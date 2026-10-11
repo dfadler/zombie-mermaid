@@ -23,6 +23,10 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
+import {
+  MONO_FONT_FACE_CSS,
+  MONO_FONT_FAMILY,
+} from './generated/mono-font-subset.ts'
 
 /* -----------------------------------------------------------------
  * Colour
@@ -106,14 +110,25 @@ export const ACCENTS = [
 export const DESIGN_FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap'
 
-/** The three font stacks, each with the canvas's own fallbacks. */
+/** The three font stacks, each with the canvas's own fallbacks.
+ *
+ * `mono` leads with {@link MONO_FONT_FAMILY} — the self-hosted, subsetted
+ * JetBrains Mono NL build `designTokensCss()` embeds via `@font-face`
+ * below — per docs/decisions/ascii-browser-font-investigation-978.md's
+ * recommendation 1/3: every page rendering ASCII output already reads
+ * `.mono`/`var(--font-mono)`, so pointing this one stack at the self-hosted
+ * family is the one change that fixes all of them, rather than a purely
+ * system-font stack that drifts per-viewer. The rest of the stack is
+ * unchanged, so a viewer whose browser can't load the embedded font (data:
+ * URIs are supported everywhere modern, but never say never) degrades
+ * exactly like it did before this change. */
 export const FONTS = {
   /** Headings and anything marked `.display`. */
   display: "'Space Grotesk', 'Plus Jakarta Sans', sans-serif",
   /** Body copy — the default for the whole page. */
   body: "'Plus Jakarta Sans', -apple-system, sans-serif",
   /** Code, CLI transcripts, and diagram source. */
-  mono: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
+  mono: `'${MONO_FONT_FAMILY}', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace`,
 } as const
 
 /**
@@ -300,6 +315,75 @@ export const MEDIA = {
   reducedMotion: '@media (prefers-reduced-motion: reduce)',
 } as const
 
+/**
+ * Breakpoints for the site's older, pre-redesign pages — demo/styles.css,
+ * demo/dashboard.css, demo/diagram-page.css, demo/fork-fixes.css,
+ * demo/blog.css, and theme-picker.tsx's `themePickerCss()` — which (per this
+ * module's header comment) render through a different, deliberately
+ * disjoint styling system from {@link BREAKPOINTS} above.
+ *
+ * Consolidated here per #1030: those files previously hardcoded 8 scattered
+ * pixel values between them (600, 640, 720, 768, 900, 1000, 1023, and a
+ * stray 1024 — see `desktopBelow` below), each redefined per file with no
+ * shared source, so changing one meant hunting down every copy and hoping
+ * they stayed in sync. Every value here was audited against the CSS it
+ * gates before being named (see #1030's PR description) — several look
+ * close enough to be typos of each other but gate genuinely different
+ * content, so nothing was collapsed except the one confirmed drift
+ * (`desktopBelow`, previously 1023 in demo/styles.css and a stray, 1px-wider
+ * 1024 in theme-picker.tsx).
+ *
+ * TS consumers (theme-picker.tsx) import this object directly. The plain
+ * CSS files can't `import` a TS value into an `@media` condition — CSS
+ * custom properties don't resolve inside a media feature — so each rule
+ * instead keeps its literal pixel value (so the file stays valid,
+ * human-readable CSS on its own) and tags it with a trailing CSS comment
+ * naming the key below (see any rule in demo/styles.css for the exact
+ * form). `__tests__/demo-legacy-breakpoints-sync.test.ts` parses every
+ * tagged rule in those five files and fails if a tagged number ever drifts
+ * from the value here — the mechanical guarantee a comment alone can't give.
+ */
+export const LEGACY_BREAKPOINTS = {
+  /** 600px — grids drop to one/two columns, `.page-h1` shrinks. Same value
+   *  as {@link BREAKPOINTS}.mobile by coincidence, not shared design intent
+   *  — kept as its own key so a future change to one doesn't silently
+   *  move the other. Used by dashboard.css, fork-fixes.css, blog.css, and
+   *  styles.css's own `.page-h1`-equivalent rules. */
+  mobile: 600,
+  /** 640px — demo/styles.css only: raises the segmented-toggle tap target
+   *  to the 44px comfortable minimum and swaps in the narrow orientation
+   *  variant for a wide diagram (issue #285). */
+  tapTarget: 640,
+  /** 720px — demo/diagram-page.css only: stacks the source/diagram columns,
+   *  narrower than `compact` because the two-column layout needs more room
+   *  than a single block of prose does before it needs to give up. */
+  diagramStack: 720,
+  /** 768px — demo/styles.css only: tightens the content-wrapper/theme-bar
+   *  padding and stacks the hero-transform, hero-arrow, and hero-buttons
+   *  rows. */
+  compact: 768,
+  /** 900px — nav/grid content collapses to a single column. Same value as
+   *  {@link BREAKPOINTS}.tablet by coincidence (see `mobile` above). Used
+   *  by dashboard.css, fork-fixes.css, blog.css, and styles.css's
+   *  `.sample-content` grid. */
+  tablet: 900,
+  /** 1000px (min-width) — demo/styles.css only: the desktop padding bump
+   *  paired with `desktopBelow` below (the two overlap 1000-1023px by
+   *  design, not an off-by-one — see the `.content-wrapper` and `.sidebar`
+   *  rules). */
+  desktopMin: 1000,
+  /** 1023px (max-width, i.e. "below 1024px" — see the `.scroll-progress`
+   *  comment in demo/styles.css) — the sidebar becomes an off-canvas
+   *  drawer, the category tabbar and scroll-progress bar pin to the
+   *  viewport bottom, and the inline theme pills collapse to the "N
+   *  Themes" dropdown. demo/styles.css already wrote every one of these as
+   *  1023 except the last (theme-pills-inline), which used a stray,
+   *  1px-wider `max-width: 1024`; theme-picker.tsx's copy of that same rule
+   *  had drifted the same way. Both are standardized to 1023 here — a
+   *  behavior change only at exactly 1024px viewport width. */
+  desktopBelow: 1023,
+} as const
+
 /* -----------------------------------------------------------------
  * CSS emission
  * ----------------------------------------------------------------- */
@@ -316,12 +400,20 @@ export const MEDIA = {
  * The colour half matches the design canvas's own `:root` exactly. The
  * `--font-*` half is this module's addition — the canvas repeats each stack
  * inline on `.dc-root` and `h1, h2, h3`; naming them changes no value.
+ *
+ * Also emits {@link MONO_FONT_FACE_CSS} ahead of the `:root` block — the
+ * `@font-face` rule embedding the self-hosted, subsetted JetBrains Mono NL
+ * build `FONTS.mono` names first (see that constant's doc comment). A
+ * `@font-face` rule can't live inside `:root {}` itself, so it's a sibling
+ * string rather than another custom property.
  */
 export function designTokensCss(): string {
   const colors = Object.entries(COLORS)
     .map(([name, value]) => `  ${name}: ${value};`)
     .join('\n')
-  return `:root {
+  return `${MONO_FONT_FACE_CSS}
+
+:root {
 ${colors}
   --font-display: ${FONTS.display};
   --font-body: ${FONTS.body};
@@ -331,17 +423,63 @@ ${colors}
 
 /**
  * `designTokensCss()` plus the base element rules the canvas applies on top
- * of it: the body font and ink, the display font on headings, and the
- * cyan/pink link pair.
+ * of it: a zeroed `body` margin (the canvas artboards are edge-to-edge, and
+ * every redesigned page's `<Nav>` is meant to sit flush against the
+ * viewport's top/left — without this, the browser's default 8px `body`
+ * margin nudges the nav bar and everything below it away from the edge),
+ * {@link LINE_HEIGHT}'s `body` step (1.5) as the actual inherited
+ * `line-height` — previously this constant existed but was never applied as
+ * real CSS anywhere, so any text that didn't set its own `line-height`
+ * (most of `<Nav>`'s: the links, the install pill's command text) rendered
+ * at the browser's default `normal` instead — the body font and ink, the
+ * display font on headings, and the cyan/pink link pair.
  *
  * A page wanting only the custom properties (because it inherits its
- * element styling from elsewhere) can emit `designTokensCss()` alone.
+ * element styling from elsewhere) can emit `designTokensCss()` alone — but
+ * then owes the `body` margin/`line-height` resets itself. Before those
+ * reset here, index-page.tsx was the one page with neither from any source
+ * (every other generator picks up *some* value incidentally, e.g.
+ * diagram-page.tsx's linked `assets/diagram-page.css` sets `body {
+ * line-height: 1.6 }` for its own old UI, blog-page.tsx's `assets/blog.css`
+ * sets its own value, editor-page.tsx's bundled `editor/css/variables.css`
+ * resets margin but not line-height, …) — which meant `<Nav>` rendered at a
+ * different height depending on which page's incidental value (or lack of
+ * one) it happened to inherit, on top of index-page.tsx's own 8px `body`
+ * margin offset — both visible as the nav bar jumping on every navigation,
+ * not just to/from the home page.
+ *
+ * `.mono` lives here rather than in `primitives.module.css` (which used to
+ * hold it, before zombie-mermaid#969 turned on hashing there) for the same
+ * reason `.display` already does: both are page-wide utility classes set
+ * as a plain string literal by dozens of unrelated files, not a
+ * component-private implementation detail. `.mono` specifically is also
+ * targeted by raw, unscoped `class="mono"` markup that
+ * `packages/core/src/theme.ts`/`packages/svg-renderer` write directly into
+ * generated SVG output — code with no relationship to this build at all —
+ * so it has to keep the literal name `mono` forever; hashing it here would
+ * silently stop matching that SVG-side selector. `body` in the selector is
+ * load-bearing, not decorative: that same SVG `<style>` (present whenever
+ * the current sample's theme has a mono font configured — e.g. a class
+ * diagram's method signatures) isn't scoped to the `<svg>` — it's a plain
+ * global `<style>` tag inlined into the page body via
+ * `dangerouslySetInnerHTML`, so its bare `.mono` selector matches every
+ * `.mono`-classed element on the whole page, ASCII output included. That
+ * selector ties this rule's specificity exactly (both single-class), so
+ * whichever `<style>` tag is later in the document wins — always the
+ * SVG's, since it's inlined into body content after this page-level
+ * `<style>`. `body .mono` breaks that tie in this rule's favor regardless
+ * of document order, so every `.mono` consumer (ASCII wells, the
+ * breadcrumb, install pills, theme pickers, …) reliably gets the
+ * self-hosted `--font-mono` this repo now ships — see
+ * docs/decisions/ascii-browser-font-investigation-978.md.
  */
 export function designBaseCss(): string {
   return `${designTokensCss()}
 
 body {
+  margin: 0;
   font-family: var(--font-body);
+  line-height: ${LINE_HEIGHT.body};
   color: var(--text);
   background: var(--bg);
 }
@@ -352,6 +490,10 @@ h3,
 .display {
   font-family: var(--font-display);
   font-weight: ${FONT_WEIGHT.bold};
+}
+
+body .mono {
+  font-family: var(--font-mono);
 }
 
 a {

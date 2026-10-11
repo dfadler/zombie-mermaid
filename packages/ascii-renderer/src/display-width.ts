@@ -74,6 +74,8 @@ const VARIATION_SELECTOR_16 = '\u{FE0F}'
  * tears these apart, which is the root cause of both #205 and #214.
  */
 function graphemeClusters(text: string): string[] {
+  // Printable ASCII is always one cluster per char; skip the (slow) segmenter.
+  if (/^[\x20-\x7e]*$/.test(text)) return text.split('')
   const clusters: string[] = []
   for (const { segment } of graphemeSegmenter.segment(text)) {
     clusters.push(segment)

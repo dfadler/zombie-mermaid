@@ -42,10 +42,22 @@ import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 // Entity box content
 // ============================================================================
 
-/** Format an attribute line: "PK type name" or "FK type name" etc. */
+/**
+ * Format an attribute line as "type name" or "type name PK" etc.
+ *
+ * Real mermaid's SVG lays attribute columns out left-to-right as
+ * type/name/keys (confirmed against `attribute-type`/`attribute-name`/
+ * `attribute-keys` x-coordinates in the form-judge report on issue #1119) —
+ * so the key column trails here too, rather than leading with a fixed-width
+ * prefix like the pre-#1134 "PK type name" order did. Nothing else in this
+ * file assumes a fixed-width key column: box width is just the widest
+ * rendered line (see measureMultiBox in draw-boxes.ts), so a trailing,
+ * unpadded key suffix sizes the box correctly with no extra alignment logic
+ * needed.
+ */
 function formatAttribute(attr: ErAttribute): string {
-  const keyStr = attr.keys.length > 0 ? attr.keys.join(',') + ' ' : '   '
-  return `${keyStr}${attr.type} ${attr.name}`
+  const keySuffix = attr.keys.length > 0 ? ' ' + attr.keys.join(',') : ''
+  return `${attr.type} ${attr.name}${keySuffix}`
 }
 
 /** Build sections for an entity box: [header], [attributes] */
@@ -532,12 +544,38 @@ export function renderErAscii(
     y: number,
     minX: number,
     maxX: number,
+    avoidForeignLines: boolean,
   ): boolean {
     for (let i = 0; i < cells.length; i++) {
       const x = startX + i
       if (x < minX || x > maxX) continue
       if (isProtected(x, y) || rc[x]?.[y] === 'arrow') return false
       if (boxCells.has(`${x},${y}`)) return false
+    }
+    if (!avoidForeignLines) return true
+    // A cell already holding a *different* relationship's line reads as
+    // free above (isProtected only tracks text/border), so without this
+    // check the search below would happily park this relationship's label
+    // right beside someone else's line — visually implying the label
+    // describes that line's solid/dashed style instead of its own (issue
+    // #1119). currentRelLineCells (see setCGuarded) is this relationship's
+    // own line cells, drawn moments earlier in this same iteration — those
+    // stay allowed, matching the "label wins over the line beneath it" doc
+    // comment above. Checked a cell wider than the label's own text on each
+    // side (not just cells.length) so a foreign line stem passing just
+    // outside the label's own span doesn't end up flush against it either —
+    // narrower than that and the existing single-cell post-placement
+    // cleanup below can't fully clear it. Only enforced on this first
+    // (strict) search pass — see the two-pass loop below — a dense diagram
+    // with no foreign-line-free row anywhere in range falls back to the
+    // old, permissive check rather than dropping the label outright (a
+    // worse information loss than the visual ambiguity this guards
+    // against).
+    for (let x = startX - 2; x <= startX + cells.length; x++) {
+      if (x < minX - 2 || x > maxX + 1) continue
+      if (rc[x]?.[y] === 'line' && !currentRelLineCells.has(`${x},${y}`)) {
+        return false
+      }
     }
     return true
   }
@@ -595,7 +633,38 @@ export function renderErAscii(
     // the same silent-corruption shape as issue #350, just between two
     // relationships instead of a relationship and a box.
     if (role !== 'text' && rc[x]?.[y] === 'text') return
+    // A same-family crossing (solid-over-solid, dashed-over-dashed, or
+    // either meeting a direction-agnostic corner/marker glyph — see
+    // lineStyleFamily) is always allowed to overwrite: two relationship
+    // lines crossing is normal, expected ER layout (see the doc comment
+    // above), and same-style glyphs look identical regardless of which
+    // relationship drew them. A *dashed* write landing on an already-drawn
+    // *solid* glyph is the one combination refused: without this, whichever
+    // relationship simply happened to be declared (and so drawn) later
+    // always won a shared cell regardless of which one it visually belongs
+    // to, so an identifying relationship's own solid line could end up
+    // showing a dashed glyph purely from draw order when it shared layout
+    // space with a non-identifying relationship (issue #1145). Solid takes
+    // precedence over dashed wherever they'd otherwise collide — not
+    // "whichever wrote first", which would just swap one order dependency
+    // for another — so the outcome is the same regardless of which
+    // relationship is declared first, mirroring how a label always wins
+    // over the line beneath it (the isProtected/canPlaceLabelLine guards
+    // above): a solid write always goes through, including over an
+    // existing dashed glyph.
+    if (
+      lineStyleFamily(ch) === 'dashed' &&
+      lineStyleFamily(canvas[x]?.[y]) === 'solid'
+    ) {
+      return
+    }
     setC(x, y, ch, role)
+    // Track this relationship's own line cells (see currentRelLineCells,
+    // reset per relationship below) so a later label-placement search can
+    // tell "sits on my own line" (fine) apart from "sits on a *different*
+    // relationship's line" (issue #1119 — a relocated label landing next to
+    // an unrelated line reads as describing that line's style instead).
+    if (role === 'line') currentRelLineCells.add(`${x},${y}`)
   }
 
   /**
@@ -711,6 +780,25 @@ export function renderErAscii(
   const dashV = useAscii ? ':' : '┊'
 
   /**
+   * Family a straight relationship-line glyph belongs to — 'solid' for an
+   * identifying relationship's H/V glyphs, 'dashed' for a non-identifying
+   * relationship's dashH/dashV glyphs, or undefined for anything else
+   * (corner glyphs from getCornerChar, crow's-foot markers, box borders,
+   * label text). Corners and markers are direction/role glyphs, not style
+   * glyphs — they look identical regardless of which relationship's style
+   * drew them, so they're deliberately excluded here rather than folded
+   * into either family; see setCGuarded's use of this for why that
+   * exclusion matters (issue #1145).
+   */
+  function lineStyleFamily(
+    ch: string | undefined,
+  ): 'solid' | 'dashed' | undefined {
+    if (ch === H || ch === V) return 'solid'
+    if (ch === dashH || ch === dashV) return 'dashed'
+    return undefined
+  }
+
+  /**
    * Character for the single cell where a routed relationship's path turns
    * — a vertical segment and a horizontal segment meeting at a right angle
    * (issue #414). `vertDir` is the direction the vertical segment extends
@@ -822,7 +910,12 @@ export function renderErAscii(
     return entity.x + margin + Math.round(idx * step)
   }
 
+  // This relationship's own line cells, reset each iteration — see
+  // setCGuarded and canPlaceLabelLineAvoidingMarkers above.
+  let currentRelLineCells = new Set<string>()
+
   for (const rel of diagram.relationships) {
+    currentRelLineCells = new Set<string>()
     const e1 = placed.get(rel.entity1)
     const e2 = placed.get(rel.entity2)
     if (!e1 || !e2) continue
@@ -1419,37 +1512,47 @@ export function renderErAscii(
         // legitimately run its label past a box that never touched
         // startY/endY's naive band (#350). It also means clear of markers,
         // not just text/borders (#392) — before giving up.
+        // Two passes: first strict (also dodging a *different*
+        // relationship's own line — #1119), then permissive (the pre-#1119
+        // check) if nothing in range clears the strict bar. A dense diagram
+        // where every candidate row touches some other relationship's line
+        // would otherwise drop the label entirely — worse than the visual
+        // ambiguity the strict pass exists to avoid.
         let placedAtY: number | null = null
-        for (
-          let offset = 0;
-          offset <= endY - startY && placedAtY === null;
-          offset++
-        ) {
-          const candidates =
-            offset === 0
-              ? [naturalStartY]
-              : [naturalStartY + offset, naturalStartY - offset]
-          for (const candidateStart of candidates) {
-            if (
-              candidateStart < startY ||
-              candidateStart + blockHeight - 1 > endY
-            ) {
-              continue
-            }
-            const fits = cellsPerLine.every((cells, lineIdx) =>
-              canPlaceLabelLineAvoidingMarkers(
-                cells,
-                labelX,
-                candidateStart + lineIdx,
-                0,
-                lastLx,
-              ),
-            )
-            if (fits) {
-              placedAtY = candidateStart
-              break
+        for (const avoidForeignLines of [true, false]) {
+          for (
+            let offset = 0;
+            offset <= endY - startY && placedAtY === null;
+            offset++
+          ) {
+            const candidates =
+              offset === 0
+                ? [naturalStartY]
+                : [naturalStartY + offset, naturalStartY - offset]
+            for (const candidateStart of candidates) {
+              if (
+                candidateStart < startY ||
+                candidateStart + blockHeight - 1 > endY
+              ) {
+                continue
+              }
+              const fits = cellsPerLine.every((cells, lineIdx) =>
+                canPlaceLabelLineAvoidingMarkers(
+                  cells,
+                  labelX,
+                  candidateStart + lineIdx,
+                  0,
+                  lastLx,
+                  avoidForeignLines,
+                ),
+              )
+              if (fits) {
+                placedAtY = candidateStart
+                break
+              }
             }
           }
+          if (placedAtY !== null) break
         }
 
         if (placedAtY !== null) {

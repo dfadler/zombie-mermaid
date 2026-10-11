@@ -1,3 +1,29 @@
+/* Keyboard focus -- previously absent across the whole editor: buttons,
+ * tabs, dropdown items and the theme/export menus had no focus style at
+ * all, and the few inputs that set `outline: none` (code-editor.css's
+ * .code-editor, config-panel.css's .padding-num, font-picker.css's
+ * .font-search) had no visible replacement, leaving keyboard navigation
+ * with no way to see where focus was. misc.css loads last (see
+ * editor.ts's readCssFiles() `order` array), and `<input>`/`<textarea>`
+ * element-plus-:focus-visible selectors already out-specificity a bare
+ * class selector like `.padding-num { outline: none }`, so this reliably
+ * wins over every earlier `outline: none` either way. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--t-accent);
+  outline-offset: 2px;
+}
+/* The code editor textarea sits flush against the panel edge, so an
+ * outside outline would get visually clipped by the panel's own
+ * overflow -- an inset ring reads cleanly instead. */
+.code-editor:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--t-accent);
+}
+
 /* Toast */
 .toast {
   position: fixed;

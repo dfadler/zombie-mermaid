@@ -27,8 +27,8 @@
  */
 import { expect, test } from '@playwright/test'
 import { renderMermaidSVG } from '../../src/index.ts'
-import { samples } from '../../samples-data.ts'
-import { xychartSamples } from '../../xychart-samples-data.ts'
+import { samples } from '../../packages/site/samples-data.ts'
+import { xychartSamples } from '../../packages/site/xychart-samples-data.ts'
 import { buildHarnessScript } from './helpers/build-harness.ts'
 import type {} from './helpers/harness-types.ts'
 
@@ -40,6 +40,10 @@ function slug(text: string): string {
 }
 
 test.describe('gallery samples (samples-data.ts)', () => {
+  // Snapshot specs are deterministic per input: a mismatch reruns identically,
+  // so 2 CI retries just triple the cost of a real failure (#1577). One keeps
+  // a cheap guard against rasterization jitter; geometry/seams keep the default.
+  test.describe.configure({ retries: process.env.CI ? 1 : 0 })
   for (const [i, sample] of samples.entries()) {
     // Hero samples render through their own `.hero-diagram-panel` full-width
     // chrome (see index.ts's `isHero` branch), never through `.svg-panel`/

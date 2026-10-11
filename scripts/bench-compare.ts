@@ -4,7 +4,8 @@
  * beyond a threshold.
  *
  * Usage: tsx scripts/bench-compare.ts <current.json> [--baseline=<path>] [--threshold=<pct>]
- *   --baseline   Path to the baseline summary. Defaults to bench-baseline.json.
+ *   --baseline   Path to the baseline summary. Defaults to this script's
+ *                sibling scripts/bench-baseline.json.
  *   --threshold  Allowed regression, as a percent of the baseline's combined
  *                total (SVG + ASCII). Defaults to 75 — deliberately loose:
  *                shared GitHub-hosted runners are noisy enough that a tight
@@ -23,6 +24,7 @@
  */
 
 import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
 interface BenchCategorySummary {
   sampleCount: number
@@ -58,7 +60,9 @@ if (!currentPath) {
   process.exit(2)
 }
 
-const baselinePath = argValue('--baseline=') ?? 'bench-baseline.json'
+const baselinePath =
+  argValue('--baseline=') ??
+  fileURLToPath(new URL('./bench-baseline.json', import.meta.url))
 const thresholdPct = Number(argValue('--threshold=') ?? '75')
 
 async function readSummary(path: string): Promise<BenchSummary> {

@@ -67,6 +67,23 @@ function selfLoopWidth(msg: Message): number {
     : SELF_LOOP_WIDTH + String(msg.seqNumber).length
 }
 
+// A self-message's label is drawn on rows ABOVE its loop (mermaid.js's own
+// placement), starting this many columns right of the lifeline so it never
+// touches it. Sitting above the loop rather than beside it means the label
+// only needs `SELF_LABEL_OFFSET + width` columns, not loop + clearance +
+// width, so the next lifeline can stay closer (issue #1387).
+const SELF_LABEL_OFFSET = 2
+
+// Columns right of the lifeline a self-message occupies: the wider of its
+// loop and its label. Shared by the gap-sizing, canvas-width and block-wall
+// passes so all three agree.
+function selfExtent(msg: Message): number {
+  return Math.max(
+    selfLoopWidth(msg),
+    SELF_LABEL_OFFSET + maxLineWidth(msg.label),
+  )
+}
+
 /**
  * Render a Mermaid sequence diagram to ASCII/Unicode text.
  *
@@ -96,6 +113,12 @@ export function renderSequenceAscii(
   const JB = useAscii ? '+' : '┴' // bottom junction on lifeline
   const JL = useAscii ? '+' : '├' // left junction
   const JR = useAscii ? '+' : '┤' // right junction
+  // Activation bar: the double-line glyph a lifeline gets while a
+  // participant is actively processing a call (issue #1133), overlaid in
+  // place of the plain lifeline `V`. Same Unicode/ASCII pairing draw-boxes.ts
+  // already uses for a double border (`║`/`‖` — see its `isDoubleBox`
+  // branch), reused here rather than inventing a second one.
+  const ACT = useAscii ? '‖' : '║'
 
   // ---- LAYOUT: compute lifeline X positions ----
 
@@ -244,7 +267,18 @@ export function renderSequenceAscii(
   for (const msg of diagram.messages) {
     const fi = actorIndexOf(msg.from)
     const ti = actorIndexOf(msg.to)
-    if (fi === ti) continue // self-messages don't affect spacing
+    if (fi === ti) {
+      // A self-message's label sits above its loop and must clear the next
+      // lifeline by one blank column, or it overwrites that lifeline
+      // (issue #1387). The last actor has no right neighbour; the
+      // canvas-width pass widens for it instead.
+      if (fi < adjMaxWidth.length) {
+        // `-2` because the gap computation below adds its own `+ 2` margin.
+        const needed = selfExtent(msg) + 1 - 2
+        adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, needed)
+      }
+      continue
+    }
     const lo = Math.min(fi, ti)
     const hi = Math.max(fi, ti)
     // Required gap per span = (max line width + arrow decorations) / number of gaps
@@ -253,6 +287,56 @@ export function renderSequenceAscii(
     const perGap = Math.ceil(needed / numGaps)
     for (let g = lo; g < hi; g++) {
       adjMaxWidth[g] = Math.max(adjMaxWidth[g]!, perGap)
+    }
+  }
+
+  // Width (including border + padding, matching the box drawn in the
+  // vertical-layout pass below) of a note anchored to an actor. Computed up
+  // front, before lifeline x-positions are finalized, so `left`/`right`
+  // notes can participate in gap sizing the same way message labels already
+  // do (issue #953 case C) instead of only being checked against a layout
+  // that's already fixed.
+  function noteBoxWidth(note: (typeof diagram.notes)[number]): number {
+    const nLines = splitLines(note.text)
+    return Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
+  }
+
+  // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
+  // actor i draws into the gap to its left (between actor i-1 and i, or —
+  // for the leftmost actor — the canvas's own left margin); a `right` note
+  // draws into the gap to its right (between actor i and i+1). Both need to
+  // be reserved as part of layout, not clamped after the fact (issue #953
+  // cases A-C: notes previously only ever collided with whatever gap
+  // message-label sizing happened to leave).
+  const leftNoteWidth: number[] = new Array(diagram.actors.length).fill(0)
+  const rightNoteWidth: number[] = new Array(diagram.actors.length).fill(0)
+  // A single-actor `over` note draws centered on that actor's own lifeline
+  // (see the note-x calculation below): `Math.floor(w / 2)` columns land to
+  // its left, the rest to its right. Neither half was reserved during gap
+  // sizing before this fix, so a note wider than the actor's own column
+  // silently spilled into whichever neighbour was closer (issue #992) — the
+  // same problem left/rightNoteWidth above already solved for `left`/
+  // `right` notes, just for the two halves of a centered one instead. A
+  // multi-actor `over` note (`Note over Alice,Bob`) is excluded on purpose:
+  // spanning both actors' columns is its intended shape, not a collision.
+  const overNoteHalfLeft: number[] = new Array(diagram.actors.length).fill(0)
+  const overNoteHalfRight: number[] = new Array(diagram.actors.length).fill(0)
+  for (const note of diagram.notes) {
+    if (note.position === 'left' || note.position === 'right') {
+      const aIdx = actorIndexOf(note.actorIds[0]!)
+      const w = noteBoxWidth(note)
+      if (note.position === 'left') {
+        leftNoteWidth[aIdx] = Math.max(leftNoteWidth[aIdx]!, w)
+      } else {
+        rightNoteWidth[aIdx] = Math.max(rightNoteWidth[aIdx]!, w)
+      }
+    } else if (note.position === 'over' && note.actorIds.length === 1) {
+      const aIdx = actorIndexOf(note.actorIds[0]!)
+      const w = noteBoxWidth(note)
+      const halfLeft = Math.floor(w / 2)
+      const halfRight = w - halfLeft
+      overNoteHalfLeft[aIdx] = Math.max(overNoteHalfLeft[aIdx]!, halfLeft)
+      overNoteHalfRight[aIdx] = Math.max(overNoteHalfRight[aIdx]!, halfRight)
     }
   }
 
@@ -269,8 +353,24 @@ export function renderSequenceAscii(
   // adjacent participants in different groups (or one grouped, one not)
   // need room for the wall(s) between their boxes, plus a blank column on
   // each side of every wall. Same-group neighbours have no wall between.
+  //
+  // A `left` note on the leftmost actor has no left neighbour to reserve a
+  // gap against — it draws into the canvas's own left margin instead, so
+  // that margin (the initial lifeline position itself) must be at least
+  // wide enough for it: `nx = llX[0] - nWidth - 1 >= 0` (see the note-x
+  // calculation below) requires `llX[0] >= nWidth + 1` (issue #953 case A —
+  // previously `nx` was clamped to 0 instead, forcing the note onto the
+  // lifeline it's supposed to sit beside).
   const llX: number[] = [
-    halfBox[0]! + (boxSpanOf[0] === -1 ? 0 : BRACKET_GAP + 1),
+    Math.max(
+      halfBox[0]! + (boxSpanOf[0] === -1 ? 0 : BRACKET_GAP + 1),
+      leftNoteWidth[0]! + 1,
+      // A single-actor `over` note on the leftmost actor has no left
+      // neighbour either — same reasoning as the `left`-note case just
+      // above, but for the note's own left half (`nx = llX[0] -
+      // overNoteHalfLeft[0]` must stay >= 0; issue #992).
+      overNoteHalfLeft[0]!,
+    ),
   ]
   for (let i = 1; i < diagram.actors.length; i++) {
     const prevSpan = boxSpanOf[i - 1]!
@@ -282,9 +382,26 @@ export function renderSequenceAscii(
     // The base constraint already leaves two blank columns between boxes;
     // each wall needs one column of its own plus one more blank beside it.
     const wallExtra = walls === 0 ? 0 : walls * (BRACKET_GAP + 1) - 1
+    // A `right` note on actor i-1, or a `left` note on actor i, draws into
+    // this gap — reserve room for whichever is wider (issue #953 cases B/C)
+    // so a wide note doesn't overflow into the neighbouring lifeline. The
+    // `+2` mirrors adjMaxWidth's own margin below and matches the 1-column
+    // clearance the note-x calculation already leaves on the lifeline side.
+    // A single-actor `over` note on either actor reaches into this same gap
+    // from its own side (its right half from i-1, its left half from i) —
+    // issue #992, folded into the same max() rather than summed, matching
+    // how the left/right pair above is already handled.
+    const noteGapNeed =
+      Math.max(
+        rightNoteWidth[i - 1]!,
+        leftNoteWidth[i]!,
+        overNoteHalfRight[i - 1]!,
+        overNoteHalfLeft[i]!,
+      ) + 2
     const gap = Math.max(
       halfBox[i - 1]! + halfBox[i]! + 2 + wallExtra,
       adjMaxWidth[i - 1]! + 2,
+      noteGapNeed,
       minLifelineGap,
     )
     llX[i] = llX[i - 1]! + gap
@@ -358,8 +475,7 @@ export function renderSequenceAscii(
       minLX = Math.min(minLX, llX[Math.min(f, t)]!)
       maxLX = Math.max(maxLX, llX[Math.max(f, t)]!)
       if (f === t) {
-        const selfRight =
-          llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
+        const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
       }
     }
@@ -435,8 +551,7 @@ export function renderSequenceAscii(
     if (note.afterIndex !== -1) continue
     curY += rowGap // gap before note
     const nLines = splitLines(note.text)
-    const nWidth =
-      Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
+    const nWidth = noteBoxWidth(note)
     const nHeight = nLines.length + 2
 
     const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
@@ -501,10 +616,12 @@ export function renderSequenceAscii(
     const destroyedIdx = destroyedByMsg.get(m)
 
     if (isSelf) {
-      // Self-message occupies 3+ rows: top-arm, label-col(s), bottom-arm
-      msgLabelY[m] = curY + 1
-      msgArrowY[m] = curY
-      curY += 2 + msgLineCount // top-arm + label lines + bottom-arm
+      // Self-message: label rows (above the loop), then a 3-row loop — top
+      // arm, right wall, bottom arm.
+      const labelRows = msgLineCount
+      msgLabelY[m] = curY
+      msgArrowY[m] = curY + labelRows
+      curY += labelRows + 3
     } else {
       // Normal message: label row(s), then — for a creating message — the
       // rows of the created box above the arrow, then the arrow row, then
@@ -533,8 +650,7 @@ export function renderSequenceAscii(
         curY += rowGap
         const note = diagram.notes[n]!
         const nLines = splitLines(note.text)
-        const nWidth =
-          Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
+        const nWidth = noteBoxWidth(note)
         const nHeight = nLines.length + 2
 
         // Determine x position based on note.position
@@ -598,8 +714,7 @@ export function renderSequenceAscii(
     const msg = diagram.messages[m]!
     if (msg.from === msg.to) {
       const fi = actorIndexOf(msg.from)
-      const selfRight =
-        llX[fi]! + selfLoopWidth(msg) + 2 + 2 + maxLineWidth(msg.label)
+      const selfRight = llX[fi]! + selfExtent(msg) + 2
       totalW = Math.max(totalW, selfRight + 1)
     }
   }
@@ -769,10 +884,90 @@ export function renderSequenceAscii(
   }
   const lifelineBottom = (i: number) => destroyRow.get(i) ?? footerY
 
+  // ---- LAYOUT: activation intervals (rows where a lifeline is "active") ----
+  //
+  // Ports svg-renderer's layout.ts activation algorithm (its
+  // startActivation/endActivation/applyActivationEvents, ~lines 288-345) to
+  // row indices instead of y-pixels: a per-actor LIFO stack of open
+  // activations (start row pushed on `activate`, popped and closed into an
+  // interval on the matching `deactivate`), fed by both the standalone
+  // `activations` list and each message's inline `activate`/`deactivate`,
+  // plus a final pass closing anything still open at diagram end
+  // (unbalanced input) — same as the SVG layout's closing pass.
+  //
+  // Nesting depth (the SVG renderer's `depth`, used there to horizontally
+  // offset nested activation rects) isn't tracked here: the stack's LIFO
+  // order alone is enough to pair activate/deactivate correctly, and
+  // `isActiveAt` below only distinguishes "some activation covers this row"
+  // from "idle" — see the ACT-glyph comment there for why nesting doesn't
+  // get its own glyph.
+  const activationIntervals = new Map<
+    string,
+    Array<{ topRow: number; bottomRow: number }>
+  >()
+  const activationStacks = new Map<string, number[]>()
+
+  function startActivation(actorId: string, row: number): void {
+    const stack = activationStacks.get(actorId) ?? []
+    activationStacks.set(actorId, stack)
+    stack.push(row)
+  }
+  function endActivation(actorId: string, row: number): void {
+    const stack = activationStacks.get(actorId)
+    const startRow = stack?.pop()
+    if (startRow === undefined) return
+    const list = activationIntervals.get(actorId) ?? []
+    activationIntervals.set(actorId, list)
+    list.push({ topRow: startRow, bottomRow: row })
+  }
+
+  const activationEventsByAfterIndex = new Map<
+    number,
+    typeof diagram.activations
+  >()
+  for (const event of diagram.activations) {
+    const list = activationEventsByAfterIndex.get(event.afterIndex) ?? []
+    list.push(event)
+    activationEventsByAfterIndex.set(event.afterIndex, list)
+  }
+  function applyActivationEvents(afterIndex: number, row: number): void {
+    for (const event of activationEventsByAfterIndex.get(afterIndex) ?? []) {
+      if (event.kind === 'start') startActivation(event.actorId, row)
+      else endActivation(event.actorId, row)
+    }
+  }
+
+  applyActivationEvents(-1, headerBottom)
+  for (let m = 0; m < diagram.messages.length; m++) {
+    const msg = diagram.messages[m]!
+    const row = msgArrowY[m]!
+    if (msg.activate) startActivation(msg.to, row)
+    if (msg.deactivate) endActivation(msg.from, row)
+    applyActivationEvents(m, row)
+  }
+  // Unbalanced `activate` with no matching `deactivate`: close at the
+  // actor's own lifeline end, mirroring svg-renderer's layout.ts closing
+  // pass at the bottom of the message area.
+  for (const [actorId, stack] of activationStacks) {
+    if (stack.length === 0) continue
+    const bottomRow = lifelineBottom(actorIndexOf(actorId))
+    const list = activationIntervals.get(actorId) ?? []
+    activationIntervals.set(actorId, list)
+    for (const startRow of stack) list.push({ topRow: startRow, bottomRow })
+  }
+
+  /** Whether `actorId`'s lifeline is inside any activation at row `y`. */
+  function isActiveAt(actorId: string, y: number): boolean {
+    const intervals = activationIntervals.get(actorId)
+    if (!intervals) return false
+    return intervals.some((iv) => y >= iv.topRow && y <= iv.bottomRow)
+  }
+
   for (let i = 0; i < diagram.actors.length; i++) {
     const x = llX[i]!
+    const actorId = diagram.actors[i]!.id
     for (let y = lifelineTop(i); y <= lifelineBottom(i); y++) {
-      setC(x, y, V, 'line')
+      setC(x, y, isActiveAt(actorId, y) ? ACT : V, 'line')
     }
   }
 
@@ -867,10 +1062,12 @@ export function renderSequenceAscii(
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
 
     if (isSelf) {
-      // Self-message: 3-row loop to the right of the lifeline
+      // Self-message: the label above a 3-row loop to the right of the
+      // lifeline, as mermaid.js draws it (issue #1387)
+      //   │ Label        (label rows, one per line)
       //   ├──┐           (row 0 = msgArrowY)
-      //   │  │ Label     (row 1)
-      //   │◄─┘           (row 2)
+      //   │  │           (row 1)
+      //   ◀──┘           (row 2)
       //
       // The loop is only SELF_LOOP_WIDTH (4) columns wide by default, with no
       // spare room for a second arrowhead without corrupting the loop's
@@ -901,16 +1098,23 @@ export function renderSequenceAscii(
         setC(x, y0, lineChar, 'line')
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
-      // Label rows: vertical on right side + one line of label text each
-      const labelX = fromX + loopW + 2
-      for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
-        const rowY = y0 + 1 + lineIdx
-        setC(fromX + loopW, rowY, V, 'line')
-        writeTextCells(labelX, rowY, msgLines[lineIdx]!, 'text', totalW)
+      // Label rows sit above the loop, clear of the lifeline.
+      const labelRows = msgLines.length
+      for (let lineIdx = 0; lineIdx < labelRows; lineIdx++) {
+        writeTextCells(
+          fromX + SELF_LABEL_OFFSET,
+          y0 - labelRows + lineIdx,
+          msgLines[lineIdx]!,
+          'text',
+          totalW,
+        )
       }
 
+      // Right wall of the loop
+      setC(fromX + loopW, y0 + 1, V, 'line')
+
       // Bottom row: arrow-back + horizontal + bottom-right corner
-      const bottomY = y0 + 1 + msgLines.length
+      const bottomY = y0 + 2
       const arrowChar = isLost
         ? lostChar
         : isFilled
@@ -943,8 +1147,33 @@ export function renderSequenceAscii(
       }
 
       // Draw label centered between the two lifelines (supports multi-line)
-      const midX = Math.floor((fromX + toX) / 2)
+      let midX = Math.floor((fromX + toX) / 2)
       const msgLines = splitLines(msg.label)
+
+      // A label centred on a message that spans several participants can land
+      // on an intermediate (uninvolved) lifeline and blank it out. When the
+      // centred label would cover one, centre it in the spanned gap that can
+      // hold it clear of both lifelines (nearest the midpoint) instead. If no
+      // gap fits, keep the centred placement. (issue #1119)
+      const labelW = Math.max(0, ...msgLines.map(displayWidth))
+      const lo = Math.min(fromX, toX)
+      const hi = Math.max(fromX, toX)
+      const between = llX.filter((x) => x > lo && x < hi)
+      const covers = (c: number) => {
+        const s = c - Math.floor(labelW / 2)
+        return between.some((x) => x >= s && x < s + labelW)
+      }
+      if (labelW > 0 && covers(midX)) {
+        const stops = [lo, ...between, hi]
+        let best: number | undefined
+        for (let k = 0; k + 1 < stops.length; k++) {
+          if (stops[k + 1]! - stops[k]! - 1 < labelW + 2) continue
+          const c = Math.floor((stops[k]! + stops[k + 1]!) / 2)
+          if (best === undefined || Math.abs(c - midX) < Math.abs(best - midX))
+            best = c
+        }
+        if (best !== undefined) midX = best
+      }
 
       for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
         const line = msgLines[lineIdx]!
@@ -1059,8 +1288,7 @@ export function renderSequenceAscii(
       // right than the lifeline itself — account for that extent too, or a
       // long self-arrow label gets clipped by / drawn outside the wall.
       if (f === t) {
-        const selfRight =
-          llX[f]! + selfLoopWidth(msg) + 2 + maxLineWidth(msg.label)
+        const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
       }
     }

@@ -187,12 +187,10 @@ const ALLOWED_OUTSIDE_ASCII = {
   // `class/format.ts`, `xychart/colors.ts`, `sequence/box-color.ts` fit
   // neither. The ASCII entry now reaches all of them through the bare
   // `@zombie-mermaid/mermaid-parser` specifier — invisible to this walker,
-  // same as the `core` bucket above. `src/parser.ts` (the flowchart/state
-  // parser) is NOT part of #624's scope — findings 1-2 are about
-  // `class`/`er`/`sequence`/`xychart` only, which already have no shared
-  // generic model the way flowcharts do — so it's the one entry still
-  // reached by relative import.
-  parser: ['src/parser.ts'],
+  // same as the `core` bucket above. The flowchart/state parser (formerly
+  // `src/parser.ts`) moved there too under #1318, so nothing is reached by
+  // relative import any more.
+  parser: [] as string[],
   // The scoping doc's recommendation 5 originally put all three on its
   // `svg-renderer`-only list. #625's addendum found `init-directive.ts` and
   // `style-directives.ts` actually belong to `core` (both moved to
@@ -260,18 +258,22 @@ describe('ascii-renderer package boundary (#623, moved under #767)', () => {
     )
   })
 
-  it('does not import back out of src/ascii/ into the umbrella registry', () => {
+  it('does not import back out of src/ascii/ into the SVG registry', () => {
     // The specific back-edge that made `ascii-renderer` un-extractable: the
     // shared registry imported `renderXYChartAscii`/`renderErAscii` out of
     // src/ascii/ while src/ascii/index.ts imported the registry back out of
     // src/. Split by renderer in #623 — src/ascii/registry.ts owns the ASCII
-    // half now, and this asserts the umbrella half stays unreachable.
-    expect(graph.all.has('src/diagram-registry.ts')).toBe(false)
+    // half now, and this asserts the SVG half stays unreachable. The SVG
+    // half itself moved from `src/diagram-registry.ts` to
+    // `packages/svg-renderer/src/registry.ts` under #1111 — a pure move, no
+    // import-graph change beyond adjusting relative-path depth, same as
+    // #767's earlier move of the ASCII entry.
+    expect(graph.all.has('packages/svg-renderer/src/registry.ts')).toBe(false)
   })
 
-  it('keeps the umbrella SVG registry free of ASCII imports (the other half of the cycle)', () => {
+  it('keeps the SVG registry free of ASCII imports (the other half of the cycle)', () => {
     const registry = readFileSync(
-      resolve(REPO_ROOT, 'src/diagram-registry.ts'),
+      resolve(REPO_ROOT, 'packages/svg-renderer/src/registry.ts'),
       'utf8',
     )
     const asciiImports = edgesOf(registry)

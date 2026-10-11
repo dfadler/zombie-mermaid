@@ -10,6 +10,7 @@ import type {
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
 import type { RenderOptions, SequenceRenderOptions } from '@zombie-mermaid/core'
+import { measureMultilineText } from '@zombie-mermaid/core'
 import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 
 // ============================================================================
@@ -75,6 +76,32 @@ const SEQ = {
  */
 export function boxLabelHeight(labelFontSize: number): number {
   return labelFontSize + 8
+}
+
+/**
+ * Distance from the bottom of a stick-figure (`actor`) icon to the vertical
+ * centre of its label. Shared with the renderer so the label lands where the
+ * layout reserved room for it.
+ */
+export const ACTOR_LABEL_OFFSET = 14
+
+/** Clearance kept between an actor label and what sits below it, in px. */
+const ACTOR_LABEL_CLEARANCE = 4
+
+/**
+ * Distance from the bottom of a stick-figure icon to the bottom of its
+ * (possibly multi-line) label. Only `actor` participants draw a label below
+ * the icon; a `participant` box holds its label inside.
+ */
+function actorLabelBottom(
+  label: string,
+  fontSize: number,
+  fontWeight: number,
+): number {
+  return (
+    ACTOR_LABEL_OFFSET +
+    measureMultilineText(label, fontSize, fontWeight).height / 2
+  )
 }
 
 /** Resolved sequence-layout config — same shape as {@link SEQ} but mutable numbers. */
@@ -194,8 +221,32 @@ export function layoutSequenceDiagram(
     return positioned
   })
 
-  // 3. Stack messages vertically
-  let messageY = actorY + seq.actorHeight + seq.headerGap
+  // 3. Stack messages vertically. A stick-figure actor's label sits below its
+  //    icon, in the gap before the first message; widen the gap so the label
+  //    (and the first message's own label above its arrow) never touch.
+  //    Participants created mid-diagram are placed at their creating message
+  //    instead, so they don't take part in the header.
+  const actorLabelBottoms = diagram.actors.map((a) =>
+    a.type === 'actor'
+      ? actorLabelBottom(a.label, fontSizes.nodeLabel, FONT_WEIGHTS.nodeLabel)
+      : 0,
+  )
+  const headerLabelBottom = Math.max(
+    0,
+    ...diagram.actors.map((a, i) =>
+      a.createdAt === undefined ? actorLabelBottoms[i]! : 0,
+    ),
+  )
+  const firstMessageLabelRoom = fontSizes.edgeLabel + 12
+  let messageY =
+    actorY +
+    seq.actorHeight +
+    Math.max(
+      seq.headerGap,
+      headerLabelBottom > 0
+        ? headerLabelBottom + ACTOR_LABEL_CLEARANCE + firstMessageLabelRoom
+        : 0,
+    )
   const messages: PositionedMessage[] = []
 
   // Pre-scan blocks to determine which message indices need extra vertical
@@ -292,7 +343,9 @@ export function layoutSequenceDiagram(
     { startY: number; depth: number }[]
   >()
   const activations: Activation[] = []
-  const nestingOffset = 4 // Horizontal offset per nesting level
+  // Horizontal offset per nesting level: half a bar, as official Mermaid does,
+  // so a nested bar overlaps its parent by half instead of hiding behind it.
+  const nestingOffset = seq.activationWidth / 2
 
   /** Open an activation bar on `actorId` at row `y` (stacks for nesting). */
   function startActivation(actorId: string, y: number): void {
@@ -320,6 +373,7 @@ export function layoutSequenceDiagram(
       topY: startY,
       bottomY: y,
       width: seq.activationWidth,
+      depth,
     })
   }
 
@@ -488,9 +542,16 @@ export function layoutSequenceDiagram(
         topY: startY,
         bottomY: messageY - seq.messageRowHeight / 2,
         width: seq.activationWidth,
+        depth,
       })
     }
   }
+
+  // Paint outer bars before the bars nested inside them. Bars are pushed in
+  // close order, so an inner one otherwise precedes (and is covered by) its
+  // parent, which closes later. Array#sort is stable, so equal depths keep
+  // their order.
+  activations.sort((a, b) => a.depth - b.depth)
 
   // 4. Position blocks (loop/alt/opt)
   const blocks: PositionedBlock[] = diagram.blocks.map((block) => {
@@ -664,7 +725,14 @@ export function layoutSequenceDiagram(
     const lifeline: Lifeline = {
       actorId: a.id,
       x: actorCenterX[i]!,
-      topY: actors[i]!.y + seq.actorHeight,
+      // A stick-figure actor's label sits on the lifeline's axis just below
+      // the icon, so the line starts under it rather than through it.
+      topY:
+        actors[i]!.y +
+        seq.actorHeight +
+        (actorLabelBottoms[i]! > 0
+          ? actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE
+          : 0),
       bottomY:
         destroyedAt === undefined
           ? diagramBottom - seq.padding

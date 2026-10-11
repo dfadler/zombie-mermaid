@@ -1,5 +1,5 @@
 import type { XYChart, XYAxis, XYChartSeries } from './types.ts'
-import type { Statement } from '@zombie-mermaid/core'
+import { decodeMermaidEntities, type Statement } from '@zombie-mermaid/core'
 
 // ============================================================================
 // XY Chart parser
@@ -40,15 +40,17 @@ export function parseXYChart(lines: Statement[]): XYChart {
     // Title
     const titleMatch = line.match(/^title\s+"([^"]+)"/)
     if (titleMatch) {
-      title = titleMatch[1]
+      title = decodeMermaidEntities(titleMatch[1]!)
       continue
     }
 
     // x-axis with categories: x-axis "Title" [a, b, c] or x-axis [a, b, c]
     const xCatMatch = line.match(/^x-axis\s+(?:"([^"]*)"\s*)?\[([^\]]+)\]/)
     if (xCatMatch) {
-      if (xCatMatch[1]) xAxis.title = xCatMatch[1]
-      xAxis.categories = xCatMatch[2]!.split(',').map((s) => s.trim())
+      if (xCatMatch[1]) xAxis.title = decodeMermaidEntities(xCatMatch[1])
+      xAxis.categories = splitCategoryList(xCatMatch[2]!).map((s) =>
+        decodeMermaidEntities(unquote(s.trim())),
+      )
       continue
     }
 
@@ -57,7 +59,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
       /^x-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
     )
     if (xRangeMatch) {
-      if (xRangeMatch[1]) xAxis.title = xRangeMatch[1]
+      if (xRangeMatch[1]) xAxis.title = decodeMermaidEntities(xRangeMatch[1])
       xAxis.range = {
         min: parseFloat(xRangeMatch[2]!),
         max: parseFloat(xRangeMatch[3]!),
@@ -70,7 +72,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
       /^y-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
     )
     if (yRangeMatch) {
-      if (yRangeMatch[1]) yAxis.title = yRangeMatch[1]
+      if (yRangeMatch[1]) yAxis.title = decodeMermaidEntities(yRangeMatch[1])
       yAxis.range = {
         min: parseFloat(yRangeMatch[2]!),
         max: parseFloat(yRangeMatch[3]!),
@@ -81,7 +83,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
     // y-axis with just title (no range)
     const yTitleOnly = line.match(/^y-axis\s+"([^"]+)"\s*$/)
     if (yTitleOnly) {
-      yAxis.title = yTitleOnly[1]
+      yAxis.title = decodeMermaidEntities(yTitleOnly[1]!)
       continue
     }
 
@@ -131,12 +133,12 @@ export function parseXYChart(lines: Statement[]): XYChart {
     const allValues = series.flatMap((s) => s.data)
     let min = Math.min(...allValues)
     let max = Math.max(...allValues)
-    const span = max - min || 1
-    // Add 10% padding
-    min = min - span * 0.1
-    max = max + span * 0.1
-    // Floor to 0 if all values are positive and min is close to 0
-    if (min > 0 && min < span * 0.5) min = 0
+    // Mermaid uses the raw data extent. Only a flat series (zero span) gets
+    // a synthetic range, so the axis has something to draw.
+    if (max === min) {
+      min -= 0.1
+      max += 0.1
+    }
     yAxis.range = { min, max }
   }
 
@@ -146,6 +148,47 @@ export function parseXYChart(lines: Statement[]): XYChart {
   }
 
   return { title, horizontal, xAxis, yAxis, series }
+}
+
+/**
+ * Split a categorical x-axis bracket's comma-separated contents into raw
+ * item strings, treating a comma *inside* a double-quoted item as literal
+ * text rather than a delimiter. A naive `.split(',')` would break
+ * `["Jan, Feb", "Mar"]` into three pieces instead of two — quoting a value
+ * that itself contains a comma is exactly the case quoting exists for. Each
+ * returned raw item is still trimmed and unquoted by the caller.
+ */
+function splitCategoryList(str: string): string[] {
+  const items: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (const char of str) {
+    if (char === '"') {
+      inQuotes = !inQuotes
+      current += char
+    } else if (char === ',' && !inQuotes) {
+      items.push(current)
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  items.push(current)
+  return items
+}
+
+/**
+ * Strip one matching pair of leading/trailing double quotes from a category
+ * item, if present — mirroring how an axis *title* capture group already
+ * unquotes via its regex. `x-axis [A, B, C]` items are only split and
+ * trimmed, so a quoted item like `"CLI output / logs"` previously kept its
+ * literal quote characters in the rendered label. See issue #1087.
+ */
+function unquote(value: string): string {
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    return value.slice(1, -1)
+  }
+  return value
 }
 
 /**

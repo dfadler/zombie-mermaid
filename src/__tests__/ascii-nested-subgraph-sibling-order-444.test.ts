@@ -34,7 +34,7 @@
  * diverge from declaration order.
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
 import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'

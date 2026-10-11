@@ -1,6 +1,6 @@
 # XY Chart (xychart-beta) — Phase 2 Design Document
 
-> **Historical note:** this is the original design proposal, written before implementation. `xychart-beta` support has since shipped in `src/xychart/` (see the README's "XY Charts" section for current, user-facing behavior). Code snippets below describe the original plan and may not match the shipped implementation exactly — treat this as background on the design rationale, not as API documentation.
+> **Historical note:** this is the original design proposal, written before implementation. `xychart-beta` support has since shipped in `packages/mermaid-parser/src/xychart/` (see the README's "XY Charts" section for current, user-facing behavior). Code snippets below describe the original plan and may not match the shipped implementation exactly — treat this as background on the design rationale, not as API documentation.
 
 ## Overview
 
@@ -9,6 +9,39 @@ This document specifies the architecture for adding `xychart-beta` / `xychart` s
 XY charts render bar charts, line charts, or combinations thereof, with categorical or numeric x-axes, numeric y-axes, optional titles, and optional horizontal orientation.
 
 ---
+
+## Shipped behavior: y-axis ticks and the y-axis title
+
+Added for [#1705](https://github.com/dfadler/zombie-mermaid/issues/1705) (finding 4 and 6 of the [#1592 audit](https://github.com/dfadler/zombie-mermaid/issues/1592#issuecomment-6100809326)). This describes the code as it is today, not a proposal.
+
+### Value-axis tick policy
+
+Ticks match Mermaid's. `niceTickValues` in `packages/core/src/ticks.ts` is a port of d3's `ticks(min, max, 10)`, the call behind Mermaid's `scaleLinear().ticks()`, and both the SVG layout (`packages/svg-renderer/src/xychart/layout.ts`) and the ASCII renderer (`packages/ascii-renderer/src/xychart.ts`) use it. It applies to the y-axis in vertical charts and to the value (x) axis in horizontal charts.
+
+1. Take the axis range `min --> max`. If the source has no `y-axis min --> max`, the parser (`packages/mermaid-parser/src/xychart/parser.ts`) uses the data's own minimum and maximum across all series, with no padding and no floor to 0, as Mermaid does. A flat series (min equals max) gets a range of 0.1 either side so there is something to draw. With no data, the range is 0 to 100.
+2. Aim for 10 intervals: `step = (max - min) / 10`.
+3. Round `step` to a nice step of `1`, `2` or `5` times a power of ten. With `power = floor(log10(step))` and `error = step / 10^power`, the multiplier is `10` for an error of at least `sqrt(50)`, `5` for at least `sqrt(10)`, `2` for at least `sqrt(2)`, otherwise `1`.
+4. Emit every multiple of the step that falls inside `min` to `max`.
+
+The result is roughly 6 to 16 ticks, depending on where the range falls between nice steps (100 to 300 gives 11, one every 20; 0 to 3 gives 16, one every 0.2). A y-axis label is drawn at every tick, and so is a grid line. Labels use as many decimals as the step needs to stay distinct (`formatTickLabels`).
+
+Because the default range starts at the data minimum, a bar chart with no `y-axis` range draws its shortest bar with zero height. That matches Mermaid. Add an explicit `y-axis 0 --> max` to start at zero.
+
+Earlier versions aimed for about 6 intervals (5 to 10 ticks) and padded the default range by 10%, starting near 0. That was a fidelity gap against Mermaid and was changed in #1705; there is no option to restore it.
+
+### Y-axis title
+
+- **SVG:** the title is rotated 90 degrees along the left edge of the plot (`PositionedAxis.title.rotate`).
+- **ASCII, vertical charts:** a terminal cannot rotate text, so the title is written one character per row down the leftmost column (column 0), starting at the row that centers it on the plot. A title longer than the plot has rows for is cut off at the bottom of the plot. Because the letters are on separate rows, the title cannot be found by searching the text of the output.
+- **ASCII, horizontal charts:** the value axis is horizontal, so its title is ordinary text centered on the last row, under the tick labels.
+
+```text
+S    │
+t  30┤····
+o    │
+r  25┤····
+y
+```
 
 ## Mermaid Syntax Reference
 
@@ -208,7 +241,7 @@ export function parseXYChart(lines: string[]): XYChart
    - `y-axis` — same patterns as x-axis
    - `bar [...]` → parse numeric array, push `{ type: 'bar', data }`
    - `line [...]` → parse numeric array, push `{ type: 'line', data }`
-3. If no y-axis range is specified, auto-derive from min/max of all series data (with padding)
+3. If no y-axis range is specified, auto-derive from min/max of all series data (unpadded, as in Mermaid)
 
 **Internal helpers:**
 
@@ -251,13 +284,13 @@ export async function layoutXYChart(
 3. **Y-axis auto-range** (when not specified):
    - Collect all data values across all series
    - `min = Math.min(...allValues)`, `max = Math.max(...allValues)`
-   - Add 10% padding: `min - 0.1 * range`, `max + 0.1 * range`
-   - Round to nice tick values
+   - Shipped: no padding, the raw data extent is the range, as in Mermaid (the original plan padded by 10%; see "Shipped behavior" above)
+   - Ticks are then generated inside that range
 
 4. **Tick generation:**
    - X-axis categorical: one tick per category, centered in band
    - X-axis numeric: 5-10 ticks at "nice" intervals (1, 2, 5, 10, 20, 50, ...)
-   - Y-axis: 5-8 ticks at nice intervals
+   - Y-axis: d3-style nice intervals aimed at 10 steps, matching Mermaid (see "Shipped behavior" above)
 
 5. **Bar rectangles:**
    - `barWidth = bandWidth * 0.6` (60% of band, leaving gaps)

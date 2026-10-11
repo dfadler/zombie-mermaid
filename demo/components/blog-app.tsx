@@ -12,15 +12,11 @@
  * and both stay small; `demo/blog-post-client.tsx`/`demo/blog-index-
  * client.tsx` each import only the one they hydrate.
  *
- * `<NavIsland>`, `<ThemePickerSection>` (index only — a single post has no
- * theme picker; see `blog-page.tsx`'s `BlogPostPageProps` for why it never
- * took a `themeBarScript` either), and `<Footer>` are deliberately **not**
- * rendered here — they stay in `blog-page.tsx` as plain siblings of each
- * app's hydration container, the same way `dashboard-page.tsx` and
- * `fork-fixes-page.tsx` render them: nesting `ThemePickerSection` inside a
- * hydrated component tree drags `react-dom/server` into the client bundle
- * (via `ThemePickerIsland`) and double-hydrates `#theme-pills` — see
- * `dashboard-app.tsx`'s header comment for the full story this repeats.
+ * `<NavIsland>` and `<Footer>` are deliberately **not** rendered here —
+ * they stay in `blog-page.tsx` as plain siblings of each app's hydration
+ * container, the same way `dashboard-page.tsx` and `fork-fixes-page.tsx`
+ * render them — see `dashboard-app.tsx`'s header comment for the full
+ * story this repeats.
  *
  * The post body (`bodyHtml`) is marked's own Markdown-to-HTML output for a
  * build-time file under version control — already a plain string by the
@@ -335,7 +331,10 @@ function FeaturedPost({ post }: { post: BlogPostSummary }) {
           padding={48}
           style={{
             display: 'flex',
-            alignItems: 'center',
+            // align-items lives in blog.css instead of here (not inline)
+            // so its tablet breakpoint override can win via plain cascade
+            // order instead of needing !important to beat this inline
+            // style (zombie-mermaid#1080).
             justifyContent: 'space-between',
             gap: `${SPACE['6xl']}px`,
           }}
@@ -471,7 +470,10 @@ function ArchiveSection({ posts }: { posts: readonly BlogPostSummary[] }) {
           className="archive-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            // grid-template-columns lives in blog.css instead of here (not
+            // inline) so its breakpoint overrides can win via plain
+            // cascade order instead of needing !important to beat this
+            // inline style (zombie-mermaid#1080).
             gap: `${SPACE['3xl'] + 4}px`,
           }}
         >

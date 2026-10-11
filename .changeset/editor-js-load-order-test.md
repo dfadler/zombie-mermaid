@@ -1,4 +1,0 @@
----
----
-
-No release: adds `editor/__tests__/module-load-order.test.ts`, which statically checks the load-order contract that previously lived only in `editor.ts`'s `readJsFiles()` `order` array. Each `editor/js/*.js` file is a plain, `var`/`function`-scoped global-scope script concatenated into one inline `<script type="module">` in that array's order, and nothing in the individual files documented what globals they need loaded before them — a wrong reorder would only have surfaced as a runtime `ReferenceError`/`TypeError` in the browser. The new test extracts the real `order` array from `editor.ts`'s source (without importing it, to avoid triggering its build side effects) and, using `eslint`'s own scope analysis, verifies every file's top-level code only references globals the browser provides or that an earlier file in the array already declares. No runtime behavior changes.

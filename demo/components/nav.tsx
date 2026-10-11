@@ -11,7 +11,8 @@
  * Sequence detail pages — each appear as a 1440px desktop artboard and a
  * 390px mobile one, sixteen in all; the mobile file is byte-identical to its
  * desktop twin, so the responsive behaviour lives entirely in the two
- * `@media` blocks reproduced in {@link navCss}, not in a second markup path.
+ * `@media` blocks reproduced in nav-css.ts's `navCss()`, not in a second
+ * markup path.
  *
  * The `<div class="nav-bar">` block is byte-identical across all eight
  * sources with exactly one exception: which link carries
@@ -65,15 +66,35 @@
  * (`https://claude.ai/code/artifact/d6852fbd-08d3-4014-9d29-767defedfbc2`,
  * not an edit to the #590 canvas itself, which stays a read-only artifact
  * this repo can't write to) rather than a round-trip through #590. See
- * {@link NavInstall}'s doc comment for the resulting markup.
+ * nav-install-popover.tsx's `NavInstall` doc comment for the resulting
+ * markup.
+ *
+ * The wide-viewport padding rule in nav-css.ts's `navCss()` is a third
+ * deviation, and purely additive: the canvas's single 1440px artboard says
+ * nothing about wider viewports, so there's no canvas answer this could
+ * contradict. See that file's `NAV_WIDE_MIN` for the alignment gap it
+ * closes.
+ *
+ * As of zombie-mermaid#933, this file is layout and composition only: the
+ * package-manager install hook (use-package-manager-install.ts), the
+ * install pill's popover components (nav-install-popover.tsx), the mobile
+ * menu's runtime script (mobile-menu.client.ts), and the CSS-string
+ * generator (nav-css.ts) each moved into their own module, so this file no
+ * longer has to be read past to find any one of those four concerns.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { CSSProperties, KeyboardEvent, ReactNode, RefObject } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import {
-  CheckIcon,
+  COPY_ICON_SIZE,
+  COPY_ICON_STROKE,
+  NavInstall,
+} from './nav-install-popover.tsx'
+import { navCss } from './nav-css.ts'
+import { MOBILE_WATERMARK_SIZE, NAV_Z_INDEX } from './nav-constants.ts'
+import { NAV_MOBILE_MENU_SCRIPT } from './mobile-menu.client.ts'
+import {
   CopyIcon,
   ICON_LINE_CAP,
   ICON_STROKE_WIDTH,
@@ -82,14 +103,10 @@ import {
 } from './icons.tsx'
 import { Pill } from './primitives.tsx'
 import {
-  BREAKPOINTS,
   COLORS,
   FONT_SIZE,
   FONT_WEIGHT,
-  LAYOUT,
   LETTER_SPACING,
-  MEDIA,
-  RADIUS,
   SPACE,
   colorVar,
 } from './tokens.tsx'
@@ -129,8 +146,12 @@ export const NAV_ITEMS = [
 /** One of the five links' identities, e.g. `'forkFixes'`. */
 export type NavKey = (typeof NAV_ITEMS)[number]['key']
 
-/** The brand wordmark, spelled the way the canvas spells it. */
-export const NAV_WORDMARK = 'zombie-mermaid'
+/**
+ * The brand wordmark, as it renders in a logo lockup (icon + wordmark
+ * together) — see `docs/brand.md` for the merged-vs-spaced rule and why
+ * this differs from most other rendered mentions of the product name.
+ */
+export const NAV_WORDMARK = 'ZombieMermaid'
 
 /** The install command in the nav's pill. */
 export const NAV_INSTALL_COMMAND = 'npm install zombie-mermaid'
@@ -139,49 +160,8 @@ export const NAV_INSTALL_COMMAND = 'npm install zombie-mermaid'
  * Measurements
  * ----------------------------------------------------------------- */
 
-/**
- * The gap between two nav links, in px.
- *
- * The canvas declares `gap:36px`. 36 is not on tokens.tsx's spacing scale
- * and nothing else in the artboards uses it, so it stays a literal here
- * rather than becoming a step no other component would reference — the same
- * call primitives.tsx makes for its 22px pill padding.
- */
-const NAV_LINK_GAP = 36
-
-/**
- * The bar's vertical padding at each breakpoint band, in px.
- *
- * 22 is off-scale for the same reason as {@link NAV_LINK_GAP}; the two
- * narrower values are `SPACE.xl` and `SPACE.lg`.
- */
-const NAV_PAD_Y = {
-  desktop: 22,
-  tablet: SPACE.xl,
-  mobile: SPACE.lg,
-} as const
-
-/**
- * The bar's horizontal padding at each breakpoint band, in px.
- *
- * Desktop and mobile match the page gutter; the tablet band does not — the
- * canvas tightens the bar to 24px where the page body still sits at 32.
- */
-const NAV_PAD_X = {
-  desktop: LAYOUT.gutter.desktop,
-  tablet: SPACE['3xl'],
-  mobile: LAYOUT.gutter.mobile,
-} as const
-
 /** The brand mark's rendered size in px — 30 in every artboard's nav. */
 const LOGO_SIZE = 30
-
-/** The copy glyph's rendered size in px, and the stroke width it draws at.
- *
- * The canvas bumps this instance to 2 rather than the icon set's 1.8, the
- * optical compensation icons.tsx documents on `IconProps.strokeWidth`. */
-const COPY_ICON_SIZE = 15
-const COPY_ICON_STROKE = 2
 
 /**
  * The bar's translucency over the page background.
@@ -195,64 +175,12 @@ const COPY_ICON_STROKE = 2
  */
 const NAV_BG_ALPHA = 0.85
 
-/** `z-index` on the bar, so the hero's artwork passes beneath it. */
-const NAV_Z_INDEX = 10
-
-/**
- * Upper bound, in px, of a dead zone the canvas doesn't cover: just above
- * {@link BREAKPOINTS}.tablet, the five links (still shown) plus the
- * install pill (rigid — the canvas's own `flex-shrink:0`, not ours to
- * loosen) need more width than the row has, and the browser's only escape
- * hatch is wrapping "Fork fixes" (and, tighter still, the wordmark) onto a
- * second line with zero breathing room before the pill — the same
- * fixed-size-flex-child dead-zone shape the hero row had (#669), just
- * without a shrinkable child available to fix it the same way.
- *
- * {@link navCss} closes the gap by dropping the pill to its icon-only
- * mobile form a bit early, freeing enough width that nothing wraps.
- * Confirmed wrapping onset between 1070px (wraps) and 1080px (doesn't) on
- * the unpatched bar; this adds a margin above that measured value rather
- * than shipping the exact edge. Verified zero wrapping and zero
- * nav-links/pill overlap at 375, 600, 700, 900, 901 (the tightest point),
- * 950, 1000, 1024, 1050, 1074, and 1100, with the pill back to full text
- * at 1101 and above (through 1150, 1280, and 1440).
- */
-const NAV_CRAMPED_MAX = 1100
-
 /**
  * The toggle button's hit target, in px — the accessibility floor
  * `artifact-design`'s "Appropriate scales" guidance sets for mobile mockup
  * controls, applied here since this is real mobile chrome, not a mockup.
  */
 const MOBILE_TOGGLE_SIZE = 44
-
-/**
- * The overlay panel's top padding, in px. There's no way to measure the
- * nav-bar's actual rendered height from pure CSS, so this is a generous
- * literal that clears it with room to spare at both breakpoint bands (the
- * bar's own content is ~44px tall, plus {@link NAV_PAD_Y}'s 14–16px of
- * padding on each side — 72–76px total).
- */
-const MOBILE_PANEL_PAD_TOP = 96
-
-/** The overlay panel's side padding, in px — {@link SPACE}'s `3xl` step,
- * one literal for both breakpoint bands rather than tracking {@link
- * NAV_PAD_X}'s own two (this menu isn't canvas-pinned, so it doesn't need
- * to match the bar's gutter exactly). */
-const MOBILE_PANEL_PAD_X = SPACE['3xl']
-
-/** The oversized watermark brand mark's rendered size, in px. */
-const MOBILE_WATERMARK_SIZE = 220
-
-/** The watermark's opacity — faint enough to read as texture, not a logo. */
-const MOBILE_WATERMARK_OPACITY = 0.05
-
-/**
- * `z-index` on the overlay panel — one below {@link NAV_Z_INDEX}, so the
- * bar (and the toggle button inside it, mid-morph into a close "X") stays
- * visible and clickable above the overlay rather than being covered by it.
- */
-const MOBILE_PANEL_Z_INDEX = NAV_Z_INDEX - 1
 
 /**
  * `--bg` as an `rgba()` at the given alpha.
@@ -271,244 +199,12 @@ export function bgRgba(alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`
 }
 
-/* -----------------------------------------------------------------
- * Install pill: package-manager selector (zombie-mermaid#719)
- *
- * Invented — approved by the repo owner via a Claude Design exploration
- * (see the module doc comment), not part of the #590 canvas. Grouped here
- * with the rest of this file's measurements/data rather than inline in
- * {@link NavInstall} for the same reason the mobile-menu literals above
- * are: one place to find every magic number this file declares.
- * ----------------------------------------------------------------- */
+// Re-exported for existing callers/tests that import `navCss` from this
+// file rather than nav-css.ts directly (e.g. `__tests__/demo-nav.test.ts`).
+export { navCss }
 
-/**
- * The four package managers the install pill's popover offers, in the
- * order the popover lists them. `'npm'` is first and the default —
- * matching {@link NAV_INSTALL_COMMAND} and this file's pre-#719 behavior.
- */
-export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn', 'bun'] as const
-
-/** One of {@link PACKAGE_MANAGERS}, e.g. `'pnpm'`. */
-export type PackageManager = (typeof PACKAGE_MANAGERS)[number]
-
-/**
- * The literal prefix {@link NAV_INSTALL_COMMAND} (and, by convention, any
- * page's `installCommand` override) starts with — `'npm install '`. Used
- * only to recover the bare package name so the other three managers' own
- * verbs can be substituted in; see {@link packageNameFromCommand}.
- */
-const NPM_INSTALL_PREFIX = 'npm install '
-
-/**
- * Recovers the package name from an npm-style install command, e.g.
- * `'npm install zombie-mermaid'` → `'zombie-mermaid'`.
- *
- * A page's {@link NavProps.installCommand} is the only source for this —
- * there is no separate "package name" prop — so this assumes the npm
- * phrasing {@link NAV_INSTALL_COMMAND} uses. A command that doesn't start
- * with {@link NPM_INSTALL_PREFIX} (a page overriding it with something
- * else entirely) is returned as-is: the pnpm/yarn/bun options then repeat
- * that same string verbatim rather than guessing at its structure, which
- * is the smallest safe fallback for a prop that's free-form text.
- */
-function packageNameFromCommand(installCommand: string): string {
-  return installCommand.startsWith(NPM_INSTALL_PREFIX)
-    ? installCommand.slice(NPM_INSTALL_PREFIX.length)
-    : installCommand
-}
-
-/**
- * The install command for a given package manager and package name —
- * `npm install <pkg>` for npm, `<manager> add <pkg>` for the other three
- * (pnpm, yarn, and bun all share the `add` verb).
- */
-function installCommandFor(
-  manager: PackageManager,
-  packageName: string,
-): string {
-  return manager === 'npm'
-    ? `npm install ${packageName}`
-    : `${manager} add ${packageName}`
-}
-
-/** The prefix trigger's padding, in px — 6 vertical ({@link SPACE.xxs}), 10
- * horizontal ({@link SPACE.sm}), per the approved design spec. */
-const INSTALL_PREFIX_PAD_Y = SPACE.xxs
-const INSTALL_PREFIX_PAD_X = SPACE.sm
-
-/** The chevron-down glyph's rendered size, in px — small enough to sit
- * beside the prefix label without competing with the copy glyph. */
-const INSTALL_CHEVRON_SIZE = 10
-
-/** The vertical divider's height, in px, between the prefix and the
- * command text — ~18px per the approved design spec; off tokens.tsx's
- * scale (16 and 20 both miss it), so it stays a literal. */
-const INSTALL_DIVIDER_HEIGHT = 18
-
-/** The popover's rendered width, in px — ~132px per the approved design
- * spec, wide enough for "pnpm" plus its checkmark without wrapping. */
-const INSTALL_POPOVER_WIDTH = 132
-
-/** Gap between the prefix trigger and the popover below it, in px. */
-const INSTALL_POPOVER_GAP = SPACE.xxs
-
-/** A popover menu item's font size, in px — {@link FONT_SIZE.bodySm} (14),
- * per the approved design spec. */
-const INSTALL_POPOVER_ITEM_FONT_SIZE = FONT_SIZE.bodySm
-
-/** The checkmark beside the popover's active item, in px. */
-const INSTALL_CHECK_SIZE = 10
-
-/* -----------------------------------------------------------------
- * CSS
- * ----------------------------------------------------------------- */
-
-/**
- * The nav's responsive rules: the two breakpoint rules transcribed from the
- * artboards' shared `<helmet><style>` preamble, plus the mobile menu's own
- * rules appended after them (invented — see the module doc comment — so
- * kept visibly separate from the canvas-pinned block above).
- *
- * At 900px and below the links disappear and the bar tightens; at 600px and
- * below the install pill drops its text, leaving the copy glyph alone, and
- * the bar tightens again. Both are `!important` in the canvas because they
- * override the inline styles on the elements themselves, which is also why
- * they must survive into the emitted CSS rather than being folded into the
- * component's `style` objects. The mobile menu block follows the same
- * `!important` convention for the same reason (overriding {@link
- * MenuToggle}'s inline `display: none`).
- *
- * Emit this once per page, after tokens.tsx's `designBaseCss()` and
- * primitives.tsx's `primitivesCss()` — the nav's pill is a `.pill`, and its
- * wordmark a `.display`, both of which those blocks define.
- */
-export function navCss(): string {
-  return `${MEDIA.tablet} {
-  .nav-bar { padding: ${NAV_PAD_Y.tablet}px ${NAV_PAD_X.tablet}px !important; }
-  .nav-links { display: none !important; }
-  .menu-toggle { display: inline-flex !important; }
-}
-
-${MEDIA.mobile} {
-  .nav-bar { padding: ${NAV_PAD_Y.mobile}px ${NAV_PAD_X.mobile}px !important; }
-  .nav-npm-text { display: none !important; }
-}
-
-@media (min-width: ${BREAKPOINTS.tablet + 1}px) and (max-width: ${NAV_CRAMPED_MAX}px) {
-  .nav-npm-text { display: none !important; }
-}
-
-/* --- Mobile menu (invented; not part of the #590 canvas) --- */
-
-html.mobile-nav-open {
-  overflow: hidden;
-}
-
-.menu-toggle .mnt-bar {
-  transition: transform .22s ease, opacity .22s ease;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.menu-toggle.is-open .mnt-bar-top {
-  transform: translateY(5px) rotate(45deg);
-}
-
-.menu-toggle.is-open .mnt-bar-mid {
-  opacity: 0;
-}
-
-.menu-toggle.is-open .mnt-bar-bottom {
-  transform: translateY(-5px) rotate(-45deg);
-}
-
-.mobile-nav-panel {
-  position: fixed;
-  inset: 0;
-  z-index: ${MOBILE_PANEL_Z_INDEX};
-  display: flex;
-  flex-direction: column;
-  padding: ${MOBILE_PANEL_PAD_TOP}px ${MOBILE_PANEL_PAD_X}px ${SPACE['5xl']}px;
-  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
-  opacity: 0;
-  transform: translateX(-12px);
-  pointer-events: none;
-  transition: opacity .26s ease, transform .26s ease;
-  overflow: hidden;
-}
-
-.mobile-nav-panel.is-open {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
-}
-
-.mobile-diagram-bg {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-}
-
-.mobile-diagram-bg .mdb-edge {
-  animation: mobile-diagram-dash 3s linear infinite;
-}
-
-@keyframes mobile-diagram-dash {
-  to {
-    stroke-dashoffset: -40;
-  }
-}
-
-.mobile-watermark {
-  position: absolute;
-  right: -${Math.round(MOBILE_WATERMARK_SIZE * 0.2)}px;
-  bottom: -${Math.round(MOBILE_WATERMARK_SIZE * 0.15)}px;
-  opacity: ${MOBILE_WATERMARK_OPACITY};
-  transform: rotate(-8deg);
-  pointer-events: none;
-}
-
-.mobile-links {
-  display: flex;
-  flex-direction: column;
-}
-
-.mobile-link {
-  padding: ${SPACE.md}px 0;
-  border-bottom: 1px solid var(--border);
-  text-shadow: 0 2px 16px rgba(10, 13, 22, 0.8);
-}
-
-.mobile-link:last-of-type {
-  border-bottom: none;
-}
-
-.mobile-install {
-  margin-top: auto;
-  align-self: flex-start;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .menu-toggle .mnt-bar,
-  .mobile-nav-panel,
-  .mobile-diagram-bg .mdb-edge {
-    transition-duration: 0.001ms !important;
-    animation: none !important;
-  }
-}
-
-@media (min-width: ${BREAKPOINTS.tablet + 1}px) {
-  /* Safety net for a viewport resize while the menu is open (e.g. a phone
-   * rotated past the breakpoint) — the toggle that would close it is gone
-   * by then, since it's hidden by the rule above this block. */
-  .mobile-nav-panel.is-open {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-}`
-}
-
-/** {@link navCss} in a `<style>` element, for a page's `<head>`. */
+/** {@link navCss} (nav-css.ts) in a `<style>` element, for a page's
+ * `<head>`. */
 export function NavStyle() {
   return <style>{navCss()}</style>
 }
@@ -542,22 +238,25 @@ export interface NavProps {
   /**
    * Replaces the install pill entirely. Defaults to the canvas's own
    * `NavInstall` (rendered with {@link installCommand}) — every page but
-   * the homepage keeps that default. #759's homepage passes an empty
-   * `<div id="nav-theme-slot" />` placeholder instead: a real, interactive
-   * theme picker is only ever *reparented* into it at runtime
-   * (`demo/index-page-client.ts`), never server-rendered there, so this
-   * stays a homepage-only behavior rather than a site-wide `Nav` change,
-   * and the "no `<button>` in Nav's SSR output" invariant
-   * (`__tests__/demo-nav.test.ts`) holds regardless of which slot content
-   * a page passes.
+   * the homepage keeps that default. As of zombie-mermaid#902, the
+   * homepage passes an empty fragment: its package-manager selector moved
+   * into the hero's own `HeroInstall` (`hero-install.tsx`), so the header
+   * renders nothing in this slot rather than falling back to `NavInstall`
+   * and duplicating it. (An earlier, #759-era homepage instead passed a
+   * `<div id="nav-theme-slot" />` placeholder here for a live theme picker
+   * reparented into it at runtime; that page-level use has since been
+   * retired, though `NAV_THEME_SLOT_ID` and the plumbing for it remain in
+   * `nav-island.tsx`/`demo/nav-client.tsx` — the "no `<button>` in Nav's
+   * SSR output" invariant (`__tests__/demo-nav.test.ts`) holds regardless
+   * of which slot content a page passes.)
    */
   installSlot?: ReactNode
   /**
    * `position: sticky; top: 0` instead of the canvas's own `position:
-   * relative`. Defaults to `false` — every page but the homepage (#759)
-   * keeps the canvas's non-sticky bar; a page with its own sticky
-   * elements pinned to `top: var(--nav-height)` (the Dashboard) isn't
-   * affected by this being a per-page opt-in rather than a global change.
+   * relative`. Defaults to `false`, but every page currently opts in —
+   * see each page's own `<NavIsland sticky .../>` call site. Stays a
+   * per-page prop rather than a hardcoded value so a future page can still
+   * opt out.
    */
   sticky?: boolean
   /** Accessible name for the link list. Defaults to `'Main'`. */
@@ -608,386 +307,6 @@ function NavBrand({ homeHref }: { homeHref?: string }) {
   )
 }
 
-/**
- * The chevron-down glyph after the popover trigger's "npm" label —
- * {@link ChevronRightIcon}'s path rotated 90°, drawn locally rather than
- * imported since {@link IconProps} has no rotation escape hatch. Invented
- * for the package-manager selector (zombie-mermaid#719, see the module
- * doc comment); still drawn in the icon set's own stroke style (the same
- * {@link ICON_VIEW_BOX}/{@link ICON_STROKE_WIDTH}/{@link ICON_LINE_CAP}
- * {@link MenuToggle} draws its own local svg with) so it reads as part of
- * the same family.
- */
-function InstallChevronGlyph() {
-  return (
-    <svg
-      width={INSTALL_CHEVRON_SIZE}
-      height={INSTALL_CHEVRON_SIZE}
-      viewBox={ICON_VIEW_BOX}
-      fill="none"
-      stroke={colorVar('--cyan')}
-      strokeWidth={ICON_STROKE_WIDTH}
-      strokeLinecap={ICON_LINE_CAP}
-      strokeLinejoin={ICON_LINE_CAP}
-      aria-hidden="true"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-
-/**
- * The install pill's leading "npm ▾" segment — clicking or pressing
- * Enter/Space opens {@link NavInstallPopover} below it. A `role="button"`
- * span, not a `<button>`, matching {@link NavInstall}'s own pre-existing
- * pattern (see `__tests__/demo-nav.test.ts`'s "no extra `<button>`"
- * assertion this file's module doc comment references).
- *
- * Invented for the package-manager selector (zombie-mermaid#719) — see the
- * module doc comment for where the design came from.
- */
-function NavInstallPrefix({
-  manager,
-  open,
-  onToggle,
-  triggerRef,
-}: {
-  manager: PackageManager
-  open: boolean
-  onToggle: () => void
-  triggerRef: RefObject<HTMLSpanElement | null>
-}) {
-  function handleKeyDown(event: KeyboardEvent<HTMLSpanElement>): void {
-    if (
-      event.key === 'Enter' ||
-      event.key === ' ' ||
-      event.key === 'ArrowDown'
-    ) {
-      event.preventDefault()
-      if (!open) onToggle()
-    } else if (event.key === 'Escape' && open) {
-      event.preventDefault()
-      onToggle()
-    }
-  }
-
-  return (
-    <span
-      ref={triggerRef}
-      className="nav-install-prefix"
-      role="button"
-      tabIndex={0}
-      aria-haspopup="listbox"
-      aria-expanded={open}
-      aria-label="Choose package manager"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: `${SPACE.xxs}px`,
-        padding: `${INSTALL_PREFIX_PAD_Y}px ${INSTALL_PREFIX_PAD_X}px`,
-        borderRadius: `${RADIUS.sm}px`,
-        color: colorVar('--cyan'),
-        cursor: 'pointer',
-      }}
-      onClick={onToggle}
-      onKeyDown={handleKeyDown}
-    >
-      {manager}
-      <InstallChevronGlyph />
-    </span>
-  )
-}
-
-/**
- * The install pill's popover: all four {@link PACKAGE_MANAGERS}, with a
- * checkmark on the current selection. Reachable via the arrow keys once
- * focus lands inside it ({@link NavInstall} moves focus to the active
- * item when it opens), and each item is itself a `role="option"` span —
- * same "no literal `<button>`" reasoning as {@link NavInstallPrefix}.
- *
- * Invented for the package-manager selector (zombie-mermaid#719) — see the
- * module doc comment for where the design came from.
- */
-function NavInstallPopover({
-  manager,
-  onSelect,
-  onClose,
-  triggerRef,
-  itemRefs,
-}: {
-  manager: PackageManager
-  onSelect: (manager: PackageManager) => void
-  onClose: () => void
-  triggerRef: RefObject<HTMLSpanElement | null>
-  itemRefs: RefObject<(HTMLSpanElement | null)[]>
-}) {
-  function handleItemKeyDown(
-    event: KeyboardEvent<HTMLSpanElement>,
-    item: PackageManager,
-    index: number,
-  ): void {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      onSelect(item)
-    } else if (event.key === 'Escape') {
-      event.preventDefault()
-      onClose()
-      triggerRef.current?.focus()
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      itemRefs.current[(index + 1) % PACKAGE_MANAGERS.length]?.focus()
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      itemRefs.current[
-        (index - 1 + PACKAGE_MANAGERS.length) % PACKAGE_MANAGERS.length
-      ]?.focus()
-    }
-  }
-
-  return (
-    <span
-      className="nav-install-popover"
-      role="listbox"
-      aria-label="Package manager"
-      style={{
-        position: 'absolute',
-        top: `calc(100% + ${INSTALL_POPOVER_GAP}px)`,
-        left: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '2px',
-        width: `${INSTALL_POPOVER_WIDTH}px`,
-        background: colorVar('--panel'),
-        border: `1px solid ${colorVar('--border')}`,
-        borderRadius: `${RADIUS.lg}px`,
-        padding: `${SPACE.xs}px`,
-        zIndex: NAV_Z_INDEX + 1,
-        cursor: 'default',
-      }}
-    >
-      {PACKAGE_MANAGERS.map((item, index) => {
-        const active = item === manager
-        return (
-          <span
-            key={item}
-            ref={(el) => {
-              itemRefs.current[index] = el
-            }}
-            className="nav-install-option"
-            role="option"
-            aria-selected={active}
-            tabIndex={0}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: `${SPACE.xs}px`,
-              padding: `${SPACE.xs}px ${SPACE.sm}px`,
-              borderRadius: `${RADIUS.sm}px`,
-              fontFamily: 'var(--font-mono)',
-              fontSize: `${INSTALL_POPOVER_ITEM_FONT_SIZE}px`,
-              color: colorVar(active ? '--text' : '--text-dim'),
-              background: active ? colorVar('--panel-2') : 'transparent',
-              cursor: 'pointer',
-            }}
-            onClick={() => onSelect(item)}
-            onKeyDown={(event) => handleItemKeyDown(event, item, index)}
-          >
-            {item}
-            {active ? (
-              <CheckIcon size={INSTALL_CHECK_SIZE} color={colorVar('--cyan')} />
-            ) : null}
-          </span>
-        )
-      })}
-    </span>
-  )
-}
-
-/**
- * The install pill: the canvas's `muted` {@link Pill} lifted onto
- * `--panel-2`, holding the package-manager selector, the command, and a
- * copy glyph.
- *
- * The text is the element the 600px rule hides, so it must stay its own
- * `.nav-npm-text` span rather than being the pill's bare text content.
- *
- * Real `onClick`/`onKeyDown` handlers plus {@link useState} for the
- * "copied" flash (zombie-mermaid#800) — replacing the old
- * `NAV_COPY_SCRIPT` runtime script, which mutated this same markup's
- * `role`/`tabindex`/`aria-label`/cursor attributes and the icon's `stroke`
- * *after* the fact. Those attributes are now part of this component's own
- * render output from the start (identical on the server and the client, so
- * hydration has nothing to reconcile), and the icon's stroke color is
- * driven by {@link copied} instead of a `setAttribute` call.
- *
- * As of zombie-mermaid#719 (invented, not canvas-pinned — see the module
- * doc comment), the pill also carries {@link NavInstallPrefix}: clicking it
- * (rather than the rest of the pill) opens {@link NavInstallPopover} to
- * pick a package manager, which drives both the prefix label and the
- * command text/copy payload via {@link selectedManager}. Neither the
- * prefix nor the popover is nested inside a click-to-copy region — they
- * sit beside it as their own focusable, `role`-carrying spans — so there
- * is no ambiguity between "open the popover" and "copy the command"
- * clicks, and no nested interactive roles for assistive tech to untangle.
- * The initial SSR render always shows npm (`useState`'s default), matching
- * the pill's pre-#719 behavior exactly; the popover starts closed.
- */
-function NavInstall({ command }: { command: string }) {
-  const [selectedManager, setSelectedManager] = useState<PackageManager>('npm')
-  const [popoverOpen, setPopoverOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const revertTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  )
-  const triggerRef = useRef<HTMLSpanElement | null>(null)
-  const popoverRef = useRef<HTMLSpanElement | null>(null)
-  const itemRefs = useRef<(HTMLSpanElement | null)[]>([])
-
-  const packageName = packageNameFromCommand(command)
-  const displayedCommand =
-    selectedManager === 'npm'
-      ? command
-      : installCommandFor(selectedManager, packageName)
-
-  // Cleared on unmount so a pending revert never fires against an
-  // unmounted component (defensive — Nav is never intentionally unmounted
-  // in this repo's pages, but hydration boundaries are exactly the place
-  // to not assume that).
-  useEffect(() => {
-    return () => {
-      if (revertTimer.current) clearTimeout(revertTimer.current)
-    }
-  }, [])
-
-  // Closes the popover on a click/tap outside both the trigger and the
-  // popover itself, and on Escape regardless of which of the two currently
-  // holds focus — the same "click elsewhere or Escape closes it" contract
-  // NAV_MOBILE_MENU_SCRIPT gives the mobile menu, done here in React state
-  // instead since this popover is real `useState`, not a runtime script.
-  useEffect(() => {
-    if (!popoverOpen) return
-
-    function handlePointerDown(event: globalThis.MouseEvent): void {
-      const target = event.target as Node
-      if (triggerRef.current?.contains(target)) return
-      if (popoverRef.current?.contains(target)) return
-      setPopoverOpen(false)
-    }
-
-    function handleKeyDown(event: globalThis.KeyboardEvent): void {
-      if (event.key === 'Escape') {
-        setPopoverOpen(false)
-        triggerRef.current?.focus()
-      }
-    }
-
-    document.addEventListener('mousedown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [popoverOpen])
-
-  // Moves focus into the popover when it opens — onto the currently
-  // selected item, mirroring how opening {@link MobileNavPanel} focuses
-  // its first link.
-  useEffect(() => {
-    if (!popoverOpen) return
-    const activeIndex = PACKAGE_MANAGERS.indexOf(selectedManager)
-    itemRefs.current[activeIndex >= 0 ? activeIndex : 0]?.focus()
-    // Deliberately keyed on `popoverOpen` alone, not every `selectedManager`
-    // change while open — selecting an item already closes the popover
-    // (see `selectManager`), so re-running this on that change would never
-    // observably differ.
-  }, [popoverOpen])
-
-  function copyCommand(): void {
-    if (!displayedCommand || !navigator.clipboard) return
-    navigator.clipboard.writeText(displayedCommand).then(() => {
-      setCopied(true)
-      if (revertTimer.current) clearTimeout(revertTimer.current)
-      revertTimer.current = setTimeout(
-        () => setCopied(false),
-        NAV_COPY_FEEDBACK_MS,
-      )
-    })
-  }
-
-  function handleCopyKeyDown(event: KeyboardEvent<HTMLSpanElement>): void {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      copyCommand()
-    }
-  }
-
-  function selectManager(next: PackageManager): void {
-    setSelectedManager(next)
-    setPopoverOpen(false)
-    triggerRef.current?.focus()
-  }
-
-  return (
-    <Pill
-      mono
-      style={{
-        background: colorVar('--panel-2'),
-        flexShrink: 0,
-        position: 'relative',
-      }}
-    >
-      <NavInstallPrefix
-        manager={selectedManager}
-        open={popoverOpen}
-        onToggle={() => setPopoverOpen((open) => !open)}
-        triggerRef={triggerRef}
-      />
-      <span
-        className="nav-install-divider"
-        aria-hidden="true"
-        style={{
-          width: '1px',
-          height: `${INSTALL_DIVIDER_HEIGHT}px`,
-          background: colorVar('--border'),
-        }}
-      />
-      <span
-        role="button"
-        tabIndex={0}
-        aria-label="Copy install command"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: `${SPACE.sm}px`,
-          flex: 1,
-          cursor: 'pointer',
-        }}
-        onClick={copyCommand}
-        onKeyDown={handleCopyKeyDown}
-      >
-        <span className="nav-npm-text">{displayedCommand}</span>
-        <CopyIcon
-          size={COPY_ICON_SIZE}
-          strokeWidth={COPY_ICON_STROKE}
-          color={copied ? NAV_COPY_SUCCESS_COLOR : NAV_COPY_ICON_COLOR}
-        />
-      </span>
-      {popoverOpen ? (
-        <span ref={popoverRef}>
-          <NavInstallPopover
-            manager={selectedManager}
-            onSelect={selectManager}
-            onClose={() => setPopoverOpen(false)}
-            triggerRef={triggerRef}
-            itemRefs={itemRefs}
-          />
-        </span>
-      ) : null}
-    </Pill>
-  )
-}
-
 /* -----------------------------------------------------------------
  * Mobile menu markup
  *
@@ -998,15 +317,16 @@ function NavInstall({ command }: { command: string }) {
 
 /**
  * The hamburger-to-close toggle. Three bars that morph into an X via CSS
- * (`.menu-toggle.is-open` in {@link navCss}) — not traced to any canvas
- * artboard, since the #590 canvas ships no mobile menu to trace one from.
- * Drawn at the rest of the icon set's own stroke weight and cap style
- * ({@link ICON_STROKE_WIDTH}, {@link ICON_LINE_CAP}) so it still reads as
- * part of the same family.
+ * (`.menu-toggle.is-open` in nav-css.ts's `navCss()`) — not traced to any
+ * canvas artboard, since the #590 canvas ships no mobile menu to trace one
+ * from. Drawn at the rest of the icon set's own stroke weight and cap
+ * style ({@link ICON_STROKE_WIDTH}, {@link ICON_LINE_CAP}) so it still
+ * reads as part of the same family.
  *
- * Hidden by default (`display: none`, desktop); {@link navCss} shows it
- * `!important` at {@link BREAKPOINTS}.tablet and below, the same threshold
- * where `.nav-links` disappears.
+ * Hidden by default (`display: none`, declared in `navCss()` rather than
+ * inline — zombie-mermaid#1080); `navCss()` shows it at {@link
+ * BREAKPOINTS}.tablet and below, the same threshold where `.nav-links`
+ * disappears.
  */
 function MenuToggle() {
   return (
@@ -1016,7 +336,10 @@ function MenuToggle() {
       aria-label="Menu"
       aria-expanded="false"
       style={{
-        display: 'none',
+        // display lives in nav-css.ts's navCss() instead of here (not
+        // inline) so the tablet-and-below rule that shows this button can
+        // win via plain cascade order instead of needing !important to
+        // beat this inline style (zombie-mermaid#1080).
         width: `${MOBILE_TOGGLE_SIZE}px`,
         height: `${MOBILE_TOGGLE_SIZE}px`,
         alignItems: 'center',
@@ -1055,7 +378,7 @@ function MenuToggle() {
 /**
  * The overlay panel's animated background: a handful of nodes and dashed
  * edges in the six accent colours, echoing the product's own diagram art
- * (mirroring the "animated edges" feature — see {@link navCss}'s
+ * (mirroring the "animated edges" feature — see nav-css.ts's
  * `mobile-diagram-dash` keyframes) rather than a plain fill. Purely
  * decorative — `aria-hidden`, and `preserveAspectRatio="xMidYMid slice"` so
  * it crops to cover whatever the viewport's actual aspect ratio is, unlike
@@ -1178,14 +501,14 @@ function MobileNavLink({
  * full at the bottom (the one place it's readable on a phone — the bar's
  * own pill drops to icon-only at {@link BREAKPOINTS}.mobile).
  *
- * Closed by default (`.mobile-nav-panel` with no `is-open`); {@link
- * NAV_MOBILE_MENU_SCRIPT} toggles the class and this element's sibling
- * {@link MenuToggle} at runtime — still a "static markup, runtime script"
- * split (unlike the install pill's copy behavior, real React state as of
- * #800; see {@link NavInstall}'s doc comment). `position: fixed` on
- * `.mobile-nav-panel` means it covers the viewport regardless of where
- * `Nav` sits in the page, so it renders as `Nav`'s sibling rather than
- * nested inside the bar.
+ * Closed by default (`.mobile-nav-panel` with no `is-open`);
+ * mobile-menu.client.ts's `initMobileMenu` toggles the class and this
+ * element's sibling {@link MenuToggle} at runtime — still a "static
+ * markup, runtime script" split (unlike the install pill's copy behavior,
+ * real React state as of #800; see nav-install-popover.tsx's `NavInstall`
+ * doc comment). `position: fixed` on `.mobile-nav-panel` means it covers
+ * the viewport regardless of where `Nav` sits in the page, so it renders
+ * as `Nav`'s sibling rather than nested inside the bar.
  */
 function MobileNavPanel({
   linkItems,
@@ -1200,7 +523,9 @@ function MobileNavPanel({
     <nav className="mobile-nav-panel" aria-label={`${label} (mobile)`}>
       <MobileDiagramMotif />
       <div className="mobile-watermark">
-        <LogoMark size={MOBILE_WATERMARK_SIZE} />
+        <div className="mobile-watermark-mark">
+          <LogoMark size={MOBILE_WATERMARK_SIZE} />
+        </div>
       </div>
       <div className="mobile-links">
         {linkItems.map((item) => (
@@ -1214,7 +539,29 @@ function MobileNavPanel({
         ))}
       </div>
       <span className="mobile-install">
-        <Pill mono style={{ background: 'rgba(20,26,46,0.85)' }}>
+        <Pill
+          mono
+          className="mobile-install-pill"
+          style={{
+            background: 'rgba(20,26,46,0.85)',
+            // `.mobile-install`'s shrink-to-fit width already keeps this
+            // pill's *unbroken* content from widening the panel -- the
+            // command text wraps at the space rather than clipping once it
+            // no longer fits on one line. But nothing upstream stops the
+            // text from ever exceeding the panel's available width outright
+            // (a longer package name, a single unbreakable token, a
+            // pinch-zoomed/larger base font size). `overflow-x: auto` is
+            // the same fallback hero-install.tsx's own copy-target span
+            // already leans on for the identical "reachable via scroll
+            // rather than silently clipped" contract; `min-width: 0` lets
+            // this pill actually shrink below its content's natural width
+            // so that fallback can engage instead of overflowing
+            // `.mobile-install` outright.
+            minWidth: 0,
+            maxWidth: '100%',
+            overflowX: 'auto',
+          }}
+        >
           {installCommand}
           <CopyIcon size={COPY_ICON_SIZE} strokeWidth={COPY_ICON_STROKE} />
         </Pill>
@@ -1224,45 +571,10 @@ function MobileNavPanel({
 }
 
 /* -----------------------------------------------------------------
- * Copy-to-clipboard behavior
- * ----------------------------------------------------------------- */
-
-/**
- * The copy glyph's resting stroke — `var(--cyan)`, the same value
- * {@link CopyIcon}'s own `defaultColor` resolves to (icons.tsx's
- * `StrokeIcon`). {@link NavInstall} reverts to this after the "copied"
- * flash rather than a hand-typed duplicate of the color.
- */
-const NAV_COPY_ICON_COLOR = colorVar('--cyan')
-
-/**
- * The copy glyph's flash color on a successful copy — `var(--green)`, the
- * same accent icons.tsx's `CheckIcon` already draws its "satisfied claim"
- * tick in, reused here rather than inventing a new one.
- */
-const NAV_COPY_SUCCESS_COLOR = colorVar('--green')
-
-/** How long the copy glyph stays green after a successful copy, in ms. */
-const NAV_COPY_FEEDBACK_MS = 1200
-
-/* -----------------------------------------------------------------
  * Hydration (zombie-mermaid#800)
  * ----------------------------------------------------------------- */
 
-/**
- * `nav-root`: id of the *hydration container* every page's Nav-hydration
- * client script (`demo/nav-client.tsx`'s `hydrateNav()`) mounts onto — see
- * `demo/components/nav-island.tsx`'s `NavIsland`, which every page-level
- * generator now renders in place of a bare `<Nav .../>`.
- *
- * A separate wrapper element from `Nav`'s own rendered root, for the same
- * reason `dashboard-app.tsx`'s `DASHBOARD_ROOT_ID` is (see that constant's
- * doc comment): `Nav` itself returns a fragment — the bar, then {@link
- * MobileNavPanel} as its sibling — and `hydrateRoot(container, node)`
- * requires a single container whose *children* match what `node` renders,
- * not a container that is itself part of that render output.
- */
-export const NAV_ROOT_ID = 'nav-root'
+export { NAV_ROOT_ID } from './nav-constants.ts'
 
 /**
  * `nav-props`: the `<script type="application/json">` element
@@ -1288,76 +600,7 @@ export const NAV_THEME_SLOT_ID = 'nav-theme-slot'
  * Mobile menu behavior
  * ----------------------------------------------------------------- */
 
-/**
- * Opens, closes, and focus-manages {@link MobileNavPanel} — a plain runtime
- * script, not React state, even though `Nav` itself hydrates as of #800:
- * the toggle and panel render exactly the same DOM either way, and out-of-
- * scope for #800 (see this file's module doc comment on the mobile menu
- * being invented, not canvas-pinned) — {@link NavInstall}'s copy button is
- * the one piece of `Nav` interactivity this issue converts to real
- * `onClick`/`useState`.
- *
- * Pairs each `.menu-toggle` with the `.mobile-nav-panel` that follows it —
- * {@link MobileNavPanel}'s own doc comment explains why that panel renders
- * as `Nav`'s sibling rather than nested inside the bar, which is what makes
- * `nextElementSibling` the right (and simplest) way to find it, with no
- * `id`/`aria-controls` pair needed and nothing to collide if a future page
- * ever renders more than one `Nav`.
- *
- * Behavior: click toggles; tapping a link or pressing Escape closes and
- * (for Escape) returns focus to the toggle; opening moves focus to the
- * first link and locks background scroll via the `mobile-nav-open` class
- * {@link navCss} keys off. What this does *not* do — deliberately, to keep
- * a first version scoped — is trap Tab/Shift+Tab inside the open panel;
- * revisit if that turns out to matter in practice.
- */
-export const NAV_MOBILE_MENU_SCRIPT = `(function () {
-  function closeMenu(toggle, panel, returnFocus) {
-    panel.classList.remove('is-open')
-    toggle.classList.remove('is-open')
-    toggle.setAttribute('aria-expanded', 'false')
-    document.documentElement.classList.remove('mobile-nav-open')
-    if (returnFocus) toggle.focus()
-  }
-
-  function openMenu(toggle, panel) {
-    panel.classList.add('is-open')
-    toggle.classList.add('is-open')
-    toggle.setAttribute('aria-expanded', 'true')
-    document.documentElement.classList.add('mobile-nav-open')
-    var firstLink = panel.querySelector('.mobile-link')
-    if (firstLink) firstLink.focus()
-  }
-
-  document.querySelectorAll('.nav-bar').forEach(function (bar) {
-    var toggle = bar.querySelector('.menu-toggle')
-    var panel = bar.nextElementSibling
-    if (!toggle || !panel || !panel.classList.contains('mobile-nav-panel')) {
-      return
-    }
-
-    toggle.addEventListener('click', function () {
-      if (panel.classList.contains('is-open')) {
-        closeMenu(toggle, panel, true)
-      } else {
-        openMenu(toggle, panel)
-      }
-    })
-
-    panel.querySelectorAll('.mobile-link').forEach(function (link) {
-      link.addEventListener('click', function () {
-        closeMenu(toggle, panel, false)
-      })
-    })
-
-    panel.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        closeMenu(toggle, panel, true)
-      }
-    })
-  })
-})()`
+export { NAV_MOBILE_MENU_SCRIPT }
 
 /**
  * {@link NAV_MOBILE_MENU_SCRIPT} in a `<script>` element.
@@ -1407,7 +650,13 @@ export function Nav({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: `${NAV_PAD_Y.desktop}px ${NAV_PAD_X.desktop}px`,
+    // padding lives in nav-css.ts's navCss() instead of here (not inline)
+    // so the breakpoint/wide-viewport overrides there can win via plain
+    // cascade order instead of needing !important to beat this inline
+    // style (zombie-mermaid#1080) — no caller passes its own `style.padding`
+    // to `<Nav>` today (see NavProps.style's own doc comment), so this
+    // doesn't lose the "a caller can override" contract that prop exists
+    // for; an inline `style.padding` would still win over the CSS rule.
     borderBottom: `1px solid ${colorVar('--border')}`,
     background: bgRgba(NAV_BG_ALPHA),
     position: sticky ? 'sticky' : 'relative',
@@ -1431,9 +680,27 @@ export function Nav({
           className="nav-links"
           aria-label={label}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: `${NAV_LINK_GAP}px`,
+            // display/align-items/gap live in nav-css.ts's navCss()
+            // instead of here (not inline) so the tablet-and-below rule
+            // that hides the links can win via plain cascade order
+            // instead of needing !important to beat this inline style
+            // (zombie-mermaid#1080).
+            // A page that overrides installSlot (any NavInstallSlotKind,
+            // 'empty' included) leaves the trailing flex child with no
+            // real content but the mobile-only MenuToggle, which is
+            // itself display:none above the tablet breakpoint -- barStyle's
+            // justify-content:space-between still treats that now-empty
+            // child as a real flex item, splitting the header's leftover
+            // width evenly between "before the links" and "after the
+            // links" and stranding nav-links mid-bar with a dead gap to
+            // its right. marginLeft:'auto' claims that leftover space for
+            // the gap before nav-links instead, pushing it flush against
+            // the (empty) trailing child. Left unset (space-between's
+            // default split) when installSlot is left undefined -- e.g. a
+            // bare `<Nav/>` in tests, or any future caller that wants the
+            // real NavInstall pill -- where the trailing child's real
+            // width already keeps nav-links positioned correctly.
+            marginLeft: installSlot !== undefined ? 'auto' : undefined,
           }}
         >
           {linkItems.map((item) => (

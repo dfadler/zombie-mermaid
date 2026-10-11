@@ -21,18 +21,35 @@ import demoStylesheet from '../../../demo/styles.css'
 const PANEL_MAX_WIDTH = '960px'
 
 /**
+ * The ASCII panel's own cap. A terminal panel is `columns x cell width` wide
+ * (7px per column now that `.ascii-output` uses an exact 7px cell), so the
+ * widest sample ("All 12 Flowchart Shapes", 210 columns) needs 1470px;
+ * ascii-seams.visual.test.ts fails if any sample outgrows this cap. Capping it at the
+ * SVG panels' 960px silently clipped the right side of "XY: Numeric X-Axis"
+ * and "All 12 Flowchart Shapes" in their baselines (`.ascii-output` scrolls
+ * horizontally, so the screenshot shows only the visible part). Panels still
+ * shrink-wrap, so only a panel that would exceed 960px is affected; this
+ * cap just guards against a runaway diagram.
+ */
+const ASCII_PANEL_MAX_WIDTH = '2000px'
+
+/**
  * Cap on how long to wait for a mounted panel's web fonts (Inter, embedded
- * per-SVG by renderMermaidSVG; JetBrains Mono, from the injected demo
- * stylesheet) before screenshotting anyway.
+ * per-SVG by renderMermaidSVG; JetBrains Mono NL, embedded as a base64
+ * `@font-face` directly in the injected demo stylesheet — see
+ * demo/styles.css's `GENERATED MONO FONT FACE` block and
+ * scripts/build-mono-font-subset.ts) before screenshotting anyway.
  *
  * A screenshot taken while a web font is still loading captures the
  * fallback font mid-swap, which is exactly the kind of instability
  * `toMatchScreenshot()`'s stability detection keeps retrying against — on
- * a CI runner with a slow/blocked path to the Google Fonts CDN, every
- * single test in the file would otherwise burn its whole per-test timeout
- * retrying a page that never stabilizes. Capped, not awaited unconditionally,
- * so a fully broken network still produces a (fallback-font) screenshot
- * once, rather than hanging until Vitest's test timeout kills every test.
+ * a CI runner with a slow/blocked path to the Google Fonts CDN, Inter would
+ * otherwise make every single test in the file burn its whole per-test
+ * timeout retrying a page that never stabilizes (JetBrains Mono NL itself
+ * carries no such risk post-#978: the embedded data URI needs no network
+ * request at all). Capped, not awaited unconditionally, so a fully broken
+ * network still produces a (fallback-font) screenshot once, rather than
+ * hanging until Vitest's test timeout kills every test.
  */
 const FONT_WAIT_TIMEOUT_MS = 8000
 
@@ -41,7 +58,13 @@ let stylesInjected = false
 function ensureStylesInjected(): void {
   if (stylesInjected) return
   const style = document.createElement('style')
-  style.textContent = demoStylesheet as string
+  // The demo page draws 64px scroll-fade overlays (`body::before` at the top,
+  // `body::after` at the bottom, both `position: fixed`) over its content. They
+  // are page chrome, not part of a panel, but a screenshot of a panel taken in
+  // the 720px test viewport caught them: the top 42px of every panel (its
+  // title bar and first row) was faded, and panels taller than ~656px got a
+  // second fade band over rows 656-719. Hide them so a screenshot is the panel.
+  style.textContent = `${demoStylesheet as string}\nbody::before, body::after { display: none !important; }`
   document.head.appendChild(style)
   stylesInjected = true
 }
@@ -115,7 +138,7 @@ export async function mountAsciiPanel(
   const panel = document.createElement('div')
   panel.className = 'ascii-panel is-active'
   panel.style.width = 'fit-content'
-  panel.style.maxWidth = PANEL_MAX_WIDTH
+  panel.style.maxWidth = ASCII_PANEL_MAX_WIDTH
   panel.appendChild(terminalWindow)
   document.body.appendChild(wrapInOutputPanel(panel, true))
   await waitForFonts()

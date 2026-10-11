@@ -9,8 +9,8 @@
 // renderer can depend on it without dragging in `elkjs` or any SVG
 // emission code.
 //
-// The one external reference is a type-only `import type { ElkNode }` in
-// `types.ts` (for `RenderOptions.layoutCache`), erased before bundling.
+// No external references at all: the ELK graph types it needs are owned in
+// `elk-types.ts`, since `elkjs` is an optional peer dependency (#1370).
 //
 // A barrel rather than per-file subpath exports: `#620`'s recommendation 4
 // has the umbrella's three entries eventually become thin re-exports of
@@ -21,14 +21,18 @@
 // ============================================================================
 
 export * from './click-directive.ts'
+export * from './cluster-edges.ts'
 export * from './color-utils.ts'
 export * from './diagram-type.ts'
 export * from './direction.ts'
+export * from './elk-types.ts'
 export * from './direction-override.ts'
 export * from './init-directive.ts'
 export * from './multiline-utils.ts'
+export * from './render-utils.ts'
 export * from './statements.ts'
 export * from './style-directives.ts'
 export * from './text-metrics.ts'
+export * from './ticks.ts'
 export * from './theme.ts'
 export * from './types.ts'

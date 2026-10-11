@@ -128,6 +128,11 @@ const PAGE_CSS = `
   @media print {
     #toolbar { display: none; }
     #stage { position: static; overflow: visible; }
+    /* Genuinely needs !important (zombie-mermaid#1080 audit): the client
+     * script's apply() sets #diagram's transform inline on every pan/zoom,
+     * so whatever pan/zoom state the viewer was left in is a live inline
+     * style this print rule must beat -- there's no static default to
+     * hoist it to instead. */
     #diagram { position: static; transform: none !important; }
   }
 `.trim()

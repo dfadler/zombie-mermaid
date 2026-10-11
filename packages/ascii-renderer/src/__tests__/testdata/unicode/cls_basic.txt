@@ -1,0 +1,15 @@
+classDiagram
+  class Animal {
+    +String name
+    +eat() void
+  }
+---
+┌───────────────┐    
+│ Animal        │    
+├───────────────┤    
+│ + String name │    
+├───────────────┤    
+│ + eat(): void │    
+└───────────────┘    
+                     
+                     

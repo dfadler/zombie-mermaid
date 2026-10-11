@@ -20,12 +20,11 @@
  * browser bundle) never needs to import this file, and therefore never
  * pulls in `react-dom/server` (used below for `renderToString`) into the
  * client bundle. `ThemeShowcase` stays here rather than moving into either
- * app: it calls `renderMermaidSVG` to build-time-render its six diagrams
- * (Node-only work a client bundle can't do), so it's static markup plus a
- * small separate bundled client script (`demo/index-page-client.ts`, via
- * `index.ts`'s `bundleClientScript()`) that auto-cycles those six
- * pre-rendered diagrams through all of `THEMES`, live, with no interactive
- * control on the page itself — see that section's own doc comment for why.
+ * app: it renders static markup (a hand-authored decorative flowchart svg,
+ * not a build-time Mermaid render) plus a small separate bundled client
+ * script (`demo/index-page-client.ts`, via `index.ts`'s
+ * `bundleClientScript()`) that wires up its click-to-pick theme selector —
+ * see that section's own doc comment.
  *
  * Layout, copy, and every colour/measurement below come from the design
  * canvas linked in #590's body
@@ -35,20 +34,32 @@
  * entirely in the shared component `*Css()` functions and {@link homePageCss}'s
  * `@media` blocks, not in a second markup path. See `index-app.tsx`'s
  * header comment for its own deliberate deviations from the canvas
- * (unchanged by this split). This file's own deviation: the theme
- * showcase renders six *real* diagrams (one per diagram type this library
- * supports), auto-cycling live across every real theme in `THEMES`, not
- * the canvas's five static per-theme cards with invented theme names
- * ("Neon", "Pastel", …) or a single flowchart. See {@link ThemeShowcase}'s
- * own doc comment.
+ * (unchanged by this split). `ThemeShowcase` itself now follows a *newer*
+ * canvas ("1e — Flow + Burst",
+ * `https://claude.ai/code/artifact/021183bd-f416-4d93-a21a-9febe1b8c69f`)
+ * pixel-for-pixel: a single decorative flowchart, re-themed in place on a
+ * manual pick only (no ambient auto-cycle, no six-diagram gallery) — see
+ * {@link ThemeShowcase}'s own doc comment. One deliberate coordinate fix
+ * on top of that 1:1 copy: the canvas's own "Deploy?" diamond sits flush
+ * against the pipeline→Deploy connector and its "pass" label, hiding both
+ * behind the diamond's opaque fill — moved 35 units right here (with its
+ * text, burst ring, and outgoing yes/no curves shifted to match) to open
+ * the same kind of gap the canvas's own "Auth?" diamond already has.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import { renderToString } from 'react-dom/server'
+import {
+  renderMermaidASCII,
+  diagramColorsToAsciiTheme,
+} from '@zombie-mermaid/ascii-renderer'
+import { asciiToHtml } from '../../packages/site/ascii-html.ts'
+import { escapeJsonForScriptTag } from '../format.ts'
 import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
+import { Document } from './document.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { SectionEyebrow } from './primitives.tsx'
 import { SharedPageStyles } from './shared-page-css.tsx'
@@ -59,19 +70,20 @@ import {
   LETTER_SPACING,
   MEDIA,
   RADIUS,
+  SECTION_SPACE,
   SPACE,
   colorVar,
 } from './tokens.tsx'
-import { renderMermaidSVG } from '../../src/index.ts'
 import { THEMES } from '@zombie-mermaid/core'
-import { DIAGRAM_TYPE_PROFILES } from '../diagram-pages-data.ts'
-import { THEME_LABELS } from '../theme-labels.ts'
 import {
   IndexHeroApp,
   IndexMainApp,
   INDEX_HERO_ROOT_ID,
+  INDEX_HERO_PROPS_ELEMENT_ID,
   INDEX_MAIN_ROOT_ID,
+  type IndexHeroAppProps,
 } from './index-app.tsx'
+import { HERO_MERMAID_SOURCE } from './hero-output-panel.tsx'
 
 // Re-exported for existing callers/tests that import these from
 // index-page.tsx rather than index-app.tsx directly (this file was the
@@ -80,8 +92,102 @@ export {
   IndexHeroApp,
   IndexMainApp,
   INDEX_HERO_ROOT_ID,
+  INDEX_HERO_PROPS_ELEMENT_ID,
   INDEX_MAIN_ROOT_ID,
 } from './index-app.tsx'
+
+/**
+ * The hero output panel's real ASCII state — `renderMermaidASCII` run
+ * against the exact same source {@link HeroCodePanel} (in
+ * `hero-output-panel.tsx`) displays, then column-width-corrected the same
+ * way `fork-fixes.ts` already does for its own ASCII panels
+ * (`asciiToHtml`, trailing-whitespace stripped per line first).
+ * `colorMode: 'none'` matches the CLI's own default for a non-TTY target —
+ * `'auto'`'s TTY detection behaves differently under Node than a real
+ * terminal, which this build-time call is not.
+ */
+const heroAsciiHtml = asciiToHtml(
+  renderMermaidASCII(HERO_MERMAID_SOURCE, { colorMode: 'none' }).replace(
+    /[ \t]+$/gm,
+    '',
+  ),
+)
+
+/**
+ * {@link ThemeShowcase}'s own hand-kept-in-sync Mermaid source — mirrors
+ * the hand-drawn `#theme-showcase-diagram` svg's shapes/labels below
+ * (Start → Auth? → a Build/Test pipeline → Deploy?, with a Ship
+ * it/Rollback branch and a Monitor tap off the pipeline) node-for-node and
+ * label-for-label, the same "third hand-kept copy" tradeoff
+ * `HERO_MERMAID_SOURCE`'s own doc comment accepts. Referencing the
+ * `Pipeline` subgraph id directly in the surrounding edges (rather than a
+ * plain node inside it) is what keeps both `Build` and `Test` rendered
+ * inside the pipeline's ASCII box — routing an edge through a member node
+ * instead pulls that node out of the subgraph in this renderer's layout.
+ *
+ * `graph LR`, not `graph TD` (the svg's own top-down shape): this box's
+ * job is filling the same landscape footprint the svg does inside
+ * `.theme-showcase-diagram-card`, and the ASCII renderer's TD layout for
+ * this graph comes out roughly 30 columns × 34 lines (tall and narrow,
+ * needing real vertical scroll to read) versus LR's ~84 × 20 (wide and
+ * short, matching the svg's own landscape proportions closely enough to
+ * read without scrolling in the common case). Same nodes/edges/labels
+ * either way -- only the layout direction differs from the svg.
+ */
+export const THEME_SHOWCASE_MERMAID_SOURCE = `graph LR
+  Start --> Auth{Auth?}
+  Auth -->|ok| Pipeline
+  subgraph Pipeline
+    Build --> Test
+  end
+  Pipeline -->|pass| Deploy{Deploy?}
+  Deploy -->|yes| Ship[Ship it]
+  Deploy -->|no| Rollback
+  Pipeline --> Monitor
+`
+
+/**
+ * The theme showcase's real ASCII state — one `renderMermaidASCII()` call
+ * per {@link THEMES} entry, all at build time, each with `colorMode:
+ * 'html'` and a `theme` derived via `diagramColorsToAsciiTheme()` from
+ * that theme's own `DiagramColors` (the same colors the svg panel derives
+ * its `--tsd-*` custom properties from). Unlike {@link heroAsciiHtml}'s
+ * single `colorMode: 'none'` + flat CSS-color render, this gives every
+ * border/line/arrow/text role its own color per theme, matching the svg
+ * panel's own per-role distinction rather than tinting the whole ASCII
+ * block one flat color.
+ *
+ * Pre-rendered per theme, not re-rendered client-side on a pick:
+ * `renderMermaidASCII` pulls in the full `@zombie-mermaid/mermaid-parser`
+ * + `@zombie-mermaid/core` as real dependencies (see that package's own
+ * `package.json`), and importing it into the browser bundle just to
+ * re-color text on a click is exactly the bundle-bloat this section was
+ * designed to avoid — see `index-app.tsx`'s header comment on why
+ * `ThemeShowcase` stays out of both hydrated islands in the first place.
+ * `wireThemePicker()` (`demo/index-page-client.ts`) instead reads this
+ * same map (threaded through via the `#theme-showcase-ascii-props`
+ * `<script type="application/json">` element below) and swaps
+ * `#theme-showcase-ascii`'s `innerHTML` by theme key on every pick,
+ * mirroring how it already swaps the svg panel's `--tsd-*` properties.
+ *
+ * No `asciiToHtml()` pass on top (unlike {@link heroAsciiHtml}): that
+ * helper's job is terminal column-width correction for wide/CJK
+ * characters, and `colorMode: 'html'`'s own `escapeHtml()` (`ansi.ts`)
+ * already makes this safe to embed directly — running it through
+ * `asciiToHtml()` too would escape the `<span>` tags themselves as literal
+ * text, destroying the coloring. This diagram's labels are all plain
+ * ASCII, so there's no wide-char column math to correct for anyway.
+ */
+const themeShowcaseAsciiHtmlByTheme: Record<string, string> =
+  Object.fromEntries(
+    Object.entries(THEMES).map(([key, colors]) => [
+      key,
+      renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+        colorMode: 'html',
+        theme: diagramColorsToAsciiTheme(colors),
+      }).replace(/[ \t]+$/gm, ''),
+    ]),
+  )
 
 const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid/'
@@ -93,46 +199,99 @@ const PLAUSIBLE_DOMAIN = 'dfadler.github.io/zombie-mermaid'
  * ----------------------------------------------------------------- */
 
 /**
- * The Mermaid source {@link ThemeShowcase} renders live, matching what
- * `index-app.tsx`'s `IndexHeroApp` hand-drawn mock already depicts ("Start
- * → Deploy? → Ship it / Iterate") so the showcase diagram tells the same
- * story the hero does, one section down — rather than an unrelated
- * invented example.
- */
-const THEME_SHOWCASE_SOURCE = `graph TD
-    Start --> Deploy{Deploy?}
-    Deploy -->|yes| Ship[Ship it]
-    Deploy -->|no| Iterate[Iterate]`
-
-/**
- * {@link ThemeShowcase}'s starting theme, before a visitor picks one (or a
- * stored preference from another page restores on load — see
- * `demo/index-page-client.ts`). Real, not the `''` Default pseudo-theme:
- * this showcase's whole point is proving the 15 real themes, so its picker
- * renders with `includeDefault={false}` and needs an actual key to render
- * the initial SSR diagram with. `dracula` also mirrors `theme-picker.tsx`'s
- * own `INLINE_THEMES`, which already surfaces it as one of the two themes
- * always shown outside the "N Themes" dropdown.
+ * {@link ThemeShowcase}'s starting theme, before a visitor picks one from
+ * {@link ThemeShowcasePicker}. Real, not the `''` Default pseudo-theme:
+ * this showcase's whole point is proving the 15 real themes, and there's no
+ * "Default" diagram rendering to fall back to here (unlike
+ * `theme-picker.tsx`'s `includeDefault` pages). `dracula` also mirrors
+ * `theme-picker.tsx`'s own `INLINE_THEMES`, which already surfaces it as
+ * one of the two themes always shown outside that picker's "N Themes"
+ * dropdown.
  */
 const THEME_SHOWCASE_DEFAULT_THEME = 'dracula'
 
 /**
- * Fixed height of the showcase's diagram card, so the section doesn't
- * reflow every ~2.8s as `index-page-client.ts`'s cycle swaps between
- * diagram types of very different natural aspect ratios (a tall, narrow
- * flowchart vs. a short, wide ER diagram) — see `renderShowcaseDiagrams()`.
- * Comfortably fits the tallest of the six diagram types at this card's
- * content width (the xy-chart, ~355px once scaled to fit); anything taller
- * shrinks via `max-height` on the svg, or is clipped by the card's own
- * `overflow: hidden` as a last resort.
+ * Blends `fgHex` into `bgHex` at `pctFg`% — the design canvas's own inline
+ * `mix()` helper (Main.dc.html), transcribed rather than shared:
+ * `demo/index-page-client.ts` keeps an identical copy for its own re-theme
+ * step, and this file only ever runs at build time under Node, so there's
+ * no reasonable shared module for three lines of arithmetic without
+ * creating a cross-bundle dependency neither side needs otherwise.
  */
-const THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT = 400
+function mixHex(fgHex: string, bgHex: string, pctFg: number): string {
+  const f = parseInt(fgHex.slice(1), 16)
+  const b = parseInt(bgHex.slice(1), 16)
+  const fr = (f >> 16) & 255
+  const fg = (f >> 8) & 255
+  const fb = f & 255
+  const br = (b >> 16) & 255
+  const bgc = (b >> 8) & 255
+  const bb = b & 255
+  const t = pctFg / 100
+  const r = Math.round(fr * t + br * (1 - t))
+  const g = Math.round(fg * t + bgc * (1 - t))
+  const bl = Math.round(fb * t + bb * (1 - t))
+  const hex = (v: number) => v.toString(16).padStart(2, '0')
+  return '#' + hex(r) + hex(g) + hex(bl)
+}
+
+/** The six color roles {@link ThemeShowcase}'s decorative flowchart needs, derived from a theme's `bg`/`fg`/`accent` the same way Main.dc.html's `renderVals()` does. */
+interface ShowcaseDiagramColors {
+  bg: string
+  nodeFill: string
+  nodeStroke: string
+  text: string
+  labelText: string
+  muted: string
+  arrow: string
+}
+
+/**
+ * Derives {@link ShowcaseDiagramColors} from a theme, matching the design
+ * canvas's `renderVals()` mapping exactly (`nodeFill`/`nodeStroke`/
+ * `labelText`/`muted` as fixed mix percentages of `fg` into `bg`; `arrow`
+ * as the theme's own `accent`, falling back to the same 85% mix
+ * `packages/core/src/theme.ts`'s `MIX.arrow` uses for themes with none —
+ * `zinc-light`/`zinc-dark`). Shared by {@link ThemeShowcasePicker}'s swatch
+ * dots (just `arrow`) and {@link ThemeShowcase}'s diagram card.
+ */
+function deriveShowcaseColors(theme: {
+  bg: string
+  fg: string
+  accent?: string
+}): ShowcaseDiagramColors {
+  return {
+    bg: theme.bg,
+    nodeFill: mixHex(theme.fg, theme.bg, 6),
+    nodeStroke: mixHex(theme.fg, theme.bg, 26),
+    text: theme.fg,
+    labelText: mixHex(theme.fg, theme.bg, 45),
+    muted: mixHex(theme.fg, theme.bg, 34),
+    arrow: theme.accent ?? mixHex(theme.fg, theme.bg, 85),
+  }
+}
 
 /* -----------------------------------------------------------------
  * Page-specific CSS: the responsive rules and animations the canvas
  * defines that aren't already covered by tokens.tsx / primitives.tsx /
  * nav.tsx / footer.tsx's own `*Css()` functions.
  * ----------------------------------------------------------------- */
+
+/**
+ * A hero-only stacking breakpoint, wider than {@link MEDIA}.tablet's 900px
+ * — a deliberate deviation from the canvas, which only ever defines
+ * a desktop (1440px) and a mobile (390px) artboard with nothing in between.
+ * `.hero-row`'s two flex children (`hero-copy` at 500px + `hero-visual` at
+ * 700px, plus the row's 48px gap) need ~1250px of content width before
+ * neither has to shrink, so leaving the row layout active down to 900px
+ * squeezes both the copy and the diagram together across the entire
+ * 900-1400px band — covering most real laptop viewport widths (1024, 1280,
+ * 1366). Stacking at 1200px instead keeps the side-by-side row for
+ * genuinely wide screens and gives everything narrower the same spacious
+ * full-width column treatment the tablet breakpoint already uses below it,
+ * rather than a cramped in-between state.
+ */
+const HERO_STACK_MEDIA = '@media (max-width: 1200px)'
 
 /**
  * Keyframes for the six per-diagram-type gallery animations plus the
@@ -207,136 +366,523 @@ function homePageCss(): string {
 }
 .bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }
 
-/* -- Theme showcase: full-bleed animated backdrop + auto-cycling proof.
-   demo/index-page-client.ts's startShowcaseCycle() drives the actual
-   theme/diagram swapping (JS, not CSS) -- everything here is either the
-   ambient background motion or static layout/type. */
+/* -- Theme showcase: full-bleed animated backdrop behind a single
+   decorative flowchart, re-themed in place on a picker click.
+   demo/index-page-client.ts's wireThemePicker() drives the actual
+   re-theme (JS, not CSS) -- everything here is either the ambient
+   background motion or static layout/type/shape. */
 .theme-showcase { background: ${colorVar('--bg-soft')}; }
 .theme-showcase-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .theme-showcase-mesh {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 1800px;
-  height: 1400px;
-  margin: -700px 0 0 -900px;
+  /* Fills .theme-showcase-bg exactly -- no static bleed -- so this layer's
+     own scrollWidth never exceeds its container's clientWidth (#1054).
+     .theme-showcase-bg's overflow: hidden clips paint either way, but an
+     element's scrollWidth reflects a clipped descendant's full laid-out
+     extent regardless of that clip, so the previous fixed 1800x1400 box
+     inflated .theme-showcase-bg's own scrollWidth at every breakpoint --
+     worst on tablet widths, which fell in the gap between this rule's old
+     desktop-sized default and the mobile-only override that used to live
+     in the mobile media-query block below. */
+  inset: 0;
   background: conic-gradient(
     from 0deg,
-    color-mix(in srgb, ${colorVar('--violet')} 24%, transparent),
+    color-mix(in srgb, #bd93f9 24%, transparent),
     color-mix(in srgb, ${colorVar('--cyan')} 18%, transparent),
     color-mix(in srgb, ${colorVar('--pink')} 18%, transparent),
     color-mix(in srgb, ${colorVar('--amber')} 16%, transparent),
-    color-mix(in srgb, ${colorVar('--violet')} 24%, transparent)
+    color-mix(in srgb, #bd93f9 24%, transparent)
   );
   filter: blur(120px);
   opacity: 0.5;
-  animation: themeShowcaseMeshSpin 60s linear infinite, themeShowcaseMeshRoam 34s ease-in-out infinite;
+  animation: themeShowcaseMeshSpin 30s linear infinite, themeShowcaseMeshRoam 17s ease-in-out infinite;
 }
-@keyframes themeShowcaseMeshSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+/* rotate/translate as their own standalone CSS properties, not the
+   transform shorthand -- themeShowcaseMeshSpin and themeShowcaseMeshRoam
+   both run at once, and two simultaneous animations targeting the same
+   shorthand transform property don't compose (the later-declared one wins
+   outright). The standalone properties are independent and DO compose,
+   and -- unlike animating margin, which was tried here first -- neither
+   one participates in layout, so this drift can never inflate
+   .theme-showcase-mesh's own box past .theme-showcase-bg's edge (#1054):
+   it only ever repaints pixels that were already clipped by
+   .theme-showcase-bg's overflow: hidden. */
+@keyframes themeShowcaseMeshSpin { from { rotate: 0deg; } to { rotate: 360deg; } }
 @keyframes themeShowcaseMeshRoam {
-  0% { margin-left: -900px; margin-top: -700px; }
-  33% { margin-left: -1080px; margin-top: -560px; }
-  66% { margin-left: -760px; margin-top: -820px; }
-  100% { margin-left: -900px; margin-top: -700px; }
+  0% { translate: 0 0; }
+  33% { translate: -2% 2.5%; }
+  66% { translate: 2% -2%; }
+  100% { translate: 0 0; }
 }
-.theme-showcase-aurora { position: absolute; inset: -10%; animation: themeShowcaseHue 26s linear infinite; }
+/* inset: 0 (not the old -10%) for the same #1054 reason as the mesh above:
+   .theme-showcase-bg's scrollWidth reflects a direct child's full box
+   regardless of clipping, so a self-bleeding aurora inflated it even with
+   the mesh fixed. overflow: hidden here is new too -- it makes this its
+   own clip boundary so an oversized .theme-showcase-glow child (below)
+   only ever shows up in *this* element's own scrollWidth check, not in
+   .theme-showcase-bg's (mirrors how .theme-showcase-bg already isolates
+   .theme-showcase-mesh from the rest of the page). */
+.theme-showcase-aurora { position: absolute; inset: 0; overflow: hidden; animation: themeShowcaseHue 13s linear infinite; }
 .theme-showcase-glow { position: absolute; border-radius: 50%; filter: blur(90px); mix-blend-mode: screen; }
-.theme-showcase-glow.g1 { width: 560px; height: 560px; background: ${colorVar('--violet')}; opacity: 0.36; top: -10%; left: 2%; animation: themeShowcaseDrift1 17s ease-in-out infinite alternate; }
-.theme-showcase-glow.g2 { width: 520px; height: 520px; background: ${colorVar('--cyan')}; opacity: 0.3; top: 6%; right: 0%; animation: themeShowcaseDrift2 21s ease-in-out infinite alternate; }
-.theme-showcase-glow.g3 { width: 480px; height: 480px; background: ${colorVar('--pink')}; opacity: 0.26; bottom: -14%; left: 20%; animation: themeShowcaseDrift3 24s ease-in-out infinite alternate; }
-.theme-showcase-glow.g4 { width: 500px; height: 500px; background: ${colorVar('--amber')}; opacity: 0.22; bottom: -6%; right: 12%; animation: themeShowcaseDrift4 19s ease-in-out infinite alternate; }
+/* #bd93f9, not colorVar('--violet') (#a374e8) -- Main.dc.html has no
+   --violet token at all; every violet in the canvas (here and the mesh
+   gradient above) is this exact literal, matched rather than mapped onto
+   this site's own (different) shared violet accent. */
+.theme-showcase-glow.g1 { width: 560px; height: 560px; background: #bd93f9; opacity: 0.36; top: -10%; left: 2%; animation: themeShowcaseDrift1 8.5s ease-in-out infinite alternate; }
+.theme-showcase-glow.g2 { width: 520px; height: 520px; background: ${colorVar('--cyan')}; opacity: 0.3; top: 6%; right: 0%; animation: themeShowcaseDrift2 10.5s ease-in-out infinite alternate; }
+.theme-showcase-glow.g3 { width: 480px; height: 480px; background: ${colorVar('--pink')}; opacity: 0.26; bottom: -14%; left: 20%; animation: themeShowcaseDrift3 12s ease-in-out infinite alternate; }
+.theme-showcase-glow.g4 { width: 500px; height: 500px; background: ${colorVar('--amber')}; opacity: 0.22; bottom: -6%; right: 12%; animation: themeShowcaseDrift4 9.5s ease-in-out infinite alternate; }
 @keyframes themeShowcaseHue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
 @keyframes themeShowcaseDrift1 { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(150px,-85px) scale(1.14); } 100% { transform: translate(-85px,65px) scale(0.92); } }
 @keyframes themeShowcaseDrift2 { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(-130px,100px) scale(0.88); } 100% { transform: translate(85px,-75px) scale(1.1); } }
 @keyframes themeShowcaseDrift3 { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(110px,95px) scale(1.12); } 100% { transform: translate(-130px,-55px) scale(0.9); } }
 @keyframes themeShowcaseDrift4 { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(-100px,-85px) scale(1.08); } 100% { transform: translate(120px,55px) scale(0.94); } }
 
-.theme-showcase-term {
-  background: color-mix(in srgb, ${colorVar('--panel')} 82%, transparent);
-  backdrop-filter: blur(6px);
-  border: 1px solid ${colorVar('--border')};
-  border-radius: ${RADIUS.card}px;
-  overflow: hidden;
-}
-.theme-showcase-term-bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid ${colorVar('--border')}; }
-.theme-showcase-term-dot { width: 9px; height: 9px; border-radius: 50%; }
-/* height fits its fixed 6-line content (the leading theme-name comment
-   line, ":root {", 3 var lines, "}") at this font-size/line-height, plus
-   a few px of slack for cross-browser line-box rounding -- content never
-   gains or loses a line, only the swapped-in theme name/hex values' text
-   changes width, so this never needs to grow. */
-.theme-showcase-term-body { font-size: 13px; line-height: 1.95; padding: 16px 18px; color: ${colorVar('--text-dim')}; height: 158px; }
-.theme-showcase-kw { color: ${colorVar('--blue')}; }
-.theme-showcase-comment { color: ${colorVar('--text-faint')}; }
-.theme-showcase-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  margin-right: 8px;
-  vertical-align: middle;
-  transition: background 900ms ease;
-}
+/* Diagram card: every color role a re-theme touches lives as a CSS custom
+   property set inline on this element (deriveShowcaseColors() at SSR time,
+   demo/index-page-client.ts's wireThemePicker() on a pick) -- descendant
+   svg elements below read them via var(), so a re-theme is one
+   setProperty() call per role on this single element rather than walking
+   the diagram's individual shapes. Matches the design canvas's own
+   transition durations/easing exactly (500ms ease). */
 .theme-showcase-diagram-card {
-  height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
+  position: relative;
   border-radius: ${RADIUS.card}px;
-  border: 1px solid ${colorVar('--border')};
-  padding: ${SPACE.xl}px;
+  padding: clamp(16px, 3vw, 28px);
   margin-top: ${SPACE.xl}px;
+  border: 1.5px dashed var(--tsd-node-stroke);
+  background: var(--tsd-bg);
+  transition: background 500ms ease, border-color 500ms ease;
   display: flex;
-  justify-content: center;
-  transition: background 900ms ease;
+  flex-direction: column;
   overflow: hidden;
 }
-/* Fills the card -- a plain block would collapse to 0x0 once its children
-   (the six slots) go position: absolute below, since absolutely
-   positioned children no longer contribute to a parent's intrinsic size. */
-#theme-showcase-diagrams { position: relative; width: 100%; height: 100%; }
-/* All six slots stack exactly on top of each other; only the .is-active
-   one is visible. index-page-client.ts's startShowcaseCycle() runs each
-   step as a strict, staged sequence rather than animating this and the
-   card's own background transition at once: fade the current diagram out
-   (this rule's own opacity transition) -- once it's fully transparent,
-   re-theme it and animate the card's background (900ms, above) -- once
-   that finishes, fade the new diagram (already re-themed) back in. So the
-   diagram is never visible while its own colors change (each slot is
-   always either hidden or at full contrast, never interpolating between
-   two themes' colors, which made text briefly unreadable when tried) and
-   never competes on-screen with the background's own color transition.
-   350ms here is deliberately quicker than the card's 900ms: it only has
-   to clear the diagram off-screen (or bring it back), not carry a color
-   change of its own. Keep this file's own DIAGRAM_FADE_MS in sync by
-   hand if either changes -- see that constant's doc comment. */
-.theme-showcase-diagram-slot {
-  position: absolute;
-  inset: 0;
+.theme-showcase-diagram {
+  width: 100%;
+  height: auto;
+  max-width: 560px;
+  display: block;
+  margin: 0 auto;
+}
+/* -- Theme showcase output toggle: an "OUTPUT / SVG / ASCII" segmented
+   header mirroring the homepage hero's own HeroOutputPanel toggle
+   (hero-output-panel.tsx) -- same .output-segment/.output-segment.active
+   classes, but wired by plain DOM (demo/index-page-client.ts's
+   initThemeShowcaseOutputToggle()) rather than React state, matching how
+   the rest of this section's interactivity (the theme picker dropdown)
+   already avoids pulling react-dom/server into the client bundle -- see
+   this file's own header comment.
+
+   position: relative + z-index: 2 are load-bearing, not decorative:
+   .theme-showcase-output-body (below) applies a translate()-then-scale()
+   transform, and any transform other than none gives an element its own
+   stacking context -- so once zoomed past 100% (#987) that body's
+   rendered box can grow past its own layout edge into this toggle row's
+   space, and being the *later* DOM sibling it would otherwise paint (and
+   hit-test) on top of these buttons despite this row visually sitting
+   "above" it in the card. Confirmed live: at 210% scale,
+   elementFromPoint() over the ASCII button returned the diagram svg, not
+   the button itself -- the scaled svg was silently swallowing the click.
+   Giving this row its own (unscaled) stacking context keeps it clickable
+   and on top regardless of how far the zoomed/panned (#988) content
+   bleeds toward it. */
+.theme-showcase-output-toggle {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${SPACE.md}px;
+  margin-bottom: ${SPACE.lg}px;
+}
+.theme-showcase-output-label {
+  font-size: ${FONT_SIZE.micro}px;
+  letter-spacing: ${LETTER_SPACING.eyebrow};
+  text-transform: uppercase;
+  color: var(--tsd-muted);
+}
+/* Groups the SVG/ASCII segmented control with the scale button (#987) so
+   .theme-showcase-output-toggle's own justify-content: space-between still
+   splits into exactly two sides -- the OUTPUT label, and everything else --
+   regardless of how many controls this side grows to. */
+.theme-showcase-output-controls {
+  display: flex;
+  align-items: center;
+  gap: ${SPACE.sm}px;
+}
+.theme-showcase-output-segments {
+  display: flex;
+  gap: 2px;
+  background: ${colorVar('--panel')};
+  border-radius: ${RADIUS.pill}px;
+  padding: 2px;
+}
+/* -- Fullscreen-only zoom: scale (#987) + pan/pinch (#988). Unlike this
+   section's original disclosure-slider design, zoom/pan only ever do
+   anything while .theme-showcase-grid is :fullscreen (below) -- the small
+   inline card stays a static preview, matching diagram-detail-app.tsx's
+   DetailOutputPanel own established convention for exactly this "small
+   preview, full interactivity only in fullscreen" split. Wired by
+   initThemeShowcaseFullscreen() in demo/index-page-client.ts, which writes
+   to #theme-showcase-output-body's own --tsd-scale and --tsd-pan-x/
+   --tsd-pan-y custom properties; .theme-showcase-output-body (below) reads
+   them via var() with a translate(0, 0) scale(1) fallback, the same "swap
+   a variable, let CSS do the rest" technique applyTheme() already uses for
+   --tsd-bg etc. Zooms from the center of the box (transform-origin:
+   center, below) rather than the top-left corner transform defaults to --
+   matching #987's own original request. Pan (mouse drag, single-finger
+   touch drag, two-finger touch pinch, trackpad wheel/ctrl-wheel) lets a
+   visitor reach content clipped by .theme-showcase-diagram-card's own
+   overflow: hidden once zoomed past 100%. */
+.theme-showcase-zoom-controls {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  background: ${colorVar('--panel')};
+  border-radius: ${RADIUS.pill}px;
+  padding: 2px;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-zoom-controls,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-zoom-controls {
+  display: flex;
+}
+.theme-showcase-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: ${RADIUS.pill}px;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  font-family: inherit;
+  font-size: ${FONT_SIZE.caption}px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.theme-showcase-zoom-btn:hover { color: ${colorVar('--text')}; background: ${colorVar('--panel-2')}; }
+.theme-showcase-zoom-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }
+/* The reset button doubles as the current-percentage label (e.g. "100%"),
+   mirroring diagram-page.tsx's own .output-zoom-reset -- wider than the
+   plain +/- buttons and monospaced so the label doesn't jiggle the layout
+   as its digit count changes. */
+.theme-showcase-zoom-reset {
+  width: auto;
+  padding: 0 ${SPACE.sm}px;
+  font-weight: 400;
+}
+/* The fullscreen toggle -- always visible (unlike the zoom controls above,
+   which only matter once already fullscreen). Both icon states
+   (theme-showcase-fullscreen-icon-enter/-exit) are always in the markup;
+   [data-fullscreen] on this same button (toggled by
+   initThemeShowcaseFullscreen()'s fullscreenchange listener) picks which
+   one shows. */
+.theme-showcase-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  cursor: pointer;
+}
+.theme-showcase-fullscreen-btn:hover { color: ${colorVar('--text')}; background: ${colorVar('--panel')}; }
+.theme-showcase-fullscreen-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: 1px; }
+.theme-showcase-fullscreen-icon-exit { display: none; }
+.theme-showcase-fullscreen-btn[data-fullscreen='true'] .theme-showcase-fullscreen-icon-enter { display: none; }
+.theme-showcase-fullscreen-btn[data-fullscreen='true'] .theme-showcase-fullscreen-icon-exit { display: block; }
+/* Wraps the svg and the ASCII <pre> together (#987) so one zoom control
+   zooms either output identically -- see the fullscreen zoom comment
+   above for the --tsd-scale/--tsd-pan-* custom properties this reads. */
+.theme-showcase-output-body {
+  min-width: 0;
+  transform: translate(var(--tsd-pan-x, 0px), var(--tsd-pan-y, 0px)) scale(var(--tsd-scale, 1));
+  transform-origin: center;
+}
+/* Pan cursor affordance (#988): .pannable is only set once
+   initThemeShowcaseFullscreen()'s recomputePanBounds() finds the zoomed
+   content actually overflows the card (i.e. there's somewhere to pan to) --
+   grab/grabbing mirrors common pan+zoom UI convention (maps, image
+   viewers). touch-action: none (matching diagram-page.tsx's own
+   .output-render-area.pannable) stops a touchscreen's native scroll from
+   competing with this element's own Pointer Event pan/pinch handling --
+   safe to apply unconditionally here, unlike a plain inline panel, since
+   fullscreen is the only place .pannable is ever set at all. No cursor
+   override at all below 100% scale, where a drag does nothing. */
+.theme-showcase-output-body.pannable { cursor: grab; touch-action: none; }
+.theme-showcase-output-body.pannable.panning { cursor: grabbing; }
+/*
+ * initThemeShowcaseFullscreen()'s toggleFullscreen() requestFullscreen()s
+ * .theme-showcase-grid itself, not just the diagram card, so the theme
+ * picker column comes along too. The browser promotes it to the top layer
+ * with its own UA :fullscreen sizing, but author rules still outrank that
+ * default regardless of specificity -- mirrors diagram-page.tsx's own
+ * .output-card:fullscreen precedent, !important included for the same
+ * reason: .theme-showcase-grid's normal grid layout is entirely inline
+ * style, which plain CSS specificity can never beat. -webkit-full-screen
+ * covers Safari < 16.4. Reflows from the normal two-column grid to a
+ * single column (picker compact at top, diagram filling the rest) and
+ * hides .theme-showcase-blurb -- a fullscreen viewer has no room, or need,
+ * for the marketing copy above the picker.
+ */
+.theme-showcase-grid:fullscreen,
+.theme-showcase-grid:-webkit-full-screen {
+  display: flex !important;
+  flex-direction: column !important;
+  /* Overrides the inline style's own alignItems: 'start' (meant for the
+     normal two-column *grid* layout's cross-axis) -- align-items applies
+     to flex containers too, and 'start' there means "don't stretch
+     children to the container's own width," the opposite of what this
+     single-column *flex* layout needs. Confirmed live: without this,
+     .theme-showcase-diagram-card computed to ~330px wide (its own content
+     width) instead of filling the fullscreen viewport. */
+  align-items: stretch !important;
+  width: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: ${SPACE.xl}px !important;
+  gap: ${SPACE.lg}px !important;
+  background: ${colorVar('--panel')} !important;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-blurb,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-blurb {
+  display: none;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-picker-column,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-picker-column {
+  flex: 0 0 auto !important;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-diagram-card,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-diagram-card {
+  flex: 1 1 auto !important;
+  margin-top: 0 !important;
+  min-height: 0;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-diagram,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-diagram {
+  max-width: none;
+}
+/* Centers the (possibly zoomed/panned) svg or ASCII block within whatever
+   vertical space is left under the toggle row -- unlike diagram-page.tsx's
+   DetailOutputPanel, which needs a margin: auto trick to avoid clipping an
+   overflowing *scrolled* container (see that file's own comment),
+   .theme-showcase-output-body's overflow is entirely transform-driven
+   (never native scroll), so plain flex centering has no equivalent
+   clipping risk here. */
+.theme-showcase-grid:fullscreen .theme-showcase-output-body,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-output-body {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 350ms ease;
-  pointer-events: none;
+  min-height: 0;
 }
-.theme-showcase-diagram-slot.is-active { opacity: 1; pointer-events: auto; }
-.theme-showcase-diagram-slot svg {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  /* Fixed px, not a percentage: the slot's own height is auto (sized to
-     this svg), so a percentage max-height here would have no definite
-     containing block to resolve against and would compute to none. This
-     page has no box-sizing: border-box reset, so the card's own
-     "height" declaration above is already its content-box height --
-     no padding to subtract here. */
-  max-height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
-  margin: 0 auto;
+/* Toggled by data-output-mode instead of .theme-showcase-ascii itself, so
+   the wrap's relatively-positioned box (needed to pin the fade overlays
+   below to its edges) exists only while the ASCII panel is the visible
+   one. */
+.theme-showcase-ascii-wrap { position: relative; display: none; min-width: 0; }
+/* No color/transition here, unlike the svg's .tsd-* classes -- every
+   character is already wrapped in its own colored <span> by
+   themeShowcaseAsciiHtmlByTheme's colorMode: 'html' render (see that
+   const's own doc comment), and a theme pick swaps this element's whole
+   innerHTML rather than smoothly transitioning a shared CSS custom
+   property. color: var(--tsd-text) stays as a harmless fallback for any
+   plain (unspanned) whitespace text nodes in that HTML. background is
+   var(--tsd-bg) -- the same property the svg panel's own
+   .theme-showcase-diagram-card rule reads, so toggling SVG/ASCII never
+   changes the panel's background: a color-mix() darken here was tried
+   to give the scroll-fade below something to fade into, but that made
+   every theme's ASCII output read as a visibly different, slightly
+   darker background than its own SVG output -- exactly the mismatch the
+   fade was meant to paper over. The fade below now carries its own tint
+   instead, so this rule can stay an exact match. */
+.theme-showcase-ascii {
+  margin: 0;
+  width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  font-variant-ligatures: none;
+  font-size: ${FONT_SIZE.bodySm}px;
+  line-height: 1.5;
+  color: var(--tsd-text);
+  background: var(--tsd-bg);
+}
+.theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-diagram { display: none; }
+.theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-ascii-wrap { display: block; }
+/* Edge scroll-fade for .theme-showcase-ascii -- mirrors
+   demo/components/fork-fixes-app.tsx's AsciiWell/AsciiWellFade (same
+   32px width, same "paint an opaque overlay over the content, not a
+   background-image behind it" reasoning documented there), wired here via
+   plain DOM (demo/index-page-client.ts's updateAsciiFade()) instead of a
+   React hook since this section never hydrates via React -- see this
+   file's header comment. Now that .theme-showcase-ascii's own background
+   is an exact var(--tsd-bg) match (above), fading into that same color
+   would be invisible, so the overlay fades into a color-mix() darken of
+   it instead -- an 8% black mix (not a fixed color) so it reads as a
+   plausible edge shadow on every theme, light or dark, without
+   hand-tuning per palette, while the well's base color stays untouched
+   and matches the svg panel everywhere it isn't actively cueing
+   scrollability. .visible is toggled per-edge by scroll position; a well
+   that doesn't overflow shows neither. */
+.theme-showcase-ascii-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  pointer-events: none;
+  display: none;
+}
+.theme-showcase-ascii-fade.visible { display: block; }
+.theme-showcase-ascii-fade.left { left: 0; background: linear-gradient(to left, transparent, color-mix(in srgb, var(--tsd-bg) 92%, black 8%)); }
+.theme-showcase-ascii-fade.right { right: 0; background: linear-gradient(to right, transparent, color-mix(in srgb, var(--tsd-bg) 92%, black 8%)); }
+.tsd-node {
+  fill: var(--tsd-node-fill);
+  stroke: var(--tsd-node-stroke);
+  stroke-width: 1.5px;
+  transition: fill 500ms ease, stroke 500ms ease;
+}
+.tsd-node-muted {
+  fill: var(--tsd-node-fill);
+  stroke: var(--tsd-muted);
+  stroke-width: 1.5px;
+  stroke-dasharray: 4 3;
+  transition: fill 500ms ease, stroke 500ms ease;
+}
+.tsd-node-text { fill: var(--tsd-text); font-weight: 700; transition: fill 500ms ease; }
+.tsd-label { fill: var(--tsd-label-text); transition: fill 500ms ease; }
+.tsd-pipeline-box {
+  fill: none;
+  stroke: var(--tsd-muted);
+  stroke-width: 1.5px;
+  stroke-dasharray: 5 4;
+  transition: stroke 500ms ease;
+}
+.tsd-flow {
+  stroke: var(--tsd-arrow);
+  stroke-width: 2px;
+  fill: none;
+  stroke-dasharray: 6 5;
+  animation: themeShowcaseDashFlow 900ms linear infinite;
+  transition: stroke 500ms ease;
+}
+@keyframes themeShowcaseDashFlow { to { stroke-dashoffset: -22; } }
+.tsd-rollback-path { stroke: var(--tsd-muted); stroke-width: 1.5px; stroke-dasharray: 4 3; fill: none; transition: stroke 500ms ease; }
+.tsd-monitor-path { stroke: var(--tsd-label-text); stroke-width: 1.5px; stroke-dasharray: 1.5 4; fill: none; transition: stroke 500ms ease; }
+.tsd-monitor-dot { fill: var(--tsd-label-text); transition: fill 500ms ease; }
+.tsd-arrow-fill { fill: var(--tsd-arrow); transition: fill 500ms ease; }
+.theme-showcase-burst-ring {
+  opacity: 0;
+  fill: none;
+  stroke: var(--tsd-arrow);
+  stroke-width: 2px;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.theme-showcase-burst-ring.active { animation: themeShowcaseBurst 650ms ease-out; }
+@keyframes themeShowcaseBurst {
+  0% { opacity: 0.85; transform: scale(0.35); }
+  100% { opacity: 0; transform: scale(2.4); }
 }
 
-.theme-showcase-frac { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.theme-showcase-frac-cur { font-size: 34px; font-weight: 700; color: ${colorVar('--cyan')}; letter-spacing: -0.02em; }
-.theme-showcase-frac-slash { font-size: 20px; color: ${colorVar('--text-faint')}; margin: 0 1px; }
-.theme-showcase-frac-total { font-size: 20px; color: ${colorVar('--text-faint')}; }
+/* -- Theme showcase picker: a "movie ticket stub" trigger + dropdown
+   panel. Interaction (open/close, picking a theme) is wired by
+   demo/index-page-client.ts's wireThemePicker() -- see ThemeShowcasePicker's
+   own doc comment. */
+.theme-showcase-picker { position: relative; }
+.theme-showcase-picker-trigger {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1.5px dashed ${colorVar('--border')};
+  border-radius: 4px;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 0 50%, ${colorVar('--bg')} 8px, transparent 8.5px),
+    radial-gradient(circle at 100% 50%, ${colorVar('--bg')} 8px, transparent 8.5px),
+    ${colorVar('--panel')};
+  color: ${colorVar('--text')};
+  font-size: 14px;
+  transition: border-color 160ms ease;
+}
+.theme-showcase-picker-trigger:hover,
+.theme-showcase-picker-trigger:focus-visible {
+  border-color: ${colorVar('--cyan')};
+  outline: none;
+}
+.theme-showcase-picker-chip { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.theme-showcase-picker-trigger #theme-showcase-picker-label { flex: 1; text-align: left; }
+.theme-showcase-picker-caret { color: ${colorVar('--text-faint')}; transition: transform 200ms ease; }
+.theme-showcase-picker.open .theme-showcase-picker-caret { transform: rotate(180deg); }
+.theme-showcase-picker-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 5;
+  max-width: 280px;
+  border: 1.5px dashed ${colorVar('--border')};
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  background: ${colorVar('--panel')};
+  max-height: 300px;
+  overflow-y: auto;
+  transform-origin: top;
+  animation: themeShowcasePickerTear 320ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@keyframes themeShowcasePickerTear {
+  0% { clip-path: inset(0 0 100% 0); transform: skewY(-1.5deg); }
+  60% { clip-path: inset(0 0 0% 0); transform: skewY(0.6deg); }
+  100% { clip-path: inset(0 0 0% 0); transform: skewY(0deg); }
+}
+.theme-showcase-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-top: 1px dashed ${colorVar('--border')};
+  cursor: pointer;
+  font-size: 13px;
+  color: ${colorVar('--text-dim')};
+  min-height: 44px;
+}
+.theme-showcase-picker-option:first-child { border-top: none; }
+.theme-showcase-picker-option:hover { background: color-mix(in srgb, ${colorVar('--cyan')} 7%, transparent); color: ${colorVar('--text')}; }
+.theme-showcase-picker-option[aria-selected='true'] { color: ${colorVar('--cyan')}; }
+.theme-showcase-picker-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* -- Burst ring: a one-off accent-colored flash over the diagram card,
+   fired only for a manual picker selection -- see ThemeShowcase's own doc
+   comment. Its CSS lives above alongside the rest of the diagram's node
+   classes (.theme-showcase-burst-ring): it's an svg <circle> centered on
+   the Deploy? diamond, not a separate overlay element. */
+
+.theme-showcase-footnote {
+  position: relative;
+  z-index: 2;
+  max-width: ${LAYOUT.maxWidth}px;
+  margin: ${SPACE['3xl']}px auto 0;
+  padding-top: ${SPACE.lg}px;
+  border-top: 1px solid ${colorVar('--border')};
+  font-size: ${FONT_SIZE.caption}px;
+  color: ${colorVar('--text-faint')};
+}
 
 ${MEDIA.reducedMotion} {
   .edge-anim { animation: none; }
@@ -346,33 +892,221 @@ ${MEDIA.reducedMotion} {
   .draw-line { animation: none; stroke-dashoffset: 0; }
   .relation-pulse { animation: none; }
   .bar-grow { animation: none; transform: scaleY(1); }
-  .theme-showcase-mesh, .theme-showcase-aurora, .theme-showcase-glow { animation: none !important; }
+  /* .theme-showcase-mesh/.theme-showcase-aurora carry their animation
+   * directly on a bare single-class rule, so this equal-specificity,
+   * later-declared override already wins without !important.
+   * .theme-showcase-glow itself never sets animation at all -- only the
+   * more specific .theme-showcase-glow.g1-g4 variants do (each 2 classes,
+   * outranking a plain .theme-showcase-glow) -- so this lists all four
+   * explicitly to match that specificity instead of relying on
+   * !important (zombie-mermaid#1080). */
+  .theme-showcase-mesh, .theme-showcase-aurora,
+  .theme-showcase-glow.g1, .theme-showcase-glow.g2, .theme-showcase-glow.g3, .theme-showcase-glow.g4 { animation: none; }
+  /* .theme-showcase-picker-panel/.tsd-flow/.theme-showcase-burst-ring.active
+   * each carry their animation on that exact same selector already, so
+   * these equal-specificity, later-declared overrides win without
+   * !important too; .theme-showcase-burst-ring.active's opacity was
+   * already redundant with the unconditional opacity: 0 on the un-suffixed
+   * .theme-showcase-burst-ring base rule above. */
+  .theme-showcase-picker-panel { animation: none; }
+  .tsd-flow { animation: none; }
+  .theme-showcase-burst-ring.active { animation: none; opacity: 0; }
+}
+
+.output-segment {
+  border: none;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  font-family: inherit;
+  font-size: ${FONT_SIZE.caption}px;
+  font-weight: 700;
+  padding: ${SPACE.xxs}px ${SPACE.md}px;
+  border-radius: ${RADIUS.pill}px;
+  cursor: pointer;
+}
+.output-segment.active { background: ${colorVar('--panel-2')}; color: ${colorVar('--text')}; }
+.output-segment:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }
+
+/*
+ * Base (desktop) values for the properties the breakpoint rules below
+ * override, declared here instead of as an inline style on the various
+ * home-page section components (index-app.tsx, why-fork-section.tsx,
+ * feature-pillars.tsx, diagram-gallery-teaser.tsx, proof-section.tsx,
+ * blog-teaser.tsx, and this file's own ThemeShowcase), so those rules can
+ * win through plain cascade order instead of needing !important to beat
+ * an inline style (zombie-mermaid#1080). Must be kept in sync with those
+ * components' own former inline literals: .hero-row used
+ * align-items: center, gap: ${SPACE['7xl']}px, and
+ * padding: ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px;
+ * .hero-copy/.hero-visual used flex: '0 1 500px'/'0 1 700px' and
+ * .hero-visual also align-items: flex-start; .hero-copy p used
+ * max-width: 480px; .hero-h1 used font-size: 56px;
+ * .why-fork-grid/.pillar-grid used repeat(3, minmax(0, 1fr));
+ * .gallery-grid used repeat(6, 1fr); .proof-grid used 1fr 1fr;
+ * .fixes-teaser-card/.blog-teaser-card/.blog-teaser-inner used
+ * align-items: center (.blog-teaser-inner also
+ * gap: ${SPACE['4xl']}px); .theme-showcase used
+ * padding: 100px 80px (top/bottom only -- left/right stay inline, see
+ * that element's own comment); .theme-showcase-grid used
+ * grid-template-columns: 1fr 1.05fr and gap: ${SPACE['8xl']}px; and
+ * .theme-showcase-grid h2 used margin-top: ${SPACE.xl}px.
+ */
+.hero-row {
+  align-items: center;
+  gap: ${SPACE['7xl']}px;
+  padding: ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px;
+}
+
+.hero-copy {
+  flex: 0 1 500px;
+}
+
+.hero-copy p {
+  max-width: 480px;
+}
+
+.hero-h1 {
+  font-size: 56px;
+}
+
+.hero-visual {
+  flex: 0 1 700px;
+  align-items: flex-start;
+}
+
+.why-fork-grid,
+.pillar-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gallery-grid {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.proof-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.fixes-teaser-card,
+.blog-teaser-card,
+.blog-teaser-inner {
+  align-items: center;
+}
+
+.blog-teaser-inner {
+  gap: ${SPACE['4xl']}px;
+}
+
+.theme-showcase {
+  padding-top: 100px;
+  padding-bottom: 100px;
+}
+
+.theme-showcase-grid {
+  grid-template-columns: 1fr 1.05fr;
+  gap: ${SPACE['8xl']}px;
+}
+
+.theme-showcase-grid h2 {
+  margin-top: ${SPACE.xl}px;
+}
+
+${HERO_STACK_MEDIA} {
+  /* .hero-row has no inline flex-direction to fight (see IndexHeroApp's
+   * markup) -- this never needed !important. */
+  .hero-row { flex-direction: column; align-items: flex-start; padding-top: 64px; gap: 40px; }
+  .hero-copy { flex: 1 1 auto; max-width: 100%; }
+  .hero-copy p { max-width: 100%; }
+  /* .hero-visual's width has no inline counterpart to fight (its
+   * horizontal size above this breakpoint comes from flex-basis, a
+   * main-axis property that only controls this item's height once
+   * .hero-row switches to a column) -- this never needed !important. */
+  .hero-visual { flex: 1 1 auto; width: 100%; max-width: 560px; }
 }
 
 ${MEDIA.tablet} {
-  .hero-row { flex-direction: column !important; align-items: flex-start !important; padding: 64px 24px 72px 24px !important; gap: 40px !important; }
-  .hero-copy { flex: 1 1 auto !important; max-width: 100% !important; }
-  .hero-copy p { max-width: 100% !important; }
-  .hero-visual { flex: 1 1 auto !important; width: 100% !important; max-width: 560px; }
-  .feature-connectors { display: none !important; }
-  .feature-grid-wrap { height: auto !important; }
-  .feature-grid { grid-template-columns: 1fr 1fr !important; grid-template-rows: none !important; }
-  .cli-mcp-row { flex-direction: column !important; }
-  .gallery-grid { grid-template-columns: repeat(3, 1fr) !important; }
-  .proof-grid { grid-template-columns: 1fr !important; }
-  .theme-showcase-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
+  .why-fork-grid { grid-template-columns: 1fr; }
+  .pillar-grid { grid-template-columns: 1fr; }
+  /* .cli-mcp-row has no inline flex-direction to fight (see
+   * CliMcpSection's markup) -- this never needed !important. */
+  .cli-mcp-row { flex-direction: column; }
+  .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+  .proof-grid { grid-template-columns: 1fr; }
+  /* Collapsing to one column stacks the diagram card below the copy, so
+     the desktop-only spacing below (sized for a comfortable 2-column
+     layout: 100px section padding, a 64px inter-column gap, the card's
+     own margin-top on top of that gap, and an un-reset <h2> UA margin)
+     turns into a long stretch of empty background before any interactive
+     content -- tighten it here for the collapsed single-column flow. */
+  .theme-showcase { padding-top: ${SPACE['6xl']}px; padding-bottom: ${SPACE['6xl']}px; }
+  .theme-showcase-grid { grid-template-columns: 1fr; gap: ${SPACE['5xl']}px; }
+  .theme-showcase-grid h2 { margin: 0; }
+  /* .theme-showcase-diagram-card's inline style (diagramCardStyle) is
+   * only the --tsd-* custom properties the diagram itself reads -- no
+   * margin-top to fight, so this never needed !important. */
+  .theme-showcase-diagram-card { margin-top: 0; }
+  /* .theme-showcase-footnote's margin/padding-top are set by its own
+   * plain (non-inline) base rule above, so this equal-specificity,
+   * later-declared override already wins without !important. */
+  .theme-showcase-footnote { margin-top: ${SPACE.lg}px; padding-top: ${SPACE.md}px; }
 }
 
 ${MEDIA.mobile} {
-  .hero-row { padding: 48px 20px 56px 20px !important; }
-  .hero-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
-  .feature-grid { grid-template-columns: 1fr !important; }
-  .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
-  .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
-  .blog-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
-  .blog-teaser-inner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
-  .theme-showcase-mesh { width: 1100px !important; height: 900px !important; margin: -450px 0 0 -550px !important; }
+  .hero-row { padding: 48px 20px 56px 20px; }
+  .hero-h1 { font-size: ${FONT_SIZE.h1Mobile}px; }
+  /* align-items: stretch (not the row layout's flex-start) so both panels
+     fill the column's full width -- a "width: 100%" override here would
+     double-count each panel's own padding/border on top of that 100%,
+     since this codebase has no global box-sizing: border-box reset.
+     flex-direction has no inline counterpart to fight here (see the base
+     rule above) -- only align-items ever did. */
+  .hero-visual { flex-direction: column; align-items: stretch; }
+  /* The install pill's full "npm install zombie-mermaid" text (plus the
+     manager-switcher prefix and copy glyph) is wider than .hero-copy at
+     this breakpoint even after hero-install.tsx's overflow-x: auto
+     fallback kicks in -- shrinking the pill's own padding/type here closes
+     most of that gap so the copy glyph stays on-screen without scrolling,
+     rather than leaving it reachable only via a tiny internal scrollbar.
+     No !important needed: .hero-install-pill's padding/font-size come
+     from .pill's rule (primitives.module.css via primitivesCss()), never
+     an inline style, and shared-page-css.tsx always emits primitivesCss()
+     before this module's homePageCss() output -- so this
+     equal-specificity rule already wins through plain cascade order. */
+  .hero-install-pill { padding: 8px 14px; font-size: 13px; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+  /* .stat-row has no inline flex-wrap/gap to fight (see StatRow's markup
+   * in proof-section.tsx) -- this never needed !important. */
+  .stat-row { flex-wrap: wrap; gap: 16px; }
+  /* flex-direction has no inline counterpart to fight on any of these
+   * three (see proof-section.tsx/blog-teaser.tsx's markup) -- only
+   * align-items ever did (base rule above). */
+  .fixes-teaser-card { flex-direction: column; align-items: flex-start; }
+  .blog-teaser-card { flex-direction: column; align-items: flex-start; }
+  .blog-teaser-inner { flex-direction: column; align-items: flex-start; gap: 14px; }
+  /* .theme-showcase-mesh needs no override here any more -- its inset: 0
+     base rule already fills .theme-showcase-bg exactly at every width
+     (#1054). .theme-showcase-glow's fixed diameters do still need
+     shrinking below this breakpoint, though: .theme-showcase-aurora is
+     now sized to match .theme-showcase-bg exactly (inset: 0, no bleed --
+     also #1054), so at narrow phone widths (~375px) g1's 560px diameter
+     alone is wider than the whole aurora box it's positioned in, pushing
+     .theme-showcase-aurora's own scrollWidth past its clientWidth. These
+     sizes are picked with headroom below what the 375-600px range needs
+     to stay contained (worst case at 375px: g1 needs <=~367px, g2
+     <=~375px, g3 <=~300px, g4 <=~330px, given each one's own
+     top/left/right/bottom offset) -- not scaled to match desktop's visual
+     proportions, since this is an ambient decorative layer, not content.
+     No !important needed: each .theme-showcase-glow.gN selector below
+     matches its own base rule's specificity exactly (two classes each)
+     and is declared later, so plain cascade order already wins. */
+  .theme-showcase-glow.g1 { width: 220px; height: 220px; }
+  .theme-showcase-glow.g2 { width: 200px; height: 200px; }
+  .theme-showcase-glow.g3 { width: 180px; height: 180px; }
+  .theme-showcase-glow.g4 { width: 190px; height: 190px; }
+  /* Narrower still than the tablet trim above -- one more pass at the
+     same dead-scroll problem for the smallest viewports. */
+  .theme-showcase { padding-top: ${SPACE['3xl']}px; padding-bottom: ${SPACE['3xl']}px; }
+  .theme-showcase-grid { gap: ${SPACE.xl}px; }
 }`
 }
 
@@ -381,102 +1115,104 @@ ${MEDIA.mobile} {
  * ----------------------------------------------------------------- */
 
 /**
- * The six diagram types this library renders, one real Mermaid source each,
- * for the showcase to cycle through. `flowchart` reuses {@link
- * THEME_SHOWCASE_SOURCE} (matching the hero's own mock — see that
- * constant's doc comment); the other five reuse the exact, already-vetted
- * source each type's own SEO landing page renders
- * (`demo/diagram-pages-data.ts`'s `DIAGRAM_TYPE_PROFILES`), rather than
- * hand-typing new Mermaid a second time for this page alone.
+ * A "movie ticket stub" theme selector: a trigger button (current theme's
+ * swatch + label) that opens a listbox of all {@link THEMES} keys. Static
+ * SSR markup only — like the rest of {@link ThemeShowcase}, this section
+ * isn't part of either hydrated React app (see this file's header
+ * comment), so open/close, keyboard support, and the actual theme pick are
+ * all wired imperatively by `demo/index-page-client.ts`'s
+ * `wireThemePicker()`. Deliberately its own component rather than
+ * `demo/components/theme-picker.tsx`'s `ThemePicker`: that component's
+ * pill row is the right shape for a persistent, always-visible control
+ * (nav, per-diagram-type pages) but doesn't fit a single hero-style
+ * "pick a theme" moment, and reworking its markup to look like a ticket
+ * stub would mean forking a shared, multi-page component for one page's
+ * visual. Both still end up calling the same underlying re-theme step —
+ * see {@link ThemeShowcase}'s own doc comment.
  */
-const SHOWCASE_TYPE_SLUGS = [
-  'flowchart',
-  'sequence',
-  'class',
-  'state',
-  'er',
-  'xy-chart',
-] as const
-
-function showcaseSource(slug: (typeof SHOWCASE_TYPE_SLUGS)[number]): string {
-  if (slug === 'flowchart') return THEME_SHOWCASE_SOURCE
-  const profile = DIAGRAM_TYPE_PROFILES.find((p) => p.slug === slug)
-  if (!profile) {
-    throw new Error(
-      `demo/components/index-page.tsx: no DIAGRAM_TYPE_PROFILES entry for slug "${slug}"`,
-    )
-  }
-  return profile.source
-}
-
-/**
- * The showcase's six build-time diagrams, one per {@link
- * SHOWCASE_TYPE_SLUGS} entry, all rendered in
- * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours — the client script cycles
- * both which diagram is visible and which theme is applied from there (see
- * this file's header comment and `demo/index-page-client.ts`). Thrown, not
- * a silent fallback: this only ever runs at `index.ts` generation time
- * under Node, so a typo'd theme key or slug should fail the build loudly
- * rather than ship a broken page.
- */
-function renderShowcaseDiagrams(): { slug: string; html: string }[] {
-  const theme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
-  if (!theme) {
+function ThemeShowcasePicker() {
+  const themeEntries = Object.entries(THEMES)
+  const defaultTheme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
+  if (!defaultTheme) {
     throw new Error(`Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`)
   }
-  return SHOWCASE_TYPE_SLUGS.map((slug) => ({
-    slug,
-    html: renderMermaidSVG(showcaseSource(slug), {
-      ...theme,
-      title: `A ${slug} diagram, rendered live in the current theme`,
-      interactivity: 'none',
-    }),
-  }))
+  const defaultAccent = deriveShowcaseColors(defaultTheme).arrow
+
+  return (
+    <div className="theme-showcase-picker" id="theme-showcase-picker">
+      <button
+        type="button"
+        className="theme-showcase-picker-trigger mono"
+        id="theme-showcase-picker-trigger"
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-controls="theme-showcase-picker-panel"
+      >
+        <span
+          className="theme-showcase-picker-chip"
+          id="theme-showcase-picker-chip"
+          style={{ background: defaultAccent }}
+        />
+        <span id="theme-showcase-picker-label">
+          {THEME_SHOWCASE_DEFAULT_THEME}
+        </span>
+        <span className="theme-showcase-picker-caret" aria-hidden="true">
+          ▾
+        </span>
+      </button>
+      <div
+        className="theme-showcase-picker-panel"
+        id="theme-showcase-picker-panel"
+        role="listbox"
+        aria-label="Themes"
+        hidden
+      >
+        {themeEntries.map(([themeKey, colors]) => {
+          const accent = deriveShowcaseColors(colors).arrow
+          return (
+            <button
+              type="button"
+              key={themeKey}
+              className="theme-showcase-picker-option mono"
+              role="option"
+              data-theme={themeKey}
+              aria-selected={themeKey === THEME_SHOWCASE_DEFAULT_THEME}
+            >
+              <span
+                className="theme-showcase-picker-dot"
+                style={{ background: accent }}
+              />
+              {themeKey}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
-/**
- * Six real diagrams — one per diagram type this library renders — auto-
- * cycling live through every real theme in `THEMES`. Replaces the
- * section's former interactive picker (#759) with a purely informational,
- * non-interactive proof: nothing on the page controls it, so it never
- * competes with the rest of the page for a visitor's clicks. (A header-
- * based theme switcher may take over this section's old picker role
- * site-wide later; that's separate, not-yet-scheduled work, not something
- * this section grows back on its own.)
- *
- * `demo/index-page-client.ts`'s `startShowcaseCycle()` does the actual
- * cycling, as a strict, staged sequence rather than one simultaneous
- * change: fade the visible diagram out, re-theme the next one via CSS
- * custom properties (`svg.style.setProperty('--bg', …)`, … — the same
- * "swap variables, no re-render" technique `demo/diagram-page-client.ts`'s
- * `applyThemeToDiagram` already uses elsewhere) and animate the card's
- * background to match while nothing diagram-shaped is on screen, then
- * fade the (already re-themed) diagram back in — see
- * `.theme-showcase-diagram-slot`'s own CSS comment for why. It also keeps
- * the `--bg`/`--fg`/`--accent` code panel and the `N / <count>` counter in
- * sync. `prefers-reduced-motion: reduce` stops the cycle before it starts —
- * the build-time render below (flowchart, in
- * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours) is a complete, correctly
- * themed diagram on its own, so that's a real fallback state, not a broken
- * one.
- *
- * `id="theme-showcase"` stays even though nothing observes it via
- * `IntersectionObserver` anymore (that relocation was the removed picker's
- * job) — kept as a stable in-page anchor, cheap to keep.
- */
 function ThemeShowcase() {
-  const diagrams = renderShowcaseDiagrams()
   const theme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
   if (!theme) {
     throw new Error(`Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`)
   }
-  const accent = theme.accent
-  if (!accent) {
+  const defaultAsciiHtml =
+    themeShowcaseAsciiHtmlByTheme[THEME_SHOWCASE_DEFAULT_THEME]
+  if (defaultAsciiHtml === undefined) {
     throw new Error(
-      `THEME_SHOWCASE_DEFAULT_THEME (${THEME_SHOWCASE_DEFAULT_THEME}) has no accent`,
+      `No ASCII render for theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`,
     )
   }
-  const themeCount = Object.keys(THEMES).length
+  const colors = deriveShowcaseColors(theme)
+  const diagramCardStyle: Record<string, string> = {
+    '--tsd-bg': colors.bg,
+    '--tsd-node-fill': colors.nodeFill,
+    '--tsd-node-stroke': colors.nodeStroke,
+    '--tsd-text': colors.text,
+    '--tsd-label-text': colors.labelText,
+    '--tsd-muted': colors.muted,
+    '--tsd-arrow': colors.arrow,
+  }
 
   return (
     <div
@@ -484,10 +1220,15 @@ function ThemeShowcase() {
       className="section-px theme-showcase"
       style={{
         position: 'relative',
-        padding: '100px 80px',
+        // padding-top/bottom live in homePageCss() instead of here (not
+        // inline) so the breakpoint overrides can win via plain cascade
+        // order instead of needing !important to beat an inline style
+        // (zombie-mermaid#1080); left/right stay inline (`.section-px`'s
+        // own responsive narrowing, footerCss(), handles those instead).
+        paddingLeft: '80px',
+        paddingRight: '80px',
         borderTop: `1px solid ${colorVar('--border')}`,
         borderBottom: `1px solid ${colorVar('--border')}`,
-        overflow: 'hidden',
       }}
     >
       <div className="theme-showcase-bg" aria-hidden="true">
@@ -501,163 +1242,483 @@ function ThemeShowcase() {
       </div>
 
       <div
+        id="theme-showcase-grid"
         className="theme-showcase-grid"
         style={{
           position: 'relative',
-          zIndex: 2,
+          // Must outrank .theme-showcase-footnote's z-index (2): they're
+          // sibling stacking contexts under #theme-showcase, and a later
+          // sibling at an *equal* z-index wins the paint order regardless
+          // of any z-index set on elements nested inside this one (like
+          // the picker panel's own z-index below) -- that's how the
+          // footnote used to render on top of the open dropdown.
+          zIndex: 3,
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: '1fr 1.05fr',
-          gap: `${SPACE['8xl']}px`,
+          // grid-template-columns/gap live in homePageCss() instead of
+          // here (not inline) so the breakpoint overrides can win via
+          // plain cascade order instead of needing !important to beat an
+          // inline style (zombie-mermaid#1080).
           alignItems: 'start',
         }}
       >
         <div
+          className="theme-showcase-picker-column"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: `${SPACE.xl}px`,
           }}
         >
-          <SectionEyebrow>Live theme switching</SectionEyebrow>
-          <h2
-            style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}
-          >
-            Pick a theme. Switch it live — no re-render.
-          </h2>
-          <p
-            style={{
-              fontSize: `${FONT_SIZE.lead}px`,
-              color: colorVar('--text-dim'),
-              margin: 0,
-            }}
-          >
-            Every one of the {themeCount} built-in themes is just{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --bg
-            </code>
-            ,{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --fg
-            </code>
-            , and{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --accent
-            </code>
-            . The diagram reads them live — no re-render, ever.
-          </p>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: `${SPACE.md}px`,
-              marginTop: `${SPACE.xs}px`,
-            }}
-          >
-            <span className="theme-showcase-frac">
-              <span
-                id="theme-showcase-counter"
-                className="theme-showcase-frac-cur"
-              >
-                1
-              </span>
-              <span className="theme-showcase-frac-slash">/</span>
-              <span className="theme-showcase-frac-total">{themeCount}</span>
-            </span>
-            <span
+          {/*
+              .theme-showcase-blurb: everything above the picker -- hidden
+              by .theme-showcase-grid:fullscreen's own CSS (below) so the
+              fullscreen view is just the picker + diagram, matching
+              DetailOutputPanel's own minimal fullscreen chrome (no
+              marketing copy). ThemeShowcasePicker itself stays a sibling,
+              not nested in here, since it must stay visible fullscreen.
+            */}
+          <div className="theme-showcase-blurb">
+            <SectionEyebrow>Live theme switching</SectionEyebrow>
+            <h2
               style={{
-                fontSize: `${FONT_SIZE.caption}px`,
-                color: colorVar('--text-faint'),
+                fontSize: '38px',
+                letterSpacing: LETTER_SPACING.heading,
+                // margin-top lives in homePageCss()'s `.theme-showcase-grid
+                // h2` rule instead of here (not inline) so its tablet
+                // breakpoint override can win via plain cascade order
+                // instead of needing !important to beat this inline style
+                // (zombie-mermaid#1080).
               }}
             >
-              themes, cycling
-            </span>
+              Pick a theme. Watch it flow.
+            </h2>
+            <p
+              style={{
+                fontSize: `${FONT_SIZE.lead}px`,
+                color: colorVar('--text-dim'),
+                margin: `${SPACE.xl}px 0 0`,
+              }}
+            >
+              Fifteen palettes pulled from editors you already trust — Dracula,
+              Nord, Solarized, Catppuccin, Tokyo Night, and more — each tuned so
+              the diagram stays legible in every one.
+            </p>
           </div>
+          <ThemeShowcasePicker />
         </div>
 
-        <div>
-          <div className="theme-showcase-term">
-            <div className="theme-showcase-term-bar">
-              <span
-                className="theme-showcase-term-dot"
-                style={{ background: '#ff6767' }}
-              />
-              <span
-                className="theme-showcase-term-dot"
-                style={{ background: '#ffc85c' }}
-              />
-              <span
-                className="theme-showcase-term-dot"
-                style={{ background: '#5ee08a' }}
-              />
-            </div>
-            <div className="theme-showcase-term-body mono">
-              <span
-                id="theme-showcase-theme-name"
-                className="theme-showcase-comment"
+        <div
+          id="theme-showcase-diagram-card"
+          className="theme-showcase-diagram-card"
+          data-output-mode="svg"
+          style={diagramCardStyle}
+        >
+          <div className="theme-showcase-output-toggle">
+            <span className="theme-showcase-output-label">Output</span>
+            <div className="theme-showcase-output-controls">
+              <div className="theme-showcase-output-segments">
+                <button
+                  type="button"
+                  id="theme-showcase-output-svg"
+                  className="output-segment active"
+                  aria-pressed="true"
+                >
+                  SVG
+                </button>
+                <button
+                  type="button"
+                  id="theme-showcase-output-ascii"
+                  className="output-segment"
+                  aria-pressed="false"
+                >
+                  ASCII
+                </button>
+              </div>
+              {/*
+                  Fullscreen-only zoom (#987 scale + #988 pan/pinch): the
+                  small inline card stays a static preview (matching
+                  diagram-detail-app.tsx's DetailOutputPanel own
+                  established convention -- see this file's own
+                  .theme-showcase-zoom-controls CSS comment below), so
+                  these three buttons only ever do anything while
+                  .theme-showcase-grid is :fullscreen. Always in the
+                  markup (not conditionally rendered -- this is plain
+                  DOM, not React) with visibility gated entirely by CSS.
+                  Wired by initThemeShowcaseFullscreen() in
+                  demo/index-page-client.ts.
+                */}
+              <div
+                className="theme-showcase-zoom-controls"
+                id="theme-showcase-zoom-controls"
+                role="group"
+                aria-label="Zoom"
               >
-                {'/* ' +
-                  (THEME_LABELS[THEME_SHOWCASE_DEFAULT_THEME] ??
-                    THEME_SHOWCASE_DEFAULT_THEME) +
-                  ' */'}
-              </span>
-              <br />
-              :root {'{'}
-              <br />
-              &nbsp;&nbsp;
-              <span className="theme-showcase-kw">--bg</span>:{' '}
-              <span
-                id="theme-showcase-bg-swatch"
-                className="theme-showcase-swatch"
-                style={{ background: theme.bg }}
-              />
-              <span id="theme-showcase-bg-val">{theme.bg}</span>;
-              <br />
-              &nbsp;&nbsp;
-              <span className="theme-showcase-kw">--fg</span>:{' '}
-              <span
-                id="theme-showcase-fg-swatch"
-                className="theme-showcase-swatch"
-                style={{ background: theme.fg }}
-              />
-              <span id="theme-showcase-fg-val">{theme.fg}</span>;
-              <br />
-              &nbsp;&nbsp;
-              <span className="theme-showcase-kw">--accent</span>:{' '}
-              <span
-                id="theme-showcase-accent-swatch"
-                className="theme-showcase-swatch"
-                style={{ background: accent }}
-              />
-              <span id="theme-showcase-accent-val">{accent}</span>;
-              <br />
-              {'}'}
+                <button
+                  type="button"
+                  id="theme-showcase-zoom-out"
+                  className="theme-showcase-zoom-btn"
+                  title="Zoom out"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  id="theme-showcase-zoom-reset"
+                  className="theme-showcase-zoom-btn theme-showcase-zoom-reset mono"
+                  title="Reset zoom"
+                >
+                  100%
+                </button>
+                <button
+                  type="button"
+                  id="theme-showcase-zoom-in"
+                  className="theme-showcase-zoom-btn"
+                  title="Zoom in"
+                >
+                  +
+                </button>
+              </div>
+              {/*
+                  Fullscreen toggle: requestFullscreen()s .theme-showcase-
+                  grid (the picker's column and this diagram card both --
+                  see that class's own :fullscreen CSS comment below for
+                  why the whole grid, not just this card, is the target).
+                  Both icon states are always in the markup (mirroring the
+                  zoom controls above); [data-fullscreen] on this same
+                  button toggles which one shows. Paths reused verbatim
+                  from diagram-detail-app.tsx's FullscreenIcon (see that
+                  component's own doc comment on why -- an already-
+                  corrected, already-shipped design, not worth a second
+                  first draft) -- not imported from there since that file
+                  is a React component and this markup is plain JSX
+                  rendered at build time into static HTML.
+                */}
+              <button
+                type="button"
+                id="theme-showcase-fullscreen-trigger"
+                className="theme-showcase-fullscreen-btn"
+                title="View fullscreen"
+                aria-pressed="false"
+              >
+                <svg
+                  className="theme-showcase-fullscreen-icon-enter"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                  <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+                  <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                  <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                </svg>
+                <svg
+                  className="theme-showcase-fullscreen-icon-exit"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                  <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                  <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                  <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                </svg>
+              </button>
             </div>
           </div>
-
           <div
-            id="theme-showcase-diagram-card"
-            className="theme-showcase-diagram-card"
-            style={{ background: theme.bg }}
+            className="theme-showcase-output-body"
+            id="theme-showcase-output-body"
           >
-            <div id="theme-showcase-diagrams">
-              {diagrams.map((d, i) => (
-                <div
-                  key={d.slug}
-                  className={
-                    i === 0
-                      ? 'theme-showcase-diagram-slot is-active'
-                      : 'theme-showcase-diagram-slot'
-                  }
-                  data-slug={d.slug}
-                  // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see this file's header comment)
-                  dangerouslySetInnerHTML={{ __html: d.html }}
-                />
-              ))}
+            <svg
+              id="theme-showcase-diagram"
+              className="theme-showcase-diagram"
+              viewBox="0 0 600 300"
+              aria-hidden="true"
+            >
+              <defs>
+                <marker
+                  id="theme-showcase-arrowhead"
+                  markerWidth={7}
+                  markerHeight={7}
+                  refX={5}
+                  refY={3.5}
+                  orient="auto"
+                >
+                  <path className="tsd-arrow-fill" d="M0,0 L7,3.5 L0,7 Z" />
+                </marker>
+              </defs>
+
+              <rect
+                className="tsd-node"
+                x={10}
+                y={130}
+                width={80}
+                height={40}
+                rx={10}
+              />
+              <text
+                className="tsd-node-text"
+                x={50}
+                y={154}
+                textAnchor="middle"
+                fontSize={12}
+              >
+                Start
+              </text>
+              <path
+                className="tsd-flow"
+                d="M90,150 L120,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+
+              <polygon
+                className="tsd-node"
+                points="160,120 190,150 160,180 130,150"
+              />
+              <text
+                className="tsd-node-text"
+                x={160}
+                y={154}
+                textAnchor="middle"
+                fontSize={10.5}
+              >
+                Auth?
+              </text>
+              <path
+                className="tsd-flow"
+                d="M190,150 L225,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={200} y={140} fontSize={9.5}>
+                ok
+              </text>
+
+              <rect
+                className="tsd-pipeline-box"
+                x={225}
+                y={95}
+                width={150}
+                height={110}
+                rx={10}
+              />
+              <text
+                className="tsd-label"
+                x={235}
+                y={112}
+                fontSize={9}
+                letterSpacing="0.08em"
+              >
+                PIPELINE
+              </text>
+              <rect
+                className="tsd-node"
+                x={245}
+                y={120}
+                width={110}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={140}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Build
+              </text>
+              <path
+                className="tsd-flow"
+                d="M300,152 L300,166"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <rect
+                className="tsd-node"
+                x={245}
+                y={168}
+                width={110}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={188}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Test
+              </text>
+
+              <path
+                className="tsd-flow"
+                d="M375,150 L410,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={382} y={142} fontSize={9.5}>
+                pass
+              </text>
+
+              <polygon
+                className="tsd-node"
+                points="445,120 480,150 445,180 410,150"
+              />
+              <text
+                className="tsd-node-text"
+                x={445}
+                y={154}
+                textAnchor="middle"
+                fontSize={10}
+              >
+                Deploy?
+              </text>
+              <circle
+                id="theme-showcase-burst"
+                className="theme-showcase-burst-ring"
+                aria-hidden="true"
+                cx={445}
+                cy={150}
+                r={28}
+              />
+
+              <path
+                className="tsd-flow"
+                d="M476,138 C 486,116 488,98 500,90"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={452} y={108} fontSize={9.5}>
+                yes
+              </text>
+              <rect
+                className="tsd-node"
+                x={500}
+                y={68}
+                width={76}
+                height={40}
+                rx={9}
+              />
+              <text
+                className="tsd-node-text"
+                x={538}
+                y={92}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Ship it
+              </text>
+
+              <path
+                className="tsd-rollback-path"
+                d="M476,162 C 486,184 488,202 500,210"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={452} y={200} fontSize={9.5}>
+                no
+              </text>
+              <rect
+                className="tsd-node-muted"
+                x={496}
+                y={192}
+                width={84}
+                height={40}
+                rx={9}
+              />
+              <text
+                className="tsd-node-text"
+                x={538}
+                y={216}
+                textAnchor="middle"
+                fontSize={10}
+              >
+                Rollback
+              </text>
+
+              <path className="tsd-monitor-path" d="M300,200 L300,250" />
+              <circle className="tsd-monitor-dot" cx={300} cy={250} r={3} />
+              <rect
+                className="tsd-node"
+                x={255}
+                y={252}
+                width={90}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={272}
+                textAnchor="middle"
+                fontSize={10.5}
+              >
+                Monitor
+              </text>
+            </svg>
+            <div className="theme-showcase-ascii-wrap">
+              <pre
+                id="theme-showcase-ascii"
+                className="theme-showcase-ascii mono"
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
+                dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
+              />
+              <div
+                id="theme-showcase-ascii-fade-left"
+                className="theme-showcase-ascii-fade left"
+                aria-hidden="true"
+              />
+              <div
+                id="theme-showcase-ascii-fade-right"
+                className="theme-showcase-ascii-fade right"
+                aria-hidden="true"
+              />
             </div>
           </div>
         </div>
+      </div>
+
+      {/*
+          Threads themeShowcaseAsciiHtmlByTheme's full per-theme map to
+          demo/index-page-client.ts's applyTheme() -- the same <script
+          type="application/json"> props-hydration technique
+          INDEX_HERO_PROPS_ELEMENT_ID uses above for IndexHeroApp, just
+          read by plain DOM code here instead of a React hydration call,
+          since ThemeShowcase itself is never hydrated (see this file's
+          header comment). Every key's value is this file's own build-time
+          renderMermaidASCII() output -- never user input.
+        */}
+      <script
+        type="application/json"
+        id="theme-showcase-ascii-props"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this file's own themeShowcaseAsciiHtmlByTheme, escaped with escapeJsonForScriptTag; never user input
+        dangerouslySetInnerHTML={{
+          __html: escapeJsonForScriptTag(
+            JSON.stringify(themeShowcaseAsciiHtmlByTheme),
+          ),
+        }}
+      />
+
+      <div className="theme-showcase-footnote">
+        Want to add your own? Every theme here is just three color roles —{' '}
+        <a
+          href={`${FORK_URL}/blob/main/docs/theming.md`}
+          target="_blank"
+          rel="noopener"
+        >
+          see how easy one is to write →
+        </a>
       </div>
     </div>
   )
@@ -733,56 +1794,77 @@ export function IndexPage({
   clientScript = '',
 }: IndexPageProps) {
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Zombie Mermaid — Mermaid Rendering, Made Beautiful</title>
-        <meta
-          name="description"
-          content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, and XY Chart diagrams."
-        />
-        <link rel="canonical" href={SITE_URL} />
-        <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-        <link rel="icon" type="image/x-icon" href="favicon.ico" />
-        <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-        <meta property="og:title" content="Zombie Mermaid" />
-        <meta
-          property="og:description"
-          content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII."
-        />
-        <meta property="og:image" content={OG_IMAGE_URL} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={SITE_URL} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Zombie Mermaid" />
-        <meta
-          name="twitter:description"
-          content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII."
-        />
-        <meta name="twitter:image" content={OG_IMAGE_URL} />
-        <script
-          type="application/ld+json"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD built from package.json at build time and escaped with escapeJsonForScriptTag
-          dangerouslySetInnerHTML={{ __html: jsonLd }}
-        />
-        {/* Plausible Analytics */}
-        <script
-          defer
-          data-domain={PLAUSIBLE_DOMAIN}
-          src="https://plausible.io/js/script.js"
-        />
-        <DesignFontLinks />
-        <SharedPageStyles />
-        <style>{homePageCss()}</style>
-      </head>
-      <body>
-        <a className="skip-link" href="#main">
-          Skip to content
-        </a>
-        <NavIsland homeHref={HOME_HREF} hrefs={ROOT_NAV_HREFS} sticky />
-        <main id="main">
+    <Document
+      title="Zombie Mermaid — Mermaid Rendering, Made Beautiful"
+      description="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, and XY Chart diagrams."
+      head={
+        <>
           {/*
+            Document's favicon `<link>` (the primary SVG one, right after
+            the description meta tag above) replaces this file's own —
+            this reorders it ahead of the canonical link and the
+            favicon.ico/apple-touch-icon fallbacks below, where it used to
+            sit last among the three. A `<head>`-internal reordering with
+            no rendering/SEO effect, not a behavior change (see
+            document.tsx's own doc comment).
+          */}
+          <link rel="canonical" href={SITE_URL} />
+          <link rel="icon" type="image/x-icon" href="favicon.ico" />
+          <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+          <meta property="og:title" content="Zombie Mermaid" />
+          <meta
+            property="og:description"
+            content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII."
+          />
+          <meta property="og:image" content={OG_IMAGE_URL} />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={SITE_URL} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="Zombie Mermaid" />
+          <meta
+            name="twitter:description"
+            content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII."
+          />
+          <meta name="twitter:image" content={OG_IMAGE_URL} />
+          <script
+            type="application/ld+json"
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD built from package.json at build time and escaped with escapeJsonForScriptTag
+            dangerouslySetInnerHTML={{ __html: jsonLd }}
+          />
+          {/* Plausible Analytics */}
+          <script
+            defer
+            data-domain={PLAUSIBLE_DOMAIN}
+            src="https://plausible.io/js/script.js"
+          />
+          <DesignFontLinks />
+          <SharedPageStyles />
+          <style>{homePageCss()}</style>
+        </>
+      }
+    >
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <NavIsland
+        homeHref={HOME_HREF}
+        hrefs={ROOT_NAV_HREFS}
+        sticky
+        // The site header never shows the npm-install pill on any page --
+        // nav.tsx's own NavInstall stays the *default* (used directly,
+        // with no NavIsland involved at all, e.g. this repo's own unit
+        // tests) -- see diagram-page.tsx/editor-page.tsx/fork-fixes-
+        // page.tsx/blog-page.tsx's matching installSlotKind="empty" for
+        // the rest of the site. Originally scoped to this page alone
+        // (zombie-mermaid#902, to avoid duplicating the hero's own
+        // install pill); made universal after the redesign shipped it
+        // inconsistently everywhere else too. nav.tsx's own nav-links
+        // marginLeft handles the "flush right" layout this used to need
+        // a page-specific CSS class for.
+        installSlotKind="empty"
+      />
+      <main id="main">
+        {/*
             Plain, inert hydration containers -- see dashboard-app.tsx's
             DASHBOARD_ROOT_ID doc comment for why neither app's own root
             can carry these ids itself, and dashboard-page.tsx's own, more
@@ -791,31 +1873,42 @@ export function IndexPage({
             between them, unhydrated as part of either app -- see this
             file's header comment for why.
           */}
-          <div
-            id={INDEX_HERO_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexHeroApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<IndexHeroApp />),
-            }}
-          />
-          <ThemeShowcase />
-          <div
-            id={INDEX_MAIN_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexMainApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<IndexMainApp />),
-            }}
-          />
-        </main>
-        <Footer columns={HOME_FOOTER_COLUMNS} />
-        <script type="module" src={clientScriptSrc} />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/index-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: clientScript }}
+        <div
+          id={INDEX_HERO_ROOT_ID}
+          dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexHeroApp component tree rendered via renderToString (see the comment above); never user input
+            __html: renderToString(<IndexHeroApp asciiHtml={heroAsciiHtml} />),
+          }}
         />
-        <NavMobileMenuScript />
-      </body>
-    </html>
+        <script
+          type="application/json"
+          id={INDEX_HERO_PROPS_ELEMENT_ID}
+          dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own IndexHeroAppProps, escaped with escapeJsonForScriptTag; never user input
+            __html: escapeJsonForScriptTag(
+              JSON.stringify({
+                asciiHtml: heroAsciiHtml,
+              } satisfies IndexHeroAppProps),
+            ),
+          }}
+        />
+        <ThemeShowcase />
+        <div
+          id={INDEX_MAIN_ROOT_ID}
+          dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexMainApp component tree rendered via renderToString (see the comment above); never user input
+            __html: renderToString(<IndexMainApp />),
+          }}
+        />
+      </main>
+      <Footer columns={HOME_FOOTER_COLUMNS} />
+      <script type="module" src={clientScriptSrc} />
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/index-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: clientScript }}
+      />
+      <NavMobileMenuScript />
+    </Document>
   )
 }

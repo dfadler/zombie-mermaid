@@ -36,16 +36,11 @@
  * for `renderToString`) into the client bundle. See `dashboard-app.tsx`'s
  * own header comment for the measured bundle-size impact.
  *
- * `<ThemePickerSection>` and `<Footer>` render here too (as plain siblings
- * of the {@link DASHBOARD_ROOT_ID} container, inside the same `dc-root`
- * wrapper `DashboardApp`'s own hydrated content sits in — so the visible
- * layout is unchanged), rather than inside `DashboardApp`'s tree. See
- * `dashboard-app.tsx`'s header comment for why: nesting `ThemePickerSection`
- * (which renders `ThemePickerIsland`, itself an `react-dom/server` importer
- * as of #801) inside `DashboardApp` would leak that import into the client
- * bundle and double-hydrate `#theme-pills`. `<Footer>` moved out alongside
- * it for the same reason (it has no client-side behavior of its own, so
- * nothing is lost).
+ * `<Footer>` renders here too (as a plain sibling of the {@link
+ * DASHBOARD_ROOT_ID} container, inside the same `dc-root` wrapper
+ * `DashboardApp`'s own hydrated content sits in — so the visible layout is
+ * unchanged), rather than inside `DashboardApp`'s tree — it has no
+ * client-side behavior of its own, so nothing is lost.
  */
 import { renderToString } from 'react-dom/server'
 import {
@@ -64,7 +59,7 @@ import {
 import { Footer } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
-import { ThemePickerSection } from './theme-picker-section.tsx'
+import { Document } from './document.tsx'
 import { DesignFontLinks, colorVar } from './tokens.tsx'
 
 // Re-exported for existing callers/tests that import these from
@@ -94,23 +89,13 @@ export interface DashboardPageProps {
   /** The page's full stylesheet — tokens/primitives/nav/footer CSS plus this page's own (see dashboard.ts). */
   css: string
   /**
-   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
-   * the page's `ThemePickerSection` is interactive. This page has nothing
-   * of its own to re-theme (a static data snapshot, not a diagram) — the
-   * picker here exists so a theme chosen elsewhere on the site stays
-   * selected if a visitor lands here, and vice versa (shared `demo/
-   * theme-state.ts` persistence).
-   */
-  themeBarScript: string
-  /**
    * The bundled `demo/dashboard-client.tsx` entry (zombie-mermaid#799) that
-   * hydrates {@link DashboardApp}, inlined the same way `themeBarScript`
-   * is — see `dashboard.ts`'s `bundleDashboardClient()` doc comment for why
-   * this is inlined rather than written to `assets/` and referenced by
-   * `src`. Defaults to `''` (no hydration script rendered at all — SSR-only,
-   * same as before #799), matching `themeBarScript`'s own default; used by
-   * existing tests that don't care about hydration. `dashboard.ts`'s real
-   * `generate()` always passes the built bundle.
+   * hydrates {@link DashboardApp} — see `dashboard.ts`'s
+   * `bundleDashboardClient()` doc comment for why this is inlined rather
+   * than written to `assets/` and referenced by `src`. Defaults to `''` (no
+   * hydration script rendered at all — SSR-only, same as before #799),
+   * used by existing tests that don't care about hydration. `dashboard.ts`'s
+   * real `generate()` always passes the built bundle.
    */
   clientScript?: string
 }
@@ -118,55 +103,76 @@ export interface DashboardPageProps {
 export function DashboardPage({
   data,
   css,
-  themeBarScript,
   clientScript = '',
 }: DashboardPageProps) {
   const viewModel = buildDashboardViewModel(data)
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Maintenance dashboard — zombie-mermaid</title>
-        <meta name="description" content={PAGE_DESCRIPTION} />
-        <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-        <DesignFontLinks />
-        <style>{css}</style>
-      </head>
-      <body>
-        <div
-          className="dc-root"
-          style={{
-            width: '100%',
-            maxWidth: '1440px',
-            margin: '0 auto',
-            // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
-            // fixed gradient here would leave a static dark band behind on
-            // every non-default theme (#772's site-chrome re-theming). The
-            // middle stop reuses --bg-soft, already defined for exactly
-            // this "lifted page background" role (tokens.tsx).
-            background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/*
+    <Document
+      title="Maintenance dashboard — Zombie Mermaid"
+      description={PAGE_DESCRIPTION}
+      head={
+        <>
+          <DesignFontLinks />
+          <style>{css}</style>
+        </>
+      }
+    >
+      <div
+        className="dc-root"
+        style={{
+          width: '100%',
+          maxWidth: '1440px',
+          margin: '0 auto',
+          // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
+          // fixed gradient here would leave a static dark band behind on
+          // every non-default theme (#772's site-chrome re-theming). The
+          // middle stop reuses --bg-soft, already defined for exactly
+          // this "lifted page background" role (tokens.tsx).
+          background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
+          position: 'relative',
+        }}
+      >
+        {/*
             Its own hydration island (zombie-mermaid#800), separate from
             DASHBOARD_ROOT_ID -- see DashboardApp's doc comment
             (dashboard-app.tsx) for why Nav still isn't part of that
             boundary, and dashboard-client.tsx for where it's hydrated.
           */}
-          <NavIsland
-            homeHref={ROUTES.home}
-            hrefs={{
-              diagrams: ROUTES.diagrams,
-              editor: ROUTES.editor,
-              forkFixes: ROUTES.forkFixes,
-              blog: ROUTES.blog,
-              github: FORK_URL,
-            }}
-          />
-
+        <NavIsland
+          sticky
+          homeHref={ROUTES.home}
+          hrefs={{
+            diagrams: ROUTES.diagrams,
+            editor: ROUTES.editor,
+            forkFixes: ROUTES.forkFixes,
+            blog: ROUTES.blog,
+            github: FORK_URL,
+          }}
+          // The site header never shows the npm-install pill on any page --
+          // see index-page.tsx's matching installSlotKind="empty" comment.
+          // This page was missed when that rule went universal
+          // (zombie-mermaid#1053): left at the default `NavInstall` pill,
+          // it's the one page whose header renders it at every width,
+          // including mobile, where the brand link and the pill's
+          // non-shrinking package-manager-selector/divider segments
+          // together no longer fit a 375px bar -- a second, dashboard-only
+          // overflow alongside the shared mobile-nav-panel bug #1053 also
+          // fixes.
+          installSlotKind="empty"
+        />
+        {/*
+            `overflow: hidden` used to live on the `.dc-root` div itself,
+            but that made it an ancestor of the sticky `<NavIsland>` above —
+            an `overflow` other than `visible` on any ancestor stops
+            `position: sticky` from ever un-sticking from its static
+            position, since the sticky element's nearest clipping ancestor
+            is what its "stuck" offset is computed against, and this div
+            was never itself the one scrolling. Scoping the clip to this
+            inner wrapper (a sibling of NavIsland, not an ancestor) keeps
+            whatever this was guarding against contained without breaking
+            the header's stickiness.
+          */}
+        <div style={{ overflow: 'hidden' }}>
           {/*
             Plain, inert hydration container -- see DASHBOARD_ROOT_ID's doc
             comment (dashboard-app.tsx) for why DashboardApp's own root
@@ -206,45 +212,23 @@ export function DashboardPage({
             }}
           />
 
-          {/*
-            Plain sibling JSX, not part of DashboardApp's hydrated tree --
-            see this file's header comment and dashboard-app.tsx's for why
-            (in short: ThemePickerSection/ThemePickerIsland imports
-            react-dom/server, and nesting it inside DASHBOARD_ROOT_ID would
-            both leak that into the client bundle and double-hydrate
-            #theme-pills). Rendered through the ordinary renderToStaticMarkup
-            path this whole document uses -- unlike DASHBOARD_ROOT_ID's own
-            container above, nothing ever calls hydrateRoot() against
-            ThemePickerSection/Footer directly, so neither needs the
-            renderToString hydration-boundary comments. ThemePicker's own
-            hydration still works: theme-bar-only-client.ts's
-            hydrateThemeBar() (bundled as themeBarScript below) finds and
-            hydrates ThemePickerIsland's #theme-pills exactly as it does on
-            every other page.
-          */}
-          <ThemePickerSection />
           <Footer columns={dashboardFooterColumns()} />
         </div>
-        <script
-          type="application/json"
-          id={DASHBOARD_PROPS_ELEMENT_ID}
-          dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
-            __html: escapeJsonForScriptTag(JSON.stringify(viewModel)),
-          }}
-        />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: themeBarScript }}
-        />
-        <NavMobileMenuScript />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/dashboard-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: clientScript }}
-        />
-      </body>
-    </html>
+      </div>
+      <script
+        type="application/json"
+        id={DASHBOARD_PROPS_ELEMENT_ID}
+        dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
+          __html: escapeJsonForScriptTag(JSON.stringify(viewModel)),
+        }}
+      />
+      <NavMobileMenuScript />
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/dashboard-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: clientScript }}
+      />
+    </Document>
   )
 }

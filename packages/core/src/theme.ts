@@ -13,6 +13,7 @@
 
 import { escapeXml, escapeAttr } from './multiline-utils.ts'
 import { parseHexColor } from './color-utils.ts'
+import { f } from './render-utils.ts'
 
 // ============================================================================
 // Types
@@ -32,6 +33,17 @@ export interface SvgEmitOptions {
   nonce?: string
   /** Emit the root `style="--bg: …"` attribute. Default: true. */
   styleAttribute?: boolean
+}
+
+/**
+ * A self-hosted monospace font a caller embeds in the SVG `<style>` block
+ * for the `.mono` rule. See `buildStyleBlock`.
+ */
+export interface MonoFontEmbed {
+  /** Font family name, listed first in the `.mono` rule's font stack. */
+  family: string
+  /** The complete `@font-face { ... }` rule (typically a base64 data URI). */
+  faceCss: string
 }
 
 /**
@@ -412,10 +424,18 @@ export function styleOpenTag(nonce?: string): string {
  *
  * Any other value is treated as a literal font name: sanitized and quoted
  * exactly as before.
+ *
+ * `mono`'s `.mono` rule (class-diagram method signatures, ER-diagram
+ * attribute types) never reaches out to Google Fonts at all. The caller
+ * supplies a self-hosted {@link MonoFontEmbed} (a base64 `woff2` `@font-face`
+ * plus its family name), which is inlined directly in the SVG's own `<style>`
+ * block (#1061). The font data itself lives in `@zombie-mermaid/svg-renderer`
+ * (see its `buildSvgStyleBlock`), not here, so ASCII-only consumers of
+ * `core` never carry it (#1319). Pass `false` to omit the `.mono` rule.
  */
 export function buildStyleBlock(
   font: string,
-  hasMonoFont: boolean,
+  mono: MonoFontEmbed | false,
   nonce?: string,
 ): string {
   const isVarReference = isSafeCssVarReference(font)
@@ -426,18 +446,11 @@ export function buildStyleBlock(
   const safeFont = isVarReference ? font.trim() : font.replace(/[<>{};'"]/g, '')
   const skipImport = isVarReference || isFontStackOrGenericFamily(font)
 
-  const fontImports = [
-    ...(skipImport
-      ? []
-      : [
-          `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(safeFont)}:wght@400;500;600;700&amp;display=swap');`,
-        ]),
-    ...(hasMonoFont
-      ? [
-          `@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap');`,
-        ]
-      : []),
-  ]
+  const fontImports = skipImport
+    ? []
+    : [
+        `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(safeFont)}:wght@400;500;600;700&amp;display=swap');`,
+      ]
 
   // Derived CSS variables: use override if set, else mix from bg+fg.
   // The --_ prefix signals "private/derived" — not meant for external override.
@@ -459,10 +472,14 @@ export function buildStyleBlock(
   return [
     styleOpenTag(nonce),
     ...(fontImports.length > 0 ? [`  ${fontImports.join('\n  ')}`] : []),
+    // Self-hosted, embedded @font-face for `.mono` text — see the doc
+    // comment above for why this never goes through the CDN-import/skip
+    // logic `font` above does.
+    ...(mono ? [`  ${mono.faceCss}`] : []),
     `  text { font-family: ${isVarReference ? safeFont : `'${safeFont}'`}, system-ui, sans-serif; }`,
-    ...(hasMonoFont
+    ...(mono
       ? [
-          `  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }`,
+          `  .mono { font-family: '${mono.family}', 'SF Mono', 'Fira Code', ui-monospace, monospace; }`,
         ]
       : []),
     `  svg {${derivedVars}`,
@@ -543,6 +560,14 @@ function nextTitleId(): string {
   return `zm-title-${titleIdCounter}`
 }
 
+/** Same scheme as `nextTitleId`, for the root `<desc>` (`description`). */
+let descIdCounter = 0
+
+function nextDescId(): string {
+  descIdCounter += 1
+  return `zm-desc-${descIdCounter}`
+}
+
 /**
  * Test-only: reset the title-id counter so id assertions in tests don't
  * depend on how many titled diagrams earlier tests in the same file rendered.
@@ -550,6 +575,7 @@ function nextTitleId(): string {
  */
 export function __resetSvgTitleIdCounterForTests(): void {
   titleIdCounter = 0
+  descIdCounter = 0
 }
 
 /**
@@ -652,6 +678,11 @@ export function themeStyleDeclarations(
  *                              See #239 — forces no root `role` so the link
  *                              stays reachable, regardless of `decorative`.
  * @param styleAttribute - Emit the root `style="…"` attribute. Default true.
+ * @param description - Accessible description: a `<desc id="zm-desc-N">`
+ *                      after the title plus `aria-describedby` on the root.
+ *                      Follows the same rules as `title` (dropped when
+ *                      decorative without interactive links). Used for
+ *                      Mermaid's `accDescr`.
  */
 export function svgOpenTag(
   width: number,
@@ -662,6 +693,7 @@ export function svgOpenTag(
   decorative?: boolean,
   hasInteractiveLinks?: boolean,
   styleAttribute: boolean = true,
+  description?: string,
 ): string {
   const styleAttr = styleAttribute
     ? ` style="${themeStyleDeclarations(colors, transparent)}"`
@@ -669,28 +701,29 @@ export function svgOpenTag(
 
   let a11yAttrs = ''
   let titleEl = ''
-  if (hasInteractiveLinks) {
-    // No root role: role="img" or aria-hidden would hide a real, focusable
-    // <a href> descendant from assistive tech while leaving it Tab-reachable.
-    if (title) {
-      const id = nextTitleId()
-      a11yAttrs = ` aria-labelledby="${id}"`
-      titleEl = `\n  <title id="${id}">${escapeXml(title)}</title>`
-    }
-  } else if (decorative) {
+  const named = hasInteractiveLinks || !decorative
+  if (!hasInteractiveLinks && decorative) {
     a11yAttrs = ' aria-hidden="true"'
-  } else {
+  } else if (!hasInteractiveLinks) {
+    // No root role with interactive links: role="img" or aria-hidden would
+    // hide a real, focusable <a href> descendant from assistive tech while
+    // leaving it Tab-reachable.
     a11yAttrs = ' role="img"'
-    if (title) {
-      const id = nextTitleId()
-      a11yAttrs += ` aria-labelledby="${id}"`
-      titleEl = `\n  <title id="${id}">${escapeXml(title)}</title>`
-    }
+  }
+  if (named && title) {
+    const id = nextTitleId()
+    a11yAttrs += ` aria-labelledby="${id}"`
+    titleEl = `\n  <title id="${id}">${escapeXml(title)}</title>`
+  }
+  if (named && description) {
+    const id = nextDescId()
+    a11yAttrs += ` aria-describedby="${id}"`
+    titleEl += `\n  <desc id="${id}">${escapeXml(description)}</desc>`
   }
 
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" ` +
-    `width="${width}" height="${height}"${a11yAttrs}${styleAttr}>` +
+    f`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" ` +
+    f`width="${width}" height="${height}"${a11yAttrs}${styleAttr}>` +
     titleEl
   )
 }

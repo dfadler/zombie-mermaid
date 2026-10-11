@@ -239,12 +239,13 @@ export async function fetchResponseTimeStats(
       '--jq',
       'tostring',
     ])
-    // The issue author's own follow-up comment isn't a response — find the
-    // first comment from someone else, matching this metric's actual name
-    // (response time, not first-comment time).
-    const first = comments.find(
-      (comment) => comment.user.login !== item.user.login,
-    )
+    // Prefer the first comment from someone other than the issue author; on
+    // this solo-maintained fork the maintainer files and answers its own
+    // issues, so fall back to the first comment of any author (#1530) —
+    // otherwise every sample is dropped and the section renders empty.
+    const first =
+      comments.find((comment) => comment.user.login !== item.user.login) ??
+      comments[0]
     if (!first) continue
     const diffMs =
       new Date(first.created_at).getTime() - new Date(item.created_at).getTime()

@@ -1,20 +1,29 @@
 # Migrating from `beautiful-mermaid`
 
-`zombie-mermaid` is a maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) — see the [README](../README.md#why-this-fork-exists) for why the fork exists. For the public API, this is a drop-in replacement: swap the package name and nothing else needs to change.
+`zombie-mermaid` is a maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) — see the [README](../README.md#why-this-fork-exists) for why the fork exists. The core render functions keep the same signatures, but since 3.0 this is not a pure package-name swap: see [Breaking changes since the fork](#breaking-changes-since-the-fork).
 
 But "drop-in" is about the API, not the pixels. Part of what this fork does is fix Mermaid syntax that `beautiful-mermaid` parsed incorrectly or silently mishandled. If you already have diagrams in production — stored source rendered on the fly, or SVGs generated once and cached — some of them may render differently the moment you upgrade. Nothing here is a bug in the new behavior; each fix below makes the output match what Mermaid itself, and the diagram author, actually intended. But a silent visual change is still worth knowing about before it shows up in a support ticket.
 
 This page covers what's safe to assume unchanged, itemizes the fixes most likely to change existing rendered output, and gives you a cheap way to check your own diagrams before upgrading.
 
+## Breaking changes since the fork
+
+- **Node `>=24`** is required (`engines.node` in `package.json`).
+- **`registerElk()`**: in browsers and bundlers, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
+- **Packages**: the parser and renderers live under `packages/*` (there is no `src/` library layout to deep-import from).
+
+A full 2.x to 5.x upgrade guide is tracked in [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538).
+
 ## What is drop-in
 
 - `renderMermaidSVG`, `renderMermaidSVGAsync`, `renderMermaidASCII`, and `parseMermaid` all have the same signatures as in `beautiful-mermaid`.
+- `registerElk` is new: required in browsers, see above. `renderMermaidSVG` (synchronous) is this fork's primary SVG entry point, and C4, architecture, pie and xychart diagrams and the MCP server are new here, with no `beautiful-mermaid` behavior to match.
 - `RenderOptions` and `AsciiRenderOptions` — colors, fonts, spacing, theming — work the same way. See [api-reference.md](api-reference.md).
 - `mergeEdges` is new to this fork's `RenderOptions` — `beautiful-mermaid` has no equivalent option, so there's no prior behavior it needs to match.
 - Built-in themes, Shiki compatibility, and CSS-variable-driven live theme switching are unchanged.
 - The CLI (`zombie-mermaid` binary) is new to this fork — `beautiful-mermaid` never had one — so there's no prior behavior it needs to preserve.
 
-If your code only calls these functions with diagram source and a `RenderOptions` object, no code changes are required beyond the import/package name.
+If your code only calls these functions with diagram source and a `RenderOptions` object, no code changes are required beyond the import/package name, plus `registerElk()` in browsers and Node `>=24`.
 
 ## Output-affecting fixes
 
@@ -31,9 +40,13 @@ This is the fix most likely to affect a real diagram, because `classDef`/`class`
 - **`style A font-family:...` and `classDef`-supplied `font-family` were parsed but never rendered**, silently ignored in SVG output. Fixed in [#78](https://github.com/dfadler/zombie-mermaid/pull/78).
 - **`classDef default` only applied to nodes that named it explicitly** (`class X default`), instead of styling every node the way Mermaid does it. Fixed in [#206](https://github.com/dfadler/zombie-mermaid/pull/206) (v1.3.0).
 
-Parsing lives in `src/parser.ts` around `graph.classDefs`/`graph.classAssignments`; resolution into inline node styles is in `packages/svg-renderer/src/renderer.ts`.
+Parsing lives in `packages/mermaid-parser/src/flowchart-parser.ts` around `graph.classDefs`/`graph.classAssignments`; resolution into inline node styles is in `packages/svg-renderer/src/renderer.ts`.
 
 **Triggered by:** any diagram using `classDef`, `class`, `:::className`, or `style` — especially one with a trailing semicolon on a `class` line, a `:::className` shorthand before the node's brackets, or a custom fill without an explicit text color.
+
+### SVG coordinates rounded to 2 decimal places
+
+All SVG coordinates are now rounded to 2dp, which changes every SVG output string (byte-for-byte). Rendering is visually identical; only snapshot or string-equality tests on stored SVG need regenerating.
 
 ### Brackets inside quoted labels, and no-space arrows
 
@@ -76,13 +89,21 @@ Fixed in [#217](https://github.com/dfadler/zombie-mermaid/pull/217) (v1.3.0): a 
 - **The left-side "zero or more" crow's-foot marker (`}o`, e.g. `TAG }o--|| PRODUCT`) was silently dropped.** Cardinality strings were normalized by sorting their characters, which conflated `}o` with the unrelated `{o`/`o{` pair and left it unmatched — the relationship rendered with no cardinality marker on that side at all. Fixed in [#51](https://github.com/dfadler/zombie-mermaid/pull/51) (v1.2.0), which also fixed the ASCII/Unicode renderer mirroring the same marker on the wrong side.
 - **The `direction` directive (`direction TB`/`LR`/`BT`/`RL`) was parsed but never applied to layout.** Fixed as part of [#81](https://github.com/dfadler/zombie-mermaid/pull/81) (v1.2.0); a diagram that set `direction` expecting a particular axis, and got the old default instead, now actually lays out on the axis it specified.
 
-**Triggered by:** an ER diagram using the `}o` cardinality marker on the left side of a relationship, or a `direction` directive.
+- **An ER diagram with no `direction` statement laid out left to right; official Mermaid lays it out top to bottom.** The SVG renderer now defaults to top to bottom ([#1250](https://github.com/dfadler/zombie-mermaid/issues/1250)). A diagram that relied on the old horizontal default needs `direction LR` in the source (or the `direction` render option / CLI `--direction LR`). The ASCII renderer has no ER direction and is unchanged.
+
+**Triggered by:** an ER diagram using the `}o` cardinality marker on the left side of a relationship, a `direction` directive, or an ER diagram with no `direction` statement.
 
 ### Nested subgraph direction and cross-boundary edges
 
 A `direction` override on a nested subgraph was silently ignored, and an edge crossing a subgraph boundary either fell back to a naive Z-shaped path or failed to route cleanly. Fixed in [#93](https://github.com/dfadler/zombie-mermaid/pull/93) (v1.2.0) by decomposing a cross-boundary edge into one routed hop per boundary crossed.
 
 **Triggered by:** a flowchart with nested subgraphs where an inner subgraph sets its own `direction`, or an edge that crosses one or more subgraph boundaries.
+
+### ASCII/Unicode: `RL` direction
+
+`beautiful-mermaid` drew `graph RL` (and a state diagram's `direction RL`) exactly like `LR`, source on the left and arrowheads pointing right. `renderMermaidASCII` now mirrors the finished layout, so the source sits on the right and arrowheads point left ([#1231](https://github.com/dfadler/zombie-mermaid/issues/1231)). `BT` was already flipped upstream and still is. A `direction RL` or `BT` written inside a nested subgraph is still drawn as `LR`/`TD` in ASCII, same as upstream ([#1372](https://github.com/dfadler/zombie-mermaid/issues/1372)); the decision record is [here](decisions/ascii-orientation-audit-vs-beautiful-mermaid-1372.md).
+
+**Triggered by:** an ASCII/Unicode-rendered flowchart declared `graph RL` / `flowchart RL`, or a state diagram with `direction RL`.
 
 ### ASCII/Unicode: wide-character box sizing
 
@@ -109,6 +130,8 @@ mkdir mermaid-upgrade-audit && cd mermaid-upgrade-audit
 npm init -y
 npm install beautiful-mermaid zombie-mermaid tsx
 ```
+
+The root `zombie-mermaid` package keeps `elkjs` as a regular dependency, so this script needs no `registerElk()` under Node. Add it if you run the audit in a browser.
 
 ```typescript
 // audit.ts — render every .mmd file in a directory through both packages,

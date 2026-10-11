@@ -27,7 +27,7 @@
  * edge), a shape `buildParallelLanePath`'s offset math cannot express.
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
 import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -220,21 +220,31 @@ describe('opposite-direction edges between one node pair (#629)', () => {
   })
 
   it('never folds a lane-assigned edge into a fan-in/fan-out bundle', () => {
-    // Side-by-side siblings B and C with an edge each way between them, in
-    // a TD graph (the only direction analyzeEdgeBundles bundles at all), so
-    // both a lane group and bundle groups exist over the same edges.
+    // Longest-path layering ranks a reciprocal pair on different levels (as
+    // dagre does), so B and C can no longer sit side by side with a lane
+    // group between them. The invariant still matters where a pair and a
+    // fan-in bundle (B, C --> D) share the same edges' neighbourhood: no
+    // edge of the pair may end up inside a bundle, and none may carry a lane
+    // into one.
     const graph = buildGraph(
       `graph TD
   A --> B
   A --> C
+  B --> D
+  C --> D
   B -- x --> C
   C -- y --> B`,
       'TD',
     )
 
-    expect(edgeBetween(graph, 'B', 'C').parallelLane).toBeDefined()
     const bundled = (graph.bundles ?? []).flatMap((b) => b.edges)
+    expect(bundled.length).toBeGreaterThan(0)
     expect(bundled.filter((e) => e.parallelLane)).toEqual([])
+    const pair = new Set([
+      edgeBetween(graph, 'B', 'C'),
+      edgeBetween(graph, 'C', 'B'),
+    ])
+    expect(bundled.filter((e) => pair.has(e))).toEqual([])
   })
 
   it('leaves a vertically stacked reciprocal pair on the #530 mechanism', () => {
@@ -267,6 +277,6 @@ describe('opposite-direction edges between one node pair (#629)', () => {
     // One declared edge, drawn as one line with a head at each end — this
     // is a different code path from the per-edge lane assignment and must
     // stay untouched.
-    expect(out).toContain(`${LEFT_ARROW}────${RIGHT_ARROW}`)
+    expect(out).toContain(`${LEFT_ARROW}───${RIGHT_ARROW}`)
   })
 })

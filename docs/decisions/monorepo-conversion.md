@@ -1,4 +1,4 @@
-# Monorepo conversion: current status and the remaining publish-strategy decision
+# Monorepo conversion: current status and the implemented publish strategy
 
 This was requested as a pre-implementation proposal synthesizing #416, #620,
 #621, and #622 — written as if the package split were still a future
@@ -17,10 +17,11 @@ and its addenda.
 The full analysis — current package boundaries, a discrepancy in #623
 (closed but its extraction never happened), the live `expanded-shapes.ts`
 back-reference, a #621 recommendation, and the concrete publish-strategy
-proposal and recommendation for #622 — is written up as a comment on
-[#622](https://github.com/dfadler/zombie-mermaid/issues/622#issuecomment-5600285433)
-rather than duplicated here, since #622 is the one part of this epic that's
-still genuinely undecided.
+proposal for #622 — is written up as a comment on
+[#622](https://github.com/dfadler/zombie-mermaid/issues/622#issuecomment-5600285433).
+That comment's recommendation (no package independently offered, `mcp` with
+no standalone name) was the _starting_ proposal; the repo owner's actual
+call, recorded here, narrowed it further.
 
 ## Summary
 
@@ -29,26 +30,32 @@ still genuinely undecided.
   what #623 closed without doing) are all real workspace packages.
 - Workspace tooling (#621) is mostly done; its remaining "use
   `pnpm -r`/`--filter`" scope isn't needed by anything yet.
-- Publish strategy (#622) is partially implemented as of #769: the five
-  internal packages now have genuinely publishable `package.json` shapes
-  (real `exports`/`main`/`module`/`types`, `publishConfig`, no longer
-  `"private"`) and their own independent builds, but the recommended
-  externalize-and-publish flip itself — a populated `fixed` changesets
-  array, thin re-exports under the `@zombie-mermaid/` npm scope, and
-  externalizing them in the umbrella build — is deferred to a follow-up PR.
-  `zombie-mermaid` is still the only package end users install, and its
-  build still bundles all five packages' source directly, exactly as
-  before. The follow-up is gated on a manual, maintainer-only step: linking
-  npm trusted publishing for each of the five new package names
-  (RELEASING.md) — publishing the umbrella before that's done would ship a
-  manifest pointing at dependencies that don't exist on the registry.
+- Publish strategy (#622) is implemented: a populated `fixed` changesets
+  array, thin re-exports under the `@zombie-mermaid/` npm scope, and no
+  standalone `mcp` package name. `zombie-mermaid` is still the only package
+  most consumers install, and the five `@zombie-mermaid/*` packages are
+  real, independently-built runtime dependencies of it — but two of them,
+  `@zombie-mermaid/ascii-renderer` and `@zombie-mermaid/svg-renderer`, are
+  **also** documented, standalone-usable public offerings in their own
+  right (see each package's own README), for anyone who wants just one
+  renderer without the full umbrella. `core`, `mermaid-parser`, and `mcp`
+  stay internal-only: published under the scope (so the names can't be
+  squatted) and version-locked with the rest, but with no standalone
+  support commitment beyond backing the umbrella and the two public
+  renderer packages. `@zombie-mermaid/svg-renderer` ships without a
+  top-level `renderMermaidSVG(text)` front door for now (that dispatch
+  logic still lives in the umbrella) — see #1111 for the follow-up that
+  would add one for parity with `ascii-renderer`.
+- npm trusted publishing is configured for all six package names; all six
+  have been published at least once.
 - Any PR that flips packages from `"private": true` to published touches
   this repo's dependency-manifest/lockfile surface, which is
   security-critical per this org's standing rule — needs a human on the
   merge/approve button.
 
 See the [#622 comment](https://github.com/dfadler/zombie-mermaid/issues/622#issuecomment-5600285433)
-for the full writeup, including open questions for the repo owner.
+for the original analysis and open questions; the summary above reflects
+what was actually decided, which differs from that comment's proposal on
+the "offer any package standalone" question.
 
-Relates to #416, #620, #621, #622 — proposing how to finish the remaining
-piece, not resolving any of them.
+Relates to #416, #620, #621, #622, #1111.

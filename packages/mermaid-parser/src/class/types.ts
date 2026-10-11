@@ -110,6 +110,19 @@ export interface PositionedClassDiagram {
   classes: PositionedClassNode[]
   relationships: PositionedClassRelationship[]
   notes: PositionedClassNote[]
+  /** Namespace frames, drawn behind their member classes */
+  namespaces: PositionedClassNamespace[]
+}
+
+/** A `namespace Name { ... }` block's frame, in diagram coordinates */
+export interface PositionedClassNamespace {
+  name: string
+  /** Ids of the member classes the frame encloses */
+  classIds: string[]
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export interface PositionedClassNote {

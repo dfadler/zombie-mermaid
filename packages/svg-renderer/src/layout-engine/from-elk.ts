@@ -7,7 +7,7 @@
  * up ELK's raw output.
  */
 
-import type { ElkNode } from 'elkjs'
+import type { ElkNode, ElkExtendedEdge } from '@zombie-mermaid/core'
 import type {
   MermaidGraph,
   MermaidSubgraph,
@@ -22,6 +22,8 @@ import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
+import { straightenTinyJogs } from './jog-straightening.ts'
+import { edgesReversedForLayout } from './to-elk.ts'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
@@ -221,6 +223,7 @@ export function elkToPositioned(
   // ELK treats all nodes as rectangles, so we need to clip edge endpoints
   // to the actual shape boundaries (e.g., diamond vertices).
   for (const edge of edges) {
+    edge.points = straightenTinyJogs(edge.points)
     const sourceNode = nodeMap.get(edge.source)
     const targetNode = nodeMap.get(edge.target)
 
@@ -432,9 +435,27 @@ function extractEdgesRecursively(
   offsetY: number,
   margins?: MarginInfo,
 ): void {
-  // First pass: collect all edge segments
+  // First pass: collect all edge segments.
+  //
+  // Under `hierarchyHandling: INCLUDE_CHILDREN` (see to-elk.ts — used when no
+  // subgraph has a direction override), ELK is free to leave a
+  // cross-hierarchy edge in an *ancestor* node's `edges` array while
+  // reporting its sections/labels in the coordinate space of the deeper
+  // container named by the edge's own (untyped-in-elkjs) `container`
+  // property. `collectEdgeSegments`'s tree walk assumes an edge's
+  // coordinates match the array it was found in, which breaks for exactly
+  // this case — the edge lands at the *ancestor's* offset instead of the
+  // declared container's, shifting nested-subgraph edges/labels off their
+  // node boundaries toward the root. Pre-computing every container's
+  // accumulated root offset here lets `collectEdgeSegments` prefer the
+  // edge's declared container when present, falling back to the owning
+  // array's offset (the previous behavior) otherwise — see
+  // zombie-mermaid#1145, ported from a fix by Galen Suen in
+  // lukilabs/beautiful-mermaid#152.
+  const containerOffsets = new Map<string, Point>()
+  collectContainerOffsets(elkNode, containerOffsets, 0, 0)
   const segments = new Map<number, EdgeSegmentGroup>()
-  collectEdgeSegments(elkNode, segments, 0, 0)
+  collectEdgeSegments(elkNode, segments, 0, 0, containerOffsets)
 
   // Track margin-routed edge count for spacing offsets
   let marginEdgeIndex = 0
@@ -509,12 +530,45 @@ function extractEdgesRecursively(
       style: originalEdge.style,
       hasArrowStart: originalEdge.hasArrowStart,
       hasArrowEnd: originalEdge.hasArrowEnd,
-      points: orthogonalPoints,
+      // An edge laid out reversed (see `edgesReversedForLayout`) comes back
+      // running target to source; flip it so it runs source to target again.
+      points: edgesReversedForLayout(graph).has(edgeIndex)
+        ? [...orthogonalPoints].reverse()
+        : orthogonalPoints,
       labelPosition,
       inlineStyle: resolveEdgeStyle(edgeIndex, graph),
       id: originalEdge.id,
       animate: originalEdge.animate,
     })
+  }
+}
+
+/**
+ * Build a map from every ELK node's own id to its accumulated root-relative
+ * offset, by walking the same `elkNode.children` tree `collectEdgeSegments`
+ * walks. Used to resolve a cross-hierarchy edge's declared `container`
+ * (an ELK output property not modeled in elkjs's types) to the offset of
+ * the container ELK actually reported its coordinates in, rather than the
+ * offset of whichever ancestor array the edge object happened to be left
+ * in — see the comment on `extractEdgesRecursively`'s call site.
+ */
+function collectContainerOffsets(
+  elkNode: ElkNode,
+  offsets: Map<string, Point>,
+  offsetX: number,
+  offsetY: number,
+): void {
+  offsets.set(elkNode.id, { x: offsetX, y: offsetY })
+  for (const child of elkNode.children ?? []) {
+    // `x`/`y` are optional in elkjs's types, but ELK always assigns both to
+    // every laid-out child node — the `?? 0` fallback mirrors the same
+    // defensive pattern already used for this walk in `collectEdgeSegments`
+    // below, and is equally unreachable from real ELK output.
+    /* v8 ignore next */
+    const childX = child.x ?? 0
+    /* v8 ignore next */
+    const childY = child.y ?? 0
+    collectContainerOffsets(child, offsets, offsetX + childX, offsetY + childY)
   }
 }
 
@@ -596,6 +650,7 @@ function collectEdgeSegments(
   segments: Map<number, EdgeSegmentGroup>,
   offsetX: number,
   offsetY: number,
+  containerOffsets: Map<string, Point>,
 ): void {
   if (elkNode.edges) {
     for (const elkEdge of elkNode.edges) {
@@ -605,9 +660,35 @@ function collectEdgeSegments(
       if (!parsed) continue
       const { edgeIndex } = parsed
 
+      // Prefer the edge's declared container offset (see
+      // `collectContainerOffsets`'s comment) over the owning array's
+      // offset. `container` and `containerOffsets.get(container)` were
+      // verified (by direct instrumentation against real elk.bundled.js
+      // output, across both flat and multiply-nested subgraphs) to always
+      // be defined in practice — ELK tags every edge with its container,
+      // even at the root, and `collectContainerOffsets` walks the same
+      // tree so every container id it can name is already in the map. The
+      // `container?`/`?? offset{X,Y}` fallbacks below exist only because
+      // `container` is untyped in elkjs and `Map.get` is typed to allow a
+      // miss; kept as defensive narrowing rather than assumed impossible.
+      const container = (elkEdge as ElkExtendedEdge & { container?: string })
+        .container
+      /* v8 ignore next */
+      const containerOffset = container
+        ? containerOffsets.get(container)
+        : undefined
+      /* v8 ignore next */
+      const edgeOffsetX = containerOffset?.x ?? offsetX
+      /* v8 ignore next */
+      const edgeOffsetY = containerOffset?.y ?? offsetY
+
       // Extract points and label position
-      const points = extractEdgePoints(elkEdge, offsetX, offsetY)
-      const labelPosition = extractEdgeLabelPosition(elkEdge, offsetX, offsetY)
+      const points = extractEdgePoints(elkEdge, edgeOffsetX, edgeOffsetY)
+      const labelPosition = extractEdgeLabelPosition(
+        elkEdge,
+        edgeOffsetX,
+        edgeOffsetY,
+      )
 
       // Store segment
       const seg: EdgeSegmentGroup = segments.get(edgeIndex) ?? {
@@ -635,6 +716,7 @@ function collectEdgeSegments(
         segments,
         offsetX + (child.x ?? 0),
         offsetY + (child.y ?? 0),
+        containerOffsets,
       )
     }
   }
@@ -665,7 +747,7 @@ function collectAllSubgraphIds(sg: MermaidSubgraph, out: Set<string>): void {
  * Resolve inline styles for an edge from linkStyles map.
  * Default link style is applied first, then index-specific overrides.
  */
-function resolveEdgeStyle(
+export function resolveEdgeStyle(
   edgeIndex: number,
   graph: MermaidGraph,
 ): Record<string, string> | undefined {

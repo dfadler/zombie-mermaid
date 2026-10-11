@@ -8,14 +8,10 @@
  * everything it imports, never touches `react-dom/server` — mirroring
  * `dashboard-app.tsx`'s split.
  *
- * The "Pick a look" theme-picker section is deliberately **not** rendered
- * here — it stays in `diagram-page.tsx` as a plain sibling of this
- * component's hydration container, for the same reason `dashboard-
- * page.tsx`/`fork-fixes-page.tsx`/`blog-page.tsx`/`index-page.tsx` keep
- * `ThemePickerSection`/`ThemePickerIsland` out of their own hydrated
- * trees: `ThemePickerIsland` imports `react-dom/server` for its own
- * SSR-only purposes. `<NavIsland>`/`<Footer>` are siblings too, same
- * reasoning.
+ * `<NavIsland>`/`<Footer>` render as plain siblings of this component's
+ * hydration container in `diagram-page.tsx` rather than nested in this
+ * file's own tree, for the same reason `dashboard-app.tsx`'s doc comment
+ * gives for its own `<Footer>`/`<Nav>` split.
  *
  * `sourcePanelHtml`/`diagramHtml` are shiki/`renderMermaidSVG` output —
  * plain, pre-rendered strings by the time they reach here (build-time
@@ -33,6 +29,7 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
+import { PRIMITIVES_CLASSES } from './generated/primitives-classes.ts'
 import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
 import { ChevronRightIcon } from './icons.tsx'
 import {
@@ -42,6 +39,7 @@ import {
   accentVar,
   type Accent,
 } from './primitives.tsx'
+import { DetailOutputPanel } from './diagram-detail-app.tsx'
 import {
   FONT_SIZE,
   FONT_WEIGHT,
@@ -375,6 +373,92 @@ function XyChartGlyph() {
   )
 }
 
+function C4Glyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <circle
+        cx="50"
+        cy="12"
+        r="6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="24"
+        y="44"
+        width="52"
+        height="20"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M50 18 V44"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function ArchitectureGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="6"
+        y="24"
+        width="24"
+        height="22"
+        rx="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="70"
+        y="24"
+        width="24"
+        height="22"
+        rx="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="50" cy="35" r="4" fill="currentColor" />
+      <path
+        d="M30 35 H46 M54 35 H70"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function PieGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <circle
+        cx="50"
+        cy="35"
+        r="26"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M50 35 V9 M50 35 L72.5 48 M50 35 L27.5 48"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
 /**
  * Every diagram type's crosslink glyph, keyed by `DiagramTypeProfile.slug`
  * (demo/diagram-pages-data.ts) — the same six slugs `DIAGRAM_TYPE_PROFILES`
@@ -388,6 +472,9 @@ const DIAGRAM_TYPE_GLYPHS: Record<string, () => ReactNode> = {
   class: ClassGlyph,
   er: ErGlyph,
   'xy-chart': XyChartGlyph,
+  c4: C4Glyph,
+  'architecture-beta': ArchitectureGlyph,
+  pie: PieGlyph,
 }
 
 /** One crosslink target: the other type's own display data. */
@@ -446,8 +533,14 @@ export interface GalleryItem {
   title: string
   /** The rendered SVG, via pages.ts's `renderDiagram(sample.source)`. */
   diagramHtml: string
-  /** `../editor#<base64 payload>` for this sample, same shape as the page's own `editorHref`. */
-  editorHref: string
+  /**
+   * This sample's own specific-diagram detail page, e.g.
+   * `flowchart/ci-cd-pipeline.html` (zombie-mermaid#989's part 2) —
+   * relative to this type page's own URL, since both live directly under
+   * `diagrams/`. Was `editorHref` (a link into the shared live editor)
+   * before #989 gave every sample its own real page to link to instead.
+   */
+  href: string
 }
 
 function DetailBreadcrumb({
@@ -469,10 +562,10 @@ function DetailBreadcrumb({
 }
 const GALLERY_VISIBLE_COUNT = 6
 
-/** One `MoreExamplesSection` card: a fixed-aspect thumbnail plus the sample's title, linking to the live editor. */
+/** One `MoreExamplesSection` card: a fixed-aspect thumbnail plus the sample's title, linking to that sample's own detail page. */
 function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
   return (
-    <Card href={item.editorHref} accent={accent} className="gallery-card">
+    <Card href={item.href} accent={accent} className="gallery-card">
       <div
         className="gallery-thumb"
         // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
@@ -486,16 +579,21 @@ function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
 }
 
 /**
- * The "More examples" section (#714/#715 — Direction A of
- * docs/decisions/diagram-gallery-layout.md, drafted on the design canvas
- * at https://claude.ai/code/artifact/d82d53c8-9678-4013-aa72-5859560b211f):
- * the samples-data.ts#713 curated set for this type
- * (`demo/diagram-pages-data.ts`'s `moreExamplesFor`), in a fixed-aspect
- * card grid. Renders nothing when `items` is empty.
+ * The "More examples" section — originally #714/#715's Direction A of
+ * docs/decisions/diagram-gallery-layout.md (drafted on the design canvas
+ * at https://claude.ai/code/artifact/d82d53c8-9678-4013-aa72-5859560b211f),
+ * built around the samples-data.ts#713 *curated* set for this type.
+ * zombie-mermaid#989's part 2 changes the *data* this renders — every real
+ * sample for the type (`demo/diagram-pages-data.ts`'s `allExamplesFor`),
+ * not just the curated subset (`moreExamplesFor`), each linking to its own
+ * new detail page instead of the shared editor — per the decision recorded
+ * in docs/decisions/diagram-tag-search.md's Context section. The *layout*
+ * mechanism below is unchanged and still does its job at the larger count
+ * (up to 24, not 3-14): a fixed-aspect card grid, capped and disclosed via
+ * `<details>`. Renders nothing when `items` is empty.
  *
- * Bounds the section's height regardless of how many samples a type
- * curates (3-14 per docs/decisions/diagram-gallery-scope.md) — the direct
- * fix for #708's ~18,000px pages: everything past
+ * Bounds the section's height regardless of how many samples a type has —
+ * the direct fix for #708's ~18,000px pages: everything past
  * {@link GALLERY_VISIBLE_COUNT} sits inside a native `<details>`
  * disclosure, so revealing the rest needs no client script at all. That
  * matches docs/decisions/no-script-interactivity.md's "demo-site chrome
@@ -504,7 +602,7 @@ function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
  * script would have been. The artboard shows a 6-desktop/4-mobile split;
  * shipping one fixed cap for both keeps this a single static render (no
  * client-side re-splitting), which still fully solves #708's actual bug
- * (unbounded height) — see the design decision doc for that tradeoff.
+ * (unbounded height) regardless of how many samples land in `items`.
  *
  * Each thumbnail (`pageCss`'s `.gallery-thumb`) fixes #708's card-sizing
  * bug directly: the rendered SVG's own `viewBox` letterboxes into the
@@ -513,9 +611,11 @@ function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
  * contained instead of blowing out the card.
  */
 function MoreExamplesSection({
+  label,
   items,
   accent,
 }: {
+  label: string
   items: readonly GalleryItem[]
   accent: Accent
 }) {
@@ -540,9 +640,9 @@ function MoreExamplesSection({
           gap: `${SPACE['4xl']}px`,
         }}
       >
-        <SectionEyebrow accent={accent}>More examples</SectionEyebrow>
+        <SectionEyebrow accent={accent}>Every example</SectionEyebrow>
         <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
-          More real-world examples.
+          {`Every ${label} example, on its own page.`}
         </h2>
         <div className="gallery-grid">
           {visible.map((item) => (
@@ -552,7 +652,7 @@ function MoreExamplesSection({
         {hidden.length > 0 && (
           <details className="gallery-more">
             <summary
-              className="pill"
+              className={PRIMITIVES_CLASSES.pill}
               style={{
                 background: 'transparent',
                 border: `1px solid ${accentVar(accent)}`,
@@ -568,6 +668,78 @@ function MoreExamplesSection({
             </div>
           </details>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The "About" section: a longer, syntax-specific paragraph on this diagram
+ * type (`DiagramTypeProfile.about`), paraphrased from Mermaid's own docs,
+ * plus an outbound link back to the real page it was drawn from
+ * (`docsUrl`). Sits after "Source → render" (the visual hook comes first)
+ * and before "Every example" — deeper explanatory content reads better
+ * once the page has already shown what the notation produces.
+ *
+ * `target="_blank" rel="noopener"` on the outbound link follows this
+ * file's existing convention for an external destination (see index-
+ * page.tsx's theme-showcase footnote link) rather than introducing a new
+ * one; `CTA` (primitives.tsx) has no target/rel props, so this is a plain
+ * styled `<a>`.
+ */
+function AboutSection({
+  aboutHeading,
+  about,
+  docsUrl,
+  accent,
+}: {
+  aboutHeading: string
+  about: string
+  docsUrl: string
+  accent: Accent
+}) {
+  return (
+    <div
+      className="section-px"
+      style={{
+        padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE['4xl']}px`,
+        }}
+      >
+        <SectionEyebrow accent={accent}>About this notation</SectionEyebrow>
+        <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+          {aboutHeading}
+        </h2>
+        <p
+          style={{
+            fontSize: `${FONT_SIZE.bodySm}px`,
+            lineHeight: 1.7,
+            color: colorVar('--text-dim'),
+            maxWidth: '760px',
+          }}
+        >
+          {about}
+        </p>
+        <a
+          href={docsUrl}
+          target="_blank"
+          rel="noopener"
+          style={{
+            color: accentVar(accent),
+            fontSize: `${FONT_SIZE.bodySm}px`,
+            fontWeight: FONT_WEIGHT.bold,
+          }}
+        >
+          Read the full syntax reference in the Mermaid docs →
+        </a>
       </div>
     </div>
   )
@@ -598,9 +770,17 @@ export interface DiagramTypeAppProps {
   sourceFilename: string
   sourcePanelHtml: OrientationVariants
   diagramHtml: OrientationVariants
+  /** `renderMermaidASCII({ colorMode: 'html' })` output for this type's hero example — see `DetailOutputPanel`'s doc comment for why this page reuses that component instead of a second toggle implementation. */
+  asciiHtml: string
   editorHref: string
   galleryItems: readonly GalleryItem[]
   types: readonly DiagramCrosslink[]
+  /** The "About" section's h2 — see `DiagramTypeProfile.aboutHeading`. */
+  aboutHeading: string
+  /** The "About" section's body paragraph — see `DiagramTypeProfile.about`. */
+  about: string
+  /** The "About" section's outbound link target — see `DiagramTypeProfile.docsUrl`. */
+  docsUrl: string
 }
 
 /**
@@ -621,9 +801,13 @@ export function DiagramTypeApp({
   sourceFilename,
   sourcePanelHtml,
   diagramHtml,
+  asciiHtml,
   editorHref,
   galleryItems,
   types,
+  aboutHeading,
+  about,
+  docsUrl,
 }: DiagramTypeAppProps) {
   return (
     <>
@@ -649,7 +833,11 @@ export function DiagramTypeApp({
           <h1
             className="page-h1"
             style={{
-              fontSize: `${FONT_SIZE.display}px`,
+              // font-size lives in diagram-page.tsx's pageCss() instead
+              // of here (not inline) so its mobile breakpoint override
+              // can win via plain cascade order instead of needing
+              // !important to beat this inline style
+              // (zombie-mermaid#1080).
               lineHeight: 1.08,
               letterSpacing: LETTER_SPACING.display,
               maxWidth: '820px',
@@ -713,7 +901,12 @@ export function DiagramTypeApp({
             <Card
               accent={accent}
               className="code-card"
-              style={{ flex: '1 1 0', minWidth: 0 }}
+              // flex lives in diagram-page.tsx's pageCss() `.code-card,
+              // .output-card` rule instead of here (not inline) so the
+              // tablet breakpoint override can win via plain cascade
+              // order instead of needing !important to beat an inline
+              // style (zombie-mermaid#1080).
+              style={{ minWidth: 0 }}
             >
               <div
                 style={{
@@ -789,17 +982,20 @@ export function DiagramTypeApp({
             <Card
               accent={accent}
               tone="glow"
-              className="diagram-frame"
+              className="output-card"
+              // flex lives in diagram-page.tsx's pageCss() `.code-card,
+              // .output-card` rule instead of here (not inline) so the
+              // tablet breakpoint override can win via plain cascade
+              // order instead of needing !important to beat an inline
+              // style (zombie-mermaid#1080).
               style={{
-                flex: '1 1 0',
                 minWidth: 0,
-                padding: `${SPACE['5xl']}px`,
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                flexDirection: 'column',
+                overflow: 'hidden',
               }}
             >
-              <OrientationBlock html={diagramHtml} />
+              <DetailOutputPanel svgHtml={diagramHtml} asciiHtml={asciiHtml} />
             </Card>
           </div>
 
@@ -825,7 +1021,13 @@ export function DiagramTypeApp({
         </div>
       </div>
 
-      <MoreExamplesSection items={galleryItems} accent={accent} />
+      <AboutSection
+        aboutHeading={aboutHeading}
+        about={about}
+        docsUrl={docsUrl}
+        accent={accent}
+      />
+      <MoreExamplesSection label={label} items={galleryItems} accent={accent} />
       {/* ============ CROSS-LINKS ============ */}
       <div
         className="section-px"

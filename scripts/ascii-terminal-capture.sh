@@ -20,6 +20,12 @@
 # script's own process is attached to, which a container can't do without
 # losing the `--select` terminal it's recording (see issue #552).
 #
+# The .cast -> .png step has two rasterisers: agg (the default) and Chromium
+# (ASCII_RASTERISER=chromium, see --help). agg draws the horizontal arm of a
+# box junction (`┼`, `├`) a pixel or more off the plain `─` bar, so an edge
+# crossing a frame wall shows a visible step; Chromium aligns them. Both start
+# from the same real-PTY .cast (see docs/research/ascii-capture-smoothing).
+#
 # Usage: scripts/ascii-terminal-capture.sh <index-module-path> <sample-index-or-file> <output-prefix> [cols] [rows]
 set -euo pipefail
 
@@ -32,6 +38,9 @@ EXIT_DEPENDENCY=4
 # PATH; "docker" runs agg's own maintainer image instead (see --help).
 ASCII_AGG_RUNTIME="${ASCII_AGG_RUNTIME:-local}"
 ASCII_AGG_DOCKER_IMAGE="${ASCII_AGG_DOCKER_IMAGE:-ghcr.io/asciinema/agg:latest}"
+
+# .cast -> .png rasteriser: "agg" (default) or "chromium" (see --help).
+ASCII_RASTERISER="${ASCII_RASTERISER:-agg}"
 
 # Floor for the recording PTY when [cols]/[rows] aren't given. The actual
 # default is max(floor, the size this sample renders at + SIZE_MARGIN), so a
@@ -52,7 +61,21 @@ GUI window) and writes <output-prefix>.cast, .txt, and .png.
 
   <index-module-path>     Path to a src/index.ts exporting renderMermaidASCII
                            - the working tree's own, or a base ref's src/
-                           extracted via `git archive <ref> src | tar -x -C <dir>`.
+                           extracted via
+                           `git archive <ref> src packages tsconfig.json | tar -x -C <dir>`.
+                           renderMermaidASCII's implementation lives entirely
+                           under packages/ascii-renderer/src (imported via
+                           the bare specifier @zombie-mermaid/ascii-renderer,
+                           which itself imports @zombie-mermaid/core and
+                           @zombie-mermaid/mermaid-parser) - archiving only
+                           src/ leaves those bare imports unresolved against
+                           <dir> and silently re-resolves them against this
+                           repo's own packages/ instead (see issue #1141),
+                           making a "before" capture identical to "after"
+                           for any change under packages/*/src. tsconfig.json
+                           must be archived alongside them: this script reads
+                           it (via tsx --tsconfig) to resolve those bare
+                           imports within <dir> instead of this repo root.
   <sample-index-or-file>  Numeric index into the working tree's
                            samples-data.ts, or a path to a .mmd file.
   <output-prefix>         Output path prefix, e.g. /tmp/after -> /tmp/after.cast, .txt, .png
@@ -69,7 +92,8 @@ silently ignores a size flag it doesn't recognize (2.x took --cols/--rows,
 PR screenshots clipped to 80x24 (issue #483). The flag form is detected from
 `asciinema record --help` before recording, so both versions work.
 
-Exit codes: 0 ok; 1 the sample failed to render; 2 usage error; 4 a missing
+Exit codes: 0 ok; 1 the sample failed to render; 2 usage error (including
+<index-module-path>'s tree root missing its own tsconfig.json); 4 a missing
 or misbehaving dependency (asciinema, agg or docker, python3, tsx, or a
 recorded terminal size that doesn't match the requested one).
 
@@ -93,9 +117,20 @@ PATH and a reachable daemon instead of a local `agg` install; python3 and
 the font install are still required either way (the crop step runs
 locally).
 
+Set ASCII_RASTERISER=chromium to rasterize the .cast with headless Chromium
+instead of agg. The recording is still a real PTY, and it is replayed through
+@xterm/headless (real terminal emulation) before drawing, so only the glyph
+rasterizer changes. Use it when the screenshot has to show smooth lines: agg
+draws a box junction's horizontal arm (`┼`, `├`) a pixel or more off the plain
+`─` bar, so an edge crossing a frame wall shows a step (see
+docs/research/ascii-capture-smoothing/README.md). Needs node and the
+repo's installed @xterm/headless and Playwright Chromium instead of agg;
+python3 + pillow are still required for the crop. The PNG is rendered at 2x.
+Not combinable with ASCII_AGG_RUNTIME=docker. Default is agg.
+
 Example (before/after a change, comparing against main):
   mkdir -p tmp-base-ref
-  git archive main src | tar -x -C tmp-base-ref
+  git archive main src packages tsconfig.json | tar -x -C tmp-base-ref
   scripts/ascii-terminal-capture.sh ./src/index.ts 12 /tmp/after
   scripts/ascii-terminal-capture.sh ./tmp-base-ref/src/index.ts 12 /tmp/before
   diff /tmp/before.txt /tmp/after.txt
@@ -144,11 +179,25 @@ local | docker) ;;
   ;;
 esac
 
+case "$ASCII_RASTERISER" in
+agg | chromium) ;;
+*)
+  echo "invalid ASCII_RASTERISER '$ASCII_RASTERISER': must be 'agg' or 'chromium'" >&2
+  exit "$EXIT_USAGE"
+  ;;
+esac
+if [ "$ASCII_RASTERISER" = chromium ] && [ "$ASCII_AGG_RUNTIME" != local ]; then
+  echo "ASCII_RASTERISER=chromium doesn't use agg, so ASCII_AGG_RUNTIME='$ASCII_AGG_RUNTIME' has no effect: unset it" >&2
+  exit "$EXIT_USAGE"
+fi
+
 # agg itself is only required locally in "local" mode; in "docker" mode its
 # rasterization runs inside ASCII_AGG_DOCKER_IMAGE instead, so `docker` (and
 # a reachable daemon) is required in its place.
 agg_deps=(asciinema python3)
-if [ "$ASCII_AGG_RUNTIME" = local ]; then
+if [ "$ASCII_RASTERISER" = chromium ]; then
+  agg_deps+=(node)
+elif [ "$ASCII_AGG_RUNTIME" = local ]; then
   agg_deps+=(agg)
 else
   agg_deps+=(docker)
@@ -159,7 +208,7 @@ for cmd in "${agg_deps[@]}"; do
     exit "$EXIT_DEPENDENCY"
   fi
 done
-if [ "$ASCII_AGG_RUNTIME" = docker ] && ! docker info >/dev/null 2>&1; then
+if [ "$ASCII_RASTERISER" = agg ] && [ "$ASCII_AGG_RUNTIME" = docker ] && ! docker info >/dev/null 2>&1; then
   echo "docker is on PATH but its daemon isn't reachable (ASCII_AGG_RUNTIME=docker needs a running Docker daemon)" >&2
   exit "$EXIT_DEPENDENCY"
 fi
@@ -172,6 +221,28 @@ tsx="$repo_root/node_modules/.bin/tsx"
 if [ ! -x "$tsx" ]; then
   echo "missing dependency: tsx (run 'pnpm install' in $repo_root first)" >&2
   exit "$EXIT_DEPENDENCY"
+fi
+
+# <index-module-path> is always <tree-root>/src/index.ts, whether <tree-root>
+# is this repo root (the working tree) or a scratch dir a base ref was
+# archived into. renderMermaidASCII lives in @zombie-mermaid/ascii-renderer
+# (and that package itself imports @zombie-mermaid/core and
+# @zombie-mermaid/mermaid-parser) - all bare specifiers, resolved by tsx via
+# tsconfig.json's `paths`. Passing --tsconfig here pins that resolution to
+# <tree-root>'s own tsconfig.json instead of tsx's default lookup (nearest
+# tsconfig from cwd), which is always *this* repo root's tsconfig.json
+# regardless of <index-module-path> - so without this flag, a "before"
+# capture against an archived base ref silently re-resolves every
+# @zombie-mermaid/* import back to the current working tree's packages/,
+# making before == after for any change under packages/*/src (see issue
+# #1141). For the working tree case <tree-root> IS the repo root, so this is
+# a no-op there - the flag is only load-bearing for an archived ref.
+index_module_dir="$(cd "$(dirname "$index_module_path")" && pwd)"
+tree_root="$(cd "$index_module_dir/.." && pwd)"
+tsconfig_path="$tree_root/tsconfig.json"
+if [ ! -f "$tsconfig_path" ]; then
+  echo "missing $tsconfig_path: <index-module-path>'s tree root must have its own tsconfig.json alongside src/ - for a base-ref extraction, archive it too (see --help's example)" >&2
+  exit "$EXIT_USAGE"
 fi
 
 # asciinema renamed its size flags between major versions (2.x: --cols N
@@ -196,7 +267,7 @@ fi
 # <index-module-path> the recording will, so a "before" capture against a
 # base ref is sized to that ref's output, not the working tree's.
 measure_status=0
-needed_size="$("$tsx" "$runner" --size "$index_module_path" "$sample_arg")" || measure_status=$?
+needed_size="$("$tsx" --tsconfig "$tsconfig_path" "$runner" --size "$index_module_path" "$sample_arg")" || measure_status=$?
 if [ "$measure_status" -ne 0 ]; then
   echo "could not render $sample_arg via $index_module_path to measure its terminal size (see above)" >&2
   if [ "$measure_status" -eq 2 ]; then
@@ -249,9 +320,9 @@ esac
 # command exits, there's no later terminal session to leave in a hidden-
 # cursor state - nothing depends on restoring it.
 # shellcheck disable=SC2016
-TSX="$tsx" RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
+TSX="$tsx" TSCONFIG_PATH="$tsconfig_path" RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
   asciinema record --overwrite --quiet \
-  -c 'printf "\033[?25l"; "$TSX" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
+  -c 'printf "\033[?25l"; "$TSX" --tsconfig "$TSCONFIG_PATH" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
   "${size_args[@]}" \
   "${out_prefix}.cast"
 
@@ -296,34 +367,47 @@ asciinema convert --overwrite --quiet "${out_prefix}.cast" "${out_prefix}.txt"
 # still passed as-is so a docker run behaves identically to a fully correct
 # local install (verified byte-identical in issue #552).
 agg_font_family="JetBrains Mono,Menlo,SF Mono,Consolas,DejaVu Sans Mono,Liberation Mono"
-if [ "$ASCII_AGG_RUNTIME" = docker ]; then
-  # agg only reads/writes inside the mounted directory, addressed by
-  # basename - resolve out_prefix's directory to an absolute path first
-  # since a relative bind-mount source is rejected by `docker run -v`.
-  out_abs_dir="$(cd "$(dirname "$out_prefix")" && pwd)"
-  out_base="$(basename "$out_prefix")"
-  docker run --rm -v "${out_abs_dir}:/data" "$ASCII_AGG_DOCKER_IMAGE" \
-    --font-family "$agg_font_family" \
-    --theme github-dark \
-    --select 100% \
-    "/data/${out_base}.cast" "/data/${out_base}.gif"
+if [ "$ASCII_RASTERISER" = chromium ]; then
+  # Replays the .cast through @xterm/headless and draws the cell grid in
+  # Chromium; the crop step below reads the resulting PNG.
+  raster_input="${out_prefix}.raw.png"
+  crop_pad=32
+  if ! node "$script_dir/ascii-cast-to-png.mjs" "${out_prefix}.cast" "$raster_input"; then
+    echo "chromium rasterization failed (needs node, the repo's installed @xterm/headless and Playwright Chromium; see --help)" >&2
+    exit "$EXIT_DEPENDENCY"
+  fi
 else
-  agg --quiet \
-    --font-family "$agg_font_family" \
-    --theme github-dark \
-    --select 100% \
-    "${out_prefix}.cast" "${out_prefix}.gif"
+  raster_input="${out_prefix}.gif"
+  crop_pad=16
+  if [ "$ASCII_AGG_RUNTIME" = docker ]; then
+    # agg only reads/writes inside the mounted directory, addressed by
+    # basename - resolve out_prefix's directory to an absolute path first
+    # since a relative bind-mount source is rejected by `docker run -v`.
+    out_abs_dir="$(cd "$(dirname "$out_prefix")" && pwd)"
+    out_base="$(basename "$out_prefix")"
+    docker run --rm -v "${out_abs_dir}:/data" "$ASCII_AGG_DOCKER_IMAGE" \
+      --font-family "$agg_font_family" \
+      --theme github-dark \
+      --select 100% \
+      "/data/${out_base}.cast" "/data/${out_base}.gif"
+  else
+    agg --quiet \
+      --font-family "$agg_font_family" \
+      --theme github-dark \
+      --select 100% \
+      "${out_prefix}.cast" "${out_prefix}.gif"
+  fi
 fi
 
 # The recording's only frame, cropped to content: sample the background from
 # a corner pixel (the theme is dark, not white, so a fixed white-background
 # diff would crop nothing) rather than assuming a particular color.
-python3 - "$out_prefix" <<'PY'
+python3 - "$out_prefix" "$raster_input" "$crop_pad" <<'PY'
 import sys
 from PIL import Image, ImageChops
 
 prefix = sys.argv[1]
-img = Image.open(f"{prefix}.gif")
+img = Image.open(sys.argv[2])
 img.seek(img.n_frames - 1)
 img = img.convert("RGB")
 
@@ -331,7 +415,7 @@ bg_color = img.getpixel((2, 2))
 bg = Image.new("RGB", img.size, bg_color)
 bbox = ImageChops.difference(img, bg).getbbox()
 if bbox:
-    pad = 16
+    pad = int(sys.argv[3])
     bbox = (
         max(0, bbox[0] - pad),
         max(0, bbox[1] - pad),
@@ -342,5 +426,10 @@ if bbox:
 img.save(f"{prefix}.png")
 PY
 
-rm -f "${out_prefix}.gif"
-echo "wrote ${out_prefix}.cast ${out_prefix}.txt ${out_prefix}.png (${cols}x${rows} terminal, agg via ${ASCII_AGG_RUNTIME})"
+rm -f "$raster_input"
+if [ "$ASCII_RASTERISER" = chromium ]; then
+  rasteriser_note="chromium"
+else
+  rasteriser_note="agg via ${ASCII_AGG_RUNTIME}"
+fi
+echo "wrote ${out_prefix}.cast ${out_prefix}.txt ${out_prefix}.png (${cols}x${rows} terminal, ${rasteriser_note})"

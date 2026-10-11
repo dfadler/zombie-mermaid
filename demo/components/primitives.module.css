@@ -1,0 +1,39 @@
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  /* 12 is tokens.tsx's SPACE.md; 22 is not on that scale (no other
+     measurement in the design canvas uses it), so it stays a literal. */
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.section-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+/*
+ * No `.mono` rule here (zombie-mermaid#969): unlike `.card`/`.pill`/
+ * `.section-eyebrow`, `.mono` was never a primitives.tsx-private class —
+ * two dozen unrelated files set `className="mono"` directly, and
+ * `packages/core/src/theme.ts`/`packages/svg-renderer` emit raw `class=
+ * "mono"` inside generated SVG markup that this build has no relationship
+ * to at all. A page-wide, cross-cutting class like that can never finish
+ * "every consumer migrated to the classes map" — the SVG side can't import
+ * one — so it isn't a candidate for this file's hashing and was moved to
+ * `tokens.tsx`'s `designBaseCss()` (see that function, right next to
+ * `.display`, which has the same shape) rather than staying in a
+ * `.module.css` that's now hashed.
+ */

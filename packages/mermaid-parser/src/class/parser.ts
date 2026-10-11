@@ -478,19 +478,14 @@ function parseMember(
     }
   }
 
-  // It's an attribute: [Type] name or name Type
-  // Common patterns: "String name", "+int age", "name"
-  const parts = parseGenericTypes(rest).split(/\s+/)
-  let name: string
-  let type: string | undefined
-
-  if (parts.length >= 2) {
-    // "Type name" pattern
-    type = parts[0]
-    name = parts.slice(1).join(' ')
-  } else {
-    name = parts[0] ?? rest
-  }
+  // It's an attribute. Mermaid renders attribute text verbatim (its
+  // ClassMember keeps everything after the visibility marker as one id and
+  // only splits methods into name/params/return type), so `String name`,
+  // `name Type` and `name: Type` all display as written. Splitting two
+  // tokens into Type + name guessed the order and flipped `-data Map` into
+  // `- Map: data` (#1265).
+  const name = parseGenericTypes(rest)
+  const type: string | undefined = undefined
 
   const isStatic = name.endsWith('$')
   const isAbstract = name.endsWith('*')

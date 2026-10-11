@@ -17,7 +17,10 @@ import type {
 import { EMPTY_STYLE } from './types.ts'
 import { mkCanvas, mkRoleCanvas } from './canvas.ts'
 import { createGrid } from './grid-occupancy.ts'
-import { stripFormattingTags } from '@zombie-mermaid/core'
+import {
+  isEdgeWithinOwnCluster,
+  stripFormattingTags,
+} from '@zombie-mermaid/core'
 
 /**
  * Convert a parsed MermaidGraph into an AsciiGraph ready for grid layout.
@@ -86,9 +89,23 @@ export function convertToAsciiGraph(
 
   // Build edges with resolved node references
   const edges: AsciiEdge[] = []
+  // Edges addressed from a subgraph id, resolved to AsciiSubgraph objects
+  // below once those exist — see AsciiEdge.clusterSource.
+  const clusterSourced = new Map<AsciiEdge, MermaidSubgraph>()
+  const clusterTargeted = new Map<AsciiEdge, MermaidSubgraph>()
   for (const mEdge of parsed.edges) {
     let sourceId = mEdge.source
     let targetId = mEdge.target
+    let clusterMSg: MermaidSubgraph | undefined
+    let clusterTargetMSg: MermaidSubgraph | undefined
+
+    // An edge between a node and a subgraph that contains it (`B --> Sub`
+    // with B inside Sub, or `Sub --> B`) has no frame-crossing to draw, and
+    // real mermaid.js draws no line for it either (a zero-length path, see
+    // core's cluster-edges.ts). The redirect below would turn it into an
+    // ordinary back-edge to the cluster's entry member and the router would
+    // run it along the frame's wall (#1310), so it is dropped.
+    if (isEdgeWithinOwnCluster(mEdge, subgraphById)) continue
 
     if (subgraphIds.has(sourceId)) {
       const mSg = subgraphById.get(sourceId)
@@ -96,6 +113,7 @@ export function convertToAsciiGraph(
         ? resolveSubgraphEndpoint(mSg, parsed, 'exit')
         : undefined
       if (resolved) sourceId = resolved
+      clusterMSg = resolved ? mSg : undefined
     }
     if (subgraphIds.has(targetId)) {
       const mSg = subgraphById.get(targetId)
@@ -103,13 +121,14 @@ export function convertToAsciiGraph(
         ? resolveSubgraphEndpoint(mSg, parsed, 'entry')
         : undefined
       if (resolved) targetId = resolved
+      clusterTargetMSg = resolved ? mSg : undefined
     }
 
     const from = nodeMap.get(sourceId)
     const to = nodeMap.get(targetId)
     if (!from || !to) continue
 
-    edges.push({
+    const asciiEdge: AsciiEdge = {
       from,
       to,
       text: mEdge.label ? stripFormattingTags(mEdge.label) : '',
@@ -124,7 +143,10 @@ export function convertToAsciiGraph(
         ? { startMarker: mEdge.startMarker }
         : {}),
       ...(mEdge.endMarker !== undefined ? { endMarker: mEdge.endMarker } : {}),
-    })
+    }
+    edges.push(asciiEdge)
+    if (clusterMSg) clusterSourced.set(asciiEdge, clusterMSg)
+    if (clusterTargetMSg) clusterTargeted.set(asciiEdge, clusterTargetMSg)
   }
 
   // Convert subgraphs recursively
@@ -138,6 +160,19 @@ export function convertToAsciiGraph(
   // The TS parser adds referenced nodes to all subgraphs they appear in,
   // which causes incorrect bounding boxes when nodes span subgraph boundaries.
   deduplicateSubgraphNodes(parsed.subgraphs, subgraphs, nodeMap)
+
+  if (clusterSourced.size > 0 || clusterTargeted.size > 0) {
+    const sgMap = new Map<MermaidSubgraph, AsciiSubgraph>()
+    buildSgMap(parsed.subgraphs, subgraphs, sgMap)
+    for (const [edge, mSg] of clusterSourced) {
+      const sg = sgMap.get(mSg)
+      if (sg) edge.clusterSource = sg
+    }
+    for (const [edge, mSg] of clusterTargeted) {
+      const sg = sgMap.get(mSg)
+      if (sg) edge.clusterTarget = sg
+    }
+  }
 
   /*
    * `classDef default` is Mermaid's implicit base style for every node, not
@@ -286,7 +321,9 @@ function convertSubgraph(
   // normalizing it in that case so it falls through to the parent's
   // direction like everything else.
   let normalizedDirection: 'LR' | 'TD' | undefined
+  let rawDirection: AsciiSubgraph['rawDirection']
   if (mSg.direction && subgraphDirectionIsHonored(mSg, parsed)) {
+    rawDirection = mSg.direction === 'TB' ? 'TD' : mSg.direction
     normalizedDirection =
       mSg.direction === 'LR' || mSg.direction === 'RL' ? 'LR' : 'TD'
   }
@@ -301,6 +338,7 @@ function convertSubgraph(
     maxX: 0,
     maxY: 0,
     direction: normalizedDirection,
+    rawDirection,
   }
 
   // Resolve node references

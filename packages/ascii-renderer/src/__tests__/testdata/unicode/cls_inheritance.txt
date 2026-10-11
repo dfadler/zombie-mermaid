@@ -1,0 +1,20 @@
+classDiagram
+  Animal <|-- Dog
+  Animal : +String name
+  Dog : +bark() void
+---
+┌───────────────┐     
+│ Animal        │     
+├───────────────┤     
+│ + String name │     
+└───────────────┘     
+        △             
+        └┐            
+         │            
+┌────────────────┐    
+│ Dog            │    
+├────────────────┤    
+│ + bark(): void │    
+└────────────────┘    
+                      
+                      

@@ -120,6 +120,13 @@ export function heuristic(a: GridCoord, b: GridCoord): number {
 // A* pathfinding
 // ============================================================================
 
+/**
+ * Per-bend tie-break cost for `preferStraight` searches. Far below one step
+ * (a path would need ~1000 bends to outweigh a single extra cell), so it
+ * only chooses between routes of equal length.
+ */
+const BEND_EPSILON = 0.001
+
 /** 4-directional movement (no diagonals in grid pathfinding). */
 const MOVE_DIRS: GridCoord[] = [
   { x: 1, y: 0 },
@@ -176,6 +183,14 @@ export function createPathBudget(
 }
 
 /**
+ * Injective integer key for a cell, valid for |coord| < 2^20 (grids here are
+ * tens to hundreds of cells wide; `MAX_ITERATIONS` bounds the search anyway).
+ */
+function searchKey(c: GridCoord): number {
+  return (c.x + 1_048_576) * 2_097_152 + (c.y + 1_048_576)
+}
+
+/**
  * Find a path from `from` to `to` on the grid using A*.
  * Returns the path as an array of GridCoords, or null if no path exists.
  *
@@ -189,19 +204,36 @@ export function getPath(
   from: GridCoord,
   to: GridCoord,
   budget?: PathBudget,
+  preferStraight = false,
 ): GridCoord[] | null {
   if (budget && budget.remaining <= 0) {
+    return null
+  }
+
+  // A sealed target (every neighbour blocked, #1474) is unreachable, but the
+  // search would still flood the open quadrant up to MAX_ITERATIONS before
+  // finding that out. `from` counts as an entry: it may sit next to `to`.
+  if (
+    !gridCoordEquals(from, to) &&
+    !MOVE_DIRS.some((dir) => {
+      const n: GridCoord = { x: to.x + dir.x, y: to.y + dir.y }
+      return isFree(grid, n) || gridCoordEquals(n, from)
+    })
+  ) {
     return null
   }
 
   const pq = new MinHeap()
   pq.push({ coord: from, priority: 0 })
 
-  const costSoFar = new Map<string, number>()
-  costSoFar.set(gridKey(from), 0)
+  // Numeric keys: the A* maps are the hottest allocation site in the ASCII
+  // renderer, and `x,y` string keys cost a template-literal allocation per
+  // lookup. Same cell identity as gridKey, just cheaper to hash.
+  const costSoFar = new Map<number, number>()
+  costSoFar.set(searchKey(from), 0)
 
-  const cameFrom = new Map<string, GridCoord | null>()
-  cameFrom.set(gridKey(from), null)
+  const cameFrom = new Map<number, GridCoord | null>()
+  cameFrom.set(searchKey(from), null)
 
   let iterations = 0
   while (pq.length > 0) {
@@ -220,10 +252,10 @@ export function getPath(
       const path: GridCoord[] = []
       let c: GridCoord | null = current
       while (c !== null) {
-        path.unshift(c)
-        c = cameFrom.get(gridKey(c)) ?? null
+        path.push(c)
+        c = cameFrom.get(searchKey(c)) ?? null
       }
-      return path
+      return path.reverse()
     }
 
     // Every coord ever pushed onto `pq` has its costSoFar entry set
@@ -233,7 +265,7 @@ export function getPath(
     // cost. That invariant lives in this function's control flow, not in
     // the Map's type, so it's checked explicitly rather than trusted via
     // `!`.
-    const currentCost = costSoFar.get(gridKey(current))
+    const currentCost = costSoFar.get(searchKey(current))
     if (currentCost === undefined) {
       /* v8 ignore next */
       throw new Error(
@@ -249,8 +281,14 @@ export function getPath(
         continue
       }
 
-      const newCost = currentCost + 1
-      const nextKey = gridKey(next)
+      // With `preferStraight`, a bend costs a hair more than a straight
+      // step, so among equally short routes the one with fewest turns wins
+      // instead of whichever a heap tie surfaces (a staircase).
+      const prev = preferStraight ? cameFrom.get(searchKey(current)) : null
+      const bends =
+        prev && (current.x - prev.x !== dir.x || current.y - prev.y !== dir.y)
+      const newCost = currentCost + 1 + (bends ? BEND_EPSILON : 0)
+      const nextKey = searchKey(next)
       const existingCost = costSoFar.get(nextKey)
 
       if (existingCost === undefined || newCost < existingCost) {
@@ -443,6 +481,12 @@ export function routeEdge(
   }
   const path =
     tryDirectPath(graph, from, to, dir) ??
-    getPath(graph.grid, from, to, graph.pathBudget)
+    getPath(
+      graph.grid,
+      from,
+      to,
+      graph.pathBudget,
+      graph.preferStraightRoutes === true,
+    )
   return path ? mergePath(path) : null
 }

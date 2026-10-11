@@ -64,7 +64,7 @@ describe('EditorPage', () => {
   it('renders a complete document with the expected head metadata', () => {
     const html = render()
     expect(html.startsWith('<!DOCTYPE html>')).toBe(true)
-    expect(html).toContain('<title>zombie-mermaid — Live Editor</title>')
+    expect(html).toContain('<title>Zombie Mermaid — Live Editor</title>')
     // SiteHead's own favicon plus the two links it doesn't cover (see the
     // component's header comment) — both must survive, since dropping
     // either would be a real regression (Windows/old-browser favicon
@@ -77,6 +77,23 @@ describe('EditorPage', () => {
   it('inlines the given CSS into a <style> element', () => {
     const html = render({}, '.topbar { display: flex; }')
     expect(html).toContain('.topbar { display: flex; }')
+  })
+
+  // Regression coverage for zombie-mermaid#969: this page can't emit
+  // tokens.tsx's designBaseCss() (see scopedDesignTokensCss()'s doc
+  // comment on why — it would collide with the editor tool's own `:root`
+  // theme variables), so before #969 it relied on primitivesCss()'s old
+  // `body .mono` rule for EditorHero's breadcrumb font, purely because
+  // that rule happened to select on bare `body`. Once #969 moved `.mono`
+  // out of primitives.module.css for good, this page silently lost its
+  // only source for it — caught by a before/after screenshot showing the
+  // breadcrumb fall back to the body font. scopedDesignTokensCss() now
+  // carries its own `.mono` rule; this locks that in.
+  it('gives .mono its own font-family rule, scoped like designBaseCss() would', () => {
+    const html = render()
+    expect(html).toContain(
+      '.zm-shell .mono {\n  font-family: var(--font-mono);\n}',
+    )
   })
 
   it('preserves each inlined script byte-for-byte via dangerouslySetInnerHTML', () => {
@@ -151,10 +168,22 @@ describe('EditorPage', () => {
     const shellStart = html.indexOf('<div class="editor-tool-shell">')
     expect(shellStart).toBeGreaterThan(-1)
     const shell = html.slice(shellStart)
+    // `#editor-root` carries `style="display:contents"` so it contributes
+    // no box to `.editor-tool-shell`'s flex layout -- `.main`'s `flex: 1`
+    // only applies to a flex container's *direct* children, so without
+    // this a plain `display:block` wrapper here would size to its own
+    // content instead of stretching (see editor-app-island.tsx's doc
+    // comment).
     expect(shell).toMatch(
-      /^<div class="editor-tool-shell"><div id="editor-root">(?:<!--.*?-->)?<div class="topbar">/,
+      /^<div class="editor-tool-shell"><div id="editor-root" style="display:contents">(?:<!--.*?-->)?<div class="topbar">/,
     )
-    expect(shell).toMatch(/<div class="main"><div class="panel-left"/)
+    // data-active-tab (added for the mobile single-panel layout -- see
+    // editor-app.tsx's EditorChromeMarkup doc comment) lands on `.main`
+    // itself, not a wrapper -- `.panel-left` is still `.main`'s immediate
+    // child with nothing in between.
+    expect(shell).toMatch(
+      /<div class="main" data-active-tab="code"><div class="panel-left"/,
+    )
     expect(shell).toMatch(
       /<div class="resize-handle" id="resize-handle"><\/div><div class="panel-right"/,
     )
@@ -195,7 +224,7 @@ describe('EditorPage', () => {
     // renderToString's hydration-boundary comments, which
     // renderToStaticMarkup never emits.
     const page = render()
-    const rootMarker = '<div id="editor-root">'
+    const rootMarker = '<div id="editor-root" style="display:contents">'
     const rootStart = page.indexOf(rootMarker) + rootMarker.length
     const rootEnd = page.indexOf(
       '<script type="application/json" id="editor-props">',

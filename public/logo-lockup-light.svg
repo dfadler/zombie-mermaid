@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 322 48" width="322" height="48" role="img" aria-label="ZombieMermaid">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&amp;family=Plus+Jakarta+Sans:wght@700&amp;display=swap');
+  </style>
+  <svg x="0" y="0" width="48" height="48" viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="2" width="9" height="9" rx="3" stroke="#38e0d0" stroke-width="1.6"/>
+    <rect x="13" y="2" width="9" height="9" rx="3" stroke="#a374e8" stroke-width="1.6"/>
+    <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" stroke="#ff5fa8" stroke-width="1.6" fill="none"/>
+  </svg>
+  <text x="64" y="36" font-size="34" font-weight="700" style="font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif; letter-spacing:-0.01em" fill="#0a0d16">ZombieMermaid</text>
+</svg>
