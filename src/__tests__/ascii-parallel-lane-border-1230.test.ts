@@ -33,10 +33,9 @@ function boxRows(lines: string[]): string[] {
 describe('parallel lanes keep the target border clean (#1230)', () => {
   // Two labeled edges now draw side by side instead (#1455), so the lanes
   // appear from three.
-  // Three lanes: the third has its own row and arrowhead (#1743). Four still
-  // merge at the target.
+  // Each lane has its own row and arrowhead (#1743), up to four lanes.
   for (const count of [3, 4]) {
-    const heads = count === 3 ? 2 : 1
+    const heads = count - 1
     it(`TD, ${count} lanes: later lanes enter the target's right face with their own arrowhead`, () => {
       const lines = render(lanes('TD', count), false)
       const rows = boxRows(lines)
@@ -56,11 +55,11 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
     })
   }
 
-  for (const count of [3]) {
+  for (const count of [3, 4]) {
     it(`LR, ${count} lanes: later lanes run under the nodes and enter the target's bottom face with their own arrowhead`, () => {
       const lines = render(lanes('LR', count), false)
       const text = lines.join('\n')
-      expect(text.match(/▲/g)).toHaveLength(1)
+      expect(text.match(/▲/g)).toHaveLength(count - 1)
       // The target's left border stays a plain box edge.
       const row = lines.find((l) => l.includes('│ T │'))!
       const col = row.indexOf('│ T │')

@@ -11,7 +11,7 @@ import type { AsciiSubgraph } from '../types.ts'
 
 const build = (lanes: number) => {
   // Long labels keep the lanes (short ones are drawn side by side instead).
-  const edges = ['first', 'second', 'third', 'fourth']
+  const edges = ['first', 'second', 'third', 'fourth', 'fifth']
     .slice(0, lanes)
     .map((label) => `  A -->|${label}| B`)
     .join('\n')
@@ -36,8 +36,23 @@ describe('clusterLaneEndShift, plain third lane (#1743)', () => {
     expect(clusterLaneEndShift(graph, last)).toBe(1)
   })
 
-  it('does not shift when there are four lanes', () => {
-    const { graph, last } = build(4)
+  it('shifts the four lanes by -1, 0, +1 (index 1 to 3)', () => {
+    const { graph } = build(4)
+    const shifts = graph.edges
+      .filter((e) => e.parallelLane && e.parallelLane.index > 0)
+      .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
+      .map((e) => clusterLaneEndShift(graph, e))
+    expect(shifts).toEqual([-1, 0, 1])
+  })
+
+  it('does not shift five lanes', () => {
+    const { graph, last } = build(5)
+    expect(clusterLaneEndShift(graph, last)).toBe(0)
+  })
+
+  it('does not shift lanes with another source (a shared fan-in)', () => {
+    const { graph, last } = build(3)
+    last.from = graph.edges[0]!.from
     expect(clusterLaneEndShift(graph, last)).toBe(0)
   })
 
