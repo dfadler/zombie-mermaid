@@ -14,6 +14,7 @@ import {
 import { renderMermaidSVG } from '../index.ts'
 import type { RenderOptions, DiagramColors } from '@zombie-mermaid/core'
 import { THEMES } from '@zombie-mermaid/core'
+import { withSourceLine } from './diagnostics.ts'
 import { buildHtmlViewer } from './html-viewer.ts'
 import { renderPng } from './png.ts'
 import type { RenderArgs } from './parse-args.ts'
@@ -116,11 +117,23 @@ export async function runRender(
     text = await readStdin()
   }
 
-  text = text.trim()
-  if (text.length === 0) {
+  if (text.trim().length === 0) {
     throw new Error('Empty input — provide a Mermaid diagram via file or stdin')
   }
 
+  try {
+    await renderText(args, text, out, err)
+  } catch (e) {
+    throw withSourceLine(e, text)
+  }
+}
+
+async function renderText(
+  args: RenderArgs,
+  text: string,
+  out: Writable,
+  err: Writable,
+): Promise<void> {
   let themeColors: DiagramColors | undefined
 
   if (args.theme !== undefined) {
@@ -385,7 +398,7 @@ async function writeOutputFile(
   }
 }
 
-async function readStdin(): Promise<string> {
+export async function readStdin(): Promise<string> {
   const chunks: string[] = []
   const stdin = process.stdin
   stdin.setEncoding('utf-8')

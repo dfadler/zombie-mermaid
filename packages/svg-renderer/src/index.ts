@@ -241,6 +241,19 @@ function scopeSvgIds(svg: string): string {
     )
 }
 
+/**
+ * Parse `text` with the same detection and parser the renderer would use, but
+ * lay out and draw nothing. Throws the parser's error (usually `Line N: ...`);
+ * returns normally when the source parses.
+ */
+export function validateMermaid(text: string): void {
+  const decoded = decodeXML(text)
+  diagramRegistry[detectDiagramType(decoded)].parse(
+    splitStatements(decoded),
+    decoded,
+  )
+}
+
 /** The renderer proper — `renderMermaidSVG` minus the optional `resolveColors` post-pass. */
 function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
