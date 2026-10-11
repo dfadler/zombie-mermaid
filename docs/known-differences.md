@@ -52,10 +52,6 @@ differ even when both assign the same layers.
 
 ## Known limitations (not intentional, not yet fixed)
 
-- **Edge trunk beside a subgraph border.** In the "System Architecture" sample, the
-  three edges leaving `API Gateway` share a vertical trunk at x=356, 2px outside the
-  right border of the Client Layer box (x=354), so the connector and the border
-  visually run together.
 - **Late sink layer when edges are labeled.** In the "Decision Tree" sample,
   `Go outside` (`C`) lands one layer below `Have umbrella?` (`B`) in our SVG, with
   the edge labels present; mermaid.js puts them in the same layer. Removing the
