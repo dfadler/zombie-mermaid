@@ -13,8 +13,9 @@ describe('xychart ASCII – narrow-range value-axis labels', () => {
     const result = render(`xychart-beta
       x-axis [A, B, C, D]
       bar [100, 102, 99, 101]`)
-    expect(result).toContain('99.5')
-    expect(result).toContain('100.5')
+    // Mermaid-matching ticks (d3 ticks(…, 10)): 0.2 steps over 99..102
+    expect(result).toContain('99.4')
+    expect(result).toContain('100.4')
   })
 
   it('renders a single tick label for a zero-width explicit range', () => {
