@@ -345,6 +345,71 @@ function parallelGroupKey(edge: AsciiEdge): string {
 }
 
 /**
+ * #1716: three or more side-by-side strokes sit a spacing (2) apart, so a label
+ * on its own stroke fits between its neighbours only up to 3 cells; only the
+ * last (rightmost / bottom-most) label can move beside its stroke into free
+ * space. A group with a wider label elsewhere keeps the side lanes.
+ */
+function labelsFitBesideStrokes(group: readonly AsciiEdge[]): boolean {
+  if (group.length < 3) return true
+  return group.every(
+    (e, i) =>
+      i === group.length - 1 ||
+      splitLines(e.text).every((line) => displayWidth(line) <= 3),
+  )
+}
+
+/** A group of 3+ parallel edges `spreadsOnFaces` can draw side by side. */
+export interface SpreadCandidate {
+  vertical: boolean
+  strokes: number
+  /** Label lines across the group (rows the gap must hold when vertical). */
+  rows: number
+  /** The node holding this entry is below its partner. */
+  below: boolean
+}
+
+/**
+ * Per node, the groups of 3+ parallel edges to a node in the same grid column
+ * or row that `spreadsOnFaces` can draw side by side, once `setColumnWidth`
+ * (grid.ts) makes room for them (#1716). One pass over the edges, so layout
+ * stays linear; every node needs its grid coordinate.
+ */
+export function spreadCandidates(
+  graph: AsciiGraph,
+): Map<AsciiNode, SpreadCandidate[]> {
+  const byPair = new Map<AsciiNode, Map<AsciiNode, AsciiEdge[]>>()
+  for (const e of graph.edges) {
+    if (e.from === e.to || e.clusterSource || e.clusterTarget) continue
+    const a = requireGridCoord(e.from)
+    const b = requireGridCoord(e.to)
+    if (a.x !== b.x && a.y !== b.y) continue
+    const targets = byPair.get(e.from) ?? new Map<AsciiNode, AsciiEdge[]>()
+    byPair.set(e.from, targets)
+    targets.set(e.to, [...(targets.get(e.to) ?? []), e])
+  }
+  const out = new Map<AsciiNode, SpreadCandidate[]>()
+  for (const [from, targets] of byPair) {
+    for (const [to, group] of targets) {
+      if (group.length < 3 || !labelsFitBesideStrokes(group)) continue
+      const a = requireGridCoord(from)
+      const b = requireGridCoord(to)
+      const entry = {
+        vertical: a.x === b.x,
+        strokes: group.length,
+        rows: group.reduce(
+          (n, e) => n + (e.text ? splitLines(e.text).length : 0),
+          0,
+        ),
+      }
+      out.set(from, [...(out.get(from) ?? []), { ...entry, below: a.y > b.y }])
+      out.set(to, [...(out.get(to) ?? []), { ...entry, below: b.y > a.y }])
+    }
+  }
+  return out
+}
+
+/**
  * Whether `group` (edges between one ordered pair of nodes) can run side by
  * side on the two nodes' facing faces (#1394) instead of taking side lanes:
  * unlabeled edges between nodes stacked in one grid column (or side by side in
@@ -364,6 +429,7 @@ function spreadsOnFaces(
     return false
   }
   if (group.some((e) => e.clusterSource || e.clusterTarget)) return false
+  if (!labelsFitBesideStrokes(group)) return false
   // Defensive: a diagonal pair has a second parent/child toward its partner,
   // which the edge check below already refuses; kept so the axis is never
   // guessed for a pair on neither a shared row nor a shared column.
