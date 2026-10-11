@@ -1,5 +1,7 @@
 # Spike: real GHCR pull time for a chromium-only Playwright image
 
+Status: **spike, answered (low-priority follow-up to #729/#733).**
+
 Answers [#737](https://github.com/dfadler/zombie-mermaid/issues/737), a
 speculative, explicitly low-priority follow-up to
 [#729](https://github.com/dfadler/zombie-mermaid/issues/729)/[#733](https://github.com/dfadler/zombie-mermaid/pull/733)'s

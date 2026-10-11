@@ -1,5 +1,7 @@
 # Research: migrating the visual-regression CI job into a pinned Playwright container
 
+Outcome (added later): **shipped** as PR [#651](https://github.com/dfadler/zombie-mermaid/pull/651); the Status line below is the pre-merge state, kept as history.
+
 Status: **pre-flight evidence gathered; the real experiment is the first CI run of the
 changed job.** Written for
 [#549](https://github.com/dfadler/zombie-mermaid/issues/549), part of the
@@ -166,7 +168,7 @@ the three steps that used to provision Chromium onto a bare runner.
 Unchanged, deliberately: the 4-way `--shard` matrix and `fail-fast: false`, the
 `persist-credentials: false` checkout, the failure-artifact upload, the
 `GITHUB_STEP_SUMMARY` write-up, the fork guard, `runs-on: ubuntu-latest`, and
-`pnpm`/Node 22 setup.
+`pnpm`/Node 22 setup (Node 22 as of this 2026-09 migration; history, not current).
 
 Changed:
 

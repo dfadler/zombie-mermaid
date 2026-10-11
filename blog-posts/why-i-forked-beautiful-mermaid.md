@@ -106,7 +106,7 @@ None of this needed to break anything for existing users — the public API
 (`renderMermaidSVG`, `renderMermaidASCII`, `parseMermaid`, `RenderOptions`)
 has stayed a drop-in replacement for beautiful-mermaid's the whole way, with
 exactly one deliberate, well-documented exception so far (the
-[2.0.0 click-handler change](/blog/why-v2-breaks-click-handlers.html)).
+[2.0.0 click-handler change](why-v2-breaks-click-handlers.html)).
 
 ## How I intend to keep maintaining it
 

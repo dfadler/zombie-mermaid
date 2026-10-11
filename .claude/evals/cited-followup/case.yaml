@@ -1,0 +1,25 @@
+schema_version: '1.1'
+name: cited-followup
+description: A follow-up that already cites a filed issue is not flagged, and a non-deferral "later" is tolerated.
+tags: [quick]
+runs: 3
+execution:
+  allowed_tools: [Skill]
+  prompt: |
+    Close out this PR body before I open the PR:
+
+    ---
+    Fixes label overlap in the class diagram renderer.
+    Follow-up: edge-label collision on dense graphs is tracked in #1712.
+    See the notes later in this description for the benchmark table.
+    Closes #1705
+    ---
+graders:
+  - name: no_issue_to_file
+    type: regex
+    pattern: 'gh issue create'
+    match: not_contains
+  - name: reports_follow_ups_ok
+    type: regex
+    pattern: '#1712|filed|n/a'
+    flags: i
