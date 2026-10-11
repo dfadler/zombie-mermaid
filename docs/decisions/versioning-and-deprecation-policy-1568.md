@@ -27,8 +27,10 @@ Premise check (the issue was written from a report, not from code):
   re-decided here.
 - **Unaffected packages do bump.** Intended: the `fixed` group forces one
   version across all six. The cost is noise, not a bug.
-- No upgrade guide exists yet ([#1538](https://github.com/dfadler/zombie-mermaid/issues/1538)
-  is open), so deprecation messages have nothing to point to until it lands.
+- The upgrade guide exists: [`docs/guides/upgrading-2x-to-5x.md`](../guides/upgrading-2x-to-5x.md)
+  ([#1538](https://github.com/dfadler/zombie-mermaid/issues/1538), shipped in
+  [#1657](https://github.com/dfadler/zombie-mermaid/pull/1657)). It covers 2.x to 5.x only,
+  so a future major needs its own guide before it can be deprecated against.
 
 ## Decision (proposed)
 
@@ -78,14 +80,14 @@ major is published, run `npm deprecate` on the previous major's range for
 all six packages, with a message pointing at the upgrade guide:
 
 ```bash
-npm deprecate "zombie-mermaid@<5" "Upgrade to 5.x: https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/upgrading.md"
+npm deprecate "zombie-mermaid@<5" "Upgrade to 5.x: https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/upgrading-2x-to-5x.md"
 ```
 
 Applied per package name (six). Deprecation is reversible and does not
 break installs, so it does not need a support window beyond the above.
 The release checklist in `docs/RELEASING.md` gains this step, **done by a
 maintainer by hand** (publish uses OIDC with no token in CI, so CI cannot
-run it). Deferred until the upgrade guide (#1538) exists.
+run it). For the 5.0 deprecation the guide (#1538) already exists; each later major needs its own guide first.
 
 ### 5. Release notes
 
@@ -97,8 +99,8 @@ extra manual release notes. Backfilling the root changelog stays in #1559.
 
 1. Minimum gap between majors: recommend 30 days.
 2. Support window for old majors: recommend none beyond latest major.
-3. Whether to deprecate pre-5 versions now, or only once #1538 lands:
-   recommend wait for #1538.
+3. Whether to deprecate pre-5 versions now (the guide from #1538 exists):
+   recommend yes, once this policy is accepted.
 4. Whether output changes should ever be major: recommend no (above).
 
 ## Self-review (decision-doc checklist, #977)
@@ -115,10 +117,8 @@ extra manual release notes. Backfilling the root changelog stays in #1559.
 - **Terminology:** "published surface" = anything reachable through
   `package.json` `exports`/`bin`, MCP schemas, or documented in
   `docs/api-reference.md`. "Rendered output" = SVG/ASCII strings.
-- **Sub-issue scope:** #1538 and #1559 are referenced as dependencies, not
-  decided here; this doc assumes only that #1538 will produce a stable URL
-  for the upgrade guide (the URL above is a placeholder and must be fixed
-  when #1538 lands).
+- **Sub-issue scope:** #1538 (shipped) and #1559 are referenced as dependencies, not
+  decided here; the deprecation URL above points at the guide #1538 produced.
 - **Precedent:** 4.0.0 / 5.0.0 reasons verified against the 5.0.0 GitHub
   Release body and `package.json` `engines` (`>=24`). The `#1446` row was
   verified: its changeset is listed as a Patch Change in 5.0.0's release.
