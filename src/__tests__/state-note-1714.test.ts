@@ -73,4 +73,17 @@ describe('state diagram notes (#1714)', () => {
     expect(svg).toContain('this is a note')
     expect(svg.match(/<polygon [^>]*fill="var\(--bg\)"/g)).toHaveLength(1)
   })
+
+  it('rejects a note block with no `end note`', () => {
+    expect(() =>
+      renderMermaidSVG('stateDiagram-v2\n  note right of A\n  text\n  A --> B'),
+    ).toThrow(/end note/)
+  })
+
+  it('applies a style fill to the note', () => {
+    const svg = renderMermaidSVG(
+      'stateDiagram-v2\n  note right of A : hi\n  style A----note-1 fill:#ffeeaa',
+    )
+    expect(svg).toContain('fill="#ffeeaa"')
+  })
 })

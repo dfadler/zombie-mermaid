@@ -687,6 +687,12 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
     }
   }
 
+  if (noteBlock) {
+    throw new Error(
+      `Unterminated note block for state "${noteBlock.target}": missing "end note"`,
+    )
+  }
+
   for (const [id, shape] of pseudoStates) {
     const node = graph.nodes.get(id)
     if (node) {

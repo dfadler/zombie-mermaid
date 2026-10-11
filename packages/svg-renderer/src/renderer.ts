@@ -699,7 +699,15 @@ function renderNodeShape(node: PositionedNode): string {
     case 'fork-join':
       return renderForkJoin(x, y, width, height, stroke)
     case 'note':
-      return renderNoteShape(x, y, width, height, stroke, sw)
+      return renderNoteShape(
+        x,
+        y,
+        width,
+        height,
+        escapeAttr(inlineStyle?.fill ?? 'var(--bg)'),
+        stroke,
+        sw,
+      )
     case 'notched-pentagon':
       return renderNotchedPentagon(x, y, width, height, fill, stroke, sw)
     case 'sloped-rectangle':
@@ -1246,6 +1254,7 @@ function renderNoteShape(
   y: number,
   w: number,
   h: number,
+  fill: string,
   stroke: string,
   sw: string,
 ): string {
@@ -1258,7 +1267,7 @@ function renderNoteShape(
     f`${x},${y + h}`,
   ].join(' ')
   return (
-    f`<polygon points="${body}" fill="var(--bg)" stroke="${stroke}" stroke-width="${sw}" />\n` +
+    f`<polygon points="${body}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />\n` +
     f`<polygon points="${x + w - fold},${y} ${x + w},${y + fold} ${x + w - fold},${y + fold}" fill="var(--_inner-stroke)" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
