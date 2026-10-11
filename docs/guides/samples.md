@@ -41,7 +41,7 @@ it now only feeds the internal visual-test suite and
 [CONTRIBUTING.md](../../CONTRIBUTING.md)); it isn't rendered anywhere on the
 public site, and the dev server's `/` route serves the same marketing page
 the live site does, not a sample browser. If you want to see more starting
-points than the six type pages offer, reading `samples-data.ts` directly is
+points than the eight type pages offer, reading `samples-data.ts` directly is
 the closest thing to browsing it today.
 
 ## Finding one
