@@ -79,16 +79,23 @@ function blankEdge(a: string): string | null {
   for (let y = 0; y < lines.length; y++) {
     for (let x = 0; x < lines[y].length; x++) {
       if (!HEADS.includes(lines[y][x])) continue
-      const cells: [number, number][] = [[y, x]]
-      if (VERT.includes(at(y - 1, x)) || VERT.includes(at(y + 1, x))) {
+      const run = (dy: number, dx: number, set: string) => {
+        const out: [number, number][] = [[y, x]]
         for (const d of [-1, 1])
-          for (let k = y + d; VERT.includes(at(k, x)); k += d)
-            cells.push([k, x])
-      } else {
-        for (const d of [-1, 1])
-          for (let k = x + d; HORIZ.includes(at(y, k)); k += d)
-            cells.push([y, k])
+          for (let k = 1; set.includes(at(y + d * k * dy, x + d * k * dx)); k++)
+            out.push([y + d * k * dy, x + d * k * dx])
+        return out
       }
+      // A horizontal head can sit in a lifeline's column (Sequence), so follow its own axis first.
+      const vert = run(1, 0, VERT)
+      const horiz = run(0, 1, HORIZ)
+      const cells = '▶◀►◄'.includes(lines[y][x])
+        ? horiz.length > 1
+          ? horiz
+          : vert
+        : vert.length > 1
+          ? vert
+          : horiz
       if (cells.length < 2) continue
       for (const [cy, cx] of cells) lines[cy][cx] = ' '
       return lines.map((l) => l.join('')).join('\n')
@@ -136,7 +143,8 @@ export interface Score {
   falsePositives: number
   defects: number
   caught: number
-  fpr: number
+  /** Null when there is no clean case: an unmeasured rate is not zero. */
+  fpr: number | null
   recall: number
   /** Per mutation: planted defects and how many the judge flagged. */
   byMutation: Record<string, { n: number; caught: number }>
@@ -177,7 +185,7 @@ export function scoreVerdicts(lines: string[], caseIds: string[]): Score {
       if (!f) m.caught++
     }
   }
-  const fpr = clean ? falsePositives / clean : 0
+  const fpr = clean ? falsePositives / clean : null
   const recall = defects ? caught / defects : 0
   return {
     clean,
@@ -190,7 +198,45 @@ export function scoreVerdicts(lines: string[], caseIds: string[]): Score {
     missing,
     pass:
       !missing.length &&
+      fpr !== null &&
       fpr <= THRESHOLDS.maxFpr &&
       recall >= THRESHOLDS.minRecall,
   }
+}
+
+/** `--limit` operand: absent means unlimited; anything but a non-negative integer throws. */
+export function parseLimit(v: string | undefined): number {
+  if (v === undefined) return Infinity
+  if (!/^\d+$/.test(v))
+    throw new Error(`--limit must be a non-negative integer, got "${v}"`)
+  return Number(v)
+}
+
+/** Blind the judge: opaque ids (the real `<sample>__<mutation>` id would leak the answer). Returns cases plus opaque -> real map. */
+export function blindCases(
+  cases: CombinedSample[],
+  only?: string[],
+): { blind: CombinedSample[]; map: Record<string, string> } {
+  const map: Record<string, string> = {}
+  const blind = cases
+    .filter((c) => !only || only.includes(c.id.split('__').pop()!))
+    .map((c, i) => {
+      const id = `case-${String(i).padStart(3, '0')}`
+      map[id] = c.id
+      return { ...c, id }
+    })
+  return { blind, map }
+}
+
+/** Rewrite opaque ids in judge JSONL back to real ids (unknown ids pass through). */
+export function remapVerdicts(
+  lines: string[],
+  map: Record<string, string>,
+): string[] {
+  return lines
+    .filter((l) => l.trim())
+    .map((l) => {
+      const v = JSON.parse(l) as { id: string }
+      return JSON.stringify({ ...v, id: map[v.id] ?? v.id })
+    })
 }

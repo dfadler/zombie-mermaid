@@ -17,8 +17,8 @@ Runs on 2026-10-11, locally, with `claude -p --model claude-sonnet-5 --max-turns
 | ------------------------------------------------ | --- | ----------------------- | ---------------------- |
 | missingNode (blank one box)                      | 13  | 13                      | 13                     |
 | dropEdge (blank one whole edge)                  | 11  | 10                      | 11                     |
-| swapDirection (flip every arrowhead)             | 11  | 10                      | 11                     |
-| truncateLabel (cut a label by 2 chars)           | 13  | 6                       | 13                     |
+| swapDirection (flip every arrowhead)             | 11  | 11                      | 11                     |
+| truncateLabel (cut a label by 2 chars)           | 13  | 5                       | 13                     |
 | wrongLabel (replace a label with `Zzzz`)         | 13  | 7                       | 13                     |
 | dropEdge v1, arrowhead row only (reference only) | 11  | 3                       | 3                      |
 
@@ -36,6 +36,11 @@ The v1 `dropEdge` (delete only the arrowhead row, leaving the connector) is a mu
 - Only one prompt iteration was needed; no tuning loop against these cases.
 
 Caveat: the clean set is small (23). A single false positive would be 4%, and the weekly run is the larger check. Re-run this calibration when the prompt or model changes.
+
+## Corrections after review
+
+- `before/sequence-results.jsonl`: the judge skipped OAuth `dropEdge` (`case-014`) and numbered the rest by position, so the verdicts labelled `case-014`..`case-016` described `swapDirection`, `truncateLabel` and `wrongLabel` (each by its finding text). They are now relabelled `case-015`..`case-017`. This moves one caught case from truncateLabel to swapDirection in the table above (swapDirection 11/11, truncateLabel 5/13); the 46/61 total is unchanged. OAuth `dropEdge` is covered by `dropedge-results.jsonl`.
+- `dropEdge` on Sequence samples (the Sequence set plus 3 cases in `dropedge-*`) was generated before `blankEdge` was fixed to follow a horizontal arrowhead along its own axis. A Sequence arrowhead sits in the lifeline column, so the old code blanked the lifeline and left the message line. Those Sequence `dropEdge` verdicts measured a missing lifeline and arrowhead, not a missing message. Re-running them needs a paid judge run and is not done here.
 
 ## Earlier baseline notes (original prompt)
 

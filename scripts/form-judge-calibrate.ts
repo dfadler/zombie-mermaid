@@ -9,7 +9,10 @@ import { readFile, writeFile } from 'node:fs/promises'
 import type { IndexEntry, SampleFile } from './form-facts.ts'
 import type { CombinedSample } from './lib/form-judge-cache.ts'
 import {
+  blindCases,
   buildCalibrationCases,
+  parseLimit,
+  remapVerdicts,
   scoreVerdicts,
 } from './lib/form-judge-calibration.ts'
 
@@ -26,7 +29,7 @@ const optArg = (n: string) =>
 
 if (process.argv[2] === 'build') {
   const index = JSON.parse(await readFile(arg('index'), 'utf8')) as IndexEntry[]
-  const limit = Number(optArg('limit') ?? Infinity)
+  const limit = parseLimit(optArg('limit'))
   const ids = optArg('sample-ids')?.split(',')
   const only = optArg('only')?.split(',')
   const cases: CombinedSample[] = []
@@ -46,15 +49,7 @@ if (process.argv[2] === 'build') {
       )
     }
   }
-  // Blind the judge: opaque ids (the real `<sample>__<mutation>` id would leak the answer). ids-out maps opaque -> real.
-  const map: Record<string, string> = {}
-  const blind = cases
-    .filter((c) => !only || only.includes(c.id.split('__').pop()!))
-    .map((c, i) => {
-      const id = `case-${String(i).padStart(3, '0')}`
-      map[id] = c.id
-      return { ...c, id }
-    })
+  const { blind, map } = blindCases(cases, only)
   await writeFile(arg('data-out'), JSON.stringify(blind, null, 2))
   await writeFile(arg('ids-out'), JSON.stringify(map))
   console.log(`${blind.length} calibration cases`)
@@ -64,12 +59,7 @@ if (process.argv[2] === 'build') {
     string,
     string
   >
-  const remapped = lines
-    .filter((l) => l.trim())
-    .map((l) => {
-      const v = JSON.parse(l) as { id: string }
-      return JSON.stringify({ ...v, id: map[v.id] ?? v.id })
-    })
+  const remapped = remapVerdicts(lines, map)
   const s = scoreVerdicts(remapped, Object.values(map))
   console.log(JSON.stringify(s, null, 2))
   process.exit(s.pass ? 0 : 1)
