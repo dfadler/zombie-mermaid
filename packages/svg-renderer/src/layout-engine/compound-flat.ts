@@ -51,6 +51,7 @@ import { resolveEdgeStyle } from './from-elk.ts'
 import { labelSpot, routeInnerEdge } from './inner-edges.ts'
 import type { LayoutHints } from './layout-hints.ts'
 import {
+  REGION_PADDING,
   SUBGRAPH_PADDING,
   hasAnyDirectionOverride,
   isStateGraph,
@@ -314,9 +315,11 @@ export function orderSiblings(
     if (group.some((a, i) => group.slice(i + 1).some((b) => connected(a, b)))) {
       continue
     }
-    // Declaration order, last to first, is left to right.
+    // Declaration order, last to first, is left to right; concurrency
+    // regions (state `--`) are the exception and run first to last.
+    const sign = group.some((g) => g.region) ? -1 : 1
     const want = [...group].sort(
-      (a, b) => subgraphs.indexOf(b) - subgraphs.indexOf(a),
+      (a, b) => sign * (subgraphs.indexOf(b) - subgraphs.indexOf(a)),
     )
     const slots = group.map(mean).sort((a, b) => a - b)
     const moves = want.map((sg, i) => slots[i]! - mean(sg))
@@ -406,20 +409,21 @@ function buildGroups(
       }),
       ...children,
     ]
-    const x0 = Math.min(...boxes.map((b) => b.x)) - SUBGRAPH_PADDING.left
-    const y0 = Math.min(...boxes.map((b) => b.y)) - SUBGRAPH_PADDING.top
-    const x1 =
-      Math.max(...boxes.map((b) => b.x + b.width)) + SUBGRAPH_PADDING.right
-    const y1 =
-      Math.max(...boxes.map((b) => b.y + b.height)) + SUBGRAPH_PADDING.bottom
+    // A concurrency region has no title bar to leave room for.
+    const pad = sg.region ? REGION_PADDING : SUBGRAPH_PADDING
+    const x0 = Math.min(...boxes.map((b) => b.x)) - pad.left
+    const y0 = Math.min(...boxes.map((b) => b.y)) - pad.top
+    const x1 = Math.max(...boxes.map((b) => b.x + b.width)) + pad.right
+    const y1 = Math.max(...boxes.map((b) => b.y + b.height)) + pad.bottom
     // The title has to fit inside the box.
-    const titleWidth =
-      measureMultilineText(
-        sg.label,
-        fontSizes.groupHeader,
-        FONT_WEIGHTS.groupHeader,
-      ).width +
-      2 * TITLE_INSET
+    const titleWidth = sg.region
+      ? 0
+      : measureMultilineText(
+          sg.label,
+          fontSizes.groupHeader,
+          FONT_WEIGHTS.groupHeader,
+        ).width +
+        2 * TITLE_INSET
     return {
       id: sg.id,
       label: sg.label,
@@ -428,6 +432,7 @@ function buildGroups(
       width: Math.max(x1 - x0, titleWidth),
       height: y1 - y0,
       children,
+      ...(sg.region ? { region: true } : {}),
     }
   }
   return subgraphs.map(build)

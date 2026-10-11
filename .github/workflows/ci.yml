@@ -103,6 +103,11 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      # Docs drift guards (#1570): dead links/anchors, stale repo paths,
+      # diagram-type counts, Node-version consistency.
+      - name: Check docs drift
+        run: pnpm run check:docs
+
       # Guards against a new whole-tree snapshot or raw markup string-pin
       # creeping into demo/editor component tests one unreviewed file at a
       # time, now that RTL is the expected pattern for them (#817, part of
@@ -698,7 +703,9 @@ jobs:
             exit 1
           fi
           # A line mentioning a follow-up / "TODO later" needs a #N link on the same line.
-          if printf '%s\n' "$PR_BODY" | grep -iE 'follow-?[ -]?ups?|todo later' | grep -vE '#[0-9]+'; then
+          # Markdown table rows are skipped: they carry case/test names (e.g. the
+          # run-evals results table's `unfiled-followup`), not promises of later work.
+          if printf '%s\n' "$PR_BODY" | grep -iE 'follow-?[ -]?ups?|todo later' | grep -vE '^[[:space:]]*\|' | grep -vE '#[0-9]+'; then
             echo "::error::PR body mentions a follow-up without a #N issue link; file the issue and link it."
             exit 1
           fi

@@ -1,0 +1,40 @@
+# Should-fire half for linux-baselines; near-miss is linux-baselines-stays-quiet-on-vitest-snapshots.
+# Can fail: without the skill the model does not know the artifact name or the Docker wrapper.
+schema_version: '1.1'
+name: linux-baselines-points-at-ci-artifacts
+description: >
+  A failing CI visual-regression job after an intentional rendering change, without
+  naming the skill, fires linux-baselines and the reply points at the CI failure
+  artifacts. expected_outcome: PASS when the skill fires and the reply names the
+  visual-regression-failures artifacts and -chromium-linux.png; FAIL otherwise.
+tags: [linux-baselines, trigger, quick]
+
+execution:
+  prompt: |
+    I changed arrow rendering on purpose and now the visual-regression job is red
+    in CI, though pnpm run test:visual passes on my Mac. How do I get CI green?
+    Don't run anything; answer in a few lines.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?linux-baselines"'
+    min: 1
+    arm: both
+
+  - name: names_ci_artifacts
+    type: regex
+    target: last_message
+    pattern: 'visual-regression-failures'
+    match: contains
+
+  - name: names_linux_baseline
+    type: regex
+    target: last_message
+    pattern: '-chromium-linux\.png'
+    match: contains

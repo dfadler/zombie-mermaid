@@ -11,6 +11,12 @@ import type {
   ShapeRenderOptions,
 } from './types.ts'
 import { dirEquals } from '../edge-routing.ts'
+import {
+  getBoxDimensions,
+  renderBox,
+  getBoxAttachmentPoint,
+} from './rectangle.ts'
+import { getCorners } from './corners.ts'
 
 /**
  * State start pseudo-state renderer — filled circle in rounded box.
@@ -201,4 +207,40 @@ export const stateEndRenderer: ShapeRenderer = {
     // All diagonals and middle point to center
     return { x: centerX, y: centerY }
   },
+}
+
+/**
+ * Fork/join bar. Unlabeled (a state diagram's `<<fork>>`/`<<join>>`) it is a
+ * solid one-row bar in a 9x3 cell; a labeled one (flowchart `shape: fork`) is an ordinary
+ * corner-decorated box. `drawBoxWithGridDimensions` fills the block.
+ */
+export const forkJoinRenderer: ShapeRenderer = {
+  getDimensions(label: string, options: ShapeRenderOptions): ShapeDimensions {
+    if (label !== '') return getBoxDimensions(label, options)
+    return {
+      width: 9,
+      height: 3,
+      labelArea: { x: 4, y: 1, width: 1, height: 1 },
+      gridColumns: [1, 7, 1],
+      gridRows: [1, 1, 1],
+    }
+  },
+
+  render(label, dimensions, options) {
+    const { width, height } = dimensions
+    const canvas = mkCanvas(width - 1, height - 1)
+    const fill = options.useAscii ? '#' : '█'
+    if (label !== '') {
+      return renderBox(
+        label,
+        dimensions,
+        getCorners('fork-join', options.useAscii),
+        options.useAscii,
+      )
+    }
+    for (let x = 0; x < width; x++) canvas[x]![Math.floor(height / 2)] = fill
+    return canvas
+  },
+
+  getAttachmentPoint: getBoxAttachmentPoint,
 }

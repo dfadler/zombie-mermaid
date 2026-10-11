@@ -4,6 +4,25 @@
 
 New here? Issues labeled [`good first issue`](https://github.com/dfadler/zombie-mermaid/labels/good%20first%20issue) or [`help wanted`](https://github.com/dfadler/zombie-mermaid/labels/help%20wanted) are the best places to start. Questions about setup or workflow are welcome as issues too.
 
+## Quick start
+
+```bash
+pnpm install        # Node 24+ (engine-strict is on)
+pnpm run doctor     # check your toolchain; ASCII/Docker tools are optional
+pnpm run verify     # typecheck + lint/format/tests for what you changed
+```
+
+`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, eslint and prettier on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or `--related <file>`) runs only affected tests. Rough path-to-suite map:
+
+| Changed path                                   | Run                                                                |
+| ---------------------------------------------- | ------------------------------------------------------------------ |
+| `packages/ascii-renderer/**`                   | its `__tests__`, plus `pnpm exec playwright test -g ascii-samples` |
+| `packages/svg-renderer/**`, `packages/core/**` | package tests, plus `pnpm run test:visual` if SVG output changes   |
+| `packages/mermaid-parser/**`                   | its `__tests__`                                                    |
+| `src/cli*`, `packages/mcp/**`                  | `src/__tests__` and `packages/mcp` tests                           |
+
+The ASCII real-terminal capture and Docker visual-baseline setup below are only needed for rendering changes.
+
 ## Getting set up
 
 ```bash
@@ -213,3 +232,11 @@ Be respectful and constructive in issues, PRs, and reviews. There's no separate 
 ## License
 
 By contributing, you agree your contributions are licensed under this project's [MIT license](LICENSE).
+
+## Bundle size budgets
+
+`pnpm run check:bundle-size` (CI job "Bundle size gate") fails a PR if any
+`dist/` file exceeds its gzip budget, or any package's unpacked `dist/` (no
+source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. To raise
+one after an intentional size increase, edit that file in the same PR and
+explain the increase in the PR description; budgets are never auto-regenerated.
