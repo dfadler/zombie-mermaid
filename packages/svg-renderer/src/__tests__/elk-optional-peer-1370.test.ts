@@ -191,5 +191,22 @@ describe('elkjs optional peer (#1370)', () => {
         else delete g.self
       }
     })
+
+    it('survives a Web Worker-style getter-only `self` on the prototype (#1524)', async () => {
+      // WorkerGlobalScope exposes `self` as a getter-only accessor on its
+      // prototype; the old delete/assign dance threw TypeError on restore.
+      Object.defineProperty(Object.prototype, 'self', {
+        get: () => globalThis,
+        configurable: true,
+      })
+      try {
+        const api = await freshWithoutElk()
+        api.registerElk(ELK)
+        expect(api.renderMermaidSVG(src)).toContain('<svg')
+        expect(Object.hasOwn(globalThis, 'self')).toBe(false)
+      } finally {
+        delete (Object.prototype as { self?: unknown }).self
+      }
+    })
   })
 })
