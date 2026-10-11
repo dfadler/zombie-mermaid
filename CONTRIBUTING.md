@@ -4,6 +4,25 @@
 
 New here? Issues labeled [`good first issue`](https://github.com/dfadler/zombie-mermaid/labels/good%20first%20issue) or [`help wanted`](https://github.com/dfadler/zombie-mermaid/labels/help%20wanted) are the best places to start. Questions about setup or workflow are welcome as issues too.
 
+## Quick start
+
+```bash
+pnpm install        # Node 24+ (engine-strict is on)
+pnpm run doctor     # check your toolchain; ASCII/Docker tools are optional
+pnpm run verify     # typecheck + lint/format/tests for what you changed
+```
+
+`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, eslint and prettier on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or `--related <file>`) runs only affected tests. Rough path-to-suite map:
+
+| Changed path                                   | Run                                                                |
+| ---------------------------------------------- | ------------------------------------------------------------------ |
+| `packages/ascii-renderer/**`                   | its `__tests__`, plus `pnpm exec playwright test -g ascii-samples` |
+| `packages/svg-renderer/**`, `packages/core/**` | package tests, plus `pnpm run test:visual` if SVG output changes   |
+| `packages/mermaid-parser/**`                   | its `__tests__`                                                    |
+| `src/cli*`, `packages/mcp/**`                  | `src/__tests__` and `packages/mcp` tests                           |
+
+The ASCII real-terminal capture and Docker visual-baseline setup below are only needed for rendering changes.
+
 ## Getting set up
 
 ```bash

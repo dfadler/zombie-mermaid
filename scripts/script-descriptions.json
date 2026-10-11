@@ -52,5 +52,7 @@
   "typecheck": "type-check the library, `demo/`, and `editor/` configs",
   "upstream:pr-candidates": "list upstream `lukilabs/beautiful-mermaid`'s open PRs as a triage table for porting (read-only; needs an authenticated `gh`); see \"Porting fixes from upstream\" in [CONTRIBUTING.md](../CONTRIBUTING.md)",
   "visual-diff": "render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review",
+  "verify": "fast local gate: the three tsc projects in parallel (incremental), eslint and prettier on files changed vs `origin/main`, then `vitest run --changed origin/main`. `--full` mirrors CI (whole-repo lint, format check, `test:coverage`).",
+  "doctor": "checks the local toolchain: Node >=24 and pnpm (required); Playwright Chromium, asciinema, agg, JetBrains Mono, and docker (optional, for ASCII captures and visual baselines).",
   "layout:scorecard": "runs the layout oracle and records it (#1572): appends a one-line mean summary to `layout-fidelity-history.jsonl` and regenerates `docs/layout-fidelity-scorecard.md` (latest figures, trend, per-sample table). Descriptive only, no pass/fail threshold (the project objective, #1564, is undecided). Flowcharts only so far. The oracle accepts the same via `--history=<file>` / `--scorecard=<file>`. Needs Chromium; run it by hand, not in CI."
 }
