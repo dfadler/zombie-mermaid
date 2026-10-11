@@ -15,3 +15,6 @@ coverage/
 # Images / binary assets
 *.png
 *.ico
+
+# Verbatim third-party license text (OFL); must not be reflowed
+packages/svg-renderer/THIRD_PARTY_NOTICES.md
