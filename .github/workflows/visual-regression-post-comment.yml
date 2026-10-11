@@ -196,12 +196,21 @@ jobs:
       - name: Resolve the pull request for this run's head commit
         id: pr
         if: steps.vr.outputs.result != 'none'
+        env:
+          # Preferred when populated (same-repo PRs): GitHub's own payload,
+          # not artifact data. Empty for most fork PRs -> lookup below.
+          PAYLOAD_PR: ${{ github.event.workflow_run.pull_requests[0].number }}
         run: |
           set -uo pipefail
 
+          if [ -n "${PAYLOAD_PR:-}" ]; then
+            echo "pr_number=${PAYLOAD_PR}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if [ -z "${HEAD_SHA:-}" ] || [ -z "${HEAD_REPO:-}" ] || [ "$HEAD_REPO" = "null" ]; then
-            echo "::error::workflow_run is missing head_sha/head_repository (possibly a deleted fork/branch) — refusing to guess which PR to post to."
-            exit 1
+            echo "::notice::workflow_run is missing head_sha/head_repository (possibly a deleted fork/branch) — refusing to guess which PR to post to; skipping."
+            exit 0
           fi
 
           # GitHub's REST API for finding a PR from a commit — used instead
@@ -209,7 +218,7 @@ jobs:
           # fork-authored PRs (see this file's header comment) and isn't
           # needed here regardless, since every candidate below is
           # independently re-validated against HEAD_SHA/HEAD_REPO/REPO.
-          raw=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/pulls")
+          raw=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/pulls" 2>/dev/null || echo '[]')
 
           pr_number=$(printf '%s' "$raw" | jq -r --arg sha "$HEAD_SHA" --arg headrepo "$HEAD_REPO" --arg baserepo "$REPO" '
             [ .[] | select(.state == "open")
@@ -221,9 +230,11 @@ jobs:
           ')
 
           if [ -z "${pr_number:-}" ]; then
-            candidate_count=$(printf '%s' "$raw" | jq 'length')
-            echo "::error::Could not uniquely resolve an open pull request for head commit ${HEAD_SHA} in ${HEAD_REPO} (base ${REPO}) — found ${candidate_count} raw candidate(s) via the commits/.../pulls API, 0 or >1 after filtering to an exact head-sha/head-repo/base-repo match. Refusing to guess; not posting."
-            exit 1
+            candidate_count=$(printf '%s' "$raw" | jq 'length' 2>/dev/null || echo 0)
+            # Not a failure: the PR was likely merged/closed/force-pushed
+            # before this ran (#1598). Downstream steps skip on empty pr_number.
+            echo "::notice::Could not uniquely resolve an open pull request for head commit ${HEAD_SHA} in ${HEAD_REPO} (base ${REPO}) — found ${candidate_count} raw candidate(s) via the commits/.../pulls API, 0 or >1 after filtering to an exact head-sha/head-repo/base-repo match. Refusing to guess; not posting."
+            exit 0
           fi
 
           echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
@@ -241,7 +252,7 @@ jobs:
       # as data-not-code (see the trust-boundary list in this file's header
       # comment).
       - name: Ensure gh supports --attach
-        if: steps.vr.outputs.result == 'failure'
+        if: steps.vr.outputs.result == 'failure' && steps.pr.outputs.pr_number != ''
         run: | # zizmor: ignore[github-env]
           set -uo pipefail
           current=$(gh --version 2>/dev/null | head -1 | awk '{print $3}')
@@ -272,7 +283,7 @@ jobs:
       # lookup below (`find failures -iname '*-diff.png'`) is already
       # recursive.
       - name: Download failure artifacts
-        if: steps.vr.outputs.result == 'failure'
+        if: steps.vr.outputs.result == 'failure' && steps.pr.outputs.pr_number != ''
         run: |
           set -uo pipefail
           mkdir -p failures
@@ -289,7 +300,7 @@ jobs:
       # real PNG signature, and (c) passed to `gh pr comment --attach`/
       # markdown-embedded as inert image bytes.
       - name: Build and post diff comment
-        if: steps.vr.outputs.result == 'failure'
+        if: steps.vr.outputs.result == 'failure' && steps.pr.outputs.pr_number != ''
         env:
           PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
           # The asset-upload endpoint behind `--attach` rejects the Actions
@@ -468,7 +479,7 @@ jobs:
       # found"/"nothing attachable" text-only case — still gets marked
       # resolved instead of being silently skipped forever.
       - name: Flip pending diff comment(s) to resolved
-        if: steps.vr.outputs.result == 'success'
+        if: steps.vr.outputs.result == 'success' && steps.pr.outputs.pr_number != ''
         env:
           PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
         run: |

@@ -192,3 +192,27 @@ describe('pie SVG: accessibility', () => {
     expect(svg).toMatch(/^<svg data-src="pie title Pets/)
   })
 })
+
+describe('pie SVG: init textPosition', () => {
+  const src = (init: string) => `${init}\npie\n  "A" : 1\n  "B" : 1`
+  // Two equal slices: the first label sits right of centre (225) at
+  // 225 + 185 * textPosition * sin(90deg).
+  const firstLabelX = (svg: string) =>
+    Number(/<text x="([\d.]+)"[^>]*class="pie-slice-label"/.exec(svg)![1])
+
+  it('moves labels toward the centre for a smaller textPosition', () => {
+    const def = firstLabelX(renderMermaidSVG(src('')))
+    const inner = firstLabelX(
+      renderMermaidSVG(src('%%{init: {"pie": {"textPosition": 0.25}}}%%')),
+    )
+    expect(def).toBeGreaterThan(inner)
+    expect(inner).toBeGreaterThan(225)
+  })
+
+  it('ignores a non-numeric textPosition', () => {
+    const bad = renderMermaidSVG(
+      src('%%{init: {"pie": {"textPosition": "x"}}}%%'),
+    )
+    expect(firstLabelX(bad)).toBe(firstLabelX(renderMermaidSVG(src(''))))
+  })
+})

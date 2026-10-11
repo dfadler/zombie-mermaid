@@ -273,11 +273,23 @@ function ensureElk(): RawFakeWorker {
   // `lib` in tsconfig.json is `["ESNext"]` (no `dom`), so `self`/`document`
   // aren't ambiently declared on `globalThis` — narrow to just the two
   // properties this probe touches instead of a blanket `Record`.
+  //
+  // Shadow `self` with an own property instead of `delete`-ing it: in a Web
+  // Worker `self` is a getter-only accessor on WorkerGlobalScope's prototype,
+  // so `delete` is a no-op (elk still sees it) and the old `g.self = origSelf`
+  // restore threw "Cannot set property self ... which has only a getter".
   const g = globalThis as { self?: unknown; document?: unknown }
-  const hadSelf = 'self' in g
-  const origSelf = g.self
-  if (hadSelf && typeof g.document === 'undefined') {
-    delete g.self
+  const ownSelf = Object.getOwnPropertyDescriptor(g, 'self')
+  const hideSelf =
+    'self' in g &&
+    typeof g.document === 'undefined' &&
+    ownSelf?.configurable !== false
+  if (hideSelf) {
+    Object.defineProperty(g, 'self', {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    })
   }
 
   let instance: unknown
@@ -286,7 +298,10 @@ function ensureElk(): RawFakeWorker {
   } finally {
     // Restore even if construction throws, so a bad registration cannot
     // leave a patched setTimeout/self behind.
-    if (hadSelf) g.self = origSelf
+    if (hideSelf) {
+      if (ownSelf) Object.defineProperty(g, 'self', ownSelf)
+      else delete g.self
+    }
     globalThis.setTimeout = origSetTimeout
   }
   if (!hasFakeWorker(instance)) {
