@@ -13,6 +13,7 @@ investigation and measurement write-ups in [research/](research/).
 - [accessibility.md](accessibility.md) — the accessibility conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
 - [theming.md](theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
 - [diagrams.md](diagrams.md) — syntax for each supported diagram type, XY chart styling, and ASCII rendering
+- [known-differences.md](known-differences.md) — verified differences from mermaid.js that are intentional or not yet fixed: subgraph inner direction, layout tie-breaks, ER parser leniency
 - [mcp-tools.md](mcp-tools.md) — per-tool reference for the MCP server: arguments, `bg`/`fg`, `outputPath` rules, return shapes
 - [react-integration.md](react-integration.md) — using `renderMermaidSVG` with `useMemo()` for zero-flash rendering
 - [api-reference.md](api-reference.md) — full function and options reference
