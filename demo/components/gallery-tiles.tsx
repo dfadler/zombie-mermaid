@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /**
- * The six small animated SVG illustrations `DiagramGalleryTeaser`
+ * The nine small animated SVG illustrations `DiagramGalleryTeaser`
  * (`diagram-gallery-teaser.tsx`) links to, one per diagram type — kept
  * together in one file since they're trivial variants of the same shape
  * (a `viewBox="0 0 100 70"` SVG, no props, one accent color each) rather
@@ -255,6 +255,98 @@ export function XYChartTile() {
   )
 }
 
+/** C4: a person above a system box, joined by a relationship arrow. */
+export function C4Tile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <circle
+        cx="50"
+        cy="10"
+        r="5"
+        fill="none"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+      />
+      <rect
+        x="26"
+        y="44"
+        width="48"
+        height="18"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+      />
+      <path
+        d="M50 17 V44"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+/** Architecture: two service boxes joined through a junction dot. */
+export function ArchitectureTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="6"
+        y="24"
+        width="24"
+        height="22"
+        rx="4"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+      />
+      <rect
+        x="70"
+        y="24"
+        width="24"
+        height="22"
+        rx="4"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+      />
+      <circle cx="50" cy="35" r="4" fill={colorVar('--violet')} />
+      <path
+        d="M30 35 H46 M54 35 H70"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+/** Pie: a circle split into three wedges. */
+export function PieTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <circle
+        cx="50"
+        cy="35"
+        r="26"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+      />
+      <path
+        d="M50 35 V9 M50 35 L72.5 48 M50 35 L27.5 48"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
 /**
  * One tile component per {@link GALLERY_TYPES} entry (`diagram-gallery-
  * teaser.tsx`), in the same order — index `i` here must line up with that
@@ -267,4 +359,7 @@ export const GALLERY_TILES = [
   ClassTile,
   ERTile,
   XYChartTile,
+  C4Tile,
+  ArchitectureTile,
+  PieTile,
 ]

@@ -202,6 +202,53 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
       'XY charts plot data across two numeric axes — the one Mermaid diagram type that’s a data chart rather than a graph of nodes and edges, useful for a quick bar or line chart living alongside process diagrams in the same document. Mermaid’s syntax sets the chart’s orientation (vertical by default, or horizontal), titles and ranges for each axis, and any number of named `line` or `bar` series drawn from a plain array of numbers — mixed on the same chart if needed, with named series appearing automatically in a legend.',
     docsUrl: 'https://mermaid.ai/open-source/syntax/xyChart.html',
   },
+  {
+    slug: 'c4',
+    label: 'C4 diagram',
+    keyword: 'C4Context',
+    source: sampleSource('C4: System Context'),
+    intro:
+      'C4 diagrams describe software architecture as people, systems, containers, and components, zoomed in one level at a time. zombie-mermaid renders the Context, Container, Component, and Dynamic variants with boundaries and labelled relationships.',
+    accent: 'cyan',
+    exampleHeading:
+      'A system in context, with the people and systems around it.',
+    sourceFilename: 'context.mmd',
+    aboutHeading: 'Where C4 diagrams come from, and how the syntax works.',
+    about:
+      'The C4 model describes a software system at four zoom levels: context, containers, components, and code. Mermaid’s syntax declares each element with a call such as `Person`, `System`, `Container`, or `Component` (with `_Ext` variants for things outside your boundary), groups them in `Boundary` blocks, and joins them with `Rel` calls that carry a label and an optional technology.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/c4.html',
+  },
+  {
+    slug: 'architecture-beta',
+    label: 'Architecture diagram',
+    keyword: 'architecture-beta',
+    source: sampleSource('Architecture: Services And Edge Sides'),
+    intro:
+      'Architecture diagrams place services in groups and connect them from a chosen side of each, which suits cloud and infrastructure layouts. zombie-mermaid renders groups, services, junctions, and edges between any of them.',
+    accent: 'violet',
+    exampleHeading: 'Services in a group, wired side to side.',
+    sourceFilename: 'infra.mmd',
+    aboutHeading:
+      'Where architecture diagrams come from, and how the syntax works.',
+    about:
+      'Architecture diagrams are a beta Mermaid type for cloud and CI/CD infrastructure. Mermaid’s syntax declares `group` and `service` nodes with an icon and a label, optionally nests a service inside a group, and connects them with edges that name the side each end attaches to (`L`, `R`, `T`, `B`). Junctions fan a single edge out to several services.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/architecture.html',
+  },
+  {
+    slug: 'pie',
+    label: 'Pie chart',
+    keyword: 'pie',
+    source: sampleSource('Pie: Basic'),
+    intro:
+      'Pie charts show how a whole divides into labelled parts. zombie-mermaid renders SVG wedges with a legend and, in ASCII, a proportional bar chart, with optional raw values via showData.',
+    accent: 'pink',
+    exampleHeading: 'One whole, split into labelled shares.',
+    sourceFilename: 'share.mmd',
+    aboutHeading: 'Where pie charts come from, and how the syntax works.',
+    about:
+      'Pie charts divide a total into proportional slices and are the simplest data chart Mermaid offers. Mermaid’s syntax starts with `pie`, an optional `showData` flag that prints each raw value in the legend, and an optional `title`, followed by one `"Label" : value` line per slice. Slice sizes are computed as a share of the sum of all values.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/pie.html',
+  },
 ]
 
 /**
@@ -220,6 +267,9 @@ const GALLERY_CATEGORY: Record<string, string> = {
   class: 'Class',
   er: 'ER',
   'xy-chart': 'XY Chart',
+  c4: 'C4',
+  'architecture-beta': 'Architecture',
+  pie: 'Pie',
 }
 
 /**

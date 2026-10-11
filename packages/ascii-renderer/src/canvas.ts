@@ -915,19 +915,51 @@ const HORIZONTAL_FLIP_MAP: Record<string, string> = {
  * `<` or `/` is prose, not an arrowhead. Call `mirrorLabelColumns` first so
  * labels keep reading left-to-right.
  *
+ * `nodeRects` (outer node-box rectangles, pre-flip) keep each node shape
+ * itself unmirrored, as mermaid.js does for RL: the box moves to its mirrored
+ * position but its four corner glyphs (parallelogram slants, the flag's
+ * notch, hexagon brackets) are exchanged left/right without remapping, so the
+ * shape looks exactly as it does in LR (#1701). Their roles swap too, because
+ * `flipRoleCanvasHorizontally` reverses them afterwards.
+ *
  * Used to transform an LR-rendered canvas into RL output. Mutates the canvas
  * in place and returns it. `roleCanvas` must still be unflipped when this runs.
  */
 export function flipCanvasHorizontally(
   canvas: Canvas,
   roleCanvas?: RoleCanvas,
+  nodeRects: LabelRect[] = [],
 ): Canvas {
+  const corners = nodeRects.flatMap(({ x0, x1, y0, y1 }) =>
+    x0 === x1
+      ? []
+      : [y0, y1].map((y) => ({
+          y,
+          x0,
+          x1,
+          g0: canvas[x0]?.[y],
+          g1: canvas[x1]?.[y],
+          r0: roleCanvas?.[x0]?.[y],
+          r1: roleCanvas?.[x1]?.[y],
+        })),
+  )
   for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
       if (roleCanvas?.[x]?.[y] === 'text' && !DOUBLE_BOX_CORNERS.has(ch))
         continue
       const flipped = HORIZONTAL_FLIP_MAP[ch]
       if (flipped) col[y] = flipped
+    }
+  }
+  // Overwrite the box corners with their un-remapped opposites; the reverse
+  // below then lands each glyph back on its own side of the mirrored box.
+  for (const { y, x0, x1, g0, g1, r0, r1 } of corners) {
+    if (g0 === undefined || g1 === undefined) continue
+    canvas[x0]![y] = g1
+    canvas[x1]![y] = g0
+    if (roleCanvas && r0 !== undefined && r1 !== undefined) {
+      roleCanvas[x0]![y] = r1
+      roleCanvas[x1]![y] = r0
     }
   }
   canvas.reverse()

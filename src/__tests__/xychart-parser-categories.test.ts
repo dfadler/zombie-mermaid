@@ -76,3 +76,19 @@ describe('parseXYChart – categorical x-axis quoting', () => {
     expect(chart.xAxis.categories).toEqual(['A, B', 'C, D, E', 'F'])
   })
 })
+
+describe('parseXYChart – default y-axis range (#1705)', () => {
+  it('uses the raw data extent, matching Mermaid (no padding, no zero floor)', () => {
+    const chart = parseXYChart([
+      'xychart-beta',
+      'x-axis [A, B, C]',
+      'bar [120, 300, 180]',
+    ])
+    expect(chart.yAxis.range).toEqual({ min: 120, max: 300 })
+  })
+
+  it('still gives a flat series a non-empty range', () => {
+    const chart = parseXYChart(['xychart-beta', 'x-axis [A]', 'bar [42]'])
+    expect(chart.yAxis.range).toEqual({ min: 41.9, max: 42.1 })
+  })
+})
