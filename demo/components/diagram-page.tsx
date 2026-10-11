@@ -182,6 +182,10 @@ const DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
@@ -217,6 +221,10 @@ const SAMPLE_DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: DETAIL_NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: DETAIL_NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: DETAIL_NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
@@ -249,6 +257,10 @@ const TAG_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: TAG_NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: TAG_NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: TAG_NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
