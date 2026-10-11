@@ -103,6 +103,10 @@ pnpm add zombie-mermaid
 > once (see the [migration guide](docs/guides/elkjs-optional-peer.md)). The
 > package no longer ships `src/` (see [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538)).
 
+> **`elkjs` in the umbrella package:** the sub-packages (`@zombie-mermaid/svg-renderer`) treat `elkjs` as an
+> optional peer, but `zombie-mermaid` itself lists it as a regular dependency so the CLI and MCP server work
+> out of the box. See [what happens if you remove it](docs/guides/elkjs-optional-peer.md#removing-elkjs-from-zombie-mermaid).
+
 Only need one output format? `@zombie-mermaid/ascii-renderer` and `@zombie-mermaid/svg-renderer` are published standalone — see [Packages](#packages) below.
 
 ## Quick Start
