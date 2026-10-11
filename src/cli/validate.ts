@@ -11,12 +11,22 @@ export async function runValidate(
   args: ValidateArgs,
   stdinContent?: string,
 ): Promise<void> {
-  const raw =
-    args.input !== undefined
-      ? await readFile(args.input, 'utf-8')
-      : (stdinContent ?? (await readStdin()))
-  const text = raw.trim()
-  if (text.length === 0) {
+  let raw: string
+  if (args.input !== undefined) {
+    raw = await readFile(args.input, 'utf-8')
+  } else if (stdinContent !== undefined) {
+    raw = stdinContent
+  } else {
+    if (process.stdin.isTTY) {
+      throw new Error(
+        'No input file specified and stdin is a terminal. Pipe a diagram or pass a file path.',
+      )
+    }
+    raw = await readStdin()
+  }
+  // Validate the untrimmed source so parser "Line N" numbers match the file.
+  const text = raw
+  if (text.trim().length === 0) {
     throw new Error('Empty input — provide a Mermaid diagram via file or stdin')
   }
   try {

@@ -60,6 +60,34 @@ describe('runValidate', () => {
     }
   })
 
+  it('reports parser line numbers against the untrimmed source', async () => {
+    await expect(
+      runValidate({ command: 'validate', input: undefined }, '\n\n' + BAD),
+    ).rejects.toThrow(/Line 6:[\s\S]*\n {2}6 \| {3}loop forever/)
+  })
+
+  it('rejects a missing file without leaking an absolute path in a diagnostic', async () => {
+    await expect(
+      runValidate({ command: 'validate', input: '/nonexistent/zz-1727.mmd' }),
+    ).rejects.toThrow(/ENOENT/)
+  })
+
+  it('refuses to wait on an interactive terminal', async () => {
+    const orig = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
+    Object.defineProperty(process.stdin, 'isTTY', {
+      value: true,
+      configurable: true,
+    })
+    try {
+      await expect(
+        runValidate({ command: 'validate', input: undefined }),
+      ).rejects.toThrow(/stdin is a terminal/)
+    } finally {
+      if (orig) Object.defineProperty(process.stdin, 'isTTY', orig)
+      else delete (process.stdin as { isTTY?: boolean }).isTTY
+    }
+  })
+
   it('rejects empty input', async () => {
     await expect(
       runValidate({ command: 'validate', input: undefined }, '  \n'),
@@ -74,6 +102,18 @@ describe('runRender failure diagnostics', () => {
     await expect(
       runRender(args, { write: () => true }, BAD, { write: () => true }),
     ).rejects.toThrow(/Line 4:[\s\S]*\n {2}4 \| {3}loop forever/)
+  })
+})
+
+describe('runRender line numbers', () => {
+  it('keeps original line numbers when the source has leading blank lines', async () => {
+    const args = parseArgs(['render', '--ascii'])
+    if (args.command !== 'render') throw new Error('x')
+    await expect(
+      runRender(args, { write: () => true }, '\n\n' + BAD, {
+        write: () => true,
+      }),
+    ).rejects.toThrow(/Line 6:[\s\S]*\n {2}6 \| {3}loop forever/)
   })
 })
 
@@ -103,6 +143,14 @@ describe('validate_mermaid', () => {
       sourceLine: '  loop forever',
     })
     expect(JSON.stringify(r)).not.toMatch(/\/Users\/|node_modules/)
+  })
+
+  it('returns a normal invalid result for empty source', () => {
+    const r = parse('')
+    expect(r).toEqual({
+      valid: false,
+      diagnostics: [{ message: 'diagram must not be empty' }],
+    })
   })
 
   it('falls back to message-only when no line is named', () => {

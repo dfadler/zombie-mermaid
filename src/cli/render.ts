@@ -117,8 +117,7 @@ export async function runRender(
     text = await readStdin()
   }
 
-  text = text.trim()
-  if (text.length === 0) {
+  if (text.trim().length === 0) {
     throw new Error('Empty input — provide a Mermaid diagram via file or stdin')
   }
 

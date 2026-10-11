@@ -14,12 +14,18 @@ import { extractParseDiagnostic } from './parse-diagnostics.ts'
 export const validateInputShape = {
   diagram: z
     .string()
-    .min(1, 'diagram must not be empty')
     .describe('Mermaid diagram source text to check without rendering.'),
 }
 
 export function validateHandler(input: { diagram: string }): CallToolResult {
   let result: object
+  if (input.diagram.trim().length === 0) {
+    result = {
+      valid: false,
+      diagnostics: [{ message: 'diagram must not be empty' }],
+    }
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  }
   try {
     validateMermaid(input.diagram)
     result = { valid: true, diagnostics: [] }
