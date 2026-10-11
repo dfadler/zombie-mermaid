@@ -81,6 +81,8 @@ Used by `dashboard-refresh.yml` (and the other PAT-using workflows) to push the 
 
 **Expiry alert ([#1736](https://github.com/dfadler/zombie-mermaid/issues/1736)).** Each run's "Check DASHBOARD_REFRESH_PAT health" step calls `GET /user` with the PAT. On HTTP 401/403, or when the `GitHub-Authentication-Token-Expiration` response header ([changelog](https://github.blog/changelog/2021-07-26-expiration-options-for-personal-access-tokens/)) is under 14 days away, it opens (or comments on) one issue titled "DASHBOARD_REFRESH_PAT needs attention", using `GITHUB_TOKEN`. The header is absent for non-expiring tokens, so those are never flagged until they are rejected. The step never fails the job.
 
+**Expiry.** As of 2026-10-11 the token is set to *no expiration* (Settings > Developer settings > Fine-grained tokens), so the early warning above cannot fire for it; the alert only triggers once GitHub rejects the token. Set a finite expiry (e.g. 90 days) so the 14-day warning has something to measure. Tracked in [#1799](https://github.com/dfadler/zombie-mermaid/issues/1799).
+
 **Rotating.** Create a new fine-grained PAT with the same scope and a short expiry, then run `gh secret set DASHBOARD_REFRESH_PAT --repo dfadler/zombie-mermaid` (it prompts for the value; never paste it into an issue, PR, log or chat), and close the alert issue.
 
 ## The `VISUAL_REGRESSION_ATTACH_PAT` secret (maintainers)
