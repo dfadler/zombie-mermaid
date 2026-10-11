@@ -1,39 +1,76 @@
 /**
  * Form-judge calibration (#1609). No LLM calls here.
- *   build: tsx scripts/form-judge-calibrate.ts build --index=form-facts-index.json --data-out=calib-data.json --ids-out=calib-ids.json [--limit=N]
+ *   build: tsx scripts/form-judge-calibrate.ts build --index=form-facts-index.json --data-out=calib-data.json --ids-out=calib-ids.json [--limit=N] [--sample-ids=a,b,c] [--only=dropEdge,...]
  *          Writes clean + planted-defect cases in the judge's input format; run the judge on calib-data.json (paid) separately.
- *   score: tsx scripts/form-judge-calibrate.ts score --results=calib-results.jsonl --ids=calib-ids.json
+ *   score: tsx scripts/form-judge-calibrate.ts score --results=calib-results.jsonl --ids=calib-ids.json  (ids file maps opaque case id -> real id)
  *          Exits 1 when FPR/recall miss the thresholds.
  */
 import { readFile, writeFile } from 'node:fs/promises'
 import type { IndexEntry, SampleFile } from './form-facts.ts'
 import type { CombinedSample } from './lib/form-judge-cache.ts'
-import { buildCalibrationCases, scoreVerdicts } from './lib/form-judge-calibration.ts'
+import {
+  buildCalibrationCases,
+  scoreVerdicts,
+} from './lib/form-judge-calibration.ts'
 
 const arg = (n: string): string => {
   const a = process.argv.find((x) => x.startsWith(`--${n}=`))
-  if (!a) { console.error(`Missing --${n}=`); process.exit(2) }
+  if (!a) {
+    console.error(`Missing --${n}=`)
+    process.exit(2)
+  }
   return a.slice(n.length + 3)
 }
-const optArg = (n: string) => process.argv.find((x) => x.startsWith(`--${n}=`))?.slice(n.length + 3)
+const optArg = (n: string) =>
+  process.argv.find((x) => x.startsWith(`--${n}=`))?.slice(n.length + 3)
 
 if (process.argv[2] === 'build') {
   const index = JSON.parse(await readFile(arg('index'), 'utf8')) as IndexEntry[]
   const limit = Number(optArg('limit') ?? Infinity)
+  const ids = optArg('sample-ids')?.split(',')
+  const only = optArg('only')?.split(',')
   const cases: CombinedSample[] = []
-  for (const e of index.filter((x) => x.judgeable).slice(0, limit)) {
+  for (const e of index
+    .filter((x) => x.judgeable && (!ids || ids.includes(x.id)))
+    .slice(0, limit)) {
     const f = JSON.parse(await readFile(e.path, 'utf8')) as SampleFile
     if (f.trimmedSvg && f.asciiText) {
-      cases.push(...buildCalibrationCases({ id: f.id, title: f.title, source: f.source, trimmedSvg: f.trimmedSvg, asciiText: f.asciiText }))
+      cases.push(
+        ...buildCalibrationCases({
+          id: f.id,
+          title: f.title,
+          source: f.source,
+          trimmedSvg: f.trimmedSvg,
+          asciiText: f.asciiText,
+        }),
+      )
     }
   }
-  await writeFile(arg('data-out'), JSON.stringify(cases, null, 2))
-  await writeFile(arg('ids-out'), JSON.stringify(cases.map((c) => c.id)))
-  console.log(`${cases.length} calibration cases`)
+  // Blind the judge: opaque ids (the real `<sample>__<mutation>` id would leak the answer). ids-out maps opaque -> real.
+  const map: Record<string, string> = {}
+  const blind = cases
+    .filter((c) => !only || only.includes(c.id.split('__').pop()!))
+    .map((c, i) => {
+      const id = `case-${String(i).padStart(3, '0')}`
+      map[id] = c.id
+      return { ...c, id }
+    })
+  await writeFile(arg('data-out'), JSON.stringify(blind, null, 2))
+  await writeFile(arg('ids-out'), JSON.stringify(map))
+  console.log(`${blind.length} calibration cases`)
 } else if (process.argv[2] === 'score') {
   const lines = (await readFile(arg('results'), 'utf8')).split('\n')
-  const ids = JSON.parse(await readFile(arg('ids'), 'utf8')) as string[]
-  const s = scoreVerdicts(lines, ids)
+  const map = JSON.parse(await readFile(arg('ids'), 'utf8')) as Record<
+    string,
+    string
+  >
+  const remapped = lines
+    .filter((l) => l.trim())
+    .map((l) => {
+      const v = JSON.parse(l) as { id: string }
+      return JSON.stringify({ ...v, id: map[v.id] ?? v.id })
+    })
+  const s = scoreVerdicts(remapped, Object.values(map))
   console.log(JSON.stringify(s, null, 2))
   process.exit(s.pass ? 0 : 1)
 } else {
