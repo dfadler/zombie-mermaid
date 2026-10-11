@@ -16,8 +16,8 @@ SVG, and ASCII — but that gallery was retired by the site redesign; see
 What's there instead:
 
 - **The [Diagrams hub](https://dfadler.github.io/zombie-mermaid/diagrams/)**
-  lists the six diagram types zombie-mermaid supports — Flowchart, State,
-  Sequence, Class, ER, and XY Chart. Each type has its own detail page
+  lists the eight diagram types zombie-mermaid supports — Flowchart (including State),
+  Sequence, Class, ER, XY Chart, Architecture, C4, and Pie. Each type has its own detail page
   (`/diagrams/<type>.html`) showing **one** worked example for that type:
   its Mermaid source (syntax-highlighted) next to the rendered SVG, plus a
   live picker across every built-in theme and an "Open in the live editor"
@@ -41,7 +41,7 @@ it now only feeds the internal visual-test suite and
 [CONTRIBUTING.md](../../CONTRIBUTING.md)); it isn't rendered anywhere on the
 public site, and the dev server's `/` route serves the same marketing page
 the live site does, not a sample browser. If you want to see more starting
-points than the six type pages offer, reading `samples-data.ts` directly is
+points than the eight type pages offer, reading `samples-data.ts` directly is
 the closest thing to browsing it today.
 
 ## Finding one

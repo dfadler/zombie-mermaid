@@ -250,6 +250,12 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     ascii: { tl: '/', tr: '\\', bl: '\\', br: '/' },
   },
 
+  // State diagram note — square corners; every state beside it is rounded
+  note: {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+
   // Bare text and anchor — no visible outline
   text: {
     unicode: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },

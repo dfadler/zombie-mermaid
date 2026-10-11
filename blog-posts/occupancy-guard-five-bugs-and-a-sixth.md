@@ -137,7 +137,7 @@ is deliberately just the first stage: the single-parent case from #964's own
 repro. A singleton block — no sibling shares its parent set — with exactly
 one qualifying parent computes a desired center equal to that parent's
 already-placed box center, then a left-to-right compaction pass resolves any
-collision against a neighboring block. #964 itself is still open.
+collision against a neighboring block. #964 itself has since been closed.
 Multi-parent convergence and the general collision-resolution case are the
 harder half the design doc flagged, and they haven't shipped yet.
 

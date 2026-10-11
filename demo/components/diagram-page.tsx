@@ -17,7 +17,7 @@
  * `DiagramTypePage` is the reference instance of the shared per-type detail
  * template (#601, part of #599, part of the #590 redesign): breadcrumb,
  * description, syntax-highlighted source + rendered SVG side by side, and
- * cross-links to the other five diagram types. Every
+ * cross-links to the other eight diagram types. Every
  * structural choice, colour, and string not called out below was lifted
  * from the design canvas's `FlowchartDetail` artboard
  * (`https://claude.ai/code/artifact/2f623662-5eaf-42c4-9fd9-c21588e34993`,
@@ -182,6 +182,10 @@ const DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
@@ -217,6 +221,10 @@ const SAMPLE_DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: DETAIL_NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: DETAIL_NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: DETAIL_NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
@@ -249,6 +257,10 @@ const TAG_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: TAG_NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: TAG_NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: TAG_NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
