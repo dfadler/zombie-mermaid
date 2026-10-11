@@ -520,6 +520,25 @@ describe('the mobile menu', () => {
     expect(html).not.toMatch(/class="mobile-nav-panel is-open"/)
   })
 
+  it('has an id the toggle points at with aria-controls', () => {
+    const html = render()
+    const id = /<nav class="mobile-nav-panel" id="([^"]+)"/.exec(html)?.[1]
+    expect(id).toBeTruthy()
+    expect(html).toContain(`aria-controls="${id}"`)
+  })
+
+  it('is visibility:hidden when closed so its links leave the Tab order, and visible when open', () => {
+    const css = navCss()
+    expect(css).toMatch(/\.mobile-nav-panel \{[^}]*visibility: hidden;[^}]*\}/)
+    expect(css).toMatch(
+      /\.mobile-nav-panel\.is-open \{[^}]*visibility: visible;[^}]*\}/,
+    )
+    // The desktop safety net must hide it from AT too, not just visually.
+    expect(css).toMatch(
+      /min-width[^{]*\{\s*[^{]*\.mobile-nav-panel\.is-open \{[^}]*visibility: hidden;/,
+    )
+  })
+
   it('renders as a sibling of the bar, not nested inside it', () => {
     // NAV_MOBILE_MENU_SCRIPT pairs a toggle with its panel via
     // `bar.nextElementSibling` — this is the markup contract that relies on.
