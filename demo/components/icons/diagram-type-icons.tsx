@@ -322,3 +322,89 @@ export function XyChartIcon({
     </StrokeIcon>
   )
 }
+
+/**
+ * C4 — a dashed relationship line flowing from the person down to the
+ * system box. Accent `--cyan` (the C4 profile's accent).
+ */
+export function C4Icon({ animated = true, ...props }: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--cyan">
+      {animated ? (
+        <style>{`
+          .zm-c4-edge {
+            stroke-dasharray: 3 3;
+            animation: zm-c4-flow 1s linear infinite;
+          }
+          @keyframes zm-c4-flow {
+            to { stroke-dashoffset: -12; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-c4-edge { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <circle cx="12" cy="5" r="2.5" />
+      <rect x="4" y="15" width="16" height="6" rx="2" />
+      <path className={animated ? 'zm-c4-edge' : undefined} d="M12 8v7" />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Architecture — two services linked by a flowing dashed edge.
+ * Accent `--violet`.
+ */
+export function ArchitectureIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--violet">
+      {animated ? (
+        <style>{`
+          .zm-ar-edge {
+            stroke-dasharray: 3 3;
+            animation: zm-ar-flow 1s linear infinite;
+          }
+          @keyframes zm-ar-flow {
+            to { stroke-dashoffset: -12; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-ar-edge { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <rect x="2" y="8" width="7" height="8" rx="2" />
+      <rect x="15" y="8" width="7" height="8" rx="2" />
+      <path className={animated ? 'zm-ar-edge' : undefined} d="M9 12h6" />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Pie — one wedge pulls out and settles back. Accent `--pink`.
+ */
+export function PieIcon({ animated = true, ...props }: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--pink">
+      {animated ? (
+        <style>{`
+          .zm-pie-slice { animation: zm-pie-pop 1.8s ease-in-out infinite; }
+          @keyframes zm-pie-pop {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(1.2px, -1.2px); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-pie-slice { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <path d="M11 4a8 8 0 1 0 8 8h-8z" />
+      <path
+        className={animated ? 'zm-pie-slice' : undefined}
+        d="M13 2v7h7a7 7 0 0 0-7-7z"
+      />
+    </StrokeIcon>
+  )
+}
