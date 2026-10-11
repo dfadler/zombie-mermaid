@@ -113,7 +113,9 @@ describe('designBaseCss', () => {
   const css = designBaseCss()
 
   it('declares the one shared :focus-visible ring (#1762)', () => {
-    expect(css).toMatch(/a:focus-visible,[\s\S]*?\{\s*outline: 2px solid var\(--cyan\)/)
+    expect(css).toMatch(
+      /a:focus-visible,[\s\S]*?\{\s*outline: 2px solid var\(--cyan\)/,
+    )
   })
 
   it('includes the tokens', () => {
