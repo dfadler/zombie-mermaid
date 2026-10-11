@@ -218,7 +218,7 @@ describe('EditorPage', () => {
       /<div class="resize-handle" id="resize-handle"><\/div><div class="panel-right"/,
     )
     expect(shell).toMatch(
-      /<\/div>(?:<!--.*?-->)?<div class="toast" id="toast"><\/div>/,
+      /<\/div>(?:<!--.*?-->)?<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"><\/div>/,
     )
     // Followed by the hydration props payload, still inside .editor-tool-shell.
     expect(shell).toMatch(/<script type="application\/json" id="editor-props">/)
