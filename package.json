@@ -92,7 +92,9 @@
     "test:watch": "vitest -c config/vitest.config.ts",
     "test:coverage": "vitest run -c config/vitest.config.ts --coverage",
     "test:visual": "playwright test",
+    "test:a11y": "playwright test -c playwright.a11y.config.ts",
     "test:visual:watch": "playwright test --ui",
+    "test:ascii-text:update": "vitest run -c config/vitest.config.ts __tests__/ascii-text-snapshots.test.ts -u",
     "test:visual:update": "playwright test --update-snapshots",
     "coverage:diff": "tsx scripts/check-diff-coverage.ts",
     "samples": "scripts/tsx-css.sh packages/site/index.ts",
@@ -157,6 +159,7 @@
     "entities": "^7.0.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.1",
     "@microsoft/api-extractor": "^7.59.0",

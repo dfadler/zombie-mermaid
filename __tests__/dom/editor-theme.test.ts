@@ -108,6 +108,63 @@ describe('<EditorApp> theme dropdown (#810)', () => {
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('nord')
   })
 
+  it('exposes listbox semantics and supports keyboard navigation (#1763)', async () => {
+    await mount()
+    const trigger = document.getElementById('theme-dropdown-btn')!
+    const menu = document.getElementById('theme-dropdown-menu')!
+    const key = (target: Element, k: string) =>
+      act(async () => {
+        target.dispatchEvent(
+          new KeyboardEvent('keydown', { key: k, bubbles: true }),
+        )
+      })
+    const items = () =>
+      Array.from(menu.querySelectorAll<HTMLElement>('.theme-dropdown-item'))
+
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
+    expect(trigger).toHaveAttribute('aria-controls', 'theme-dropdown-menu')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(menu).toHaveAttribute('role', 'listbox')
+    expect(items().every((el) => el.getAttribute('role') === 'option')).toBe(
+      true,
+    )
+    expect(items()[0]).toHaveAttribute('aria-selected', 'true')
+
+    // ArrowDown on the closed trigger opens and focuses the selected item.
+    await key(trigger, 'ArrowDown')
+    expect(menu).toHaveClass('open')
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(document.activeElement).toBe(items()[0])
+
+    await key(items()[0], 'ArrowDown')
+    expect(document.activeElement).toBe(items()[1])
+    await key(items()[1], 'End')
+    expect(document.activeElement).toBe(items()[items().length - 1])
+    await key(document.activeElement!, 'ArrowDown') // wraps
+    expect(document.activeElement).toBe(items()[0])
+    await key(items()[0], 'ArrowUp') // wraps back
+    expect(document.activeElement).toBe(items()[items().length - 1])
+    await key(document.activeElement!, 'Home')
+    expect(document.activeElement).toBe(items()[0])
+
+    // Escape closes and returns focus to the trigger.
+    await key(items()[0], 'Escape')
+    expect(menu).not.toHaveClass('open')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(document.activeElement).toBe(trigger)
+
+    // Selecting updates aria-selected and returns focus to the trigger.
+    await key(trigger, 'ArrowDown')
+    const nord = items()[1]
+    await act(async () => {
+      nord.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushRenderTimers()
+    })
+    expect(nord).toHaveAttribute('aria-selected', 'true')
+    expect(items()[0]).toHaveAttribute('aria-selected', 'false')
+    expect(document.activeElement).toBe(trigger)
+  })
+
   it('closes on an outside click without changing the theme', async () => {
     await mount()
     const trigger = document.getElementById('theme-dropdown-btn')!

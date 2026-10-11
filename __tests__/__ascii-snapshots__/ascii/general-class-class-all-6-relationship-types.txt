@@ -1,0 +1,11 @@
+    +---+            +---+            +---+            +---+            +---+           +---+        
+    | A |            | C |            | E |            | G |            | I |           | K |        
+    +---+            +---+            +---+            +---+            +---+           +---+        
+      ^                *                o                |                :               :          
+ inheritance      composition      aggregation      association      dependency      realization     
+      |                |                |                v                v               v          
+    +---+            +---+            +---+            +---+            +---+           +---+        
+    | B |            | D |            | F |            | H |            | J |           | L |        
+    +---+            +---+            +---+            +---+            +---+           +---+        
+                                                                                                     
+                                                                                                     

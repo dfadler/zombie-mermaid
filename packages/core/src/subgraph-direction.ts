@@ -14,7 +14,7 @@
 
 import type { Direction, MermaidGraph, MermaidSubgraph } from './types.ts'
 
-const cache = new WeakMap<MermaidGraph, Map<string, Direction> | null>()
+const cache = new WeakMap<MermaidGraph, Map<string, Direction>>()
 
 /** Every node id and nested subgraph id strictly inside `sg`. */
 function descendants(
@@ -39,7 +39,7 @@ export function subgraphDirections(
 ): Map<string, Direction> | undefined {
   if (!graph.flipsSubgraphs) return undefined
   const hit = cache.get(graph)
-  if (hit !== undefined) return hit ?? undefined
+  if (hit) return hit
   const out = new Map<string, Direction>()
   const walk = (sg: MermaidSubgraph, parent: Direction): void => {
     const inside = descendants(sg)
