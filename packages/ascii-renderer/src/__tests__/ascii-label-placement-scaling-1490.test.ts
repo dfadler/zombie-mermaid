@@ -36,7 +36,9 @@ function best(n: number, runs = 3): number {
 
 describe('label placement scaling (#1490)', () => {
   it('renders 80 labelled edges on shared legs', () => {
-    expect(renderMermaidASCII(labelled(40), { colorMode: 'none' })).toContain('l79')
+    expect(renderMermaidASCII(labelled(40), { colorMode: 'none' })).toContain(
+      'l79',
+    )
   })
 
   it('grows no worse than ~cubic from n=20 to n=40', () => {
