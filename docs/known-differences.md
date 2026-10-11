@@ -80,15 +80,3 @@ and rejects the line:
 
 Quote such labels (`: "one-to-one"`) if the source also has to work in mermaid.js
 tools such as GitHub or the Mermaid Live Editor.
-
-**Cardinality and line forms.**
-
-- `A ||-|| B : x` (single dash) and `A ||==o{ B : x`: mermaid.js reports a parse
-  error; zombie-mermaid draws no relationship and reports no error.
-- Word-form cardinalities (`A one to many B : x`, `A 1 to 0+ B : x`): mermaid.js
-  parses them; zombie-mermaid draws no relationship and reports no error.
-- `A o|--|| B : x` and `A o{--o{ B : x`: mermaid.js parses them; zombie-mermaid throws.
-
-The silent drops are the sharper edge: the diagram renders, with the relationship
-missing. The throwing cases are valid mermaid.js that zombie-mermaid rejects, because
-the left and right cardinality symbols are matched against fixed sets.
