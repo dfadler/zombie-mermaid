@@ -32,7 +32,7 @@ export function NumberSliderField({
   return (
     <div className="padding-field">
       <div className="padding-row">
-        <label>{label}</label>
+        <label htmlFor={id}>{label}</label>
         <input
           className="padding-num"
           id={id}
@@ -47,6 +47,7 @@ export function NumberSliderField({
       <input
         className="padding-slider"
         id={`${id}-slider`}
+        aria-label={`${label} slider`}
         type="range"
         min={min}
         max={max}

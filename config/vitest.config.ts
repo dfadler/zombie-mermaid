@@ -55,7 +55,8 @@ export default defineConfig({
     // still open even on the 5.0.0-rc line) that hangs CI runs forever with
     // no timeout — see #299. Playwright Test drives the browser entirely
     // from Node with no such bridge, so this class of hang can't occur.
-    exclude: ['__tests__/visual/**'],
+    // __tests__/a11y/ is the axe scan, also Playwright (`pnpm test:a11y`).
+    exclude: ['__tests__/visual/**', '__tests__/a11y/**'],
     // Per-file `// @vitest-environment jsdom` docblocks (see
     // __tests__/dom/rtl-example.test.ts), not a directory glob, scope which
     // tests get a live DOM -- added by zombie-mermaid#798 as the #797

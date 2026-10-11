@@ -1,0 +1,24 @@
++--------------------+        +------------------+    
+| USER               |        | POST             |    
++--------------------+        +------------------+    
+| int id PK          |        | int id PK        |    
+| string username UK |-|----o<| string title     |    
+| string email UK    | writes | text content     |    
+| date joined        |        | int author_id FK |    
++--------------------+        | date published   |    
+           +                  +------------------+    
+           |                   +                >     
+ + authors +    + has ---------+ + tagged-with -+     
+ |              |                |                    
+o<             o<               o<                    
++----------------+      +----------------+            
+| COMMENT        |      | TAG            |            
++----------------+      +----------------+            
+| int id PK      |      | int id PK      |            
+| text body      |      | string name UK |            
+| int post_id FK |      +----------------+            
+| int user_id FK |                                    
+| date created   |                                    
++----------------+                                    
+                                                      
+                                                      
