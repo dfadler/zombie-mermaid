@@ -31,6 +31,11 @@ changes that don't need a release (docs, CI, tests).
 
 Not every change needs one — see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
+What counts as a breaking (major) change, and how old majors are supported and
+deprecated, is defined in the
+[versioning and deprecation policy](decisions/versioning-and-deprecation-policy-1568.md).
+Read it before picking a bump type.
+
 ## What happens on merge to `main`
 
 `.github/workflows/publish.yml` runs on every push to `main` (i.e. whenever
@@ -131,6 +136,39 @@ visible in the workflow run. Double-check this setting against npm's current
 [trusted publishers docs](https://docs.npmjs.com/trusted-publishers/) rather
 than assuming the option is where this note describes it — npm has changed
 the default here before and may again.
+
+## After publishing a new major: deprecate the previous major (maintainer, by hand)
+
+Per [section 4 of the versioning and deprecation policy](decisions/versioning-and-deprecation-policy-1568.md),
+only the latest major is supported. Once a new major `N` has published (the
+Version PR is merged and the publish run is green), deprecate the previous
+major's range on npm for **all six packages**. Publish uses OIDC with no token
+in CI, so a maintainer runs this locally while logged in to npm with publish
+rights; CI cannot.
+
+```bash
+for pkg in zombie-mermaid @zombie-mermaid/core @zombie-mermaid/mermaid-parser \
+  @zombie-mermaid/svg-renderer @zombie-mermaid/ascii-renderer @zombie-mermaid/mcp; do
+  npm deprecate "$pkg@<N" "Upgrade to N.x: <URL of the upgrade guide for N>"
+done
+```
+
+Replace `N` with the new major number. The message points at the upgrade
+guide; the policy's example is
+`npm deprecate "zombie-mermaid@<5" "Upgrade to 5.x: https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/upgrading-2x-to-5x.md"`.
+`<N` covers every earlier version and excludes `N.0.0` and its prereleases.
+
+- Each later major needs its own upgrade guide **before** it is deprecated
+  against; the existing one is
+  [upgrading-2x-to-5x.md](guides/upgrading-2x-to-5x.md) and covers 2.x to 5.x
+  only.
+- Deprecation is reversible and does not break installs. To undo it, run
+  `npm deprecate "<pkg>@<N" ""` (empty message).
+- The major's changeset summary should already start with `**BREAKING:**` and
+  link the guide (policy section 5).
+- Whether to deprecate pre-5 versions now, and the support window for old
+  majors, are open maintainer choices in the policy doc; follow what it
+  records as decided.
 
 ## Publishing `ascii-renderer` and `svg-renderer` standalone
 
