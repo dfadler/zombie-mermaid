@@ -40,18 +40,19 @@ Semver applies to the **published surface**: documented exports and types,
 CLI flags and exit codes, MCP tool names and input/output schemas, and the
 install contract. Specifically, a change is **major** if it does any of:
 
-| Change                                                                                                                                | Major?                                             | Precedent                   |
-| ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
-| Raises `engines.node` floor                                                                                                           | Yes                                                | 4.0.0                       |
-| Adds or promotes a peer dependency (including optional) that callers must install or call to keep a documented path working           | Yes                                                | 5.0.0 `elkjs`               |
-| Removes or renames an export, CLI flag, MCP tool or tool parameter                                                                    | Yes                                                |                             |
-| Removes a file consumers could import via `exports`/deep path                                                                         | Yes                                                |                             |
-| Changes a documented option's default so existing calls render differently by design                                                  | Yes                                                |                             |
-| Drops a documented platform or runtime (Bun, browser bundle shape)                                                                    | Yes                                                |                             |
-| Removes non-`exports` tarball contents (e.g. `src/`, [#1446](https://github.com/dfadler/zombie-mermaid/pull/1446))                    | No (patch); not public API                         | 5.0.0 shipped it as a patch |
-| Changes rendered SVG/ASCII output (layout fixes, rounding such as 2dp [#1163](https://github.com/dfadler/zombie-mermaid/issues/1163)) | No; patch for fixes, minor for new visual features |                             |
-| Raises a dev-only dependency or TypeScript version                                                                                    | No                                                 |                             |
-| New diagram type, new option, new MCP tool                                                                                            | Minor                                              |                             |
+| Change                                                                                                                                           | Major?                                             | Precedent                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- | --------------------------- |
+| Raises `engines.node` floor                                                                                                                      | Yes                                                | 4.0.0                       |
+| Adds or promotes a peer dependency (including optional) that callers must install or call to keep a documented path working                      | Yes                                                | 5.0.0 `elkjs`               |
+| Removes or renames an export, CLI flag, MCP tool or tool parameter                                                                               | Yes                                                |                             |
+| Removes a path listed in `exports` or documented as supported                                                                                    | Yes                                                |                             |
+| Changes a documented option's default so existing calls render differently by design                                                             | Yes                                                |                             |
+| Drops a documented platform or runtime (Bun, browser bundle shape)                                                                               | Yes                                                |                             |
+| Changes published `.d.ts` so existing consumer code stops compiling, or raises the TypeScript version consumers need                             | Yes                                                |                             |
+| Removes non-`exports` tarball contents (e.g. `src/`, [#1446](https://github.com/dfadler/zombie-mermaid/pull/1446))                               | No (patch); not public API                         | 5.0.0 shipped it as a patch |
+| Changes rendered SVG/ASCII output (layout fixes, rounding such as 2dp [#1163](https://github.com/dfadler/zombie-mermaid/issues/1163))            | No; patch for fixes, minor for new visual features |                             |
+| Raises a dev-only dependency or the build-time TypeScript version, leaving published `.d.ts` and the supported consumer compiler floor unchanged | No                                                 |                             |
+| New diagram type, new option, new MCP tool                                                                                                       | Minor                                              |                             |
 
 Rendered output is deliberately **not** covered by semver: byte-stable
 output would freeze every layout fix. The contract is "valid Mermaid in,
@@ -109,10 +110,11 @@ extra manual release notes. Backfilling the root changelog stays in #1559.
   (ship immediately, still a major). A change touching only one package
   (still bumps all six). A major whose only break is optional-peer
   (counts, per 5.0.0). A change that is breaking only for deep imports of
-  files not in `exports` (not breaking by definition above).
-- **Boundaries:** "30 days" is measured from the previous major's publish
-  date to the next major's publish date, inclusive of the exact day.
-  `npm deprecate "<5"` covers 4.x and below, excludes 5.0.0 (semver range
+  files not in `exports` and not documented as supported (not breaking by
+  definition above).
+- **Boundaries:** "30 days" is elapsed calendar days between UTC publish
+  dates: the next major is allowed when `next date - previous date >= 30`
+  (a major published 1 Sep allows the next on 1 Oct, not 30 Sep). `npm deprecate "<5"` covers 4.x and below, excludes 5.0.0 (semver range
   `<5` excludes 5.0.0 and prereleases of 5).
 - **Terminology:** "published surface" = anything reachable through
   `package.json` `exports`/`bin`, MCP schemas, or documented in
