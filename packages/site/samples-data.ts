@@ -2130,4 +2130,25 @@ pie title Pets adopted by volunteers
   WAREHOUSE ||.-o{ SHELF : holds
   SHELF ||-.o{ BIN : holds`,
   },
+  {
+    title: 'Flowchart: Three Parallel Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Exactly three labeled parallel edges between the same two nodes in a top-down graph. In ASCII each lane enters the target on its own row with its own arrowhead.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B`,
+  },
+  {
+    title: 'Flowchart: Three Parallel Edges Plus Reciprocal (TD)',
+    category: 'Flowchart',
+    description:
+      'Three labeled parallel edges plus a reciprocal edge back, in a top-down graph. In ASCII the third lane keeps its own arrowhead row.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  B -->|back| A`,
+  },
 ]
