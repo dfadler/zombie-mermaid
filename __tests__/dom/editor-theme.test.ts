@@ -30,13 +30,12 @@ import {
 } from '../../demo/components/editor-app.tsx'
 import { EDITOR_EFFECTIVE_THEME_EVENT } from '../../demo/components/editor-theme.ts'
 import { buildHash } from '../../demo/components/editor-sharing.ts'
-import { DARK_MODE_STORAGE_KEY } from '../../demo/editor-dark-mode-state.ts'
 import { setTheme as setSharedTheme } from '../../demo/theme-state.ts'
 
 /** The Editor's own, local diagram-theme key -- mirrors `editor-theme.ts`'s private `THEME_STORAGE_KEY` (not exported, so duplicated here as a literal, the same way that file's own comment documents the key). */
 const THEME_STORAGE_KEY = 'bm-editor-theme'
 
-// Includes 'zinc-dark' -- the dark-mode-derived auto diagram theme -- the
+// Includes 'zinc-dark' -- one of the 15 built-in diagram themes -- the
 // same way the real editor.ts builds this prop from *every* THEMES key
 // (Object.keys(THEMES).map(...)), not just a curated subset.
 const PROPS: EditorAppProps = {
@@ -189,14 +188,6 @@ describe('<EditorApp> client bootstrap (#810)', () => {
     )
   })
 
-  it('derives the auto dark diagram theme from a persisted dark-mode preference', async () => {
-    window.localStorage.setItem(DARK_MODE_STORAGE_KEY, 'true')
-    await mount()
-    expect(document.getElementById('theme-btn-label')!.textContent).toBe(
-      'Zinc Dark',
-    )
-  })
-
   it('loads source + theme from the URL hash, overriding a saved theme', async () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, 'dracula')
     window.history.replaceState(
@@ -218,9 +209,7 @@ describe('<EditorApp> client bootstrap (#810)', () => {
 describe('<EditorApp> theme scoped to the Editor only (theme-selector-shared-state.md amendment)', () => {
   it('does not reskin the editor chrome when a diagram theme is selected', async () => {
     await mount()
-    expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
-      '#FFFFFF',
-    )
+    expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe('')
 
     await act(async () => {
       document
@@ -234,13 +223,12 @@ describe('<EditorApp> theme scoped to the Editor only (theme-selector-shared-sta
 
     // The dropdown label reflects the pick (and the diagram itself gets
     // Nord's colors -- see editor-rendering.test.ts's buildOptions
-    // coverage), but the tool's own chrome color stays at its light-mode
-    // default: it no longer follows the diagram theme (Nord's bg is
-    // '#2E3440', not '#FFFFFF').
+    // coverage), but the tool's own chrome color (fixed by editor/css/
+    // variables.css's `:root` defaults) is never touched by selecting a
+    // diagram theme -- no inline --t-bg override appears (Nord's bg is
+    // '#2E3440', not the chrome's default).
     expect(document.getElementById('theme-btn-label')!.textContent).toBe('Nord')
-    expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
-      '#FFFFFF',
-    )
+    expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe('')
   })
 
   it('does not persist a picked theme to the shared site-wide mermaid-theme key', async () => {
@@ -270,44 +258,6 @@ describe('<EditorApp> theme scoped to the Editor only (theme-selector-shared-sta
 
     expect(document.getElementById('theme-btn-label')!.textContent).toBe(
       'Default',
-    )
-  })
-
-  it('a dark/light toggle overrides a manually-picked theme back to the auto diagram theme', async () => {
-    await mount()
-    // Manually pick a theme first.
-    await act(async () => {
-      document
-        .getElementById('theme-dropdown-btn')!
-        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      document
-        .querySelector<HTMLElement>('.theme-dropdown-item[data-theme="nord"]')!
-        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await flushRenderTimers()
-    })
-    expect(document.getElementById('theme-btn-label')!.textContent).toBe('Nord')
-
-    // Toggling dark mode always wins over a manual pick -- see
-    // editor-theme.ts's header comment (verbatim `editor/js/dark-mode.ts`
-    // behavior: the toggle subscriber always passes force: true).
-    await act(async () => {
-      document
-        .getElementById('dark-light-btn')!
-        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await flushRenderTimers()
-    })
-
-    // '#18181B' is editor-dark-mode.ts's applyChromeColorMode() dark-mode
-    // default -- it happens to equal this file's stubbed 'zinc-dark' theme
-    // bg (both are independently '#18181B'), but this assertion is checking
-    // the chrome's own dark/light-derived color, not a reskin-to-diagram-
-    // theme effect (see the "theme scoped to the Editor only" describe
-    // block above for that).
-    expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
-      '#18181B',
-    )
-    expect(document.getElementById('theme-btn-label')!.textContent).toBe(
-      'Zinc Dark',
     )
   })
 })

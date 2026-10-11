@@ -12,15 +12,11 @@
  * `fork-fixes-page.tsx`, which imports `renderToString` for its own
  * SSR-only purposes.
  *
- * `<ThemePickerSection>`/`<Footer>`/`<NavIsland>` are deliberately **not**
- * rendered here — they stay in `fork-fixes-page.tsx` as plain siblings of
- * this component's hydration container, the same way `dashboard-page.tsx`
- * renders them today (a fix landed alongside #802's investigation: nesting
- * `ThemePickerSection` inside a hydrated component tree drags
- * `react-dom/server` into the client bundle via `ThemePickerIsland`, and
- * double-hydrates `#theme-pills` — see `dashboard-app.tsx`'s header comment
- * for the full story). `fork-fixes.html` never repeats that mistake in the
- * first place.
+ * `<Footer>`/`<NavIsland>` are deliberately **not** rendered here — they
+ * stay in `fork-fixes-page.tsx` as plain siblings of this component's
+ * hydration container, the same way `dashboard-page.tsx` renders them
+ * today — see `dashboard-app.tsx`'s header comment for the full story of
+ * why that split exists.
  *
  * Every fact rendered below (PR/commit/render-mode/upstream-issue metadata,
  * the source, and the before/after content) still comes from fork-fixes.ts
@@ -35,8 +31,9 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import { Fragment, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useRef, type CSSProperties, type ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
+import { useScrollFade } from './use-scroll-fade.ts'
 import {
   CheckIcon,
   ChevronRightIcon,
@@ -456,6 +453,9 @@ export type PanelContent =
   /** The rendered SVG. */
   | { kind: 'svg'; html: string }
 
+/** Width, in px, of the fade overlay at each edge of {@link AsciiWell}. */
+const SCROLL_FADE_WIDTH = 32
+
 /**
  * The monospace, scrollable well shared by the `ascii`/`excerpt` kinds —
  * `fix-ascii .fix-wide` is a real CSS selector (see demo/fork-fixes.css)
@@ -480,6 +480,93 @@ const ASCII_WELL_STYLE: CSSProperties = {
   // instead of scrolling inside this well — several fixes on this page
   // exist specifically because a diagram renders wider than its label.
   minWidth: 0,
+}
+
+/**
+ * One edge's fade for {@link AsciiWell} — an absolutely positioned overlay,
+ * not part of the well's own `overflow-x` scrolling box, so it stays
+ * pinned at the well's visible edge regardless of scroll position and
+ * paints *over* whatever's underneath. That distinction matters: a
+ * `background-image` gradient on the well itself can only ever paint
+ * *behind* the well's own text, so it read as barely-there dimming of
+ * already-dim `--text-dim` content rather than a visible fade (reported
+ * as "I see no fix" against a live render). Painted on top instead, the
+ * diagram visibly dissolves under it. Ends in `--panel-2` — this well's
+ * own card background — so it fades to the same surface colour a reader
+ * already sees framing the well, not an arbitrary tint.
+ */
+function AsciiWellFade({ side }: { side: 'left' | 'right' }) {
+  // Points the gradient line *outward*, toward the card border, so
+  // `--panel-2` (opaque) lands at the well's true outer edge and
+  // `transparent` lands toward the content — not the reverse, which would
+  // paint a solid panel-coloured block a fade-width *into* the diagram
+  // while leaving the actual edge transparent (a visible seam against the
+  // well's own `--bg`, rather than a blend into the card).
+  const direction = side === 'left' ? 'to left' : 'to right'
+  const corners =
+    side === 'left'
+      ? `${RADIUS.md}px 0 0 ${RADIUS.md}px`
+      : `0 ${RADIUS.md}px ${RADIUS.md}px 0`
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        [side]: 0,
+        width: `${SCROLL_FADE_WIDTH}px`,
+        background: `linear-gradient(${direction}, transparent, ${colorVar('--panel-2')})`,
+        borderRadius: corners,
+        pointerEvents: 'none',
+      }}
+    />
+  )
+}
+
+/**
+ * {@link ASCII_WELL_STYLE}'s `<pre>`, framed with {@link AsciiWellFade}
+ * overlays that {@link useScrollFade} shows only on the edge(s) that still
+ * have more content past them — several fixes on this page render an ASCII
+ * diagram wider than its panel, and without this a reader can miss that the
+ * well scrolls at all, since nothing about a flush-cut edge says so. Pass
+ * exactly one of `text` (the `excerpt` panel kind) or `html` (the `ascii`
+ * kind's pre-rendered ascii-html.ts markup).
+ *
+ * Hydrated client-side only, mirroring this whole file's own hydration
+ * boundary (see this file's header comment) — this page already ships
+ * hydration JS for `ForkFixesApp` (and `NavIsland`, `ThemePickerIsland`
+ * elsewhere), so a scroll listener here is one more hydrated behaviour on
+ * an already-interactive page, not an exception to some larger "this site
+ * never runs JS" rule. That rule (docs/decisions/no-script-interactivity.md)
+ * is scoped to the *library's rendered diagram output* — the `<svg>`/ASCII
+ * markup `renderMermaidSVG`/`renderMermaidASCII` themselves produce, which
+ * must stay meaningful standalone (a file on disk, inlined into a host
+ * page, loaded via `<img>`, rasterized) — not to this demo site's own
+ * chrome, which the site fully controls and already hydrates.
+ */
+function AsciiWell({ text, html }: { text?: string; html?: string }) {
+  const ref = useRef<HTMLPreElement>(null)
+  const { left, right } = useScrollFade(ref)
+  return (
+    <div style={{ position: 'relative', minWidth: 0 }}>
+      {html === undefined ? (
+        <pre ref={ref} className="fix-ascii mono" style={ASCII_WELL_STYLE}>
+          {text}
+        </pre>
+      ) : (
+        <pre
+          ref={ref}
+          className="fix-ascii mono"
+          style={ASCII_WELL_STYLE}
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- ascii-html.ts output for this repo's own build-time render, never user input
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      )}
+      {left && <AsciiWellFade side="left" />}
+      {right && <AsciiWellFade side="right" />}
+    </div>
+  )
 }
 
 /** One side of a before/after pair. `accent` colours an error/empty note to match the side it's on (amber for before, green for after). */
@@ -519,11 +606,7 @@ export function FixPanel({
         </div>
       )
     case 'excerpt':
-      return (
-        <pre className="fix-ascii mono" style={ASCII_WELL_STYLE}>
-          {content.text}
-        </pre>
-      )
+      return <AsciiWell text={content.text} />
     case 'screenshot':
       return (
         <img
@@ -539,20 +622,21 @@ export function FixPanel({
         />
       )
     case 'ascii':
-      return (
-        <pre
-          className="fix-ascii mono"
-          style={ASCII_WELL_STYLE}
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- ascii-html.ts output for this repo's own build-time render, never user input
-          dangerouslySetInnerHTML={{ __html: content.html }}
-        />
-      )
+      return <AsciiWell html={content.html} />
     case 'svg':
       return (
         <div
           className="fix-svg"
           style={{
-            background: colorVar('--bg'),
+            // Not colorVar('--bg') (this page's own dark chrome): fork-fixes.ts's
+            // renderWith() bakes a fixed `{ bg: '#ffffff', fg: '#1a1a1a' }` into
+            // every rendered <svg> here, deliberately not following the site's
+            // theme (docs/decisions/theme-selector-shared-state.md's #689
+            // amendment) — a historical "before" render isn't guaranteed to
+            // support today's CSS custom-property theming contract. Matching
+            // this wrapper to that same fixed white keeps the panel a seamless
+            // light card instead of a white diagram floating in a dark inset.
+            background: '#ffffff',
             borderRadius: `${RADIUS.md}px`,
             padding: `${SPACE.xl}px`,
             minWidth: 0,
@@ -673,7 +757,10 @@ export function FixSection({
   return (
     <section id={id}>
       <Card
-        padding={44}
+        // padding lives in fork-fixes.css instead of via this prop (which
+        // would render as an inline style) so the breakpoint overrides
+        // below can win via plain cascade order instead of needing
+        // !important to beat an inline style (zombie-mermaid#1080).
         className="fix-card"
         style={{
           display: 'flex',
@@ -742,7 +829,10 @@ export function FixSection({
           className="ba-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            // grid-template-columns lives in fork-fixes.css instead of
+            // here (not inline) so its mobile breakpoint override can win
+            // via plain cascade order instead of needing !important to
+            // beat this inline style (zombie-mermaid#1080).
             gap: `${SPACE['4xl']}px`,
           }}
         >
@@ -810,9 +900,9 @@ export interface ForkFixesAppProps {
  * it straight to `hydrateRoot()` client-side, targeting that same
  * container.
  *
- * Deliberately does **not** include `<NavIsland>`, `<ThemePickerSection>`,
- * or `<Footer>` -- see this file's header comment for why all three stay
- * plain siblings in `fork-fixes-page.tsx` instead.
+ * Deliberately does **not** include `<NavIsland>` or `<Footer>` -- see
+ * this file's header comment for why both stay plain siblings in
+ * `fork-fixes-page.tsx` instead.
  */
 export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
   return (
@@ -848,7 +938,10 @@ export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
           <h1
             className="page-h1"
             style={{
-              fontSize: '48px',
+              // font-size lives in fork-fixes.css instead of here (not
+              // inline) so its mobile breakpoint override can win via
+              // plain cascade order instead of needing !important to beat
+              // this inline style (zombie-mermaid#1080).
               lineHeight: 1.1,
               letterSpacing: LETTER_SPACING.display,
               maxWidth: '820px',

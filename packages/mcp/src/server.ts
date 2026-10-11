@@ -11,6 +11,8 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { getPackageVersion } from '../../../src/package-info.ts'
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk } from '@zombie-mermaid/svg-renderer'
 import { renderSvgInputShape, renderSvgHandler } from './tools/render-svg.ts'
 import {
   renderAsciiInputShape,
@@ -25,6 +27,9 @@ import {
   fixSequenceActivationsHandler,
 } from './tools/fix-sequence-activations.ts'
 
+import { listThemesHandler } from './tools/list-themes.ts'
+import { listDiagramTypesHandler } from './tools/list-diagram-types.ts'
+
 /**
  * Build a zombie-mermaid MCP server exposing `render_mermaid_svg`,
  * `render_mermaid_ascii`, and `check_mermaid_sequence_activations` tools.
@@ -35,6 +40,8 @@ import {
  * in-process without spawning anything.
  */
 export function createMcpServer(): McpServer {
+  // elkjs is a regular dependency of this package; register it for the SVG tool.
+  registerElk(ELK)
   const server = new McpServer({
     name: 'zombie-mermaid',
     version: getPackageVersion(),
@@ -47,12 +54,17 @@ export function createMcpServer(): McpServer {
       description:
         'Render Mermaid diagram source to a self-contained SVG string. ' +
         'Supports flowcharts, state diagrams, sequence diagrams, class ' +
-        'diagrams, ER diagrams, and XY charts.',
+        'diagrams, ER diagrams, and XY charts. Optional bg/fg hex colors ' +
+        'override the theme. Optional outputPath writes the SVG to a .svg ' +
+        "file inside the server's working directory and returns " +
+        '{ saved, size } instead of the SVG text.',
       inputSchema: renderSvgInputShape,
       annotations: {
         title: 'Render Mermaid diagram to SVG',
-        readOnlyHint: true,
-        destructiveHint: false,
+        // Only writes when the caller passes outputPath, but the hint must
+        // describe the tool's worst case: it can overwrite an existing .svg.
+        readOnlyHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: false,
       },
@@ -129,6 +141,44 @@ export function createMcpServer(): McpServer {
       },
     },
     fixSequenceActivationsHandler,
+  )
+
+  server.registerTool(
+    'list_themes',
+    {
+      title: 'List built-in diagram themes',
+      description:
+        'List the names of the built-in themes accepted by the `theme` ' +
+        'argument of render_mermaid_svg.',
+      inputSchema: {},
+      annotations: {
+        title: 'List built-in diagram themes',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    listThemesHandler,
+  )
+
+  server.registerTool(
+    'list_diagram_types',
+    {
+      title: 'List supported diagram types',
+      description:
+        'List the Mermaid diagram types this library detects and renders ' +
+        '(flowchart also covers state diagrams).',
+      inputSchema: {},
+      annotations: {
+        title: 'List supported diagram types',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    listDiagramTypesHandler,
   )
 
   return server

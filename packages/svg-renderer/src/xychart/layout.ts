@@ -9,6 +9,7 @@ import type {
   PlotArea,
   LegendItem,
 } from '@zombie-mermaid/mermaid-parser'
+import { niceTickValues } from '@zombie-mermaid/core'
 import type { XyChartRenderOptions } from '@zombie-mermaid/core'
 import { estimateTextWidth } from '../styles.ts'
 
@@ -82,13 +83,10 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   const yTicks = niceTickValues(yRange.min, yRange.max)
+  const yLabels = formatTickLabels(yTicks)
   const maxYLabelWidth = Math.max(
-    ...yTicks.map((v) =>
-      estimateTextWidth(
-        formatTickValue(v),
-        XY.axisLabelFontSize,
-        XY.axisLabelFontWeight,
-      ),
+    ...yLabels.map((label) =>
+      estimateTextWidth(label, XY.axisLabelFontSize, XY.axisLabelFontWeight),
     ),
     XY.yLabelWidth,
   )
@@ -127,8 +125,8 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   const xTicks = buildXTicks(chart, xScale, top + plotH, bandWidth)
 
   // Y-axis ticks
-  const yAxisTicks: AxisTick[] = yTicks.map((v) => ({
-    label: formatTickValue(v),
+  const yAxisTicks: AxisTick[] = yTicks.map((v, i) => ({
+    label: yLabels[i]!,
     x: left,
     y: yScale(v),
     tx: left - XY.tickLength,
@@ -251,6 +249,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   const valueTicks = niceTickValues(yRange.min, yRange.max)
+  const valueLabels = formatTickLabels(valueTicks)
 
   // Compute category label widths for left margin
   const dataCount = getDataCount(chart)
@@ -293,8 +292,8 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const catScale = (i: number) => top + (i + 0.5) * bandHeight
 
   // X-axis (bottom): value ticks
-  const xTicks: AxisTick[] = valueTicks.map((v) => ({
-    label: formatTickValue(v),
+  const xTicks: AxisTick[] = valueTicks.map((v, i) => ({
+    label: valueLabels[i]!,
     x: valueScale(v),
     y: top + plotH,
     tx: valueScale(v),
@@ -491,16 +490,45 @@ function getCategoryLabels(chart: XYChart, count: number): string[] {
   return Array.from({ length: count }, (_, i) => String(i + 1))
 }
 
+/** Minimum clear space between two neighbouring x-axis labels. */
+const X_LABEL_MIN_GAP = 8
+
+/**
+ * Step between shown x-axis labels: 1 when every pair of neighbouring labels
+ * keeps `X_LABEL_MIN_GAP` of clear space, otherwise the smallest n for which
+ * every pair of shown (every n-th) labels does. Checked pairwise on the real
+ * widths so one long label doesn't thin out an otherwise roomy axis.
+ */
+export function xLabelStep(labels: string[], bandWidth: number): number {
+  const widths = labels.map((l) =>
+    estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
+  )
+  for (let step = 1; step < labels.length; step++) {
+    let fits = true
+    for (let i = 0; i + step < labels.length; i += step) {
+      const gap = step * bandWidth - (widths[i]! + widths[i + step]!) / 2
+      if (gap < X_LABEL_MIN_GAP) {
+        fits = false
+        break
+      }
+    }
+    if (fits) return step
+  }
+  return Math.max(1, labels.length)
+}
+
 function buildXTicks(
   chart: XYChart,
   xScale: (i: number) => number,
   axisY: number,
-  _bandWidth: number,
+  bandWidth: number,
 ): AxisTick[] {
   const count = getDataCount(chart)
   const labels = getCategoryLabels(chart, count)
+  const step = xLabelStep(labels, bandWidth)
+  // Dropped labels keep their tick mark but render no text.
   return labels.map((label, i) => ({
-    label,
+    label: i % step === 0 ? label : '',
     x: xScale(i),
     y: axisY,
     tx: xScale(i),
@@ -605,27 +633,24 @@ function layoutLines(
   return lines
 }
 
-/** Generate "nice" tick values for a numeric range */
-function niceTickValues(min: number, max: number): number[] {
-  const range = max - min
-  if (range <= 0) return [min]
+export { niceTickValues } from '@zombie-mermaid/core'
 
-  // Find nice interval
-  const rawInterval = range / 6
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rawInterval)))
-  const residual = rawInterval / magnitude
-  let niceInterval: number
-  if (residual <= 1.5) niceInterval = magnitude
-  else if (residual <= 3) niceInterval = 2 * magnitude
-  else if (residual <= 7) niceInterval = 5 * magnitude
-  else niceInterval = 10 * magnitude
-
-  const start = Math.ceil(min / niceInterval) * niceInterval
-  const ticks: number[] = []
-  for (let v = start; v <= max + niceInterval * 0.001; v += niceInterval) {
-    ticks.push(Math.round(v * 1e10) / 1e10) // avoid floating-point noise
-  }
-  return ticks
+/**
+ * Format a set of evenly-spaced tick values with enough decimal places to
+ * keep every label distinct. Precision comes from the tick step, not the
+ * magnitude of the value: a 0.5 step around 100 needs one decimal, or
+ * 99.5 and 100.5 both collapse into neighbouring whole numbers.
+ */
+export function formatTickLabels(ticks: number[]): string[] {
+  const step = ticks.length > 1 ? Math.abs(ticks[1]! - ticks[0]!) : 0
+  // The -1e-9 keeps an exact power-of-ten step (0.1) from rounding up
+  const decimals =
+    step > 0 && step < 1 ? Math.ceil(-Math.log10(step) - 1e-9) : 0
+  return ticks.map((v) =>
+    Number.isInteger(v) && decimals === 0
+      ? String(v)
+      : String(Number(v.toFixed(decimals))),
+  )
 }
 
 function formatTickValue(v: number): string {

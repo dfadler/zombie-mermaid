@@ -17,7 +17,7 @@
  * do with subgraphs — this repro has none).
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
 import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import {
@@ -187,7 +187,7 @@ describe('cross-style edge overlap', () => {
         'dotted',
       )
       expect(conflict).not.toBeNull()
-      grid.add(`${conflict!.x},${conflict!.y}`)
+      grid.add(conflict!.x, conflict!.y)
     }
 
     // The bug: after those three iterations, every real conflict cell now

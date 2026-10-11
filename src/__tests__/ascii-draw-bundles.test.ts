@@ -15,7 +15,7 @@
  * with that input.
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
 import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import type {
@@ -63,6 +63,15 @@ const FAN_IN = `flowchart TD
   A[One] --> C[Target]
   B[Two] --> C`
 
+// A plain fan-in centers its target between the sources, so the grid has no
+// spare columns beside the junction. The hand-built trunk paths below step a
+// column to either side of it; a source that feeds a second node keeps the
+// target under the first source (#1339), leaving that room.
+const FAN_IN_BESIDE = `flowchart TD
+  A[One] --> C[Target]
+  B[Two] --> C
+  B --> D[Other]`
+
 const FAN_OUT = `flowchart TD
   C[Source] --> A[One]
   C --> B[Two]`
@@ -82,22 +91,26 @@ const MIXED_FAN_OUT = `flowchart TD
 describe('draw-bundles: rendered fan-in/fan-out diagrams', () => {
   it('draws a fan-in bundle with a T-junction and single arrowhead (unicode)', () => {
     const out = renderMermaidASCII(FAN_IN, { useAscii: false })
-    expect(out).toContain('├────────────┘')
+    // The two sources join in one trunk whose T-junction sits over the
+    // (centered) target.
+    expect(out).toContain('└───────┬──────┘')
     expect(out).toContain('▼')
     expect(out.match(/▼/g)).toHaveLength(1)
   })
 
   it('draws a fan-in bundle box-start and junction in ASCII charset', () => {
     const out = renderMermaidASCII(FAN_IN, { useAscii: true })
-    expect(out).toContain('+----+---+')
+    expect(out).toContain('+-------+------+')
     expect(out).toContain('+--+--+')
-    expect(out).toContain('+------------+')
+    expect(out).toContain('+--------+')
     expect(out).toContain('v')
   })
 
   it('draws a fan-out bundle with one arrowhead per target (unicode)', () => {
     const out = renderMermaidASCII(FAN_OUT, { useAscii: false })
-    expect(out).toContain('├────────────┐')
+    // The source sits centred over its two targets, so the shared trunk
+    // leaves its bottom border and splits at a ┴ directly beneath it.
+    expect(out).toMatch(/┌─+┴─+┐/)
     expect(out.match(/▼/g)).toHaveLength(2)
   })
 
@@ -274,7 +287,7 @@ describe('drawBundledEdgeSegment', () => {
 
 describe('drawBundleSharedPath', () => {
   it('returns unmodified canvases when sharedPath has fewer than 2 points', () => {
-    const graph = buildGraph(FAN_IN)
+    const graph = buildGraph(FAN_IN_BESIDE)
     const bundle = graph.bundles[0]!
     const shortBundle = {
       ...bundle,
@@ -322,7 +335,7 @@ describe('drawBundleSharedPath', () => {
   ])(
     'draws a %s in the shared trunk (unicode)',
     (_label, makePath, expectedChar) => {
-      const graph = buildGraph(FAN_IN)
+      const graph = buildGraph(FAN_IN_BESIDE)
       const bundle = graph.bundles[0]!
       const bent = {
         ...bundle,
@@ -334,7 +347,7 @@ describe('drawBundleSharedPath', () => {
   )
 
   it('draws a bend in the shared trunk as "+" in ASCII charset', () => {
-    const graph = buildGraph(FAN_IN, true)
+    const graph = buildGraph(FAN_IN_BESIDE, true)
     const bundle = graph.bundles[0]!
     const junction = bundle.junctionPoint!
     const bent = {

@@ -278,6 +278,8 @@ motion was intended.
 own class (`class A foo` or `A:::foo`) overrides it property by property, and
 an explicit `style A ...` directive overrides both.
 
+<!-- mermaid-audited-version: 11.17.0 (read by .github/workflows/upstream-watch.yml; bump when the coverage audit is redone) -->
+
 ### Known limitations
 
 Three pieces of Mermaid's flowchart syntax are recognized as intentionally
@@ -305,13 +307,11 @@ to mean picking one fixed rendered state (expanded or collapsed) at render
 time, which is a different feature. The real collapse syntax also could not
 be verified, since Mermaid itself isn't a dependency here; shipping a guess
 at the grammar seemed worse than not shipping it. **A `collapse <id>`
-statement, or `@{ ... }` metadata attached to a subgraph id, is not
-recognized as collapse syntax — treat it as unsupported rather than a
-no-op.** Verified empirically: both forms are absorbed by the ordinary node
-parser instead, which adds a stray, disconnected node to the diagram (with
-id `collapse`, or reusing the subgraph's own id) rather than leaving the
-diagram unchanged. Omit this syntax rather than relying on it to be
-harmlessly ignored.
+statement is not recognized as collapse syntax — treat it as unsupported
+rather than a no-op.** Re-verified on 5.0: it is absorbed by the ordinary
+node parser, which adds a stray, disconnected node with id `collapse`. A
+`S@{ collapse: true }` line on a subgraph id no longer adds a node, but it
+does not collapse anything either. Omit this syntax.
 
 ## State Diagrams
 
@@ -321,6 +321,19 @@ stateDiagram-v2
   Idle --> Processing: start
   Processing --> Complete: done
   Complete --> [*]
+```
+
+### Styling
+
+State diagrams accept the same `classDef` / `class` / `:::name` styling as
+flowcharts (see [Styling](#styling)), including `classDef default`:
+
+```
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Busy:::hot
+  classDef hot fill:#f96,stroke:#333
+  class Idle hot
 ```
 
 ## Sequence Diagrams
@@ -469,6 +482,20 @@ classDiagram
   Duck: +String beakColor
   Duck: +swim()
   Duck: +quack()
+```
+
+### Namespaces
+
+`namespace Name { ... }` blocks are drawn as a labeled frame around their
+member classes in both SVG and ASCII.
+
+```
+classDiagram
+  namespace Core {
+    class A
+    class B
+  }
+  A --> B
 ```
 
 ### Interactions
@@ -678,6 +705,115 @@ The chart renderer follows a clean, minimal design philosophy, originally inspir
 - **Full theme support** — All 15 built-in themes (and custom themes) apply to charts. The accent color drives the entire series color palette
 - **Live theme switching** — Chart series colors are CSS custom properties (`--xychart-color-N`), so theme changes apply instantly without re-rendering
 
+## Architecture Diagrams
+
+`architecture-beta` (and the bare `architecture` header) follows
+[Mermaid's syntax](https://mermaid.ai/open-source/syntax/architecture.html):
+
+```mermaid
+architecture-beta
+  group api(cloud)[API]
+  service db(database)[Database] in api
+  service server(server)[Server] in api
+  service client(internet)[Client]
+  db:L -- R:server
+  server:T <--> B:client
+```
+
+Supported: `group`, `service` and `junction` (with `in <group>` nesting and
+optional `(icon)` / `[Title]`), edges with port sides and `--`, `-->`, `<--`,
+`<-->`, and the `{group}` modifier (the edge attaches to the service's
+enclosing group). A statement the parser does not understand is an error with
+its line number, not silently dropped.
+
+The diagram is lowered to the flowchart model and drawn by the flowchart
+layout, so it is not positioned on Mermaid's port grid:
+
+- Ports only choose the flow direction (left-to-right unless more edges use
+  top/bottom ports) and which way each edge points in the layout, so
+  `db:L -- R:server` still puts `server` left of `db`. Exact placement is the
+  flowchart layout's.
+- Icons are not drawn. `database` and `disk` give a cylinder, `cloud` a
+  stadium, `internet` a circle; any other icon (including custom `"pack:name"`
+  icons) gives a rectangle.
+- `align row` / `align column` are accepted and ignored.
+- ASCII draws a junction as an empty box and, like any flowchart, can mis-place
+  nodes when sibling groups are joined by cross-group edges.
+
+## C4 Diagrams
+
+`C4Context`, `C4Container`, `C4Component`, `C4Dynamic` and `C4Deployment` diagrams render in both SVG and ASCII.
+
+```
+C4Container
+  Person(user, "User")
+  System_Boundary(shop, "Shop") {
+    Container(web, "Web App", "React", "Storefront")
+    ContainerDb(db, "Database", "PostgreSQL")
+  }
+  Rel(user, web, "Browses")
+  Rel(web, db, "Reads/writes", "SQL")
+```
+
+Supported: `Person`, `System`, `Container`, `Component` (plus `Db`, `Queue` and `_Ext` variants), `Boundary`/`Enterprise_Boundary`/`System_Boundary`/`Container_Boundary`, `Deployment_Node`/`Node`/`Node_L`/`Node_R`, `Rel`, `BiRel`, directional `Rel_*` aliases, `RelIndex`, and `title`.
+
+C4 diagrams have their own renderers (they are not lowered to the flowchart model): persons get a head-and-shoulders glyph, databases a cylinder, queues a pipe, external elements the muted C4 palette, and boundaries and deployment nodes a dashed frame with a title. Relationship labels show the label and, on its own line, the `[technology]`. A `title` is drawn at the top. `Rel` endpoints may be populated boundaries. `RenderOptions.direction` re-orients the SVG layout (default top-to-bottom).
+
+Layout hints: `Rel_D`/`Rel_U`/`Rel_L`/`Rel_R` are layering constraints (target below/above, or side by side in one row) in ASCII. In SVG they have no effect on placement, as in Mermaid: shapes are laid out in declaration order, in rows, and relationships are drawn afterwards without moving anything. C4 SVG uses its own row layout, not ELK, so it does not need `elkjs`.
+
+Known limitations:
+
+- ASCII output is always top-to-bottom (`BT` reverses the rows; `LR`/`RL` are laid out top-to-bottom).
+- `UpdateElementStyle`, `UpdateRelStyle`, `UpdateLayoutConfig`, legends and tags are accepted and ignored. Elements use the standard C4 palette.
+- A relationship from an element to itself is not drawn in ASCII.
+- Two relationships with the same `from` and `to` (for example `Rel(a, b, ...)` and `Rel_Back(a, b, ...)`) are both drawn. Mermaid merges them and draws only the later one; we keep both so nothing the author wrote is dropped (#1209).
+
+## Pie Charts
+
+`pie` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/pie.html)
+and its renderer's layout:
+
+```mermaid
+pie showData title Key elements in Product X
+  "Calcium" : 42.96
+  "Potassium" : 50.05
+  "Magnesium" : 10.01
+  "Iron" : 5
+```
+
+Supported: `title` (on the `pie` line or its own line), `showData` (right
+after `pie`), quoted `"label" : value` slices, `accTitle` and `accDescr`.
+Values must be zero or more; a repeated label keeps its first value. A line
+the parser does not understand is an error with its line number.
+
+The SVG uses Mermaid's geometry: slices in source order, clockwise from 12
+o'clock; each slice labelled with its whole-number percentage of the total,
+inside the slice; a legend on the right listing every slice (with `showData`,
+as `label [value]`, the value printed as written). Slices under 1% of the
+total are left out of the pie but stay in the legend, so the drawn slices
+fill the circle and the labels may not add up to 100%. A `pie` with no
+slices draws an empty circle.
+
+Colours follow the theme instead of Mermaid's `pie1`..`pie12`: the first
+slice uses the accent colour, the next eleven use the XY chart series
+shades, and the twelve repeat after that. Slices are drawn at Mermaid's 0.7
+opacity with a 2px outline in the theme's foreground colour.
+
+Known differences from Mermaid:
+
+- `%%{init: {"pie": {"textPosition": 0.5}}}%%` moves the SVG slice labels
+  (0 is the centre, 1 the outer edge; default 0.75). The ASCII output has no
+  positioned labels, so it ignores it. The other `pie` settings Mermaid
+  11.16+ supports (`donutHole`, `legendPosition`, `highlightSlice`) are not
+  supported yet; their defaults are always used.
+- A legend taller than the 450px frame (more than about 20 slices) makes the
+  SVG taller instead of being cut off, and an empty chart keeps its full
+  width (Mermaid crops it).
+- Mermaid's `#quot;`-style character codes in pie labels and legends are shown as written. Flowchart labels decode them (via `decodeMermaidEntities` in `packages/core/src/multiline-utils.ts`).
+
+Mermaid has no text output for pie charts; see
+[ASCII Pie Charts](#ascii-pie-charts) for this library's.
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
@@ -698,6 +834,16 @@ This library never invents a name on your behalf (a generated "flowchart
 with 3 nodes" summary would be a confidently useless accessible name) — when
 `title` is omitted the SVG still gets `role="img"`, but claims no name, the
 same as an `<img>` with no `alt`.
+
+Pie charts also read Mermaid's `accTitle:` and `accDescr:` lines from the
+source: `accTitle` becomes the accessible name when the `title` option is not
+given (the option wins), and `accDescr` becomes a `<desc id="zm-desc-N">`
+referenced by `aria-describedby`. The visible chart `title` is not used as the
+accessible name. Both are dropped when the diagram is `decorative`.
+
+C4 diagrams use their source `title` as the accessible name when the `title`
+option is not given. Architecture diagrams are named only by the `title`
+option.
 
 For a diagram that's already described in surrounding prose, mark it
 decorative instead of naming it:
@@ -738,8 +884,8 @@ const ascii = renderMermaidASCII(`graph LR; A --> B`, { useAscii: true })
 ```
 
 If you only need ASCII output, import from `zombie-mermaid/ascii` instead —
-it never pulls in `elkjs`, the SVG layout engine, which the package root
-statically imports regardless of whether you call `renderMermaidSVG`:
+it never loads the SVG renderer or `elkjs`, the SVG layout engine (an optional
+peer you register with `registerElk()`):
 
 ```typescript
 import { renderMermaidASCII } from 'zombie-mermaid/ascii'
@@ -821,3 +967,45 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 - **Multi-series** — Each series gets a distinct ANSI color from the theme's accent palette
 - **Legends** — Automatically shown when multiple series are present
 - **Horizontal charts** — Fully supported with categories on the y-axis
+- **Y-axis ticks** — The same ticks as the SVG, and as Mermaid.js: about 10 intervals at a step of 1, 2 or 5 times a power of ten. Without a `y-axis` range the axis spans the data's own minimum and maximum, so bars start at the data minimum; see [xychart-design.md](xychart-design.md#shipped-behavior-y-axis-ticks-and-the-y-axis-title)
+- **Y-axis title** — Written one letter per row down the left edge in vertical charts (no rotation in a terminal), and as a centered line under the axis in horizontal charts
+
+### ASCII Pie Charts
+
+Mermaid has no text mode for pie charts, so the ASCII output is this
+library's own design: one stacked bar, 50 cells wide, and a table below it.
+The numbers are the SVG renderer's.
+
+```text
+             Pets adopted by volunteers
+
+[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]
+
+  █ Dogs    79%
+  ▓ Cats    17%
+  ▒ Rats     3%
+```
+
+- **The bar** holds the slices at or above 1% of the total, in source order,
+  sharing all 50 cells between them, as the SVG's drawn slices share the
+  circle. Cells are rounded by largest remainder, so the segments always add
+  up to 50, and every drawn slice gets at least one cell (with more than 50
+  slices at 1% or more, the ones that lose out on the rounding get none).
+- **The table** is the SVG legend: one row per slice, in source order, with
+  `label [value]` under `showData` (the value printed as written). The
+  percentage is the SVG's slice label, a whole number of the full total.
+  A slice with no segment (under 1%, or left without a cell) has no
+  percentage, and a `·` (`.` in ASCII mode) as its swatch.
+- **Fills** tell segments apart: `█▓▒░` (Unicode) or `#=*+` (ASCII),
+  cycling so that neighbouring segments always differ; each table swatch
+  repeats its segment's fill. This holds in every colour mode, because two
+  neighbouring palette shades can land on the same terminal colour
+  (especially in `ansi16`).
+- **Colour** uses the SVG palette, painted over the fills: the accent, then
+  the XY chart series shades, repeating after 12.
+- The title is centred over the bar. `accTitle` and `accDescr` are not
+  printed (in the SVG they are the accessible name and description, not
+  visible text).
+- Long labels are never truncated or wrapped; the table widens to fit them,
+  measured in terminal columns so CJK and emoji labels line up.
+- A chart with no slices prints an empty bar.

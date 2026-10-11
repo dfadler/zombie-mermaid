@@ -1,0 +1,19 @@
+classDiagram
+  A <|-- B : inherits
+  C *-- D : owns
+  E o-- F : has
+  G --> H : uses
+  I ..> J : depends
+  K ..|> L : implements
+---
+   ┌───┐       ┌───┐    ┌───┐     ┌───┐      ┌───┐          ┌───┐       
+   │ A │       │ C │    │ E │     │ G │      │ I │          │ K │       
+   └───┘       └───┘    └───┘     └───┘      └───┘          └───┘       
+     △           ◆        ◇         │          ┊              ┊         
+ inherits      owns      has      uses      depends      implements     
+     │           │        │         ▼          ▼              ▽         
+   ┌───┐       ┌───┐    ┌───┐     ┌───┐      ┌───┐          ┌───┐       
+   │ B │       │ D │    │ F │     │ H │      │ J │          │ L │       
+   └───┘       └───┘    └───┘     └───┘      └───┘          └───┘       
+                                                                        
+                                                                        

@@ -5,8 +5,8 @@ description: |
   an ASCII-rendering change — as a real-terminal capture (via
   scripts/ascii-terminal-capture.sh), never a browser/HTML screenshot. Use
   this whenever the diff touches ASCII output — anything under
-  src/ascii/**, ascii-html.ts, src/cli.ts's ASCII path, demo/client.ts's
-  ASCII path (TERMINAL_ASCII_OPTS / applyWideCharWidths), index.ts's
+  packages/ascii-renderer/**, packages/site/ascii-html.ts, src/cli.ts's ASCII path,
+  __tests__/visual/helpers/terminal-panel.ts (TERMINAL_ASCII_OPTS / applyWideCharWidths), packages/site/index.ts's
   `.ascii-panel` markup, scripts/visual-diff.ts,
   __tests__/visual/helpers/terminal-panel.ts, or
   __tests__/visual/ascii-samples.visual.test.ts and its baselines — and
@@ -34,10 +34,10 @@ metadata:
 
 This library has two independent ASCII "renderers" a change can affect:
 
-1. **The terminal itself** — `renderMermaidASCII` (`src/ascii/index.ts`),
+1. **The terminal itself** — `renderMermaidASCII` (`packages/ascii-renderer/src/index.ts`),
    consumed via the real CLI (`src/cli.ts` → `zombie-mermaid render --ascii`).
    Column widths, line-wrapping, and color all resolve against a real PTY:
-   `detectColorMode()` (`src/ascii/ansi.ts`) inspects `process.stdout.isTTY`,
+   `detectColorMode()` (`packages/ascii-renderer/src/ansi.ts`) inspects `process.stdout.isTTY`,
    `COLORTERM`, and `TERM` to pick `truecolor`/`ansi256`/`ansi16`/`none`, and
    a real terminal gives every wide (CJK/emoji) glyph exactly two columns.
 2. **The browser mockup** — `ascii-html.ts` / `demo/client.ts`'s
@@ -127,6 +127,19 @@ closes the failure mode rather than just moving it. `asciinema record`
 itself still runs locally either way — it drives the real PTY this
 script's own process is attached to, which a container can't do.
 
+**Smooth lines: `ASCII_RASTERISER=chromium`.** agg draws the horizontal arm of
+a box junction (`┼`, `├`) a pixel or more off the plain `─` bar, so an edge
+that crosses a frame wall shows a small step in the PNG even though the
+characters are correct (measured in
+`docs/research/ascii-capture-smoothing/README.md`). When the screenshot has to
+show clean lines, set `ASCII_RASTERISER=chromium` on the capture command: the
+recording is still a real PTY and is replayed through `@xterm/headless`
+(real terminal emulation) before Chromium draws the cell grid, so only the
+glyph rasterizer changes. It needs `node`, the repo's `@xterm/headless` and
+Playwright Chromium instead of `agg`, writes the PNG at 2x, and can't be
+combined with `ASCII_AGG_RUNTIME=docker`. Use the same rasteriser for both
+the before and the after capture so the two are comparable.
+
 ## Procedure
 
 1. **Pick a sample.** Reuse an existing entry from `samples-data.ts` if one
@@ -138,23 +151,42 @@ script's own process is attached to, which a container can't do.
    Mermaid source string covering it rather than skipping verification —
    pass a path to a `.mmd` file in that case instead of a numeric index.
 
-2. **Get the base-ref renderer without a full worktree.** Mirror
-   `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`):
+2. **Get the base-ref renderer without a full worktree.**
 
    ```bash
    mkdir -p tmp-base-ref
-   git archive main src | tar -x -C tmp-base-ref
+   git archive main src packages tsconfig.json | tar -x -C tmp-base-ref
    ```
 
-   pulls `src/` at the base commit into a scratch directory — no worktree
-   needed just to diff a renderer function. This is also why `src/cli.ts`
-   isn't the right tool for the "before" side: it reads `../package.json`
-   (for its `--version` string) relative to its own file, which the scratch
-   dir doesn't have. `scripts/ascii-render-runner.mjs` (what the capture
-   script runs inside the PTY) imports `renderMermaidASCII` directly
-   instead — the same function `cli.ts` itself calls — and skips the CLI
-   entirely on both sides. Delete `tmp-base-ref/` once done; it's a scratch
-   extraction, not something to commit.
+   pulls `src/`, every workspace `packages/*/src`, and `tsconfig.json` at the
+   base commit into a scratch directory — no worktree needed just to diff a
+   renderer function. All three are required, not just `src/`:
+   `renderMermaidASCII`'s implementation lives entirely under
+   `packages/ascii-renderer/src` (itself depending on `@zombie-mermaid/core`
+   and `@zombie-mermaid/mermaid-parser`), reached from `src/index.ts` only
+   through the bare specifier `@zombie-mermaid/ascii-renderer` —
+   `scripts/ascii-terminal-capture.sh` resolves that specifier by pointing
+   `tsx --tsconfig` at `tmp-base-ref/tsconfig.json`, so archiving `src/`
+   alone leaves it unresolved against the scratch dir and silently
+   re-resolves it against this repo's own `packages/` instead, making a
+   "before" capture identical to "after" for any change under
+   `packages/*/src` (see issue
+   [#1141](https://github.com/dfadler/zombie-mermaid/issues/1141)). This is
+   also why `src/cli.ts` isn't the right tool for the "before" side: it
+   reads `../package.json` (for its `--version` string) relative to its own
+   file, which the scratch dir doesn't have. `scripts/ascii-render-runner.mjs`
+   (what the capture script runs inside the PTY) imports `renderMermaidASCII`
+   directly instead — the same function `cli.ts` itself calls — and skips
+   the CLI entirely on both sides. Delete `tmp-base-ref/` once done; it's a
+   scratch extraction, not something to commit.
+
+   `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`) still
+   archives `src/` alone and has the same unresolved-bare-specifier bug for
+   any package-level change — it's a separate, in-process `import()` rather
+   than a `tsx` subprocess this skill's `--tsconfig` fix doesn't reach. Keep
+   using it only for its documented purpose (a human-reviewable HTML report
+   during local iteration, per CONTRIBUTING.md), never as this skill's
+   before/after source.
 
 3. **Capture both sides** — replace `12` with the sample's actual index (or
    a `.mmd` file path for the inline-fallback case from step 1); the sample

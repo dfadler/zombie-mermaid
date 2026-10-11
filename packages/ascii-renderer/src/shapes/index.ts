@@ -16,13 +16,15 @@ import type {
 } from './types.ts'
 
 // Import all shape renderers
-import { rectangleRenderer } from './rectangle.ts'
-import { diamondRenderer } from './diamond.ts'
-import { circleRenderer } from './circle.ts'
+import {
+  rectangleRenderer,
+  getBoxDimensions,
+  renderBox,
+  getBoxAttachmentPoint,
+} from './rectangle.ts'
+import { getCorners } from './corners.ts'
 import { stateStartRenderer, stateEndRenderer } from './state.ts'
-import { roundedRenderer } from './rounded.ts'
 import { stadiumRenderer } from './stadium.ts'
-import { hexagonRenderer } from './hexagon.ts'
 import {
   subroutineRenderer,
   doublecircleRenderer,
@@ -41,6 +43,46 @@ export type {
   ShapeRenderOptions,
   ShapeRegistry,
 }
+
+/**
+ * Corner-decorated shape renderers — circle, diamond, rounded, hexagon.
+ * Each one renders a rectangle (`getBoxDimensions`/`renderBox`/
+ * `getBoxAttachmentPoint`) with a different corner-marker set pulled from
+ * corners.ts's `SHAPE_CORNERS`, instead of drawing curves or diagonals:
+ *
+ *   circle  (◯)       — circle markers indicate circular shape semantics
+ *   diamond (◇)       — diamond markers indicate decision node semantics
+ *   rounded (╭╮╰╯)    — rounded markers indicate soft edges
+ *   hexagon (⌜⌝⌞⌟)    — crop-corner markers indicate process node semantics;
+ *     not the hexagon glyph ⬡ (U+2B21) earlier docs here used to claim —
+ *     JetBrains Mono NL has no glyph for ⬡ at all, and the renderer hasn't
+ *     actually emitted it since corners.ts moved to the monospace-safe
+ *     crop-corner style. See issue #1062.
+ *
+ * Each renders as (TL/TR/BL/BR = that shape's four corner markers above):
+ *   TL─────────TR
+ *   │  Label  │
+ *   BL─────────BR
+ */
+function createCornerShapeRenderer(
+  shape: 'circle' | 'diamond' | 'rounded' | 'hexagon',
+): ShapeRenderer {
+  return {
+    getDimensions: getBoxDimensions,
+
+    render(label, dimensions, options) {
+      const corners = getCorners(shape, options.useAscii)
+      return renderBox(label, dimensions, corners, options.useAscii)
+    },
+
+    getAttachmentPoint: getBoxAttachmentPoint,
+  }
+}
+
+export const circleRenderer = createCornerShapeRenderer('circle')
+export const diamondRenderer = createCornerShapeRenderer('diamond')
+export const roundedRenderer = createCornerShapeRenderer('rounded')
+export const hexagonRenderer = createCornerShapeRenderer('hexagon')
 
 /**
  * Global shape registry — maps shape types to their renderers.

@@ -2,7 +2,9 @@
 // ../../vite.config.package.ts for the shared factory and its rationale
 // (issue #769). Depends on @zombie-mermaid/core and
 // @zombie-mermaid/mermaid-parser, which must already be built (see the
-// root `build` script's order).
+// root `build` script's order). `parseMermaid` (flowchart/state) is
+// imported from @zombie-mermaid/mermaid-parser like every other parser, so
+// it stays external here rather than being inlined (#1318).
 import { resolve } from 'node:path'
 import { definePackageBuild } from '../../vite.config.package.ts'
 

@@ -1,0 +1,14 @@
+pie showData title Revenue by region
+  "North" : 2500000.75
+  "South" : 1000000
+  "East" : 42.10
+  "West" : 0.5
+---
+                 Revenue by region
+
+[####################################==============]
+
+  # North [2500000.75]    71%
+  = South [1000000]       29%
+  . East [42.1]
+  . West [0.5]

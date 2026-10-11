@@ -4,7 +4,7 @@
  * `ascii-renderer`, `mcp`) — issue #769, implementing the publish strategy
  * `docs/decisions/monorepo-conversion.md` / issue #622 recommend: each
  * package gets a real, independent build instead of being bundled straight
- * into the umbrella's `dist/*.js` (see `vite.config.lib.ts`, which now
+ * into the umbrella's `dist/*.js` (see `config/vite.config.lib.ts`, which now
  * treats all five as external rather than inlining them).
  *
  * Each package's own `packages/<name>/vite.config.ts` is a few lines that
@@ -12,14 +12,14 @@
  * everything else (dual ESM/CJS JS, one rolled-up `.d.ts`/`.d.cts` pair,
  * what counts as "external") is shared here so the five don't drift.
  *
- * Modeled directly on `vite.config.lib.ts` (the umbrella's own build) and
+ * Modeled directly on `config/vite.config.lib.ts` (the umbrella's own build) and
  * reusing its hard-won gotchas rather than rediscovering them:
  *
  * - `vite build --app` (Vite's builder mode) builds every configured
  *   environment. The top-level `build` block still needs a `lib.entry` even
  *   though every real environment below restates its own `formats`, purely
  *   to stop unplugin-dts's `configResolved` hook warning that the config
- *   has no `lib` — see vite.config.lib.ts's header for the fuller version
+ *   has no `lib` — see config/vite.config.lib.ts's header for the fuller version
  *   of this.
  * - Every environment here is custom-named (`es`/`cjs`/`dts`), never the
  *   literal `client` — so every one of them defaults to `consumer:
@@ -27,7 +27,7 @@
  *   is silently ignored in favor of the entry file's own basename unless
  *   `rolldownOptions.output.entryFileNames` is also set. `core`/
  *   `mermaid-parser`/`svg-renderer`/`ascii-renderer` opt into
- *   `consumer: 'client'` (matching vite.config.lib.ts's own `ascii`
+ *   `consumer: 'client'` (matching config/vite.config.lib.ts's own `ascii`
  *   environment) since none of their bundled closure touches a Node
  *   built-in, which sidesteps entryFileNames entirely. `mcp` is the one
  *   exception (see `serverConsumer` below).
@@ -39,7 +39,7 @@
  * already be built before a dependent's dts step runs, or api-extractor
  * will fail trying to resolve a package.json that still points at nothing
  * (or, pre-#769, at raw `.ts` source it can't analyse — see
- * vite.config.lib.ts's dts plugin comment for that exact failure mode).
+ * config/vite.config.lib.ts's dts plugin comment for that exact failure mode).
  * The root `build` script enforces this order: core -> mermaid-parser ->
  * svg-renderer -> ascii-renderer -> mcp -> umbrella.
  *
@@ -63,7 +63,7 @@ export interface PackageBuildOptions {
    * closure touches a real Node built-in that must not be browser-shimmed
    * — currently only `@zombie-mermaid/mcp`, via its reach-through into the
    * umbrella's `src/package-info.ts` (`createRequire(import.meta.url)`).
-   * Mirrors `consumer: 'server'` in vite.config.lib.ts's `mcp_es`/`mcp_cjs`
+   * Mirrors `consumer: 'server'` in config/vite.config.lib.ts's `mcp_es`/`mcp_cjs`
    * environments, including the same `import.meta.url` CJS shim (see that
    * file's `mcp_cjs` comment for why it's needed) — applied here to this
    * package's own `cjs` environment only, never `es`.
@@ -129,7 +129,7 @@ export function definePackageBuild(options: PackageBuildOptions) {
     plugins: [
       {
         ...dts({
-          // tsconfig.build.json, not tsconfig.json — the latter overrides
+          // config/tsconfig.build.json, not tsconfig.json — the latter overrides
           // `@zombie-mermaid/*` to resolve to source (for live typecheck
           // and the editor; see its own comment), which this dts step must
           // NOT inherit. A build's dts step has to resolve those imports
@@ -142,10 +142,10 @@ export function definePackageBuild(options: PackageBuildOptions) {
           // tsconfig.json, which `extends` already inherits.
           //
           // Only vite.config.package.ts (this file) uses it — the umbrella
-          // build (vite.config.lib.ts) resolves `tsconfig.json` directly,
+          // build (config/vite.config.lib.ts) resolves `tsconfig.json` directly,
           // since #769's rework reverted it to bundling `packages/*` by
           // source rather than through their built output.
-          tsconfigPath: resolve(REPO_ROOT, 'tsconfig.build.json'),
+          tsconfigPath: resolve(REPO_ROOT, 'config/tsconfig.build.json'),
           exclude: ['src/__tests__/**', '**/*.test.ts'],
           // Rolls this package's entire public surface into one
           // self-contained `.d.ts`, regardless of how many source files —
@@ -154,7 +154,7 @@ export function definePackageBuild(options: PackageBuildOptions) {
           // header for why that matters for those two packages
           // specifically. Any `@zombie-mermaid/*` sibling this package
           // actually depends on is left as a normal external `import` in
-          // the output, not inlined — unlike vite.config.lib.ts's own dts
+          // the output, not inlined — unlike config/vite.config.lib.ts's own dts
           // config, nothing here lists `bundledPackages`.
           bundleTypes: true,
           declarationOnly: true,
@@ -209,7 +209,7 @@ export function definePackageBuild(options: PackageBuildOptions) {
       // ("build.lib.name is required when output formats include umd").
       // Naming this environment 'client' overrides that implicit default
       // with real `formats` instead of leaving it to build (and fail) on
-      // its own — vite.config.lib.ts never hits this because its own
+      // its own — config/vite.config.lib.ts never hits this because its own
       // `client` environment is the umbrella's real `index` entry.
       client: {
         consumer: serverConsumer ? 'server' : 'client',

@@ -10,7 +10,7 @@
  * - Comments and error cases
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 // `isDirection` moved to @zombie-mermaid/core under #625; `toDirection`
 // followed it under #624 once `er/parser.ts` (now
 // packages/mermaid-parser/src/er/parser.ts) became a second caller that
@@ -93,9 +93,16 @@ describe('parseMermaid – graph header', () => {
     ).toThrow('Did you mean "sequenceDiagram"?')
   })
 
+  it('suggests `pie` for a pie header in the wrong case', () => {
+    // Mermaid's `pie` keyword is case-sensitive, so `PieChart` is not a pie.
+    expect(() => parseMermaid('PieChart\n  "A" : 1')).toThrow(
+      'Did you mean "pie"?',
+    )
+  })
+
   it('lists all supported diagram headers for a totally unrecognized header', () => {
     expect(() => parseMermaid('this is not mermaid at all')).toThrow(
-      /"stateDiagram-v2".*"sequenceDiagram".*"classDiagram".*"erDiagram".*"xychart-beta"/,
+      /"stateDiagram-v2".*"sequenceDiagram".*"classDiagram".*"erDiagram".*"xychart-beta".*"pie"/,
     )
   })
 
@@ -1129,6 +1136,33 @@ describe('parseMermaid – subgraphs', () => {
     expect(outer.children[0]!.nodeIds).toContain('B')
     expect(outer.nodeIds).toContain('C')
     expect(outer.nodeIds).toContain('D')
+  })
+
+  it('adopts a bare node declared earlier outside any subgraph (#1289)', () => {
+    const g = parseMermaid(`graph TD
+      X --> A
+      X --> B
+      subgraph SA[Alpha]
+        A
+      end
+      subgraph SB[Beta]
+        B
+      end`)
+    expect(g.subgraphs.find((sg) => sg.id === 'SA')!.nodeIds).toEqual(['A'])
+    expect(g.subgraphs.find((sg) => sg.id === 'SB')!.nodeIds).toEqual(['B'])
+  })
+
+  it('keeps an already-claimed node in its first subgraph when later bare-referenced (#1289)', () => {
+    const g = parseMermaid(`graph TD
+      subgraph S1
+        A
+      end
+      subgraph S2
+        A
+        B
+      end`)
+    expect(g.subgraphs.find((sg) => sg.id === 'S1')!.nodeIds).toEqual(['A'])
+    expect(g.subgraphs.find((sg) => sg.id === 'S2')!.nodeIds).toEqual(['B'])
   })
 
   it('does NOT track nodes in subgraphs where they are merely referenced (regression)', () => {

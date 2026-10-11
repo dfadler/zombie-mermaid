@@ -243,6 +243,71 @@ interface PlacedClass {
   height: number
 }
 
+// Namespace frames: a frame's border sits `FRAME_SIDE_PAD` columns outside
+// its member boxes (one blank column of padding, then the border), the top
+// border (which carries the title) two rows above, and the bottom border two
+// rows below. The gaps between boxes and levels grow by the matching amount
+// so a frame never needs more room than the gap it sits in.
+const FRAME_SIDE_PAD = 2
+const FRAME_TOP_PAD = 2
+const FRAME_BOTTOM_PAD = 2
+const FRAME_EXTRA_HGAP = FRAME_SIDE_PAD * 2
+const FRAME_EXTRA_VGAP = FRAME_TOP_PAD + FRAME_BOTTOM_PAD - 1
+
+/** A `namespace` block with at least one member class in the diagram. */
+interface AsciiNamespaceFrame {
+  name: string
+  /** Member class ids, including the notes attached to those classes. */
+  ids: string[]
+}
+
+/**
+ * Namespaces to frame. A class claimed by two namespaces stays in the first;
+ * unknown members and empty namespaces are dropped; a note attached to a
+ * member class joins that class's frame, since it sits right beside it.
+ */
+function resolveFrames(
+  diagram: ClassDiagram,
+  notesById: Map<string, ClassNote>,
+): AsciiNamespaceFrame[] {
+  const known = new Set(diagram.classes.map((c) => c.id))
+  const claimed = new Set<string>()
+  const frames: AsciiNamespaceFrame[] = []
+  for (const ns of diagram.namespaces) {
+    const ids: string[] = []
+    for (const id of ns.classIds) {
+      if (!known.has(id) || claimed.has(id)) continue
+      claimed.add(id)
+      ids.push(id)
+      for (const [noteId, note] of notesById) {
+        if (note.forClass === id) ids.push(noteId)
+      }
+    }
+    if (ids.length > 0) frames.push({ name: ns.name, ids })
+  }
+  return frames
+}
+
+/**
+ * Reorder one level's classes so each frame's members sit next to each
+ * other, at the position of the frame's first member. Order inside a frame,
+ * and among unframed classes, is unchanged.
+ */
+function groupByFrame(group: string[], frameOf: Map<string, number>): string[] {
+  const out: string[] = []
+  const emitted = new Set<number>()
+  for (const id of group) {
+    const f = frameOf.get(id)
+    if (f === undefined) {
+      out.push(id)
+    } else if (!emitted.has(f)) {
+      emitted.add(f)
+      out.push(...group.filter((other) => frameOf.get(other) === f))
+    }
+  }
+  return out
+}
+
 /** Per-render switches that aren't layout config (see `AsciiRenderOptions`). */
 export interface ClassAsciiOptions {
   /** Wrap each `click`-linked class's name in an OSC 8 hyperlink pair. */
@@ -267,11 +332,21 @@ export function renderClassAscii(
 
   if (diagram.classes.length === 0) return ''
 
+  const frames = resolveFrames(diagram, notesById)
+  const frameOf = new Map<string, number>()
+  for (const [i, fr] of frames.entries()) {
+    for (const id of fr.ids) frameOf.set(id, i)
+  }
+
   const useAscii = config.useAscii
   // See paddingOffset's doc comment (types.ts) for why these are an offset
   // from the padding defaults rather than the raw config values.
-  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 4, 1) // horizontal gap between class boxes
-  const vGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 3, 1) // vertical gap between levels (enough for relationship lines)
+  const hGap =
+    paddingOffset(config.paddingX, DEFAULT_PADDING_X, 4, 1) +
+    (frames.length > 0 ? FRAME_EXTRA_HGAP : 0) // horizontal gap between class boxes
+  const vGap =
+    paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 3, 1) +
+    (frames.length > 0 ? FRAME_EXTRA_VGAP : 0) // vertical gap between levels (enough for relationship lines)
 
   // --- Build box dimensions for each class ---
   const classSections = new Map<string, string[][]>()
@@ -374,6 +449,11 @@ export function renderClassAscii(
   const levelGroups: string[][] = Array.from({ length: maxLevel + 1 }, () => [])
   for (const cls of diagram.classes) {
     levelGroups[level.get(cls.id)!]!.push(cls.id)
+  }
+  if (frames.length > 0) {
+    for (const [i, g] of levelGroups.entries()) {
+      levelGroups[i] = groupByFrame(g, frameOf)
+    }
   }
 
   // When more than one relationship connects the same pair of classes —
@@ -563,45 +643,271 @@ export function renderClassAscii(
     const group = levelGroups[lv]!
     if (group.length === 0) continue
 
+    // --- #970's block-based x-assignment (issues #971, #972) ---
+    // docs/decisions/ascii-class-diagram-x-coordinate-assignment-970.md.
+    // Alignment blocks group classes at this level sharing the exact same
+    // parent-id set, processed as a unit. A block's *qualifying* parents
+    // are the subset strictly shallower than this level — a parent at the
+    // same level (a rootless relationship cycle, whose members still
+    // record each other as "parents" in `parents` even though nothing
+    // above them ever resolves) never qualifies. A block with zero
+    // qualifying parents has "no resolvable parents" and every member
+    // keeps its plain left-to-right baseline position, computed
+    // individually (not as a joint unit — #971's exact per-class
+    // behavior, preserved verbatim for this shape, including when a
+    // no-resolvable-parents block's members happen not to be declaration-
+    // adjacent). A block with at least one qualifying parent computes a
+    // real desired center: the mean of its qualifying parents' own,
+    // already-placed box centers (a single qualifying parent's mean is
+    // just that parent's center — the #964 repro exactly, #971's case; a
+    // block of more than one class sharing that parent set spreads evenly
+    // by centering the block's *total* width on that shared center, #972's
+    // "multiple children of one parent" case; more than one qualifying
+    // parent averages their centers, #972's "converging edges" case).
+    // Either way, the block's desired *left* edge (its slot-space left,
+    // matching `currentX`'s role below) is `desiredCenter -
+    // floor(totalWidth / 2)` — floor chosen only for determinism. A single
+    // left-to-right compaction pass then resolves any collision between
+    // *any* two blocks' desired positions — universal across every block
+    // shape, not just multi-parent ones, since two independently-aligned
+    // singleton blocks can still want overlapping positions (#971) — by
+    // only ever pushing a block right of its desired position, never left,
+    // and never reordering blocks relative to each other.
+    //
+    // A class with no parents at all is always its own singleton block —
+    // two unrelated roots must never be merged into one block just because
+    // both happen to have an empty parent set; there is nothing shared to
+    // align them around.
+    const blockKeyOf = (id: string): string => {
+      const pset = parents.get(id)
+      return pset && pset.size > 0 ? [...pset].sort().join(',') : `root:${id}`
+    }
+    // Every member sharing a given block key, regardless of adjacency in
+    // `group` — looked up once a block is actually confirmed to have a
+    // shared center to align around (see the main loop below). Building
+    // this eagerly for every id up front, and processing every block's
+    // *entire* membership together the moment its first (in declaration
+    // order) member is reached — even for a block with no resolvable
+    // parents — used to silently reorder an unrelated class that was
+    // declared between two same-parent-set siblings ahead of it, moving it
+    // visually later than its own declaration position (caught in review
+    // on #972). The main loop below only merges members into one placement
+    // unit for a block that actually resolves to a shared center; a
+    // no-resolvable-parents "block" is never merged, so it can't reorder
+    // anything.
+    const blockMembers = new Map<string, string[]>()
+    for (const id of group) {
+      const key = blockKeyOf(id)
+      let members = blockMembers.get(key)
+      if (!members) {
+        members = []
+        blockMembers.set(key, members)
+      }
+      members.push(id)
+    }
+
+    // Baseline: today's plain left-to-right slot position for every class
+    // in this level, computed exactly as the pre-#971 algorithm did — the
+    // fallback position for a no-resolvable-parents block's members, and
+    // the starting point the compaction step below can only ever push
+    // right of, never left.
+    const baselineSlotLeft = new Map<string, number>()
+    const slotWidthOf = new Map<string, number>()
+    const leftPadOf = new Map<string, number>()
+    {
+      let x = 0
+      for (const id of group) {
+        const w = classBoxW.get(id)!
+        // The box's center column sits `floor(w / 2)` cells from its left
+        // edge (the same arithmetic `connectionColumns` uses), so anything
+        // reaching further than that past the center overhangs the box.
+        const reach = columnReach.get(id)!
+        const leftPad = Math.max(0, reach.left - Math.floor(w / 2))
+        const rightPad = Math.max(0, reach.right - (w - 1 - Math.floor(w / 2)))
+        baselineSlotLeft.set(id, x)
+        slotWidthOf.set(id, leftPad + w + rightPad)
+        leftPadOf.set(id, leftPad)
+        x += leftPad + w + rightPad + hGap
+      }
+    }
+
     let currentX = 0
     let maxH = 0
 
-    for (const id of group) {
+    /** Places one class's box at slot-left `slotLeft`, advancing `currentX`/`maxH`/`maxSlotEnd`. */
+    const placeAt = (id: string, slotLeft: number): void => {
       const cls = classById.get(id)!
       const w = classBoxW.get(id)!
       const h = classBoxH.get(id)!
-      // The box's center column sits `floor(w / 2)` cells from its left
-      // edge (the same arithmetic `connectionColumns` uses), so anything
-      // reaching further than that past the center overhangs the box.
-      const reach = columnReach.get(id)!
-      const leftPad = Math.max(0, reach.left - Math.floor(w / 2))
-      const rightPad = Math.max(0, reach.right - (w - 1 - Math.floor(w / 2)))
+      const leftPad = leftPadOf.get(id)!
+      const slotWidth = slotWidthOf.get(id)!
       placed.set(id, {
         cls,
         sections: classSections.get(id)!,
         // Shifted right only by the left overhang, so a box with nothing
-        // reaching past its left edge lands exactly where it always has.
-        x: currentX + leftPad,
+        // reaching past its left edge lands exactly where its slot does.
+        x: slotLeft + leftPad,
         y: currentY,
         width: w,
         height: h,
       })
-      const slotWidth = leftPad + w + rightPad
-      maxSlotEnd = Math.max(maxSlotEnd, currentX + slotWidth)
-      currentX += slotWidth + hGap
+      maxSlotEnd = Math.max(maxSlotEnd, slotLeft + slotWidth)
+      currentX = slotLeft + slotWidth + hGap
       maxH = Math.max(maxH, h)
+    }
+
+    const placedThisLevel = new Set<string>()
+    for (const id of group) {
+      // Already placed as part of an earlier qualifying block's joint
+      // placement below (never true for a no-resolvable-parents id, which
+      // is always placed the moment the loop reaches it, in its own true
+      // declaration-order turn).
+      if (placedThisLevel.has(id)) continue
+
+      const key = blockKeyOf(id)
+      const pset = parents.get(id)
+      // `level.get(pid)!`: every relationship endpoint is guaranteed a
+      // `classById`/`level` entry (the parser's `ensureClass` auto-creates
+      // an implicit class for any id used only as a relationship endpoint,
+      // never just a dangling reference — see `classById.has(...)`'s own
+      // guards elsewhere in this file, which protect a *different* case),
+      // so this is never actually missing.
+      const qualifying = pset
+        ? [...pset].filter((pid) => level.get(pid)! < lv)
+        : []
+
+      if (qualifying.length === 0) {
+        // No resolvable parents: this id has no shared center to align
+        // around, so it is never merged into a joint block with the other
+        // members `blockKeyOf` groups it with — only *this* id is placed
+        // here, in its own true position in `group`'s declaration order,
+        // exactly matching #971's per-class behavior for this shape. Any
+        // other same-key member is placed independently, on its own later
+        // turn through this same loop — merging them together here would
+        // reorder whatever was declared between them ahead of its own
+        // declaration position (issue caught in #972's review).
+        const slotLeft = Math.max(baselineSlotLeft.get(id)!, currentX, 0)
+        placeAt(id, slotLeft)
+        placedThisLevel.add(id)
+        continue
+      }
+
+      // A block with a real shared center to align around *is* placed as
+      // a joint unit, gathering every member `blockKeyOf` groups with it
+      // regardless of adjacency in `group` — the whole reason to group
+      // same-parent-set siblings together in the first place.
+      const members = blockMembers.get(key)!
+
+      // `placed.get(...)!`: every id in `qualifying` has a strictly-
+      // shallower level than `lv`, and this loop places every class of a
+      // level before moving to the next, so a strictly-shallower class is
+      // always already placed by the time this level is processed.
+      // "Center column" is always a box's own rendered center, never the
+      // reach-padded slot's — aligning to the slot center instead would
+      // visually misalign the boxes whenever a relationship's label
+      // overhang is asymmetric.
+      const parentCenters = qualifying.map((pid) => {
+        const p = placed.get(pid)!
+        return p.x + Math.floor(p.width / 2)
+      })
+      const desiredCenter = Math.round(
+        parentCenters.reduce((sum, c) => sum + c, 0) / parentCenters.length,
+      )
+
+      let totalWidth = 0
+      for (let i = 0; i < members.length; i++) {
+        totalWidth += slotWidthOf.get(members[i]!)!
+        if (i < members.length - 1) totalWidth += hGap
+      }
+      // `totalWidth` is the *slot* span (every member's own reach padding
+      // included at both ends), but the thing that must visually center on
+      // `desiredCenter` is the *rendered box* span — from the first
+      // member's own box left edge to the last member's own box right
+      // edge, which excludes the outermost reach padding at each end (that
+      // padding only ever separates a box from a *neighbor*; at the
+      // block's own two ends there is no neighbor to separate from, so it
+      // just becomes asymmetric dead space that would otherwise skew the
+      // visible boxes off `desiredCenter` whenever the first member's
+      // leftPad differs from the last member's rightPad — e.g. one child
+      // has a long incoming label reserving room on its own left, the
+      // other has none). Subtracting them back out here, once, is cheaper
+      // than threading a separate "visible width" accumulator through the
+      // loop above (caught in #972's review).
+      const firstLeftPad = leftPadOf.get(members[0]!)!
+      const lastMember = members[members.length - 1]!
+      const lastRightPad =
+        slotWidthOf.get(lastMember)! -
+        leftPadOf.get(lastMember)! -
+        classBoxW.get(lastMember)!
+      const visibleWidth = totalWidth - firstLeftPad - lastRightPad
+      const blockDesiredLeft =
+        desiredCenter - firstLeftPad - Math.floor(visibleWidth / 2)
+      const blockActualLeft = Math.max(blockDesiredLeft, currentX, 0)
+
+      let memberX = blockActualLeft
+      for (const memberId of members) {
+        placeAt(memberId, memberX)
+        placedThisLevel.add(memberId)
+        memberX = currentX
+      }
     }
 
     currentY += maxH + vGap
   }
 
+  // --- Frame rectangles ---
+  // Each frame wraps the boxes of its members; the whole diagram shifts
+  // right/down so the outermost frame's border lands on the canvas.
+  interface FrameRect {
+    name: string
+    x0: number
+    y0: number
+    x1: number
+    y1: number
+  }
+  const frameRects: FrameRect[] = []
+  if (frames.length > 0) {
+    for (const p of placed.values()) {
+      p.x += FRAME_SIDE_PAD
+      p.y += FRAME_TOP_PAD
+    }
+    maxSlotEnd += FRAME_SIDE_PAD
+    for (const fr of frames) {
+      let minX = Infinity
+      let minY = Infinity
+      let maxX = -Infinity
+      let maxY = -Infinity
+      for (const id of fr.ids) {
+        const p = placed.get(id)
+        if (!p) continue
+        minX = Math.min(minX, p.x)
+        minY = Math.min(minY, p.y)
+        maxX = Math.max(maxX, p.x + p.width - 1)
+        maxY = Math.max(maxY, p.y + p.height - 1)
+      }
+      if (minX === Infinity) continue
+      const x0 = minX - FRAME_SIDE_PAD
+      // Wide enough for ` Title ` between the corners, plus a dash each side.
+      const x1 = Math.max(maxX + FRAME_SIDE_PAD, x0 + displayWidth(fr.name) + 5)
+      frameRects.push({
+        name: fr.name,
+        x0,
+        y0: minY - FRAME_TOP_PAD,
+        x1,
+        y1: maxY + FRAME_BOTTOM_PAD,
+      })
+    }
+  }
+
   // --- Create canvas ---
   let totalW = maxSlotEnd
+  for (const r of frameRects) totalW = Math.max(totalW, r.x1 + 1)
   let totalH = 0
   for (const p of placed.values()) {
     totalW = Math.max(totalW, p.x + p.width)
     totalH = Math.max(totalH, p.y + p.height)
   }
+  for (const r of frameRects) totalH = Math.max(totalH, r.y1 + 1)
 
   // Extra space for relationship lines that may go below/beside
   totalW += 4
@@ -664,6 +970,45 @@ export function renderClassAscii(
         })
       }
     }
+  }
+
+  // --- Snapshot cells occupied by class boxes ---
+  // Taken once, right after boxes are drawn and before any relationship
+  // line, corner, marker, or label is drawn — the class-diagram analog of
+  // the `boxCells`/`setCGuarded` guard er-diagram.ts gained for issue #350.
+  // Two independent routing branches rely on it:
+  // - The cross-level ("target below"/"target above") branches, whose
+  //   routing can jog a long way horizontally with no prior occupancy
+  //   check — e.g. connecting a level-1 child to a level-0 parent whose
+  //   column sits far from an intervening, taller same-level sibling's
+  //   box, which the jog then cuts straight through.
+  // - The same-level branch's own detour (this file's final `else`), which
+  //   primarily avoids a same-row obstruction by computing its detour row
+  //   from this same box geometry (see `obstructionBottom` there); this
+  //   snapshot is the last-resort backstop for whatever that routing
+  //   doesn't anticipate.
+  const boxCells = new Set<string>()
+  for (const p of placed.values()) {
+    for (let by = 0; by < p.height; by++) {
+      for (let bx = 0; bx < p.width; bx++) {
+        boxCells.add(`${p.x + bx},${p.y + by}`)
+      }
+    }
+  }
+
+  /**
+   * Like setC, but refuses to draw into a cell already occupied by a class
+   * box (see boxCells above). Used by both the cross-level relationship
+   * branches (where a mis-routed jog can cut straight through an
+   * unrelated, taller same-level box) and the same-level branch's own
+   * detour (a last-resort backstop for whatever its obstruction-aware
+   * routing doesn't anticipate — see `obstructionBottom` below), so either
+   * kind of mis-routed segment degrades to a gap in the line rather than
+   * corrupting a box's border or attribute/method text.
+   */
+  function setCGuarded(x: number, y: number, ch: string, role: CharRole): void {
+    if (boxCells.has(`${x},${y}`)) return
+    setC(x, y, ch, role)
   }
 
   /** Check if a point (x, y) is inside any class box */
@@ -825,6 +1170,7 @@ export function renderClassAscii(
    * an arrowhead at a shared anchor doubles as the junction.
    */
   function setJogCell(x: number, y: number, ch: string, role: CharRole): void {
+    if (boxCells.has(`${x},${y}`)) return
     if (rc[x]?.[y] === 'arrow') return
     const existing = canvas[x]?.[y]
     if (
@@ -911,6 +1257,15 @@ export function renderClassAscii(
     }
   >()
 
+  // Same-level relationships' obstruction-aware detour row (issue #953),
+  // keyed by relationship index — `computeLabelAnchor`'s own same-level
+  // branch reads this so a labeled same-level relationship's label anchors
+  // on the same corrected row the connector itself routes through, instead
+  // of recomputing the naive (obstruction-unaware) `Math.max(fromBY, toBY)
+  // + 2` and landing back inside whatever box the connector fix was
+  // routing around.
+  const sameLevelDetourY = new Map<number, number>()
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -977,21 +1332,21 @@ export function renderClassAscii(
         const lx1 = Math.min(fromAnchorX, routeX)
         const rx1 = Math.max(fromAnchorX, routeX)
         for (let x = lx1; x <= rx1; x++) {
-          setC(x, exitY, lineH, 'line')
+          setCGuarded(x, exitY, lineH, 'line')
         }
         if (!useAscii && exitY < (canvas[0]?.length ?? 0)) {
           if (fromAnchorX < routeX) {
-            setC(fromAnchorX, exitY, '└', 'corner')
-            setC(routeX, exitY, '┐', 'corner')
+            setCGuarded(fromAnchorX, exitY, '└', 'corner')
+            setCGuarded(routeX, exitY, '┐', 'corner')
           } else {
-            setC(fromAnchorX, exitY, '┘', 'corner')
-            setC(routeX, exitY, '┌', 'corner')
+            setCGuarded(fromAnchorX, exitY, '┘', 'corner')
+            setCGuarded(routeX, exitY, '┌', 'corner')
           }
         }
 
         // 2. Vertical at routeX from exit to entry
         for (let y = exitY + 1; y <= entryY; y++) {
-          setC(routeX, y, lineV, 'line')
+          setCGuarded(routeX, y, lineV, 'line')
         }
 
         // 3. Horizontal from routeX to target anchor at entry
@@ -999,15 +1354,15 @@ export function renderClassAscii(
           const lx2 = Math.min(routeX, toAnchorX)
           const rx2 = Math.max(routeX, toAnchorX)
           for (let x = lx2; x <= rx2; x++) {
-            setC(x, entryY, lineH, 'line')
+            setCGuarded(x, entryY, lineH, 'line')
           }
           if (!useAscii && entryY < (canvas[0]?.length ?? 0)) {
             if (routeX < toAnchorX) {
-              setC(routeX, entryY, '└', 'corner')
-              setC(toAnchorX, entryY, '┐', 'corner')
+              setCGuarded(routeX, entryY, '└', 'corner')
+              setCGuarded(toAnchorX, entryY, '┐', 'corner')
             } else {
-              setC(routeX, entryY, '┘', 'corner')
-              setC(toAnchorX, entryY, '┌', 'corner')
+              setCGuarded(routeX, entryY, '┘', 'corner')
+              setCGuarded(toAnchorX, entryY, '┌', 'corner')
             }
           }
         }
@@ -1028,11 +1383,11 @@ export function renderClassAscii(
             useAscii,
             isHierarchical ? 'up' : 'down',
           )
-          setC(toAnchorX, entryY, markerChar, 'arrow')
+          setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
         }
         if (marker.markerAt === 'from') {
           const markerChar = getMarkerShape(marker.type, useAscii, 'down')
-          setC(fromAnchorX, fromBY + 1, markerChar, 'arrow')
+          setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
         }
       } else {
         // NO COLLISION CASE: Use original midpoint-based routing
@@ -1053,26 +1408,37 @@ export function renderClassAscii(
         //    the source bottom (or from below the jog) to midY
         drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
         for (let y = fromBY + (fromJogs ? 2 : 1); y <= midY; y++) {
-          setC(fromCX, y, lineV, 'line')
+          setCGuarded(fromCX, y, lineV, 'line')
         }
 
         // 2. Horizontal from fromCX to toCX at midY (if needed)
+        //
+        // This segment matters most for the boxCells guard: it can travel
+        // a long way horizontally when the target's column sits far from
+        // the source's (e.g. a level-1 child positioned under a completely
+        // different level-0 sibling than its own parent). Nothing about
+        // `findClearColumn` finding `fromCX` itself clear (the only check
+        // that decided this is the no-collision branch) says the *row*
+        // this horizontal run lands on is clear all the way over to
+        // `toCX` too — a taller same-level sibling sitting between them,
+        // extending below its own row's shortest box, is exactly the case
+        // that check misses.
         if (fromCX !== toCX && midY < (canvas[0]?.length ?? 0)) {
           const lx = Math.min(fromCX, toCX)
           const rx = Math.max(fromCX, toCX)
           for (let x = lx; x <= rx; x++) {
-            setC(x, midY, lineH, 'line')
+            setCGuarded(x, midY, lineH, 'line')
           }
           if (!useAscii) {
-            setC(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
-            setC(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
+            setCGuarded(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
+            setCGuarded(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
           }
         }
 
         // 3. Vertical from midY to the target top (or to above the jog),
         //    then jog from the lane back in to the target anchor
         for (let y = midY + 1; y < toTY - (toJogs ? 1 : 0); y++) {
-          setC(toCX, y, lineV, 'line')
+          setCGuarded(toCX, y, lineV, 'line')
         }
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 
@@ -1083,7 +1449,7 @@ export function renderClassAscii(
           // down into it.
           const isHierarchical =
             marker.type === 'inheritance' || marker.type === 'realization'
-          setC(
+          setCGuarded(
             toAnchorX,
             toTY - 1,
             getMarkerShape(
@@ -1095,7 +1461,7 @@ export function renderClassAscii(
           )
         }
         if (marker.markerAt === 'from') {
-          setC(
+          setCGuarded(
             fromAnchorX,
             fromBY + 1,
             getMarkerShape(marker.type, useAscii, 'down'),
@@ -1115,23 +1481,31 @@ export function renderClassAscii(
       // (mirror of the downward case), then vertical up to midY
       drawJog(fromTY - 1, fromAnchorX, fromCX, lineH, false)
       for (let y = fromTY - (fromJogs ? 2 : 1); y >= midY; y--) {
-        setC(fromCX, y, lineV, 'line')
+        setCGuarded(fromCX, y, lineV, 'line')
       }
 
+      // This branch has no collision-avoidance routing at all (unlike the
+      // "target below source" branch above, which at least tries
+      // `findClearColumn` first) — it always draws the straight
+      // jog/vertical/horizontal/vertical/jog path. The boxCells guard is
+      // this path's only protection against a horizontal run landing on
+      // an unrelated box; see the equivalent midY comment in the "target
+      // below source" branch above for why that's a real, not merely
+      // theoretical, case.
       if (fromCX !== toCX) {
         const lx = Math.min(fromCX, toCX)
         const rx = Math.max(fromCX, toCX)
         for (let x = lx; x <= rx; x++) {
-          setC(x, midY, lineH, 'line')
+          setCGuarded(x, midY, lineH, 'line')
         }
         if (!useAscii && midY >= 0 && midY < totalH) {
-          setC(fromCX, midY, fromCX < toCX ? '┌' : '┐', 'corner')
-          setC(toCX, midY, fromCX < toCX ? '┘' : '└', 'corner')
+          setCGuarded(fromCX, midY, fromCX < toCX ? '┌' : '┐', 'corner')
+          setCGuarded(toCX, midY, fromCX < toCX ? '┘' : '└', 'corner')
         }
       }
 
       for (let y = midY - 1; y > toBY + (toJogs ? 1 : 0); y--) {
-        setC(toCX, y, lineV, 'line')
+        setCGuarded(toCX, y, lineV, 'line')
       }
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
@@ -1140,7 +1514,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, 'up')
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1155,7 +1529,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, markerDir)
         const my = toBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1164,9 +1538,38 @@ export function renderClassAscii(
         }
       }
     } else {
-      // Same level — draw horizontal line with a detour below both boxes
+      // Same level — draw horizontal line with a detour below both boxes.
       const toBY = toP.y + toP.height - 1
-      const detourY = Math.max(fromBY, toBY) + 2
+      const lx = Math.min(fromCX, toCX)
+      const rx = Math.max(fromCX, toCX)
+
+      // The naive detour row — max(fromBY, toBY) + 2 — is derived only from
+      // this relationship's own two endpoints. A same-level layout puts
+      // every class in the level on one shared row (see the placement loop
+      // above), so a relationship cycle that can't be linearly leveled
+      // (e.g. A->B->C->A) lands a third, unrelated class between `fromP`
+      // and `toP` in that same row. When that in-between class is taller
+      // than both endpoints (more attributes/methods), the naive detour row
+      // sits *above* its bottom edge, and the horizontal segment below
+      // (spanning [lx, rx], which crosses straight through that class's
+      // x-range) cuts through its box instead of running beneath it.
+      // Search for any such same-row obstruction and route the detour below
+      // its bottom edge too — generalizing er-diagram.ts's obstructionBottom
+      // search (issue #350) to class diagrams' same-level detour.
+      let obstructionBottom = Math.max(fromBY, toBY)
+      for (const [id, other] of placed.entries()) {
+        if (id === rel.from || id === rel.to) continue
+        if (other.y !== fromP.y) continue
+        const overlapsGap = other.x < rx + 1 && other.x + other.width > lx
+        if (overlapsGap) {
+          obstructionBottom = Math.max(
+            obstructionBottom,
+            other.y + other.height - 1,
+          )
+        }
+      }
+      const detourY = obstructionBottom + 2
+      sameLevelDetourY.set(relIndex, detourY)
       increaseSize(canvas, totalW, detourY + 1)
       increaseRoleCanvasSize(rc, totalW, detourY + 1)
       const fromJogs = fromCX !== fromAnchorX
@@ -1175,17 +1578,15 @@ export function renderClassAscii(
       // Jog out to the lane under the source, then vertical down from it
       drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
       for (let y = fromBY + (fromJogs ? 2 : 1); y <= detourY; y++) {
-        setC(fromCX, y, lineV, 'line')
+        setCGuarded(fromCX, y, lineV, 'line')
       }
       // Horizontal
-      const lx = Math.min(fromCX, toCX)
-      const rx = Math.max(fromCX, toCX)
       for (let x = lx; x <= rx; x++) {
-        setC(x, detourY, lineH, 'line')
+        setCGuarded(x, detourY, lineH, 'line')
       }
       // Vertical up to target, then jog back in to its anchor
       for (let y = detourY - 1; y >= toBY + (toJogs ? 2 : 1); y--) {
-        setC(toCX, y, lineV, 'line')
+        setCGuarded(toCX, y, lineV, 'line')
       }
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
@@ -1194,7 +1595,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1215,7 +1616,7 @@ export function renderClassAscii(
         )
         const my = toP.y + toP.height
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1313,9 +1714,24 @@ export function renderClassAscii(
         baseMidY: Math.floor((toBY + 1 + fromP.y - 1) / 2),
       }
     }
+    // Same level — anchor on the obstruction-aware detour row the connector
+    // itself was routed through (see `sameLevelDetourY` above), not the
+    // naive `Math.max(fromBY, toBY) + 2` recomputation, which ignores any
+    // taller same-row box between `fromP`/`toP` and would place the label
+    // right back inside it (issue #953).
     return {
       idealMidX: Math.floor((fromCX + toCX) / 2),
-      baseMidY: Math.max(fromBY, toP.y + toP.height - 1) + 2,
+      // The `??` fallback is unreachable in practice: the main
+      // relationship-drawing pass above runs for every relationship before
+      // this label pass does, and it sets `sameLevelDetourY` for every
+      // relIndex that takes this same "same level" branch — the exact
+      // condition this function just evaluated to reach here. Kept only
+      // because `Map.get` is typed `T | undefined`, not because a real
+      // diagram can actually hit it.
+      /* v8 ignore next */
+      baseMidY:
+        sameLevelDetourY.get(relIndex) ??
+        Math.max(fromBY, toP.y + toP.height - 1) + 2,
     }
   }
 
@@ -1590,6 +2006,52 @@ export function renderClassAscii(
           }
         }
       }
+    }
+  }
+
+  // --- Draw namespace frames ---
+  // Drawn last, into blank cells only: a relationship that crosses a frame
+  // keeps its stroke (the frame border yields), and the title slides along
+  // the top border (widening the frame if it must) to stay clear of strokes.
+  for (const r of frameRects) {
+    const h = useAscii ? '-' : '─'
+    const v = useAscii ? '|' : '│'
+    const c = useAscii
+      ? { tl: '+', tr: '+', bl: '+', br: '+' }
+      : { tl: '┌', tr: '┐', bl: '└', br: '┘' }
+    const cells = toDisplayCells(` ${r.name} `)
+    const blank = (x: number): boolean => (canvas[x]?.[r.y0] ?? ' ') === ' '
+    // Leftmost start, one dash in from the corner, whose cells plus a dash
+    // each side hold no stroke.
+    let start = r.x0 + 2
+    while (
+      Array.from({ length: cells.length + 2 }, (_, i) => start - 1 + i).some(
+        (x) => !blank(x),
+      )
+    ) {
+      start++
+    }
+    r.x1 = Math.max(r.x1, start + cells.length + 1)
+    increaseSize(canvas, r.x1 + 1, r.y1 + 1)
+    increaseRoleCanvasSize(rc, r.x1 + 1, r.y1 + 1)
+
+    const put = (x: number, y: number, ch: string, role: CharRole): void => {
+      if (canvas[x]?.[y] === ' ') setC(x, y, ch, role)
+    }
+    for (let x = r.x0 + 1; x < r.x1; x++) {
+      put(x, r.y0, h, 'border')
+      put(x, r.y1, h, 'border')
+    }
+    for (let y = r.y0 + 1; y < r.y1; y++) {
+      put(r.x0, y, v, 'border')
+      put(r.x1, y, v, 'border')
+    }
+    put(r.x0, r.y0, c.tl, 'border')
+    put(r.x1, r.y0, c.tr, 'border')
+    put(r.x0, r.y1, c.bl, 'border')
+    put(r.x1, r.y1, c.br, 'border')
+    for (const [i, cell] of cells.entries()) {
+      if (canvas[start + i]?.[r.y0] === h) setC(start + i, r.y0, cell, 'text')
     }
   }
 

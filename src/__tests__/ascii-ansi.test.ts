@@ -476,6 +476,28 @@ describe('colorizeLine — HTML mode', () => {
       `<span style="color:${theme.fg}">a</span> <span style="color:${theme.fg}">b</span>`,
     )
   })
+
+  it('backs a run of full blocks with its own color so abutting glyphs cannot seam', () => {
+    const result = colorizeLine(
+      ['█', '█', '█'],
+      ['border', 'border', 'border'],
+      theme,
+      'html',
+    )
+    expect(result).toBe(
+      `<span style="color:${theme.border};background:${theme.border}">███</span>`,
+    )
+  })
+
+  it('does not back a run that mixes blocks with other characters', () => {
+    const result = colorizeLine(['█', 'a'], ['border', 'border'], theme, 'html')
+    expect(result).toBe(`<span style="color:${theme.border}">█a</span>`)
+  })
+
+  it('does not back half blocks, which must not fill the whole cell', () => {
+    const result = colorizeLine(['▄'], ['border'], theme, 'html')
+    expect(result).toBe(`<span style="color:${theme.border}">▄</span>`)
+  })
 })
 
 describe('colorizeText', () => {

@@ -7,7 +7,11 @@
 // contains font metrics, spacing constants, and stroke widths.
 // ============================================================================
 
-import { measureTextWidth } from '@zombie-mermaid/core'
+import { buildStyleBlock, measureTextWidth } from '@zombie-mermaid/core'
+import {
+  MONO_FONT_FAMILY as EMBEDDED_MONO_FONT_FAMILY,
+  MONO_FONT_FACE_CSS as EMBEDDED_MONO_FONT_FACE_CSS,
+} from './generated/mono-font-subset.ts'
 
 /** Average character width in px at the given font size and weight (proportional font) */
 export function estimateTextWidth(
@@ -116,3 +120,26 @@ export const ARROW_HEAD = {
   width: 8,
   height: 5,
 } as const
+
+/**
+ * SVG `<style>` block for a diagram: core's `buildStyleBlock` plus, when
+ * `hasMonoFont` is set, the self-hosted mono font subset for the `.mono`
+ * rule. The subset lives here rather than in `core` because only SVG output
+ * embeds it (#1319).
+ */
+export function buildSvgStyleBlock(
+  font: string,
+  hasMonoFont: boolean,
+  nonce?: string,
+): string {
+  return buildStyleBlock(
+    font,
+    hasMonoFont
+      ? {
+          family: EMBEDDED_MONO_FONT_FAMILY,
+          faceCss: EMBEDDED_MONO_FONT_FACE_CSS,
+        }
+      : false,
+    nonce,
+  )
+}

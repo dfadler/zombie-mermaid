@@ -5,6 +5,12 @@ import { runWeb } from './cli/web.ts'
 import { runMcp } from './cli/mcp.ts'
 import { THEMES } from '@zombie-mermaid/core'
 import { getPackageVersion } from './package-info.ts'
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk } from '@zombie-mermaid/svg-renderer'
+
+// The CLI always has elkjs (it is a regular dependency of this package), so
+// register it explicitly rather than relying on the Node auto-load.
+registerElk(ELK)
 
 const pkgVersion = getPackageVersion()
 

@@ -253,9 +253,23 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-/** Wrap text in a <span> with an inline color style. */
+/** A run made only of full blocks (U+2588), as drawn by bar and area fills. */
+const SOLID_BLOCK_RUN = /^█+$/
+
+/**
+ * Wrap text in a <span> with an inline color style. A run of full blocks also
+ * gets a background of the same color: a browser draws each `█` as an
+ * anti-aliased glyph, and where a cell edge falls inside a device pixel (any
+ * fractional display scale, e.g. 125% or 150%) the two neighbouring glyphs
+ * each cover only part of that pixel and composite to 75-81% of the fill,
+ * leaving a hairline seam between cells. A background is snapped to whole
+ * device pixels, so the glyph edges land on a solid fill instead.
+ */
 function htmlSpan(hex: string, text: string): string {
-  return `<span style="color:${hex}">${escapeHtml(text)}</span>`
+  const style = SOLID_BLOCK_RUN.test(text)
+    ? `color:${hex};background:${hex}`
+    : `color:${hex}`
+  return `<span style="${style}">${escapeHtml(text)}</span>`
 }
 
 // ============================================================================

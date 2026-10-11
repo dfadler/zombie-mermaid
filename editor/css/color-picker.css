@@ -75,7 +75,7 @@
   outline: none;
 }
 .color-hex-input:focus {
-  border-color: var(--blue);
+  border-color: var(--t-accent);
 }
 
 .color-clear-btn {
@@ -109,7 +109,10 @@
   width: 100%;
   aspect-ratio: 1;
   border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  /* Was a fixed rgba(0,0,0,.12) -- used to be invisible against the old
+   * dark chrome mode. color-mix off --t-fg reads correctly against the
+   * tool's fixed light chrome too. */
+  border: 1px solid color-mix(in srgb, var(--t-fg) 20%, transparent);
   cursor: pointer;
   transition:
     transform 0.1s,

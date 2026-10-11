@@ -8,7 +8,8 @@
 // from both index.ts and editor.ts.
 // ============================================================================
 
-import { renderMermaidSVGAsync } from './index.ts'
+import { renderMermaidSVGAsync, registerElk } from './index.ts'
+import ELK from 'elkjs/lib/elk.bundled.js'
 import {
   renderMermaidASCII,
   diagramColorsToAsciiTheme,
@@ -18,6 +19,10 @@ import {
   getSeriesColor,
   CHART_ACCENT_FALLBACK,
 } from '@zombie-mermaid/mermaid-parser'
+
+// elkjs is an optional peer of the library (#1370); this bundle is a browser
+// consumer that renders flowcharts, so it registers elk itself.
+registerElk(ELK)
 
 export interface MermaidBrowserGlobal {
   renderMermaidSVGAsync: typeof renderMermaidSVGAsync

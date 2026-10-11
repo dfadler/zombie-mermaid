@@ -9,7 +9,7 @@
  * - Integration: full SVG output with multi-line labels
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import {
   parseSequenceDiagram,
   parseClassDiagram,

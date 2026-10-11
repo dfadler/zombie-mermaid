@@ -49,12 +49,11 @@
  *
  * The new chrome's colours come from tokens.tsx's design-system palette,
  * which is *not* safe to load at `:root` here: editor/css/variables.css
- * already defines `--bg`, `--border`, and `--green` for its own light/dark
- * theming (derived from `--t-bg`/`--t-fg`, which the dark-mode toggle
- * rewrites at runtime), and tokens.tsx's `COLORS` reuses those exact three
- * names for unrelated values. Loading `designTokensCss()` at `:root` would
- * silently overwrite the tool's own theme variables and break the dark-mode
- * toggle. {@link editorPageCss} instead scopes the whole palette to
+ * already defines `--bg`, `--border`, and `--green` for its own theming
+ * (derived from `--t-bg`/`--t-fg`), and tokens.tsx's `COLORS` reuses those
+ * exact three names for unrelated values. Loading `designTokensCss()` at
+ * `:root` would silently overwrite the tool's own theme variables.
+ * {@link editorPageCss} instead scopes the whole palette to
  * `.zm-shell` — the wrapper around the nav/hero block and the one around
  * the feature-strip/footer block — so it cascades to their descendants
  * (Nav, Footer, Card, the icons) without ever reaching `:root` or the tool.
@@ -71,6 +70,16 @@
  * directly below it already has a real, working 15-theme dropdown
  * (`<EditorTopbar>`'s `#theme-dropdown-btn`). Shipping an inert copy next
  * to the real control would read as a second, broken theme picker.
+ *
+ * zombie-mermaid#935's audit found the hero and the feature strip to be
+ * independent, stateless presentational components with nothing shared
+ * between them beyond both being lifted from the same artboard -- the same
+ * shape #932/#933 split index-app.tsx's/nav.tsx's own presentational
+ * components on -- so they now live in their own files,
+ * `editor-hero.tsx`/`editor-feature-strip.tsx`. What's left here is this
+ * page's own CSS generation (scoped to this page's specific palette/layout
+ * needs, not a generic concern worth a third file) and the `<EditorPage>`
+ * composition itself.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
@@ -112,33 +121,28 @@
  * asynchronously rather than run synchronously inside the `hydrateRoot()`
  * call).
  */
-import type { ReactNode } from 'react'
-import { SiteHead } from './site-head.tsx'
-import { HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
+import { FontLinks, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
+import { Document } from './document.tsx'
 import { EditorAppIsland } from './editor-app-island.tsx'
 import { EDITOR_LEGACY_APP_JS_ELEMENT_ID } from './editor-app.tsx'
+import { EditorFeatureStrip } from './editor-feature-strip.tsx'
+import {
+  EditorHero,
+  HERO_H1_SIZE,
+  HERO_H1_SIZE_MOBILE,
+} from './editor-hero.tsx'
 import type { EditorThemeItem } from './editor-topbar.tsx'
 import { NavMobileMenuScript, NavStyle } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
-import { Card, PrimitivesStyle } from './primitives.tsx'
+import { PrimitivesStyle } from './primitives-css.tsx'
 import {
-  ChevronRightIcon,
-  DownloadIcon,
-  ShareIcon,
-  SyncRenderIcon,
-  ThemesIcon,
-} from './icons.tsx'
-import {
+  BREAKPOINTS,
   COLORS,
-  FONT_SIZE,
   FONT_WEIGHT,
   FONTS,
   LAYOUT,
-  LETTER_SPACING,
   SECTION_SPACE,
-  SPACE,
-  colorVar,
 } from './tokens.tsx'
 
 /* -----------------------------------------------------------------
@@ -155,6 +159,20 @@ const ZM_SHELL = 'zm-shell'
  * every other redesigned page. A scoped equivalent of `designTokensCss()` +
  * `designBaseCss()` — see the module doc comment for why this page can't
  * use those directly.
+ *
+ * `.${selector} .mono` (zombie-mermaid#969) mirrors `designBaseCss()`'s own
+ * `body .mono` rule for the same reason that one exists — see its doc
+ * comment — but this page never emits `designBaseCss()`, so without a
+ * local copy `.mono`-classed elements here (the breadcrumb, `EditorHero`)
+ * would have no font-family rule at all and fall back to `--font-body`.
+ * Before #969, this worked by accident: `.mono`'s rule lived inside
+ * `primitivesCss()` instead, which this page also emits (`<PrimitivesStyle
+ * />` below) and which happens to select on bare `body`, so it matched
+ * regardless of this page's `.zm-shell` scoping. Now that `.mono` moved out
+ * of the CSS-Modules-hashed `primitives.module.css` for good, this page
+ * needs its own copy rather than continuing to depend on that
+ * coincidence. Two classes (`.${selector} .mono`) beats the SVG-embedded
+ * bare `.mono` selector on specificity alone, same as `body .mono` does.
  */
 function scopedDesignTokensCss(selector: string): string {
   const colors = Object.entries(COLORS)
@@ -178,6 +196,10 @@ ${colors}
   font-weight: ${FONT_WEIGHT.bold};
 }
 
+.${selector} .mono {
+  font-family: var(--font-mono);
+}
+
 .${selector} a {
   color: var(--cyan);
   text-decoration: none;
@@ -187,19 +209,6 @@ ${colors}
   color: var(--pink);
 }`
 }
-
-/** The hero h1's desktop size, in px — the mockup's own literal (46), not
- * on tokens.tsx's `FONT_SIZE` scale (its `h1` step is a plainer 38). */
-const HERO_H1_SIZE = 46
-/** The hero h1's size at {@link BREAKPOINTS_MOBILE} and below — this one
- * does match tokens.tsx's `FONT_SIZE.h1Mobile`, kept literal alongside
- * {@link HERO_H1_SIZE} rather than split across two sources. */
-const HERO_H1_SIZE_MOBILE = 34
-/** Mirrors tokens.tsx's `BREAKPOINTS.mobile` — kept literal so this file's
- * CSS text doesn't need a second import just for one number. */
-const BREAKPOINTS_MOBILE = 600
-/** Mirrors tokens.tsx's `BREAKPOINTS.tablet`. */
-const BREAKPOINTS_TABLET = 900
 
 /**
  * This page's own layout rules: the scoped palette (one `.zm-shell` class
@@ -223,14 +232,35 @@ body {
   overflow: visible;
 }
 
+/* body itself needs the page background painted on it, not just var(--bg):
+ * the nav's own .zm-shell wrapper is display:contents (see the sticky
+ * NavIsland below), so it never paints a box of its own behind the bar.
+ * <header>'s background is bgRgba(NAV_BG_ALPHA) -- 85% opaque, by design,
+ * so the page shows through it -- and without this rule that "page" is
+ * body's default (unstyled, effectively white) background rather than the
+ * dark navy every other section on this page actually sits on, so the bar
+ * reads as a visibly lighter band instead of blending into the hero below
+ * it. Literal hex (tokens.tsx's COLORS), not var(--bg) -- see the module
+ * doc comment for why var(--bg) itself is off-limits here. */
+body {
+  background: ${COLORS['--bg']};
+}
+
 /* Reproduces body's old contract (display:flex; flex-direction:column;
  * overflow:hidden over an explicit height) so <EditorChrome>'s three
  * fragment children lay out exactly as before, just scoped to a card
  * instead of the whole viewport. Colours are literal hex (tokens.tsx's
- * COLORS), not var() — see the module doc comment for why. */
+ * COLORS), not var() — see the module doc comment for why -- except
+ * background, which is var(--t-bg) (the tool's own chrome token, fixed by
+ * editor/css/variables.css's :root default) rather than a literal: the
+ * card needs to paint an opaque surface of its own, since .topbar itself
+ * is background: transparent (editor/css/topbar.css) and would otherwise
+ * let this dark page's own body background (above) show straight
+ * through it. */
 .editor-tool-shell {
   display: flex;
   flex-direction: column;
+  background: var(--t-bg);
   height: min(720px, 82vh);
   min-height: 480px;
   max-width: ${LAYOUT.maxWidth}px;
@@ -253,7 +283,18 @@ body {
   isolation: isolate;
 }
 
-@media (max-width: ${BREAKPOINTS_TABLET}px) {
+/* The default 4-up column count lives here, not as an inline style on
+ * .editor-features-grid (editor-feature-strip.tsx) -- an inline style's
+ * specificity beats any stylesheet rule regardless of selector weight, so a
+ * grid-template-columns set via style={} would silently defeat both
+ * media-query overrides below and permanently lock the grid at 4 columns
+ * down to 375px, squeezing every card (and its heading/paragraph) into a
+ * sliver-width column (zombie-mermaid#1056). */
+.editor-features-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: ${BREAKPOINTS.tablet}px) {
   .editor-tool-shell {
     height: min(640px, 78vh);
   }
@@ -265,7 +306,7 @@ body {
   }
 }
 
-@media (max-width: ${BREAKPOINTS_MOBILE}px) {
+@media (max-width: ${BREAKPOINTS.mobile}px) {
   .editor-tool-shell {
     height: min(560px, 74vh);
   }
@@ -275,183 +316,34 @@ body {
   .editor-features-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* editor-fullscreen.ts's useEditorFullscreen requestFullscreen()s this
+ * exact element -- the browser then promotes it to the "top layer" and
+ * applies its own UA-stylesheet :fullscreen sizing, but author rules
+ * (this one included) outrank that UA default regardless of specificity,
+ * so the card's normal bordered/max-width/centered/fixed-height layout
+ * above would otherwise keep confining it. :fullscreen's own specificity
+ * (a pseudo-class, same weight as a plain class) already outranks every
+ * plain ".editor-tool-shell" rule above including the @media-scoped
+ * height overrides, so this doesn't need to be more specific than them,
+ * just present. background: var(--t-bg) (not a literal hex, unlike this
+ * card's border/shadow above) is deliberate: --t-bg is the *tool's* own
+ * chrome token (editor/css/variables.css's :root default), correctly in
+ * scope here since .editor-tool-shell is that token's own scope root, not
+ * the design-system palette's. -webkit-full-screen covers Safari < 16.4. */
+.editor-tool-shell:fullscreen,
+.editor-tool-shell:-webkit-full-screen {
+  max-width: none;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--t-bg);
 }`
-}
-
-/* -----------------------------------------------------------------
- * The new chrome's markup
- * ----------------------------------------------------------------- */
-
-/** Breadcrumb + heading + description, lifted from the canvas's page
- * header — the only copy on this page that isn't the tool itself. */
-function EditorHero({ homeHref }: { homeHref: string }) {
-  return (
-    <div
-      className="section-px"
-      style={{
-        padding: `${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px ${SPACE['5xl']}px ${LAYOUT.gutter.desktop}px`,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: `${LAYOUT.maxWidth}px`,
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: `${SPACE.xl}px`,
-        }}
-      >
-        <nav
-          aria-label="Breadcrumb"
-          className="mono"
-          style={{
-            fontSize: `${FONT_SIZE.bodySm}px`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: `${SPACE.xs}px`,
-          }}
-        >
-          <a href={homeHref} style={{ color: colorVar('--text-faint') }}>
-            Home
-          </a>
-          <ChevronRightIcon size={12} strokeWidth={2.4} />
-          <span style={{ color: colorVar('--text-dim') }}>Editor</span>
-        </nav>
-        <h1
-          className="page-h1"
-          style={{
-            fontSize: `${HERO_H1_SIZE}px`,
-            lineHeight: 1.1,
-            letterSpacing: LETTER_SPACING.display,
-            maxWidth: 760,
-          }}
-        >
-          Write Mermaid, watch it render as you type.
-        </h1>
-        <p
-          style={{
-            fontSize: `${FONT_SIZE.lead}px`,
-            lineHeight: 1.6,
-            color: colorVar('--text-dim'),
-            maxWidth: 640,
-          }}
-        >
-          A live SVG preview, 15 switchable themes, pan &amp; zoom, and
-          one-click SVG export — every diagram you edit here round-trips through
-          the URL, so a shared link reproduces the exact view.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-/** One card in the feature strip below the tool. */
-interface EditorFeature {
-  icon: ReactNode
-  title: string
-  description: string
-}
-
-/** The four features the canvas's editor page calls out, in canvas order —
- * each icon is icons.tsx's own component for that exact feature (see each
- * icon's CANVAS note for the Editor.dc.html reference). */
-const EDITOR_FEATURES: readonly EditorFeature[] = [
-  {
-    icon: <SyncRenderIcon size={26} color={colorVar('--blue')} />,
-    title: 'Live, debounced rendering',
-    description:
-      'Type or paste Mermaid source and the preview re-renders a beat later — no explicit "run" button, no full page reload.',
-  },
-  {
-    icon: <ShareIcon size={26} />,
-    title: 'Shareable via URL',
-    description:
-      'The diagram source and selected theme both round-trip through the URL hash — copy the link, send the exact view.',
-  },
-  {
-    icon: <ThemesIcon size={26} color={colorVar('--violet')} />,
-    title: '15 built-in themes',
-    description:
-      'Switch instantly between all 15 themes right from the toolbar, with no re-parse of your diagram source.',
-  },
-  {
-    icon: <DownloadIcon size={26} />,
-    title: 'One-click SVG export',
-    description:
-      'Download the exact rendered diagram as a clean, standalone SVG file — ready to drop into docs or slides.',
-  },
-] as const
-
-/** The feature-strip section below the tool: an eyebrow + heading over a
- * four-card grid, one card per {@link EDITOR_FEATURES} entry. */
-function EditorFeatureStrip() {
-  return (
-    <div
-      className="section-px"
-      style={{
-        padding: `${SPACE['5xl']}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px`,
-        background: colorVar('--bg-soft'),
-        borderTop: `1px solid ${colorVar('--border')}`,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: `${LAYOUT.maxWidth}px`,
-          margin: `0 auto ${SPACE['7xl']}px auto`,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: `${SPACE.xl}px`,
-        }}
-      >
-        <span className="section-eyebrow">
-          Everything a mermaid.live user expects
-        </span>
-        <h2
-          style={{
-            fontSize: `${FONT_SIZE.h2}px`,
-            letterSpacing: LETTER_SPACING.heading,
-          }}
-        >
-          Built to be the fast, shareable way to draft a diagram.
-        </h2>
-      </div>
-
-      <div
-        className="editor-features-grid"
-        style={{
-          maxWidth: `${LAYOUT.maxWidth}px`,
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-          gap: `${SPACE['3xl']}px`,
-        }}
-      >
-        {EDITOR_FEATURES.map((feature) => (
-          <Card
-            key={feature.title}
-            padding={26}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: `${SPACE.lg}px`,
-            }}
-          >
-            {feature.icon}
-            <h3 style={{ fontSize: `${FONT_SIZE.lead}px` }}>{feature.title}</h3>
-            <p
-              style={{
-                fontSize: `${FONT_SIZE.bodySm}px`,
-                color: colorVar('--text-dim'),
-                lineHeight: 1.5,
-              }}
-            >
-              {feature.description}
-            </p>
-          </Card>
-        ))}
-      </div>
-    </div>
-  )
 }
 
 export interface EditorPageProps {
@@ -509,73 +401,94 @@ export function EditorPage({
   // as every other page's active-page self-link.
   const { editor: _editor, ...editorNavHrefs } = ROOT_NAV_HREFS
   return (
-    <html lang="en">
-      <head>
-        <SiteHead title="zombie-mermaid — Live Editor" css={css} />
-        {/* SiteHead only emits the SVG favicon (first shaped around
-            dashboard.ts, which needs nothing else). The original template
-            also links a .ico fallback and an apple-touch-icon; kept here as
-            siblings rather than growing SiteHead's props for one consumer. */}
-        <link rel="icon" type="image/x-icon" href="favicon.ico" />
-        <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-        <PrimitivesStyle />
-        <NavStyle />
-        <FooterStyle />
-        <style>{editorPageCss()}</style>
-      </head>
-      <body>
-        <div className={ZM_SHELL}>
-          <NavIsland
-            active="editor"
-            homeHref={homeHref}
-            hrefs={editorNavHrefs}
-          />
-          <EditorHero homeHref={homeHref} />
-        </div>
-
-        <div
-          className="section-px"
-          style={{
-            padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px`,
-            // Literal hex (tokens.tsx's COLORS), not var(--bg): this div sits
-            // between the two .zm-shell blocks, outside their scope, and
-            // would otherwise show the *tool's* --bg (near-white) through as
-            // a jarring pale band between two dark sections. See the module
-            // doc comment on why var(--bg) itself is off-limits here.
-            background: COLORS['--bg'],
-          }}
-        >
-          <div className="editor-tool-shell">
-            <EditorAppIsland themes={themes} />
-          </div>
-        </div>
-
-        <div className={ZM_SHELL}>
-          <EditorFeatureStrip />
-          <Footer />
-        </div>
-
-        {/* 1. window.__themeColors + renderer + theme-state bridge — must run first (see header comment) */}
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own chromeThemeColorsScript() output plus the src/browser.ts bundle and the theme-state bridge, all under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: rendererSetupJs }}
+    <Document
+      title="Zombie Mermaid — Live Editor"
+      head={
+        <>
+          {/* Document only emits the SVG favicon (its own shared default,
+              first shaped around dashboard.ts, which needs nothing else).
+              The original template also links a .ico fallback and an
+              apple-touch-icon; kept here as siblings rather than growing
+              Document's props for one consumer. */}
+          <FontLinks />
+          <style>{css}</style>
+          <link rel="icon" type="image/x-icon" href="favicon.ico" />
+          <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+          <PrimitivesStyle />
+          <NavStyle />
+          <FooterStyle />
+          <style>{editorPageCss()}</style>
+        </>
+      }
+    >
+      {/*
+          A separate `.zm-shell` wrapper from the hero's below, `display:
+          contents` so it contributes no box of its own -- `<NavIsland
+          sticky>`'s containing block (nav-island.tsx's `display: contents`
+          on #nav-root pushes it here, its own parent) needs to span the
+          page's full scroll height to have any room to actually stick, and
+          the hero-sized `.zm-shell` below does not. `display: contents`
+          still participates fully in the cascade (`--text`/`--bg`/etc
+          inherit through it normally) and in descendant-selector matching
+          (`.zm-shell .nav-bar` etc, from `scopedDesignTokensCss` above,
+          still resolves through it) -- only its own box disappears, so the
+          scoped palette still reaches `<NavIsland>` exactly as before.
+        */}
+      <div className={ZM_SHELL} style={{ display: 'contents' }}>
+        <NavIsland
+          sticky
+          active="editor"
+          homeHref={homeHref}
+          hrefs={editorNavHrefs}
+          installSlotKind="empty"
         />
-        {/* 2. Hydrates <EditorApp> + <NavIsland>, then loads (3) itself once hydration is confirmed done */}
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/editor-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: editorClientScript }}
-        />
-        {/* 3. Legacy editor/js/*.js modules — inert data, not an executable script (see header comment) */}
-        <script
-          type="application/x-zm-legacy-js"
-          id={EDITOR_LEGACY_APP_JS_ELEMENT_ID}
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own editor/js/*.js modules, under version control and concatenated at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: appJs }}
-        />
-        <NavMobileMenuScript />
-      </body>
-    </html>
+      </div>
+      <div className={ZM_SHELL}>
+        <EditorHero homeHref={homeHref} />
+      </div>
+
+      <div
+        className="section-px"
+        style={{
+          padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px`,
+          // Literal hex (tokens.tsx's COLORS), not var(--bg): this div sits
+          // between the two .zm-shell blocks, outside their scope, and
+          // would otherwise show the *tool's* --bg (near-white) through as
+          // a jarring pale band between two dark sections. See the module
+          // doc comment on why var(--bg) itself is off-limits here.
+          background: COLORS['--bg'],
+        }}
+      >
+        <div className="editor-tool-shell">
+          <EditorAppIsland themes={themes} />
+        </div>
+      </div>
+
+      <div className={ZM_SHELL}>
+        <EditorFeatureStrip />
+        <Footer />
+      </div>
+
+      {/* 1. window.__themeColors + renderer + theme-state bridge — must run first (see header comment) */}
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own chromeThemeColorsScript() output plus the src/browser.ts bundle and the theme-state bridge, all under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: rendererSetupJs }}
+      />
+      {/* 2. Hydrates <EditorApp> + <NavIsland>, then loads (3) itself once hydration is confirmed done */}
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/editor-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: editorClientScript }}
+      />
+      {/* 3. Legacy editor/js/*.js modules — inert data, not an executable script (see header comment) */}
+      <script
+        type="application/x-zm-legacy-js"
+        id={EDITOR_LEGACY_APP_JS_ELEMENT_ID}
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own editor/js/*.js modules, under version control and concatenated at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: appJs }}
+      />
+      <NavMobileMenuScript />
+    </Document>
   )
 }

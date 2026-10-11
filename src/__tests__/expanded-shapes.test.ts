@@ -7,7 +7,7 @@
  * metadata block as unparsed text on the line.
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 import {
   parseExpandedMeta,

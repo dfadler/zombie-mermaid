@@ -48,6 +48,11 @@ const diagrams: Record<string, string> = {
   x-axis [jan, feb, mar, apr]
   y-axis "Revenue (k)" 0 --> 120
   bar [50, 60, 75, 90]`,
+
+  pie: `pie showData title Pets
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
 }
 
 // ============================================================================

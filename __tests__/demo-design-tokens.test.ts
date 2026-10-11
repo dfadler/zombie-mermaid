@@ -35,6 +35,7 @@ import {
   DesignTokensStyle,
   FONTS,
   LAYOUT,
+  LEGACY_BREAKPOINTS,
   MEDIA,
   RADIUS,
   colorVar,
@@ -98,8 +99,13 @@ describe('designTokensCss', () => {
 
   it('emits a single :root block', () => {
     expect(css.match(/:root/g)).toHaveLength(1)
-    expect(css.startsWith(':root {')).toBe(true)
     expect(css.trimEnd().endsWith('}')).toBe(true)
+  })
+
+  it('emits the mono font @font-face ahead of the :root block', () => {
+    expect(css.match(/@font-face/g)).toHaveLength(1)
+    expect(css.startsWith('@font-face {')).toBe(true)
+    expect(css.indexOf('@font-face')).toBeLessThan(css.indexOf(':root'))
   })
 })
 
@@ -119,6 +125,17 @@ describe('designBaseCss', () => {
   it('uses the canvas cyan/pink link pair', () => {
     expect(css).toContain('color: var(--cyan);')
     expect(css).toContain('color: var(--pink);')
+  })
+
+  // zombie-mermaid#969: .mono moved here from primitives.module.css, which
+  // is now hashed — see this function's doc comment for why a page-wide
+  // utility class like .mono can never finish migrating every consumer to
+  // a classes map and so has to stay a plain, unhashed literal. `body
+  // .mono` (not bare `.mono`) is load-bearing for the same reason the doc
+  // comment gives: it needs strictly higher specificity than the bare
+  // `.mono` selector a rendered diagram's own embedded <style> can inject.
+  it('sets .mono to the self-hosted mono font stack, at body-scoped specificity', () => {
+    expect(css).toContain('body .mono {\n  font-family: var(--font-mono);\n}')
   })
 })
 
@@ -148,6 +165,24 @@ describe('breakpoints', () => {
 
   it('gives each breakpoint band its own gutter', () => {
     expect(LAYOUT.gutter).toEqual({ desktop: 80, tablet: 32, mobile: 20 })
+  })
+})
+
+describe('LEGACY_BREAKPOINTS', () => {
+  // Pins the #1030 consolidation: the pre-redesign pages' breakpoints, one
+  // named constant per distinct pixel value. See
+  // __tests__/demo-legacy-breakpoints-sync.test.ts for the check that every
+  // tagged @media rule in the CSS files actually using these still matches.
+  it('names every distinct legacy breakpoint value', () => {
+    expect(LEGACY_BREAKPOINTS).toEqual({
+      mobile: 600,
+      tapTarget: 640,
+      diagramStack: 720,
+      compact: 768,
+      tablet: 900,
+      desktopMin: 1000,
+      desktopBelow: 1023,
+    })
   })
 })
 

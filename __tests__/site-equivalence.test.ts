@@ -33,10 +33,16 @@ import { createElement } from 'react'
 import { JSDOM } from 'jsdom'
 import { within } from '@testing-library/react'
 import { renderHtmlDocument } from '../demo/render-html.ts'
-import { IndexPage } from '../demo/components/index-page.tsx'
+import {
+  IndexPage,
+  THEME_SHOWCASE_MERMAID_SOURCE,
+} from '../demo/components/index-page.tsx'
 import { FORK_URL } from '../demo/components/site-chrome.tsx'
 import { THEMES } from '@zombie-mermaid/core'
-import { THEME_LABELS } from '../demo/theme-labels.ts'
+import {
+  renderMermaidASCII,
+  diagramColorsToAsciiTheme,
+} from '@zombie-mermaid/ascii-renderer'
 import { EditorPage } from '../demo/components/editor-page.tsx'
 import {
   ForkFixesPage,
@@ -217,64 +223,220 @@ describe('index.ts → index.html', () => {
     ).toHaveAttribute('href', 'editor.html')
   })
 
-  it('renders the theme showcase heading, live count, and six pre-rendered diagram slots', () => {
+  it('renders the theme showcase heading and a single decorative flowchart, themed in dracula', () => {
     const document = renderIndexPageDocument()
     const body = within(document.body)
-    const themeCount = Object.keys(THEMES).length
     const defaultTheme = THEMES.dracula
     if (!defaultTheme) throw new Error('test setup: no "dracula" theme')
 
     expect(
       body.getByRole('heading', {
         level: 2,
-        name: 'Pick a theme. Switch it live — no re-render.',
+        name: 'Pick a theme. Watch it flow.',
       }),
     ).toBeInTheDocument()
-    expect(
-      document.querySelector('.theme-showcase-frac-total')?.textContent,
-    ).toBe(`${themeCount}`)
-    expect(document.getElementById('theme-showcase-counter')?.textContent).toBe(
-      '1',
-    )
-    expect(
-      document.getElementById('theme-showcase-theme-name')?.textContent,
-    ).toBe(`/* ${THEME_LABELS.dracula ?? 'dracula'} */`)
-    expect(document.getElementById('theme-showcase-bg-val')?.textContent).toBe(
-      defaultTheme.bg,
+
+    const card = document.getElementById('theme-showcase-diagram-card')
+    expect(card).toBeInTheDocument()
+    expect(card?.style.getPropertyValue('--tsd-bg')).toBe(defaultTheme.bg)
+    expect(card?.style.getPropertyValue('--tsd-text')).toBe(defaultTheme.fg)
+    expect(card?.style.getPropertyValue('--tsd-arrow')).toBe(
+      defaultTheme.accent,
     )
 
-    const slots = document.querySelectorAll(
-      '#theme-showcase-diagrams > [data-slug]',
-    )
-    expect(slots).toHaveLength(6)
-    expect(slots[0]?.getAttribute('data-slug')).toBe('flowchart')
-    expect(slots[0]?.classList.contains('is-active')).toBe(true)
+    const diagram = document.getElementById('theme-showcase-diagram')
+    expect(diagram).toBeInTheDocument()
+    expect(diagram?.tagName.toLowerCase()).toBe('svg')
     expect(
-      [...slots].filter((slot) => slot.classList.contains('is-active')),
-    ).toHaveLength(1)
+      Array.from(diagram?.querySelectorAll('.tsd-node-text') ?? []).map(
+        (el) => el.textContent,
+      ),
+    ).toEqual([
+      'Start',
+      'Auth?',
+      'Build',
+      'Test',
+      'Deploy?',
+      'Ship it',
+      'Rollback',
+      'Monitor',
+    ])
+
+    const burst = document.getElementById('theme-showcase-burst')
+    expect(burst).toBeInTheDocument()
+    expect(burst?.tagName.toLowerCase()).toBe('circle')
   })
 
-  it('renders the six feature-grid cards', () => {
+  it('renders the theme showcase output toggle defaulted to SVG, with a real ASCII render behind it', () => {
+    const document = renderIndexPageDocument()
+
+    const card = document.getElementById('theme-showcase-diagram-card')
+    expect(card).toHaveAttribute('data-output-mode', 'svg')
+
+    const svgBtn = document.getElementById('theme-showcase-output-svg')
+    expect(svgBtn).toHaveAttribute('aria-pressed', 'true')
+    const asciiBtn = document.getElementById('theme-showcase-output-ascii')
+    expect(asciiBtn).toHaveAttribute('aria-pressed', 'false')
+
+    // Drift guard: the pre-rendered #theme-showcase-ascii block must be the
+    // real renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE) output, not
+    // hand-typed text that could silently fall out of sync with it.
+    const ascii = document.getElementById('theme-showcase-ascii')
+    expect(ascii).toBeInTheDocument()
+    const realAscii = renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+      colorMode: 'none',
+    })
+    for (const label of [
+      'Start',
+      'Auth?',
+      'Build',
+      'Test',
+      'Pipeline',
+      'Deploy?',
+      'Ship it',
+      'Rollback',
+      'Monitor',
+    ]) {
+      expect(realAscii).toContain(label)
+      expect(ascii?.textContent).toContain(label)
+    }
+  })
+
+  it('threads a real, per-role-colored ASCII render for every theme via #theme-showcase-ascii-props', () => {
+    const document = renderIndexPageDocument()
+
+    const propsEl = document.getElementById('theme-showcase-ascii-props')
+    expect(propsEl).toBeInTheDocument()
+    expect(propsEl?.getAttribute('type')).toBe('application/json')
+    const byTheme = JSON.parse(propsEl?.textContent ?? '{}') as Record<
+      string,
+      string
+    >
+
+    const themeKeys = Object.keys(THEMES)
+    expect(Object.keys(byTheme).sort()).toEqual(themeKeys.sort())
+
+    const dracula = THEMES.dracula
+    const nord = THEMES.nord
+    if (!dracula || !nord) throw new Error('test setup: missing theme(s)')
+
+    // Drift guard: each entry is the real colorMode:'html' render for that
+    // theme, not a flat/uncolored string -- distinct per-role <span
+    // style="color:..."> markup, not just the same plain text repeated 15
+    // times under different keys.
+    expect(byTheme.dracula).toContain('<span style="color:')
+    expect(byTheme.dracula).not.toBe(byTheme.nord)
+    expect(byTheme.dracula).toBe(
+      renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+        colorMode: 'html',
+        theme: diagramColorsToAsciiTheme(dracula),
+      }).replace(/[ \t]+$/gm, ''),
+    )
+    expect(byTheme.nord).toBe(
+      renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+        colorMode: 'html',
+        theme: diagramColorsToAsciiTheme(nord),
+      }).replace(/[ \t]+$/gm, ''),
+    )
+
+    // The initially server-rendered #theme-showcase-ascii block must match
+    // the default theme's own entry in that same map -- a visitor's first
+    // paint (before any client-side pick) shouldn't be a different render
+    // than what the picker would swap to for that same theme.
+    const ascii = document.getElementById('theme-showcase-ascii')
+    expect(ascii?.innerHTML).toBe(byTheme.dracula)
+  })
+
+  it('renders the theme showcase picker with a trigger and one option per theme', () => {
+    const document = renderIndexPageDocument()
+    const themeCount = Object.keys(THEMES).length
+
+    const trigger = document.getElementById('theme-showcase-picker-trigger')
+    expect(trigger).toBeInTheDocument()
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      document.getElementById('theme-showcase-picker-label')?.textContent,
+    ).toBe('dracula')
+
+    const panel = document.getElementById('theme-showcase-picker-panel')
+    expect(panel).toBeInTheDocument()
+    expect(panel).toHaveAttribute('role', 'listbox')
+
+    const options = document.querySelectorAll(
+      '#theme-showcase-picker-panel [role="option"]',
+    )
+    expect(options).toHaveLength(themeCount)
+    const selected = [...options].filter(
+      (opt) => opt.getAttribute('aria-selected') === 'true',
+    )
+    expect(selected).toHaveLength(1)
+    expect(selected[0]?.getAttribute('data-theme')).toBe('dracula')
+  })
+
+  it('renders a footnote linking to the custom-theme docs', () => {
+    const document = renderIndexPageDocument()
+    const link = within(
+      mustFind(document.querySelector('.theme-showcase-footnote')),
+    ).getByRole('link', { name: /see how easy one is to write/ })
+    expect(link).toHaveAttribute(
+      'href',
+      `${FORK_URL}/blob/main/docs/theming.md`,
+    )
+  })
+
+  it('renders "Why This Fork Exists" with the new-to-this-fork cards', () => {
     const document = renderIndexPageDocument()
     const body = within(document.body)
 
     expect(
       body.getByRole('heading', {
         level: 2,
-        name: 'Six nodes, one rendering engine.',
+        name: 'What zombie-mermaid adds on top.',
       }),
     ).toBeInTheDocument()
     for (const label of [
-      'Dual output',
-      '15 built-in themes',
-      'Full Shiki compatibility',
-      'Mono mode',
-      'Zero DOM dependencies',
-      'Synchronous rendering',
+      'A real CLI binary',
+      'mergeEdges',
+      'Real bugs, actually fixed',
     ]) {
       expect(
         body.getByRole('heading', { level: 3, name: label }),
       ).toBeInTheDocument()
+    }
+    expect(
+      body.getByRole('link', { name: 'See every fix, before and after →' }),
+    ).toHaveAttribute('href', 'fork-fixes.html')
+  })
+
+  it('renders the three feature pillars', () => {
+    const document = renderIndexPageDocument()
+    const body = within(document.body)
+
+    expect(
+      body.getByRole('heading', {
+        level: 2,
+        name: 'Three ways this stays out of your way.',
+      }),
+    ).toBeInTheDocument()
+    for (const label of [
+      'Output flexibility',
+      'Drop-in architecture',
+      'Proven at scale',
+    ]) {
+      expect(
+        body.getByRole('heading', { level: 3, name: label }),
+      ).toBeInTheDocument()
+    }
+    for (const label of [
+      'Dual output.',
+      'Mono mode.',
+      'Zero DOM dependencies.',
+      'Synchronous rendering.',
+      'Ultra-fast.',
+      'CI-enforced accessibility.',
+    ]) {
+      expect(body.getByText(label)).toBeInTheDocument()
     }
   })
 
@@ -320,6 +482,9 @@ describe('index.ts → index.html', () => {
       ['Class', 'diagrams/class.html'],
       ['ER', 'diagrams/er.html'],
       ['XY Chart', 'diagrams/xy-chart.html'],
+      ['C4', 'diagrams/c4.html'],
+      ['Architecture', 'diagrams/architecture-beta.html'],
+      ['Pie', 'diagrams/pie.html'],
     ]
     for (const [label, href] of gallery) {
       expect(body.getByRole('link', { name: label })).toHaveAttribute(
@@ -428,7 +593,7 @@ describe('editor.ts → editor.html', () => {
   it('renders the page title and the hero heading above the tool', () => {
     const { document, page } = renderEditorPageDocument()
 
-    expect(document.title).toBe('zombie-mermaid — Live Editor')
+    expect(document.title).toBe('Zombie Mermaid — Live Editor')
     expect(
       page.getByRole('heading', {
         level: 1,
@@ -448,16 +613,16 @@ describe('editor.ts → editor.html', () => {
     expect(page.getByRole('contentinfo')).toBeInTheDocument()
   })
 
-  it('renders the topbar: logo, code/config tabs, dark-mode toggle, theme button, and export button', () => {
+  it('renders the topbar: logo, code/config tabs, theme button, and export button', () => {
     const { document } = renderEditorPageDocument()
     const topbar = within(mustFind(document.querySelector('.topbar')))
 
-    expect(
-      topbar.getByRole('link', { name: /zombie-mermaid/ }),
-    ).toHaveAttribute('href', '/zombie-mermaid/')
+    expect(topbar.getByRole('link', { name: /ZombieMermaid/ })).toHaveAttribute(
+      'href',
+      '/zombie-mermaid/',
+    )
     expect(document.getElementById('tab-code')).toHaveClass('active')
     expect(document.getElementById('tab-config')).not.toHaveClass('active')
-    expect(document.getElementById('dark-light-btn')).toBeInTheDocument()
     expect(document.getElementById('theme-dropdown-btn')).toBeInTheDocument()
     expect(document.getElementById('export-main-btn')).toHaveAttribute(
       'title',
@@ -604,7 +769,6 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
       createElement(ForkFixesPage, {
         css: FIXTURE_CSS,
         fixes,
-        themeBarScript: FIXTURE_SCRIPT,
         // #802: fork-fixes.html's clientScript hydrates ForkFixesApp +
         // NavIsland in one bundle now, replacing the standalone
         // nav-only-client.tsx bundle every other page here still uses —
@@ -781,7 +945,6 @@ describe('blog.ts → blog/*.html', () => {
             description: 'Setting things up.',
           },
         ],
-        themeBarScript: FIXTURE_SCRIPT,
         clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
@@ -817,7 +980,6 @@ describe('blog.ts → blog/*.html', () => {
         cssHref: 'assets/blog.css',
         faviconHref: '../favicon.svg',
         posts: [],
-        themeBarScript: FIXTURE_SCRIPT,
         clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )

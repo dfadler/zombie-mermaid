@@ -1,9 +1,12 @@
 # Dependencies
 node_modules/
 
+# Skill eval run output
+**/evals/results/
+
 # Build output
 dist/
-site/
+/site/
 *.tsbuildinfo
 
 # Generated files
@@ -13,6 +16,7 @@ fork-fixes.html
 diagrams/
 sitemap.xml
 dashboard.html
+xychart-test.html
 
 # index.ts's bundled client script (demo/index-page-client.ts, #759),
 # alongside index.html above -- mirrors diagrams/assets/ and blog/assets/,
@@ -83,3 +87,6 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# eval run output
+**/evals/results/

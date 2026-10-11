@@ -8,19 +8,12 @@ it, read [Theming](../theming.md) instead — it documents every derivation.
 
 ## 1. Try the built-in themes
 
-Every page on the [live demo](https://dfadler.github.io/zombie-mermaid/) has
-a "Pick a look" theme picker. Three are shown inline; the **"16 Themes"**
-button opens the rest — 15 built-in themes plus **Default**. Your choice is
-remembered across pages.
-
-Try it on a [diagram type page](https://dfadler.github.io/zombie-mermaid/diagrams/)
-(e.g. Flowchart) to see it do the most: switching re-themes the rendered
-diagram instantly, without re-rendering it. That is not an optimization
-detail you can ignore: it is the same mechanism you get in your own app (see
+The [live demo's home page](https://dfadler.github.io/zombie-mermaid/) has a
+"Pick a theme. Watch it flow." picker that re-themes a live diagram instantly,
+without re-rendering it — the same mechanism you get in your own app (see
 step 4), so what you see there is what live theme switching will actually
-cost you. On pages with no diagram of their own — Home, the Diagrams hub,
-Blog, Fork Fixes, Dashboard — the picker exists so your choice carries over
-when you navigate to a page that does have one.
+cost you. The picker there is local to that one demo diagram; it doesn't
+carry a choice across pages.
 
 The 15 built-ins — 6 light, 9 dark:
 

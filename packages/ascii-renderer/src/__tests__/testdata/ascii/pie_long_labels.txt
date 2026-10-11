@@ -1,0 +1,12 @@
+pie title Where the quarterly infrastructure budget actually went this year
+  "Cloud compute for the continuous integration and nightly regression fleet" : 55
+  "Storage" : 30
+  "A label that is long but not the longest one in this chart" : 15
+---
+Where the quarterly infrastructure budget actually went this year
+
+[############################===============*******]
+
+  # Cloud compute for the continuous integration and nightly regression fleet    55%
+  = Storage                                                                      30%
+  * A label that is long but not the longest one in this chart                   15%

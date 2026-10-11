@@ -1,0 +1,34 @@
+pie title Commits by weekday and team
+  "Mon core" : 14
+  "Mon docs" : 9
+  "Tue core" : 13
+  "Tue docs" : 8
+  "Wed core" : 12
+  "Wed docs" : 7
+  "Thu core" : 11
+  "Thu docs" : 7
+  "Fri core" : 10
+  "Fri docs" : 6
+  "Sat core" : 5
+  "Sat docs" : 3
+  "Sun core" : 4
+  "Sun docs" : 2
+---
+            <span style="color:#27272a">Commits by weekday and team</span>
+
+<span style="color:#a1a1aa">[</span><span style="color:#3b82f6;background:#3b82f6">██████</span><span style="color:#0d5ba5">▓▓▓▓</span><span style="color:#5fb4f2">▒▒▒▒▒▒</span><span style="color:#0a5076">░░░░</span><span style="color:#92e0f6;background:#92e0f6">█████</span><span style="color:#0a5e76">▓▓▓</span><span style="color:#97f5f7">▒▒▒▒▒</span><span style="color:#0a6d76">░░░</span><span style="color:#97f7e5;background:#97f7e5">█████</span><span style="color:#0a7671">▓▓▓</span><span style="color:#97f7d2">▒▒</span><span style="color:#0a7662">░</span><span style="color:#3b82f6;background:#3b82f6">██</span><span style="color:#0d5ba5">▓</span><span style="color:#a1a1aa">]</span>
+
+  <span style="color:#3b82f6;background:#3b82f6">█</span> <span style="color:#27272a">Mon core</span>   <span style="color:#27272a"> 13%</span>
+  <span style="color:#0d5ba5">▓</span> <span style="color:#27272a">Mon docs</span>   <span style="color:#27272a">  8%</span>
+  <span style="color:#5fb4f2">▒</span> <span style="color:#27272a">Tue core</span>   <span style="color:#27272a"> 12%</span>
+  <span style="color:#0a5076">░</span> <span style="color:#27272a">Tue docs</span>   <span style="color:#27272a">  7%</span>
+  <span style="color:#92e0f6;background:#92e0f6">█</span> <span style="color:#27272a">Wed core</span>   <span style="color:#27272a"> 11%</span>
+  <span style="color:#0a5e76">▓</span> <span style="color:#27272a">Wed docs</span>   <span style="color:#27272a">  6%</span>
+  <span style="color:#97f5f7">▒</span> <span style="color:#27272a">Thu core</span>   <span style="color:#27272a"> 10%</span>
+  <span style="color:#0a6d76">░</span> <span style="color:#27272a">Thu docs</span>   <span style="color:#27272a">  6%</span>
+  <span style="color:#97f7e5;background:#97f7e5">█</span> <span style="color:#27272a">Fri core</span>   <span style="color:#27272a">  9%</span>
+  <span style="color:#0a7671">▓</span> <span style="color:#27272a">Fri docs</span>   <span style="color:#27272a">  5%</span>
+  <span style="color:#97f7d2">▒</span> <span style="color:#27272a">Sat core</span>   <span style="color:#27272a">  5%</span>
+  <span style="color:#0a7662">░</span> <span style="color:#27272a">Sat docs</span>   <span style="color:#27272a">  3%</span>
+  <span style="color:#3b82f6;background:#3b82f6">█</span> <span style="color:#27272a">Sun core</span>   <span style="color:#27272a">  4%</span>
+  <span style="color:#0d5ba5">▓</span> <span style="color:#27272a">Sun docs</span>   <span style="color:#27272a">  2%</span>

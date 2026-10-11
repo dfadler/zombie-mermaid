@@ -4,7 +4,7 @@ import {
   parseChangedLinesFromDiff,
   parseLcovContent,
   computeDiffCoverage,
-} from '../check-diff-coverage.ts'
+} from '../scripts/check-diff-coverage.ts'
 
 describe('isTrackedTsFile', () => {
   it('accepts a .ts file directly under src/', () => {
@@ -28,7 +28,15 @@ describe('isTrackedTsFile', () => {
     expect(isTrackedTsFile('src/__tests__/foo.test.ts')).toBe(false)
   })
 
-  // vitest.config.ts's coverage.include only covers packages/*/src/**/*.ts —
+  // Tests colocated inside a workspace package (packages/<name>/src/__tests__/)
+  // must be excluded the same way as src/__tests__/ above.
+  it('rejects files under a workspace package __tests__/', () => {
+    expect(isTrackedTsFile('packages/core/src/__tests__/foo.test.ts')).toBe(
+      false,
+    )
+  })
+
+  // config/vitest.config.ts's coverage.include only covers packages/*/src/**/*.ts —
   // a package-root file outside that must not be tracked here either, or
   // diff coverage and Vitest coverage disagree on what counts.
   it('rejects a .ts file at a package root (outside <package>/src/)', () => {
@@ -298,7 +306,7 @@ describe('resolveBaseRef', () => {
     vi.doMock('node:child_process', () => ({
       execFileSync: vi.fn(() => ''), // every rev-parse succeeds
     }))
-    const { resolveBaseRef } = await import('../check-diff-coverage.ts')
+    const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBe('origin/main')
   })
 
@@ -312,7 +320,7 @@ describe('resolveBaseRef', () => {
         return ''
       }),
     }))
-    const { resolveBaseRef } = await import('../check-diff-coverage.ts')
+    const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBe('origin/main')
   })
 
@@ -323,7 +331,7 @@ describe('resolveBaseRef', () => {
         return ''
       }),
     }))
-    const { resolveBaseRef } = await import('../check-diff-coverage.ts')
+    const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBe('main')
   })
 
@@ -333,7 +341,7 @@ describe('resolveBaseRef', () => {
         throw new Error('unknown revision')
       }),
     }))
-    const { resolveBaseRef } = await import('../check-diff-coverage.ts')
+    const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBeNull()
   })
 })

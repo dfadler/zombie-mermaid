@@ -10,9 +10,9 @@
  * eight pages, each in a 1440px desktop and a 390px mobile variant — share
  * one `<helmet><style>` preamble, and its `.card`, `.pill`, and
  * `.section-eyebrow` rules are byte-identical across all sixteen. Those
- * three rules are reproduced verbatim in {@link primitivesCss}; the variants
- * below are the inline-style overrides the artboards actually spell out at
- * their usage sites.
+ * three rules are reproduced verbatim in `primitives-css.tsx`'s
+ * `primitivesCss()`; the variants below are the inline-style overrides the
+ * artboards actually spell out at their usage sites.
  *
  * That base-class-plus-inline-override split is the canvas's own authoring
  * shape, so the components keep it: each renders the canvas class name and
@@ -20,9 +20,8 @@
  * `primitivesCss()` once (alongside tokens.tsx's `designBaseCss()`) and gets
  * markup that matches the artboards element for element.
  *
- * Nothing on the site consumes these yet — wiring them into the pages is
- * #598-610's job. Colours, radii, spacing, and type all come from tokens.tsx
- * rather than being retyped, so the palette has exactly one definition.
+ * Colours, radii, spacing, and type all come from tokens.tsx rather than
+ * being retyped, so the palette has exactly one definition.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
@@ -33,16 +32,8 @@ import type {
   MouseEventHandler,
   ReactNode,
 } from 'react'
-import {
-  COLORS,
-  FONT_SIZE,
-  FONT_WEIGHT,
-  LETTER_SPACING,
-  RADIUS,
-  SPACE,
-  colorVar,
-  type ColorToken,
-} from './tokens.tsx'
+import { PRIMITIVES_CLASSES } from './generated/primitives-classes.ts'
+import { COLORS, FONT_WEIGHT, colorVar, type ColorToken } from './tokens.tsx'
 
 /* -----------------------------------------------------------------
  * Accents
@@ -108,68 +99,38 @@ export function accentRgba(accent: Accent, alpha: number): string {
  */
 const SOLID_INK = colorVar('--bg')
 
-/**
- * A pill's horizontal padding in px.
- *
- * The canvas declares `padding: 12px 22px`. The 12 is tokens.tsx's
- * `SPACE.md`; 22 is not on that scale — no other measurement in the
- * artboards uses it — so it stays a literal here rather than becoming a
- * spacing step nothing else would reference.
- */
-const PILL_PADDING_X = 22
-
 /* -----------------------------------------------------------------
  * Base CSS
  * ----------------------------------------------------------------- */
 
 /**
- * The `.card`, `.pill`, `.section-eyebrow`, and `.mono` rules, transcribed
- * from the sixteen showcase artboards' shared style preamble.
+ * The `.card`/`.pill`/`.section-eyebrow` rules these components render
+ * against live in `primitives-css.tsx` (zombie-mermaid#938, part of the
+ * #931 umbrella — see that file for why it's a separate module rather than
+ * living here alongside the components). `.mono` isn't among them — it's a
+ * page-wide utility class defined in tokens.tsx's `designBaseCss()`, see
+ * that function's doc comment.
  *
- * The values are written through the tokens module rather than retyped, but
- * they resolve to exactly what the canvas declares: a 20px-radius panel with
- * a hairline border, a fully-rounded 12px/22px inline-flex pill at 15px/600,
- * and an uppercase 13px/700 cyan eyebrow tracked out to 0.14em.
- *
- * Emit this once per page, after tokens.tsx's `designBaseCss()` — the rules
- * reference the custom properties that block defines.
+ * `PRIMITIVES_CLASSES` (imported above from `./generated/
+ * primitives-classes.ts`) rather than a plain string literal, because
+ * `primitives.module.css`'s classes are hashed (zombie-mermaid#969): this
+ * file is shared between SSR (`*-page.tsx`) and browser-hydrated
+ * (`*-app.tsx`) code — `Card`/`Pill`/`SectionEyebrow`/`CTA` all render
+ * inside client bundles — and can't import `scripts/load-css-module.ts`
+ * (which `primitives-css.tsx` uses to compile the actual stylesheet)
+ * directly: that module resolves its build through Vite at module-load
+ * time, which depends on Node built-ins (`vite`, transitively `esbuild`/
+ * `child_process`) that don't exist in a browser. Importing from it here
+ * would drag that whole dependency into every page's client bundle
+ * (verified empirically while building the original unhashed seam:
+ * `bundleForBrowser()` warned about `child_process`/`fs`/`tty` being
+ * "externalized for browser compatibility" the one time this file tried
+ * it). The generated classes module has no such dependency — it's a plain
+ * object literal — so it's safe to import from both SSR and browser code,
+ * and it's guaranteed to match `primitives-css.tsx`'s compiled CSS because
+ * both are produced from the same `primitives.module.css` content (see
+ * `scripts/generate-primitives-classes.ts`'s header comment).
  */
-export function primitivesCss(): string {
-  return `.card {
-  background: ${colorVar('--panel')};
-  border: 1px solid ${colorVar('--border')};
-  border-radius: ${RADIUS.card}px;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: ${SPACE.sm}px;
-  border-radius: ${RADIUS.pill}px;
-  padding: ${SPACE.md}px ${PILL_PADDING_X}px;
-  font-size: ${FONT_SIZE.bodyLg}px;
-  font-weight: ${FONT_WEIGHT.semibold};
-}
-
-.section-eyebrow {
-  text-transform: uppercase;
-  letter-spacing: ${LETTER_SPACING.eyebrow};
-  font-size: ${FONT_SIZE.label}px;
-  font-weight: ${FONT_WEIGHT.bold};
-  color: ${colorVar('--cyan')};
-}
-
-.mono {
-  font-family: var(--font-mono);
-}`
-}
-
-/** {@link primitivesCss} in a `<style>` element, for a page's `<head>`. */
-export function PrimitivesStyle() {
-  return <style>{primitivesCss()}</style>
-}
-
-/** Joins class names, dropping the empty ones. */
 function classNames(...parts: (string | false | undefined)[]): string {
   return parts.filter(Boolean).join(' ')
 }
@@ -240,7 +201,7 @@ export function Card({
   if (padding !== undefined) cardStyle.padding = `${padding}px`
 
   const merged = { ...cardStyle, ...style }
-  const classes = classNames('card', className)
+  const classes = classNames(PRIMITIVES_CLASSES.card, className)
   return href === undefined ? (
     <div className={classes} style={merged}>
       {children}
@@ -350,7 +311,7 @@ export function Pill({
   if (fontSize !== undefined) pill.fontSize = `${fontSize}px`
   return (
     <span
-      className={classNames('pill', mono && 'mono', className)}
+      className={classNames(PRIMITIVES_CLASSES.pill, mono && 'mono', className)}
       style={{ ...pill, ...style }}
       role={role}
       tabIndex={tabIndex}
@@ -396,7 +357,7 @@ export function SectionEyebrow({
   const eyebrowStyle: CSSProperties = accent ? { color: accentVar(accent) } : {}
   return (
     <div
-      className={classNames('section-eyebrow', className)}
+      className={classNames(PRIMITIVES_CLASSES['section-eyebrow'], className)}
       style={{ ...eyebrowStyle, ...style }}
     >
       {children}
@@ -485,7 +446,7 @@ export function CTA({
   const pill = pillStyle(variant === 'ghost' ? 'outline' : 'solid', accent)
   return (
     <a
-      className={classNames('pill', className)}
+      className={classNames(PRIMITIVES_CLASSES.pill, className)}
       href={href}
       style={{ ...pill, ...style }}
     >

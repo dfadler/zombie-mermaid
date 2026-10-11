@@ -34,20 +34,31 @@
 import { createElement } from 'react'
 import { render, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { ACCENTS, COLORS } from '../demo/components/tokens.tsx'
+import { PRIMITIVES_CLASSES } from '../demo/components/generated/primitives-classes.ts'
+import {
+  ACCENTS,
+  COLORS,
+  FONT_SIZE,
+  FONT_WEIGHT,
+  LETTER_SPACING,
+  RADIUS,
+  SPACE,
+} from '../demo/components/tokens.tsx'
 import {
   ACCENT_NAMES,
   CTA,
   Card,
   Pill,
-  PrimitivesStyle,
   SectionEyebrow,
   accentRgba,
   accentToken,
   accentVar,
-  primitivesCss,
   type Accent,
 } from '../demo/components/primitives.tsx'
+import {
+  PrimitivesStyle,
+  primitivesCss,
+} from '../demo/components/primitives-css.tsx'
 
 /** Renders a component into a real (jsdom) DOM via React Testing Library. */
 function renderComponent(
@@ -92,7 +103,15 @@ const CANVAS_BASE_RULES = {
   ],
   'section-eyebrow': [
     'text-transform: uppercase;',
-    'letter-spacing: 0.14em;',
+    // '.14em', not '0.14em' — Lightning CSS's transform() (zombie-mermaid#968
+    // replaced the old Vite build()-based bridge with it) re-serializes every
+    // value it parses, dropping a redundant leading zero as part of that —
+    // the artboards themselves spell out the full '0.14em' (see
+    // primitives.module.css and LETTER_SPACING.eyebrow, both still '0.14em'
+    // verbatim), but the *compiled* CSS this asserts against is Lightning
+    // CSS's output, not the source file's bytes. Equivalent CSS numbers
+    // either way.
+    'letter-spacing: .14em;',
     'font-size: 13px;',
     'font-weight: 700;',
     'color: var(--cyan);',
@@ -149,14 +168,45 @@ describe('primitivesCss', () => {
     }
   })
 
-  it('defines each base class exactly once', () => {
-    for (const selector of Object.keys(CANVAS_BASE_RULES)) {
-      expect(css.match(new RegExp(`\\.${selector} \\{`, 'g'))).toHaveLength(1)
+  it('defines each base class exactly once, under its hashed name', () => {
+    for (const selector of Object.keys(CANVAS_BASE_RULES) as Array<
+      keyof typeof PRIMITIVES_CLASSES
+    >) {
+      const hashed = PRIMITIVES_CLASSES[selector]
+      expect(css.match(new RegExp(`\\.${hashed} \\{`, 'g'))).toHaveLength(1)
     }
   })
 
-  it('points .mono at the tokens module font stack', () => {
-    expect(css).toContain('font-family: var(--font-mono);')
+  // .mono isn't part of primitives.module.css (zombie-mermaid#969 moved it
+  // to tokens.tsx's designBaseCss() — see that function's doc comment for
+  // why), so demo-design-tokens.test.ts covers it instead of here.
+
+  // primitivesCss() now delegates to primitives.module.css — a real static
+  // CSS file, through the CSS Modules seam in scripts/css-module-hooks.mjs
+  // (zombie-mermaid#938/#1103/#968) — which can't `import` tokens.tsx the way the old
+  // template-literal implementation did, so its non-color values (radii,
+  // spacing, type) are literals transcribed from these tokens rather than
+  // references to them. This test is the backstop that documented tradeoff
+  // needs: if a token changes here without primitives.module.css being
+  // updated to match, this fails loudly instead of the two silently
+  // drifting apart (`22` isn't on any tokens.tsx scale — see
+  // primitives.module.css's own comment on that rule for why).
+  it('keeps primitives.module.css literals in sync with tokens.tsx', () => {
+    expect(css).toContain(`border-radius: ${RADIUS.card}px;`)
+    expect(css).toContain(`gap: ${SPACE.sm}px;`)
+    expect(css).toContain(`border-radius: ${RADIUS.pill}px;`)
+    expect(css).toContain(`padding: ${SPACE.md}px 22px;`)
+    expect(css).toContain(`font-size: ${FONT_SIZE.bodyLg}px;`)
+    expect(css).toContain(`font-weight: ${FONT_WEIGHT.semibold};`)
+    // Lightning CSS drops the redundant leading zero when it re-serializes
+    // a value (see CANVAS_BASE_RULES's 'section-eyebrow' comment above) —
+    // LETTER_SPACING.eyebrow itself stays '0.14em', so this compares against
+    // its Lightning-CSS-normalized form rather than the token's own string.
+    expect(css).toContain(
+      `letter-spacing: ${LETTER_SPACING.eyebrow.replace(/^0\./, '.')};`,
+    )
+    expect(css).toContain(`font-size: ${FONT_SIZE.label}px;`)
+    expect(css).toContain(`font-weight: ${FONT_WEIGHT.bold};`)
   })
 
   it('wraps in a style element', () => {
@@ -178,7 +228,7 @@ describe('Card', () => {
     const { container } = renderComponent(Card, { children: 'Body' })
     const el = within(container).getByText('Body')
     expect(el.tagName).toBe('DIV')
-    expect(el.className).toBe('card')
+    expect(el.className).toBe(PRIMITIVES_CLASSES.card)
     expect(el.getAttribute('style')).toBeNull()
   })
 
@@ -237,7 +287,7 @@ describe('Card', () => {
     })
     const el = within(container).getByRole('link', { name: 'Flowchart' })
     expect(el.tagName).toBe('A')
-    expect(el.className).toBe('card crosslink-card')
+    expect(el.className).toBe(`${PRIMITIVES_CLASSES.card} crosslink-card`)
     expect(el.getAttribute('href')).toBe('#flowchart')
     expect(el.style.padding).toBe('22px')
   })
@@ -257,7 +307,7 @@ describe('Pill', () => {
   it('defaults to the muted treatment with no accent', () => {
     const { container } = renderComponent(Pill, { children: 'v1.2.0' })
     const el = within(container).getByText('v1.2.0')
-    expect(el.className).toBe('pill')
+    expect(el.className).toBe(PRIMITIVES_CLASSES.pill)
     expect(el.style.background).toBe('var(--panel)')
     expect(el.style.border).toBe('1px solid var(--border)')
     expect(el.style.color).toBe('var(--text-dim)')
@@ -315,7 +365,7 @@ describe('Pill', () => {
       children: 'npm install zombie-mermaid',
     })
     const el = within(container).getByText('npm install zombie-mermaid')
-    expect(el.className).toBe('pill mono')
+    expect(el.className).toBe(`${PRIMITIVES_CLASSES.pill} mono`)
     expect(el.style.fontSize).toBe('11px')
   })
 
@@ -337,7 +387,7 @@ describe('SectionEyebrow', () => {
     })
     const el = within(container).getByText('Diagrams')
     expect(el.tagName).toBe('DIV')
-    expect(el.className).toBe('section-eyebrow')
+    expect(el.className).toBe(PRIMITIVES_CLASSES['section-eyebrow'])
     expect(el.getAttribute('style')).toBeNull()
   })
 
@@ -363,7 +413,7 @@ describe('CTA', () => {
       name: 'View the live demo',
     })
     expect(el.tagName).toBe('A')
-    expect(el.className).toBe('pill')
+    expect(el.className).toBe(PRIMITIVES_CLASSES.pill)
     expect(el.getAttribute('href')).toBe('#demo')
     expect(el.style.background).toBe('var(--violet)')
     expect(el.style.color).toBe('var(--bg)')

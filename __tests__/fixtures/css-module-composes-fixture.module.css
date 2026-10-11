@@ -1,0 +1,8 @@
+.base {
+  color: blue;
+}
+
+.foo {
+  composes: base;
+  font-weight: bold;
+}

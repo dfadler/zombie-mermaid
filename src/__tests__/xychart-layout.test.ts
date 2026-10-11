@@ -8,6 +8,10 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaid } from '../index.ts'
+import {
+  niceTickValues,
+  formatTickLabels,
+} from '../../packages/svg-renderer/src/xychart/layout.ts'
 
 describe('xychart – horizontal layout', () => {
   it('lays out a single-series horizontal bar chart', async () => {
@@ -163,5 +167,46 @@ describe('xychart – vertical layout branch coverage', () => {
     expect(svg).toContain('data-label="A"')
     expect(svg).toContain('data-value="2"')
     expect(svg).not.toContain('NaN')
+  })
+})
+
+describe('xychart – y-axis tick labels stay distinct (#1234)', () => {
+  it('labels a narrow range with fractional steps', () => {
+    const labels = formatTickLabels(niceTickValues(98.7, 102.3))
+    expect(labels).toEqual([
+      '99',
+      '99.5',
+      '100',
+      '100.5',
+      '101',
+      '101.5',
+      '102',
+    ])
+  })
+
+  it('matches Mermaid (d3 ticks) density: 100..300 labels every 20 (#1705)', () => {
+    expect(niceTickValues(100, 300)).toEqual(
+      Array.from({ length: 11 }, (_, i) => 100 + i * 20),
+    )
+  })
+
+  it.each([
+    ['single value', 41.9, 42.1],
+    ['all zeros', -0.1, 0.1],
+    ['span of 3', 0, 3],
+    ['wide range', 0, 1000],
+    ['negative narrow', -102.3, -98.7],
+  ])('never repeats a label: %s', (_name, min, max) => {
+    const labels = formatTickLabels(niceTickValues(min, max))
+    expect(new Set(labels).size).toBe(labels.length)
+  })
+
+  it('renders distinct tick labels end to end for a flat series', async () => {
+    const svg = await renderMermaid(`xychart-beta
+  x-axis [A]
+  bar [42]`)
+    // 41.9..42.1 gets 0.02 steps; each label keeps its own decimals
+    expect(svg).toContain('>41.92<')
+    expect(svg).toContain('>42.08<')
   })
 })

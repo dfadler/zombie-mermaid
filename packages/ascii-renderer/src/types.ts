@@ -144,6 +144,19 @@ export interface AsciiNode {
   drawingCoord: DrawingCoord | null
   drawing: Canvas | null
   drawn: boolean
+  /**
+   * Set by grid layout when a plain fan-in child was centered across its
+   * parents' cross-axis slots (`fanInCenter`). Edge routing then leaves each
+   * parent through its graph-direction face (LR: right) and joins in the gap
+   * before the child, instead of exiting the parents' bottom/top faces.
+   */
+  fanInCentered?: boolean
+  /**
+   * Rows of `drawing` holding the label's lines (inclusive), set by drawBox.
+   * Lets the BT flip restore the label's reading order exactly, rather than
+   * inferring which text cells belong to one label.
+   */
+  labelRows?: { top: number; bottom: number }
   styleClassName: string
   styleClass: AsciiStyleClass
 }
@@ -215,6 +228,67 @@ export interface AsciiEdge {
    * keeping every lane in the group on a genuinely distinct path.
    */
   parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
+  /**
+   * The subgraph this edge was originally addressed *from* (`Processing -->
+   * Done` where `Processing` is a subgraph id), before the converter
+   * redirected `from` to a stand-in member node (see
+   * `resolveSubgraphEndpoint`). Unset for an ordinary edge, including a
+   * direct edge from that same member node — the two are otherwise
+   * indistinguishable once converted. Consumed by cluster-boundary.ts.
+   */
+  clusterSource?: AsciiSubgraph
+  /**
+   * The subgraph this edge was originally addressed *to* (`X --> Sub` where
+   * `Sub` is a subgraph id), before the converter redirected `to` to the
+   * cluster's entry member. Unset for an ordinary edge, including a direct
+   * edge to that same member. Consumed by the level placement in grid.ts.
+   */
+  clusterTarget?: AsciiSubgraph
+  /**
+   * Set when `determinePath` gave this edge the cluster-entry shape: the path
+   * ends at a gutter cell just outside `clusterTarget`'s flow-side wall, and
+   * the arrow is drawn up to that wall instead of on into the frame. See
+   * `buildClusterEntryRoute`.
+   */
+  clusterEntered?: boolean
+}
+
+/**
+ * Grid-space extent of a subgraph's member nodes, inclusive on both ends
+ * (a node's 3x3 block spans `gridCoord.x .. gridCoord.x + 2`).
+ */
+export interface ClusterGridBox {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+/**
+ * Routing plan for one subgraph whose 2+ outgoing edges share an exit. Built
+ * once by `planClusterExits` (cluster-boundary.ts) before per-edge routing;
+ * absent for every subgraph that doesn't engage, which keeps its edges on
+ * the ordinary routing path byte for byte.
+ */
+export interface ClusterExitPlan {
+  box: ClusterGridBox
+  /** The stand-in member node every edge in `edges` departs from. */
+  anchor: AsciiNode
+  /** Gutter cell just past the cluster's flow-side wall, in the anchor's column/row. */
+  gutter: GridCoord
+  /**
+   * Staircase bus (#1331): each exit's own gutter cell, one track further out
+   * than the one before, so its turn is on a row (column) no sibling shares.
+   * Absent for an exit that stays on `gutter`.
+   */
+  gutters?: Map<AsciiEdge, GridCoord>
+  /** Edges that route through the shared stub. */
+  edges: Set<AsciiEdge>
+}
+
+/** The gutter cell where `edge` turns off the stub: its own, else the plan's. */
+export function exitGutter(plan: ClusterExitPlan, edge: AsciiEdge): GridCoord {
+  return plan.gutters?.get(edge) ?? plan.gutter
 }
 
 /** A subgraph container with bounding box for rendering. */
@@ -229,6 +303,13 @@ export interface AsciiSubgraph {
   maxY: number
   /** Optional direction override for layout within this subgraph (LR or TD). */
   direction?: 'LR' | 'TD'
+  /** Un-normalized direction (RL/BT kept) when the override is honored; drives the post-draw region flip. */
+  rawDirection?: 'LR' | 'RL' | 'TD' | 'BT'
+  /**
+   * Extra interior columns added (split across both sides) so the title can
+   * clear a vertical edge entering the frame (#1222). Set by layout only.
+   */
+  titleRoom?: number
 }
 
 // ============================================================================
@@ -291,6 +372,14 @@ export interface AsciiConfig {
   graphDirection: 'LR' | 'TD'
 }
 
+/** Inclusive bounding rectangle of one label on the canvas. */
+export interface LabelRect {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+}
+
 /** Full ASCII graph state used during layout and rendering. */
 export interface AsciiGraph {
   nodes: AsciiNode[]
@@ -298,6 +387,18 @@ export interface AsciiGraph {
   canvas: Canvas
   /** Role canvas — tracks the role of each character for colored output. */
   roleCanvas: RoleCanvas
+  /**
+   * Bounding rectangles (canvas coords, inclusive) of every node and edge
+   * label, recorded by drawGraph. Text cells inside one rectangle are one
+   * label; `mirrorLabelRows` uses them to pre-compensate the BT flip.
+   */
+  labelRects?: LabelRect[]
+  /**
+   * Outer bounding rectangle (canvas coords, inclusive) of every drawn node
+   * box. The RL flip uses them to keep each shape's corner glyphs unmirrored
+   * (#1701).
+   */
+  nodeRects?: LabelRect[]
   /** Grid occupancy map — tracks which "x,y" cells are reserved. */
   grid: Grid
   columnWidth: Map<number, number>
@@ -318,6 +419,14 @@ export interface AsciiGraph {
    * PathBudget for details.
    */
   pathBudget?: PathBudget
+  /**
+   * While set, A* breaks ties between equally short routes by fewest bends
+   * (see getPath's `preferStraight`). Raised only around style-conflict
+   * reroutes in graphs with an engaged cluster exit — see grid.ts.
+   */
+  preferStraightRoutes?: boolean
+  /** Engaged cluster-exit plans, keyed by subgraph. Set by createMapping. */
+  clusterExitPlans?: Map<AsciiSubgraph, ClusterExitPlan>
 }
 
 // ============================================================================

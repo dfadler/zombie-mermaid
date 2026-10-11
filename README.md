@@ -1,12 +1,15 @@
 <div align="center">
 
-# zombie-mermaid
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="public/logo-lockup-dark.svg">
+  <img src="public/logo-lockup-light.svg" alt="ZombieMermaid" height="48">
+</picture>
 
 **Render Mermaid diagrams as beautiful SVGs or ASCII art**
 
 Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) that refuses to die.
 
-![Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself](hero.svg)
+![Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself](public/hero.svg)
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-view_the_sample_gallery-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/)
 [![Beautiful Mermaid Fork Fixes](https://img.shields.io/badge/Beautiful_Mermaid_Fork_Fixes-before%2Fafter_evidence-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)
@@ -14,8 +17,9 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 [![npm version](https://img.shields.io/npm/v/zombie-mermaid.svg)](https://www.npmjs.com/package/zombie-mermaid)
 [![CI](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml/badge.svg)](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/dfadler/zombie-mermaid/branch/main/graph/badge.svg)](https://codecov.io/gh/dfadler/zombie-mermaid)
-[![Bundle Size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size.json)](#bundle-size)
-[![Socket Security](https://socket.dev/api/badge/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
+[![ASCII renderer size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-ascii-renderer.json)](#bundle-size)
+[![SVG renderer size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-svg-renderer.json)](#bundle-size)
+[![Socket Security](https://badge.socket.dev/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>
@@ -43,17 +47,33 @@ Diagrams are essential for AI-assisted programming. When you're working with an 
 
 ### Bundle Size
 
-The **Bundle Size** badge above tracks the gzipped size of `zombie-mermaid`'s
-main entry point (`dist/index.js`) and updates automatically with every
-release — the same badge/CI-tracked pattern already backing the coverage and
-CI status badges. Need ASCII rendering only? `import { renderMermaidASCII }
-from 'zombie-mermaid/ascii'` skips [ELK.js](https://github.com/kieler/elkjs),
-the layout engine the SVG renderer depends on, for a substantially smaller
-bundle.
+The two size badges above track the gzipped size of each renderer, and update
+automatically with every release:
+
+- **ascii-renderer** — the ASCII/Unicode renderer plus `@zombie-mermaid/core`
+  and `@zombie-mermaid/mermaid-parser`. It has no third-party dependencies, so
+  this is what `zombie-mermaid/ascii` costs.
+- **svg-renderer (incl. deps)** — the SVG renderer, core and parser, **plus its
+  third-party dependencies**, reported two ways: the base figure, and the figure
+  with [ELK.js](https://github.com/kieler/elkjs) (the layout engine) registered.
+  ELK.js is an optional peer: about 466 KB gzipped on its own, one pre-bundled
+  file that can't be tree-shaken, and only shipped if your app registers it
+  (see [the migration guide](docs/guides/elkjs-optional-peer.md)). `entities` is
+  counted tree-shaken, since the renderer uses one function from it.
+
+Both figures gzip a plain concatenation of the built files, so they approximate
+what you'd ship, not what any particular bundler emits. The umbrella
+`zombie-mermaid` entry re-exports both renderers; its all-in total is
+[![All-in size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size.json)](#bundle-size), the worst case. With a
+bundler, importing only `renderMermaidASCII` from the root drops the SVG
+renderer (every package here is `"sideEffects": false`), and the root entry no
+longer includes ELK.js unless you register it. Without a bundler — Node, a CLI, a
+serverless function — you can import from `zombie-mermaid/ascii` to skip loading
+the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Features
 
-- **6 diagram types** — Flowcharts, State, Sequence, Class, ER, and XY Charts (bar, line, combined)
+- **8 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, and Pie
 - **Dual output** — SVG for rich UIs, ASCII/Unicode for terminals
 - **Synchronous rendering** — No async, no flash. Works with React `useMemo()`
 - **15 built-in themes** — And dead simple to add your own
@@ -66,6 +86,8 @@ bundle.
 
 ## Installation
 
+Requires Node.js 24 or newer (`engines` in `package.json`).
+
 ```bash
 npm install zombie-mermaid
 # or
@@ -73,6 +95,15 @@ bun add zombie-mermaid
 # or
 pnpm add zombie-mermaid
 ```
+
+> Not sure this is the right package? See [Which package do I install?](docs/guides/choosing-a-package.md).
+
+> **Upgrading from 4.x?** Node.js 24 or newer is now required. `elkjs` is now an
+> optional peer dependency: browser and bundler apps must call `registerElk(ELK)`
+> once (see the [migration guide](docs/guides/elkjs-optional-peer.md)). The
+> package no longer ships `src/` (see [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538)).
+
+Only need one output format? `@zombie-mermaid/ascii-renderer` and `@zombie-mermaid/svg-renderer` are published standalone — see [Packages](#packages) below.
 
 ## Quick Start
 
@@ -90,6 +121,23 @@ const svg = renderMermaidSVG(`
 ```
 
 Rendering is **fully synchronous** — no `await`, no promises. The ELK.js layout engine runs synchronously via a FakeWorker bypass, so you get your SVG string instantly.
+
+Flowchart, state, class, ER and architecture diagrams are laid out by
+[`elkjs`](https://github.com/kieler/elkjs), an **optional peer dependency**.
+Under Node and Bun it is loaded automatically. In a browser or bundler, register
+it once (`npm install elkjs`):
+
+```typescript
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk } from 'zombie-mermaid'
+
+registerElk(ELK)
+```
+
+Architecture diagrams (`architecture-beta`, see [Supported Diagrams](docs/diagrams.md#architecture-diagrams)) are laid out by `elkjs` too.
+Sequence, pie, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
+and no registration. Rendering a graph diagram with no `elkjs` available throws an
+`ElkNotRegisteredError` that says how to fix it.
 
 Need async? Use `renderMermaidSVGAsync()` — same output, returns a `Promise<string>`.
 
@@ -110,10 +158,9 @@ const ascii = renderMermaidASCII(`graph LR; A --> B --> C`)
 ```
 
 ASCII-only consumers (a CLI, a terminal UI, a serverless function) can import
-from `zombie-mermaid/ascii` instead of the package root. The root entry
-statically pulls in `elkjs` for the SVG layout engine — over 1.4MB minified —
-even if you never call `renderMermaidSVG`. The `/ascii` subpath never imports
-it:
+from `zombie-mermaid/ascii` instead of the package root. The root entry also
+loads the SVG renderer (about 74 KB gzipped, plus `elkjs` only if you register
+it); the `/ascii` subpath never touches either:
 
 ```typescript
 import { renderMermaidASCII } from 'zombie-mermaid/ascii'
@@ -160,7 +207,7 @@ hyperlinks — off by default, since terminal and pager support varies (see
 
 > 🧪 **Experimental — shipped to gauge interest, not a finished or best-effort implementation.** This is a first cut covering the common case; the tool surface may change based on feedback. Try it and [open an issue](https://github.com/dfadler/zombie-mermaid/issues/new) with what you'd want from it.
 
-`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as four tools: `render_mermaid_svg`, `render_mermaid_ascii`, `check_mermaid_sequence_activations`, and `fix_mermaid_sequence_activations`. Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
+`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as six tools: `render_mermaid_svg`, `render_mermaid_ascii`, `check_mermaid_sequence_activations`, `fix_mermaid_sequence_activations`, `list_themes`, and `list_diagram_types`. `render_mermaid_svg` also takes optional `bg`/`fg` hex color overrides (applied on top of `theme`) and an optional `outputPath` that writes the SVG to disk and returns `{ saved, size }` instead of the SVG text. `outputPath` must end in `.svg` and resolve inside the server's working directory (the directory your MCP client launched it from); its parent directory must already exist, symlinks and non-regular files are refused, and an existing `.svg` file at that path is overwritten. Per-tool arguments and return shapes are in the [MCP tool reference](docs/mcp-tools.md). Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
 
 Example Claude Desktop / Claude Code MCP server config:
 
@@ -175,7 +222,7 @@ Example Claude Desktop / Claude Code MCP server config:
 }
 ```
 
-All three tools accept a `diagram` string. The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
+The four diagram tools accept a `diagram` string (`list_themes` and `list_diagram_types` take no arguments). The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
 
 `check_mermaid_sequence_activations` is a mechanical, deterministic check — no LLM judgment involved — for a specific gap in existing Mermaid validators: every `activate X` (or `+` arrow shorthand) in a `sequenceDiagram` must be closed by a matching `deactivate X` (`-` shorthand) before the diagram ends. It returns a JSON report (`{ ok, issues }`) rather than rendering anything, and errors (`isError: true`) if given a non-sequence diagram.
 
@@ -209,6 +256,20 @@ the package.
 
 ---
 
+## Packages
+
+This repo is a pnpm-workspace monorepo. Most consumers only need the umbrella `zombie-mermaid` package above; internally it's built from workspace packages under `packages/`, all published under the `@zombie-mermaid` npm scope and version-locked with it:
+
+- **[`@zombie-mermaid/ascii-renderer`](packages/ascii-renderer)** — the ASCII/Unicode renderer, published standalone for anyone who wants terminal output without `svg-renderer` or `elkjs`. The exact code `zombie-mermaid/ascii` re-exports.  
+  [![npm](https://img.shields.io/npm/v/@zombie-mermaid/ascii-renderer.svg)](https://www.npmjs.com/package/@zombie-mermaid/ascii-renderer) [![gzip size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-ascii-renderer.json)](#bundle-size)
+- **[`@zombie-mermaid/svg-renderer`](packages/svg-renderer)** — the ELK.js-backed SVG layout and rendering engine, also published standalone.  
+  [![npm](https://img.shields.io/npm/v/@zombie-mermaid/svg-renderer.svg)](https://www.npmjs.com/package/@zombie-mermaid/svg-renderer) [![gzip size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-svg-renderer.json)](#bundle-size)
+- `@zombie-mermaid/core`, `@zombie-mermaid/mermaid-parser`, `@zombie-mermaid/mcp` — shared types/theming, the diagram parsers, and the MCP server implementation, respectively. Published under the scope (so the names can't be squatted) and version-locked with the rest, but internal-only: no standalone support commitment beyond backing the umbrella and the two renderer packages above.
+
+See [docs/decisions/monorepo-conversion.md](docs/decisions/monorepo-conversion.md) for the full package-split and publish-strategy history.
+
+---
+
 ## Docs
 
 - [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md), [using the HTML viewer](docs/guides/html-viewer.md)
@@ -239,7 +300,7 @@ Thank you Alexander for the excellent foundation!
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, the test/lint workflow, and how changesets and releases work ([RELEASING.md](RELEASING.md)). Security issues should go through [SECURITY.md](SECURITY.md) instead of a public issue. Released versions are tracked in [CHANGELOG.md](CHANGELOG.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, the test/lint workflow, and how changesets and releases work ([RELEASING.md](docs/RELEASING.md)). Security issues should go through [SECURITY.md](SECURITY.md) instead of a public issue. Released versions are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

@@ -7,6 +7,7 @@
 // ============================================================================
 
 import { z } from 'zod'
+import { renderErrorResult } from './parse-diagnostics.ts'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
@@ -86,14 +87,10 @@ export function renderAsciiHandler(input: RenderAsciiToolArgs): CallToolResult {
     const ascii = renderMermaidASCII(input.diagram, options)
     return { content: [{ type: 'text', text: ascii }] }
   } catch (err) {
-    return {
-      isError: true,
-      content: [
-        {
-          type: 'text',
-          text: `Failed to render diagram to ASCII: ${err instanceof Error ? err.message : String(err)}`,
-        },
-      ],
-    }
+    return renderErrorResult(
+      'Failed to render diagram to ASCII',
+      err,
+      input.diagram,
+    )
   }
 }

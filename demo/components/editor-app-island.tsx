@@ -45,6 +45,24 @@ export function EditorAppIsland({ themes }: EditorAppProps) {
     <>
       <div
         id={EDITOR_ROOT_ID}
+        // display: contents -- this hydration container is real DOM (a
+        // hydrateRoot() target needs a real node), but .editor-tool-shell
+        // is display:flex;flex-direction:column and expects .topbar/.main/
+        // .toast as its direct flex items (see editor-app.tsx's
+        // EditorChromeMarkup doc comment: "No wrapper <div> is introduced
+        // anywhere in this subtree"). Without this, the wrapper's own
+        // display:block box sizes to its children's natural content
+        // height instead of stretching, so .main's flex:1 has no effect
+        // (flex properties only apply to a flex container's *direct*
+        // children) -- confirmed via getBoundingClientRect while building
+        // the fullscreen toggle: harmless in the normal card (a ~32px gap
+        // hidden by overflow:hidden and no bottom-of-card content nearby),
+        // but glaring once .editor-tool-shell:fullscreen makes the card
+        // fill the whole viewport instead of ~720px (a ~200px dead band
+        // below the status bar). display: contents removes this element's
+        // own box while keeping it in the DOM, exactly the same fix
+        // editor-page.tsx already uses for .zm-shell's sticky-nav wrapper.
+        style={{ display: 'contents' }}
         dangerouslySetInnerHTML={{
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own EditorApp component tree rendered via renderToString (see the module doc comment); never user input
           __html: renderToString(<EditorApp themes={themes} />),

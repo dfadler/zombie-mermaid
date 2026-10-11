@@ -17,9 +17,25 @@
  * still-legacy module calls into React-owned state; here, React calls into
  * a still-legacy function). See `editor/js/global.d.ts` for the ambient
  * declaration and `sharing.ts` for the one-line registration.
+ *
+ * The decision/transform logic (the "no SVG rendered yet" guard message,
+ * and the SVG-to-PNG/SVG-to-Blob conversions) lives in the framework-free
+ * `editor-export-actions.ts`, split out the same way #935's audit split
+ * `editor-config-helpers.ts` out of `editor-config.tsx` -- so that logic is
+ * directly testable without mounting `<EditorApp>`. What's left here is
+ * wiring: resolving the current `<svg>` element via refs, calling into
+ * `editor-export-actions.ts` for the decision/transform, and dispatching
+ * the resulting toast/download/clipboard side effects. The
+ * `useLayoutEffect`s below are wiring too (event listener attach/detach),
+ * not decision logic, so they stay.
  */
 import { useLayoutEffect, useRef, type Dispatch } from 'react'
 import type { EditorAction, EditorRefs, EditorState } from './editor-app.tsx'
+import {
+  resolveExportGuardMessage,
+  svgElementToPngBlob,
+  svgElementToSvgBlob,
+} from './editor-export-actions.ts'
 
 declare global {
   interface Window {
@@ -35,51 +51,26 @@ export interface UseEditorExportArgs {
   refs: { current: EditorRefs | null }
 }
 
+/**
+ * Resolves the currently-rendered `<svg>` element via `refs`, or dispatches
+ * the shared "nothing rendered yet" toast (see `editor-export-actions.ts`'s
+ * `resolveExportGuardMessage`) and returns `null`. Pure wiring: the
+ * decision of *what* the guard message says lives in the actions module.
+ */
 function getSvgEl(
   refs: EditorRefs,
   dispatch: Dispatch<EditorAction>,
+  outputMode: EditorState['outputMode'],
 ): SVGSVGElement | null {
   const el = refs.previewInner.querySelector<SVGSVGElement>('svg')
   if (!el) {
-    dispatch({ type: 'SHOW_TOAST', message: 'Render a diagram first.' })
+    dispatch({
+      type: 'SHOW_TOAST',
+      message: resolveExportGuardMessage(outputMode),
+    })
     return null
   }
   return el
-}
-
-function svgToPngBlob(
-  svgEl: SVGSVGElement,
-  scale: number,
-  cb: BlobCallback,
-  onError: () => void,
-): void {
-  const serialized = new XMLSerializer().serializeToString(svgEl)
-  const svgBlob = new Blob([serialized], {
-    type: 'image/svg+xml;charset=utf-8',
-  })
-  const url = URL.createObjectURL(svgBlob)
-  const img = new Image()
-  img.onload = function () {
-    const canvas = document.createElement('canvas')
-    const w = img.naturalWidth || svgEl.viewBox.baseVal.width || 800
-    const h = img.naturalHeight || svgEl.viewBox.baseVal.height || 600
-    canvas.width = w * scale
-    canvas.height = h * scale
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      URL.revokeObjectURL(url)
-      return
-    }
-    ctx.scale(scale, scale)
-    ctx.drawImage(img, 0, 0)
-    URL.revokeObjectURL(url)
-    canvas.toBlob(cb, 'image/png')
-  }
-  img.onerror = function () {
-    URL.revokeObjectURL(url)
-    onError()
-  }
-  img.src = url
 }
 
 /**
@@ -98,12 +89,10 @@ export function useEditorExport({
   const exportPNG = useRef((): void => {
     const r = refs.current
     if (!r) return
-    const svgEl = getSvgEl(r, dispatch)
+    const svgEl = getSvgEl(r, dispatch, stateRef.current.outputMode)
     if (!svgEl) return
-    svgToPngBlob(
-      svgEl,
-      stateRef.current.exportScale,
-      (blob) => {
+    svgElementToPngBlob(svgEl, stateRef.current.exportScale)
+      .then((blob) => {
         if (!blob) return
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -116,18 +105,18 @@ export function useEditorExport({
           message: 'PNG saved (' + stateRef.current.exportScale + 'x)',
         })
         dispatch({ type: 'SET_EXPORT_DROPDOWN_OPEN', open: false })
-      },
-      () => dispatch({ type: 'SHOW_TOAST', message: 'PNG export failed.' }),
-    )
+      })
+      .catch(() =>
+        dispatch({ type: 'SHOW_TOAST', message: 'PNG export failed.' }),
+      )
   })
 
   const exportSVG = useRef((): void => {
     const r = refs.current
     if (!r) return
-    const svgEl = getSvgEl(r, dispatch)
+    const svgEl = getSvgEl(r, dispatch, stateRef.current.outputMode)
     if (!svgEl) return
-    const data = new XMLSerializer().serializeToString(svgEl)
-    const blob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' })
+    const blob = svgElementToSvgBlob(svgEl)
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -141,12 +130,10 @@ export function useEditorExport({
   const copyImage = useRef((): void => {
     const r = refs.current
     if (!r) return
-    const svgEl = getSvgEl(r, dispatch)
+    const svgEl = getSvgEl(r, dispatch, stateRef.current.outputMode)
     if (!svgEl) return
-    svgToPngBlob(
-      svgEl,
-      stateRef.current.exportScale,
-      (blob) => {
+    svgElementToPngBlob(svgEl, stateRef.current.exportScale)
+      .then((blob) => {
         if (!blob) return
         try {
           navigator.clipboard
@@ -164,9 +151,10 @@ export function useEditorExport({
             message: 'Copy not supported in this browser.',
           })
         }
-      },
-      () => dispatch({ type: 'SHOW_TOAST', message: 'PNG export failed.' }),
-    )
+      })
+      .catch(() =>
+        dispatch({ type: 'SHOW_TOAST', message: 'PNG export failed.' }),
+      )
   })
 
   const copyURL = useRef((): void => {

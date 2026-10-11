@@ -5,8 +5,8 @@
  * `diagram-page.tsx` for the same reason `diagram-type-app.tsx` was — see
  * that file's header comment (this page has no live diagram of its own to
  * re-theme, so it's a much simpler split: no `react-dom/server`-importing
- * concern beyond the usual `ThemePickerSection`/`<NavIsland>`/`<Footer>`
- * siblings every hydrated page keeps out of its own tree).
+ * concern beyond the usual `<NavIsland>`/`<Footer>` siblings every
+ * hydrated page keeps out of its own tree).
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
@@ -22,7 +22,7 @@ import {
   XyChartIcon,
   type DiagramTypeIconProps,
 } from './icons.tsx'
-import { Card, CTA, type Accent, accentVar } from './primitives.tsx'
+import { Card, CTA, Pill, type Accent, accentVar } from './primitives.tsx'
 import {
   FONT_SIZE,
   FONT_WEIGHT,
@@ -68,7 +68,7 @@ function DiagramTypeRow({
   index,
   total,
 }: {
-  type: DiagramTypeLink & { intro: string; accent: Accent }
+  type: DiagramTypeLink & { intro: string; accent: Accent; count: number }
   index: number
   total: number
 }) {
@@ -106,7 +106,12 @@ function DiagramTypeRow({
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'flex',
-          flexDirection: isReversed ? 'row-reverse' : 'row',
+          // flex-direction lives in hubPageCss()'s `.type-row`/
+          // `.type-row.reverse` rules instead of here (not inline) --
+          // keyed off the same `reverse` modifier class this element
+          // already carries -- so the tablet breakpoint override can win
+          // via plain cascade order instead of needing !important to beat
+          // an inline style (zombie-mermaid#1080).
           alignItems: 'center',
           gap: `${SPACE['8xl']}px`,
         }}
@@ -116,8 +121,11 @@ function DiagramTypeRow({
           tone="glow"
           className="icon-panel icon-panel-fixed"
           style={{
-            flex: '0 0 460px',
-            height: '360px',
+            // flex-basis and height live in hubPageCss()'s
+            // `.icon-panel-fixed` rule instead of here (not inline) so
+            // the breakpoint overrides can win via plain cascade order
+            // instead of needing !important to beat this inline style
+            // (zombie-mermaid#1080).
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -163,17 +171,37 @@ function DiagramTypeRow({
           >
             {type.intro}
           </p>
-          <CTA
-            href={`${type.slug}.html`}
-            accent={type.accent}
+          <div
             style={{
-              width: 'fit-content',
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.lg}px`,
               marginTop: `${SPACE.xs}px`,
-              ...ctaStyle,
             }}
           >
-            View examples
-          </CTA>
+            <CTA
+              href={`${type.slug}.html`}
+              accent={type.accent}
+              style={{ width: 'fit-content', ...ctaStyle }}
+            >
+              View examples
+            </CTA>
+            {/* zombie-mermaid#989's part 3: how many dedicated pages a
+                visitor will find behind "View examples" — each type now
+                links to a full directory of real per-sample pages (#1003),
+                not just a single hero example, so the count is worth
+                surfacing here before the click. `variant="muted"`
+                (primitives.tsx's neutral treatment) rather than the type's
+                own accent: the CTA stays the one accent-colored action in
+                this row, this pill is quiet metadata beside it. */}
+            <Pill
+              mono
+              fontSize={FONT_SIZE.bodySm}
+              style={{ cursor: 'default' }}
+            >
+              {`${type.count} example${type.count === 1 ? '' : 's'}`}
+            </Pill>
+          </div>
         </div>
       </div>
     </div>
@@ -195,7 +223,18 @@ export const DIAGRAM_HUB_PROPS_ELEMENT_ID = 'diagram-hub-props'
 
 export interface DiagramHubAppProps {
   themeCount: number
-  types: ReadonlyArray<DiagramTypeLink & { intro: string; accent: Accent }>
+  types: ReadonlyArray<
+    DiagramTypeLink & { intro: string; accent: Accent; count: number }
+  >
+  /**
+   * `diagrams/all.html`'s href relative to this page (zombie-
+   * mermaid#1001) — the "View all diagrams" CTA below the intro
+   * paragraph. Threaded through as a prop rather than a hardcoded `'./
+   * all.html'` literal so this file doesn't need to know the all-page's
+   * own URL shape, matching how every other cross-page link on this site
+   * is passed in rather than assumed.
+   */
+  allHref: string
 }
 
 /**
@@ -204,7 +243,11 @@ export interface DiagramHubAppProps {
  * `DiagramHubPage` used to render directly, in the same order. The exact
  * same function runs on both sides of hydration.
  */
-export function DiagramHubApp({ themeCount, types }: DiagramHubAppProps) {
+export function DiagramHubApp({
+  themeCount,
+  types,
+  allHref,
+}: DiagramHubAppProps) {
   return (
     <>
       {/* ============ PAGE HEADER ============ */}
@@ -229,7 +272,10 @@ export function DiagramHubApp({ themeCount, types }: DiagramHubAppProps) {
           <h1
             className="page-h1"
             style={{
-              fontSize: `${FONT_SIZE.display}px`,
+              // font-size lives in hubPageCss() instead of here (not
+              // inline) so its mobile breakpoint override can win via
+              // plain cascade order instead of needing !important to beat
+              // this inline style (zombie-mermaid#1080).
               lineHeight: 1.08,
               letterSpacing: LETTER_SPACING.display,
               maxWidth: '820px',
@@ -249,6 +295,13 @@ export function DiagramHubApp({ themeCount, types }: DiagramHubAppProps) {
             with a live picker across every one of its {themeCount} built-in
             themes.
           </p>
+          {/* #1001: a secondary path into every real example at once,
+              alongside the per-type rows below -- ghost/violet so it reads
+              as a lighter-weight action than each row's own solid "View
+              examples" CTA. */}
+          <CTA href={allHref} variant="ghost" style={{ width: 'fit-content' }}>
+            View all diagrams
+          </CTA>
         </div>
       </div>
 

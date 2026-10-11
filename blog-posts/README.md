@@ -61,10 +61,11 @@ does **not** render as a diagram. Use this for:
   it through this fork's own (fixed) renderer would show different output
   than the bug being described, which would contradict the post.
 
-Use ` ```mermaid-render ` instead when the diagram itself — not its source
-text — is the point (e.g. a chart illustrating data the post discusses, with
-no accompanying screenshot). That fence renders to an inline SVG at build
-time via the same `renderMermaidSVG` the per-diagram-type gallery pages use,
-as a white card (see demo/blog.css's `.mermaid-diagram`). A source syntax
-error in one of these fails the whole build, same as a bad frontmatter
-field — see blog.ts's `renderMermaidDiagram`.
+Use ` ```mermaid-render ` instead when the diagram itself — not just its
+source text — is the point (e.g. a chart illustrating data the post
+discusses, with no accompanying screenshot). That fence renders its
+syntax-highlighted source followed by an inline SVG diagram, back to back,
+at build time via the same `renderMermaidSVG` the per-diagram-type gallery
+pages use — the diagram as a white card (see demo/blog.css's
+`.mermaid-diagram`). A source syntax error in one of these fails the whole
+build, same as a bad frontmatter field — see blog.ts's `renderMermaidDiagram`.

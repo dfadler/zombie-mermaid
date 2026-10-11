@@ -127,6 +127,15 @@ export function flipLinkCanvasVertically(linkCanvas: LinkCanvas): LinkCanvas {
 }
 
 /**
+ * Flip the link canvas horizontally to match `flipCanvasHorizontally` (used
+ * for RL direction). Mutates in place and returns it.
+ */
+export function flipLinkCanvasHorizontally(linkCanvas: LinkCanvas): LinkCanvas {
+  linkCanvas.reverse()
+  return linkCanvas
+}
+
+/**
  * Mark the label text inside a drawn box as linked to `href`.
  *
  * `box` is a standalone box canvas (from `drawNode`/`drawMultiBox`) whose

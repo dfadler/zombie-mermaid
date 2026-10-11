@@ -123,7 +123,7 @@ function EditorLogo() {
         />
       </svg>
       <span>
-        <strong>zombie-mermaid</strong>
+        <strong>ZombieMermaid</strong>
         <span className="logo-sub">Live Editor</span>
       </span>
     </a>
@@ -168,7 +168,7 @@ export function EditorThemeItems({
   )
 }
 
-/** The editor's top bar: logo, tabs, dark mode, themes, and export. */
+/** The editor's top bar: logo, tabs, fullscreen, themes, and export. */
 export function EditorTopbar({ themeItems }: { themeItems: ReactNode }) {
   return (
     <div className="topbar">
@@ -183,28 +183,45 @@ export function EditorTopbar({ themeItems }: { themeItems: ReactNode }) {
         <button className="tab" id="tab-config" data-panel="config">
           Config
         </button>
+        {/*
+         * Mobile-only third tab (editor/css/topbar.css hides it above the
+         * mobile breakpoint, where the source/config panel and the preview
+         * are already visible side by side). Selecting it doesn't change
+         * which of Code/Config is showing inside the source panel -- it
+         * just switches .main's single visible panel to .panel-right, via
+         * data-active-tab (see editor-app.tsx's EditorChromeMarkup and
+         * editor/css/panels.css's mobile media query). Always rendered
+         * (never conditionally, based on viewport width) so server- and
+         * client-rendered markup match at hydration.
+         */}
+        <button
+          className="tab tab-preview"
+          id="tab-preview"
+          data-panel="preview"
+        >
+          Preview
+        </button>
       </div>
 
       <div className="spacer" />
 
       <button
         className="btn"
-        id="dark-light-btn"
-        title="Toggle dark/light mode"
+        id="fullscreen-btn"
+        title="Enter fullscreen"
+        aria-pressed="false"
       >
-        <StrokeIcon id="icon-moon">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        <StrokeIcon id="icon-fullscreen-enter">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+          <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+          <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+          <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
         </StrokeIcon>
-        <StrokeIcon id="icon-sun" style={{ display: 'none' }}>
-          <circle cx="12" cy="12" r="5" />
-          <line x1="12" y1="1" x2="12" y2="3" />
-          <line x1="12" y1="21" x2="12" y2="23" />
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-          <line x1="1" y1="12" x2="3" y2="12" />
-          <line x1="21" y1="12" x2="23" y2="12" />
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        <StrokeIcon id="icon-fullscreen-exit" style={{ display: 'none' }}>
+          <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+          <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+          <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+          <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
         </StrokeIcon>
       </button>
 

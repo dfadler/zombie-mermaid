@@ -31,8 +31,8 @@ export default tseslint.config(
       'editor/__tests__/**',
       'examples/**',
       'public/**',
-      'samples-data.ts',
-      'xychart-samples-data.ts',
+      'packages/site/samples-data.ts',
+      'packages/site/xychart-samples-data.ts',
       'tsup.config.ts',
       // Workflow-tool scripts (Claude Code's Workflow orchestration DSL, not
       // a plain ES module): the harness wraps the script body in an async
@@ -57,13 +57,15 @@ export default tseslint.config(
       // The live editor's client-side modules (#766).
       'editor/js/**/*.ts',
       'vite.config.ts',
-      'vite.config.lib.ts',
-      'index.ts',
-      'fork-fixes.ts',
-      'ascii-html.ts',
-      'bench.ts',
-      'xychart-test.ts',
-      'check-diff-coverage.ts',
+      'config/vite.config.lib.ts',
+      // The site-generator scripts (#995 moved these into packages/site/ as a
+      // unit) — samples-data.ts/xychart-samples-data.ts are excluded above
+      // via the global `ignores` block instead. This glob also now covers
+      // pages.ts/blog.ts/dashboard.ts, which weren't individually listed
+      // here before the move — a pre-existing gap, not new scope.
+      'packages/site/*.ts',
+      // bench.ts/check-diff-coverage.ts moved into scripts/ (#996) and are
+      // covered by the 'scripts/**/*.ts' glob below.
       'scripts/**/*.ts',
       '__tests__/**/*.ts',
     ],

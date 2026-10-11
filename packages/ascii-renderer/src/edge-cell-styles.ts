@@ -30,9 +30,9 @@
 // just finds the identical cell again on every retry.
 // ============================================================================
 
-import type { AsciiEdgeStyle, GridCoord } from './types.ts'
+import type { AsciiEdge, AsciiEdgeStyle, GridCoord } from './types.ts'
 import { gridKey } from './types.ts'
-import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
+import { isFree, isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
 
 /** Cells already claimed by a drawn edge, keyed by "x,y", storing which
  * single line style is drawn there. */
@@ -77,5 +77,296 @@ export function claimPathCells(
     if (isOccupied(grid, cell)) continue
     const key = gridKey(cell)
     if (!cellStyles.has(key)) cellStyles.set(key, style)
+  }
+}
+
+// ============================================================================
+// Chain-edge overlap detection (independent of style)
+// ============================================================================
+//
+// The cross-*style* conflict above only fires when two overlapping edges
+// draw different characters — a same-style overlap silently draws the same
+// glyph twice, which this module's own doc calls harmless, and it usually
+// is: `analyzeEdgeBundles`'s own fan-in/fan-out trunk sharing is same-style
+// by construction, and a "complete bipartite" crossing like `A & B --> C &
+// D` (see ascii.test.ts's `ampersand_lhs_and_rhs` golden file) *deliberately*
+// routes two edges that share neither endpoint (`A --> D` and `B --> C`)
+// through the same shared crossbar — that is the intended, faithful
+// rendering of that shape, not a defect.
+//
+// It stops being harmless in one specific shape a plain "shares an
+// endpoint" check can't distinguish from that crossing pattern: a *chain*
+// through a shared intermediate node, `A --> B` then `B --> C`, each routed
+// independently. When their corners happen to coincide, `A`'s incoming leg
+// and `C`'s outgoing leg trace the exact same column/row beyond the shared,
+// node-owned port cell and read as one continuous `A --> C` connector
+// (#1067, "System Architecture": `Mobile App --> API Gateway` and
+// `API Gateway --> User Service` sharing one on-screen row with no visual
+// break, even though there is no `Mobile App --> User Service` edge in the
+// source). Unlike the crossing pattern above, a chain's two edges have no
+// reason to share open-space cells at all beyond that one port — so this
+// check is scoped *only* to chain pairs (`isChainPair` below), not to every
+// pair of edges that merely shares neither endpoint; widening it to that
+// general case is exactly what broke the ampersand golden file during this
+// fix's own development.
+
+/** Cells already claimed by drawn edges, keyed by "x,y", storing every edge
+ * (by reference) that drew there — independent of `EdgeCellStyles` above,
+ * which tracks *style* rather than edge identity.
+ *
+ * Stores a `Set`, not a single edge: `graph.edges` order means an edge
+ * unrelated to any chain can claim a cell before a real chain pair's own
+ * edges do, and a single-owner map would let that unrelated edge's claim
+ * hide the chain pair's overlap from `findUnrelatedOverlap` entirely. See
+ * that function's own doc.
+ */
+export type EdgeCellOwners = Map<string, Set<AsciiEdge>>
+
+export function createEdgeCellOwners(): EdgeCellOwners {
+  return new Map()
+}
+
+/**
+ * Whether `a` and `b` form a chain through a shared intermediate node: one
+ * edge's target is the other's source. Deliberately narrower than "shares
+ * any endpoint" — a fan-in/fan-out pair (shared `from` or shared `to`) is
+ * excluded on purpose, since that is exactly the shape a legitimate shared
+ * trunk (bundled or not — see module doc) already routes through common
+ * cells for.
+ */
+function isChainPair(a: AsciiEdge, b: AsciiEdge): boolean {
+  return a.to === b.from || b.to === a.from
+}
+
+/**
+ * Whether port-offsets.ts leaves `edge` where it was routed: self-loops,
+ * bundled, lane, invisible and cluster edges. Such an edge is not drawn apart
+ * from another at a shared port, so the port-sharing exemption below does not
+ * apply to it. Lives here, not in port-offsets.ts, to keep this module free of
+ * the layout imports that would make a cycle.
+ */
+export function isPortFixedEdge(edge: AsciiEdge): boolean {
+  return (
+    edge.from === edge.to ||
+    edge.path.length < 2 ||
+    edge.bundle !== undefined ||
+    edge.parallelLane !== undefined ||
+    edge.style === 'invisible' ||
+    edge.clusterSource !== undefined ||
+    edge.clusterTarget !== undefined
+  )
+}
+
+/**
+ * Cells where `owner` and a candidate `path` for `edge` meet at one node port
+ * in opposite roles: one leaves the node by the port cell and the other
+ * arrives at the very same cell, so their first (or last) legs run along the
+ * same cells. port-offsets.ts draws two such edges one cell apart on the node's
+ * side, so sharing those cells cannot read as one connector, and routing them
+ * around each other only wraps one of them round the far side of the diagram
+ * (#1349).
+ *
+ * A reciprocal pair (`A --> C` beside `C --> A`) always qualifies. A chain
+ * (`D --> A` beside `A --> C`, both on A's right) qualifies only when the two
+ * legs end at different corners. When they turn at the *same* cell (`Mobile App
+ * --> Gateway` then `Gateway --> User Service`, #1067) the far legs lie on one
+ * line, and a gap of a cell between strokes reads as a single connector through
+ * the node, so that chain keeps being routed apart. Cells further along either
+ * route are not exempt: nothing draws those apart.
+ */
+function portSharedCells(
+  owner: AsciiEdge,
+  edge: AsciiEdge,
+  path: readonly GridCoord[],
+): Set<string> {
+  const shared = new Set<string>()
+  if (isPortFixedEdge(owner) || isPortFixedEdge(edge)) return shared
+  const reciprocal = owner.from === edge.to && owner.to === edge.from
+  const same = (a: GridCoord | undefined, b: GridCoord | undefined): boolean =>
+    a !== undefined && b !== undefined && a.x === b.x && a.y === b.y
+  const keysOf = (leg: GridCoord[]): Set<string> =>
+    new Set(pathCells(leg).map(gridKey))
+  const meet = (a: GridCoord[], b: GridCoord[]): void => {
+    const bKeys = keysOf(b)
+    for (const key of keysOf(a)) if (bKeys.has(key)) shared.add(key)
+  }
+  const ownerPath = owner.path
+  if (ownerPath.length < 2 || path.length < 2) return shared
+  const first = (p: readonly GridCoord[]): GridCoord[] => [p[0]!, p[1]!]
+  const last = (p: readonly GridCoord[]): GridCoord[] => [
+    p[p.length - 2]!,
+    p[p.length - 1]!,
+  ]
+  // `owner` leaves the node `edge` arrives at, through the same port.
+  if (
+    owner.from === edge.to &&
+    same(ownerPath[0], path[path.length - 1]) &&
+    (reciprocal || !same(ownerPath[1], path[path.length - 2]))
+  ) {
+    meet(first(ownerPath), last(path))
+  }
+  // `owner` arrives at the node `edge` leaves, through the same port.
+  if (
+    owner.to === edge.from &&
+    same(ownerPath[ownerPath.length - 1], path[0]) &&
+    (reciprocal || !same(ownerPath[ownerPath.length - 2], path[1]))
+  ) {
+    meet(last(ownerPath), first(path))
+  }
+  return shared
+}
+
+/**
+ * Minimum number of open, non-node cells a chain pair must share before it
+ * counts as a real conflict. A single shared cell is an ordinary crossing
+ * (two independent lines passing through the same point, which still reads
+ * as two lines) — it takes a *run* of shared cells, long enough to read as
+ * one continuous connector, to actually mislead a reader. Chosen to be the
+ * smallest value that catches a shared corner-to-corner leg (at least 2
+ * collinear cells) while still letting a lone crossing through.
+ */
+const MIN_CHAIN_OVERLAP = 2
+
+/**
+ * A cluster-exit edge (cluster-boundary.ts) turns at the gutter cell right
+ * beside the target's rank, so its last leg into the target can be a single
+ * open cell — the very corner cell. A chain partner leaving the target
+ * through that same face (`Error --> Idle` after `Processing --> Error`)
+ * then retraces the leg and reads as a continuation of it, at just one
+ * shared cell. For such an owner one shared cell is already a conflict.
+ * Only an owner whose cluster-exit plan is active qualifies: an edge merely
+ * addressed from a cluster (single exit, rejected plan) routes ordinarily.
+ */
+function chainOverlapThreshold(
+  owner: AsciiEdge,
+  isActiveClusterExit: (edge: AsciiEdge) => boolean,
+): number {
+  return isActiveClusterExit(owner) ? 1 : MIN_CHAIN_OVERLAP
+}
+
+/**
+ * The first open (non-node-occupied) cell in `path` already claimed by a
+ * different edge that forms a chain with `edge` (`isChainPair`) — but only
+ * once *that specific chain partner's* total overlap with `edge` reaches
+ * `MIN_CHAIN_OVERLAP` cells (see that constant's doc). Each distinct owner
+ * of a cell is checked and counted independently — a cell can hold several
+ * edges' claims (see `EdgeCellOwners`'s own doc), and an unrelated same-style
+ * edge sharing a cell must not hide a real chain partner's overlap that also
+ * claimed it. Returns `null` when no chain partner's overlap reaches the
+ * threshold.
+ */
+export function findUnrelatedOverlap(
+  grid: Grid,
+  owners: EdgeCellOwners,
+  path: readonly GridCoord[],
+  edge: AsciiEdge,
+  isActiveClusterExit: (edge: AsciiEdge) => boolean = () => false,
+): GridCoord | null {
+  const overlapCounts = new Map<AsciiEdge, number>()
+  const firstConflicts = new Map<AsciiEdge, GridCoord>()
+  const exempt = new Map<AsciiEdge, Set<string>>()
+  const portShared = (owner: AsciiEdge): Set<string> => {
+    let cells = exempt.get(owner)
+    if (!cells) {
+      cells = portSharedCells(owner, edge, path)
+      exempt.set(owner, cells)
+    }
+    return cells
+  }
+  for (const cell of pathCells(path)) {
+    if (isOccupied(grid, cell)) continue
+    const cellOwners = owners.get(gridKey(cell))
+    if (cellOwners === undefined) continue
+    for (const owner of cellOwners) {
+      if (owner === edge) continue
+      if (!isChainPair(owner, edge)) continue
+      if (portShared(owner).has(gridKey(cell))) continue
+      overlapCounts.set(owner, (overlapCounts.get(owner) ?? 0) + 1)
+      if (!firstConflicts.has(owner)) firstConflicts.set(owner, cell)
+    }
+  }
+  for (const [owner, count] of overlapCounts) {
+    if (count >= chainOverlapThreshold(owner, isActiveClusterExit))
+      return firstConflicts.get(owner)!
+  }
+  return null
+}
+
+/**
+ * Record every open (non-node-occupied) cell in `path` as claimed by
+ * `edge`, alongside any edge(s) that already claimed it — see
+ * `EdgeCellOwners`'s own doc for why a cell can have more than one owner.
+ */
+export function claimPathOwners(
+  grid: Grid,
+  owners: EdgeCellOwners,
+  path: readonly GridCoord[],
+  edge: AsciiEdge,
+): void {
+  for (const cell of pathCells(path)) {
+    if (isOccupied(grid, cell)) continue
+    const key = gridKey(cell)
+    let cellOwners = owners.get(key)
+    if (cellOwners === undefined) {
+      cellOwners = new Set()
+      owners.set(key, cellOwners)
+    }
+    cellOwners.add(edge)
+  }
+}
+
+// ============================================================================
+// Fan-in lane separation (#1439)
+// ============================================================================
+
+/** Fewest cells a vertical run must share with another source's edge into the
+ * same node before it reads as one stroke and gets a lane of its own. */
+const MIN_FAN_IN_OVERLAP = 2
+
+/** How far from its routed column a vertical run may move to find a free lane. */
+const MAX_LANE_SHIFT = 3
+
+/** Two edges into one node from different sources. */
+function isFanInPair(a: AsciiEdge, b: AsciiEdge): boolean {
+  return a.to === b.to && a.from !== b.from
+}
+
+/**
+ * In a TD graph, two unbundled edges into one node from different sources can
+ * run down the same column, which draws as one stroke and hides which source
+ * each belongs to. Move such an edge's inner vertical run to the nearest free
+ * column, keeping the horizontal legs on either side of it. Leaves the path
+ * alone when no column within `MAX_LANE_SHIFT` is free of nodes and of other
+ * sources' strokes into the same node. Edges that share a source keep sharing
+ * their trunk.
+ */
+export function separateFanInLane(
+  grid: Grid,
+  owners: EdgeCellOwners,
+  edge: AsciiEdge,
+): void {
+  const p = edge.path
+  const shared = (cells: GridCoord[]): number =>
+    cells.filter((c) =>
+      [...(owners.get(gridKey(c)) ?? [])].some(
+        (o) => o !== edge && isFanInPair(o, edge),
+      ),
+    ).length
+  for (let i = 1; i + 2 < p.length; i++) {
+    const [a, b, c, d] = [p[i - 1]!, p[i]!, p[i + 1]!, p[i + 2]!]
+    if (b.x !== c.x || a.y !== b.y || c.y !== d.y) continue
+    if (shared(pathCells([b, c])) < MIN_FAN_IN_OVERLAP) continue
+    for (let k = 1; k <= MAX_LANE_SHIFT; k++) {
+      for (const x of [b.x + k, b.x - k]) {
+        if (x === a.x || x === d.x) continue
+        const lane = [a, { x, y: b.y }, { x, y: c.y }, d]
+        const inner = pathCells(lane).slice(1, -1)
+        if (!inner.every((cell) => isFree(grid, cell))) continue
+        if (shared(pathCells(lane.slice(1, 3))) >= MIN_FAN_IN_OVERLAP) continue
+        edge.path = [...p.slice(0, i - 1), ...lane, ...p.slice(i + 3)]
+        return
+      }
+    }
+    return
   }
 }
