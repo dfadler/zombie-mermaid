@@ -216,3 +216,37 @@ describe('pie SVG: init textPosition', () => {
     expect(firstLabelX(bad)).toBe(firstLabelX(renderMermaidSVG(src(''))))
   })
 })
+
+describe('pie SVG: init donutHole', () => {
+  const src = (init: string) => `${init}\npie\n  "A" : 1\n  "B" : 1`
+  const hole = (v: string) =>
+    renderMermaidSVG(src(`%%{init: {"pie": {"donutHole": ${v}}}}%%`))
+  const slicePath = (svg: string) =>
+    /<path d="([^"]+)" class="pie-slice/.exec(svg)![1]
+
+  it('cuts an inner arc at donutHole * radius', () => {
+    // radius 185 * 0.5 = 92.5 inner arc, drawn back the other way (sweep 0)
+    expect(slicePath(hole('0.5'))).toContain('A92.5,92.5,0,0,0,')
+  })
+
+  it('cuts a hole through a single full-circle slice', () => {
+    const svg = renderMermaidSVG(
+      '%%{init: {"pie": {"donutHole": 0.5}}}%%\npie\n  "A" : 1',
+    )
+    expect(slicePath(svg)).toContain('A92.5,92.5,0,1,0,')
+  })
+
+  it('keeps the labels at textPosition', () => {
+    const x = (svg: string) =>
+      /<text x="([\d.]+)"[^>]*class="pie-slice-label"/.exec(svg)![1]
+    expect(x(hole('0.5'))).toBe(x(renderMermaidSVG(src(''))))
+  })
+
+  it.each(['0', '0.95', '-1', '"x"'])('draws a plain pie for %s', (v) => {
+    expect(hole(v)).toBe(renderMermaidSVG(src('')))
+  })
+
+  it('accepts the 0.9 upper bound', () => {
+    expect(slicePath(hole('0.9'))).toContain('A166.5,166.5,')
+  })
+})

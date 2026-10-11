@@ -387,8 +387,11 @@ export function parsePieChart(text: string): PieChart {
   }
 
   const chart: PieChart = { showData, slices }
-  const { pieTextPosition } = extractInitConfig(text.split(/\r\n?|\n/))
+  const { pieTextPosition, pieDonutHole } = extractInitConfig(
+    text.split(/\r\n?|\n/),
+  )
   if (pieTextPosition !== undefined) chart.textPosition = pieTextPosition
+  if (pieDonutHole !== undefined) chart.donutHole = pieDonutHole
   if (title) chart.title = title
   if (accTitle) chart.accTitle = accTitle
   if (accDescr) chart.accDescr = accDescr

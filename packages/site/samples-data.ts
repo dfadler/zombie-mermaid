@@ -1907,6 +1907,17 @@ flowchart LR
 ${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" : 1`).join('\n')}`,
   },
   {
+    title: 'Pie: Donut Hole',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"donutHole": 0.5}}}%%` cuts a hole of half the radius in the SVG; Mermaid keeps the labels where they were. The ASCII bar chart has no centre to cut, so it is unchanged.',
+    source: `%%{init: {"pie": {"donutHole": 0.5}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
     title: 'Labeled Fan-In (LR)',
     category: 'Flowchart',
     description:
