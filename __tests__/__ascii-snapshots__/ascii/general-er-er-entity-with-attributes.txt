@@ -1,0 +1,10 @@
++-----------------+    
+| CUSTOMER        |    
++-----------------+    
+| int id PK       |    
+| string name     |    
+| string email UK |    
+| date created_at |    
++-----------------+    
+                       
+                       

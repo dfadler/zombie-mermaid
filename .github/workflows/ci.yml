@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Least-privilege default (#1732): every job below also declares its own block,
+# so this only guards a future job that forgets to.
+permissions:
+  contents: read
+
 # Cancel superseded runs on a PR branch (repeated pushes) instead of letting
 # them pile up. Pushes to main are keyed by SHA and never cancelled: a
 # cancelled run is the latest completed run on main, and the README's

@@ -1,0 +1,11 @@
+┌─────────────────┐    
+│ <<enumeration>> │    
+│ Status          │    
+├─────────────────┤    
+│ ACTIVE          │    
+│ INACTIVE        │    
+│ PENDING         │    
+│ DELETED         │    
+└─────────────────┘    
+                       
+                       
