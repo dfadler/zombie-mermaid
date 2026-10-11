@@ -18,7 +18,7 @@ two READMEs making similar claims. This is that check.
 What follows isn't a rendered side-by-side. Building and running
 `beautiful-mermaid`'s own code wasn't something this check did; the `upstream`
 git remote this repo already carries — the same one
-[`.github/workflows/upstream-check.yml`](https://github.com/dfadler/zombie-mermaid/blob/main/.github/workflows/upstream-check.yml)
+[`.github/workflows/upstream-watch.yml`](https://github.com/dfadler/zombie-mermaid/blob/main/.github/workflows/upstream-watch.yml)
 fetches from weekly to watch for new commits — was enough to pull its current
 source and read it directly. For the eleven bugs below, that's actually a
 stronger form of proof than a screenshot: each one is a regex, a missing type

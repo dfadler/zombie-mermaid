@@ -204,7 +204,7 @@ describe('fetchResponseTimeStats', () => {
     })
   })
 
-  it('skips an issue whose only comments are all from the author', async () => {
+  it('falls back to the first author comment when nobody else has commented (#1530)', async () => {
     const ghFn = ghSequence([
       {
         items: [
@@ -221,7 +221,8 @@ describe('fetchResponseTimeStats', () => {
 
     const result = await fetchResponseTimeStats(20, ghFn)
 
-    expect(result).toBeNull()
+    expect(result?.sampleSize).toBe(1)
+    expect(result?.medianHours).toBe(1)
   })
 
   it('computes the median across an odd number of samples (middle value)', async () => {
