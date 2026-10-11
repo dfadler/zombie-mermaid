@@ -79,4 +79,39 @@ describe('parallel edges side by side (#1394)', () => {
     )
     expect(out).toContain('▼ ▼ ▼')
   })
+
+  it.each([4, 5])(
+    'ASCII: %i labeled edges each get an arrowhead (#1716)',
+    (n) => {
+      const edges = Array.from({ length: n }, (_, i) => `  A -->|e${i}| B`)
+      for (const dir of ['TD', 'LR']) {
+        const out = ascii(`graph ${dir}\n${edges.join('\n')}`)
+        expect(out.match(dir === 'TD' ? /▼/g : /►/g)).toHaveLength(n)
+        for (let i = 0; i < n; i++) expect(out).toContain(`e${i}`)
+      }
+    },
+  )
+
+  it('ASCII: labels of exactly 3 cells spread, 4 cells keep the lanes', () => {
+    const three = ascii(
+      'graph TD\n  A -->|abc| B\n  A -->|def| B\n  A -->|ghi| B',
+    )
+    expect(three.match(/▼/g)).toHaveLength(3)
+    expect(three).not.toContain('◄')
+    const four = ascii(
+      'graph TD\n  A -->|abcd| B\n  A -->|efgh| B\n  A -->|ijkl| B',
+    )
+    expect(four).toMatch(/◄─+┴/)
+  })
+
+  it('ASCII: a spread group with a node above it still gets its own strokes', () => {
+    const td = ascii(
+      'graph TD\n  X --> A\n  A -->|a| B\n  A -->|b| B\n  A -->|c| B',
+    )
+    expect(td.match(/▼/g)).toHaveLength(4)
+    const lr = ascii(
+      'graph LR\n  X --> A\n  A -->|a| B\n  A -->|b| B\n  A -->|c| B',
+    )
+    expect(lr.match(/►/g)).toHaveLength(4)
+  })
 })
