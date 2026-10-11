@@ -32,10 +32,11 @@ export function driftError({
     : null
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const { SITE_URL, PACKAGE, GRACE_HOURS, LAST_PAGES_SUCCESS } = process.env
+/** Fetches npm + the live site; returns { line, err } (err null when fresh). */
+export async function run(env, fetchFn = fetch, now = Date.now()) {
+  const { SITE_URL, PACKAGE, GRACE_HOURS, LAST_PAGES_SUCCESS } = env
   const get = async (u) => {
-    const r = await fetch(u)
+    const r = await fetchFn(u)
     if (!r.ok) throw new Error(`${u}: HTTP ${r.status}`)
     return r
   }
@@ -46,14 +47,21 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     site,
     latest,
     publishedAt: reg.time[latest],
-    now: Date.now(),
+    now,
     graceHours: Number(GRACE_HOURS || 24),
   })
-  console.log(
-    `site=${site} npm=${latest} last pages.yml success=${LAST_PAGES_SUCCESS || 'unknown'}`,
-  )
-  if (err) {
-    console.error(`::error::${err}`)
-    process.exit(1)
-  }
+  const line = `site=${site} npm=${latest} last pages.yml success=${LAST_PAGES_SUCCESS || 'unknown'}`
+  return { line, err }
+}
+
+/** CLI entry: prints the status line, annotates drift; returns the exit code. */
+export async function main(env, fetchFn = fetch) {
+  const { line, err } = await run(env, fetchFn)
+  console.log(line)
+  if (err) console.error(`::error::${err}`)
+  return err ? 1 : 0
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  process.exitCode = await main(process.env)
 }
