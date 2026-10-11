@@ -10,6 +10,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run test:watch` — Vitest in watch mode
 - `pnpm run test:coverage` — Vitest with coverage
 - `pnpm run test:visual` — run the Playwright visual regression suite (see [visual-regression.md](visual-regression.md))
+- `pnpm run test:a11y` — axe-core accessibility scan of the built site (run `pnpm run build:site` first)
 - `pnpm run test:visual:watch` — the visual regression suite in Playwright UI mode
 - `pnpm run test:visual:update` — regenerate visual baselines for your platform (see [visual-regression.md](visual-regression.md))
 - `pnpm run coverage:diff` — hold new/changed lines to a 90% coverage bar (what CI's "Check coverage on new/changed code" step runs, after `pnpm run test:coverage` has produced `coverage/lcov.info`; see `scripts/check-diff-coverage.ts`)
