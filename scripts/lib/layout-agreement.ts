@@ -177,10 +177,9 @@ export function officialNodeName(
   renderId: string,
   type: OracleType,
 ): string {
-  const name = raw
-    .replace(`${renderId}-${type}-`, '')
-    .replace(new RegExp(`^${type}-`), '')
-    .replace(/-\d+$/, '')
+  let name = raw.replace(`${renderId}-${type}-`, '')
+  if (name.startsWith(`${type}-`)) name = name.slice(type.length + 1)
+  name = name.replace(/-\d+$/, '')
   return type === 'state' ? name.replace(/^root_(start|end)$/, '_$1') : name
 }
 
