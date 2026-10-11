@@ -198,6 +198,27 @@ describe('<EditorApp> buttons interaction (#809)', () => {
   })
 })
 
+describe('<EditorApp> toast live region (#1764)', () => {
+  it('is a polite status region and carries the message only while shown', async () => {
+    render(createElement(EditorApp, PROPS))
+    const toast = document.getElementById('toast')!
+    expect(toast).toHaveAttribute('role', 'status')
+    expect(toast).toHaveAttribute('aria-live', 'polite')
+    expect(toast.textContent).toBe('')
+
+    ;(document.getElementById('code-editor') as HTMLTextAreaElement).value =
+      'graph TD\n  A --> B'
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    })
+    await act(async () => {
+      fireEvent.click(document.getElementById('copy-source-btn')!)
+    })
+    expect(toast.textContent).toBe('Source copied!')
+  })
+})
+
 describe('<EditorApp> toast auto-dismiss (#809)', () => {
   it('shows then auto-dismisses after 2500ms, and restarts the timer on a repeat message', async () => {
     vi.useFakeTimers()
