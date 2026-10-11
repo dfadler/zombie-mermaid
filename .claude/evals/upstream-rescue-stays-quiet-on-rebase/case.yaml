@@ -1,0 +1,25 @@
+# Near-miss: shares "upstream" vocabulary but is plain git, not PR rescue.
+schema_version: '1.1'
+name: upstream-rescue-stays-quiet-on-rebase
+description: >
+  A git question about syncing a branch with the upstream remote must not fire
+  upstream-rescue. expected_outcome: PASS when no upstream-rescue Skill call is made.
+tags: [upstream-rescue, trigger, quick]
+
+execution:
+  prompt: |
+    In one sentence, how do I update my local main from the `upstream` git remote?
+    Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: skill_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?upstream-rescue"'
+    min: 0
+    max: 0
+    arm: both
