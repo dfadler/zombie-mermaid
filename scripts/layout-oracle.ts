@@ -28,18 +28,6 @@
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
-import { parseMermaid } from '../src/index.ts'
-import { splitStatements } from '@zombie-mermaid/core'
-import {
-  parseClassDiagram,
-  parseErDiagram,
-} from '@zombie-mermaid/mermaid-parser'
-import {
-  layoutClassDiagramSync,
-  layoutErDiagramSync,
-  layoutFlowchartSync,
-  layoutGraphSync,
-} from '@zombie-mermaid/svg-renderer'
 import { samples } from '../packages/site/samples-data.ts'
 import {
   TABLE_HEADER,
@@ -58,6 +46,7 @@ import {
   summarize,
   type LayoutBoxes,
 } from './lib/layout-agreement.ts'
+import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
 /**
@@ -107,48 +96,6 @@ async function measureOfficial(
     // State composites are `state-<id>-<n>`, so strip it like a node's.
     groups[type === 'state' ? officialNodeName(id, renderId, type) : id] = box
   }
-  return { nodes, groups }
-}
-
-/** Box of every node and subgraph in our own layout of `source`. */
-function measureOurs(source: string, type: OracleType): LayoutBoxes {
-  const nodes: Record<string, Box> = {}
-  if (type === 'class') {
-    const d = layoutClassDiagramSync(
-      parseClassDiagram(splitStatements(source)),
-    )
-    for (const c of d.classes) {
-      nodes[c.id] = { x: c.x, y: c.y, w: c.width, h: c.height }
-    }
-    const groups: Record<string, Box> = {}
-    for (const n of d.namespaces) {
-      groups[n.name] = { x: n.x, y: n.y, w: n.width, h: n.height }
-    }
-    return { nodes, groups }
-  }
-  if (type === 'er') {
-    const d = layoutErDiagramSync(
-      parseErDiagram(splitStatements(source)),
-    )
-    for (const e of d.entities) {
-      nodes[e.id] = { x: e.x, y: e.y, w: e.width, h: e.height }
-    }
-    return { nodes, groups: {} }
-  }
-  const graph = parseMermaid(source)
-  const positioned =
-    type === 'state' ? layoutGraphSync(graph) : layoutFlowchartSync(graph)
-  for (const n of positioned.nodes) {
-    nodes[n.id] = { x: n.x, y: n.y, w: n.width, h: n.height }
-  }
-  const groups: Record<string, Box> = {}
-  const walk = (list: typeof positioned.groups): void => {
-    for (const g of list) {
-      groups[g.id] = { x: g.x, y: g.y, w: g.width, h: g.height }
-      walk(g.children)
-    }
-  }
-  walk(positioned.groups)
   return { nodes, groups }
 }
 
@@ -281,4 +228,11 @@ async function main(): Promise<number> {
   return 0
 }
 
-process.exit(await main())
+// Only run when executed directly, so the pure helpers can be imported by tests.
+const isMainModule =
+  process.argv[1] !== undefined &&
+  import.meta.url === new URL(process.argv[1], 'file://').href
+
+if (isMainModule) {
+  process.exit(await main())
+}
