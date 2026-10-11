@@ -1,6 +1,6 @@
 # Accessibility conformance statement
 
-Last reviewed: 2026-09-09, against `zombie-mermaid` on `main`.
+Last reviewed: 2026-10-10, against `zombie-mermaid` on `main`.
 
 This is a scoped, honest statement of what `zombie-mermaid` guarantees today
 — not a claim of full [WCAG 2.1](https://www.w3.org/TR/WCAG21/) conformance
@@ -19,8 +19,8 @@ If you find a gap between this document and actual behavior, please
   application embeds; its accessibility properties are what this package can
   actually promise, because they don't depend on how a consumer wires things
   up.
-- **The demo/editor site** (`demo/`, `editor/`, `index.ts`) — the sample
-  gallery and diagram editor this repo ships and deploys itself. Its
+- **The demo/editor site** (`demo/`, `editor/`, `packages/site/`) — the
+  marketing, diagram, blog and editor pages this repo ships and deploys itself. Its
   accessibility properties are specific to that one page, not something
   every consumer of the library inherits.
 
@@ -34,7 +34,7 @@ check of their own.
 
 **Guarantee:** every SVG `zombie-mermaid` renders — for every diagram type
 this library supports (flowchart, state diagram, sequence, class, ER, XY
-chart), with or without a `click`-based interactive link, with or without an
+chart, architecture, C4, pie), with or without a `click`-based interactive link, with or without an
 explicit `title`/`decorative` option — has a root `<svg>` that follows the
 WAI-ARIA `img` accessible-name pattern rather than being an anonymous,
 unlabeled group of child text nodes:
@@ -45,6 +45,9 @@ unlabeled group of child text nodes:
 | No `click`-based link, `title: '...'` supplied                   | `role="img"` + `aria-labelledby` pointing at a `<title id>` child holding the escaped text                                                                                                                                                                                                                                                                                                           |
 | No `click`-based link, `decorative: true`                        | `aria-hidden="true"`, no `role`, no name                                                                                                                                                                                                                                                                                                                                                             |
 | Any node has a `click A "url"` link (real, focusable `<a href>`) | No `role` and no `aria-hidden` at all — both would hide the focusable link from assistive tech while leaving it Tab-reachable, an explicit WAI-ARIA violation. `title`, if supplied, still applies via `aria-labelledby` (a `role`-less element can still have a computed name). `decorative` is silently overridden — a diagram containing a real action is never fully hidden from assistive tech. |
+
+An optional `description` option adds a `<desc id>` child after the title and
+an `aria-describedby` on the root, independent of the table above.
 
 This maps to two WCAG success criteria:
 
@@ -81,7 +84,7 @@ It complements the longer-standing
 [#215](https://github.com/dfadler/zombie-mermaid/issues/215) and
 [#239](https://github.com/dfadler/zombie-mermaid/issues/239)), which tests
 the underlying `svgOpenTag()` unit behavior in more depth. Because the new
-test's sample map is typed `Record<DiagramType, string>`, a 6th diagram type
+test's sample map is typed `Record<DiagramType, string>`, a ninth diagram type
 added without a matching sample fails `tsc --noEmit` (the `typecheck` job)
 — coverage can't silently lapse the way an unmaintained list of ad hoc test
 cases could.
@@ -109,7 +112,7 @@ fixes.
 ## Demo/editor site: keyboard and focus behavior
 
 The site this repo builds and deploys itself (`demo/`, `editor/`, and the
-per-page generators — `index.ts`, `pages.ts`, `blog.ts`, `fork-fixes.ts`,
+per-page generators in `packages/site/` — `index.ts`, `pages.ts`, `blog.ts`, `fork-fixes.ts`,
 `dashboard.ts`, `editor.ts` — what
 [dfadler.github.io/zombie-mermaid](https://dfadler.github.io/zombie-mermaid/)
 serves) is no longer one gallery-plus-editor page: the #590 "Diagram-Native
@@ -125,30 +128,34 @@ of any single one of them:
   `:focus-visible` ring (`a:focus-visible, button:focus-visible { … }`)
   is present on the **Diagrams hub and per-type pages**
   (`diagrams/*.html`, via `demo/styles.css` + `demo/diagram-page.css`,
-  concatenated into `diagrams/assets/diagram-page.css` by `pages.ts`) and
+  concatenated into `diagrams/assets/diagram-page.css` by `packages/site/pages.ts`) and
   on **Fork fixes** (`fork-fixes.html`, via `demo/fork-fixes.css`) —
   relevant to
   [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
-  on those pages. **Home** (`index.html`), **Blog** (`blog/*.html`), and
-  **Dashboard** (`dashboard.html`) — all built on the redesign's shared
-  component library (`demo/components/tokens.tsx`, `primitives.tsx`,
-  `nav.tsx`, `footer.tsx`) — declare no `:focus-visible` rule of their own
-  and fall back to each browser's default outline. **Editor**
-  (`editor.html`) sits in between: its new nav/hero/footer chrome has no
-  ring either, and the editor tool itself only styles `:focus` (not
-  `:focus-visible`) on three specific inputs
-  (`editor/css/config-panel.css`, `font-picker.css`, `color-picker.css`),
-  not as a general control ring.
+  on those pages. **Blog** (`blog/*.html`) and **Dashboard**
+  (`dashboard.html`) — built on the redesign's shared component library
+  (`demo/components/tokens.tsx`, `primitives.tsx`, `nav.tsx`, `footer.tsx`) —
+  declare no `:focus-visible` rule of their own and fall back to each
+  browser's default outline. **Home** (`index.html`) has widget-level rules
+  only (theme showcase zoom/fullscreen, the picker trigger and the output
+  segment control in `demo/components/index-page.tsx`), not a general
+  `a`/`button` ring. **Editor**
+  (`editor.html`) has the same kind of ring on its tool controls
+  (`editor/css/misc.css`, loaded last, covers buttons, links, inputs,
+  selects and `[tabindex]` elements), but its nav/hero/footer chrome has
+  none.
 - **A skip-to-content link** — exists only on **Home**:
   `<a className="skip-link" href="#main">` in
   `demo/components/index-page.tsx`, jumping to `<main id="main">` on that
   same page — relevant to
   [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A)
   on Home only. No other page family (Diagrams, Editor, Fork fixes, Blog,
-  Dashboard) has one. The Diagrams per-type pages do link a "See all
-  samples" CTA to `../#samples-heading`, but that id no longer exists on
-  Home (or anywhere) since the redesign — a dead in-page anchor, not a
-  functioning skip link.
+  Dashboard) has one.
+- **Landmarks and hidden-nav focus** — `<main>` exists only on Home and
+  Fork fixes; the Editor, Dashboard, Diagrams and Blog pages have none. The
+  closed mobile nav panel (`.mobile-nav-panel` in `demo/components/nav-css.ts`)
+  is hidden with `opacity:0; pointer-events:none` only, so its links remain
+  Tab-focusable and exposed to assistive tech while it is closed.
 - **Modal dialog semantics** — **no longer applicable.** The "Edit Diagram"
   dialog this bullet used to describe was part of the interactive gallery
   the redesign removed; there is no `role="dialog"`/`aria-modal` element
@@ -163,17 +170,13 @@ of any single one of them:
   open/closed state, but only on the **Diagrams per-type pages** — the hub
   page renders no theme picker, and the editor's own theme dropdown
   (`#theme-dropdown-btn` in `demo/components/editor-topbar.tsx`, wired by
-  `editor/js/init.js`) sets no `aria-expanded` at all. The **mobile
-  sidebar toggle** this bullet used to describe no longer exists in any
-  form: `demo/components/nav.tsx`'s own header comment states the redesign
-  ships no hamburger, drawer, or overflow affordance for its nav — below
-  900px the nav links are simply `display:none`, with no toggle and no
-  alternate route to them from the nav bar itself (Home's footer and
-  in-page sections still link to Diagrams/Editor/Fork fixes/Blog, so
-  they're not entirely unreachable on mobile, just not from the nav).
+  `demo/components/editor-theme.ts`) sets no `aria-expanded` at all. The **mobile
+  nav toggle** (`.menu-toggle` in `demo/components/nav.tsx`, wired by
+  `demo/components/mobile-menu.client.ts`) sets `aria-expanded` as the
+  fullscreen menu opens and closes, wherever the shared nav renders.
 
 **Verified how:** read directly in the current source (file/selector cited
-above) as part of writing this statement's 2026-09-09 revision, cross-checked
+above) as part of writing this statement's 2026-10-10 revision, cross-checked
 against `pnpm run build:site`'s actual output. The properties that predate
 the #590 redesign each landed as their own targeted PR (see
 `.changeset/consistent-focus-visible-ring.md`,
@@ -197,9 +200,13 @@ not something this statement claims already exists.
   components — not the result of a full page-level audit.
 - **No color-contrast guarantee across all 15 built-in themes.** Some
   contrast issues have been found and fixed as one-off reports (see
-  `.changeset/description-text-contrast.md`, `.changeset/fix-edit-btn-contrast.md`),
-  but no automated contrast check runs across the full theme set, so this
-  isn't a standing guarantee the way the SVG accessible-name check is.
+  `.changeset/description-text-contrast.md`, `.changeset/fix-edit-btn-contrast.md`).
+  `packages/core/src/__tests__/theme-palette-contrast.test.ts` asserts only
+  `bg`/`fg` at 4.0:1 (below WCAG AA's 4.5:1 for normal text). The `muted`
+  secondary-text color (edge labels, group headers, axis titles) is below
+  4.5:1 in most built-in themes, and `line` is below 3:1 in many; neither is
+  checked, so this isn't a standing guarantee the way the SVG
+  accessible-name check is.
 - **No screen-reader compatibility testing matrix.** The markup follows
   documented WAI-ARIA/SVG accessibility techniques (cited above), but this
   hasn't been manually verified against a specific screen reader (VoiceOver,
