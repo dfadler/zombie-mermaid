@@ -53,17 +53,17 @@ jobs:
     if: github.repository == 'dfadler/zombie-mermaid'
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Full history so check-diff-coverage.ts can diff against
           # origin/main below (a shallow checkout wouldn't have it).
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -76,7 +76,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-report
           path: coverage/
@@ -87,7 +87,7 @@ jobs:
       # without it this step fails rather than silently skipping, so the
       # badge's data source stays honest about whether it's actually wired up.
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
@@ -133,7 +133,7 @@ jobs:
     if: github.repository == 'dfadler/zombie-mermaid'
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Full history: fork-fixes.ts renders each "before" by extracting
           # the source tree at a historical commit, which a shallow checkout
@@ -141,10 +141,10 @@ jobs:
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -254,7 +254,7 @@ jobs:
       # would leave the read-only GITHUB_TOKEN in the local git config for
       # that code to read; nothing after checkout needs authenticated git,
       # so it's disabled.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -302,7 +302,7 @@ jobs:
           assert_family serif "DejaVu Serif"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       # Pinned to 22 even though the image ships a newer Node: SVG and ASCII
       # output are generated in Node (only DOM mounting happens in the
@@ -310,7 +310,7 @@ jobs:
       # so the Node version is part of what produced the baselines, and the
       # rest of this workflow's jobs are on 22.
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -354,7 +354,7 @@ jobs:
       - name: Upload failure report
         id: upload-report
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: visual-regression-failures-${{ matrix.shardIndex }}
           path: |
@@ -420,13 +420,13 @@ jobs:
     if: github.repository == 'dfadler/zombie-mermaid'
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -447,7 +447,7 @@ jobs:
 
       - name: Upload benchmark result
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bench-result
           path: bench-current.json
@@ -485,7 +485,7 @@ jobs:
 
       - name: Upload per-package benchmark results
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bench-package-results
           path: |
@@ -501,7 +501,7 @@ jobs:
       # this repo merging many PRs per day, that produced far more trend
       # PRs than any maintainer could keep up with (24 open, none ever
       # merged, is what prompted this). Trend recording now runs on its own
-      # weekly schedule instead — see .github/workflows/bench-trend.yml —
+      # weekly schedule instead — see .github/workflows/dashboard-refresh.yml —
       # fully decoupled from how often main actually gets pushed to.
 
   bundle-size:
@@ -516,13 +516,13 @@ jobs:
     if: github.repository == 'dfadler/zombie-mermaid'
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -540,6 +540,38 @@ jobs:
       - name: Check bundle size
         run: pnpm run check:bundle-size
 
+  packed-smoke:
+    name: Packed tarball smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # only checks out code, builds, packs and installs into temp dirs
+    # Same fork-of-this-fork guard as the `test` job above.
+    if: github.repository == 'dfadler/zombie-mermaid'
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build
+
+      # Installs the packed tarballs into clean projects and checks imports,
+      # types, CLI, MCP, rendering, elkjs and a Vite bundle (#1566).
+      - name: Smoke-test packed tarballs
+        run: pnpm run smoke:packed
+
   semgrep:
     name: Semgrep SAST scan
     runs-on: ubuntu-latest
@@ -554,10 +586,14 @@ jobs:
     container:
       # Official Semgrep image; runs entirely against Semgrep's free, public
       # rulesets (no SEMGREP_APP_TOKEN / Semgrep Cloud account required or used).
-      image: semgrep/semgrep
+      # Pinned to 1.179.0 by digest (the `latest` tag as of 2026-10-10) so an
+      # engine release can't fail old PRs; bump deliberately. Rules from
+      # `--config auto` are still served by the registry and can't be pinned
+      # without vendoring them (see #1599).
+      image: semgrep/semgrep:1.179.0@sha256:93963d9295a366f59e4850127b1550400ee7b388f04fe144e4a1f6325d96e01b
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `--config auto` pulls Semgrep's community rulesets keyed off the
       # languages detected in this repo (no account/token needed — verified
@@ -593,15 +629,15 @@ jobs:
       !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -609,13 +645,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Also exempt: badges/ and bench-history.jsonl, the bot-written data
+      # files (publish.yml, dashboard-refresh.yml) that used to carry an empty
+      # changeset each (#1585).
       # demo/ is never published (it's excluded from package.json's "files"
       # field), so a PR that only touches demo/ has no effect on the shipped
       # package and shouldn't be forced into a version bump + changelog
       # entry. Scoped to "every changed file is under demo/" rather than a
       # flat path-ignore so a PR that touches demo/ *and* src/ still requires
       # a changeset for the src/ change.
-      - name: Check whether this PR only touches demo/
+      - name: Check whether this PR only touches unpublished/data paths
         id: diff_scope
         run: |
           set -euo pipefail
@@ -623,7 +662,7 @@ jobs:
           # awk, not `grep -c`, because grep -c exits 1 (a hard failure
           # under set -e) when the count is zero — exactly the demo-only
           # case this check needs to detect. awk always exits 0.
-          non_demo_count="$(printf '%s\n' "$changed_files" | awk 'NF && $0 !~ /^demo\// { count++ } END { print count + 0 }')"
+          non_demo_count="$(printf '%s\n' "$changed_files" | awk 'NF && $0 !~ /^(demo\/|badges\/|bench-history\.jsonl$)/ { count++ } END { print count + 0 }')"
           if [ -z "$changed_files" ] || [ "$non_demo_count" -gt 0 ]; then
             echo "demo_only=false" >> "$GITHUB_OUTPUT"
           else
@@ -633,3 +672,33 @@ jobs:
       - name: Check for changeset
         if: steps.diff_scope.outputs.demo_only != 'true'
         run: pnpm changeset status --since origin/main
+
+  pr-hygiene:
+    name: PR hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # only checks out code and greps commit subjects and the PR body
+    if: >-
+      github.repository == 'dfadler/zombie-mermaid' && github.event_name == 'pull_request' &&
+      !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      # The PR body goes through env, never interpolated into the script.
+      - name: No TEMP commits; follow-ups must link an issue
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          if git log --format=%s origin/main..HEAD | grep -E '^TEMP:'; then
+            echo "::error::Commit subject starts with 'TEMP:'; drop or reword it before merging."
+            exit 1
+          fi
+          # A line mentioning a follow-up / "TODO later" needs a #N link on the same line.
+          if printf '%s\n' "$PR_BODY" | grep -iE 'follow-?[ -]?ups?|todo later' | grep -vE '#[0-9]+'; then
+            echo "::error::PR body mentions a follow-up without a #N issue link; file the issue and link it."
+            exit 1
+          fi

@@ -482,6 +482,9 @@ describe('index.ts → index.html', () => {
       ['Class', 'diagrams/class.html'],
       ['ER', 'diagrams/er.html'],
       ['XY Chart', 'diagrams/xy-chart.html'],
+      ['C4', 'diagrams/c4.html'],
+      ['Architecture', 'diagrams/architecture-beta.html'],
+      ['Pie', 'diagrams/pie.html'],
     ]
     for (const [label, href] of gallery) {
       expect(body.getByRole('link', { name: label })).toHaveAttribute(

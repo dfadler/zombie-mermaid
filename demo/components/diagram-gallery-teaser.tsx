@@ -15,7 +15,7 @@ import {
   colorVar,
 } from './tokens.tsx'
 
-/** Six of the nine diagram types the gallery teaser tiles (the rest are behind the CTA), and their `/diagrams/` routes. */
+/** The nine diagram types the gallery teaser links to, and their `/diagrams/` routes. */
 const GALLERY_TYPES = [
   { slug: 'flowchart', label: 'Flowchart' },
   { slug: 'state', label: 'State' },
@@ -23,6 +23,9 @@ const GALLERY_TYPES = [
   { slug: 'class', label: 'Class' },
   { slug: 'er', label: 'ER' },
   { slug: 'xy-chart', label: 'XY Chart' },
+  { slug: 'c4', label: 'C4' },
+  { slug: 'architecture-beta', label: 'Architecture' },
+  { slug: 'pie', label: 'Pie' },
 ] as const
 
 export function DiagramGalleryTeaser() {
