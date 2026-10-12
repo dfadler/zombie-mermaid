@@ -341,3 +341,53 @@ describe('pie SVG: init legendPosition', () => {
     ).toBe(renderMermaidSVG('pie'))
   })
 })
+
+describe('pie SVG: init highlightSlice', () => {
+  const src = (v: string) =>
+    `%%{init: {"pie": {"highlightSlice": ${v}}}}%%\npie\n  "Dogs" : 386\n  "Cats" : 85\n  "Rats" : 15`
+  const plain = renderMermaidSVG(
+    'pie\n  "Dogs" : 386\n  "Cats" : 85\n  "Rats" : 15',
+  )
+  const paths = (svg: string) =>
+    [
+      ...svg.matchAll(
+        /<path d="([^"]+)" class="([^"]+)" data-label="([^"]+)"/g,
+      ),
+    ].map((m) => ({ d: m[1]!, cls: m[2]!, label: m[3]! }))
+
+  it('grows only the named slice by 5% about the pie centre and makes it opaque', () => {
+    const svg = renderMermaidSVG(src('"Cats"'))
+    const [dogs, cats, rats] = paths(svg)
+    expect(cats!.cls).toContain('pie-highlight')
+    expect(dogs!.cls).not.toContain('pie-highlight')
+    expect(rats!.cls).not.toContain('pie-highlight')
+    // 185 * 1.05 = 194.25; the others keep radius 185
+    expect(cats!.d).toContain('A194.25,194.25')
+    expect(dogs!.d).toContain('A185,185')
+    expect(svg).toContain('.pie-slice.pie-highlight { opacity: 1; }')
+  })
+
+  it('leaves a chart without a match byte-identical to the plain one', () => {
+    expect(renderMermaidSVG(src('"Fish"'))).toBe(plain)
+    expect(renderMermaidSVG(src('"cats"'))).toBe(plain) // labels match exactly
+    expect(renderMermaidSVG(src('""'))).toBe(plain)
+    expect(renderMermaidSVG(src('7'))).toBe(plain)
+  })
+
+  it('ignores "hover": a static image has no pointer', () => {
+    expect(renderMermaidSVG(src('"hover"'))).toBe(plain)
+  })
+
+  it('does not treat a slice labelled "hover" as highlighted', () => {
+    const s =
+      '%%{init: {"pie": {"highlightSlice": "hover"}}}%%\npie\n  "hover" : 1\n  "b" : 1'
+    expect(renderMermaidSVG(s)).toBe(
+      renderMermaidSVG('pie\n  "hover" : 1\n  "b" : 1'),
+    )
+  })
+
+  it('scales the donut ring with the slice', () => {
+    const s = `%%{init: {"pie": {"highlightSlice": "A", "donutHole": 0.5}}}%%\npie\n  "A" : 1\n  "B" : 1`
+    expect(renderMermaidSVG(s)).toContain('A97.13,97.13,') // 92.5 * 1.05
+  })
+})

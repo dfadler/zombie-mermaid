@@ -491,7 +491,7 @@ describe('pie ASCII – colour modes', () => {
   })
 })
 
-describe('pie ASCII – init legendPosition', () => {
+describe('pie ASCII – init legendPosition / highlightSlice', () => {
   it.each(['left', 'top', 'bottom', 'center'])(
     'ignores legendPosition %s (the legend is always beside the bars)',
     (pos) => {
@@ -500,4 +500,10 @@ describe('pie ASCII – init legendPosition', () => {
       ).toBe(render(PETS))
     },
   )
+
+  it('ignores highlightSlice (no hover, no emphasis in text)', () => {
+    expect(
+      render(`%%{init: {"pie": {"highlightSlice": "Cats"}}}%%\n${PETS}`),
+    ).toBe(render(PETS))
+  })
 })

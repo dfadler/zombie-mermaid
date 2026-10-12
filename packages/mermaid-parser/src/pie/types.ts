@@ -41,6 +41,11 @@ export interface PieChart {
    */
   legendPosition?: PieLegendPosition
   /**
+   * `%%{init: {"pie": {"highlightSlice": "Cats"}}}%%`: the label of the slice
+   * to emphasise. `hover` (Mermaid's hover-only mode) has no static meaning.
+   */
+  highlightSlice?: string
+  /**
    * Slices in source order. A label that repeats keeps its first value and
    * position; later duplicates are ignored, as in Mermaid. May be empty:
    * Mermaid accepts a bare `pie` with no slices.
@@ -81,6 +86,8 @@ export interface PositionedPieSlice {
   /** Anchor of the percentage label (text-anchor middle, alphabetic baseline). */
   labelX: number
   labelY: number
+  /** Set on the slice `pie.highlightSlice` names: drawn 5% larger, fully opaque. */
+  highlighted?: boolean
 }
 
 /** One legend row: a colour swatch and its label. Every slice gets one. */

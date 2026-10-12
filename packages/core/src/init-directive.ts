@@ -50,6 +50,8 @@ export interface InitConfig {
   pieDonutHole?: number
   /** `pie.legendPosition`; a value Mermaid does not know is stored as `right`. */
   pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center'
+  /** `pie.highlightSlice`: label of the slice to emphasise. */
+  pieHighlightSlice?: string
   /** Recognized but not acted on — see `IGNORED_KEYS`. */
   ignored: string[]
 }
@@ -222,7 +224,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
             config.pieLegendPosition = PIE_LEGEND_POSITIONS.has(pv)
               ? (pv as InitConfig['pieLegendPosition'])
               : 'right'
-          }
+          } else if (pl === 'highlightslice') config.pieHighlightSlice = pv
           continue
         }
         if (typeof pv !== 'number' || !Number.isFinite(pv)) continue
@@ -260,6 +262,9 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.pieLegendPosition !== undefined) {
       merged.pieLegendPosition = config.pieLegendPosition
+    }
+    if (config.pieHighlightSlice !== undefined) {
+      merged.pieHighlightSlice = config.pieHighlightSlice
     }
     merged.ignored.push(...config.ignored)
   }

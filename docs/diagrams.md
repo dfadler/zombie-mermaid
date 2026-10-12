@@ -852,7 +852,13 @@ Known differences from Mermaid:
   and `bottom` make the frame taller, and `center` draws the legend over the
   pie. As in Mermaid, the title stays centred on the frame, not on a shifted
   pie. The ASCII output always puts the legend beside the bars, so it ignores
-  it. `highlightSlice` is not supported yet.
+  it.
+- `%%{init: {"pie": {"highlightSlice": "Cats"}}}%%` draws the slice with that
+  exact label 5% larger and fully opaque, as Mermaid 12.1.0 does (it scales the
+  slice about the pie centre; it does not pull it out). `"hover"` only
+  applies under a pointer, so a static image ignores it, and so does the ASCII
+  output. See
+  [the decision](decisions/pie-highlight-slice-static-1726.md).
 - A legend taller than the 450px frame (more than about 20 slices), or a
   `top`/`bottom`/`center` legend wider than it, makes the SVG larger instead of
   being cut off, and an empty chart keeps its full

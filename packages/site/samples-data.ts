@@ -2234,4 +2234,15 @@ pie title Pets adopted by volunteers
   "Cats" : 85
   "Rats" : 15`,
   },
+  {
+    title: 'Pie: Highlight Slice',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"highlightSlice": "Cats"}}}%%` draws the named slice 5% larger and fully opaque, as Mermaid does; `hover` only applies under a pointer, so a static image ignores it. The ASCII bar chart has no emphasis, so it is unchanged.',
+    source: `%%{init: {"pie": {"highlightSlice": "Cats"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
 ]

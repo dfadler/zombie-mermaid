@@ -23,6 +23,8 @@
 //     and bottom stack the legend above or below (the pie shifts down for top)
 //     and make the frame taller; center draws it over the pie. The title stays
 //     centred on the frame in every case, as in Mermaid.
+//   - `pie.highlightSlice`: the named slice grows 5% about the pie centre and
+//     is drawn fully opaque (`hover` has no static meaning and is ignored).
 //
 // Two places differ from Mermaid on purpose, both where Mermaid's output is
 // broken rather than a style choice:
@@ -66,6 +68,8 @@ export const PIE = {
   fontWeight: 400,
   /** Mermaid's `pie1`..`pie12` scale wraps after this many colours. */
   paletteSize: 12,
+  /** `.highlighted { scale: 1.05 }` in Mermaid's pieStyles.ts. */
+  highlightScale: 1.05,
   /** Slices below this percentage of the total are not drawn. */
   minPercent: 1,
 } as const
@@ -232,16 +236,25 @@ export function layoutPieChart(
     const end = angle + (slice.value / drawnTotal) * TAU
     angle = end
     const label = polar(cx, cy, labelRadius, (start + end) / 2)
+    // Mermaid's `.highlighted` is `scale: 1.05` about the pie centre plus full
+    // opacity; `hover` only scales under a pointer, so it never applies here.
+    const highlighted =
+      chart.highlightSlice !== undefined &&
+      chart.highlightSlice !== 'hover' &&
+      chart.highlightSlice !== '' &&
+      chart.highlightSlice === slice.label
+    const grow = highlighted ? PIE.highlightScale : 1
     slices.push({
       label: slice.label,
       value: slice.value,
       colorIndex,
       startAngle: start,
       endAngle: end,
-      path: slicePath(cx, cy, radius, start, end, innerRadius),
+      path: slicePath(cx, cy, radius * grow, start, end, innerRadius * grow),
       percentText: `${((slice.value / total) * 100).toFixed(0)}%`,
       labelX: label.x,
       labelY: label.y,
+      ...(highlighted ? { highlighted } : {}),
     })
   }
 
