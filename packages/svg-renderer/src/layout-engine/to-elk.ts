@@ -194,7 +194,7 @@ function edgeLabelStyle(opts: { fontSizes: FontSizes }): ElkEdgeLabelStyle {
 // Node sizing
 // ============================================================================
 
-function estimateNodeSize(
+export function estimateNodeSize(
   id: string,
   label: string,
   shape: string,

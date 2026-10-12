@@ -163,7 +163,7 @@ async function main(): Promise<number> {
         )
         const a = agreement(
           official,
-          measureOurs(sample.source, args.type),
+          measureOurs(sample.source, args.type, args.layout),
           args.tolerance,
         )
         results[sample.title] = { ...a, subgraphs: hasSubgraphs }

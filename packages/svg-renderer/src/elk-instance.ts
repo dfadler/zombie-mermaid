@@ -75,7 +75,7 @@ export class ElkNotRegisteredError extends Error {
         'diagram needs the optional peer dependency "elkjs". Install it ' +
         '(npm i elkjs) and call registerElk(ELK) once at startup with ' +
         "`import ELK from 'elkjs/lib/elk.bundled.js'`. Sequence, pie, xychart, " +
-        'C4 and ASCII output do not need it.',
+        "C4 and ASCII output do not need it. A flowchart can also pass `layout: 'simple'` to skip elkjs.",
     )
     this.name = 'ElkNotRegisteredError'
   }
