@@ -2,49 +2,133 @@
 
 # Layout-fidelity scorecard
 
-How closely our flowchart layouts match official mermaid.js: the share of node
-pairs placed in the same above/below/beside relation (`vertical`,
-`horizontal`) and of node/subgraph pairs that agree on containment. Only
-relative placement is compared. Flowcharts only so far. These are descriptive
+How closely our flowchart, state, class and ER layouts match official
+mermaid.js: the share of node pairs placed in the same above/below/beside
+relation (`vertical`, `horizontal`) and of node/subgraph pairs that agree on
+containment. Only relative placement is compared. These are descriptive
 figures, not pass/fail thresholds. Method: `scripts/layout-oracle.ts`.
 
-Latest run (2026-10-10, b05ce34, 27 samples, tolerance 20px):
-vertical **96%**, horizontal **98%**, containment **100%** (means over samples).
+Reference: mermaid 12.1.0. Since mermaid 12.0.0 its default layout engine for
+these diagram types is ELK (it was dagre before). Generated 2026-10-12 at
+86a7d2f with `pnpm run layout:scorecard`, tolerance 20px.
+
+## Latest run (means over samples)
+
+| Type      | Samples | Vertical | Horizontal | Containment |
+| --------- | ------- | -------- | ---------- | ----------- |
+| Flowchart | 37      | 98%      | 95%        | 100%        |
+| State     | 7       | 100%     | 98%        | 100%        |
+| Class     | 17      | 100%     | 88%        | 100%        |
+| ER        | 15      | 100%     | 100%       | -           |
 
 ## Trend (last 20 recorded runs)
 
-| Date       | Commit  | Samples | Vertical | Horizontal | Containment |
-| ---------- | ------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-10 | b05ce34 | 27      | 96%      | 98%        | 100%        |
+Runs recorded before 12.1.0 were measured against mermaid 11.17.2 (dagre) and
+cover flowcharts only. The reference changed engine, so do not read a trend
+across that change.
 
-## Per sample (lowest first)
+| Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
+| ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
+| 2026-10-10 | b05ce34 | 11.17.2 | Flowchart | 27      | 96%      | 98%        | 100%        |
+| 2026-10-12 | 86a7d2f | 12.1.0  | Flowchart | 37      | 98%      | 95%        | 100%        |
+| 2026-10-12 | 86a7d2f | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-12 | 86a7d2f | 12.1.0  | Class     | 17      | 100%     | 88%        | 100%        |
+| 2026-10-12 | 86a7d2f | 12.1.0  | ER        | 15      | 100%     | 100%       | -           |
 
-| Sample                            | Vertical | Horizontal | Containment | Nodes |
-| --------------------------------- | -------- | ---------- | ----------- | ----- |
-| Labeled Fan-In (LR)               | 17%      | 100%       | -           | 4     |
-| CI/CD Pipeline                    | 95%      | 76%        | 100%        | 7     |
-| Git Branching Workflow            | 95%      | 86%        | -           | 7     |
-| Decision Tree                     | 90%      | 95%        | -           | 7     |
-| System Architecture               | 96%      | 93%        | 100%        | 10    |
-| Simple Flow                       | 100%     | 100%       | -           | 3     |
-| Original Node Shapes              | 100%     | 100%       | -           | 5     |
-| Batch 1 Shapes                    | 100%     | 100%       | -           | 3     |
-| Batch 2 Shapes                    | 100%     | 100%       | -           | 4     |
-| All 12 Flowchart Shapes           | 100%     | 100%       | -           | 12    |
-| All Edge Styles                   | 100%     | 100%       | -           | 4     |
-| No-Arrow Edges                    | 100%     | 100%       | -           | 4     |
-| Text-Embedded Labels              | 100%     | 100%       | -           | 5     |
-| Bidirectional Arrows              | 100%     | 100%       | -           | 4     |
-| Parallel Links (&)                | 100%     | 100%       | -           | 5     |
-| Chained Edges                     | 100%     | 100%       | -           | 5     |
-| linkStyle: Color-Coded Edges      | 100%     | 100%       | -           | 5     |
-| linkStyle: Default + Override     | 100%     | 100%       | -           | 5     |
-| Direction: Left-Right (LR)        | 100%     | 100%       | -           | 3     |
-| Direction: Bottom-Top (BT)        | 100%     | 100%       | -           | 3     |
-| Subgraphs                         | 100%     | 100%       | 100%        | 4     |
-| Nested Subgraphs                  | 100%     | 100%       | 100%        | 5     |
-| Subgraph Direction Override       | 100%     | 100%       | 100%        | 6     |
-| ::: Class Shorthand               | 100%     | 100%       | -           | 3     |
-| Inline Style Overrides            | 100%     | 100%       | -           | 3     |
-| Interactivity: Links and Tooltips | 100%     | 100%       | -           | 3     |
-| Interactivity: Animated Edge      | 100%     | 100%       | -           | 3     |
+## Per sample
+
+### Flowchart (lowest first)
+
+| Sample                                               | Vertical | Horizontal | Containment | Nodes |
+| ---------------------------------------------------- | -------- | ---------- | ----------- | ----- |
+| Nested Subgraphs                                     | 100%     | 20%        | 100%        | 5     |
+| CI/CD Pipeline                                       | 86%      | 48%        | 100%        | 7     |
+| Flowchart: CJK Labels                                | 50%      | 100%       | 100%        | 4     |
+| Flowchart: Five Cluster Exit Siblings (TD)           | 100%     | 67%        | 100%        | 4     |
+| System Architecture                                  | 89%      | 93%        | 100%        | 10    |
+| Decision Tree                                        | 90%      | 100%       | -           | 7     |
+| Git Branching Workflow                               | 100%     | 90%        | -           | 7     |
+| Simple Flow                                          | 100%     | 100%       | -           | 3     |
+| Original Node Shapes                                 | 100%     | 100%       | -           | 5     |
+| Batch 1 Shapes                                       | 100%     | 100%       | -           | 3     |
+| Batch 2 Shapes                                       | 100%     | 100%       | -           | 4     |
+| All 12 Flowchart Shapes                              | 100%     | 100%       | -           | 12    |
+| All Edge Styles                                      | 100%     | 100%       | -           | 4     |
+| No-Arrow Edges                                       | 100%     | 100%       | -           | 4     |
+| Text-Embedded Labels                                 | 100%     | 100%       | -           | 5     |
+| Bidirectional Arrows                                 | 100%     | 100%       | -           | 4     |
+| Parallel Links (&)                                   | 100%     | 100%       | -           | 5     |
+| Chained Edges                                        | 100%     | 100%       | -           | 5     |
+| linkStyle: Color-Coded Edges                         | 100%     | 100%       | -           | 5     |
+| linkStyle: Default + Override                        | 100%     | 100%       | -           | 5     |
+| Direction: Left-Right (LR)                           | 100%     | 100%       | -           | 3     |
+| Direction: Bottom-Top (BT)                           | 100%     | 100%       | -           | 3     |
+| Subgraphs                                            | 100%     | 100%       | 100%        | 4     |
+| Subgraph Direction Override                          | 100%     | 100%       | 100%        | 6     |
+| ::: Class Shorthand                                  | 100%     | 100%       | -           | 3     |
+| Inline Style Overrides                               | 100%     | 100%       | -           | 3     |
+| Interactivity: Links and Tooltips                    | 100%     | 100%       | -           | 3     |
+| Interactivity: Animated Edge                         | 100%     | 100%       | -           | 3     |
+| Labeled Fan-In (LR)                                  | 100%     | 100%       | -           | 4     |
+| Direction: Right-Left (RL)                           | 100%     | 100%       | -           | 4     |
+| Nested Subgraphs (RL)                                | 100%     | 100%       | 100%        | 4     |
+| Nested Subgraphs (BT)                                | 100%     | 100%       | 100%        | 4     |
+| Edges Into and Out of Subgraphs                      | 100%     | 100%       | 100%        | 8     |
+| Vertical Edge Labels                                 | 100%     | 100%       | -           | 5     |
+| Flowchart: Three Parallel Edges (TD)                 | 100%     | 100%       | -           | 2     |
+| Flowchart: Three Parallel Edges Plus Reciprocal (TD) | 100%     | 100%       | -           | 2     |
+| Flowchart: Four Parallel Edges (TD)                  | 100%     | 100%       | -           | 2     |
+
+### State (lowest first)
+
+| Sample                       | Vertical | Horizontal | Containment | Nodes |
+| ---------------------------- | -------- | ---------- | ----------- | ----- |
+| State: Notes                 | 100%     | 83%        | -           | 4     |
+| Basic State Diagram          | 100%     | 100%       | -           | 5     |
+| State: Composite States      | 100%     | 100%       | 100%        | 8     |
+| State: Connection Lifecycle  | 100%     | 100%       | -           | 7     |
+| State: CJK State Names       | 100%     | 100%       | -           | 6     |
+| State: Choice, Fork and Join | 100%     | 100%       | -           | 7     |
+| State: Concurrent Regions    | 100%     | 100%       | 100%        | 4     |
+
+### Class (lowest first)
+
+| Sample                           | Vertical | Horizontal | Containment | Nodes |
+| -------------------------------- | -------- | ---------- | ----------- | ----- |
+| Class: Inheritance (<\|--)       | 100%     | 67%        | -           | 3     |
+| Class: Relationship Labels       | 100%     | 67%        | -           | 3     |
+| Class: MVC Architecture          | 100%     | 67%        | -           | 3     |
+| Class: Namespaces                | 100%     | 67%        | 100%        | 3     |
+| Class: Full Hierarchy            | 100%     | 93%        | -           | 6     |
+| Class: Composition (*--)         | 100%     | 100%       | -           | 2     |
+| Class: Aggregation (o--)         | 100%     | 100%       | -           | 2     |
+| Class: Association (-->)         | 100%     | 100%       | -           | 2     |
+| Class: Dependency (..>)          | 100%     | 100%       | -           | 2     |
+| Class: Realization (..\|>)       | 100%     | 100%       | -           | 2     |
+| Class: All 6 Relationship Types  | 100%     | 100%       | -           | 12    |
+| Class: Design Pattern — Observer | 100%     | 100%       | -           | 5     |
+| Class: Basic Class               | -        | -          | -           | 1     |
+| Class: Visibility Markers        | -        | -          | -           | 1     |
+| Class: Interface Annotation      | -        | -          | -           | 1     |
+| Class: Abstract Annotation       | -        | -          | -           | 1     |
+| Class: Enum Annotation           | -        | -          | -           | 1     |
+
+### ER (lowest first)
+
+| Sample                                        | Vertical | Horizontal | Containment | Nodes |
+| --------------------------------------------- | -------- | ---------- | ----------- | ----- |
+| ER: Basic Relationship                        | 100%     | 100%       | -           | 2     |
+| ER: Exactly One to Exactly One (\|\|--\|\|)   | 100%     | 100%       | -           | 2     |
+| ER: Exactly One to Zero-or-Many (\|\|--o{)    | 100%     | 100%       | -           | 2     |
+| ER: Zero-or-One to One-or-Many (\|o--\|{)     | 100%     | 100%       | -           | 2     |
+| ER: One-or-More to Zero-or-Many (}\|--o{)     | 100%     | 100%       | -           | 2     |
+| ER: All Cardinality Types                     | 100%     | 100%       | -           | 8     |
+| ER: Identifying (Solid) Relationship          | 100%     | 100%       | -           | 2     |
+| ER: Non-Identifying (Dashed) Relationship     | 100%     | 100%       | -           | 3     |
+| ER: Mixed Identifying & Non-Identifying       | 100%     | 100%       | -           | 5     |
+| ER: E-Commerce Schema                         | 100%     | 100%       | -           | 4     |
+| ER: Blog Platform Schema                      | 100%     | 100%       | -           | 4     |
+| ER: School Management Schema                  | 100%     | 100%       | -           | 4     |
+| ER: Word-Form Cardinalities and .- / -. Lines | 100%     | 100%       | -           | 8     |
+| ER: Entity with Attributes                    | -        | -          | -           | 1     |
+| ER: Attribute Keys (PK, FK, UK)               | -        | -          | -           | 1     |

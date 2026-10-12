@@ -127,6 +127,14 @@ and scorecard on top of the oracle so these numbers can be tracked over time
 rather than rerun by hand. It is not merged as of this writing, so the table
 above is the raw script output.
 
+**Update, 2026-10-12.** All figures in this post were measured against mermaid
+11.17.2 with 27 flowchart samples. The reference has since moved to 12.1.0,
+which lays flowcharts out with ELK instead of dagre, and the oracle now scores
+flowchart, state, class and ER samples. The scorecard at
+`docs/layout-fidelity-scorecard.md` has the current numbers (flowchart: 37
+samples, vertical 98%, horizontal 95%); the sample that scored 17 percent here
+now scores 100 percent on 12.1.0.
+
 ## Takeaway
 
 The oracle did two jobs. It showed that the subgraph work moved CI/CD from

@@ -237,7 +237,13 @@ describe('summarize / scorecardMarkdown (#1572)', () => {
     nodes: 3,
     subgraphs: false,
   })
-  const meta = { date: '2026-10-10', commit: 'abcdef123', tolerance: 20 }
+  const meta = {
+    date: '2026-10-10',
+    commit: 'abcdef123',
+    tolerance: 20,
+    type: 'flowchart' as const,
+    mermaid: '12.1.0',
+  }
 
   it('means ignore null figures', () => {
     const e = summarize({ a: r(1, null, null), b: r(0.5, null, null) }, meta)
@@ -246,8 +252,30 @@ describe('summarize / scorecardMarkdown (#1572)', () => {
 
   it('scorecard lists lowest sample first and escapes pipes', () => {
     const results = { 'hi|gh': r(1, 1, 1), low: r(0.2, 1, 1) }
-    const md = scorecardMarkdown(summarize(results, meta), results, [])
+    const entry = summarize(results, meta)
+    const md = scorecardMarkdown([{ entry, results }], [entry])
     expect(md.indexOf('| low |')).toBeLessThan(md.indexOf('hi\\|gh'))
+  })
+
+  it('scorecard names the reference version and lists every type (#1905)', () => {
+    const results = { a: r(1, 1, null) }
+    const er = summarize(results, { ...meta, type: 'er' })
+    const legacy = { ...summarize(results, meta) } as Partial<typeof er>
+    delete legacy.mermaid
+    delete legacy.type
+    const md = scorecardMarkdown(
+      [
+        { entry: summarize(results, meta), results },
+        { entry: er, results },
+      ],
+      [legacy as typeof er, er],
+    )
+    expect(md).toContain('Reference: mermaid 12.1.0')
+    expect(md).toContain('| Flowchart | 1 |')
+    expect(md).toContain('| ER | 1 |')
+    expect(md).toContain('### ER (lowest first)')
+    // A pre-#1905 history line has no version or type: it was 11.17.2 flowcharts.
+    expect(md).toContain('| 11.17.2 | Flowchart | 1 |')
   })
 })
 
