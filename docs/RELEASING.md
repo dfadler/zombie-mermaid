@@ -34,7 +34,10 @@ Not every change needs one — see [CONTRIBUTING.md](../CONTRIBUTING.md).
 What counts as a breaking (major) change, and how old majors are supported and
 deprecated, is defined in the
 [versioning and deprecation policy](decisions/versioning-and-deprecation-policy-1568.md).
-Read it before picking a bump type.
+Read it before picking a bump type. A `major` changeset's summary must start
+with `**BREAKING:**` and link its upgrade-guide section; a changeset whose
+rendered output changes says "Output change". `pnpm run check:changesets`
+lints the first rule. Majors are batched: see "Batching majors" below.
 
 ## What happens on merge to `main`
 
@@ -66,6 +69,41 @@ In short: **merging the Version PR is what triggers the actual npm
 publish.** There's no separate "cut a release" step or GitHub Release to
 create by hand (if one is ever missing, backfill it per the policy's section 5) — releases are tracked via `CHANGELOG.md` and git tags,
 generated automatically as part of this flow.
+
+## Batching majors: the `breaking` label and the 30-day queue
+
+Policy ([section 3](decisions/versioning-and-deprecation-policy-1568.md)): at
+most one major every **30 days**, bundling whatever is queued. This is a manual
+process; nothing automates it. Changesets has no native way to hold a changeset
+back, and a merged major changeset puts a major into the Version Packages PR,
+so the hold is: **a breaking PR is not merged until the gate opens.**
+
+**Holding a PR.** Any PR whose changeset has a `major` bump (or that should
+have one) gets the `breaking` label. Review it and keep it green and
+up to date with `main` (merge `main` in; do not rebase), but leave it open.
+Non-breaking PRs keep merging and releasing as minor or patch meanwhile.
+
+**Checking the queue before cutting a major** (maintainer):
+
+```bash
+# date of the last major (UTC)
+git for-each-ref --sort=-creatordate --format='%(creatordate:format:%Y-%m-%d) %(refname:short)' \
+  'refs/tags/zombie-mermaid@*.0.0' | head -1
+# queued breaking PRs
+gh pr list --label breaking --state open
+```
+
+The gate is open when `today - last major publish date >= 30` calendar days
+(UTC; a major published 1 Sep allows the next on 1 Oct). Example: 5.0.0 was
+published 2026-10-10, so the next major may ship on 2026-11-09 or later. When
+open, merge every queued `breaking` PR in one go (each keeps its own
+`**BREAKING:**` changeset), update the upgrade guide, then merge the Version
+Packages PR. If the queue is empty there is nothing to cut; the gap only limits
+how soon the next major may ship.
+
+**Exempt** (may ship before the gate opens, still as a major): security fixes,
+and fixes for breakage caused by an upstream dependency. Say which exemption
+applies in the PR body and the changeset.
 
 ## One-time manual setup required (maintainer only)
 
