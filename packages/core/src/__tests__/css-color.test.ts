@@ -113,6 +113,8 @@ const INVALID = [
   '',
   ')',
   'rgb(1 2 3))',
+  'var(--x))',
+  'rgb(var(--r)))',
 ]
 
 describe('isValidCssColor', () => {
