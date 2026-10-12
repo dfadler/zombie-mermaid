@@ -18,6 +18,9 @@ export interface PieSlice {
   value: number
 }
 
+/** Where the legend sits relative to the pie (`pie.legendPosition`). */
+export type PieLegendPosition = 'left' | 'right' | 'top' | 'bottom' | 'center'
+
 /** A parsed Mermaid pie chart. */
 export interface PieChart {
   /** `title …`, either on the `pie` header line or on its own line. */
@@ -32,6 +35,11 @@ export interface PieChart {
   textPosition?: number
   /** `%%{init: {"pie": {"donutHole": n}}}%%`; Mermaid draws a hole only for 0 < n <= 0.9. */
   donutHole?: number
+  /**
+   * `%%{init: {"pie": {"legendPosition": "left"}}}%%`; absent means Mermaid's
+   * `right`. Any value Mermaid does not know is read as `right`, as it does.
+   */
+  legendPosition?: PieLegendPosition
   /**
    * Slices in source order. A label that repeats keeps its first value and
    * position; later duplicates are ignored, as in Mermaid. May be empty:
