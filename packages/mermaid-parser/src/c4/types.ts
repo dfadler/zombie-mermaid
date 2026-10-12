@@ -118,6 +118,11 @@ export interface PositionedC4Relationship extends C4Relationship {
   curve?: Point
   /** Centre of the label block, when the relationship has label text. */
   labelPosition?: Point
+  /**
+   * The label's text lines when the layout wrapped it to fit a narrow gap;
+   * unset means `c4RelLabelLines(rel)`.
+   */
+  labelLines?: string[]
   /** Centre x of the `[technology]` line, which Mermaid lays out on its own. */
   technologyX?: number
 }

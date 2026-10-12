@@ -21,9 +21,11 @@ import {
   c4PersonGeometry,
   c4QueueCap,
   c4ShapeSize,
+  c4RelLabelBoxes,
   c4TextWidth,
   wrapToWidth,
 } from './metrics.ts'
+import type { C4LabelBox } from './metrics.ts'
 
 // ============================================================================
 // C4 layout, following Mermaid's own C4 renderer.
@@ -513,88 +515,255 @@ function routeRelationship(
   return out
 }
 
-/** A text line's box: centre x, centre y, width and height. */
-interface TextBox {
-  cx: number
-  cy: number
-  w: number
-  h: number
+/** A rectangle, as `x0..x1` by `y0..y1`. */
+interface Rect {
+  x0: number
+  x1: number
+  y0: number
+  y1: number
 }
 
-/** Clear space kept between a label and a shape or another label. */
+/** Something a label should keep off, and how bad it is to land on it. */
+interface Obstacle extends Rect {
+  weight: number
+}
+
+/** Clear space kept between a label and anything it must avoid. */
 const LABEL_CLEARANCE = 2
 /** Extra space kept between a label and a shape, for the arrowhead. */
 const SHAPE_CLEARANCE = 6
 /** How far along the chord each trial position is from the last. */
 const LABEL_STEP = 2
+/** Offsets from the chord a label may try, nearest first (the label is 12px tall). */
+const SIDE_STEPS = [0, 14, -14, 28, -28]
+/** How wide each wrapped trial is, as a fraction of the label's own width. */
+const WRAP_FRACTIONS = [0.75, 0.55, 0.4]
+// What landing on each kind of obstacle costs: a shape is the worst (the text
+// becomes unreadable), a frame line, heading or other label next, a line last.
+const SHAPE_WEIGHT = 1000
+const FRAME_WEIGHT = 100
+const LINE_WEIGHT = 10
+/** Space a label keeps from a boundary's dashed frame, and from its heading text. */
+const FRAME_PAD = 2
+const HEADING_PAD = 5
+/** Spacing, in px along a line, of the points a relationship line is sampled at. */
+const LINE_SAMPLE = 4
 
-/** The boxes a relationship's label lines occupy, as the renderer draws them. */
-function labelBoxes(rel: PositionedC4Relationship, dx: number): TextBox[] {
-  const pos = rel.labelPosition
-  if (!pos) return []
-  return c4RelLabelLines(rel).map((line, i, all) => {
-    const isTech = rel.technology !== undefined && i === all.length - 1
+const rectOf = (b: C4LabelBox): Rect => ({
+  x0: b.cx - b.w / 2,
+  x1: b.cx + b.w / 2,
+  y0: b.cy - b.h / 2,
+  y1: b.cy + b.h / 2,
+})
+
+const rectsOverlap = (a: Rect, b: Rect): boolean =>
+  a.x0 < b.x1 + LABEL_CLEARANCE &&
+  a.x1 > b.x0 - LABEL_CLEARANCE &&
+  a.y0 < b.y1 + LABEL_CLEARANCE &&
+  a.y1 > b.y0 - LABEL_CLEARANCE
+
+/** Points along a relationship's line (straight or quadratic) every few px. */
+function sampleLine(rel: PositionedC4Relationship): Point[] {
+  const start = rel.points[0]
+  const end = rel.points[rel.points.length - 1]
+  if (!start || !end) return []
+  const c = rel.curve
+  const len = Math.hypot(end.x - start.x, end.y - start.y)
+  const n = Math.max(1, Math.ceil(len / LINE_SAMPLE))
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const t = i / n
+    if (!c) {
+      return {
+        x: start.x + (end.x - start.x) * t,
+        y: start.y + (end.y - start.y) * t,
+      }
+    }
+    const u = 1 - t
     return {
-      cx:
-        (isTech && rel.technologyX !== undefined ? rel.technologyX : pos.x) +
-        dx,
-      cy: pos.y + (i === 0 ? 0 : C4.messageSize + 5),
-      w: c4TextWidth(line, C4.messageSize, 400),
-      h: C4.messageSize,
+      x: u * u * start.x + 2 * u * t * c.x + t * t * end.x,
+      y: u * u * start.y + 2 * u * t * c.y + t * t * end.y,
     }
   })
 }
 
-const boxesOverlap = (a: TextBox, b: TextBox): boolean =>
-  Math.abs(a.cx - b.cx) < (a.w + b.w) / 2 + LABEL_CLEARANCE &&
-  Math.abs(a.cy - b.cy) < (a.h + b.h) / 2 + LABEL_CLEARANCE
+/** The frame lines and heading texts of the boundaries, which a label keeps off. */
+function boundaryObstacles(boundaries: LaidOutBoundary[]): Obstacle[] {
+  return boundaries.flatMap((b) => {
+    // Padded, so a label sits clear of a dashed line or a heading, not on it.
+    const frame = (
+      x0: number,
+      x1: number,
+      y0: number,
+      y1: number,
+      pad: number,
+    ) => ({
+      x0: x0 - pad,
+      x1: x1 + pad,
+      y0: y0 - pad,
+      y1: y1 + pad,
+      weight: FRAME_WEIGHT,
+    })
+    const text = (label: string, y: number, size: number, weight: number) => {
+      const w = c4TextWidth(label, size, weight)
+      const cx = b.x + b.width / 2
+      return frame(
+        cx - w / 2,
+        cx + w / 2,
+        b.y + y - size / 2,
+        b.y + y + size / 2,
+        HEADING_PAD,
+      )
+    }
+    const typeLine = c4BoundaryTypeLine({
+      ...b,
+      elementAliases: [],
+      children: [],
+    })
+    return [
+      frame(b.x, b.x + b.width, b.y, b.y, FRAME_PAD), // top
+      frame(b.x, b.x + b.width, b.y + b.height, b.y + b.height, FRAME_PAD), // bottom
+      frame(b.x, b.x, b.y, b.y + b.height, FRAME_PAD), // left
+      frame(b.x + b.width, b.x + b.width, b.y, b.y + b.height, FRAME_PAD), // right
+      text(b.label, b.labelY, C4.boundarySize + 2, 700),
+      ...(typeLine && b.typeY !== undefined
+        ? [text(typeLine, b.typeY, C4.boundarySize, 400)]
+        : []),
+      ...(b.description && b.descrY !== undefined
+        ? [text(b.description, b.descrY, C4.boundarySize - 2, 400)]
+        : []),
+    ]
+  })
+}
+
+/** One way to set a label: its text lines, and where they are centred. */
+interface LabelVariant {
+  lines: string[]
+  position: Point
+  technologyX?: number
+}
 
 /**
  * Mermaid starts a label at the chord's midpoint, so a label can land on a
- * shape the line passes beside or through (#1290). Slide it along the chord,
- * nearest the midpoint first, to the first spot clear of every shape and of
- * the labels already placed; if there is none, leave it where Mermaid does.
+ * shape the line passes beside or through (#1290), and nothing stops it
+ * landing on a boundary's frame or heading, or on another relationship
+ * (#1908). Try the label in place, slid along the chord, set a little to
+ * either side of it, and wrapped narrower; keep the trial that touches the
+ * least (a shape counts most), breaking ties by the smallest move. The
+ * renderer draws the label on a background plate, as flowchart edge labels
+ * are, so a line that still runs under it does not strike the text through.
  */
 function clearLabel(
   rel: PositionedC4Relationship,
-  shapes: TextBox[],
-  placed: TextBox[],
+  obstacles: Obstacle[],
+  lines: Point[][],
+  placed: Obstacle[],
 ): void {
   const start = rel.points[0]
   const end = rel.points[rel.points.length - 1]
-  if (!rel.labelPosition || !start || !end) return
+  const origin = rel.labelPosition
+  if (!origin || !start || !end) return
   const dx = end.x - start.x
   const dy = end.y - start.y
   const len = Math.hypot(dx, dy)
-  if (len === 0) return
-  const ux = dx / len
-  const uy = dy / len
-  const clear = (t: number): TextBox[] | undefined => {
-    const boxes = labelBoxes(rel, t * ux).map((b) => ({
-      ...b,
-      cy: b.cy + t * uy,
-    }))
-    const hit = boxes.some((b) =>
-      [...shapes, ...placed].some((o) => boxesOverlap(b, o)),
-    )
-    return hit ? undefined : boxes
+  const own = c4RelLabelLines(rel)
+  const hasHead = rel.label !== '' || rel.index !== undefined
+  const headWidth = hasHead ? c4TextWidth(own[0] ?? '', C4.messageSize, 400) : 0
+  const midX = origin.x - headWidth / 2
+
+  const variants: { variant: LabelVariant; cost: number }[] = [
+    {
+      variant: {
+        lines: own,
+        position: origin,
+        ...(rel.technologyX === undefined
+          ? {}
+          : { technologyX: rel.technologyX }),
+      },
+      cost: 0,
+    },
+  ]
+  if (hasHead) {
+    const tail = rel.technology ? [`[${rel.technology}]`] : []
+    const seen = new Set([own.join('\n')])
+    WRAP_FRACTIONS.forEach((fraction, i) => {
+      const head = wrapToWidth(own[0]!, headWidth * fraction, C4.messageSize)
+      const key = [...head, ...tail].join('\n')
+      if (seen.has(key)) return
+      seen.add(key)
+      const widest = Math.max(
+        ...head.map((l) => c4TextWidth(l, C4.messageSize, 400)),
+      )
+      variants.push({
+        variant: {
+          lines: [...head, ...tail],
+          position: { x: midX + widest / 2, y: origin.y },
+        },
+        cost: 25 * (i + 1),
+      })
+    })
   }
-  for (let t = 0; t <= len / 2; t += LABEL_STEP) {
-    for (const s of t === 0 ? [1] : [1, -1]) {
-      const boxes = clear(s * t)
-      if (!boxes) continue
-      if (t !== 0) {
-        rel.labelPosition = {
-          x: rel.labelPosition.x + s * t * ux,
-          y: rel.labelPosition.y + s * t * uy,
+
+  const ux = len === 0 ? 0 : dx / len
+  const uy = len === 0 ? 0 : dy / len
+  const all = [...obstacles, ...placed]
+  let best:
+    { v: LabelVariant; at: Point; penalty: number; cost: number } | undefined
+  for (const { variant, cost: base } of variants) {
+    for (const side of SIDE_STEPS) {
+      for (let t = 0; t <= len / 2; t += LABEL_STEP) {
+        for (const s of t === 0 ? [1] : [1, -1]) {
+          const along = s * t
+          const at = {
+            x: along * ux - side * uy,
+            y: along * uy + side * ux,
+          }
+          const boxes = c4RelLabelBoxes({
+            ...rel,
+            labelLines: variant.lines,
+            labelPosition: {
+              x: variant.position.x + at.x,
+              y: variant.position.y + at.y,
+            },
+            ...(variant.technologyX === undefined
+              ? {}
+              : { technologyX: variant.technologyX + at.x }),
+          }).map(rectOf)
+          let penalty = 0
+          for (const b of boxes) {
+            for (const o of all) if (rectsOverlap(b, o)) penalty += o.weight
+            for (const pts of lines) {
+              if (
+                pts.some(
+                  (p) => p.x > b.x0 && p.x < b.x1 && p.y > b.y0 && p.y < b.y1,
+                )
+              ) {
+                penalty += LINE_WEIGHT
+              }
+            }
+          }
+          const cost = base + t + 2 * Math.abs(side)
+          if (
+            !best ||
+            penalty < best.penalty ||
+            (penalty === best.penalty && cost < best.cost)
+          ) {
+            best = { v: variant, at, penalty, cost }
+          }
         }
-        if (rel.technologyX !== undefined) rel.technologyX += s * t * ux
       }
-      placed.push(...boxes)
-      return
     }
   }
-  placed.push(...labelBoxes(rel, 0))
+  const { v, at } = best!
+  rel.labelPosition = { x: v.position.x + at.x, y: v.position.y + at.y }
+  if (v.lines !== own) rel.labelLines = v.lines
+  if (v.technologyX === undefined) delete rel.technologyX
+  else rel.technologyX = v.technologyX + at.x
+  placed.push(
+    ...c4RelLabelBoxes(rel).map((b) => ({
+      ...rectOf(b),
+      weight: FRAME_WEIGHT,
+    })),
+  )
 }
 
 /** Lay out a parsed C4 diagram the way Mermaid's C4 renderer does. */
@@ -647,15 +816,27 @@ export function layoutC4DiagramSync(
   const relationships = diagram.relationships.map((r, i) =>
     routeRelationship(r, i, boxes, shift),
   )
-  const shapeBoxes: TextBox[] = elements.map((e) => ({
-    cx: e.x + e.width / 2,
-    cy: e.y + e.height / 2,
-    // Padded so a label also keeps off the arrowhead that ends a line on it.
-    w: e.width + 2 * SHAPE_CLEARANCE,
-    h: e.height + 2 * SHAPE_CLEARANCE,
-  }))
-  const placedLabels: TextBox[] = []
-  for (const r of relationships) clearLabel(r, shapeBoxes, placedLabels)
+  const obstacles: Obstacle[] = [
+    ...elements.map((e) => ({
+      // Padded so a label also keeps off the arrowhead that ends a line on it.
+      x0: e.x - SHAPE_CLEARANCE,
+      x1: e.x + e.width + SHAPE_CLEARANCE,
+      y0: e.y - SHAPE_CLEARANCE,
+      y1: e.y + e.height + SHAPE_CLEARANCE,
+      weight: SHAPE_WEIGHT,
+    })),
+    ...boundaryObstacles(boundaries),
+  ]
+  const sampled = relationships.map(sampleLine)
+  const placedLabels: Obstacle[] = []
+  relationships.forEach((r, i) =>
+    clearLabel(
+      r,
+      obstacles,
+      sampled.filter((_, j) => j !== i),
+      placedLabels,
+    ),
+  )
 
   const width = layout.maxX + C4.diagramMarginX
   const height = layout.maxY + C4.diagramMarginY + titleExtra

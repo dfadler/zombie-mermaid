@@ -4,11 +4,7 @@ import type {
   PositionedC4Element,
   PositionedC4Relationship,
 } from '@zombie-mermaid/mermaid-parser'
-import {
-  c4BoundaryTypeLine,
-  c4RelLabelLines,
-  c4TypeLine,
-} from '@zombie-mermaid/mermaid-parser'
+import { c4BoundaryTypeLine, c4TypeLine } from '@zombie-mermaid/mermaid-parser'
 import type { DiagramColors, Point, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
@@ -24,9 +20,11 @@ import {
   C4,
   c4CylinderCap,
   c4DescriptionHeight,
+  c4PositionedLabelLines,
   c4Palette,
   c4PersonGeometry,
   c4QueueCap,
+  c4RelLabelBoxes,
   c4TextBlockHeight,
 } from './metrics.ts'
 import type { C4Palette } from './metrics.ts'
@@ -84,10 +82,9 @@ export function renderC4Svg(
 
   for (const b of diagram.boundaries) parts.push(renderBoundary(b))
   for (const el of diagram.elements) parts.push(renderElement(el))
-  for (const r of diagram.relationships) {
-    parts.push(renderRelationshipLine(r))
-    parts.push(renderRelationshipLabel(r))
-  }
+  // Every line first, so a label's plate sits over all of them.
+  for (const r of diagram.relationships) parts.push(renderRelationshipLine(r))
+  for (const r of diagram.relationships) parts.push(renderRelationshipLabel(r))
 
   parts.push('</svg>')
   return parts.filter(Boolean).join('\n')
@@ -249,18 +246,32 @@ function renderElement(el: PositionedC4Element): string {
   return parts.join('\n')
 }
 
-/** A rounded pill with a round head rising out of its top, as Mermaid draws a person. */
-function personShape(el: PositionedC4Element, pal: C4Palette): string[] {
-  const { x, width: w } = el
-  const { rx, headRadius, pillTop: rise } = c4PersonGeometry(w, el.height)
-  const y = el.y
+/**
+ * A rounded pill with a round head rising out of its top, as Mermaid draws a
+ * person, but as one outline: the head's arc runs from one end of the pill's
+ * top edge to the other, so the head does not cut a second outline across the
+ * body.
+ */
+export function personPath(el: PositionedC4Element): string {
+  const { x, y, width: w, height: h } = el
+  const { rx, headRadius: r, pillTop: rise } = c4PersonGeometry(w, h)
   const cx = x + w / 2
-  const pillTop = y + rise
-  const pillHeight = el.y + el.height - pillTop
-  const style = f`fill="${pal.fill}" stroke="${pal.stroke}" stroke-width="${C4.strokeWidth}"`
+  const top = y + rise
+  const bottom = y + h
+  // Where the head's circle crosses the pill's top edge.
+  const half = Math.sqrt(Math.max(0, r * r - (top - (y + r)) ** 2))
+  return (
+    f`M ${x + rx} ${top} H ${cx - half} A ${r} ${r} 0 1 1 ${cx + half} ${top} ` +
+    f`H ${x + w - rx} A ${rx} ${rx} 0 0 1 ${x + w} ${top + rx} V ${bottom - rx} ` +
+    f`A ${rx} ${rx} 0 0 1 ${x + w - rx} ${bottom} H ${x + rx} ` +
+    f`A ${rx} ${rx} 0 0 1 ${x} ${bottom - rx} V ${top + rx} ` +
+    f`A ${rx} ${rx} 0 0 1 ${x + rx} ${top} Z`
+  )
+}
+
+function personShape(el: PositionedC4Element, pal: C4Palette): string[] {
   return [
-    f`  <rect x="${x}" y="${pillTop}" width="${w}" height="${pillHeight}" rx="${rx}" ry="${rx}" ${style} />`,
-    f`  <circle cx="${cx}" cy="${y + headRadius}" r="${headRadius}" ${style} />`,
+    f`  <path class="c4-person-shape" d="${personPath(el)}" fill="${pal.fill}" stroke="${pal.stroke}" stroke-width="${C4.strokeWidth}" />`,
   ]
 }
 
@@ -310,6 +321,10 @@ function arrowHead(tip: Point, from: Point): string {
   )
 }
 
+/** Room the label's plate has around its text. */
+const PLATE_PAD_X = 3
+const PLATE_PAD_Y = 1
+
 function renderRelationshipLine(rel: PositionedC4Relationship): string {
   const [start, end] = [rel.points[0], rel.points[rel.points.length - 1]]
   if (!start || !end || start === end) return ''
@@ -337,23 +352,33 @@ function renderRelationshipLine(rel: PositionedC4Relationship): string {
   return [line, ...heads].filter(Boolean).join('\n')
 }
 
-/** Plain text at the middle of the chord: the label, then `[technology]` below. */
+/**
+ * The label, then `[technology]` below, on a background plate as flowchart
+ * edge labels are (a line that runs under it does not strike the text out).
+ */
 function renderRelationshipLabel(rel: PositionedC4Relationship): string {
-  const lines = c4RelLabelLines(rel)
-  if (lines.length === 0 || !rel.labelPosition) return ''
-  const { x, y } = rel.labelPosition
+  const lines = c4PositionedLabelLines(rel)
+  const boxes = c4RelLabelBoxes(rel)
+  if (lines.length === 0 || boxes.length === 0) return ''
   const parts = [
     f`<g class="c4-relationship-label" data-from="${escapeAttr(rel.from)}" data-to="${escapeAttr(rel.to)}">`,
   ]
+  const x0 = Math.min(...boxes.map((b) => b.cx - b.w / 2)) - PLATE_PAD_X
+  const x1 = Math.max(...boxes.map((b) => b.cx + b.w / 2)) + PLATE_PAD_X
+  const y0 = boxes[0]!.cy - boxes[0]!.h / 2 - PLATE_PAD_Y
+  const last = boxes[boxes.length - 1]!
+  const y1 = last.cy + last.h / 2 + PLATE_PAD_Y
+  parts.push(
+    f`  <rect class="c4-label-plate" x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" rx="2" ry="2" fill="var(--bg)" />`,
+  )
   lines.forEach((line, i) => {
     const isTech = rel.technology !== undefined && i === lines.length - 1
-    // Mermaid puts the technology one font size plus 5px below the label.
-    const cy = y + (i === 0 ? 0 : C4.messageSize + 5)
+    const box = boxes[i]!
     parts.push(
       centred(
         line,
-        isTech && rel.technologyX !== undefined ? rel.technologyX : x,
-        cy,
+        box.cx,
+        box.cy,
         C4.messageSize,
         isTech
           ? 'font-style="italic" fill="var(--_text)"'

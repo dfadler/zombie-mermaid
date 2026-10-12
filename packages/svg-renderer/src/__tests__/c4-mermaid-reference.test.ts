@@ -43,6 +43,10 @@ const WIDER: Record<string, number[]> = {
   'v02-person-targets': [3],
 }
 const LABEL = 10
+// Deliberate difference (#1290, #1908): Mermaid's label can sit on a shape, a
+// boundary's frame or another line. This package slides it along the chord and
+// may also set it up to 28px to either side, to clear them.
+const LABEL_OFF_CHORD = 30
 // Deliberate difference (#1209): Mermaid merges two relationships with the
 // same from/to (the later one wins, one line drawn). This package draws both,
 // so a relationship the author wrote is never dropped. Each entry is a case
@@ -99,9 +103,8 @@ describe('C4 SVG layout against Mermaid on varied diagrams', () => {
           ).toBeLessThan(limit)
         })
         if (r.label && rel.labelPosition) {
-          // Mermaid's label can sit on a shape; this package slides it along
-          // the chord to clear it (#1290). That is the one allowed difference:
-          // the label may move along the line but not off it.
+          // The one allowed difference (see LABEL_OFF_CHORD): the label may
+          // move along the line or a little to either side of it.
           const dx = e!.x - s!.x
           const dy = e!.y - s!.y
           const len = Math.hypot(dx, dy)
@@ -115,7 +118,7 @@ describe('C4 SVG layout against Mermaid on varied diagrams', () => {
             expect(
               Math.abs(across(rel.labelPosition) - across(ref0)),
               `relationship ${i + 1} label is off the chord`,
-            ).toBeLessThan(LABEL)
+            ).toBeLessThan(LABEL_OFF_CHORD)
           }
         }
       })

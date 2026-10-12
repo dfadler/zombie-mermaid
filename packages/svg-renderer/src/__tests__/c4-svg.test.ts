@@ -239,11 +239,13 @@ describe('C4 SVG rendering', () => {
 
   it('draws a person as a pill with a round head, only for persons', () => {
     const svg = renderMermaidSVG(SRC)
-    // One circle per person (the user and the external partner).
-    expect(svg.match(/<circle/g)).toHaveLength(2)
+    // One outline per person (the user and the external partner): the head
+    // and body are a single path, so no second outline cuts across the body.
+    expect(svg.match(/class="c4-person-shape"/g)).toHaveLength(2)
+    expect(svg).not.toContain('<circle')
     expect(svg).not.toContain('c4-person-glyph')
     expect(renderMermaidSVG('C4Context\nSystem(s, "S")')).not.toContain(
-      '<circle',
+      'c4-person-shape',
     )
   })
 
