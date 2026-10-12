@@ -13,6 +13,8 @@
 // type that supports it.
 // ============================================================================
 
+import { dropInvalidColors } from './css-color.ts'
+
 /** The three maps a styling-aware diagram carries. `MermaidGraph` and
  * `ClassDiagram` both satisfy this structurally. */
 export interface StyleDirectives {
@@ -159,6 +161,9 @@ export function splitClassShorthand(identifier: string): {
  *   2. the node's own assigned class (`class A foo` / `A:::foo`)
  *   3. an explicit `style A ...` directive
  *
+ * Invalid `fill` / `stroke` / `color` values are dropped from the result, as a
+ * browser drops an invalid CSS declaration (#1918).
+ *
  * Returns undefined when nothing in the cascade applies, so callers can fall
  * back to theme defaults without an empty-object check.
  */
@@ -194,7 +199,7 @@ export function resolveNodeStyle(
     result = result ? { ...result, ...nodeStyle } : { ...nodeStyle }
   }
 
-  return result
+  return result && dropInvalidColors(result)
 }
 
 /**

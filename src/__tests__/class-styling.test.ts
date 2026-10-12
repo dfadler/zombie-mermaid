@@ -439,9 +439,16 @@ describe('renderMermaidSVG – class diagram styling', () => {
   it('escapes a hostile style value rather than emitting it raw', () => {
     const svg = renderMermaidSVG(`classDiagram
       class Animal
-      style Animal fill:#f00"onload="alert(1)`)
+      style Animal stroke-width:2"onload="alert(1)`)
     expect(svg).not.toContain('"onload="')
     expect(svg).toContain('&quot;onload=&quot;')
+  })
+
+  it('drops a hostile colour value instead of emitting it (#1918)', () => {
+    const svg = renderMermaidSVG(`classDiagram
+      class Animal
+      style Animal fill:#f00"onload="alert(1)`)
+    expect(svg).not.toContain('onload')
   })
 
   it('drops a class name that is not a valid CSS identifier from the class attribute', () => {
