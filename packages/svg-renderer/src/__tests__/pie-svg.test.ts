@@ -209,12 +209,15 @@ describe('pie SVG: init textPosition', () => {
     expect(inner).toBeGreaterThan(225)
   })
 
-  it('ignores a non-numeric textPosition', () => {
-    const bad = renderMermaidSVG(
-      src('%%{init: {"pie": {"textPosition": "x"}}}%%'),
-    )
-    expect(firstLabelX(bad)).toBe(firstLabelX(renderMermaidSVG(src(''))))
-  })
+  it.each(['"x"', 'true', 'null'])(
+    'ignores a non-numeric textPosition (%s)',
+    (v) => {
+      const bad = renderMermaidSVG(
+        src(`%%{init: {"pie": {"textPosition": ${v}}}}%%`),
+      )
+      expect(firstLabelX(bad)).toBe(firstLabelX(renderMermaidSVG(src(''))))
+    },
+  )
 })
 
 describe('pie SVG: init donutHole', () => {
