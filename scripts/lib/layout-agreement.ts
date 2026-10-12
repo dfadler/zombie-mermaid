@@ -332,6 +332,30 @@ export function summarize(
   }
 }
 
+/** Whether a sample declares subgraphs (flowchart), composite states or namespaces. */
+export function hasGroups(type: OracleType, source: string): boolean {
+  return {
+    state: /^\s*state\s+.*\{\s*$/m,
+    class: /^\s*namespace\b/m,
+    er: /$^/,
+    flowchart: /\bsubgraph\b/,
+  }[type].test(source)
+}
+
+/** `--json` file body: bare figures for one type, keyed by type for several. */
+export function jsonPayload(runs: ScorecardRun[]): string {
+  const out =
+    runs.length === 1
+      ? runs[0]!.results
+      : Object.fromEntries(runs.map((r) => [r.entry.type, r.results]))
+  return `${JSON.stringify(out, null, 2)}\n`
+}
+
+/** History entries as JSON Lines, ready to append. */
+export function historyLines(entries: HistoryEntry[]): string {
+  return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
+}
+
 const cell = (n: number | null): string =>
   n === null ? '-' : `${Math.round(n * 100)}%`
 

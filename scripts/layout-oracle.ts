@@ -41,6 +41,9 @@ import {
   isOfType,
   officialNodeName,
   ORACLE_TYPES,
+  hasGroups,
+  historyLines,
+  jsonPayload,
   type OracleArgs,
   type OracleType,
   parseOracleArgs,
@@ -122,12 +125,7 @@ async function scoreType(
   const rows: string[] = []
   const failing: string[] = []
   for (const [i, sample] of wanted.entries()) {
-    const hasSubgraphs = {
-      state: /^\s*state\s+.*\{\s*$/m,
-      class: /^\s*namespace\b/m,
-      er: /$^/,
-      flowchart: /\bsubgraph\b/,
-    }[type].test(sample.source)
+    const hasSubgraphs = hasGroups(type, sample.source)
     try {
       const renderId = `oracle_${i}`
       const svg = await renderRealMermaidSvg(session, renderId, sample.source)
@@ -224,20 +222,13 @@ async function main(): Promise<number> {
   }
 
   if (args.json) {
-    const out =
-      types.length === 1
-        ? runs[0]!.results
-        : Object.fromEntries(runs.map((r) => [r.entry.type, r.results]))
-    await writeFile(args.json, `${JSON.stringify(out, null, 2)}\n`)
+    await writeFile(args.json, jsonPayload(runs))
     console.log(`\nWrote ${args.json}`)
   }
   if (recording) {
     let history = runs.map((r) => r.entry)
     if (args.history) {
-      await appendFile(
-        args.history,
-        history.map((e) => `${JSON.stringify(e)}\n`).join(''),
-      )
+      await appendFile(args.history, historyLines(history))
       history = (await readFile(args.history, 'utf8'))
         .split('\n')
         .filter(Boolean)

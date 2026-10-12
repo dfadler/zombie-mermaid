@@ -7,6 +7,9 @@ import {
   officialNodeName,
   parseOracleArgs,
   worst,
+  hasGroups,
+  historyLines,
+  jsonPayload,
   scorecardMarkdown,
   summarize,
   type Box,
@@ -255,6 +258,28 @@ describe('summarize / scorecardMarkdown (#1572)', () => {
     const entry = summarize(results, meta)
     const md = scorecardMarkdown([{ entry, results }], [entry])
     expect(md.indexOf('| low |')).toBeLessThan(md.indexOf('hi\\|gh'))
+  })
+
+  it('helpers: group detection, json payload, history lines (#1905)', () => {
+    expect(hasGroups('flowchart', 'graph TD\n subgraph S\n a\n end')).toBe(true)
+    expect(hasGroups('state', 'stateDiagram-v2\n state X {\n a\n }')).toBe(true)
+    expect(hasGroups('class', 'classDiagram\n namespace N {\n }')).toBe(true)
+    expect(hasGroups('er', 'erDiagram\n subgraph')).toBe(false)
+    expect(hasGroups('flowchart', 'graph TD\n a-->b')).toBe(false)
+    const results = { a: r(1, 1, 1) }
+    const entry = summarize(results, meta)
+    expect(JSON.parse(jsonPayload([{ entry, results }]))).toEqual(results)
+    const er = summarize(results, { ...meta, type: 'er' })
+    expect(
+      JSON.parse(
+        jsonPayload([
+          { entry, results },
+          { entry: er, results },
+        ]),
+      ),
+    ).toEqual({ flowchart: results, er: results })
+    expect(historyLines([entry, er]).split('\n')).toHaveLength(3)
+    expect(historyLines([entry]).endsWith('\n')).toBe(true)
   })
 
   it('scorecard names the reference version and lists every type (#1905)', () => {
