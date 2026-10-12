@@ -260,6 +260,23 @@ describe('summarize / scorecardMarkdown (#1572)', () => {
     expect(md.indexOf('| low |')).toBeLessThan(md.indexOf('hi\\|gh'))
   })
 
+  it('scorecard treats untyped, unversioned entries as 11.17.2 flowcharts and sorts no-figure samples last (#1905)', () => {
+    const results = {
+      none: r(null, null, null),
+      high: r(1, 1, 1),
+      none2: r(null, null, null),
+      low: r(0.5, 1, null),
+    }
+    const { type: _t, mermaid: _m, ...legacy } = summarize(results, meta)
+    const md = scorecardMarkdown([{ entry: legacy, results }], [legacy])
+    expect(md).toContain('Reference: mermaid 11.17.2.')
+    expect(md).toContain('| Flowchart | 4 |')
+    expect(md).toContain('### Flowchart (lowest first)')
+    const at = (s: string) => md.indexOf(`| ${s} |`)
+    expect(at('low')).toBeLessThan(at('high'))
+    expect(at('high')).toBeLessThan(at('none'))
+  })
+
   it('helpers: group detection, json payload, history lines (#1905)', () => {
     expect(hasGroups('flowchart', 'graph TD\n subgraph S\n a\n end')).toBe(true)
     expect(hasGroups('state', 'stateDiagram-v2\n state X {\n a\n }')).toBe(true)
