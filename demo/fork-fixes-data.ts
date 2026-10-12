@@ -498,4 +498,17 @@ export const forkFixes: ForkFix[] = [
       'Before: the dotted edge’s leg is drawn with heavy glyphs. After: each edge keeps its own style.',
     upstreamIssues: [63],
   },
+  {
+    id: 'ascii-er-shorter-entity-row',
+    title: 'An ER relationship beside a shorter entity landed on its border',
+    symptom:
+      'The relationship row was the left entity’s midpoint, so beside a shorter entity it fell on that box’s bottom border and the cardinality marker ran into the corner.',
+    source:
+      'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  CUSTOMER {\n    int id PK\n    string name\n    string email\n    string phone\n    string address\n  }\n  ORDER {\n    int id PK\n  }',
+    fixCommit: '87336e06',
+    pr: 1913,
+    render: 'ascii',
+    lookFor:
+      'Before: the ╟ marker collides with ORDER’s └ corner. After: the line meets ORDER at a ├ junction inside the box.',
+  },
 ]
