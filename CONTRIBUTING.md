@@ -85,7 +85,7 @@ Keep PRs focused: one fix or feature per PR is much easier to review and, if nee
 
 CI (`.github/workflows/ci.yml`) runs on every push and PR against `main`; its job list is the source of truth for what must pass. A few jobs need contributor action:
 
-- `test` includes `pnpm run coverage:diff`: new and changed lines need 90% coverage. It also runs `scripts/check-snapshot-allowlist.sh` (see "Testing conventions for demo/editor components" below).
+- `test` includes `pnpm run coverage:diff`: new and changed lines in `src/`, `packages/*/src/` and `scripts/**/*.ts` need 90% coverage (see "Testing scripts" below for run-on-import CLIs). It also runs `scripts/check-snapshot-allowlist.sh` (see "Testing conventions for demo/editor components" below).
 - `visual-regression` is the Playwright suite; see "Visual regression tests" below.
 - `semgrep` is a SAST scan against Semgrep's free public rulesets. If it flags something in your PR, either fix the underlying issue or, for a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line explaining why. Don't disable the rule repo-wide.
 - `changeset` requires a changeset when you change anything that ships (see "Changesets" below).
@@ -141,6 +141,21 @@ A reviewer should be able to read the reason without opening the issue. The desc
 ### Test coverage
 
 CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. The repo-wide floor is `coverage.thresholds` in `config/vitest.config.ts`, kept a bit under the measured baseline as headroom; `pnpm run test:coverage` fails the build if coverage drops below it, so it's a hard gate against silent regression, not just visibility. On top of that, `pnpm run coverage:diff` holds new and changed lines to a stricter 90%.
+
+### Testing scripts
+
+`scripts/**/*.ts` is in the coverage run and the `coverage:diff` gate, same 90%
+bar as `src/`. A CLI that runs on import (top-level code, `process.exit`)
+can't be covered in-process, and a subprocess test is invisible to v8. So:
+keep the logic in an importable file (`scripts/lib/*.ts`, or exported
+functions guarded by an `isMainModule` check as in `check-diff-coverage.ts`)
+and make the CLI a thin entry point over it. If a thin entry point really
+can't be covered, add it to `scripts/coverage-exempt.json` with a `reason` and
+a `maxLines` (new entries: at most 150). Exempt files are excluded from both
+the coverage report and the gate. A test fails if an entry points at a
+missing file or the file grows past `maxLines`; raising it is a reviewed
+change, so extract logic into a lib file instead. `.mjs` and `.sh` scripts are
+not measured.
 
 ### Testing conventions for demo/editor components
 

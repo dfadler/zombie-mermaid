@@ -1,9 +1,11 @@
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   isTrackedTsFile,
   parseChangedLinesFromDiff,
   parseLcovContent,
   computeDiffCoverage,
+  loadCoverageExempt,
 } from '../scripts/check-diff-coverage.ts'
 
 describe('isTrackedTsFile', () => {
@@ -53,6 +55,60 @@ describe('isTrackedTsFile', () => {
     expect(isTrackedTsFile('src/foo.js')).toBe(false)
     expect(isTrackedTsFile('src/foo.tsx')).toBe(false)
     expect(isTrackedTsFile('packages/core/package.json')).toBe(false)
+  })
+})
+
+describe('isTrackedTsFile: scripts/', () => {
+  it('accepts importable .ts under scripts/ and scripts/lib/', () => {
+    expect(isTrackedTsFile('scripts/check-docs.ts')).toBe(true)
+    expect(isTrackedTsFile('scripts/lib/form-judge-cache.ts')).toBe(true)
+  })
+
+  it('rejects non-.ts scripts and tests', () => {
+    expect(isTrackedTsFile('scripts/verify.sh')).toBe(false)
+    expect(isTrackedTsFile('scripts/css-module-hooks.mjs')).toBe(false)
+    expect(isTrackedTsFile('scripts/__tests__/x.ts')).toBe(false)
+  })
+
+  it('rejects a file on the exempt list', () => {
+    expect(isTrackedTsFile('scripts/bench.ts')).toBe(false)
+  })
+})
+
+describe('scripts/coverage-exempt.json', () => {
+  const entries = loadCoverageExempt()
+
+  it('only lists existing files', () => {
+    const stale = entries.filter((e) => !existsSync(e.file)).map((e) => e.file)
+    expect(stale).toEqual([])
+  })
+
+  it('requires a real reason on every entry', () => {
+    for (const e of entries) {
+      expect(e.reason.trim().length, e.file).toBeGreaterThan(15)
+    }
+  })
+
+  it('lists only scripts/**/*.ts, with no duplicates', () => {
+    const files = entries.map((e) => e.file)
+    expect(new Set(files).size).toBe(files.length)
+    for (const f of files) expect(f, f).toMatch(/^scripts\/(.+\/)?[^/]+\.ts$/)
+  })
+
+  it('keeps each exempt file within its recorded maxLines', () => {
+    for (const e of entries.filter((x) => existsSync(x.file))) {
+      const lines = readFileSync(e.file, 'utf8').split('\n').length
+      expect(
+        lines,
+        `${e.file} grew; move logic into scripts/lib/`,
+      ).toBeLessThanOrEqual(e.maxLines)
+    }
+  })
+
+  it('caps new (non-legacy) entries at 150 lines', () => {
+    for (const e of entries.filter((x) => !x.legacy)) {
+      expect(e.maxLines, e.file).toBeLessThanOrEqual(150)
+    }
   })
 })
 

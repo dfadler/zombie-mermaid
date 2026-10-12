@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
@@ -100,8 +101,22 @@ export default defineConfig({
       // zombie-mermaid#625 — it has to stay in the denominator or the
       // thresholds below would measure a strictly smaller file set than
       // they were calibrated against.
-      include: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
-      exclude: ['src/__tests__/**', 'packages/*/src/__tests__/**'],
+      include: ['src/**/*.ts', 'packages/*/src/**/*.ts', 'scripts/**/*.ts'],
+      // scripts/ is gated by check-diff-coverage.ts too; run-on-import CLI entry
+      // points can't be covered in-process, so they're listed (with a reason)
+      // in scripts/coverage-exempt.json and kept out of the denominator.
+      exclude: [
+        'src/__tests__/**',
+        'packages/*/src/__tests__/**',
+        ...(
+          JSON.parse(
+            readFileSync(
+              resolve(REPO_ROOT, 'scripts/coverage-exempt.json'),
+              'utf8',
+            ),
+          ) as { file: string }[]
+        ).map((e) => e.file),
+      ],
       thresholds: {
         statements: 88,
         branches: 77,
