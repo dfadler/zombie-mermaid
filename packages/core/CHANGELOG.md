@@ -1,5 +1,11 @@
 # @zombie-mermaid/core
 
+## 5.1.0
+
+### Patch Changes
+
+- [#1620](https://github.com/dfadler/zombie-mermaid/pull/1620) [`ab0b6c9`](https://github.com/dfadler/zombie-mermaid/commit/ab0b6c9278bbef10949cd353a1088e2b02596931) Thanks [@dfadler](https://github.com/dfadler)! - Fix package README inaccuracies and add missing `package.json` metadata ([#1545](https://github.com/dfadler/zombie-mermaid/issues/1545)).
+
 ## 5.0.1
 
 ## 5.0.0
