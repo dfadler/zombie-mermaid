@@ -6,6 +6,9 @@ difference is either intentional or not yet fixed. The reference is the pinned
 `scripts/lib/real-mermaid.ts`; mermaid.live and GitHub render the same layout.
 The pin moved from 11.17.2 in the bump that added this note, and entries not
 listed below as re-checked were measured on 11.17.2: other versions may differ.
+The "Labeled Fan-In (LR)" mirrored-order entry that used to sit under layout
+tie-breaks was removed after a re-check: on 12.1.0 mermaid and zombie-mermaid agree
+(100% / 100%, it was 17% on 11.17.2).
 
 ## Subgraph inner direction
 
@@ -25,24 +28,38 @@ Re-checked on 12.1.0 (and 11.17.2). Given `subgraph S` holding `a --> b --> c` i
 
 ## Layout tie-breaks and placement
 
-ELK (our layout engine) and the dagre-based layout in mermaid.js break layout ties
-differently, so node order within a layer, and cross-axis offsets between layers, can
-differ even when both assign the same layers.
+Since mermaid 12.0.0, mermaid.js lays out flowcharts, state, class and ER diagrams
+with ELK by default (it was dagre in 11.x; see the
+[12.0.0 release notes](https://github.com/mermaid-js/mermaid/releases/tag/mermaid%4012.0.0)),
+and mermaid.live renders that layout. Both engines are now ELK, but with different
+options: mermaid sets no `considerModelOrder` and breaks cycles depth-first, while
+zombie-mermaid uses `considerModelOrder.strategy: NODES_AND_EDGES` (set in
+`packages/svg-renderer/src/layout-engine/to-elk.ts`), so node order within a layer, and
+cross-axis offsets between layers, can still differ even when both assign the same
+layers. The 12.1.0 comparison is in
+[#1834](https://github.com/dfadler/zombie-mermaid/issues/1834).
 
-- **Mirrored vertical order.** In the "Labeled Fan-In (LR)" sample, mermaid.js
-  stacks `C` above `A` above `B`; zombie-mermaid places `B` above `C` above `A`. Layers
-  match. ELK follows source order as its crossing-minimization tie-break
-  (`elk.layered.considerModelOrder.strategy: NODES_AND_EDGES`, set in
-  `packages/svg-renderer/src/layout-engine/to-elk.ts`); mermaid.js does not. This is
-  intentional and is why that sample scores low in the
-  [layout-fidelity scorecard](layout-fidelity-scorecard.md) (a handful of nodes, so
-  one flipped pair moves the percentage a lot).
+- **Sibling subgraph order and feedback edges.** zombie-mermaid still imitates
+  mermaid 11's dagre layout in two places: sibling subgraphs are placed in reverse
+  declaration order, and depth-first back edges are reversed before ELK runs. Mermaid
+  12 does neither. "Nested Subgraphs" puts the second subgraph on the left in ours and
+  the first on the left in mermaid 12.1.0 and mermaid.live (horizontal 20%), and in
+  "CI/CD Pipeline" mermaid 12.1.0 keeps `Fix & Retry` beside `Build Image` where ours
+  puts it below `QA Approved?` (horizontal 48%). Tracked in
+  [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
+- **Remaining small differences are tie-breaks.** "System Architecture", "Flowchart:
+  CJK Labels" and "Flowchart: Five Cluster Exit Siblings (TD)" score 50-93% against
+  12.1.0, but every disagreeing node pair is one renderer calling two centres level
+  (within the 20 px tolerance) and the other offsetting them (for example `Start` and
+  `T` are 25 px apart in mermaid and 2 px apart in ours). No pair is in the opposite
+  order.
 
 ## Known limitations (not intentional, not yet fixed)
 
 - **Late sink layer when edges are labeled.** In the "Decision Tree" sample,
   `Go outside` (`C`) lands one layer below `Have umbrella?` (`B`) in our SVG, with
-  the edge labels present; mermaid.js puts them in the same layer. Removing the
+  the edge labels present; mermaid.js puts them in the same layer (re-checked on
+  12.1.0: `C` sits about 60 px above `B` there and 130 px below it in ours). Removing the
   labels from the source puts `C` back beside `B`. Edge labels are the trigger,
   not node shapes.
 
