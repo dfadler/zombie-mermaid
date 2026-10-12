@@ -32,6 +32,15 @@ describe('parseStyleProps splits on top-level commas only (#1921)', () => {
     })
   })
 
+  it('keeps a nested function intact and stays fast on long unbalanced input', () => {
+    expect(
+      parseStyleProps('fill:color-mix(in srgb, rgb(0,0,0), red),color:#fff'),
+    ).toEqual({ fill: 'color-mix(in srgb, rgb(0,0,0), red)', color: '#fff' })
+    const start = Date.now()
+    parseStyleProps('fill:' + '(('.repeat(5000) + ',stroke:#333')
+    expect(Date.now() - start).toBeLessThan(1000)
+  })
+
   it('splits unbalanced input like before, so later declarations survive', () => {
     expect(parseStyleProps('fill:rgb(255,0,0,stroke:#333')).toEqual({
       fill: 'rgb(255',

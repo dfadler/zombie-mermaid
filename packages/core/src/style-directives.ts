@@ -29,29 +29,15 @@ export interface StyleDirectives {
 /**
  * Split a style list on commas that are not inside `(...)` or a quoted string,
  * so `fill:rgb(255,0,0),stroke:#333` yields two declarations (issue #1921).
- * Unbalanced parentheses or quotes fall back to splitting on every comma, so a
- * typo can't swallow the declarations after it.
+ * A `(` or quote with no closing partner is a plain character, so a typo can't
+ * swallow the declarations after it. Parentheses nest two levels deep
+ * (`color-mix(in srgb, rgb(0,0,0), red)`).
  */
+const TOP_LEVEL_SEGMENT_RE =
+  /(?:[^,("']|\((?:[^()]|\([^()]*\))*\)|"[^"]*"|'[^']*'|["'(])+/g
+
 function splitTopLevelCommas(str: string): string[] {
-  const parts: string[] = []
-  let depth = 0
-  let quote = ''
-  let start = 0
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i]!
-    if (quote) {
-      if (ch === quote) quote = ''
-    } else if (ch === '"' || ch === "'") quote = ch
-    else if (ch === '(') depth++
-    else if (ch === ')') depth = Math.max(0, depth - 1)
-    else if (ch === ',' && depth === 0) {
-      parts.push(str.slice(start, i))
-      start = i + 1
-    }
-  }
-  if (depth > 0 || quote) return str.split(',')
-  parts.push(str.slice(start))
-  return parts
+  return str.match(TOP_LEVEL_SEGMENT_RE) ?? []
 }
 
 /** Parse "fill:#f00,stroke:#333" style property strings into a Record */
