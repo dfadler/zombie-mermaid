@@ -31,4 +31,6 @@ if command -v fc-list >/dev/null && fc-list | grep -qi 'JetBrains Mono'; then
 else
   opt "JetBrains Mono font"
 fi
+# Informational: a stale mermaid pin makes parity checks measure an old mermaid.
+if out=$(pnpm exec tsx scripts/lib/mermaid-pin-freshness.ts 2>/dev/null); then echo "$out"; fi
 exit "$bad"
