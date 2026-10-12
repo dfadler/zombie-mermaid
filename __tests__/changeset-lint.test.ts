@@ -61,6 +61,24 @@ describe('lintChangeset', () => {
       { warnings: [] },
     )
   })
+  it('errors on a **BREAKING:** summary without a major bump', () => {
+    expect(
+      lintChangeset('a.md', cs('minor', '**BREAKING:** Raised engines.node.'))
+        .errors,
+    ).toHaveLength(1)
+  })
+  it('reads quoted bump values', () => {
+    expect(
+      lintChangeset('a.md', `---\n"a": "major"\n---\n\nx\n`).errors,
+    ).toHaveLength(1)
+  })
+  it('warns when the guide mention has no section anchor', () => {
+    const r = lintChangeset(
+      'a.md',
+      cs('major', '**BREAKING:** x. See docs/guides/upgrading later'),
+    )
+    expect(r.warnings).toHaveLength(1)
+  })
   it('reads double-quoted and mixed bump lists', () => {
     const t = `---\n"a": patch\n'b': major\n---\n\nx\n`
     expect(lintChangeset('a.md', t).errors).toHaveLength(1)

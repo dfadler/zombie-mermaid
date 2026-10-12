@@ -86,8 +86,9 @@ Non-breaking PRs keep merging and releasing as minor or patch meanwhile.
 **Checking the queue before cutting a major** (maintainer):
 
 ```bash
-# date of the last major (UTC)
-git for-each-ref --sort=-creatordate --format='%(creatordate:format:%Y-%m-%d) %(refname:short)' \
+# date of the last major (UTC); fetch tags first so a just-published major is not missed
+git fetch --tags
+TZ=UTC git for-each-ref --sort=-creatordate --format='%(creatordate:format-local:%Y-%m-%d) %(refname:short)' \
   'refs/tags/zombie-mermaid@*.0.0' | head -1
 # queued breaking PRs
 gh pr list --label breaking --state open

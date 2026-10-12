@@ -13,7 +13,8 @@ export interface LintResult {
   warnings: string[]
 }
 
-const BUMP_LINE = /^\s*['"]?[^'":]+['"]?\s*:\s*(major|minor|patch)\s*$/gm
+const BUMP_LINE =
+  /^\s*['"]?[^'":]+['"]?\s*:\s*['"]?(major|minor|patch)['"]?\s*$/gm
 
 /** Lint one changeset's text. `file` is only used to label the result. */
 export function lintChangeset(file: string, text: string): LintResult {
@@ -28,7 +29,7 @@ export function lintChangeset(file: string, text: string): LintResult {
       result.errors.push(
         'a `major` bump needs a summary starting with `**BREAKING:**`',
       )
-    if (!/docs\/guides\/upgrading[^\s)]*/.test(summary))
+    if (!/docs\/guides\/upgrading[^\s)#]*#[\w-]+/.test(summary))
       result.warnings.push(
         'a major summary should link its upgrade-guide section (docs/guides/upgrading-*.md#...)',
       )
@@ -36,9 +37,10 @@ export function lintChangeset(file: string, text: string): LintResult {
       result.warnings.push(
         '"Output change" on a major: output changes are minor/patch unless a documented contract changes',
       )
+  } else if (breaking && bumps.size > 0) {
+    result.errors.push('a `**BREAKING:**` summary needs a `major` bump')
   } else if (
     bumps.has('minor') &&
-    !breaking &&
     /\b(engines|peerDependencies)\b/.test(summary)
   ) {
     result.warnings.push(
