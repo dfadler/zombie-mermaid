@@ -24,6 +24,11 @@ describe('EditorHero', () => {
     expect(screen.getByText('Editor')).toBeInTheDocument()
   })
 
+  it('mentions that syntax errors name the offending line', () => {
+    render(createElement(EditorHero, { homeHref: '/' }))
+    expect(screen.getByText(/name the offending line/)).toBeInTheDocument()
+  })
+
   it('uses the given homeHref verbatim', () => {
     render(createElement(EditorHero, { homeHref: '../index.html' }))
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute(
