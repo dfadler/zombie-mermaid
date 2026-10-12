@@ -84,6 +84,11 @@
     "legacy": true
   },
   {
+    "file": "scripts/form-judge-calibrate.ts",
+    "reason": "thin argv/file-I/O CLI over scripts/lib/form-judge-calibration.ts (which is covered in-process); runs on import and calls process.exit, so only __tests__/form-judge-calibrate-cli.test.ts exercises it, via a subprocess v8 cannot see",
+    "maxLines": 70
+  },
+  {
     "file": "scripts/form-judge-finalize-cache.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 66,
@@ -138,6 +143,12 @@
     "legacy": true
   },
   {
+    "file": "scripts/lib/real-mermaid.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium, so it is only reachable from the form-diff/form-facts CLIs",
+    "maxLines": 107,
+    "legacy": true
+  },
+  {
     "file": "scripts/print-tag-coverage.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 27,
@@ -147,12 +158,6 @@
     "file": "scripts/visual-diff.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 338,
-    "legacy": true
-  },
-  {
-    "file": "scripts/lib/real-mermaid.ts",
-    "reason": "Playwright-driven helper: needs a real Chromium, so it is only reachable from the form-diff/form-facts CLIs",
-    "maxLines": 107,
     "legacy": true
   }
 ]
