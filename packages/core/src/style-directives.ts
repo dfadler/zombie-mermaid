@@ -26,12 +26,40 @@ export interface StyleDirectives {
   nodeStyles: Map<string, Record<string, string>>
 }
 
+/**
+ * Split a style list on commas that are not inside `(...)` or a quoted string,
+ * so `fill:rgb(255,0,0),stroke:#333` yields two declarations (issue #1921).
+ * Unbalanced parentheses or quotes fall back to splitting on every comma, so a
+ * typo can't swallow the declarations after it.
+ */
+function splitTopLevelCommas(str: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let quote = ''
+  let start = 0
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i]!
+    if (quote) {
+      if (ch === quote) quote = ''
+    } else if (ch === '"' || ch === "'") quote = ch
+    else if (ch === '(') depth++
+    else if (ch === ')') depth = Math.max(0, depth - 1)
+    else if (ch === ',' && depth === 0) {
+      parts.push(str.slice(start, i))
+      start = i + 1
+    }
+  }
+  if (depth > 0 || quote) return str.split(',')
+  parts.push(str.slice(start))
+  return parts
+}
+
 /** Parse "fill:#f00,stroke:#333" style property strings into a Record */
 export function parseStyleProps(propsStr: string): Record<string, string> {
   // Strip trailing semicolons — Mermaid tolerates them (e.g. `stroke:#f00;`)
   const cleaned = propsStr.replace(/;\s*$/, '')
   const props: Record<string, string> = {}
-  for (const pair of cleaned.split(',')) {
+  for (const pair of splitTopLevelCommas(cleaned)) {
     const colonIdx = pair.indexOf(':')
     if (colonIdx > 0) {
       const key = pair.slice(0, colonIdx).trim()
