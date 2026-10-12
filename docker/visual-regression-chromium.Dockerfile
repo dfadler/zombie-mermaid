@@ -7,7 +7,7 @@
 # multi-browser `mcr.microsoft.com/playwright:v1.62.1-jammy` image
 # (docker/visual-regression.Dockerfile) that job used before? Yes - #737
 # measured ~36% faster / ~43s saved per 4-shard run (see
-# docs/research/737-chromium-only-image-pull-timing.md), and #868 adopted it:
+# https://github.com/dfadler/zombie-mermaid/issues/737#issuecomment-6130806278), and #868 adopted it:
 # `ci.yml`'s `visual-regression` job now pins the digest this file builds
 # instead of the stock multi-browser tag. #868 also re-ran the full suite
 # against this exact image (281/281 passed against the unchanged committed

@@ -5,7 +5,7 @@
  * layout) previously had no self-loop-specific routing at all: ELK has no
  * native concept of a self-loop, so a `B --> B` edge came back as a
  * degenerate 4-point right-angle polyline sitting on top of the node
- * instead of a loop beside it — see docs/research/537-self-loop-regression-check.md
+ * instead of a loop beside it — see https://github.com/dfadler/zombie-mermaid/issues/537#issuecomment-6130805676
  * for the before/after comparison against current upstream Mermaid.
  *
  * These tests assert the synthesized replacement: a rounded loop bulging

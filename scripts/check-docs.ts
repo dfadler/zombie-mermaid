@@ -168,6 +168,33 @@ export function nodeConsistency(want: string, fs: Fs = realFs): string[] {
   return errs
 }
 
+// #1642: findings live on the issue. A doc under docs/research/ stays only
+// while something outside its own file/dir (and the README index) mentions it.
+export function orphanResearch(fs: Fs = realFs): string[] {
+  const keyOf = (f: string) => f.split('/')[2]!.replace(/\.md$/, '')
+  const docs = fs
+    .ls('docs/research')
+    .filter((f) => f !== 'docs/research/README.md')
+  const others = [
+    '*.md',
+    '*.ts',
+    '*.mjs',
+    '*.sh',
+    '*.yml',
+    '*.json',
+    'Dockerfile',
+  ]
+    .flatMap((g) => fs.ls(g))
+    .filter((f) => !f.startsWith('docs/research/') && !/CHANGELOG\.md$/.test(f))
+  const text = others.map((f) => fs.read(f)).join('\n')
+  return [...new Set(docs.map(keyOf))]
+    .filter((k) => !text.includes(`research/${k}`))
+    .map(
+      (k) =>
+        `docs/research/${k}: nothing links to it; post the findings on the issue instead (#1642)`,
+    )
+}
+
 export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
   const want = fs.read('.nvmrc').trim().replace(/^v/, '').split('.')[0]!
   const files = fs
@@ -177,6 +204,7 @@ export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
     files: files.length,
     errs: [
       ...nodeConsistency(want, fs),
+      ...orphanResearch(fs),
       ...files.flatMap((f) => checkDoc(f, fs.read(f), want)),
     ],
   }
