@@ -72,7 +72,8 @@ jobs:
           n_bench="$(printf '%s\n' "$changed" | re="$nobench" awk 'NF && $0 !~ ENVIRON["re"] { c++ } END { print c + 0 }')"
           emit "$([ "$n_code" -gt 0 ] && echo true || echo false)" "$([ "$n_bench" -gt 0 ] && echo true || echo false)"
 
-  test:
+  unit-tests:
+    name: Unit tests + coverage
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -155,9 +156,6 @@ jobs:
       - name: Check coverage on new/changed code
         run: pnpm run coverage:diff
 
-      - name: Lint
-        run: pnpm run lint
-
       # Docs drift guards (#1570): dead links/anchors, stale repo paths,
       # diagram-type counts, Node-version consistency.
       - name: Check docs drift
@@ -171,6 +169,36 @@ jobs:
       - name: Check snapshot test allow-list
         run: scripts/check-snapshot-allowlist.sh
 
+  # Lint/typecheck/format run in parallel with the tests (#1786) instead of
+  # serially after them; the `test` job below fans these back into the one
+  # required check name.
+  static:
+    name: Lint, typecheck, format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    # Same fork guard as `unit-tests`.
+    if: github.repository == 'dfadler/zombie-mermaid'
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
       - name: Type check
         # Runs both the library config and demo/tsconfig.json — the demo's
         # client-side code needs DOM types the root config deliberately omits,
@@ -180,6 +208,32 @@ jobs:
 
       - name: Format check
         run: pnpm run format:check
+
+  # The REQUIRED status check in branch protection is named `test`; this job
+  # keeps that exact name (do not add a `name:` or rename the key) so the
+  # split needs no branch-protection edit (#1786). `if: always()` makes it run
+  # even when a dependency failed, was cancelled or was skipped (a plain job
+  # would be skipped, and a skipped required check counts as passing). It then
+  # passes only if every dependency is exactly `success`. Both dependencies
+  # are unconditional apart from the fork guard, which is also on this job, so
+  # `skipped` is never a legitimate outcome here.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [unit-tests, static]
+    if: always() && github.repository == 'dfadler/zombie-mermaid'
+    permissions: {}
+    steps:
+      - name: Require every needed job to have succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -uo pipefail
+          echo "needed job results: $RESULTS"
+          [ -n "$RESULTS" ] || { echo "no needed results"; exit 1; }
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "::error::a needed job ended as '$r'"; exit 1; }
+          done
 
   build-site:
     name: Build site generator check
