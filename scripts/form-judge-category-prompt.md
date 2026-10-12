@@ -106,11 +106,25 @@ Each verdict is one line of JSON:
 {"id": "<the sample's id>", "title": "<the sample's title>", "faithful": true|false, "findings": [{"severity": "major|moderate|minor", "summary": "one sentence naming the specific defect", "evidence": "the concrete signal proving it — quote the exact ASCII text and, where relevant, the SVG attribute/element that contradicts it"}]}
 ```
 
-`faithful` is `false` only when at least one finding is severe enough that
-you would _not_ call the ASCII output a reasonable reproduction overall — a
-sample can be `faithful: true` while still carrying a minor cosmetic
-finding worth noting (e.g. token order in an attribute line) that isn't, on
-its own, a structural defect.
+Severity and `faithful` are two separate calls. Severity says how much a
+finding matters; `faithful` says whether `asciiText` conveys the same content
+as `trimmedSvg`.
+
+`faithful` is `false` whenever at least one finding means the ASCII output's
+content differs from what real mermaid renders: a label that is wrong,
+truncated, or missing text; a node, edge, or relationship that is missing,
+extra, or connected to the wrong element; an arrow pointing the wrong way; an
+element of the wrong kind or on the wrong side/order. Such findings are
+`major` or `moderate`, and any `major` or `moderate` finding makes the sample
+`faithful: false`. This is a content check against the SVG, not a judgment of
+how the output looks.
+
+`faithful` stays `true` only when every finding is `minor` and purely
+cosmetic (e.g. token order in an attribute line, spacing, a decoration that
+doesn't change what the diagram says), or when there are no findings. The
+rule above about not reporting unless you're confident still applies: only
+report a content difference you can point to by quoting both the ASCII and
+the SVG; when in doubt, don't report it, so a clean sample stays `true`.
 
 When you've judged every entry in `__DATA_PATH__`, you're done — do not
 write a separate summary file, the workflow reads `__RESULTS_PATH__`
