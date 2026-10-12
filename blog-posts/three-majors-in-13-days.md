@@ -104,6 +104,13 @@ batching releases and gating majors are under discussion there and in
 [#1568](https://github.com/dfadler/zombie-mermaid/issues/1568), so the cadence
 may change.
 
+The pace also has a cost on `main`. Two fixes for the same ASCII layout bug
+([#1467](https://github.com/dfadler/zombie-mermaid/issues/1467)) merged three
+minutes apart, each with its own golden, and the release runs went red until
+[#1492](https://github.com/dfadler/zombie-mermaid/pull/1492) and
+[#1494](https://github.com/dfadler/zombie-mermaid/pull/1494) repaired them. The
+[fan-in post](ascii-fan-in-fan-out-parallel-labeled-edges.html) has the details.
+
 If you pin by range, three majors in 13 days means a `^3` range will not pick
 any of this up on its own. Read the release notes for each major you cross.
 Of the three, only 5.0.0 requires code changes for browser and bundler users
