@@ -2162,4 +2162,33 @@ pie title Pets adopted by volunteers
   "Cats" : 85
   "Rats" : 15`,
   },
+  {
+    title: 'Flowchart: Four Parallel Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Four labeled edges between the same two nodes (#1743). In the ASCII panel each lane enters the target on its own row with its own arrowhead.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  A -->|fourth| B`,
+  },
+  {
+    title: 'Flowchart: Five Cluster Exit Siblings (TD)',
+    category: 'Flowchart',
+    description:
+      'Five labeled edges leave a subgraph for one target beside another exit (#1689). In the ASCII panel each sibling gets its own arrowhead; the fifth enters the low face.',
+    source: `flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|1| T
+  S -->|2| T
+  S -->|3| T
+  S -->|4| T
+  S -->|5| T
+  S -->|other| U`,
+  },
 ]
+
