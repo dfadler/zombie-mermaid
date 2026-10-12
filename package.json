@@ -115,6 +115,7 @@
     "metrics:history:append": "tsx scripts/metrics-history-append.ts",
     "bench:trend": "tsx scripts/bench-trend.ts",
     "bench:mcp": "tsx scripts/bench-mcp.ts",
+    "check:changesets": "tsx scripts/check-changesets.ts",
     "check:docs": "tsx scripts/check-docs.ts",
     "smoke:packed": "node scripts/smoke-test-packed.mjs",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
