@@ -75,6 +75,43 @@ describe('isTrackedTsFile: scripts/', () => {
   })
 })
 
+const LEGACY_EXEMPT = new Set([
+  'scripts/bench-ascii-renderer.ts',
+  'scripts/bench-compare.ts',
+  'scripts/bench-core.ts',
+  'scripts/bench-label-placement.ts',
+  'scripts/bench-mermaid-parser.ts',
+  'scripts/bench-package-compare.ts',
+  'scripts/bench-scaling.ts',
+  'scripts/bench-svg-renderer.ts',
+  'scripts/bench.ts',
+  'scripts/build-mono-font-subset.ts',
+  'scripts/capture-fork-fixes-terminal.ts',
+  'scripts/check-visual-baselines.ts',
+  'scripts/form-diff.ts',
+  'scripts/form-facts.ts',
+  'scripts/form-judge-finalize-cache.ts',
+  'scripts/form-judge-prepare.ts',
+  'scripts/generate-bundle-badge.ts',
+  'scripts/generate-hero.ts',
+  'scripts/generate-logo-lockup.ts',
+  'scripts/generate-page.ts',
+  'scripts/generate-primitives-classes.ts',
+  'scripts/label-position-oracle.ts',
+  'scripts/layout-oracle.ts',
+  'scripts/lib/real-mermaid.ts',
+  'scripts/print-tag-coverage.ts',
+  'scripts/visual-diff.ts',
+])
+
+function capViolations(
+  es: { file: string; maxLines: number; legacy?: boolean }[],
+) {
+  return es
+    .filter((e) => !LEGACY_EXEMPT.has(e.file) && (e.legacy || e.maxLines > 150))
+    .map((e) => e.file)
+}
+
 describe('scripts/coverage-exempt.json', () => {
   const entries = loadCoverageExempt()
 
@@ -105,10 +142,19 @@ describe('scripts/coverage-exempt.json', () => {
     }
   })
 
-  it('caps new (non-legacy) entries at 150 lines', () => {
-    for (const e of entries.filter((x) => !x.legacy)) {
-      expect(e.maxLines, e.file).toBeLessThanOrEqual(150)
-    }
+  // Day-one exemptions, fixed. Only these paths may be `legacy` (and so exceed
+  // the cap); their ceilings stay editable in the JSON because a bump is
+  // already a reviewed diff. Anything else is capped at 150 whatever its flag.
+  it('caps every entry not on the legacy allow-list at 150 lines', () => {
+    expect(capViolations(entries)).toEqual([])
+  })
+
+  it('rejects legacy:true / maxLines 500 on a path outside the allow-list', () => {
+    const sneaky = [
+      ...entries,
+      { file: 'scripts/new-cli.ts', reason: 'x', maxLines: 500, legacy: true },
+    ]
+    expect(capViolations(sneaky).length).toBeGreaterThan(0)
   })
 })
 

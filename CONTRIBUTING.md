@@ -140,7 +140,7 @@ A reviewer should be able to read the reason without opening the issue. The desc
 
 ### Test coverage
 
-CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. The repo-wide floor is `coverage.thresholds` in `config/vitest.config.ts`, kept a bit under the measured baseline as headroom; `pnpm run test:coverage` fails the build if coverage drops below it, so it's a hard gate against silent regression, not just visibility. On top of that, `pnpm run coverage:diff` holds new and changed lines to a stricter 90%.
+CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. The repo-wide floor is `coverage.thresholds` in `config/vitest.config.ts`, kept a bit under the measured baseline as headroom; `pnpm run test:coverage` fails the build if coverage drops below it, so it's a hard gate against silent regression, not just visibility. On top of that, `pnpm run coverage:diff` holds new and changed lines to a stricter 95%.
 
 ### Testing scripts
 
