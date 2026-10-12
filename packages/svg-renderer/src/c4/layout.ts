@@ -564,9 +564,8 @@ const rectsOverlap = (a: Rect, b: Rect): boolean =>
 
 /** Points along a relationship's line (straight or quadratic) every few px. */
 function sampleLine(rel: PositionedC4Relationship): Point[] {
-  const start = rel.points[0]
-  const end = rel.points[rel.points.length - 1]
-  if (!start || !end) return []
+  const start = rel.points[0]!
+  const end = rel.points[rel.points.length - 1]!
   const c = rel.curve
   const len = Math.hypot(end.x - start.x, end.y - start.y)
   const n = Math.max(1, Math.ceil(len / LINE_SAMPLE))
@@ -625,11 +624,9 @@ function boundaryObstacles(boundaries: LaidOutBoundary[]): Obstacle[] {
       frame(b.x, b.x, b.y, b.y + b.height, FRAME_PAD), // left
       frame(b.x + b.width, b.x + b.width, b.y, b.y + b.height, FRAME_PAD), // right
       text(b.label, b.labelY, C4.boundarySize + 2, 700),
-      ...(typeLine && b.typeY !== undefined
-        ? [text(typeLine, b.typeY, C4.boundarySize, 400)]
-        : []),
-      ...(b.description && b.descrY !== undefined
-        ? [text(b.description, b.descrY, C4.boundarySize - 2, 400)]
+      ...(typeLine ? [text(typeLine, b.typeY!, C4.boundarySize, 400)] : []),
+      ...(b.description
+        ? [text(b.description, b.descrY!, C4.boundarySize - 2, 400)]
         : []),
     ]
   })
@@ -640,6 +637,21 @@ interface LabelVariant {
   lines: string[]
   position: Point
   technologyX?: number
+}
+
+/** The rectangles a label's lines occupy when set as `variant`. */
+function labelRects(
+  rel: PositionedC4Relationship,
+  variant: LabelVariant,
+): Rect[] {
+  return c4RelLabelBoxes({
+    ...rel,
+    labelLines: variant.lines,
+    labelPosition: variant.position,
+    ...(variant.technologyX === undefined
+      ? {}
+      : { technologyX: variant.technologyX }),
+  }).map(rectOf)
 }
 
 /**
@@ -667,7 +679,7 @@ function clearLabel(
   const len = Math.hypot(dx, dy)
   const own = c4RelLabelLines(rel)
   const hasHead = rel.label !== '' || rel.index !== undefined
-  const headWidth = hasHead ? c4TextWidth(own[0] ?? '', C4.messageSize, 400) : 0
+  const headWidth = hasHead ? c4TextWidth(own[0]!, C4.messageSize, 400) : 0
   const midX = origin.x - headWidth / 2
 
   const variants: { variant: LabelVariant; cost: number }[] = [
@@ -705,33 +717,82 @@ function clearLabel(
 
   const ux = len === 0 ? 0 : dx / len
   const uy = len === 0 ? 0 : dy / len
-  const all = [...obstacles, ...placed]
+  // Only what lies within reach of a trial can be touched by one: the labels'
+  // boxes in place, moved at most half the chord along it and the widest side
+  // step off it.
+  const reach = len / 2 + Math.max(...SIDE_STEPS) + LABEL_CLEARANCE
+  const spots = variants.flatMap((v) => labelRects(rel, v.variant))
+  const region: Rect = {
+    x0: Math.min(...spots.map((r) => r.x0)) - reach,
+    x1: Math.max(...spots.map((r) => r.x1)) + reach,
+    y0: Math.min(...spots.map((r) => r.y0)) - reach,
+    y1: Math.max(...spots.map((r) => r.y1)) + reach,
+  }
+  const inReach = (r: Rect): boolean =>
+    r.x0 < region.x1 && r.x1 > region.x0 && r.y0 < region.y1 && r.y1 > region.y0
+  const all = [...obstacles, ...placed].filter(inReach)
+  // At most about 100 trial positions along a long chord, so cost stays bounded.
+  const step = Math.max(LABEL_STEP, len / 200)
+  // A line can only touch a label inside its bounds, so most are skipped
+  // without scanning their points.
+  const nearLines = lines.filter((pts) =>
+    inReach({
+      x0: Math.min(...pts.map((p) => p.x)),
+      x1: Math.max(...pts.map((p) => p.x)),
+      y0: Math.min(...pts.map((p) => p.y)),
+      y1: Math.max(...pts.map((p) => p.y)),
+    }),
+  )
+  const lineBounds = nearLines.map((pts) => ({
+    x0: Math.min(...pts.map((p) => p.x)),
+    x1: Math.max(...pts.map((p) => p.x)),
+    y0: Math.min(...pts.map((p) => p.y)),
+    y1: Math.max(...pts.map((p) => p.y)),
+  }))
   let best:
     { v: LabelVariant; at: Point; penalty: number; cost: number } | undefined
+  // Once a trial touches nothing, only a cheaper one can beat it.
+  const settled = (cost: number): boolean =>
+    best?.penalty === 0 && cost >= best.cost
   for (const { variant, cost: base } of variants) {
+    // The label's boxes in place; a trial only shifts them.
+    const baseBoxes = labelRects(rel, variant)
     for (const side of SIDE_STEPS) {
-      for (let t = 0; t <= len / 2; t += LABEL_STEP) {
+      if (settled(base + 2 * Math.abs(side))) continue
+      for (let t = 0; t <= len / 2; t += step) {
+        if (settled(base + 2 * Math.abs(side) + t)) break
         for (const s of t === 0 ? [1] : [1, -1]) {
           const along = s * t
           const at = {
             x: along * ux - side * uy,
             y: along * uy + side * ux,
           }
-          const boxes = c4RelLabelBoxes({
-            ...rel,
-            labelLines: variant.lines,
-            labelPosition: {
-              x: variant.position.x + at.x,
-              y: variant.position.y + at.y,
-            },
-            ...(variant.technologyX === undefined
-              ? {}
-              : { technologyX: variant.technologyX + at.x }),
-          }).map(rectOf)
+          const boxes = baseBoxes.map((r) => ({
+            x0: r.x0 + at.x,
+            x1: r.x1 + at.x,
+            y0: r.y0 + at.y,
+            y1: r.y1 + at.y,
+          }))
           let penalty = 0
+          // Past the best penalty so far a trial cannot win: stop counting.
+          const limit = best?.penalty ?? Infinity
           for (const b of boxes) {
-            for (const o of all) if (rectsOverlap(b, o)) penalty += o.weight
-            for (const pts of lines) {
+            if (penalty > limit) break
+            for (const o of all) {
+              if (rectsOverlap(b, o)) penalty += o.weight
+              if (penalty > limit) break
+            }
+            if (penalty > limit) break
+            for (const [i, pts] of nearLines.entries()) {
+              const lb = lineBounds[i]!
+              if (
+                lb.x1 <= b.x0 ||
+                lb.x0 >= b.x1 ||
+                lb.y1 <= b.y0 ||
+                lb.y0 >= b.y1
+              ) {
+                continue
+              }
               if (
                 pts.some(
                   (p) => p.x > b.x0 && p.x < b.x1 && p.y > b.y0 && p.y < b.y1,

@@ -359,7 +359,7 @@ function renderRelationshipLine(rel: PositionedC4Relationship): string {
 function renderRelationshipLabel(rel: PositionedC4Relationship): string {
   const lines = c4PositionedLabelLines(rel)
   const boxes = c4RelLabelBoxes(rel)
-  if (lines.length === 0 || boxes.length === 0) return ''
+  if (boxes.length === 0) return ''
   const parts = [
     f`<g class="c4-relationship-label" data-from="${escapeAttr(rel.from)}" data-to="${escapeAttr(rel.to)}">`,
   ]

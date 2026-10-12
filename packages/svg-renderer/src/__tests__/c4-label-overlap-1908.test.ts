@@ -66,6 +66,15 @@ const SOURCES: Record<string, string> = {
   Rel(a, b, "Requests")
   Rel_Back(b, a, "Responds")
   BiRel(u, b, "Streams")`,
+  // A node with a description heading and one with no type line.
+  deploymentDescribed: `C4Deployment
+  Deployment_Node(dc, "Data centre", "Ubuntu", "Hosts the whole stack") {
+    Container(app, "App", "Java")
+  }
+  Deployment_Node(plain, "Plain")
+  ContainerDb(db, "DB", "Pg")
+  Rel(app, db, "reads")
+  Rel(db, plain, "to plain")`,
   deployment: `C4Deployment
   Deployment_Node(dc, "DC", "Ubuntu") {
     Deployment_Node(k, "K8s", "Kubernetes") {
@@ -181,6 +190,108 @@ describe('C4 relationship labels keep clear of shapes, frames and each other (#1
   System(b, "B")
   Rel(a, b, "Uses")`)
     expect(d.relationships[0]!.labelLines).toBeUndefined()
+  })
+
+  it('keeps a label off the other relationships lines when it can', () => {
+    // Three relationships fan out of one shape; each label must clear the
+    // other two lines, not only the shapes.
+    const d = layout(`C4Context
+  System(a, "A")
+  System(b, "B")
+  System(c, "C")
+  System(e, "E")
+  Rel(a, b, "First relation")
+  Rel(a, c, "Second relation")
+  Rel(a, e, "Third relation")`)
+    const sample = (r: (typeof d.relationships)[number]) => {
+      const [s, e] = [r.points[0]!, r.points[r.points.length - 1]!]
+      return Array.from({ length: 101 }, (_, i) => {
+        const t = i / 100
+        const u = 1 - t
+        const c = r.curve
+        return c
+          ? {
+              x: u * u * s.x + 2 * u * t * c.x + t * t * e.x,
+              y: u * u * s.y + 2 * u * t * c.y + t * t * e.y,
+            }
+          : { x: s.x + (e.x - s.x) * t, y: s.y + (e.y - s.y) * t }
+      })
+    }
+    const touching = d.relationships.flatMap((mine) =>
+      c4RelLabelBoxes(mine).flatMap((b) =>
+        d.relationships
+          .filter((other) => other !== mine)
+          .filter((other) =>
+            sample(other).some(
+              (p) =>
+                p.x > b.cx - b.w / 2 &&
+                p.x < b.cx + b.w / 2 &&
+                p.y > b.cy - b.h / 2 &&
+                p.y < b.cy + b.h / 2,
+            ),
+          )
+          .map((other) => `${mine.to} label on ${other.to} line`),
+      ),
+    )
+    expect(touching).toEqual([])
+  })
+
+  it('places a label that has only a technology, or only a sequence number', () => {
+    const tech = layout(`C4Context
+  System(a, "A")
+  System(b, "B")
+  Rel(a, b, "", "HTTPS")`).relationships[0]!
+    expect(c4PositionedLabelLines(tech)).toEqual(['[HTTPS]'])
+    expect(tech.labelPosition).toBeDefined()
+    const seq = layout(`C4Dynamic
+  System(a, "A")
+  System(b, "B")
+  Rel(a, b, "")`).relationships[0]!
+    expect(c4PositionedLabelLines(seq)).toEqual(['1:'])
+    expect(seq.labelPosition).toBeDefined()
+  })
+
+  it('places the label of a zero-length relationship', () => {
+    const d = parseC4Diagram(
+      splitStatements(`C4Context
+  System(a, "A")
+  System(b, "B")
+  Rel(a, b, "self")`),
+    )
+    const p = layoutC4DiagramSync({
+      ...d,
+      relationships: [{ ...d.relationships[0]!, to: 'a' }],
+    })
+    const pos = p.relationships[0]!.labelPosition!
+    expect(Number.isFinite(pos.x) && Number.isFinite(pos.y)).toBe(true)
+  })
+
+  it('draws no plate for a relationship with no label at all', () => {
+    const svg = renderMermaidSVG(`C4Context
+  System(a, "A")
+  System(b, "B")
+  Rel(a, b, "")`)
+    expect(svg).toContain('class="c4-relationship"')
+    expect(svg).not.toContain('c4-label-plate')
+  })
+
+  it('avoids only the headings a boundary has', () => {
+    const d = parseC4Diagram(splitStatements(SOURCES.component!))
+    const untyped = (b: (typeof d.boundaries)[number]): typeof b => {
+      const { type: _type, ...rest } = b
+      return { ...rest, children: rest.children.map(untyped) }
+    }
+    const p = layoutC4DiagramSync({
+      ...d,
+      boundaries: d.boundaries.map(untyped),
+    })
+    expect(p.boundaries.every((b) => b.typeY === undefined)).toBe(true)
+    expect(p.relationships.every((r) => r.labelPosition)).toBe(true)
+  })
+
+  it('has no label boxes for a relationship without a position', () => {
+    const rel = layout(SOURCES.dynamic!).relationships[0]!
+    expect(c4RelLabelBoxes({ ...rel, labelPosition: undefined })).toEqual([])
   })
 
   it('sets every label on a background plate, drawn after all the lines', () => {
