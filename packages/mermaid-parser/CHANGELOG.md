@@ -1,5 +1,15 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.1.0
+
+### Patch Changes
+
+- [#1719](https://github.com/dfadler/zombie-mermaid/pull/1719) [`3ec564e`](https://github.com/dfadler/zombie-mermaid/commit/3ec564ea51616fceb6facb37709313e15fb8b7d6) Thanks [@dfadler](https://github.com/dfadler)! - Decode Mermaid entity codes (`#quot;`, `[#35](https://github.com/dfadler/zombie-mermaid/issues/35);`) in pie and xychart titles, slice labels, axis titles and categories.
+
+- [#1620](https://github.com/dfadler/zombie-mermaid/pull/1620) [`ab0b6c9`](https://github.com/dfadler/zombie-mermaid/commit/ab0b6c9278bbef10949cd353a1088e2b02596931) Thanks [@dfadler](https://github.com/dfadler)! - Fix package README inaccuracies and add missing `package.json` metadata ([#1545](https://github.com/dfadler/zombie-mermaid/issues/1545)).
+- Updated dependencies [[`ab0b6c9`](https://github.com/dfadler/zombie-mermaid/commit/ab0b6c9278bbef10949cd353a1088e2b02596931)]:
+  - @zombie-mermaid/core@5.1.0
+
 ## 5.0.1
 
 ### Patch Changes
