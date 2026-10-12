@@ -29,6 +29,7 @@ import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 import { samples } from '../packages/site/samples-data.ts'
+import { pinFreshness } from './lib/mermaid-pin-freshness.ts'
 import {
   TABLE_HEADER,
   USAGE,
@@ -112,6 +113,9 @@ async function main(): Promise<number> {
     console.log(USAGE)
     return 0
   }
+
+  const fresh = pinFreshness()
+  if (fresh.stale) console.error(`warning: ${fresh.message}`)
 
   const wanted = samples.filter(
     (s) =>

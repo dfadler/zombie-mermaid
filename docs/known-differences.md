@@ -1,39 +1,27 @@
 # Known differences from mermaid.js
 
 Places where zombie-mermaid renders or parses differently from mermaid.js and the
-difference is either intentional or not yet fixed. Each entry was re-checked against
-the pinned `mermaid` devDependency (11.17.2), rendered headless through
-`scripts/lib/real-mermaid.ts`. Other mermaid versions may differ.
+difference is either intentional or not yet fixed. The reference is the pinned
+`mermaid` devDependency (12.1.0), rendered headless through
+`scripts/lib/real-mermaid.ts`; mermaid.live and GitHub render the same layout.
+The pin moved from 11.17.2 in the bump that added this note, and entries not
+listed below as re-checked were measured on 11.17.2: other versions may differ.
 
 ## Subgraph inner direction
 
-mermaid.js flips a subgraph's inner direction perpendicular to its parent by default
-(`graph TD` parent, row inside; `graph LR` parent, column inside). An edge that
-touches a node _inside_ the subgraph cancels the flip, and an explicit `direction` is
-then ignored. Edges to or from the subgraph id (`X --> Sub`, `Sub --> Y`) do not cancel
-it. Outside edges do not cause the flip; it is the default.
+Re-checked on 12.1.0 (and 11.17.2). Given `subgraph S` holding `a --> b --> c` in a
+`graph TD`:
 
-zombie-mermaid never applies the default flip. It honors an explicit `direction`
-only when no edge crosses the subgraph boundary (an edge with exactly one end inside
-the subgraph, where its id counts as inside), and otherwise uses the parent's
-direction. Edges between two inner nodes, like `a --> b`, never cancel it. SVG and ASCII agree with each other. Given `subgraph S` holding
-`a --> b --> c` in a `graph TD`:
-
-| Source                                      | mermaid.js inner | zombie-mermaid |
-| ------------------------------------------- | ---------------- | -------------- |
-| no `direction`, no edges                    | row              | column         |
-| `direction LR`, no edges                    | row              | row            |
-| `direction TB`, no edges                    | column           | column         |
-| `graph LR` parent, no `direction`, no edges | column           | row            |
-| `X --> S` or `S --> Y` (edge to the id)     | row              | column         |
-| `direction LR` plus `X --> S`               | row              | column         |
-| `X --> a` (edge to an inner node)           | column           | column         |
-| `c --> Y` (edge from an inner node)         | column           | column         |
-
-The rows that differ are an isolated subgraph with no `direction`, and a subgraph
-touched only by edges to or from its id. To get the same result in both, set
-`direction` explicitly and keep edges off the subgraph id, or accept the difference.
-Nested subgraphs and cluster-to-cluster edges were not checked.
+- **No `direction`.** mermaid 11.17.2 flipped an uncrossed subgraph perpendicular to
+  its parent (row inside a `TD` graph). mermaid 12.1.0, mermaid.live and GitHub do
+  not: the subgraph follows its parent (column). zombie-mermaid never flips, so it
+  matches 12.x. A 11.x-based comparison shows a difference that is not one.
+- **Explicit `direction`.** Both versions keep it unless an edge crosses the subgraph
+  boundary, or an ancestor's. An edge to or from the subgraph's own id (`X --> S`,
+  `S --> Y`) does not cross it, so `direction LR` plus `X --> S` is a row. An edge to
+  or from a member (`X --> a`, `c --> Y`) crosses, and the subgraph follows its
+  parent. zombie-mermaid counts the subgraph's own id as inside, so it draws a column
+  for the id-edge cases (#1830 fixes this).
 
 ## Layout tie-breaks and placement
 
