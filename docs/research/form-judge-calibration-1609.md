@@ -40,7 +40,15 @@ Caveat: the clean set is small (23). A single false positive would be 4%, and th
 ## Corrections after review
 
 - `before/sequence-results.jsonl`: the judge skipped OAuth `dropEdge` (`case-014`) and numbered the rest by position, so the verdicts labelled `case-014`..`case-016` described `swapDirection`, `truncateLabel` and `wrongLabel` (each by its finding text). They are now relabelled `case-015`..`case-017`. This moves one caught case from truncateLabel to swapDirection in the table above (swapDirection 11/11, truncateLabel 5/13); the 46/61 total is unchanged. OAuth `dropEdge` is covered by `dropedge-results.jsonl`.
-- `dropEdge` on Sequence samples (the Sequence set plus 3 cases in `dropedge-*`) was generated before `blankEdge` was fixed to follow a horizontal arrowhead along its own axis. A Sequence arrowhead sits in the lifeline column, so the old code blanked the lifeline and left the message line. Those Sequence `dropEdge` verdicts measured a missing lifeline and arrowhead, not a missing message. Re-running them needs a paid judge run and is not done here.
+- `dropEdge` on the 3 Sequence samples (cases `case-007`..`case-009` of `dropedge-*`) was generated before `blankEdge` was fixed to follow a horizontal arrowhead along its own axis. A Sequence arrowhead sits in the lifeline column, so the old code blanked the lifeline and left the message line. Those 3 cases were rebuilt with the fixed mutation and re-judged: with the original prompt for `before/`, with the #1822 prompt for `after/`, and the committed verdict files are updated. All 3 are `faithful: false` under both prompts (finding: the first message's connector and arrowhead is missing), so the dropEdge counts do not change (before 10/11, after 11/11). The `dropEdge v1` reference row comes from the Sequence/Flowchart/Class sets and was never the fixed mutation; it stays reference only.
+- **Open question for the maintainer, not decided here:** the single-case OAuth `wrongLabel` retry (`before/retry-results.jsonl`, `faithful: true`, no finding) was a re-run of a case the Sequence session had skipped; the session's own verdict for that case, once relabelled to `case-017`, is `faithful: false`. The "before" numbers above use the retry verdict. Totals both ways (original prompt):
+
+  |            | with retry override (`true`) | with relabelled session verdict (`false`) |
+  | ---------- | ---------------------------- | ----------------------------------------- |
+  | wrongLabel | 7/13                         | 8/13                                      |
+  | recall     | 46/61 = 75.4%                | 47/61 = 77.0%                             |
+
+  Both are below the 80% threshold. The "after" numbers (100%) do not depend on this choice.
 
 ## Earlier baseline notes (original prompt)
 
