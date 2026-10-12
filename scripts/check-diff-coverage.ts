@@ -6,7 +6,7 @@
 // a slow, all-at-once cleanup of existing gaps.
 //
 // Scope: src/, packages/*/src/ and scripts/**/*.ts (minus the exempt list in
-// scripts/coverage-exempt.json). DIFF_THRESHOLD is 90 here, not 95.
+// scripts/coverage-exempt.json). DIFF_THRESHOLD is 95 (maintainer decision, #1829).
 //
 // Usage: pnpm run test:coverage && pnpm run coverage:diff
 // (relies on coverage/lcov.info from the coverage run above)
@@ -14,7 +14,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
 
-const DIFF_THRESHOLD = 90
+const DIFF_THRESHOLD = 95
 const LCOV_PATH = 'coverage/lcov.info'
 // Broad git pathspec for the diff itself (see getChangedLines) — narrowed to
 // config/vitest.config.ts's actual coverage.include pattern by isTrackedTsFile()

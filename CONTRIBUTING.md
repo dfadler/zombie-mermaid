@@ -85,7 +85,7 @@ Keep PRs focused: one fix or feature per PR is much easier to review and, if nee
 
 CI (`.github/workflows/ci.yml`) runs on every push and PR against `main`; its job list is the source of truth for what must pass. A few jobs need contributor action:
 
-- `test` includes `pnpm run coverage:diff`: new and changed lines in `src/`, `packages/*/src/` and `scripts/**/*.ts` need 90% coverage (see "Testing scripts" below for run-on-import CLIs). It also runs `scripts/check-snapshot-allowlist.sh` (see "Testing conventions for demo/editor components" below).
+- `test` includes `pnpm run coverage:diff`: new and changed lines in `src/`, `packages/*/src/` and `scripts/**/*.ts` need 95% coverage (see "Testing scripts" below for run-on-import CLIs). It also runs `scripts/check-snapshot-allowlist.sh` (see "Testing conventions for demo/editor components" below).
 - `visual-regression` is the Playwright suite; see "Visual regression tests" below.
 - `semgrep` is a SAST scan against Semgrep's free public rulesets. If it flags something in your PR, either fix the underlying issue or, for a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line explaining why. Don't disable the rule repo-wide.
 - `changeset` requires a changeset when you change anything that ships (see "Changesets" below).
@@ -144,7 +144,7 @@ CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the 
 
 ### Testing scripts
 
-`scripts/**/*.ts` is in the coverage run and the `coverage:diff` gate, same 90%
+`scripts/**/*.ts` is in the coverage run and the `coverage:diff` gate, same 95%
 bar as `src/`. A CLI that runs on import (top-level code, `process.exit`)
 can't be covered in-process, and a subprocess test is invisible to v8. So:
 keep the logic in an importable file (`scripts/lib/*.ts`, or exported
