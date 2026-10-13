@@ -33,7 +33,14 @@ export type {
   XyChartRenderOptions,
 } from '@zombie-mermaid/core'
 export type { DiagramColors, ThemeName } from '@zombie-mermaid/core'
-export { fromShikiTheme, THEMES, DEFAULTS } from '@zombie-mermaid/core'
+export type { RenderLimits } from '@zombie-mermaid/core'
+export {
+  fromShikiTheme,
+  THEMES,
+  DEFAULTS,
+  DEFAULT_RENDER_LIMITS,
+  LimitExceededError,
+} from '@zombie-mermaid/core'
 export { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 export {
   renderMermaidASCII,

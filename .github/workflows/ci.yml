@@ -688,7 +688,24 @@ jobs:
       # Installs the packed tarballs into clean projects and checks imports,
       # types, CLI, MCP, rendering, elkjs and a Vite bundle (#1566).
       - name: Smoke-test packed tarballs
+        env:
+          SMOKE_TARBALL_DIR: ${{ runner.temp }}/tarballs
         run: pnpm run smoke:packed
+
+      # Report-only (#1868): publint + attw (pinned devDependencies, run via
+      # pnpm exec) over the tarballs packed above, so nothing is packed twice.
+      # continue-on-error keeps it advisory; gate it once the output is clean.
+      - name: Lint package exports (publint, attw; report-only)
+        continue-on-error: true
+        env:
+          TARBALL_DIR: ${{ runner.temp }}/tarballs
+        run: |
+          {
+            echo '## publint + arethetypeswrong (report-only)'
+            echo '```'
+            scripts/check-package-types.sh "$TARBALL_DIR" 2>&1
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
   semgrep:
     name: Semgrep SAST scan
