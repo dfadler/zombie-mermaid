@@ -524,4 +524,30 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the ╟ marker collides with ORDER’s └ corner. After: the line meets ORDER at a ├ junction inside the box.',
   },
+  {
+    id: 'c4-empty-boundary-frame-width',
+    title: 'A C4 empty boundary frame ran past the right edge of the SVG',
+    symptom:
+      'An empty deployment node got its default 216px width after the diagram width was measured, so its frame was drawn partly outside the SVG and clipped at the edge.',
+    source:
+      'C4Deployment\n  Deployment_Node(dc, \"DC\", \"Ubuntu\") {\n    Container(app, \"App\", \"Java\")\n  }\n  Deployment_Node(empty, \"Empty\", \"x\")',
+    fixCommit: 'fa02ffe3a',
+    pr: 1965,
+    render: 'svg',
+    lookFor:
+      'Before: the `Empty` frame is cut off at the right edge. After: the SVG is wider and the frame is fully drawn. mermaid 12.2.0 rejects this input, so this shows only what our output does.',
+  },
+  {
+    id: 'elk-invalid-hitboxes-wide-labels',
+    title: 'Disconnected pairs with wide edge labels crashed the layout',
+    symptom:
+      'ELK’s post-compaction pass threw `Invalid hitboxes for scanline constraint calculation` when a graph had two or more components with wide inline edge labels, so nothing rendered. The layout now retries once without post-compaction.',
+    source:
+      'flowchart TD\n  A -->|a longer label here| B\n  C -->|a longer label here| D\n  E -->|a longer label here| F\n  G -->|a longer label here| H',
+    fixCommit: 'e63ed989d',
+    pr: 1976,
+    render: 'svg',
+    lookFor:
+      'Before: an error instead of a diagram. After: four labelled pairs.',
+  },
 ]
