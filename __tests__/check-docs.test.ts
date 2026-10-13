@@ -108,7 +108,11 @@ describe('check-docs research guard (#1642)', () => {
     read: (p: string) => files[p] ?? '',
     ls: (g: string) =>
       Object.keys(files).filter((f) =>
-        g.startsWith('*.') ? f.endsWith(g.slice(1)) : f.startsWith(g),
+        g === '*'
+          ? true
+          : g.startsWith('*.')
+            ? f.endsWith(g.slice(1))
+            : f.startsWith(g),
       ),
   })
   it('flags a research doc or dir that nothing else mentions', () => {
@@ -127,6 +131,17 @@ describe('check-docs research guard (#1642)', () => {
       'docs/research/a',
       'docs/research/d',
     ])
+  })
+  it('counts a reference from a Dockerfile, but not from a longer key', () => {
+    const base = { 'docs/research/614-x.md': 'x' }
+    expect(
+      orphanResearch(
+        fs({ ...base, 'docker/a.Dockerfile': '# docs/research/614-x.md' }),
+      ),
+    ).toEqual([])
+    expect(
+      orphanResearch(fs({ ...base, 'ci.yml': 'docs/research/614-x-v2.md' })),
+    ).toHaveLength(1)
   })
   it('passes when every doc is referenced from outside the directory', () => {
     expect(

@@ -53,6 +53,7 @@
   "test:ascii-text:update": "rewrite the plain-text ASCII snapshots under `__tests__/__ascii-snapshots__/` (unicode and ASCII-only, one `.txt` per gallery sample; asserted by `__tests__/ascii-text-snapshots.test.ts` under normal `pnpm test`). Run it after an intentional ASCII rendering change or after adding a sample to `samples-data.ts`/`xychart-samples-data.ts`, then review the `.txt` diff (#1708)",
   "test:visual:update": "regenerate visual baselines for your platform (see [visual-regression.md](visual-regression.md))",
   "test:visual:watch": "the visual regression suite in Playwright UI mode",
+  "test:shuffle": "Vitest with file and test order shuffled (pass --sequence.seed=<n> to reproduce; nightly in CI)",
   "test:watch": "Vitest in watch mode",
   "typecheck": "type-check the library, `demo/`, and `editor/` configs",
   "upstream:pr-candidates": "list upstream `lukilabs/beautiful-mermaid`'s open PRs as a triage table for porting (read-only; needs an authenticated `gh`); see \"Porting fixes from upstream\" in [CONTRIBUTING.md](../CONTRIBUTING.md)",
