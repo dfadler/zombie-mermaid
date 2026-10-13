@@ -34,6 +34,19 @@ This isn't just a claim — see **[what this fork fixes](https://dfadler.github.
 
 It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below.
 
+### Migrating from `beautiful-mermaid`
+
+Swap the package (`npm uninstall beautiful-mermaid && npm install zombie-mermaid`, Node.js 24+) and change the import path; `renderMermaidSVG`, `renderMermaidSVGAsync`, `renderMermaidASCII` and `parseMermaid` keep the same signatures. In browsers and bundlers, also register `elkjs` once (Node, Bun, the CLI and MCP do it for you):
+
+```ts
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk, renderMermaidSVG } from 'zombie-mermaid'
+
+registerElk(ELK) // once, before the first render
+```
+
+Some fixes change existing output, so diff your stored diagrams first: see the [migration guide](docs/migrating-from-beautiful-mermaid.md) and the [`elkjs` guide](docs/guides/elkjs-optional-peer.md).
+
 ## The Problem With Default Mermaid Rendering
 
 Diagrams are essential for AI-assisted programming. When you're working with an AI coding assistant, being able to visualize data flows, state machines, and system architecture—directly in your terminal or chat interface—makes complex concepts instantly graspable.
