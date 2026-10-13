@@ -301,7 +301,7 @@ jobs:
     # result the #544 cluster produced. Pre-flight evidence (3x full-suite
     # green, 281/281, zero retries consumed, inside a Playwright container
     # image on an emulated-amd64 host) is in
-    # https://github.com/dfadler/zombie-mermaid/issues/549#issuecomment-6130805981.
+    # docs/research/549-ci-container-migration.md.
     #
     # zombie-mermaid#868 (a #737 follow-up) switched this job from the
     # stock, multi-browser `mcr.microsoft.com/playwright:v1.62.1-jammy` image

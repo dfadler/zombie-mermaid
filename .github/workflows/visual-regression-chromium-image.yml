@@ -8,7 +8,7 @@ name: Visual regression Chromium-only image (build & publish)
 # follow-up to #729/#733's investigation into `visual-regression`'s
 # container-init overhead - and deliberately NOT wired into
 # `push`/`pull_request`, since #737's own scope was "build the image and
-# measure it," not "adopt it" (https://github.com/dfadler/zombie-mermaid/issues/737#issuecomment-6130806278
+# measure it," not "adopt it" (docs/research/737-chromium-only-image-pull-timing.md
 # has the resulting numbers).
 #
 # zombie-mermaid#868 adopted the image #737 built: `ci.yml`'s real
