@@ -67,15 +67,7 @@ let ElkCtor: ElkConstructor | null = null
 let elk: ElkBundledInternal | null = null
 let rawWorker: RawFakeWorker | null = null
 
-/**
- * Thrown when a graph diagram renders and no `elkjs` constructor is available.
- *
- * Deliberately NOT a `MermaidParseError` (#1979): the diagram source is fine,
- * the environment is missing a peer dependency. Extending the parse base would
- * make `instanceof MermaidParseError` consumers (MCP diagnostics, the CLI)
- * treat it as bad input to fix in the diagram, and it has no line, column or
- * diagramType to carry.
- */
+/** Thrown when a graph diagram renders and no `elkjs` constructor is available. */
 export class ElkNotRegisteredError extends Error {
   constructor() {
     super(
