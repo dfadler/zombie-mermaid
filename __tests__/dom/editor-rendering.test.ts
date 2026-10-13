@@ -107,6 +107,10 @@ function stubMermaidWithAscii(
 afterEach(() => {
   // @ts-expect-error -- deleting a property this file's own tests define.
   delete window.__mermaid
+  // EditorApp persists the theme/config into the URL hash and storage; without
+  // this reset a later test boots with an earlier test's theme (#1969).
+  window.history.replaceState(null, '', window.location.pathname)
+  window.localStorage.clear()
 })
 
 describe('hexToRgb (#810)', () => {
