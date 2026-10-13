@@ -36,6 +36,9 @@ importers:
       entities:
         specifier: ^7.0.1
         version: 7.0.1
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.13.0
@@ -136,9 +139,6 @@ importers:
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@24.13.6)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1)(vite@8.2.2(@types/node@24.13.6)(esbuild@0.28.2)(tsx@4.23.12)(yaml@2.9.0))
-      zod:
-        specifier: ^4.5.4
-        version: 4.5.4
     optionalDependencies:
       '@resvg/resvg-js':
         specifier: ^2.6.2
