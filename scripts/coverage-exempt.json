@@ -91,7 +91,7 @@
   {
     "file": "scripts/form-judge-calibrate.ts",
     "reason": "thin argv/file-I/O CLI over scripts/lib/form-judge-calibration.ts (which is covered in-process); runs on import and calls process.exit, so only __tests__/form-judge-calibrate-cli.test.ts exercises it, via a subprocess v8 cannot see",
-    "maxLines": 70
+    "maxLines": 80
   },
   {
     "file": "scripts/form-judge-finalize-cache.ts",

@@ -79,7 +79,21 @@ function getNodeAttachmentPoint(
       `Node "${node.name}" has no drawingCoord; grid layout must run before bundled-edge drawing`,
     )
   }
-  return getShapeAttachmentPoint(node.shape, dir, gridDimensions, baseCoord)
+  const point = getShapeAttachmentPoint(
+    node.shape,
+    dir,
+    gridDimensions,
+    baseCoord,
+  )
+  // A vertical entry/exit must sit in the column the routed stem is drawn
+  // in: the centre of the node's middle grid column. The box's own centre
+  // (`floor(width / 2)`) differs from it by one when the node is an even
+  // number of cells wide (a "half-column" centre), which put the arrowhead
+  // and the junction connector a column off the stem. See issue #1914.
+  if (dirEquals(dir, Up) || dirEquals(dir, Down)) {
+    point.x = gridToDrawingCoord(graph, { x: gc.x + 1, y: gc.y }).x
+  }
+  return point
 }
 
 /**

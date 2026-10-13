@@ -25,8 +25,11 @@ const root = resolve(import.meta.dirname, '..')
 const rootPkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const dev = rootPkg.devDependencies
 const tmp = mkdtempSync(join(tmpdir(), 'zm-smoke-'))
-const tarDir = join(tmp, 'tarballs')
-mkdirSync(tarDir)
+// SMOKE_TARBALL_DIR keeps the tarballs where `check:package-types` can reuse them.
+const tarDir = process.env.SMOKE_TARBALL_DIR
+  ? resolve(process.env.SMOKE_TARBALL_DIR)
+  : join(tmp, 'tarballs')
+mkdirSync(tarDir, { recursive: true })
 
 const run = (cmd, args, cwd, opts = {}) =>
   execFileSync(cmd, args, { cwd, encoding: 'utf8', stdio: 'pipe', ...opts })
