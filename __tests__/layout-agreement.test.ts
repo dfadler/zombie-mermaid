@@ -281,6 +281,18 @@ describe('summarize / scorecardMarkdown (#1572)', () => {
     expect(md.indexOf('| low |')).toBeLessThan(md.indexOf('hi\\|gh'))
   })
 
+  it('scorecard names samples the oracle errored on', () => {
+    const results = { ok: r(1, 1, 1) }
+    const entry = summarize(results, meta)
+    const sampled = ['ok', 'broken']
+    expect(scorecardMarkdown([{ entry, results, sampled }], [entry])).toContain(
+      'Not scored (the oracle errored): broken.',
+    )
+    expect(scorecardMarkdown([{ entry, results }], [entry])).not.toContain(
+      'Not scored',
+    )
+  })
+
   it('scorecard treats untyped, unversioned entries as 11.17.2 flowcharts and sorts no-figure samples last (#1905)', () => {
     const results = {
       none: r(null, null, null),

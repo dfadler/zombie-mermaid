@@ -153,7 +153,7 @@ async function scoreType(
       }
     }
   }
-  return { wanted: wanted.length, results, rows, failing }
+  return { wanted: wanted.map((s) => s.title), results, rows, failing }
 }
 
 async function main(): Promise<number> {
@@ -198,7 +198,7 @@ async function main(): Promise<number> {
   try {
     for (const type of types) {
       const scored = await scoreType(session, type, args)
-      if (scored.wanted === 0) {
+      if (scored.wanted.length === 0) {
         console.error(`No ${type} sample matches "${args.filter ?? ''}".`)
         return 2
       }
@@ -208,6 +208,7 @@ async function main(): Promise<number> {
       failing.push(...scored.failing)
       runs.push({
         results: scored.results,
+        sampled: scored.wanted,
         entry: summarize(scored.results, {
           date: new Date().toISOString().slice(0, 10),
           commit,

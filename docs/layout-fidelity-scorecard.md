@@ -91,6 +91,8 @@ across that change.
 | State: Choice, Fork and Join | 100%     | 100%       | -           | 7     |
 | State: Concurrent Regions    | 100%     | 100%       | 100%        | 4     |
 
+Not scored (the oracle errored): zombie-mermaid.
+
 ### Class (lowest first)
 
 | Sample                           | Vertical | Horizontal | Containment | Nodes |
