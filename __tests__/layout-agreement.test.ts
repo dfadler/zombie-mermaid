@@ -168,6 +168,17 @@ describe('parseOracleArgs', () => {
     )
   })
 
+  it('refuses --layout=simple with --history or --scorecard', () => {
+    for (const flag of ['--history=h.jsonl', '--scorecard=s.md']) {
+      expect(() => parseOracleArgs(['--layout=simple', flag])).toThrow(
+        /record the elk layout only/,
+      )
+    }
+    expect(parseOracleArgs(['--layout=elk', '--history=h.jsonl']).layout).toBe(
+      'elk',
+    )
+  })
+
   it('reads each option', () => {
     expect(
       parseOracleArgs([

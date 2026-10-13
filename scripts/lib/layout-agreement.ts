@@ -275,6 +275,9 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
   if (args.layout === 'simple' && args.type !== 'flowchart') {
     throw new Error('--layout=simple only lays out flowcharts.')
   }
+  if (args.layout !== 'elk' && (args.history || args.scorecard)) {
+    throw new Error('--history and --scorecard record the elk layout only.')
+  }
   return args
 }
 

@@ -132,11 +132,7 @@ async function scoreType(
       const official = await measureOfficial(session.page, svg, renderId, type)
       const a = agreement(
         official,
-        measureOurs(
-          sample.source,
-          type,
-          type === 'flowchart' ? args.layout : 'elk',
-        ),
+        measureOurs(sample.source, type, args.layout),
         args.tolerance,
       )
       results[sample.title] = { ...a, subgraphs: hasSubgraphs }
@@ -180,10 +176,6 @@ async function main(): Promise<number> {
   // The history and scorecard record every covered type, so --type is ignored for them.
   const recording = Boolean(args.history || args.scorecard)
   const types = recording ? ORACLE_TYPES : [args.type]
-  if (recording && args.layout !== 'elk') {
-    console.error('--history and --scorecard record the elk layout only.')
-    return 2
-  }
 
   let session
   try {
