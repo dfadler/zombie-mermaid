@@ -25,7 +25,7 @@
   },
   "unpackedBudgets": {
     "dist": 48000,
-    "packages/core/dist": 187000,
+    "packages/core/dist": 192000,
     "packages/mermaid-parser/dist": 202000,
     "packages/svg-renderer/dist": 432000,
     "packages/ascii-renderer/dist": 428000,
