@@ -30,8 +30,19 @@ export function findBackEdgeIndexes(
   graph: MermaidGraph,
   walkOrder?: Iterable<string>,
 ): Set<number> {
+  return findBackEdges(graph.edges, walkOrder ?? graph.nodes.keys())
+}
+
+/**
+ * The same walk over any edge list (class relationships use it too), given
+ * the node ids in the order the walk starts from.
+ */
+export function findBackEdges(
+  edges: ReadonlyArray<{ source: string; target: string }>,
+  walkOrder: Iterable<string>,
+): Set<number> {
   const outEdges = new Map<string, number[]>()
-  graph.edges.forEach((edge, index) => {
+  edges.forEach((edge, index) => {
     if (edge.source === edge.target) return
     const list = outEdges.get(edge.source)
     if (list) list.push(index)
@@ -43,7 +54,7 @@ export function findBackEdgeIndexes(
   const onStack = new Set<string>()
 
   // Iterative, so a long chain can't overflow the call stack.
-  for (const root of walkOrder ?? graph.nodes.keys()) {
+  for (const root of walkOrder) {
     if (visited.has(root)) continue
     const stack: Array<{ node: string; next: number }> = [
       { node: root, next: 0 },
@@ -52,14 +63,14 @@ export function findBackEdgeIndexes(
     onStack.add(root)
     while (stack.length > 0) {
       const frame = stack[stack.length - 1]!
-      const edges = outEdges.get(frame.node) ?? []
-      if (frame.next >= edges.length) {
+      const outs = outEdges.get(frame.node) ?? []
+      if (frame.next >= outs.length) {
         onStack.delete(frame.node)
         stack.pop()
         continue
       }
-      const index = edges[frame.next++]!
-      const target = graph.edges[index]!.target
+      const index = outs[frame.next++]!
+      const target = edges[index]!.target
       if (onStack.has(target)) {
         back.add(index)
       } else if (!visited.has(target)) {

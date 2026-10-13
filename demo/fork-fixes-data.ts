@@ -498,4 +498,30 @@ export const forkFixes: ForkFix[] = [
       'Before: the dotted edge’s leg is drawn with heavy glyphs. After: each edge keeps its own style.',
     upstreamIssues: [63],
   },
+  {
+    id: 'invalid-style-colors',
+    title: 'An invalid colour in style/classDef painted the node black',
+    symptom:
+      'A value that is not a CSS colour (`fill:notacolor`) was written into the SVG as an attribute, which browsers paint black (or stroke as none). Mermaid ignores the bad declaration, and so do we now.',
+    source:
+      'flowchart LR\n  A[Fill word] --> B[Stroke word]\n  style A fill:notacolor\n  style B fill:#ffe6cc,stroke:notacolor,stroke-width:4px',
+    fixCommit: '3861e50d',
+    pr: 1922,
+    render: 'svg',
+    lookFor:
+      'Before: the first node is solid black and the second has no border. After: both fall back to the theme paint, and the valid fill and stroke width stay.',
+  },
+  {
+    id: 'ascii-er-shorter-entity-row',
+    title: 'An ER relationship beside a shorter entity landed on its border',
+    symptom:
+      'The relationship row was the left entity’s midpoint, so beside a shorter entity it fell on that box’s bottom border and the cardinality marker ran into the corner.',
+    source:
+      'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  CUSTOMER {\n    int id PK\n    string name\n    string email\n    string phone\n    string address\n  }\n  ORDER {\n    int id PK\n  }',
+    fixCommit: '87336e06',
+    pr: 1913,
+    render: 'ascii',
+    lookFor:
+      'Before: the ╟ marker collides with ORDER’s └ corner. After: the line meets ORDER at a ├ junction inside the box.',
+  },
 ]

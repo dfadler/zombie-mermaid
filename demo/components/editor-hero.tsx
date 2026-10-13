@@ -90,7 +90,8 @@ export function EditorHero({ homeHref }: { homeHref: string }) {
         >
           A live SVG preview, 15 switchable themes, pan &amp; zoom, and
           one-click SVG export — every diagram you edit here round-trips through
-          the URL, so a shared link reproduces the exact view.
+          the URL, so a shared link reproduces the exact view. Syntax errors
+          name the offending line.
         </p>
       </div>
     </div>

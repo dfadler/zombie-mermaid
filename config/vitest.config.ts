@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
@@ -55,7 +56,8 @@ export default defineConfig({
     // still open even on the 5.0.0-rc line) that hangs CI runs forever with
     // no timeout — see #299. Playwright Test drives the browser entirely
     // from Node with no such bridge, so this class of hang can't occur.
-    exclude: ['__tests__/visual/**'],
+    // __tests__/a11y/ is the axe scan, also Playwright (`pnpm test:a11y`).
+    exclude: ['__tests__/visual/**', '__tests__/a11y/**'],
     // Per-file `// @vitest-environment jsdom` docblocks (see
     // __tests__/dom/rtl-example.test.ts), not a directory glob, scope which
     // tests get a live DOM -- added by zombie-mermaid#798 as the #797
@@ -99,8 +101,22 @@ export default defineConfig({
       // zombie-mermaid#625 — it has to stay in the denominator or the
       // thresholds below would measure a strictly smaller file set than
       // they were calibrated against.
-      include: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
-      exclude: ['src/__tests__/**', 'packages/*/src/__tests__/**'],
+      include: ['src/**/*.ts', 'packages/*/src/**/*.ts', 'scripts/**/*.ts'],
+      // scripts/ is gated by check-diff-coverage.ts too; run-on-import CLI entry
+      // points can't be covered in-process, so they're listed (with a reason)
+      // in scripts/coverage-exempt.json and kept out of the denominator.
+      exclude: [
+        'src/__tests__/**',
+        'packages/*/src/__tests__/**',
+        ...(
+          JSON.parse(
+            readFileSync(
+              resolve(REPO_ROOT, 'scripts/coverage-exempt.json'),
+              'utf8',
+            ),
+          ) as { file: string }[]
+        ).map((e) => e.file),
+      ],
       thresholds: {
         statements: 88,
         branches: 77,

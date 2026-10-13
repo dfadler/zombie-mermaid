@@ -28,7 +28,7 @@ import {
   extractEdgePoints,
   extractEdgeLabelPosition,
 } from './elk-adapter-utils.ts'
-import { resolveNodeStyle } from '@zombie-mermaid/core'
+import { dropInvalidColors, resolveNodeStyle } from '@zombie-mermaid/core'
 
 /** Margin routing info for cross-hierarchy edges */
 interface MarginInfo {
@@ -110,7 +110,7 @@ function buildSelfLoopGeometry(
  * x/y/width/height, so computing it any earlier would have it drift out of
  * sync with a node that layer-alignment later shifts.
  */
-function synthesizeSelfLoopEdges(
+export function synthesizeSelfLoopEdges(
   graph: MermaidGraph,
   nodeMap: Map<string, PositionedNode>,
   edges: PositionedEdge[],
@@ -747,6 +747,7 @@ function collectAllSubgraphIds(sg: MermaidSubgraph, out: Set<string>): void {
 /**
  * Resolve inline styles for an edge from linkStyles map.
  * Default link style is applied first, then index-specific overrides.
+ * Invalid colours are dropped, as for nodes (#1918).
  */
 export function resolveEdgeStyle(
   edgeIndex: number,
@@ -764,5 +765,5 @@ export function resolveEdgeStyle(
     result = result ? { ...result, ...indexStyle } : { ...indexStyle }
   }
 
-  return result
+  return result && dropInvalidColors(result)
 }

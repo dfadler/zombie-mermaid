@@ -19,12 +19,19 @@ gh run download "$1" -p 'visual-regression-failures-*' -D "$tmp"
 dest="$repo_root/__tests__/visual/__screenshots__"
 n=0
 while IFS= read -r actual; do
-  # test-results/<test-dir>/<name>-actual.png; the baseline path is derived from
-  # the test dir (spec file + sample) so locate it by the spec's snapshot dir.
-  base="$(basename "$actual" -actual.png)"
-  spec="$(find "$dest" -name "${base}-chromium-linux.png" -print -quit)"
-  if [[ -z "$spec" ]]; then
-    echo "skip (no existing baseline, add by hand): $actual" >&2
+  # test-results/<test-dir>/<name>-actual.png. Playwright names <test-dir>
+  # "<spec-stem>.visual-<sample>-<hash>-<project>", e.g. "ascii-samples.visual-xycha-...",
+  # which maps to __screenshots__/<spec-stem>.visual.test.ts/. Install only there:
+  # the same baseline name can exist in several spec dirs (#1744).
+  testdir="$(basename "$(dirname "$actual")")"
+  if [[ "$testdir" != *.visual-* ]]; then
+    echo "skip (cannot map test dir to a spec): $actual" >&2
+    continue
+  fi
+  spec_dir="$dest/${testdir%%.visual-*}.visual.test.ts"
+  spec="$spec_dir/$(basename "$actual" -actual.png)-chromium-linux.png"
+  if [[ ! -f "$spec" ]]; then
+    echo "skip (no existing baseline in ${spec_dir##*/}, add by hand): $actual" >&2
     continue
   fi
   cp "$actual" "$spec"

@@ -134,7 +134,7 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
   // (no low-side gutter) and a fourth sibling needs a track of its own, so
   // layout inserts gutter tracks. Five or more keep today's routing.
   describe('three or more siblings (#1253)', () => {
-    const LABELS = ['first', 'second', 'third', 'fourth', 'fifth']
+    const LABELS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth']
     const many = (dir: Dir, siblings: number, others: string[]): string =>
       `flowchart ${dir}
   subgraph S [Cluster]
@@ -249,7 +249,7 @@ ${LABELS.slice(0, siblings)
       expect(clusterLaneEndShift(graph, third)).toBe(0)
     })
 
-    it('LR: the third sibling is not shifted (#1331)', () => {
+    it('LR: the third sibling is shifted a column (#1689)', () => {
       const graph = convertToAsciiGraph(
         parseMermaid(many('LR', 3, ['other'])),
         {
@@ -263,7 +263,7 @@ ${LABELS.slice(0, siblings)
       createMapping(graph)
       const plan = [...graph.clusterExitPlans!.values()][0]!
       const third = [...plan.edges].find((e) => e.parallelLane?.index === 2)!
-      expect(clusterLaneEndShift(graph, third)).toBe(0)
+      expect(clusterLaneEndShift(graph, third)).toBe(1)
     })
 
     it('TD: the two-sibling layout is not shifted (#1331)', () => {
@@ -287,9 +287,9 @@ ${LABELS.slice(0, siblings)
     })
 
     it.each(['TD', 'LR'] as const)(
-      "%s: five siblings keep today's routing (no lane in the plan)",
+      "%s: six siblings keep today's routing (no lane in the plan)",
       (dir) => {
-        const src = many(dir, 5, ['other', 'more'])
+        const src = many(dir, 6, ['other', 'more'])
         const graph = convertToAsciiGraph(parseMermaid(src), {
           useAscii: false,
           paddingX: 6,

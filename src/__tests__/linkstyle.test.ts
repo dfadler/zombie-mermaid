@@ -116,11 +116,18 @@ describe('linkStyle – SVG integration', () => {
 
   it('escapes XSS injection in stroke value', () => {
     const svg = renderMermaidSVG(
-      'graph TD\n  A --> B\n  linkStyle 0 stroke:red" onmouseover="alert(1)',
+      'graph TD\n  A --> B\n  linkStyle 0 stroke-width:2" onmouseover="alert(1)',
     )
     // Quotes must be escaped — no attribute breakout
-    expect(svg).not.toContain('stroke="red" onmouseover')
-    expect(svg).toContain('stroke="red&quot; onmouseover=&quot;alert(1)"')
+    expect(svg).not.toContain('stroke-width="2" onmouseover')
+    expect(svg).toContain('stroke-width="2&quot; onmouseover=&quot;alert(1)"')
+  })
+
+  it('drops a hostile stroke colour instead of emitting it (#1918)', () => {
+    const svg = renderMermaidSVG(
+      'graph TD\n  A --> B\n  linkStyle 0 stroke:red" onmouseover="alert(1)',
+    )
+    expect(svg).not.toContain('onmouseover')
   })
 
   it('trailing semicolons do not leak into SVG attributes', () => {

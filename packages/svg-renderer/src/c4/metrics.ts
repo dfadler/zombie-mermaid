@@ -1,4 +1,8 @@
-import type { C4Element } from '@zombie-mermaid/mermaid-parser'
+import type {
+  C4Element,
+  PositionedC4Relationship,
+} from '@zombie-mermaid/mermaid-parser'
+import { c4RelLabelLines } from '@zombie-mermaid/mermaid-parser'
 import { estimateTextWidth } from '../styles.ts'
 import { arialAdvance } from './arial-widths.ts'
 
@@ -258,4 +262,37 @@ export function c4Palette(el: Pick<C4Element, 'kind' | 'external'>): C4Palette {
     case 'component':
       return { fill: '#85bbf0', stroke: '#78a8d8', text }
   }
+}
+
+/** A relationship label line's box: centre x, centre y, width and height. */
+export interface C4LabelBox {
+  cx: number
+  cy: number
+  w: number
+  h: number
+}
+
+/** Distance between the baselines of a relationship label's lines. */
+export const C4_REL_LINE = C4.messageSize + 5
+
+/** The text lines of a positioned relationship's label, wrapped or not. */
+export function c4PositionedLabelLines(
+  rel: PositionedC4Relationship,
+): string[] {
+  return rel.labelLines ?? c4RelLabelLines(rel)
+}
+
+/** The boxes a positioned relationship's label lines occupy, as drawn. */
+export function c4RelLabelBoxes(rel: PositionedC4Relationship): C4LabelBox[] {
+  const pos = rel.labelPosition
+  if (!pos) return []
+  return c4PositionedLabelLines(rel).map((line, i, all) => {
+    const isTech = rel.technology !== undefined && i === all.length - 1
+    return {
+      cx: isTech && rel.technologyX !== undefined ? rel.technologyX : pos.x,
+      cy: pos.y + i * C4_REL_LINE,
+      w: c4TextWidth(line, C4.messageSize, 400),
+      h: C4.messageSize,
+    }
+  })
 }

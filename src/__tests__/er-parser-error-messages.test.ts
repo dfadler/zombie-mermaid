@@ -80,3 +80,83 @@ describe('parseErDiagram – valid syntax and unrelated lines are unaffected', (
     ).not.toThrow()
   })
 })
+
+// Cardinality matrix verified against mermaid.js 11.17.2 (#1747, #1748):
+// every symbol is valid on either side of the line.
+describe('parseErDiagram – cardinality pairs mermaid.js accepts (#1748)', () => {
+  const SYMBOLS = {
+    '||': 'one',
+    '|o': 'zero-one',
+    'o|': 'zero-one',
+    '}o': 'zero-many',
+    'o{': 'zero-many',
+    '}|': 'many',
+    '|{': 'many',
+  } as const
+  const LINES = { '--': true, '..': false, '.-': false, '-.': false } as const
+
+  for (const [l, lc] of Object.entries(SYMBOLS)) {
+    for (const [r, rc] of Object.entries(SYMBOLS)) {
+      for (const [line, identifying] of Object.entries(LINES)) {
+        it(`parses ${l}${line}${r}`, () => {
+          const d = parse(`erDiagram\n  A ${l}${line}${r} B : x`)
+          expect(d.relationships).toEqual([
+            {
+              entity1: 'A',
+              entity2: 'B',
+              cardinality1: lc,
+              cardinality2: rc,
+              label: 'x',
+              identifying,
+            },
+          ])
+        })
+      }
+    }
+  }
+})
+
+describe('parseErDiagram – word-form cardinalities (#1747)', () => {
+  it.each([
+    ['one to many', 'one', 'zero-many', true],
+    ['1 to 0+', 'one', 'zero-many', true],
+    ['only one to zero or more', 'one', 'zero-many', true],
+    ['zero or one to one or more', 'zero-one', 'many', true],
+    ['one or zero optionally to many(0)', 'zero-one', 'zero-many', false],
+    ['many(1) optionally to 1+', 'many', 'many', false],
+    ['ONE TO MANY', 'one', 'zero-many', true],
+  ])('parses "%s"', (spec, c1, c2, identifying) => {
+    const d = parse(`erDiagram\n  A ${spec} B : x`)
+    expect(d.relationships).toHaveLength(1)
+    expect(d.relationships[0]).toMatchObject({
+      entity1: 'A',
+      entity2: 'B',
+      cardinality1: c1,
+      cardinality2: c2,
+      identifying,
+    })
+  })
+
+  it('does not treat a click tooltip containing "to" as a relationship', () => {
+    expect(() =>
+      parse(`erDiagram\n  A ||--o{ B : x\n  click A "u" "Go to page"`),
+    ).not.toThrow()
+  })
+})
+
+describe('parseErDiagram – relationship lines are never silently dropped (#1747)', () => {
+  it.each([
+    '||-||',
+    '||==o{',
+    '||--',
+    '--||',
+    '||o{',
+    '||---o{',
+    'one to',
+    '|--||',
+  ])('throws a line-level error for "%s"', (spec) => {
+    expect(() =>
+      parse(`erDiagram\n  A ||--o{ C : ok\n  A ${spec} B : x`),
+    ).toThrow(/^Line 3: Invalid ER relationship cardinality/)
+  })
+})

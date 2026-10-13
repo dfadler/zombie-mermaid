@@ -483,7 +483,7 @@ interface LaneSide {
 /**
  * The face and gutter track for lane sibling `edge` (`index` 1 takes the near
  * side of the target, 2 the far side, 3 a track of its own past the high
- * side that merges into the same face); null when no such leg is possible,
+ * side on the same face, 4 the low face when the first three stacked high); null when no such leg is possible,
  * or `insertAt` set when it needs a gutter track the layout lacks (#1253): a
  * target against the layout edge, or the fourth sibling's own track.
  */
@@ -494,7 +494,7 @@ function laneSide(
 ): LaneSide | null {
   const vertical = graph.config.graphDirection !== 'LR'
   const index = edge.parallelLane!.index
-  if (index > 3) return null
+  if (index > 4) return null
   const to = requireGridCoord(edge.to)
   const origin = vertical ? to.x : to.y
   // Cross-axis position of the target's centre, and whether the gutter
@@ -516,10 +516,13 @@ function laneSide(
   // own tracks on the high side (origin+4, origin+5), so labels read in source
   // order instead of the third sibling detouring left and back into the low face.
   const stackHigh = gutterCross >= centre
-  if (index === 3 || (index === 2 && stackHigh)) {
+  // The high face holds three siblings (its top, middle and bottom rows), so
+  // a fifth takes the low face when the first three stacked on the high one.
+  const fifth = index === 4 && stackHigh
+  if (!fifth && (index === 3 || index === 4 || (index === 2 && stackHigh))) {
     // Its own track just past the high gutter: free of nodes and sized, or
     // else inserted. Landing on the high face merges with the sibling there.
-    const lane = origin + 4 + (stackHigh ? index - 2 : 0)
+    const lane = origin + 4 + (stackHigh ? index - 2 : index - 3)
     if (lane === gutterCross) return null
     const occupied = graph.nodes.some((node) => {
       const at = requireGridCoord(node)
@@ -532,7 +535,9 @@ function laneSide(
       insertAt: occupied || !sizes.has(lane) ? lane : undefined,
     }
   }
-  const side = (gutterCross >= centre ? [high, low] : [low, high])[index - 1]!
+  const side = fifth
+    ? low
+    : (gutterCross >= centre ? [high, low] : [low, high])[index - 1]!
   if (side.lane === gutterCross) return null
   // Against the layout edge the low side has no gutter track at all.
   if (side.lane < 0) return { ...side, insertAt: 0 }
@@ -602,25 +607,67 @@ export function clusterLaneSideRoute(
 }
 
 /**
- * Drawn-cell shift for the end of the third lane sibling's leg (#1331). With
- * three siblings the second and third drop from one bus into the same target
- * face on the same row and merge, so the third's final run is drawn one cell
- * further along the face and each arrowhead has its own stroke. TD only (LR
- * keeps its layout); 0 otherwise.
+ * Drawn-cell shift for the end of a lane sibling's leg (#1331, #1743, #1689).
+ * Siblings that enter one target face on the same row merge into a single
+ * arrowhead, so each final run is drawn on a row (column) of its own: two on a
+ * face use the middle and the one after it, three use all three, the outermost
+ * lane last so no stroke crosses another. Plain lanes (no cluster) do this for
+ * groups of three (LR and TD) and four; more would need a taller face. 0
+ * otherwise.
  */
 export function clusterLaneEndShift(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): number {
-  if (edge.parallelLane?.index !== 2 || graph.config.graphDirection === 'LR') {
+  const lane = edge.parallelLane
+  if (!lane) return 0
+  const lr = graph.config.graphDirection === 'LR'
+  for (const plan of graph.clusterExitPlans?.values() ?? []) {
+    if (!plan.edges.has(edge) || lane.index === 0) continue
+    // The siblings entering the same target face, in lane order, take its
+    // rows in turn: two use the middle and the one below, three use all.
+    const dir = laneSide(graph, plan, edge)?.dir
+    const onFace = [...plan.edges]
+      .filter(
+        (e) =>
+          e.parallelLane?.usedOffsets === lane.usedOffsets &&
+          e.parallelLane.index > 0 &&
+          laneSide(graph, plan, e)?.dir === dir,
+      )
+      .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
+    const rank = onFace.indexOf(edge)
+    return onFace.length === 2 ? rank : onFace.length === 3 ? rank - 1 : 0
+  }
+  // #1743: outside a cluster the side lanes enter the target's right face on
+  // one row and merge. With three lanes the third drops one row (the second
+  // keeps the middle); with four the three side lanes take the face's top,
+  // middle and bottom rows, outermost lowest so no stroke crosses another.
+  // Five or more would need more rows than a one-line box has: unchanged.
+  if (
+    ![3, 4].includes(lane.total) ||
+    edge.clusterSource ||
+    edge.clusterTarget
+  ) {
     return 0
   }
-  for (const plan of graph.clusterExitPlans?.values() ?? []) {
-    if (!plan.edges.has(edge)) continue
-    const origin = requireGridCoord(edge.to).x
-    return laneSide(graph, plan, edge)?.lane === origin + 4 ? 1 : 0
+  const { path } = edge
+  const [a, b] = path.slice(-2)
+  // The last run heads back toward the target: left in TD, up in LR.
+  if (!a || !b) return 0
+  const back = lr ? a.x === b.x && b.y < a.y : a.y === b.y && b.x < a.x
+  if (!back) return 0
+  // Only a group of edges between one pair of nodes: lanes split off a shared
+  // fan-in (#1467) have other sources and keep their layout.
+  const group = graph.edges.filter(
+    (e) => e.parallelLane?.usedOffsets === lane.usedOffsets,
+  )
+  if (
+    group.length !== lane.total ||
+    group.some((e) => e.from !== edge.from || e.to !== edge.to)
+  ) {
+    return 0
   }
-  return 0
+  return lane.total === 4 ? lane.index - 2 : lane.index === 2 ? 1 : 0
 }
 
 /** Safety bound on one-character gutter widenings per cluster. */

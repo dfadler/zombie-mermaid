@@ -6,6 +6,9 @@ on:
   issue_comment:
     types: [created, edited]
 
+# Least-privilege default (#1732); the job grants its own scopes.
+permissions: {}
+
 jobs:
   issue-bot:
     permissions:

@@ -42,6 +42,14 @@ describe('pie ASCII – init textPosition', () => {
   })
 })
 
+describe('pie ASCII – init donutHole', () => {
+  it('is ignored (a bar chart has no centre to cut)', () => {
+    expect(render(`%%{init: {"pie": {"donutHole": 0.5}}}%%\n${PETS}`)).toBe(
+      render(PETS),
+    )
+  })
+})
+
 // ============================================================================
 // allocateCells
 // ============================================================================
@@ -480,5 +488,22 @@ describe('pie ASCII – colour modes', () => {
 
   it('emits no escapes in none mode', () => {
     expect(render(PETS)).not.toContain('\x1b')
+  })
+})
+
+describe('pie ASCII – init legendPosition / highlightSlice', () => {
+  it.each(['left', 'top', 'bottom', 'center'])(
+    'ignores legendPosition %s (the legend is always beside the bars)',
+    (pos) => {
+      expect(
+        render(`%%{init: {"pie": {"legendPosition": "${pos}"}}}%%\n${PETS}`),
+      ).toBe(render(PETS))
+    },
+  )
+
+  it('ignores highlightSlice (no hover, no emphasis in text)', () => {
+    expect(
+      render(`%%{init: {"pie": {"highlightSlice": "Cats"}}}%%\n${PETS}`),
+    ).toBe(render(PETS))
   })
 })

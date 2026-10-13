@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Least-privilege default (#1732): every job below also declares its own block,
+# so this only guards a future job that forgets to.
+permissions:
+  contents: read
+
 # Cancel superseded runs on a PR branch (repeated pushes) instead of letting
 # them pile up. Pushes to main are keyed by SHA and never cancelled: a
 # cancelled run is the latest completed run on main, and the README's
@@ -17,7 +22,58 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test:
+  # Path scoping for the heavy, NON-required jobs (#1586). Deliberately a job
+  # rather than a workflow-level `paths:`/`paths-ignore:` filter: a filter that
+  # suppresses the whole workflow leaves required checks never reporting and
+  # blocks the PR forever. Here every required check (`test`, `Build site
+  # generator check`, `Semgrep SAST scan`, `Changeset present`) is unconditional
+  # and does NOT depend on this job; only visual-regression, bundle-size and
+  # packed-smoke (`code`) and bench (`bench`) are gated, and a job skipped via
+  # `if:` reports as skipped, never as missing. Fails open: pushes to main, an
+  # empty/failed diff, or any file outside the docs-only lists below set both
+  # outputs to true, so a path nobody anticipated runs everything.
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # only checks out code and diffs against origin/main
+    if: github.repository == 'dfadler/zombie-mermaid'
+    outputs:
+      code: ${{ steps.scope.outputs.code }}
+      bench: ${{ steps.scope.outputs.bench }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Classify changed files
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          emit() { echo "code=$1" >> "$GITHUB_OUTPUT"; echo "bench=$2" >> "$GITHUB_OUTPUT"; echo "code=$1 bench=$2"; }
+          if [ "$EVENT_NAME" != pull_request ]; then
+            emit true true; exit 0
+          fi
+          if ! changed="$(git diff --name-only origin/main...HEAD)" || [ -z "$changed" ]; then
+            emit true true; exit 0
+          fi
+          # code=false only if EVERY file is docs/changeset/maintainer-prose
+          # (README.md is excluded: it ships in the tarball). bench=false
+          # also for files no benchmark reads (tests, demo, bot data, blog).
+          # Anything else, including .github/ and scripts/, keeps both true.
+          # awk, not grep -c: always exits 0 (see the changeset job).
+          docs='^(docs/|\.changeset/|(CHANGELOG|CONTRIBUTING|SECURITY|CLAUDE)\.md$)'
+          nobench='^(docs/|\.changeset/|(CHANGELOG|CONTRIBUTING|SECURITY|CLAUDE|README)\.md$|__tests__/|demo/|badges/|blog-posts/|bench-history\.jsonl$)'
+          n_code="$(printf '%s\n' "$changed" | re="$docs" awk 'NF && $0 !~ ENVIRON["re"] { c++ } END { print c + 0 }')"
+          n_bench="$(printf '%s\n' "$changed" | re="$nobench" awk 'NF && $0 !~ ENVIRON["re"] { c++ } END { print c + 0 }')"
+          emit "$([ "$n_code" -gt 0 ] && echo true || echo false)" "$([ "$n_bench" -gt 0 ] && echo true || echo false)"
+
+  unit-tests:
+    name: Unit tests + coverage
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -65,7 +121,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -100,9 +156,6 @@ jobs:
       - name: Check coverage on new/changed code
         run: pnpm run coverage:diff
 
-      - name: Lint
-        run: pnpm run lint
-
       # Docs drift guards (#1570): dead links/anchors, stale repo paths,
       # diagram-type counts, Node-version consistency.
       - name: Check docs drift
@@ -116,6 +169,36 @@ jobs:
       - name: Check snapshot test allow-list
         run: scripts/check-snapshot-allowlist.sh
 
+  # Lint/typecheck/format run in parallel with the tests (#1786) instead of
+  # serially after them; the `test` job below fans these back into the one
+  # required check name.
+  static:
+    name: Lint, typecheck, format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    # Same fork guard as `unit-tests`.
+    if: github.repository == 'dfadler/zombie-mermaid'
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
       - name: Type check
         # Runs both the library config and demo/tsconfig.json — the demo's
         # client-side code needs DOM types the root config deliberately omits,
@@ -125,6 +208,32 @@ jobs:
 
       - name: Format check
         run: pnpm run format:check
+
+  # The REQUIRED status check in branch protection is named `test`; this job
+  # keeps that exact name (do not add a `name:` or rename the key) so the
+  # split needs no branch-protection edit (#1786). `if: always()` makes it run
+  # even when a dependency failed, was cancelled or was skipped (a plain job
+  # would be skipped, and a skipped required check counts as passing). It then
+  # passes only if every dependency is exactly `success`. Both dependencies
+  # are unconditional apart from the fork guard, which is also on this job, so
+  # `skipped` is never a legitimate outcome here.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [unit-tests, static]
+    if: always() && github.repository == 'dfadler/zombie-mermaid'
+    permissions: {}
+    steps:
+      - name: Require every needed job to have succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -uo pipefail
+          echo "needed job results: $RESULTS"
+          [ -n "$RESULTS" ] || { echo "no needed results"; exit 1; }
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "::error::a needed job ended as '$r'"; exit 1; }
+          done
 
   build-site:
     name: Build site generator check
@@ -151,7 +260,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -178,7 +287,8 @@ jobs:
     # Same fork-of-this-fork guard as the `test` job above — see its comment
     # for the full reasoning on what github.repository resolves to and what
     # this does/doesn't protect against.
-    if: github.repository == 'dfadler/zombie-mermaid'
+    needs: changes
+    if: github.repository == 'dfadler/zombie-mermaid' && needs.changes.outputs.code == 'true'
     # Runs the suite inside a custom, chromium-only Playwright image instead
     # of provisioning Chromium onto a bare runner. Per
     # docs/decisions/playwright-docker-image-visual-regression.md's
@@ -317,7 +427,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -422,7 +532,8 @@ jobs:
     # Same fork-of-this-fork guard as the `test` job above — see its comment
     # for the full reasoning on what github.repository resolves to and what
     # this does/doesn't protect against.
-    if: github.repository == 'dfadler/zombie-mermaid'
+    needs: changes
+    if: github.repository == 'dfadler/zombie-mermaid' && needs.changes.outputs.bench == 'true'
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -433,7 +544,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -518,7 +629,8 @@ jobs:
     # Same fork-of-this-fork guard as the `test` job above — see its comment
     # for the full reasoning on what github.repository resolves to and what
     # this does/doesn't protect against.
-    if: github.repository == 'dfadler/zombie-mermaid'
+    needs: changes
+    if: github.repository == 'dfadler/zombie-mermaid' && needs.changes.outputs.code == 'true'
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -529,7 +641,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -552,7 +664,8 @@ jobs:
     permissions:
       contents: read # only checks out code, builds, packs and installs into temp dirs
     # Same fork-of-this-fork guard as the `test` job above.
-    if: github.repository == 'dfadler/zombie-mermaid'
+    needs: changes
+    if: github.repository == 'dfadler/zombie-mermaid' && needs.changes.outputs.code == 'true'
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -563,7 +676,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -638,18 +751,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       # Also exempt: badges/ and bench-history.jsonl, the bot-written data
       # files (publish.yml, dashboard-refresh.yml) that used to carry an empty
       # changeset each (#1585).
@@ -673,6 +774,24 @@ jobs:
           else
             echo "demo_only=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # Node/pnpm setup and install run only when `changeset status` will (it
+      # is the only step that needs them), so demo/data-only PRs skip ~24 s of
+      # setup (#1600). The job itself still always runs and reports.
+      - name: Setup pnpm
+        if: steps.diff_scope.outputs.demo_only != 'true'
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        if: steps.diff_scope.outputs.demo_only != 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        if: steps.diff_scope.outputs.demo_only != 'true'
+        run: pnpm install --frozen-lockfile
 
       - name: Check for changeset
         if: steps.diff_scope.outputs.demo_only != 'true'

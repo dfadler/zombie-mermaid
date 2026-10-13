@@ -114,6 +114,7 @@ export function FontPopup({
           ref={searchInputRef}
           className="font-search"
           id="font-search"
+          aria-label="Search fonts"
           placeholder="Quick search"
           value={search}
           onChange={(e) => onSearchChange(e.currentTarget.value)}

@@ -320,20 +320,6 @@ function homePageCss(): string {
   overflow-x: hidden;
 }
 
-.skip-link {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  z-index: 100;
-  padding: ${SPACE.md}px ${SPACE.xl}px;
-  background: ${colorVar('--panel')};
-  color: ${colorVar('--text')};
-}
-.skip-link:focus {
-  left: ${SPACE.xl}px;
-  top: ${SPACE.xl}px;
-}
-
 @keyframes marchingAnts { to { stroke-dashoffset: -24; } }
 .edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }
 
@@ -1844,9 +1830,6 @@ export function IndexPage({
         </>
       }
     >
-      <a className="skip-link" href="#main">
-        Skip to content
-      </a>
       <NavIsland
         homeHref={HOME_HREF}
         hrefs={ROOT_NAV_HREFS}

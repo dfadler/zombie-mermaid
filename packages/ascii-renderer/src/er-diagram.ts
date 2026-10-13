@@ -944,7 +944,19 @@ export function renderErAscii(
 
       const startX = left.x + left.width
       const endX = right.x - 1
-      const lineY = left.y + Math.floor(left.height / 2)
+      // The row must lie inside both boxes' interiors: beside a shorter
+      // entity, the left midpoint can fall on or below its border (#1911),
+      // so fall back to the middle of the rows the two boxes share.
+      let lineY = left.y + Math.floor(left.height / 2)
+      const sharedTop = Math.max(left.y, right.y) + 1
+      const sharedBottom =
+        Math.min(left.y + left.height, right.y + right.height) - 2
+      if (
+        (lineY < sharedTop || lineY > sharedBottom) &&
+        sharedTop <= sharedBottom
+      ) {
+        lineY = Math.floor((sharedTop + sharedBottom) / 2)
+      }
 
       // A straight line at lineY only stays clear of other boxes when left
       // and right are actually adjacent in the row. When some other entity

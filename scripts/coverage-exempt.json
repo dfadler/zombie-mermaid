@@ -1,0 +1,163 @@
+[
+  {
+    "file": "scripts/bench-ascii-renderer.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 182,
+    "legacy": true
+  },
+  {
+    "file": "scripts/bench-compare.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 130,
+    "legacy": true
+  },
+  {
+    "file": "scripts/bench-core.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 185,
+    "legacy": true
+  },
+  {
+    "file": "scripts/bench-label-placement.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 61,
+    "legacy": true
+  },
+  {
+    "file": "scripts/bench-mermaid-parser.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 243,
+    "legacy": true
+  },
+  {
+    "file": "scripts/bench-package-compare.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 153,
+    "legacy": true
+  },
+  {
+    "file": "scripts/bench-scaling.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 103,
+    "legacy": true
+  },
+  {
+    "file": "scripts/bench-svg-renderer.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 285,
+    "legacy": true
+  },
+  {
+    "file": "scripts/bench.ts",
+    "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
+    "maxLines": 346,
+    "legacy": true
+  },
+  {
+    "file": "scripts/build-mono-font-subset.ts",
+    "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
+    "maxLines": 422,
+    "legacy": true
+  },
+  {
+    "file": "scripts/capture-fork-fixes-terminal.ts",
+    "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
+    "maxLines": 342,
+    "legacy": true
+  },
+  {
+    "file": "scripts/check-visual-baselines.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 43,
+    "legacy": true
+  },
+  {
+    "file": "scripts/form-diff.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 188,
+    "legacy": true
+  },
+  {
+    "file": "scripts/form-facts.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 147,
+    "legacy": true
+  },
+  {
+    "file": "scripts/form-judge-calibrate.ts",
+    "reason": "thin argv/file-I/O CLI over scripts/lib/form-judge-calibration.ts (which is covered in-process); runs on import and calls process.exit, so only __tests__/form-judge-calibrate-cli.test.ts exercises it, via a subprocess v8 cannot see",
+    "maxLines": 70
+  },
+  {
+    "file": "scripts/form-judge-finalize-cache.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 66,
+    "legacy": true
+  },
+  {
+    "file": "scripts/form-judge-prepare.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 84,
+    "legacy": true
+  },
+  {
+    "file": "scripts/generate-bundle-badge.ts",
+    "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
+    "maxLines": 177,
+    "legacy": true
+  },
+  {
+    "file": "scripts/generate-hero.ts",
+    "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
+    "maxLines": 67,
+    "legacy": true
+  },
+  {
+    "file": "scripts/generate-logo-lockup.ts",
+    "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
+    "maxLines": 71,
+    "legacy": true
+  },
+  {
+    "file": "scripts/generate-page.ts",
+    "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
+    "maxLines": 118,
+    "legacy": true
+  },
+  {
+    "file": "scripts/generate-primitives-classes.ts",
+    "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
+    "maxLines": 74,
+    "legacy": true
+  },
+  {
+    "file": "scripts/label-position-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 156,
+    "legacy": true
+  },
+  {
+    "file": "scripts/layout-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 243,
+    "legacy": true
+  },
+  {
+    "file": "scripts/lib/real-mermaid.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium, so it is only reachable from the form-diff/form-facts CLIs",
+    "maxLines": 107,
+    "legacy": true
+  },
+  {
+    "file": "scripts/print-tag-coverage.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 27,
+    "legacy": true
+  },
+  {
+    "file": "scripts/visual-diff.ts",
+    "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
+    "maxLines": 338,
+    "legacy": true
+  }
+]

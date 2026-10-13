@@ -79,6 +79,7 @@ export function ColorPopup({
           type="button"
           className="color-popup-close"
           id="color-popup-close"
+          aria-label="Close color picker"
           onClick={onClose}
         >
           ×
@@ -89,6 +90,7 @@ export function ColorPopup({
           type="color"
           className="color-native"
           id="color-native-input"
+          aria-label="Pick color"
           value={nativeValue}
           onChange={(e) => onNativeChange(e.currentTarget.value)}
         />
@@ -96,6 +98,7 @@ export function ColorPopup({
           type="text"
           className="color-hex-input"
           id="color-hex-input"
+          aria-label="Hex color"
           placeholder="#rrggbb"
           maxLength={9}
           value={hexInput}
@@ -119,6 +122,7 @@ export function ColorPopup({
             className="color-swatch-btn"
             style={{ background: hex }}
             title={hex}
+            aria-label={hex}
             onClick={() => onPickPreset(hex)}
           />
         ))}
