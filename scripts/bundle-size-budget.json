@@ -17,7 +17,7 @@
     "packages/ascii-renderer/dist/index.js": 65536,
     "packages/ascii-renderer/dist/index.cjs": 58368,
     "packages/mcp/dist/index.js": 7168,
-    "packages/mcp/dist/index.cjs": 7168
+    "packages/mcp/dist/index.cjs": 7424
   },
   "consumerBundles": {
     "packages/svg-renderer/dist/index.js": 86016,
@@ -29,6 +29,6 @@
     "packages/mermaid-parser/dist": 202000,
     "packages/svg-renderer/dist": 432000,
     "packages/ascii-renderer/dist": 428000,
-    "packages/mcp/dist": 47600
+    "packages/mcp/dist": 48128
   }
 }
