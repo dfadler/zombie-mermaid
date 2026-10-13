@@ -522,6 +522,12 @@ summary:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
+}
+
+/* The hero panel's edge-fade mask clips anything outside its border box,
+ * so the outset ring above is invisible there; draw it inside instead. */
+.hero-code-panel:focus-visible {
+  outline-offset: -2px;
 }`
 }
 
