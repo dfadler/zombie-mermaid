@@ -1,3 +1,4 @@
+import { MermaidParseError } from '@zombie-mermaid/core'
 import { describe, it, expect } from 'vitest'
 import { parsePieChart } from '../index.ts'
 
@@ -448,5 +449,18 @@ accDescr: Desc %% note`)
     expect(() => parsePieChart('pie\naccDescr {\n  d\n} "A" : 1')).toThrow(
       /Line 4: .*expected end of line after accDescr/,
     )
+  })
+})
+
+describe('typed errors (#1855)', () => {
+  it('negative slice throws MermaidParseError with line', () => {
+    let err: unknown
+    try {
+      parsePieChart('pie\n  "a" : -1')
+    } catch (e) {
+      err = e
+    }
+    expect(err).toBeInstanceOf(MermaidParseError)
+    expect((err as MermaidParseError).line).toBe(2)
   })
 })
