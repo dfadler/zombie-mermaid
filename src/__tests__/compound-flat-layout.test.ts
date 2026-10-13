@@ -334,6 +334,12 @@ describe('orderSiblings', () => {
     expect(means).toEqual([15, 115])
   })
 
+  it('keeps declaration order for siblings it is told are tied', () => {
+    const keys = sideBySide()
+    orderSiblings([a, b], layer, keys, undefined, () => true)
+    expect(keys).toEqual(sideBySide())
+  })
+
   it('leaves them alone when they are already in that order', () => {
     const keys = new Map([
       ['a1', 110],
@@ -850,13 +856,23 @@ describe('layoutFlowchartSync: other shapes of subgraph diagram', () => {
     expect(z.x + z.width <= box.x || z.x >= box.x + box.width).toBe(true)
   })
 
-  it('draws sibling subgraphs in reverse declaration order, as mermaid.js does', () => {
+  it('draws siblings tied by a shared outside node in declaration order (mermaid 12 ELK)', () => {
+    // Checked against mermaid@12.2.0 in Chrome: east at x=112, west at x=352.
     const source =
       'graph TD\n  subgraph east [East]\n    A --> B\n  end\n  subgraph west [West]\n    C --> D\n  end\n  E --> A\n  E --> C'
     const p = layoutFlowchartSync(graphOf(source))
     const east = p.groups.find((q) => q.id === 'east')!
     const west = p.groups.find((q) => q.id === 'west')!
-    // `west` is declared second, so it is drawn on the left.
+    expect(east.x).toBeLessThan(west.x)
+  })
+
+  it('draws unconnected sibling subgraphs in reverse declaration order (mermaid 12 ELK)', () => {
+    // mermaid@12.2.0: east at x=352, west at x=112.
+    const source =
+      'graph TD\n  subgraph east [East]\n    A --> B\n  end\n  subgraph west [West]\n    C --> D\n  end'
+    const p = layoutFlowchartSync(graphOf(source))
+    const east = p.groups.find((q) => q.id === 'east')!
+    const west = p.groups.find((q) => q.id === 'west')!
     expect(west.x).toBeLessThan(east.x)
   })
 
