@@ -48,7 +48,8 @@ const CASES: Array<[string, () => unknown, string, number | undefined]> = [
   ],
   [
     'architecture: self-nested group',
-    () => parseArchitecture(lines('architecture-beta\ngroup a in b\ngroup b in a')),
+    () =>
+      parseArchitecture(lines('architecture-beta\ngroup a in b\ngroup b in a')),
     'architecture',
     undefined,
   ],
