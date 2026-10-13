@@ -16,6 +16,8 @@
 
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import {
+  checkGraphSize,
+  checkLimit,
   decodeXmlEntitiesInLabel,
   withDirectionOverride,
 } from '@zombie-mermaid/core'
@@ -23,6 +25,7 @@ import type {
   Direction,
   MermaidGraph,
   MermaidSubgraph,
+  RenderLimits,
 } from '@zombie-mermaid/core'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
@@ -59,6 +62,7 @@ import type {
 export interface FlowchartAsciiExtras {
   direction?: Direction
   hyperlinks?: boolean
+  limits?: RenderLimits
 }
 
 /**
@@ -227,8 +231,19 @@ export function renderGraphAscii(
     config.graphDirection = 'TD'
   }
 
+  checkGraphSize(parsed.nodes.size, parsed.edges.length, extras.limits)
   const graph = convertToAsciiGraph(parsed, config)
   createMapping(graph)
+  // The canvas is allocated from the finished grid; check its size before
+  // drawing fills it (memory is what runs out, not time).
+  const sum = (m: Map<number, number>) =>
+    [...m.values()].reduce((a, b) => a + b, 0)
+  checkLimit(
+    'maxCanvasCells',
+    (sum(graph.columnWidth) + graph.offsetX) *
+      (sum(graph.rowHeight) + graph.offsetY),
+    extras.limits,
+  )
   drawGraph(graph)
 
   // Opt-in OSC 8 hyperlinks: mark each `click`-linked node's label cells

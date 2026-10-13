@@ -45,6 +45,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run bench:mcp` — benchmark the `packages/mcp` server's own request/response overhead (Zod validation, tool dispatch, transport round-trip) by driving a real MCP `Client` against `createMcpServer()` over `InMemoryTransport`; reports mean/median/p95 latency per tool. Supports `--json=<path>` in `bench.ts`'s own summary shape, `--iterations=<n>` (default 50), and `--warmup=<n>` (default 5)
 - `pnpm run check:changesets` — lint `.changeset/*.md`: a `major` bump needs a summary starting with `**BREAKING:**` (errors fail the run); warns when a major summary lacks an upgrade-guide link or says "Output change", or a minor mentions `engines`/`peerDependencies` (logic in `scripts/lib/changeset-lint.ts`; part of `pnpm run verify`; see "Changesets" in [CONTRIBUTING.md](../CONTRIBUTING.md))
 - `pnpm run check:docs` — check docs for drift: broken links and anchors, script and path references, and the Node version claim against `.nvmrc` and `engines.node` (see `scripts/check-docs.ts`)
+- `pnpm run check:package-types` — report-only publint + arethetypeswrong over packed tarballs (optional dir argument, else packs via `smoke:packed`; run `pnpm run build` first; CI's "Packed tarball smoke test" job runs it with continue-on-error)
 - `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
 
 ## Site and asset generators
