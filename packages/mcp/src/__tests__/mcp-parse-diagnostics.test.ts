@@ -108,3 +108,13 @@ describe('extractParseDiagnostic', () => {
     expect(extractParseDiagnostic('oops at Line 1: x', 'a')).toBeUndefined()
   })
 })
+
+describe('typed MermaidParseError.line (#1855)', () => {
+  it('is preferred over the message prefix', () => {
+    expect(extractParseDiagnostic('no prefix here', 'a\nb', 2)).toEqual({
+      line: 2,
+      sourceLine: 'b',
+      message: 'no prefix here',
+    })
+  })
+})
