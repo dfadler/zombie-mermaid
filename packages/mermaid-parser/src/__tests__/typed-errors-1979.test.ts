@@ -124,6 +124,10 @@ describe('pie column (#1979)', () => {
     expect(thrown(() => parsePieChart('pie\n"a" : 1 x')).column).toBe(9)
   })
 
+  it('reports the column of a token that fails to parse', () => {
+    expect(thrown(() => parsePieChart('pie\n  pie')).column).toBe(3)
+  })
+
   it('reports the column of a lexer failure', () => {
     expect(thrown(() => parsePieChart('pie\n  bogus')).column).toBe(3)
   })
