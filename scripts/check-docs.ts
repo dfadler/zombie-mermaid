@@ -184,14 +184,14 @@ export function orphanResearch(fs: Fs = realFs): string[] {
         !/CHANGELOG\.md$|\.(png|jpe?g|gif|webp|ico|woff2?|ttf|pdf)$/.test(f),
     )
   const text = others.map((f) => fs.read(f)).join('\n')
+  // Path boundary: `research/614-x` must not match `research/614-x-v2.md`.
+  const mentioned = new Set(
+    [...text.matchAll(/research\/([\w.-]+)/g)].map((m) =>
+      m[1]!.replace(/(\.md)?\.*$/, ''),
+    ),
+  )
   return [...new Set(docs.map(keyOf))]
-    .filter(
-      // Path boundary: `research/614-x` must not match `research/614-x-v2.md`.
-      (k) =>
-        !new RegExp(
-          `research/${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`,
-        ).test(text),
-    )
+    .filter((k) => !mentioned.has(k))
     .map(
       (k) =>
         `docs/research/${k}: nothing links to it; post the findings on the issue instead (#1642)`,
