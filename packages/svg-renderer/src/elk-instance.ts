@@ -358,29 +358,40 @@ export function elkLayoutSync(graph: ElkNode, cache?: LayoutCache): ElkNode {
 
   const worker = ensureElk()
 
-  let result: ElkNode | undefined
-  let error: unknown
-
-  // Replace onmessage to intercept the result synchronously
-  // (the dispatcher calls this directly, without setTimeout)
-  const origOnmessage = worker.onmessage
-  worker.onmessage = (answer: { data: ElkWorkerResponse }) => {
-    if (answer.data.error) {
-      error = answer.data.error
-    } else {
-      result = answer.data.data
+  const run = (g: ElkNode) => {
+    let result: ElkNode | undefined
+    let error: unknown
+    // Intercept the result synchronously (the dispatcher calls onmessage
+    // directly, without setTimeout) and bypass FakeWorker.postMessage's
+    // setTimeout(0) by calling dispatcher.saveDispatch directly.
+    const origOnmessage = worker.onmessage
+    worker.onmessage = (answer: { data: ElkWorkerResponse }) => {
+      if (answer.data.error) error = answer.data.error
+      else result = answer.data.data
     }
+    worker.dispatcher.saveDispatch({ data: { id: 0, cmd: 'layout', graph: g } })
+    worker.onmessage = origOnmessage
+    return { result, error }
   }
 
-  // Call dispatcher.saveDispatch directly — bypasses FakeWorker.postMessage's
-  // setTimeout(0) wrapper. The dispatcher processes the layout synchronously
-  // and calls rawWorker.onmessage with the result.
-  worker.dispatcher.saveDispatch({
-    data: { id: 0, cmd: 'layout', graph },
-  })
+  let { result, error } = run(graph)
 
-  // Restore original handler
-  worker.onmessage = origOnmessage
+  // ELK's LEFT_RIGHT_CONSTRAINT_LOCKING post-compaction (a scanline pass)
+  // throws "Invalid hitboxes" for several components with wide inline edge
+  // labels (#1813). Post-compaction only tightens the result: retry without it.
+  if (
+    String(
+      (error as { message?: string } | undefined)?.message ?? error,
+    ).includes('Invalid hitboxes')
+  ) {
+    ;({ result, error } = run({
+      ...graph,
+      layoutOptions: {
+        ...graph.layoutOptions,
+        'elk.layered.compaction.postCompaction.strategy': 'NONE',
+      },
+    }))
+  }
 
   if (error) throw error
   if (!result) throw new Error('ELK layout did not return synchronously')
