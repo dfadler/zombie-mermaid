@@ -1,7 +1,7 @@
 /**
  * Tests for the ANSI/HTML color utilities in src/ascii/ansi.ts.
  */
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import {
   DEFAULT_ASCII_THEME,
   diagramColorsToAsciiTheme,
@@ -83,6 +83,11 @@ describe('DEFAULT_ASCII_THEME', () => {
 
 describe('detectColorMode', () => {
   const originalIsTTY = process.stdout.isTTY
+
+  beforeEach(() => {
+    vi.stubEnv('FORCE_COLOR', '')
+    vi.stubEnv('NO_COLOR', '')
+  })
 
   afterEach(() => {
     Object.defineProperty(process.stdout, 'isTTY', {
@@ -167,6 +172,45 @@ describe('detectColorMode', () => {
       if (hadColorTerm) process.env.COLORTERM = prevColorTerm
       if (hadTerm) process.env.TERM = prevTerm
     }
+  })
+
+  it('NO_COLOR disables color on a color-capable TTY', () => {
+    setTTY(true)
+    vi.stubEnv('COLORTERM', 'truecolor')
+    vi.stubEnv('TERM', 'xterm-256color')
+    vi.stubEnv('NO_COLOR', '1')
+    expect(detectColorMode()).toBe('none')
+  })
+
+  it.each([
+    ['1', 'ansi16'],
+    ['true', 'ansi16'],
+    ['2', 'ansi256'],
+    ['3', 'truecolor'],
+  ])('FORCE_COLOR=%s enables %s even when piped', (value, mode) => {
+    setTTY(false)
+    vi.stubEnv('FORCE_COLOR', value)
+    expect(detectColorMode()).toBe(mode)
+  })
+
+  it.each(['0', 'false'])('FORCE_COLOR=%s is ignored', (value) => {
+    setTTY(false)
+    vi.stubEnv('FORCE_COLOR', value)
+    expect(detectColorMode()).toBe('none')
+  })
+
+  it('FORCE_COLOR wins over NO_COLOR', () => {
+    setTTY(false)
+    vi.stubEnv('FORCE_COLOR', '3')
+    vi.stubEnv('NO_COLOR', '1')
+    expect(detectColorMode()).toBe('truecolor')
+  })
+
+  it('TERM=dumb beats COLORTERM=truecolor', () => {
+    setTTY(true)
+    vi.stubEnv('COLORTERM', 'truecolor')
+    vi.stubEnv('TERM', 'dumb')
+    expect(detectColorMode()).toBe('none')
   })
 
   it('returns html when no process object exists but document is defined', () => {

@@ -35,6 +35,8 @@ renderMermaidASCII(text, {
 })
 ```
 
+With `colorMode: 'auto'` (or unset), color is detected from the environment. An explicit `colorMode` always wins. Otherwise: a non-empty `FORCE_COLOR` (not `0`/`false`; `1`/`2`/`3` = 16/256/true color) enables color even when piped; then a non-empty [`NO_COLOR`](https://no-color.org/) disables it; then color needs a TTY, `TERM` other than `dumb`, and `COLORTERM`/`TERM` pick the depth. `FORCE_COLOR` beats `NO_COLOR`, as in Node.js.
+
 See `AsciiRenderOptions` in [`src/index.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/ascii-renderer/src/index.ts) for the full option set (color mode, theme, hyperlinks, direction override, coordinate overlay).
 
 ## Relationship to `zombie-mermaid`

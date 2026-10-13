@@ -255,7 +255,11 @@ function layoutFrames(root: Frame): Layout {
         let width = bounds.stopx! - bounds.startx!
         let height = bounds.stopy! - bounds.starty!
         // A boundary with nothing in it still gets a visible frame.
-        if (width === 0) width = C4.width
+        // Widen the bounds too, or the diagram width ignores the frame.
+        if (width === 0) {
+          width = C4.width
+          bounds.stopx = bounds.startx! + width
+        }
         if (height === 0) height = Y + C4.shapeMargin
         boundaries.push({
           alias: b.alias,

@@ -1,5 +1,10 @@
 [
   {
+    "file": "scripts/check-changesets.ts",
+    "reason": "thin CLI: runs on import and calls process.exit; all logic is in scripts/lib/changeset-lint.ts (tested)",
+    "maxLines": 20
+  },
+  {
     "file": "scripts/bench-ascii-renderer.ts",
     "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
     "maxLines": 182,
@@ -86,7 +91,7 @@
   {
     "file": "scripts/form-judge-calibrate.ts",
     "reason": "thin argv/file-I/O CLI over scripts/lib/form-judge-calibration.ts (which is covered in-process); runs on import and calls process.exit, so only __tests__/form-judge-calibrate-cli.test.ts exercises it, via a subprocess v8 cannot see",
-    "maxLines": 70
+    "maxLines": 80
   },
   {
     "file": "scripts/form-judge-finalize-cache.ts",
@@ -139,7 +144,7 @@
   {
     "file": "scripts/layout-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
-    "maxLines": 243,
+    "maxLines": 258,
     "legacy": true
   },
   {

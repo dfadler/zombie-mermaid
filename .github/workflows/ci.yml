@@ -301,7 +301,7 @@ jobs:
     # result the #544 cluster produced. Pre-flight evidence (3x full-suite
     # green, 281/281, zero retries consumed, inside a Playwright container
     # image on an emulated-amd64 host) is in
-    # docs/research/549-ci-container-migration.md.
+    # https://github.com/dfadler/zombie-mermaid/issues/549#issuecomment-6130805981.
     #
     # zombie-mermaid#868 (a #737 follow-up) switched this job from the
     # stock, multi-browser `mcr.microsoft.com/playwright:v1.62.1-jammy` image
@@ -688,7 +688,24 @@ jobs:
       # Installs the packed tarballs into clean projects and checks imports,
       # types, CLI, MCP, rendering, elkjs and a Vite bundle (#1566).
       - name: Smoke-test packed tarballs
+        env:
+          SMOKE_TARBALL_DIR: ${{ runner.temp }}/tarballs
         run: pnpm run smoke:packed
+
+      # Report-only (#1868): publint + attw (pinned devDependencies, run via
+      # pnpm exec) over the tarballs packed above, so nothing is packed twice.
+      # continue-on-error keeps it advisory; gate it once the output is clean.
+      - name: Lint package exports (publint, attw; report-only)
+        continue-on-error: true
+        env:
+          TARBALL_DIR: ${{ runner.temp }}/tarballs
+        run: |
+          {
+            echo '## publint + arethetypeswrong (report-only)'
+            echo '```'
+            scripts/check-package-types.sh "$TARBALL_DIR" 2>&1
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
   semgrep:
     name: Semgrep SAST scan
@@ -731,7 +748,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read # only checks out code and runs `pnpm changeset status`; no writes back to the repo
+      contents: read # only checks out code and runs `pnpm changeset status` and `check:changesets`; no writes back to the repo
     # Same fork-of-this-fork guard as the `test` job above — see its comment
     # for the full reasoning on what github.repository resolves to and what
     # this does/doesn't protect against. (The additional event_name check
@@ -775,8 +792,8 @@ jobs:
             echo "demo_only=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Node/pnpm setup and install run only when `changeset status` will (it
-      # is the only step that needs them), so demo/data-only PRs skip ~24 s of
+      # Node/pnpm setup and install run only when the changeset steps will (they
+      # are the only ones that need them), so demo/data-only PRs skip ~24 s of
       # setup (#1600). The job itself still always runs and reports.
       - name: Setup pnpm
         if: steps.diff_scope.outputs.demo_only != 'true'
@@ -796,6 +813,10 @@ jobs:
       - name: Check for changeset
         if: steps.diff_scope.outputs.demo_only != 'true'
         run: pnpm changeset status --since origin/main
+
+      - name: Lint changeset summaries
+        if: steps.diff_scope.outputs.demo_only != 'true'
+        run: pnpm run check:changesets
 
   pr-hygiene:
     name: PR hygiene

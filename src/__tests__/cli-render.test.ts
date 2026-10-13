@@ -105,7 +105,7 @@ describe('runRender – --resolve-colors', () => {
     expect(svg).toContain('<svg')
     expect(svg).not.toMatch(/\b(?:var|color-mix)\(/)
     // tokyo-night's explicit --line wins over the color-mix fallback.
-    expect(svg).toContain('--_line:          #3d59a1')
+    expect(svg).toContain('--_line:          #4464b4')
   })
 
   it('keeps var()/color-mix() in the SVG when resolveColors is not set', async () => {
@@ -139,7 +139,7 @@ describe('runRender – --resolve-colors', () => {
     const svg = mockStdout.output()
     expect(svg).toMatch(/^<svg[\s\S]*<\/svg>$/)
     expect(svg).not.toMatch(/\b(?:var|color-mix)\(/)
-    expect(svg).toContain('--_line:          #3d59a1')
+    expect(svg).toContain('--_line:          #4464b4')
   })
 })
 

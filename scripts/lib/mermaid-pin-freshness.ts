@@ -28,17 +28,20 @@ export function isBehind(pinned: string, latest: string): boolean {
   return lMaj > pMaj || (lMaj === pMaj && lMin > pMin)
 }
 
+/** The `mermaid` devDependency version, e.g. `12.1.0`. */
+export function pinnedMermaidVersion(): string {
+  return (
+    JSON.parse(
+      readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+    ) as { devDependencies: Record<string, string> }
+  ).devDependencies['mermaid']!.replace(/^[^\d]*/, '')
+}
+
 export function pinFreshness(
   latestOverride?: string,
   pinnedOverride?: string,
 ): PinFreshness {
-  const pinned =
-    pinnedOverride ??
-    (
-      JSON.parse(
-        readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
-      ) as { devDependencies: Record<string, string> }
-    ).devDependencies['mermaid']!.replace(/^[^\d]*/, '')
+  const pinned = pinnedOverride ?? pinnedMermaidVersion()
   let latest = latestOverride
   if (latest === undefined) {
     try {

@@ -7,7 +7,11 @@ import {
   officialNodeName,
   parseOracleArgs,
   worst,
+  hasGroups,
+  historyLines,
+  jsonPayload,
   scorecardMarkdown,
+  wantsSample,
   summarize,
   type Box,
   type LayoutBoxes,
@@ -165,6 +169,25 @@ describe('parseOracleArgs', () => {
     )
   })
 
+  it('refuses --layout=simple with --history or --scorecard', () => {
+    for (const flag of ['--history=h.jsonl', '--scorecard=s.md']) {
+      expect(() => parseOracleArgs(['--layout=simple', flag])).toThrow(
+        /record the elk layout only/,
+      )
+    }
+    expect(parseOracleArgs(['--layout=elk', '--history=h.jsonl']).layout).toBe(
+      'elk',
+    )
+  })
+
+  it('wantsSample matches type and a case-insensitive title filter', () => {
+    const s = { title: 'State: Notes', source: 'stateDiagram-v2\n  A --> B' }
+    expect(wantsSample(s, 'state')).toBe(true)
+    expect(wantsSample(s, 'class')).toBe(false)
+    expect(wantsSample(s, 'state', 'notes')).toBe(true)
+    expect(wantsSample(s, 'state', 'xyz')).toBe(false)
+  })
+
   it('reads each option', () => {
     expect(
       parseOracleArgs([
@@ -247,7 +270,13 @@ describe('summarize / scorecardMarkdown (#1572)', () => {
     nodes: 3,
     subgraphs: false,
   })
-  const meta = { date: '2026-10-10', commit: 'abcdef123', tolerance: 20 }
+  const meta = {
+    date: '2026-10-10',
+    commit: 'abcdef123',
+    tolerance: 20,
+    type: 'flowchart' as const,
+    mermaid: '12.1.0',
+  }
 
   it('means ignore null figures', () => {
     const e = summarize({ a: r(1, null, null), b: r(0.5, null, null) }, meta)
@@ -256,8 +285,81 @@ describe('summarize / scorecardMarkdown (#1572)', () => {
 
   it('scorecard lists lowest sample first and escapes pipes', () => {
     const results = { 'hi|gh': r(1, 1, 1), low: r(0.2, 1, 1) }
-    const md = scorecardMarkdown(summarize(results, meta), results, [])
+    const entry = summarize(results, meta)
+    const md = scorecardMarkdown([{ entry, results }], [entry])
     expect(md.indexOf('| low |')).toBeLessThan(md.indexOf('hi\\|gh'))
+  })
+
+  it('scorecard names samples the oracle errored on', () => {
+    const results = { ok: r(1, 1, 1) }
+    const entry = summarize(results, meta)
+    const sampled = ['ok', 'broken']
+    expect(scorecardMarkdown([{ entry, results, sampled }], [entry])).toContain(
+      'Not scored (the oracle errored): broken.',
+    )
+    expect(scorecardMarkdown([{ entry, results }], [entry])).not.toContain(
+      'Not scored',
+    )
+  })
+
+  it('scorecard treats untyped, unversioned entries as 11.17.2 flowcharts and sorts no-figure samples last (#1905)', () => {
+    const results = {
+      none: r(null, null, null),
+      high: r(1, 1, 1),
+      none2: r(null, null, null),
+      low: r(0.5, 1, null),
+    }
+    const { type: _t, mermaid: _m, ...legacy } = summarize(results, meta)
+    const md = scorecardMarkdown([{ entry: legacy, results }], [legacy])
+    expect(md).toContain('Reference: mermaid 11.17.2.')
+    expect(md).toContain('| Flowchart | 4 |')
+    expect(md).toContain('### Flowchart (lowest first)')
+    const at = (s: string) => md.indexOf(`| ${s} |`)
+    expect(at('low')).toBeLessThan(at('high'))
+    expect(at('high')).toBeLessThan(at('none'))
+  })
+
+  it('helpers: group detection, json payload, history lines (#1905)', () => {
+    expect(hasGroups('flowchart', 'graph TD\n subgraph S\n a\n end')).toBe(true)
+    expect(hasGroups('state', 'stateDiagram-v2\n state X {\n a\n }')).toBe(true)
+    expect(hasGroups('class', 'classDiagram\n namespace N {\n }')).toBe(true)
+    expect(hasGroups('er', 'erDiagram\n subgraph')).toBe(false)
+    expect(hasGroups('flowchart', 'graph TD\n a-->b')).toBe(false)
+    const results = { a: r(1, 1, 1) }
+    const entry = summarize(results, meta)
+    expect(JSON.parse(jsonPayload([{ entry, results }]))).toEqual(results)
+    const er = summarize(results, { ...meta, type: 'er' })
+    expect(
+      JSON.parse(
+        jsonPayload([
+          { entry, results },
+          { entry: er, results },
+        ]),
+      ),
+    ).toEqual({ flowchart: results, er: results })
+    expect(historyLines([entry, er]).split('\n')).toHaveLength(3)
+    expect(historyLines([entry]).endsWith('\n')).toBe(true)
+  })
+
+  it('scorecard names the reference version and lists every type (#1905)', () => {
+    const results = { a: r(1, 1, null) }
+    const er = summarize(results, { ...meta, type: 'er' })
+    const legacy = { ...summarize(results, meta) } as Partial<typeof er>
+    delete legacy.mermaid
+    delete legacy.type
+    const md = scorecardMarkdown(
+      [
+        { entry: summarize(results, meta), results },
+        { entry: er, results },
+      ],
+      [legacy as typeof er, er],
+    )
+    expect(md).toContain('Reference: mermaid 12.1.0')
+    expect(md).toContain('| Flowchart | 1 |')
+    expect(md).toContain('| ER | 1 |')
+    expect(md).toContain('### ER (lowest first)')
+    // A pre-#1905 history line has no version or type: it was 11.17.2 flowcharts.
+    expect(md).toContain('| 11.17.2 | Flowchart | 1 |')
   })
 })
 

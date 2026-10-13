@@ -240,3 +240,28 @@ export function remapVerdicts(
       return JSON.stringify({ ...v, id: map[v.id] ?? v.id })
     })
 }
+
+/** Fills the judge prompt template's `__NAME__` placeholders; throws if any are left unfilled. */
+export function renderPrompt(
+  template: string,
+  vars: Record<string, string>,
+): string {
+  const out = template.replace(/__([A-Z_]+)__/g, (m, k: string) =>
+    k in vars ? vars[k]! : m,
+  )
+  const left = out.match(/__[A-Z_]+__/)
+  if (left) throw new Error(`unfilled placeholder ${left[0]}`)
+  return out
+}
+
+export const calibrationPrompt = (
+  template: string,
+  dataPath: string,
+  resultsPath: string,
+): string =>
+  renderPrompt(template, {
+    CATEGORY: 'Calibration',
+    DATA_PATH: dataPath,
+    RESULTS_PATH: resultsPath,
+    BATCH_SIZE: '5',
+  })
