@@ -75,6 +75,8 @@ export interface RenderArgs {
    * diagram's own direction.
    */
   direction: Direction | undefined
+  /** `--profile markdown`: plain ASCII-only output (see `AsciiRenderOptions.profile`); also defaults `--max-width` to 80. */
+  profile?: 'markdown' | undefined
 }
 
 export interface SimpleCommand {
@@ -312,6 +314,7 @@ function parseRender(args: string[]): RenderArgs {
   let hyperlinks = false
   let maxWidth: number | 'auto' | undefined
   let direction: Direction | undefined
+  let profile: 'markdown' | undefined
 
   let i = 0
   while (i < args.length) {
@@ -370,6 +373,13 @@ function parseRender(args: string[]): RenderArgs {
       i++
     } else if (arg === '-w' || arg === '--max-width') {
       maxWidth = parseMaxWidthFlag(args, i, arg)
+      i += 2
+    } else if (arg === '--profile') {
+      const v = args[i + 1]
+      if (v !== 'markdown') {
+        throw new Error(`${arg} needs a value: markdown`)
+      }
+      profile = v
       i += 2
     } else if (arg === '--direction') {
       direction = parseDirectionFlag(args, i, arg)
@@ -487,6 +497,10 @@ function parseRender(args: string[]): RenderArgs {
     throw new Error('-w/--max-width requires --ascii')
   }
 
+  if (profile !== undefined && !ascii) {
+    throw new Error('--profile requires --ascii')
+  }
+
   if (hyperlinks && !ascii) {
     throw new Error('--hyperlinks requires --ascii')
   }
@@ -513,6 +527,7 @@ function parseRender(args: string[]): RenderArgs {
     hyperlinks,
     maxWidth,
     direction,
+    profile,
   }
 }
 

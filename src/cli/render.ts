@@ -185,16 +185,24 @@ async function renderText(
     if (args.paddingY !== undefined) asciiOpts.paddingY = args.paddingY
     if (args.borderPadding !== undefined)
       asciiOpts.boxBorderPadding = args.borderPadding
+    if (args.profile !== undefined) {
+      // The profile owns charset and color: it replaces --theme's ANSI too.
+      asciiOpts.profile = args.profile
+      delete asciiOpts.theme
+      asciiOpts.colorMode = 'none'
+    }
     if (args.coords) asciiOpts.showCoords = true
     if (args.direction !== undefined) asciiOpts.direction = args.direction
     // Only for terminal output: a .txt file gets no escape codes regardless
     // (same contract as the ANSI color guard above), so OSC 8 hyperlink
     // sequences must never be written into a file target.
-    if (args.hyperlinks && asciiFile === undefined) asciiOpts.hyperlinks = true
+    if (args.hyperlinks && asciiFile === undefined && !args.profile)
+      asciiOpts.hyperlinks = true
     let ascii = renderMermaidASCII(text, asciiOpts)
 
-    if (args.maxWidth !== undefined) {
-      const targetWidth = resolveMaxWidth(args.maxWidth)
+    const maxWidth = args.maxWidth ?? (args.profile ? 80 : undefined)
+    if (maxWidth !== undefined) {
+      const targetWidth = resolveMaxWidth(maxWidth)
       let actualWidth = maxLineWidth(ascii)
       let compactApplied = false
 

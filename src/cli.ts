@@ -154,6 +154,7 @@ Options:
                        VTE-based terminals render them as clickable links;
                        others may show the URL or nothing. Pagers need
                        OSC 8 support too (\`less -R\`, recent versions).
+  --profile markdown   Paste-safe ASCII (no color/links, width 80)
   -w, --max-width <n|auto>  Fit ASCII output within this many columns
                        ('auto' detects the terminal width): applies compact
                        spacing automatically when needed, and warns on

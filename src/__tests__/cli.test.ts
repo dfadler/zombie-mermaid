@@ -680,6 +680,18 @@ describe('parseArgs – validation errors', () => {
     )
   })
 
+  it('parses --profile markdown and rejects bad values or missing --ascii', () => {
+    expect(
+      parseArgs(['render', 'd.mmd', '--ascii', '--profile', 'markdown']),
+    ).toMatchObject({ profile: 'markdown' })
+    expect(() =>
+      parseArgs(['render', 'd.mmd', '--ascii', '--profile', 'x']),
+    ).toThrow('--profile needs a value: markdown')
+    expect(() =>
+      parseArgs(['render', 'd.mmd', '--svg', '--profile', 'markdown']),
+    ).toThrow('--profile requires --ascii')
+  })
+
   it('throws when --max-width is zero', () => {
     expect(() =>
       parseArgs(['render', 'diagram.mmd', '--ascii', '--max-width', '0']),
