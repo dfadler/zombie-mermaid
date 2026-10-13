@@ -1,3 +1,4 @@
+import { MermaidParseError } from '@zombie-mermaid/core'
 import type { SequenceDiagram, Message, Block, Actor } from './types.ts'
 import { normalizeBrTags, type Statement } from '@zombie-mermaid/core'
 import { parseBoxHeader } from './box-color.ts'
@@ -177,7 +178,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     const boxMatch = line.match(/^box(?:\s+(.*))?$/)
     if (boxMatch) {
       if (boxCtx.open !== undefined) {
-        throw new Error(
+        throw new MermaidParseError(
           `Line ${stmt.line}: Sequence diagram: a box cannot be nested inside another box — close the open box with "end" first`,
         )
       }
@@ -207,7 +208,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       const id = createMatch[2]!
       if (actorIds.has(id)) {
         // Mermaid's own wording (sequenceDb `createParticipant`).
-        throw new Error(
+        throw new MermaidParseError(
           `Line ${stmt.line}: It is not possible to have actors with the same id, even if one is destroyed before the next is created. Use 'AS' aliases to simulate the behavior`,
         )
       }
@@ -363,7 +364,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     // silently ignored (#762); mirrors the "box cannot be nested" throw
     // above in surfacing a structural mistake instead of dropping it.
     if (line === 'end') {
-      throw new Error(
+      throw new MermaidParseError(
         `Line ${stmt.line}: Sequence diagram: "end" does not match any open block ("loop"/"alt"/"opt"/"par"/"critical"/"break"/"rect") or "box" — nothing is currently open to close.`,
       )
     }
@@ -434,7 +435,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       const arrowToken = msgMatch[2]!
       const toFirstChar = msgMatch[4]![0]
       if (toFirstChar === '>' || toFirstChar === ')') {
-        throw new Error(
+        throw new MermaidParseError(
           `Line ${stmt.line}: Malformed sequence-diagram arrow in "${line}" — "${arrowToken}${toFirstChar}" is not a recognized arrow. Expected one of: ->, -->, ->>, -->>, -x, --x, -), --), <<->>, <<-->>.`,
         )
       }
@@ -454,7 +455,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       const msg = diagram.messages[msgIndex]!
       if (pendingCreate !== undefined) {
         if (msg.to !== pendingCreate) {
-          throw new Error(
+          throw new MermaidParseError(
             `Line ${stmt.line}: The created participant ${pendingCreate} does not have an associated creating message after its declaration. Please check the sequence diagram.`,
           )
         }
@@ -463,7 +464,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       }
       if (pendingDestroy !== undefined) {
         if (msg.from !== pendingDestroy && msg.to !== pendingDestroy) {
-          throw new Error(
+          throw new MermaidParseError(
             `Line ${stmt.line}: The destroyed participant ${pendingDestroy} does not have an associated destroying message after its declaration. Please check the sequence diagram.`,
           )
         }
@@ -482,13 +483,13 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
   // thing to report when both are open.
   if (blockStack.length > 0) {
     const unclosed = blockStack[blockStack.length - 1]!
-    throw new Error(
+    throw new MermaidParseError(
       `Line ${unclosed.line}: Sequence diagram: unclosed "${unclosed.type}" block — expected a matching "end" before the diagram ends.`,
     )
   }
   if (boxCtx.open !== undefined) {
     const openBox = diagram.boxes[boxCtx.open]!
-    throw new Error(
+    throw new MermaidParseError(
       `Line ${boxOpenLine}: Sequence diagram: unclosed "box${openBox.label ? ` ${openBox.label}` : ''}" — expected a matching "end" before the diagram ends.`,
     )
   }
@@ -543,7 +544,7 @@ function joinOpenBox(
   if (existing !== undefined) {
     const from = diagram.boxes[existing]!.label
     const to = diagram.boxes[open]!.label
-    throw new Error(
+    throw new MermaidParseError(
       `Line ${lineNumber}: A same participant should only be defined in one Box: ${id} can't be in '${from}' and in '${to}' at the same time.`,
     )
   }

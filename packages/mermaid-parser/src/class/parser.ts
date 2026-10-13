@@ -1,3 +1,4 @@
+import { MermaidParseError } from '@zombie-mermaid/core'
 import type {
   ClassDiagram,
   ClassNode,
@@ -128,7 +129,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
       // (e.g. a missing closing `>>`) rather than a member — surface that
       // instead of silently mis-parsing it as a member named "<<foo" (#761).
       if (line.startsWith('<<')) {
-        throw new Error(
+        throw new MermaidParseError(
           `Line ${stmt.line}: Malformed class annotation "${line}" — expected "<<name>>" (e.g. "<<interface>>").`,
         )
       }
@@ -219,7 +220,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
       } else if (cls && body.startsWith('<<')) {
         // Same broken-annotation-attempt case as the multi-line body
         // branch above, just on the single-line form (#761).
-        throw new Error(
+        throw new MermaidParseError(
           `Line ${stmt.line}: Malformed class annotation "${body}" — expected "<<name>>" (e.g. "<<interface>>").`,
         )
       } else if (cls && body) {
@@ -263,14 +264,14 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     // #722 used for ER/xychart-beta) so genuinely unrecognized syntax with
     // no arrow at all keeps falling through silently (#761).
     if (RELATIONSHIP_ARROW_MARKER.test(line)) {
-      throw new Error(
+      throw new MermaidParseError(
         `Line ${stmt.line}: Malformed class-diagram relationship "${line}". Expected "FROM ARROW TO" (optionally with cardinalities and a ": label"), e.g. "Animal <|-- Dog" or 'A "1" --> "*" B : label'. ARROW must be one of <|--, <|.., *--, o--, -->, --*, --o, --|>, ..>, ..|>, <--, <.., or --.`,
       )
     }
   }
 
   if (currentClass !== null) {
-    throw new Error(
+    throw new MermaidParseError(
       `Line ${openClassLine}: Unclosed class body for "${currentClass.id}" — expected a closing "}" before the diagram ends.`,
     )
   }
@@ -440,7 +441,7 @@ function parseMember(
   // instead of silently parsing "eat(void" as a member literally named
   // that (#761).
   if (rest.includes('(') && !rest.includes(')')) {
-    throw new Error(
+    throw new MermaidParseError(
       `Line ${lineNumber}: Malformed class member "${trimmed}" — unclosed "(" in a method signature. Expected e.g. "+eat() void" or "+eat(Food f) void".`,
     )
   }

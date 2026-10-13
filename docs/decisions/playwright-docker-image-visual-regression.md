@@ -15,15 +15,12 @@ replace inference with real measurement, feeding this decision
 ([#548](https://github.com/dfadler/zombie-mermaid/issues/548)):
 
 - [#545](https://github.com/dfadler/zombie-mermaid/issues/545) — real cross-arch
-  screenshot diff (`docs/research/545-crossarch-docker-screenshot-spike.md`, on
-  `issue-545-crossarch-screenshot-spike`)
+  screenshot diff ([findings](https://github.com/dfadler/zombie-mermaid/issues/545#issuecomment-5571597826))
 - [#546](https://github.com/dfadler/zombie-mermaid/issues/546) — native Linux
-  ARM64 Chromium availability (`docs/research/546-arm64-chromium-spike.md`, on
-  `issue-546-arm64-chromium-spike`)
+  ARM64 Chromium availability ([findings](https://github.com/dfadler/zombie-mermaid/issues/546#issuecomment-5572655677))
 - [#547](https://github.com/dfadler/zombie-mermaid/issues/547) — real CI timing
   cost, container job vs. current `actions/cache` approach
-  (`docs/research/ci-container-job-vs-actions-cache-timing.md`, on
-  `issue-547-ci-timing-spike`)
+  ([findings](https://github.com/dfadler/zombie-mermaid/issues/547#issuecomment-5594929534))
 
 ### What the spikes actually found
 

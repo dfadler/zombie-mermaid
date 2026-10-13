@@ -198,7 +198,10 @@ export function definePackageBuild(options: PackageBuildOptions) {
         entry,
         fileName: (format) => `index.${format === 'es' ? 'js' : 'cjs'}`,
       },
-      rolldownOptions: { external: isExternal },
+      rolldownOptions: {
+        external: isExternal,
+        output: { sourcemapExcludeSources: true },
+      },
     },
     environments: {
       // Named 'client' deliberately, not e.g. 'es': `vite build --app`

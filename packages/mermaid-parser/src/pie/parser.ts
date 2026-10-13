@@ -1,3 +1,4 @@
+import { MermaidParseError } from '@zombie-mermaid/core'
 import { decodeMermaidEntities, extractInitConfig } from '@zombie-mermaid/core'
 import type { PieChart, PieSlice } from './types.ts'
 
@@ -136,7 +137,9 @@ function lineError(
 ): Error {
   /* v8 ignore next -- every caller passes a line inside `lines` */
   const source = (lines[line - 1] ?? '').trim()
-  return new Error(`Line ${line}: ${message} in "${source}". ${SYNTAX_HELP}`)
+  return new MermaidParseError(
+    `Line ${line}: ${message} in "${source}". ${SYNTAX_HELP}`,
+  )
 }
 
 /** What the lexer expected at a position it couldn't tokenize. */
@@ -376,7 +379,7 @@ export function parsePieChart(text: string): PieChart {
   const seen = new Set<string>()
   for (const { label, value, line } of rawSlices) {
     if (value < 0) {
-      throw new Error(
+      throw new MermaidParseError(
         `Line ${line}: "${label}" has invalid value: ${value}. Negative values are not allowed in pie charts. All slice values must be >= 0.`,
       )
     }

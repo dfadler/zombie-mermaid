@@ -5,6 +5,7 @@ import {
   checkDoc,
   engineMatches,
   main,
+  orphanResearch,
 } from '../scripts/check-docs.ts'
 
 const has = (set: string[]) => (p: string) => set.some((s) => p.endsWith(s))
@@ -93,11 +94,64 @@ describe('check-docs orchestration', () => {
     expect(r.errs).toEqual([
       'package.json engines.node ">=20 || >=24" vs .nvmrc 24',
       '.github/workflows/ci.yml: node-version 22 vs .nvmrc 24',
+      'docs/research/a: nothing links to it; post the findings on the issue instead (#1642)',
     ])
   })
   it('default fs reads the real repo, which has no drift', () => {
     expect(checkAll().errs).toEqual([])
     expect(checkDoc('README.md', '[x](./LICENSE)', '24')).toEqual([])
+  })
+})
+
+describe('check-docs research guard (#1642)', () => {
+  const fs = (files: Record<string, string>) => ({
+    read: (p: string) => files[p] ?? '',
+    ls: (g: string) =>
+      Object.keys(files).filter((f) =>
+        g === '*'
+          ? true
+          : g.startsWith('*.')
+            ? f.endsWith(g.slice(1))
+            : f.startsWith(g),
+      ),
+  })
+  it('flags a research doc or dir that nothing else mentions', () => {
+    const errs = orphanResearch(
+      fs({
+        'docs/research/README.md': '[a](a.md) [d](d/)',
+        'docs/research/a.md': 'x',
+        'docs/research/d/README.md': 'x',
+        'docs/research/d/data.json': '{}',
+        'docs/research/linked.md': 'x',
+        'docs/guide.md': 'see docs/research/linked.md',
+        'CHANGELOG.md': 'docs/research/a.md',
+      }),
+    )
+    expect(errs.map((e) => e.split(':')[0])).toEqual([
+      'docs/research/a',
+      'docs/research/d',
+    ])
+  })
+  it('counts a reference from a Dockerfile, but not from a longer key', () => {
+    const base = { 'docs/research/614-x.md': 'x' }
+    expect(
+      orphanResearch(
+        fs({ ...base, 'docker/a.Dockerfile': '# docs/research/614-x.md' }),
+      ),
+    ).toEqual([])
+    expect(
+      orphanResearch(fs({ ...base, 'ci.yml': 'docs/research/614-x-v2.md' })),
+    ).toHaveLength(1)
+  })
+  it('passes when every doc is referenced from outside the directory', () => {
+    expect(
+      orphanResearch(
+        fs({
+          'docs/research/d/README.md': 'x',
+          'scripts/x.sh': '# see docs/research/d/README.md',
+        }),
+      ),
+    ).toEqual([])
   })
 })
 

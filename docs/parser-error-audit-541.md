@@ -3,7 +3,7 @@
 > **Historical.** This is a snapshot from when the audit was done. Its claims no
 > longer hold (it counts five parsers and says no thrown error carries a
 > line/column; both are out of date). See
-> [research/541-parser-error-audit-followup.md](research/541-parser-error-audit-followup.md)
+> [the #541 follow-up audit](https://github.com/dfadler/zombie-mermaid/issues/541#issuecomment-5600101240)
 > for the current state.
 
 Audit of parse-error quality across all five diagram-type parsers, done by

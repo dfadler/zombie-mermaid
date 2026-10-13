@@ -188,6 +188,18 @@ export function isOfType(source: string, type: OracleType): boolean {
   return TYPE_HEADER[type].test(source)
 }
 
+/** Whether a sample is of `type` and its title contains the `--filter` text. */
+export function wantsSample(
+  s: { title: string; source: string },
+  type: OracleType,
+  filter?: string,
+): boolean {
+  return (
+    isOfType(s.source, type) &&
+    (!filter || s.title.toLowerCase().includes(filter.toLowerCase()))
+  )
+}
+
 /**
  * Our node id for an element id real mermaid wrote into its SVG
  * (`<renderId>-flowchart-<id>-<n>` / `<renderId>-state-<id>-<n>`; the id may
@@ -214,8 +226,8 @@ mermaid.js draws, as the share of node pairs placed in the same relation.
   --type=<kind>        flowchart (default), state, class or er
   --filter=<text>      only samples whose title contains <text>
   --json=<file>        write the per-sample figures to <file>
-  --history=<file>     append a one-line summary of this run to <file> (JSON Lines)
-  --scorecard=<file>   write a Markdown scorecard to <file> (trend read from --history)
+  --history=<file>     append one summary line per type to <file> (JSON Lines); scores all four types
+  --scorecard=<file>   write a Markdown scorecard to <file> (trend read from --history); scores all four types
   --fail-below=<pct>   exit 1 if any sample's lowest figure is under <pct> (0-100)
   --layout=<engine>    elk (default) or simple (built-in, flowchart only, #1685)
   --layout=<engine>    elk (default) or simple (built-in, flowchart only, #1685)
@@ -275,6 +287,9 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
   if (args.layout === 'simple' && args.type !== 'flowchart') {
     throw new Error('--layout=simple only lays out flowcharts.')
   }
+  if (args.layout !== 'elk' && (args.history || args.scorecard)) {
+    throw new Error('--history and --scorecard record the elk layout only.')
+  }
   return args
 }
 
@@ -302,12 +317,16 @@ export const TABLE_HEADER = ' vert horiz   in   sg  nodes  sample'
 
 export type SampleResult = Agreement & { subgraphs: boolean }
 
-/** One tracked data point: mean agreement over every flowchart sample. */
+/** One tracked data point: mean agreement over every sample of one diagram type. */
 export interface HistoryEntry {
   date: string
   commit: string
   tolerance: number
-  /** Samples scored (flowcharts only; other diagram types are not covered yet). */
+  /** Diagram type scored; entries recorded before #1905 omit it and are flowcharts. */
+  type?: OracleType
+  /** mermaid version of the reference; entries recorded before #1905 omit it (11.17.2). */
+  mermaid?: string
+  /** Samples scored. */
   samples: number
   /** Mean of each figure over the samples that have it, 0..1; null if none do. */
   vertical: number | null
@@ -323,7 +342,13 @@ const mean = (xs: (number | null)[]): number | null => {
 /** Collapse per-sample results into one history entry. */
 export function summarize(
   results: Record<string, SampleResult>,
-  meta: { date: string; commit: string; tolerance: number },
+  meta: {
+    date: string
+    commit: string
+    tolerance: number
+    type: OracleType
+    mermaid: string
+  },
 ): HistoryEntry {
   const all = Object.values(results)
   return {
@@ -335,52 +360,121 @@ export function summarize(
   }
 }
 
+/** Whether a sample declares subgraphs (flowchart), composite states or namespaces. */
+export function hasGroups(type: OracleType, source: string): boolean {
+  return {
+    state: /^\s*state\s+.*\{\s*$/m,
+    class: /^\s*namespace\b/m,
+    er: /$^/,
+    flowchart: /\bsubgraph\b/,
+  }[type].test(source)
+}
+
+/** `--json` file body: bare figures for one type, keyed by type for several. */
+export function jsonPayload(runs: ScorecardRun[]): string {
+  const out =
+    runs.length === 1
+      ? runs[0]!.results
+      : Object.fromEntries(runs.map((r) => [r.entry.type, r.results]))
+  return `${JSON.stringify(out, null, 2)}\n`
+}
+
+/** History entries as JSON Lines, ready to append. */
+export function historyLines(entries: HistoryEntry[]): string {
+  return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
+}
+
 const cell = (n: number | null): string =>
   n === null ? '-' : `${Math.round(n * 100)}%`
 
+const TYPE_LABEL: Record<OracleType, string> = {
+  flowchart: 'Flowchart',
+  state: 'State',
+  class: 'Class',
+  er: 'ER',
+}
+
+/** Reference version of entries recorded before the field existed (#1905). */
+const LEGACY_MERMAID = '11.17.2'
+
+/** One scored diagram type: its summary entry and per-sample figures. */
+export interface ScorecardRun {
+  entry: HistoryEntry
+  results: Record<string, SampleResult>
+  /** Titles the oracle tried to score; any missing from `results` errored. */
+  sampled?: string[]
+}
+
 /**
- * Markdown scorecard: the latest run, its per-sample figures (lowest first)
- * and the recorded trend. Descriptive only; no pass/fail threshold.
+ * Markdown scorecard: the latest run per diagram type, the recorded trend and
+ * each type's per-sample figures (lowest first). Descriptive only; no
+ * pass/fail threshold.
  */
 export function scorecardMarkdown(
-  latest: HistoryEntry,
-  results: Record<string, SampleResult>,
+  runs: ScorecardRun[],
   history: HistoryEntry[],
+  command = 'pnpm run layout:scorecard',
 ): string {
-  const rows = Object.entries(results)
-    .sort(([, a], [, b]) => (worst(a) ?? 2) - (worst(b) ?? 2))
-    .map(
-      ([t, r]) =>
-        `| ${t.replace(/\|/g, '\\|')} | ${cell(r.vertical)} | ${cell(r.horizontal)} | ${cell(r.containment)} | ${r.nodes} |`,
-    )
+  const first = runs[0]!.entry
+  const means = runs.map(
+    ({ entry: e }) =>
+      `| ${TYPE_LABEL[e.type ?? 'flowchart']} | ${e.samples} | ${cell(e.vertical)} | ${cell(e.horizontal)} | ${cell(e.containment)} |`,
+  )
   const trend = history
     .slice(-20)
     .map(
       (h) =>
-        `| ${h.date} | ${h.commit.slice(0, 7)} | ${h.samples} | ${cell(h.vertical)} | ${cell(h.horizontal)} | ${cell(h.containment)} |`,
+        `| ${h.date} | ${h.commit.slice(0, 7)} | ${h.mermaid ?? LEGACY_MERMAID} | ${TYPE_LABEL[h.type ?? 'flowchart']} | ${h.samples} | ${cell(h.vertical)} | ${cell(h.horizontal)} | ${cell(h.containment)} |`,
     )
-  return `<!-- Generated by \`pnpm run layout:scorecard\`. Do not edit by hand. -->
-# Layout-fidelity scorecard
-
-How closely our flowchart layouts match official mermaid.js: the share of node
-pairs placed in the same above/below/beside relation (\`vertical\`,
-\`horizontal\`) and of node/subgraph pairs that agree on containment. Only
-relative placement is compared. Flowcharts only so far. These are descriptive
-figures, not pass/fail thresholds. Method: \`scripts/layout-oracle.ts\`.
-
-Latest run (${latest.date}, ${latest.commit.slice(0, 7)}, ${latest.samples} samples, tolerance ${latest.tolerance}px):
-vertical **${cell(latest.vertical)}**, horizontal **${cell(latest.horizontal)}**, containment **${cell(latest.containment)}** (means over samples).
-
-## Trend (last 20 recorded runs)
-
-| Date | Commit | Samples | Vertical | Horizontal | Containment |
-| --- | --- | --- | --- | --- | --- |
-${trend.join('\n')}
-
-## Per sample (lowest first)
+  const sections = runs.map(({ entry, results, sampled = [] }) => {
+    const errored = sampled.filter((t) => !(t in results))
+    const note = errored.length
+      ? `\n\nNot scored (the oracle errored): ${errored.join(', ')}.`
+      : ''
+    const rows = Object.entries(results)
+      .sort(([, a], [, b]) => (worst(a) ?? 2) - (worst(b) ?? 2))
+      .map(
+        ([t, r]) =>
+          `| ${t.replace(/\|/g, '\\|')} | ${cell(r.vertical)} | ${cell(r.horizontal)} | ${cell(r.containment)} | ${r.nodes} |`,
+      )
+    return `### ${TYPE_LABEL[entry.type ?? 'flowchart']} (lowest first)
 
 | Sample | Vertical | Horizontal | Containment | Nodes |
 | --- | --- | --- | --- | --- |
-${rows.join('\n')}
+${rows.join('\n')}${note}`
+  })
+  return `<!-- Generated by \`${command}\`. Do not edit by hand. -->
+
+# Layout-fidelity scorecard
+
+How closely our flowchart, state, class and ER layouts match official
+mermaid.js: the share of node pairs placed in the same above/below/beside
+relation (\`vertical\`, \`horizontal\`) and of node/subgraph pairs that agree on
+containment. Only relative placement is compared. These are descriptive
+figures, not pass/fail thresholds. Method: \`scripts/layout-oracle.ts\`.
+
+Reference: mermaid ${first.mermaid ?? LEGACY_MERMAID}. Since mermaid 12.0.0 its default layout engine for
+these diagram types is ELK (it was dagre before). Generated ${first.date} at
+${first.commit.slice(0, 7)} with \`${command}\`, tolerance ${first.tolerance}px.
+
+## Latest run (means over samples)
+
+| Type | Samples | Vertical | Horizontal | Containment |
+| --- | --- | --- | --- | --- |
+${means.join('\n')}
+
+## Trend (last 20 recorded runs)
+
+Runs recorded before 12.1.0 were measured against mermaid 11.17.2 (dagre) and
+cover flowcharts only. The reference changed engine, so do not read a trend
+across that change.
+
+| Date | Commit | Mermaid | Type | Samples | Vertical | Horizontal | Containment |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+${trend.join('\n')}
+
+## Per sample
+
+${sections.join('\n\n')}
 `
 }
