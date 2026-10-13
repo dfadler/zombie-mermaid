@@ -20,16 +20,28 @@ import {
 } from './tools/render-ascii.ts'
 import {
   checkSequenceActivationsInputShape,
+  checkSequenceActivationsOutputShape,
   checkSequenceActivationsHandler,
 } from './tools/check-sequence-activations.ts'
 import {
   fixSequenceActivationsInputShape,
+  fixSequenceActivationsOutputShape,
   fixSequenceActivationsHandler,
 } from './tools/fix-sequence-activations.ts'
 
-import { validateInputShape, validateHandler } from './tools/validate.ts'
-import { listThemesHandler } from './tools/list-themes.ts'
-import { listDiagramTypesHandler } from './tools/list-diagram-types.ts'
+import {
+  validateInputShape,
+  validateOutputShape,
+  validateHandler,
+} from './tools/validate.ts'
+import {
+  listThemesHandler,
+  listThemesOutputShape,
+} from './tools/list-themes.ts'
+import {
+  listDiagramTypesHandler,
+  listDiagramTypesOutputShape,
+} from './tools/list-diagram-types.ts'
 
 /**
  * Build a zombie-mermaid MCP server exposing `render_mermaid_svg`,
@@ -106,6 +118,7 @@ export function createMcpServer(): McpServer {
         'Mechanical and deterministic — no LLM judgment involved. Only ' +
         'sequence diagrams are supported.',
       inputSchema: checkSequenceActivationsInputShape,
+      outputSchema: checkSequenceActivationsOutputShape,
       annotations: {
         title: 'Check Mermaid sequence diagram activation balance',
         readOnlyHint: true,
@@ -133,6 +146,7 @@ export function createMcpServer(): McpServer {
         'Mechanical and deterministic — no LLM judgment involved. Only ' +
         'sequence diagrams are supported.',
       inputSchema: fixSequenceActivationsInputShape,
+      outputSchema: fixSequenceActivationsOutputShape,
       annotations: {
         title: 'Fix Mermaid sequence diagram activation balance',
         readOnlyHint: true,
@@ -152,6 +166,7 @@ export function createMcpServer(): McpServer {
         'List the names of the built-in themes accepted by the `theme` ' +
         'argument of render_mermaid_svg.',
       inputSchema: {},
+      outputSchema: listThemesOutputShape,
       annotations: {
         title: 'List built-in diagram themes',
         readOnlyHint: true,
@@ -171,6 +186,7 @@ export function createMcpServer(): McpServer {
         'List the Mermaid diagram types this library detects and renders ' +
         '(flowchart also covers state diagrams).',
       inputSchema: {},
+      outputSchema: listDiagramTypesOutputShape,
       annotations: {
         title: 'List supported diagram types',
         readOnlyHint: true,
@@ -191,6 +207,7 @@ export function createMcpServer(): McpServer {
         '{ valid, diagnostics }; each diagnostic has { line, sourceLine, ' +
         'message } when the parser names a line, else just { message }.',
       inputSchema: validateInputShape,
+      outputSchema: validateOutputShape,
       annotations: {
         title: 'Validate Mermaid diagram syntax',
         readOnlyHint: true,
