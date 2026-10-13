@@ -8,6 +8,7 @@
 
 import { z } from 'zod'
 import { renderErrorResult } from './parse-diagnostics.ts'
+import { MCP_LIMITS } from './limits.ts'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
@@ -83,6 +84,7 @@ export function renderAsciiHandler(input: RenderAsciiToolArgs): CallToolResult {
       paddingY: input.paddingY,
       boxBorderPadding: input.boxBorderPadding,
       colorMode: 'none',
+      limits: MCP_LIMITS,
     }
     const ascii = renderMermaidASCII(input.diagram, options)
     return { content: [{ type: 'text', text: ascii }] }
