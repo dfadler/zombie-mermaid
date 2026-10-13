@@ -307,6 +307,7 @@ export default defineConfig({
     },
     rolldownOptions: {
       external: isExternal,
+      output: { sourcemapExcludeSources: true },
     },
   },
   environments: {
