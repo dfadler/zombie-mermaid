@@ -79,6 +79,8 @@ import {
   setMonospaceMetrics,
   detectDiagramType,
   splitStatements,
+  checkLimit,
+  checkGraphSize,
 } from '@zombie-mermaid/core'
 import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
@@ -261,6 +263,7 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
   // `text` itself is left untouched so `embedSource` below stamps the exact
   // string the caller passed in, not this entity-decoded copy used
   // internally for parsing.
+  checkLimit('maxInputLength', text.length, options.limits)
   const decoded = decodeXML(text)
 
   const colors = buildColors(options)
@@ -285,6 +288,10 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
   // ./registry.ts).
   const registered = diagramRegistry[diagramType]
   const diagram = registered.parse(lines, decoded)
+  const g = diagram as { nodes?: unknown; edges?: unknown }
+  if (g.nodes instanceof Map && Array.isArray(g.edges)) {
+    checkGraphSize(g.nodes.size, g.edges.length, options.limits)
+  }
   const positioned = registered.layoutForSvg(diagram, options)
   const ctx: SvgRenderContext = {
     colors,

@@ -2245,4 +2245,19 @@ pie title Pets adopted by volunteers
   "Cats" : 85
   "Rats" : 15`,
   },
+  {
+    title: 'Fan-Out Under Half-Column Parent',
+    category: 'Flowchart',
+    description:
+      'A chain of fan-outs ending at `G`, whose box has an even width. Each ASCII arrowhead sits directly under its stem, including the left one (#1914).',
+    source: `flowchart TD
+    A --> B
+    A -->|no| C
+    C --> D
+    D --> E
+    D --> F
+    F --> G
+    G --> H
+    G --> I`,
+  },
 ]
