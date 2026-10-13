@@ -175,20 +175,23 @@ export function orphanResearch(fs: Fs = realFs): string[] {
   const docs = fs
     .ls('docs/research')
     .filter((f) => f !== 'docs/research/README.md')
-  const others = [
-    '*.md',
-    '*.ts',
-    '*.mjs',
-    '*.sh',
-    '*.yml',
-    '*.json',
-    'Dockerfile',
-  ]
-    .flatMap((g) => fs.ls(g))
-    .filter((f) => !f.startsWith('docs/research/') && !/CHANGELOG\.md$/.test(f))
+  // Every tracked text file counts as a link source (Dockerfiles, .tsx, .html...).
+  const others = fs
+    .ls('*')
+    .filter(
+      (f) =>
+        !f.startsWith('docs/research/') &&
+        !/CHANGELOG\.md$|\.(png|jpe?g|gif|webp|ico|woff2?|ttf|pdf)$/.test(f),
+    )
   const text = others.map((f) => fs.read(f)).join('\n')
   return [...new Set(docs.map(keyOf))]
-    .filter((k) => !text.includes(`research/${k}`))
+    .filter(
+      // Path boundary: `research/614-x` must not match `research/614-x-v2.md`.
+      (k) =>
+        !new RegExp(
+          `research/${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`,
+        ).test(text),
+    )
     .map(
       (k) =>
         `docs/research/${k}: nothing links to it; post the findings on the issue instead (#1642)`,
