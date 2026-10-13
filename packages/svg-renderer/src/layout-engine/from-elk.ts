@@ -110,7 +110,7 @@ function buildSelfLoopGeometry(
  * x/y/width/height, so computing it any earlier would have it drift out of
  * sync with a node that layer-alignment later shifts.
  */
-function synthesizeSelfLoopEdges(
+export function synthesizeSelfLoopEdges(
   graph: MermaidGraph,
   nodeMap: Map<string, PositionedNode>,
   edges: PositionedEdge[],

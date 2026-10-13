@@ -12,6 +12,12 @@ describe('measureOurs (layout-oracle, browser-free)', () => {
     expect(m.nodes.A!.w).toBeGreaterThan(0)
   })
 
+  it('lays a flowchart out with the built-in engine when asked (#1685)', () => {
+    const m = measureOurs('graph TD\n  A --> B', 'flowchart', 'simple')
+    expect(Object.keys(m.nodes).sort()).toEqual(['A', 'B'])
+    expect(m.nodes.B!.y).toBeGreaterThan(m.nodes.A!.y)
+  })
+
   it('keys state nodes by id', () => {
     const m = measureOurs(
       'stateDiagram-v2\n  [*] --> Idle\n  Idle --> Done',

@@ -18,7 +18,11 @@ import { parseMermaid } from '../../src/index.ts'
 import type { Box, LayoutBoxes, OracleType } from './layout-agreement.ts'
 
 /** Box of every node and subgraph in our own layout of `source`. */
-export function measureOurs(source: string, type: OracleType): LayoutBoxes {
+export function measureOurs(
+  source: string,
+  type: OracleType,
+  layout: 'elk' | 'simple' = 'elk',
+): LayoutBoxes {
   const nodes: Record<string, Box> = {}
   if (type === 'class') {
     const d = layoutClassDiagramSync(parseClassDiagram(splitStatements(source)))
@@ -40,7 +44,9 @@ export function measureOurs(source: string, type: OracleType): LayoutBoxes {
   }
   const graph = parseMermaid(source)
   const positioned =
-    type === 'state' ? layoutGraphSync(graph) : layoutFlowchartSync(graph)
+    type === 'state'
+      ? layoutGraphSync(graph)
+      : layoutFlowchartSync(graph, { layout })
   for (const n of positioned.nodes) {
     nodes[n.id] = { x: n.x, y: n.y, w: n.width, h: n.height }
   }

@@ -66,7 +66,7 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import { HeroInstall } from './hero-install.tsx'
+import { HeroInstall, HeroRequirements } from './hero-install.tsx'
 import { HeroCodePanel, HeroOutputPanel } from './hero-output-panel.tsx'
 import { WhyForkExistsSection } from './why-fork-section.tsx'
 import { FeaturePillars } from './feature-pillars.tsx'
@@ -190,6 +190,7 @@ export function IndexHeroApp({ asciiHtml }: IndexHeroAppProps) {
             View the live demo
           </CTA>
         </div>
+        <HeroRequirements />
       </div>
 
       <div

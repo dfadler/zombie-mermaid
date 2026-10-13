@@ -153,6 +153,8 @@ export interface OracleArgs {
   tolerance: number
   /** Which diagram type to score; flowchart unless `--type=` says otherwise. */
   type: OracleType
+  /** Our layout engine to score: `elk` (default) or the built-in `simple` (#1685). Flowcharts only. */
+  layout: 'elk' | 'simple'
   help: boolean
 }
 
@@ -215,6 +217,8 @@ mermaid.js draws, as the share of node pairs placed in the same relation.
   --history=<file>     append one summary line per type to <file> (JSON Lines); scores all four types
   --scorecard=<file>   write a Markdown scorecard to <file> (trend read from --history); scores all four types
   --fail-below=<pct>   exit 1 if any sample's lowest figure is under <pct> (0-100)
+  --layout=<engine>    elk (default) or simple (built-in, flowchart only, #1685)
+  --layout=<engine>    elk (default) or simple (built-in, flowchart only, #1685)
   --tolerance=<px>     centres this close count as level (default ${DEFAULT_TOLERANCE})
   -h, --help           show this help
 `
@@ -224,6 +228,7 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
   const args: OracleArgs = {
     tolerance: DEFAULT_TOLERANCE,
     type: 'flowchart',
+    layout: 'elk',
     help: false,
   }
   for (const arg of argv) {
@@ -243,6 +248,11 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
         throw new Error(`--type is ${ORACLE_TYPES.join(', ')}, got "${value}"`)
       }
       args.type = value as OracleType
+    } else if (name === 'layout') {
+      if (value !== 'elk' && value !== 'simple') {
+        throw new Error(`--layout is elk or simple, got "${value}"`)
+      }
+      args.layout = value
     } else if (name === 'json') args.json = value
     else if (name === 'history') args.history = value
     else if (name === 'scorecard') args.scorecard = value
@@ -261,6 +271,9 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     } else {
       throw new Error(`Unknown argument: ${arg}`)
     }
+  }
+  if (args.layout === 'simple' && args.type !== 'flowchart') {
+    throw new Error('--layout=simple only lays out flowcharts.')
   }
   return args
 }
