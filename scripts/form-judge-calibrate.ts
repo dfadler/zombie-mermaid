@@ -2,6 +2,7 @@
  * Form-judge calibration (#1609). No LLM calls here.
  *   build: tsx scripts/form-judge-calibrate.ts build --index=form-facts-index.json --data-out=calib-data.json --ids-out=calib-ids.json [--limit=N] [--sample-ids=a,b,c] [--only=dropEdge,...]
  *          Writes clean + planted-defect cases in the judge's input format; run the judge on calib-data.json (paid) separately.
+ *   prompt: tsx scripts/form-judge-calibrate.ts prompt --template=scripts/form-judge-category-prompt.md --data=calib-data.json --results=calib-results.jsonl --out=calib-prompt.md
  *   score: tsx scripts/form-judge-calibrate.ts score --results=calib-results.jsonl --ids=calib-ids.json  (ids file maps opaque case id -> real id)
  *          Exits 1 when FPR/recall miss the thresholds.
  */
@@ -13,6 +14,7 @@ import {
   buildCalibrationCases,
   parseLimit,
   remapVerdicts,
+  renderPrompt,
   scoreVerdicts,
 } from './lib/form-judge-calibration.ts'
 
@@ -53,6 +55,17 @@ if (process.argv[2] === 'build') {
   await writeFile(arg('data-out'), JSON.stringify(blind, null, 2))
   await writeFile(arg('ids-out'), JSON.stringify(map))
   console.log(`${blind.length} calibration cases`)
+} else if (process.argv[2] === 'prompt') {
+  const tpl = await readFile(arg('template'), 'utf8')
+  await writeFile(
+    arg('out'),
+    renderPrompt(tpl, {
+      CATEGORY: 'Calibration',
+      DATA_PATH: arg('data'),
+      RESULTS_PATH: arg('results'),
+      BATCH_SIZE: '5',
+    }),
+  )
 } else if (process.argv[2] === 'score') {
   const lines = (await readFile(arg('results'), 'utf8')).split('\n')
   const map = JSON.parse(await readFile(arg('ids'), 'utf8')) as Record<
@@ -64,6 +77,6 @@ if (process.argv[2] === 'build') {
   console.log(JSON.stringify(s, null, 2))
   process.exit(s.pass ? 0 : 1)
 } else {
-  console.error('usage: form-judge-calibrate.ts build|score')
+  console.error('usage: form-judge-calibrate.ts build|prompt|score')
   process.exit(2)
 }

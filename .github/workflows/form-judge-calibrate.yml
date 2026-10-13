@@ -76,12 +76,11 @@ jobs:
             --sample-ids="$SAMPLE_IDS" \
             --data-out="$GITHUB_WORKSPACE/calib-data.json" \
             --ids-out="$GITHUB_WORKSPACE/calib-ids.json"
-          sed \
-            -e "s|__CATEGORY__|Calibration|g" \
-            -e "s|__DATA_PATH__|$GITHUB_WORKSPACE/calib-data.json|g" \
-            -e "s|__RESULTS_PATH__|$GITHUB_WORKSPACE/calib-results.jsonl|g" \
-            -e "s|__BATCH_SIZE__|5|g" \
-            scripts/form-judge-category-prompt.md > "$GITHUB_WORKSPACE/calib-prompt.md"
+          pnpm run form-judge-calibrate prompt \
+            --template=scripts/form-judge-category-prompt.md \
+            --data="$GITHUB_WORKSPACE/calib-data.json" \
+            --results="$GITHUB_WORKSPACE/calib-results.jsonl" \
+            --out="$GITHUB_WORKSPACE/calib-prompt.md"
 
       - name: Judge calibration cases
         # Same pinned action, tool restrictions and model as the judge step
