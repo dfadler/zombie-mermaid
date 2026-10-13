@@ -152,8 +152,17 @@ describe('parseOracleArgs', () => {
     expect(parseOracleArgs([])).toEqual({
       tolerance: DEFAULT_TOLERANCE,
       type: 'flowchart',
+      layout: 'elk',
       help: false,
     })
+  })
+
+  it('reads --layout and rejects an unknown engine', () => {
+    expect(parseOracleArgs(['--layout=simple']).layout).toBe('simple')
+    expect(() => parseOracleArgs(['--layout=dagre'])).toThrow(/elk or simple/)
+    expect(() => parseOracleArgs(['--layout=simple', '--type=state'])).toThrow(
+      /only lays out flowcharts/,
+    )
   })
 
   it('reads each option', () => {
@@ -170,6 +179,7 @@ describe('parseOracleArgs', () => {
       failBelow: 75,
       tolerance: 30,
       type: 'flowchart',
+      layout: 'elk',
       help: false,
     })
   })

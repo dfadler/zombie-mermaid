@@ -27,7 +27,7 @@
     "dist": 48000,
     "packages/core/dist": 187000,
     "packages/mermaid-parser/dist": 202000,
-    "packages/svg-renderer/dist": 414000,
+    "packages/svg-renderer/dist": 432000,
     "packages/ascii-renderer/dist": 428000,
     "packages/mcp/dist": 47000
   }
