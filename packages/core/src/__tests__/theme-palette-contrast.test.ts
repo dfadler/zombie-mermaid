@@ -8,26 +8,13 @@
  *
  * Computes the actual WCAG 2.x contrast ratio (relative luminance, per
  * https://www.w3.org/TR/WCAG21/#dfn-relative-luminance) between each
- * theme's `bg`/`fg` pair — not a hand-picked pass/fail per theme, so a
+ * theme's `bg`/`fg` pair (and, below, muted/line/accent) — not a hand-picked pass/fail per theme, so a
  * future THEMES addition with a genuinely illegible pair fails this test
  * automatically instead of only being caught by a human noticing a
  * screenshot looks wrong.
  */
 import { describe, it, expect } from 'vitest'
 import { THEMES } from '@zombie-mermaid/core'
-
-/**
- * The threshold every theme must clear. WCAG AA's own thresholds are 4.5:1
- * for normal text and 3:1 for large/bold text; diagram node labels here
- * are typically medium, semi-bold text, closer to the "large text"
- * category than dense body copy. 4.0 sits between the two -- strict enough
- * to catch a genuinely illegible pair, loose enough not to fail
- * `solarized-light` (4.13:1), whose muted bg/fg pair matches Ethan
- * Schoonover's actual published Solarized values rather than being a
- * mistake in this repo's THEMES data -- #684's own non-goals rule out
- * changing THEMES' colors to "fix" a curated editor-theme's real values.
- */
-const MIN_CONTRAST_RATIO = 4.0
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace('#', '')
@@ -58,11 +45,32 @@ function contrastRatio(hexA: string, hexB: string): number {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
-describe('every built-in theme has a legible bg/fg contrast ratio', () => {
-  for (const [themeKey, colors] of Object.entries(THEMES)) {
-    it(`${themeKey}: bg/fg contrast is at least ${MIN_CONTRAST_RATIO}:1`, () => {
-      const ratio = contrastRatio(colors.bg, colors.fg)
-      expect(ratio).toBeGreaterThanOrEqual(MIN_CONTRAST_RATIO)
+/**
+ * Optional enrichment colors, by what they paint (theme.ts derivedVars):
+ * `muted` is secondary text (edge labels, group headers, axis labels) so it
+ * needs the 4.5:1 text bar (WCAG 1.4.3); `line` is the edge stroke
+ * (`--_line`) and `accent` the arrowhead fill (`--_arrow`), both non-text
+ * graphics needing 3:1 (WCAG 1.4.11).
+ */
+const MIN_TEXT_RATIO = 4.5
+const MIN_GRAPHIC_RATIO = 3.0
+
+describe('every built-in theme meets WCAG AA for fg, muted, line and accent on bg', () => {
+  for (const [themeKey, c] of Object.entries(THEMES)) {
+    it(`${themeKey}: fg and muted >= ${MIN_TEXT_RATIO}:1, line and accent >= ${MIN_GRAPHIC_RATIO}:1`, () => {
+      expect(contrastRatio(c.bg, c.fg)).toBeGreaterThanOrEqual(MIN_TEXT_RATIO)
+      if (c.muted)
+        expect(contrastRatio(c.bg, c.muted)).toBeGreaterThanOrEqual(
+          MIN_TEXT_RATIO,
+        )
+      if (c.line)
+        expect(contrastRatio(c.bg, c.line)).toBeGreaterThanOrEqual(
+          MIN_GRAPHIC_RATIO,
+        )
+      if (c.accent)
+        expect(contrastRatio(c.bg, c.accent)).toBeGreaterThanOrEqual(
+          MIN_GRAPHIC_RATIO,
+        )
     })
   }
 })
