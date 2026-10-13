@@ -11,6 +11,7 @@ import {
   historyLines,
   jsonPayload,
   scorecardMarkdown,
+  wantsSample,
   summarize,
   type Box,
   type LayoutBoxes,
@@ -177,6 +178,14 @@ describe('parseOracleArgs', () => {
     expect(parseOracleArgs(['--layout=elk', '--history=h.jsonl']).layout).toBe(
       'elk',
     )
+  })
+
+  it('wantsSample matches type and a case-insensitive title filter', () => {
+    const s = { title: 'State: Notes', source: 'stateDiagram-v2\n  A --> B' }
+    expect(wantsSample(s, 'state')).toBe(true)
+    expect(wantsSample(s, 'class')).toBe(false)
+    expect(wantsSample(s, 'state', 'notes')).toBe(true)
+    expect(wantsSample(s, 'state', 'xyz')).toBe(false)
   })
 
   it('reads each option', () => {

@@ -188,6 +188,18 @@ export function isOfType(source: string, type: OracleType): boolean {
   return TYPE_HEADER[type].test(source)
 }
 
+/** Whether a sample is of `type` and its title contains the `--filter` text. */
+export function wantsSample(
+  s: { title: string; source: string },
+  type: OracleType,
+  filter?: string,
+): boolean {
+  return (
+    isOfType(s.source, type) &&
+    (!filter || s.title.toLowerCase().includes(filter.toLowerCase()))
+  )
+}
+
 /**
  * Our node id for an element id real mermaid wrote into its SVG
  * (`<renderId>-flowchart-<id>-<n>` / `<renderId>-state-<id>-<n>`; the id may

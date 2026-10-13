@@ -38,7 +38,7 @@ import {
   USAGE,
   agreement,
   formatRow,
-  isOfType,
+  wantsSample,
   officialNodeName,
   ORACLE_TYPES,
   hasGroups,
@@ -115,12 +115,7 @@ async function scoreType(
   type: OracleType,
   args: OracleArgs,
 ) {
-  const wanted = samples.filter(
-    (s) =>
-      isOfType(s.source, type) &&
-      (!args.filter ||
-        s.title.toLowerCase().includes(args.filter.toLowerCase())),
-  )
+  const wanted = samples.filter((s) => wantsSample(s, type, args.filter))
   const results: Record<string, SampleResult> = {}
   const rows: string[] = []
   const failing: string[] = []
