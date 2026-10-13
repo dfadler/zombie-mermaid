@@ -124,7 +124,7 @@ and commit the generated file under `.changeset/` alongside your change. What co
 
 Update the relevant file under `docs/` (or `README.md`) when you change documented behavior; [docs/README.md](docs/README.md) is the index. Rendered output has accessibility expectations: check [docs/accessibility.md](docs/accessibility.md) for what's guaranteed and CI-enforced before changing markup or colors. `docs/decisions/` holds rare, short records of settled decisions. Add one only when it closes off an alternative someone would plausibly re-propose (see its [README](docs/decisions/README.md)), and walk through [the self-review checklist](docs/decisions/decision-doc-self-review-checklist-977.md) before opening that PR.
 
-Investigation and measurement findings belong on the issue, not only in a PR. Post the findings summary as an issue comment, with a permalink to any long-form artifact (a `docs/research/*.md` doc or a script) in the repo. Add a research doc only when the detail is too long or too reusable for a comment; the PR then carries the artifact, and the issue carries what we know and how to solve it.
+Investigation and measurement findings belong on the issue, not in the repo. Post the findings summary as an issue comment, with a permalink to any script or other artifact it relies on. Do not add a `docs/research/*.md` doc: add one only when something else (a guide, a code comment, a script) links to it, because `pnpm run check:docs` fails on a doc there that nothing outside it references. See [docs/research/README.md](docs/research/README.md) for where earlier write-ups went.
 
 ### Mutation and reassignment
 

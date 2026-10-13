@@ -31,7 +31,7 @@
 #     against a real, concurrently-running x86 CI run: 843/843 executions
 #     passed in the final tally, with real CI showing *more* jitter than
 #     the quiet-host arm64 runs (see the comment on issue #545 and
-#     docs/research/545-crossarch-ci-flag-matched-confirmation.md).
+#     https://github.com/dfadler/zombie-mermaid/issues/545#issuecomment-5606427602).
 #     Architecture is ruled out as a driver for SVG too, once flags are
 #     matched - which is why this wrapper sets `CI=true` in the container
 #     below and now supports the SVG half through `--suite`.
