@@ -20,6 +20,9 @@ on:
       - 'packages/**'
       - 'src/**'
       - 'scripts/determinism-manifest.ts'
+      - 'scripts/lib/determinism-manifest.ts'
+      - 'scripts/css-module-register.mjs'
+      - 'scripts/css-module-hooks.mjs'
       - '.github/workflows/determinism.yml'
       - 'pnpm-lock.yaml'
   workflow_dispatch: {}

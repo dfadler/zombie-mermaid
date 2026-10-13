@@ -1,8 +1,8 @@
 [
   {
     "file": "scripts/determinism-manifest.ts",
-    "reason": "CI-only CLI: runs on import and prints hashes; verified by determinism.yml diffing manifests across OS/Node (#1861)",
-    "maxLines": 40
+    "reason": "thin CLI: runs on import and prints; all logic is in scripts/lib/determinism-manifest.ts (tested)",
+    "maxLines": 20
   },
   {
     "file": "scripts/check-changesets.ts",
