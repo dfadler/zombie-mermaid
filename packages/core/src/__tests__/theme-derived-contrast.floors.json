@@ -1,0 +1,137 @@
+{
+  "zinc-light": {
+    "text-sec vs bg": 4.08,
+    "text-muted vs bg": 2.35,
+    "text-faint vs bg": 1.65,
+    "line vs bg": 3.06,
+    "arrow vs bg": 9.2,
+    "node-stroke vs bg": 1.48,
+    "node-stroke vs node-fill": 1.4
+  },
+  "zinc-dark": {
+    "text-sec vs bg": 6.74,
+    "text-muted vs bg": 3.71,
+    "text-faint vs bg": 2.22,
+    "line vs bg": 5.07,
+    "arrow vs bg": 12.44,
+    "node-stroke vs bg": 1.85,
+    "node-stroke vs node-fill": 1.72
+  },
+  "tokyo-night": {
+    "text-sec vs bg": 4.55,
+    "text-muted vs bg": 4.55,
+    "text-faint vs bg": 1.68,
+    "line vs bg": 3.03,
+    "arrow vs bg": 6.78,
+    "node-stroke vs bg": 1.49,
+    "node-stroke vs node-fill": 1.42
+  },
+  "tokyo-night-storm": {
+    "text-sec vs bg": 4.53,
+    "text-muted vs bg": 4.53,
+    "text-faint vs bg": 1.67,
+    "line vs bg": 3.05,
+    "arrow vs bg": 5.78,
+    "node-stroke vs bg": 1.5,
+    "node-stroke vs node-fill": 1.42
+  },
+  "tokyo-night-light": {
+    "text-sec vs bg": 4.59,
+    "text-muted vs bg": 4.59,
+    "text-faint vs bg": 1.5,
+    "line vs bg": 5.2,
+    "arrow vs bg": 5.2,
+    "node-stroke vs bg": 1.37,
+    "node-stroke vs node-fill": 1.31
+  },
+  "catppuccin-mocha": {
+    "text-sec vs bg": 4.55,
+    "text-muted vs bg": 4.55,
+    "text-faint vs bg": 1.94,
+    "line vs bg": 3.03,
+    "arrow vs bg": 8.07,
+    "node-stroke vs bg": 1.68,
+    "node-stroke vs node-fill": 1.57
+  },
+  "catppuccin-latte": {
+    "text-sec vs bg": 4.53,
+    "text-muted vs bg": 4.53,
+    "text-faint vs bg": 1.46,
+    "line vs bg": 3.03,
+    "arrow vs bg": 4.78,
+    "node-stroke vs bg": 1.35,
+    "node-stroke vs node-fill": 1.29
+  },
+  "nord": {
+    "text-sec vs bg": 4.56,
+    "text-muted vs bg": 4.56,
+    "text-faint vs bg": 1.93,
+    "line vs bg": 3.05,
+    "arrow vs bg": 6.24,
+    "node-stroke vs bg": 1.69,
+    "node-stroke vs node-fill": 1.56
+  },
+  "nord-light": {
+    "text-sec vs bg": 4.58,
+    "text-muted vs bg": 4.58,
+    "text-faint vs bg": 1.57,
+    "line vs bg": 3.04,
+    "arrow vs bg": 3.49,
+    "node-stroke vs bg": 1.43,
+    "node-stroke vs node-fill": 1.36
+  },
+  "dracula": {
+    "text-sec vs bg": 4.55,
+    "text-muted vs bg": 4.55,
+    "text-faint vs bg": 2.18,
+    "line vs bg": 3.02,
+    "arrow vs bg": 5.9,
+    "node-stroke vs bg": 1.86,
+    "node-stroke vs node-fill": 1.71
+  },
+  "github-light": {
+    "text-sec vs bg": 6.11,
+    "text-muted vs bg": 6.11,
+    "text-faint vs bg": 1.67,
+    "line vs bg": 3.06,
+    "arrow vs bg": 5.19,
+    "node-stroke vs bg": 1.49,
+    "node-stroke vs node-fill": 1.41
+  },
+  "github-dark": {
+    "text-sec vs bg": 6.49,
+    "text-muted vs bg": 6.49,
+    "text-faint vs bg": 2.05,
+    "line vs bg": 3.05,
+    "arrow vs bg": 6.1,
+    "node-stroke vs bg": 1.72,
+    "node-stroke vs node-fill": 1.63
+  },
+  "solarized-light": {
+    "text-sec vs bg": 4.58,
+    "text-muted vs bg": 4.58,
+    "text-faint vs bg": 1.36,
+    "line vs bg": 3.04,
+    "arrow vs bg": 3.41,
+    "node-stroke vs bg": 1.27,
+    "node-stroke vs node-fill": 1.23
+  },
+  "solarized-dark": {
+    "text-sec vs bg": 4.56,
+    "text-muted vs bg": 4.56,
+    "text-faint vs bg": 1.45,
+    "line vs bg": 3.03,
+    "arrow vs bg": 4.07,
+    "node-stroke vs bg": 1.34,
+    "node-stroke vs node-fill": 1.28
+  },
+  "one-dark": {
+    "text-sec vs bg": 4.53,
+    "text-muted vs bg": 4.53,
+    "text-faint vs bg": 1.66,
+    "line vs bg": 3.03,
+    "arrow vs bg": 4.75,
+    "node-stroke vs bg": 1.49,
+    "node-stroke vs node-fill": 1.41
+  }
+}
