@@ -39,6 +39,17 @@ export const checkSequenceActivationsInputShape = {
     ),
 }
 
+const activationIssueSchema = z.object({
+  code: z.enum(['DANGLING_ACTIVATION', 'UNMATCHED_DEACTIVATION']),
+  actorId: z.string(),
+  message: z.string(),
+})
+
+export const checkSequenceActivationsOutputShape = {
+  ok: z.boolean(),
+  issues: z.array(activationIssueSchema),
+}
+
 export interface CheckSequenceActivationsToolArgs {
   diagram: string
 }
@@ -76,6 +87,7 @@ export function checkSequenceActivationsHandler(
     const result = checkActivationBalance(diagram)
     return {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      structuredContent: { ...result },
     }
   } catch (err) {
     return {

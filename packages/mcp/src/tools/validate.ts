@@ -17,22 +17,37 @@ export const validateInputShape = {
     .describe('Mermaid diagram source text to check without rendering.'),
 }
 
+export const validateOutputShape = {
+  valid: z.boolean(),
+  diagnostics: z.array(
+    z.object({
+      line: z.number().optional(),
+      sourceLine: z.string().optional(),
+      message: z.string(),
+    }),
+  ),
+}
+
+function ok(result: { valid: boolean; diagnostics: object[] }): CallToolResult {
+  return {
+    content: [{ type: 'text', text: JSON.stringify(result) }],
+    structuredContent: result,
+  }
+}
+
 export function validateHandler(input: { diagram: string }): CallToolResult {
-  let result: object
   if (input.diagram.trim().length === 0) {
-    result = {
+    return ok({
       valid: false,
       diagnostics: [{ message: 'diagram must not be empty' }],
-    }
-    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+    })
   }
   try {
     validateMermaid(input.diagram)
-    result = { valid: true, diagnostics: [] }
+    return ok({ valid: true, diagnostics: [] })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     const d = extractParseDiagnostic(message, input.diagram)
-    result = { valid: false, diagnostics: [d ?? { message }] }
+    return ok({ valid: false, diagnostics: [d ?? { message }] })
   }
-  return { content: [{ type: 'text', text: JSON.stringify(result) }] }
 }
