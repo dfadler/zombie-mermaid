@@ -1,6 +1,12 @@
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
-import { renderPrompt } from '../scripts/lib/form-judge-calibration.ts'
+import {
+  calibrationPrompt,
+  renderPrompt,
+} from '../scripts/lib/form-judge-calibration.ts'
 
 const read = (p: string) => readFileSync(p, 'utf8')
 const calib = read('.github/workflows/form-judge-calibrate.yml')
@@ -9,15 +15,34 @@ const uses = (s: string, re: RegExp) => s.match(re)?.[0]
 
 describe('renderPrompt', () => {
   it('fills every placeholder in the real judge prompt', () => {
-    const out = renderPrompt(read('scripts/form-judge-category-prompt.md'), {
-      CATEGORY: 'Calibration',
-      DATA_PATH: '/w/d.json',
-      RESULTS_PATH: '/w/r.jsonl',
-      BATCH_SIZE: '5',
-    })
+    const out = calibrationPrompt(
+      read('scripts/form-judge-category-prompt.md'),
+      '/w/d.json',
+      '/w/r.jsonl',
+    )
     expect(out).toContain('/w/d.json')
     expect(out).not.toMatch(/__[A-Z_]+__/)
   })
+
+  it('the CLI prompt subcommand writes the rendered file', () => {
+    const out = join(mkdtempSync(join(tmpdir(), 'fjp-')), 'p.md')
+    const r = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        'scripts/form-judge-calibrate.ts',
+        'prompt',
+        '--template=scripts/form-judge-category-prompt.md',
+        '--data=/w/d.json',
+        '--results=/w/r.jsonl',
+        `--out=${out}`,
+      ],
+      { encoding: 'utf8' },
+    )
+    expect(r.status).toBe(0)
+    expect(read(out)).toContain('/w/r.jsonl')
+  }, 30_000)
 
   it('throws on a placeholder it was not given', () => {
     expect(() => renderPrompt('x __NOPE__', {})).toThrow('__NOPE__')

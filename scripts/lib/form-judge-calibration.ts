@@ -253,3 +253,15 @@ export function renderPrompt(
   if (left) throw new Error(`unfilled placeholder ${left[0]}`)
   return out
 }
+
+export const calibrationPrompt = (
+  template: string,
+  dataPath: string,
+  resultsPath: string,
+): string =>
+  renderPrompt(template, {
+    CATEGORY: 'Calibration',
+    DATA_PATH: dataPath,
+    RESULTS_PATH: resultsPath,
+    BATCH_SIZE: '5',
+  })

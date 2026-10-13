@@ -14,7 +14,7 @@ import {
   buildCalibrationCases,
   parseLimit,
   remapVerdicts,
-  renderPrompt,
+  calibrationPrompt,
   scoreVerdicts,
 } from './lib/form-judge-calibration.ts'
 
@@ -59,12 +59,7 @@ if (process.argv[2] === 'build') {
   const tpl = await readFile(arg('template'), 'utf8')
   await writeFile(
     arg('out'),
-    renderPrompt(tpl, {
-      CATEGORY: 'Calibration',
-      DATA_PATH: arg('data'),
-      RESULTS_PATH: arg('results'),
-      BATCH_SIZE: '5',
-    }),
+    calibrationPrompt(tpl, arg('data'), arg('results')),
   )
 } else if (process.argv[2] === 'score') {
   const lines = (await readFile(arg('results'), 'utf8')).split('\n')
