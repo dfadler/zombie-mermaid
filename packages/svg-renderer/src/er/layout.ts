@@ -129,6 +129,9 @@ function buildErElkGraph(
       // Keep declaration order as the crossing-minimization tie-break and
       // center children under their parents, as official Mermaid does.
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+      // Mermaid lays disconnected components out in declaration order
+      // (#1795); ELK's default packs them by size, which reorders them.
+      'elk.separateConnectedComponents': 'false',
       'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
     },
     children,

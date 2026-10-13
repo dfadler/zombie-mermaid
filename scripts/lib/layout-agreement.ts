@@ -151,19 +151,41 @@ export interface OracleArgs {
   /** Fail (exit 1) if any sample's worst figure is below this percentage. */
   failBelow?: number
   tolerance: number
-  /** Which diagram type to score; flowchart unless `--type=state`. */
+  /** Which diagram type to score; flowchart unless `--type=` says otherwise. */
   type: OracleType
+  /** Our layout engine to score: `elk` (default) or the built-in `simple` (#1685). Flowcharts only. */
+  layout: 'elk' | 'simple'
   help: boolean
 }
 
 /** Diagram types the oracle can score. */
-export type OracleType = 'flowchart' | 'state'
+export type OracleType = 'flowchart' | 'state' | 'class' | 'er'
 
-/** Whether `source` is a diagram of `type` (graph/flowchart or stateDiagram[-v2]). */
+export const ORACLE_TYPES: readonly OracleType[] = [
+  'flowchart',
+  'state',
+  'class',
+  'er',
+]
+
+const TYPE_HEADER: Record<OracleType, RegExp> = {
+  flowchart: /^\s*(graph|flowchart)\b/,
+  state: /^\s*stateDiagram(-v2)?\b/,
+  class: /^\s*classDiagram(-v2)?\b/,
+  er: /^\s*erDiagram\b/,
+}
+
+/** The word real mermaid puts between the render id and our node id. */
+const OFFICIAL_PREFIX: Record<OracleType, string> = {
+  flowchart: 'flowchart',
+  state: 'state',
+  class: 'classId',
+  er: 'entity',
+}
+
+/** Whether `source` is a diagram of `type` (by its header line). */
 export function isOfType(source: string, type: OracleType): boolean {
-  return type === 'state'
-    ? /^\s*stateDiagram(-v2)?\b/.test(source)
-    : /^\s*(graph|flowchart)\b/.test(source)
+  return TYPE_HEADER[type].test(source)
 }
 
 /**
@@ -177,23 +199,26 @@ export function officialNodeName(
   renderId: string,
   type: OracleType,
 ): string {
-  let name = raw.replace(`${renderId}-${type}-`, '')
-  if (name.startsWith(`${type}-`)) name = name.slice(type.length + 1)
+  const prefix = OFFICIAL_PREFIX[type]
+  let name = raw.replace(`${renderId}-${prefix}-`, '')
+  if (name.startsWith(`${prefix}-`)) name = name.slice(prefix.length + 1)
   name = name.replace(/-\d+$/, '')
   return type === 'state' ? name.replace(/^root_(start|end)$/, '_$1') : name
 }
 
 export const USAGE = `Usage: tsx scripts/layout-oracle.ts [options]
 
-Compares our layout of each flowchart (or state) sample with the one official
+Compares our layout of each flowchart, state, class or ER sample with the one official
 mermaid.js draws, as the share of node pairs placed in the same relation.
 
-  --type=<kind>        flowchart (default) or state
+  --type=<kind>        flowchart (default), state, class or er
   --filter=<text>      only samples whose title contains <text>
   --json=<file>        write the per-sample figures to <file>
   --history=<file>     append a one-line summary of this run to <file> (JSON Lines)
   --scorecard=<file>   write a Markdown scorecard to <file> (trend read from --history)
   --fail-below=<pct>   exit 1 if any sample's lowest figure is under <pct> (0-100)
+  --layout=<engine>    elk (default) or simple (built-in, flowchart only, #1685)
+  --layout=<engine>    elk (default) or simple (built-in, flowchart only, #1685)
   --tolerance=<px>     centres this close count as level (default ${DEFAULT_TOLERANCE})
   -h, --help           show this help
 `
@@ -203,6 +228,7 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
   const args: OracleArgs = {
     tolerance: DEFAULT_TOLERANCE,
     type: 'flowchart',
+    layout: 'elk',
     help: false,
   }
   for (const arg of argv) {
@@ -218,10 +244,15 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     const [, name, value] = match as unknown as [string, string, string]
     if (name === 'filter') args.filter = value
     else if (name === 'type') {
-      if (value !== 'flowchart' && value !== 'state') {
-        throw new Error(`--type is flowchart or state, got "${value}"`)
+      if (!(ORACLE_TYPES as readonly string[]).includes(value)) {
+        throw new Error(`--type is ${ORACLE_TYPES.join(', ')}, got "${value}"`)
       }
-      args.type = value
+      args.type = value as OracleType
+    } else if (name === 'layout') {
+      if (value !== 'elk' && value !== 'simple') {
+        throw new Error(`--layout is elk or simple, got "${value}"`)
+      }
+      args.layout = value
     } else if (name === 'json') args.json = value
     else if (name === 'history') args.history = value
     else if (name === 'scorecard') args.scorecard = value
@@ -240,6 +271,9 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     } else {
       throw new Error(`Unknown argument: ${arg}`)
     }
+  }
+  if (args.layout === 'simple' && args.type !== 'flowchart') {
+    throw new Error('--layout=simple only lays out flowcharts.')
   }
   return args
 }

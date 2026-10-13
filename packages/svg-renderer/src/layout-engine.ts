@@ -34,13 +34,14 @@ import { withoutOwnClusterEdges } from '@zombie-mermaid/core'
 import { elkLayoutSync } from './elk-instance.ts'
 import { resolveFontSizes } from './styles.ts'
 import { DEFAULTS } from './layout-engine/constants.ts'
-import { mermaidToElk } from './layout-engine/to-elk.ts'
+import { isStateGraph, mermaidToElk } from './layout-engine/to-elk.ts'
 import { elkToPositioned } from './layout-engine/from-elk.ts'
 import {
   canLayOutFlat,
   layoutCompoundFlat,
 } from './layout-engine/compound-flat.ts'
 import type { LayoutHints } from './layout-engine/layout-hints.ts'
+import { layoutSimple } from './layout-engine/simple-layout.ts'
 
 // ============================================================================
 // Public API
@@ -87,6 +88,20 @@ export function layoutFlowchartSync(
   // Real mermaid.js draws no line for an edge between a node and a subgraph
   // containing it (#1310), so it is not laid out or rendered here either.
   const graph = withoutOwnClusterEdges(rawGraph)
+  // Opt-in built-in layout that needs no elkjs (#1685); never a fallback.
+  // State diagrams share this entry point and still need ELK (see `isStateGraph`).
+  if (options.layout === 'simple' && !isStateGraph(graph)) {
+    return layoutSimple(graph, options)
+  }
+  if (
+    options.layout !== undefined &&
+    options.layout !== 'elk' &&
+    options.layout !== 'simple'
+  ) {
+    throw new Error(
+      `zombie-mermaid: unknown layout ${JSON.stringify(options.layout)}; use 'elk' or 'simple'.`,
+    )
+  }
   if (canLayOutFlat(graph)) {
     const fontSizes = resolveFontSizes(options.fontSizes)
     const flat = layoutCompoundFlat(

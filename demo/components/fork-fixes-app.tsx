@@ -794,7 +794,7 @@ export function FixSection({
             gap: `${SPACE.md}px`,
           }}
         >
-          <h3
+          <h2
             style={{
               fontSize: `${FONT_SIZE.h3}px`,
               letterSpacing: LETTER_SPACING.heading,
@@ -807,7 +807,7 @@ export function FixSection({
             >
               {title}
             </a>
-          </h3>
+          </h2>
           <p
             style={{
               // The canvas's own literal (18px would be FONT_SIZE.lead, but
@@ -991,6 +991,7 @@ export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
       </header>
 
       <main
+        id="main"
         className="section-px"
         // 60px bottom padding is the canvas's own literal (between
         // SECTION_SPACE.snug's 64 and .tight's 48).

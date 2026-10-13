@@ -204,13 +204,15 @@ export function DashboardPage({
             copy this same `renderToString`-for-the-hydrated-island
             approach.
           */}
-          <div
-            id={DASHBOARD_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DashboardApp viewModel={viewModel} />),
-            }}
-          />
+          <main id="main">
+            <div
+              id={DASHBOARD_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DashboardApp viewModel={viewModel} />),
+              }}
+            />
+          </main>
 
           <Footer columns={dashboardFooterColumns()} />
         </div>

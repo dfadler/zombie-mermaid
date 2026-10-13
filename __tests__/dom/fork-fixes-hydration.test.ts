@@ -132,6 +132,12 @@ describe('ForkFixesApp hydration (#802)', () => {
       }),
     ).toBeInTheDocument()
 
+    // #1764: fix titles are h2 (no h1 -> h3 jump).
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Edge labels overlapped' }),
+    ).toBeInTheDocument()
+    expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0)
+
     const fixSection = document.getElementById('svg-fix')
     if (!fixSection) throw new Error('fix section missing after hydration')
     expect(

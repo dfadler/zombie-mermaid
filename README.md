@@ -153,6 +153,18 @@ Sequence, pie, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
 and no registration. Rendering a graph diagram with no `elkjs` available throws an
 `ElkNotRegisteredError` that says how to fix it.
 
+**Flowcharts without `elkjs`.** Pass `layout: 'simple'` to lay a flowchart out with a
+small built-in layered layout instead of ELK. It needs no `elkjs`, adds about 3.5 KB
+gzipped, and is opt-in: the default output never changes. It is a rougher match for
+ELK on edge routing, and a subgraph's own `direction` is ignored. State, class, ER
+and architecture diagrams still need `elkjs`. See
+[the decision record](docs/decisions/simple-layout-1685.md) for the measured quality
+gap.
+
+```typescript
+const svg = renderMermaidSVG('graph TD\n  A --> B', { layout: 'simple' }) // no registerElk()
+```
+
 Need async? Use `renderMermaidSVGAsync()` — same output, returns a `Promise<string>`.
 
 ### ASCII Output
@@ -292,6 +304,7 @@ See [docs/decisions/monorepo-conversion.md](docs/decisions/monorepo-conversion.m
 - [Supported Diagrams](docs/diagrams.md) — syntax for every diagram type, XY chart styling, and ASCII rendering options
 - [React Integration](docs/react-integration.md) — zero-flash rendering with `useMemo()`
 - [API Reference](docs/api-reference.md) — full function and options reference
+- [Versioning and deprecation policy](docs/decisions/versioning-and-deprecation-policy-1568.md) — what counts as a breaking change, and how old majors are supported and deprecated
 - [Migrating from `beautiful-mermaid`](docs/migrating-from-beautiful-mermaid.md) — what's drop-in, which fixes change rendered output, and how to audit your own diagrams before upgrading
 
 More design write-ups and reference material live in [docs/](docs/).

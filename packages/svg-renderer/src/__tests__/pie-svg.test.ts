@@ -209,10 +209,188 @@ describe('pie SVG: init textPosition', () => {
     expect(inner).toBeGreaterThan(225)
   })
 
-  it('ignores a non-numeric textPosition', () => {
-    const bad = renderMermaidSVG(
-      src('%%{init: {"pie": {"textPosition": "x"}}}%%'),
+  it.each(['"x"', 'true', 'null'])(
+    'ignores a non-numeric textPosition (%s)',
+    (v) => {
+      const bad = renderMermaidSVG(
+        src(`%%{init: {"pie": {"textPosition": ${v}}}}%%`),
+      )
+      expect(firstLabelX(bad)).toBe(firstLabelX(renderMermaidSVG(src(''))))
+    },
+  )
+})
+
+describe('pie SVG: init donutHole', () => {
+  const src = (init: string) => `${init}\npie\n  "A" : 1\n  "B" : 1`
+  const hole = (v: string) =>
+    renderMermaidSVG(src(`%%{init: {"pie": {"donutHole": ${v}}}}%%`))
+  const slicePath = (svg: string) =>
+    /<path d="([^"]+)" class="pie-slice/.exec(svg)![1]
+
+  it('cuts an inner arc at donutHole * radius', () => {
+    // radius 185 * 0.5 = 92.5 inner arc, drawn back the other way (sweep 0)
+    expect(slicePath(hole('0.5'))).toContain('A92.5,92.5,0,0,0,')
+  })
+
+  it('cuts a hole through a single full-circle slice', () => {
+    const svg = renderMermaidSVG(
+      '%%{init: {"pie": {"donutHole": 0.5}}}%%\npie\n  "A" : 1',
     )
-    expect(firstLabelX(bad)).toBe(firstLabelX(renderMermaidSVG(src(''))))
+    expect(slicePath(svg)).toContain('A92.5,92.5,0,1,0,')
+  })
+
+  it('keeps the labels at textPosition', () => {
+    const x = (svg: string) =>
+      /<text x="([\d.]+)"[^>]*class="pie-slice-label"/.exec(svg)![1]
+    expect(x(hole('0.5'))).toBe(x(renderMermaidSVG(src(''))))
+  })
+
+  it.each(['0', '0.95', '-1', '"x"'])('draws a plain pie for %s', (v) => {
+    expect(hole(v)).toBe(renderMermaidSVG(src('')))
+  })
+
+  it('accepts the 0.9 upper bound', () => {
+    expect(slicePath(hole('0.9'))).toContain('A166.5,166.5,')
+  })
+})
+
+describe('pie SVG: init legendPosition', () => {
+  const src = (
+    pos: string,
+    body = '"Dogs" : 386\n  "Cats" : 85\n  "Rats" : 15',
+  ) => `%%{init: {"pie": {"legendPosition": ${pos}}}}%%\npie title T\n  ${body}`
+  const geo = (svg: string) => {
+    const vb = /viewBox="0 0 (\d+) (\d+)"/.exec(svg)!
+    const rects = [...svg.matchAll(/<rect x="([\d.-]+)" y="([\d.-]+)"/g)].map(
+      (m) => ({ x: Number(m[1]), y: Number(m[2]) }),
+    )
+    const c = /<circle cx="([\d.]+)" cy="([\d.]+)"/.exec(svg)!
+    const t = /<text x="([\d.]+)" y="([\d.]+)"[^>]*class="pie-title"/.exec(svg)!
+    return {
+      w: Number(vb[1]),
+      h: Number(vb[2]),
+      rects,
+      cx: Number(c[1]),
+      cy: Number(c[2]),
+      title: { x: Number(t[1]), y: Number(t[2]) },
+    }
+  }
+  const def = geo(renderMermaidSVG(src('"right"')))
+
+  it('keeps the default layout for right, an unknown value and a non-string', () => {
+    const plain = renderMermaidSVG(
+      'pie title T\n  "Dogs" : 386\n  "Cats" : 85\n  "Rats" : 15',
+    )
+    expect(renderMermaidSVG(src('"right"'))).toBe(plain)
+    expect(renderMermaidSVG(src('"nope"'))).toBe(plain)
+    expect(renderMermaidSVG(src('3'))).toBe(plain)
+  })
+
+  it('left: legend column at the left edge, pie shifted right, frame as wide as right', () => {
+    const g = geo(renderMermaidSVG(src('"left"')))
+    expect(g.rects.map((r) => r.x)).toEqual([18, 18, 18])
+    expect(g.rects.map((r) => r.y)).toEqual([192, 214, 236])
+    expect(g.cx).toBeGreaterThan(225)
+    expect(g.w).toBe(Math.ceil(g.cx + 265))
+    expect(g.w).toBe(def.w)
+    expect(g.h).toBe(450)
+    // the title stays centred on the frame, not on the shifted pie
+    expect(g.title).toEqual({ x: 225, y: 25 })
+  })
+
+  it('top: legend above the pie, pie pushed down, frame taller by one row each', () => {
+    const g = geo(renderMermaidSVG(src('"top"')))
+    expect(g.h).toBe(450 + 3 * 22)
+    expect(g.w).toBe(490)
+    expect(g.cy).toBe(225 + 4 * 22)
+    expect(g.rects.map((r) => r.y)).toEqual([40, 62, 84])
+    expect(g.rects[0]!.x).toBeLessThan(225)
+    expect(g.title).toEqual({ x: 225, y: 25 })
+  })
+
+  it('bottom: legend below the pie, pie stays put, frame taller', () => {
+    const g = geo(renderMermaidSVG(src('"bottom"')))
+    expect(g.h).toBe(450 + 3 * 22)
+    expect(g.w).toBe(490)
+    expect(g.cy).toBe(225)
+    expect(g.rects.map((r) => r.y)).toEqual([432, 454, 476])
+  })
+
+  it('center: legend over the middle of the pie, frame unchanged', () => {
+    const svg = renderMermaidSVG(src('"center"'))
+    const g = geo(svg)
+    expect({ w: g.w, h: g.h, cx: g.cx, cy: g.cy }).toEqual({
+      w: 490,
+      h: 450,
+      cx: 225,
+      cy: 225,
+    })
+    expect(g.rects.map((r) => r.y)).toEqual([192, 214, 236])
+    // painted after the slices, so it sits on top of them
+    expect(svg.indexOf('class="pie-legend"')).toBeGreaterThan(
+      svg.lastIndexOf('class="pie-slice '),
+    )
+  })
+
+  it('grows the viewBox for a top legend wider than the frame instead of clipping it', () => {
+    const g = geo(renderMermaidSVG(src('"top"', `"${'W'.repeat(80)}" : 1`)))
+    expect(g.rects[0]!.x).toBeGreaterThanOrEqual(0)
+    expect(g.w).toBeGreaterThan(490)
+  })
+
+  it('does nothing for a chart with no slices', () => {
+    expect(
+      renderMermaidSVG('%%{init: {"pie": {"legendPosition": "left"}}}%%\npie'),
+    ).toBe(renderMermaidSVG('pie'))
+  })
+})
+
+describe('pie SVG: init highlightSlice', () => {
+  const src = (v: string) =>
+    `%%{init: {"pie": {"highlightSlice": ${v}}}}%%\npie\n  "Dogs" : 386\n  "Cats" : 85\n  "Rats" : 15`
+  const plain = renderMermaidSVG(
+    'pie\n  "Dogs" : 386\n  "Cats" : 85\n  "Rats" : 15',
+  )
+  const paths = (svg: string) =>
+    [
+      ...svg.matchAll(
+        /<path d="([^"]+)" class="([^"]+)" data-label="([^"]+)"/g,
+      ),
+    ].map((m) => ({ d: m[1]!, cls: m[2]!, label: m[3]! }))
+
+  it('grows only the named slice by 5% about the pie centre and makes it opaque', () => {
+    const svg = renderMermaidSVG(src('"Cats"'))
+    const [dogs, cats, rats] = paths(svg)
+    expect(cats!.cls).toContain('pie-highlight')
+    expect(dogs!.cls).not.toContain('pie-highlight')
+    expect(rats!.cls).not.toContain('pie-highlight')
+    // 185 * 1.05 = 194.25; the others keep radius 185
+    expect(cats!.d).toContain('A194.25,194.25')
+    expect(dogs!.d).toContain('A185,185')
+    expect(svg).toContain('.pie-slice.pie-highlight { opacity: 1; }')
+  })
+
+  it('leaves a chart without a match byte-identical to the plain one', () => {
+    expect(renderMermaidSVG(src('"Fish"'))).toBe(plain)
+    expect(renderMermaidSVG(src('"cats"'))).toBe(plain) // labels match exactly
+    expect(renderMermaidSVG(src('""'))).toBe(plain)
+    expect(renderMermaidSVG(src('7'))).toBe(plain)
+  })
+
+  it('ignores "hover": a static image has no pointer', () => {
+    expect(renderMermaidSVG(src('"hover"'))).toBe(plain)
+  })
+
+  it('does not treat a slice labelled "hover" as highlighted', () => {
+    const s =
+      '%%{init: {"pie": {"highlightSlice": "hover"}}}%%\npie\n  "hover" : 1\n  "b" : 1'
+    expect(renderMermaidSVG(s)).toBe(
+      renderMermaidSVG('pie\n  "hover" : 1\n  "b" : 1'),
+    )
+  })
+
+  it('scales the donut ring with the slice', () => {
+    const s = `%%{init: {"pie": {"highlightSlice": "A", "donutHole": 0.5}}}%%\npie\n  "A" : 1\n  "B" : 1`
+    expect(renderMermaidSVG(s)).toContain('A97.13,97.13,') // 92.5 * 1.05
   })
 })

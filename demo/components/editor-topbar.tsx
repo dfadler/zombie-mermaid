@@ -151,13 +151,22 @@ export function EditorThemeItems({
 }) {
   return (
     <>
-      <button className="theme-dropdown-item active" data-theme="">
+      <button
+        className="theme-dropdown-item active"
+        data-theme=""
+        role="option"
+        aria-selected="true"
+        tabIndex={-1}
+      >
         Default
       </button>
       {themes.map((theme) => (
         <button
           className="theme-dropdown-item"
           data-theme={theme.key}
+          role="option"
+          aria-selected="false"
+          tabIndex={-1}
           key={theme.key}
         >
           <span className="theme-swatch" style={{ background: theme.bg }} />
@@ -209,6 +218,7 @@ export function EditorTopbar({ themeItems }: { themeItems: ReactNode }) {
         className="btn"
         id="fullscreen-btn"
         title="Enter fullscreen"
+        aria-label="Fullscreen"
         aria-pressed="false"
       >
         <StrokeIcon id="icon-fullscreen-enter">
@@ -228,14 +238,25 @@ export function EditorTopbar({ themeItems }: { themeItems: ReactNode }) {
       <div className="topbar-sep" />
 
       <div className="theme-dropdown-wrap" id="theme-dropdown-wrap">
-        <button className="theme-dropdown-btn" id="theme-dropdown-btn">
+        <button
+          className="theme-dropdown-btn"
+          id="theme-dropdown-btn"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls="theme-dropdown-menu"
+        >
           <span className="theme-swatch" id="theme-btn-swatch" />
           <span id="theme-btn-label">Default</span>
           <StrokeIcon strokeWidth="2.5">
             <polyline points="6 9 12 15 18 9" />
           </StrokeIcon>
         </button>
-        <div className="theme-dropdown-menu" id="theme-dropdown-menu">
+        <div
+          className="theme-dropdown-menu"
+          id="theme-dropdown-menu"
+          role="listbox"
+          aria-label="Diagram theme"
+        >
           {themeItems}
         </div>
       </div>
@@ -259,6 +280,7 @@ export function EditorTopbar({ themeItems }: { themeItems: ReactNode }) {
           className="btn btn-primary export-chevron"
           id="export-chevron-btn"
           title="More export options"
+          aria-label="More export options"
         >
           <StrokeIcon width="12" height="12" strokeWidth="2.5">
             <polyline points="6 9 12 15 18 9" />

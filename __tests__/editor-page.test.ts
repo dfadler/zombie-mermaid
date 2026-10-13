@@ -29,6 +29,7 @@
  * and that raw script content survives untouched.
  */
 import { createElement } from 'react'
+import { DIAGRAM_TYPES, type DiagramType } from '@zombie-mermaid/core'
 import { describe, expect, it } from 'vitest'
 import { EditorApp } from '../demo/components/editor-app.tsx'
 import { EditorPage } from '../demo/components/editor-page.tsx'
@@ -59,6 +60,35 @@ function render(
 function stripHydrationComments(html: string): string {
   return html.replace(/<!--.*?-->/g, '')
 }
+
+/** Display name the editor copy uses for each detectable type. A Record, so a new DIAGRAM_TYPES entry fails typecheck until the copy is considered. */
+const TYPE_LABELS: Record<DiagramType, string> = {
+  flowchart: 'Flowchart',
+  sequence: 'Sequence',
+  class: 'Class',
+  er: 'ER',
+  xychart: 'XY Chart',
+  architecture: 'Architecture',
+  c4: 'C4',
+  pie: 'Pie',
+}
+
+describe('EditorPage meta description', () => {
+  const content = (html: string) =>
+    /<meta name="description" content="([^"]*)"/.exec(html)?.[1] ?? ''
+
+  it('is present and non-empty', () => {
+    expect(content(render()).trim().length).toBeGreaterThan(0)
+  })
+
+  it('names every supported diagram type (State is detected as a flowchart) and both output formats', () => {
+    const desc = content(render())
+    for (const type of DIAGRAM_TYPES) expect(desc).toContain(TYPE_LABELS[type])
+    expect(desc).toContain('State')
+    expect(desc).toContain('SVG')
+    expect(desc).toContain('ASCII')
+  })
+})
 
 describe('EditorPage', () => {
   it('renders a complete document with the expected head metadata', () => {
@@ -188,7 +218,7 @@ describe('EditorPage', () => {
       /<div class="resize-handle" id="resize-handle"><\/div><div class="panel-right"/,
     )
     expect(shell).toMatch(
-      /<\/div>(?:<!--.*?-->)?<div class="toast" id="toast"><\/div>/,
+      /<\/div>(?:<!--.*?-->)?<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"><\/div>/,
     )
     // Followed by the hydration props payload, still inside .editor-tool-shell.
     expect(shell).toMatch(/<script type="application\/json" id="editor-props">/)

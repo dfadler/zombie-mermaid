@@ -98,6 +98,22 @@ script) in the repo; don't leave the findings only in a PR's research doc. Write
 research doc only when the detail is too long or reusable for a comment. See
 [#1479](https://github.com/dfadler/zombie-mermaid/issues/1479).
 
+## Parity with mermaid.js: check what users see, not only the pinned oracle
+
+For any issue or PR whose premise is "match mermaid.js" (or another renderer), render
+the sample in what users actually compare against before writing code: a
+GitHub-rendered ` ```mermaid ` block or mermaid.live (via Chrome), and the latest
+`mermaid` from npm run headless through `scripts/lib/real-mermaid.ts`, next to the
+pinned oracle (`mermaid` in `package.json`, used by `pnpm run layout:oracle`). If they
+disagree, stop and report that; don't build on the pin. `pnpm run doctor` and the
+oracle warn when the pin is behind npm latest. A user's screenshot of a real render
+outranks the issue text. Don't write "matches mermaid" in a PR body without naming the
+version it was checked against. See
+[#1699](https://github.com/dfadler/zombie-mermaid/issues/1699): the pin (11.17.2)
+flipped uncrossed subgraphs, current mermaid and GitHub do not, and
+[#1820](https://github.com/dfadler/zombie-mermaid/pull/1820) built on the stale
+behavior.
+
 ## Decision docs: run the self-review checklist before opening the PR
 
 Before opening a PR that adds or edits a `docs/decisions/*.md` file, walk through

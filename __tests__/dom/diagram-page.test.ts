@@ -136,6 +136,8 @@ describe('DiagramTypePage (#821)', () => {
       'href',
       'https://mermaid.ai/open-source/syntax/sequenceDiagram.html',
     )
+    // #1761: one <main id="main"> landmark per page (skip-link target).
+    expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 
   it('keeps the tablet/mobile flex-basis override targeting .output-card, not the stale .diagram-frame selector it renamed from', () => {
@@ -308,6 +310,8 @@ describe('DiagramDetailPage (#989)', () => {
       'href',
       '../tag/subgraph.html',
     )
+    // #1761: one <main id="main"> landmark per page (skip-link target).
+    expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 
   // The SVG/ASCII toggle's actual click -> state-change behavior isn't
@@ -417,6 +421,8 @@ describe('DiagramHubPage (#821)', () => {
       'flowchart.html',
       'sequence.html',
     ])
+    // #1761: one <main id="main"> landmark per page (skip-link target).
+    expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 
   it('no longer renders a "Pick a look" theme-picker section', () => {
@@ -500,6 +506,8 @@ describe('DiagramTagPage (#991)', () => {
       'href',
       'https://mermaid.ai/open-source/syntax/flowchart.html#subgraphs',
     )
+    // #1761: one <main id="main"> landmark per page (skip-link target).
+    expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 
   it('renders singular wording for a single result', () => {
@@ -603,5 +611,7 @@ describe('DiagramAllPage (#1001)', () => {
     // A "grouped by type" page shows each section's own count, not a single flat total.
     expect(screen.getByText('2 examples')).toBeInTheDocument()
     expect(screen.getByText('1 example')).toBeInTheDocument()
+    // #1761: one <main id="main"> landmark per page (skip-link target).
+    expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 })

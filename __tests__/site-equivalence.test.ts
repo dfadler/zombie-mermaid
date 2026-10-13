@@ -168,9 +168,18 @@ describe('index.ts → index.html', () => {
 
     expect(body.getByRole('banner')).toBeInTheDocument()
     expect(body.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
+    // Closed, so visibility:hidden (nav-css.ts) keeps it out of the
+    // accessibility tree (#1760); it is only reachable with `hidden: true`.
     expect(
-      body.getByRole('navigation', { name: 'Main (mobile)' }),
-    ).toBeInTheDocument()
+      body
+        .getAllByRole('navigation', { hidden: true })
+        .map((n) => n.getAttribute('aria-label')),
+    ).toContain('Main (mobile)')
+    expect(
+      body
+        .queryAllByRole('navigation')
+        .map((n) => n.getAttribute('aria-label')),
+    ).not.toContain('Main (mobile)')
     expect(body.getByRole('main')).toBeInTheDocument()
     expect(body.getByRole('contentinfo')).toBeInTheDocument()
   })
@@ -990,5 +999,75 @@ describe('blog.ts → blog/*.html', () => {
     ).toBeInTheDocument()
     expect(document.querySelector('.featured-card')).toBeNull()
     expect(document.querySelector('.archive-grid')).toBeNull()
+  })
+})
+
+/**
+ * #1761: the shared `Document` shell puts a skip link first in `<body>`,
+ * and every page renders exactly one `<main id="main">` for it to target.
+ */
+describe('page shell landmarks (#1761)', () => {
+  function expectSkipLinkAndMain(html: string): void {
+    const { document } = new JSDOM(html).window
+    const first = document.querySelector(
+      'a[href], button, input, select, textarea',
+    )
+    expect(first?.getAttribute('class')).toBe('skip-link')
+    expect(first?.getAttribute('href')).toBe('#main')
+    expect(document.querySelectorAll('main#main')).toHaveLength(1)
+    expect(document.querySelectorAll('main')).toHaveLength(1)
+  }
+
+  it('index, editor, fork fixes, blog post and blog index', () => {
+    expectSkipLinkAndMain(
+      renderHtmlDocument(
+        createElement(IndexPage, {
+          jsonLd: '{}',
+          clientScriptSrc: 'x.js',
+          clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+        }),
+      ),
+    )
+    expectSkipLinkAndMain(
+      renderHtmlDocument(
+        createElement(EditorPage, {
+          css: FIXTURE_CSS,
+          themes: [{ key: 'nord', bg: '#2E3440', label: 'Nord' }],
+          rendererSetupJs: FIXTURE_SCRIPT,
+          editorClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+          appJs: FIXTURE_SCRIPT,
+        }),
+      ),
+    )
+    expectSkipLinkAndMain(
+      renderHtmlDocument(
+        createElement(ForkFixesPage, {
+          css: FIXTURE_CSS,
+          fixes: [],
+          clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+        }),
+      ),
+    )
+    const blog = {
+      canonical: 'https://example.test/blog/',
+      cssHref: 'assets/blog.css',
+      faviconHref: '../favicon.svg',
+      clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+    }
+    expectSkipLinkAndMain(
+      renderHtmlDocument(createElement(BlogIndexPage, { ...blog, posts: [] })),
+    )
+    expectSkipLinkAndMain(
+      renderHtmlDocument(
+        createElement(BlogPostPage, {
+          ...blog,
+          title: 't',
+          displayDate: 'd',
+          description: 'x',
+          publishedTime: '2026-03-04',
+          bodyHtml: '<p>b</p>',
+        }),
+      ),
+    )
   })
 })

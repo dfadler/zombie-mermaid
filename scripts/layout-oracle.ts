@@ -9,7 +9,7 @@
  *
  * Usage: tsx scripts/layout-oracle.ts [--filter=<text>] [--json=<file>]
  *                                     [--fail-below=<pct>] [--tolerance=<px>]
- *                                     [--type=flowchart|state]
+ *                                     [--type=flowchart|state|class|er]
  *
  * Why it exists: "true to the mermaid source" was a judgment from looking at a
  * screenshot next to mermaid's. This puts a number on it, per sample, so a
@@ -20,19 +20,16 @@
  *
  * Only relative placement is compared (see layout-agreement.ts for why), so
  * font and padding differences between the renderers don't count against us.
- * Flowcharts by default; `--type=state` scores state diagrams (official node
- * ids `state-<id>-<n>`, composites as clusters). Other types are not covered yet.
+ * Flowcharts by default; `--type=state|class|er` scores the others (official
+ * node ids `state-<id>-<n>`, `classId-<id>-<n>`, `entity-<id>-<n>`; state
+ * composites and class namespaces are clusters). Other types are not covered.
  */
 
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
-import { parseMermaid } from '../src/index.ts'
-import {
-  layoutFlowchartSync,
-  layoutGraphSync,
-} from '@zombie-mermaid/svg-renderer'
 import { samples } from '../packages/site/samples-data.ts'
+import { pinFreshness } from './lib/mermaid-pin-freshness.ts'
 import {
   TABLE_HEADER,
   USAGE,
@@ -50,6 +47,7 @@ import {
   summarize,
   type LayoutBoxes,
 } from './lib/layout-agreement.ts'
+import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
 /**
@@ -102,26 +100,6 @@ async function measureOfficial(
   return { nodes, groups }
 }
 
-/** Box of every node and subgraph in our own layout of `source`. */
-function measureOurs(source: string, type: OracleType): LayoutBoxes {
-  const graph = parseMermaid(source)
-  const positioned =
-    type === 'state' ? layoutGraphSync(graph) : layoutFlowchartSync(graph)
-  const nodes: Record<string, Box> = {}
-  for (const n of positioned.nodes) {
-    nodes[n.id] = { x: n.x, y: n.y, w: n.width, h: n.height }
-  }
-  const groups: Record<string, Box> = {}
-  const walk = (list: typeof positioned.groups): void => {
-    for (const g of list) {
-      groups[g.id] = { x: g.x, y: g.y, w: g.width, h: g.height }
-      walk(g.children)
-    }
-  }
-  walk(positioned.groups)
-  return { nodes, groups }
-}
-
 async function main(): Promise<number> {
   let args
   try {
@@ -135,6 +113,9 @@ async function main(): Promise<number> {
     console.log(USAGE)
     return 0
   }
+
+  const fresh = pinFreshness()
+  if (fresh.stale) console.error(`warning: ${fresh.message}`)
 
   const wanted = samples.filter(
     (s) =>
@@ -165,10 +146,12 @@ async function main(): Promise<number> {
   const failing: string[] = []
   try {
     for (const [i, sample] of wanted.entries()) {
-      const hasSubgraphs =
-        args.type === 'state'
-          ? /^\s*state\s+.*\{\s*$/m.test(sample.source)
-          : /\bsubgraph\b/.test(sample.source)
+      const hasSubgraphs = {
+        state: /^\s*state\s+.*\{\s*$/m,
+        class: /^\s*namespace\b/m,
+        er: /$^/,
+        flowchart: /\bsubgraph\b/,
+      }[args.type].test(sample.source)
       try {
         const renderId = `oracle_${i}`
         const svg = await renderRealMermaidSvg(session, renderId, sample.source)
@@ -180,7 +163,7 @@ async function main(): Promise<number> {
         )
         const a = agreement(
           official,
-          measureOurs(sample.source, args.type),
+          measureOurs(sample.source, args.type, args.layout),
           args.tolerance,
         )
         results[sample.title] = { ...a, subgraphs: hasSubgraphs }
@@ -249,4 +232,11 @@ async function main(): Promise<number> {
   return 0
 }
 
-process.exit(await main())
+// Only run when executed directly, so the pure helpers can be imported by tests.
+const isMainModule =
+  process.argv[1] !== undefined &&
+  import.meta.url === new URL(process.argv[1], 'file://').href
+
+if (isMainModule) {
+  process.exit(await main())
+}

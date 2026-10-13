@@ -805,8 +805,15 @@ function EditorChromeMarkup({
         <EditorRightPanel />
       </div>
 
-      <div className={toastVisible ? 'toast show' : 'toast'} id="toast">
-        {toastMessage}
+      <div
+        className={toastVisible ? 'toast show' : 'toast'}
+        id="toast"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {/* Emptied on hide so a repeat of the same message re-announces. */}
+        {toastVisible ? toastMessage : ''}
       </div>
     </>
   )

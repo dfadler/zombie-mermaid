@@ -62,7 +62,18 @@ describe('parallel edges side by side (#1394)', () => {
     const out = ascii(
       'graph TD\n  A -->|first| B\n  A -->|second| B\n  A -->|third| B',
     )
-    expect(out).toMatch(/◄─+┴/)
+    // #1743: the third lane has its own row and arrowhead, no shared junction.
+    expect(out).toMatch(/◄─+┘/)
+    expect(out.match(/◄/g)).toHaveLength(2)
+    expect(out).not.toMatch(/◄─+┴/)
+  })
+
+  it('ASCII: three lanes plus a reciprocal edge keep separate arrowheads (#1743)', () => {
+    const out = ascii(
+      'graph TD\n  A -->|first| B\n  A -->|second| B\n  A -->|third| B\n  B -->|back| A',
+    )
+    expect(out.match(/◄/g)).toHaveLength(2)
+    expect(out).not.toMatch(/◄─+┴/)
   })
 
   it('ASCII: three labeled edges in LR each get a row and an arrowhead (#1716)', () => {
@@ -101,7 +112,7 @@ describe('parallel edges side by side (#1394)', () => {
     const four = ascii(
       'graph TD\n  A -->|abcd| B\n  A -->|efgh| B\n  A -->|ijkl| B',
     )
-    expect(four).toMatch(/◄─+┴/)
+    expect(four.match(/◄/g)).toHaveLength(2)
   })
 
   it('ASCII: a spread group with a node above it still gets its own strokes', () => {

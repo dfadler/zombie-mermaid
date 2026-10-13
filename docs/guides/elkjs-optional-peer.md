@@ -50,6 +50,24 @@ const { default: ELK } = await import('elkjs/lib/elk.bundled.js')
 registerElk(ELK)
 ```
 
+### Flowcharts only, without `elkjs` in the bundle
+
+If you only render flowcharts and want no `elkjs` at all, pass
+`layout: 'simple'` ([#1685](https://github.com/dfadler/zombie-mermaid/issues/1685)):
+
+```ts
+import { renderMermaidSVG } from 'zombie-mermaid'
+
+const svg = renderMermaidSVG('graph LR\n  A --> B', { layout: 'simple' }) // no registerElk()
+```
+
+It is opt-in, so existing output is unchanged. It costs about 3.5 KB gzipped on
+top of the 74 KB "elkjs not registered" bundle above. It covers flowcharts
+only: state, class, ER and architecture diagrams still need `elkjs`. Edge routing
+is plainer than ELK's, and `mergeEdges`, `layoutCache` and a subgraph's own
+`direction` have no effect. Quality numbers and the trade-offs are in
+[docs/decisions/simple-layout-1685.md](../decisions/simple-layout-1685.md).
+
 ### Node, Bun, CLI, MCP
 
 Nothing to do. `zombie-mermaid` still depends on `elkjs`, and when nothing is
@@ -95,4 +113,4 @@ peer. If you remove it anyway (for example with an overrides or
   `registerElk()`.
 
 Related: [#1685](https://github.com/dfadler/zombie-mermaid/issues/1685)
-(lightweight built-in layout) is still open.
+(lightweight built-in layout) added `layout: 'simple'` for flowcharts.

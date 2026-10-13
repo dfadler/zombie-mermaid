@@ -15,7 +15,26 @@
  * wraps, standing in for the `esbuild.build()` calls these generators used
  * previously. See zombie-mermaid#310.
  */
+import { fileURLToPath } from 'node:url'
 import { build as viteBuild } from 'vite'
+
+// Resolve workspace packages from source, mirroring tsconfig.json `paths` and
+// config/vitest.config.ts. Their package.json `exports` point at `dist/`, so
+// without this a stale (or missing) dist breaks the bundle, e.g. a
+// `registerElk` MISSING_EXPORT (#1754).
+const WORKSPACE_PACKAGES = [
+  'core',
+  'mermaid-parser',
+  'svg-renderer',
+  'ascii-renderer',
+  'mcp',
+]
+const workspaceAliases = Object.fromEntries(
+  WORKSPACE_PACKAGES.map((name) => [
+    `@zombie-mermaid/${name}`,
+    fileURLToPath(new URL(`../packages/${name}/src/index.ts`, import.meta.url)),
+  ]),
+)
 
 export interface BundleForBrowserOptions {
   /**
@@ -62,6 +81,7 @@ export async function bundleForBrowser(
     // Vite's own "building for production..." banner would otherwise mix
     // into these generators' own progress logging.
     logLevel: 'warn',
+    resolve: { alias: workspaceAliases },
     build: {
       write: false,
       minify,

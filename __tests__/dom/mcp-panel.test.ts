@@ -22,6 +22,10 @@ describe('McpPanel', () => {
       screen.getByText('render_mermaid_svg({ diagram })'),
     ).toBeInTheDocument()
 
+    expect(screen.getByText('validate_mermaid')).toBeInTheDocument()
+    expect(screen.getByText(/seven tools/)).toBeInTheDocument()
+    expect(screen.queryByText(/may still change/)).not.toBeInTheDocument()
+
     const link = screen.getByRole('link', { name: /read the mcp docs/i })
     expect(link).toHaveAttribute('href', `${FORK_URL}#mcp-server`)
   })

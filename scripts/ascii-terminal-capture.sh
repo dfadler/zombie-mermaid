@@ -33,6 +33,9 @@ EXIT_OK=0
 EXIT_FAILURE=1
 EXIT_USAGE=2
 EXIT_DEPENDENCY=4
+# ascii-render-runner.mjs's exit code for a render that threw while
+# ASCII_CAPTURE_EXPECT_THROW is set (see --help).
+EXIT_RENDER_THREW=3
 
 # agg rasterization runtime: "local" (default) uses the `agg` binary on
 # PATH; "docker" runs agg's own maintainer image instead (see --help).
@@ -91,6 +94,13 @@ silently ignores a size flag it doesn't recognize (2.x took --cols/--rows,
 3.x takes --window-size COLSxROWS) rather than erroring, which once shipped
 PR screenshots clipped to 80x24 (issue #483). The flag form is detected from
 `asciinema record --help` before recording, so both versions work.
+
+Set ASCII_CAPTURE_EXPECT_THROW=1 to capture a renderer that throws (e.g. the
+"before" side of a fix for a crash): the thrown error is recorded as the
+terminal output - one `<Name>: <message>` line, no stack trace or local
+paths - instead of the script exiting 1. The recording uses the default
+terminal size (or [cols] [rows]). If the render does NOT throw the script
+fails (exit 1), so a capture can't claim a failure that didn't happen.
 
 Exit codes: 0 ok; 1 the sample failed to render; 2 usage error (including
 <index-module-path>'s tree root missing its own tsconfig.json); 4 a missing
@@ -267,12 +277,23 @@ fi
 # <index-module-path> the recording will, so a "before" capture against a
 # base ref is sized to that ref's output, not the working tree's.
 measure_status=0
+render_throws=0
 needed_size="$("$tsx" --tsconfig "$tsconfig_path" "$runner" --size "$index_module_path" "$sample_arg")" || measure_status=$?
-if [ "$measure_status" -ne 0 ]; then
+if [ "$measure_status" -eq "$EXIT_RENDER_THREW" ]; then
+  # Only reachable with ASCII_CAPTURE_EXPECT_THROW set (the runner exits 3
+  # for no other reason). The error text is on stderr above; there is no
+  # output to size, so the recording falls back to the default terminal size.
+  render_throws=1
+  needed_size="0 0"
+elif [ "$measure_status" -ne 0 ]; then
   echo "could not render $sample_arg via $index_module_path to measure its terminal size (see above)" >&2
   if [ "$measure_status" -eq 2 ]; then
     exit "$EXIT_USAGE"
   fi
+  exit "$EXIT_FAILURE"
+fi
+if [ -n "${ASCII_CAPTURE_EXPECT_THROW:-}" ] && [ "$render_throws" -eq 0 ]; then
+  echo "ASCII_CAPTURE_EXPECT_THROW is set but $sample_arg rendered fine via $index_module_path: refusing to record a capture that claims a failure" >&2
   exit "$EXIT_FAILURE"
 fi
 needed_cols="${needed_size%% *}"
@@ -324,7 +345,13 @@ TSX="$tsx" TSCONFIG_PATH="$tsconfig_path" RUNNER="$runner" INDEX_MODULE_PATH="$i
   asciinema record --overwrite --quiet \
   -c 'printf "\033[?25l"; "$TSX" --tsconfig "$TSCONFIG_PATH" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
   "${size_args[@]}" \
-  "${out_prefix}.cast"
+  "${out_prefix}.cast" || record_status=$?
+# A render that was expected to throw makes the recorded command exit non-zero
+# (and some asciinema versions pass that through); that is the capture, not a
+# failure. Any other non-zero status is a real recording failure.
+if [ "${record_status:-0}" -ne 0 ] && [ "$render_throws" -eq 0 ]; then
+  exit "$record_status"
+fi
 
 # Guard against the failure mode above actually happening: the header is the
 # recording's own statement of the PTY size it captured, so a mismatch means
@@ -432,4 +459,8 @@ if [ "$ASCII_RASTERISER" = chromium ]; then
 else
   rasteriser_note="agg via ${ASCII_AGG_RUNTIME}"
 fi
-echo "wrote ${out_prefix}.cast ${out_prefix}.txt ${out_prefix}.png (${cols}x${rows} terminal, ${rasteriser_note})"
+throw_note=""
+if [ "$render_throws" -eq 1 ]; then
+  throw_note=", recorded the render's thrown error"
+fi
+echo "wrote ${out_prefix}.cast ${out_prefix}.txt ${out_prefix}.png (${cols}x${rows} terminal, ${rasteriser_note}${throw_note})"
