@@ -261,10 +261,11 @@ export function planSpines(
 // ============================================================================
 
 /**
- * Put sibling subgraphs that sit side by side in the order mermaid.js draws
- * them: the reverse of their declaration order (mermaid.js walks its list of
- * subgraphs backwards, so `subgraph a` then `subgraph b` come out with `b` on
- * the left; see #444 and the same reversal in `mermaidToElk`). ELK chooses the
+ * Put sibling subgraphs that sit side by side in the order mermaid draws
+ * them. Mermaid 12 (ELK) keeps declaration order when `tied` says an edge
+ * relates the siblings (a shared outside node, `E --> A`, `E --> C`) and still
+ * reverses unconnected ones (checked against mermaid@12.2.0; mermaid 11's
+ * dagre reversed all of them, see #444). ELK chooses the
  * order of two independent subgraphs by their edges, so the first layout may
  * have them the other way round. The subgraphs of a group swap places: each
  * takes the position of whichever came to occupy its slot, by moving the keys of
@@ -276,6 +277,7 @@ export function orderSiblings(
   layer: ReadonlyMap<string, number>,
   keys: Map<string, number>,
   connected: (a: MermaidSubgraph, b: MermaidSubgraph) => boolean = () => false,
+  tied: (a: MermaidSubgraph, b: MermaidSubgraph) => boolean = () => false,
 ): void {
   const span = (sg: MermaidSubgraph): [number, number] | undefined => {
     const layers = [...membersOf(sg)]
@@ -317,7 +319,12 @@ export function orderSiblings(
     }
     // Declaration order, last to first, is left to right; concurrency
     // regions (state `--`) are the exception and run first to last.
-    const sign = group.some((g) => g.region) ? -1 : 1
+    // Siblings tied together by an edge (see `tied`) keep declaration order,
+    // as mermaid 12's ELK layout draws them; unconnected ones are reversed.
+    const forward =
+      group.some((g) => g.region) ||
+      group.some((a, i) => group.slice(i + 1).some((b) => tied(a, b)))
+    const sign = forward ? -1 : 1
     const want = [...group].sort(
       (a, b) => sign * (subgraphs.indexOf(b) - subgraphs.indexOf(a)),
     )
@@ -330,7 +337,7 @@ export function orderSiblings(
     })
   }
   for (const sg of subgraphs) {
-    orderSiblings(sg.children, layer, keys, connected)
+    orderSiblings(sg.children, layer, keys, connected, tied)
   }
 }
 
@@ -599,7 +606,24 @@ export function layoutCompoundFlat(
       graph.edges.some((e) => from.has(e.source) && to.has(e.target))
     return run(inA, inB) && run(inB, inA)
   }
-  orderSiblings(graph.subgraphs, layer, keys, joins)
+  // Two siblings are tied when an edge joins them, or a node outside both
+  // has an edge to each (mermaid 12: `E --> A`, `E --> C` into two subgraphs).
+  const tied = (a: MermaidSubgraph, b: MermaidSubgraph): boolean => {
+    const inA = membersOf(a)
+    const inB = membersOf(b)
+    const touches = (x: string, set: Set<string>): boolean =>
+      graph.edges.some(
+        (e) =>
+          (e.source === x && set.has(e.target)) ||
+          (e.target === x && set.has(e.source)),
+      )
+    return [...graph.nodes.keys()].some((x) =>
+      inA.has(x) || inB.has(x)
+        ? (inA.has(x) && touches(x, inB)) || (inB.has(x) && touches(x, inA))
+        : touches(x, inA) && touches(x, inB),
+    )
+  }
+  orderSiblings(graph.subgraphs, layer, keys, joins, tied)
   for (const g of plan.ghosts) {
     const sg = clusters.find((c) => c.id === g.subgraph)!
     const at = [...membersOf(sg)]
