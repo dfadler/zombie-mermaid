@@ -23,6 +23,11 @@ select:focus-visible,
   outline: none;
   box-shadow: inset 0 0 0 2px var(--t-accent);
 }
+/* The preview body fills its overflow: hidden panel edge to edge, so the
+ * outset ring above is clipped to a sliver on one side; draw it inside. */
+#preview-body:focus-visible {
+  outline-offset: -2px;
+}
 
 /* Toast */
 .toast {
