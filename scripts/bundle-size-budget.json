@@ -8,7 +8,7 @@
     "dist/mcp.js": 512,
     "dist/mcp.cjs": 512,
     "dist/cli.js": 14336,
-    "packages/core/dist/index.js": 11264,
+    "packages/core/dist/index.js": 11520,
     "packages/core/dist/index.cjs": 10752,
     "packages/mermaid-parser/dist/index.js": 21504,
     "packages/mermaid-parser/dist/index.cjs": 19456,

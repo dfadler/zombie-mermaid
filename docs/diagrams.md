@@ -846,10 +846,22 @@ Known differences from Mermaid:
   fraction of the radius. Like Mermaid, it only applies for values above 0
   and up to 0.9 (anything else draws a plain pie), and the slice labels stay
   at `textPosition`. The ASCII output has no centre to cut, so it ignores it.
-  The other `pie` settings Mermaid 11.16+ supports (`legendPosition`,
-  `highlightSlice`) are not supported yet; their defaults are always used.
-- A legend taller than the 450px frame (more than about 20 slices) makes the
-  SVG taller instead of being cut off, and an empty chart keeps its full
+- `%%{init: {"pie": {"legendPosition": "left"}}}%%` moves the SVG legend
+  (`right` is the default, then `left`, `top`, `bottom` or `center`; anything
+  else draws the default). `left` and `top` shift the pie to make room, `top`
+  and `bottom` make the frame taller, and `center` draws the legend over the
+  pie. As in Mermaid, the title stays centred on the frame, not on a shifted
+  pie. The ASCII output always puts the legend beside the bars, so it ignores
+  it.
+- `%%{init: {"pie": {"highlightSlice": "Cats"}}}%%` draws the slice with that
+  exact label 5% larger and fully opaque, as Mermaid 12.1.0 does (it scales the
+  slice about the pie centre; it does not pull it out). `"hover"` only
+  applies under a pointer, so a static image ignores it, and so does the ASCII
+  output. See
+  [the decision](decisions/pie-highlight-slice-static-1726.md).
+- A legend taller than the 450px frame (more than about 20 slices), or a
+  `top`/`bottom`/`center` legend wider than it, makes the SVG larger instead of
+  being cut off, and an empty chart keeps its full
   width (Mermaid crops it).
 - Mermaid's `#quot;`-style character codes in pie labels and legends are shown as written. Flowchart labels decode them (via `decodeMermaidEntities` in `packages/core/src/multiline-utils.ts`).
 
