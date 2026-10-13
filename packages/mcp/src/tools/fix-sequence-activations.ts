@@ -26,6 +26,20 @@ export const fixSequenceActivationsInputShape = {
     ),
 }
 
+export const fixSequenceActivationsOutputShape = {
+  ok: z.boolean(),
+  originalDiagram: z.string(),
+  fixedDiagram: z.string(),
+  fixesApplied: z.array(z.string()),
+  remainingIssues: z.array(
+    z.object({
+      code: z.enum(['DANGLING_ACTIVATION', 'UNMATCHED_DEACTIVATION']),
+      actorId: z.string(),
+      message: z.string(),
+    }),
+  ),
+}
+
 export interface FixSequenceActivationsToolArgs {
   diagram: string
 }
@@ -62,6 +76,7 @@ export function fixSequenceActivationsHandler(
     const result = fixActivationBalance(input.diagram)
     return {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      structuredContent: { ...result },
     }
   } catch (err) {
     return {
