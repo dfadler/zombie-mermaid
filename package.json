@@ -89,6 +89,7 @@
   },
   "scripts": {
     "test": "vitest run -c config/vitest.config.ts",
+    "test:shuffle": "vitest run -c config/vitest.config.ts --sequence.shuffle.files --sequence.shuffle.tests",
     "test:watch": "vitest -c config/vitest.config.ts",
     "test:coverage": "vitest run -c config/vitest.config.ts --coverage",
     "test:visual": "playwright test",
