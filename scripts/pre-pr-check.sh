@@ -22,6 +22,7 @@ Warns about likely PR-process misses, from the diff of HEAD against REF
     screenshot flow: verify-ascii-terminal skill)
   - published code changed with no .changeset/*.md
   - a releasing changeset (names a package) on a PR that touches no published code
+  - a docs/research/ file added (findings belong on the issue, #1938)
   - docs/decisions/*.md changed (self-review checklist link)
   - rendered-output bug fix without demo/fork-fixes-data.ts
 
@@ -113,6 +114,10 @@ for f in $(printf '%s\n' "$files" | grep -E '^\.changeset/.+\.md$'); do
 done
 if [ "$has_code" -eq 0 ] && [ "$has_release_changeset" -eq 1 ]; then
   warnings+=("A changeset is included but no published code (src/, packages/*/src/) changed; data/docs-only PRs should not carry one.")
+fi
+# Added (not edited) research docs; README.md is the index, not a finding.
+if git diff --diff-filter=A --name-only "$base"...HEAD | grep -E '^docs/research/' | grep -Evq '^docs/research/README\.md$'; then
+  warnings+=("docs/research/ file added: post the findings as an issue comment instead (long ones in <details>); keep a doc only if a guide, code comment or script links to it (CLAUDE.md 'Research and measurement', #1642).")
 fi
 if has '^docs/decisions/.+\.md$'; then
   warnings+=("docs/decisions/*.md changed: walk the self-review checklist first, docs/decisions/decision-doc-self-review-checklist-977.md")
