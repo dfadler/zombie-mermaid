@@ -205,7 +205,7 @@ pnpm run layout:oracle -- --type=state         # state diagrams instead (flowcha
 pnpm run layout:oracle -- --fail-below=90      # exit 1 if any sample's lowest figure is under 90%
 ```
 
-Run it before and after a change to layout (`packages/svg-renderer/src/layout-engine/`) and put the rows that moved in the PR. It's a diagnostic, not a CI gate: it needs a Chromium install and a real browser render. See the header of `scripts/layout-oracle.ts` for what it does and doesn't compare.
+Run it before and after a change to layout (`packages/svg-renderer/src/layout-engine/`) and put the rows that moved in the PR. `pnpm run layout:scorecard` records all four types (flowchart, state, class, ER) in `docs/layout-fidelity-scorecard.md`, against the pinned mermaid version. It's a diagnostic, not a CI gate: it needs a Chromium install and a real browser render. See the header of `scripts/layout-oracle.ts` for what it does and doesn't compare.
 
 ## Porting fixes from upstream
 

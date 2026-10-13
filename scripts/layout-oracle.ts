@@ -29,16 +29,25 @@ import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 import { samples } from '../packages/site/samples-data.ts'
-import { pinFreshness } from './lib/mermaid-pin-freshness.ts'
+import {
+  pinFreshness,
+  pinnedMermaidVersion,
+} from './lib/mermaid-pin-freshness.ts'
 import {
   TABLE_HEADER,
   USAGE,
   agreement,
   formatRow,
-  isOfType,
+  wantsSample,
   officialNodeName,
+  ORACLE_TYPES,
+  hasGroups,
+  historyLines,
+  jsonPayload,
+  type OracleArgs,
   type OracleType,
   parseOracleArgs,
+  type ScorecardRun,
   worst,
   type Box,
   type HistoryEntry,
@@ -100,6 +109,48 @@ async function measureOfficial(
   return { nodes, groups }
 }
 
+/** Score every sample of one diagram type; returns the table rows, figures and failures. */
+async function scoreType(
+  session: Awaited<ReturnType<typeof startRealMermaid>>,
+  type: OracleType,
+  args: OracleArgs,
+) {
+  const wanted = samples.filter((s) => wantsSample(s, type, args.filter))
+  const results: Record<string, SampleResult> = {}
+  const rows: string[] = []
+  const failing: string[] = []
+  for (const [i, sample] of wanted.entries()) {
+    const hasSubgraphs = hasGroups(type, sample.source)
+    try {
+      const renderId = `oracle_${i}`
+      const svg = await renderRealMermaidSvg(session, renderId, sample.source)
+      const official = await measureOfficial(session.page, svg, renderId, type)
+      const a = agreement(
+        official,
+        measureOurs(sample.source, type, args.layout),
+        args.tolerance,
+      )
+      results[sample.title] = { ...a, subgraphs: hasSubgraphs }
+      rows.push(formatRow(sample.title, a, hasSubgraphs))
+      const low = worst(a)
+      if (
+        args.failBelow !== undefined &&
+        low !== null &&
+        low * 100 < args.failBelow
+      ) {
+        failing.push(`${sample.title} (${Math.round(low * 100)}%)`)
+      }
+    } catch (err) {
+      const message = (err as Error).message.split('\n')[0]
+      rows.push(`ERR  ${sample.title}: ${message}`)
+      if (args.failBelow !== undefined) {
+        failing.push(`${sample.title} (error)`)
+      }
+    }
+  }
+  return { wanted: wanted.map((s) => s.title), results, rows, failing }
+}
+
 async function main(): Promise<number> {
   let args
   try {
@@ -117,16 +168,9 @@ async function main(): Promise<number> {
   const fresh = pinFreshness()
   if (fresh.stale) console.error(`warning: ${fresh.message}`)
 
-  const wanted = samples.filter(
-    (s) =>
-      isOfType(s.source, args.type) &&
-      (!args.filter ||
-        s.title.toLowerCase().includes(args.filter.toLowerCase())),
-  )
-  if (wanted.length === 0) {
-    console.error(`No ${args.type} sample matches "${args.filter ?? ''}".`)
-    return 2
-  }
+  // The history and scorecard record every covered type, so --type is ignored for them.
+  const recording = Boolean(args.history || args.scorecard)
+  const types = recording ? ORACLE_TYPES : [args.type]
 
   let session
   try {
@@ -141,76 +185,46 @@ async function main(): Promise<number> {
   // tsx (esbuild) wraps named functions in a `__name` helper the page lacks.
   await session.page.evaluate('window.__name = (f) => f')
 
-  const results: Record<string, SampleResult> = {}
-  const rows: string[] = []
+  const runs: ScorecardRun[] = []
   const failing: string[] = []
+  const commit = recording
+    ? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+    : ''
   try {
-    for (const [i, sample] of wanted.entries()) {
-      const hasSubgraphs = {
-        state: /^\s*state\s+.*\{\s*$/m,
-        class: /^\s*namespace\b/m,
-        er: /$^/,
-        flowchart: /\bsubgraph\b/,
-      }[args.type].test(sample.source)
-      try {
-        const renderId = `oracle_${i}`
-        const svg = await renderRealMermaidSvg(session, renderId, sample.source)
-        const official = await measureOfficial(
-          session.page,
-          svg,
-          renderId,
-          args.type,
-        )
-        const a = agreement(
-          official,
-          measureOurs(sample.source, args.type, args.layout),
-          args.tolerance,
-        )
-        results[sample.title] = { ...a, subgraphs: hasSubgraphs }
-        rows.push(formatRow(sample.title, a, hasSubgraphs))
-        const low = worst(a)
-        if (
-          args.failBelow !== undefined &&
-          low !== null &&
-          low * 100 < args.failBelow
-        ) {
-          failing.push(`${sample.title} (${Math.round(low * 100)}%)`)
-        }
-      } catch (err) {
-        const message = (err as Error).message.split('\n')[0]
-        rows.push(`ERR  ${sample.title}: ${message}`)
-        if (args.failBelow !== undefined) {
-          failing.push(`${sample.title} (error)`)
-        }
+    for (const type of types) {
+      const scored = await scoreType(session, type, args)
+      if (scored.wanted.length === 0) {
+        console.error(`No ${type} sample matches "${args.filter ?? ''}".`)
+        return 2
       }
+      if (types.length > 1) console.log(`\n== ${type} ==`)
+      console.log(TABLE_HEADER)
+      console.log(scored.rows.join('\n'))
+      failing.push(...scored.failing)
+      runs.push({
+        results: scored.results,
+        sampled: scored.wanted,
+        entry: summarize(scored.results, {
+          date: new Date().toISOString().slice(0, 10),
+          commit,
+          tolerance: args.tolerance,
+          type,
+          mermaid: pinnedMermaidVersion(),
+        }),
+      })
     }
   } finally {
     await session.close()
   }
 
-  console.log(TABLE_HEADER)
-  console.log(rows.join('\n'))
   if (args.json) {
-    await writeFile(args.json, `${JSON.stringify(results, null, 2)}\n`)
+    await writeFile(args.json, jsonPayload(runs))
     console.log(`\nWrote ${args.json}`)
   }
-  if ((args.history || args.scorecard) && args.type !== 'flowchart') {
-    // The history and scorecard track the flowchart means; mixing types would break the trend.
-    console.error('--history and --scorecard are flowchart-only for now.')
-    return 2
-  }
-  if (args.history || args.scorecard) {
-    const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
-      encoding: 'utf8',
-    }).trim()
-    const entry = summarize(results, {
-      date: new Date().toISOString().slice(0, 10),
-      commit,
-      tolerance: args.tolerance,
-    })
-    let history: HistoryEntry[] = [entry]
+  if (recording) {
+    let history = runs.map((r) => r.entry)
     if (args.history) {
-      await appendFile(args.history, `${JSON.stringify(entry)}\n`)
+      await appendFile(args.history, historyLines(history))
       history = (await readFile(args.history, 'utf8'))
         .split('\n')
         .filter(Boolean)
@@ -218,10 +232,7 @@ async function main(): Promise<number> {
       console.log(`Appended to ${args.history}`)
     }
     if (args.scorecard) {
-      await writeFile(
-        args.scorecard,
-        scorecardMarkdown(entry, results, history),
-      )
+      await writeFile(args.scorecard, scorecardMarkdown(runs, history))
       console.log(`Wrote ${args.scorecard}`)
     }
   }
