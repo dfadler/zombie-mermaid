@@ -28,9 +28,9 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 ## Why This Fork Exists
 
-`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. But upstream development has stalled: dozens of [pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) sit open, some for over half a year, and nothing has merged in months — by most definitions, it's dead. I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
+`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. Checkable facts, as of 2026-10-13: the last push to upstream's `main` was 2026-05-06 and its latest release is v1.1.2 (2026-02-26); it has [43 open pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) (19 opened before 2026-04-13) and [50 open issues](https://github.com/lukilabs/beautiful-mermaid/issues) (live counts at those links; the figures above are a dated snapshot). I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
 
-This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase: every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
+This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (35 fixes as of 2026-10-13): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
 
 It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below.
 
