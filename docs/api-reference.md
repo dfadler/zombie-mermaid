@@ -81,6 +81,43 @@ Two more advanced options exist — `fontSizes` (per-element font size overrides
 
 **C4 and architecture diagrams:** C4 uses the theme colours and `font` but no layout options (see above); the source `title` is its fallback accessible name when the `title` option is not given. Architecture diagrams take every flowchart option, including `direction` and `curve`, and are named only by the `title` option.
 
+## Size limits (`options.limits`)
+
+Both `renderMermaidSVG()` and `renderMermaidASCII()` check input size before
+layout and throw `LimitExceededError` (`code: 'LIMIT_EXCEEDED'`, plus `limit`,
+`value` and `max`) instead of hanging in ELK or running out of memory. Pass
+`limits: { ... }` to change any of them; `Infinity` disables one.
+
+| Limit            | Default   | MCP tools | Applies to                                               |
+| ---------------- | --------- | --------- | -------------------------------------------------------- |
+| `maxInputLength` | 100,000   | 50,000    | Source length, every diagram type                        |
+| `maxNodes`       | 400       | 150       | Flowchart, state and architecture diagrams               |
+| `maxEdges`       | 600       | 300       | Flowchart, state and architecture diagrams               |
+| `maxCanvasCells` | 2,000,000 | 1,000,000 | ASCII flowchart/state/architecture: width x height cells |
+
+The defaults sit far above every sample in the repo (at most 12 nodes, 750
+characters, 6,500 canvas cells). ELK layout time depends on topology, not
+only size: random 100-node/300-edge graphs took 2 to 6 s and 150/450 took 9 to
+16 s (Node 24, macOS), so raise the node and edge limits only for input you
+trust. The canvas check runs after the ASCII grid is laid out, so it bounds
+memory, not layout time. The MCP tools use the tighter column because one
+out-of-memory abort would end the stdio server for every tool.
+
+```ts
+import { renderMermaidSVG, LimitExceededError } from 'zombie-mermaid'
+
+try {
+  renderMermaidSVG(code, { limits: { maxNodes: 1000, maxEdges: 2000 } })
+} catch (e) {
+  if (e instanceof LimitExceededError) console.warn(e.limit, e.value, e.max)
+  else throw e
+}
+```
+
+`LimitExceededError`, `DEFAULT_RENDER_LIMITS` and the `RenderLimits` type are
+exported from `zombie-mermaid`; `zombie-mermaid/ascii` also exports
+`LimitExceededError` and `RenderLimits`.
+
 ## `registerElk(ELK): void`
 
 Registers the [`elkjs`](https://github.com/kieler/elkjs) layout engine, an optional
