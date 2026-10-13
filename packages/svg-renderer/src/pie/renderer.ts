@@ -21,7 +21,8 @@
 // The legend swatch is filled and stroked with the slice colour at full
 // opacity, as in Mermaid. There are no tooltips or hover effects: Mermaid
 // draws none by default (`highlightSlice` is off), so `interactivity` does
-// not change the output.
+// not change the output. A `highlightSlice` label draws that slice 5% larger
+// (in its path) and at full opacity, as Mermaid's `.highlighted` does.
 // ============================================================================
 
 import type { PositionedPieChart } from '@zombie-mermaid/mermaid-parser'
@@ -73,11 +74,15 @@ function pieStyles(
       `  .pie-color-${i} { fill: var(--pie-color-${i}); }\n` +
       `  rect.pie-color-${i} { stroke: var(--pie-color-${i}); }`,
   )
+  // Mermaid's `.pieCircle.highlighted`: full opacity (the 5% growth is in the path).
+  const highlightRule = chart.slices.some((s) => s.highlighted)
+    ? '\n  .pie-slice.pie-highlight { opacity: 1; }'
+    : ''
   const varsBlock = vars.length > 0 ? `\n  svg {\n${vars.join('\n')}\n  }` : ''
 
   return `${styleOpenTag(nonce)}
   .pie-outer { fill: none; stroke: var(--fg); stroke-width: ${PIE.outerStrokeWidth}px; }
-  .pie-slice { stroke: var(--fg); stroke-width: 2px; opacity: 0.7; }
+  .pie-slice { stroke: var(--fg); stroke-width: 2px; opacity: 0.7; }${highlightRule}
   .pie-slice-label { fill: var(--_text); font-size: ${PIE.sectionFontSize}px; font-weight: ${PIE.fontWeight}; }
   .pie-title { fill: var(--_text); font-size: ${PIE.titleFontSize}px; font-weight: ${PIE.fontWeight}; }
   .pie-legend-text { fill: var(--_text); font-size: ${PIE.legendFontSize}px; font-weight: ${PIE.fontWeight}; }${varsBlock}
@@ -130,7 +135,7 @@ export function renderPieSvg(
 
   for (const s of chart.slices) {
     parts.push(
-      `<path d="${s.path}" class="pie-slice pie-color-${s.colorIndex}"` +
+      `<path d="${s.path}" class="pie-slice${s.highlighted ? ' pie-highlight' : ''} pie-color-${s.colorIndex}"` +
         ` data-label="${escapeAttr(s.label)}" data-value="${s.value}"/>`,
     )
   }

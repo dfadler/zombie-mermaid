@@ -142,3 +142,14 @@ export function HeroInstall() {
     </Pill>
   )
 }
+
+/** One-line facts a visitor needs before installing: the Node floor
+ * (docs/decisions/consumer-node-floor-1567.md) and the main API name. */
+export function HeroRequirements() {
+  return (
+    <p style={{ fontSize: '14px', color: colorVar('--text-dim') }}>
+      Requires Node 24+. Call <span className="mono">renderMermaidSVG()</span>{' '}
+      for an SVG string.
+    </p>
+  )
+}

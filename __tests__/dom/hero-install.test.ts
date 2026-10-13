@@ -12,7 +12,10 @@
 import { createElement } from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { HeroInstall } from '../../demo/components/hero-install.tsx'
+import {
+  HeroInstall,
+  HeroRequirements,
+} from '../../demo/components/hero-install.tsx'
 
 describe('HeroInstall', () => {
   it('defaults to npm and shows the copy button', () => {
@@ -24,5 +27,13 @@ describe('HeroInstall', () => {
     expect(
       screen.getByRole('button', { name: 'Copy install command' }),
     ).toHaveTextContent('npm install zombie-mermaid')
+  })
+})
+
+describe('HeroRequirements', () => {
+  it('states the Node floor and the renderMermaidSVG entry point', () => {
+    render(createElement(HeroRequirements))
+    expect(screen.getByText(/Requires Node 24\+/)).toBeInTheDocument()
+    expect(screen.getByText('renderMermaidSVG()')).toBeInTheDocument()
   })
 })
