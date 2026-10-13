@@ -7,6 +7,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 ## Testing
 
 - `pnpm run test` — run the unit/integration test suite once (Vitest)
+- `pnpm run test:shuffle` — Vitest with file and test order shuffled (pass --sequence.seed=<n> to reproduce; nightly in CI)
 - `pnpm run test:watch` — Vitest in watch mode
 - `pnpm run test:coverage` — Vitest with coverage
 - `pnpm run test:visual` — run the Playwright visual regression suite (see [visual-regression.md](visual-regression.md))
