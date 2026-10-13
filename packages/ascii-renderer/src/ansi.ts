@@ -70,10 +70,16 @@ export function diagramColorsToAsciiTheme(colors: DiagramColors): AsciiTheme {
 /**
  * Detect the best color mode for the current environment.
  *
- * Terminal detection order:
- * 1. COLORTERM=truecolor or COLORTERM=24bit → truecolor
- * 2. TERM contains "256color" → ansi256
- * 3. TERM is set and not "dumb" → ansi16
+ * Terminal detection order (an explicit `colorMode` option beats all of this):
+ * 1. FORCE_COLOR set, non-empty, not "0"/"false" → 1/true: ansi16, 2: ansi256,
+ *    3: truecolor (wins over NO_COLOR, as in Node and supports-color; works
+ *    when piped)
+ * 2. NO_COLOR non-empty (no-color.org) → none
+ * 3. stdout not a TTY → none
+ * 4. TERM=dumb → none
+ * 5. COLORTERM=truecolor or COLORTERM=24bit → truecolor
+ * 6. TERM contains "256color" → ansi256
+ * 7. TERM is set → ansi16
  *
  * Browser: returns 'html' (uses <span> tags with inline styles).
  * Unknown/piped: returns 'none'.
@@ -91,6 +97,12 @@ export function detectColorMode(): ColorMode {
   ).process
 
   if (proc) {
+    const force = proc.env?.FORCE_COLOR?.toLowerCase() ?? ''
+    if (force && force !== '0' && force !== 'false') {
+      return force === '3' ? 'truecolor' : force === '2' ? 'ansi256' : 'ansi16'
+    }
+    if (proc.env?.NO_COLOR) return 'none'
+
     // Check if stdout is a TTY (not piped/redirected)
     if (!proc.stdout?.isTTY) {
       return 'none'
@@ -98,6 +110,8 @@ export function detectColorMode(): ColorMode {
 
     const colorTerm = proc.env?.COLORTERM?.toLowerCase() ?? ''
     const term = proc.env?.TERM?.toLowerCase() ?? ''
+
+    if (term === 'dumb') return 'none'
 
     // True color support
     if (colorTerm === 'truecolor' || colorTerm === '24bit') {
@@ -110,7 +124,7 @@ export function detectColorMode(): ColorMode {
     }
 
     // Basic color support
-    if (term && term !== 'dumb') {
+    if (term) {
       return 'ansi16'
     }
 
