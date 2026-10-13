@@ -476,6 +476,60 @@ describe('mobile menu resize reset', () => {
     )
   })
 
+  it('links the toggle to the panel via aria-controls', () => {
+    stubMatchMedia()
+    renderNavWithScript()
+
+    const toggle = document.querySelector('.menu-toggle')
+    const panel = document.querySelector('.mobile-nav-panel')
+    if (!toggle || !panel) throw new Error('test setup: nav markup missing')
+
+    expect(panel.id).not.toBe('')
+    expect(toggle.getAttribute('aria-controls')).toBe(panel.id)
+  })
+
+  it('moves focus into the panel on open, and Escape closes it and returns focus to the toggle', () => {
+    stubMatchMedia()
+    renderNavWithScript()
+
+    const toggle = document.querySelector<HTMLElement>('.menu-toggle')
+    const panel = document.querySelector<HTMLElement>('.mobile-nav-panel')
+    if (!toggle || !panel) throw new Error('test setup: nav markup missing')
+
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute('aria-expanded')).toBe('true')
+    expect(panel.contains(document.activeElement)).toBe(true)
+
+    fireEvent.keyDown(document.activeElement ?? panel, { key: 'Escape' })
+    expect(panel.classList.contains('is-open')).toBe(false)
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(toggle)
+  })
+
+  it('traps Tab and Shift+Tab inside the open panel', () => {
+    stubMatchMedia()
+    renderNavWithScript()
+
+    const toggle = document.querySelector<HTMLElement>('.menu-toggle')
+    const panel = document.querySelector<HTMLElement>('.mobile-nav-panel')
+    if (!toggle || !panel) throw new Error('test setup: nav markup missing')
+    fireEvent.click(toggle)
+
+    const focusable = panel.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled])',
+    )
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (!first || !last) throw new Error('test setup: panel has no focusables')
+
+    last.focus()
+    fireEvent.keyDown(last, { key: 'Tab' })
+    expect(document.activeElement).toBe(first)
+
+    fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(last)
+  })
+
   it('does nothing on a desktop-breakpoint match if the menu was never opened', () => {
     const mediaQuery = stubMatchMedia()
     renderNavWithScript()

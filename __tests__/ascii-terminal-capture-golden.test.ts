@@ -14,7 +14,13 @@
  */
 import { describe, it, expect, afterAll } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { chromium } from '@playwright/test'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
@@ -62,6 +68,76 @@ function capture(prefix: string, env: Record<string, string> = {}) {
   expect(png.length).toBeGreaterThan(500)
   return readFileSync(`${out}.txt`, 'utf8').trimEnd()
 }
+
+// A stand-in "base ref" whose renderer throws, laid out like a
+// `git archive <ref> src packages tsconfig.json` extraction (src/index.ts plus
+// its own tsconfig.json).
+const throwingTree = join(work, 'throwing-ref')
+mkdirSync(join(throwingTree, 'src'), { recursive: true })
+// Extends the repo's own tsconfig so the runner's working-tree imports (display
+// width, in --size mode) resolve their @zombie-mermaid/* paths as they would in
+// a real extraction.
+writeFileSync(
+  join(throwingTree, 'tsconfig.json'),
+  JSON.stringify({ extends: join(REPO_ROOT, 'tsconfig.json') }),
+)
+writeFileSync(
+  join(throwingTree, 'src/index.ts'),
+  "export function renderMermaidASCII(): string { throw new Error('boom: segment did not reach its endpoint') }\n",
+)
+
+function captureWith(
+  indexModule: string,
+  prefix: string,
+  env: Record<string, string>,
+) {
+  return spawnSync(SCRIPT, [indexModule, sample, join(work, prefix)], {
+    cwd: REPO_ROOT,
+    env: { ...process.env, ...env },
+    encoding: 'utf8',
+    timeout: 120_000,
+  })
+}
+
+describe('ascii-terminal-capture.sh throwing render', () => {
+  const throwingIndex = join(throwingTree, 'src/index.ts')
+
+  it.skipIf(!hasAgg)(
+    'fails by default when the render throws',
+    { timeout: 120_000 },
+    () => {
+      expect(captureWith(throwingIndex, 'throws-default', {}).status).toBe(1)
+    },
+  )
+
+  it.skipIf(!hasAgg)(
+    'ASCII_CAPTURE_EXPECT_THROW records the error line, without a stack trace',
+    { timeout: 120_000 },
+    () => {
+      const r = captureWith(throwingIndex, 'throws-expected', {
+        ASCII_CAPTURE_EXPECT_THROW: '1',
+      })
+      expect(r.status, r.stderr).toBe(0)
+      const txt = readFileSync(join(work, 'throws-expected.txt'), 'utf8')
+      expect(txt).toContain('Error: boom: segment did not reach its endpoint')
+      expect(txt).not.toContain('    at ')
+      const png = readFileSync(join(work, 'throws-expected.png'))
+      expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a')
+    },
+  )
+
+  it.skipIf(!hasAgg)(
+    'ASCII_CAPTURE_EXPECT_THROW refuses a render that does not throw',
+    { timeout: 120_000 },
+    () => {
+      const r = captureWith('./src/index.ts', 'no-throw', {
+        ASCII_CAPTURE_EXPECT_THROW: '1',
+      })
+      expect(r.status).toBe(1)
+      expect(r.stderr).toContain('rendered fine')
+    },
+  )
+})
 
 describe('ascii-terminal-capture.sh golden', () => {
   it.skipIf(!hasAgg)('asciinema -> agg -> PNG', { timeout: 120_000 }, () => {

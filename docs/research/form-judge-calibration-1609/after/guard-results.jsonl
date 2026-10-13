@@ -1,0 +1,10 @@
+{"id": "case-000", "title": "All Edge Styles", "faithful": true, "findings": []}
+{"id": "case-001", "title": "Chained Edges", "faithful": true, "findings": []}
+{"id": "case-002", "title": "Direction: Left-Right (LR)", "faithful": true, "findings": []}
+{"id": "case-003", "title": "State: Composite States", "faithful": true, "findings": []}
+{"id": "case-004", "title": "Sequence: Actor Stick Figures", "faithful": true, "findings": []}
+{"id": "case-005", "title": "Sequence: Activation Boxes", "faithful": true, "findings": []}
+{"id": "case-006", "title": "Class: Interface Annotation", "faithful": true, "findings": []}
+{"id": "case-007", "title": "Class: All 6 Relationship Types", "faithful": true, "findings": []}
+{"id": "case-008", "title": "ER: Attribute Keys (PK, FK, UK)", "faithful": true, "findings": []}
+{"id": "case-009", "title": "ER: All Cardinality Types", "faithful": true, "findings": []}

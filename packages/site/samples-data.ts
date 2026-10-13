@@ -1214,10 +1214,10 @@ flowchart LR
     description:
       "Every crow's-foot cardinality combination side by side — the reference chart for reading any combination at a glance instead of checking each relationship's own page.",
     source: `erDiagram
-  A ||--|| B : one-to-one
-  C ||--o{ D : one-to-many
+  A ||--|| B : "one-to-one"
+  C ||--o{ D : "one-to-many"
   E |o--|{ F : opt-to-many
-  G }|--o{ H : many-to-many`,
+  G }|--o{ H : "many-to-many"`,
   },
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -2104,5 +2104,145 @@ ${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" :
     [*] --> B1
     B1 --> B2
   }`,
+  },
+  {
+    title: 'Pie: Donut Hole',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"donutHole": 0.5}}}%%` cuts a hole of half the radius in the SVG; Mermaid keeps the labels where they were. The ASCII bar chart has no centre to cut, so it is unchanged.',
+    source: `%%{init: {"pie": {"donutHole": 0.5}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'ER: Word-Form Cardinalities and .- / -. Lines',
+    category: 'ER',
+    description:
+      'Cardinalities written as words (`one to many`, `1 to 0+`, `zero or one to one or more`), the mirrored symbol pairs `o|--||` and `o{--o{`, and the `.-` / `-.` line forms, which draw a dashed (non-identifying) relationship.',
+    source: `erDiagram
+  CUSTOMER one to many ORDER : places
+  ORDER 1 to 0+ LINE_ITEM : contains
+  LINE_ITEM zero or one to one or more PRODUCT : lists
+  PRODUCT o|--|| SUPPLIER : sourced_from
+  SUPPLIER o{--o{ WAREHOUSE : stocks
+  WAREHOUSE ||.-o{ SHELF : holds
+  SHELF ||-.o{ BIN : holds`,
+  },
+  {
+    title: 'Flowchart: Three Parallel Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Exactly three labeled parallel edges between the same two nodes in a top-down graph. In ASCII each lane enters the target on its own row with its own arrowhead.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B`,
+  },
+  {
+    title: 'Flowchart: Three Parallel Edges Plus Reciprocal (TD)',
+    category: 'Flowchart',
+    description:
+      'Three labeled parallel edges plus a reciprocal edge back, in a top-down graph. In ASCII the third lane keeps its own arrowhead row.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  B -->|back| A`,
+  },
+  {
+    title: 'Pie: Text Position',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"textPosition": 0.5}}}%%` moves the slice percentage labels from the default 0.75 of the radius to halfway out in the SVG. The ASCII bar chart has no slice labels to move, so it is unchanged.',
+    source: `%%{init: {"pie": {"textPosition": 0.5}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Flowchart: Four Parallel Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Four labeled edges between the same two nodes (#1743). In the ASCII panel each lane enters the target on its own row with its own arrowhead.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  A -->|fourth| B`,
+  },
+  {
+    title: 'Flowchart: Five Cluster Exit Siblings (TD)',
+    category: 'Flowchart',
+    description:
+      'Five labeled edges leave a subgraph for one target beside another exit (#1689). In the ASCII panel each sibling gets its own arrowhead; the fifth enters the low face.',
+    source: `flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|1| T
+  S -->|2| T
+  S -->|3| T
+  S -->|4| T
+  S -->|5| T
+  S -->|other| U`,
+  },
+  {
+    title: 'Pie: Legend Left',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"legendPosition": "left"}}}%%` puts the legend left of the pie and widens the frame to fit. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+    source: `%%{init: {"pie": {"legendPosition": "left"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: Legend Top',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"legendPosition": "top"}}}%%` stacks the legend above the pie and makes the frame taller. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+    source: `%%{init: {"pie": {"legendPosition": "top"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: Legend Bottom',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"legendPosition": "bottom"}}}%%` stacks the legend below the pie and makes the frame taller. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+    source: `%%{init: {"pie": {"legendPosition": "bottom"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: Legend Center',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"legendPosition": "center"}}}%%` draws the legend over the middle of the pie, centred, without resizing the frame. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+    source: `%%{init: {"pie": {"legendPosition": "center"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: Highlight Slice',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"highlightSlice": "Cats"}}}%%` draws the named slice 5% larger and fully opaque, as Mermaid does; `hover` only applies under a pointer, so a static image ignores it. The ASCII bar chart has no emphasis, so it is unchanged.',
+    source: `%%{init: {"pie": {"highlightSlice": "Cats"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
   },
 ]

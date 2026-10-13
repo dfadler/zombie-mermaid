@@ -34,6 +34,13 @@
  *                             asciinema spawns inherits) rather than argv so
  *                             scripts/ascii-terminal-capture.sh's positional
  *                             interface stays unchanged.
+ *   ASCII_CAPTURE_EXPECT_THROW
+ *                             When non-empty, a render that throws prints just
+ *                             `<Name>: <message>` to stderr (no stack trace, so
+ *                             no local file paths) and exits 3 instead of
+ *                             crashing with Node's uncaught-error output. Lets
+ *                             scripts/ascii-terminal-capture.sh record a
+ *                             "before" capture of a renderer that throws.
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -96,6 +103,20 @@ if (rawOptions !== undefined && rawOptions !== '') {
   extraOptions = parsed
 }
 
+const expectThrow = (process.env.ASCII_CAPTURE_EXPECT_THROW ?? '') !== ''
+const EXIT_RENDER_THREW = 3
+const render = (options) => {
+  try {
+    return renderMermaidASCII(source, options)
+  } catch (error) {
+    if (!expectThrow) throw error
+    const { name, message } =
+      error instanceof Error ? error : { name: 'Error', message: String(error) }
+    console.error(`${name}: ${message}`)
+    process.exit(EXIT_RENDER_THREW)
+  }
+}
+
 if (sizeOnly) {
   // Measure with colors off so no SGR escape bytes inflate the width. The
   // width function comes from the *working tree* (like samples-data.ts
@@ -117,10 +138,7 @@ if (sizeOnly) {
   // Matches SGR color escape sequences (`\x1b[...m`); same pattern as the
   // ANSI_ESCAPE const in src/cli/render.ts and packages/ascii-renderer/src/coords.ts.
   const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
-  const lines = renderMermaidASCII(source, {
-    colorMode: 'none',
-    ...extraOptions,
-  }).split('\n')
+  const lines = render({ colorMode: 'none', ...extraOptions }).split('\n')
   const cols = Math.max(
     0,
     ...lines.map((line) =>
@@ -129,7 +147,5 @@ if (sizeOnly) {
   )
   process.stdout.write(`${cols} ${lines.length}\n`)
 } else {
-  process.stdout.write(
-    renderMermaidASCII(source, { colorMode: 'auto', ...extraOptions }),
-  )
+  process.stdout.write(render({ colorMode: 'auto', ...extraOptions }))
 }

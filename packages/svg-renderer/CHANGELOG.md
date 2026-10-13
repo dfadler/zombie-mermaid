@@ -1,5 +1,22 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.1.0
+
+### Minor Changes
+
+- [#1727](https://github.com/dfadler/zombie-mermaid/pull/1727) [`ce29689`](https://github.com/dfadler/zombie-mermaid/commit/ce2968907a79cbbb0f81f50eb70ce80b4f0e2da1) Thanks [@dfadler](https://github.com/dfadler)! - Add a `validate_mermaid` MCP tool and a `zombie-mermaid validate [file]` CLI command (parse only, line diagnostics, exit 1 when invalid). Failed `render` runs now print the offending source line too. New `validateMermaid()` export.
+
+### Patch Changes
+
+- [#1639](https://github.com/dfadler/zombie-mermaid/pull/1639) [`7104031`](https://github.com/dfadler/zombie-mermaid/commit/71040311cdca8de5f3c3ce41c6d9a54209ed8b8f) Thanks [@dfadler](https://github.com/dfadler)! - Ship `THIRD_PARTY_NOTICES.md` in the published tarballs.
+
+- [#1670](https://github.com/dfadler/zombie-mermaid/pull/1670) [`0d6711c`](https://github.com/dfadler/zombie-mermaid/commit/0d6711c1c51a57e25ede4c11e360c208ea4b9278) Thanks [@dfadler](https://github.com/dfadler)! - Fix SVG rendering of graph diagrams inside a browser Web Worker: hiding the worker-style `self` while constructing ELK no longer throws "Cannot set property self ... which has only a getter" ([#1524](https://github.com/dfadler/zombie-mermaid/issues/1524)).
+
+- [#1620](https://github.com/dfadler/zombie-mermaid/pull/1620) [`ab0b6c9`](https://github.com/dfadler/zombie-mermaid/commit/ab0b6c9278bbef10949cd353a1088e2b02596931) Thanks [@dfadler](https://github.com/dfadler)! - Fix package README inaccuracies and add missing `package.json` metadata ([#1545](https://github.com/dfadler/zombie-mermaid/issues/1545)).
+- Updated dependencies [[`3ec564e`](https://github.com/dfadler/zombie-mermaid/commit/3ec564ea51616fceb6facb37709313e15fb8b7d6), [`ab0b6c9`](https://github.com/dfadler/zombie-mermaid/commit/ab0b6c9278bbef10949cd353a1088e2b02596931)]:
+  - @zombie-mermaid/mermaid-parser@5.1.0
+  - @zombie-mermaid/core@5.1.0
+
 ## 5.0.1
 
 ### Patch Changes

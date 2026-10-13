@@ -26,6 +26,7 @@ import {
   FONT_WEIGHTS,
   resolveFontSizes,
 } from '../styles.ts'
+import { findBackEdges } from '../layout-engine/back-edges.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
 import {
   extractEdgePoints,
@@ -123,6 +124,17 @@ function resolveNamespaces(diagram: ClassDiagram): LayoutNamespace[] {
     }
   }
   return out
+}
+
+/**
+ * Indices into `diagram.relationships` of the edges dagre's depth-first walk
+ * reverses to break cycles; see `findBackEdges`.
+ */
+export function classBackEdges(diagram: ClassDiagram): Set<number> {
+  return findBackEdges(
+    diagram.relationships.map((r) => ({ source: r.from, target: r.to })),
+    diagram.classes.map((c) => c.id),
+  )
 }
 
 /** Size of each note box, keyed by its layout id. */
@@ -228,13 +240,19 @@ function buildClassElkGraph(
   // once on the root graph below (`elk.edgeLabels.placement: CENTER`).
   const labelStyle = { fontSize: fontSizes.edgeLabel }
 
+  // Break cycles the way mermaid (dagre) does, by a depth-first walk in
+  // declaration order, rather than ELK's own choice (#1794). Edges the walk
+  // reverses go to ELK reversed; `extractClassLayout` flips their points back.
+  const reversed = classBackEdges(diagram)
+
   const edges: ElkExtendedEdge[] = []
   for (const [i, rel] of diagram.relationships.entries()) {
+    const flip = reversed.has(i)
     edges.push(
       buildElkEdge({
         id: `e${i}`,
-        source: rel.from,
-        target: rel.to,
+        source: flip ? rel.to : rel.from,
+        target: flip ? rel.from : rel.to,
         label: rel.label,
         labelStyle,
       }),
@@ -392,6 +410,7 @@ function extractClassLayout(
   }
 
   const relationships: PositionedClassRelationship[] = []
+  const backEdges = classBackEdges(diagram)
   const elkEdges = result.edges ?? []
   // The first diagram.relationships.length edges are the relationships, in
   // order — buildClassElkGraph creates exactly one ELK edge per relationship
@@ -405,7 +424,9 @@ function extractClassLayout(
     }
 
     const off = edgeOffset(elkEdge)
-    const points = extractEdgePoints(elkEdge, off.x, off.y)
+    const laidOut = extractEdgePoints(elkEdge, off.x, off.y)
+    // Laid out target-to-source when reversed; run it source-to-target again.
+    const points = backEdges.has(i) ? laidOut.reverse() : laidOut
     const labelPosition = extractEdgeLabelPosition(elkEdge, off.x, off.y)
 
     relationships.push({

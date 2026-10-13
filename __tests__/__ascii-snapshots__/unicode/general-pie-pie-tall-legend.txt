@@ -1,0 +1,28 @@
+                Tickets by component
+
+[███▓▓▓▒▒▒░░░███▓▓▓▒▒▒░░░███▓▓▒▒░░██▓▓▒▒░░██▓▒░█▓▒░]
+
+  █ Component 01     7%
+  ▓ Component 02     7%
+  ▒ Component 03     6%
+  ░ Component 04     6%
+  █ Component 05     6%
+  ▓ Component 06     6%
+  ▒ Component 07     5%
+  ░ Component 08     5%
+  █ Component 09     5%
+  ▓ Component 10     5%
+  ▒ Component 11     5%
+  ░ Component 12     4%
+  █ Component 13     4%
+  ▓ Component 14     4%
+  ▒ Component 15     4%
+  ░ Component 16     3%
+  █ Component 17     3%
+  ▓ Component 18     3%
+  ▒ Component 19     3%
+  ░ Component 20     2%
+  █ Component 21     2%
+  ▓ Component 22     2%
+  ▒ Component 23     2%
+  ░ Component 24     2%

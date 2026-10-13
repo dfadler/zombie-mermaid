@@ -549,7 +549,26 @@ export interface RenderOptions {
    * since it starts empty each time.
    */
   layoutCache?: LayoutCache
+
+  /**
+   * Which layout engine places a flowchart's nodes (#1685). `'elk'` (the
+   * default) is the ELK layered layout and needs the optional peer dependency
+   * `elkjs`. `'simple'` is a small built-in layered layout that needs no
+   * `elkjs`, so `renderMermaidSVG` draws a flowchart in a size-sensitive
+   * browser bundle. It is opt-in, never a fallback: unset keeps existing
+   * output exactly.
+   *
+   * Flowcharts only (`graph` / `flowchart`). State, class, ER and
+   * architecture diagrams ignore it and still need `elkjs`. Under `'simple'`,
+   * `mergeEdges`, `layoutCache` and a subgraph's own `direction` have no
+   * effect, and the layout is a rougher match for mermaid.js than ELK's; see
+   * docs/decisions/simple-layout-1685.md for the measured gap.
+   */
+  layout?: LayoutEngine
 }
+
+/** Layout engines `RenderOptions.layout` accepts. */
+export type LayoutEngine = 'elk' | 'simple'
 
 // ============================================================================
 // Per-diagram-type option subsets — issue #534
@@ -636,6 +655,7 @@ export type FlowchartRenderOptions = CommonRenderOptions &
     | 'fontSizes'
     | 'interactivity'
     | 'layoutCache'
+    | 'layout'
   >
 
 /**

@@ -192,35 +192,61 @@ function parseAttribute(line: string): ErAttribute | null {
 }
 
 /**
- * Parse a relationship line.
- *
- * Cardinality symbols on each side of the line style:
- *   Left side (entity1):  ||  |o  }|  }o
- *   Line:                 --  (identifying) or  ..  (non-identifying)
- *   Right side (entity2): ||  o|  |{  o{
+ * Cardinality tokens mermaid.js's lexer accepts. Symbol and word forms are
+ * interchangeable and valid on either side of the line, so `o|--||`,
+ * `o{--o{` and `A one to many B` all parse. Matched case-insensitively,
+ * like mermaid.js; every token must end at a word boundary.
+ */
+const CARDINALITY_TOKENS: ReadonlyArray<readonly [string, Cardinality]> = [
+  ['one or zero', 'zero-one'],
+  ['zero or one', 'zero-one'],
+  ['one or more', 'many'],
+  ['one or many', 'many'],
+  ['many\\(1\\)', 'many'],
+  ['1\\+', 'many'],
+  ['zero or more', 'zero-many'],
+  ['zero or many', 'zero-many'],
+  ['many\\(0\\)', 'zero-many'],
+  ['0\\+', 'zero-many'],
+  ['many', 'zero-many'],
+  ['only one', 'one'],
+  ['one', 'one'],
+  ['1', 'one'],
+  ['\\|o', 'zero-one'],
+  ['o\\|', 'zero-one'],
+  ['\\}o', 'zero-many'],
+  ['o\\{', 'zero-many'],
+  ['\\}\\|', 'many'],
+  ['\\|\\{', 'many'],
+  ['\\|\\|', 'one'],
+]
+const CARD_RE = `(${CARDINALITY_TOKENS.map(([t]) => t).join('|')})(?![A-Za-z0-9_])`
+// `--` and `to` are identifying; `..`, `.-`, `-.` and `optionally to` are not.
+const REL_RE =
+  '(--|\\.\\.|\\.-|-\\.|optionally to(?![A-Za-z0-9_])|to(?![A-Za-z0-9_]))'
+const SPEC_RE = new RegExp(`^${CARD_RE}\\s*${REL_RE}\\s*${CARD_RE}$`, 'i')
+
+function cardinalityOf(token: string): Cardinality {
+  const t = token.toLowerCase()
+  return CARDINALITY_TOKENS.find(([src]) => new RegExp(`^${src}$`).test(t))![1]
+}
+
+/**
+ * Parse a relationship line: `ENTITY1 <card> <line> <card> ENTITY2 : label`.
+ * Any cardinality token (symbol or word form) is valid on either side; the
+ * line is `--`/`to` (identifying) or `..`/`.-`/`-.`/`optionally to`.
  *
  * Full pattern example: CUSTOMER ||--o{ ORDER : places
+ *
+ * A line that looks like a relationship attempt but does not parse throws;
+ * it is never silently dropped (#1747). Lines that do not look like one
+ * return null.
  */
 function parseRelationshipLine(
   line: string,
   lineNumber: number,
 ): ErRelationship | null {
-  // Loosely match a line shaped like a relationship attempt: two bare
-  // tokens flanking a `--`/`..`-based marker, with an optional `: label`.
-  // A line with no such marker at all doesn't look like a relationship
-  // attempt and falls through silently (returns null), same as before —
-  // that part of the parser's leniency is unchanged.
-  //
-  // Everything that *does* match this shape is validated below and either
-  // returns a fully-parsed relationship or throws an actionable error.
-  // Before this pass, an invalid cardinality token or a missing/empty
-  // label silently dropped the *entire* line (both entities included)
-  // with zero indication anything was wrong — see issue #541 (parser
-  // error-message quality audit — this parser had zero throw sites before
-  // this pass).
-  const attempt = line.match(
-    /^(\S+)\s+(\S*(?:--|\.\.)\S*)\s+(\S+)\s*(?::\s*(.*))?$/,
-  )
+  const attempt = line.match(/^(\S+)\s+(.+?)\s+(\S+)\s*(?::\s*(.*))?$/)
   if (!attempt) return null
 
   const entity1 = attempt[1]!
@@ -229,22 +255,21 @@ function parseRelationshipLine(
   const hasLabel = attempt[4] !== undefined
   const rawLabel = attempt[4]?.trim() ?? ''
 
-  // Cardinality symbols on each side of the line style:
-  //   Left side (entity1):  ||  |o  }|  }o
-  //   Line:                 --  (identifying) or  ..  (non-identifying)
-  //   Right side (entity2): ||  o|  |{  o{
-  // `shapeMatch` only confirms the token is built from crow's-foot
-  // characters around a line-style marker — `parseLeftCardinality`/
-  // `parseRightCardinality` still reject a shape match that isn't one of
-  // the four valid two-character combinations per side (e.g. a lone "|").
-  const shapeMatch = cardinalityStr.match(/^([|o}{]*)(--|\.\.?)([|o}{]*)$/)
-  const cardinality1 = shapeMatch ? parseLeftCardinality(shapeMatch[1]!) : null
-  const cardinality2 = shapeMatch ? parseRightCardinality(shapeMatch[3]!) : null
-
-  if (!cardinality1 || !cardinality2) {
+  const spec = cardinalityStr.match(SPEC_RE)
+  if (!spec) {
+    // Looks like an attempt: a line marker, a lone run of cardinality/line
+    // characters (`||-||`, `||==o{`), or a word-form `to`.
+    const looksLikeAttempt =
+      /--|\.\.|\.-|-\./.test(cardinalityStr) ||
+      (/^[|o}{=.-]{2,}$/.test(cardinalityStr) &&
+        /[|}{=]/.test(cardinalityStr)) ||
+      (/\bto\b/i.test(cardinalityStr) &&
+        new RegExp(`^${CARD_RE}|${CARD_RE}$`, 'i').test(cardinalityStr))
+    if (!looksLikeAttempt) return null
     throw new Error(
       `Line ${lineNumber}: Invalid ER relationship cardinality "${cardinalityStr}" in "${line}". ` +
-        'Left side must be one of ||, |o, }|, }o; right side must be one of ||, o|, |{, o{ (e.g. "||--o{").',
+        'Each side must be one of ||, |o, }|, }o, o|, |{, o{ (or a word form such as "one or more"), ' +
+        'joined by -- or .. (e.g. "||--o{").',
     )
   }
 
@@ -256,31 +281,14 @@ function parseRelationshipLine(
 
   // Strip surrounding quotes if present, then normalize br tags.
   const label = normalizeBrTags(rawLabel.replace(/^["']|["']$/g, ''))
-  const identifying = shapeMatch![2] === '--'
+  const rel = spec[2]!.toLowerCase()
 
-  return { entity1, entity2, cardinality1, cardinality2, label, identifying }
-}
-
-/**
- * Parse a left-side (entity1) cardinality notation string.
- * The crow's-foot character sits nearer the entity, so left- and
- * right-side notations are mirror images of each other and must be
- * matched exactly rather than order-normalized (sorting `}o` and `o{`
- * to the same key conflates "zero or more" with malformed input).
- */
-function parseLeftCardinality(str: string): Cardinality | null {
-  if (str === '||') return 'one'
-  if (str === '|o') return 'zero-one'
-  if (str === '}|') return 'many'
-  if (str === '}o') return 'zero-many'
-  return null
-}
-
-/** Parse a right-side (entity2) cardinality notation string. */
-function parseRightCardinality(str: string): Cardinality | null {
-  if (str === '||') return 'one'
-  if (str === 'o|') return 'zero-one'
-  if (str === '|{') return 'many'
-  if (str === 'o{') return 'zero-many'
-  return null
+  return {
+    entity1,
+    entity2,
+    cardinality1: cardinalityOf(spec[1]!),
+    cardinality2: cardinalityOf(spec[3]!),
+    label,
+    identifying: rel === '--' || rel === 'to',
+  }
 }

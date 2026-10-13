@@ -19,7 +19,10 @@ import type {
 } from '@zombie-mermaid/core'
 import type { FontSizes } from '../styles.ts'
 import { FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
-import { measureMultilineText } from '@zombie-mermaid/core'
+import {
+  measureMultilineText,
+  subgraphDirectionIsHonored,
+} from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 import { findBackEdgeIndexes } from './back-edges.ts'
 import type { LayoutHints } from './layout-hints.ts'
@@ -191,7 +194,7 @@ function edgeLabelStyle(opts: { fontSizes: FontSizes }): ElkEdgeLabelStyle {
 // Node sizing
 // ============================================================================
 
-function estimateNodeSize(
+export function estimateNodeSize(
   id: string,
   label: string,
   shape: string,
@@ -288,35 +291,6 @@ export function hasAnyDirectionOverride(subgraphs: MermaidSubgraph[]): boolean {
 function collectAllMemberNodeIds(sg: MermaidSubgraph, out: Set<string>): void {
   for (const id of sg.nodeIds) out.add(id)
   for (const child of sg.children) collectAllMemberNodeIds(child, out)
-}
-
-/**
- * Real mermaid.js ignores a subgraph's own `direction` override once any of
- * its member nodes (including nested descendants) has an edge to something
- * outside the subgraph — the subgraph then inherits its parent's direction
- * instead. Per the docs: "If any of a subgraph's nodes are linked to the
- * outside, subgraph direction will be ignored. Instead the subgraph will
- * inherit the direction of the parent graph."
- * https://mermaid.js.org/syntax/flowchart.html
- *
- * Verified against real mermaid.js output for nested subgraphs with
- * `direction LR` and an edge crossing the boundary (e.g. `B --> X` where X
- * is inside the subgraph): the crossing-linked nodes render at the same
- * x-coordinate with increasing y — stacked per the parent's direction,
- * despite the subgraph's own `direction LR`. Mirrors the equivalent ASCII
- * fix in src/ascii/converter.ts (subgraphDirectionIsHonored, issue #445).
- */
-function subgraphDirectionIsHonored(
-  sg: MermaidSubgraph,
-  graph: MermaidGraph,
-): boolean {
-  const memberIds = new Set<string>()
-  collectAllMemberNodeIds(sg, memberIds)
-  if (memberIds.size === 0) return true
-
-  const isInside = (id: string): boolean => memberIds.has(id) || id === sg.id
-
-  return !graph.edges.some((e) => isInside(e.source) !== isInside(e.target))
 }
 
 /**

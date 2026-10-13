@@ -20,6 +20,7 @@ import { createGrid } from './grid-occupancy.ts'
 import {
   isEdgeWithinOwnCluster,
   stripFormattingTags,
+  subgraphDirectionIsHonored,
 } from '@zombie-mermaid/core'
 
 /**
@@ -237,34 +238,6 @@ function indexSubgraph(
 function collectAllMemberNodeIds(mSg: MermaidSubgraph, out: Set<string>): void {
   for (const id of mSg.nodeIds) out.add(id)
   for (const child of mSg.children) collectAllMemberNodeIds(child, out)
-}
-
-/**
- * Real mermaid.js ignores a subgraph's own `direction` override once any of
- * its member nodes (including nested descendants) has an edge to something
- * outside the subgraph — the subgraph then inherits the parent graph's
- * direction instead. Per the docs: "If any of a subgraph's nodes are linked
- * to the outside, subgraph direction will be ignored. Instead the subgraph
- * will inherit the direction of the parent graph."
- * https://mermaid.js.org/syntax/flowchart.html
- *
- * Verified against real mermaid.js output for issue #445 (`graph TD` +
- * `direction LR` subgraph with `E --> A` / `D --> F` edges crossing the
- * boundary): all member nodes render at the same x-coordinate with
- * increasing y, i.e. stacked top-down per the outer `TD` direction, despite
- * the subgraph's own `direction LR`.
- */
-function subgraphDirectionIsHonored(
-  mSg: MermaidSubgraph,
-  parsed: MermaidGraph,
-): boolean {
-  const memberIds = new Set<string>()
-  collectAllMemberNodeIds(mSg, memberIds)
-  if (memberIds.size === 0) return true
-
-  const isInside = (id: string): boolean => memberIds.has(id) || id === mSg.id
-
-  return !parsed.edges.some((e) => isInside(e.source) !== isInside(e.target))
 }
 
 /**

@@ -315,6 +315,9 @@ function NavBrand({ homeHref }: { homeHref?: string }) {
  * canvas fidelity the way the rest of this file does.
  * ----------------------------------------------------------------- */
 
+/** id linking {@link MenuToggle}'s `aria-controls` to the panel (#1760). */
+const MOBILE_NAV_PANEL_ID = 'mobile-nav-panel'
+
 /**
  * The hamburger-to-close toggle. Three bars that morph into an X via CSS
  * (`.menu-toggle.is-open` in nav-css.ts's `navCss()`) — not traced to any
@@ -335,6 +338,7 @@ function MenuToggle() {
       className="menu-toggle"
       aria-label="Menu"
       aria-expanded="false"
+      aria-controls={MOBILE_NAV_PANEL_ID}
       style={{
         // display lives in nav-css.ts's navCss() instead of here (not
         // inline) so the tablet-and-below rule that shows this button can
@@ -520,7 +524,11 @@ function MobileNavPanel({
   label: string
 }) {
   return (
-    <nav className="mobile-nav-panel" aria-label={`${label} (mobile)`}>
+    <nav
+      className="mobile-nav-panel"
+      id={MOBILE_NAV_PANEL_ID}
+      aria-label={`${label} (mobile)`}
+    >
       <MobileDiagramMotif />
       <div className="mobile-watermark">
         <div className="mobile-watermark-mark">

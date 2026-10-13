@@ -1,5 +1,18 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.1.0
+
+### Patch Changes
+
+- [#1639](https://github.com/dfadler/zombie-mermaid/pull/1639) [`7104031`](https://github.com/dfadler/zombie-mermaid/commit/71040311cdca8de5f3c3ce41c6d9a54209ed8b8f) Thanks [@dfadler](https://github.com/dfadler)! - Ship `THIRD_PARTY_NOTICES.md` in the published tarballs.
+
+- [#1721](https://github.com/dfadler/zombie-mermaid/pull/1721) [`fd1367f`](https://github.com/dfadler/zombie-mermaid/commit/fd1367fda8a8d7759e3883af1fada45e282a0903) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts laid out `RL` no longer mirror node shapes: trapezoid slants, the flag notch and hexagon brackets keep the same look as in `LR`, matching mermaid.js.
+
+- [#1620](https://github.com/dfadler/zombie-mermaid/pull/1620) [`ab0b6c9`](https://github.com/dfadler/zombie-mermaid/commit/ab0b6c9278bbef10949cd353a1088e2b02596931) Thanks [@dfadler](https://github.com/dfadler)! - Fix package README inaccuracies and add missing `package.json` metadata ([#1545](https://github.com/dfadler/zombie-mermaid/issues/1545)).
+- Updated dependencies [[`3ec564e`](https://github.com/dfadler/zombie-mermaid/commit/3ec564ea51616fceb6facb37709313e15fb8b7d6), [`ab0b6c9`](https://github.com/dfadler/zombie-mermaid/commit/ab0b6c9278bbef10949cd353a1088e2b02596931)]:
+  - @zombie-mermaid/mermaid-parser@5.1.0
+  - @zombie-mermaid/core@5.1.0
+
 ## 5.0.1
 
 ### Patch Changes

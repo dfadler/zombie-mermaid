@@ -5,20 +5,38 @@
 // of them to be covered, so new work is held to a higher bar without forcing
 // a slow, all-at-once cleanup of existing gaps.
 //
+// Scope: src/, packages/*/src/ and scripts/**/*.ts (minus the exempt list in
+// scripts/coverage-exempt.json). DIFF_THRESHOLD is 95 (maintainer decision, #1829).
+//
 // Usage: pnpm run test:coverage && pnpm run coverage:diff
 // (relies on coverage/lcov.info from the coverage run above)
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
 
-const DIFF_THRESHOLD = 90
+const DIFF_THRESHOLD = 95
 const LCOV_PATH = 'coverage/lcov.info'
 // Broad git pathspec for the diff itself (see getChangedLines) — narrowed to
 // config/vitest.config.ts's actual coverage.include pattern by isTrackedTsFile()
 // below, so a package-root file outside <package>/src/ isn't counted here
 // when Vitest doesn't count it either.
-const DIFF_PATHS = ['src/', 'packages/']
+const DIFF_PATHS = ['src/', 'packages/', 'scripts/']
 const PACKAGE_SRC_PREFIX = /^packages\/[^/]+\/src\//
+// Thin CLI entry points that run on import and so can't be covered in-process.
+// Reviewed list with a required reason per entry — see scripts/coverage-exempt.json
+// and CONTRIBUTING.md's "Testing scripts" section. Also excluded from
+// config/vitest.config.ts's coverage, so lcov never contains them.
+export const COVERAGE_EXEMPT_PATH = 'scripts/coverage-exempt.json'
+export interface CoverageExemptEntry {
+  file: string
+  reason: string
+  maxLines: number
+  legacy?: boolean
+}
+export function loadCoverageExempt(): CoverageExemptEntry[] {
+  return JSON.parse(readFileSync(COVERAGE_EXEMPT_PATH, 'utf8'))
+}
+const EXEMPT_FILES = new Set(loadCoverageExempt().map((e) => e.file))
 // Matches both src/__tests__/ and packages/<name>/src/__tests__/ — test
 // files are excluded regardless of which src/ tree they're colocated under.
 const EXCLUDE_TESTS_RE = /(^|\/)__tests__\//
@@ -54,7 +72,10 @@ export function resolveBaseRef(): string | null {
 
 export function isTrackedTsFile(path: string): boolean {
   return (
-    (path.startsWith('src/') || PACKAGE_SRC_PREFIX.test(path)) &&
+    (path.startsWith('src/') ||
+      PACKAGE_SRC_PREFIX.test(path) ||
+      path.startsWith('scripts/')) &&
+    !EXEMPT_FILES.has(path) &&
     path.endsWith('.ts') &&
     !EXCLUDE_TESTS_RE.test(path)
   )

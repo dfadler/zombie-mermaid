@@ -247,6 +247,9 @@ describe('DashboardApp / hydration ids (#799)', () => {
     const html = renderDashboardHtml(data, '')
     expect(html).toContain(`<div id="${DASHBOARD_ROOT_ID}">`)
     expect(html).toContain(`id="${DASHBOARD_PROPS_ELEMENT_ID}"`)
+    // #1761: root sits inside the page's single <main id="main">.
+    expect(html.match(/<main id="main">/g)).toHaveLength(1)
+    expect(html).toContain(`<main id="main"><div id="${DASHBOARD_ROOT_ID}">`)
     expect(DASHBOARD_ROOT_ID).toBe('dashboard-root')
     expect(DASHBOARD_PROPS_ELEMENT_ID).toBe('dashboard-props')
   })

@@ -8,6 +8,7 @@
  */
 import { createElement } from 'react'
 import { render, screen } from '@testing-library/react'
+import { DIAGRAM_TYPES } from '@zombie-mermaid/core'
 import { describe, expect, it } from 'vitest'
 import { EditorFeatureStrip } from '../../demo/components/editor-feature-strip.tsx'
 
@@ -48,6 +49,24 @@ describe('EditorFeatureStrip', () => {
     expect(
       container.querySelectorAll('.editor-features-grid svg'),
     ).toHaveLength(FEATURE_TITLES.length)
+  })
+
+  it('claims a diagram-type count matching DIAGRAM_TYPES (plus State, detected as a flowchart)', () => {
+    const { container } = render(createElement(EditorFeatureStrip))
+    const words = ['one', 'two', 'three', 'four', 'five', 'six', 'seven']
+    words.push('eight', 'nine', 'ten', 'eleven', 'twelve')
+    const expected = words[DIAGRAM_TYPES.length]
+    expect(container.textContent).toContain(
+      `across all ${expected} diagram types`,
+    )
+  })
+
+  it('advertises SVG and ASCII output and the SVG download', () => {
+    const { container } = render(createElement(EditorFeatureStrip))
+    const card = Array.from(
+      container.querySelectorAll('.editor-features-grid > *'),
+    ).find((c) => c.querySelector('h3')?.textContent === 'SVG and ASCII output')
+    expect(card?.textContent).toMatch(/SVG.*ASCII.*download the SVG/)
   })
 
   it('describes the live-rendering feature', () => {

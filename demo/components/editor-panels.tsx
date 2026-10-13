@@ -79,13 +79,19 @@ export function EditorLeftPanel({ state, dispatch }: EditorLeftPanelProps) {
             className="toolbar-btn"
             id="copy-source-btn"
             title="Copy source"
+            aria-label="Copy source"
           >
             <StrokeIcon>
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </StrokeIcon>
           </button>
-          <button className="toolbar-btn" id="clear-btn" title="Clear editor">
+          <button
+            className="toolbar-btn"
+            id="clear-btn"
+            title="Clear editor"
+            aria-label="Clear editor"
+          >
             <StrokeIcon>
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -107,6 +113,7 @@ export function EditorLeftPanel({ state, dispatch }: EditorLeftPanelProps) {
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
+          aria-label="Mermaid source"
           placeholder="Enter mermaid diagram syntax here…"
           defaultValue=""
         />
@@ -161,7 +168,12 @@ export function EditorRightPanel() {
         </div>
         <div className="toolbar-spacer" />
         <div className="zoom-controls">
-          <button className="toolbar-btn" id="zoom-out-btn" title="Zoom out">
+          <button
+            className="toolbar-btn"
+            id="zoom-out-btn"
+            title="Zoom out"
+            aria-label="Zoom out"
+          >
             <StrokeIcon>
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -171,7 +183,12 @@ export function EditorRightPanel() {
           <span className="zoom-label" id="zoom-label">
             100%
           </span>
-          <button className="toolbar-btn" id="zoom-in-btn" title="Zoom in">
+          <button
+            className="toolbar-btn"
+            id="zoom-in-btn"
+            title="Zoom in"
+            aria-label="Zoom in"
+          >
             <StrokeIcon>
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -179,7 +196,12 @@ export function EditorRightPanel() {
               <line x1="8" y1="11" x2="14" y2="11" />
             </StrokeIcon>
           </button>
-          <button className="toolbar-btn" id="zoom-fit-btn" title="Fit to view">
+          <button
+            className="toolbar-btn"
+            id="zoom-fit-btn"
+            title="Fit to view"
+            aria-label="Fit to view"
+          >
             <StrokeIcon>
               <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
             </StrokeIcon>
@@ -188,6 +210,7 @@ export function EditorRightPanel() {
             className="toolbar-btn"
             id="pan-btn"
             title="Pan (hold to drag)"
+            aria-label="Pan"
           >
             <StrokeIcon>
               <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2" />

@@ -503,6 +503,19 @@ a {
 
 a:hover {
   color: var(--pink);
+}
+
+/* The one shared keyboard-focus ring for every page that composes
+ * designBaseCss() (#1762). Page stylesheets must not redeclare it. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }`
 }
 
