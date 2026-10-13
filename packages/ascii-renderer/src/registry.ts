@@ -30,7 +30,7 @@
 // 'class'/'flowchart' now move together on both sides.
 // ============================================================================
 
-import type { DiagramType, Direction } from '@zombie-mermaid/core'
+import type { DiagramType, Direction, RenderLimits } from '@zombie-mermaid/core'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { renderXYChartAscii } from './xychart.ts'
 import { renderErAscii } from './er-diagram.ts'
@@ -54,6 +54,7 @@ import { renderPieAscii } from './pie.ts'
 export interface AsciiRenderExtras {
   hyperlinks?: boolean
   direction?: Direction
+  limits?: RenderLimits
 }
 
 /**
