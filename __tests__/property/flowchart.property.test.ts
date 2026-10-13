@@ -51,7 +51,9 @@ export const flowchartArb: fc.Arbitrary<string> = fc
       )
       .map((edges) => {
         const lines = [`flowchart ${dir}`]
-        nodes.forEach(([[o, c], text], i) => lines.push(`  n${i}${o}"${text}"${c}`))
+        nodes.forEach(([[o, c], text], i) =>
+          lines.push(`  n${i}${o}"${text}"${c}`),
+        )
         for (const e of edges) {
           const op = e.text ? `${e.op}|${e.text}|` : e.op
           lines.push(`  n${e.from} ${op} n${e.to}`)
