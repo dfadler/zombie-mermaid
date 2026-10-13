@@ -1,5 +1,10 @@
 [
   {
+    "file": "scripts/check-changesets.ts",
+    "reason": "thin CLI: runs on import and calls process.exit; all logic is in scripts/lib/changeset-lint.ts (tested)",
+    "maxLines": 20
+  },
+  {
     "file": "scripts/bench-ascii-renderer.ts",
     "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
     "maxLines": 182,

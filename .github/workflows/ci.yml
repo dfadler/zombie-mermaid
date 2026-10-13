@@ -731,7 +731,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read # only checks out code and runs `pnpm changeset status`; no writes back to the repo
+      contents: read # only checks out code and runs `pnpm changeset status` and `check:changesets`; no writes back to the repo
     # Same fork-of-this-fork guard as the `test` job above — see its comment
     # for the full reasoning on what github.repository resolves to and what
     # this does/doesn't protect against. (The additional event_name check
@@ -775,8 +775,8 @@ jobs:
             echo "demo_only=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Node/pnpm setup and install run only when `changeset status` will (it
-      # is the only step that needs them), so demo/data-only PRs skip ~24 s of
+      # Node/pnpm setup and install run only when the changeset steps will (they
+      # are the only ones that need them), so demo/data-only PRs skip ~24 s of
       # setup (#1600). The job itself still always runs and reports.
       - name: Setup pnpm
         if: steps.diff_scope.outputs.demo_only != 'true'
@@ -796,6 +796,10 @@ jobs:
       - name: Check for changeset
         if: steps.diff_scope.outputs.demo_only != 'true'
         run: pnpm changeset status --since origin/main
+
+      - name: Lint changeset summaries
+        if: steps.diff_scope.outputs.demo_only != 'true'
+        run: pnpm run check:changesets
 
   pr-hygiene:
     name: PR hygiene
