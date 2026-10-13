@@ -4,6 +4,7 @@
 
 import type { ElkNode } from './elk-types.ts'
 import type { InitConfig, CurveStyle } from './init-directive.ts'
+import type { RenderLimits } from './limits.ts'
 
 // `LayoutCache`'s shape is declared here rather than beside
 // `createLayoutCache()`/`elkLayoutSync()` in
@@ -276,6 +277,8 @@ export interface PositionedGroup {
 // ============================================================================
 
 export interface RenderOptions {
+  /** Size limits checked before layout; exceeding one throws `LimitExceededError`. See `RenderLimits`. */
+  limits?: RenderLimits
   /** Background color → CSS variable --bg. Default: '#FFFFFF' */
   bg?: string
   /** Foreground / primary text color → CSS variable --fg. Default: '#27272A' */

@@ -8,6 +8,7 @@
 
 import { z } from 'zod'
 import { renderErrorResult } from './parse-diagnostics.ts'
+import { MCP_LIMITS } from './limits.ts'
 import {
   closeSync,
   constants,
@@ -237,6 +238,7 @@ export function renderSvgHandler(input: RenderSvgToolArgs): CallToolResult {
       ...themeColors,
       transparent: input.transparent,
       font: input.font,
+      limits: MCP_LIMITS,
       // Only set when provided so an absent override never clobbers the theme.
       ...(input.bg !== undefined ? { bg: input.bg } : {}),
       ...(input.fg !== undefined ? { fg: input.fg } : {}),

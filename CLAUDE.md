@@ -92,11 +92,15 @@ requirement exists to close.
 
 ## Research and measurement: findings go in the issue
 
-For investigation or measurement work on an issue, post the findings summary as an
-issue comment with a permalink to any artifact (a `docs/research/*.md` doc or a
-script) in the repo; don't leave the findings only in a PR's research doc. Write a
-research doc only when the detail is too long or reusable for a comment. See
-[#1479](https://github.com/dfadler/zombie-mermaid/issues/1479).
+For investigation, measurement or spike work on an issue, post the findings as an issue
+comment (long ones in a collapsed `<details>`), with a permalink to any script or other
+artifact in the repo. Do not add a `docs/research/*.md` doc: write one only when something
+else (a guide, a code comment, a script) links to it and it is worth keeping current.
+`pnpm run check:docs` fails on a doc under `docs/research/` that nothing outside it
+references. Former research docs and where their findings now live are indexed in
+[`docs/research/README.md`](docs/research/README.md). See
+[#1479](https://github.com/dfadler/zombie-mermaid/issues/1479) and
+[#1642](https://github.com/dfadler/zombie-mermaid/issues/1642).
 
 ## Parity with mermaid.js: check what users see, not only the pinned oracle
 

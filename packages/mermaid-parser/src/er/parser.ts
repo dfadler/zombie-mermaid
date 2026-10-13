@@ -1,3 +1,4 @@
+import { MermaidParseError } from '@zombie-mermaid/core'
 import type {
   ErDiagram,
   ErEntity,
@@ -266,7 +267,7 @@ function parseRelationshipLine(
       (/\bto\b/i.test(cardinalityStr) &&
         new RegExp(`^${CARD_RE}|${CARD_RE}$`, 'i').test(cardinalityStr))
     if (!looksLikeAttempt) return null
-    throw new Error(
+    throw new MermaidParseError(
       `Line ${lineNumber}: Invalid ER relationship cardinality "${cardinalityStr}" in "${line}". ` +
         'Each side must be one of ||, |o, }|, }o, o|, |{, o{ (or a word form such as "one or more"), ' +
         'joined by -- or .. (e.g. "||--o{").',
@@ -274,7 +275,7 @@ function parseRelationshipLine(
   }
 
   if (!hasLabel || rawLabel.length === 0) {
-    throw new Error(
+    throw new MermaidParseError(
       `Line ${lineNumber}: ER relationship "${entity1} ${cardinalityStr} ${entity2}" is missing a ": label" — expected e.g. "${entity1} ${cardinalityStr} ${entity2} : label".`,
     )
   }

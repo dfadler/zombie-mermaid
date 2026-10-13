@@ -1,3 +1,4 @@
+import { MermaidParseError } from '@zombie-mermaid/core'
 import type { XYChart, XYAxis, XYChartSeries } from './types.ts'
 import { decodeMermaidEntities, type Statement } from '@zombie-mermaid/core'
 
@@ -208,7 +209,7 @@ function parseNumericArray(
     const trimmed = raw.trim()
     const value = parseFloat(trimmed)
     if (trimmed.length === 0 || Number.isNaN(value)) {
-      throw new Error(
+      throw new MermaidParseError(
         `Line ${lineNumber}: Invalid numeric value ${JSON.stringify(trimmed)} at position ${
           index + 1
         } in "${line}". Every value in a ${seriesType} [...] list must be a number.`,
@@ -240,7 +241,7 @@ function malformedDirectiveError(
   lineNumber: number,
 ): Error {
   const help = XYCHART_DIRECTIVE_HELP[keyword] ?? keyword
-  return new Error(
+  return new MermaidParseError(
     `Line ${lineNumber}: Malformed xychart-beta "${keyword}" directive: "${line}". Expected: ${help}.`,
   )
 }
