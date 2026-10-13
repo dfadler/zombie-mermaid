@@ -17,8 +17,8 @@
 //   const ascii = renderMermaidASCII('graph LR\n  A --> B')
 // ============================================================================
 
-import { detectDiagramType } from '@zombie-mermaid/core'
-import type { Direction, DiagramType } from '@zombie-mermaid/core'
+import { checkLimit, detectDiagramType } from '@zombie-mermaid/core'
+import type { Direction, DiagramType, RenderLimits } from '@zombie-mermaid/core'
 import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
 import {
@@ -33,6 +33,9 @@ import {
   DEFAULT_BOX_BORDER_PADDING,
 } from './types.ts'
 
+export { LimitExceededError } from '@zombie-mermaid/core'
+export type { RenderLimits }
+
 // Re-export types for external use
 export type { AsciiTheme, ColorMode }
 export { DEFAULT_ASCII_THEME, detectColorMode, diagramColorsToAsciiTheme }
@@ -44,6 +47,8 @@ export interface AsciiRenderOptions {
    * their width is font-dependent.
    */
   profile?: 'markdown'
+  /** Size limits checked before layout; exceeding one throws `LimitExceededError`. See `RenderLimits`. */
+  limits?: RenderLimits
   /** true = ASCII chars (+,-,|,>), false = Unicode box-drawing (┌,─,│,►). Default: false */
   useAscii?: boolean
   /** Horizontal spacing between nodes. Default: 5 */
@@ -153,6 +158,7 @@ export function renderMermaidASCII(
   // Merge user theme with defaults
   const theme: AsciiTheme = { ...DEFAULT_ASCII_THEME, ...options.theme }
 
+  checkLimit('maxInputLength', text.length, options.limits)
   const diagramType: DiagramType = detectDiagramType(text)
 
   // Registry dispatch (see src/ascii/registry.ts — issue #533 / #745):
@@ -165,6 +171,7 @@ export function renderMermaidASCII(
   const result = asciiRegistry[diagramType](text, config, colorMode, theme, {
     hyperlinks: options.hyperlinks ?? false,
     direction: options.direction,
+    limits: options.limits,
   })
 
   return options.showCoords ? addCoordsOverlay(result) : result

@@ -1,0 +1,122 @@
+# Calibrates the form-judge (see form-judge-weekly.yml): plants known defects
+# in 13 known-faithful samples (blinded ids), runs the same judge step over
+# them, and fails when the false-positive rate is > 10% or recall < 80%
+# (scripts/form-judge-calibrate.ts score). Not weekly: runs only when the
+# judge prompt, the calibration lib or the judge workflow itself changes, or
+# on manual dispatch (#1827, umbrella #1502).
+#
+# Cost: one paid claude-sonnet-5 session over ~74 cases per run, so the
+# triggers are path-filtered and same-repo only. Not a required check (a
+# path filter would leave a required check Pending); a failure is advisory.
+#
+# Requires the CLAUDE_CODE_OAUTH_TOKEN repo secret, same as
+# form-judge-weekly.yml. Pull requests from forks never receive it, so they
+# are skipped.
+name: Form-judge calibrate
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'scripts/form-judge-category-prompt.md'
+      - 'scripts/lib/form-judge-calibration.ts'
+      - '.github/workflows/form-judge-weekly.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: form-judge-calibrate-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  calibrate:
+    if: >-
+      github.repository == 'dfadler/zombie-mermaid' &&
+      (github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      # The 13 known-faithful base samples from the #1609 calibration
+      # (5 Flowchart, 3 Sequence, 5 State/Class/ER).
+      SAMPLE_IDS: >-
+        form-1-flowchart-simple-flow,form-16-flowchart-subgraphs,form-17-flowchart-nested-subgraphs,form-24-flowchart-git-branching-workflow,form-8-flowchart-text-embedded-labels,form-33-sequence-sequence-basic-messages,form-40-sequence-sequence-alt-else-block,form-45-sequence-sequence-oauth-2-0-flow,form-29-state-basic-state-diagram,form-31-state-state-connection-lifecycle,form-54-class-class-inheritance,form-62-class-class-design-pattern-observer,form-76-er-er-e-commerce-schema
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Render facts
+        run: pnpm run form-facts
+
+      - name: Build blinded calibration cases
+        run: |
+          set -euo pipefail
+          pnpm run form-judge-calibrate build \
+            --index="$GITHUB_WORKSPACE/form-facts-index.json" \
+            --sample-ids="$SAMPLE_IDS" \
+            --data-out="$GITHUB_WORKSPACE/calib-data.json" \
+            --ids-out="$GITHUB_WORKSPACE/calib-ids.json"
+          pnpm run form-judge-calibrate prompt \
+            --template=scripts/form-judge-category-prompt.md \
+            --data="$GITHUB_WORKSPACE/calib-data.json" \
+            --results="$GITHUB_WORKSPACE/calib-results.jsonl" \
+            --out="$GITHUB_WORKSPACE/calib-prompt.md"
+
+      - name: Judge calibration cases
+        # Same pinned action, tool restrictions and model as the judge step
+        # in form-judge-weekly.yml; keep the two in sync.
+        timeout-minutes: 30
+        uses: anthropics/claude-code-base-action@646b4a772085257c35182cd167bdd6b3b1017675 # main HEAD as of 2026-09-06, no newer tag exists
+        with:
+          prompt_file: ${{ github.workspace }}/calib-prompt.md
+          claude_args: |
+            --allowedTools "Read,Write"
+            --disallowedTools "Task,Bash,Glob,Grep,LS,ExitPlanMode,Edit,MultiEdit,NotebookEdit,WebFetch,TodoWrite,WebSearch,BashOutput,KillBash"
+            --max-turns 150
+            --model claude-sonnet-5
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Restore Node.js for pnpm (after the judge step)
+        # The judge action leaves Node 18 on PATH; see form-judge-weekly.yml.
+        if: always()
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Score (fails when FPR > 10% or recall < 80%)
+        run: |
+          set -euo pipefail
+          pnpm run form-judge-calibrate score \
+            --results="$GITHUB_WORKSPACE/calib-results.jsonl" \
+            --ids="$GITHUB_WORKSPACE/calib-ids.json"
+
+      - name: Upload calibration results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: form-judge-calibration
+          path: |
+            calib-results.jsonl
+            calib-ids.json
+          if-no-files-found: warn
+          retention-days: 14
