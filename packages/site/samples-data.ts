@@ -2190,5 +2190,59 @@ pie title Pets adopted by volunteers
   S -->|5| T
   S -->|other| U`,
   },
+  {
+    title: 'Pie: Legend Left',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"legendPosition": "left"}}}%%` puts the legend left of the pie and widens the frame to fit. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+    source: `%%{init: {"pie": {"legendPosition": "left"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: Legend Top',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"legendPosition": "top"}}}%%` stacks the legend above the pie and makes the frame taller. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+    source: `%%{init: {"pie": {"legendPosition": "top"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: Legend Bottom',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"legendPosition": "bottom"}}}%%` stacks the legend below the pie and makes the frame taller. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+    source: `%%{init: {"pie": {"legendPosition": "bottom"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: Legend Center',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"legendPosition": "center"}}}%%` draws the legend over the middle of the pie, centred, without resizing the frame. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+    source: `%%{init: {"pie": {"legendPosition": "center"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: Highlight Slice',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"highlightSlice": "Cats"}}}%%` draws the named slice 5% larger and fully opaque, as Mermaid does; `hover` only applies under a pointer, so a static image ignores it. The ASCII bar chart has no emphasis, so it is unchanged.',
+    source: `%%{init: {"pie": {"highlightSlice": "Cats"}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
 ]
-

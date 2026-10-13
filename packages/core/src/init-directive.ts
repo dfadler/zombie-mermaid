@@ -31,6 +31,14 @@ const CURVE_STYLES = new Set<CurveStyle>([
   'stepAfter',
 ])
 
+const PIE_LEGEND_POSITIONS = new Set([
+  'left',
+  'right',
+  'top',
+  'bottom',
+  'center',
+])
+
 /** Configuration a diagram can set for itself via `%%{init: ...}%%`. */
 export interface InitConfig {
   theme?: string
@@ -40,6 +48,10 @@ export interface InitConfig {
   pieTextPosition?: number
   /** `pie.donutHole`: inner radius as a fraction of the radius. */
   pieDonutHole?: number
+  /** `pie.legendPosition`; a value Mermaid does not know is stored as `right`. */
+  pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center'
+  /** `pie.highlightSlice`: label of the slice to emphasise. */
+  pieHighlightSlice?: string
   /** Recognized but not acted on — see `IGNORED_KEYS`. */
   ignored: string[]
 }
@@ -206,8 +218,16 @@ export function parseInitDirective(line: string): InitConfig | undefined {
 
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
-        if (typeof pv !== 'number' || !Number.isFinite(pv)) continue
         const pl = pk.toLowerCase()
+        if (typeof pv === 'string') {
+          if (pl === 'legendposition') {
+            config.pieLegendPosition = PIE_LEGEND_POSITIONS.has(pv)
+              ? (pv as InitConfig['pieLegendPosition'])
+              : 'right'
+          } else if (pl === 'highlightslice') config.pieHighlightSlice = pv
+          continue
+        }
+        if (typeof pv !== 'number' || !Number.isFinite(pv)) continue
         if (pl === 'textposition') config.pieTextPosition = pv
         else if (pl === 'donuthole') config.pieDonutHole = pv
       }
@@ -239,6 +259,12 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.pieDonutHole !== undefined) {
       merged.pieDonutHole = config.pieDonutHole
+    }
+    if (config.pieLegendPosition !== undefined) {
+      merged.pieLegendPosition = config.pieLegendPosition
+    }
+    if (config.pieHighlightSlice !== undefined) {
+      merged.pieHighlightSlice = config.pieHighlightSlice
     }
     merged.ignored.push(...config.ignored)
   }
