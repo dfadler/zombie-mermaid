@@ -1,3 +1,4 @@
+import { MermaidParseError } from '@zombie-mermaid/core'
 import type {
   MermaidGraph,
   MermaidNode,
@@ -228,7 +229,7 @@ function parseFlowchart(lines: Statement[]): MermaidGraph {
     )
     if (partialFlowchartMatch) {
       const rest = partialFlowchartMatch[1]!.trim()
-      throw new Error(
+      throw new MermaidParseError(
         rest.length > 0
           ? `Line ${headerStmt.line}: Invalid direction "${rest}" in header "${header}". Expected one of: TD, TB, LR, BT, RL.`
           : `Line ${headerStmt.line}: Missing direction in header "${header}". Expected e.g. "graph TD" or "flowchart LR" — one of: TD, TB, LR, BT, RL.`,
@@ -243,7 +244,7 @@ function parseFlowchart(lines: Statement[]): MermaidGraph {
       suggestion && suggestion.toLowerCase() !== header.trim().toLowerCase()
         ? ` Did you mean "${suggestion}"?`
         : ''
-    throw new Error(
+    throw new MermaidParseError(
       `Line ${headerStmt.line}: Invalid mermaid header: "${header}".${hint} Supported headers: ${SUPPORTED_HEADERS}.`,
     )
   }

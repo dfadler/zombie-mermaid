@@ -15,6 +15,7 @@
 // ============================================================================
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { MermaidParseError } from '@zombie-mermaid/core'
 
 export interface ParseDiagnostic {
   /** 1-based physical line in the submitted diagram source. */
@@ -34,15 +35,16 @@ const LINE_PREFIX = /^Line (\d+): ([\s\S]*)$/
 export function extractParseDiagnostic(
   message: string,
   diagram: string,
+  typedLine?: number,
 ): ParseDiagnostic | undefined {
+  // Prefer the typed `MermaidParseError.line`; the "Line N: " regex is the
+  // fallback for throw sites that have not migrated yet.
   const match = LINE_PREFIX.exec(message)
-  if (match === null) return undefined
-  const line = Number(match[1])
+  const line = typedLine ?? (match === null ? NaN : Number(match[1]))
+  if (!Number.isSafeInteger(line)) return undefined
   const sourceLine = diagram.split(/\r?\n/)[line - 1]
-  if (!Number.isSafeInteger(line) || line < 1 || sourceLine === undefined) {
-    return undefined
-  }
-  return { line, sourceLine, message: match[2] ?? '' }
+  if (line < 1 || sourceLine === undefined) return undefined
+  return { line, sourceLine, message: match?.[2] ?? message }
 }
 
 /**
@@ -60,7 +62,11 @@ export function renderErrorResult(
   const content: CallToolResult['content'] = [
     { type: 'text', text: `${prefix}: ${message}` },
   ]
-  const diagnostic = extractParseDiagnostic(message, diagram)
+  const diagnostic = extractParseDiagnostic(
+    message,
+    diagram,
+    err instanceof MermaidParseError ? err.line : undefined,
+  )
   if (diagnostic !== undefined) {
     content.push({
       type: 'text',
