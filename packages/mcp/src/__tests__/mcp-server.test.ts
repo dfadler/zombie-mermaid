@@ -197,4 +197,31 @@ describe('createMcpServer', () => {
     expect(report.fixesApplied).toHaveLength(1)
     expect(report.remainingIssues).toEqual([])
   })
+
+  // MCP 2025-06-18 tools spec: a tool with an outputSchema returns
+  // structuredContent conforming to it, plus the JSON as a text block.
+  // https://modelcontextprotocol.io/specification/2025-06-18/server/tools#output-schema
+  it.each([
+    ['list_themes', {}],
+    ['list_diagram_types', {}],
+    ['validate_mermaid', { diagram: 'flowchart TD\nA-->B' }],
+    ['validate_mermaid', { diagram: 'flowchart TD\nA-->' }],
+    [
+      'check_mermaid_sequence_activations',
+      { diagram: 'sequenceDiagram\nactivate A' },
+    ],
+    [
+      'fix_mermaid_sequence_activations',
+      { diagram: 'sequenceDiagram\nactivate A' },
+    ],
+  ])(
+    '%s returns structuredContent matching its text block',
+    async (name, args) => {
+      const { tools } = await client.listTools()
+      expect(tools.find((t) => t.name === name)?.outputSchema).toBeDefined()
+      const res = await client.callTool({ name, arguments: args })
+      const first = (res.content as { type: string; text: string }[])[0]
+      expect(res.structuredContent).toEqual(JSON.parse(first!.text))
+    },
+  )
 })
