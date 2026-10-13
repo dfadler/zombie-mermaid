@@ -90,6 +90,9 @@ export function HeroCodePanel() {
     <div
       ref={scrollRef}
       className="hero-code-panel"
+      tabIndex={0}
+      role="region"
+      aria-label="Example code (scrollable)"
       style={{
         flex: '1 1 auto',
         minWidth: 0,

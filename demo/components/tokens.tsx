@@ -505,6 +505,12 @@ a:hover {
   color: var(--pink);
 }
 
+/* Links inside running text: colour alone is not a cue (WCAG 1.4.1, #1810). */
+a.inline-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* The one shared keyboard-focus ring for every page that composes
  * designBaseCss() (#1762). Page stylesheets must not redeclare it. */
 a:focus-visible,

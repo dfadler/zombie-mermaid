@@ -253,7 +253,7 @@ function renderMermaidDiagram(
       `${sourceFile}: a \`\`\`${MERMAID_RENDER_LANG} fence failed to render: ${message}`,
     )
   }
-  return `<div class="mermaid-render-block">${highlightedHtml}<div class="mermaid-diagram">${svg}</div></div>\n`
+  return `<div class="mermaid-render-block">${highlightedHtml}<div class="mermaid-diagram">${svg.replace('<svg', '<svg aria-label="Rendered Mermaid diagram"')}</div></div>\n`
 }
 
 async function renderPostBody(

@@ -223,7 +223,13 @@ export function EditorRightPanel() {
         </div>
       </div>
 
-      <div className="preview-body" id="preview-body">
+      <div
+        className="preview-body"
+        id="preview-body"
+        tabIndex={0}
+        role="region"
+        aria-label="Diagram preview"
+      >
         <div className="render-spinner" id="render-spinner" />
         <div className="preview-inner" id="preview-inner">
           <div className="preview-placeholder" id="preview-placeholder">

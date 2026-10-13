@@ -216,7 +216,9 @@ export function McpPanel() {
           over stdio. Embed it, or run{' '}
           <span className="mono">zombie-mermaid mcp</span> directly. Newer than
           the rest of the library, so feedback is welcome.{' '}
-          <a href={`${FORK_URL}#mcp-server`}>Read the MCP docs →</a>
+          <a className="inline-link" href={`${FORK_URL}#mcp-server`}>
+            Read the MCP docs →
+          </a>
         </p>
       </div>
     </div>

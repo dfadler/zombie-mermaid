@@ -174,6 +174,6 @@ describe('FixPanel', () => {
   it('injects rendered SVG verbatim inside a <div class="fix-svg">', () => {
     const html = renderPanel({ kind: 'svg', html: '<svg data-x="1"></svg>' })
     expect(html).toContain('class="fix-svg"')
-    expect(html).toContain('<svg data-x="1"></svg>')
+    expect(html).toContain('<svg aria-label="Rendered diagram" data-x="1">')
   })
 })
