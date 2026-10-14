@@ -49,6 +49,7 @@ import { ARROW_HEAD, FONT_WEIGHTS } from '../styles.ts'
 import { DEFAULTS } from './constants.ts'
 import { resolveEdgeStyle } from './from-elk.ts'
 import { labelSpot, routeInnerEdge } from './inner-edges.ts'
+import { subgraphFeedbackEdges } from './back-edges.ts'
 import type { LayoutHints } from './layout-hints.ts'
 import {
   REGION_PADDING,
@@ -578,7 +579,8 @@ export function layoutCompoundFlat(
 ): PositionedGraph | undefined {
   const realOrder = [...graph.nodes.keys()]
   const flat: MermaidGraph = { ...graph, subgraphs: [] }
-  const first = layout(flat)
+  const feedbackEdges = subgraphFeedbackEdges(graph)
+  const first = layout(flat, { feedbackEdges })
   const layer = layerIndexes(first.nodes, graph.direction)
   const vertical = isVertical(graph.direction)
   const firstNode = new Map(first.nodes.map((n) => [n.id, n]))
@@ -675,6 +677,7 @@ export function layoutCompoundFlat(
         looseEdges,
         detachedEdges,
         walkOrder: realOrder,
+        feedbackEdges,
         forceNodeOrder: true,
       })
       const real = new Map(

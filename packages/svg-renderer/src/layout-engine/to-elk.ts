@@ -24,7 +24,7 @@ import {
   subgraphDirectionIsHonored,
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
-import { findBackEdgeIndexes } from './back-edges.ts'
+import { findBackEdgeIndexes, subgraphFeedbackEdges } from './back-edges.ts'
 import type { LayoutHints } from './layout-hints.ts'
 import {
   ELK_DIRECTION_FALLBACK,
@@ -127,7 +127,11 @@ export function edgesReversedForLayout(
     set =
       isStateGraph(graph) || hasAnyDirectionOverride(graph.subgraphs)
         ? new Set()
-        : findBackEdgeIndexes(graph, hints?.walkOrder)
+        : findBackEdgeIndexes(
+            graph,
+            hints?.walkOrder,
+            hints?.feedbackEdges ?? subgraphFeedbackEdges(graph),
+          )
     reversedCache.set(graph, set)
   }
   return set
@@ -423,7 +427,7 @@ export function mermaidToElk(
     // it beside them. Subgraph layouts (also the hinted compound pass) keep it:
     // their border clearance relies on it.
     'elk.layered.compaction.postCompaction.strategy':
-      graph.subgraphs.length === 0 && !hints
+      graph.subgraphs.length === 0 && !hints?.forceNodeOrder
         ? 'NONE'
         : 'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
