@@ -192,6 +192,240 @@ const NODES: Record<string, number> = {
   '#2030 RL reciprocal + duplicate edges': 2,
 }
 
+/**
+ * Self-loops sharing a face with in/out/duplicate edges, in every direction
+ * (exercises `separateSelfLoops` and `separateLaneEnds` placement). Only the
+ * invariants that hold today: equal-width rows, no orphan arms, intact node
+ * borders.
+ */
+const FACE_CASES: [string, string, number][] = [
+  [
+    'LR loop on a lower node beside an unrelated edge',
+    `flowchart LR
+  a["a"]
+  b["b"]
+  c["c"]
+  d["d"]
+  a --> b
+  c --> d
+  b --> b
+  d --> d`,
+    4,
+  ],
+  [
+    'LR many duplicates around a middle node',
+    `flowchart LR
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> b
+  a --> b
+  a --> b
+  a --> b
+  b --> c
+  b --> c
+  a --> c
+  a --> c
+  c --> a
+  c --> a`,
+    3,
+  ],
+  [
+    'TD many duplicates around a middle node',
+    `flowchart TD
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> b
+  a --> b
+  a --> b
+  a --> b
+  b --> c
+  b --> c
+  a --> c
+  a --> c
+  c --> a
+  c --> a`,
+    3,
+  ],
+  [
+    'self-loop with in and out neighbours (TD)',
+    `flowchart TD
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a`,
+    3,
+  ],
+  [
+    'self-loop with duplicate neighbours (TD)',
+    `flowchart TD
+  a["a"]
+  b["b"]
+  a --> a
+  a --> b
+  a --> b
+  b --> a
+  b --> a
+  a --> a`,
+    2,
+  ],
+  [
+    'two self-loops and a fan (TD)',
+    `flowchart TD
+  a["a"]
+  b["b"]
+  c["c"]
+  d["d"]
+  a --> a
+  b --> b
+  a --> b
+  c --> a
+  d --> a
+  a --> c
+  a --> d
+  d --> b
+  c --> b`,
+    4,
+  ],
+  [
+    'self-loop with in and out neighbours (LR)',
+    `flowchart LR
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a`,
+    3,
+  ],
+  [
+    'self-loop with duplicate neighbours (LR)',
+    `flowchart LR
+  a["a"]
+  b["b"]
+  a --> a
+  a --> b
+  a --> b
+  b --> a
+  b --> a
+  a --> a`,
+    2,
+  ],
+  [
+    'two self-loops and a fan (LR)',
+    `flowchart LR
+  a["a"]
+  b["b"]
+  c["c"]
+  d["d"]
+  a --> a
+  b --> b
+  a --> b
+  c --> a
+  d --> a
+  a --> c
+  a --> d
+  d --> b
+  c --> b`,
+    4,
+  ],
+  [
+    'self-loop with in and out neighbours (BT)',
+    `flowchart BT
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a`,
+    3,
+  ],
+  [
+    'self-loop with duplicate neighbours (BT)',
+    `flowchart BT
+  a["a"]
+  b["b"]
+  a --> a
+  a --> b
+  a --> b
+  b --> a
+  b --> a
+  a --> a`,
+    2,
+  ],
+  [
+    'two self-loops and a fan (BT)',
+    `flowchart BT
+  a["a"]
+  b["b"]
+  c["c"]
+  d["d"]
+  a --> a
+  b --> b
+  a --> b
+  c --> a
+  d --> a
+  a --> c
+  a --> d
+  d --> b
+  c --> b`,
+    4,
+  ],
+  [
+    'self-loop with in and out neighbours (RL)',
+    `flowchart RL
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a`,
+    3,
+  ],
+  [
+    'self-loop with duplicate neighbours (RL)',
+    `flowchart RL
+  a["a"]
+  b["b"]
+  a --> a
+  a --> b
+  a --> b
+  b --> a
+  b --> a
+  a --> a`,
+    2,
+  ],
+  [
+    'two self-loops and a fan (RL)',
+    `flowchart RL
+  a["a"]
+  b["b"]
+  c["c"]
+  d["d"]
+  a --> a
+  b --> b
+  a --> b
+  c --> a
+  d --> a
+  a --> c
+  a --> d
+  d --> b
+  c --> b`,
+    4,
+  ],
+]
+
 describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
   for (const [name, source] of Object.entries(CASES)) {
     for (const useAscii of [false, true]) {
@@ -287,5 +521,22 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
         heads(c).length === 1,
     )
     expect(loops).toHaveLength(1)
+  })
+
+  describe('self-loops sharing a face with other edges', () => {
+    for (const [name, source, nodes] of FACE_CASES) {
+      for (const useAscii of [false, true]) {
+        it(`${name} (${useAscii ? 'ascii' : 'unicode'}): equal-width rows, no orphan arms, intact boxes`, () => {
+          const out = renderMermaidASCII(source, {
+            colorMode: 'none',
+            useAscii,
+          })
+          expect(widths(out).size).toBe(1)
+          if (useAscii) return
+          expect(orphanArms(out)).toEqual([])
+          expect(nodeBoxes(out)).toHaveLength(nodes)
+        })
+      }
+    }
   })
 })
