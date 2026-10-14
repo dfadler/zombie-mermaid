@@ -53,7 +53,7 @@ export { LimitExceededError }
 export { RenderLimits }
 
 // @public
-export function renderMermaidASCII(text: string, options?: AsciiRenderOptions): string;
+export function renderMermaidASCII(source: string, options?: AsciiRenderOptions): string;
 
 // @public @deprecated (undocumented)
 export const renderMermaidAscii: typeof renderMermaidASCII;
