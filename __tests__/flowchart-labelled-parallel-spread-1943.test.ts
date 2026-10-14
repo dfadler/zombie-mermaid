@@ -8,10 +8,9 @@ import { layoutFlowchartSync } from '@zombie-mermaid/svg-renderer'
 import { parseMermaid } from '../src/index.ts'
 
 function offset(count: number): number {
-  const edges = Array.from(
-    { length: count },
-    (_, i) => `  S -->|${i}| T`,
-  ).join('\n')
+  const edges = Array.from({ length: count }, (_, i) => `  S -->|${i}| T`).join(
+    '\n',
+  )
   const g = layoutFlowchartSync(
     parseMermaid(`flowchart TD\n${edges}\n  S -->|other| U`),
   )
