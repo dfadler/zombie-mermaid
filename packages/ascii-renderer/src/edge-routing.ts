@@ -1262,7 +1262,7 @@ const innerCells = new WeakMap<GridCoord[], Set<string>>()
 const cellKey = (c: GridCoord): string => `${c.x},${c.y}`
 
 /** Record `line` as `edge`'s label segment, keeping `held` in step with `chosen`. */
-function holdLine(
+export function holdLine(
   ctx: LabelContext,
   edge: AsciiEdge,
   line: [GridCoord, GridCoord],
@@ -1280,7 +1280,7 @@ function holdLine(
 }
 
 /** True when a segment other than `except`'s holds any of `keys`. */
-function heldByOther(
+export function heldByOther(
   ctx: LabelContext,
   keys: Iterable<string>,
   except?: AsciiEdge,
