@@ -8,8 +8,7 @@
  * nodes above, below, beside and inside the same things.
  *
  * Usage: tsx scripts/layout-oracle.ts [--filter=<text>] [--json=<file>]
- *                                     [--scorecard-json=<file>] [--thresholds]
- *                                     [--fail-below=<pct>] [--tolerance=<px>]
+ *   [--scorecard-json=<file>] [--thresholds] [--fail-below=<pct>] [--tolerance=<px>]
  *                                     [--type=flowchart|state|class|er]
  *
  * Why it exists: "true to the mermaid source" was a judgment from looking at a
@@ -24,9 +23,7 @@
  * Flowcharts by default; `--type=state|class|er` scores the others (official
  * node ids `state-<id>-<n>`, `classId-<id>-<n>`, `entity-<id>-<n>`; state
  * composites and class namespaces are clusters). Sequence, architecture, C4
- * and charts are not scored: see EXCLUDED_TYPES in scripts/lib/layout-agreement.ts.
- * `--scorecard-json=<file>` writes the stable machine-readable scorecard and
- * `--thresholds` exits 1 when a sample is under its explicit floor.
+ * and charts are not scored (EXCLUDED_TYPES in scripts/lib/layout-agreement.ts).
  */
 
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
@@ -57,8 +54,8 @@ import {
   type HistoryEntry,
   type SampleResult,
   scorecardMarkdown,
-  scorecardJson,
-  breaches,
+  finishScorecard,
+  recordsAllTypes,
   summarize,
   type LayoutBoxes,
 } from './lib/layout-agreement.ts'
@@ -175,9 +172,7 @@ async function main(): Promise<number> {
   if (fresh.stale) console.error(`warning: ${fresh.message}`)
 
   // The history and scorecard record every covered type, so --type is ignored for them.
-  const recording = Boolean(
-    args.history || args.scorecard || args.scorecardJson || args.thresholds,
-  )
+  const recording = recordsAllTypes(args)
   const types = recording ? ORACLE_TYPES : [args.type]
 
   let session
@@ -244,11 +239,7 @@ async function main(): Promise<number> {
       console.log(`Wrote ${args.scorecard}`)
     }
   }
-  if (args.scorecardJson) {
-    await writeFile(args.scorecardJson, scorecardJson(runs))
-    console.log(`Wrote ${args.scorecardJson}`)
-  }
-  if (args.thresholds) failing.push(...breaches(runs))
+  failing.push(...(await finishScorecard(args, runs)))
   if (failing.length > 0) {
     console.error(`\nBelow threshold: ${failing.join(', ')}`)
     return 1

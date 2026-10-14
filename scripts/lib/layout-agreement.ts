@@ -11,6 +11,8 @@
  * relation (above, below, or level) and the same horizontal one.
  */
 
+import { writeFile } from 'node:fs/promises'
+
 export interface Box {
   x: number
   y: number
@@ -487,6 +489,21 @@ export function breaches(runs: ScorecardRun[]): string[] {
     }
   }
   return out
+}
+
+/** Whether the run scores every type (history, scorecard, JSON, thresholds), so `--type` is ignored. */
+export const recordsAllTypes = (a: OracleArgs): boolean =>
+  Boolean(a.history || a.scorecard || a.scorecardJson || a.thresholds)
+
+/** Writes `--scorecard-json` if asked; returns the `--thresholds` breaches (none unless asked). */
+export async function finishScorecard(
+  args: OracleArgs,
+  runs: ScorecardRun[],
+): Promise<string[]> {
+  if (args.scorecardJson) {
+    await writeFile(args.scorecardJson, scorecardJson(runs))
+  }
+  return args.thresholds ? breaches(runs) : []
 }
 
 /** Bumped when the shape of `scorecardJson` changes incompatibly. */
