@@ -4,49 +4,49 @@
       +              
     +-+              
     | places         
-   o<                
+   o^                
 +-------+            
 | ORDER |            
 +-------+            
     +                
     +-+ contains     
       |              
-     o<              
+     o^              
 +-----------+        
 | LINE_ITEM |        
 +-----------+        
-     |o              
+     o+              
      ++              
      | lists         
-     <               
+     ^               
 +---------+          
 | PRODUCT |          
 +---------+          
-    |o               
+    o+               
      ++ sourced_from 
       |              
       +              
 +----------+         
 | SUPPLIER |         
 +----------+         
-     >o              
+     oV              
       | stocks       
       |              
-     o<              
+     o^              
 +-----------+        
 | WAREHOUSE |        
 +-----------+        
       +              
     +.+              
     : holds          
-   o<                
+   o^                
 +-------+            
 | SHELF |            
 +-------+            
     +                
    ++                
    : holds           
-  o<                 
+  o^                 
 +-----+              
 | BIN |              
 +-----+              

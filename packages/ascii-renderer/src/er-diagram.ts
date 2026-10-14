@@ -103,11 +103,15 @@ function getCrowsFootChars(
         // line in the non-vertical case below.
         return vertical ? '+' : '|'
       case 'zero-one':
-        return isRight ? 'o|' : '|o'
+        return vertical ? 'o+' : isRight ? 'o|' : '|o'
       case 'many':
-        return isRight ? '<' : '>'
+        // Vertical: the crow's foot opens toward its entity ('V' under the
+        // upper entity, '^' above the lower one) instead of the
+        // horizontal '<' / '>', which would sit as a stray bracket
+        // beside the line (#2081).
+        return vertical ? (isRight ? '^' : 'V') : isRight ? '<' : '>'
       case 'zero-many':
-        return isRight ? 'o<' : '>o'
+        return vertical ? (isRight ? 'o^' : 'oV') : isRight ? 'o<' : '>o'
     }
   } else {
     // Use cleaner Unicode characters
@@ -118,11 +122,17 @@ function getCrowsFootChars(
         // horizontal stroke that marks the "one" cardinality.
         return vertical ? '┼' : '│'
       case 'zero-one':
-        return isRight ? '○│' : '│○'
+        // Vertical markers put the circle first so the 2-cell centering in
+        // the vertical draw loop lands the stroke glyph on the line column
+        // (the horizontal order would leave it one column off the line).
+        return vertical ? '○┼' : isRight ? '○│' : '│○'
       case 'many':
-        return isRight ? '╟' : '╢'
+        // '╤' / '╧' are '╟' / '╢' rotated for a vertical edge: the double
+        // bar spans the entity-side edge, the stem runs along the line
+        // (#2081). Was '╟' / '╢', which read as a stray double bar.
+        return vertical ? (isRight ? '╧' : '╤') : isRight ? '╟' : '╢'
       case 'zero-many':
-        return isRight ? '○╟' : '╢○'
+        return vertical ? (isRight ? '○╧' : '○╤') : isRight ? '○╟' : '╢○'
     }
   }
 }
