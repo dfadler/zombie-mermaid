@@ -23,9 +23,10 @@ describe('A* cap hits over all samples (#1859)', () => {
         const hits = takeCapHits()
         const known = KNOWN[s.title]
         if (known) {
-          expect(hits, `${known} may be fixed: drop from KNOWN`).toBeGreaterThan(
-            0,
-          )
+          expect(
+            hits,
+            `${known} may be fixed: drop from KNOWN`,
+          ).toBeGreaterThan(0)
         } else {
           expect(
             hits,
