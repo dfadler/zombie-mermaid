@@ -1413,9 +1413,10 @@ export function renderClassAscii(
         // Drawn after every other relationship (see `lateDetours`).
         lateDetours.push(() => {
           // The entry run sits one row above the arrowhead row, so the head
-          // has a stem above it, whenever the gap has the room.
-          const runY = entryY - 1 > exitY ? entryY - 1 : entryY
-          if (routeX !== toAnchorX && runY !== entryY) {
+          // has a stem above it. The first layout pass may lack the room
+          // (its result is discarded below); the second pass always has it.
+          const runY = entryY - 1
+          if (routeX !== toAnchorX) {
             detourEntryLevels.add(level.get(rel.to)! - 1)
           }
 
@@ -1424,7 +1425,7 @@ export function renderClassAscii(
           //    run starts a row lower so the stem stays a plain `│` and the run
           //    branches off it (`├`), instead of a corner replacing the stem.
           const sharesStem = [V, dashV].includes(canvas[fromAnchorX]![exitY]!)
-          const exitRunY = sharesStem && exitY + 1 < runY ? exitY + 1 : exitY
+          const exitRunY = sharesStem ? exitY + 1 : exitY
           drawRun(
             exitRunY,
             fromAnchorX,
