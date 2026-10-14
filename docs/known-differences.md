@@ -61,6 +61,27 @@ layers. The 12.1.0 comparison is in
   agreed only after `elk.spacing.edgeEdge` was raised to 40 px for graphs with three or
   more labelled edges between the same pair (#1943).
 
+## State diagram notes
+
+`note left of X` / `note right of X` place the note on the side the keyword names in
+zombie-mermaid. mermaid.js does not. Checked on mermaid 12.2.0 (jsDelivr, real Chrome,
+default config) for the "State: Notes" sample: `note right of Active` lands below
+`Active`, 20 px to its left, and `note left of Idle` lands above `Idle`, 20 px to its
+right. The maintainer-run oracle on 12.1.0 gives the same layout. This is why "State:
+Notes" scores 83% horizontal agreement; the floor in `scripts/lib/layout-agreement.ts`
+stays at 0.8. We keep the keyword's meaning rather than imitate a placement that
+contradicts the syntax ([#1942](https://github.com/dfadler/zombie-mermaid/issues/1942)).
+
+## Escaped characters in pie titles
+
+mermaid.js double-escapes `<`, `&` and `>` in a pie title: `pie title Labels <&> "quotes"`
+renders the text `Labels &lt;&amp;&gt; "quotes"` (the entities appear literally; the
+quotes are fine). Checked on mermaid 12.2.0 (jsDelivr, real Chrome) and on mermaid.live
+(version not shown on the page), by reading the rendered title element's text. zombie-mermaid
+renders the literal `Labels <&> "quotes"` and does not copy the bug. Duplicate slice
+labels such as `"R&D"` keep the first value in both renderers
+([#2084](https://github.com/dfadler/zombie-mermaid/issues/2084)).
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams
