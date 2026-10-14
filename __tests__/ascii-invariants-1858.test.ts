@@ -45,10 +45,19 @@ describe('ASCII canvas invariants over all samples (#1858)', () => {
     for (const useAscii of [false, true]) {
       const known = KNOWN[s.title]
       it(`${s.title} (${useAscii ? 'ascii' : 'unicode'})`, () => {
-        const out = renderMermaidASCII(s.source, { colorMode: 'none', useAscii })
-        const vs = checkAll(out, { unicode: !useAscii, skip: skipFor(s.source) })
+        const out = renderMermaidASCII(s.source, {
+          colorMode: 'none',
+          useAscii,
+        })
+        const vs = checkAll(out, {
+          unicode: !useAscii,
+          skip: skipFor(s.source),
+        })
         if (known && !useAscii) {
-          expect(vs.length, `${known} may be fixed: drop from KNOWN`).toBeGreaterThan(0)
+          expect(
+            vs.length,
+            `${known} may be fixed: drop from KNOWN`,
+          ).toBeGreaterThan(0)
         } else {
           expect(vs.map((x) => x.message)).toEqual([])
         }
@@ -58,7 +67,9 @@ describe('ASCII canvas invariants over all samples (#1858)', () => {
 })
 
 describe('checker sabotage (rules fire on a corrupted grid)', () => {
-  const good = renderMermaidASCII('flowchart TD\n  A --> B', { colorMode: 'none' })
+  const good = renderMermaidASCII('flowchart TD\n  A --> B', {
+    colorMode: 'none',
+  })
   const grid = () => toGrid(good)
   const find = (g: string[][], ch: string): [number, number] => {
     for (let y = 0; y < g.length; y++) {

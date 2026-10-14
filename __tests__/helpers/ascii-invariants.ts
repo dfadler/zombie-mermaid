@@ -39,9 +39,12 @@ export interface Violation {
 }
 
 /** One cell per terminal column: a wide (CJK/emoji) glyph is followed by a NUL filler. */
-const WIDE = /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe6f\uff00-\uff60\uffe0-\uffe6\u{1f300}-\u{1faff}\u{20000}-\u{3fffd}]/u
+const WIDE =
+  /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe6f\uff00-\uff60\uffe0-\uffe6\u{1f300}-\u{1faff}\u{20000}-\u{3fffd}]/u
 export const toGrid = (out: string): string[][] =>
-  out.split('\n').map((l) => [...l].flatMap((c) => (WIDE.test(c) ? [c, '\0'] : [c])))
+  out
+    .split('\n')
+    .map((l) => [...l].flatMap((c) => (WIDE.test(c) ? [c, '\0'] : [c])))
 
 function excerpt(grid: string[][], x: number, y: number): string {
   return [y - 1, y, y + 1]
@@ -95,14 +98,23 @@ export function checkArrowheads(grid: string[][]): Violation[] {
       // line cell with an arm toward the head.
       let k = 1
       let back = grid[y + dy]?.[x + dx] ?? ' '
-      const label = (c: string) => c !== ' ' &&!ARMS[c] && !HEADS[c]
-      while (label(back) || (dx !== 0 && back === ' ' && label(grid[y]?.[x + (k + 1) * dx] ?? ' '))) {
+      const label = (c: string) => c !== ' ' && !ARMS[c] && !HEADS[c]
+      while (
+        label(back) ||
+        (dx !== 0 && back === ' ' && label(grid[y]?.[x + (k + 1) * dx] ?? ' '))
+      ) {
         if (++k > 40) break
         back = grid[y + k * dy]?.[x + k * dx] ?? ' '
       }
       if (!ARMS[back]?.includes(d))
         out.push(
-          v(grid, 'arrowhead', x, y, `'${ch}' has no line cell behind it (found '${back}')`),
+          v(
+            grid,
+            'arrowhead',
+            x,
+            y,
+            `'${ch}' has no line cell behind it (found '${back}')`,
+          ),
         )
     }),
   )
@@ -125,10 +137,13 @@ export function checkArms(grid: string[][]): Violation[] {
         const n = grid[y + dy]?.[x + dx] ?? ' '
         // `┌─ Title ──`: a frame title pads the stroke with a blank.
         const titlePad =
-          n === ' ' && /[\p{L}\p{N}]/u.test(grid[y + 2 * dy]?.[x + 2 * dx] ?? ' ')
+          n === ' ' &&
+          /[\p{L}\p{N}]/u.test(grid[y + 2 * dy]?.[x + 2 * dx] ?? ' ')
         if (n === ' ' && titlePad) continue
         if (n === ' ')
-          out.push(v(grid, 'orphan-arm', x, y, `'${ch}' arm ${d} leads to blank`))
+          out.push(
+            v(grid, 'orphan-arm', x, y, `'${ch}' arm ${d} leads to blank`),
+          )
         // A straight stroke ending on a perpendicular straight one is how a
         // line meets a box wall or a dashed crossing: by design, not a stub.
         else if (
@@ -137,11 +152,23 @@ export function checkArms(grid: string[][]): Violation[] {
           !(ARMS[ch]!.length === 2 && ARMS[n]!.length === 2)
         )
           out.push(
-            v(grid, 'junction', x, y, `'${ch}' arm ${d} meets '${n}' with no arm back`),
+            v(
+              grid,
+              'junction',
+              x,
+              y,
+              `'${ch}' arm ${d} meets '${n}' with no arm back`,
+            ),
           )
         else if (HEADS[n] && 'UD'.includes(HEADS[n]!) !== 'UD'.includes(d))
           out.push(
-            v(grid, 'junction', x, y, `'${ch}' arm ${d} meets head '${n}' pointing ${HEADS[n]}`),
+            v(
+              grid,
+              'junction',
+              x,
+              y,
+              `'${ch}' arm ${d} meets head '${n}' pointing ${HEADS[n]}`,
+            ),
           )
       }
     }),
@@ -177,7 +204,13 @@ export function checkNodeTextClear(grid: string[][]): Violation[] {
             /[\p{L}\p{N}]/u.test(at(c - 1, r) + at(c + 1, r))
           )
             out.push(
-              v(grid, 'node-text-overlap', c, r, `connector glyph '${ch}' inside box text`),
+              v(
+                grid,
+                'node-text-overlap',
+                c,
+                r,
+                `connector glyph '${ch}' inside box text`,
+              ),
             )
         }
       }
