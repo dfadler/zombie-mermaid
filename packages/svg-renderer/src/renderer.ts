@@ -121,6 +121,7 @@ export function renderSvg(
         decorative,
         hasInteractiveLinks,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),

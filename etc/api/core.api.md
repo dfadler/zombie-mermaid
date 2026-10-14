@@ -7,6 +7,15 @@
 // @public
 export function __resetSvgTitleIdCounterForTests(): void;
 
+// @public (undocumented)
+export interface AccessibleText {
+    // (undocumented)
+    accDescr?: string;
+    // (undocumented)
+    accTitle?: string;
+    text: string;
+}
+
 // @public
 export function applyClickStatement(line: string, interactions: Map<string, NodeInteraction>): void;
 
@@ -187,6 +196,9 @@ export function escapeAttr(value: string): string;
 
 // @public
 export function escapeXml(text: string): string;
+
+// @public
+export function extractAccessibility(text: string): AccessibleText;
 
 // @public
 export function extractInitConfig(lines: string[]): InitConfig;
@@ -641,6 +653,7 @@ export function subgraphDirectionIsHonored(sg: MermaidSubgraph, graph: MermaidGr
 
 // @public
 export interface SvgEmitOptions {
+    description?: string;
     nonce?: string;
     styleAttribute?: boolean;
 }

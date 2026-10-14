@@ -33,6 +33,8 @@ export interface SvgEmitOptions {
   nonce?: string
   /** Emit the root `style="--bg: …"` attribute. Default: true. */
   styleAttribute?: boolean
+  /** Root `<desc>` text (Mermaid's `accDescr`); see `svgOpenTag`. */
+  description?: string
 }
 
 /**
