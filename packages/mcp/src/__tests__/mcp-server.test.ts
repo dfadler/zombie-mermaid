@@ -125,6 +125,34 @@ describe('createMcpServer', () => {
     expect(content[0].text).toContain('B')
   })
 
+  it('render_mermaid_ascii advertises and honours profile: markdown (#2011)', async () => {
+    const { tools } = await client.listTools()
+    const tool = tools.find((t) => t.name === 'render_mermaid_ascii')
+    expect(tool?.inputSchema.properties).toHaveProperty('profile')
+
+    const run = async (args: Record<string, unknown>) => {
+      const r = await client.callTool({
+        name: 'render_mermaid_ascii',
+        arguments: { diagram: 'graph LR\n  A --> B', ...args },
+      })
+      expect(r.isError).toBeFalsy()
+      const c = r.content
+      if (!Array.isArray(c) || c[0]?.type !== 'text') throw new Error('text')
+      return c[0].text as string
+    }
+    expect(await run({})).toMatch(/[^\x00-\x7f]/)
+    expect(await run({ profile: 'markdown' })).not.toMatch(/[^\x00-\x7f]/)
+    expect(await run({ profile: 'markdown', useAscii: false })).toMatch(
+      /[^\x00-\x7f]/,
+    )
+
+    const bad = await client.callTool({
+      name: 'render_mermaid_ascii',
+      arguments: { diagram: 'graph LR\n  A --> B', profile: 'nope' },
+    })
+    expect(bad.isError).toBe(true)
+  })
+
   it('rejects an out-of-range theme via input schema validation', async () => {
     const result = await client.callTool({
       name: 'render_mermaid_svg',

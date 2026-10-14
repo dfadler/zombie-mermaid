@@ -68,6 +68,8 @@ export interface RenderArgs {
    * width check is performed.
    */
   maxWidth: number | 'auto' | undefined
+  /** `--profile markdown`: ASCII output preset (see `AsciiRenderOptions.profile`). */
+  profile?: 'markdown' | undefined
   /**
    * Layout direction override (`--direction`), already upper-cased and
    * validated. Passed straight through as `RenderOptions.direction` /
@@ -311,6 +313,7 @@ function parseRender(args: string[]): RenderArgs {
   let coords = false
   let hyperlinks = false
   let maxWidth: number | 'auto' | undefined
+  let profile: 'markdown' | undefined
   let direction: Direction | undefined
 
   let i = 0
@@ -370,6 +373,15 @@ function parseRender(args: string[]): RenderArgs {
       i++
     } else if (arg === '-w' || arg === '--max-width') {
       maxWidth = parseMaxWidthFlag(args, i, arg)
+      i += 2
+    } else if (arg === '--profile') {
+      const v = args[i + 1]
+      if (v !== 'markdown') {
+        throw new Error(
+          `--profile requires one of: markdown, got: "${v ?? ''}"`,
+        )
+      }
+      profile = v
       i += 2
     } else if (arg === '--direction') {
       direction = parseDirectionFlag(args, i, arg)
@@ -487,6 +499,10 @@ function parseRender(args: string[]): RenderArgs {
     throw new Error('-w/--max-width requires --ascii')
   }
 
+  if (profile !== undefined && !ascii) {
+    throw new Error('--profile requires --ascii')
+  }
+
   if (hyperlinks && !ascii) {
     throw new Error('--hyperlinks requires --ascii')
   }
@@ -512,6 +528,7 @@ function parseRender(args: string[]): RenderArgs {
     coords,
     hyperlinks,
     maxWidth,
+    profile,
     direction,
   }
 }
