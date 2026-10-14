@@ -1,5 +1,10 @@
 [
   {
+    "file": "scripts/determinism-manifest.ts",
+    "reason": "thin CLI: runs on import and prints; all logic is in scripts/lib/determinism-manifest.ts (tested)",
+    "maxLines": 20
+  },
+  {
     "file": "scripts/check-changesets.ts",
     "reason": "thin CLI: runs on import and calls process.exit; all logic is in scripts/lib/changeset-lint.ts (tested)",
     "maxLines": 20
