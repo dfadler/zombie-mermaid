@@ -252,6 +252,19 @@ By contributing, you agree your contributions are licensed under this project's 
 
 `pnpm run check:bundle-size` (CI job "Bundle size gate") fails a PR if any
 `dist/` file exceeds its gzip budget, or any package's unpacked `dist/` (no
-source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. To raise
-one after an intentional size increase, edit that file in the same PR and
-explain the increase in the PR description; budgets are never auto-regenerated.
+source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. It prints
+bytes, budget and remaining headroom per entry. Each budget is the size CI
+measured plus 2% (reset 2026-10-14, #1994); budgets are never auto-regenerated.
+Measure on a clean `pnpm install --frozen-lockfile && pnpm run build`: sizes are
+deterministic for a given lockfile, but a stale `dist/` or a main checkout with
+drifted dependencies reads differently from CI, and CI is what counts.
+
+**A raise is justified** for growth that is the feature: new feature code, a new
+validator or schema, new exported types. Raise only the entries that grew, to
+measured + 2%, and state in the PR body which entries, by how many bytes, and
+that it is feature growth.
+
+**Fix instead of raising** when the growth is a regression: duplicated code, an
+accidentally bundled dependency (or `elkjs` leaking into the consumer bundle),
+or a chunking/build change. If the gate fails after merging `main`, rebuild
+before touching the JSON.
