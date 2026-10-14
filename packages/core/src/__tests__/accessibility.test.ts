@@ -16,7 +16,9 @@ describe('extractAccessibility', () => {
   })
 
   it('cuts a trailing %% comment off single-line values', () => {
-    expect(extractAccessibility('graph TD\naccTitle: T %% c').accTitle).toBe('T')
+    expect(extractAccessibility('graph TD\naccTitle: T %% c').accTitle).toBe(
+      'T',
+    )
   })
 
   it('leaves pie and text without statements untouched', () => {
