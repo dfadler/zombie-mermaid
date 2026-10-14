@@ -425,7 +425,6 @@ export const DEFAULT_FLOOR = 0.85
  */
 export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   'Nested Subgraphs': 0.2,
-  'CI/CD Pipeline': 0.45,
   'Flowchart: CJK Labels': 0.5,
   'Flowchart: Five Cluster Exit Siblings (TD)': 0.65,
   'State: Notes': 0.8,

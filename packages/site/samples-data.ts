@@ -2291,6 +2291,45 @@ pie title Pets adopted by volunteers
     Q->>P: done`,
   },
   {
+    title: 'Duplicate Self-Loops',
+    category: 'Flowchart',
+    description:
+      'Two identical self-loops on one node. They draw as one clean loop, with no junction leading into blank space (#2028).',
+    source: `flowchart TD
+    n0["a"]
+    n0 --> n0
+    n0 --> n0`,
+  },
+  {
+    title: 'Reciprocal and Duplicate Edges RL',
+    category: 'Flowchart',
+    description:
+      'A reciprocal pair plus a duplicate between two nodes in a right-to-left graph. Every stroke connects to something (#2030).',
+    source: `flowchart RL
+    n0["L6rc9iw"]
+    n1(["9B531Zk"])
+    n1 --> n0
+    n0 --> n1
+    n1 --> n0`,
+  },
+  {
+    title: 'Decision Self-Loop with Duplicate Edges',
+    category: 'Flowchart',
+    description:
+      'A decision node with a self-loop, duplicate parallel edges and a labeled back edge. The canvas stays rectangular (#2025).',
+    source: `flowchart LR
+    n0{"gSQ21Q"}
+    n1["C"]
+    n2(["OkfK"])
+    n3("Q552S")
+    n0 --> n0
+    n0 --> n2
+    n0 --> n2
+    n0 --> n1
+    n1 -->|000A| n0
+    n0 --> n1`,
+  },
+  {
     title: 'LR Bypass Edge In A Chain',
     category: 'Flowchart',
     description:

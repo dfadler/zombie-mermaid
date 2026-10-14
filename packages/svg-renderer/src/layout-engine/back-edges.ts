@@ -25,12 +25,128 @@ import type { MermaidGraph } from '@zombie-mermaid/core'
  *
  * `walkOrder` is the order the walk starts from; it defaults to the graph's
  * node order, which is mermaid's (first appearance in the source).
+ *
+ * `feedback` edges (see `subgraphFeedbackEdges`) are laid out reversed
+ * regardless, so the walk runs over the graph with them flipped; an edge the
+ * walk then finds is flipped back. The result includes `feedback` itself.
  */
 export function findBackEdgeIndexes(
   graph: MermaidGraph,
   walkOrder?: Iterable<string>,
+  feedback: ReadonlySet<number> = new Set(),
 ): Set<number> {
-  return findBackEdges(graph.edges, walkOrder ?? graph.nodes.keys())
+  const edges = graph.edges.map((e, i) =>
+    feedback.has(i) ? { source: e.target, target: e.source } : e,
+  )
+  const out = new Set(feedback)
+  for (const i of findBackEdges(edges, walkOrder ?? graph.nodes.keys())) {
+    if (!out.delete(i)) out.add(i)
+  }
+  return out
+}
+
+/**
+ * Edges that close a cycle between subgraphs (or between a subgraph and the
+ * nodes around it), found the way mermaid 12's ELK layout finds them
+ * (`orientFeedbackEdges`, `subgraphFeedbackEdges.ts` in mermaid's ELK layout
+ * algorithm; read in mermaid 12.1.0, same positions in 12.2.0).
+ *
+ * Each edge is lifted to the two children of the subgraph that contains both
+ * ends, and a depth-first walk over those children (sources first, then
+ * everything, in the order edges first mention them) finds the lifted edges
+ * that point back at a child still on the walk's stack. Only an edge that was
+ * actually lifted (an end sits inside a subgraph) is reported; an edge between
+ * siblings is left to `findBackEdges`. In the CI/CD sample `F --> D` runs from
+ * outside the `ci` subgraph back into it, so it is the feedback edge, and
+ * `D -.-> A`, inside it, is not reversed: `D` sits beside `C`, not below `F`.
+ */
+export function subgraphFeedbackEdges(graph: MermaidGraph): Set<number> {
+  const ROOT = ''
+  const parent = new Map<string, string>()
+  const walkTree = (subgraphs: MermaidGraph['subgraphs'], up: string): void => {
+    for (const sg of subgraphs) {
+      parent.set(sg.id, up)
+      for (const id of sg.nodeIds) parent.set(id, sg.id)
+      walkTree(sg.children, sg.id)
+    }
+  }
+  walkTree(graph.subgraphs, ROOT)
+  // `id` and every subgraph around it, innermost first.
+  const chain = (id: string): string[] => {
+    const out = [id]
+    for (let p = parent.get(id); p; p = parent.get(p)) out.push(p)
+    return out
+  }
+
+  interface Lifted {
+    index: number
+    from: string
+    to: string
+    lifted: boolean
+  }
+  const levels = new Map<string, Lifted[]>()
+  graph.edges.forEach((edge, index) => {
+    const up = chain(edge.source)
+    const down = chain(edge.target)
+    if (up.includes(edge.target) || down.includes(edge.source)) return
+    const common = up.find((id) => down.includes(id)) ?? ROOT
+    const childOf = (c: string[]): string =>
+      common === ROOT ? c[c.length - 1]! : c[c.indexOf(common) - 1]!
+    const from = childOf(up)
+    const to = childOf(down)
+    const list = levels.get(common) ?? []
+    list.push({
+      index,
+      from,
+      to,
+      lifted: from !== edge.source || to !== edge.target,
+    })
+    levels.set(common, list)
+  })
+
+  const feedback = new Set<number>()
+  for (const level of levels.values()) {
+    const out = new Map<string, Lifted[]>()
+    const inDegree = new Map<string, number>()
+    for (const e of level) {
+      for (const id of [e.from, e.to]) {
+        if (!out.has(id)) {
+          out.set(id, [])
+          inDegree.set(id, 0)
+        }
+      }
+      out.get(e.from)!.push(e)
+      inDegree.set(e.to, inDegree.get(e.to)! + 1)
+    }
+    const ids = [...out.keys()]
+    const state = new Map<string, 'open' | 'done'>()
+    for (const root of [
+      ...ids.filter((id) => inDegree.get(id) === 0),
+      ...ids,
+    ]) {
+      if (state.has(root)) continue
+      state.set(root, 'open')
+      const stack = [{ id: root, next: 0 }]
+      while (stack.length > 0) {
+        const frame = stack[stack.length - 1]!
+        const outs = out.get(frame.id)!
+        if (frame.next >= outs.length) {
+          state.set(frame.id, 'done')
+          stack.pop()
+          continue
+        }
+        const e = outs[frame.next++]!
+        const seen = state.get(e.to)
+        if (seen === 'open') {
+          if (e.lifted) feedback.add(e.index)
+        } else if (seen === undefined) {
+          state.set(e.to, 'open')
+          stack.push({ id: e.to, next: 0 })
+        }
+      }
+    }
+  }
+  return feedback
 }
 
 /**
