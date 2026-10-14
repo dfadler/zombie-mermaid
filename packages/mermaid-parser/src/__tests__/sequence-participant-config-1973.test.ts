@@ -35,7 +35,9 @@ describe('participant @{ config }', () => {
         'U->>N: go',
       ].join('\n'),
     )
-    expect(d.actors.map((a) => [a.id, a.label, a.type, a.participantType])).toEqual([
+    expect(
+      d.actors.map((a) => [a.id, a.label, a.type, a.participantType]),
+    ).toEqual([
       ['U', 'User', 'actor', 'boundary'],
       ['my-svc', 'my-svc', 'participant', 'queue'],
       ['C', 'Ctl', 'participant', 'control'],
@@ -49,9 +51,7 @@ describe('participant @{ config }', () => {
   })
 
   it('names the construct and line for a malformed config', () => {
-    for (const bad of [
-      'participant A@{ "type": "database"',
-    ]) {
+    for (const bad of ['participant A@{ "type": "database"']) {
       let err: unknown
       try {
         parse(`participant B\n${bad}\nB->>B: hi`)
@@ -59,13 +59,19 @@ describe('participant @{ config }', () => {
         err = e
       }
       expect(err).toBeInstanceOf(MermaidParseError)
-      expect((err as Error).message).toMatch(/Line 3: .*malformed participant config/)
+      expect((err as Error).message).toMatch(
+        /Line 3: .*malformed participant config/,
+      )
       expect((err as Error).message).not.toMatch(/par"/)
     }
   })
 
   it('leaves ids containing @ untouched', () => {
     const d = parse('participant a@b\na@b->>a@b: hi')
-    expect(d.actors[0]).toEqual({ id: 'a@b', label: 'a@b', type: 'participant' })
+    expect(d.actors[0]).toEqual({
+      id: 'a@b',
+      label: 'a@b',
+      type: 'participant',
+    })
   })
 })

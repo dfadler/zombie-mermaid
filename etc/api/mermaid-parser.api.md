@@ -72,6 +72,7 @@ export interface Actor {
     id: string;
     // (undocumented)
     label: string;
+    participantType?: string;
     type: 'participant' | 'actor';
 }
 
