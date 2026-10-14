@@ -36,6 +36,7 @@ function expectAllPresentOnce(text: string, needles: string[]): void {
 
 // The exact minimal repro from issue #350.
 const REPRO_MINIMAL = `erDiagram
+    direction LR
     ORDER ||--|{ LINE_ITEM : contains
     ORDER ||--o| SHIPMENT : fulfilled_by
     PRODUCT ||--o{ LINE_ITEM : appears_in
@@ -63,6 +64,7 @@ const REPRO_MINIMAL = `erDiagram
 // crowding the same rows, including two labels ("has" / "fulfilled_by")
 // that both need to route through the same row-gap band.
 const REPRO_FULL = `erDiagram
+    direction LR
     CUSTOMER ||--o{ ORDER : places
     CUSTOMER ||--o{ ADDRESS : has
     ORDER ||--|{ LINE_ITEM : contains
@@ -217,6 +219,7 @@ describe('ASCII ER relationship label routing — adjacent-entity regression (is
   it('keeps a short label between two adjacent entities compact (no unnecessary detour)', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : x`,
       { colorMode: 'none' },
     )
@@ -230,6 +233,7 @@ describe('ASCII ER relationship label routing — adjacent-entity regression (is
   it('renders a normal two-entity diagram exactly as before (direct line, no detour)', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none' },
     )
@@ -252,6 +256,7 @@ describe('ASCII ER relationship label routing — adjacent-entity regression (is
     // both adjacent pairs, so neither needs to route around anything.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc`,
       { colorMode: 'none' },
@@ -285,6 +290,7 @@ describe('ASCII ER relationship label routing — long labels and crowded areas 
   it('does not corrupt attribute text with a longer, multi-word relationship label', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places
         CUSTOMER ||--o{ ADDRESS : "ships to"
         ORDER {
@@ -315,6 +321,7 @@ describe('ASCII ER relationship label routing — parallel relationships (CodeRa
     // on the identical direct-path row unless the label search kicks in.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : first
         A ||--o{ B : second`,
       { colorMode: 'none' },
@@ -329,6 +336,7 @@ describe('ASCII ER relationship label routing — parallel relationships (CodeRa
     // without pickBandY's collision search.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : sibling
         A ||--o{ C : first
         A ||--o{ C : second`,
@@ -347,6 +355,7 @@ describe('ASCII ER relationship routing — multi-row obstruction (CodeRabbit fo
     // alone doesn't cover it — this needs the free-column bypass.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd
@@ -390,6 +399,7 @@ describe('ASCII ER relationship routing — multi-row obstruction (CodeRabbit fo
     // interior cell.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd
@@ -425,6 +435,7 @@ describe('ASCII ER relationship routing — multi-row obstruction (CodeRabbit fo
     // disabled: the extra character outside D's box does not appear).
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd

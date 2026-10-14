@@ -48,11 +48,18 @@ layers. The 12.1.0 comparison is in
   puts it below `QA Approved?` (horizontal 48%). Tracked in
   [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
 - **Remaining small differences are tie-breaks.** "System Architecture", "Flowchart:
-  CJK Labels" and "Flowchart: Five Cluster Exit Siblings (TD)" score 50-93% against
-  12.1.0, but every disagreeing node pair is one renderer calling two centres level
-  (within the 20 px tolerance) and the other offsetting them (for example `Start` and
-  `T` are 25 px apart in mermaid and 2 px apart in ours). No pair is in the opposite
-  order.
+  CJK Labels" and "LR Fan-In With Bypass Edge" score 33-93% against 12.1.0, but every
+  disagreeing node pair is one renderer calling two centres level (within the 20 px
+  tolerance) and the other offsetting them. In "LR Fan-In With Bypass Edge" `B` sits
+  above `A` and `C` in both renderers, 22 px in mermaid (12.1.0 and 12.2.0) and 15 px
+  in ours, whose boxes are 37 px tall to mermaid's 48 px (#2058). In "CJK Labels"
+  mermaid puts `B` about 19 px below `A`, `C` and `D`, and ours puts it 29 px above.
+  The cause is not CJK text measurement: the same graph written in ASCII differs the
+  same way, and without the subgraph both renderers put `B` above. It needs a subgraph
+  around `A` and `B` plus the feedback edge `C --> A`, so it is where the edge's track
+  sits relative to `B`, not text width (#1941). "Flowchart: Five Cluster Exit Siblings (TD)"
+  agreed only after `elk.spacing.edgeEdge` was raised to 40 px for graphs with three or
+  more labelled edges between the same pair (#1943).
 
 ## Known limitations (not intentional, not yet fixed)
 

@@ -2382,4 +2382,15 @@ pie title Pets adopted by volunteers
   S -->|6| T
   S -->|other| U`,
   },
+  {
+    title: 'ER: Remaining Cardinality Spellings',
+    category: 'ER',
+    description:
+      'The other word and symbol spellings mermaid accepts: `only one`, `zero or more`, `one or many`, `many(0)`, `many(1)`, `1+`, `0+`, `zero or one`, and the `to` / `optionally to` connectors. Complements the word-form sample (#1788).',
+    source: `erDiagram
+  AUTHOR only one to zero or more BOOK : writes
+  BOOK one or many to many(0) REVIEW : receives
+  REVIEW many(1) optionally to 0+ COMMENT : attracts
+  COMMENT 1+ to zero or one FLAG : raises`,
+  },
 ]
