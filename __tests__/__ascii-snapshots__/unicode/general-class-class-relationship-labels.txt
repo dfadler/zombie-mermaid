@@ -4,7 +4,9 @@
 │ + String name │    │ + String name │    
 └───────────────┘    └───────────────┘    
         │                    │            
-       teaches        enrolled in         
+     teaches            enrolled in       
+        └───┐             ┌──┘            
+            │             │               
             ▼             ▼               
           ┌────────────────┐              
           │ Course         │              
