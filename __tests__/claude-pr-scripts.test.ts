@@ -152,6 +152,14 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
     expect(check(repo).stderr).toContain('no published code')
   })
 
+  it('warns when a docs/research file is added, not when only README is', () => {
+    const added = makeRepo({ 'docs/research/9-x.md': '# x' })
+    expect(check(added).stderr).toContain('docs/research/ file added')
+    rmSync(added, { recursive: true, force: true })
+    const readme = makeRepo({ 'docs/research/README.md': '# r' })
+    expect(check(readme).stderr).not.toContain('docs/research/ file added')
+  })
+
   it('warns when a decision doc changes', () => {
     const repo = makeRepo({ 'docs/decisions/d.md': '# d' })
     expect(check(repo).stderr).toContain('self-review checklist')

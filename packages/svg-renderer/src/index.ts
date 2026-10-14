@@ -79,6 +79,7 @@ import {
   setMonospaceMetrics,
   detectDiagramType,
   splitStatements,
+  extractAccessibility,
   checkLimit,
   checkGraphSize,
 } from '@zombie-mermaid/core'
@@ -98,7 +99,10 @@ function buildColors(options: RenderOptions): DiagramColors {
     fg: options.fg ?? DEFAULTS.fg,
     line: options.line,
     accent: options.accent,
-    muted: options.muted,
+    // The zinc-light default pair needs its own muted to clear 4.5:1 (#2000);
+    // a custom bg/fg gets the color-mix fallback instead.
+    muted:
+      options.muted ?? (options.bg || options.fg ? undefined : DEFAULTS.muted),
     surface: options.surface,
     border: options.border,
   }
@@ -249,7 +253,7 @@ function scopeSvgIds(svg: string): string {
  * returns normally when the source parses.
  */
 export function validateMermaid(text: string): void {
-  const decoded = decodeXML(text)
+  const decoded = extractAccessibility(decodeXML(text)).text
   diagramRegistry[detectDiagramType(decoded)].parse(
     splitStatements(decoded),
     decoded,
@@ -264,7 +268,8 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
   // string the caller passed in, not this entity-decoded copy used
   // internally for parsing.
   checkLimit('maxInputLength', text.length, options.limits)
-  const decoded = decodeXML(text)
+  const acc = extractAccessibility(decodeXML(text))
+  const decoded = acc.text
 
   const colors = buildColors(options)
   const font = options.font ?? 'Inter'
@@ -274,9 +279,9 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
   const fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType: DiagramType = detectDiagramType(decoded)
   const embedSource = options.embedSource ? text : undefined
-  const title = options.title
+  const title = options.title ?? acc.accTitle
   const decorative = options.decorative
-  const emit = resolveSvgEmit(options)
+  const emit = { ...resolveSvgEmit(options), description: acc.accDescr }
 
   const lines = splitStatements(decoded)
 

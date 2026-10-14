@@ -244,3 +244,20 @@ The published package doesn't bundle `elkjs`; consumers supply it with `register
 - The actual publish step (`pnpm changeset publish`) should generally not be
   run locally — it's meant to run in CI, immediately after the Version PR
   merges, using the OIDC credential minted for that run.
+
+## Supply-chain signals (Scorecard, signed assets, SBOM)
+
+`.github/workflows/scorecard.yml` runs OpenSSF Scorecard weekly and on pushes to
+`main`; the score is informational and not gated on. After each release,
+`.github/workflows/release-assets.yml` attaches `zombie-mermaid-<v>.tgz`, a
+CycloneDX SBOM (`pnpm sbom`) and a Sigstore bundle for each (`*.sigstore.json`) to
+the GitHub release. Re-run it for a tag with `workflow_dispatch`. npm provenance
+(`publishConfig.provenance`) is separate and does not count for Scorecard's
+Signed-Releases check. Verify an asset with
+`gh attestation verify <file>.tgz --repo dfadler/zombie-mermaid`.
+
+Settings the maintainer owns, which Scorecard reads but no workflow can change:
+branch protection and required reviews (Branch-Protection, Code-Review), and an
+admin token if classic protection should be fully scored (prefer migrating to
+repository rulesets, which the default token can read). Do not add a Scorecard
+badge to the README until a real score exists.

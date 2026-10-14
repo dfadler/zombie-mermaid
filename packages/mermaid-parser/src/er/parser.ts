@@ -271,12 +271,14 @@ function parseRelationshipLine(
       `Line ${lineNumber}: Invalid ER relationship cardinality "${cardinalityStr}" in "${line}". ` +
         'Each side must be one of ||, |o, }|, }o, o|, |{, o{ (or a word form such as "one or more"), ' +
         'joined by -- or .. (e.g. "||--o{").',
+      { diagramType: 'er' },
     )
   }
 
   if (!hasLabel || rawLabel.length === 0) {
     throw new MermaidParseError(
       `Line ${lineNumber}: ER relationship "${entity1} ${cardinalityStr} ${entity2}" is missing a ": label" — expected e.g. "${entity1} ${cardinalityStr} ${entity2} : label".`,
+      { diagramType: 'er' },
     )
   }
 

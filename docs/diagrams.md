@@ -505,8 +505,7 @@ box).
 
 ### Known limitations
 
-None currently — `activate`/`deactivate`, `create`/`destroy`, and
-`box ... end` are all recognized (see above).
+- `participant X@{ "type": "database" }` / `actor X@{ ... }` (Mermaid 12: `boundary`, `control`, `entity`, `database`, `collections`, `queue`; [Mermaid sequence docs](https://mermaid.js.org/syntax/sequenceDiagram.html#participants)) is parsed, including the `alias` key, `as` labels, `create participant`, hyphenated ids and a space before `@{`. The type is drawn, matching Mermaid 12.1.0 and 12.2.0 (same shapes in both): `boundary` (circle with a wall), `control` (circle with an arrow), `entity` (circle on a line) and `database` (cylinder) are free-standing icons with the label below, like the stick figure; `collections` is two stacked boxes and `queue` a horizontal cylinder, each with the label inside. SVG uses the theme's node tokens. ASCII has no circles or cylinders, so each type gets a one-line pictogram above the label inside the usual box, identical in the unicode and `--ascii` charsets: `|-O` boundary, `(@)` control, `_O_` entity, `(_)` database, `[[]]` collections, `>>>` queue. An unknown type, or a type on `actor`, renders as before (plain box / stick figure), as in Mermaid 12.1.0. A malformed `@{ ... }` is a parse error naming the line (#1973).
 
 ## Class Diagrams
 
@@ -889,15 +888,16 @@ with 3 nodes" summary would be a confidently useless accessible name) — when
 `title` is omitted the SVG still gets `role="img"`, but claims no name, the
 same as an `<img>` with no `alt`.
 
-Pie charts also read Mermaid's `accTitle:` and `accDescr:` lines from the
-source: `accTitle` becomes the accessible name when the `title` option is not
-given (the option wins), and `accDescr` becomes a `<desc id="zm-desc-N">`
-referenced by `aria-describedby`. The visible chart `title` is not used as the
-accessible name. Both are dropped when the diagram is `decorative`.
-
-C4 diagrams use their source `title` as the accessible name when the `title`
-option is not given. Architecture diagrams are named only by the `title`
-option.
+Every diagram type reads Mermaid's `accTitle:` and `accDescr:` statements
+([Mermaid docs](https://mermaid.js.org/config/accessibility.html)): put
+`accTitle: text` and `accDescr: text` on one line, or `accDescr { ... }` over
+several lines, anywhere after the header. `accTitle` becomes the accessible
+name when the `title` option is not given (the option wins; for C4 the order is
+option, `accTitle`, then the C4 `title`), and `accDescr` becomes a
+`<desc id="zm-desc-N">` referenced by `aria-describedby`. The statements are
+never drawn, and both are dropped when the diagram is `decorative`. ASCII output
+ignores them. The visible chart `title` of a pie chart is not used as its
+accessible name.
 
 For a diagram that's already described in surrounding prose, mark it
 decorative instead of naming it:

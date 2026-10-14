@@ -19,10 +19,7 @@ import {
   orderSiblings,
   planSpines,
 } from '../../packages/svg-renderer/src/layout-engine/compound-flat.ts'
-import {
-  labelSpot,
-  routeInnerEdge,
-} from '../../packages/svg-renderer/src/layout-engine/inner-edges.ts'
+import { routeInnerEdge } from '../../packages/svg-renderer/src/layout-engine/inner-edges.ts'
 import { measureMultilineText } from '@zombie-mermaid/core'
 import {
   FONT_SIZES,
@@ -450,14 +447,17 @@ describe('layoutFlowchartSync: the CI/CD sample', () => {
     expectBoxesClear(CI_CD, p)
   })
 
-  it('puts Deploy Staging, QA Approved? and Production in a column beside the box', () => {
+  it('puts Deploy Staging, QA Approved? and Production below the box', () => {
     for (const id of ['E', 'F', 'G']) {
-      expect(node(id).x + node(id).width, id).toBeLessThanOrEqual(ci.x)
+      expect(node(id).y, id).toBeGreaterThanOrEqual(ci.y + ci.height)
     }
   })
 
-  it('ranks Fix & Retry after QA Approved?, as mermaid.js does', () => {
-    expect(node('D').y).toBeGreaterThan(node('F').y)
+  // `F --> D` is the feedback edge (#1993), as in mermaid 12.1.0 and 12.2.0
+  // (ELK `orientFeedbackEdges`), so Fix & Retry sits beside Build Image.
+  it('puts Fix & Retry level with Build Image, not after QA Approved?', () => {
+    expect(node('D').y).toBe(node('C').y)
+    expect(node('D').x).toBeGreaterThan(node('C').x + node('C').width)
   })
 
   it('flows top to bottom through the chain', () => {
@@ -522,12 +522,23 @@ describe('layoutFlowchartSync: edges inside a box stay inside it', () => {
   })
 
   it('keeps the two inside edges apart where they run side by side', () => {
-    const xs = (a: string, b: string) =>
+    // Vertical runs as [x, top, bottom]; only runs sharing some height can touch.
+    const runs = (a: string, b: string) =>
       edge(a, b).points.flatMap((pt, i, all) =>
-        i > 0 && all[i - 1]!.x === pt.x ? [pt.x] : [],
-      )
-    for (const x of xs('B', 'D'))
-      for (const y of xs('D', 'A')) expect(Math.abs(x - y)).toBeGreaterThan(12)
+        i > 0 && all[i - 1]!.x === pt.x
+          ? [
+              [
+                pt.x,
+                Math.min(pt.y, all[i - 1]!.y),
+                Math.max(pt.y, all[i - 1]!.y),
+              ],
+            ]
+          : [],
+      ) as Array<[number, number, number]>
+    for (const [x, top, bottom] of runs('B', 'D'))
+      for (const [x2, top2, bottom2] of runs('D', 'A'))
+        if (top < bottom2 && top2 < bottom)
+          expect(Math.abs(x - x2)).toBeGreaterThan(12)
   })
 
   it('labels the edge on its own path', () => {
@@ -536,7 +547,19 @@ describe('layoutFlowchartSync: edges inside a box stay inside it', () => {
     expect(e.points).toContainEqual(
       expect.objectContaining({ x: expect.any(Number) }),
     )
-    expect(e.labelPosition).toEqual(labelSpot(e.points))
+    // On the edge's own path (ELK places it, so not at `labelSpot`).
+    const { x, y } = e.labelPosition!
+    const onPath = e.points.some((pt, i, all) => {
+      const q = all[i - 1]
+      return (
+        q !== undefined &&
+        x >= Math.min(pt.x, q.x) - 1 &&
+        x <= Math.max(pt.x, q.x) + 1 &&
+        y >= Math.min(pt.y, q.y) - 1 &&
+        y <= Math.max(pt.y, q.y) + 1
+      )
+    })
+    expect(onPath).toBe(true)
   })
 })
 
@@ -838,13 +861,14 @@ describe('layoutFlowchartSync: other shapes of subgraph diagram', () => {
     expect(group.width).toBeGreaterThanOrEqual(title + 24)
   })
 
-  it('keeps two clusters with edges both ways in the order the layout gave them, as mermaid.js does', () => {
+  it('puts the cluster whose edge closes the cycle on the left, as mermaid 12 does', () => {
     const [, source] = cases[1]!
     const p = layoutFlowchartSync(graphOf(source))
     const left = p.groups.find((q) => q.id === 'l')!
     const right = p.groups.find((q) => q.id === 'r')!
-    // `l` is declared first, and mermaid.js draws it on the left here.
-    expect(left.x).toBeLessThan(right.x)
+    // `R2 --> L3` is the feedback edge (#1993), so mermaid 12.1.0 draws `r`
+    // on the left even though `l` is declared first.
+    expect(right.x).toBeLessThan(left.x)
   })
 
   it('arranges "outsiders on both sides" with the side node beside the box', () => {

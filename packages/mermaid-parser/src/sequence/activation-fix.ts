@@ -21,7 +21,11 @@
 // resolve.
 // ============================================================================
 
-import { detectDiagramType, splitStatements } from '@zombie-mermaid/core'
+import {
+  detectDiagramType,
+  MermaidParseError,
+  splitStatements,
+} from '@zombie-mermaid/core'
 import { parseSequenceDiagram } from './parser.ts'
 import {
   checkActivationBalance,
@@ -62,9 +66,10 @@ export function fixActivationBalance(
 ): ActivationFixResult {
   const diagramType = detectDiagramType(sourceDiagram)
   if (diagramType !== 'sequence') {
-    throw new Error(
+    throw new MermaidParseError(
       'fixActivationBalance only supports sequence diagrams (source must ' +
         `start with "sequenceDiagram"); detected diagram type: "${diagramType}".`,
+      { diagramType: 'sequence' },
     )
   }
 

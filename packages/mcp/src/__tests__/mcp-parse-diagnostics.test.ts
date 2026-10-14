@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from 'vitest'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { MermaidParseError } from '@zombie-mermaid/core'
 import { renderSvgHandler } from '../tools/render-svg.ts'
 import { renderAsciiHandler } from '../tools/render-ascii.ts'
 import { extractParseDiagnostic } from '../tools/parse-diagnostics.ts'
@@ -92,7 +93,8 @@ describe.each([
 
 describe('extractParseDiagnostic', () => {
   it('handles CRLF sources without leaking the carriage return', () => {
-    expect(extractParseDiagnostic('Line 2: bad', 'a\r\nb\r\nc')).toEqual({
+    const err = new MermaidParseError('Line 2: bad')
+    expect(extractParseDiagnostic(err, 'a\r\nb\r\nc')).toEqual({
       line: 2,
       sourceLine: 'b',
       message: 'bad',
@@ -100,21 +102,30 @@ describe('extractParseDiagnostic', () => {
   })
 
   it('returns undefined for a line outside the source', () => {
-    expect(extractParseDiagnostic('Line 9: bad', 'a\nb')).toBeUndefined()
-    expect(extractParseDiagnostic('Line 0: bad', 'a\nb')).toBeUndefined()
+    expect(
+      extractParseDiagnostic(new MermaidParseError('x', { line: 9 }), 'a\nb'),
+    ).toBeUndefined()
+    expect(
+      extractParseDiagnostic(new MermaidParseError('x', { line: 0 }), 'a\nb'),
+    ).toBeUndefined()
   })
 
-  it('only matches a leading "Line N:" prefix', () => {
-    expect(extractParseDiagnostic('oops at Line 1: x', 'a')).toBeUndefined()
+  it('uses the typed line even without a message prefix (#1979)', () => {
+    expect(
+      extractParseDiagnostic(
+        new MermaidParseError('no prefix here', { line: 2 }),
+        'a\nb',
+      ),
+    ).toEqual({ line: 2, sourceLine: 'b', message: 'no prefix here' })
   })
-})
 
-describe('typed MermaidParseError.line (#1855)', () => {
-  it('is preferred over the message prefix', () => {
-    expect(extractParseDiagnostic('no prefix here', 'a\nb', 2)).toEqual({
-      line: 2,
-      sourceLine: 'b',
-      message: 'no prefix here',
-    })
+  it('ignores a plain Error even when it has a "Line N:" prefix', () => {
+    expect(extractParseDiagnostic(new Error('Line 1: x'), 'a')).toBeUndefined()
+  })
+
+  it('returns undefined for a MermaidParseError with no line', () => {
+    expect(
+      extractParseDiagnostic(new MermaidParseError('x'), 'a'),
+    ).toBeUndefined()
   })
 })

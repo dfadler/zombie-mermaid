@@ -1,4 +1,8 @@
-import { normalizeBrTags, type Statement } from '@zombie-mermaid/core'
+import {
+  MermaidParseError,
+  normalizeBrTags,
+  type Statement,
+} from '@zombie-mermaid/core'
 import type {
   ArchitectureDiagram,
   ArchitectureEdge,
@@ -47,8 +51,9 @@ const ALIGN_RE = new RegExp(
 type Kind = 'group' | 'service' | 'junction'
 
 function fail(stmt: Statement, msg: string): never {
-  throw new Error(
+  throw new MermaidParseError(
     `Architecture diagram, line ${stmt.line}: ${msg} — "${stmt.text}"`,
+    { diagramType: 'architecture', line: stmt.line },
   )
 }
 
@@ -154,8 +159,9 @@ export function parseArchitecture(lines: Statement[]): ArchitectureDiagram {
     const seen = new Set([g.id])
     for (let p = parentOf.get(g.id); p; p = parentOf.get(p)) {
       if (seen.has(p)) {
-        throw new Error(
+        throw new MermaidParseError(
           `Architecture diagram: group "${g.id}" is nested inside itself`,
+          { diagramType: 'architecture' },
         )
       }
       seen.add(p)

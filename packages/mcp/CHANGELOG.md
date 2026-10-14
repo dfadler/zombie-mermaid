@@ -1,5 +1,39 @@
 # @zombie-mermaid/mcp
 
+## 5.4.0
+
+### Minor Changes
+
+- [#2047](https://github.com/dfadler/zombie-mermaid/pull/2047) [`d28ff6c`](https://github.com/dfadler/zombie-mermaid/commit/d28ff6cb0005069901b65db005919b26af1c80db) Thanks [@dfadler](https://github.com/dfadler)! - Expose the ASCII `profile: 'markdown'` preset through the CLI (`render --ascii --profile markdown`) and the MCP `render_mermaid_ascii` tool (`profile`).
+
+### Patch Changes
+
+- [#2013](https://github.com/dfadler/zombie-mermaid/pull/2013) [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8) Thanks [@dfadler](https://github.com/dfadler)! - Republish with `dist/` included. 5.1.0 and 5.2.0 of every package shipped without build output because the release job (split from the test job in [#1596](https://github.com/dfadler/zombie-mermaid/issues/1596)) never ran the build before `changeset publish`; imports of `zombie-mermaid` and the `@zombie-mermaid/*` packages failed to resolve. The release job now builds first and fails before publishing if any tarball lacks its entry files. Closes [#1991](https://github.com/dfadler/zombie-mermaid/issues/1991).
+- Updated dependencies [[`d1b2d9a`](https://github.com/dfadler/zombie-mermaid/commit/d1b2d9a524e9e46fa1b4252cdb2952f48166742d), [`520c6b1`](https://github.com/dfadler/zombie-mermaid/commit/520c6b1ceaddbb8c3817e528b4704b88740b6ee5), [`10f4259`](https://github.com/dfadler/zombie-mermaid/commit/10f425979fca1b6150ebc1139d5fc9bf9f3971e3), [`344431e`](https://github.com/dfadler/zombie-mermaid/commit/344431ec91d52753988a6bce3b380c394a401c33), [`0f89a9d`](https://github.com/dfadler/zombie-mermaid/commit/0f89a9db354f32fa14aa55455e28be0376d284ac), [`b7314ed`](https://github.com/dfadler/zombie-mermaid/commit/b7314ed0e47b0392573b36d6863036e0a05d2b4d), [`0c2b6d3`](https://github.com/dfadler/zombie-mermaid/commit/0c2b6d3ec38fb97bcc927573b82de06fd83c9492), [`36f8c04`](https://github.com/dfadler/zombie-mermaid/commit/36f8c049eb94c3eef47c4a07a61ea7231c837d57), [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8), [`adf9f32`](https://github.com/dfadler/zombie-mermaid/commit/adf9f32494a78701c37894dfcb6c4a96344b7447), [`782eaa0`](https://github.com/dfadler/zombie-mermaid/commit/782eaa00d9e8d0a8503bc2c4039c5ab4a22467a6), [`38e2b3c`](https://github.com/dfadler/zombie-mermaid/commit/38e2b3c00efe238bb9afe8683f6758a6f23a0996)]:
+  - @zombie-mermaid/core@5.4.0
+  - @zombie-mermaid/svg-renderer@5.4.0
+  - @zombie-mermaid/ascii-renderer@5.4.0
+  - @zombie-mermaid/mermaid-parser@5.4.0
+
+## 5.3.0
+
+### Minor Changes
+
+- [#1963](https://github.com/dfadler/zombie-mermaid/pull/1963) [`ea05f88`](https://github.com/dfadler/zombie-mermaid/commit/ea05f88dc9622a9414cd40c4b94842b664dedb7e) Thanks [@dfadler](https://github.com/dfadler)! - The MCP JSON tools (`validate_mermaid`, `check_mermaid_sequence_activations`, `fix_mermaid_sequence_activations`, `list_themes`, `list_diagram_types`) now declare an `outputSchema` and return matching `structuredContent`, alongside the existing JSON text block. Fixes [#1857](https://github.com/dfadler/zombie-mermaid/issues/1857).
+
+- [#1984](https://github.com/dfadler/zombie-mermaid/pull/1984) [`2fe4e00`](https://github.com/dfadler/zombie-mermaid/commit/2fe4e0006481a32fdd37faf45f9ee584d4d1696a) Thanks [@dfadler](https://github.com/dfadler)! - Add `limits` to `renderMermaidSVG` and `renderMermaidASCII`: `maxInputLength`, `maxNodes`, `maxEdges` (and `maxCanvasCells` for ASCII) are checked before layout and throw `LimitExceededError` (`code: 'LIMIT_EXCEEDED'`). Defaults are 100,000 characters, 400 nodes, 600 edges and 2,000,000 canvas cells, so a flowchart above 400 nodes or 600 edges now throws unless you raise the limit (`Infinity` disables one). The MCP render tools use tighter limits (50,000 / 150 / 300 / 1,000,000). See the API reference.
+
+### Patch Changes
+
+- [#1967](https://github.com/dfadler/zombie-mermaid/pull/1967) [`88bf8a5`](https://github.com/dfadler/zombie-mermaid/commit/88bf8a5abed27d76a775ca5269605090311c34d5) Thanks [@dfadler](https://github.com/dfadler)! - Add `MermaidParseError` (`line`, `column`, `diagramType`, `code`, all optional) to `@zombie-mermaid/core`. Line-prefixed parser errors now throw it with the message unchanged, and the MCP parse diagnostics read `line` from it before falling back to the `Line N:` message prefix. Closes [#1855](https://github.com/dfadler/zombie-mermaid/issues/1855).
+
+- [#2005](https://github.com/dfadler/zombie-mermaid/pull/2005) [`8360227`](https://github.com/dfadler/zombie-mermaid/commit/8360227eb337146a923e14781a87bc63ce74f44d) Thanks [@dfadler](https://github.com/dfadler)! - Every parser failure is now a `MermaidParseError` with `diagramType` set (and `line` where the parser knows it, now including C4 and architecture statement errors); the pie parser also sets `column`. Messages are unchanged. The MCP diagnostics read the typed `line` instead of parsing the message, so C4 and architecture errors now get a source-line diagnostic. `ElkNotRegisteredError` stays a plain `Error`: it is a missing-peer-dependency error, not a problem in the diagram. Closes [#1979](https://github.com/dfadler/zombie-mermaid/issues/1979).
+- Updated dependencies [[`d028603`](https://github.com/dfadler/zombie-mermaid/commit/d028603dbe31376e1e1b26c05749f8719445a7a5), [`ef0f872`](https://github.com/dfadler/zombie-mermaid/commit/ef0f872d83bf76fa65cbcf1ff630700dc5470d4e), [`8daa5ee`](https://github.com/dfadler/zombie-mermaid/commit/8daa5ee7f10ac14bf161ba48e1cd54dd0155b077), [`fa02ffe`](https://github.com/dfadler/zombie-mermaid/commit/fa02ffe3ab869d1d92d87ce67d82b2e8ce4ff1f9), [`e63ed98`](https://github.com/dfadler/zombie-mermaid/commit/e63ed989d8179d428149d1f48e31e78a87f261f3), [`2fe4e00`](https://github.com/dfadler/zombie-mermaid/commit/2fe4e0006481a32fdd37faf45f9ee584d4d1696a), [`858a8ba`](https://github.com/dfadler/zombie-mermaid/commit/858a8ba39898b95678c300120590130835f7445d), [`315dcb8`](https://github.com/dfadler/zombie-mermaid/commit/315dcb86ecb4688248c8c1ef35df90e50da303ce), [`5e4a9a7`](https://github.com/dfadler/zombie-mermaid/commit/5e4a9a71b2f07c8eceaed50dc764504525065675), [`88bf8a5`](https://github.com/dfadler/zombie-mermaid/commit/88bf8a5abed27d76a775ca5269605090311c34d5), [`8360227`](https://github.com/dfadler/zombie-mermaid/commit/8360227eb337146a923e14781a87bc63ce74f44d)]:
+  - @zombie-mermaid/ascii-renderer@5.3.0
+  - @zombie-mermaid/svg-renderer@5.3.0
+  - @zombie-mermaid/core@5.3.0
+  - @zombie-mermaid/mermaid-parser@5.3.0
+
 ## 5.2.0
 
 ### Patch Changes

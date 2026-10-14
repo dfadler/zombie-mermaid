@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ElkNode } from '@zombie-mermaid/core'
 import { splitStatements } from '@zombie-mermaid/core'
 import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
@@ -56,6 +56,14 @@ const layout = () =>
   layoutClassDiagramSync(parseClassDiagram(splitStatements(SRC)))
 
 describe('class namespace layout against sparse ELK output (#1196)', () => {
+  // Each test sets only the flag it needs; reset the rest so order is irrelevant.
+  beforeEach(() => {
+    mode.strip = false
+    mode.dropNamespaces = false
+    mode.emptyNamespaces = false
+    mode.noChildren = false
+  })
+
   it('falls back to the origin and measured sizes when ELK omits geometry', () => {
     mode.strip = true
     mode.dropNamespaces = false

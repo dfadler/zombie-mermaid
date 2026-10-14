@@ -47,7 +47,7 @@ export function validateHandler(input: { diagram: string }): CallToolResult {
     return ok({ valid: true, diagnostics: [] })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    const d = extractParseDiagnostic(message, input.diagram)
+    const d = extractParseDiagnostic(err, input.diagram)
     return ok({ valid: false, diagnostics: [d ?? { message }] })
   }
 }

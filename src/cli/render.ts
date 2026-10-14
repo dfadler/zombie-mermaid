@@ -186,6 +186,7 @@ async function renderText(
     if (args.borderPadding !== undefined)
       asciiOpts.boxBorderPadding = args.borderPadding
     if (args.coords) asciiOpts.showCoords = true
+    if (args.profile !== undefined) asciiOpts.profile = args.profile
     if (args.direction !== undefined) asciiOpts.direction = args.direction
     // Only for terminal output: a .txt file gets no escape codes regardless
     // (same contract as the ANSI color guard above), so OSC 8 hyperlink

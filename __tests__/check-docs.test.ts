@@ -4,6 +4,7 @@ import {
   checkAll,
   checkDoc,
   engineMatches,
+  forkFixesCount,
   main,
   orphanResearch,
 } from '../scripts/check-docs.ts'
@@ -173,5 +174,19 @@ describe('check-docs main', () => {
     expect(err.mock.calls[0]![0]).toContain('broken link ./gone.md')
     expect(err.mock.calls[0]![0]).toContain('1 docs drift problem(s)')
     err.mockRestore()
+  })
+})
+
+describe('forkFixesCount', () => {
+  const fs = (readme: string) => ({ read: () => readme, ls: () => [] })
+  it('passes when the README count matches the entries', () => {
+    expect(forkFixesCount(fs('showcase (7 fixes): x'), 7)).toEqual([])
+  })
+  it('fails with the number to write when stale', () => {
+    const [e] = forkFixesCount(fs('showcase (7 fixes): x'), 8)
+    expect(e).toContain('(8 fixes)')
+  })
+  it('matches the real README to the real data', () => {
+    expect(forkFixesCount()).toEqual([])
   })
 })

@@ -312,6 +312,8 @@ function buildClassElkGraph(
       // model order as the tie-break keeps source order.
       'elk.separateConnectedComponents': 'false',
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+      // Centre parents over their children, as official Mermaid does (#2020).
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
     },
     children,
     edges,

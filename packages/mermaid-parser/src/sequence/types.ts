@@ -71,6 +71,12 @@ export interface Actor {
   /** 'participant' renders as a box, 'actor' renders as a stick figure */
   type: 'participant' | 'actor'
   /**
+   * `@{ "type": ... }` config (boundary, control, entity, database,
+   * collections, queue), drawn by both renderers as the matching icon or
+   * box variant. An unknown value keeps the plain box (docs/diagrams.md).
+   */
+  participantType?: string
+  /**
    * Index of the message that creates this participant (`create participant
    * X` on the line before it). The participant's box is drawn at that
    * message's row instead of in the header, and its lifeline starts there.
@@ -167,6 +173,8 @@ export interface PositionedActor {
   id: string
   label: string
   type: 'participant' | 'actor'
+  /** `@{ "type": ... }` kind carried over from {@link Actor.participantType}. */
+  participantType?: string
   /** Center x of the actor box */
   x: number
   /** Top y of the actor box */

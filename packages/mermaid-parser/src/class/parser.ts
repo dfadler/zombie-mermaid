@@ -131,6 +131,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
       if (line.startsWith('<<')) {
         throw new MermaidParseError(
           `Line ${stmt.line}: Malformed class annotation "${line}" — expected "<<name>>" (e.g. "<<interface>>").`,
+          { diagramType: 'class' },
         )
       }
 
@@ -222,6 +223,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
         // branch above, just on the single-line form (#761).
         throw new MermaidParseError(
           `Line ${stmt.line}: Malformed class annotation "${body}" — expected "<<name>>" (e.g. "<<interface>>").`,
+          { diagramType: 'class' },
         )
       } else if (cls && body) {
         addMember(cls, body, stmt.line)
@@ -266,6 +268,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     if (RELATIONSHIP_ARROW_MARKER.test(line)) {
       throw new MermaidParseError(
         `Line ${stmt.line}: Malformed class-diagram relationship "${line}". Expected "FROM ARROW TO" (optionally with cardinalities and a ": label"), e.g. "Animal <|-- Dog" or 'A "1" --> "*" B : label'. ARROW must be one of <|--, <|.., *--, o--, -->, --*, --o, --|>, ..>, ..|>, <--, <.., or --.`,
+        { diagramType: 'class' },
       )
     }
   }
@@ -273,6 +276,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
   if (currentClass !== null) {
     throw new MermaidParseError(
       `Line ${openClassLine}: Unclosed class body for "${currentClass.id}" — expected a closing "}" before the diagram ends.`,
+      { diagramType: 'class' },
     )
   }
 
@@ -443,6 +447,7 @@ function parseMember(
   if (rest.includes('(') && !rest.includes(')')) {
     throw new MermaidParseError(
       `Line ${lineNumber}: Malformed class member "${trimmed}" — unclosed "(" in a method signature. Expected e.g. "+eat() void" or "+eat(Food f) void".`,
+      { diagramType: 'class' },
     )
   }
 

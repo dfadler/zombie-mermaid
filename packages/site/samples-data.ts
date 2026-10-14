@@ -5,7 +5,7 @@
  *   - __tests__/visual/*.visual.test.ts — the Playwright visual-regression suite
  *   - scripts/visual-diff.ts            — before/after rendering report
  *   - demo/diagram-pages-data.ts        — looks up one sample per diagram type by title
- *   - bench.ts                          — runs performance benchmarks in Bun (no browser)
+ *   - bench.ts                          — runs performance benchmarks under tsx (no browser)
  *   - vite.config.ts                    — dev server with live reload
  *
  * index.ts (the marketing home page) does not consume this file.
@@ -2259,5 +2259,85 @@ pie title Pets adopted by volunteers
     F --> G
     G --> H
     G --> I`,
+  },
+  {
+    title: 'LR Fan-In With Bypass Edge',
+    category: 'Flowchart',
+    description:
+      'The long edge from `A` to `C` runs under `B` from its own exit on `A` to its own arrowhead on `C`, instead of sharing the line out of `A` and the arrowhead of `B --> C` (#1915, #2043, #2044).',
+    source: `flowchart LR
+    A --> B
+    A --> C
+    B --> C`,
+  },  {
+    title: 'Sequence: Participant Types',
+    category: 'Sequence',
+    gallery: true,
+    description:
+      'All six `participant X@{ "type": ... }` kinds from Mermaid 12: boundary, control, entity and database draw an icon with the label below it, collections stacks two boxes, and queue is a horizontal cylinder (#2059). ASCII marks each with a one-line glyph above the label.',
+    source: `sequenceDiagram
+    participant B@{ "type": "boundary" }
+    participant C@{ "type": "control" }
+    participant E@{ "type": "entity" }
+    participant D@{ "type": "database" }
+    participant L@{ "type": "collections" }
+    participant Q@{ "type": "queue" }
+    participant P as Plain
+    B->>C: request
+    C->>E: load
+    E->>D: select
+    D->>L: rows
+    L->>Q: enqueue
+    Q->>P: done`,
+  },
+  {
+    title: 'Duplicate Self-Loops',
+    category: 'Flowchart',
+    description:
+      'Two identical self-loops on one node. They draw as one clean loop, with no junction leading into blank space (#2028).',
+    source: `flowchart TD
+    n0["a"]
+    n0 --> n0
+    n0 --> n0`,
+  },
+  {
+    title: 'Reciprocal and Duplicate Edges RL',
+    category: 'Flowchart',
+    description:
+      'A reciprocal pair plus a duplicate between two nodes in a right-to-left graph. Every stroke connects to something (#2030).',
+    source: `flowchart RL
+    n0["L6rc9iw"]
+    n1(["9B531Zk"])
+    n1 --> n0
+    n0 --> n1
+    n1 --> n0`,
+  },
+  {
+    title: 'Decision Self-Loop with Duplicate Edges',
+    category: 'Flowchart',
+    description:
+      'A decision node with a self-loop, duplicate parallel edges and a labeled back edge. The canvas stays rectangular (#2025).',
+    source: `flowchart LR
+    n0{"gSQ21Q"}
+    n1["C"]
+    n2(["OkfK"])
+    n3("Q552S")
+    n0 --> n0
+    n0 --> n2
+    n0 --> n2
+    n0 --> n1
+    n1 -->|000A| n0
+    n0 --> n1`,
+  },
+  {
+    title: 'LR Bypass Edge In A Chain',
+    category: 'Flowchart',
+    description:
+      'In a chain, the edge from `A` to `C` leaves the bottom of `A`, runs under `B` and enters the bottom of `C`, so `B --> C` keeps its own arrowhead (#2043, #2044).',
+    source: `flowchart LR
+    A --> B
+    B --> C
+    C --> D
+    A --> C`,
   },
 ]

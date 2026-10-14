@@ -9,6 +9,10 @@ type Files = Record<string, number | null> // path under dist/ -> size; null = n
 async function run(
   unpackedBudgets: Record<string, number>,
   dirs: Record<string, Files | 'missing'>,
+  gzip: {
+    budgets?: Record<string, number>
+    consumerBundles?: Record<string, number>
+  } = {},
 ) {
   vi.resetModules()
   const exit = vi
@@ -18,7 +22,9 @@ async function run(
   vi.spyOn(console, 'log').mockImplementation((m) => void out.push(String(m)))
   vi.spyOn(console, 'error').mockImplementation((m) => void out.push(String(m)))
 
-  vi.doMock('esbuild', () => ({ build: async () => null }))
+  vi.doMock('esbuild', () => ({
+    build: async () => ({ outputFiles: [{ contents: new Uint8Array(10) }] }),
+  }))
   vi.doMock('node:fs/promises', () => {
     const dirOf = (p: string) =>
       Object.keys(dirs).find((d) => p.includes(`/${d}`))
@@ -27,10 +33,11 @@ async function run(
         if (String(u).endsWith('bundle-size-budget.json'))
           return JSON.stringify({
             unit: 'gzip-bytes',
-            budgets: {},
-            consumerBundles: {},
+            budgets: gzip.budgets ?? {},
+            consumerBundles: gzip.consumerBundles ?? {},
             unpackedBudgets,
           })
+        if (String(u).endsWith('/dist/f.js')) return Buffer.from('x'.repeat(50))
         throw new Error('ENOENT')
       },
       readdir: async (d: string) => {
@@ -69,7 +76,9 @@ describe('scripts/check-bundle-size.ts unpacked budgets', () => {
       },
     )
     expect(r.code).toBe(0)
-    expect(r.text).toMatch(/pkg\/dist\s+1\.0 KB \/\s+1\.0 KB budget\s+ok/)
+    expect(r.text).toMatch(
+      /pkg\/dist\s+1000 B \/\s+1000 B\s+headroom\s+0\.0%\s+ok/,
+    )
   })
 
   it('fails with exit 1 when the unpacked size exceeds the budget', async () => {
@@ -83,5 +92,35 @@ describe('scripts/check-bundle-size.ts unpacked budgets', () => {
     const r = await run({ 'pkg/dist': 1000 }, { 'pkg/dist': 'missing' })
     expect(r.code).toBe(1)
     expect(r.text).toMatch(/MISSING/)
+  })
+
+  it('prints bytes, budget and headroom for gzip and consumer entries', async () => {
+    const r = await run(
+      {},
+      {},
+      { budgets: { 'dist/f.js': 100 }, consumerBundles: { 'pkg/c.js': 5 } },
+    )
+    expect(r.text).toMatch(
+      /dist\/f\.js\s+\d+ B \/\s+100 B\s+headroom\s+[\d.]+%\s+ok/,
+    )
+    expect(r.text).toMatch(
+      /pkg\/c\.js\s+\d+ B \/\s+5 B\s+headroom\s+-[\d.]+%\s+OVER/,
+    )
+    expect(r.code).toBe(1)
+  })
+
+  it('flags an over-budget gzip file and passes an in-budget consumer bundle', async () => {
+    const r = await run(
+      {},
+      {},
+      { budgets: { 'dist/f.js': 1 }, consumerBundles: { 'pkg/c.js': 100 } },
+    )
+    expect(r.text).toMatch(
+      /dist\/f\.js\s+\d+ B \/\s+1 B\s+headroom\s+-[\d.]+%\s+OVER/,
+    )
+    expect(r.text).toMatch(
+      /pkg\/c\.js\s+\d+ B \/\s+100 B\s+headroom\s+[\d.]+%\s+ok/,
+    )
+    expect(r.code).toBe(1)
   })
 })

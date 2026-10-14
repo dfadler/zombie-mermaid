@@ -22,6 +22,7 @@
 
 export * from './click-directive.ts'
 export * from './cluster-edges.ts'
+export * from './accessibility.ts'
 export * from './color-utils.ts'
 export * from './css-color.ts'
 export * from './diagram-type.ts'

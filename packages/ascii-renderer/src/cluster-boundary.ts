@@ -611,9 +611,7 @@ export function clusterLaneSideRoute(
  * Siblings that enter one target face on the same row merge into a single
  * arrowhead, so each final run is drawn on a row (column) of its own: two on a
  * face use the middle and the one after it, three use all three, the outermost
- * lane last so no stroke crosses another. Plain lanes (no cluster) do this for
- * groups of three (LR and TD) and four; more would need a taller face. 0
- * otherwise.
+ * lane last so no stroke crosses another. 0 otherwise.
  */
 export function clusterLaneEndShift(
   graph: AsciiGraph,
@@ -621,7 +619,6 @@ export function clusterLaneEndShift(
 ): number {
   const lane = edge.parallelLane
   if (!lane) return 0
-  const lr = graph.config.graphDirection === 'LR'
   for (const plan of graph.clusterExitPlans?.values() ?? []) {
     if (!plan.edges.has(edge) || lane.index === 0) continue
     // The siblings entering the same target face, in lane order, take its
@@ -638,36 +635,9 @@ export function clusterLaneEndShift(
     const rank = onFace.indexOf(edge)
     return onFace.length === 2 ? rank : onFace.length === 3 ? rank - 1 : 0
   }
-  // #1743: outside a cluster the side lanes enter the target's right face on
-  // one row and merge. With three lanes the third drops one row (the second
-  // keeps the middle); with four the three side lanes take the face's top,
-  // middle and bottom rows, outermost lowest so no stroke crosses another.
-  // Five or more would need more rows than a one-line box has: unchanged.
-  if (
-    ![3, 4].includes(lane.total) ||
-    edge.clusterSource ||
-    edge.clusterTarget
-  ) {
-    return 0
-  }
-  const { path } = edge
-  const [a, b] = path.slice(-2)
-  // The last run heads back toward the target: left in TD, up in LR.
-  if (!a || !b) return 0
-  const back = lr ? a.x === b.x && b.y < a.y : a.y === b.y && b.x < a.x
-  if (!back) return 0
-  // Only a group of edges between one pair of nodes: lanes split off a shared
-  // fan-in (#1467) have other sources and keep their layout.
-  const group = graph.edges.filter(
-    (e) => e.parallelLane?.usedOffsets === lane.usedOffsets,
-  )
-  if (
-    group.length !== lane.total ||
-    group.some((e) => e.from !== edge.from || e.to !== edge.to)
-  ) {
-    return 0
-  }
-  return lane.total === 4 ? lane.index - 2 : lane.index === 2 ? 1 : 0
+  // Outside a cluster, lanes get their face cells from port-offsets.ts's
+  // `allocateFaces` (#1743, #2025).
+  return 0
 }
 
 /** Safety bound on one-character gutter widenings per cluster. */

@@ -1,6 +1,9 @@
-import { MermaidParseError } from '@zombie-mermaid/core'
 import type { XYChart, XYAxis, XYChartSeries } from './types.ts'
-import { decodeMermaidEntities, type Statement } from '@zombie-mermaid/core'
+import {
+  decodeMermaidEntities,
+  MermaidParseError,
+  type Statement,
+} from '@zombie-mermaid/core'
 
 // ============================================================================
 // XY Chart parser
@@ -213,6 +216,7 @@ function parseNumericArray(
         `Line ${lineNumber}: Invalid numeric value ${JSON.stringify(trimmed)} at position ${
           index + 1
         } in "${line}". Every value in a ${seriesType} [...] list must be a number.`,
+        { diagramType: 'xychart' },
       )
     }
     return value
@@ -243,5 +247,6 @@ function malformedDirectiveError(
   const help = XYCHART_DIRECTIVE_HELP[keyword] ?? keyword
   return new MermaidParseError(
     `Line ${lineNumber}: Malformed xychart-beta "${keyword}" directive: "${line}". Expected: ${help}.`,
+    { diagramType: 'xychart' },
   )
 }

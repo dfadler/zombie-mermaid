@@ -24,7 +24,7 @@ import {
   subgraphDirectionIsHonored,
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
-import { findBackEdgeIndexes } from './back-edges.ts'
+import { findBackEdgeIndexes, subgraphFeedbackEdges } from './back-edges.ts'
 import type { LayoutHints } from './layout-hints.ts'
 import {
   ELK_DIRECTION_FALLBACK,
@@ -127,7 +127,11 @@ export function edgesReversedForLayout(
     set =
       isStateGraph(graph) || hasAnyDirectionOverride(graph.subgraphs)
         ? new Set()
-        : findBackEdgeIndexes(graph, hints?.walkOrder)
+        : findBackEdgeIndexes(
+            graph,
+            hints?.walkOrder,
+            hints?.feedbackEdges ?? subgraphFeedbackEdges(graph),
+          )
     reversedCache.set(graph, set)
   }
   return set
@@ -418,8 +422,14 @@ export function mermaidToElk(
     'elk.layered.thoroughness': String(DEFAULTS.thoroughness),
     'elk.layered.highDegreeNodes.treatment': 'true',
     'elk.layered.highDegreeNodes.threshold': '8',
+    // Post-compaction slides a sink down the flow axis into the gap an inline
+    // edge label leaves, one layer past its siblings (#1750); mermaid keeps
+    // it beside them. Subgraph layouts (also the hinted compound pass) keep it:
+    // their border clearance relies on it.
     'elk.layered.compaction.postCompaction.strategy':
-      'LEFT_RIGHT_CONSTRAINT_LOCKING',
+      graph.subgraphs.length === 0 && !hints?.forceNodeOrder
+        ? 'NONE'
+        : 'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     // Every layer keeps the nodes in the order the graph lists them: the
     // compound layout relies on it to keep a subgraph's nodes together.

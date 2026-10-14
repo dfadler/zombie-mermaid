@@ -358,6 +358,21 @@ describe('CLI – render --ascii --hyperlinks', () => {
   })
 })
 
+describe('CLI – render --ascii --profile markdown (#2011)', () => {
+  it('emits plain ASCII only when the profile is set', async () => {
+    const off = createMockStdout()
+    await runRender(renderArgs({ ascii: true }), off, LINKED_FLOW)
+    const on = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, profile: 'markdown' }),
+      on,
+      LINKED_FLOW,
+    )
+    expect(off.output()).toMatch(/[^\x00-\x7f]/)
+    expect(on.output()).not.toMatch(/[^\x00-\x7f]/)
+  })
+})
+
 /** SGR-only strip, for asserting link spans inside colored output. */
 function stripSgr(text: string): string {
   return text.replace(/\x1b\[[0-9;]*m/g, '')

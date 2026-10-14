@@ -42,7 +42,13 @@ import {
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
-import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
+import {
+  isOccupied,
+  pathCells,
+  runsAlong,
+  segmentsOf,
+  type Grid,
+} from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
 // draw-bundles.ts, shapes/*.ts) that import dirEquals from this module —
@@ -548,9 +554,14 @@ export function splitSharedLabeledLane(
   ) {
     return
   }
+  // Cached per path array (paths are replaced, never mutated in place).
   const inner = (e: AsciiEdge): Set<string> => {
-    const cells = pathCells(e.path).slice(2, -2)
-    return new Set(cells.map((c) => `${c.x},${c.y}`))
+    let set = innerCells.get(e.path)
+    if (!set) {
+      const cells = pathCells(e.path).slice(2, -2)
+      innerCells.set(e.path, (set = new Set(cells.map(cellKey))))
+    }
+    return set
   }
   const mine = inner(edge)
   // A straight run into the target's final approach is a plain tee whose
@@ -665,6 +676,51 @@ interface ParallelLaneRoute {
   labelSegment: [GridCoord, GridCoord]
   /** Set when the lane leaves/enters different faces than the caller asked for. */
   faces?: { startDir: Direction; endDir: Direction }
+  /** Set when every offset was blocked and `path` is only the last attempt. */
+  exhausted?: true
+}
+
+/**
+ * Edges whose latest `determinePath` ended in `buildParallelLanePath`'s
+ * exhausted fallback: a placeholder path up to MAX_LANE_OFFSET_SEARCH rows
+ * out, not a route. `rerouteAroundStyleConflicts` keeps the previous path
+ * instead of adopting it (#2030, #2025).
+ */
+const exhaustedLaneEdges = new WeakSet<AsciiEdge>()
+export function laneSearchExhausted(edge: AsciiEdge): boolean {
+  return exhaustedLaneEdges.has(edge)
+}
+
+/**
+ * Whether a segment of `path` other than its two stems runs along part of
+ * another routed edge, or doubles back along `path` itself (#2025): two lanes
+ * of different groups, or a lane and a self-loop or plain edge, drawn on one
+ * line read as one stroke and close a box with their stems, and a fold draws a
+ * spike. The stems are left to port-offsets.ts.
+ */
+function runTaken(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  path: GridCoord[],
+): boolean {
+  const own = segmentsOf(path)
+  const others = graph.edges.flatMap((o) =>
+    o === edge ? [] : segmentsOf(o.path),
+  )
+  return own
+    .slice(1, -1)
+    .some(([a, b], i) =>
+      runsAlong(a, b, [...own.filter((_, j) => j !== i + 1), ...others]),
+    )
+}
+
+/** `mergePath` after dropping repeated points (gutter cells can coincide). */
+function lanePath(points: GridCoord[]): GridCoord[] {
+  return mergePath(
+    points.filter(
+      (p, i) => i === 0 || p.x !== points[i - 1]!.x || p.y !== points[i - 1]!.y,
+    ),
+  )
 }
 
 function buildParallelLanePath(
@@ -673,7 +729,10 @@ function buildParallelLanePath(
   preferredDir: Direction,
   preferredOppositeDir: Direction,
   laneIndex: number,
+  avoidRuns: boolean,
 ): ParallelLaneRoute {
+  const clear = (path: GridCoord[]): boolean =>
+    !avoidRuns || !runTaken(graph, edge, path)
   const fromAttach = gridCoordDirection(
     requireGridCoord(edge.from),
     preferredDir,
@@ -710,10 +769,16 @@ function buildParallelLanePath(
       : dirEquals(preferredOppositeDir, Down)
         ? 1
         : -1
-  const fromGutter = horizontalDeparture
+  // Each gutter steps along its own face's axis: a diagonal pair leaves one
+  // node vertically and enters the other horizontally (or the reverse), so the
+  // arrival's axis is not the departure's. Stepping the wrong axis put the
+  // gutter on the target's own border corner (#2025).
+  const isHorizontal = (d: Direction): boolean =>
+    dirEquals(d, Left) || dirEquals(d, Right)
+  const fromGutter = isHorizontal(preferredDir)
     ? { x: fromAttach.x + fromStep, y: fromAttach.y }
     : { x: fromAttach.x, y: fromAttach.y + fromStep }
-  const toGutter = horizontalDeparture
+  const toGutter = isHorizontal(preferredOppositeDir)
     ? { x: toAttach.x + toStep, y: toAttach.y }
     : { x: toAttach.x, y: toAttach.y + toStep }
 
@@ -752,7 +817,10 @@ function buildParallelLanePath(
             { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: toSide.y },
           ]
       const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
-      if (interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)) {
+      if (
+        interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes) &&
+        clear(sidePath)
+      ) {
         usedOffsets.add(offset)
         return {
           path: sidePath,
@@ -781,7 +849,7 @@ function buildParallelLanePath(
     // makes into its target (`toGutter` -> `toAttach`), instead of running
     // the last leg along the target's own border, where it drew a stray
     // arrowhead/junction on the border cell itself (#1230).
-    const wideCandidate = mergePath([
+    const wideCandidate = lanePath([
       fromAttach,
       wideLabelSegment[0],
       horizontalDeparture
@@ -790,7 +858,12 @@ function buildParallelLanePath(
       toGutter,
       toAttach,
     ])
-    if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate), ownNodes)) {
+    // No exemption for the edge's own nodes: a lane that leaves along a
+    // border row/column draws over the node's corner and edge glyphs (#2025).
+    if (
+      interiorCellsClearOfNodes(graph, pathCells(wideCandidate)) &&
+      clear(wideCandidate)
+    ) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
     }
@@ -847,7 +920,7 @@ function buildParallelLanePath(
             { x: laneCross, y: fromGutter.y },
           ]
     const gutterCandidate = horizontalDeparture
-      ? mergePath([
+      ? lanePath([
           fromAttach,
           fromGutter,
           { x: fromGutter.x, y: laneMain },
@@ -855,7 +928,7 @@ function buildParallelLanePath(
           toGutter,
           toAttach,
         ])
-      : mergePath([
+      : lanePath([
           fromAttach,
           fromGutter,
           { x: laneCross, y: fromGutter.y },
@@ -864,7 +937,8 @@ function buildParallelLanePath(
           toAttach,
         ])
     if (
-      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes)
+      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes) &&
+      clear(gutterCandidate)
     ) {
       usedOffsets.add(offset)
       return { path: gutterCandidate, labelSegment: gutterLabelSegment }
@@ -889,8 +963,7 @@ function buildParallelLanePath(
   // findNonNodeColumn's "every column occupied" fallback elsewhere in this
   // file: graceful degradation over a hard failure, not a case expected to
   // be exercised by a realistic graph.
-  /* v8 ignore next */
-  return { path, labelSegment }
+  return { path, labelSegment, exhausted: true }
 }
 
 // ============================================================================
@@ -928,6 +1001,100 @@ function buildClusterLaneRoute(
   }
 }
 
+/** Whether a node sits between `edge`'s ends on the same grid row (LR). */
+function jumpsNodeOnRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const a = edge.from.gridCoord
+  const b = edge.to.gridCoord
+  if (!a || !b || a.y !== b.y || a.x >= b.x) return false
+  return graph.nodes.some((n) => {
+    const c = n.gridCoord
+    return c !== null && c.y === a.y && c.x > a.x && c.x < b.x
+  })
+}
+
+/**
+ * Whether an LR edge runs under its row (#2043, #2044): it jumps a node on
+ * its own row, so its east-to-west route would share the origin's and the
+ * target's side faces with the edge through that node. Left as is: an edge
+ * whose ends already carry a self-loop or a backwards edge on the bottom face
+ * (they would merge there), a node that another jumping edge leaves while
+ * this one enters it (or the reverse), and a labeled edge that shares an end
+ * with another jumping edge (each label needs a lane of its own, #1467).
+ */
+function runsUnderRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  if (!jumpsNodeOnRow(graph, edge)) return false
+  const ends = new Set([edge.from, edge.to])
+  const sharedWith = graph.edges.filter(
+    (o) =>
+      o !== edge &&
+      (o.from === edge.from || o.to === edge.to) &&
+      jumpsNodeOnRow(graph, o),
+  )
+  if (edge.text.length > 0 && sharedWith.length > 0) return false
+  // A node that one jumping edge enters and another leaves would have both on
+  // its bottom face, in one cell.
+  if (
+    graph.edges.some(
+      (o) =>
+        (o.to === edge.from || o.from === edge.to) && jumpsNodeOnRow(graph, o),
+    )
+  ) {
+    return false
+  }
+  return !graph.edges.some((o) => {
+    if (o === edge || !(ends.has(o.from) || ends.has(o.to))) return false
+    const a = o.from.gridCoord
+    const b = o.to.gridCoord
+    return o.from === o.to || (a !== null && b !== null && a.x > b.x)
+  })
+}
+
+/**
+ * An edge that runs under its row (see `runsUnderRow`) needs the row it runs
+ * along tall enough for a stroke row and an arrowhead row, at any `paddingY`.
+ */
+export function reserveUnderRow(graph: AsciiGraph, edge: AsciiEdge): void {
+  const a = edge.from.gridCoord
+  const b = edge.to.gridCoord
+  if (!dirEquals(edge.startDir, Down) || !dirEquals(edge.endDir, Down)) return
+  if (!a || !b || a.y !== b.y || a.x >= b.x) return
+  for (const c of edge.path) {
+    if (c.y > a.y + 2) {
+      graph.rowHeight.set(c.y, Math.max(graph.rowHeight.get(c.y) ?? 0, 2))
+    }
+  }
+}
+
+/**
+ * Whether the node's bottom face (in an LR graph) is already used by another
+ * edge: a lower neighbour's edge, a reciprocal, or a parallel lane, which all
+ * leave or enter by that face. An LR self-loop re-enters there by default, on
+ * top of those strokes (#2025); with the bottom taken and the top free it
+ * re-enters the top face instead.
+ */
+function loopEntersTop(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+): boolean {
+  const node = edge.from
+  if (edge.from !== edge.to || effectiveDir !== 'LR') return false
+  if (requireGridCoord(node).y === 0) return false
+  const uses = (face: Direction): boolean =>
+    graph.edges.some((e) => {
+      if (e === edge || e.from === e.to) return false
+      if (e.from !== node && e.to !== node) return false
+      const lane = e.parallelLane !== undefined && e.parallelLane.index > 0
+      const [start, end] = determineStartAndEndDir(e, effectiveDir)
+      return (
+        (e.from === node &&
+          (lane ? dirEquals(Down, face) : dirEquals(start, face))) ||
+        (e.to === node && (lane ? dirEquals(Down, face) : dirEquals(end, face)))
+      )
+    })
+  return uses(Down) && !uses(Up)
+}
+
 /**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
@@ -940,6 +1107,7 @@ function buildClusterLaneRoute(
  * when both source and target are in the same subgraph.
  */
 export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
+  exhaustedLaneEdges.delete(edge)
   // Determine effective direction for this edge
   // If both nodes are in the same subgraph with a direction override, use it
   // Otherwise, use the graph's direction (not source's effective direction)
@@ -950,12 +1118,26 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       ? sourceSg.direction
       : graph.config.graphDirection
 
-  const [
+  let [
     preferredDir,
     preferredOppositeDir,
     alternativeDir,
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
+  if (loopEntersTop(graph, edge, effectiveDir)) {
+    ;[preferredDir, preferredOppositeDir] = [Right, Up]
+    ;[alternativeDir, alternativeOppositeDir] = [Right, Up]
+  }
+
+  // #2043/#2044: an LR edge that jumps over a node on its own row would leave
+  // the origin's right face and enter the target's left face, the very cells
+  // the edge through that node uses, so the two strokes and arrowheads merge.
+  // Run it under the row instead, from the origin's bottom face to the
+  // target's (the U shape a backwards LR edge already takes).
+  if (effectiveDir === 'LR' && runsUnderRow(graph, edge)) {
+    preferredDir = alternativeDir = Down
+    preferredOppositeDir = alternativeOppositeDir = Down
+  }
 
   // An edge leaving a cluster that engaged cluster-boundary routing (see
   // cluster-boundary.ts) takes the cluster's shared exit instead of the
@@ -1049,14 +1231,21 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       : preferredOppositeDir
     edge.startDir = laneDir
     edge.endDir = laneOppositeDir
-    const route = buildParallelLanePath(
-      graph,
-      edge,
-      laneDir,
-      laneOppositeDir,
-      edge.parallelLane.index,
-    )
+    const lane = (avoid: boolean): ParallelLaneRoute =>
+      buildParallelLanePath(
+        graph,
+        edge,
+        laneDir,
+        laneOppositeDir,
+        edge.parallelLane!.index,
+        avoid,
+      )
+    // Keeping off other edges' runs is a preference: with no such offset,
+    // share a run rather than fall back to the placeholder.
+    let route = lane(true)
+    if (route.exhausted) route = lane(false)
     edge.path = route.path
+    if (route.exhausted) exhaustedLaneEdges.add(edge)
     if (route.faces) {
       edge.startDir = route.faces.startDir
       edge.endDir = route.faces.endDir
@@ -1248,11 +1437,48 @@ export interface LabelContext {
   cover: Map<string, Set<AsciiEdge>>
   /** Label segment each edge has been given so far. */
   chosen: Map<AsciiEdge, [GridCoord, GridCoord]>
+  /** Cell key -> edges whose `chosen` segment covers it (index of `chosen`). */
+  held: Map<string, Set<AsciiEdge>>
+}
+
+const innerCells = new WeakMap<GridCoord[], Set<string>>()
+
+const cellKey = (c: GridCoord): string => `${c.x},${c.y}`
+
+/** Record `line` as `edge`'s label segment, keeping `held` in step with `chosen`. */
+export function holdLine(
+  ctx: LabelContext,
+  edge: AsciiEdge,
+  line: [GridCoord, GridCoord],
+): void {
+  const old = ctx.chosen.get(edge)
+  if (old)
+    for (const c of pathCells(old)) ctx.held.get(cellKey(c))?.delete(edge)
+  ctx.chosen.set(edge, line)
+  for (const c of pathCells(line)) {
+    const k = cellKey(c)
+    const set = ctx.held.get(k)
+    if (set) set.add(edge)
+    else ctx.held.set(k, new Set([edge]))
+  }
+}
+
+/** True when a segment other than `except`'s holds any of `keys`. */
+export function heldByOther(
+  ctx: LabelContext,
+  keys: Iterable<string>,
+  except?: AsciiEdge,
+): boolean {
+  for (const k of keys) {
+    const set = ctx.held.get(k)
+    if (set && set.size > (set.has(except!) ? 1 : 0)) return true
+  }
+  return false
 }
 
 export function createLabelContext(graph: AsciiGraph): LabelContext {
   const cover = new Map<string, Set<AsciiEdge>>()
-  const chosen = new Map<AsciiEdge, [GridCoord, GridCoord]>()
+  const ctx: LabelContext = { cover, chosen: new Map(), held: new Map() }
   for (const edge of graph.edges) {
     for (const cell of pathCells(expandDiagonalSegments(edge.path))) {
       const key = `${cell.x},${cell.y}`
@@ -1262,10 +1488,10 @@ export function createLabelContext(graph: AsciiGraph): LabelContext {
     }
     // Labels fixed during routing (cluster exits, parallel lanes) are taken.
     if (edge.labelLine.length === 2) {
-      chosen.set(edge, [edge.labelLine[0]!, edge.labelLine[1]!])
+      holdLine(ctx, edge, [edge.labelLine[0]!, edge.labelLine[1]!])
     }
   }
-  return { cover, chosen }
+  return ctx
 }
 
 /**
@@ -1412,12 +1638,7 @@ export function determineLabelLine(
       if (others && [...others].some((o) => o !== edge)) shared++
     }
     const keys = new Set(cells.map((c) => `${c.x},${c.y}`))
-    let taken = 0
-    for (const [other, held] of ctx.chosen) {
-      if (other === edge) continue
-      if (pathCells(held).some((c) => keys.has(`${c.x},${c.y}`))) taken = 1
-    }
-    return [taken, shared]
+    return [heldByOther(ctx, keys, edge) ? 1 : 0, shared]
   }
   const byRank = (
     a: { line: [GridCoord, GridCoord]; index: number },
@@ -1477,13 +1698,7 @@ export function determineLabelLine(
             .slice(1, -1)
             .map((c) => `${c.x},${c.y}`),
         )
-        for (const [other, held] of ctx.chosen) {
-          if (other === edge) continue
-          if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) {
-            return true
-          }
-        }
-        return false
+        return heldByOther(ctx, inner, edge)
       }
       const free = segments.filter(
         (s) => s.isVertical && clearOfNodes(s.line) && !holdsLabel(s.line),
@@ -1569,10 +1784,7 @@ export function determineLabelLine(
           .map((c) => `${c.x},${c.y}`),
       )
       // This edge isn't in `chosen` yet (labels fixed in routing return early).
-      for (const held of ctx.chosen.values()) {
-        if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) return true
-      }
-      return false
+      return heldByOther(ctx, inner)
     }
     if (holdsOther(largestLine)) {
       const free = segments.filter(
@@ -1588,7 +1800,7 @@ export function determineLabelLine(
   }
 
   applyLabelLine(graph, edge, largestLine, lenLabel)
-  ctx?.chosen.set(edge, largestLine)
+  if (ctx) holdLine(ctx, edge, largestLine)
 }
 
 /**

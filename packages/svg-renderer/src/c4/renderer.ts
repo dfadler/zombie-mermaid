@@ -66,6 +66,7 @@ export function renderC4Svg(
         decorative,
         undefined,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),

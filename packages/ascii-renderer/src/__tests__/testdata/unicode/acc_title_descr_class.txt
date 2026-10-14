@@ -1,0 +1,19 @@
+classDiagram
+  accTitle: Accessible title
+  accDescr {
+    A description
+    over two lines.
+  }
+  Animal <|-- Dog
+---
+┌────────┐    
+│ Animal │    
+└────────┘    
+     △        
+     │        
+     │        
+  ┌─────┐     
+  │ Dog │     
+  └─────┘     
+              
+              

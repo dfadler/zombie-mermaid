@@ -49,6 +49,18 @@ export function drawNode(node: AsciiNode, graph: AsciiGraph): Canvas {
  * All shapes are rendered as rectangles with distinctive corner characters
  * (defined in corners.ts) to indicate shape type.
  */
+/** The glyph a state start/end/choice node is drawn as, if it is one. */
+export function pseudoStateGlyph(
+  node: AsciiNode,
+  useAscii: boolean,
+): string | undefined {
+  if (node.shape === 'state-start') return useAscii ? '*' : '●'
+  if (node.shape === 'state-end') return useAscii ? '@' : '◉'
+  if (node.shape === 'diamond' && node.displayLabel === '')
+    return useAscii ? 'o' : '◇'
+  return undefined
+}
+
 function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   // Every node is guaranteed a gridCoord before drawing starts —
   // createMapping (grid.ts) seeds even nodes in otherwise-unreachable
@@ -75,13 +87,34 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   const to: DrawingCoord = { x: w, y: h }
   const box = mkCanvas(Math.max(from.x, to.x), Math.max(from.y, to.y))
 
-  // An unlabeled fork/join is a solid one-row bar, not an outlined box. Its
-  // blank top and bottom rows are where edges attach, so they stay clear of it.
+  // An unlabeled fork/join is a solid one-row bar (a 1-row cell, so edges
+  // attach flush to it, #2027), not an outlined box.
   if (node.shape === 'fork-join' && node.displayLabel === '') {
-    const mid = from.y + Math.floor(h / 2)
+    const mid = from.y
     for (let x = from.x; x <= to.x; x++)
       write(box, x, mid, useAscii ? '#' : '█')
     node.labelRows = { top: mid, bottom: mid }
+    return box
+  }
+
+  // Pseudo-states are one glyph (#2027), not a box. It sits at the start of
+  // its cell along the flow axis, where edges land (a taller sibling in the
+  // row/column would otherwise strand it), and centred across it.
+  const glyph = pseudoStateGlyph(node, useAscii)
+  if (glyph !== undefined) {
+    const lr = graph.config.graphDirection === 'LR'
+    // Same arithmetic as gridToDrawingCoord (the box is drawn half its first
+    // column in, edges land half the middle one in), so edges meet the glyph.
+    const col = (i: number) => graph.columnWidth.get(gc.x + i) ?? 0
+    const row = (i: number) => graph.rowHeight.get(gc.y + i) ?? 0
+    const gx = lr
+      ? from.x
+      : col(0) + Math.floor(col(1) / 2) - Math.floor(col(0) / 2)
+    const cy = lr
+      ? row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
+      : from.y
+    write(box, gx, cy, glyph)
+    node.labelRows = { top: cy, bottom: cy }
     return box
   }
 

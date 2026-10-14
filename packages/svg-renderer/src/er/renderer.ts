@@ -95,6 +95,7 @@ export function renderErSvg(
         decorative,
         undefined,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),
@@ -201,7 +202,7 @@ function renderEntityBox(
   if (attributes.length === 0) {
     parts.push(
       f`  <text x="${x + width / 2}" y="${attrTop + rowHeight / 2}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
-        f`font-size="${ER_FONT.attrSize}" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>`,
+        f`font-size="${ER_FONT.attrSize}" fill="var(--_text-muted)" font-style="italic">(no attributes)</text>`,
     )
   }
 
