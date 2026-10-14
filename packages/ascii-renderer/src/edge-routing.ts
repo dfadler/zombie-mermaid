@@ -665,6 +665,19 @@ interface ParallelLaneRoute {
   labelSegment: [GridCoord, GridCoord]
   /** Set when the lane leaves/enters different faces than the caller asked for. */
   faces?: { startDir: Direction; endDir: Direction }
+  /** Set when every offset was blocked and `path` is only the last attempt. */
+  exhausted?: true
+}
+
+/**
+ * Edges whose latest `determinePath` ended in `buildParallelLanePath`'s
+ * exhausted fallback: a placeholder path up to MAX_LANE_OFFSET_SEARCH rows
+ * out, not a route. `rerouteAroundStyleConflicts` keeps the previous path
+ * instead of adopting it (#2030, #2025).
+ */
+const exhaustedLaneEdges = new WeakSet<AsciiEdge>()
+export function laneSearchExhausted(edge: AsciiEdge): boolean {
+  return exhaustedLaneEdges.has(edge)
 }
 
 function buildParallelLanePath(
@@ -889,8 +902,7 @@ function buildParallelLanePath(
   // findNonNodeColumn's "every column occupied" fallback elsewhere in this
   // file: graceful degradation over a hard failure, not a case expected to
   // be exercised by a realistic graph.
-  /* v8 ignore next */
-  return { path, labelSegment }
+  return { path, labelSegment, exhausted: true }
 }
 
 // ============================================================================
@@ -940,6 +952,7 @@ function buildClusterLaneRoute(
  * when both source and target are in the same subgraph.
  */
 export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
+  exhaustedLaneEdges.delete(edge)
   // Determine effective direction for this edge
   // If both nodes are in the same subgraph with a direction override, use it
   // Otherwise, use the graph's direction (not source's effective direction)
@@ -1057,6 +1070,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       edge.parallelLane.index,
     )
     edge.path = route.path
+    if (route.exhausted) exhaustedLaneEdges.add(edge)
     if (route.faces) {
       edge.startDir = route.faces.startDir
       edge.endDir = route.faces.endDir

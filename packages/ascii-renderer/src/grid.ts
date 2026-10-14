@@ -21,6 +21,7 @@ import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
   interiorCellsClearOfNodes,
+  laneSearchExhausted,
   determineLabelLine,
   createLabelContext,
   assignParallelEdgeLanes,
@@ -386,6 +387,12 @@ function rerouteAroundStyleConflicts(
   // staircase hugging the cluster wall (#1148's `retry` edge) or a stair-step
   // round a reciprocal edge (#1349's `D --> A`). Prefer fewest bends instead.
   graph.preferStraightRoutes = true
+  const entry = {
+    path: edge.path,
+    startDir: edge.startDir,
+    endDir: edge.endDir,
+    labelLine: edge.labelLine,
+  }
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
@@ -410,11 +417,21 @@ function rerouteAroundStyleConflicts(
       // determinePath then falls back to a straight line that ignores
       // occupancy (#1411: A --> D drawn through B). A line that overlaps
       // another edge is better than one through a node: keep the old path.
+      // A lane search that ran out of offsets returns a placeholder path
+      // hundreds of rows long, and every earlier detour was only a
+      // half-blocked fallback (a spike that draws a dangling stub, #2030):
+      // restore the route the edge had before any reroute.
+      if (laneSearchExhausted(edge)) {
+        Object.assign(edge, entry)
+        return
+      }
       if (
         !interiorCellsClearOfNodes(
           graph,
           pathCells(edge.path),
-          [edge.from, edge.to],
+          // A self-loop's detour must never cut through its own node's
+          // block (#2028): the own-node exemption would allow it.
+          edge.from === edge.to ? [] : [edge.from, edge.to],
           nodeOnlyGrid,
         )
       ) {
