@@ -260,7 +260,7 @@ By contributing, you agree your contributions are licensed under this project's 
 
 ## Bundle size budgets
 
-`pnpm run check:bundle-size` (CI job "Bundle size gate") fails a PR if any
+`pnpm run check:bundle-size` (the "Check bundle size" step of the CI job "Packed tarball smoke test") fails a PR if any
 `dist/` file exceeds its gzip budget, or any package's unpacked `dist/` (no
 source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. It prints
 bytes, budget and remaining headroom per entry. Each budget is the size CI
