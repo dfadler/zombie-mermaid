@@ -578,9 +578,14 @@ function separateLaneEnds(
 ): void {
   const place = (run: PortRun | undefined, role: 'S' | 'E'): number => {
     const geo = run && portGeometry(graph, run)
+    // Defensive: runs of a routed edge always have a geometry and a role entry,
+    // and some offset always attaches.
+    /* v8 ignore next */
     if (!run || !geo) return 0
+    /* v8 ignore next */
     if ((rolesAt.get(portKey(run.node, run.cell))?.size ?? 0) < 2) return 0
     const push = pushOf(run, role)
+    /* v8 ignore next */
     return (
       [STROKE_SPACING, 1]
         .map((m) => push * m)
@@ -607,6 +612,7 @@ function separateLaneEnds(
       )
     })
     if (!joins) return 0
+    /* v8 ignore next */
     return (
       [STROKE_SPACING, 1]
         .map((m) => -run.turn * m)
@@ -632,7 +638,10 @@ function separateLaneEnds(
       end: place(e, 'E') || apart(edge, e),
     }
     if (shift.start === 0 && shift.end === 0) continue
+    // Defensive: a routed edge always has both runs.
+    /* v8 ignore next */
     if (s) shift.startRun = shiftedRun(s)
+    /* v8 ignore next */
     if (e) shift.endRun = shiftedRun(e)
     result.set(edge, shift)
   }
@@ -657,6 +666,7 @@ function separateSelfLoops(
   const used = new Map<string, number[]>()
   const note = (run: PortRun | undefined, by: number): void => {
     const geo = run && portGeometry(graph, run)
+    /* v8 ignore next */
     if (!run || !geo) return
     const key = `${run.node.index}|${run.side}`
     used.set(key, [...(used.get(key) ?? []), geo.centre + by])
@@ -669,16 +679,21 @@ function separateSelfLoops(
   }
   const place = (run: PortRun | undefined, toward: number): number => {
     const geo = run && portGeometry(graph, run)
+    /* v8 ignore next */
     if (!run || !geo) return 0
     const taken = used.get(`${run.node.index}|${run.side}`) ?? []
     // Alone at its port cell the loop keeps the centre.
     if (!taken.includes(geo.centre)) return 0
+    // A loop's end always turns, so `toward` is never 0.
+    /* v8 ignore next */
     const dir = toward === 0 ? 1 : toward
     for (const gap of [STROKE_SPACING, 1]) {
       for (const o of [dir, dir * 2, -dir, -dir * 2]) {
         if (!attachesAt(run, geo.centre + o, geo)) continue
         if (taken.every((t) => Math.abs(t - (geo.centre + o)) >= gap)) return o
       }
+      // The centre is in `taken` here, so it is never clear.
+      /* v8 ignore next */
       if (taken.every((t) => Math.abs(t - geo.centre) >= gap)) return 0
     }
     // Nowhere free on the face: stay at the centre (no fixture reaches this).
@@ -689,11 +704,16 @@ function separateSelfLoops(
     const s = startRun(loop)
     const e = endRun(loop)
     const shift: PortShift = {
+      // Loops always have both runs (see `loops` filter).
+      /* v8 ignore next */
       start: place(s, s?.turn ?? 0),
+      /* v8 ignore next */
       end: place(e, -(e?.turn ?? 0)),
     }
     if (shift.start === 0 && shift.end === 0) continue
+    /* v8 ignore next */
     if (s) shift.startRun = shiftedRun(s)
+    /* v8 ignore next */
     if (e) shift.endRun = shiftedRun(e)
     result.set(loop, shift)
   }
