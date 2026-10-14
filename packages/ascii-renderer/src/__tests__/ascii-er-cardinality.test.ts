@@ -13,12 +13,14 @@ describe('ASCII ER crow-foot cardinality markers', () => {
     // which is only correct on the right side.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         WIDGET |o--|| GADGET : rel`,
       { useAscii: true },
     )
     expect(ascii).toContain('|o')
 
     const unicode = renderMermaidASCII(`erDiagram
+      direction LR
       WIDGET |o--|| GADGET : rel`)
     expect(unicode).toContain('│○')
   })
@@ -28,13 +30,34 @@ describe('ASCII ER crow-foot cardinality markers', () => {
     // from it: circle nearest the entity, line furthest: "o|".
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         WIDGET ||--o| GADGET : rel`,
       { useAscii: true },
     )
     expect(ascii).toContain('o|')
 
     const unicode = renderMermaidASCII(`erDiagram
+      direction LR
       WIDGET ||--o| GADGET : rel`)
     expect(unicode).toContain('○│')
+  })
+
+  it('draws many / zero-many / zero-one along the vertical axis on a vertical edge (#2081)', () => {
+    // Default ER layout stacks entities top to bottom, so these markers sit
+    // on a vertical run: the upper entity's marker opens downward, the
+    // lower one's upward, and neither reuses the horizontal ╟/╢ glyphs.
+    const render = (src: string, useAscii = false) =>
+      renderMermaidASCII(`erDiagram\n  ${src}`, { useAscii })
+
+    const manyUni = render('A }|--o{ B : r')
+    expect(manyUni).toContain('╤')
+    expect(manyUni).toContain('○╧')
+    expect(manyUni).not.toMatch(/[╟╢]/)
+
+    const manyAscii = render('A }|--o{ B : r', true)
+    expect(manyAscii).toMatch(/^\s*V\s*$/m)
+    expect(manyAscii).toMatch(/^\s*o\^\s*$/m)
+
+    expect(render('A ||--o| B : r')).toMatch(/^\s*○┼\s*$/m)
   })
 })
