@@ -825,8 +825,6 @@ function buildParallelLanePath(
     ])
     // No exemption for the edge's own nodes: a lane that leaves along a
     // border row/column draws over the node's corner and edge glyphs (#2025).
-    // The clear-wide-lane branch is not reached by any fixture yet.
-    /* v8 ignore if */
     if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate))) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
