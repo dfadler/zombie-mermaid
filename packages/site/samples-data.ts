@@ -5,7 +5,7 @@
  *   - __tests__/visual/*.visual.test.ts — the Playwright visual-regression suite
  *   - scripts/visual-diff.ts            — before/after rendering report
  *   - demo/diagram-pages-data.ts        — looks up one sample per diagram type by title
- *   - bench.ts                          — runs performance benchmarks in Bun (no browser)
+ *   - bench.ts                          — runs performance benchmarks under tsx (no browser)
  *   - vite.config.ts                    — dev server with live reload
  *
  * index.ts (the marketing home page) does not consume this file.

@@ -33,7 +33,6 @@ export default tseslint.config(
       'public/**',
       'packages/site/samples-data.ts',
       'packages/site/xychart-samples-data.ts',
-      'tsup.config.ts',
       // Workflow-tool scripts (Claude Code's Workflow orchestration DSL, not
       // a plain ES module): the harness wraps the script body in an async
       // function, so top-level `await`/`return` is valid there but not under

@@ -80,7 +80,8 @@ export interface PackageBuildOptions {
 // `export { X } from '../core'`) matched neither alternative and silently
 // passed the afterBuild guard below. Caught in PR review (#769) — this
 // invariant matters more once these packages are actually published.
-const RELATIVE_IMPORT_RE = /^(?:import|export)\s[^;]*\bfrom\s*['"]\.\.?\//m
+export const RELATIVE_IMPORT_RE =
+  /^(?:import|export)\s[^;]*\bfrom\s*['"]\.\.?\//m
 
 /**
  * External predicate shared by every package build: bundle only local
@@ -114,6 +115,25 @@ function isExternal(id: string): boolean {
   return true
 }
 
+/**
+ * Settings the umbrella build (`config/vite.config.lib.ts`) shares verbatim
+ * with every package build, so the two can't drift: the `unplugin-dts`
+ * options (each caller adds its own `afterBuild`) and the top-level `build`
+ * block's non-structural fields. `outDir`, `lib` and `external` stay per-caller.
+ */
+export const sharedDtsOptions = {
+  tsconfigPath: resolve(REPO_ROOT, 'config/tsconfig.build.json'),
+  exclude: ['src/__tests__/**', '**/*.test.ts'],
+  bundleTypes: true,
+  declarationOnly: true,
+}
+export const sharedBuild = {
+  emptyOutDir: false,
+  target: 'es2022',
+  sourcemap: true,
+  rolldownOptions: { output: { sourcemapExcludeSources: true } },
+} as const
+
 const ES_ONLY: LibraryFormats[] = ['es']
 const CJS_ONLY: LibraryFormats[] = ['cjs']
 
@@ -141,12 +161,9 @@ export function definePackageBuild(options: PackageBuildOptions) {
           // just the one `paths` block below; nothing else differs from
           // tsconfig.json, which `extends` already inherits.
           //
-          // Only vite.config.package.ts (this file) uses it — the umbrella
-          // build (config/vite.config.lib.ts) resolves `tsconfig.json` directly,
-          // since #769's rework reverted it to bundling `packages/*` by
-          // source rather than through their built output.
-          tsconfigPath: resolve(REPO_ROOT, 'config/tsconfig.build.json'),
-          exclude: ['src/__tests__/**', '**/*.test.ts'],
+          // Shared with the umbrella build (config/vite.config.lib.ts) via
+          // `sharedDtsOptions` above.
+          ...sharedDtsOptions,
           // Rolls this package's entire public surface into one
           // self-contained `.d.ts`, regardless of how many source files —
           // or, for ascii-renderer/mcp, how many directories outside this
@@ -156,8 +173,6 @@ export function definePackageBuild(options: PackageBuildOptions) {
           // actually depends on is left as a normal external `import` in
           // the output, not inlined — unlike config/vite.config.lib.ts's own dts
           // config, nothing here lists `bundledPackages`.
-          bundleTypes: true,
-          declarationOnly: true,
           afterBuild: async (emitted) => {
             const files = [...emitted.keys()].filter((file) =>
               file.endsWith('.d.ts'),
@@ -187,9 +202,7 @@ export function definePackageBuild(options: PackageBuildOptions) {
     ],
     build: {
       outDir: DIST,
-      emptyOutDir: false,
-      target: 'es2022',
-      sourcemap: true,
+      ...sharedBuild,
       // Present only so unplugin-dts's configResolved hook doesn't warn
       // about a lib-less config before any environment is resolved — see
       // this file's header. Every real environment below sets its own
@@ -199,8 +212,8 @@ export function definePackageBuild(options: PackageBuildOptions) {
         fileName: (format) => `index.${format === 'es' ? 'js' : 'cjs'}`,
       },
       rolldownOptions: {
+        ...sharedBuild.rolldownOptions,
         external: isExternal,
-        output: { sourcemapExcludeSources: true },
       },
     },
     environments: {
