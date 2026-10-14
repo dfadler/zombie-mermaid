@@ -127,17 +127,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Vitest keeps only a small results.json here (per-file duration and
-      # failure history, used to order files); restoring the latest one runs
-      # long files first so the workers finish together (#1839). Cache-only
-      # hint: a miss changes ordering, never results.
-      - name: Restore Vitest results cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: node_modules/.vite/vitest
-          key: vitest-results-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: vitest-results-${{ runner.os }}-
-
       - name: Run tests with coverage
         run: pnpm run test:coverage
 
