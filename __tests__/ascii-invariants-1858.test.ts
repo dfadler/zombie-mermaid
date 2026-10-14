@@ -22,7 +22,6 @@ import {
 const KNOWN: Record<string, string> = {
   'Class: Relationship Labels': '#2024',
   'Class: MVC Architecture': '#2024',
-  'C4: System Context': '#2026',
 }
 
 /** Rules a diagram kind does not promise (pie/xychart are ragged by design). */

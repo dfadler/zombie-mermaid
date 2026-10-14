@@ -2260,4 +2260,14 @@ pie title Pets adopted by volunteers
     G --> H
     G --> I`,
   },
+  {
+    title: 'LR Fan-In With Bypass Edge',
+    category: 'Flowchart',
+    description:
+      'The long edge from `A` to `C` joins the line out of `A` with a junction in the gap before `B`, including at a narrow `paddingX` (#1915).',
+    source: `flowchart LR
+    A --> B
+    A --> C
+    B --> C`,
+  },
 ]

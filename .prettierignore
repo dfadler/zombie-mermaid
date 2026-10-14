@@ -19,3 +19,4 @@ coverage/
 # Verbatim third-party license text (OFL, MIT); must not be reflowed
 packages/svg-renderer/THIRD_PARTY_NOTICES.md
 packages/ascii-renderer/THIRD_PARTY_NOTICES.md
+etc/api/

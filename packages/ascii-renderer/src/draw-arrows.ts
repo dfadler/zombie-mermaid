@@ -1545,6 +1545,19 @@ function otherLabelPlacements(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] {
+  // Memoised like `resolveLabelPlacement`: every slide candidate re-asks.
+  const key = `${graph.edges.indexOf(edge)}:others`
+  const hit = placementMemo.get(key)
+  if (hit) return hit
+  const out = computeOtherLabelPlacements(graph, edge)
+  placementMemo.set(key, out)
+  return out
+}
+
+function computeOtherLabelPlacements(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { x: number; y: number; text: string }[] {
   const out: { x: number; y: number; text: string }[] = []
   const shifts = portShifts(graph)
   const at = graph.edges.indexOf(edge)

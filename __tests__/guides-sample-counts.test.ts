@@ -25,14 +25,14 @@ describe('docs/guides/samples.md sample counts', () => {
       byCategory.set(category, (byCategory.get(category) ?? 0) + 1)
     }
 
-    expect(samples.length, 'total including the hero banner').toBe(142)
+    expect(samples.length, 'total including the hero banner').toBe(143)
     expect(
       samples.filter((s) => s.category !== 'Hero').length,
       'browsable gallery count quoted in the guide',
-    ).toBe(141)
+    ).toBe(142)
 
     // The category table in samples.md.
-    expect(byCategory.get('Flowchart')).toBe(36)
+    expect(byCategory.get('Flowchart')).toBe(37)
     expect(byCategory.get('Sequence')).toBe(20)
     expect(byCategory.get('Class')).toBe(17)
     expect(byCategory.get('ER')).toBe(15)
