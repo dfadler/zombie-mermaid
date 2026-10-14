@@ -543,7 +543,9 @@ describe('ASCII class diagram — a detour that clears to the left of its source
         l.includes('┌───┐') && (lines[i + 1]?.includes('│ C │') ?? false),
     )
     expect(cTopRow).toBeGreaterThan(0)
-    const entryRow = lines[cTopRow - 1]!
+    // The entry run sits one row above the arrowhead row (#2056), so the
+    // head has a stem: the run's anchor-end corner is that stem's top.
+    const entryRow = lines[cTopRow - 2]!
     // `routeX < toAnchorX` draws '└' at the trunk column and '┐' at the
     // anchor (jogging right into C); the mirrored `else` branch (every
     // other detour test's case) draws '┘' at the trunk column instead — so
@@ -551,9 +553,11 @@ describe('ASCII class diagram — a detour that clears to the left of its source
     // distinguishes the two branches.
     expect(entryRow).toContain('└')
     expect(entryRow).not.toContain('┘')
-    const arrowCol = entryRow.indexOf('▼')
+    const arrowCol = lines[cTopRow - 1]!.indexOf('▼')
     expect(arrowCol).toBeGreaterThanOrEqual(0)
     expect(entryRow.indexOf('└')).toBeLessThan(arrowCol)
+    // '┤' where B --> C's own stem joins the run at the shared anchor
+    expect(entryRow[arrowCol]).toMatch(/[┐┤]/)
   })
 })
 
