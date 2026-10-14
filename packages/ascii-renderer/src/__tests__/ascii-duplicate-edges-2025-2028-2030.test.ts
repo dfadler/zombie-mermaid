@@ -55,6 +55,52 @@ function orphanArms(out: string): string[] {
   return found
 }
 
+/** Glyph arms that lead into a line glyph (not a node border) with no arm back. */
+function brokenJunctions(out: string): string[] {
+  const grid = out.split('\n').map((l) => [...l])
+  const border = new Set(nodeBoxes(out).flatMap((b) => [...b]))
+  const found: string[] = []
+  grid.forEach((row, y) =>
+    row.forEach((ch, x) => {
+      for (const arm of ARMS[ch] ?? '') {
+        const [dx, dy] = STEP[arm]!
+        const next = ARMS[grid[y + dy]?.[x + dx] ?? ' ']
+        if (border.has(key(x + dx, y + dy))) continue
+        if (next !== undefined && !next.includes(OPPOSITE[arm]!))
+          found.push(`${ch} at ${x},${y} arm ${arm}`)
+      }
+    }),
+  )
+  return found
+}
+
+/**
+ * A seeded random flowchart of 2-4 nodes with duplicate, reciprocal and
+ * self-loop edges, in any direction (mulberry32).
+ */
+function randomFlowchart(seed: number): string {
+  let t = seed >>> 0
+  const rnd = () => {
+    t = (t + 0x6d2b79f5) >>> 0
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+  const pick = (n: number) => Math.floor(rnd() * n)
+  const n = 2 + pick(3)
+  const lines = [`flowchart ${['TD', 'LR', 'BT', 'RL'][pick(4)]}`]
+  for (let i = 0; i < n; i++) lines.push(`  n${i}["n${i}"]`)
+  const m = 3 + pick(7)
+  for (let i = 0; i < m; i++) {
+    const a = pick(n)
+    const b = rnd() < 0.2 ? a : pick(n)
+    lines.push(`  n${a} --> n${b}`)
+    if (rnd() < 0.3) lines.push(`  n${a} --> n${b}`)
+    if (rnd() < 0.2) lines.push(`  n${b} --> n${a}`)
+  }
+  return lines.join('\n')
+}
+
 const CORNER_TL = '┌╭◇('
 const CORNER_TR = '┐╮◇)'
 const CORNER_BL = '└╰◇('
@@ -159,6 +205,23 @@ function headsOnExitStems(out: string): string[] {
   return found
 }
 
+/** Stroke components that meet exactly one node box, at two cells or more. */
+function selfLoops(out: string): number {
+  const boxes = nodeBoxes(out)
+  const { comps } = strokeComponents(out, boxes)
+  const near = (k: string) => {
+    const [x, y] = k.split(',').map(Number) as Cell
+    return Object.values(STEP).map(([dx, dy]) => key(x + dx, y + dy))
+  }
+  return comps.filter((c) => {
+    const hit = boxes.filter((b) =>
+      c.some((k) => near(k).some((n) => b.has(n))),
+    )
+    if (hit.length !== 1) return false
+    return new Set(c.flatMap(near).filter((n) => hit[0]!.has(n))).size >= 2
+  }).length
+}
+
 const widths = (out: string) =>
   new Set(out.split('\n').map((l) => [...l].length))
 
@@ -193,10 +256,9 @@ const NODES: Record<string, number> = {
 }
 
 /**
- * Self-loops sharing a face with in/out/duplicate edges, in every direction
- * (exercises `separateSelfLoops` and `separateLaneEnds` placement). Only the
- * invariants that hold today: equal-width rows, no orphan arms, intact node
- * borders.
+ * Self-loops and lanes sharing a face with in/out/duplicate edges, in every
+ * direction (exercises `allocateFaces` in port-offsets.ts and `runTaken` in
+ * edge-routing.ts).
  */
 const FACE_CASES: [string, string, number][] = [
   [
@@ -426,6 +488,29 @@ const FACE_CASES: [string, string, number][] = [
   ],
 ]
 
+/**
+ * Closed stroke rectangles a case cannot avoid. TD many duplicates: `a --> c`
+ * (lane 0, routed first) takes the only gutter column beside `b`, and lanes
+ * only grow outward, so the short `a --> b` and `b --> c` lanes must cross it
+ * and the long `c --> a` lane; two such crossings close one rectangle.
+ */
+const CROSSINGS: Record<string, number> = {
+  'TD many duplicates around a middle node': 1,
+}
+
+/**
+ * Self-loops still drawn along a neighbour's route. `self-loop with in and out
+ * neighbours`: the loop's corner sits in the one gutter row/column between
+ * its node and the `b --> c` fan, which runs along the same gutter; drawn a
+ * cell closer the loop would leave no cell for its arrowhead (`hugLoop`), and
+ * the node has no free face to loop round instead. Needs a wider gutter.
+ */
+const LOOP_ON_NEIGHBOUR = new Set(
+  ['TD', 'LR', 'BT', 'RL'].map(
+    (d) => `self-loop with in and out neighbours (${d})`,
+  ),
+)
+
 describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
   for (const [name, source] of Object.entries(CASES)) {
     for (const useAscii of [false, true]) {
@@ -526,17 +611,58 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
   describe('self-loops sharing a face with other edges', () => {
     for (const [name, source, nodes] of FACE_CASES) {
       for (const useAscii of [false, true]) {
-        it(`${name} (${useAscii ? 'ascii' : 'unicode'}): equal-width rows, no orphan arms, intact boxes`, () => {
+        it(`${name} (${useAscii ? 'ascii' : 'unicode'}): equal-width rows`, () => {
           const out = renderMermaidASCII(source, {
             colorMode: 'none',
             useAscii,
           })
           expect(widths(out).size).toBe(1)
-          if (useAscii) return
-          expect(orphanArms(out)).toEqual([])
-          expect(nodeBoxes(out)).toHaveLength(nodes)
         })
       }
+      it(`${name}: no orphan arms, intact boxes, no closed rectangle, heads not on exit stems`, () => {
+        const out = renderMermaidASCII(source, { colorMode: 'none' })
+        expect(orphanArms(out)).toEqual([])
+        const boxes = nodeBoxes(out)
+        expect(boxes).toHaveLength(nodes)
+        expect(strokeComponents(out, boxes).cycles).toBe(CROSSINGS[name] ?? 0)
+        expect(headsOnExitStems(out)).toEqual([])
+      })
+      it.skipIf(LOOP_ON_NEIGHBOUR.has(name))(
+        `${name}: every self-loop is a stroke of its own`,
+        () => {
+          const out = renderMermaidASCII(source, { colorMode: 'none' })
+          const looped = new Set(
+            [...source.matchAll(/^\s*(\w+) --> (\w+)$/gm)]
+              .filter((m) => m[1] === m[2])
+              .map((m) => m[1]),
+          )
+          expect(selfLoops(out)).toBe(looped.size)
+        },
+      )
     }
+  })
+
+  // 48 seeded graphs. Before the face allocator (#2025) the same seeds drew
+  // 555 broken or dangling arms over 200 seeds on main and, on this PR's
+  // parent, 50 closed rectangles and 10 heads on exit stems over these 48;
+  // now none of the former, and the totals below (crossings the grid
+  // cannot route round) are a ratchet.
+  it('random duplicate/reciprocal/self-loop graphs: no broken arms, few boxes', () => {
+    let cycles = 0
+    let heads = 0
+    for (let seed = 1; seed <= 48; seed++) {
+      const out = renderMermaidASCII(randomFlowchart(seed), {
+        colorMode: 'none',
+      })
+      expect(
+        [...orphanArms(out), ...brokenJunctions(out)],
+        `seed ${seed}`,
+      ).toEqual([])
+      expect(widths(out).size, `seed ${seed}`).toBe(1)
+      cycles += strokeComponents(out, nodeBoxes(out)).cycles
+      heads += headsOnExitStems(out).length
+    }
+    expect(cycles).toBeLessThanOrEqual(9)
+    expect(heads).toBeLessThanOrEqual(3)
   })
 })
