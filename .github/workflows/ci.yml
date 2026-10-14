@@ -142,6 +142,18 @@ jobs:
       # (from codecov.io, once the repo is linked there) as a repo secret —
       # without it this step fails rather than silently skipping, so the
       # badge's data source stays honest about whether it's actually wired up.
+      # The junit report written by config/vitest.config.ts under CI (#1838).
+      # The job summary (Vitest's github-actions reporter) lists any test that
+      # passed only on retry; see CONTRIBUTING.md "Flaky tests".
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: junit-report
+          path: test-results/junit.xml
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
