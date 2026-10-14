@@ -3,7 +3,7 @@
  * whose route has a horizontal run (source and target columns differ) had its
  * label centred on that run's row, overwriting it. The stem ended in the label
  * row and the arrowhead below it sat several columns away, connected to
- * nothing. The label now hangs beside the source stem, on a row of its own.
+ * nothing. The label now sits on the source stem, above the run, so it is on the path.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -42,5 +42,13 @@ describe('ASCII class diagram — label does not detach arrowheads (issue #2024)
     expect(out).toContain(' teaches ')
     expect(out).toContain(' enrolled in ')
     expect(detachedHeads(out)).toEqual([])
+  })
+  it('puts each label on its path: on the row directly above the run that starts under it', () => {
+    const rows = renderMermaidASCII(down, { colorMode: 'none' }).split('\n')
+    for (const label of ['teaches', 'enrolled in']) {
+      const y = rows.findIndex((r) => r.includes(label))
+      const mid = (rows[y] ?? '').indexOf(label) + Math.floor(label.length / 2)
+      expect(rows[y + 1]?.[mid]).toMatch(/[└┘]/)
+    }
   })
 })

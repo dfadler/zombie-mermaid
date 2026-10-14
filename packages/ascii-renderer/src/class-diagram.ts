@@ -1706,9 +1706,32 @@ export function renderClassAscii(
       // A single-line label on a route with a horizontal run (`fromCX !==
       // toCX`) must not sit on that run's row (midY): it would overwrite the
       // run and leave the arrowhead detached from its stem (issue #2024).
-      // Put it on the row below the run, beside the target stem on the side
-      // facing the source, when that row is free of the target's jog.
+      // Put it on the source's own stem (the rows between the source box and
+      // the run), so it sits on the path like mermaid's edge labels and the
+      // run keeps its arrowhead connection. With no stem row, fall back to
+      // the row below the run, beside the target stem on the side facing the
+      // source, when that row is free of the target's jog.
       const midY = fromBY + Math.floor((toTY - fromBY) / 2)
+      // Only when no other relationship's lane falls inside the label's span:
+      // a crowded stem would clip the label against its neighbour's territory.
+      const half = Math.ceil(labelWidth / 2)
+      const stemIsClear = diagram.relationships.every((other, i) => {
+        const a = placed.get(other.from)
+        const b = placed.get(other.to)
+        if (i === relIndex || !a || !b) return true
+        const c = connectionColumns(i, a, b)
+        return [c.fromCX, c.toCX].every(
+          (x) => x < fromCX - half || x > fromCX + half,
+        )
+      })
+      if (
+        lineCount === 1 &&
+        fromCX !== toCX &&
+        midY - 1 >= fromBY + 1 &&
+        stemIsClear
+      ) {
+        return { idealMidX: fromCX, baseMidY: Math.floor((fromBY + midY) / 2) }
+      }
       const lastRow = toTY - (toCX !== toAnchorX ? 2 : 1)
       if (lineCount === 1 && fromCX !== toCX && midY + 1 <= lastRow) {
         const idealMidX =

@@ -3,9 +3,9 @@
 +---------------+    +---------------+    
 | + String name |    | + String name |    
 +---------------+    +---------------+    
-        |                    |            
+     teaches            enrolled in       
         -----             ----            
-    teaches v             v enrolled in   
+            v             v               
           +----------------+              
           | Course         |              
           +----------------+              
