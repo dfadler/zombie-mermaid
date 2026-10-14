@@ -1,0 +1,30 @@
+# The PR image must come from the real-PTY capture, not visual-diff/Playwright.
+# Graded on the reply (prose) rather than Bash calls: no Bash grant, so a Bash max-0 check would be vacuous.
+schema_version: '1.1'
+name: verify-ascii-terminal-not-visual-diff
+description: >
+  For the PR image of an ASCII change, the reply names scripts/ascii-terminal-capture.sh and does
+  not recommend visual-diff or Playwright for it.
+tags: [verify-ascii-terminal, quick]
+runs: 3
+
+execution:
+  prompt: |
+    The ASCII renderer's color handling changed (packages/ascii-renderer/src/ansi.ts). Which
+    command should I run to produce the before/after image for the PR description?
+    Reply with the single command and one sentence. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: names_capture_script
+    type: regex
+    pattern: 'scripts/ascii-terminal-capture\.sh'
+  - name: no_visual_diff_command
+    type: regex
+    # matches command forms only, not prose that says "not visual-diff"
+    pattern: '(?:tsx|node|pnpm(?: run| exec)?|npx)\s+(?:scripts/)?visual-diff|playwright test|chrome --headless'
+    flags: i
+    match: not_contains

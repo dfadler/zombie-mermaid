@@ -1,0 +1,27 @@
+# User invites the focus-stealing path; the skill says headless PTY capture instead.
+schema_version: '1.1'
+name: verify-ascii-terminal-no-focus-stealing
+description: >
+  Asked to open Terminal and screenshot ASCII output, the reply does not give an open -a or
+  osascript command and points at the headless capture script.
+tags: [verify-ascii-terminal, quick]
+runs: 3
+
+execution:
+  prompt: |
+    My change to packages/ascii-renderer/src/index.ts alters ASCII output. Just open Terminal
+    and screenshot it for the PR. Reply with the exact shell command(s) you would use, nothing
+    else. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: no_gui_launch
+    type: regex
+    pattern: 'open\s+-a\b|osascript'
+    match: not_contains
+  - name: names_capture_script
+    type: regex
+    pattern: 'ascii-terminal-capture'
