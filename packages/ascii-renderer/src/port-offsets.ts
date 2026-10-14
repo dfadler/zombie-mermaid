@@ -505,7 +505,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     )
     const magnitudes =
       nearFixed || fansOut
-        ? [nearFixed ? STROKE_SPACING : 1]
+        ? nearFixed
+          ? [STROKE_SPACING, 1]
+          : [1]
         : Array.from({ length: PAIR_SPREAD }, (_, i) => PAIR_SPREAD - i)
     const offset = magnitudes
       .map((m) => push * m)
@@ -557,146 +559,349 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (r.end) shift.endRun = shiftedRun(r.end)
     result.set(edge, shift)
   }
-  separateLaneEnds(graph, result, rolesAt, shiftedRun)
-  separateSelfLoops(graph, result, shiftedRun)
+  allocateFaces(graph, result, shiftedRun)
   return result
 }
 
+/** One end of a lane edge or self-loop on a node face, for `allocateFaces`. */
+interface FaceEnd {
+  edge: AsciiEdge
+  run: PortRun
+  role: 'S' | 'E'
+}
+
+const endsOf = (e: AsciiEdge): [PortRun | undefined, 'S' | 'E'][] => [
+  [startRun(e), 'S'],
+  [endRun(e), 'E'],
+]
+
 /**
- * Lane edges keep their routed geometry, but a lane that leaves a port another
- * edge arrives at (or the reverse) draws its stem and arrowhead on that edge's
- * stroke, so neither direction can be told (#2030, #2025). Such an end moves a
- * stroke spacing to the side `pushOf` gives its role, the way an unfixed edge
- * does, or one cell if the face is too short. Lanes sharing a role at the port
- * keep sharing a stem.
+ * The one record of which cells of each node face are taken (#2025, #2028,
+ * #2030). Lane edges and self-loops keep their routed geometry, so each of
+ * their ends starts at the port centre, on top of whatever else uses the face.
+ * Every other edge's end is placed by now and holds its cell; the lane and loop
+ * ends of a face then get cells of their own (`placeFace`). Ends of one route
+ * (duplicate self-loops, #2028) share a cell. When a face is too short, the
+ * deeper of two same-direction unlabeled duplicate lanes is drawn on the
+ * other's route (drawn once) and the faces are placed again; with no such pair
+ * left, ends of one role may share a cell (a fan), and failing that the
+ * face's ends stay at the centre. Last, a self-loop that runs along another
+ * edge is drawn a cell closer to its node (`hugLoop`).
  */
-function separateLaneEnds(
+function allocateFaces(
   graph: AsciiGraph,
   result: Map<AsciiEdge, PortShift>,
-  rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
   shiftedRun: (run: PortRun) => ShiftedRun,
 ): void {
-  const place = (run: PortRun | undefined, role: 'S' | 'E'): number => {
-    const geo = run && portGeometry(graph, run)
-    if (!run || !geo) return 0
-    if ((rolesAt.get(portKey(run.node, run.cell))?.size ?? 0) < 2) return 0
-    const push = pushOf(run, role)
-    return (
-      [STROKE_SPACING, 1]
-        .map((m) => push * m)
-        .find((o) => attachesAt(run, geo.centre + o, geo)) ?? 0
-    )
+  const lanes = graph.edges.filter(
+    (e) =>
+      e.path.length >= 2 &&
+      !result.has(e) &&
+      (e.from === e.to ||
+        (e.parallelLane !== undefined &&
+          !e.bundle &&
+          !e.clusterSource &&
+          !e.clusterTarget &&
+          // A spike lane (#329) folds back on its stem: keep it there.
+          new Set(e.path.map((p) => `${p.x},${p.y}`)).size === e.path.length)),
+  )
+  const faceOf = (run: PortRun): string => `${run.node.index}|${run.side}`
+  const held = new Map<string, Held[]>()
+  for (const e of graph.edges) {
+    if (e.path.length < 2 || lanes.includes(e)) continue
+    const shift = result.get(e)
+    for (const [run, role] of endsOf(e)) {
+      const geo = run && portGeometry(graph, run)
+      if (!run || !geo) continue
+      const by = (role === 'S' ? shift?.start : shift?.end) ?? 0
+      const k = faceOf(run)
+      held.set(k, [
+        ...(held.get(k) ?? []),
+        heldEnd(e, run, role, geo.centre + by),
+      ])
+    }
   }
-  // A later lane that lands on the very cell the group's first edge lands on
-  // re-joins it, closing a box with the stem they share (#2030). It
-  // lands beside it instead, on the side it comes from, so no crossing.
-  const apart = (edge: AsciiEdge, run: PortRun | undefined): number => {
-    const geo = run && portGeometry(graph, run)
-    if (!run || !geo || run.turn === 0 || edge.parallelLane!.index === 0)
-      return 0
-    const last = edge.path[edge.path.length - 1]!
-    const joins = graph.edges.some((o) => {
-      const end = o.path[o.path.length - 1]
-      return (
-        o !== edge &&
-        o.parallelLane?.index === 0 &&
-        o.from === edge.from &&
-        o.to === edge.to &&
-        end?.x === last.x &&
-        end.y === last.y
-      )
-    })
-    if (!joins) return 0
-    return (
-      [STROKE_SPACING, 1]
-        .map((m) => -run.turn * m)
-        .find((o) => attachesAt(run, geo.centre + o, geo)) ?? 0
-    )
-  }
-  for (const edge of graph.edges) {
-    if (
-      !edge.parallelLane ||
-      edge.from === edge.to ||
-      edge.path.length < 2 ||
-      edge.bundle ||
-      edge.clusterSource ||
-      edge.clusterTarget ||
-      result.has(edge)
-    ) {
+  // Duplicate lane -> the lane it is drawn on.
+  const onto = new Map<AsciiEdge, AsciiEdge>()
+  for (;;) {
+    const faces = new Map<string, FaceEnd[]>()
+    for (const edge of lanes) {
+      if (onto.has(edge)) continue
+      for (const [run, role] of endsOf(edge)) {
+        if (!run) continue
+        faces.set(faceOf(run), [
+          ...(faces.get(faceOf(run)) ?? []),
+          { edge, run, role },
+        ])
+      }
+    }
+    const placed = new Map<FaceEnd, number>()
+    // A straight lane is one run: the face placed first fixes it for both.
+    const fixed = new Map<AsciiEdge, number>()
+    let pair: [AsciiEdge, AsciiEdge] | undefined
+    for (const [face, list] of faces) {
+      const has = held.get(face) ?? []
+      let offs = placeFace(graph, list, has, fixed, false)
+      if (!offs) {
+        pair ??= duplicateLanes(list)
+        if (pair) continue
+        offs = placeFace(graph, list, has, fixed, true) ?? list.map(() => 0)
+      }
+      list.forEach((f, i) => {
+        placed.set(f, offs[i]!)
+        if (runsOf(f.edge)?.straight) fixed.set(f.edge, offs[i]!)
+      })
+    }
+    if (pair) {
+      onto.set(pair[0], pair[1])
       continue
     }
-    const s = startRun(edge)
-    const e = endRun(edge)
-    const shift: PortShift = {
-      start: place(s, 'S'),
-      end: place(e, 'E') || apart(edge, e),
+    for (const [f, by] of placed) {
+      if (by === 0) continue
+      const shift = result.get(f.edge) ?? { start: 0, end: 0 }
+      if (f.role === 'S') {
+        shift.start = by
+        shift.startRun = shiftedRun(f.run)
+      } else {
+        shift.end = by
+        shift.endRun = shiftedRun(f.run)
+      }
+      result.set(f.edge, shift)
     }
-    if (shift.start === 0 && shift.end === 0) continue
-    if (s) shift.startRun = shiftedRun(s)
-    if (e) shift.endRun = shiftedRun(e)
-    result.set(edge, shift)
+    for (const [dup, lane] of onto) {
+      let root = lane
+      while (onto.has(root)) root = onto.get(root)!
+      const want = drawnPath(graph, root, result.get(root))
+      const base = lineToDrawing(graph, dup.path)
+      result.set(dup, {
+        start: 0,
+        end: 0,
+        points: base.map((b, i) => ({
+          x: want[i]!.x - b.x,
+          y: want[i]!.y - b.y,
+        })),
+      })
+    }
+    for (const loop of lanes) {
+      if (loop.from === loop.to) hugLoop(graph, loop, result)
+    }
+    return
   }
 }
 
+/** A cell another edge's end holds on a face, and the way that end turns. */
+interface Held {
+  at: number
+  role: 'S' | 'E'
+  heading: number
+  depth: number
+}
+
+function heldEnd(
+  edge: AsciiEdge,
+  run: PortRun,
+  role: 'S' | 'E',
+  at: number,
+): Held {
+  const heading = role === 'S' ? run.turn : -run.turn
+  return { at, role, heading, depth: runExtent(edge, run) }
+}
+
 /**
- * Draw each self-loop's two ends on strokes of their own (#2025). A loop leaves
- * and re-enters one node, usually by faces other edges also use, and at the
- * port centre its stem and arrowhead sit on those edges' strokes: the loop
- * then reads as a branch of a neighbour. Each end moves toward the loop's
- * inside to the nearest position clear of every other edge's end on that side
- * (two cells clear if the face is wide enough, else one). Loops do not avoid
- * each other: duplicates still draw as one loop (#2028).
+ * Cells for the lane and loop ends on one face, as offsets from each end's
+ * port centre, or undefined when the face is too short. Ends heading one way
+ * along the face sit on that side, the deeper (outer) lane farther from where
+ * it goes, so the lanes nest instead of crossing or sharing a stem with a lane
+ * that parts from it (a closed box). Cells are a stroke spacing apart, and
+ * from the cells other edges hold, where the face is wide enough, else one
+ * cell; with `share`, ends of one role may also share a cell. Among those the
+ * cells nearest the centre win, on each end's own side, clear of other edges'
+ * stems the end would run across.
  */
-function separateSelfLoops(
+function placeFace(
   graph: AsciiGraph,
-  result: Map<AsciiEdge, PortShift>,
-  shiftedRun: (run: PortRun) => ShiftedRun,
-): void {
-  const loops = graph.edges.filter((e) => e.from === e.to && e.path.length >= 2)
-  if (loops.length === 0) return
-  const used = new Map<string, number[]>()
-  const note = (run: PortRun | undefined, by: number): void => {
-    const geo = run && portGeometry(graph, run)
-    if (!run || !geo) return
-    const key = `${run.node.index}|${run.side}`
-    used.set(key, [...(used.get(key) ?? []), geo.centre + by])
+  list: FaceEnd[],
+  held: Held[],
+  fixed: ReadonlyMap<AsciiEdge, number>,
+  share: boolean,
+): number[] | undefined {
+  const run = list[0]!.run
+  const geo = portGeometry(graph, run)
+  if (!geo) return undefined
+  const centre = geo.centre
+  const info = list.map((f) => {
+    const heading = f.role === 'S' ? f.run.turn : -f.run.turn
+    // A loop hugs its node: inside any lane it shares the face with.
+    const depth =
+      runExtent(f.edge, f.run) - (f.edge.from === f.edge.to ? 0.5 : 0)
+    return {
+      // Ends that turn the same way at the same depth run on together
+      // beyond the stem: they are one route (a fan, or duplicate loops).
+      key: `${f.role}|${heading}|${depth}|${fixed.get(f.edge)}`,
+      role: f.role,
+      heading,
+      depth,
+      // A straight lane: the #1284 pair side (down-travelling right).
+      push: pushOf(f.run, f.role),
+      at: fixed.get(f.edge),
+    }
+  })
+  type Route = (typeof info)[number]
+  const routes = [...new Map(info.map((m) => [m.key, m])).values()]
+  routes.sort(
+    (a, b) =>
+      a.heading - b.heading ||
+      (a.heading < 0
+        ? a.depth - b.depth
+        : a.heading > 0
+          ? b.depth - a.depth
+          : a.push - b.push),
+  )
+  const cells: number[] = []
+  for (let p = geo.lo; p <= geo.hi; p++) {
+    if (attachesAt(run, p, geo)) cells.push(p)
   }
-  for (const e of graph.edges) {
-    if (e.from === e.to || e.path.length < 2) continue
-    const shift = result.get(e)
-    note(startRun(e), shift?.start ?? 0)
-    note(endRun(e), shift?.end ?? 0)
-  }
-  const place = (run: PortRun | undefined, toward: number): number => {
-    const geo = run && portGeometry(graph, run)
-    if (!run || !geo) return 0
-    const taken = used.get(`${run.node.index}|${run.side}`) ?? []
-    // Alone at its port cell the loop keeps the centre.
-    if (!taken.includes(geo.centre)) return 0
-    const dir = toward === 0 ? 1 : toward
-    for (const gap of [STROKE_SPACING, 1]) {
-      for (const o of [dir, dir * 2, -dir, -dir * 2]) {
-        if (!attachesAt(run, geo.centre + o, geo)) continue
-        if (taken.every((t) => Math.abs(t - (geo.centre + o)) >= gap)) return o
+  for (const gap of share ? [0] : [STROKE_SPACING, 1]) {
+    // A cell `r` may take: off other edges' cells (one of its role, if
+    // sharing), how far from the centre, and the stems it would run across.
+    const cost = (r: Route, p: number): number => {
+      if (r.at !== undefined && p !== centre + r.at) return Infinity
+      // Running on with another edge's end: share its stem (a fan).
+      const join = held.find(
+        (h) =>
+          h.role === r.role && h.heading === r.heading && h.depth === r.depth,
+      )
+      if (join) return p === join.at ? 0 : Infinity
+      let c =
+        2 * Math.abs(p - centre) -
+        (Math.sign(p - centre) === (r.heading || r.push) ? 1 : 0)
+      for (const h of held) {
+        if (h.at === p && (gap > 0 || h.role !== r.role)) return Infinity
+        if (Math.abs(h.at - p) < gap) return Infinity
+        if (h.at === p) c += 4
+        else if (Math.sign(h.at - p) === r.heading) c += 3
       }
-      if (taken.every((t) => Math.abs(t - geo.centre) >= gap)) return 0
+      return c
     }
-    // Nowhere free on the face: stay at the centre (no fixture reaches this).
-    /* v8 ignore next */
-    return 0
-  }
-  for (const loop of loops) {
-    const s = startRun(loop)
-    const e = endRun(loop)
-    const shift: PortShift = {
-      start: place(s, s?.turn ?? 0),
-      end: place(e, -(e?.turn ?? 0)),
+    // One entry per cell: the cheapest placing so far whose last route is there.
+    let best = cells.map((p) => ({
+      cost: cost(routes[0]!, p),
+      at: [p],
+      role: routes[0]!.role,
+    }))
+    for (const r of routes.slice(1)) {
+      best = cells.map((p) => {
+        const step = (b: (typeof best)[number]): number => {
+          const d = p - b.at[b.at.length - 1]!
+          return d >= Math.max(gap, 1)
+            ? 0
+            : d === 0 && gap === 0 && b.role === r.role
+              ? 4
+              : Infinity
+        }
+        const prev = best
+          .map((b) => ({ b, c: b.cost + step(b) }))
+          .sort((x, y) => x.c - y.c)[0]!
+        return {
+          cost: prev.c + cost(r, p),
+          at: [...prev.b.at, p],
+          role: r.role,
+        }
+      })
     }
-    if (shift.start === 0 && shift.end === 0) continue
-    if (s) shift.startRun = shiftedRun(s)
-    if (e) shift.endRun = shiftedRun(e)
-    result.set(loop, shift)
+    const win = best.sort((a, b) => a.cost - b.cost)[0]
+    if (!win || win.cost === Infinity) continue
+    const pos = new Map(routes.map((r, i) => [r.key, win.at[i]!]))
+    return info.map((m) => pos.get(m.key)! - centre)
   }
+  return undefined
+}
+
+/**
+ * Draw a self-loop a cell closer to its node when its far legs run along
+ * another edge's stroke, so it does not read as a branch of that edge
+ * (#2025). Kept as routed when that would put a leg against the node, or
+ * still run along something.
+ */
+function hugLoop(
+  graph: AsciiGraph,
+  loop: AsciiEdge,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  const node = loop.from
+  const dc = node.drawingCoord
+  const drawing = node.drawing
+  if (!dc || !drawing || loop.path.length < 4) return
+  const box = {
+    x0: dc.x,
+    x1: dc.x + drawing.length - 1,
+    y0: dc.y,
+    y1: dc.y + (drawing[0]?.length ?? 0) - 1,
+  }
+  const others = graph.edges
+    .filter((e) => e.from !== e.to && e.path.length >= 2)
+    .map((e) => drawnPath(graph, e, result.get(e)))
+  const shift = result.get(loop) ?? { start: 0, end: 0 }
+  const along = (s: PortShift): boolean =>
+    sharesRun(drawnPath(graph, loop, s).slice(1, -1), others)
+  if (!along(shift)) return
+  const drawn = drawnPath(graph, loop, shift)
+  const pull = (v: number, lo: number, hi: number): number =>
+    v > hi ? -1 : v < lo ? 1 : 0
+  const points = drawn.map((p, i) =>
+    i === 0 || i === drawn.length - 1
+      ? { x: 0, y: 0 }
+      : { x: pull(p.x, box.x0, box.x1), y: pull(p.y, box.y0, box.y1) },
+  )
+  const hugged: PortShift = { ...shift, points }
+  // The arrowhead needs a cell of its own before the last corner.
+  const d = drawnPath(graph, loop, hugged)
+  const [y, z] = d.slice(-2) as [DrawingCoord, DrawingCoord]
+  const tight = Math.abs(y.x - z.x) + Math.abs(y.y - z.y) < 2
+  if (tight || along(hugged)) return
+  result.set(loop, hugged)
+}
+
+/** Whether a segment of `path` runs (for a cell or more) along one of `others`. */
+function sharesRun(path: DrawingCoord[], others: DrawingCoord[][]): boolean {
+  const segs = (p: DrawingCoord[]) =>
+    p.slice(1).map((q, i) => [p[i]!, q] as const)
+  return segs(path).some(([a, b]) =>
+    others.some((o) =>
+      segs(o).some(([p, q]) => {
+        const h = a.y === b.y
+        if (h ? p.y !== a.y || q.y !== a.y : p.x !== a.x || q.x !== a.x)
+          return false
+        const [s, t, u, v] = h ? [a.x, b.x, p.x, q.x] : [a.y, b.y, p.y, q.y]
+        return (
+          Math.min(Math.max(s, t), Math.max(u, v)) >
+          Math.max(Math.min(s, t), Math.min(u, v))
+        )
+      }),
+    ),
+  )
+}
+
+/**
+ * Two unlabeled lanes on `list` between the same nodes in the same direction
+ * and of the same kind: the later one, to draw on the earlier one's route.
+ */
+function duplicateLanes(list: FaceEnd[]): [AsciiEdge, AsciiEdge] | undefined {
+  const same = (a: AsciiEdge, b: AsciiEdge): boolean =>
+    a.from === b.from &&
+    a.to === b.to &&
+    a.text === '' &&
+    b.text === '' &&
+    a.style === b.style &&
+    a.hasArrowStart === b.hasArrowStart &&
+    a.hasArrowEnd === b.hasArrowEnd &&
+    a.path.length === b.path.length
+  const edges = [...new Set(list.map((f) => f.edge))]
+  for (const dup of [...edges].reverse()) {
+    const lane = edges.find((e) => e !== dup && same(e, dup))
+    if (lane && dup.parallelLane?.index) return [dup, lane]
+  }
+  return undefined
 }
 
 /** Where a fan-in edge lands and which row its last leg runs along. */
@@ -922,7 +1127,10 @@ export function edgePointShifts(
   edge: AsciiEdge,
 ): DrawingCoord[] | undefined {
   const shift = portShifts(graph).get(edge)
-  if (!shift) return undefined
+  return shift && pointShifts(edge, shift)
+}
+
+function pointShifts(edge: AsciiEdge, shift: PortShift): DrawingCoord[] {
   const shifts: DrawingCoord[] = edge.path.map(() => ({ x: 0, y: 0 }))
   for (const [run, by] of [
     [shift.startRun, shift.start],
@@ -1008,14 +1216,21 @@ export function pathToDrawing(
   const cache = scopedPaths.get(graph)
   const hit = cache?.get(edge)
   if (hit) return hit
-  const base = lineToDrawing(graph, edge.path)
-  const shifts = edgePointShifts(graph, edge)
-  const out = shifts
-    ? base.map((dc, i) => ({
-        x: dc.x + shifts[i]!.x,
-        y: dc.y + shifts[i]!.y,
-      }))
-    : base
+  const out = drawnPath(graph, edge, portShifts(graph).get(edge))
   cache?.set(edge, out)
   return out
+}
+
+function drawnPath(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  shift: PortShift | undefined,
+): DrawingCoord[] {
+  const base = lineToDrawing(graph, edge.path)
+  if (!shift) return base
+  const shifts = pointShifts(edge, shift)
+  return base.map((dc, i) => ({
+    x: dc.x + shifts[i]!.x,
+    y: dc.y + shifts[i]!.y,
+  }))
 }
