@@ -1,5 +1,24 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.3.0
+
+### Minor Changes
+
+- [#1984](https://github.com/dfadler/zombie-mermaid/pull/1984) [`2fe4e00`](https://github.com/dfadler/zombie-mermaid/commit/2fe4e0006481a32fdd37faf45f9ee584d4d1696a) Thanks [@dfadler](https://github.com/dfadler)! - Add `limits` to `renderMermaidSVG` and `renderMermaidASCII`: `maxInputLength`, `maxNodes`, `maxEdges` (and `maxCanvasCells` for ASCII) are checked before layout and throw `LimitExceededError` (`code: 'LIMIT_EXCEEDED'`). Defaults are 100,000 characters, 400 nodes, 600 edges and 2,000,000 canvas cells, so a flowchart above 400 nodes or 600 edges now throws unless you raise the limit (`Infinity` disables one). The MCP render tools use tighter limits (50,000 / 150 / 300 / 1,000,000). See the API reference.
+
+### Patch Changes
+
+- [#1965](https://github.com/dfadler/zombie-mermaid/pull/1965) [`fa02ffe`](https://github.com/dfadler/zombie-mermaid/commit/fa02ffe3ab869d1d92d87ce67d82b2e8ce4ff1f9) Thanks [@dfadler](https://github.com/dfadler)! - Output change: a C4 SVG boundary that holds nothing no longer runs past the right edge of the SVG; the diagram is now wide enough for its default-width frame. ASCII output is unchanged. Fixes [#1909](https://github.com/dfadler/zombie-mermaid/issues/1909).
+
+- [#1976](https://github.com/dfadler/zombie-mermaid/pull/1976) [`e63ed98`](https://github.com/dfadler/zombie-mermaid/commit/e63ed989d8179d428149d1f48e31e78a87f261f3) Thanks [@dfadler](https://github.com/dfadler)! - Fix flowchart and state diagrams with several disconnected, widely-labelled edges throwing ELK's "Invalid hitboxes for scanline constraint calculation" instead of rendering ([#1813](https://github.com/dfadler/zombie-mermaid/issues/1813)).
+
+- [#1982](https://github.com/dfadler/zombie-mermaid/pull/1982) [`858a8ba`](https://github.com/dfadler/zombie-mermaid/commit/858a8ba39898b95678c300120590130835f7445d) Thanks [@dfadler](https://github.com/dfadler)! - Flowcharts: sibling subgraphs tied together by a shared outside node (`E --> A`, `E --> C`) now keep declaration order left to right, as mermaid 12 draws them. Unconnected siblings stay reversed. Nested Subgraphs horizontal agreement with mermaid 12.1.0 goes from 20% to 100%. Refs [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
+
+- [#1968](https://github.com/dfadler/zombie-mermaid/pull/1968) [`315dcb8`](https://github.com/dfadler/zombie-mermaid/commit/315dcb86ecb4688248c8c1ef35df90e50da303ce) Thanks [@dfadler](https://github.com/dfadler)! - Source maps no longer embed `sourcesContent`, cutting the shipped `.map` files by about 70% (svg-renderer 1532K to 404K, ascii-renderer 2384K to 556K on disk). Stack traces keep their line numbers. Refs [#1871](https://github.com/dfadler/zombie-mermaid/issues/1871).
+- Updated dependencies [[`2fe4e00`](https://github.com/dfadler/zombie-mermaid/commit/2fe4e0006481a32fdd37faf45f9ee584d4d1696a), [`315dcb8`](https://github.com/dfadler/zombie-mermaid/commit/315dcb86ecb4688248c8c1ef35df90e50da303ce), [`5e4a9a7`](https://github.com/dfadler/zombie-mermaid/commit/5e4a9a71b2f07c8eceaed50dc764504525065675), [`88bf8a5`](https://github.com/dfadler/zombie-mermaid/commit/88bf8a5abed27d76a775ca5269605090311c34d5), [`8360227`](https://github.com/dfadler/zombie-mermaid/commit/8360227eb337146a923e14781a87bc63ce74f44d)]:
+  - @zombie-mermaid/core@5.3.0
+  - @zombie-mermaid/mermaid-parser@5.3.0
+
 ## 5.2.0
 
 ### Minor Changes
