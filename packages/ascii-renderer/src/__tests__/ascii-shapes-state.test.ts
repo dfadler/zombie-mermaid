@@ -5,6 +5,7 @@ import {
   stateEndRenderer,
   forkJoinRenderer,
 } from '../shapes/state.ts'
+import { diamondRenderer } from '../shapes/index.ts'
 import { canvasToString } from '../canvas.ts'
 import { Up, Down, Left, Right, Middle, UpperLeft } from '../types.ts'
 import type { ShapeRenderOptions } from '../shapes/types.ts'
@@ -199,5 +200,23 @@ describe('stateDiagram-v2 rendering (integration)', () => {
     const endGlyphCount = (out.match(/◉/g) ?? []).length
     expect(startGlyphCount).toBe(2)
     expect(endGlyphCount).toBe(2)
+  })
+})
+
+describe('diamondRenderer (choice pseudo-state)', () => {
+  it('is a single glyph when unlabeled, an ordinary box when labeled', () => {
+    const dims = diamondRenderer.getDimensions('', unicodeOptions)
+    expect([dims.width, dims.height]).toEqual([1, 1])
+    expect(
+      canvasToString(diamondRenderer.render('', dims, unicodeOptions)),
+    ).toBe('◇')
+    expect(canvasToString(diamondRenderer.render('', dims, asciiOptions))).toBe(
+      'o',
+    )
+    const labeled = diamondRenderer.getDimensions('x', unicodeOptions)
+    expect(labeled.height).toBeGreaterThan(1)
+    expect(
+      canvasToString(diamondRenderer.render('x', labeled, unicodeOptions)),
+    ).toContain('◇')
   })
 })
