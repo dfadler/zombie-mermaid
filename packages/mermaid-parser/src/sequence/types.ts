@@ -72,8 +72,8 @@ export interface Actor {
   type: 'participant' | 'actor'
   /**
    * `@{ "type": ... }` config (boundary, control, entity, database,
-   * collections, queue). Parsed and kept, but not drawn: both renderers
-   * still draw the plain box / stick figure (docs/diagrams.md).
+   * collections, queue), drawn by both renderers as the matching icon or
+   * box variant. An unknown value keeps the plain box (docs/diagrams.md).
    */
   participantType?: string
   /**
@@ -173,6 +173,8 @@ export interface PositionedActor {
   id: string
   label: string
   type: 'participant' | 'actor'
+  /** `@{ "type": ... }` kind carried over from {@link Actor.participantType}. */
+  participantType?: string
   /** Center x of the actor box */
   x: number
   /** Top y of the actor box */
