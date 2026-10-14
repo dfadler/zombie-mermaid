@@ -22,8 +22,8 @@ async function run(
   vi.spyOn(console, 'log').mockImplementation((m) => void out.push(String(m)))
   vi.spyOn(console, 'error').mockImplementation((m) => void out.push(String(m)))
 
-  vi.doMock('esbuild', () => ({
-    build: async () => ({ outputFiles: [{ contents: new Uint8Array(10) }] }),
+  vi.doMock('../scripts/vite-bundle.ts', () => ({
+    bundleSource: async () => 'x'.repeat(10),
   }))
   vi.doMock('node:fs/promises', () => {
     const dirOf = (p: string) =>
@@ -59,7 +59,7 @@ async function run(
 afterEach(() => {
   vi.restoreAllMocks()
   vi.doUnmock('node:fs/promises')
-  vi.doUnmock('esbuild')
+  vi.doUnmock('../scripts/vite-bundle.ts')
 })
 
 describe('scripts/check-bundle-size.ts unpacked budgets', () => {

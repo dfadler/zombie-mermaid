@@ -7,7 +7,7 @@
     "dist/ascii.cjs": 512,
     "dist/mcp.js": 512,
     "dist/mcp.cjs": 512,
-    "dist/cli.js": 12773,
+    "dist/cli.js": 13054,
     "packages/core/dist/index.js": 12032,
     "packages/core/dist/index.cjs": 11115,
     "packages/mermaid-parser/dist/index.js": 20189,
@@ -20,11 +20,11 @@
     "packages/mcp/dist/index.cjs": 7459
   },
   "consumerBundles": {
-    "packages/svg-renderer/dist/index.js": 86213,
-    "dist/index.js": 152602
+    "packages/svg-renderer/dist/index.js": 84502,
+    "dist/index.js": 144553
   },
   "unpackedBudgets": {
-    "dist": 49231,
+    "dist": 49591,
     "packages/core/dist": 198133,
     "packages/mermaid-parser/dist": 206040,
     "packages/svg-renderer/dist": 441469,
