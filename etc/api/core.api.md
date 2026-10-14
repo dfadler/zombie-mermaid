@@ -44,6 +44,7 @@ export const DEFAULT_RENDER_LIMITS: Required<RenderLimits>;
 export const DEFAULTS: Readonly<{
     bg: string;
     fg: string;
+    muted: string;
 }>;
 
 // @public
