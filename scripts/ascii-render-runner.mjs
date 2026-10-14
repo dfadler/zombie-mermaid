@@ -147,5 +147,9 @@ if (sizeOnly) {
   )
   process.stdout.write(`${cols} ${lines.length}\n`)
 } else {
-  process.stdout.write(render({ colorMode: 'auto', ...extraOptions }))
+  // A `profile` supplies its own colorMode default (markdown => 'none'); forcing
+  // 'auto' here would override it ("explicit options win") and capture ANSI
+  // color for a render that should have none.
+  const defaults = extraOptions.profile ? {} : { colorMode: 'auto' }
+  process.stdout.write(render({ ...defaults, ...extraOptions }))
 }
