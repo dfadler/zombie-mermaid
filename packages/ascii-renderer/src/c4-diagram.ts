@@ -521,10 +521,10 @@ export function renderC4Ascii(
       start: !!(rel.bidirectional || rel.reversed),
       end: !rel.reversed || rel.bidirectional,
     }
-    const path =
-      findPath(a.box, b.box, grid, extraBlocked, heads) ??
-      /* v8 ignore next -- safety net: a fuzz of 400 random diagrams never needed it */
-      findPath(a.box, b.box, grid, extraBlocked)
+    const path = [heads, undefined].reduce<[number, number][] | undefined>(
+      (found, h) => found ?? findPath(a.box, b.box, grid, extraBlocked, h),
+      undefined,
+    )
     if (!path) continue
     routed.push({ rel, path })
     stamp(path, masks, a.box, b.box)
