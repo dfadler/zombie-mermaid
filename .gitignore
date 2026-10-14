@@ -90,3 +90,7 @@ coverage/
 
 # eval run output
 **/evals/results/
+
+# Stryker mutation testing (#1862)
+.stryker-tmp/
+reports/mutation/
