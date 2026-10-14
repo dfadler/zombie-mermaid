@@ -105,6 +105,27 @@ export const SUBGRAPH_PADDING = { top: 44, left: 16, bottom: 16, right: 16 }
 /** Padding for an untitled concurrency region (no header band). */
 export const REGION_PADDING = { top: 16, left: 16, bottom: 16, right: 16 }
 
+/**
+ * Whether three or more labelled edges join the same source and target. With
+ * the 12px edge spacing the target sat under the source; mermaid 12.1.0 and
+ * 12.2.0 offset it by about 25px. Raising `elk.spacing.edgeEdge` to 40px
+ * spreads the parallel runs enough to match (Five Cluster Exit Siblings, #1943;
+ * measured on every flowchart sample, 36px is marginal and 30px has no effect).
+ * Only for these graphs: at 40px on every graph it pushed edge runs onto
+ * subgraph borders (CJK Labels, System Architecture).
+ */
+function hasLabelledParallelRun(graph: MermaidGraph): boolean {
+  const counts = new Map<string, number>()
+  for (const e of graph.edges) {
+    if (!e.label) continue
+    const key = `${e.source}\0${e.target}`
+    const n = (counts.get(key) ?? 0) + 1
+    if (n >= 3) return true
+    counts.set(key, n)
+  }
+  return false
+}
+
 const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
 
 /**
@@ -431,6 +452,7 @@ export function mermaidToElk(
         ? 'NONE'
         : 'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+    ...(hasLabelledParallelRun(graph) ? { 'elk.spacing.edgeEdge': '40' } : {}),
     // Every layer keeps the nodes in the order the graph lists them: the
     // compound layout relies on it to keep a subgraph's nodes together.
     ...(hints?.forceNodeOrder
