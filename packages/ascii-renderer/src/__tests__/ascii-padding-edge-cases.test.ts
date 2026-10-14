@@ -41,6 +41,7 @@ describe('ASCII padding edge cases (issue #343 follow-up)', () => {
 
   it('a negative boxBorderPadding does not produce a negative-width ER box', () => {
     const er = `erDiagram
+      direction LR
       CUSTOMER {
         string name
       }`
@@ -79,6 +80,7 @@ describe('ASCII padding edge cases (issue #343 follow-up)', () => {
     // naive first/last-pipe slice would silently include it as a false
     // positive even when it has been overwritten by the other marker.
     const er = `erDiagram
+      direction LR
       CUSTOMER ||--o{ ORDER : x`
     const ascii = renderMermaidASCII(er, { useAscii: true, paddingX: -100 })
     const line = ascii.split('\n').find((l) => l.includes('CUSTOMER'))
@@ -96,6 +98,7 @@ describe('ASCII padding edge cases (issue #343 follow-up)', () => {
     // producing a vertical connector whose upper/lower crow's-foot markers
     // must land on different rows even when vGap is squeezed.
     const er = `erDiagram
+      direction LR
       A ||--o{ B : r1
       A ||--o{ C : r2`
     const ascii = renderMermaidASCII(er, { useAscii: true, paddingY: -100 })

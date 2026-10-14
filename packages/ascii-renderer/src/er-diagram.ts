@@ -201,6 +201,40 @@ function findConnectedComponents(diagram: ErDiagram): Set<string>[] {
 // ============================================================================
 
 /**
+ * Assign each entity of one component a top-to-bottom layer, the way
+ * mermaid.js (dagre, default TB) stacks an erDiagram: `A ||--o{ B` puts B
+ * below A (#1917). Longest path from the sources by repeated relaxation
+ * (capped at n - 1 layers, which also stops a cycle from growing forever),
+ * then each source is pulled down next to its nearest successor like dagre.
+ * ponytail: an approximation of dagre's network-simplex ranking.
+ */
+function assignLayers(
+  entities: ErEntity[],
+  relationships: ErDiagram['relationships'],
+): Map<string, number> {
+  const n = entities.length
+  const layer = new Map(entities.map((e) => [e.id, 0]))
+  const rels = relationships.filter(
+    (r) =>
+      r.entity1 !== r.entity2 && layer.has(r.entity1) && layer.has(r.entity2),
+  )
+  for (let i = 0; i < n; i++) {
+    for (const r of rels) {
+      const l = layer.get(r.entity1)! + 1
+      if (l < n && l > layer.get(r.entity2)!) layer.set(r.entity2, l)
+    }
+  }
+  for (const e of entities) {
+    if (rels.some((r) => r.entity2 === e.id)) continue
+    const below = rels.filter((r) => r.entity1 === e.id)
+    if (below.length) {
+      layer.set(e.id, Math.min(...below.map((r) => layer.get(r.entity2)!)) - 1)
+    }
+  }
+  return layer
+}
+
+/**
  * Look up a per-entity value computed by renderErAscii's box-sizing pass.
  * Every entity in `diagram.entities` gets an entry in `entityBoxW`,
  * `entityBoxH`, and `entitySections` before layout runs, so this always
@@ -394,35 +428,57 @@ export function renderErAscii(
   // --- Layout: place each component, then stack components vertically ---
   const placed = new Map<string, PlacedEntity>()
   let currentY = 0
+  const sideBySide = diagram.direction === 'LR' || diagram.direction === 'RL'
 
   for (const component of components) {
     // Get entities in this component (preserve original order for consistency)
-    const componentEntities = diagram.entities.filter((e) =>
-      component.has(e.id),
-    )
+    const declared = diagram.entities.filter((e) => component.has(e.id))
 
-    // Layout entities within this component horizontally
-    // Use sqrt-based row limit for larger components
-    const maxPerRow = Math.max(
-      2,
-      Math.ceil(Math.sqrt(componentEntities.length)),
-    )
+    // Stack layers top to bottom like mermaid.js (#1917). A layer wider than
+    // the sqrt-based row limit wraps, which keeps the width bounded.
+    const maxPerRow = Math.max(2, Math.ceil(Math.sqrt(declared.length)))
+    // `direction LR`/`RL` keeps the side-by-side row packing (one layer).
+    // ponytail: BT stacks like TB (not flipped); LR is not true columns.
+    const layerOf = sideBySide
+      ? new Map(declared.map((e) => [e.id, 0]))
+      : assignLayers(declared, diagram.relationships)
+    const componentEntities: ErEntity[] = []
+    const rowStarts = new Set<string>()
+    const slot = new Map<string, number>() // index in componentEntities
+    for (let l = 0; componentEntities.length < declared.length; l++) {
+      // Order a layer by its earliest-placed parent so children sit under
+      // their parents; declaration order breaks ties.
+      const parentSlot = (e: ErEntity): number =>
+        Math.min(
+          Infinity,
+          ...diagram.relationships
+            .filter((r) => r.entity2 === e.id)
+            .map((r) => slot.get(r.entity1) ?? Infinity),
+        )
+      const layer = declared
+        .filter((e) => layerOf.get(e.id) === l)
+        .map((e, i) => [e, parentSlot(e), i] as const)
+        .sort((a, b) => a[1] - b[1] || a[2] - b[2])
+        .map(([e]) => e)
+      layer.forEach((e, i) => {
+        if (i % maxPerRow === 0) rowStarts.add(e.id)
+        slot.set(e.id, componentEntities.push(e) - 1)
+      })
+    }
 
     let currentX = 0
     let maxRowH = 0
-    let colCount = 0
 
     for (let idx = 0; idx < componentEntities.length; idx++) {
       const ent = componentEntities[idx]!
       const w = mustGetEntityValue(entityBoxW, ent.id, 'box width')
       const h = mustGetEntityValue(entityBoxH, ent.id, 'box height')
 
-      if (colCount >= maxPerRow) {
+      if (idx > 0 && rowStarts.has(ent.id)) {
         // Wrap to next row within this component
         currentY += maxRowH + vGap
         currentX = 0
         maxRowH = 0
-        colCount = 0
       }
 
       placed.set(ent.id, {
@@ -438,9 +494,8 @@ export function renderErAscii(
       // relationship's label fits with 1 char of padding on each side
       // instead of being truncated or crammed against a box border.
       let gap = hGap
-      const willWrapNext = colCount + 1 >= maxPerRow
       const nextEnt = componentEntities[idx + 1]
-      if (!willWrapNext && nextEnt) {
+      if (nextEnt && !rowStarts.has(nextEnt.id)) {
         const key = [ent.id, nextEnt.id].sort().join('|')
         const labelW = pairLabelWidth.get(key) ?? 0
         if (labelW > 0) gap = Math.max(gap, labelW + 2)
@@ -448,7 +503,6 @@ export function renderErAscii(
 
       currentX += w + gap
       maxRowH = Math.max(maxRowH, h)
-      colCount++
     }
 
     // Move to next component row (add gap between components)
@@ -464,6 +518,22 @@ export function renderErAscii(
   }
   totalW += 4
   totalH += 2
+  // A relationship that skips a row routes down a free column (the via
+  // bypass below). Boxes fill the canvas width, so reserve a right gutter
+  // of two columns per such relationship plus room for its label.
+  // ponytail: an upper bound, not exact; the extra width is the cost of a
+  // legible bypass.
+  for (const rel of sideBySide ? [] : diagram.relationships) {
+    const a = placed.get(rel.entity1)
+    const b = placed.get(rel.entity2)
+    if (!a || !b) continue
+    const lo = Math.min(a.y, b.y)
+    const hi = Math.max(a.y, b.y)
+    const skipsRow = [...placed.values()].some((p) => p.y > lo && p.y < hi)
+    if (skipsRow) {
+      totalW += 2 + (rel.label ? maxLineWidth(rel.label) + 1 : 0)
+    }
+  }
 
   const canvas = mkCanvas(totalW - 1, totalH - 1)
   const rc = mkRoleCanvas(totalW - 1, totalH - 1)
@@ -1326,6 +1396,7 @@ export function renderErAscii(
           const left = lineX - offset
           if (
             offset > 0 &&
+            (sideBySide || left >= 0) &&
             columnClearOfBoxes(left, startY, endY) &&
             !viaColumnBlocked(left, startY, endY)
           ) {
@@ -1436,6 +1507,11 @@ export function renderErAscii(
           routingX = lowerCX
         }
       }
+
+      // Row of this relationship's own horizontal jog (none when it routes
+      // straight or through the via bypass). A label sitting on it would
+      // hide the jog, so the label search below steers off it (#1917).
+      const jogRow = !sideBySide && !multiRowObstruction && needsJog ? midY : -1
 
       // Crow's foot markers (vertical direction) — markerStartY/markerEndY
       // computed up front, above.
@@ -1548,6 +1624,12 @@ export function renderErAscii(
               ) {
                 continue
               }
+              const onJog =
+                labelX - 1 <= rx &&
+                lastLx >= lx &&
+                jogRow >= candidateStart &&
+                jogRow < candidateStart + blockHeight
+              if (onJog) continue
               const fits = cellsPerLine.every((cells, lineIdx) =>
                 canPlaceLabelLineAvoidingMarkers(
                   cells,
