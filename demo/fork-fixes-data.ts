@@ -550,4 +550,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: an error instead of a diagram. After: four labelled pairs.',
   },
+  {
+    id: 'ascii-fanout-arrowhead-column',
+    title: 'An ASCII fan-out arrowhead sat one column off its stem',
+    symptom:
+      'Under an even-width box, the bundled arrowhead took its column from the box’s own centre while the stem was drawn in the middle grid column’s centre, so the head landed one column right of the line feeding it.',
+    source:
+      'flowchart TD\n    A --> B\n    A -->|no| C\n    C --> D\n    D --> E\n    D --> F\n    F --> G\n    G --> H\n    G --> I',
+    fixCommit: 'd028603db',
+    pr: 1989,
+    render: 'ascii',
+    lookFor:
+      'Before: the `▼` under `G` is shifted one column from the vertical line above it. After: head and stem line up.',
+  },
 ]
