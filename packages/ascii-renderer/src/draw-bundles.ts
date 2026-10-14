@@ -29,6 +29,7 @@ import { getShapeAttachmentPoint } from './shapes/index.ts'
 import type { ShapeDimensions } from './shapes/index.ts'
 import { drawLine } from './draw-lines.ts'
 import { markerArrowChar } from './draw-arrows.ts'
+import { pseudoStateGlyph } from './draw-boxes.ts'
 
 // ============================================================================
 // Node attachment point helper
@@ -195,7 +196,12 @@ export function drawBundledEdgeSegment(
   // The connector is placed at the first point coordinate (box border position)
   // since we use offsets 1,-1 for drawLine, the line starts one step past this point
   const boxStartCanvas = copyCanvas(graph.canvas)
-  if (bundle.type === 'fan-in' && pathToJunction.length >= 2) {
+  if (
+    bundle.type === 'fan-in' &&
+    pathToJunction.length >= 2 &&
+    // A glyph pseudo-state has no border to tee into (#2027).
+    pseudoStateGlyph(edge.from, useAscii) === undefined
+  ) {
     const firstPoint = drawingPath[0]!
     const dir = determineDirection(pathToJunction[0]!, pathToJunction[1]!)
 

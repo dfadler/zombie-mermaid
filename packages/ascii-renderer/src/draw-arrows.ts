@@ -36,6 +36,7 @@ import {
   drawingCoordEquals,
   requireGridCoord,
 } from './types.ts'
+import { pseudoStateGlyph } from './draw-boxes.ts'
 import { blankLayer, copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
@@ -611,7 +612,7 @@ function drawBoxStart(
   // bordered design), unless the exit starts on a cluster wall (#1330).
   if (
     !wallAt &&
-    (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end')
+    pseudoStateGlyph(sourceNode, graph.config.useAscii) !== undefined
   ) {
     return canvas
   }

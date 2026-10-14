@@ -49,6 +49,18 @@ export function drawNode(node: AsciiNode, graph: AsciiGraph): Canvas {
  * All shapes are rendered as rectangles with distinctive corner characters
  * (defined in corners.ts) to indicate shape type.
  */
+/** The glyph a state start/end/choice node is drawn as, if it is one. */
+export function pseudoStateGlyph(
+  node: AsciiNode,
+  useAscii: boolean,
+): string | undefined {
+  if (node.shape === 'state-start') return useAscii ? '*' : '●'
+  if (node.shape === 'state-end') return useAscii ? '@' : '◉'
+  if (node.shape === 'diamond' && node.displayLabel === '')
+    return useAscii ? 'o' : '◇'
+  return undefined
+}
+
 function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   // Every node is guaranteed a gridCoord before drawing starts —
   // createMapping (grid.ts) seeds even nodes in otherwise-unreachable
@@ -82,6 +94,15 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     for (let x = from.x; x <= to.x; x++)
       write(box, x, mid, useAscii ? '#' : '█')
     node.labelRows = { top: mid, bottom: mid }
+    return box
+  }
+
+  // Pseudo-states are one glyph at the cell's centre (#2027), not a box.
+  const glyph = pseudoStateGlyph(node, useAscii)
+  if (glyph !== undefined) {
+    const cy = from.y + Math.floor(h / 2)
+    write(box, from.x + Math.floor((w + 1) / 2), cy, glyph)
+    node.labelRows = { top: cy, bottom: cy }
     return box
   }
 
