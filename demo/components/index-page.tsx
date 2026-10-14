@@ -485,7 +485,10 @@ function homePageCss(): string {
   font-size: ${FONT_SIZE.micro}px;
   letter-spacing: ${LETTER_SPACING.eyebrow};
   text-transform: uppercase;
-  color: var(--tsd-muted);
+  /* Not --tsd-muted: that is a theme-derived token and sits near 2.9:1 on
+     some themes (#1815). Mixing the theme's own text toward its bg keeps it
+     muted but legible on every theme. */
+  color: color-mix(in srgb, var(--tsd-text) 75%, var(--tsd-bg));
 }
 /* Groups the SVG/ASCII segmented control with the scale button (#987) so
    .theme-showcase-output-toggle's own justify-content: space-between still

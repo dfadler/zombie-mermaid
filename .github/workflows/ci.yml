@@ -489,6 +489,10 @@ jobs:
       # options that could close that remaining gap.
       - name: Write visual regression summary
         if: failure() && steps.visual-tests.conclusion == 'failure'
+        # The job's container (Playwright jammy image) has bash, but the
+        # container default is `sh -e` (dash); the here-string below is
+        # bash-only (#1992).
+        shell: bash
         run: |
           {
             echo "## Visual regression failures (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
