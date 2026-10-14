@@ -890,7 +890,7 @@ function buildParallelLanePath(
           toGutter,
           toAttach,
         ])
-        : lanePath([
+      : lanePath([
           fromAttach,
           fromGutter,
           { x: laneCross, y: fromGutter.y },
@@ -963,6 +963,36 @@ function buildClusterLaneRoute(
 }
 
 /**
+ * Whether the node's bottom face (in an LR graph) is already used by another
+ * edge: a lower neighbour's edge, a reciprocal, or a parallel lane, which all
+ * leave or enter by that face. An LR self-loop re-enters there by default, on
+ * top of those strokes (#2025); with the bottom taken and the top free it
+ * re-enters the top face instead.
+ */
+function loopEntersTop(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+): boolean {
+  const node = edge.from
+  if (edge.from !== edge.to || effectiveDir !== 'LR') return false
+  if (requireGridCoord(node).y === 0) return false
+  const uses = (face: Direction): boolean =>
+    graph.edges.some((e) => {
+      if (e === edge || e.from === e.to) return false
+      if (e.from !== node && e.to !== node) return false
+      const lane = e.parallelLane !== undefined && e.parallelLane.index > 0
+      const [start, end] = determineStartAndEndDir(e, effectiveDir)
+      return (
+        (e.from === node &&
+          (lane ? dirEquals(Down, face) : dirEquals(start, face))) ||
+        (e.to === node && (lane ? dirEquals(Down, face) : dirEquals(end, face)))
+      )
+    })
+  return uses(Down) && !uses(Up)
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -985,12 +1015,16 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       ? sourceSg.direction
       : graph.config.graphDirection
 
-  const [
+  let [
     preferredDir,
     preferredOppositeDir,
     alternativeDir,
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
+  if (loopEntersTop(graph, edge, effectiveDir)) {
+    ;[preferredDir, preferredOppositeDir] = [Right, Up]
+    ;[alternativeDir, alternativeOppositeDir] = [Right, Up]
+  }
 
   // An edge leaving a cluster that engaged cluster-boundary routing (see
   // cluster-boundary.ts) takes the cluster's shared exit instead of the

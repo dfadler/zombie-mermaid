@@ -557,7 +557,144 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (r.end) shift.endRun = shiftedRun(r.end)
     result.set(edge, shift)
   }
+  separateLaneEnds(graph, result, rolesAt, shiftedRun)
+  separateSelfLoops(graph, result, shiftedRun)
   return result
+}
+
+/**
+ * Lane edges keep their routed geometry, but a lane that leaves a port another
+ * edge arrives at (or the reverse) draws its stem and arrowhead on that edge's
+ * stroke, so neither direction can be told (#2030, #2025). Such an end moves a
+ * stroke spacing to the side `pushOf` gives its role, the way an unfixed edge
+ * does, or one cell if the face is too short. Lanes sharing a role at the port
+ * keep sharing a stem.
+ */
+function separateLaneEnds(
+  graph: AsciiGraph,
+  result: Map<AsciiEdge, PortShift>,
+  rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
+  shiftedRun: (run: PortRun) => ShiftedRun,
+): void {
+  const place = (run: PortRun | undefined, role: 'S' | 'E'): number => {
+    const geo = run && portGeometry(graph, run)
+    if (!run || !geo) return 0
+    if ((rolesAt.get(portKey(run.node, run.cell))?.size ?? 0) < 2) return 0
+    const push = pushOf(run, role)
+    return (
+      [STROKE_SPACING, 1]
+        .map((m) => push * m)
+        .find((o) => attachesAt(run, geo.centre + o, geo)) ?? 0
+    )
+  }
+  // A later lane that lands on the very cell the group's first edge lands on
+  // re-joins it, closing a box with the stem they share (#2030). It
+  // lands beside it instead, on the side it comes from, so no crossing.
+  const apart = (edge: AsciiEdge, run: PortRun | undefined): number => {
+    const geo = run && portGeometry(graph, run)
+    if (!run || !geo || run.turn === 0 || edge.parallelLane!.index === 0)
+      return 0
+    const last = edge.path[edge.path.length - 1]!
+    const joins = graph.edges.some((o) => {
+      const end = o.path[o.path.length - 1]
+      return (
+        o !== edge &&
+        o.parallelLane?.index === 0 &&
+        o.from === edge.from &&
+        o.to === edge.to &&
+        end?.x === last.x &&
+        end.y === last.y
+      )
+    })
+    if (!joins) return 0
+    return (
+      [STROKE_SPACING, 1]
+        .map((m) => -run.turn * m)
+        .find((o) => attachesAt(run, geo.centre + o, geo)) ?? 0
+    )
+  }
+  for (const edge of graph.edges) {
+    if (
+      !edge.parallelLane ||
+      edge.from === edge.to ||
+      edge.path.length < 2 ||
+      edge.bundle ||
+      edge.clusterSource ||
+      edge.clusterTarget ||
+      result.has(edge)
+    ) {
+      continue
+    }
+    const s = startRun(edge)
+    const e = endRun(edge)
+    const shift: PortShift = {
+      start: place(s, 'S'),
+      end: place(e, 'E') || apart(edge, e),
+    }
+    if (shift.start === 0 && shift.end === 0) continue
+    if (s) shift.startRun = shiftedRun(s)
+    if (e) shift.endRun = shiftedRun(e)
+    result.set(edge, shift)
+  }
+}
+
+/**
+ * Draw each self-loop's two ends on strokes of their own (#2025). A loop leaves
+ * and re-enters one node, usually by faces other edges also use, and at the
+ * port centre its stem and arrowhead sit on those edges' strokes: the loop
+ * then reads as a branch of a neighbour. Each end moves toward the loop's
+ * inside to the nearest position clear of every other edge's end on that side
+ * (two cells clear if the face is wide enough, else one). Loops do not avoid
+ * each other: duplicates still draw as one loop (#2028).
+ */
+function separateSelfLoops(
+  graph: AsciiGraph,
+  result: Map<AsciiEdge, PortShift>,
+  shiftedRun: (run: PortRun) => ShiftedRun,
+): void {
+  const loops = graph.edges.filter((e) => e.from === e.to && e.path.length >= 2)
+  if (loops.length === 0) return
+  const used = new Map<string, number[]>()
+  const note = (run: PortRun | undefined, by: number): void => {
+    const geo = run && portGeometry(graph, run)
+    if (!run || !geo) return
+    const key = `${run.node.index}|${run.side}`
+    used.set(key, [...(used.get(key) ?? []), geo.centre + by])
+  }
+  for (const e of graph.edges) {
+    if (e.from === e.to || e.path.length < 2) continue
+    const shift = result.get(e)
+    note(startRun(e), shift?.start ?? 0)
+    note(endRun(e), shift?.end ?? 0)
+  }
+  const place = (run: PortRun | undefined, toward: number): number => {
+    const geo = run && portGeometry(graph, run)
+    if (!run || !geo) return 0
+    const taken = used.get(`${run.node.index}|${run.side}`) ?? []
+    // Alone at its port cell the loop keeps the centre.
+    if (!taken.includes(geo.centre)) return 0
+    const dir = toward === 0 ? 1 : toward
+    for (const gap of [STROKE_SPACING, 1]) {
+      for (const o of [dir, dir * 2, -dir, -dir * 2]) {
+        if (!attachesAt(run, geo.centre + o, geo)) continue
+        if (taken.every((t) => Math.abs(t - (geo.centre + o)) >= gap)) return o
+      }
+      if (taken.every((t) => Math.abs(t - geo.centre) >= gap)) return 0
+    }
+    return 0
+  }
+  for (const loop of loops) {
+    const s = startRun(loop)
+    const e = endRun(loop)
+    const shift: PortShift = {
+      start: place(s, s?.turn ?? 0),
+      end: place(e, -(e?.turn ?? 0)),
+    }
+    if (shift.start === 0 && shift.end === 0) continue
+    if (s) shift.startRun = shiftedRun(s)
+    if (e) shift.endRun = shiftedRun(e)
+    result.set(loop, shift)
+  }
 }
 
 /** Where a fan-in edge lands and which row its last leg runs along. */
