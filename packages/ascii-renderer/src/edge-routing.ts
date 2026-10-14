@@ -42,7 +42,13 @@ import {
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
-import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
+import {
+  isOccupied,
+  pathCells,
+  runsAlong,
+  segmentsOf,
+  type Grid,
+} from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
 // draw-bundles.ts, shapes/*.ts) that import dirEquals from this module —
@@ -670,6 +676,51 @@ interface ParallelLaneRoute {
   labelSegment: [GridCoord, GridCoord]
   /** Set when the lane leaves/enters different faces than the caller asked for. */
   faces?: { startDir: Direction; endDir: Direction }
+  /** Set when every offset was blocked and `path` is only the last attempt. */
+  exhausted?: true
+}
+
+/**
+ * Edges whose latest `determinePath` ended in `buildParallelLanePath`'s
+ * exhausted fallback: a placeholder path up to MAX_LANE_OFFSET_SEARCH rows
+ * out, not a route. `rerouteAroundStyleConflicts` keeps the previous path
+ * instead of adopting it (#2030, #2025).
+ */
+const exhaustedLaneEdges = new WeakSet<AsciiEdge>()
+export function laneSearchExhausted(edge: AsciiEdge): boolean {
+  return exhaustedLaneEdges.has(edge)
+}
+
+/**
+ * Whether a segment of `path` other than its two stems runs along part of
+ * another routed edge, or doubles back along `path` itself (#2025): two lanes
+ * of different groups, or a lane and a self-loop or plain edge, drawn on one
+ * line read as one stroke and close a box with their stems, and a fold draws a
+ * spike. The stems are left to port-offsets.ts.
+ */
+function runTaken(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  path: GridCoord[],
+): boolean {
+  const own = segmentsOf(path)
+  const others = graph.edges.flatMap((o) =>
+    o === edge ? [] : segmentsOf(o.path),
+  )
+  return own
+    .slice(1, -1)
+    .some(([a, b], i) =>
+      runsAlong(a, b, [...own.filter((_, j) => j !== i + 1), ...others]),
+    )
+}
+
+/** `mergePath` after dropping repeated points (gutter cells can coincide). */
+function lanePath(points: GridCoord[]): GridCoord[] {
+  return mergePath(
+    points.filter(
+      (p, i) => i === 0 || p.x !== points[i - 1]!.x || p.y !== points[i - 1]!.y,
+    ),
+  )
 }
 
 function buildParallelLanePath(
@@ -678,7 +729,10 @@ function buildParallelLanePath(
   preferredDir: Direction,
   preferredOppositeDir: Direction,
   laneIndex: number,
+  avoidRuns: boolean,
 ): ParallelLaneRoute {
+  const clear = (path: GridCoord[]): boolean =>
+    !avoidRuns || !runTaken(graph, edge, path)
   const fromAttach = gridCoordDirection(
     requireGridCoord(edge.from),
     preferredDir,
@@ -715,10 +769,16 @@ function buildParallelLanePath(
       : dirEquals(preferredOppositeDir, Down)
         ? 1
         : -1
-  const fromGutter = horizontalDeparture
+  // Each gutter steps along its own face's axis: a diagonal pair leaves one
+  // node vertically and enters the other horizontally (or the reverse), so the
+  // arrival's axis is not the departure's. Stepping the wrong axis put the
+  // gutter on the target's own border corner (#2025).
+  const isHorizontal = (d: Direction): boolean =>
+    dirEquals(d, Left) || dirEquals(d, Right)
+  const fromGutter = isHorizontal(preferredDir)
     ? { x: fromAttach.x + fromStep, y: fromAttach.y }
     : { x: fromAttach.x, y: fromAttach.y + fromStep }
-  const toGutter = horizontalDeparture
+  const toGutter = isHorizontal(preferredOppositeDir)
     ? { x: toAttach.x + toStep, y: toAttach.y }
     : { x: toAttach.x, y: toAttach.y + toStep }
 
@@ -757,7 +817,10 @@ function buildParallelLanePath(
             { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: toSide.y },
           ]
       const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
-      if (interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)) {
+      if (
+        interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes) &&
+        clear(sidePath)
+      ) {
         usedOffsets.add(offset)
         return {
           path: sidePath,
@@ -786,7 +849,7 @@ function buildParallelLanePath(
     // makes into its target (`toGutter` -> `toAttach`), instead of running
     // the last leg along the target's own border, where it drew a stray
     // arrowhead/junction on the border cell itself (#1230).
-    const wideCandidate = mergePath([
+    const wideCandidate = lanePath([
       fromAttach,
       wideLabelSegment[0],
       horizontalDeparture
@@ -795,7 +858,12 @@ function buildParallelLanePath(
       toGutter,
       toAttach,
     ])
-    if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate), ownNodes)) {
+    // No exemption for the edge's own nodes: a lane that leaves along a
+    // border row/column draws over the node's corner and edge glyphs (#2025).
+    if (
+      interiorCellsClearOfNodes(graph, pathCells(wideCandidate)) &&
+      clear(wideCandidate)
+    ) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
     }
@@ -852,7 +920,7 @@ function buildParallelLanePath(
             { x: laneCross, y: fromGutter.y },
           ]
     const gutterCandidate = horizontalDeparture
-      ? mergePath([
+      ? lanePath([
           fromAttach,
           fromGutter,
           { x: fromGutter.x, y: laneMain },
@@ -860,7 +928,7 @@ function buildParallelLanePath(
           toGutter,
           toAttach,
         ])
-      : mergePath([
+      : lanePath([
           fromAttach,
           fromGutter,
           { x: laneCross, y: fromGutter.y },
@@ -869,7 +937,8 @@ function buildParallelLanePath(
           toAttach,
         ])
     if (
-      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes)
+      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes) &&
+      clear(gutterCandidate)
     ) {
       usedOffsets.add(offset)
       return { path: gutterCandidate, labelSegment: gutterLabelSegment }
@@ -894,8 +963,7 @@ function buildParallelLanePath(
   // findNonNodeColumn's "every column occupied" fallback elsewhere in this
   // file: graceful degradation over a hard failure, not a case expected to
   // be exercised by a realistic graph.
-  /* v8 ignore next */
-  return { path, labelSegment }
+  return { path, labelSegment, exhausted: true }
 }
 
 // ============================================================================
@@ -934,6 +1002,36 @@ function buildClusterLaneRoute(
 }
 
 /**
+ * Whether the node's bottom face (in an LR graph) is already used by another
+ * edge: a lower neighbour's edge, a reciprocal, or a parallel lane, which all
+ * leave or enter by that face. An LR self-loop re-enters there by default, on
+ * top of those strokes (#2025); with the bottom taken and the top free it
+ * re-enters the top face instead.
+ */
+function loopEntersTop(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+): boolean {
+  const node = edge.from
+  if (edge.from !== edge.to || effectiveDir !== 'LR') return false
+  if (requireGridCoord(node).y === 0) return false
+  const uses = (face: Direction): boolean =>
+    graph.edges.some((e) => {
+      if (e === edge || e.from === e.to) return false
+      if (e.from !== node && e.to !== node) return false
+      const lane = e.parallelLane !== undefined && e.parallelLane.index > 0
+      const [start, end] = determineStartAndEndDir(e, effectiveDir)
+      return (
+        (e.from === node &&
+          (lane ? dirEquals(Down, face) : dirEquals(start, face))) ||
+        (e.to === node && (lane ? dirEquals(Down, face) : dirEquals(end, face)))
+      )
+    })
+  return uses(Down) && !uses(Up)
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -945,6 +1043,7 @@ function buildClusterLaneRoute(
  * when both source and target are in the same subgraph.
  */
 export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
+  exhaustedLaneEdges.delete(edge)
   // Determine effective direction for this edge
   // If both nodes are in the same subgraph with a direction override, use it
   // Otherwise, use the graph's direction (not source's effective direction)
@@ -955,12 +1054,16 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       ? sourceSg.direction
       : graph.config.graphDirection
 
-  const [
+  let [
     preferredDir,
     preferredOppositeDir,
     alternativeDir,
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
+  if (loopEntersTop(graph, edge, effectiveDir)) {
+    ;[preferredDir, preferredOppositeDir] = [Right, Up]
+    ;[alternativeDir, alternativeOppositeDir] = [Right, Up]
+  }
 
   // An edge leaving a cluster that engaged cluster-boundary routing (see
   // cluster-boundary.ts) takes the cluster's shared exit instead of the
@@ -1054,14 +1157,21 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       : preferredOppositeDir
     edge.startDir = laneDir
     edge.endDir = laneOppositeDir
-    const route = buildParallelLanePath(
-      graph,
-      edge,
-      laneDir,
-      laneOppositeDir,
-      edge.parallelLane.index,
-    )
+    const lane = (avoid: boolean): ParallelLaneRoute =>
+      buildParallelLanePath(
+        graph,
+        edge,
+        laneDir,
+        laneOppositeDir,
+        edge.parallelLane!.index,
+        avoid,
+      )
+    // Keeping off other edges' runs is a preference: with no such offset,
+    // share a run rather than fall back to the placeholder.
+    let route = lane(true)
+    if (route.exhausted) route = lane(false)
     edge.path = route.path
+    if (route.exhausted) exhaustedLaneEdges.add(edge)
     if (route.faces) {
       edge.startDir = route.faces.startDir
       edge.endDir = route.faces.endDir

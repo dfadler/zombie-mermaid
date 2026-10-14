@@ -1,13 +1,14 @@
 /**
- * Guards of the plain (non-cluster) branch of `clusterLaneEndShift` (#1743):
- * only the third of exactly three lanes whose final run heads left is shifted.
+ * Plain (non-cluster) parallel lanes entering one target face (#1743): each
+ * lane's arrowhead gets a row of its own, the outermost lane lowest so no
+ * stroke crosses another. Since #2025 this is `allocateFaces`
+ * (port-offsets.ts), which also gives each lane its own row on the source.
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
-import { clusterLaneEndShift } from '../cluster-boundary.ts'
 import { convertToAsciiGraph } from '../converter.ts'
 import { createMapping } from '../grid.ts'
-import type { AsciiSubgraph } from '../types.ts'
+import { portShifts } from '../port-offsets.ts'
 
 const build = (lanes: number) => {
   // Long labels keep the lanes (short ones are drawn side by side instead).
@@ -26,54 +27,25 @@ const build = (lanes: number) => {
     },
   )
   createMapping(graph)
-  const last = graph.edges.find((e) => e.parallelLane?.index === 2)!
-  return { graph, last }
+  const shifts = portShifts(graph)
+  const later = graph.edges
+    .filter((e) => e.parallelLane && e.parallelLane.index > 0)
+    .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
+  return {
+    ends: later.map((e) => shifts.get(e)?.end ?? 0),
+    starts: later.map((e) => shifts.get(e)?.start ?? 0),
+  }
 }
 
-describe('clusterLaneEndShift, plain third lane (#1743)', () => {
-  it('shifts the third of three lanes whose last run heads left', () => {
-    const { graph, last } = build(3)
-    expect(clusterLaneEndShift(graph, last)).toBe(1)
+describe('plain parallel lanes on the target face (#1743, #2025)', () => {
+  it('three lanes: each later lane lands on its own row, the outer one lower', () => {
+    const { ends, starts } = build(3)
+    expect(ends[0]).toBeLessThan(ends[1]!)
+    // Nested on the source too: the outer lane leaves higher.
+    expect(starts[0]).toBeGreaterThan(starts[1]!)
   })
 
-  it('shifts the four lanes by -1, 0, +1 (index 1 to 3)', () => {
-    const { graph } = build(4)
-    const shifts = graph.edges
-      .filter((e) => e.parallelLane && e.parallelLane.index > 0)
-      .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
-      .map((e) => clusterLaneEndShift(graph, e))
-    expect(shifts).toEqual([-1, 0, 1])
-  })
-
-  it('does not shift five lanes', () => {
-    const { graph, last } = build(5)
-    expect(clusterLaneEndShift(graph, last)).toBe(0)
-  })
-
-  it('does not shift lanes with another source (a shared fan-in)', () => {
-    const { graph, last } = build(3)
-    last.from = graph.edges[0]!.from
-    expect(clusterLaneEndShift(graph, last)).toBe(0)
-  })
-
-  it('does not shift an edge that touches a cluster', () => {
-    const { graph, last } = build(3)
-    last.clusterSource = {} as AsciiSubgraph
-    expect(clusterLaneEndShift(graph, last)).toBe(0)
-    delete last.clusterSource
-    last.clusterTarget = {} as AsciiSubgraph
-    expect(clusterLaneEndShift(graph, last)).toBe(0)
-  })
-
-  it('does not shift unless the last run is horizontal and heads left', () => {
-    const { graph, last } = build(3)
-    const orig = last.path
-    const a = orig[orig.length - 2]!
-    last.path = [...orig.slice(0, -1), { x: a.x, y: a.y + 1 }]
-    expect(clusterLaneEndShift(graph, last)).toBe(0)
-    last.path = [...orig.slice(0, -1), { x: a.x + 3, y: a.y }]
-    expect(clusterLaneEndShift(graph, last)).toBe(0)
-    last.path = []
-    expect(clusterLaneEndShift(graph, last)).toBe(0)
+  it('four lanes take the face rows -1, 0, +1 (index 1 to 3)', () => {
+    expect(build(4).ends).toEqual([-1, 0, 1])
   })
 })

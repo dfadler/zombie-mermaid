@@ -21,6 +21,7 @@ import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
   interiorCellsClearOfNodes,
+  laneSearchExhausted,
   determineLabelLine,
   createLabelContext,
   assignParallelEdgeLanes,
@@ -399,21 +400,31 @@ function rerouteAroundStyleConflicts(
   // staircase hugging the cluster wall (#1148's `retry` edge) or a stair-step
   // round a reciprocal edge (#1349's `D --> A`). Prefer fewest bends instead.
   graph.preferStraightRoutes = true
+  const entry = {
+    path: edge.path,
+    startDir: edge.startDir,
+    endDir: edge.endDir,
+    labelLine: edge.labelLine,
+  }
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
         findStyleConflict(nodeOnlyGrid, cellStyles, edge.path, edge.style) ??
-        findUnrelatedOverlap(
-          nodeOnlyGrid,
-          cellOwners,
-          edge.path,
-          edge,
-          (owner) =>
-            owner.clusterSource !== undefined &&
-            graph.clusterExitPlans
-              ?.get(owner.clusterSource)
-              ?.edges.has(owner) === true,
-        )
+        // A lane already keeps off other edges' runs (`runTaken`); the stem
+        // it shares with a chain partner is split by port-offsets.ts.
+        (edge.parallelLane?.index
+          ? null
+          : findUnrelatedOverlap(
+              nodeOnlyGrid,
+              cellOwners,
+              edge.path,
+              edge,
+              (owner) =>
+                owner.clusterSource !== undefined &&
+                graph.clusterExitPlans
+                  ?.get(owner.clusterSource)
+                  ?.edges.has(owner) === true,
+            ))
       if (!conflict) return
       graph.grid.add(conflict.x, conflict.y)
       temporarilyBlocked.push(conflict)
@@ -423,11 +434,21 @@ function rerouteAroundStyleConflicts(
       // determinePath then falls back to a straight line that ignores
       // occupancy (#1411: A --> D drawn through B). A line that overlaps
       // another edge is better than one through a node: keep the old path.
+      // A lane search that ran out of offsets returns a placeholder path
+      // hundreds of rows long, and every earlier detour was only a
+      // half-blocked fallback (a spike that draws a dangling stub, #2030):
+      // restore the route the edge had before any reroute.
+      if (laneSearchExhausted(edge)) {
+        Object.assign(edge, entry)
+        return
+      }
       if (
         !interiorCellsClearOfNodes(
           graph,
           pathCells(edge.path),
-          [edge.from, edge.to],
+          // A self-loop's detour must never cut through its own node's
+          // block (#2028): the own-node exemption would allow it.
+          edge.from === edge.to ? [] : [edge.from, edge.to],
           nodeOnlyGrid,
         )
       ) {
@@ -2026,7 +2047,12 @@ export function createMapping(graph: AsciiGraph): void {
     AsciiNode,
     { count: number; usedOffsets: Set<number> }
   >()
-  for (const edge of graph.edges) {
+  // Offset lanes go last so they can keep off every other edge's runs (#2025).
+  const lanesLast = [
+    ...graph.edges.filter((e) => !e.parallelLane?.index),
+    ...graph.edges.filter((e) => e.parallelLane?.index),
+  ]
+  for (const edge of lanesLast) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
       increaseGridSizeForPath(graph, edge.path)
