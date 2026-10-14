@@ -133,6 +133,38 @@ describe('CLI e2e – render', () => {
     expect(stdout).toContain('End')
   })
 
+  it('--profile markdown renders plain ASCII characters (#2011)', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const plain = await runCli(['render', inputPath, '--ascii'])
+    const md = await runCli([
+      'render',
+      inputPath,
+      '--ascii',
+      '--profile',
+      'markdown',
+    ])
+
+    expect(md.exitCode).toBe(0)
+    expect(plain.stdout).toMatch(/[┌─│]/)
+    expect(md.stdout).not.toMatch(/[^\x00-\x7f]/)
+    expect(md.stdout).toContain('+')
+  })
+
+  it('--profile rejects unknown values and requires --ascii', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    expect(
+      (await runCli(['render', inputPath, '--ascii', '--profile', 'x']))
+        .exitCode,
+    ).not.toBe(0)
+    expect(
+      (await runCli(['render', inputPath, '--profile', 'markdown'])).exitCode,
+    ).not.toBe(0)
+  })
+
   it('renders ASCII diagram piped via stdin', async () => {
     const { stdout, exitCode } = await runCli(
       ['render', '--ascii'],

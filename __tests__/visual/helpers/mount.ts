@@ -80,9 +80,32 @@ function ensureStylesInjected(): void {
  * loading, silently defeating the wait it's supposed to provide.
  */
 async function waitForFonts(): Promise<void> {
+  const deadline = Date.now() + FONT_WAIT_TIMEOUT_MS
+  const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()))
+  // renderMermaidSVG's Inter arrives via an `@import` of the Google Fonts
+  // stylesheet inside the SVG's <style>. Until that sheet has loaded, the
+  // document has no Inter @font-face at all, so `document.fonts.ready` is
+  // already resolved and the wait below would be a no-op: the screenshot loop
+  // then races the network, and a baseline captured in the fallback font
+  // (DejaVu) passed or failed depending on which side won (#1825, A/B Test
+  // Results). A CSSImportRule's `styleSheet` is null until its sheet loads.
+  const importsPending = () =>
+    [...document.styleSheets].some((sheet) =>
+      [...sheet.cssRules].some(
+        (rule) => rule instanceof CSSImportRule && !rule.styleSheet,
+      ),
+    )
+  while (importsPending() && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 25))
+  }
+  // Let style recalc/layout start loading the now-registered faces.
+  await frame()
+  await frame()
   await Promise.race([
     document.fonts.ready.then(() => undefined),
-    new Promise<void>((resolve) => setTimeout(resolve, FONT_WAIT_TIMEOUT_MS)),
+    new Promise<void>((resolve) =>
+      setTimeout(resolve, Math.max(0, deadline - Date.now())),
+    ),
   ])
 }
 

@@ -10,6 +10,11 @@ const flow = `flowchart TD
   C -->|${label}| D
   E -->|${label}| F
   G -->|${label}| H`
+const flowSubgraph = `${flow}
+  subgraph S
+    A
+    B
+  end`
 const state = `stateDiagram-v2
   A --> B : ${label}
   C --> D : ${label}
@@ -19,6 +24,7 @@ const state = `stateDiagram-v2
 describe.each([
   ['flowchart', flow],
   ['state diagram', state],
+  ['flowchart with a subgraph', flowSubgraph],
 ])('disconnected wide-labelled edges, %s (#1813)', (_n, src) => {
   it('renders SVG with every label', () => {
     const svg = renderMermaidSVG(src)

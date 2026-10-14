@@ -44,7 +44,7 @@
     "@zombie-mermaid/ascii-renderer": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.5.4",
-    "elkjs": "^0.11.0"
+    "elkjs": "^0.12.0"
   },
   "engines": {
     "node": ">=24"
