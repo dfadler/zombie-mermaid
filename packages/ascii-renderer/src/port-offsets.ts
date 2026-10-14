@@ -681,6 +681,8 @@ function separateSelfLoops(
       }
       if (taken.every((t) => Math.abs(t - geo.centre) >= gap)) return 0
     }
+    // Nowhere free on the face: stay at the centre (no fixture reaches this).
+    /* v8 ignore next */
     return 0
   }
   for (const loop of loops) {
