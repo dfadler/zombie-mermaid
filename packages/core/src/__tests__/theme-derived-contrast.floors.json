@@ -1,7 +1,7 @@
 {
   "zinc-light": {
-    "text-sec vs bg": 4.08,
-    "text-muted vs bg": 2.35,
+    "text-sec vs bg": 4.83,
+    "text-muted vs bg": 4.83,
     "text-faint vs bg": 1.65,
     "line vs bg": 3.06,
     "arrow vs bg": 9.2,
@@ -9,8 +9,8 @@
     "node-stroke vs node-fill": 1.4
   },
   "zinc-dark": {
-    "text-sec vs bg": 6.74,
-    "text-muted vs bg": 3.71,
+    "text-sec vs bg": 6.91,
+    "text-muted vs bg": 6.91,
     "text-faint vs bg": 2.22,
     "line vs bg": 5.07,
     "arrow vs bg": 12.44,
