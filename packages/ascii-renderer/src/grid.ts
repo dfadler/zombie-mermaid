@@ -410,17 +410,21 @@ function rerouteAroundStyleConflicts(
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
         findStyleConflict(nodeOnlyGrid, cellStyles, edge.path, edge.style) ??
-        findUnrelatedOverlap(
-          nodeOnlyGrid,
-          cellOwners,
-          edge.path,
-          edge,
-          (owner) =>
-            owner.clusterSource !== undefined &&
-            graph.clusterExitPlans
-              ?.get(owner.clusterSource)
-              ?.edges.has(owner) === true,
-        )
+        // A lane already keeps off other edges' runs (`runTaken`); the stem
+        // it shares with a chain partner is split by port-offsets.ts.
+        (edge.parallelLane?.index
+          ? null
+          : findUnrelatedOverlap(
+              nodeOnlyGrid,
+              cellOwners,
+              edge.path,
+              edge,
+              (owner) =>
+                owner.clusterSource !== undefined &&
+                graph.clusterExitPlans
+                  ?.get(owner.clusterSource)
+                  ?.edges.has(owner) === true,
+            ))
       if (!conflict) return
       graph.grid.add(conflict.x, conflict.y)
       temporarilyBlocked.push(conflict)
@@ -2043,7 +2047,12 @@ export function createMapping(graph: AsciiGraph): void {
     AsciiNode,
     { count: number; usedOffsets: Set<number> }
   >()
-  for (const edge of graph.edges) {
+  // Offset lanes go last so they can keep off every other edge's runs (#2025).
+  const lanesLast = [
+    ...graph.edges.filter((e) => !e.parallelLane?.index),
+    ...graph.edges.filter((e) => e.parallelLane?.index),
+  ]
+  for (const edge of lanesLast) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
       increaseGridSizeForPath(graph, edge.path)

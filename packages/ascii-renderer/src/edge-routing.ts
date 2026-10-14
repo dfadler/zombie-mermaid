@@ -685,6 +685,36 @@ export function laneSearchExhausted(edge: AsciiEdge): boolean {
   return exhaustedLaneEdges.has(edge)
 }
 
+/**
+ * Whether a segment of `path` other than its two stems runs along part of
+ * another routed edge, or doubles back along `path` itself (#2025): two lanes
+ * of different groups, or a lane and a self-loop or plain edge, drawn on one
+ * line read as one stroke and close a box with their stems, and a fold draws a
+ * spike. The stems are left to port-offsets.ts.
+ */
+function runTaken(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  path: GridCoord[],
+): boolean {
+  const segs = (p: GridCoord[]) => p.slice(1).map((q, i) => [p[i]!, q] as const)
+  const own = segs(path)
+  const others = graph.edges.filter((o) => o !== edge).map((o) => segs(o.path))
+  return own.slice(1, -1).some(([a, b], i) => {
+    const h = a.y === b.y
+    const lo = h ? Math.min(a.x, b.x) : Math.min(a.y, b.y)
+    const hi = h ? Math.max(a.x, b.x) : Math.max(a.y, b.y)
+    return [own.filter((_, j) => j !== i + 1), ...others].some((list) =>
+      list.some(([p, q]) => {
+        if (h ? p.y !== a.y || q.y !== a.y : p.x !== a.x || q.x !== a.x)
+          return false
+        const [s, t] = h ? [p.x, q.x] : [p.y, q.y]
+        return Math.min(hi, Math.max(s, t)) > Math.max(lo, Math.min(s, t))
+      }),
+    )
+  })
+}
+
 /** `mergePath` after dropping repeated points (gutter cells can coincide). */
 function lanePath(points: GridCoord[]): GridCoord[] {
   return mergePath(
@@ -700,7 +730,10 @@ function buildParallelLanePath(
   preferredDir: Direction,
   preferredOppositeDir: Direction,
   laneIndex: number,
+  avoidRuns: boolean,
 ): ParallelLaneRoute {
+  const clear = (path: GridCoord[]): boolean =>
+    !avoidRuns || !runTaken(graph, edge, path)
   const fromAttach = gridCoordDirection(
     requireGridCoord(edge.from),
     preferredDir,
@@ -785,7 +818,10 @@ function buildParallelLanePath(
             { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: toSide.y },
           ]
       const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
-      if (interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)) {
+      if (
+        interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes) &&
+        clear(sidePath)
+      ) {
         usedOffsets.add(offset)
         return {
           path: sidePath,
@@ -825,7 +861,10 @@ function buildParallelLanePath(
     ])
     // No exemption for the edge's own nodes: a lane that leaves along a
     // border row/column draws over the node's corner and edge glyphs (#2025).
-    if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate))) {
+    if (
+      interiorCellsClearOfNodes(graph, pathCells(wideCandidate)) &&
+      clear(wideCandidate)
+    ) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
     }
@@ -899,7 +938,8 @@ function buildParallelLanePath(
           toAttach,
         ])
     if (
-      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes)
+      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes) &&
+      clear(gutterCandidate)
     ) {
       usedOffsets.add(offset)
       return { path: gutterCandidate, labelSegment: gutterLabelSegment }
@@ -1118,13 +1158,19 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       : preferredOppositeDir
     edge.startDir = laneDir
     edge.endDir = laneOppositeDir
-    const route = buildParallelLanePath(
-      graph,
-      edge,
-      laneDir,
-      laneOppositeDir,
-      edge.parallelLane.index,
-    )
+    const lane = (avoid: boolean): ParallelLaneRoute =>
+      buildParallelLanePath(
+        graph,
+        edge,
+        laneDir,
+        laneOppositeDir,
+        edge.parallelLane!.index,
+        avoid,
+      )
+    // Keeping off other edges' runs is a preference: with no such offset,
+    // share a run rather than fall back to the placeholder.
+    let route = lane(true)
+    if (route.exhausted) route = lane(false)
     edge.path = route.path
     if (route.exhausted) exhaustedLaneEdges.add(edge)
     if (route.faces) {
