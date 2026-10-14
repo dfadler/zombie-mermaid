@@ -354,6 +354,8 @@ export async function doRender(
     // unconditional zoom-label write) -- see editor-config.tsx's/
     // editor-viewport.ts's own doc comments for those guards.
     const svgEl = refs.previewInner.querySelector('svg')
+    // Name the role=img SVG (svg-img-alt, #1812) without touching renderer output.
+    svgEl?.setAttribute('aria-label', 'Rendered diagram preview')
     window.__editorConfigState.applyStrokeOverrides(svgEl)
     window.__editorViewportState.applyZoom()
     refs.statusText.textContent = 'OK'
