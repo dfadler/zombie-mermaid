@@ -255,6 +255,10 @@ const FRAME_EXTRA_HGAP = FRAME_SIDE_PAD * 2
 const FRAME_EXTRA_VGAP = FRAME_TOP_PAD + FRAME_BOTTOM_PAD - 1
 // Rows added below a level holding a single-line relationship label.
 const LABEL_EXTRA_VGAP = 2
+// Rows added below the level above a box whose incoming edge detours around
+// an intermediate box: the detour's entry run needs its own row above the
+// arrowhead row so the head has a stem (issue #2056), clear of the labels.
+const DETOUR_EXTRA_VGAP = 2
 
 /** A `namespace` block with at least one member class in the diagram. */
 interface AsciiNamespaceFrame {
@@ -327,6 +331,9 @@ export function renderClassAscii(
   colorMode?: ColorMode,
   theme?: AsciiTheme,
   options: ClassAsciiOptions = {},
+  // Levels whose gap below needs DETOUR_EXTRA_VGAP rows; set by the second
+  // layout pass (see `detourEntryLevels`).
+  detourRoomLevels?: ReadonlySet<number>,
 ): string {
   const lines = splitStatements(text)
   // Notes ride through the layout as pseudo-classes — see withNotePseudoClasses.
@@ -882,7 +889,11 @@ export function renderClassAscii(
       }
     }
 
-    currentY += maxH + vGap + (labelRoomLevels.has(lv) ? LABEL_EXTRA_VGAP : 0)
+    currentY +=
+      maxH +
+      vGap +
+      (labelRoomLevels.has(lv) ? LABEL_EXTRA_VGAP : 0) +
+      (detourRoomLevels?.has(lv) ? DETOUR_EXTRA_VGAP : 0)
   }
 
   // --- Frame rectangles ---
@@ -1217,6 +1228,39 @@ export function renderClassAscii(
   }
 
   /**
+   * Draw a detour's horizontal run on `row` between two columns, merging
+   * with lines already there. The ends are corners (`startCorner` at `x1`,
+   * `endCorner` at `x2`) in unicode, plain line glyphs otherwise.
+   */
+  function drawRun(
+    row: number,
+    x1: number,
+    x2: number,
+    startCorner: string,
+    endCorner: string,
+    lineH: string,
+  ): void {
+    const corners = !useAscii
+    for (let x = Math.min(x1, x2) + 1; x < Math.max(x1, x2); x++) {
+      // A dashed vertical crossing the run stays whole (it is the stem of a
+      // head just below); a solid one merges into `┼`.
+      if (canvas[x]?.[row] !== dashV) setJogCell(x, row, lineH, 'line')
+    }
+    setJogCell(
+      x1,
+      row,
+      corners ? startCorner : lineH,
+      corners ? 'corner' : 'line',
+    )
+    setJogCell(
+      x2,
+      row,
+      corners ? endCorner : lineH,
+      corners ? 'corner' : 'line',
+    )
+  }
+
+  /**
    * Draw the short horizontal jog that joins a relationship's anchor on a
    * box border to the lane its line runs along, on the row directly
    * adjacent to that border. `boxIsAbove` says which side of the row the
@@ -1296,6 +1340,14 @@ export function renderClassAscii(
   // routing around.
   const sameLevelDetourY = new Map<number, number>()
 
+  // Levels whose gap below holds a detour's entry run. The first layout
+  // pass collects them; a second pass re-lays out with extra rows there.
+  const detourEntryLevels = new Set<number>()
+
+  // Detour drawing runs after every other relationship, so it can see the
+  // straight stems already on the canvas at the anchor it shares.
+  const lateDetours: (() => void)[] = []
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -1358,67 +1410,73 @@ export function renderClassAscii(
           clearSide: routeX > fromCX ? 'right' : 'left',
         })
 
-        // 1. Horizontal from source anchor to route column
-        const lx1 = Math.min(fromAnchorX, routeX)
-        const rx1 = Math.max(fromAnchorX, routeX)
-        for (let x = lx1; x <= rx1; x++) {
-          setCGuarded(x, exitY, lineH, 'line')
-        }
-        if (!useAscii && exitY < (canvas[0]?.length ?? 0)) {
-          if (fromAnchorX < routeX) {
-            setCGuarded(fromAnchorX, exitY, '└', 'corner')
-            setCGuarded(routeX, exitY, '┐', 'corner')
-          } else {
-            setCGuarded(fromAnchorX, exitY, '┘', 'corner')
-            setCGuarded(routeX, exitY, '┌', 'corner')
+        // Drawn after every other relationship (see `lateDetours`).
+        lateDetours.push(() => {
+          // The entry run sits one row above the arrowhead row, so the head
+          // has a stem above it. The first layout pass may lack the room
+          // (its result is discarded below); the second pass always has it.
+          const runY = entryY - 1
+          if (routeX !== toAnchorX) {
+            detourEntryLevels.add(level.get(rel.to)! - 1)
           }
-        }
 
-        // 2. Vertical at routeX from exit to entry
-        for (let y = exitY + 1; y <= entryY; y++) {
-          setCGuarded(routeX, y, lineV, 'line')
-        }
-
-        // 3. Horizontal from routeX to target anchor at entry
-        if (routeX !== toAnchorX) {
-          const lx2 = Math.min(routeX, toAnchorX)
-          const rx2 = Math.max(routeX, toAnchorX)
-          for (let x = lx2; x <= rx2; x++) {
-            setCGuarded(x, entryY, lineH, 'line')
-          }
-          if (!useAscii && entryY < (canvas[0]?.length ?? 0)) {
-            if (routeX < toAnchorX) {
-              setCGuarded(routeX, entryY, '└', 'corner')
-              setCGuarded(toAnchorX, entryY, '┐', 'corner')
-            } else {
-              setCGuarded(routeX, entryY, '┘', 'corner')
-              setCGuarded(toAnchorX, entryY, '┌', 'corner')
-            }
-          }
-        }
-
-        // Markers for detour case
-        if (marker.markerAt === 'to') {
-          // Target sits below this point — the arrowhead must point down
-          // into it. Hierarchical markers (inheritance/realization) rotate
-          // opposite to directional ones (association/dependency): passing
-          // 'up' yields a hierarchical marker's down-pointing glyph, while
-          // 'down' yields a directional marker's down-pointing glyph. See
-          // the matching compensation in the "target is above source"
-          // branch below, which handles the mirrored case.
-          const isHierarchical =
-            marker.type === 'inheritance' || marker.type === 'realization'
-          const markerChar = getMarkerShape(
-            marker.type,
-            useAscii,
-            isHierarchical ? 'up' : 'down',
+          // 1. Horizontal from source anchor to route column. When another
+          //    relationship's straight stem already leaves the same anchor, the
+          //    run starts a row lower so the stem stays a plain `│` and the run
+          //    branches off it (`├`), instead of a corner replacing the stem.
+          const sharesStem = [V, dashV].includes(canvas[fromAnchorX]![exitY]!)
+          const exitRunY = sharesStem ? exitY + 1 : exitY
+          drawRun(
+            exitRunY,
+            fromAnchorX,
+            routeX,
+            fromAnchorX < routeX ? '└' : '┘',
+            fromAnchorX < routeX ? '┐' : '┌',
+            lineH,
           )
-          setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
-        }
-        if (marker.markerAt === 'from') {
-          const markerChar = getMarkerShape(marker.type, useAscii, 'down')
-          setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
-        }
+
+          // 2. Vertical at routeX from exit to the entry run
+          const trunkEnd = routeX !== toAnchorX ? runY - 1 : entryY
+          for (let y = exitRunY + 1; y <= trunkEnd; y++) {
+            setCGuarded(routeX, y, lineV, 'line')
+          }
+
+          // 3. Horizontal from routeX to target anchor at the entry run; its
+          //    corner at the anchor is the stem top above the arrowhead
+          if (routeX !== toAnchorX) {
+            drawRun(
+              runY,
+              routeX,
+              toAnchorX,
+              routeX < toAnchorX ? '└' : '┘',
+              routeX < toAnchorX ? '┐' : '┌',
+              lineH,
+            )
+          }
+
+          // Markers for detour case
+          if (marker.markerAt === 'to') {
+            // Target sits below this point — the arrowhead must point down
+            // into it. Hierarchical markers (inheritance/realization) rotate
+            // opposite to directional ones (association/dependency): passing
+            // 'up' yields a hierarchical marker's down-pointing glyph, while
+            // 'down' yields a directional marker's down-pointing glyph. See
+            // the matching compensation in the "target is above source"
+            // branch below, which handles the mirrored case.
+            const isHierarchical =
+              marker.type === 'inheritance' || marker.type === 'realization'
+            const markerChar = getMarkerShape(
+              marker.type,
+              useAscii,
+              isHierarchical ? 'up' : 'down',
+            )
+            setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
+          }
+          if (marker.markerAt === 'from') {
+            const markerChar = getMarkerShape(marker.type, useAscii, 'down')
+            setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
+          }
+        })
       } else {
         // NO COLLISION CASE: Use original midpoint-based routing
         // Path: source anchor → (jog to lane) → vertical to midY → horizontal at midY → vertical → (jog to anchor) → target
@@ -1656,6 +1714,21 @@ export function renderClassAscii(
       }
     }
   })
+
+  for (const draw of lateDetours) draw()
+
+  // A detour was routed with no room for its arrowhead stem: lay out again
+  // with extra rows there (at most once).
+  if (!detourRoomLevels && detourEntryLevels.size > 0) {
+    return renderClassAscii(
+      text,
+      config,
+      colorMode,
+      theme,
+      options,
+      detourEntryLevels,
+    )
+  }
 
   /**
    * Where a relationship's label should ideally center — the column and row

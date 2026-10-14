@@ -2269,6 +2269,26 @@ pie title Pets adopted by volunteers
     A --> B
     A --> C
     B --> C`,
+  },  {
+    title: 'Sequence: Participant Types',
+    category: 'Sequence',
+    gallery: true,
+    description:
+      'All six `participant X@{ "type": ... }` kinds from Mermaid 12: boundary, control, entity and database draw an icon with the label below it, collections stacks two boxes, and queue is a horizontal cylinder (#2059). ASCII marks each with a one-line glyph above the label.',
+    source: `sequenceDiagram
+    participant B@{ "type": "boundary" }
+    participant C@{ "type": "control" }
+    participant E@{ "type": "entity" }
+    participant D@{ "type": "database" }
+    participant L@{ "type": "collections" }
+    participant Q@{ "type": "queue" }
+    participant P as Plain
+    B->>C: request
+    C->>E: load
+    E->>D: select
+    D->>L: rows
+    L->>Q: enqueue
+    Q->>P: done`,
   },
   {
     title: 'Duplicate Self-Loops',
