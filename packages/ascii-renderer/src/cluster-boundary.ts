@@ -481,11 +481,17 @@ interface LaneSide {
 }
 
 /**
- * The face and gutter track for lane sibling `edge` (`index` 1 takes the near
- * side of the target, 2 the far side, 3 a track of its own past the high
- * side on the same face, 4 the low face when the first three stacked high); null when no such leg is possible,
- * or `insertAt` set when it needs a gutter track the layout lacks (#1253): a
- * target against the layout edge, or the fourth sibling's own track.
+ * The face and gutter track for lane sibling `edge` (#1826). A face holds
+ * three siblings (its top, middle and bottom rows), so the first six take
+ * faces in the order below (H the high face, L the low one; a gutter at or
+ * past the target's centre stacks the first three on the high side, so labels
+ * read in source order instead of the third sibling detouring back into the
+ * low face) and `step` counts the earlier siblings on the same face: each
+ * takes a track of its own, farther from the target, so the outermost lane
+ * enters last and no stroke crosses another. Null when no such leg is
+ * possible (a seventh sibling), or `insertAt` set when it needs a gutter
+ * track the layout lacks (#1253): a target against the layout edge, or a
+ * sibling's own track.
  */
 function laneSide(
   graph: AsciiGraph,
@@ -493,55 +499,35 @@ function laneSide(
   edge: AsciiEdge,
 ): LaneSide | null {
   const vertical = graph.config.graphDirection !== 'LR'
-  const index = edge.parallelLane!.index
-  if (index > 4) return null
+  const i = edge.parallelLane!.index - 1
   const to = requireGridCoord(edge.to)
   const origin = vertical ? to.x : to.y
-  // Cross-axis position of the target's centre, and whether the gutter
-  // lies on its low or high side.
-  const centre = origin + 1
   const gutterCross = vertical ? plan.gutter.x : plan.gutter.y
-  const high: LaneSide = {
-    lane: origin + 3,
-    attach: origin + 2,
-    dir: vertical ? Left : Up,
-  }
-  const low: LaneSide = {
-    lane: origin - 1,
-    attach: origin,
-    dir: vertical ? Right : Down,
-  }
   const sizes = vertical ? graph.columnWidth : graph.rowHeight
-  // Gutter at or past the target's centre: siblings 2 and 3 both stack their
-  // own tracks on the high side (origin+4, origin+5), so labels read in source
-  // order instead of the third sibling detouring left and back into the low face.
-  const stackHigh = gutterCross >= centre
-  // The high face holds three siblings (its top, middle and bottom rows), so
-  // a fifth takes the low face when the first three stacked on the high one.
-  const fifth = index === 4 && stackHigh
-  if (!fifth && (index === 3 || index === 4 || (index === 2 && stackHigh))) {
-    // Its own track just past the high gutter: free of nodes and sized, or
-    // else inserted. Landing on the high face merges with the sibling there.
-    const lane = origin + 4 + (stackHigh ? index - 2 : index - 3)
-    if (lane === gutterCross) return null
+  const [faces, steps] =
+    gutterCross > origin ? ['HHHLLL', '012012'] : ['LHHHLL', '001212']
+  if (!faces[i]) return null
+  const high = faces[i] === 'H'
+  const step = +steps[i]!
+  const lane = high ? origin + 3 + step : origin - 1 - step
+  const side: LaneSide = high
+    ? { lane, attach: origin + 2, dir: vertical ? Left : Up }
+    : { lane, attach: origin, dir: vertical ? Right : Down }
+  if (lane === gutterCross) return null
+  if (step > 0) {
+    // Its own track past the nearer one: free of nodes and sized, or else
+    // inserted (beside the target when on the low side, which shifts it).
     const occupied = graph.nodes.some((node) => {
       const at = requireGridCoord(node)
       const start = vertical ? at.x : at.y
       return start <= lane && lane <= start + 2
     })
-    return {
-      ...high,
-      lane,
-      insertAt: occupied || !sizes.has(lane) ? lane : undefined,
-    }
+    const missing = lane < 0 || occupied || !sizes.has(lane)
+    return { ...side, insertAt: missing ? (high ? lane : origin) : undefined }
   }
-  const side = fifth
-    ? low
-    : (gutterCross >= centre ? [high, low] : [low, high])[index - 1]!
-  if (side.lane === gutterCross) return null
   // Against the layout edge the low side has no gutter track at all.
-  if (side.lane < 0) return { ...side, insertAt: 0 }
-  return sizes.has(side.lane) ? side : null
+  if (lane < 0) return { ...side, insertAt: 0 }
+  return sizes.has(lane) ? side : null
 }
 
 /**
@@ -633,7 +619,7 @@ export function clusterLaneEndShift(
       )
       .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
     const rank = onFace.indexOf(edge)
-    return onFace.length === 2 ? rank : onFace.length === 3 ? rank - 1 : 0
+    return rank - Math.floor((onFace.length - 1) / 2)
   }
   // Outside a cluster, lanes get their face cells from port-offsets.ts's
   // `allocateFaces` (#1743, #2025).

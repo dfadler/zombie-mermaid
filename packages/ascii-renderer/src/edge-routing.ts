@@ -526,6 +526,17 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
     for (let i = 0; i < group.length; i++) {
       group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
     }
+    // #1826: past the 3 cells of a box face, every sibling still needs a cell of
+    // its own, so lengthen the face rather than let them merge. Cluster exits
+    // split over two faces instead (`laneFace`, cluster-boundary.ts).
+    if (group.length > 4 && !group[0]!.clusterSource) {
+      const lr = graph.config.graphDirection === 'LR'
+      const sizes = lr ? graph.columnWidth : graph.rowHeight
+      for (const n of [group[0]!.from, group[0]!.to]) {
+        const at = requireGridCoord(n)[lr ? 'x' : 'y'] + 1
+        sizes.set(at, Math.max(sizes.get(at) ?? 0, group.length - 1))
+      }
+    }
   }
 }
 

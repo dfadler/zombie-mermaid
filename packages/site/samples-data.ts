@@ -2329,4 +2329,46 @@ pie title Pets adopted by volunteers
     n1 -->|000A| n0
     n0 --> n1`,
   },
+  {
+    title: 'Flowchart: Five Parallel Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Five labeled edges between the same two nodes (#1826). In the ASCII panel the boxes grow so each lane still enters the target on its own row with its own arrowhead.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  A -->|fourth| B
+  A -->|fifth| B`,
+  },
+  {
+    title: 'Flowchart: Five Parallel Edges with Reciprocals (LR)',
+    category: 'Flowchart',
+    description:
+      'Three edges one way and two back between the same two nodes in a left-to-right graph (#1826). In the ASCII panel the reciprocals share the group and each edge keeps its own arrowhead.',
+    source: `flowchart LR
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  B -->|back one| A
+  B -->|back two| A`,
+  },
+  {
+    title: 'Flowchart: Six Cluster Exit Siblings (TD)',
+    category: 'Flowchart',
+    description:
+      'Six labeled edges leave a subgraph for one target beside another exit (#1826). In the ASCII panel the siblings share both side faces of the target, each on its own row.',
+    source: `flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|1| T
+  S -->|2| T
+  S -->|3| T
+  S -->|4| T
+  S -->|5| T
+  S -->|6| T
+  S -->|other| U`,
+  },
 ]
