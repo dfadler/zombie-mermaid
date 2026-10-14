@@ -2,8 +2,8 @@
 | SUPERVISOR |    
 +------------+    
       |o          
-      + manages   
-      |           
+      ++          
+      | manages   
       <           
 +----------+      
 | EMPLOYEE |      

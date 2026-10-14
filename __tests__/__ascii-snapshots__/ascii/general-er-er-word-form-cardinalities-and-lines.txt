@@ -16,8 +16,8 @@
 | LINE_ITEM |        
 +-----------+        
      |o              
-     + lists         
-     |               
+     ++              
+     | lists         
      <               
 +---------+          
 | PRODUCT |          
@@ -44,8 +44,8 @@
 | SHELF |            
 +-------+            
     +                
-   + holds           
-   :                 
+   ++                
+   : holds           
   o<                 
 +-----+              
 | BIN |              

@@ -14,8 +14,8 @@ erDiagram
 │ string name PK │    
 └────────────────┘    
          ┼            
-        ┌ lives_at    
-        │             
+        ┌┘            
+        │ lives_at    
        ○╟             
 ┌───────────────┐     
 │ ADDRESS       │     

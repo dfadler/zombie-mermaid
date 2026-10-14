@@ -1647,7 +1647,7 @@ export function renderErAscii(
                 continue
               }
               const onJog =
-                labelX <= rx &&
+                labelX - 1 <= rx &&
                 lastLx >= lx &&
                 jogRow >= candidateStart &&
                 jogRow < candidateStart + blockHeight

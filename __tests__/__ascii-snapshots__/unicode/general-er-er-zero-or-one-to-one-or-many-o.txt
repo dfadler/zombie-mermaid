@@ -2,8 +2,8 @@
 │ SUPERVISOR │    
 └────────────┘    
       │○          
-      ┌ manages   
-      │           
+      ┌┘          
+      │ manages   
       ╟           
 ┌──────────┐      
 │ EMPLOYEE │      

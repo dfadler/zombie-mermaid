@@ -18,8 +18,8 @@ erDiagram
 │ int age         │    
 └─────────────────┘    
          ┼             
-        ┌ places       
-        │              
+        ┌┘             
+        │ places       
        ○╟              
 ┌───────────────┐      
 │ ORDER         │      
