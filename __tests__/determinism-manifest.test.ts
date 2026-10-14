@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { hash, manifestLines } from '../scripts/lib/determinism-manifest.ts'
+import {
+  attempt,
+  hash,
+  manifestLines,
+} from '../scripts/lib/determinism-manifest.ts'
 
 describe('manifestLines', () => {
   const samples = [
@@ -27,5 +31,13 @@ describe('manifestLines', () => {
     const b = manifestLines(samples, svg, (s) => `${ascii(s)}!`)
     expect(a[0]).toBe(b[0])
     expect(a[1]).not.toBe(b[1])
+  })
+
+  it('hashes a non-Error throw via String()', () => {
+    expect(
+      attempt(() => {
+        throw 'oops'
+      }),
+    ).toBe('THROW:oops')
   })
 })
