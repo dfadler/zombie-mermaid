@@ -40,7 +40,9 @@ export function missingEntries(dir) {
 export function main(root = resolve(import.meta.dirname, '..')) {
   const dirs = [
     root,
-    ...readdirSync(join(root, 'packages')).map((d) => join(root, 'packages', d)),
+    ...readdirSync(join(root, 'packages')).map((d) =>
+      join(root, 'packages', d),
+    ),
   ].filter(
     (d) =>
       existsSync(join(d, 'package.json')) &&
