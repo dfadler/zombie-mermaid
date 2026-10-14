@@ -675,16 +675,6 @@ jobs:
       - name: Build packages
         run: pnpm run build
 
-      # Gates published dist/ output against bundle-size-budget.json — see
-      # scripts/check-bundle-size.ts for why this is an in-house gzip check
-      # rather than a size-limit/bundlewatch dependency, and how to raise a
-      # budget after an intentional, reviewed size increase. Folded in here
-      # from the separate `Bundle size gate` job (not a required check) so the
-      # build runs once (#1839). It stays a blocking step, and runs before
-      # anything else touches dist/.
-      - name: Check bundle size
-        run: pnpm run check:bundle-size
-
       # Installs the packed tarballs into clean projects and checks imports,
       # types, CLI, MCP, rendering, elkjs and a Vite bundle (#1566).
       - name: Smoke-test packed tarballs
@@ -731,6 +721,18 @@ jobs:
             echo "::warning::Public API surface changed (report-only)"
             exit 1
           fi
+
+      # Gates published dist/ output against bundle-size-budget.json — see
+      # scripts/check-bundle-size.ts for why this is an in-house gzip check
+      # rather than a size-limit/bundlewatch dependency, and how to raise a
+      # budget after an intentional, reviewed size increase. Folded in here
+      # from the separate `Bundle size gate` job (not a required check) so the
+      # build runs once (#1839). It stays a blocking step; `!cancelled()` makes
+      # it run even if the smoke test failed, so neither signal hides the other.
+      # Nothing above modifies dist/ (pack and the report steps only read it).
+      - name: Check bundle size
+        if: ${{ !cancelled() }}
+        run: pnpm run check:bundle-size
 
   semgrep:
     name: Semgrep SAST scan
