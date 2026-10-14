@@ -3,6 +3,7 @@ import { splitStatements } from '@zombie-mermaid/core'
 import { parseC4Diagram } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidASCII } from '../../../../src/index.ts'
 import { rankElements } from '../c4-diagram.ts'
+import { samples } from '../../../site/samples-data.ts'
 
 function ranks(src: string): Record<string, number> {
   const d = parseC4Diagram(splitStatements(src))
@@ -307,5 +308,36 @@ describe('relationship labels stay readable', () => {
       return between(out, 'A').length
     }
     expect(rows(4)).toBeGreaterThan(rows(1))
+  })
+})
+
+describe('arrowheads are fed by a stroke (#2026)', () => {
+  // The cell behind a head (opposite its direction) must carry a stroke that
+  // runs along the head's axis, never a side arm or nothing.
+  const HEADS: Record<string, [number, number, RegExp]> = {
+    '▲': [0, 1, /[│└┘├┤┴┼]/],
+    '▼': [0, -1, /[│┌┐├┤┬┼]/],
+    '►': [-1, 0, /[─┌└├┬┴┼]/],
+    '◄': [1, 0, /[─┐┘┤┬┴┼]/],
+  }
+  const c4 = samples.filter((s) => s.source.trimStart().startsWith('C4'))
+
+  it('has C4 samples to check', () => {
+    expect(c4.length).toBeGreaterThan(0)
+  })
+
+  it.each(c4.map((s) => [s.title, s.source]))('%s', (_t, source) => {
+    const grid = renderMermaidASCII(source!).split('\n')
+    const bad: string[] = []
+    grid.forEach((line, y) =>
+      [...line].forEach((ch, x) => {
+        const h = HEADS[ch]
+        if (!h) return
+        const behind = [...(grid[y + h[1]] ?? '')][x + h[0]] ?? ' '
+        if (!h[2].test(behind))
+          bad.push(`${ch} at ${x},${y} behind "${behind}"`)
+      }),
+    )
+    expect(bad).toEqual([])
   })
 })
