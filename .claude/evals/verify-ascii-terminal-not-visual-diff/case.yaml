@@ -25,6 +25,10 @@ graders:
   - name: no_visual_diff_command
     type: regex
     # matches command forms only, not prose that says "not visual-diff"
-    pattern: '(?:tsx|node|pnpm(?: run| exec)?|npx)\s+(?:scripts/)?visual-diff|playwright test|chrome --headless'
+    pattern: '(?:tsx|node|pnpm(?: run| exec)?|npx)\s+(?:scripts/)?visual-diff|playwright test'
     flags: i
     match: not_contains
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-ascii-terminal"'

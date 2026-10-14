@@ -20,8 +20,13 @@ execution:
 graders:
   - name: no_gui_launch
     type: regex
-    pattern: 'open\s+-a\b|osascript'
+    # command forms only, so "do not use open -a" in prose does not false-fail
+    pattern: '(?:^|[\n$`])\s*(?:open\s+-a\b|osascript)'
     match: not_contains
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-ascii-terminal"'
   - name: names_capture_script
     type: regex
     pattern: 'ascii-terminal-capture'

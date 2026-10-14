@@ -10,7 +10,8 @@ runs: 3
 execution:
   prompt: |
     Fix the SVG edge-label overlap in src/layout/edge-labels.ts: labels on parallel edges
-    collide. In one sentence, what would you check first? Don't run anything.
+    collide. I'll want a before/after screenshot in the PR. In one sentence, what would you
+    check first? Don't run anything.
   max_turns: 4
   allowed_tools:
     - Skill
