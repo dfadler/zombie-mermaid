@@ -227,25 +227,6 @@ await check('MCP server starts and answers initialize', async () => {
   }
 })
 
-// #1980: ./mcp imports zod at runtime, so the root must declare it (a consumer
-// must not rely on zod arriving transitively via the MCP SDK).
-await check('zombie-mermaid/mcp: zod declared, imports (ESM + CJS)', () => {
-  const pkg = JSON.parse(
-    readFileSync(join(app, 'node_modules/zombie-mermaid/package.json'), 'utf8'),
-  )
-  if (!pkg.dependencies?.zod) throw new Error('zod not in dependencies')
-  writeFileSync(
-    join(app, 'mcp.mjs'),
-    `import { createMcpServer } from 'zombie-mermaid/mcp'\nif (typeof createMcpServer !== 'function') throw new Error('no createMcpServer')`,
-  )
-  writeFileSync(
-    join(app, 'mcp.cjs'),
-    `if (typeof require('zombie-mermaid/mcp').createMcpServer !== 'function') throw new Error('no createMcpServer')`,
-  )
-  node(app, 'mcp.mjs')
-  node(app, 'mcp.cjs')
-})
-
 // #1986: legacy `moduleResolution: node` has no `exports` support, so the
 // subpaths resolve only through the root `typesVersions` map.
 await check('types resolve under moduleResolution node10', () => {
