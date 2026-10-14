@@ -6,6 +6,9 @@
 // options, or else from a leading "Line N: " in the message, so a throw site
 // migrates by swapping `Error` for `MermaidParseError`. All fields optional:
 // many throw sites carry no position.
+//
+// Every parser throw uses this (#1979). svg-renderer's ElkNotRegisteredError
+// deliberately does not extend it: a missing peer dependency is not bad input.
 // ============================================================================
 
 export interface MermaidParseErrorOptions {
