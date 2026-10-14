@@ -1,6 +1,6 @@
 /**
  * Browser-side entry point for the visual regression suite's Playwright
- * Test harness. Bundled by build-harness.ts (esbuild) into a single script
+ * Test harness. Bundled by build-harness.ts (Vite) into a single script
  * and injected into a blank page via page.setContent(); the test file (Node
  * side) then drives it through page.evaluate() calls against
  * `window.__harness`.
