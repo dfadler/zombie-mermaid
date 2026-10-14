@@ -94,6 +94,29 @@ export default defineConfig({
     // omitting it fails loudly (`document is not defined`) rather than
     // silently passing under the wrong environment.
     setupFiles: ['./config/vitest.setup.ts'],
+    // CI-only (#1838); local runs keep the default reporter and no retry.
+    // - `github-actions`: annotations plus the job summary written to
+    //   $GITHUB_STEP_SUMMARY, which lists every test that passed only after
+    //   a retry under "Flaky Tests". A custom `reporters` list drops the
+    //   reporter Vitest otherwise auto-adds, so it is named explicitly.
+    //   https://vitest.dev/guide/reporters#github-actions-reporter
+    // - `junit`: machine-readable report, uploaded as an artifact by ci.yml.
+    //   https://vitest.dev/guide/reporters#junit-reporter
+    // - `retry: 1` retries a failing test once. It must not hide flakes: a
+    //   test that needed it is surfaced in the summary above and is a bug to
+    //   file (CONTRIBUTING.md, "Flaky tests"; #1825).
+    //   https://vitest.dev/config/retry
+    // `html` is omitted: it needs @vitest/ui, which this repo does not depend on.
+    ...(process.env.CI
+      ? {
+          reporters: [
+            'default',
+            'github-actions',
+            ['junit', { outputFile: 'test-results/junit.xml' }],
+          ],
+          retry: 1,
+        }
+      : {}),
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

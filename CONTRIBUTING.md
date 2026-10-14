@@ -142,6 +142,16 @@ A reviewer should be able to read the reason without opening the issue. The desc
 
 CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. The repo-wide floor is `coverage.thresholds` in `config/vitest.config.ts`, kept a bit under the measured baseline as headroom; `pnpm run test:coverage` fails the build if coverage drops below it, so it's a hard gate against silent regression, not just visibility. On top of that, `pnpm run coverage:diff` holds new and changed lines to a stricter 95%.
 
+### Flaky tests
+
+Under `CI`, `config/vitest.config.ts` retries a failing test once (`retry: 1`) and adds the
+`github-actions` and `junit` reporters; local runs are unchanged. The retry exists to keep one
+unlucky run from blocking a merge, not to excuse flakiness. Every test that passed only on retry
+is listed under "Flaky Tests" in the Unit tests job summary, and the full report is the
+`junit-report` artifact. A test that passes only on retry is a bug: file an issue (see #1825 for
+the known flakes) and fix or quarantine it; don't ignore a green run that lists one. To reproduce
+locally, see the `vitest:flaky-tests` skill, or `CI=true pnpm test`.
+
 ### Testing scripts
 
 `scripts/**/*.ts` is in the coverage run and the `coverage:diff` gate, same 95%
