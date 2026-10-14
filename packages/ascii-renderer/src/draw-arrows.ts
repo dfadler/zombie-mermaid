@@ -578,6 +578,8 @@ function drawPath(
 
 /** Vertical box-border characters a horizontal connector can genuinely merge with. */
 const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊', '|', '‖'])
+/** Solid fork/join bar cell (Unicode / ASCII): nothing to connect to, nothing to overwrite. */
+const BAR_CHARS = new Set(['█', '#'])
 /** Horizontal box-border characters a vertical connector can genuinely merge with. */
 const HORIZONTAL_BORDER_CHARS = new Set(['─', '━', '═', '╌', '┄', '-', '='])
 
@@ -640,6 +642,7 @@ function drawBoxStart(
     const x = from.x
     const y = from.y + 1
     const existing = existingOnBox(x, y)
+    if (existing !== undefined && BAR_CHARS.has(existing)) return canvas
     const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
     write(canvas, x, y, hasBorder ? (junction ?? '┴') : useAscii ? '|' : '│')
@@ -647,6 +650,7 @@ function drawBoxStart(
     const x = from.x
     const y = from.y - 1
     const existing = existingOnBox(x, y)
+    if (existing !== undefined && BAR_CHARS.has(existing)) return canvas
     const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
     write(canvas, x, y, hasBorder ? (junction ?? '┬') : useAscii ? '|' : '│')
@@ -690,6 +694,10 @@ function drawBoxStart(
           ? '-'
           : '─',
     )
+    // A widened border column starts the stroke past the real border; bridge
+    // the blank cells between them so the connector isn't an orphan (#2027).
+    const [lo, hi] = x < from.x ? [x + 1, from.x - 1] : [from.x + 1, x - 1]
+    for (let gx = lo; gx <= hi; gx++) write(canvas, gx, y, useAscii ? '-' : '─')
   }
 
   return canvas
