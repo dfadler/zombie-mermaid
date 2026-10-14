@@ -1662,8 +1662,9 @@ export function renderClassAscii(
     fromP: PlacedClass,
     toP: PlacedClass,
     labelWidth: number,
+    lineCount: number,
   ): { idealMidX: number; baseMidY: number } {
-    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
+    const { fromCX, toCX, toAnchorX } = connectionColumns(relIndex, fromP, toP)
     const fromBY = fromP.y + fromP.height - 1
     const toTY = toP.y
 
@@ -1701,6 +1702,22 @@ export function renderClassAscii(
               idealMidX: Math.floor((detour.fromAnchorX + detour.routeX) / 2),
               baseMidY: detour.exitY,
             }
+      }
+      // A single-line label on a route with a horizontal run (`fromCX !==
+      // toCX`) must not sit on that run's row (midY): it would overwrite the
+      // run and leave the arrowhead detached from its stem (issue #2024).
+      // Put it on the row below the run, beside the target stem on the side
+      // facing the source, when that row is free of the target's jog.
+      const midY = fromBY + Math.floor((toTY - fromBY) / 2)
+      const lastRow = toTY - (toCX !== toAnchorX ? 2 : 1)
+      if (lineCount === 1 && fromCX !== toCX && midY + 1 <= lastRow) {
+        const idealMidX =
+          toCX > fromCX
+            ? toCX - Math.ceil(labelWidth / 2)
+            : toCX + 1 + Math.floor(labelWidth / 2)
+        if (idealMidX - Math.floor(labelWidth / 2) >= 0) {
+          return { idealMidX, baseMidY: midY + 1 }
+        }
       }
       return {
         idealMidX: Math.floor((fromCX + toCX) / 2),
@@ -1874,6 +1891,7 @@ export function renderClassAscii(
       fromP,
       toP,
       width,
+      lines.length,
     )
     const excludeIds = new Set([rel.from, rel.to])
     const labelY = resolveLabelFinalY(
@@ -1949,6 +1967,7 @@ export function renderClassAscii(
         fromP,
         toP,
         maxLabelWidth,
+        lines.length,
       )
 
       // The row to draw on: resolved once, up front, by the territory
