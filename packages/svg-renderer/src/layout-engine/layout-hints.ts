@@ -22,6 +22,12 @@ export interface LayoutHints {
    * graph's node order (which is also the order ELK is given the nodes in).
    */
   walkOrder?: readonly string[]
+  /**
+   * Indices of edges to lay out reversed before the depth-first back-edge
+   * search, for a graph that has lost its subgraphs (the flat passes of the
+   * compound layout). Without it, `subgraphFeedbackEdges` of the graph itself.
+   */
+  feedbackEdges?: ReadonlySet<number>
   /** Keep every layer's nodes in the order the graph lists them. */
   forceNodeOrder?: boolean
 }
