@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
+  DEFAULT_FLOOR,
   DEFAULT_TOLERANCE,
+  SCORECARD_SCHEMA,
   agreement,
+  breaches,
+  floorFor,
+  sampleStatus,
+  scorecardJson,
   formatRow,
   isOfType,
   officialNodeName,
@@ -157,6 +163,7 @@ describe('parseOracleArgs', () => {
       tolerance: DEFAULT_TOLERANCE,
       type: 'flowchart',
       layout: 'elk',
+      thresholds: false,
       help: false,
     })
   })
@@ -203,6 +210,7 @@ describe('parseOracleArgs', () => {
       tolerance: 30,
       type: 'flowchart',
       layout: 'elk',
+      thresholds: false,
       help: false,
     })
   })
@@ -415,5 +423,96 @@ describe('oracle diagram types (#1707)', () => {
     expect(parseOracleArgs(['--type=class']).type).toBe('class')
     expect(parseOracleArgs(['--type=er']).type).toBe('er')
     expect(() => parseOracleArgs(['--type=pie'])).toThrow(/--type/)
+  })
+})
+
+describe('thresholds and machine-readable scorecard', () => {
+  const ag = (v: number | null, h: number | null, c: number | null = null) => ({
+    vertical: v,
+    horizontal: h,
+    containment: c,
+    nodes: 3,
+  })
+  const run = (
+    results: Record<string, ReturnType<typeof ag> & { subgraphs: boolean }>,
+    sampled: string[] = Object.keys(results),
+  ) => ({
+    results,
+    sampled,
+    entry: summarize(results, {
+      date: '2026-10-14',
+      commit: 'abc1234567',
+      tolerance: 20,
+      type: 'class' as const,
+      mermaid: '12.1.0',
+    }),
+  })
+
+  it('applies the default floor, per-sample overrides, and the boundary', () => {
+    expect(floorFor('Anything new')).toBe(DEFAULT_FLOOR)
+    expect(floorFor('Class: MVC Architecture')).toBe(0.65)
+    expect(sampleStatus('x', ag(1, DEFAULT_FLOOR))).toBe('pass')
+    expect(sampleStatus('x', ag(1, DEFAULT_FLOOR - 0.01))).toBe('fail')
+    expect(sampleStatus('Class: MVC Architecture', ag(1, 0.67))).toBe('pass')
+    expect(sampleStatus('x', ag(null, null))).toBe('n/a')
+    // 0.9 as a float sum must still meet a floor of 0.9.
+    expect(sampleStatus('x', ag(1, 0.1 + 0.8), 0.9)).toBe('pass')
+  })
+
+  it('lists breaches and unexpected errors, not expected ones or n/a', () => {
+    const r = run(
+      {
+        ok: { ...ag(1, 1), subgraphs: false },
+        low: { ...ag(1, 0.5), subgraphs: false },
+        single: { ...ag(null, null), subgraphs: false },
+      },
+      ['ok', 'low', 'single', 'zombie-mermaid', 'broke'],
+    )
+    expect(breaches([r])).toEqual(['low (50% < 85%)', 'broke (error)'])
+    expect(breaches([run({ ok: { ...ag(1, 1), subgraphs: false } })])).toEqual(
+      [],
+    )
+  })
+
+  it('writes a stable, sorted, rounded JSON scorecard', () => {
+    const r = run({
+      b: { ...ag(1, 2 / 3), subgraphs: true },
+      a: { ...ag(1, 1), subgraphs: false },
+    })
+    const json = JSON.parse(scorecardJson([r]))
+    expect(json.schema).toBe(SCORECARD_SCHEMA)
+    expect(json.mermaid).toBe('12.1.0')
+    expect(Object.keys(json.excluded)).toContain('sequence')
+    const titles = json.types.class.samples.map(
+      (s: { title: string }) => s.title,
+    )
+    expect(titles).toEqual(['a', 'b'])
+    expect(json.types.class.samples[1]).toMatchObject({
+      horizontal: 0.6667,
+      floor: DEFAULT_FLOOR,
+      status: 'fail',
+    })
+    expect(json.types.class.passing).toBe(1)
+    expect(json.types.class.failing).toBe(1)
+    expect(scorecardJson([r])).toBe(scorecardJson([r]))
+  })
+
+  it('parses --thresholds and --scorecard-json, refusing the simple layout', () => {
+    const a = parseOracleArgs(['--thresholds', '--scorecard-json=x.json'])
+    expect(a.thresholds).toBe(true)
+    expect(a.scorecardJson).toBe('x.json')
+    expect(() => parseOracleArgs(['--thresholds', '--layout=simple'])).toThrow(
+      /elk layout only/,
+    )
+  })
+
+  it('the markdown shows each floor and status and the excluded types', () => {
+    const md = scorecardMarkdown(
+      [run({ 'Class: MVC Architecture': { ...ag(1, 0.5), subgraphs: false } })],
+      [],
+    )
+    expect(md).toContain('| 50% | - | 3 | 65% | fail |')
+    expect(md).toContain('## Diagram types not scored')
+    expect(md).toContain('**sequence**')
   })
 })
