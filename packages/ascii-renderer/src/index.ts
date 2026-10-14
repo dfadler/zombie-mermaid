@@ -41,6 +41,12 @@ export type { AsciiTheme, ColorMode }
 export { DEFAULT_ASCII_THEME, detectColorMode, diagramColorsToAsciiTheme }
 
 export interface AsciiRenderOptions {
+  /**
+   * `'markdown'`: paste-safe plain output (defaults `useAscii: true`,
+   * `colorMode: 'none'`; explicit options win). Non-ASCII labels are kept;
+   * their width is font-dependent.
+   */
+  profile?: 'markdown'
   /** Size limits checked before layout; exceeding one throws `LimitExceededError`. See `RenderLimits`. */
   limits?: RenderLimits
   /** true = ASCII chars (+,-,|,>), false = Unicode box-drawing (┌,─,│,►). Default: false */
@@ -131,8 +137,10 @@ export function renderMermaidASCII(
   text: string,
   options: AsciiRenderOptions = {},
 ): string {
+  // `profile` only fills in defaults; explicit options still win.
+  const md = options.profile === 'markdown'
   const config: AsciiConfig = {
-    useAscii: options.useAscii ?? false,
+    useAscii: options.useAscii ?? md,
     paddingX: options.paddingX ?? DEFAULT_PADDING_X,
     paddingY: options.paddingY ?? DEFAULT_PADDING_Y,
     boxBorderPadding: options.boxBorderPadding ?? DEFAULT_BOX_BORDER_PADDING,
@@ -141,9 +149,11 @@ export function renderMermaidASCII(
 
   // Resolve color mode ('auto' or unset → detect environment, otherwise use specified mode)
   const colorMode: ColorMode =
-    options.colorMode === 'auto' || options.colorMode === undefined
-      ? detectColorMode()
-      : options.colorMode
+    options.colorMode === undefined && md
+      ? 'none'
+      : options.colorMode === 'auto' || options.colorMode === undefined
+        ? detectColorMode()
+        : options.colorMode
 
   // Merge user theme with defaults
   const theme: AsciiTheme = { ...DEFAULT_ASCII_THEME, ...options.theme }
