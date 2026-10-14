@@ -117,6 +117,16 @@ describe('derived SVG token contrast ratchet (#1864)', () => {
     })
   }
 
+  // WCAG 1.4.3 (#2000): text-sec/text-muted paint readable text. Exempt on
+  // purpose: node-stroke (1.4.11; the node's text label carries the
+  // information and the stroke only outlines it) and text-faint (paints only
+  // spacer/": " separators beside text that is itself >= 4.5:1).
+  for (const [theme, toks] of Object.entries(current))
+    it(`${theme}: text-sec and text-muted meet 4.5:1 (WCAG 1.4.3)`, () => {
+      expect(toks['text-sec vs bg']).toBeGreaterThanOrEqual(4.5)
+      expect(toks['text-muted vs bg']).toBeGreaterThanOrEqual(4.5)
+    })
+
   it('floors file has no stale themes', () => {
     expect(Object.keys(floors).sort()).toEqual(Object.keys(current).sort())
   })

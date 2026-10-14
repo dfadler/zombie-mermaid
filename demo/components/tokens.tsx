@@ -56,7 +56,7 @@ export const COLORS = {
   /** Secondary ink: sub-heads, descriptions, nav links at rest. */
   '--text-dim': '#9aa3c4',
   /** Tertiary ink: captions, timestamps, disabled states. */
-  '--text-faint': '#6b7398',
+  '--text-faint': '#7f86a6',
   /** Accent — flowchart. */
   '--blue': '#4d8dff',
   /** Accent — state. */

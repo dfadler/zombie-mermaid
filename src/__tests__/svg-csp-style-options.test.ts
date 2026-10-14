@@ -270,7 +270,7 @@ describe('renderMermaidSVG – styleAttribute: false', () => {
       })
 
       expect(rootStyleAttr(withAttr)).toBe(
-        '--bg:#FFFFFF;--fg:#27272A;background:var(--bg)',
+        '--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)',
       )
       expect(rootStyleAttr(without)).toBeUndefined()
 
@@ -419,7 +419,7 @@ describe('default output is unchanged when neither option is set', () => {
       expect(tag).toContain('xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ')
       expect(
         tag.endsWith(
-          ' style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">',
+          ' style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">',
         ),
       ).toBe(true)
       expect(tag).not.toContain('nonce')

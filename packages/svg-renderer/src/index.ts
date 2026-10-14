@@ -98,7 +98,10 @@ function buildColors(options: RenderOptions): DiagramColors {
     fg: options.fg ?? DEFAULTS.fg,
     line: options.line,
     accent: options.accent,
-    muted: options.muted,
+    // The zinc-light default pair needs its own muted to clear 4.5:1 (#2000);
+    // a custom bg/fg gets the color-mix fallback instead.
+    muted:
+      options.muted ?? (options.bg || options.fg ? undefined : DEFAULTS.muted),
     surface: options.surface,
     border: options.border,
   }
