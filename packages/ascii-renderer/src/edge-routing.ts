@@ -685,6 +685,15 @@ export function laneSearchExhausted(edge: AsciiEdge): boolean {
   return exhaustedLaneEdges.has(edge)
 }
 
+/** `mergePath` after dropping repeated points (gutter cells can coincide). */
+function lanePath(points: GridCoord[]): GridCoord[] {
+  return mergePath(
+    points.filter(
+      (p, i) => i === 0 || p.x !== points[i - 1]!.x || p.y !== points[i - 1]!.y,
+    ),
+  )
+}
+
 function buildParallelLanePath(
   graph: AsciiGraph,
   edge: AsciiEdge,
@@ -728,10 +737,16 @@ function buildParallelLanePath(
       : dirEquals(preferredOppositeDir, Down)
         ? 1
         : -1
-  const fromGutter = horizontalDeparture
+  // Each gutter steps along its own face's axis: a diagonal pair leaves one
+  // node vertically and enters the other horizontally (or the reverse), so the
+  // arrival's axis is not the departure's. Stepping the wrong axis put the
+  // gutter on the target's own border corner (#2025).
+  const isHorizontal = (d: Direction): boolean =>
+    dirEquals(d, Left) || dirEquals(d, Right)
+  const fromGutter = isHorizontal(preferredDir)
     ? { x: fromAttach.x + fromStep, y: fromAttach.y }
     : { x: fromAttach.x, y: fromAttach.y + fromStep }
-  const toGutter = horizontalDeparture
+  const toGutter = isHorizontal(preferredOppositeDir)
     ? { x: toAttach.x + toStep, y: toAttach.y }
     : { x: toAttach.x, y: toAttach.y + toStep }
 
@@ -799,7 +814,7 @@ function buildParallelLanePath(
     // makes into its target (`toGutter` -> `toAttach`), instead of running
     // the last leg along the target's own border, where it drew a stray
     // arrowhead/junction on the border cell itself (#1230).
-    const wideCandidate = mergePath([
+    const wideCandidate = lanePath([
       fromAttach,
       wideLabelSegment[0],
       horizontalDeparture
@@ -808,7 +823,9 @@ function buildParallelLanePath(
       toGutter,
       toAttach,
     ])
-    if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate), ownNodes)) {
+    // No exemption for the edge's own nodes: a lane that leaves along a
+    // border row/column draws over the node's corner and edge glyphs (#2025).
+    if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate))) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
     }
@@ -865,7 +882,7 @@ function buildParallelLanePath(
             { x: laneCross, y: fromGutter.y },
           ]
     const gutterCandidate = horizontalDeparture
-      ? mergePath([
+      ? lanePath([
           fromAttach,
           fromGutter,
           { x: fromGutter.x, y: laneMain },
@@ -873,7 +890,7 @@ function buildParallelLanePath(
           toGutter,
           toAttach,
         ])
-      : mergePath([
+        : lanePath([
           fromAttach,
           fromGutter,
           { x: laneCross, y: fromGutter.y },
