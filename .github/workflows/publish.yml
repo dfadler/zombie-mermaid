@@ -162,6 +162,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # #1991: the packages under packages/ have no prepublishOnly, so
+      # `changeset publish` ships whatever is on disk. #1596's split moved the
+      # build into the `test` job, whose dist/ does not reach this job, and
+      # 5.1.0/5.2.0 shipped without dist/. Rebuild here (rather than pass an
+      # artifact between jobs) and fail before publishing if any tarball
+      # would lack its entry files.
+      - name: Build packages
+        run: pnpm run build
+
+      - name: Verify tarballs contain dist/
+        run: pnpm run check:pack-dist
+
       - name: Ensure npm supports trusted publishing
         # Pinned (was @latest): trusted publishing needs npm >= 11.5.1.
         run: npm install -g npm@11.21.0
