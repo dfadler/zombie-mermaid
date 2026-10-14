@@ -50,7 +50,10 @@ function blankColumn(height: number): string[] {
  */
 function setCell(canvas: Canvas, x: number, y: number, ch: string): void {
   let col = canvas[x]!
-  if (Object.isFrozen(col)) canvas[x] = col = col.slice()
+  // A frozen column is always the all-space blank; V8's slice() of a frozen
+  // array is ~30x slower than a fresh fill and made per-edge layers cubic.
+  if (Object.isFrozen(col))
+    canvas[x] = col = new Array<string>(col.length).fill(' ')
   col[y] = ch
 }
 
