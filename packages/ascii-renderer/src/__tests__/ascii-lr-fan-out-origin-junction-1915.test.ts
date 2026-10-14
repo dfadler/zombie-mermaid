@@ -38,11 +38,12 @@ describe('LR origin gap junction (#1915)', () => {
     },
   )
 
-  it('draws the origin junction at paddingX 2', () => {
+  // Since #2043 the long edge leaves A's bottom face instead of the gap.
+  it('keeps the line out of A unbroken at paddingX 2', () => {
     const rows = renderMermaidASCII(SOURCES[0]!, {
       colorMode: 'none',
       paddingX: 2,
     }).split('\n')
-    expect(rows[2]).toMatch(/^│ A ├─┬►│ B ├─┬►│ C │$/)
+    expect(rows[2]).toMatch(/^│ A ├──►│ B ├──►│ C │$/)
   })
 })
