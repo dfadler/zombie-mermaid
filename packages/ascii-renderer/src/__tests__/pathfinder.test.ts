@@ -5,6 +5,7 @@ import {
   mergePath,
   createPathBudget,
   DEFAULT_PATH_BUDGET,
+  takeCapHits,
 } from '../pathfinder.ts'
 import type { GridCoord, PathBudget } from '../types.ts'
 import { createGrid, placeBlock, type Grid } from '../grid-occupancy.ts'
@@ -195,6 +196,18 @@ describe('pathfinder', () => {
       const budget = createPathBudget(3) // deliberately smaller than this search needs
       getPath(grid, { x: 0, y: 0 }, { x: 0, y: 50 }, budget)
       expect(budget.remaining).toBeGreaterThanOrEqual(0)
+    })
+
+    it('counts a budget-exhausted search as a cap hit (#1859)', () => {
+      takeCapHits()
+      getPath(
+        buildGrid([]),
+        { x: 0, y: 0 },
+        { x: 0, y: 50 },
+        createPathBudget(3),
+      )
+      expect(takeCapHits()).toBe(1)
+      expect(takeCapHits()).toBe(0)
     })
 
     it('bounds total pathfinding work across many edges to the budget, regardless of edge count', () => {
