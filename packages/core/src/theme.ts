@@ -79,9 +79,11 @@ export interface DiagramColors {
 // ============================================================================
 
 /** Default bg/fg when no colors are provided (zinc light) */
-export const DEFAULTS: Readonly<{ bg: string; fg: string }> = {
+export const DEFAULTS: Readonly<{ bg: string; fg: string; muted: string }> = {
   bg: '#FFFFFF',
   fg: '#27272A',
+  /** Applies only when neither bg nor fg is overridden (see buildColors) */
+  muted: '#71717A',
 } as const
 
 // ============================================================================
@@ -128,10 +130,12 @@ export const THEMES: Record<string, DiagramColors> = {
   'zinc-light': {
     bg: '#FFFFFF',
     fg: '#27272A',
+    muted: '#71717A', // zinc-500, 4.83:1 (the 40/60% mixes were 2.35/4.08:1, #2000)
   },
   'zinc-dark': {
     bg: '#18181B',
     fg: '#FAFAFA',
+    muted: '#A1A1AA', // zinc-400, 7.3:1 (the 40% mix was 3.71:1, #2000)
   },
   'tokyo-night': {
     bg: '#1a1b26',
