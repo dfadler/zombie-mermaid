@@ -8,12 +8,12 @@
  * model is deliberate). Vite's normal build pipeline is built around
  * `index.html` as the entry and writing a multi-file `dist/`, which doesn't
  * fit that model — but its underlying JS bundler is reachable directly via
- * `build()` with `rollupOptions.input` pointed at a script instead of an
+ * `build()` with `rolldownOptions.input` pointed at a script instead of an
  * HTML file, `write: false` to keep the result in memory, and
  * `codeSplitting: false` to force a single output chunk (there is only one
  * entry point and no `import()` calls to split off). That's what this
  * wraps, standing in for the `esbuild.build()` calls these generators used
- * previously. See zombie-mermaid#310.
+ * previously (Vite 8 build API: https://vite.dev/guide/api-javascript#build). See zombie-mermaid#310.
  */
 import { fileURLToPath } from 'node:url'
 import { build as viteBuild } from 'vite'
@@ -64,6 +64,8 @@ export interface BundleForBrowserOptions {
    * per-module `@__PURE__`-style analysis to reach the same conclusion.
    */
   treeshake?: boolean
+  /** Output format; defaults to `'es'`. The visual harness needs `'iife'`. */
+  format?: 'es' | 'iife'
 }
 
 /**
@@ -72,7 +74,7 @@ export interface BundleForBrowserOptions {
  */
 export async function bundleForBrowser(
   entryPath: string,
-  { minify, treeshake = true }: BundleForBrowserOptions,
+  { minify, treeshake = true, format = 'es' }: BundleForBrowserOptions,
 ): Promise<string> {
   const result = await viteBuild({
     // Skip loading vite.config.ts entirely — its plugin is dev-server-only
@@ -86,11 +88,13 @@ export async function bundleForBrowser(
       write: false,
       minify,
       target: 'esnext',
-      rollupOptions: {
+      // Vite 8 renamed `rollupOptions` to `rolldownOptions`
+      // (https://vite.dev/config/build-options#build-rolldownoptions).
+      rolldownOptions: {
         input: entryPath,
         treeshake,
         output: {
-          format: 'es',
+          format,
           codeSplitting: false,
           entryFileNames: 'bundle.js',
         },
