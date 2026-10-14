@@ -119,6 +119,7 @@
     "check:changesets": "tsx scripts/check-changesets.ts",
     "check:docs": "tsx scripts/check-docs.ts",
     "smoke:packed": "node scripts/smoke-test-packed.mjs",
+    "check:pack-dist": "node scripts/check-pack-dist.mjs",
     "check:package-types": "scripts/check-package-types.sh",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
