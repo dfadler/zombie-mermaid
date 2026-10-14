@@ -77,10 +77,10 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     expect(lines[detourLineIndex + 1]).toContain('relates_to')
     expect(ascii).toContain('relates_to')
     expect(ascii).toContain('tracks')
-    // "tracks" renders next to its own bottom marker ('○╟'), not spliced
+    // "tracks" renders next to its own bottom marker ('○╧'), not spliced
     // onto the unrelated detour line above.
     const tracksLine = lines.find((l) => l.includes('tracks'))
-    expect(tracksLine).toContain('○╟')
+    expect(tracksLine).toContain('○╧')
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
 

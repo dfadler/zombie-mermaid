@@ -212,7 +212,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
       labelRowIdx + 3,
     ].filter((r) => r < lines.length)
     const hasAlignedMarker = nearbyRows.some((r) =>
-      lines[r]!.slice(cornerCol - 1, cornerCol + 2).includes('○╟'),
+      lines[r]!.slice(cornerCol - 1, cornerCol + 2).includes('○╧'),
     )
     expect(hasAlignedMarker).toBe(true)
   })
@@ -354,13 +354,13 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
 
     const lines = ascii.split('\n')
     // ships-via's detour fill sits one row below LINE_ITEM's own
-    // zero-many marker ('╢○', for "includes") — anchoring on that marker
+    // zero-many marker ('○╤', for "includes") — anchoring on that marker
     // (unambiguous: it's only ever drawn once, at LINE_ITEM's own bottom
     // edge) rather than searching for a '└...┘' corner pair directly,
     // since every entity box's own border also has solid corners and a
     // naive substring search can match those instead (they're a different
     // row, but a row can contain more than one corner pair).
-    const markerRowIdx = lines.findIndex((l) => l.includes('╢○'))
+    const markerRowIdx = lines.findIndex((l) => l.includes('○╤'))
     expect(markerRowIdx).toBeGreaterThanOrEqual(0)
     const detourRow = lines[markerRowIdx + 1]!
     const detourStart = detourRow.indexOf('└╌')
@@ -423,7 +423,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // fill itself now solid too (styles swapped for this test), a naive
     // substring search matches ORDER's own box border instead of the
     // detour row.
-    const markerRowIdx = lines.findIndex((l) => l.includes('╢○'))
+    const markerRowIdx = lines.findIndex((l) => l.includes('○╤'))
     expect(markerRowIdx).toBeGreaterThanOrEqual(0)
     const detourRow = lines[markerRowIdx + 1]!
     const detourStart = detourRow.indexOf('└─') // index of the '└' corner

@@ -12,7 +12,7 @@ erDiagram
   +      
   | has  
   |      
- o<      
+ o^      
 +---+    
 | B |    
 +---+    

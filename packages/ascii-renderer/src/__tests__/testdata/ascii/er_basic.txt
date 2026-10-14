@@ -7,7 +7,7 @@ erDiagram
       +         
     +-+         
     | places    
-   o<           
+   o^           
 +-------+       
 | ORDER |       
 +-------+       
