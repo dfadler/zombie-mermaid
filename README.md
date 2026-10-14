@@ -223,6 +223,7 @@ zombie-mermaid --help                                   # Show all options
 `--hyperlinks` (with `--ascii`) turns `click` hrefs into OSC 8 terminal
 hyperlinks — off by default, since terminal and pager support varies (see
 [ASCII terminal hyperlinks](docs/diagrams.md#ascii-terminal-hyperlinks)).
+`--profile markdown` (with `--ascii`) emits plain ASCII characters with no color, for pasting into issues, commits and fenced blocks (the `profile` option in the library and the MCP `render_mermaid_ascii` tool).
 
 **Output rules.** `-o` is the destination for the run's _file_ output — SVG, HTML, or PNG when `--svg`/`--html`/`--png` is given, otherwise the ASCII rendering — and `-o -` sends it to stdout instead. A recognised extension (`.svg`, `.html`/`.htm`, `.txt`, `.png`) picks the format on its own, so the flag can be dropped; an extension that contradicts an explicit flag (`--svg -o out.txt`) is an error, while unrecognised ones are simply used as given. `--svg`/`--html`/`--png` with no `-o` writes `<input stem>.svg`/`.html`/`.png` beside the input (stdin input has no name to derive from, so it must pass `-o`). Only one of `--svg`/`--html`/`--png` can be set at a time — run the command twice for more than one. ASCII always prints to the terminal when one of them is also requested (`--ascii --svg -o out.svg`), and never carries ANSI colour codes when written to a file. **An existing output file is never overwritten unless you pass `--force`/`-f`.**
 
