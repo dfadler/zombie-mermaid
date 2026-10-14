@@ -27,7 +27,7 @@ jobs:
   # suppresses the whole workflow leaves required checks never reporting and
   # blocks the PR forever. Here every required check (`test`, `Build site
   # generator check`, `Semgrep SAST scan`, `Changeset present`) is unconditional
-  # and does NOT depend on this job; only visual-regression, bundle-size and
+  # and does NOT depend on this job; only visual-regression and
   # packed-smoke (`code`) and bench (`bench`) are gated, and a job skipped via
   # `if:` reports as skipped, never as missing. Fails open: pushes to main, an
   # empty/failed diff, or any file outside the docs-only lists below set both
@@ -636,43 +636,6 @@ jobs:
       # weekly schedule instead — see .github/workflows/dashboard-refresh.yml —
       # fully decoupled from how often main actually gets pushed to.
 
-  bundle-size:
-    name: Bundle size gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read # only checks out code, builds, and checks dist/ sizes; no writes back to the repo
-    # Same fork-of-this-fork guard as the `test` job above — see its comment
-    # for the full reasoning on what github.repository resolves to and what
-    # this does/doesn't protect against.
-    needs: changes
-    if: github.repository == 'dfadler/zombie-mermaid' && needs.changes.outputs.code == 'true'
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build package
-        run: pnpm run build
-
-      # Gates published dist/ output against bundle-size-budget.json — see
-      # scripts/check-bundle-size.ts for why this is an in-house gzip check
-      # rather than a size-limit/bundlewatch dependency, and how to raise a
-      # budget after an intentional, reviewed size increase.
-      - name: Check bundle size
-        run: pnpm run check:bundle-size
-
   packed-smoke:
     name: Packed tarball smoke test
     runs-on: ubuntu-latest
@@ -747,6 +710,18 @@ jobs:
             echo "::warning::Public API surface changed (report-only)"
             exit 1
           fi
+
+      # Gates published dist/ output against bundle-size-budget.json — see
+      # scripts/check-bundle-size.ts for why this is an in-house gzip check
+      # rather than a size-limit/bundlewatch dependency, and how to raise a
+      # budget after an intentional, reviewed size increase. Folded in here
+      # from the separate `Bundle size gate` job (not a required check) so the
+      # build runs once (#1839). It stays a blocking step; `!cancelled()` makes
+      # it run even if the smoke test failed, so neither signal hides the other.
+      # Nothing above modifies dist/ (pack and the report steps only read it).
+      - name: Check bundle size
+        if: ${{ !cancelled() }}
+        run: pnpm run check:bundle-size
 
   semgrep:
     name: Semgrep SAST scan
