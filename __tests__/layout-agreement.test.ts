@@ -241,6 +241,7 @@ describe('parseOracleArgs', () => {
     [['--fail-below=-5'], 'non-negative number'],
     [['--fail-below=101'], 'percentage'],
     [['--tolerance=-1'], 'non-negative number'],
+    [['--scorecard-json='], 'needs a file path'],
   ])('rejects %j', (argv, message) => {
     expect(() => parseOracleArgs(argv)).toThrow(message)
   })

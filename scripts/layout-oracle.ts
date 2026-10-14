@@ -241,7 +241,7 @@ async function main(): Promise<number> {
   }
   failing.push(...(await finishScorecard(args, runs)))
   if (failing.length > 0) {
-    console.error(`\nBelow threshold: ${failing.join(', ')}`)
+    console.error(`\nBelow threshold: ${[...new Set(failing)].join(', ')}`)
     return 1
   }
   return 0

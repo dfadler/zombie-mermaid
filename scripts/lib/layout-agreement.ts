@@ -280,7 +280,10 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     } else if (name === 'json') args.json = value
     else if (name === 'history') args.history = value
     else if (name === 'scorecard') args.scorecard = value
-    else if (name === 'scorecard-json') args.scorecardJson = value
+    else if (name === 'scorecard-json') {
+      if (value === '') throw new Error('--scorecard-json needs a file path')
+      args.scorecardJson = value
+    }
     else if (name === 'fail-below' || name === 'tolerance') {
       const n = Number(value)
       if (value === '' || !Number.isFinite(n) || n < 0) {
