@@ -51,7 +51,8 @@ function orphanArms(out: string): string[] {
   return found
 }
 
-const widths = (out: string) => new Set(out.split('\n').map((l) => [...l].length))
+const widths = (out: string) =>
+  new Set(out.split('\n').map((l) => [...l].length))
 
 const CASES: Record<string, string> = {
   '#2025 decision self-loop + duplicates + labeled back edge': `flowchart LR
