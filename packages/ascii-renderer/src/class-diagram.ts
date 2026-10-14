@@ -253,6 +253,8 @@ const FRAME_TOP_PAD = 2
 const FRAME_BOTTOM_PAD = 2
 const FRAME_EXTRA_HGAP = FRAME_SIDE_PAD * 2
 const FRAME_EXTRA_VGAP = FRAME_TOP_PAD + FRAME_BOTTOM_PAD - 1
+// Rows added below a level holding a single-line relationship label.
+const LABEL_EXTRA_VGAP = 2
 
 /** A `namespace` block with at least one member class in the diagram. */
 interface AsciiNamespaceFrame {
@@ -453,6 +455,34 @@ export function renderClassAscii(
   if (frames.length > 0) {
     for (const [i, g] of levelGroups.entries()) {
       levelGroups[i] = groupByFrame(g, frameOf)
+    }
+  }
+
+  // Levels whose gap below holds a single-line relationship label: the gap
+  // grows by LABEL_EXTRA_VGAP rows so the label sits on its path with a stem
+  // above it, like mermaid's edge labels, instead of replacing the only stem.
+  // A lone parent-child pair is centred (a straight stem), so only a source
+  // with several children or a target with several parents is expected to
+  // need a horizontal run.
+  const labelRoomLevels = new Set<number>()
+  const outDeg = new Map<string, number>()
+  const inDeg = new Map<string, number>()
+  for (const rel of diagram.relationships) {
+    outDeg.set(rel.from, (outDeg.get(rel.from) ?? 0) + 1)
+    inDeg.set(rel.to, (inDeg.get(rel.to) ?? 0) + 1)
+  }
+  for (const rel of diagram.relationships) {
+    const from = level.get(rel.from)
+    const to = level.get(rel.to)
+    if (
+      rel.label &&
+      splitLines(rel.label).length === 1 &&
+      from !== undefined &&
+      to !== undefined &&
+      from < to &&
+      (outDeg.get(rel.from)! > 1 || inDeg.get(rel.to)! > 1)
+    ) {
+      labelRoomLevels.add(from)
     }
   }
 
@@ -852,7 +882,7 @@ export function renderClassAscii(
       }
     }
 
-    currentY += maxH + vGap
+    currentY += maxH + vGap + (labelRoomLevels.has(lv) ? LABEL_EXTRA_VGAP : 0)
   }
 
   // --- Frame rectangles ---
@@ -1730,7 +1760,7 @@ export function renderClassAscii(
         midY - 1 >= fromBY + 1 &&
         stemIsClear
       ) {
-        return { idealMidX: fromCX, baseMidY: Math.floor((fromBY + midY) / 2) }
+        return { idealMidX: fromCX, baseMidY: midY - 1 }
       }
       const lastRow = toTY - (toCX !== toAnchorX ? 2 : 1)
       if (lineCount === 1 && fromCX !== toCX && midY + 1 <= lastRow) {

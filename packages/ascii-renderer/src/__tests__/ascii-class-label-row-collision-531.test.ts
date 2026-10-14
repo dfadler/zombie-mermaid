@@ -76,18 +76,9 @@ describe('ASCII class diagram — relationship label row collision (issue #531)'
         expect(out).toContain('reads')
         expect(out).toContain('notifies')
 
-        // `refreshes` shares a row with `updates` at this tight spacing and
-        // must yield some of its width via territory-splitting/truncation
-        // (issue #447's established, accepted behavior for genuinely
-        // insufficient space) — but it must never disappear *entirely* the
-        // way it (or `updates`, depending on exact geometry) did before the
-        // fix. Assert the real invariant rather than pinning the exact
-        // truncated glyphs: the row that carries `updates` must carry some
-        // non-blank content besides it, where the old bug left nothing.
-        const line = out.split('\n').find((l) => l.includes('updates'))
-        expect(line).toBeDefined()
-        const withoutUpdates = line!.replace('updates', '').trim()
-        expect(withoutUpdates.length).toBeGreaterThan(0)
+        // Labelled gaps grow by two rows (issue #2024), so `refreshes` no
+        // longer shares a row with `updates` and renders in full too.
+        expect(out).toContain('refreshes')
       },
     )
   })
