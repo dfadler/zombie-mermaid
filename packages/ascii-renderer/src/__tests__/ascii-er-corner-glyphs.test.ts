@@ -39,6 +39,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // in ascii-er-relationship-label-corruption-350.test.ts uses.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         FIRST_ENTITY ||--|{ MIDDLE_ENTITY : contains
         MIDDLE_ENTITY ||--o{ THIRD_ENTITY : includes
         FIRST_ENTITY ||--o| THIRD_ENTITY : relates_to
@@ -89,6 +90,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // ascii-er-jog-stray-line.test.ts's stray-duplicate-line fix.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER ||--o{ LOG_ENTRY : generates
         USER ||..o{ SESSION : opens`,
       { colorMode: 'none' },
@@ -119,6 +121,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // why there are two adjacent corners here at all.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER ||--o{ LOG_ENTRY : generates
         USER ||..o{ SESSION : opens`,
       { colorMode: 'none', useAscii: true },
@@ -139,6 +142,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // two short jogs (one leaving A's row, one entering G's row).
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd
@@ -206,6 +210,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // integrity, not a specific rendered character.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd
@@ -253,6 +258,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // not a specific rendered character).
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd

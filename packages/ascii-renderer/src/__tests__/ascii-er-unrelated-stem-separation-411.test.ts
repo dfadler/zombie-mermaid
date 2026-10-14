@@ -33,6 +33,7 @@ describe('ASCII ER — unrelated relationship stems stay visually separated (iss
     // do with each other, so their stems must read as visually distinct.)
     const ascii = renderMermaidASCII(
       `erDiagram
+    direction LR
     CUSTOMER ||--o{ ORDER : places
     ORDER ||--|{ LINE_ITEM : contains
     PRODUCT ||--o{ LINE_ITEM : appears_in
@@ -60,6 +61,7 @@ describe('ASCII ER — unrelated relationship stems stay visually separated (iss
     // silently overwriting its corner glyph with a plain vertical bar.
     const ascii = renderMermaidASCII(
       `erDiagram
+  direction LR
   STUDENT {
     int id PK
     string name

@@ -40,6 +40,7 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // more line".
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac`,
       { colorMode: 'none' },
@@ -67,6 +68,7 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
   it('renders distinct ticks at both ends when both entities have "one" cardinality', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--|| C : ac`,
       { colorMode: 'none' },
@@ -93,6 +95,7 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
   it('renders the ASCII-mode equivalent ("+" instead of "|") for the vertical "one" marker', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac`,
       { colorMode: 'none', useAscii: true },

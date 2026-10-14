@@ -31,6 +31,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // the line-vs-label collision from any label-vs-label collision.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac
         A ||--o{ D : helloworld
@@ -48,6 +49,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // guard, B-E's label characters land on top of the tail of A-D's label.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac
         A ||--o{ D : longlabelhere
@@ -67,6 +69,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // doesn't corrupt B's own header text.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac
         A ||--o{ D : helloworld
@@ -101,6 +104,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // never partially splice into whatever's already at its natural row.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER ||--o{ POST : writes
         USER ||--o{ COMMENT : authors
         POST ||--o{ COMMENT : has
@@ -126,6 +130,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // vanish.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER ||--o{ POST : writes
         USER ||--o{ COMMENT : authors
         POST ||--o{ COMMENT : has
@@ -150,6 +155,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // it sits immediately next to that marker instead.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER {
           int id PK
           string username UK
@@ -220,6 +226,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // label loop.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : early
         A ||--o{ C : longlonglabelhere
         A ||--o{ D : y
@@ -255,6 +262,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // leaving an open-looking, broken box. Border cells are protected too.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         ORDER ||--|{ LINE_ITEM : contains
         ORDER ||..o{ SHIPMENT : ships-via
         PRODUCT ||--o{ LINE_ITEM : includes
@@ -285,6 +293,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // actual corruption at a glance.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER {
           int id PK
           string username UK
@@ -335,6 +344,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // crossing rather than picking up ships-via's dash.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         ORDER ||--|{ LINE_ITEM : contains
         ORDER ||..o{ SHIPMENT : ships-via
         PRODUCT ||--o{ LINE_ITEM : includes
@@ -397,6 +407,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // character breaking it.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         ORDER ||--|{ LINE_ITEM : contains
         ORDER ||--o{ SHIPMENT : ships-via
         PRODUCT ||..o{ LINE_ITEM : includes

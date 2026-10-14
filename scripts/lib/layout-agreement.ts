@@ -426,7 +426,10 @@ export const DEFAULT_FLOOR = 0.85
 export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   'Nested Subgraphs': 0.2,
   'Flowchart: CJK Labels': 0.5,
-  'Flowchart: Five Cluster Exit Siblings (TD)': 0.65,
+  // Same shape as mermaid (B above A and C, both A->C and A->B->C drawn), but
+  // B sits 15px above A in ours and 21-22px in mermaid 12.1.0 and 12.2.0 (nodes
+  // are 37px tall here, 48px there), so the 20px tolerance splits the pair (#2058).
+  'LR Fan-In With Bypass Edge': 0.3,
   'State: Notes': 0.8,
   'Class: Inheritance (<|--)': 0.65,
   'Class: Relationship Labels': 0.65,
