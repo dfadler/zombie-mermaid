@@ -1,0 +1,21 @@
+stateDiagram-v2
+  accTitle: Accessible title
+  accDescr {
+    A description
+    over two lines.
+  }
+  [*] --> A
+---
+*---*
+|   |
+*---*
+  |  
+  |  
+  |  
+  |  
+  v  
+.---.
+|   |
+| A |
+|   |
+'---'

@@ -106,6 +106,7 @@ export function renderClassSvg(
         decorative,
         hasInteractiveLinks,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),

@@ -77,9 +77,11 @@ Two more advanced options exist — `fontSizes` (per-element font size overrides
 
 **XY Charts:** Diagrams starting with `xychart-beta` are auto-detected — no separate function needed. The `accent` color option drives the chart series color palette.
 
-**Pie charts:** `accent` sets the first slice colour (the remaining slices are derived from it and `bg`). The `title` option names the SVG for assistive tech and wins over the source's `accTitle:`; `accDescr:` becomes the description. See [Accessibility](diagrams.md#accessibility).
+**Pie charts:** `accent` sets the first slice colour (the remaining slices are derived from it and `bg`). See [Accessibility](diagrams.md#accessibility).
 
-**C4 and architecture diagrams:** C4 uses the theme colours and `font` but no layout options (see above); the source `title` is its fallback accessible name when the `title` option is not given. Architecture diagrams take every flowchart option, including `direction` and `curve`, and are named only by the `title` option.
+**`accTitle` / `accDescr`:** every diagram type reads Mermaid's `accTitle:` and `accDescr:` statements. The `title` option names the SVG for assistive tech and wins over the source's `accTitle:`; `accDescr:` becomes the `<desc>`. ASCII output ignores them.
+
+**C4 and architecture diagrams:** C4 uses the theme colours and `font` but no layout options (see above); the source `title` is its fallback accessible name when neither the `title` option nor `accTitle:` is given. Architecture diagrams take every flowchart option, including `direction` and `curve`, and are named by the `title` option or `accTitle:`.
 
 ## Size limits (`options.limits`)
 

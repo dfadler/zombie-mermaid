@@ -1,0 +1,15 @@
+architecture-beta
+  accTitle: Accessible title
+  accDescr {
+    A description
+    over two lines.
+  }
+  service a(server)[A]
+  service b(server)[B]
+  a:R -- L:b
+---
+┌───┐     ┌───┐
+│   │     │   │
+│ A ├─────┤ B │
+│   │     │   │
+└───┘     └───┘

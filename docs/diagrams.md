@@ -889,15 +889,16 @@ with 3 nodes" summary would be a confidently useless accessible name) — when
 `title` is omitted the SVG still gets `role="img"`, but claims no name, the
 same as an `<img>` with no `alt`.
 
-Pie charts also read Mermaid's `accTitle:` and `accDescr:` lines from the
-source: `accTitle` becomes the accessible name when the `title` option is not
-given (the option wins), and `accDescr` becomes a `<desc id="zm-desc-N">`
-referenced by `aria-describedby`. The visible chart `title` is not used as the
-accessible name. Both are dropped when the diagram is `decorative`.
-
-C4 diagrams use their source `title` as the accessible name when the `title`
-option is not given. Architecture diagrams are named only by the `title`
-option.
+Every diagram type reads Mermaid's `accTitle:` and `accDescr:` statements
+([Mermaid docs](https://mermaid.js.org/config/accessibility.html)): put
+`accTitle: text` and `accDescr: text` on one line, or `accDescr { ... }` over
+several lines, anywhere after the header. `accTitle` becomes the accessible
+name when the `title` option is not given (the option wins; for C4 the order is
+option, `accTitle`, then the C4 `title`), and `accDescr` becomes a
+`<desc id="zm-desc-N">` referenced by `aria-describedby`. The statements are
+never drawn, and both are dropped when the diagram is `decorative`. ASCII output
+ignores them. The visible chart `title` of a pie chart is not used as its
+accessible name.
 
 For a diagram that's already described in surrounding prose, mark it
 decorative instead of naming it:

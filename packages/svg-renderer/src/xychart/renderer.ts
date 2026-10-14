@@ -99,6 +99,7 @@ export function renderXYChartSvg(
       decorative,
       undefined,
       emit.styleAttribute,
+      emit.description,
     ).replace('<svg ', `<svg data-xychart-colors="${maxColorIdx}" `),
     embedSource,
   )
