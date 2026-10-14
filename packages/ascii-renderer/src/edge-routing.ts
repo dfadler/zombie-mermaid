@@ -42,7 +42,13 @@ import {
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
-import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
+import {
+  isOccupied,
+  pathCells,
+  runsAlong,
+  segmentsOf,
+  type Grid,
+} from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
 // draw-bundles.ts, shapes/*.ts) that import dirEquals from this module —
@@ -697,22 +703,15 @@ function runTaken(
   edge: AsciiEdge,
   path: GridCoord[],
 ): boolean {
-  const segs = (p: GridCoord[]) => p.slice(1).map((q, i) => [p[i]!, q] as const)
-  const own = segs(path)
-  const others = graph.edges.filter((o) => o !== edge).map((o) => segs(o.path))
-  return own.slice(1, -1).some(([a, b], i) => {
-    const h = a.y === b.y
-    const lo = h ? Math.min(a.x, b.x) : Math.min(a.y, b.y)
-    const hi = h ? Math.max(a.x, b.x) : Math.max(a.y, b.y)
-    return [own.filter((_, j) => j !== i + 1), ...others].some((list) =>
-      list.some(([p, q]) => {
-        if (h ? p.y !== a.y || q.y !== a.y : p.x !== a.x || q.x !== a.x)
-          return false
-        const [s, t] = h ? [p.x, q.x] : [p.y, q.y]
-        return Math.min(hi, Math.max(s, t)) > Math.max(lo, Math.min(s, t))
-      }),
+  const own = segmentsOf(path)
+  const others = graph.edges.flatMap((o) =>
+    o === edge ? [] : segmentsOf(o.path),
+  )
+  return own
+    .slice(1, -1)
+    .some(([a, b], i) =>
+      runsAlong(a, b, [...own.filter((_, j) => j !== i + 1), ...others]),
     )
-  })
 }
 
 /** `mergePath` after dropping repeated points (gutter cells can coincide). */

@@ -33,6 +33,7 @@ import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
+import { runsAlong, segmentsOf } from './grid-occupancy.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
@@ -617,7 +618,7 @@ function allocateFaces(
       const k = faceOf(run)
       held.set(k, [
         ...(held.get(k) ?? []),
-        heldEnd(e, run, role, geo.centre + by),
+        { ...shapeOf({ edge: e, run, role }), at: geo.centre + by },
       ])
     }
   }
@@ -689,23 +690,18 @@ function allocateFaces(
   }
 }
 
-/** A cell another edge's end holds on a face, and the way that end turns. */
-interface Held {
-  at: number
-  role: 'S' | 'E'
-  heading: number
-  depth: number
+/** How an end leaves its face: which way it turns and how far out. */
+function shapeOf(f: FaceEnd) {
+  return {
+    role: f.role,
+    heading: f.role === 'S' ? f.run.turn : -f.run.turn,
+    // A loop hugs its node: inside any lane it shares the face with.
+    depth: runExtent(f.edge, f.run) - (f.edge.from === f.edge.to ? 0.5 : 0),
+  }
 }
 
-function heldEnd(
-  edge: AsciiEdge,
-  run: PortRun,
-  role: 'S' | 'E',
-  at: number,
-): Held {
-  const heading = role === 'S' ? run.turn : -run.turn
-  return { at, role, heading, depth: runExtent(edge, run) }
-}
+/** A cell another edge's end holds on a face. */
+type Held = ReturnType<typeof shapeOf> & { at: number }
 
 /**
  * Cells for the lane and loop ends on one face, as offsets from each end's
@@ -730,17 +726,12 @@ function placeFace(
   if (!geo) return undefined
   const centre = geo.centre
   const info = list.map((f) => {
-    const heading = f.role === 'S' ? f.run.turn : -f.run.turn
-    // A loop hugs its node: inside any lane it shares the face with.
-    const depth =
-      runExtent(f.edge, f.run) - (f.edge.from === f.edge.to ? 0.5 : 0)
+    const shape = shapeOf(f)
     return {
+      ...shape,
       // Ends that turn the same way at the same depth run on together
       // beyond the stem: they are one route (a fan, or duplicate loops).
-      key: `${f.role}|${heading}|${depth}|${fixed.get(f.edge)}`,
-      role: f.role,
-      heading,
-      depth,
+      key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}`,
       // A straight lane: the #1284 pair side (down-travelling right).
       push: pushOf(f.run, f.role),
       at: fixed.get(f.edge),
@@ -840,10 +831,12 @@ function hugLoop(
   }
   const others = graph.edges
     .filter((e) => e.from !== e.to && e.path.length >= 2)
-    .map((e) => drawnPath(graph, e, result.get(e)))
+    .flatMap((e) => segmentsOf(drawnPath(graph, e, result.get(e))))
   const shift = result.get(loop) ?? { start: 0, end: 0 }
   const along = (s: PortShift): boolean =>
-    sharesRun(drawnPath(graph, loop, s).slice(1, -1), others)
+    segmentsOf(drawnPath(graph, loop, s).slice(1, -1)).some(([a, b]) =>
+      runsAlong(a, b, others),
+    )
   if (!along(shift)) return
   const drawn = drawnPath(graph, loop, shift)
   const pull = (v: number, lo: number, hi: number): number =>
@@ -860,26 +853,6 @@ function hugLoop(
   const tight = Math.abs(y.x - z.x) + Math.abs(y.y - z.y) < 2
   if (tight || along(hugged)) return
   result.set(loop, hugged)
-}
-
-/** Whether a segment of `path` runs (for a cell or more) along one of `others`. */
-function sharesRun(path: DrawingCoord[], others: DrawingCoord[][]): boolean {
-  const segs = (p: DrawingCoord[]) =>
-    p.slice(1).map((q, i) => [p[i]!, q] as const)
-  return segs(path).some(([a, b]) =>
-    others.some((o) =>
-      segs(o).some(([p, q]) => {
-        const h = a.y === b.y
-        if (h ? p.y !== a.y || q.y !== a.y : p.x !== a.x || q.x !== a.x)
-          return false
-        const [s, t, u, v] = h ? [a.x, b.x, p.x, q.x] : [a.y, b.y, p.y, q.y]
-        return (
-          Math.min(Math.max(s, t), Math.max(u, v)) >
-          Math.max(Math.min(s, t), Math.min(u, v))
-        )
-      }),
-    ),
-  )
 }
 
 /**
