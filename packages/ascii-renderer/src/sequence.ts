@@ -43,7 +43,35 @@ const SELF_LOOP_WIDTH = 4
 // plain box) — see issue #449. Plain ASCII already, so — unlike H/V/TL/etc.
 // above — there's no separate useAscii/unicode variant to pick between.
 const ACTOR_GLYPH_LINES = ['O', '/|\\', '/ \\']
-const ACTOR_GLYPH_WIDTH = 3
+
+// `participant X@{ "type": ... }` kinds: a one-line marker above the label,
+// inside the same box, the way `actor` gets its figure. Single-cell ASCII, so
+// the unicode and ascii charsets draw the same marker. The SVG icons do not
+// translate to cells (circles, cylinders), so each marker is a small
+// pictogram of the same idea: a circle with a wall (boundary), a circled
+// loop arrow (control), a circle on a line (entity), a can (database),
+// stacked brackets (collections), a flow of chevrons (queue). Unknown types
+// get no marker (the plain box, as before).
+const PARTICIPANT_TYPE_GLYPHS: Readonly<Record<string, string>> = {
+  boundary: '|-O',
+  control: '(@)',
+  entity: '_O_',
+  database: '(_)',
+  collections: '[[]]',
+  queue: '>>>',
+}
+
+// The marker lines drawn above an actor's label (none for a plain box).
+function actorGlyphLines(a: {
+  type: 'participant' | 'actor'
+  participantType?: string | undefined
+}): readonly string[] {
+  if (a.type === 'actor') return ACTOR_GLYPH_LINES
+  const g = Object.hasOwn(PARTICIPANT_TYPE_GLYPHS, a.participantType ?? '')
+    ? PARTICIPANT_TYPE_GLYPHS[a.participantType!]
+    : undefined
+  return g === undefined ? [] : [g]
+}
 
 // Horizontal clearance between a block's (loop/alt/opt/par/etc.) side wall
 // and the lifelines its own messages touch. Shared by every block type —
@@ -166,15 +194,17 @@ export function renderSequenceAscii(
   // `maxLineWidth`/`lineCount` account for the label only; add the
   // stick-figure glyph's own footprint (see ACTOR_GLYPH_LINES below) for
   // actor-kind participants so box sizing matches what drawActorBox draws.
-  const actorContentWidth = (a: {
-    label: string
-    type: 'participant' | 'actor'
-  }) =>
-    Math.max(maxLineWidth(a.label), a.type === 'actor' ? ACTOR_GLYPH_WIDTH : 0)
-  const actorContentHeight = (a: {
-    label: string
-    type: 'participant' | 'actor'
-  }) => lineCount(a.label) + (a.type === 'actor' ? ACTOR_GLYPH_LINES.length : 0)
+  const actorContentWidth = (
+    a: Parameters<typeof actorGlyphLines>[0] & {
+      label: string
+    },
+  ) =>
+    Math.max(maxLineWidth(a.label), maxLineWidth(actorGlyphLines(a).join('\n')))
+  const actorContentHeight = (
+    a: Parameters<typeof actorGlyphLines>[0] & {
+      label: string
+    },
+  ) => lineCount(a.label) + actorGlyphLines(a).length
   // Use max line width for multi-line actor labels
   const actorBoxWidths = diagram.actors.map(
     (a) => actorContentWidth(a) + 2 * boxPad + 2,
@@ -828,14 +858,13 @@ export function renderSequenceAscii(
     cx: number,
     topY: number,
     label: string,
-    actorType: 'participant' | 'actor',
+    glyphLines: readonly string[],
     boxH: number,
   ): void {
-    const glyphLines = actorType === 'actor' ? ACTOR_GLYPH_LINES : []
     const lines = [...glyphLines, ...splitLines(label)]
     const maxW = Math.max(
       maxLineWidth(label),
-      glyphLines.length > 0 ? ACTOR_GLYPH_WIDTH : 0,
+      maxLineWidth(glyphLines.join('\n')),
     )
     const w = maxW + 2 * boxPad + 2
     const h = boxH
@@ -1029,9 +1058,21 @@ export function renderSequenceAscii(
     // header. Destroyed: no footer box — the lifeline already ended.
     const headerTop = createdBoxTop.get(i) ?? headerBoxTop
     const destroyed = destroyRow.has(i)
-    drawActorBox(llX[i]!, headerTop, actor.label, actor.type, actorBoxH)
+    drawActorBox(
+      llX[i]!,
+      headerTop,
+      actor.label,
+      actorGlyphLines(actor),
+      actorBoxH,
+    )
     if (!destroyed) {
-      drawActorBox(llX[i]!, footerBoxTop, actor.label, actor.type, actorBoxH)
+      drawActorBox(
+        llX[i]!,
+        footerBoxTop,
+        actor.label,
+        actorGlyphLines(actor),
+        actorBoxH,
+      )
     }
 
     // Lifeline junctions on box borders (Unicode only)
