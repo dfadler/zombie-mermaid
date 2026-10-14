@@ -69,7 +69,7 @@ describe('scripts/check-bundle-size.ts unpacked budgets', () => {
       },
     )
     expect(r.code).toBe(0)
-    expect(r.text).toMatch(/pkg\/dist\s+1\.0 KB \/\s+1\.0 KB budget\s+ok/)
+    expect(r.text).toMatch(/pkg\/dist\s+1000 B \/\s+1000 B\s+headroom\s+0\.0%\s+ok/)
   })
 
   it('fails with exit 1 when the unpacked size exceeds the budget', async () => {
