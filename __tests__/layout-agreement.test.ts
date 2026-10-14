@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
+import { mkdtempSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
+  finishScorecard,
+  recordsAllTypes,
   DEFAULT_FLOOR,
   DEFAULT_TOLERANCE,
   SCORECARD_SCHEMA,
@@ -495,6 +500,19 @@ describe('thresholds and machine-readable scorecard', () => {
     expect(json.types.class.passing).toBe(1)
     expect(json.types.class.failing).toBe(1)
     expect(scorecardJson([r])).toBe(scorecardJson([r]))
+  })
+
+  it('finishScorecard writes the JSON and returns breaches only under --thresholds', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'oracle-'))
+    const file = join(dir, 'sc.json')
+    const r = run({ low: { ...ag(1, 0.5), subgraphs: false } })
+    const none = parseOracleArgs([])
+    expect(recordsAllTypes(none)).toBe(false)
+    expect(await finishScorecard(none, [r])).toEqual([])
+    const asked = parseOracleArgs(['--thresholds', `--scorecard-json=${file}`])
+    expect(recordsAllTypes(asked)).toBe(true)
+    expect(await finishScorecard(asked, [r])).toEqual(['low (50% < 85%)'])
+    expect(JSON.parse(readFileSync(file, 'utf8')).schema).toBe(SCORECARD_SCHEMA)
   })
 
   it('parses --thresholds and --scorecard-json, refusing the simple layout', () => {
