@@ -203,54 +203,32 @@ function findConnectedComponents(diagram: ErDiagram): Set<string>[] {
 /**
  * Assign each entity of one component a top-to-bottom layer, the way
  * mermaid.js (dagre, default TB) stacks an erDiagram: `A ||--o{ B` puts B
- * below A (#1917). Cycles are broken by dropping DFS back edges; layers are
- * longest-path from the sources, then sources are pulled down next to their
- * nearest successor.
+ * below A (#1917). Longest path from the sources by repeated relaxation
+ * (capped at n - 1 layers, which also stops a cycle from growing forever),
+ * then each source is pulled down next to its nearest successor like dagre.
  * ponytail: an approximation of dagre's network-simplex ranking.
  */
 function assignLayers(
   entities: ErEntity[],
   relationships: ErDiagram['relationships'],
 ): Map<string, number> {
-  const ids = new Set(entities.map((e) => e.id))
-  const out = new Map<string, string[]>()
-  for (const e of entities) out.set(e.id, [])
-  for (const r of relationships) {
-    if (r.entity1 !== r.entity2 && ids.has(r.entity1) && ids.has(r.entity2)) {
-      out.get(r.entity1)!.push(r.entity2)
+  const n = entities.length
+  const layer = new Map(entities.map((e) => [e.id, 0]))
+  const rels = relationships.filter(
+    (r) =>
+      r.entity1 !== r.entity2 && layer.has(r.entity1) && layer.has(r.entity2),
+  )
+  for (let i = 0; i < n; i++) {
+    for (const r of rels) {
+      const l = layer.get(r.entity1)! + 1
+      if (l < n && l > layer.get(r.entity2)!) layer.set(r.entity2, l)
     }
   }
-  // DFS in declaration order; an edge into a node still on the stack is a back edge.
-  const state = new Map<string, 1 | 2>()
-  const dag = new Map<string, string[]>()
-  const finished: string[] = []
-  const visit = (id: string): void => {
-    state.set(id, 1)
-    dag.set(id, [])
-    for (const t of out.get(id)!) {
-      if (state.get(t) === 1) continue
-      dag.get(id)!.push(t)
-      if (!state.has(t)) visit(t)
-    }
-    state.set(id, 2)
-    finished.push(id)
-  }
-  for (const e of entities) if (!state.has(e.id)) visit(e.id)
-  // `finished` is reverse-topological, so walking it backwards visits every
-  // node after all its predecessors.
-  const layer = new Map<string, number>(entities.map((e) => [e.id, 0]))
-  for (const id of finished.reverse()) {
-    for (const t of dag.get(id)!) {
-      layer.set(t, Math.max(layer.get(t)!, layer.get(id)! + 1))
-    }
-  }
-  // Like dagre, pull a source down next to its nearest successor instead of
-  // leaving it at the top (PRODUCT sits beside ORDER, not above it).
-  const hasIn = new Set([...dag.values()].flat())
   for (const e of entities) {
-    const succ = dag.get(e.id)!
-    if (!hasIn.has(e.id) && succ.length > 0) {
-      layer.set(e.id, Math.min(...succ.map((t) => layer.get(t)!)) - 1)
+    if (rels.some((r) => r.entity2 === e.id)) continue
+    const below = rels.filter((r) => r.entity1 === e.id)
+    if (below.length) {
+      layer.set(e.id, Math.min(...below.map((r) => layer.get(r.entity2)!)) - 1)
     }
   }
   return layer
