@@ -278,28 +278,6 @@ describe('runRender – output ergonomics', () => {
     expect(mockStdout.output()).toContain('\x1b]8;;')
   })
 
-  it('--profile markdown prints ASCII-only output with no hyperlinks or ANSI', async () => {
-    const inputPath = join(tmpDir, 'diagram.mmd')
-    await writeFile(inputPath, LINKED_FLOWCHART)
-
-    const mockStdout = createMockStdout()
-    await runRender(
-      renderArgs({
-        input: inputPath,
-        ascii: true,
-        hyperlinks: true,
-        theme: 'dracula',
-        profile: 'markdown',
-      }),
-      mockStdout,
-    )
-
-    const text = mockStdout.output()
-    expect(text).not.toContain('\x1b')
-    expect(text).toContain('+')
-    expect(text).not.toContain('┌')
-  })
-
   it('refuses to overwrite an existing ASCII output file too', async () => {
     const inputPath = join(tmpDir, 'diagram.mmd')
     const outputPath = join(tmpDir, 'out.txt')

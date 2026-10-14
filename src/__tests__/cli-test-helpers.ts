@@ -49,7 +49,6 @@ export function renderArgs(overrides: Partial<RenderArgs> = {}): RenderArgs {
     hyperlinks: false,
     maxWidth: undefined,
     direction: undefined,
-    profile: undefined,
     ...overrides,
   }
 }

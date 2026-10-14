@@ -3,7 +3,17 @@
  * only affects ASCII output, so there is no SVG snapshot counterpart.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+
+// Goldens in testdata/markdown/*.txt, like the sibling ascii/ and unicode/ dirs.
+const GOLDEN_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  'testdata',
+  'markdown',
+)
 
 const FLOW =
   'graph LR\n  A[Start] -->|go| B{Ok?}\n  B --> C((End))\n  click A "https://example.com"'
@@ -26,7 +36,7 @@ describe("profile: 'markdown'", () => {
       expect(out).not.toContain('\x1b')
       // Only label text may be non-ASCII; every border/arrow glyph is ASCII.
       expect(out.replace(NON_ASCII_LABEL, '')).toMatch(/^[\n\x20-\x7e]*$/)
-      expect(out).toMatchSnapshot()
+      expect(out).toBe(readFileSync(join(GOLDEN_DIR, `${name}.txt`), 'utf-8'))
     })
   }
 
