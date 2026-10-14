@@ -1,0 +1,18 @@
+sequenceDiagram
+  accTitle: Accessible title
+  accDescr {
+    A description
+    over two lines.
+  }
+  A->>B: hi
+---
+ +---+     +---+   
+ | A |     | B |   
+ +---+     +---+   
+   |         |     
+   |   hi    |     
+   |--------->     
+   |         |     
+ +---+     +---+   
+ | A |     | B |   
+ +---+     +---+   

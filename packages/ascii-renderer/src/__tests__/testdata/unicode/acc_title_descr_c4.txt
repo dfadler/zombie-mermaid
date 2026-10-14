@@ -1,0 +1,31 @@
+C4Context
+  accTitle: Accessible title
+  accDescr {
+    A description
+    over two lines.
+  }
+  Person(u, "User")
+  System(s, "System")
+  Rel(u, s, "uses")
+---
+                           
+                           
+     ╭────────────╮        
+     │     o      │        
+     │    /|\     │        
+     │    / \     │        
+     │    User    │        
+     │  [Person]  │        
+     ╰────────────╯        
+            │              
+            │              
+            │ uses         
+            ▼              
+  ┌───────────────────┐    
+  │      System       │    
+  │ [Software System] │    
+  └───────────────────┘    
+                           
+                           
+                           
+                           

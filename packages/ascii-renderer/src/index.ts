@@ -17,7 +17,11 @@
 //   const ascii = renderMermaidASCII('graph LR\n  A --> B')
 // ============================================================================
 
-import { checkLimit, detectDiagramType } from '@zombie-mermaid/core'
+import {
+  checkLimit,
+  detectDiagramType,
+  extractAccessibility,
+} from '@zombie-mermaid/core'
 import type { Direction, DiagramType, RenderLimits } from '@zombie-mermaid/core'
 import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
@@ -114,7 +118,7 @@ export interface AsciiRenderOptions {
  * Auto-detects diagram type from the header line and dispatches to
  * the appropriate renderer.
  *
- * @param text - Mermaid source text (any supported diagram type)
+ * @param source - Mermaid source text (any supported diagram type)
  * @param options - Rendering options
  * @returns Multi-line ASCII/Unicode string
  *
@@ -134,7 +138,7 @@ export interface AsciiRenderOptions {
  * ```
  */
 export function renderMermaidASCII(
-  text: string,
+  source: string,
   options: AsciiRenderOptions = {},
 ): string {
   // `profile` only fills in defaults; explicit options still win.
@@ -158,7 +162,9 @@ export function renderMermaidASCII(
   // Merge user theme with defaults
   const theme: AsciiTheme = { ...DEFAULT_ASCII_THEME, ...options.theme }
 
-  checkLimit('maxInputLength', text.length, options.limits)
+  checkLimit('maxInputLength', source.length, options.limits)
+  // accTitle/accDescr have no place in text output: drop them, never print.
+  const text = extractAccessibility(source).text
   const diagramType: DiagramType = detectDiagramType(text)
 
   // Registry dispatch (see src/ascii/registry.ts — issue #533 / #745):

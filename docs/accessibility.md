@@ -46,7 +46,13 @@ unlabeled group of child text nodes:
 | No `click`-based link, `decorative: true`                        | `aria-hidden="true"`, no `role`, no name                                                                                                                                                                                                                                                                                                                                                             |
 | Any node has a `click A "url"` link (real, focusable `<a href>`) | No `role` and no `aria-hidden` at all — both would hide the focusable link from assistive tech while leaving it Tab-reachable, an explicit WAI-ARIA violation. `title`, if supplied, still applies via `aria-labelledby` (a `role`-less element can still have a computed name). `decorative` is silently overridden — a diagram containing a real action is never fully hidden from assistive tech. |
 
-An optional `description` option adds a `<desc id>` child after the title and
+Mermaid's `accTitle:` / `accDescr:` source statements
+([syntax](https://mermaid.js.org/config/accessibility.html), supported on every
+diagram type here) feed the same mechanism: `accTitle` is the title when the
+`title` option is absent, and `accDescr` is the description. They are read
+once in `extractAccessibility()` (`packages/core/src/accessibility.ts`) before
+any parser runs, and emitted by the one `svgOpenTag()`
+([#1865](https://github.com/dfadler/zombie-mermaid/issues/1865)). An optional `description` option adds a `<desc id>` child after the title and
 an `aria-describedby` on the root, independent of the table above.
 
 This maps to two WCAG success criteria:
@@ -65,7 +71,7 @@ This maps to two WCAG success criteria:
   `click`-based link keeps its native `<a>` name/role/state instead of being
   masked by an ancestor's `role="img"`.
 
-**Enforced by:** `src/__tests__/svg-accessible-name-conformance.test.ts`
+**Enforced by:** `packages/svg-renderer/src/__tests__/acc-title-descr-1865.test.ts` (every type's `accTitle`/`accDescr`), and `src/__tests__/svg-accessible-name-conformance.test.ts`
 (added for [#294](https://github.com/dfadler/zombie-mermaid/issues/294)),
 which renders one real sample per `DiagramType` — a closed TypeScript union
 — plus a `stateDiagram-v2` sample, through every `title`/`decorative`
