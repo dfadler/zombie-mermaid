@@ -108,4 +108,19 @@ describe('scripts/check-bundle-size.ts unpacked budgets', () => {
     )
     expect(r.code).toBe(1)
   })
+
+  it('flags an over-budget gzip file and passes an in-budget consumer bundle', async () => {
+    const r = await run(
+      {},
+      {},
+      { budgets: { 'dist/f.js': 1 }, consumerBundles: { 'pkg/c.js': 100 } },
+    )
+    expect(r.text).toMatch(
+      /dist\/f\.js\s+\d+ B \/\s+1 B\s+headroom\s+-[\d.]+%\s+OVER/,
+    )
+    expect(r.text).toMatch(
+      /pkg\/c\.js\s+\d+ B \/\s+100 B\s+headroom\s+[\d.]+%\s+ok/,
+    )
+    expect(r.code).toBe(1)
+  })
 })
