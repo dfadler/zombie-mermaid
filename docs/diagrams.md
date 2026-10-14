@@ -505,8 +505,7 @@ box).
 
 ### Known limitations
 
-None currently — `activate`/`deactivate`, `create`/`destroy`, and
-`box ... end` are all recognized (see above).
+- `participant X@{ "type": "database" }` / `actor X@{ ... }` (Mermaid 12: `boundary`, `control`, `entity`, `database`, `collections`, `queue`; [Mermaid sequence docs](https://mermaid.js.org/syntax/sequenceDiagram.html#participants)) is parsed, including the `alias` key, `as` labels, `create participant`, hyphenated ids and a space before `@{`. The type's icon is **not drawn**: the participant renders as a plain box (or stick figure for `actor`) in SVG and ASCII. An unknown type is treated the same, as in Mermaid 12.1.0. A malformed `@{ ... }` is a parse error naming the line (#1973).
 
 ## Class Diagrams
 
