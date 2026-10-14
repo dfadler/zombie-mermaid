@@ -29,6 +29,13 @@ export const renderAsciiInputShape = {
       'true = plain ASCII characters (+, -, |, >); false/unset = Unicode ' +
         'box-drawing characters (┌, ─, │, ►). Default: false.',
     ),
+  profile: z
+    .enum(['markdown'])
+    .optional()
+    .describe(
+      "'markdown' = plain ASCII characters for pasting into issues, commits " +
+        'and fenced blocks (defaults useAscii to true; explicit useAscii wins).',
+    ),
   paddingX: z
     .number()
     .int()
@@ -58,6 +65,7 @@ export const renderAsciiInputShape = {
 export interface RenderAsciiToolArgs {
   diagram: string
   useAscii?: boolean | undefined
+  profile?: 'markdown' | undefined
   paddingX?: number | undefined
   paddingY?: number | undefined
   boxBorderPadding?: number | undefined
@@ -80,6 +88,7 @@ export function renderAsciiHandler(input: RenderAsciiToolArgs): CallToolResult {
   try {
     const options: AsciiRenderOptions = {
       useAscii: input.useAscii,
+      profile: input.profile,
       paddingX: input.paddingX,
       paddingY: input.paddingY,
       boxBorderPadding: input.boxBorderPadding,

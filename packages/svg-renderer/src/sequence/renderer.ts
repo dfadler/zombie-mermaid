@@ -84,6 +84,7 @@ export function renderSequenceSvg(
         decorative,
         undefined,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),

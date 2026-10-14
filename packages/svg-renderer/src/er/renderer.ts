@@ -95,6 +95,7 @@ export function renderErSvg(
         decorative,
         undefined,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),

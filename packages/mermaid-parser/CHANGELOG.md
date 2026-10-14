@@ -1,5 +1,17 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.4.0
+
+### Minor Changes
+
+- [#2055](https://github.com/dfadler/zombie-mermaid/pull/2055) [`adf9f32`](https://github.com/dfadler/zombie-mermaid/commit/adf9f32494a78701c37894dfcb6c4a96344b7447) Thanks [@dfadler](https://github.com/dfadler)! - Sequence: `participant X@{ "type": "database" }` and `actor X@{ ... }` (Mermaid 12 participant config) now parse instead of failing with a misleading `unclosed "par" block` error. The type is kept on `Actor.participantType`; the icon is not drawn yet, so both renderers draw the plain participant. A malformed `@{ ... }` reports a precise parse error.
+
+### Patch Changes
+
+- [#2013](https://github.com/dfadler/zombie-mermaid/pull/2013) [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8) Thanks [@dfadler](https://github.com/dfadler)! - Republish with `dist/` included. 5.1.0 and 5.2.0 of every package shipped without build output because the release job (split from the test job in [#1596](https://github.com/dfadler/zombie-mermaid/issues/1596)) never ran the build before `changeset publish`; imports of `zombie-mermaid` and the `@zombie-mermaid/*` packages failed to resolve. The release job now builds first and fails before publishing if any tarball lacks its entry files. Closes [#1991](https://github.com/dfadler/zombie-mermaid/issues/1991).
+- Updated dependencies [[`d1b2d9a`](https://github.com/dfadler/zombie-mermaid/commit/d1b2d9a524e9e46fa1b4252cdb2952f48166742d), [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8), [`38e2b3c`](https://github.com/dfadler/zombie-mermaid/commit/38e2b3c00efe238bb9afe8683f6758a6f23a0996)]:
+  - @zombie-mermaid/core@5.4.0
+
 ## 5.3.0
 
 ### Minor Changes

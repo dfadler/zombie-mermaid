@@ -718,6 +718,29 @@ describe('parseArgs – validation errors', () => {
     ).toThrow('-w/--max-width requires --ascii')
   })
 
+  it('parses --profile markdown and rejects bad use', () => {
+    expect(
+      parseArgs(['render', 'd.mmd', '--ascii', '--profile', 'markdown']),
+    ).toMatchObject({ profile: 'markdown' })
+    expect(() =>
+      parseArgs(['render', 'd.mmd', '--ascii', '--profile', 'x']),
+    ).toThrow('--profile requires one of: markdown, got: "x"')
+    expect(() =>
+      parseArgs(['render', 'd.mmd', '--ascii', '--profile']),
+    ).toThrow('--profile requires one of: markdown')
+    expect(() =>
+      parseArgs([
+        'render',
+        'd.mmd',
+        '--svg',
+        '-o',
+        'o.svg',
+        '--profile',
+        'markdown',
+      ]),
+    ).toThrow('--profile requires --ascii')
+  })
+
   it('throws when --hyperlinks is given without --ascii', () => {
     expect(() =>
       parseArgs([

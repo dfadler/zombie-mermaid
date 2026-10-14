@@ -672,13 +672,13 @@ jobs:
     if: github.repository == 'dfadler/zombie-mermaid' && needs.changes.outputs.code == 'true'
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
@@ -710,6 +710,31 @@ jobs:
             scripts/check-package-types.sh "$TARBALL_DIR" 2>&1
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Report-only (#1870): regenerates etc/api/*.api.md from the build above
+      # (folded in here from a separate job so the build runs once, #1839) and
+      # shows any drift in the job summary. continue-on-error keeps it from
+      # ever failing the PR; drop it to gate on public-API changes.
+      - name: Regenerate API reports (report-only)
+        continue-on-error: true
+        run: pnpm run api:report
+
+      - name: Diff API reports against committed (report-only)
+        continue-on-error: true
+        run: |
+          if git diff --exit-code --quiet -- etc/api; then
+            echo "Public API surface unchanged." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo '### Public API surface changed'
+              echo "Run pnpm run build && pnpm run api:report, then commit etc/api/."
+              echo "\`\`\`diff"
+              git diff -- etc/api
+              echo "\`\`\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Public API surface changed (report-only)"
+            exit 1
+          fi
 
   semgrep:
     name: Semgrep SAST scan
@@ -832,7 +857,7 @@ jobs:
       github.repository == 'dfadler/zombie-mermaid' && github.event_name == 'pull_request' &&
       !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 

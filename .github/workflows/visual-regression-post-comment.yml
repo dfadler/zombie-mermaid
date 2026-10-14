@@ -472,8 +472,8 @@ jobs:
           done <<< "$stale_ids"
 
       # Mirror image of "Build and post diff comment" above: flips any
-      # earlier diff comment's "⬜ Pending" cells to "✅ Resolved" in place
-      # once the visual-regression job passes on a later push. Matches on
+      # earlier diff comment (the whole stale table) to a one-line
+      # "✅ Resolved" banner once the visual-regression job passes on a later push. Matches on
       # the MARKER alone (not on APPROVED_PENDING) so a comment posted
       # before the Approved column existed — or the table-less "no diffs
       # found"/"nothing attachable" text-only case — still gets marked
@@ -485,27 +485,26 @@ jobs:
         run: |
           set -uo pipefail
 
-          # Only the MARKER, and not already resolved — keeps this
-          # idempotent across repeat "success" runs (e.g. a second push
-          # with no new failure in between) instead of re-appending a
-          # resolved banner onto an already-resolved comment.
+          # Only the MARKER, and not already collapsed to the resolved
+          # banner (keyed on its "a later push made" text, so older
+          # comments that only had their cells flipped get collapsed too)
+          # — keeps this idempotent across repeat "success" runs.
           ids=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/comments" \
-            --jq ".[] | select(.body | startswith(\"${MARKER}\")) | select(.body | contains(\"${APPROVED_RESOLVED}\") | not) | .id" 2>/dev/null || true)
+            --jq ".[] | select(.body | startswith(\"${MARKER}\")) | select(.body | contains(\"a later push made\") | not) | .id" 2>/dev/null || true)
 
           failed=false
           while IFS= read -r id; do
             [ -z "$id" ] && continue
             body_file="${RUNNER_TEMP}/resolved-comment-${id}.md"
-            gh api "repos/${REPO}/issues/comments/${id}" --jq .body > "$body_file"
-            if grep -qF "$APPROVED_PENDING" "$body_file"; then
-              sed -i "s/${APPROVED_PENDING}/${APPROVED_RESOLVED}/g" "$body_file"
-            else
-              # Legacy comment predating the Approved column, or the
-              # table-less case — no per-row cell to flip, so append a
-              # one-line resolved banner instead.
-              printf '\n%s — a later push made the visual regression suite pass.\n' \
-                "$APPROVED_RESOLVED" >> "$body_file"
-            fi
+            # Replace the whole body: the stale before/after/diff table
+            # describes a failure that no longer exists, so keeping it
+            # (even with "Resolved" cells) just confuses readers.
+            {
+              echo "$MARKER"
+              echo "### Visual regression diff"
+              echo
+              printf '%s — a later push made the visual regression suite pass.\n' "$APPROVED_RESOLVED"
+            } > "$body_file"
             # -F (not -f) is required here: only -F/--field reads an
             # "@path" value from a file — -f/--raw-field treats it as a
             # literal string, which would PATCH the comment body to the
