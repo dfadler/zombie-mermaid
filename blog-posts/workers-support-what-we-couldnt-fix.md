@@ -1,5 +1,5 @@
 ---
-title: "Workers Support: One Bug Fixed, the Rest Unconfirmed"
+title: 'Workers Support: One Bug Fixed, the Rest Unconfirmed'
 date: 2026-10-14
 description: Upstream beautiful-mermaid#149 asks for rendering in Web Workers and Cloudflare Workers. We fixed the exact TypeError and reproduced the fix in a Workers-like Node setup, but we have not run a single diagram in workerd, and we cannot yet promise CPU time or startup limits.
 ---
@@ -38,7 +38,11 @@ than the renderer wants (the renderer drives ELK's synchronous
 // before (simplified)
 const origSelf = g.self
 delete g.self
-try { instance = new Ctor() } finally { g.self = origSelf }
+try {
+  instance = new Ctor()
+} finally {
+  g.self = origSelf
+}
 ```
 
 In a Node process that works. In a browser Web Worker, `self` is a getter-only
