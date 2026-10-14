@@ -2264,10 +2264,21 @@ pie title Pets adopted by volunteers
     title: 'LR Fan-In With Bypass Edge',
     category: 'Flowchart',
     description:
-      'The long edge from `A` to `C` joins the line out of `A` with a junction in the gap before `B`, including at a narrow `paddingX` (#1915).',
+      'The long edge from `A` to `C` runs under `B` from its own exit on `A` to its own arrowhead on `C`, instead of sharing the line out of `A` and the arrowhead of `B --> C` (#1915, #2043, #2044).',
     source: `flowchart LR
     A --> B
     A --> C
     B --> C`,
+  },
+  {
+    title: 'LR Bypass Edge In A Chain',
+    category: 'Flowchart',
+    description:
+      'In a chain, the edge from `A` to `C` leaves the bottom of `A`, runs under `B` and enters the bottom of `C`, so `B --> C` keeps its own arrowhead (#2043, #2044).',
+    source: `flowchart LR
+    A --> B
+    B --> C
+    C --> D
+    A --> C`,
   },
 ]
