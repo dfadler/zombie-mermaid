@@ -548,9 +548,14 @@ export function splitSharedLabeledLane(
   ) {
     return
   }
+  // Cached per path array (paths are replaced, never mutated in place).
   const inner = (e: AsciiEdge): Set<string> => {
-    const cells = pathCells(e.path).slice(2, -2)
-    return new Set(cells.map((c) => `${c.x},${c.y}`))
+    let set = innerCells.get(e.path)
+    if (!set) {
+      const cells = pathCells(e.path).slice(2, -2)
+      innerCells.set(e.path, (set = new Set(cells.map(cellKey))))
+    }
+    return set
   }
   const mine = inner(edge)
   // A straight run into the target's final approach is a plain tee whose
@@ -1262,11 +1267,48 @@ export interface LabelContext {
   cover: Map<string, Set<AsciiEdge>>
   /** Label segment each edge has been given so far. */
   chosen: Map<AsciiEdge, [GridCoord, GridCoord]>
+  /** Cell key -> edges whose `chosen` segment covers it (index of `chosen`). */
+  held: Map<string, Set<AsciiEdge>>
+}
+
+const innerCells = new WeakMap<GridCoord[], Set<string>>()
+
+const cellKey = (c: GridCoord): string => `${c.x},${c.y}`
+
+/** Record `line` as `edge`'s label segment, keeping `held` in step with `chosen`. */
+export function holdLine(
+  ctx: LabelContext,
+  edge: AsciiEdge,
+  line: [GridCoord, GridCoord],
+): void {
+  const old = ctx.chosen.get(edge)
+  if (old)
+    for (const c of pathCells(old)) ctx.held.get(cellKey(c))?.delete(edge)
+  ctx.chosen.set(edge, line)
+  for (const c of pathCells(line)) {
+    const k = cellKey(c)
+    const set = ctx.held.get(k)
+    if (set) set.add(edge)
+    else ctx.held.set(k, new Set([edge]))
+  }
+}
+
+/** True when a segment other than `except`'s holds any of `keys`. */
+export function heldByOther(
+  ctx: LabelContext,
+  keys: Iterable<string>,
+  except?: AsciiEdge,
+): boolean {
+  for (const k of keys) {
+    const set = ctx.held.get(k)
+    if (set && set.size > (set.has(except!) ? 1 : 0)) return true
+  }
+  return false
 }
 
 export function createLabelContext(graph: AsciiGraph): LabelContext {
   const cover = new Map<string, Set<AsciiEdge>>()
-  const chosen = new Map<AsciiEdge, [GridCoord, GridCoord]>()
+  const ctx: LabelContext = { cover, chosen: new Map(), held: new Map() }
   for (const edge of graph.edges) {
     for (const cell of pathCells(expandDiagonalSegments(edge.path))) {
       const key = `${cell.x},${cell.y}`
@@ -1276,10 +1318,10 @@ export function createLabelContext(graph: AsciiGraph): LabelContext {
     }
     // Labels fixed during routing (cluster exits, parallel lanes) are taken.
     if (edge.labelLine.length === 2) {
-      chosen.set(edge, [edge.labelLine[0]!, edge.labelLine[1]!])
+      holdLine(ctx, edge, [edge.labelLine[0]!, edge.labelLine[1]!])
     }
   }
-  return { cover, chosen }
+  return ctx
 }
 
 /**
@@ -1426,12 +1468,7 @@ export function determineLabelLine(
       if (others && [...others].some((o) => o !== edge)) shared++
     }
     const keys = new Set(cells.map((c) => `${c.x},${c.y}`))
-    let taken = 0
-    for (const [other, held] of ctx.chosen) {
-      if (other === edge) continue
-      if (pathCells(held).some((c) => keys.has(`${c.x},${c.y}`))) taken = 1
-    }
-    return [taken, shared]
+    return [heldByOther(ctx, keys, edge) ? 1 : 0, shared]
   }
   const byRank = (
     a: { line: [GridCoord, GridCoord]; index: number },
@@ -1491,13 +1528,7 @@ export function determineLabelLine(
             .slice(1, -1)
             .map((c) => `${c.x},${c.y}`),
         )
-        for (const [other, held] of ctx.chosen) {
-          if (other === edge) continue
-          if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) {
-            return true
-          }
-        }
-        return false
+        return heldByOther(ctx, inner, edge)
       }
       const free = segments.filter(
         (s) => s.isVertical && clearOfNodes(s.line) && !holdsLabel(s.line),
@@ -1583,10 +1614,7 @@ export function determineLabelLine(
           .map((c) => `${c.x},${c.y}`),
       )
       // This edge isn't in `chosen` yet (labels fixed in routing return early).
-      for (const held of ctx.chosen.values()) {
-        if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) return true
-      }
-      return false
+      return heldByOther(ctx, inner)
     }
     if (holdsOther(largestLine)) {
       const free = segments.filter(
@@ -1602,7 +1630,7 @@ export function determineLabelLine(
   }
 
   applyLabelLine(graph, edge, largestLine, lenLabel)
-  ctx?.chosen.set(edge, largestLine)
+  if (ctx) holdLine(ctx, edge, largestLine)
 }
 
 /**

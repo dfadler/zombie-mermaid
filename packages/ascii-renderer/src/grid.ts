@@ -315,7 +315,20 @@ function lrFanInGap(graph: AsciiGraph, node: AsciiNode): number {
   for (const e of graph.edges) {
     if (e.to === node && e.from !== node) parents.add(e.from)
   }
-  return parents.size > 1 ? 3 : 0
+  if (parents.size > 1) return 3
+  // Origin gap (#1915): a same-row parent whose other edge bypasses this node
+  // to a farther same-row node leaves east and drops in this gap, sharing the
+  // parent's line. It too needs a junction column plus the arrowhead column.
+  const gc = requireGridCoord(node)
+  for (const p of parents) {
+    const pc = requireGridCoord(p)
+    if (pc.y !== gc.y) continue
+    for (const e of graph.edges) {
+      const c = e.from === p ? e.to.gridCoord : null
+      if (c && c.y === gc.y && c.x > gc.x) return 3
+    }
+  }
+  return 0
 }
 
 /** Ensure grid has width/height entries for all cells along an edge path. */
