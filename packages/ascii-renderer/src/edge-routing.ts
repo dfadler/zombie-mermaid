@@ -1012,6 +1012,70 @@ function buildClusterLaneRoute(
   }
 }
 
+/** Whether a node sits between `edge`'s ends on the same grid row (LR). */
+function jumpsNodeOnRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const a = edge.from.gridCoord
+  const b = edge.to.gridCoord
+  if (!a || !b || a.y !== b.y || a.x >= b.x) return false
+  return graph.nodes.some((n) => {
+    const c = n.gridCoord
+    return c !== null && c.y === a.y && c.x > a.x && c.x < b.x
+  })
+}
+
+/**
+ * Whether an LR edge runs under its row (#2043, #2044): it jumps a node on
+ * its own row, so its east-to-west route would share the origin's and the
+ * target's side faces with the edge through that node. Left as is: an edge
+ * whose ends already carry a self-loop or a backwards edge on the bottom face
+ * (they would merge there), a node that another jumping edge leaves while
+ * this one enters it (or the reverse), and a labeled edge that shares an end
+ * with another jumping edge (each label needs a lane of its own, #1467).
+ */
+function runsUnderRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  if (!jumpsNodeOnRow(graph, edge)) return false
+  const ends = new Set([edge.from, edge.to])
+  const sharedWith = graph.edges.filter(
+    (o) =>
+      o !== edge &&
+      (o.from === edge.from || o.to === edge.to) &&
+      jumpsNodeOnRow(graph, o),
+  )
+  if (edge.text.length > 0 && sharedWith.length > 0) return false
+  // A node that one jumping edge enters and another leaves would have both on
+  // its bottom face, in one cell.
+  if (
+    graph.edges.some(
+      (o) =>
+        (o.to === edge.from || o.from === edge.to) && jumpsNodeOnRow(graph, o),
+    )
+  ) {
+    return false
+  }
+  return !graph.edges.some((o) => {
+    if (o === edge || !(ends.has(o.from) || ends.has(o.to))) return false
+    const a = o.from.gridCoord
+    const b = o.to.gridCoord
+    return o.from === o.to || (a !== null && b !== null && a.x > b.x)
+  })
+}
+
+/**
+ * An edge that runs under its row (see `runsUnderRow`) needs the row it runs
+ * along tall enough for a stroke row and an arrowhead row, at any `paddingY`.
+ */
+export function reserveUnderRow(graph: AsciiGraph, edge: AsciiEdge): void {
+  const a = edge.from.gridCoord
+  const b = edge.to.gridCoord
+  if (!dirEquals(edge.startDir, Down) || !dirEquals(edge.endDir, Down)) return
+  if (!a || !b || a.y !== b.y || a.x >= b.x) return
+  for (const c of edge.path) {
+    if (c.y > a.y + 2) {
+      graph.rowHeight.set(c.y, Math.max(graph.rowHeight.get(c.y) ?? 0, 2))
+    }
+  }
+}
+
 /**
  * Whether the node's bottom face (in an LR graph) is already used by another
  * edge: a lower neighbour's edge, a reciprocal, or a parallel lane, which all
@@ -1074,6 +1138,16 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (loopEntersTop(graph, edge, effectiveDir)) {
     ;[preferredDir, preferredOppositeDir] = [Right, Up]
     ;[alternativeDir, alternativeOppositeDir] = [Right, Up]
+  }
+
+  // #2043/#2044: an LR edge that jumps over a node on its own row would leave
+  // the origin's right face and enter the target's left face, the very cells
+  // the edge through that node uses, so the two strokes and arrowheads merge.
+  // Run it under the row instead, from the origin's bottom face to the
+  // target's (the U shape a backwards LR edge already takes).
+  if (effectiveDir === 'LR' && runsUnderRow(graph, edge)) {
+    preferredDir = alternativeDir = Down
+    preferredOppositeDir = alternativeOppositeDir = Down
   }
 
   // An edge leaving a cluster that engaged cluster-boundary routing (see

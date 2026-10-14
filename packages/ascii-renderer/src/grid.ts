@@ -26,6 +26,7 @@ import {
   createLabelContext,
   assignParallelEdgeLanes,
   splitSharedLabeledLane,
+  reserveUnderRow,
   spreadCandidates,
   type SpreadCandidate,
 } from './edge-routing.ts'
@@ -2080,6 +2081,7 @@ export function createMapping(graph: AsciiGraph): void {
     if (graph.config.graphDirection === 'TD' && !isPortFixedEdge(edge)) {
       separateFanInLane(nodeOnlyGrid, cellOwners, edge)
     }
+    reserveUnderRow(graph, edge)
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
