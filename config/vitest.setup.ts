@@ -39,6 +39,17 @@ import { afterEach } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
+// React's act() requires this flag. RTL only sets it via a global `beforeAll`
+// (needs `test.globals`, which is off here), so without it a test calling
+// `act()` directly gets "not configured to support act(...)" whenever React
+// schedules work inside that act -- timing-dependent, so it flaked under
+// shuffle (#1969). RTL's own asyncWrapper still flips it off around waitFor.
+if (typeof window !== 'undefined') {
+  ;(
+    globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+  ).IS_REACT_ACT_ENVIRONMENT = true
+}
+
 if (typeof window !== 'undefined' && typeof ResizeObserver === 'undefined') {
   class NoopResizeObserver implements ResizeObserver {
     observe() {}

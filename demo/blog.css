@@ -224,6 +224,12 @@ p {
   padding: 20px 24px;
 }
 
+/* github-dark's comment colour (#6a737d) is 3:1 on its code background; shiki
+   inlines it, so lift it past 4.5:1 here (#1815). */
+.prose pre code span[style*='#6A737D'] {
+  color: #8b949e !important;
+}
+
 .prose pre code {
   font-family: var(--font-mono);
   font-size: 14px;

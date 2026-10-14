@@ -56,13 +56,6 @@ layers. The 12.1.0 comparison is in
 
 ## Known limitations (not intentional, not yet fixed)
 
-- **Late sink layer when edges are labeled.** In the "Decision Tree" sample,
-  `Go outside` (`C`) lands one layer below `Have umbrella?` (`B`) in our SVG, with
-  the edge labels present; mermaid.js puts them in the same layer (re-checked on
-  12.1.0: `C` sits about 60 px above `B` there and 130 px below it in ours). Removing the
-  labels from the source puts `C` back beside `B`. Edge labels are the trigger,
-  not node shapes.
-
 ## ER diagrams
 
 zombie-mermaid's ER parser (`packages/mermaid-parser/src/er/parser.ts`) is a
