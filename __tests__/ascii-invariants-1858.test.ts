@@ -19,9 +19,7 @@ import {
 } from './helpers/ascii-invariants.ts'
 
 /** sample title -> issue tracking the renderer bug (unicode charset). */
-const KNOWN: Record<string, string> = {
-  'Class: MVC Architecture': '#2024',
-}
+const KNOWN: Record<string, string> = {}
 
 /** Rules a diagram kind does not promise (pie/xychart are ragged by design). */
 function skipFor(source: string): Rule[] {

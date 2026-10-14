@@ -142,6 +142,16 @@ A reviewer should be able to read the reason without opening the issue. The desc
 
 CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. The repo-wide floor is `coverage.thresholds` in `config/vitest.config.ts`, kept a bit under the measured baseline as headroom; `pnpm run test:coverage` fails the build if coverage drops below it, so it's a hard gate against silent regression, not just visibility. On top of that, `pnpm run coverage:diff` holds new and changed lines to a stricter 95%.
 
+### Flaky tests
+
+Under `CI`, `config/vitest.config.ts` retries a failing test once (`retry: 1`) and adds the
+`github-actions` and `junit` reporters; local runs are unchanged. The retry exists to keep one
+unlucky run from blocking a merge, not to excuse flakiness. Every test that passed only on retry
+is listed under "Flaky Tests" in the Unit tests job summary, and the full report is the
+`junit-report` artifact. A test that passes only on retry is a bug: file an issue (see #1825 for
+the known flakes) and fix or quarantine it; don't ignore a green run that lists one. To reproduce
+locally, see the `vitest:flaky-tests` skill, or `CI=true pnpm test`.
+
 ### Testing scripts
 
 `scripts/**/*.ts` is in the coverage run and the `coverage:diff` gate, same 95%
@@ -227,7 +237,7 @@ Either way, add a changeset (see "Changesets" above) describing what changed and
 
 `demo/fork-fixes-data.ts` backs `packages/site/fork-fixes.ts`, a before/after showcase of bugs this fork has fixed vs. upstream. It's a credible differentiator specifically because every pair is a _real_ render from an actual pre-fix/post-fix commit, not a hand-drawn illustration — the generator fails the build if a pair renders identically (see `packages/site/fork-fixes.ts`'s own header comment and [#189](https://github.com/dfadler/zombie-mermaid/issues/189)). That evidentiary value only holds up if the page keeps growing with the fork, so treat adding an entry as a standing step for bug-fix PRs, not a one-time backfill (see [#295](https://github.com/dfadler/zombie-mermaid/issues/295)):
 
-- If your PR fixes a bug that changes _rendered_ output (SVG or ASCII — a wrong shape, a dropped edge, a corrupted label, a layout glitch, a crash on previously-malformed input), add an entry to the `forkFixes` array in `demo/fork-fixes-data.ts`: a minimal Mermaid `source` that reproduces the bug, the `fixCommit`, the PR number, and a short `lookFor` describing what changed. Run `pnpm run fork-fixes` locally to confirm your pair actually renders two different things before committing it — see the interface doc comments in `demo/fork-fixes-data.ts` for the full field list (including the optional `excerpt` and `upstreamIssues` fields).
+- If your PR fixes a bug that changes _rendered_ output (SVG or ASCII — a wrong shape, a dropped edge, a corrupted label, a layout glitch, a crash on previously-malformed input), add an entry to the `forkFixes` array in `demo/fork-fixes-data.ts`: a minimal Mermaid `source` that reproduces the bug, the `fixCommit`, the PR number, and a short `lookFor` describing what changed. Run `pnpm run fork-fixes` locally to confirm your pair actually renders two different things before committing it — see the interface doc comments in `demo/fork-fixes-data.ts` for the full field list (including the optional `excerpt` and `upstreamIssues` fields). Adding or removing an entry changes the count in the README's "(N fixes)" sentence: `pnpm run check:docs` fails with the number to write.
 - If the fix is _not_ visible in rendered output (an internal refactor, a type-only fix, a performance fix, a fix to something other than the renderer itself), skip the entry — there's nothing for the showcase to demonstrate.
 - The PR template's checklist has a line for this; check it or explain why it doesn't apply.
 - If the entry has `render: 'ascii'`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, and `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/`. Those real-terminal screenshots are the before/after shown on that page, not a live render.

@@ -1,0 +1,22 @@
+sequenceDiagram
+  participant U@{ "type": "boundary" } as User
+  participant DB@{ "type": "database" }
+  participant Q@{ type: queue }
+  U->>DB: query
+  DB-->>Q: notify
+---
++------+    +-----+     +-----+   
+| |-O  |    | (_) |     | >>> |   
+| User |    | DB  |     |  Q  |   
++------+    +-----+     +-----+   
+    |          |           |      
+    |  query   |           |      
+    |---------->           |      
+    |          |           |      
+    |          |  notify   |      
+    |          |...........>      
+    |          |           |      
++------+    +-----+     +-----+   
+| |-O  |    | (_) |     | >>> |   
+| User |    | DB  |     |  Q  |   
++------+    +-----+     +-----+   

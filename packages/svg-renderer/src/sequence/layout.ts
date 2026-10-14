@@ -85,6 +85,26 @@ export function boxLabelHeight(labelFontSize: number): number {
  */
 export const ACTOR_LABEL_OFFSET = 14
 
+/**
+ * `participant X@{ "type": ... }` kinds drawn as a free-standing icon with the
+ * label beneath it, like a stick-figure `actor`. `collections` and `queue`
+ * keep the label inside a box-shaped glyph, so they are not listed here.
+ */
+const ICON_PARTICIPANT_TYPES: ReadonlySet<string | undefined> = new Set([
+  'boundary',
+  'control',
+  'entity',
+  'database',
+])
+
+/** True when the label sits below the icon (stick-figure or typed icon). */
+export function hasLabelBelowIcon(a: {
+  type: 'participant' | 'actor'
+  participantType?: string | undefined
+}): boolean {
+  return a.type === 'actor' || ICON_PARTICIPANT_TYPES.has(a.participantType)
+}
+
 /** Clearance kept between an actor label and what sits below it, in px. */
 const ACTOR_LABEL_CLEARANCE = 4
 
@@ -194,6 +214,9 @@ export function layoutSequenceDiagram(
     id: a.id,
     label: a.label,
     type: a.type,
+    ...(a.participantType !== undefined && {
+      participantType: a.participantType,
+    }),
     x: actorCenterX[i]!,
     y: actorY,
     width: actorWidths[i]!,
@@ -227,7 +250,7 @@ export function layoutSequenceDiagram(
   //    Participants created mid-diagram are placed at their creating message
   //    instead, so they don't take part in the header.
   const actorLabelBottoms = diagram.actors.map((a) =>
-    a.type === 'actor'
+    hasLabelBelowIcon(a)
       ? actorLabelBottom(a.label, fontSizes.nodeLabel, FONT_WEIGHTS.nodeLabel)
       : 0,
   )

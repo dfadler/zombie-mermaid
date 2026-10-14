@@ -3,25 +3,18 @@
  * terminal-panel.ts, the ASCII/theme renderer internals, the demo
  * stylesheet) into a single browser-ready script, once per test run.
  *
- * `.css` uses esbuild's built-in `text` loader (raw file contents as a JS
- * string export) — the same effect as Vite's `?raw` import convention that
- * mount.ts used when this suite ran under Vitest's browser mode, but
- * without depending on Vite/Vitest at all.
+ * Goes through the shared Vite/rolldown helper in scripts/vite-bundle.ts
+ * (https://vite.dev/guide/api-javascript#build); mount.ts imports the
+ * stylesheet with `?raw` (https://vite.dev/guide/assets#importing-asset-as-string).
  */
-import * as esbuild from 'esbuild'
+import { bundleForBrowser } from '../../../scripts/vite-bundle.ts'
 
 let cachedScript: Promise<string> | null = null
 
 export function buildHarnessScript(): Promise<string> {
-  cachedScript ??= esbuild
-    .build({
-      entryPoints: [new URL('./harness-entry.ts', import.meta.url).pathname],
-      bundle: true,
-      platform: 'browser',
-      format: 'iife',
-      loader: { '.css': 'text' },
-      write: false,
-    })
-    .then((result) => result.outputFiles[0]!.text)
+  cachedScript ??= bundleForBrowser(
+    new URL('./harness-entry.ts', import.meta.url).pathname,
+    { minify: false, format: 'iife' },
+  )
   return cachedScript
 }

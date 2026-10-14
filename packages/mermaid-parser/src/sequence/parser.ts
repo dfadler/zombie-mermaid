@@ -18,6 +18,55 @@ interface BoxContext {
   membership: Map<string, number>
 }
 
+/** Participant `type`s Mermaid 12 defines for `participant X@{ "type": ... }`. */
+const PARTICIPANT_TYPES = [
+  'boundary',
+  'control',
+  'entity',
+  'database',
+  'collections',
+  'queue',
+]
+
+const DECL_CONFIG_RE =
+  /^((?:create\s+)?(?:participant|actor)\s+[^\s@]+)\s*@\{([^}]*)\}(.*)$/
+
+/**
+ * Split a `participant X@{ "type": "database" }` config off a declaration
+ * (mermaid 12, https://mermaid.js.org/syntax/sequenceDiagram.html#participants).
+ * Keys may be quoted or bare (JSON or YAML flow style); only `type` and
+ * `alias` are read, others are ignored like mermaid does. Returns the line
+ * with the config removed. The shape is not drawn, see docs/diagrams.md.
+ */
+function extractParticipantConfig(
+  text: string,
+  lineNo: number,
+): { text: string; type?: string; alias?: string } {
+  if (
+    !text.includes('@{') ||
+    !/^(?:create\s+)?(?:participant|actor)\s/.test(text)
+  )
+    return { text }
+  const m = DECL_CONFIG_RE.exec(text)
+  if (!m) {
+    throw new MermaidParseError(
+      `Line ${lineNo}: Sequence diagram: malformed participant config "@{ ... }", expected e.g. participant X@{ "type": "database" }`,
+      { diagramType: 'sequence' },
+    )
+  }
+  const cfg: Record<string, string> = {}
+  for (const kv of m[2]!.matchAll(
+    /["']?(\w+)["']?\s*:\s*(?:"([^"]*)"|'([^']*)'|([^,\s]+))/g,
+  )) {
+    cfg[kv[1]!] = kv[2] ?? kv[3] ?? kv[4]!
+  }
+  // Unknown types render as a plain box in mermaid 12.1.0, so do the same.
+  const lower = cfg.type?.toLowerCase()
+  const type =
+    lower !== undefined && PARTICIPANT_TYPES.includes(lower) ? lower : undefined
+  return { text: m[1]! + m[3]!, type, alias: cfg.alias }
+}
+
 /**
  * Narrow a regex-captured block keyword to `Block['type']`. The capturing
  * regex at the call site uses the same `(loop|alt|opt|par|critical|break|
@@ -174,7 +223,8 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
 
   for (let i = 1; i < lines.length; i++) {
     const stmt = lines[i]!
-    const line = stmt.text
+    const decl = extractParticipantConfig(stmt.text, stmt.line)
+    const line = decl.text
 
     // --- box <color?> <label?> ---
     // Opens a participant group; closed by `end`. Boxes cannot nest
@@ -222,8 +272,9 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       actorIds.add(id)
       diagram.actors.push({
         id,
-        label: normalizeBrTags(createMatch[3]?.trim() ?? id),
+        label: normalizeBrTags(createMatch[3]?.trim() ?? decl.alias ?? id),
         type,
+        ...(decl.type && { participantType: decl.type }),
       })
       joinOpenBox(diagram, boxCtx, id, stmt.line)
       pendingCreate = id
@@ -268,11 +319,16 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       const type: 'participant' | 'actor' =
         actorMatch[1] === 'actor' ? 'actor' : 'participant'
       const id = actorMatch[2]!
-      const rawLabel = actorMatch[3]?.trim() ?? id
+      const rawLabel = actorMatch[3]?.trim() ?? decl.alias ?? id
       const label = normalizeBrTags(rawLabel)
       if (!actorIds.has(id)) {
         actorIds.add(id)
-        diagram.actors.push({ id, label, type })
+        diagram.actors.push({
+          id,
+          label,
+          type,
+          ...(decl.type && { participantType: decl.type }),
+        })
       }
       // A re-declaration inside a box joins it (or errors if it already
       // belongs to a different one) — Mermaid's `addActor` rule.
@@ -311,7 +367,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
 
     // --- Block start: loop, alt, opt, par, critical, break, rect ---
     const blockMatch = line.match(
-      /^(loop|alt|opt|par|critical|break|rect)\s*(.*)$/,
+      /^(loop|alt|opt|par|critical|break|rect)\b\s*(.*)$/,
     )
     if (blockMatch) {
       const blockType = toBlockType(blockMatch[1]!)

@@ -30,7 +30,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 `beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. Checkable facts, as of 2026-10-13: the last push to upstream's `main` was 2026-05-06 and its latest release is v1.1.2 (2026-02-26); it has [43 open pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) (19 opened before 2026-04-13) and [50 open issues](https://github.com/lukilabs/beautiful-mermaid/issues) (live counts at those links; the figures above are a dated snapshot). I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
 
-This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (38 fixes as of 2026-10-14): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
+This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (38 fixes): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
 
 It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below.
 
@@ -223,6 +223,7 @@ zombie-mermaid --help                                   # Show all options
 `--hyperlinks` (with `--ascii`) turns `click` hrefs into OSC 8 terminal
 hyperlinks — off by default, since terminal and pager support varies (see
 [ASCII terminal hyperlinks](docs/diagrams.md#ascii-terminal-hyperlinks)).
+`--profile markdown` (with `--ascii`) emits plain ASCII characters with no color, for pasting into issues, commits and fenced blocks (the `profile` option in the library and the MCP `render_mermaid_ascii` tool).
 
 **Output rules.** `-o` is the destination for the run's _file_ output — SVG, HTML, or PNG when `--svg`/`--html`/`--png` is given, otherwise the ASCII rendering — and `-o -` sends it to stdout instead. A recognised extension (`.svg`, `.html`/`.htm`, `.txt`, `.png`) picks the format on its own, so the flag can be dropped; an extension that contradicts an explicit flag (`--svg -o out.txt`) is an error, while unrecognised ones are simply used as given. `--svg`/`--html`/`--png` with no `-o` writes `<input stem>.svg`/`.html`/`.png` beside the input (stdin input has no name to derive from, so it must pass `-o`). Only one of `--svg`/`--html`/`--png` can be set at a time — run the command twice for more than one. ASCII always prints to the terminal when one of them is also requested (`--ascii --svg -o out.svg`), and never carries ANSI colour codes when written to a file. **An existing output file is never overwritten unless you pass `--force`/`-f`.**
 
