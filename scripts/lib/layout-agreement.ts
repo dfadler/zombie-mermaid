@@ -283,8 +283,7 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     else if (name === 'scorecard-json') {
       if (value === '') throw new Error('--scorecard-json needs a file path')
       args.scorecardJson = value
-    }
-    else if (name === 'fail-below' || name === 'tolerance') {
+    } else if (name === 'fail-below' || name === 'tolerance') {
       const n = Number(value)
       if (value === '' || !Number.isFinite(n) || n < 0) {
         throw new Error(`--${name} needs a non-negative number, got "${value}"`)
