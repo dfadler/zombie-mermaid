@@ -534,7 +534,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
       const sizes = lr ? graph.columnWidth : graph.rowHeight
       for (const n of [group[0]!.from, group[0]!.to]) {
         const at = requireGridCoord(n)[lr ? 'x' : 'y'] + 1
-        sizes.set(at, Math.max(sizes.get(at) ?? 0, group.length - 1))
+        sizes.set(at, Math.max(sizes.get(at)!, group.length - 1))
       }
     }
   }

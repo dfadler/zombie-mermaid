@@ -11,7 +11,10 @@ import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidASCII } from '../index.ts'
 import { convertToAsciiGraph } from '../converter.ts'
 import { createMapping } from '../grid.ts'
-import { clusterLaneEndShift } from '../cluster-boundary.ts'
+import {
+  clusterLaneEndShift,
+  clusterLaneSideRoute,
+} from '../cluster-boundary.ts'
 import {
   checkAll,
   toGrid,
@@ -207,5 +210,22 @@ describe('cluster exit siblings past the fifth (#1689, #1826)', () => {
     expect(shifts.sort()).toEqual([-1, -1, 0, 0, 0, 1, 1].sort())
     // An eighth edge keeps ordinary routing (documented limit).
     expect(plan(8).lanes).toHaveLength(0)
+  })
+
+  it('a track that would land on the gutter column is refused', () => {
+    const graph = convertToAsciiGraph(parseMermaid(cluster('TD', 6)), {
+      useAscii: false,
+      paddingX: 6,
+      paddingY: 5,
+      boxBorderPadding: 1,
+      graphDirection: 'TD',
+    })
+    createMapping(graph)
+    const plan = [...graph.clusterExitPlans!.values()][0]!
+    const second = [...plan.edges].find((e) => e.parallelLane?.index === 2)!
+    expect(clusterLaneSideRoute(graph, plan, second)).not.toBeNull()
+    // The second sibling's own track is the target's origin + 4.
+    plan.gutter.x = second.to.gridCoord!.x + 4
+    expect(clusterLaneSideRoute(graph, plan, second)).toBeNull()
   })
 })
