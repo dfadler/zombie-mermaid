@@ -643,7 +643,6 @@ function drawBoxStart(
     const x = from.x
     const y = from.y + 1
     const existing = existingOnBox(x, y)
-    if (existing !== undefined && BAR_CHARS.has(existing)) return canvas
     const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
     write(canvas, x, y, hasBorder ? (junction ?? '┴') : useAscii ? '|' : '│')
