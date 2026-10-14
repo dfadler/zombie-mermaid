@@ -97,11 +97,23 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     return box
   }
 
-  // Pseudo-states are one glyph at the cell's centre (#2027), not a box.
+  // Pseudo-states are one glyph (#2027), not a box. It sits at the start of
+  // its cell along the flow axis, where edges land (a taller sibling in the
+  // row/column would otherwise strand it), and centred across it.
   const glyph = pseudoStateGlyph(node, useAscii)
   if (glyph !== undefined) {
-    const cy = from.y + Math.floor(h / 2)
-    write(box, from.x + Math.floor((w + 1) / 2), cy, glyph)
+    const lr = graph.config.graphDirection === 'LR'
+    // Same arithmetic as gridToDrawingCoord (the box is drawn half its first
+    // column in, edges land half the middle one in), so edges meet the glyph.
+    const col = (i: number) => graph.columnWidth.get(gc.x + i) ?? 0
+    const row = (i: number) => graph.rowHeight.get(gc.y + i) ?? 0
+    const gx = lr
+      ? from.x
+      : col(0) + Math.floor(col(1) / 2) - Math.floor(col(0) / 2)
+    const cy = lr
+      ? row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
+      : from.y
+    write(box, gx, cy, glyph)
     node.labelRows = { top: cy, bottom: cy }
     return box
   }

@@ -90,4 +90,23 @@ describe('state diagram orphan stubs (#2027)', () => {
   B --> J`)
     expect(out).toContain('◇')
   })
+
+  // A taller sibling stretches the glyph's row/column; the arrow must still
+  // land on the glyph, not stop short of it.
+  it.each([
+    [
+      'TD',
+      'Idle --> [*]\n  note left of Idle\n    a\n    b\n    c\n  end note',
+    ],
+    [
+      'LR',
+      'direction LR\n  Idle --> [*]\n  note left of Idle\n    a\n    b\n    c\n  end note',
+    ],
+  ])('the end glyph touches its arrow (%s)', (_d, body) => {
+    const lines = renderMermaidASCII(`stateDiagram-v2\n  ${body}`).split('\n')
+    const y = lines.findIndex((l) => l.includes('◉'))
+    const x = lines[y]!.indexOf('◉')
+    const arrow = _d === 'LR' ? lines[y]![x - 1] : lines[y - 1]![x]
+    expect(arrow).toBe(_d === 'LR' ? '►' : '▼')
+  })
 })
