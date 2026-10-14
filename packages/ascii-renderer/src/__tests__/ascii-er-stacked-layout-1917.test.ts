@@ -13,7 +13,10 @@ import { checkAll } from '../../../../__tests__/helpers/ascii-invariants.ts'
 const row = (out: string, text: string) =>
   out.split('\n').findIndex((l) => l.includes(text))
 const col = (out: string, text: string) =>
-  out.split('\n').find((l) => l.includes(text))!.indexOf(text)
+  out
+    .split('\n')
+    .find((l) => l.includes(text))!
+    .indexOf(text)
 const width = (out: string) => Math.max(...out.split('\n').map((l) => l.length))
 
 const TWO = `erDiagram
@@ -42,7 +45,9 @@ describe('ASCII ER stacked layout (issue #1917)', () => {
   })
 
   it('keeps direction LR side by side', () => {
-    const out = renderMermaidASCII(`erDiagram\n  direction LR\n${TWO.slice(10)}`)
+    const out = renderMermaidASCII(
+      `erDiagram\n  direction LR\n${TWO.slice(10)}`,
+    )
     expect(row(out, 'CUSTOMER')).toBe(row(out, 'ORDER'))
   })
 

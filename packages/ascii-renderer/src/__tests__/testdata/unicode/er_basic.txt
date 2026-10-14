@@ -5,8 +5,8 @@ erDiagram
 │ CUSTOMER │    
 └──────────┘    
       ┼         
-    ┌ places    
-    │           
+    ┌─┘         
+    │ places    
    ○╟           
 ┌───────┐       
 │ ORDER │       

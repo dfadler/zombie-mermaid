@@ -2,8 +2,8 @@
 | CUSTOMER |    
 +----------+    
       +         
-    + places    
-    |           
+    +-+         
+    | places    
    o<           
 +-------+       
 | ORDER |       

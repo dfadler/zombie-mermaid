@@ -450,6 +450,7 @@ export function renderErAscii(
   // --- Layout: place each component, then stack components vertically ---
   const placed = new Map<string, PlacedEntity>()
   let currentY = 0
+  const sideBySide = diagram.direction === 'LR' || diagram.direction === 'RL'
 
   for (const component of components) {
     // Get entities in this component (preserve original order for consistency)
@@ -460,7 +461,6 @@ export function renderErAscii(
     const maxPerRow = Math.max(2, Math.ceil(Math.sqrt(declared.length)))
     // `direction LR`/`RL` keeps the side-by-side row packing (one layer).
     // ponytail: BT stacks like TB (not flipped); LR is not true columns.
-    const sideBySide = diagram.direction === 'LR' || diagram.direction === 'RL'
     const layerOf = sideBySide
       ? new Map(declared.map((e) => [e.id, 0]))
       : assignLayers(declared, diagram.relationships)
@@ -545,7 +545,7 @@ export function renderErAscii(
   // of two columns per such relationship plus room for its label.
   // ponytail: an upper bound, not exact; the extra width is the cost of a
   // legible bypass.
-  for (const rel of diagram.relationships) {
+  for (const rel of sideBySide ? [] : diagram.relationships) {
     const a = placed.get(rel.entity1)
     const b = placed.get(rel.entity2)
     if (!a || !b) continue
@@ -1418,7 +1418,7 @@ export function renderErAscii(
           const left = lineX - offset
           if (
             offset > 0 &&
-            left >= 0 &&
+            (sideBySide || left >= 0) &&
             columnClearOfBoxes(left, startY, endY) &&
             !viaColumnBlocked(left, startY, endY)
           ) {
@@ -1533,7 +1533,7 @@ export function renderErAscii(
       // Row of this relationship's own horizontal jog (none when it routes
       // straight or through the via bypass). A label sitting on it would
       // hide the jog, so the label search below steers off it (#1917).
-      const jogRow = !multiRowObstruction && needsJog ? midY : -1
+      const jogRow = !sideBySide && !multiRowObstruction && needsJog ? midY : -1
 
       // Crow's foot markers (vertical direction) — markerStartY/markerEndY
       // computed up front, above.
