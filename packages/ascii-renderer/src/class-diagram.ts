@@ -1240,7 +1240,7 @@ export function renderClassAscii(
     endCorner: string,
     lineH: string,
   ): void {
-    const corners = !useAscii && row < (canvas[0]?.length ?? 0)
+    const corners = !useAscii
     for (let x = Math.min(x1, x2) + 1; x < Math.max(x1, x2); x++) {
       // A dashed vertical crossing the run stays whole (it is the stem of a
       // head just below); a solid one merges into `┼`.
@@ -1423,9 +1423,7 @@ export function renderClassAscii(
           //    relationship's straight stem already leaves the same anchor, the
           //    run starts a row lower so the stem stays a plain `│` and the run
           //    branches off it (`├`), instead of a corner replacing the stem.
-          const sharesStem = [V, dashV].includes(
-            canvas[fromAnchorX]?.[exitY] ?? ' ',
-          )
+          const sharesStem = [V, dashV].includes(canvas[fromAnchorX]![exitY]!)
           const exitRunY = sharesStem && exitY + 1 < runY ? exitY + 1 : exitY
           drawRun(
             exitRunY,
