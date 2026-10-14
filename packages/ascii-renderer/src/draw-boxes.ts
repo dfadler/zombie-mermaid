@@ -75,14 +75,12 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   const to: DrawingCoord = { x: w, y: h }
   const box = mkCanvas(Math.max(from.x, to.x), Math.max(from.y, to.y))
 
-  // An unlabeled fork/join is a solid bar, not an outlined box. It fills the
-  // border rows too: edges attach one cell outside the border, so a blank
-  // border row left them detached from the bar (#2027).
+  // An unlabeled fork/join is a solid one-row bar (a 1-row cell, so edges
+  // attach flush to it, #2027), not an outlined box.
   if (node.shape === 'fork-join' && node.displayLabel === '') {
-    const mid = from.y + Math.floor(h / 2)
-    for (let y = from.y; y <= to.y; y++)
-      for (let x = from.x; x <= to.x; x++)
-        write(box, x, y, useAscii ? '#' : '█')
+    const mid = from.y
+    for (let x = from.x; x <= to.x; x++)
+      write(box, x, mid, useAscii ? '#' : '█')
     node.labelRows = { top: mid, bottom: mid }
     return box
   }

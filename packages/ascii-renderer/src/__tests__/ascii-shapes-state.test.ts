@@ -130,12 +130,12 @@ describe('stateEndRenderer (direct unit tests)', () => {
 })
 
 describe('forkJoinRenderer (direct unit tests)', () => {
-  it('is a fixed 9x3 cell when unlabeled, and draws a solid middle row', () => {
+  it('is a fixed 9x1 cell when unlabeled, and draws a solid one-row bar', () => {
     const dims = forkJoinRenderer.getDimensions('', unicodeOptions)
-    expect([dims.width, dims.height]).toEqual([9, 3])
+    expect([dims.width, dims.height]).toEqual([9, 1])
     expect(
       canvasToString(forkJoinRenderer.render('', dims, unicodeOptions)),
-    ).toBe('         \n█████████\n         ')
+    ).toBe('█████████')
     const ascii = forkJoinRenderer.render('', dims, asciiOptions)
     expect(canvasToString(ascii)).toContain('#########')
   })

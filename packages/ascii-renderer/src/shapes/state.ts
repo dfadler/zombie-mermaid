@@ -211,7 +211,7 @@ export const stateEndRenderer: ShapeRenderer = {
 
 /**
  * Fork/join bar. Unlabeled (a state diagram's `<<fork>>`/`<<join>>`) it is a
- * solid one-row bar in a 9x3 cell; a labeled one (flowchart `shape: fork`) is an ordinary
+ * solid one-row bar in a 9x1 cell; a labeled one (flowchart `shape: fork`) is an ordinary
  * corner-decorated box. `drawBoxWithGridDimensions` fills the block.
  */
 export const forkJoinRenderer: ShapeRenderer = {
@@ -219,10 +219,10 @@ export const forkJoinRenderer: ShapeRenderer = {
     if (label !== '') return getBoxDimensions(label, options)
     return {
       width: 9,
-      height: 3,
-      labelArea: { x: 4, y: 1, width: 1, height: 1 },
+      height: 1,
+      labelArea: { x: 4, y: 0, width: 1, height: 1 },
       gridColumns: [1, 7, 1],
-      gridRows: [1, 1, 1],
+      gridRows: [0, 0, 0],
     }
   },
 
