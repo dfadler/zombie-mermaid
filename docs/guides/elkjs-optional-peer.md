@@ -92,7 +92,7 @@ Nothing to do, and you no longer pay for elk in your bundle.
 ## Package manifests
 
 - `@zombie-mermaid/svg-renderer`: `elkjs` moved from `dependencies` to
-  `peerDependencies` (`^0.11.0`, `peerDependenciesMeta.optional`).
+  `peerDependencies` (`^0.11.0 || ^0.12.0`, `peerDependenciesMeta.optional`).
 - `@zombie-mermaid/core`: no dependencies (the `elkjs` type import is gone).
 - `zombie-mermaid` and `@zombie-mermaid/mcp`: still list `elkjs` under
   `dependencies`, because they ship the CLI and MCP server.
