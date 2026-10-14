@@ -1,5 +1,24 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.4.0
+
+### Minor Changes
+
+- [#2048](https://github.com/dfadler/zombie-mermaid/pull/2048) [`d1b2d9a`](https://github.com/dfadler/zombie-mermaid/commit/d1b2d9a524e9e46fa1b4252cdb2952f48166742d) Thanks [@dfadler](https://github.com/dfadler)! - Support Mermaid's `accTitle:` / `accDescr:` (single-line and `accDescr { ... }`) on every diagram type, not just pie. In SVG, `accTitle` names the root (the `title` option still wins) and `accDescr` becomes `<desc>` with `aria-describedby`; both go through the one `svgOpenTag()`. ASCII output ignores the statements and is byte-identical. New `extractAccessibility()` in `@zombie-mermaid/core`.
+
+### Patch Changes
+
+- [#2023](https://github.com/dfadler/zombie-mermaid/pull/2023) [`0c2b6d3`](https://github.com/dfadler/zombie-mermaid/commit/0c2b6d3ec38fb97bcc927573b82de06fd83c9492) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams now centre a parent over its children, as mermaid does (ELK `BALANCED` node placement).
+
+- [#2051](https://github.com/dfadler/zombie-mermaid/pull/2051) [`36f8c04`](https://github.com/dfadler/zombie-mermaid/commit/36f8c049eb94c3eef47c4a07a61ea7231c837d57) Thanks [@dfadler](https://github.com/dfadler)! - Support elkjs 0.12.0. The optional `elkjs` peer range of `@zombie-mermaid/svg-renderer` widens from `^0.11.0` to `^0.11.0 || ^0.12.0`, so both versions keep working; layouts are identical on both. `zombie-mermaid` (CLI) now depends on `elkjs@^0.12.0`. Closes [#1907](https://github.com/dfadler/zombie-mermaid/issues/1907).
+
+- [#2013](https://github.com/dfadler/zombie-mermaid/pull/2013) [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8) Thanks [@dfadler](https://github.com/dfadler)! - Republish with `dist/` included. 5.1.0 and 5.2.0 of every package shipped without build output because the release job (split from the test job in [#1596](https://github.com/dfadler/zombie-mermaid/issues/1596)) never ran the build before `changeset publish`; imports of `zombie-mermaid` and the `@zombie-mermaid/*` packages failed to resolve. The release job now builds first and fails before publishing if any tarball lacks its entry files. Closes [#1991](https://github.com/dfadler/zombie-mermaid/issues/1991).
+
+- [#2018](https://github.com/dfadler/zombie-mermaid/pull/2018) [`782eaa0`](https://github.com/dfadler/zombie-mermaid/commit/782eaa00d9e8d0a8503bc2c4039c5ab4a22467a6) Thanks [@dfadler](https://github.com/dfadler)! - Output change: in an SVG flowchart without subgraphs, a sink node reached by a labeled edge now sits beside its siblings instead of one layer below them, as mermaid.js (12.1.0 and 12.2.0) draws it. The "Decision Tree" sample is the example. ASCII output is unchanged. Fixes [#1750](https://github.com/dfadler/zombie-mermaid/issues/1750).
+- Updated dependencies [[`d1b2d9a`](https://github.com/dfadler/zombie-mermaid/commit/d1b2d9a524e9e46fa1b4252cdb2952f48166742d), [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8), [`adf9f32`](https://github.com/dfadler/zombie-mermaid/commit/adf9f32494a78701c37894dfcb6c4a96344b7447), [`38e2b3c`](https://github.com/dfadler/zombie-mermaid/commit/38e2b3c00efe238bb9afe8683f6758a6f23a0996)]:
+  - @zombie-mermaid/core@5.4.0
+  - @zombie-mermaid/mermaid-parser@5.4.0
+
 ## 5.3.0
 
 ### Minor Changes

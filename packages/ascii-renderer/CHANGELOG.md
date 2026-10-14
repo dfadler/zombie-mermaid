@@ -1,5 +1,28 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.4.0
+
+### Minor Changes
+
+- [#2048](https://github.com/dfadler/zombie-mermaid/pull/2048) [`d1b2d9a`](https://github.com/dfadler/zombie-mermaid/commit/d1b2d9a524e9e46fa1b4252cdb2952f48166742d) Thanks [@dfadler](https://github.com/dfadler)! - Support Mermaid's `accTitle:` / `accDescr:` (single-line and `accDescr { ... }`) on every diagram type, not just pie. In SVG, `accTitle` names the root (the `title` option still wins) and `accDescr` becomes `<desc>` with `aria-describedby`; both go through the one `svgOpenTag()`. ASCII output ignores the statements and is byte-identical. New `extractAccessibility()` in `@zombie-mermaid/core`.
+
+### Patch Changes
+
+- [#2036](https://github.com/dfadler/zombie-mermaid/pull/2036) [`520c6b1`](https://github.com/dfadler/zombie-mermaid/commit/520c6b1ceaddbb8c3817e528b4704b88740b6ee5) Thanks [@dfadler](https://github.com/dfadler)! - ASCII C4: arrowheads are now fed by a stroke running in their direction. Routes meet each headed end straight on instead of turning on the head's own cell.
+
+- [#2041](https://github.com/dfadler/zombie-mermaid/pull/2041) [`10f4259`](https://github.com/dfadler/zombie-mermaid/commit/10f425979fca1b6150ebc1139d5fc9bf9f3971e3) Thanks [@dfadler](https://github.com/dfadler)! - ASCII class diagrams: a relationship label no longer overwrites the horizontal run of its route, so arrowheads stay connected to their stems ([#2024](https://github.com/dfadler/zombie-mermaid/issues/2024)).
+
+- [#2034](https://github.com/dfadler/zombie-mermaid/pull/2034) [`344431e`](https://github.com/dfadler/zombie-mermaid/commit/344431ec91d52753988a6bce3b380c394a401c33) Thanks [@dfadler](https://github.com/dfadler)! - Speed up ASCII rendering of graphs with many labelled edges (about 2.5x at 160 labelled edges), with byte-identical output: copy-on-write canvas columns no longer use the slow `slice()` of a frozen array, label segments are looked up through a per-cell index instead of rescanned, and each label's competing placements are computed once per layout.
+
+- [#2016](https://github.com/dfadler/zombie-mermaid/pull/2016) [`0f89a9d`](https://github.com/dfadler/zombie-mermaid/commit/0f89a9db354f32fa14aa55455e28be0376d284ac) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: at a narrow `paddingX` (1 or 2), an LR edge that bypasses a same-row child now starts with a `┬` junction in the gap after its parent, instead of dropping from beside the child's arrowhead. The gap before such a child is kept 3 wide, as [#1404](https://github.com/dfadler/zombie-mermaid/issues/1404) did for fan-in children. Fixes [#1915](https://github.com/dfadler/zombie-mermaid/issues/1915).
+
+- [#2039](https://github.com/dfadler/zombie-mermaid/pull/2039) [`b7314ed`](https://github.com/dfadler/zombie-mermaid/commit/b7314ed0e47b0392573b36d6863036e0a05d2b4d) Thanks [@dfadler](https://github.com/dfadler)! - Fix orphan line stubs in ASCII state diagrams: a side exit from a box whose border column was widened now draws its stroke all the way from the connector (State Notes), and fork/join bars fill their border rows so stems and arrowheads touch the bar.
+
+- [#2013](https://github.com/dfadler/zombie-mermaid/pull/2013) [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8) Thanks [@dfadler](https://github.com/dfadler)! - Republish with `dist/` included. 5.1.0 and 5.2.0 of every package shipped without build output because the release job (split from the test job in [#1596](https://github.com/dfadler/zombie-mermaid/issues/1596)) never ran the build before `changeset publish`; imports of `zombie-mermaid` and the `@zombie-mermaid/*` packages failed to resolve. The release job now builds first and fails before publishing if any tarball lacks its entry files. Closes [#1991](https://github.com/dfadler/zombie-mermaid/issues/1991).
+- Updated dependencies [[`d1b2d9a`](https://github.com/dfadler/zombie-mermaid/commit/d1b2d9a524e9e46fa1b4252cdb2952f48166742d), [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8), [`adf9f32`](https://github.com/dfadler/zombie-mermaid/commit/adf9f32494a78701c37894dfcb6c4a96344b7447), [`38e2b3c`](https://github.com/dfadler/zombie-mermaid/commit/38e2b3c00efe238bb9afe8683f6758a6f23a0996)]:
+  - @zombie-mermaid/core@5.4.0
+  - @zombie-mermaid/mermaid-parser@5.4.0
+
 ## 5.3.0
 
 ### Minor Changes
