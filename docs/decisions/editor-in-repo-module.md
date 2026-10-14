@@ -1,5 +1,7 @@
 # Editor stays in-repo, modeled on the MCP server
 
+Status: implemented
+
 ## Context
 
 The live editor (`editor.ts` + `editor/`) bundles `src/browser.ts` via

@@ -1,5 +1,7 @@
 # Diagram gallery layout: inline capped grid with expand, not a new page
 
+Status: implemented
+
 ## Context
 
 [#712](https://github.com/dfadler/zombie-mermaid/issues/712)/[#713](https://github.com/dfadler/zombie-mermaid/issues/713)

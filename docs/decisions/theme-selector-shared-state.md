@@ -1,5 +1,7 @@
 # Theme selector: shared state module, Default vs `zinc-light`, ASCII preview
 
+Status: implemented
+
 Settles the architecture questions [#685](https://github.com/dfadler/zombie-mermaid/issues/685)
 raised, ahead of [#686](https://github.com/dfadler/zombie-mermaid/issues/686)–[#690](https://github.com/dfadler/zombie-mermaid/issues/690)
 restoring a global theme selector (tracked in [#684](https://github.com/dfadler/zombie-mermaid/issues/684)).

@@ -1,5 +1,7 @@
 # Cluster-exit anchoring (#1148): label placement and bounding-box timing
 
+Status: implemented
+
 ## Context
 
 Prerequisite design questions for [#1148](https://github.com/dfadler/zombie-mermaid/issues/1148):

@@ -1,5 +1,7 @@
 # A built-in `layout: 'simple'` for flowcharts
 
+Status: implemented
+
 ## Context
 
 SVG output for flowchart, state, class, ER and architecture diagrams needs

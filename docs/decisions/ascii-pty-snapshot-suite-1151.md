@@ -1,5 +1,7 @@
 # Real-PTY pixel-snapshot CI suite for ASCII rendering: not now
 
+Status: not adopted (#1151 closed as not planned)
+
 ## Context
 
 [#1141](https://github.com/dfadler/zombie-mermaid/issues/1141) asked how to

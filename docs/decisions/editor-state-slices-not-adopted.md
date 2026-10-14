@@ -1,5 +1,7 @@
 # Editor `EditorState`/`EditorAction`/`editorReducer` slice split: not adopted
 
+Status: not adopted
+
 ## Context
 
 An architecture review (following the dedup pattern in

@@ -1,5 +1,7 @@
 # ASCII collision-avoidance stays triplicated for now (issue #532 scoping)
 
+Status: implemented
+
 Scoping/feasibility pass for [#532](https://github.com/dfadler/zombie-mermaid/issues/532)
 (unify ASCII collision-avoidance into one occupancy module), per the issue's
 own "no behavior change is proposed" framing. No renderer code changed.

@@ -1,5 +1,7 @@
 # Diagram-type registry: partial adoption, not a single shared `layout` step
 
+Status: superseded (`diagramRegistry` in `packages/svg-renderer/src/registry.ts` is now `Record<DiagramType, ...>`, so every type is covered)
+
 > **Addendum (issue #533 follow-up):** `sequence` and `class` have since been
 > added to both `diagramRegistry` (`src/diagram-registry.ts`) and
 > `asciiRegistry` (`src/ascii/registry.ts`), following exactly the
