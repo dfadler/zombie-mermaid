@@ -513,11 +513,17 @@ export function renderC4Ascii(
       extraBlocked.push(a.box)
     if (b.boundary && bNodes.get(rel.to)!.rows.length > 0)
       extraBlocked.push(b.box)
-    const path = findPath(
-      a.box,
-      b.box,
-      { width, height, blocked, masks, arrows, borders },
-      extraBlocked,
+    const grid = { width, height, blocked, masks, arrows, borders }
+    // An arrowhead needs a stroke running in its direction behind it, so the
+    // route must meet each headed end straight on. Fall back to any route
+    // rather than drop the relationship when no straight approach exists.
+    const heads = {
+      start: !!(rel.bidirectional || rel.reversed),
+      end: !rel.reversed || rel.bidirectional,
+    }
+    const path = [heads, undefined].reduce<[number, number][] | undefined>(
+      (found, h) => found ?? findPath(a.box, b.box, grid, extraBlocked, h),
+      undefined,
     )
     if (!path) continue
     routed.push({ rel, path })
@@ -757,6 +763,10 @@ function towardBox(cell: [number, number], box: Box): number {
   return L
 }
 
+function oppositeDir(d: number): number {
+  return d === U ? D : d === D ? U : d === L ? R : L
+}
+
 function arrowChar(dir: number, ascii: boolean): string {
   if (dir === D) return ascii ? 'v' : '▼'
   if (dir === U) return ascii ? '^' : '▲'
@@ -872,6 +882,7 @@ function findPath(
   to: Box,
   grid: Grid,
   extraBlocked: Box[],
+  heads?: { start: boolean; end: boolean },
 ): [number, number][] | undefined {
   const inExtra = (x: number, y: number) =>
     extraBlocked.some(
@@ -918,7 +929,10 @@ function findPath(
     const cur = open.splice(bi, 1)[0]!
     const gk = `${cur.x},${cur.y}`
     const goalCost = goals.get(gk)
-    if (goalCost !== undefined) {
+    if (
+      goalCost !== undefined &&
+      (!heads?.end || !cur.parent || cur.dir === towardBox([cur.x, cur.y], to))
+    ) {
       const path: [number, number][] = []
       for (let n: Node | undefined = cur; n; n = n.parent) path.push([n.x, n.y])
       return path.reverse()
@@ -927,6 +941,12 @@ function findPath(
       const nx = cur.x + dx
       const ny = cur.y + dy
       if (nx < 0 || ny < 0 || nx > grid.width || ny > grid.height) continue
+      if (
+        heads?.start &&
+        !cur.parent &&
+        d !== oppositeDir(towardBox([cur.x, cur.y], from))
+      )
+        continue
       const isGoal = goals.has(`${nx},${ny}`)
       if (grid.blocked[nx]![ny] && !isGoal) continue
       if (inExtra(nx, ny)) continue
