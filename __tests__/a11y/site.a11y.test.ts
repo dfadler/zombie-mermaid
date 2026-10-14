@@ -57,12 +57,7 @@ const PAGES = [
  * OTHER serious/critical violation on the page still fails, and an entry that
  * no longer reproduces ALSO fails (delete it) so this list only shrinks.
  */
-const KNOWN: Record<string, Record<string, string>> = {
-  // color-contrast on every page (footer, pills, code-panel labels, status
-  // text) is added below and tracked by #1759 (site chrome beyond it: #1815).
-}
-for (const path of PAGES)
-  (KNOWN[path] ??= {})['color-contrast'] = '#1759, #1815'
+const KNOWN: Record<string, Record<string, string>> = {}
 
 const MIME: Record<string, string> = {
   '.html': 'text/html',
