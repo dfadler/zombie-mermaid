@@ -20,7 +20,6 @@ import {
 
 /** sample title -> issue tracking the renderer bug (unicode charset). */
 const KNOWN: Record<string, string> = {
-  'Class: Relationship Labels': '#2024',
   'Class: MVC Architecture': '#2024',
   'C4: System Context': '#2026',
   'State: Choice, Fork and Join': '#2027',
