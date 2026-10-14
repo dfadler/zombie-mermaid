@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 const SOURCE = `erDiagram
+    direction LR
     CUSTOMER ||--o{ ORDER : places
     CUSTOMER {
         int id PK

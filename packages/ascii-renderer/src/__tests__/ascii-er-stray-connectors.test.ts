@@ -21,6 +21,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   it('insets only the colliding "one" marker on a horizontal connector, leaving the non-colliding "zero-many" marker flush (Unicode) — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none' },
     )
@@ -44,6 +45,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   it('insets only the colliding "one" marker on a horizontal connector, leaving the non-colliding "zero-many" marker flush (ASCII) — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none', useAscii: true },
     )
@@ -55,6 +57,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   it('leaves both markers flush on a horizontal connector when neither collides with the border', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER }o--o{ ORDER : has`,
       { colorMode: 'none' },
     )
@@ -74,6 +77,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
     // sqrt-based row limit of 2 per row wrap C onto its own row below A/B.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac`,
       { colorMode: 'none' },
@@ -109,6 +113,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   it('insets the "zero-or-one" marker from the entity border on a horizontal connector, since it collides on both sides — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         C |o--|| D : owns`,
       { colorMode: 'none' },
     )
@@ -128,6 +133,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
     // involved, unlike the horizontal case immediately above.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A |o--|| C : owns`,
       { colorMode: 'none' },
@@ -152,6 +158,7 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
     // identical row and overwrote each other.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : rel1
         B ||--o{ C : rel2
         A ||--o{ C : rel3`,
@@ -177,6 +184,7 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
     // e.g. "appears_in" rendered as "appear│_in".
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places
         ORDER ||--|{ LINE_ITEM : contains
         PRODUCT ||--o{ LINE_ITEM : appears_in
@@ -211,6 +219,7 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
     // no longer read as a single spliced word.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         DDDD ||--o{ A : x0
         BB ||--o{ A : l1
         DDDD ||--o{ CCC : longerlabelhere2`,
@@ -232,6 +241,7 @@ describe('ASCII ER — compact gutters between disconnected components (issue #3
   it('does not leave a large blank gutter between two small disconnected components', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places
         PRODUCT ||--o{ LINE_ITEM : appears_in`,
       { colorMode: 'none' },

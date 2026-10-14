@@ -8,11 +8,20 @@ erDiagram
     string city
   }
 ---
-┌────────────────┐          ┌───────────────┐    
-│ PERSON         │          │ ADDRESS       │    
-├────────────────┤─│──────○╟├───────────────┤    
-│ string name PK │ lives_at │ string street │    
-└────────────────┘          │ string city   │    
-                            └───────────────┘    
-                                                 
-                                                 
+┌────────────────┐    
+│ PERSON         │    
+├────────────────┤    
+│ string name PK │    
+└────────────────┘    
+         ┼            
+        ┌ lives_at    
+        │             
+       ○╟             
+┌───────────────┐     
+│ ADDRESS       │     
+├───────────────┤     
+│ string street │     
+│ string city   │     
+└───────────────┘     
+                      
+                      

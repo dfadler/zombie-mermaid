@@ -35,6 +35,7 @@ function expectInside(ascii: string, name: string, y: number): void {
 describe('ER side-by-side relationship row (#1911 extra cases)', () => {
   it('attaches to a bare short entity beside a tall one', () => {
     const ascii = renderMermaidASCII(`erDiagram
+    direction LR
     ${TALL}
     TAG
     CUSTOMER ||--o{ TAG : has`)
@@ -47,6 +48,7 @@ describe('ER side-by-side relationship row (#1911 extra cases)', () => {
 
   it('attaches whichever way round the relationship is declared', () => {
     const ascii = renderMermaidASCII(`erDiagram
+    direction LR
     TAG
     ${TALL}
     TAG }o--|| CUSTOMER : has`)
@@ -57,6 +59,7 @@ describe('ER side-by-side relationship row (#1911 extra cases)', () => {
 
   it('attaches a dashed (non-identifying) line the same way', () => {
     const ascii = renderMermaidASCII(`erDiagram
+    direction LR
     ${TALL}
     TAG
     CUSTOMER ||..o{ TAG : has`)
@@ -67,6 +70,7 @@ describe('ER side-by-side relationship row (#1911 extra cases)', () => {
 
   it('keeps the vertical-centre row for equal-height entities', () => {
     const ascii = renderMermaidASCII(`erDiagram
+    direction LR
     ${TALL}
     ORDER {
         int id PK

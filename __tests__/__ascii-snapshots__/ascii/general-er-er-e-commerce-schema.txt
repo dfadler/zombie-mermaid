@@ -1,21 +1,32 @@
-+-----------------+        +--------------------+    
-| CUSTOMER        |        | ORDER              |    
-+-----------------+        +--------------------+    
-| int id PK       |-|----o<| int id PK          |    
-| string name     | places | date created       |    
-| string email UK |        | int customer_id FK |    
-+-----------------+        +--------------------+    
-                                      +              
-                                   + contains        
-                                   |                 
-                                   <                 
-+-------------+          +-------------------+       
-| PRODUCT     |          | LINE_ITEM         |       
-+-------------+          +-------------------+       
-| int id PK   |-|------o<| int id PK         |       
-| string name | includes | int order_id FK   |       
-| float price |          | int product_id FK |       
-+-------------+          | int quantity      |       
-                         +-------------------+       
-                                                     
-                                                     
++-----------------+                            
+| CUSTOMER        |                            
++-----------------+                            
+| int id PK       |                            
+| string name     |                            
+| string email UK |                            
++-----------------+                            
+         +                                     
+         +-+ places                            
+           |                                   
+          o<                                   
++--------------------+      +-------------+    
+| ORDER              |      | PRODUCT     |    
++--------------------+      +-------------+    
+| int id PK          |      | int id PK   |    
+| date created       |      | string name |    
+| int customer_id FK |      | float price |    
++--------------------+      +-------------+    
+           +                       +           
+ +---------+       +---------------+           
+ | contains        | includes                  
+ <                o<                           
++-------------------+                          
+| LINE_ITEM         |                          
++-------------------+                          
+| int id PK         |                          
+| int order_id FK   |                          
+| int product_id FK |                          
+| int quantity      |                          
++-------------------+                          
+                                               
+                                               
