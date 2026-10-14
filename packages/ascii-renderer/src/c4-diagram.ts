@@ -523,6 +523,7 @@ export function renderC4Ascii(
     }
     const path =
       findPath(a.box, b.box, grid, extraBlocked, heads) ??
+      /* v8 ignore next -- safety net: a fuzz of 400 random diagrams never needed it */
       findPath(a.box, b.box, grid, extraBlocked)
     if (!path) continue
     routed.push({ rel, path })
