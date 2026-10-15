@@ -671,6 +671,20 @@ export const forkFixes: ForkFix[] = [
       'Before: the back-edge hooks round the right side into `a`’s right face. After: it leaves `c`’s top and enters `a`’s bottom.',
   },
   {
+    id: 'ascii-feedback-edge-sibling-order',
+    title:
+      'ASCII subgraph order and feedback edges followed mermaid 11, not 12',
+    symptom:
+      'In the CI/CD pipeline the ASCII layout put `Fix & Retry` at the very bottom, below `QA Approved?`; mermaid 12.1.0 and 12.2.0 draw it beside `Build Image`. Sibling subgraphs tied by a shared parent came out in reversed order (West left of East); mermaid 12 keeps declaration order.',
+    source:
+      'graph TD\n  subgraph ci [CI Pipeline]\n    A[Push Code] --> B{Tests Pass?}\n    B -->|Yes| C[Build Image]\n    B -->|No| D[Fix & Retry]\n    D -.-> A\n  end\n  C --> E([Deploy Staging])\n  E --> F{QA Approved?}\n  F -->|Yes| G((Production))\n  F -->|No| D',
+    fixCommit: 'b55b7fae',
+    pr: 2148,
+    render: 'ascii',
+    lookFor:
+      'Before: `Fix & Retry` hangs below `QA Approved?`. After: it sits beside `Build Image`, and the QA `No` edge rises into it.',
+  },
+  {
     id: 'er-multi-key-attributes',
     title: 'An ER attribute with two keys lost one of them',
     symptom:
