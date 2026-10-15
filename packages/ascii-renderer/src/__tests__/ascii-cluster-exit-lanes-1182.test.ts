@@ -287,7 +287,7 @@ ${LABELS.slice(0, siblings)
     })
 
     it.each(['TD', 'LR'] as const)(
-      "%s: six siblings keep today's routing (no lane in the plan)",
+      '%s: six siblings engage the plan too (#1826)',
       (dir) => {
         const src = many(dir, 6, ['other', 'more'])
         const graph = convertToAsciiGraph(parseMermaid(src), {
@@ -299,7 +299,7 @@ ${LABELS.slice(0, siblings)
         })
         createMapping(graph)
         const edges = [...(graph.clusterExitPlans?.values() ?? [])][0]?.edges
-        expect([...(edges ?? [])].some((e) => e.parallelLane)).toBe(false)
+        expect([...(edges ?? [])].filter((e) => e.parallelLane)).toHaveLength(6)
       },
     )
   })
