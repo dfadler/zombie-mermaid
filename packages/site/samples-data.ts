@@ -2487,4 +2487,29 @@ pie title Pets adopted by volunteers
     string h PK,FK,UK "with comment"
   }`,
   },
+  {
+    title: 'ER: Style, classDef and Class',
+    category: 'ER',
+    description:
+      'Entities styled three ways, as mermaid 12.1.0 and 12.2.0 paint them (#2107): `classDef` with `class`, the `:::` shorthand, and an inline `style` (which wins over the class). `classDef default` sets the stroke of every entity. In the ASCII panel the colours are ignored, as in every other diagram type.',
+    source: `erDiagram
+  CUSTOMER ||--o{ ORDER : places
+  ORDER ||--|{ LINE_ITEM : contains
+  CUSTOMER {
+    int id PK
+    string name
+  }
+  ORDER:::late {
+    int id PK
+    date due
+  }
+  LINE_ITEM {
+    int qty
+  }
+  classDef default stroke:#475569
+  classDef vip fill:#fef3c7,stroke:#d97706,stroke-width:3px
+  classDef late fill:#fecaca,stroke:#dc2626,color:#7f1d1d
+  class CUSTOMER vip
+  style LINE_ITEM fill:#dbeafe,stroke:#2563eb`,
+  },
 ]
