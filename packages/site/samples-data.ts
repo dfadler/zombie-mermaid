@@ -2441,4 +2441,34 @@ pie title Pets adopted by volunteers
   S -->|9| T
   S -->|other| U`,
   },
+  {
+    title: 'Flowchart: Self-Loop with In and Out Neighbours (TD)',
+    category: 'Flowchart',
+    description:
+      'A self-loop on a node that also has incoming and outgoing neighbours (#2070). In the ASCII panel the loop is a stroke of its own, nested inside the fan that passes its node.',
+    source: `flowchart TD
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a`,
+  },
+  {
+    title: 'Flowchart: Self-Loop with In and Out Neighbours (LR)',
+    category: 'Flowchart',
+    description:
+      'A self-loop on a node that also has incoming and outgoing neighbours (#2070). In the ASCII panel the loop is a stroke of its own, nested inside the fan that passes its node.',
+    source: `flowchart LR
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a`,
+  },
 ]

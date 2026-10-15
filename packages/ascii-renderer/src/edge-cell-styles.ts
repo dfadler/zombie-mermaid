@@ -62,6 +62,36 @@ export function findStyleConflict(
 }
 
 /**
+ * Tracks a self-loop shares with an edge that does not touch its node (#2070).
+ * One gutter row/column then holds both strokes, and the loop reads as a
+ * branch of that edge. Returned as the grid columns and rows the loop's legs
+ * run in; the caller widens them so port-offsets.ts can draw the loop a cell
+ * closer to its node, with the arrowhead in the cell left over. The two end
+ * stems sit on the node's faces, which port-offsets.ts separates, so they do
+ * not count; two shared cells are a run, one is a crossing.
+ */
+export function loopTracksSharedWithEdge(
+  grid: Grid,
+  owners: EdgeCellOwners,
+  loop: AsciiEdge,
+): { cols: number[]; rows: number[] } | null {
+  const shared = new Map<AsciiEdge, number>()
+  const legs = pathCells(loop.path).slice(2, -1)
+  for (const cell of legs) {
+    if (isOccupied(grid, cell)) continue
+    for (const o of owners.get(gridKey(cell)) ?? []) {
+      if (o.from === loop.from || o.to === loop.from) continue
+      shared.set(o, (shared.get(o) ?? 0) + 1)
+    }
+  }
+  if (![...shared.values()].some((n) => n >= MIN_CHAIN_OVERLAP)) return null
+  return {
+    cols: [...new Set(legs.map((c) => c.x))],
+    rows: [...new Set(legs.map((c) => c.y))],
+  }
+}
+
+/**
  * Record every open (non-node-occupied) cell in `path` as claimed by
  * `style`. First claim per cell wins — a later same-style edge through the
  * same cell is a harmless no-op, and a later different-style edge is
