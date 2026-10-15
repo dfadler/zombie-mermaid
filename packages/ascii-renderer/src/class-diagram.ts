@@ -18,6 +18,7 @@ import type {
   ClassDiagram,
   ClassNode,
   ClassNote,
+  ClassRelationship,
   RelationshipType,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -298,6 +299,7 @@ interface AsciiNamespaceFrame {
 function resolveFrames(
   diagram: ClassDiagram,
   notesById: Map<string, ClassNote>,
+  lollipops: Map<string, AsciiLollipop>,
 ): AsciiNamespaceFrame[] {
   const known = new Set(diagram.classes.map((c) => c.id))
   const claimed = new Set<string>()
@@ -310,6 +312,9 @@ function resolveFrames(
       ids.push(id)
       for (const [noteId, note] of notesById) {
         if (note.forClass === id) ids.push(noteId)
+      }
+      for (const [lolliId, lolli] of lollipops) {
+        if (lolli.host === id) ids.push(lolliId)
       }
     }
     if (ids.length > 0) frames.push({ name: ns.name, ids })
@@ -360,11 +365,14 @@ export function renderClassAscii(
 ): string {
   const lines = splitStatements(text)
   // Notes ride through the layout as pseudo-classes — see withNotePseudoClasses.
-  const { diagram, notesById } = withNotePseudoClasses(parseClassDiagram(lines))
+  const { diagram: lollipopDiagram, lollipops } = withLollipopPseudoClasses(
+    parseClassDiagram(lines),
+  )
+  const { diagram, notesById } = withNotePseudoClasses(lollipopDiagram)
 
   if (diagram.classes.length === 0) return ''
 
-  const frames = resolveFrames(diagram, notesById)
+  const frames = resolveFrames(diagram, notesById, lollipops)
   const frameOf = new Map<string, number>()
   for (const [i, fr] of frames.entries()) {
     for (const id of fr.ids) frameOf.set(id, i)
@@ -388,6 +396,14 @@ export function renderClassAscii(
   for (const cls of diagram.classes) {
     const sections = buildClassSections(cls)
     classSections.set(cls.id, sections)
+
+    // An interface name has no box: one text row, centred on the host's
+    // first content row (see decorateAsciiLollipops).
+    if (lollipops.has(cls.id)) {
+      classBoxW.set(cls.id, displayWidth(cls.label))
+      classBoxH.set(cls.id, 3)
+      continue
+    }
 
     // Reserve exactly what drawMultiBox will draw — measuring it here rather
     // than re-deriving the arithmetic keeps layout and drawing in lockstep for
@@ -474,6 +490,10 @@ export function renderClassAscii(
   // move it onto its class's row so the row placement below puts it right
   // beside that class.
   pinNoteLevels(notesById, level)
+  for (const [id, lolli] of lollipops) {
+    const hostLevel = level.get(lolli.host)
+    if (hostLevel !== undefined) level.set(id, hostLevel)
+  }
 
   // --- Position classes by level ---
   // Group classes by level
@@ -1003,6 +1023,12 @@ export function renderClassAscii(
 
   // --- Draw class boxes ---
   for (const p of placed.values()) {
+    if (lollipops.has(p.cls.id)) {
+      const cells = toDisplayCells(p.cls.label)
+      for (const [i, cell] of cells.entries())
+        setC(p.x + i, p.y + 1, cell, 'text')
+      continue
+    }
     const boxCanvas = drawMultiBox(
       p.sections,
       useAscii,
@@ -2231,6 +2257,7 @@ export function renderClassAscii(
   // each attached note to its class. Last, so a connector never lands on
   // top of a relationship line or label.
   decorateAsciiNotes(notesById, placed, canvas, useAscii, setC)
+  decorateAsciiLollipops(lollipops, placed, canvas, useAscii, setC)
 
   return canvasToString(canvas, {
     roleCanvas: rc,
@@ -2340,6 +2367,110 @@ function decorateAsciiNotes(
     const y = cls.y + 1
     for (let x = cls.x + cls.width; x < p.x; x++) {
       if (canvas[x]?.[y] === ' ') setC(x, y, dash, 'line')
+    }
+  }
+}
+
+// ============================================================================
+// Lollipop interfaces
+//
+// Mermaid draws `A ()-- B` as a small circle node carrying the name `A`,
+// hung off `B` by a short stem, with no edge to a class `A` (and no `A` box
+// at all when `A` is used only this way). Same idea here as for notes: the
+// interface name rides through the layout as a one-row pseudo-class pinned
+// to its host's level and placed beside it in source order (`A ()-- B` puts
+// it left of B, `B --() A` right of B), then `decorateAsciiLollipops` draws
+// `Name ○──` / `──○ Name` between them. `()--()` has no single host and
+// stays an ordinary relationship.
+// ============================================================================
+
+interface AsciiLollipop {
+  host: string
+  name: string
+  side: 'left' | 'right'
+}
+
+function withLollipopPseudoClasses(parsed: ClassDiagram): {
+  diagram: ClassDiagram
+  lollipops: Map<string, AsciiLollipop>
+} {
+  const lollipops = new Map<string, AsciiLollipop>()
+  const relationships: ClassRelationship[] = []
+  const interfaceIds = new Set<string>()
+  const pseudoByHost = new Map<string, ClassNode[]>()
+  for (const rel of parsed.relationships) {
+    if (rel.type !== 'lollipop' || rel.markerAt === 'both') {
+      relationships.push(rel)
+      continue
+    }
+    const left = rel.markerAt === 'from'
+    const host = left ? rel.to : rel.from
+    const name = left ? rel.from : rel.to
+    const id = `lollipop ${lollipops.size}`
+    lollipops.set(id, { host, name, side: left ? 'left' : 'right' })
+    interfaceIds.add(name)
+    const list = pseudoByHost.get(host) ?? []
+    list.push({ id, label: name, attributes: [], methods: [] })
+    pseudoByHost.set(host, list)
+  }
+  if (lollipops.size === 0) return { diagram: parsed, lollipops }
+
+  // An interface keeps its box only when something else gives it one.
+  const kept = new Set(relationships.flatMap((r) => [r.from, r.to]))
+  for (const { host } of lollipops.values()) kept.add(host)
+  for (const note of parsed.notes) if (note.forClass) kept.add(note.forClass)
+  for (const ns of parsed.namespaces) for (const id of ns.classIds) kept.add(id)
+  const drop = (c: ClassNode): boolean =>
+    interfaceIds.has(c.id) &&
+    !kept.has(c.id) &&
+    !c.annotation &&
+    c.attributes.length === 0 &&
+    c.methods.length === 0
+
+  const classes: ClassNode[] = []
+  for (const cls of parsed.classes) {
+    if (drop(cls)) continue
+    const pseudo = pseudoByHost.get(cls.id) ?? []
+    for (const ps of pseudo)
+      if (lollipops.get(ps.id)!.side === 'left') classes.push(ps)
+    classes.push(cls)
+    for (const ps of pseudo)
+      if (lollipops.get(ps.id)!.side === 'right') classes.push(ps)
+  }
+  return { diagram: { ...parsed, classes, relationships }, lollipops }
+}
+
+/** Draw each interface's stem and circle in the gap beside its host. */
+function decorateAsciiLollipops(
+  lollipops: Map<string, AsciiLollipop>,
+  placed: Map<string, PlacedClass>,
+  canvas: Canvas,
+  useAscii: boolean,
+  setC: (x: number, y: number, ch: string, role: CharRole) => void,
+): void {
+  const stem = useAscii ? '-' : '─'
+  const circle = useAscii ? 'O' : '○'
+  for (const [id, lolli] of lollipops) {
+    const p = placed.get(id)
+    const host = placed.get(lolli.host)
+    if (!p || !host || p.y !== host.y) continue
+    const y = p.y + 1
+    // [x0, x1): the gap between the two; the circle sits next to the name.
+    const [x0, x1] =
+      lolli.side === 'right'
+        ? [host.x + host.width, p.x]
+        : [p.x + p.width, host.x]
+    if (x1 <= x0) continue
+    const circleX =
+      lolli.side === 'right'
+        ? x1 - (x1 - x0 >= 3 ? 2 : 1)
+        : x0 + (x1 - x0 >= 3 ? 1 : 0)
+    for (let x = x0; x < x1; x++) {
+      if (canvas[x]?.[y] !== ' ') continue
+      const onCircle = x === circleX
+      const onName = lolli.side === 'right' ? x > circleX : x < circleX
+      if (onName) continue
+      setC(x, y, onCircle ? circle : stem, onCircle ? 'arrow' : 'line')
     }
   }
 }

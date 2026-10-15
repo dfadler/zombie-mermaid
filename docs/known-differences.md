@@ -121,11 +121,17 @@ above.
 
 Intentional ([#2117](https://github.com/dfadler/zombie-mermaid/issues/2117)). For `A ()-- B` /
 `A --() B`, mermaid.js (12.1.0 and 12.2.0 agree) turns the lollipop end into a small circle
-node with the class name beside it, and draws no class box for a class that is only used that
-way. zombie-mermaid keeps the class box and ends the line in a hollow circle marker on it
-(`○`, or `O` in the `--ascii` charset). Both show a circle at the interface end; the layout
-and the name placement differ. Dotted lollipops (`()..`, `..()`), which mermaid accepts, are
-a parse error here.
+node with the name beside it, attached to `B`, with no edge to a class `A` and no `A` box
+for a class that is only used that way.
+
+- **ASCII** matches that shape: `Comparable ○──│ Version │──○ Printable` (`O` in the `--ascii`
+  charset), on the host's row, in source order. A class that has members, an annotation or
+  another relationship keeps its box. `()--()` has no single host and stays an ordinary line
+  with a circle at both ends. A label or cardinality on a lollipop is not drawn.
+- **SVG** still keeps the class box and ends the line in a hollow circle marker on it, so the
+  layout and name placement differ from mermaid.
+
+Dotted lollipops (`()..`, `..()`), which mermaid accepts, are a parse error here.
 
 ## Known limitations (not intentional, not yet fixed)
 

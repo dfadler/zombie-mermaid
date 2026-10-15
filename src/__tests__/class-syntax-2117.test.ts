@@ -86,6 +86,17 @@ describe('both-ends and lollipop arrows', () => {
     expect(ascii).toContain('O')
   })
 
+  it('ASCII hangs the interface off its host: name and circle on the host row, no box, no edge', () => {
+    const left = renderMermaidASCII('classDiagram\n  Comparable ()-- Version')
+    expect(left.split('\n')[1]).toMatch(/^Comparable ○─+│ Version │/)
+    expect(left).not.toContain('┌───────────┐') // no Comparable box
+    const right = renderMermaidASCII('classDiagram\n  Version --() Printable')
+    expect(right.split('\n')[1]).toMatch(/│ Version │─+○ Printable/)
+    // Used elsewhere too, the interface name keeps its own box.
+    const both = renderMermaidASCII('classDiagram\n  A ()-- B\n  A --> C')
+    expect(both).toContain('│ A │')
+  })
+
   it('still rejects a mixed pair, which has no single marker', () => {
     expect(() => parse('classDiagram\n  A <|--* B')).toThrow(/Malformed/)
   })
