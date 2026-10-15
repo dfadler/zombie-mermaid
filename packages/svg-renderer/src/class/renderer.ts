@@ -113,7 +113,11 @@ export function renderClassSvg(
   )
   parts.push(buildSvgStyleBlock(font, true, emit.nonce))
   parts.push('<defs>')
-  parts.push(relationshipMarkerDefs())
+  parts.push(
+    relationshipMarkerDefs(
+      diagram.relationships.some((r) => r.type === 'lollipop'),
+    ),
+  )
   parts.push('</defs>')
 
   // 0. Namespace frames (behind everything else)
@@ -179,10 +183,11 @@ function renderNamespace(ns: PositionedClassNamespace): string {
  *   - association: open arrow (simple >)
  *   - dependency: open arrow (simple >)
  *   - realization: hollow triangle (same as inheritance)
+ *   - lollipop: hollow circle (interface)
  *
  * Uses var(--_arrow) for fill/stroke and var(--bg) for hollow marker fills.
  */
-function relationshipMarkerDefs(): string {
+function relationshipMarkerDefs(withLollipop: boolean): string {
   return (
     // Hollow triangle (inheritance, realization) — points at target
     `  <marker id="cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">` +
@@ -200,7 +205,14 @@ function relationshipMarkerDefs(): string {
     // Open arrow (association, dependency)
     `\n  <marker id="cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">` +
     `\n    <polyline points="0 0, 8 3, 0 6" fill="none" stroke="var(--_arrow)" stroke-width="1.5" />` +
-    `\n  </marker>`
+    `\n  </marker>` +
+    // Circle (lollipop interface) — its far edge sits on the endpoint. Only
+    // emitted when used, so diagrams without a lollipop keep their output.
+    (withLollipop
+      ? `\n  <marker id="cls-lollipop" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto-start-reverse">` +
+        `\n    <circle cx="6" cy="6" r="5" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />` +
+        `\n  </marker>`
+      : '')
   )
 }
 
@@ -547,16 +559,14 @@ function renderRelationship(rel: PositionedClassRelationship): string {
  */
 function getRelationshipMarkers(
   type: RelationshipType,
-  markerAt: 'from' | 'to',
+  markerAt: 'from' | 'to' | 'both',
 ): string {
   const markerId = getMarkerDefId(type)
   if (!markerId) return ''
 
-  if (markerAt === 'from') {
-    return f` marker-start="url(#${markerId})"`
-  } else {
-    return f` marker-end="url(#${markerId})"`
-  }
+  const start = markerAt !== 'to' ? f` marker-start="url(#${markerId})"` : ''
+  const end = markerAt !== 'from' ? f` marker-end="url(#${markerId})"` : ''
+  return start + end
 }
 
 /** Map relationship type to its SVG marker definition ID */
@@ -572,6 +582,8 @@ function getMarkerDefId(type: RelationshipType): string | null {
     case 'association':
     case 'dependency':
       return 'cls-arrow'
+    case 'lollipop':
+      return 'cls-lollipop'
     default:
       return null
   }
