@@ -291,7 +291,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     if (inlineAttrMatch) {
       // Make sure this isn't a relationship line (those have arrows)
       const rest = inlineAttrMatch[2]!
-      if (!rest.match(/<\|--|--|\*--|o--|-->|\.\.>|\.\.\|>/)) {
+      if (!parseRelationship(line)) {
         addMember(
           ensureClass(classMap, unquoteClassId(inlineAttrMatch[1]!)),
           rest,

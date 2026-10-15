@@ -643,7 +643,9 @@ classDiagram-v2
 - `<|--|>`, `<|..|>`, `<-->`, `<..>`, `*--*` and `o--o` draw the relationship's
   marker at both ends of the line (a mixed pair such as `<|--*` is still an error).
 - `()--`, `--()` and `()--()` end the line in a hollow circle (lollipop interface):
-  `○`, or `O` in the `--ascii` charset. The class box is kept; see
+  `○`, or `O` in the `--ascii` charset. In SVG the class box is kept and the circle ends
+  the line; in ASCII a one-ended lollipop draws the interface name with the circle
+  above or below its host and no box, as Mermaid does. See
   [known differences](known-differences.md#class-lollipop-interfaces).
 - A backtick-quoted class name may hold spaces and punctuation
   (`` class `Animal Class!` ``, `` `Animal Class!` <|-- Duck ``,

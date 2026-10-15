@@ -152,6 +152,13 @@ describe('both-ends and lollipop arrows', () => {
     expect(out).not.toContain('| I |')
   })
 
+  it('treats a colon-named source with a dotted left arrow as a relationship, not an attribute', () => {
+    expect(parse('classDiagram\n  A:B <.. C').relationships).toHaveLength(1)
+    const attr = parse('classDiagram\n  A : x <.. y')
+    expect(attr.relationships).toHaveLength(0)
+    expect(attr.classes[0]!.attributes).toHaveLength(1)
+  })
+
   it('still rejects a mixed pair, which has no single marker', () => {
     expect(() => parse('classDiagram\n  A <|--* B')).toThrow(/Malformed/)
   })
