@@ -1,5 +1,14 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.6.0
+
+### Patch Changes
+
+- [#2098](https://github.com/dfadler/zombie-mermaid/pull/2098) [`0d940f6`](https://github.com/dfadler/zombie-mermaid/commit/0d940f68a55f6f6812c5a243c53b7f94bcb1ad39) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: a self-loop on a node that also has incoming and outgoing neighbours no longer runs along another edge's lane in the gutter beside its node. The gutter is widened where the loop shares cells with an edge that does not touch its node, so the loop is drawn as a stroke of its own, nested inside that edge, in all four directions. Fixes [#2070](https://github.com/dfadler/zombie-mermaid/issues/2070).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.6.0
+  - @zombie-mermaid/mermaid-parser@5.6.0
+
 ## 5.5.0
 
 ### Minor Changes
