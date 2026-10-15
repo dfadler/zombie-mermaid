@@ -6,6 +6,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 const port = vi.hoisted(() => ({ on: vi.fn(), postMessage: vi.fn() }))
 vi.mock('node:worker_threads', () => ({ parentPort: port }))
+vi.mock('@zombie-mermaid/ascii-renderer', async (orig) => {
+  const actual = await orig<typeof import('@zombie-mermaid/ascii-renderer')>()
+  return { ...actual, renderMermaidASCII: vi.fn(actual.renderMermaidASCII) }
+})
 
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '../../../../src/index.ts'
@@ -48,5 +52,18 @@ describe('render worker entry', () => {
     expect(port.postMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({ ok: false }),
     )
+  })
+
+  it('wraps a non-Error throw', () => {
+    vi.mocked(renderMermaidASCII).mockImplementationOnce(() => {
+      throw 'plain string'
+    })
+    handle({ kind: 'ascii', diagram: 'graph LR\n  A --> B', options: {} })
+    expect(port.postMessage).toHaveBeenLastCalledWith({
+      ok: false,
+      name: 'Error',
+      message: 'plain string',
+      line: undefined,
+    })
   })
 })

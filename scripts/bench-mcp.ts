@@ -47,6 +47,16 @@ import type { createMcpServer as CreateMcpServer } from '../packages/mcp/src/ser
 // from needing a build.
 const BUILT_SERVER = '../packages/mcp/dist/index.js'
 
+/** Import `createMcpServer` from the built package (or from `specifier`, for tests). */
+export async function loadCreateMcpServer(
+  specifier: string = BUILT_SERVER,
+): Promise<typeof CreateMcpServer> {
+  const mod: { createMcpServer: typeof CreateMcpServer } = await import(
+    specifier
+  )
+  return mod.createMcpServer
+}
+
 // ============================================================================
 // Fixtures
 // ============================================================================
@@ -211,10 +221,7 @@ async function main() {
   let client: Client | undefined
 
   try {
-    const mod: { createMcpServer: typeof CreateMcpServer } = await import(
-      BUILT_SERVER
-    )
-    server = mod.createMcpServer()
+    server = (await loadCreateMcpServer())()
     client = new Client({ name: 'bench-mcp', version: '0.0.0' })
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair()

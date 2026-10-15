@@ -49,7 +49,7 @@ export function createWorkerRenderer(opts: WorkerRendererOptions = {}) {
         w.off('exit', onExit)
         if (healthy) w.unref()
         else {
-          if (worker === w) worker = undefined
+          worker = undefined // calls are serialised, so w is the current worker
           void w.terminate()
         }
         if (err) reject(err)

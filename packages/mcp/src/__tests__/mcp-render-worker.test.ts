@@ -65,6 +65,24 @@ describe('worker timeout and OOM', () => {
     expect(await r.render(req('ok'))).toBe(a) // same thread: not respawned
   })
 
+  it('rebuilds other render errors by name and message', async () => {
+    const r = make({})
+    const err = await r.render(req('limit')).catch((e: unknown) => e)
+    expect(err).toMatchObject({
+      name: 'LimitExceededError',
+      message: 'maxNodes exceeded: 9 > 1',
+    })
+  })
+
+  it('surfaces a worker crash and an unexpected exit, then respawns', async () => {
+    const r = make({})
+    await expect(r.render(req('crash'))).rejects.toThrow('boom')
+    await expect(r.render(req('exit'))).rejects.toThrow(
+      /exited unexpectedly \(code 0\)/,
+    )
+    await expect(r.render(req('ok'))).resolves.toMatch(/^thread/)
+  })
+
   it('serialises calls so a queued render never inherits the earlier timeout', async () => {
     const r = make({ timeoutMs: 300 })
     const slow = r.render(req('hang')).catch((e: unknown) => e)
