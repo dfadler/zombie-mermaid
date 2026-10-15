@@ -2092,17 +2092,17 @@ export function createMapping(graph: AsciiGraph): void {
   // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).
   for (const edge of graph.edges) {
     if (edge.from !== edge.to || edge.path.length < 4) continue
-    const node = requireGridCoord(edge.from)
-    const tracks = loopTracksSharedWithEdge(nodeOnlyGrid, cellOwners, edge)
-    for (const x of tracks?.cols ?? []) {
-      if (x < node.x || x >= node.x + NODE_BLOCK_SIZE) {
-        graph.columnWidth.set(x, (graph.columnWidth.get(x) ?? 0) + 2)
-      }
+    const { cols, rows } = loopTracksSharedWithEdge(
+      nodeOnlyGrid,
+      cellOwners,
+      edge,
+      requireGridCoord(edge.from),
+    )
+    for (const x of cols) {
+      graph.columnWidth.set(x, graph.columnWidth.get(x)! + 2)
     }
-    for (const y of tracks?.rows ?? []) {
-      if (y < node.y || y >= node.y + NODE_BLOCK_SIZE) {
-        graph.rowHeight.set(y, (graph.rowHeight.get(y) ?? 0) + 2)
-      }
+    for (const y of rows) {
+      graph.rowHeight.set(y, graph.rowHeight.get(y)! + 2)
     }
   }
 

@@ -74,7 +74,8 @@ export function loopTracksSharedWithEdge(
   grid: Grid,
   owners: EdgeCellOwners,
   loop: AsciiEdge,
-): { cols: number[]; rows: number[] } | null {
+  node: GridCoord,
+): { cols: number[]; rows: number[] } {
   const shared = new Map<AsciiEdge, number>()
   const legs = pathCells(loop.path).slice(2, -1)
   for (const cell of legs) {
@@ -84,10 +85,14 @@ export function loopTracksSharedWithEdge(
       shared.set(o, (shared.get(o) ?? 0) + 1)
     }
   }
-  if (![...shared.values()].some((n) => n >= MIN_CHAIN_OVERLAP)) return null
+  if (![...shared.values()].some((n) => n >= MIN_CHAIN_OVERLAP)) {
+    return { cols: [], rows: [] }
+  }
+  // Only tracks outside the loop's own node block: those are the gutter.
+  const outside = (v: number, at: number): boolean => Math.abs(v - at - 1) > 1
   return {
-    cols: [...new Set(legs.map((c) => c.x))],
-    rows: [...new Set(legs.map((c) => c.y))],
+    cols: [...new Set(legs.map((c) => c.x))].filter((x) => outside(x, node.x)),
+    rows: [...new Set(legs.map((c) => c.y))].filter((y) => outside(y, node.y)),
   }
 }
 
