@@ -128,16 +128,13 @@ above.
 
 ## Class: lollipop interfaces
 
-Intentional ([#2117](https://github.com/dfadler/zombie-mermaid/issues/2117)). For `A ()-- B` /
-`A --() B`, mermaid.js (12.1.0 and 12.2.0 agree) turns the lollipop end into a small circle
-node with the name beside it, attached to `B`, with no edge to a class `A` and no `A` box
-for a class that is only used that way.
-
-- **ASCII** matches that shape: the name sits above (`A ()-- B`) or below (`B --() A`) its host with a circle (`O` in the `--ascii` charset) and a stem between. A class that has members, an annotation or
-  another relationship keeps its box. `()--()` has no single host and stays an ordinary line
-  with a circle at both ends.
-- **SVG** still keeps the class box and ends the line in a hollow circle marker on it, so the
-  layout and name placement differ from mermaid.
+Not a difference any more for one-ended lollipops
+([#2117](https://github.com/dfadler/zombie-mermaid/issues/2117),
+[#2135](https://github.com/dfadler/zombie-mermaid/issues/2135)): `A ()-- B` / `B --() A` draw
+the name beside a small circle joined to `B` by a stem, with no `A` box unless `A` has
+members, an annotation, another relationship, a note or a namespace, in both SVG and ASCII,
+as mermaid.js does (12.1.0 and 12.2.0 agree). `()--()` is an ordinary boxed line with a
+circle at both ends, in mermaid and here.
 
 Dotted lollipops (`()..`, `..()`), which mermaid accepts, are a parse error here.
 
