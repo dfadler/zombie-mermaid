@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { resolveBuildStamp, stampHtml } from '../scripts/build-stamp.ts'
+import {
+  buildStamp,
+  resolveBuildStamp,
+  stampHtml,
+} from '../scripts/build-stamp.ts'
 import { generatePage } from '../scripts/generate-page.ts'
 
 const SHA = 'a'.repeat(40)
@@ -27,6 +31,13 @@ describe('build stamp (#1613)', () => {
     expect(resolveBuildStamp({ GITHUB_SHA: 'junk' }, noGit, '1').sha).toBe(
       'unknown',
     )
+  })
+
+  it('buildStamp reads the real package version and caches', () => {
+    const s = buildStamp()
+    expect(s.version).toMatch(/^\d+\.\d+\.\d+/)
+    expect(s.sha).toMatch(/^([0-9a-f]{40}|unknown)$/)
+    expect(buildStamp()).toBe(s)
   })
 
   it('inserts both meta tags right after <head>', () => {

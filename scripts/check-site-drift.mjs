@@ -20,10 +20,11 @@ export function siteVersion(html) {
 }
 
 export function siteStamp(html) {
-  const meta = (name) =>
-    html.match(new RegExp(`<meta name="${name}" content="([^"]*)"`))?.[1] ??
-    null
-  return { sha: meta('build-sha'), version: meta('build-version') }
+  return {
+    sha: html.match(/<meta name="build-sha" content="([^"]*)"/)?.[1] ?? null,
+    version:
+      html.match(/<meta name="build-version" content="([^"]*)"/)?.[1] ?? null,
+  }
 }
 
 // Mirrors pages.yml `paths-ignore`: a push touching only these does not
