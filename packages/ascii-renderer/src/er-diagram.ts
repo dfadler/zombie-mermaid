@@ -57,7 +57,13 @@ import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
  */
 function formatAttribute(attr: ErAttribute): string {
   const keySuffix = attr.keys.length > 0 ? ' ' + attr.keys.join(',') : ''
-  return `${attr.type} ${attr.name}${keySuffix}`
+  // Mermaid shows the comment as a fourth column (#2127). A terminal row has
+  // no column grid, so it trails quoted (the source syntax), which also keeps
+  // a keyless row's comment from reading as part of the name. Never wrapped,
+  // like mermaid; a <br> becomes a space so the row stays one line.
+  const comment = attr.comment?.replace(/\s*\n\s*/g, ' ').trim()
+  const commentSuffix = comment ? ` "${comment}"` : ''
+  return `${attr.type} ${attr.name}${keySuffix}${commentSuffix}`
 }
 
 /** Build sections for an entity box: [header], [attributes] */
