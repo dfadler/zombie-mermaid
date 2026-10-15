@@ -1,0 +1,13 @@
+┌───────────────────┐    
+│ T                 │    
+├───────────────────┤    
+│ string a PK,FK    │    
+│ string b PK,FK    │    
+│ string d PK       │    
+│ string e FK       │    
+│ string f UK       │    
+│ string g PK,FK,UK │    
+│ string h PK,FK,UK │    
+└───────────────────┘    
+                         
+                         
