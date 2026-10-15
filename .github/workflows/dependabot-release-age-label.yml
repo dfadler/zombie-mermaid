@@ -28,6 +28,8 @@ jobs:
       RUN_ID: ${{ github.event.workflow_run.id }}
       PR: ${{ github.event.workflow_run.pull_requests[0].number }}
       CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
       LABEL: release-age-blocked
     steps:
       - name: Sync label with the run's failure cause
@@ -39,9 +41,22 @@ jobs:
             *) echo "conclusion=$CONCLUSION; leaving labels alone"; exit 0 ;;
           esac
 
+          # A rebase or a rerun can finish an older run after a newer one; only
+          # the PR's current head SHA and the run's latest attempt may touch the label.
+          current_sha=$(gh pr view "$PR" --json headRefOid -q .headRefOid) \
+            || { echo "::warning::could not read PR head; leaving label alone"; exit 0; }
+          current_attempt=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID" -q .run_attempt) \
+            || { echo "::warning::could not read run attempt; leaving label alone"; exit 0; }
+          if [ "$current_sha" != "$HEAD_SHA" ] || [ "$current_attempt" != "$RUN_ATTEMPT" ]; then
+            echo "stale run (sha $HEAD_SHA attempt $RUN_ATTEMPT; current $current_sha attempt $current_attempt); leaving label alone"
+            exit 0
+          fi
+
           blocked=false
           if [ "$CONCLUSION" = failure ]; then
-            gh run view "$RUN_ID" --log-failed > failed.log || true
+            # Don't classify from a missing or partial log: keep the label as-is.
+            gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --log-failed > failed.log \
+              || { echo "::warning::could not fetch failed-job log; leaving label alone"; exit 0; }
             if grep -q 'ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION' failed.log; then
               blocked=true
             fi
