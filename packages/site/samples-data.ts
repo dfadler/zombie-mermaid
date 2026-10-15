@@ -2619,6 +2619,23 @@ pie title Pets adopted by volunteers
   PUBLISHER ||..o{ CATALOG : appears-in`,
   },
   {
+    title: 'ER: Attribute Comments',
+    category: 'ER',
+    description:
+      'Attribute comments (#2127). Mermaid shows them as a fourth column after the keys and never wraps them; the ASCII panel appends them to the row in quotes, also unwrapped, and a `<br>` becomes a space. The SVG keeps them as a hover tooltip. An entity without comments is drawn as before.',
+    source: `erDiagram
+  CUSTOMER ||--o{ ORDER : places
+  CUSTOMER {
+    string name PK "the primary key"
+    string email UK "login address<br>must be unique"
+    int age
+  }
+  ORDER {
+    int id PK
+    int customer_id FK "references CUSTOMER, deleted orders are archived rather than removed"
+  }`,
+  },
+  {
     title: 'Class: Relationship Cardinalities',
     category: 'Class',
     description:
