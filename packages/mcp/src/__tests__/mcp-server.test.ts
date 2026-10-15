@@ -7,11 +7,31 @@
 // the handler logic already covered by the per-tool unit tests.
 // ============================================================================
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { createMcpServer } from '../server.ts'
+
+// Source runs have no built dist/render-worker.js, so render in-thread here;
+// the real worker is covered by mcp-render-worker.test.ts and the packed smoke test.
+vi.mock('../tools/render-worker-client.ts', async () => {
+  const { default: ELK } = await import('elkjs/lib/elk.bundled.js')
+  const { registerElk, renderMermaidSVG } =
+    await import('@zombie-mermaid/svg-renderer')
+  const { renderMermaidASCII } = await import('@zombie-mermaid/ascii-renderer')
+  registerElk(ELK)
+  return {
+    renderInWorker: async (req: {
+      kind: 'svg' | 'ascii'
+      diagram: string
+      options: object
+    }) =>
+      req.kind === 'svg'
+        ? renderMermaidSVG(req.diagram, req.options)
+        : renderMermaidASCII(req.diagram, req.options),
+  }
+})
 
 let server: McpServer
 let client: Client

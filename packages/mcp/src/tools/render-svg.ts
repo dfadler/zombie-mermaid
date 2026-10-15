@@ -29,6 +29,7 @@ import {
 } from 'node:path'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { renderMermaidSVG } from '../../../../src/index.ts'
+import type { RenderOptions } from '../../../../src/index.ts'
 import { THEMES } from '@zombie-mermaid/core'
 import type { DiagramColors } from '@zombie-mermaid/core'
 
@@ -231,36 +232,10 @@ export function writeSvgFile(
  */
 export function renderSvgHandler(input: RenderSvgToolArgs): CallToolResult {
   try {
-    const themeColors: DiagramColors | undefined = input.theme
-      ? THEMES[input.theme]
-      : undefined
-    const svg = renderMermaidSVG(input.diagram, {
-      ...themeColors,
-      transparent: input.transparent,
-      font: input.font,
-      limits: MCP_LIMITS,
-      // Only set when provided so an absent override never clobbers the theme.
-      ...(input.bg !== undefined ? { bg: input.bg } : {}),
-      ...(input.fg !== undefined ? { fg: input.fg } : {}),
-    })
-    if (input.outputPath !== undefined) {
-      let saved: { saved: string; size: number }
-      try {
-        saved = writeSvgFile(input.outputPath, svg)
-      } catch (err) {
-        // Raw Node fs errors embed the absolute path ("EISDIR: ..., open
-        // '/abs/x.svg'"); report only the errno code. Our own checks above
-        // throw code-less Errors with already-safe messages.
-        if (err instanceof Error && 'code' in err) {
-          throw new Error(
-            `outputPath could not be written (${String(err.code)})`,
-          )
-        }
-        throw err
-      }
-      return { content: [{ type: 'text', text: JSON.stringify(saved) }] }
-    }
-    return { content: [{ type: 'text', text: svg }] }
+    return svgResult(
+      input,
+      renderMermaidSVG(input.diagram, svgRenderOptions(input)),
+    )
   } catch (err) {
     return renderErrorResult(
       'Failed to render diagram to SVG',
@@ -268,4 +243,43 @@ export function renderSvgHandler(input: RenderSvgToolArgs): CallToolResult {
       input.diagram,
     )
   }
+}
+
+/** The options `renderSvgHandler` renders with; shared with the worker wrapper. */
+export function svgRenderOptions(input: RenderSvgToolArgs): RenderOptions {
+  const themeColors: DiagramColors | undefined = input.theme
+    ? THEMES[input.theme]
+    : undefined
+  return {
+    ...themeColors,
+    transparent: input.transparent,
+    font: input.font,
+    limits: MCP_LIMITS,
+    // Only set when provided so an absent override never clobbers the theme.
+    ...(input.bg !== undefined ? { bg: input.bg } : {}),
+    ...(input.fg !== undefined ? { fg: input.fg } : {}),
+  }
+}
+
+/** Turn a rendered SVG into the tool result: the text, or the outputPath save report. May throw. */
+export function svgResult(
+  input: RenderSvgToolArgs,
+  svg: string,
+): CallToolResult {
+  if (input.outputPath !== undefined) {
+    let saved: { saved: string; size: number }
+    try {
+      saved = writeSvgFile(input.outputPath, svg)
+    } catch (err) {
+      // Raw Node fs errors embed the absolute path ("EISDIR: ..., open
+      // '/abs/x.svg'"); report only the errno code. Our own checks above
+      // throw code-less Errors with already-safe messages.
+      if (err instanceof Error && 'code' in err) {
+        throw new Error(`outputPath could not be written (${String(err.code)})`)
+      }
+      throw err
+    }
+    return { content: [{ type: 'text', text: JSON.stringify(saved) }] }
+  }
+  return { content: [{ type: 'text', text: svg }] }
 }

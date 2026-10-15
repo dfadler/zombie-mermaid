@@ -71,6 +71,21 @@ export interface RenderAsciiToolArgs {
   boxBorderPadding?: number | undefined
 }
 
+/** The options `renderAsciiHandler` renders with; shared with the worker wrapper. */
+export function asciiRenderOptions(
+  input: RenderAsciiToolArgs,
+): AsciiRenderOptions {
+  return {
+    useAscii: input.useAscii,
+    profile: input.profile,
+    paddingX: input.paddingX,
+    paddingY: input.paddingY,
+    boxBorderPadding: input.boxBorderPadding,
+    colorMode: 'none',
+    limits: MCP_LIMITS,
+  }
+}
+
 /**
  * MCP tool handler for `render_mermaid_ascii`. Renders Mermaid source to a
  * plain ASCII/Unicode-art string.
@@ -86,16 +101,7 @@ export interface RenderAsciiToolArgs {
  */
 export function renderAsciiHandler(input: RenderAsciiToolArgs): CallToolResult {
   try {
-    const options: AsciiRenderOptions = {
-      useAscii: input.useAscii,
-      profile: input.profile,
-      paddingX: input.paddingX,
-      paddingY: input.paddingY,
-      boxBorderPadding: input.boxBorderPadding,
-      colorMode: 'none',
-      limits: MCP_LIMITS,
-    }
-    const ascii = renderMermaidASCII(input.diagram, options)
+    const ascii = renderMermaidASCII(input.diagram, asciiRenderOptions(input))
     return { content: [{ type: 'text', text: ascii }] }
   } catch (err) {
     return renderErrorResult(
