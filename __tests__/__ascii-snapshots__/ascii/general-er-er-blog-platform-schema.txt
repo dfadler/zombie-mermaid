@@ -1,40 +1,41 @@
-+--------------------+                                  
-| USER               |                                  
-+--------------------+                                  
-| int id PK          |                                  
-| string username UK |                                  
-| string email UK    |                                  
-| date joined        |                                  
-+--------------------+                                  
- +--------------------+                                 
-          +---------+ |                                 
-          | writes    |                                 
-          |           |                                 
-          o           |                                 
-          ^           |                                 
-+------------------+  |                                 
-| POST             |  |                                 
-+------------------+  |                                 
-| int id PK        |  |                                 
-| string title     |  | authors                         
-| text content     |  |                                 
-| int author_id FK |  |                                 
-| date published   |  |                                 
-+------------------+  |                                 
- +                V   |                                 
- |                |   |                                 
- | has            +--------------+ tagged-with          
- |              +-----+          |                      
- o              o                o                      
- ^              ^                ^                      
-+----------------+      +----------------+              
-| COMMENT        |      | TAG            |              
-+----------------+      +----------------+              
-| int id PK      |      | int id PK      |              
-| text body      |      | string name UK |              
-| int post_id FK |      +----------------+              
-| int user_id FK |                                      
-| date created   |                                      
-+----------------+                                      
-                                                        
-                                                        
++--------------------+                                      
+| USER               |                                      
++--------------------+                                      
+| int id PK          |                                      
+| string username UK |                                      
+| string email UK    |                                      
+| date joined        |                                      
++--------------------+                                      
+ +                  +                                       
+ |                  |                                       
+ +---- authors -----+-+                                     
+          + writes -+ |                                     
+          o           |                                     
+          ^           |                                     
++------------------+  |                                     
+| POST             |  |                                     
++------------------+  |                                     
+| int id PK        |  |                                     
+| string title     |  |                                     
+| text content     |  |                                     
+| int author_id FK |  |                                     
+| date published   |  |                                     
++------------------+  |                                     
+ +                V   |                                     
+ |                |   |                                     
+ |                +---+ tagged-with -+                      
+ | has                |              |                      
+ |              +-----+              |                      
+ o              o                    o                      
+ ^              ^                    ^                      
++----------------+          +----------------+              
+| COMMENT        |          | TAG            |              
++----------------+          +----------------+              
+| int id PK      |          | int id PK      |              
+| text body      |          | string name UK |              
+| int post_id FK |          +----------------+              
+| int user_id FK |                                          
+| date created   |                                          
++----------------+                                          
+                                                            
+                                                            

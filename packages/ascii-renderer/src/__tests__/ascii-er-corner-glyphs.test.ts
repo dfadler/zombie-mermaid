@@ -64,9 +64,13 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // its dashes, with no separator — the same label-lands-on-a-foreign-line
     // defect issue #1119 fixes. "tracks" now relocates to its own row next
     // to its own marker instead.
-    expect(ascii).toMatch(/└─+│─+┘/)
+    //
+    // The "tracks" stem (MIDDLE_ENTITY down to FIFTH_ENTITY) crosses the
+    // detour row, and the crossing is a '┼' junction (#2112), not a plain
+    // '│' that reads as the detour ending and restarting.
+    expect(ascii).toMatch(/└─+┼─+┘/)
     const lines = ascii.split('\n')
-    const detourLineIndex = lines.findIndex((l) => /└─+│─+┘/.test(l))
+    const detourLineIndex = lines.findIndex((l) => /└─+┼─+┘/.test(l))
     expect(detourLineIndex).toBeGreaterThan(0)
     // MIDDLE_ENTITY's "tracks" marker ('┼', flush against its own border)
     // sits above the detour line, which starts below the two-row markers
@@ -107,7 +111,9 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     const lines = ascii.split('\n')
     const jogLineIndex = lines.findIndex((l) => l.includes('└┐'))
     expect(jogLineIndex).toBeGreaterThan(0)
-    expect(lines[jogLineIndex - 1]).toMatch(/┼/)
+    // (#2112: the jog now starts past the marker rows, so a stem row sits
+    // between the marker and the corner and the marker is somewhere above.)
+    expect(lines.slice(0, jogLineIndex).some((l) => /┼/.test(l))).toBe(true)
     expect(ascii).toContain('opens')
   })
 
@@ -186,8 +192,8 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // marker glyph the way the pre-#1134 geometry did.
     // (The bypass's own label now shares its horizontal run, since
     // two-row markers (#2083) leave the jog row between them.)
-    expect(ascii).toMatch(/┌ cd ─+┘/)
-    expect(ascii).toMatch(/┌ fg ─+┘/)
+    expect(ascii).toMatch(/┌─+ cd ─+┘/)
+    expect(ascii).toMatch(/┌─+ fg ─+┘/)
     expect(ascii).toContain('ag')
   })
 

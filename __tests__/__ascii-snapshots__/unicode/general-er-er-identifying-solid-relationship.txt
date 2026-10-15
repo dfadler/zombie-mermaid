@@ -2,8 +2,8 @@
 │ ORDER │        
 └───────┘        
     ┼            
-    └─┐ contains 
-      │          
+    └─┐          
+      │ contains 
       ╧          
 ┌───────────┐    
 │ LINE_ITEM │    

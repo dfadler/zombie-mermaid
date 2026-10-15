@@ -46,6 +46,7 @@ describe('ASCII canvas invariants over all samples (#1858)', () => {
         const vs = checkAll(out, {
           unicode: !useAscii,
           skip: skipFor(s.source),
+          er: /^\s*erDiagram/m.test(s.source),
         })
         if (known && !useAscii) {
           expect(
