@@ -81,6 +81,23 @@ export function driftError({
     : null
 }
 
+/**
+ * Ids of pages.yml runs that are still unfinished `maxMinutes` after creation
+ * (#1525: a deploy stuck in `waiting` on the github-pages environment held the
+ * concurrency group for 4 days; job timeout-minutes never applies there).
+ * `runs` = `gh run list --json databaseId,status,createdAt` output. A normal
+ * run takes 2-4 min and both jobs have a 10 min timeout, so 30 is generous.
+ */
+export function stuckRuns(runs, now, maxMinutes = 30) {
+  return runs
+    .filter(
+      (r) =>
+        r.status !== 'completed' &&
+        (now - Date.parse(r.createdAt)) / 6e4 > maxMinutes,
+    )
+    .map((r) => r.databaseId)
+}
+
 /** Fetches npm + the live site; returns { line, err } (err null when fresh). */
 export async function run(env, fetchFn = fetch, now = Date.now()) {
   const { SITE_URL, PACKAGE, GRACE_HOURS, LAST_PAGES_SUCCESS, REPO } = env
@@ -136,6 +153,17 @@ export async function main(env, fetchFn = fetch) {
   return err ? 1 : 0
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+// `node check-site-drift.mjs --stuck [minutes]`: reads run JSON on stdin,
+// prints stuck run ids one per line.
+if (process.argv[2] === '--stuck') {
+  let json = ''
+  for await (const c of process.stdin) json += c
+  const ids = stuckRuns(
+    JSON.parse(json),
+    Date.now(),
+    Number(process.argv[3] || 30),
+  )
+  if (ids.length) console.log(ids.join('\n'))
+} else if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   process.exitCode = await main(process.env)
 }
