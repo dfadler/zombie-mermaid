@@ -446,9 +446,23 @@ export function spreadCandidates(
   }
   for (const [from, targets] of byPair) {
     for (const [to, group] of targets) {
-      if (group.length < 3 || !labelsFitBesideStrokes(group)) continue
       const a = requireGridCoord(from)
       const b = requireGridCoord(to)
+      // #2102: a lone labelled edge between adjacent stacked nodes needs its
+      // label rows, an arrowhead row and a plain stroke row in the gap, or
+      // the label lands on a box border at a small `paddingY`.
+      // `rows + 3` (setColumnWidth) is then label rows + 2.
+      const text = group.length === 1 ? group[0]!.text : ''
+      if (text && a.x === b.x && Math.abs(a.y - b.y) <= 4) {
+        const rows = splitLines(text).length - 1
+        const entry = { vertical: true, strokes: 1, rows }
+        out.set(from, [
+          ...(out.get(from) ?? []),
+          { ...entry, below: a.y > b.y },
+        ])
+        out.set(to, [...(out.get(to) ?? []), { ...entry, below: b.y > a.y }])
+      }
+      if (group.length < 3 || !labelsFitBesideStrokes(group)) continue
       const entry = {
         vertical: a.x === b.x,
         strokes: group.length,
