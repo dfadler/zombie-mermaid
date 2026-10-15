@@ -229,6 +229,17 @@ export interface AsciiEdge {
    */
   parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
   /**
+   * Flow-axis face lane plan (#2121, `assignFaceLanes`): the gutter lane slot
+   * beside the column and the drawn offsets, along the flow, of the edge's
+   * departure and arrival runs within their gutter rows.
+   */
+  faceLanePlan?: { slot: number; dep: number; arr: number }
+  /**
+   * Set by determinePath when the edge was routed as planned. Its ports are
+   * placed by port-offsets.ts's allocateFaces, like a lane's.
+   */
+  faceLane?: boolean
+  /**
    * The subgraph this edge was originally addressed *from* (`Processing -->
    * Done` where `Processing` is a subgraph id), before the converter
    * redirected `from` to a stand-in member node (see
@@ -384,6 +395,10 @@ export interface LabelRect {
 
 /** Full ASCII graph state used during layout and rendering. */
 export interface AsciiGraph {
+  /** Edges (by index) that must not take flow-axis face lanes (#2121). */
+  faceLaneOff?: ReadonlySet<number>
+  /** Planned face lanes that were rejected by this layout (#2121). */
+  faceLaneRejected?: Set<number>
   nodes: AsciiNode[]
   edges: AsciiEdge[]
   canvas: Canvas

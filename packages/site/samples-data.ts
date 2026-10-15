@@ -2552,4 +2552,59 @@ pie title Pets adopted by volunteers
   class CUSTOMER vip
   style LINE_ITEM fill:#dbeafe,stroke:#2563eb`,
   },
+  {
+    title: 'Class: classDiagram-v2 Header',
+    category: 'Class',
+    description:
+      '`classDiagram-v2` is accepted as an alias of `classDiagram`, as in Mermaid (#2117).',
+    source: `classDiagram-v2
+  Animal <|-- Duck
+  Animal : +int age
+  Animal : +eat()`,
+  },
+  {
+    title: 'Class: Bidirectional Relationships',
+    category: 'Class',
+    description:
+      '`<|--|>` and `<-->` draw their marker at both ends of the line (#2117).',
+    source: `classDiagram
+  Person <|--|> Employee
+  Order <--> Customer : places`,
+  },
+  {
+    title: 'Class: Lollipop Interface',
+    category: 'Class',
+    description:
+      '`()--` and `--()` end the line in a circle, the lollipop interface notation (#2117). Mermaid draws the interface as a name and circle hung off its host. The ASCII panel does the same; the SVG keeps the class box and ends the line in the circle.',
+    source: `classDiagram
+  class Comparable {
+    <<interface>>
+  }
+  Comparable ()-- Version
+  Version --() Printable`,
+  },
+  {
+    title: 'Class: Backtick Class Names',
+    category: 'Class',
+    description:
+      'A backtick-quoted class name may contain spaces and punctuation, in `class` statements, relationships and members (#2117).',
+    source: `classDiagram
+  class \`Animal Class!\` {
+    +int age
+    +eat()
+  }
+  \`Animal Class!\` <|-- Duck
+  \`Animal Class!\` : +String name`,
+  },
+  {
+    title: 'Class: Mixed Newly Accepted Syntax',
+    category: 'Class',
+    description:
+      'The `classDiagram-v2` header, a backtick name, bidirectional ends and lollipop interfaces in one diagram (#2117).',
+    source: `classDiagram-v2
+  \`Base Shape\` <|--|> Circle
+  Circle <--> Canvas : draws
+  Canvas ()-- Renderer
+  Plugin --() Renderer`,
+  },
 ]

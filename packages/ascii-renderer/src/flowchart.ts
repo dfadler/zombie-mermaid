@@ -232,8 +232,17 @@ export function renderGraphAscii(
   }
 
   checkGraphSize(parsed.nodes.size, parsed.edges.length, extras.limits)
-  const graph = convertToAsciiGraph(parsed, config)
+  let graph = convertToAsciiGraph(parsed, config)
   createMapping(graph)
+  // Flow-axis face lanes (#2121) that did not come out as planned are dropped
+  // and the layout redone, so the room planned for them is not left behind.
+  const off = new Set<number>()
+  for (let pass = 0; pass < 4 && graph.faceLaneRejected?.size; pass++) {
+    for (const i of graph.faceLaneRejected) off.add(i)
+    graph = convertToAsciiGraph(parsed, config)
+    graph.faceLaneOff = new Set(off)
+    createMapping(graph)
+  }
   // The canvas is allocated from the finished grid; check its size before
   // drawing fills it (memory is what runs out, not time).
   const sum = (m: Map<number, number>) =>
