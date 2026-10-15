@@ -1,5 +1,20 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.5.0
+
+### Minor Changes
+
+- [#2067](https://github.com/dfadler/zombie-mermaid/pull/2067) [`e21b993`](https://github.com/dfadler/zombie-mermaid/commit/e21b993aec9aa7b3c6f3e747aeb0e98bdf9ac08b) Thanks [@dfadler](https://github.com/dfadler)! - Draw the sequence `participant X@{ "type": ... }` kinds (boundary, control, entity, database, collections, queue). SVG draws Mermaid's icons and box variants with the theme's node tokens; ASCII adds a one-line marker above the label, the same in the unicode and ASCII charsets. Unknown types keep the plain box.
+
+### Patch Changes
+
+- [#2075](https://github.com/dfadler/zombie-mermaid/pull/2075) [`0a493e2`](https://github.com/dfadler/zombie-mermaid/commit/0a493e21c78e6d259996bb2b65dbd63ae689ab3c) Thanks [@dfadler](https://github.com/dfadler)! - Flowcharts: three or more labelled edges between the same two nodes now spread apart more, so the target sits off the source's column the way mermaid 12.1.0 and 12.2.0 draw it (for example `T` in the Five Cluster Exit Siblings sample).
+
+- [#2060](https://github.com/dfadler/zombie-mermaid/pull/2060) [`efb2ade`](https://github.com/dfadler/zombie-mermaid/commit/efb2ade09c6bfbe05b49ea5b7f3961b1d5794fb6) Thanks [@dfadler](https://github.com/dfadler)! - Flowcharts: an edge that leaves a subgraph and comes back to it is now laid out as the feedback edge, the way mermaid 12's ELK layout orients it. In the CI/CD Pipeline sample `Fix & Retry` now sits beside `Build Image` instead of below `QA Approved?`.
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.5.0
+  - @zombie-mermaid/mermaid-parser@5.5.0
+
 ## 5.4.0
 
 ### Minor Changes
