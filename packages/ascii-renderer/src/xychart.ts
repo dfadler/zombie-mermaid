@@ -152,7 +152,11 @@ function renderVertical(
   const plotW = Math.max(PLOT_WIDTH, dataCount * 6)
   const plotH = PLOT_HEIGHT
   const bandW = Math.floor(plotW / dataCount)
-  const catLabels = getCategoryLabels(chart, dataCount)
+  const catLabels = ellipsizeTouching(
+    getCategoryLabels(chart, dataCount),
+    bandW,
+    ch === ASC ? '...' : '…',
+  )
 
   // Canvas dimensions
   const hasTitle = !!chart.title
@@ -247,9 +251,12 @@ function renderVertical(
   for (let c = plotLeft; c < plotLeft + bandW * dataCount; c++) {
     set(canvas, roles, xAxisRow, c, ch.hLine, 'border')
   }
+  const catCenters = catLabels.map((_, i) => bandCenter(i))
+  const catShown = thinLabels(catLabels, catCenters)
   for (let i = 0; i < dataCount; i++) {
-    const cx = bandCenter(i)
+    const cx = catCenters[i]!
     set(canvas, roles, xAxisRow, cx, ch.xTick, 'border')
+    if (!catShown[i]) continue
     // Label below
     const label = catLabels[i]!
     const labelStart = cx - Math.floor(label.length / 2)
@@ -470,10 +477,20 @@ function renderHorizontal(
   for (let c = plotLeft; c < plotLeft + plotW; c++) {
     set(canvas, roles, xAxisRow, c, ch.hLine, 'border')
   }
-  for (const [ti, tick] of valueTicks.entries()) {
-    const cx = valueToCol(tick)
-    if (cx < plotLeft || cx >= plotLeft + plotW) continue
+  const inPlot = valueTicks
+    .map((_, ti) => ti)
+    .filter((ti) => {
+      const cx = valueToCol(valueTicks[ti]!)
+      return cx >= plotLeft && cx < plotLeft + plotW
+    })
+  const valueShown = thinLabels(
+    inPlot.map((ti) => valueLabels[ti]!),
+    inPlot.map((ti) => valueToCol(valueTicks[ti]!)),
+  )
+  for (const [k, ti] of inPlot.entries()) {
+    const cx = valueToCol(valueTicks[ti]!)
     set(canvas, roles, xAxisRow, cx, ch.xTick, 'border')
+    if (!valueShown[k]) continue
     const label = valueLabels[ti]!
     writeText(
       canvas,
@@ -1044,6 +1061,64 @@ function getDataCount(chart: XYChart): number {
     if (s.data.length > 0) return s.data.length
   }
   return 0
+}
+
+/**
+ * Label thinning for a horizontal text axis (category labels under a vertical
+ * chart, value labels under a horizontal one); the ASCII counterpart of the
+ * SVG renderer's `xLabelStep` (#1243). Labels are never truncated and never
+ * touch: every n-th label is shown, n being the smallest step for which each
+ * pair of shown neighbours keeps LABEL_MIN_GAP clear cells. The tick marks
+ * of dropped labels stay. Checked pairwise on real widths, so one long label
+ * does not thin an otherwise roomy axis (#2113).
+ */
+const LABEL_MIN_GAP = 1
+
+/**
+ * Companion to thinLabels for category text: a word label that would touch a
+ * neighbour at full width is cut to its band (bandW - LABEL_MIN_GAP cells) and
+ * ends in an ellipsis, so every category stays identifiable. Labels that fit
+ * are left alone. Numbers and dates are never cut (a cut number reads as a
+ * different number) and fall to thinLabels, as does any band too narrow to
+ * leave 3 characters of the name before the ellipsis.
+ */
+function ellipsizeTouching(
+  labels: string[],
+  bandW: number,
+  ellipsis: string,
+): string[] {
+  const budget = bandW - LABEL_MIN_GAP
+  if (budget < ellipsis.length + 3) return labels
+  const start = (i: number) =>
+    Math.floor(bandW * (i + 0.5)) - Math.floor(labels[i]!.length / 2)
+  const end = (i: number) => start(i) + labels[i]!.length - 1
+  const touches = (i: number, j: number) =>
+    j >= 0 &&
+    j < labels.length &&
+    (j > i ? start(j) - end(i) : start(i) - end(j)) - 1 < LABEL_MIN_GAP
+  return labels.map((l, i) =>
+    (touches(i, i - 1) || touches(i, i + 1)) &&
+    l.length > budget &&
+    /\p{L}{2}/u.test(l)
+      ? l.slice(0, budget - ellipsis.length) + ellipsis
+      : l,
+  )
+}
+
+function thinLabels(labels: string[], centers: number[]): boolean[] {
+  const start = (i: number) => centers[i]! - Math.floor(labels[i]!.length / 2)
+  const end = (i: number) => start(i) + labels[i]!.length - 1
+  for (let step = 1; step < labels.length; step++) {
+    let fits = true
+    for (let i = 0; i + step < labels.length; i += step) {
+      if (start(i + step) - end(i) - 1 < LABEL_MIN_GAP) {
+        fits = false
+        break
+      }
+    }
+    if (fits) return labels.map((_, i) => i % step === 0)
+  }
+  return labels.map((_, i) => i === 0)
 }
 
 function getCategoryLabels(chart: XYChart, count: number): string[] {

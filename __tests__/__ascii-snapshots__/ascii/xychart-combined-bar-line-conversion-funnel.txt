@@ -22,4 +22,4 @@
   1000+.######..######..######..######.+---------------+.......
       | ######  ######  ######  ######  ######  ###### +------
       +----+-------+-------+-------+-------+-------+-------+---
-       Visitors  Leads  SignupsActivatedEngaged  Paid  Retained
+       Visitors  Leads  Signups Acti... Engaged  Paid  Retained
