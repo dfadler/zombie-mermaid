@@ -38,6 +38,22 @@ describe('invalid colours are ignored in every style placement (#1918)', () => {
       'classDiagram\n  class A\n  class B\n  A --> B\n  style A fill:notacolor',
     ],
     [
+      'er style',
+      'erDiagram\n  A ||--o{ B : has\n  style A fill:notacolor,stroke:rgb(x),color:notacolor',
+    ],
+    [
+      'er classDef',
+      'erDiagram\n  A ||--o{ B : has\n  classDef hot fill:notacolor,stroke:#12345\n  class A hot',
+    ],
+    [
+      'er classDef default',
+      'erDiagram\n  A ||--o{ B : has\n  classDef default fill:notacolor',
+    ],
+    [
+      'er ::: shorthand',
+      'erDiagram\n  A:::hot ||--o{ B : has\n  classDef hot fill:notacolor',
+    ],
+    [
       'class classDef',
       'classDiagram\n  class A\n  class B\n  A --> B\n  classDef hot fill:notacolor,color:notacolor\n  cssClass "A" hot',
     ],
@@ -83,6 +99,24 @@ describe('invalid colours are ignored in every style placement (#1918)', () => {
         '  style A fill:notacolor,stroke:rgb(x)\n  linkStyle 0 stroke:notacolor',
     )
     expect(norm(withBad)).toBe(norm(await renderMermaidSVG(FLOW)))
+  })
+
+  it('drops only the bad ER declaration and keeps the rest of the rule', async () => {
+    const svg = await renderMermaidSVG(
+      'erDiagram\n  A ||--o{ B : has\n  style A fill:#ff0000,stroke:notacolor,stroke-width:4px',
+    )
+    expect(svg).toMatch(
+      /<rect[^>]*fill="#ff0000"[^>]*stroke="var\(--_node-stroke\)"[^>]*stroke-width="4px"/,
+    )
+    expect(svg).not.toContain('notacolor')
+  })
+
+  it('renders an ignored ER declaration exactly like the diagram without it', async () => {
+    const ER = 'erDiagram\n  A {\n    string id PK\n  }\n  A ||--o{ B : has\n'
+    const withBad = await renderMermaidSVG(
+      ER + '  style A fill:notacolor,stroke:rgb(x),color:notacolor',
+    )
+    expect(norm(withBad)).toBe(norm(await renderMermaidSVG(ER)))
   })
 
   it.each([

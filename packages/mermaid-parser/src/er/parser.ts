@@ -8,7 +8,11 @@ import type {
 } from './types.ts'
 import {
   normalizeBrTags,
+  splitClassShorthand,
   toDirection,
+  tryApplyClassAssignment,
+  tryApplyClassDef,
+  tryApplyStyleStatement,
   type Statement,
 } from '@zombie-mermaid/core'
 
@@ -57,6 +61,9 @@ export function parseErDiagram(lines: Statement[]): ErDiagram {
   const diagram: ErDiagram = {
     entities: [],
     relationships: [],
+    classDefs: new Map(),
+    classAssignments: new Map(),
+    nodeStyles: new Map(),
   }
 
   // Track entities by ID for deduplication
@@ -76,12 +83,19 @@ export function parseErDiagram(lines: Statement[]): ErDiagram {
       }
 
       // Attribute line: type name [PK|FK|UK] ["comment"]
-      const attr = parseAttribute(line)
+      const attr = parseAttribute(line, stmt.line)
       if (attr) {
         currentEntity.attributes.push(attr)
       }
       continue
     }
+
+    // --- Styling: `classDef`, `class A,B name`, `style A fill:...` ---
+    // Same statements and cascade as flowcharts (packages/core/src/
+    // style-directives.ts); mermaid 12.1.0 and 12.2.0 accept all three in ER.
+    if (tryApplyClassDef(line, diagram)) continue
+    if (tryApplyClassAssignment(line, diagram)) continue
+    if (tryApplyStyleStatement(line, diagram)) continue
 
     // --- direction directive: `direction TB` / `direction LR` / etc. ---
     // ER diagrams have no subgraph nesting, so a single top-level direction
@@ -98,7 +112,7 @@ export function parseErDiagram(lines: Statement[]): ErDiagram {
     // closing `}`) inline on the same line, e.g. `p[Person] { string name }`.
     const entityBlockMatch = line.match(/^(\S+?)(?:\[(.+)\])?\s*\{(.*)$/)
     if (entityBlockMatch) {
-      const id = entityBlockMatch[1]!
+      const id = declareEntityId(entityBlockMatch[1]!, diagram)
       const aliasRaw = entityBlockMatch[2]
       const alias =
         aliasRaw !== undefined
@@ -113,7 +127,7 @@ export function parseErDiagram(lines: Statement[]): ErDiagram {
         .split(';')
         .map((s) => s.trim())
         .filter(Boolean)) {
-        const attr = parseAttribute(part)
+        const attr = parseAttribute(part, stmt.line)
         if (attr) entity.attributes.push(attr)
       }
 
@@ -125,9 +139,17 @@ export function parseErDiagram(lines: Statement[]): ErDiagram {
       continue
     }
 
+    // --- Bare entity with a style class: `ENTITY:::name` ---
+    if (/^\S+:::[\w-]+$/.test(line)) {
+      ensureEntity(entityMap, declareEntityId(line, diagram))
+      continue
+    }
+
     // --- Relationship: `ENTITY1 cardinality1--cardinality2 ENTITY2 : label` ---
     const rel = parseRelationshipLine(line, stmt.line)
     if (rel) {
+      rel.entity1 = declareEntityId(rel.entity1, diagram)
+      rel.entity2 = declareEntityId(rel.entity2, diagram)
       // Ensure both entities exist
       ensureEntity(entityMap, rel.entity1)
       ensureEntity(entityMap, rel.entity2)
@@ -138,6 +160,13 @@ export function parseErDiagram(lines: Statement[]): ErDiagram {
 
   diagram.entities = [...entityMap.values()]
   return diagram
+}
+
+/** Split a `NAME:::class` token, recording the class assignment; returns the bare id. */
+function declareEntityId(token: string, diagram: ErDiagram): string {
+  const { id, className } = splitClassShorthand(token)
+  if (className) diagram.classAssignments.set(id, className)
+  return id
 }
 
 /**
@@ -161,8 +190,8 @@ function ensureEntity(
 }
 
 /** Parse an attribute line inside an entity block */
-function parseAttribute(line: string): ErAttribute | null {
-  // Format: type name [PK|FK|UK [...]] ["comment"]
+function parseAttribute(line: string, lineNumber: number): ErAttribute | null {
+  // Format: type name [PK|FK|UK [, ...]] ["comment"]
   const match = line.match(/^(\S+)\s+(\S+)(?:\s+(.+))?$/)
   if (!match) return null
 
@@ -180,12 +209,21 @@ function parseAttribute(line: string): ErAttribute | null {
     comment = normalizeBrTags(commentMatch[1]!)
   }
 
-  // Extract key constraints
+  // Key list: `PK`, `FK`, `UK`, comma-separated, with or without a space
+  // after the comma (`PK,FK`, `PK, FK`). Like mermaid.js, a space-only list
+  // (`PK FK`), a dangling comma or an unknown word is a parse error rather
+  // than a silently dropped key.
   const restWithoutComment = rest.replace(/"[^"]*"/, '').trim()
-  for (const part of restWithoutComment.split(/\s+/)) {
-    const upper = part.toUpperCase()
-    if (upper === 'PK' || upper === 'FK' || upper === 'UK') {
-      keys.push(upper)
+  if (restWithoutComment) {
+    for (const part of restWithoutComment.split(',')) {
+      const upper = part.trim().toUpperCase()
+      if (!/^[PFU]K$/.test(upper)) {
+        throw new MermaidParseError(
+          `Line ${lineNumber}: Invalid ER attribute keys "${restWithoutComment}"; use PK, FK or UK separated by commas.`,
+          { diagramType: 'er' },
+        )
+      }
+      keys.push(upper as ErAttribute['keys'][number])
     }
   }
 
