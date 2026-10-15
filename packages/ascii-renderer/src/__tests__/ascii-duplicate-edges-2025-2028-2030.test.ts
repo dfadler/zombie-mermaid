@@ -491,11 +491,12 @@ const FACE_CASES: [string, string, number][] = [
 /**
  * Closed stroke rectangles a case cannot avoid. TD many duplicates: `a --> c`
  * (lane 0, routed first) takes the only gutter column beside `b`, and lanes
- * only grow outward, so the short `a --> b` and `b --> c` lanes must cross it
- * and the long `c --> a` lane; two such crossings close one rectangle.
+ * only grow outward (#2071), so the short `a --> b` and `b --> c` lanes must
+ * cross it and the long `c --> a` lane. Every edge keeps a lane of its own
+ * (#2072), so these are three crossings, not one.
  */
 const CROSSINGS: Record<string, number> = {
-  'TD many duplicates around a middle node': 1,
+  'TD many duplicates around a middle node': 3,
 }
 
 describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
@@ -522,6 +523,18 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
       expect(out.split('\n').length).toBeLessThan(40)
     })
   }
+
+  // #2072: Mermaid draws one path per edge. A too-short face used to draw the
+  // later of two same-direction duplicates on its twin's route (one arrowhead
+  // for two edges); each edge now keeps its own lane and arrowhead.
+  it.each([
+    ['LR many duplicates around a middle node', 10],
+    ['TD many duplicates around a middle node', 10],
+  ])('%s: one arrowhead per edge', (name, edges) => {
+    const src = Object.fromEntries(FACE_CASES.map(([n, s]) => [n, s]))[name]!
+    const out = renderMermaidASCII(src, { colorMode: 'none' })
+    expect(out.match(/[▲▼◄►]/g)).toHaveLength(edges)
+  })
 
   it('two self-loops on one node draw the one clean loop', () => {
     const one = renderMermaidASCII('flowchart TD\n  n0["a"]\n  n0 --> n0', {
@@ -630,7 +643,8 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
   // 555 broken or dangling arms over 200 seeds on main and, on this PR's
   // parent, 50 closed rectangles and 10 heads on exit stems over these 48;
   // now none of the former, and the totals below (crossings the grid
-  // cannot route round) are a ratchet.
+  // cannot route round) are a ratchet. #2072: each edge keeps a lane of its
+  // own, as in Mermaid, so lanes that used to merge now cross (9 -> 15).
   it('random duplicate/reciprocal/self-loop graphs: no broken arms, few boxes', () => {
     let cycles = 0
     let heads = 0
@@ -646,7 +660,7 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
       cycles += strokeComponents(out, nodeBoxes(out)).cycles
       heads += headsOnExitStems(out).length
     }
-    expect(cycles).toBeLessThanOrEqual(9)
+    expect(cycles).toBeLessThanOrEqual(15)
     expect(heads).toBeLessThanOrEqual(3)
   })
 })

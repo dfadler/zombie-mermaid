@@ -1,5 +1,21 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.6.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.6.1
+  - @zombie-mermaid/mermaid-parser@5.6.1
+
+## 5.6.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.6.0
+  - @zombie-mermaid/mermaid-parser@5.6.0
+
 ## 5.5.0
 
 ### Minor Changes
