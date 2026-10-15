@@ -9,12 +9,13 @@ import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { convertToAsciiGraph } from '../converter.ts'
 import { createMapping } from '../grid.ts'
+import { portShifts } from '../port-offsets.ts'
 
 const CYCLE = (dir: string): string =>
   `flowchart ${dir}\n a --> b\n b --> c\n c --> a`
 
-function backEdge(dir: 'TD' | 'LR') {
-  const graph = convertToAsciiGraph(parseMermaid(CYCLE(dir)), {
+function layout(source: string, dir: 'TD' | 'LR') {
+  const graph = convertToAsciiGraph(parseMermaid(source), {
     useAscii: false,
     paddingX: 5,
     paddingY: 5,
@@ -22,7 +23,13 @@ function backEdge(dir: 'TD' | 'LR') {
     graphDirection: dir,
   })
   createMapping(graph)
-  return graph.edges.find((e) => e.from.name === 'c' && e.to.name === 'a')!
+  return graph
+}
+
+function backEdge(dir: 'TD' | 'LR') {
+  return layout(CYCLE(dir), dir).edges.find(
+    (e) => e.from.name === 'c' && e.to.name === 'a',
+  )!
 }
 
 describe('ASCII back-edge on the flow-axis faces (#2121)', () => {
@@ -85,5 +92,53 @@ describe('ASCII back-edge on the flow-axis faces (#2121)', () => {
     )
     createMapping(g)
     expect(g.edges.some((e) => e.faceLane)).toBe(false)
+  })
+
+  describe('forward skips and parallel back-edges share the gutter', () => {
+    const SKIPS = (dir: string): string =>
+      `flowchart ${dir}\n a --> b\n b --> c\n a --> c\n c --> a\n c --> a`
+
+    it.each(['TD', 'LR'] as const)(
+      '%s: forward lane inside the back-edge lanes, each on its own slot',
+      (dir) => {
+        const g = layout(SKIPS(dir), dir)
+        const lanes = g.edges.filter((e) => e.faceLane)
+        expect(lanes).toHaveLength(3)
+        // The lane runs at the third path point's cross coordinate.
+        const cross = (e: (typeof lanes)[number]) =>
+          dir === 'TD' ? e.path[2]!.x : e.path[2]!.y
+        const forward = lanes.find((e) => e.from.name === 'a')!
+        const back = lanes.filter((e) => e.from.name === 'c')
+        expect(cross(forward)).toBeLessThan(Math.min(...back.map(cross)))
+        expect(new Set(lanes.map(cross)).size).toBe(3)
+      },
+    )
+
+    it.each(['TD', 'LR'] as const)(
+      '%s: horizontal runs sharing a gutter row are drawn on rows of their own',
+      (dir) => {
+        const g = layout(SKIPS(dir), dir)
+        const shifts = portShifts(g)
+        // a's far gutter holds the forward departure (points 1-2) and both
+        // back-edge arrivals (points 3-4), so their offsets differ.
+        const at = (e: (typeof g.edges)[number], i: number) => {
+          const p = shifts.get(e)!.points![i]!
+          return dir === 'TD' ? p.y : p.x
+        }
+        const fwd = g.edges.find((e) => e.faceLane && e.from.name === 'a')!
+        const backs = g.edges.filter((e) => e.faceLane && e.from.name === 'c')
+        const nearA = [at(fwd, 1), ...backs.map((e) => at(e, 3))]
+        expect(new Set(nearA).size).toBe(3)
+      },
+    )
+
+    it('keeps the old routing in a column holding duplicate neighbour edges', () => {
+      const g = layout(
+        'flowchart TD\n a --> b\n a --> b\n b --> c\n a --> c\n c --> a',
+        'TD',
+      )
+      expect(g.edges.some((e) => e.faceLane)).toBe(false)
+      expect(g.edges.some((e) => e.faceLanePlan)).toBe(false)
+    })
   })
 })
