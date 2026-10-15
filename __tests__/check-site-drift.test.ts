@@ -4,6 +4,8 @@ import {
   driftError,
   main,
   run,
+  shaError,
+  siteStamp,
   siteVersion,
 } from '../scripts/check-site-drift.mjs'
 
@@ -93,6 +95,113 @@ describe('check-site-drift', () => {
       )
       log.mockRestore()
       errSpy.mockRestore()
+    })
+  })
+
+  describe('build-sha stamp (#1613)', () => {
+    const LIVE = 'a'.repeat(40)
+    const stamped = `<meta name="build-sha" content="${LIVE}"/><meta name="build-version" content="5.0.0"/>${html('5.0.0')}`
+    const mainDate = '2026-10-10T10:00:00Z' // 2h before `now`
+    const behind = (filename: string) => ({
+      status: 'ahead',
+      commits: [{ sha: 'b'.repeat(40) }],
+      files: [{ filename }],
+    })
+    const base = { liveSha: LIVE, mainDate, now }
+
+    it('parses the stamp', () => {
+      expect(siteStamp(stamped)).toEqual({ sha: LIVE, version: '5.0.0' })
+      expect(siteStamp('<p/>')).toEqual({ sha: null, version: null })
+    })
+    it('is fresh when identical, or behind only on non-deploying paths', () => {
+      expect(shaError({ ...base, compare: { status: 'identical' } })).toBeNull()
+      expect(
+        shaError({
+          ...base,
+          mainDate: '2026-10-01T00:00:00Z',
+          compare: behind('__tests__/x.test.ts'),
+        }),
+      ).toBeNull()
+    })
+    it('flags behind main only after the grace period', () => {
+      const compare = behind('packages/core/src/a.ts')
+      expect(
+        shaError({ ...base, mainDate: '2026-10-10T11:30:00Z', compare }),
+      ).toBeNull()
+      expect(shaError({ ...base, graceHours: 1, compare })).toMatch(
+        /not deployed/,
+      )
+      expect(
+        shaError({
+          ...base,
+          compare: behind('.github/workflows/pages.yml'),
+          graceHours: 1,
+        }),
+      ).toMatch(/not deployed/)
+      expect(
+        shaError({
+          ...base,
+          compare: behind('.github/workflows/ci.yml'),
+          graceHours: 1,
+        }),
+      ).toBeNull()
+    })
+    it('flags missing, unknown, foreign and ahead-of-main stamps', () => {
+      expect(shaError({ ...base, liveSha: null, compare: null })).toMatch(
+        /no usable/,
+      )
+      expect(shaError({ ...base, liveSha: 'unknown', compare: null })).toMatch(
+        /no usable/,
+      )
+      expect(shaError({ ...base, compare: null })).toMatch(/not a commit/)
+      expect(shaError({ ...base, compare: { status: 'behind' } })).toMatch(
+        /ahead of main/,
+      )
+    })
+
+    const gh = (compare: unknown, page = stamped, cStatus = 200) =>
+      vi.fn(async (u: string) => {
+        if (u.startsWith('https://registry.npmjs.org/'))
+          return { ok: true, json: async () => reg5 }
+        if (u.endsWith('/commits/main'))
+          return {
+            ok: true,
+            json: async () => ({ commit: { committer: { date: mainDate } } }),
+          }
+        if (u.includes('/compare/'))
+          return {
+            ok: cStatus === 200,
+            status: cStatus,
+            json: async () => compare,
+          }
+        return { ok: true, text: async () => page }
+      })
+    const reg5 = {
+      'dist-tags': { latest: '5.0.0' },
+      time: { '5.0.0': '2026-10-01T00:00:00Z' },
+    }
+    const env = { SITE_URL: 'https://site.test/', PACKAGE: 'pkg', REPO: 'o/r' }
+
+    it('run adds stamp info and passes when identical', async () => {
+      const r = await run(env, gh({ status: 'identical' }), now)
+      expect(r.err).toBeNull()
+      expect(r.line).toContain(`build-sha=${LIVE} build-version=5.0.0`)
+    })
+    it('run errors when the live sha is behind main past grace', async () => {
+      const r = await run(
+        { ...env, SHA_GRACE_HOURS: '1' },
+        gh(behind('demo/a.tsx')),
+        now,
+      )
+      expect(r.err).toMatch(/not deployed/)
+    })
+    it('run errors on an unstamped site and on an unknown sha (404)', async () => {
+      expect((await run(env, gh(null, html('5.0.0')), now)).err).toMatch(
+        /no usable/,
+      )
+      expect((await run(env, gh(null, stamped, 404), now)).err).toMatch(
+        /not a commit/,
+      )
     })
   })
 })
