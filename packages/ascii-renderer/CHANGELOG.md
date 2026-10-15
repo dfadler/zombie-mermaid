@@ -1,5 +1,22 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.7.0
+
+### Minor Changes
+
+- [#2126](https://github.com/dfadler/zombie-mermaid/pull/2126) [`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams: the parser now accepts syntax mermaid.js accepts and it used to reject with an error: the `classDiagram-v2` header (an alias of `classDiagram`), `<|--|>` / `<|..|>` / `<-->` / `<..>` / `*--*` / `o--o` (the marker is drawn at both ends, in SVG and ASCII), lollipop interfaces `()--`, `--()` and `()--()` (a hollow circle at the end of the line: `○`, or `O` with `useAscii`), and backtick-quoted class names such as `` class `Animal Class!` `` (the backticks are not drawn). Nothing that parsed before is rejected, and no existing input renders differently except the output change below; the arrow regex is built from one table, so the error for a malformed relationship now lists the longer arrow set. `ClassRelationship.markerAt` gains `'both'` and `RelationshipType` gains `'lollipop'`. Parity checked against mermaid 12.1.0 (the pin) and 12.2.0.
+
+  Output change: in ASCII, a directional arrowhead at the `from` end of a relationship (`A <-- B`, `A <.. B`) now points into the `from` box (`▲` under it) instead of away from it (`▼`). Fixes [#2117](https://github.com/dfadler/zombie-mermaid/issues/2117).
+
+### Patch Changes
+
+- [#2137](https://github.com/dfadler/zombie-mermaid/pull/2137) [`3dea4e8`](https://github.com/dfadler/zombie-mermaid/commit/3dea4e87ad6f4f3d285368ca3d460396e51e6fba) Thanks [@dfadler](https://github.com/dfadler)! - fix(ascii): draw back-edges and forward skips on the flow-axis faces like mermaid ([#2121](https://github.com/dfadler/zombie-mermaid/issues/2121)). Output change: a flowchart edge between nodes in one column (TD/BT) or one row (LR/RL) that runs against the flow, such as `c --> a` in `a --> b --> c --> a`, or forward over a level (`a --> c` beside `a --> b --> c`) now leaves the source's top/bottom (LR: left/right) face, runs along a lane in the gutter beside the column (below the row in LR) and enters the target's opposite face, instead of looping out of the side faces (LR: the bottom faces). Ports are spread along each face, forward lanes inside back-edge lanes, and each lane's runs along a gutter row take a row of their own, so parallel back-edges nest without crossing. Nodes with such an edge grow to hold their ports a stroke spacing apart. Duplicate edges between neighbouring levels in such a column are strokes on the facing faces, so the dense duplicate-edge samples draw with no crossings. Reciprocal pairs on neighbouring levels and diagonal back-edges keep their previous shape. Checked against mermaid 12.1.0.
+
+- [#2109](https://github.com/dfadler/zombie-mermaid/pull/2109) [`1629a93`](https://github.com/dfadler/zombie-mermaid/commit/1629a93b59f74df129350aa69985039f2cc70cda) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII flowcharts draw every duplicate or reciprocal edge on a lane and arrowhead of its own, as mermaid.js draws one path per edge (checked on mermaid 12.1.0 and 12.2.0). A too-short node face used to draw the later of two identical same-direction edges on its twin's route, so two edges showed as one; the node face now grows to hold every lane of every neighbour pair, and the lanes are no longer merged. Only dense graphs of duplicates between three or more nodes change (no gallery sample or golden file does), and lanes that were merged can now cross. Semver: patch, a layout fix; layout and spacing are not a documented output contract (versioning-and-deprecation-policy-1568, section 1, "Output changes"). Fixes [#2072](https://github.com/dfadler/zombie-mermaid/issues/2072).
+- Updated dependencies [[`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903)]:
+  - @zombie-mermaid/core@5.7.0
+  - @zombie-mermaid/mermaid-parser@5.7.0
+
 ## 5.6.1
 
 ### Patch Changes

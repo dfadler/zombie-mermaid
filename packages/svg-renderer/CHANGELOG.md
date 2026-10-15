@@ -1,5 +1,20 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.7.0
+
+### Minor Changes
+
+- [#2126](https://github.com/dfadler/zombie-mermaid/pull/2126) [`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams: the parser now accepts syntax mermaid.js accepts and it used to reject with an error: the `classDiagram-v2` header (an alias of `classDiagram`), `<|--|>` / `<|..|>` / `<-->` / `<..>` / `*--*` / `o--o` (the marker is drawn at both ends, in SVG and ASCII), lollipop interfaces `()--`, `--()` and `()--()` (a hollow circle at the end of the line: `○`, or `O` with `useAscii`), and backtick-quoted class names such as `` class `Animal Class!` `` (the backticks are not drawn). Nothing that parsed before is rejected, and no existing input renders differently except the output change below; the arrow regex is built from one table, so the error for a malformed relationship now lists the longer arrow set. `ClassRelationship.markerAt` gains `'both'` and `RelationshipType` gains `'lollipop'`. Parity checked against mermaid 12.1.0 (the pin) and 12.2.0.
+
+  Output change: in ASCII, a directional arrowhead at the `from` end of a relationship (`A <-- B`, `A <.. B`) now points into the `from` box (`▲` under it) instead of away from it (`▼`). Fixes [#2117](https://github.com/dfadler/zombie-mermaid/issues/2117).
+
+### Patch Changes
+
+- [#2124](https://github.com/dfadler/zombie-mermaid/pull/2124) [`90e2fdc`](https://github.com/dfadler/zombie-mermaid/commit/90e2fdc0527bab025bda9126ea525c6edca06259) Thanks [@dfadler](https://github.com/dfadler)! - Flowchart SVG: an edge that crosses a subgraph border into a node that layer alignment moves up (the `Reply` and `Cache` targets in "Edges Into and Out of Subgraphs") no longer runs along that node's top border and ends in a half-clipped arrowhead. The cross-flow run now keeps room above the node, so the edge drops in with a whole arrowhead as in mermaid.js. The same shortened last or first leg is fixed in "CI/CD Pipeline", "Git Branching Workflow" and "Decision Self-Loop with Duplicate Edges". Fixes [#2110](https://github.com/dfadler/zombie-mermaid/issues/2110).
+- Updated dependencies [[`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903)]:
+  - @zombie-mermaid/core@5.7.0
+  - @zombie-mermaid/mermaid-parser@5.7.0
+
 ## 5.6.1
 
 ### Patch Changes
