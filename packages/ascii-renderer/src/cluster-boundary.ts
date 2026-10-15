@@ -378,7 +378,7 @@ function planOne(
       const hasOtherExit = eligible.some(
         (other) => other.parallelLane?.usedOffsets !== lane.usedOffsets,
       )
-      if (missing !== undefined && hasOtherExit) {
+      if (missing !== undefined && (hasOtherExit || lane.total >= 3)) {
         return { at: missing, flow: false }
       }
       unroutable.add(lane.usedOffsets)
@@ -394,7 +394,15 @@ function planOne(
   const exits = new Set<unknown>(
     eligible.map((edge) => edge.parallelLane?.usedOffsets ?? edge),
   )
-  if (exits.size < 2) return null
+  // A lone lane group still engages from three siblings (#1826): beyond the
+  // first two, the siblings need side faces of the target, which only the
+  // plan routes (ordinary routing merges them on one face).
+  const [only] = eligible
+  if (
+    exits.size < 2 &&
+    !(exits.size === 1 && (only!.parallelLane?.total ?? 0) >= 3)
+  )
+    return null
 
   // Staircase bus (#1331): each exit turns off the stub on a track of its
   // own. Tracks past the first must exist and be free of nodes, else one is
@@ -471,6 +479,15 @@ function staircase(
   return { gutters, rows }
 }
 
+/**
+ * Cells each of the target's two side faces gives a cluster lane group of
+ * `total` edges: the default box face holds three, and a larger group gets a
+ * longer face (`assignParallelEdgeLanes`, edge-routing.ts) so no head merges.
+ */
+export function clusterFaceCapacity(total: number): number {
+  return Math.max(3, Math.ceil((total - 1) / 2))
+}
+
 /** Which target face and gutter track a lane sibling uses; see `laneSide`. */
 interface LaneSide {
   lane: number
@@ -482,14 +499,15 @@ interface LaneSide {
 
 /**
  * The face and gutter track for lane sibling `edge` (#1826). A face holds
- * three siblings (its top, middle and bottom rows), so the first six take
+ * `clusterFaceCapacity` siblings (three, its top, middle and bottom rows, unless
+ * a big group lengthened it), so the siblings take
  * faces in the order below (H the high face, L the low one; a gutter at or
  * past the target's centre stacks the first three on the high side, so labels
  * read in source order instead of the third sibling detouring back into the
  * low face) and `step` counts the earlier siblings on the same face: each
  * takes a track of its own, farther from the target, so the outermost lane
  * enters last and no stroke crosses another. Null when no such leg is
- * possible (a seventh sibling), or `insertAt` set when it needs a gutter
+ * possible (a gutter track that would land on the gutter column), or `insertAt` set when it needs a gutter
  * track the layout lacks (#1253): a target against the layout edge, or a
  * sibling's own track.
  */
@@ -504,8 +522,13 @@ function laneSide(
   const origin = vertical ? to.x : to.y
   const gutterCross = vertical ? plan.gutter.x : plan.gutter.y
   const sizes = vertical ? graph.columnWidth : graph.rowHeight
+  const k = clusterFaceCapacity(edge.parallelLane!.total)
+  const run = (n: number, from = 0): string =>
+    Array.from({ length: n }, (_, j) => from + j).join('')
   const [faces, steps] =
-    gutterCross > origin ? ['HHHLLL', '012012'] : ['LHHHLL', '001212']
+    gutterCross > origin
+      ? ['H'.repeat(k) + 'L'.repeat(k), run(k) + run(k)]
+      : ['L' + 'H'.repeat(k) + 'L'.repeat(k - 1), '0' + run(k) + run(k - 1, 1)]
   if (!faces[i]) return null
   const high = faces[i] === 'H'
   const step = +steps[i]!
@@ -527,7 +550,9 @@ function laneSide(
   }
   // Against the layout edge the low side has no gutter track at all.
   if (lane < 0) return { ...side, insertAt: 0 }
-  return sizes.has(lane) ? side : null
+  // A lone lane group has no other exit to have opened the track beside the
+  // target: insert it.
+  return sizes.has(lane) ? side : { ...side, insertAt: high ? lane : origin }
 }
 
 /**
@@ -540,7 +565,7 @@ function laneSide(
  * own border column (row), overwriting the border. Sibling `index` 1 takes
  * the near side, 2 the far side, 3 its own track on the high side; null when
  * the leg has no gutter track yet (see `laneSide`), isn't clear of other
- * nodes, or for any further sibling.
+ * nodes.
  */
 export function clusterLaneSideRoute(
   graph: AsciiGraph,
@@ -619,7 +644,11 @@ export function clusterLaneEndShift(
       )
       .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
     const rank = onFace.indexOf(edge)
-    return rank - Math.floor((onFace.length - 1) / 2)
+    // The run sits in the middle of the face (the three cells of a default
+    // box, or the longer face a bigger group gets), the centre cell being
+    // `floor(cells / 2)`.
+    const cells = clusterFaceCapacity(lane.total)
+    return Math.ceil((cells - onFace.length) / 2) + rank - Math.floor(cells / 2)
   }
   // Outside a cluster, lanes get their face cells from port-offsets.ts's
   // `allocateFaces` (#1743, #2025).

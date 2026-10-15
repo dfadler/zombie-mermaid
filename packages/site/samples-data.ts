@@ -2393,4 +2393,52 @@ pie title Pets adopted by volunteers
   REVIEW many(1) optionally to 0+ COMMENT : attracts
   COMMENT 1+ to zero or one FLAG : raises`,
   },
+  {
+    title: 'Flowchart: Parallel Edges with Back Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Four edges down and two back between the same two nodes in a top-down graph (#1826). In the ASCII panel the faces they share grow so each edge keeps its own arrowhead.',
+    source: `flowchart TD
+  A -->|f1| B
+  A -->|f2| B
+  A -->|f3| B
+  A -->|f4| B
+  B -->|b1| A
+  B -->|b2| A`,
+  },
+  {
+    title: 'Flowchart: Cluster Exit Siblings with No Other Exit (TD)',
+    category: 'Flowchart',
+    description:
+      'Three labeled edges are the only way out of a subgraph (#1826). In the ASCII panel they leave on a shared stub and each enters the target on a face of its own.',
+    source: `flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|1| T
+  S -->|2| T
+  S -->|3| T`,
+  },
+  {
+    title: 'Flowchart: Nine Cluster Exit Siblings (TD)',
+    category: 'Flowchart',
+    description:
+      'Nine labeled edges leave a subgraph for one target beside another exit (#1826). In the ASCII panel the target grows a longer face so each sibling keeps an arrowhead of its own.',
+    source: `flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|1| T
+  S -->|2| T
+  S -->|3| T
+  S -->|4| T
+  S -->|5| T
+  S -->|6| T
+  S -->|7| T
+  S -->|8| T
+  S -->|9| T
+  S -->|other| U`,
+  },
 ]
