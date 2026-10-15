@@ -148,6 +148,23 @@ describe('ER style statements paint the entity (SVG)', () => {
   })
 })
 
+describe('ER style review fixes', () => {
+  it('targets Unicode entity ids with style and class', () => {
+    const d = parse(
+      'erDiagram\n  客户 ||--|| A : has\n  style 客户 fill:#f00\n  classDef hot fill:#00f\n  class 客户 hot',
+    )
+    expect(d.nodeStyles.get('客户')).toEqual({ fill: '#f00' })
+    expect(d.classAssignments.get('客户')).toBe('hot')
+  })
+
+  it('an invalid style colour keeps the valid classDef default fill', () => {
+    const svg = renderMermaidSVG(
+      BASE + '  classDef default fill:#ff0000\n  style A fill:notacolor',
+    )
+    expect(entityGroup(svg, 'A')).toContain('#ff0000')
+  })
+})
+
 describe('ER colour declarations in ASCII', () => {
   it('are ignored, as in every other diagram type', () => {
     const styled =
