@@ -229,6 +229,13 @@ export interface AsciiEdge {
    */
   parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
   /**
+   * Set by determinePath on a back-edge routed on the flow-axis faces (leave
+   * the source's near face, run along a lane beside the column, enter the
+   * target's far face; #2121). Its ports are placed by port-offsets.ts's
+   * allocateFaces, like a lane's.
+   */
+  faceLane?: boolean
+  /**
    * The subgraph this edge was originally addressed *from* (`Processing -->
    * Done` where `Processing` is a subgraph id), before the converter
    * redirected `from` to a stand-in member node (see

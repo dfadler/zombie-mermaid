@@ -1,0 +1,89 @@
+/**
+ * #2121: a back-edge between nodes in one column (row, in LR) is drawn on the
+ * flow-axis faces like mermaid does (pinned mermaid 12.1.0: `c --> a` leaves
+ * c's top, runs up a lane beside the column, enters a's bottom), with its
+ * ports at the outer end of each face so it never crosses a forward stem.
+ */
+import { describe, it, expect } from 'vitest'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { convertToAsciiGraph } from '../converter.ts'
+import { createMapping } from '../grid.ts'
+
+const CYCLE = (dir: string): string =>
+  `flowchart ${dir}\n a --> b\n b --> c\n c --> a`
+
+function backEdge(dir: 'TD' | 'LR') {
+  const graph = convertToAsciiGraph(parseMermaid(CYCLE(dir)), {
+    useAscii: false,
+    paddingX: 5,
+    paddingY: 5,
+    boxBorderPadding: 1,
+    graphDirection: dir,
+  })
+  createMapping(graph)
+  return graph.edges.find((e) => e.from.name === 'c' && e.to.name === 'a')!
+}
+
+describe('ASCII back-edge on the flow-axis faces (#2121)', () => {
+  it('TD: leaves c up, runs right of the column, enters a from below', () => {
+    const e = backEdge('TD')
+    expect(e.faceLane).toBe(true)
+    // up, right, up, left, up: the path c.top -> gutter -> lane -> gutter -> a.bottom
+    expect(e.path).toEqual([
+      { x: 1, y: 8 },
+      { x: 1, y: 7 },
+      { x: 3, y: 7 },
+      { x: 3, y: 3 },
+      { x: 1, y: 3 },
+      { x: 1, y: 2 },
+    ])
+  })
+
+  it('TD: forward stems stay centred and the back-edge ports sit right of them', () => {
+    const rows = renderMermaidASCII(CYCLE('TD'), { colorMode: 'none' }).split(
+      '\n',
+    )
+    // a's bottom border: forward stem at the centre, back-edge arrowhead two
+    // cells right; no stem or head on the left half.
+    const border = rows.findIndex((r) => r.startsWith('└──┬──┘'))
+    expect(border).toBeGreaterThan(0)
+    expect(rows[border + 1]!.trimEnd()).toBe('   │ ▲')
+    // c's top border: the back-edge leaves two cells right of the stem.
+    const top = rows.findIndex((r, i) => i > border && r.startsWith('┌────┴┐'))
+    expect(top).toBeGreaterThan(border)
+  })
+
+  it('LR: leaves c left, runs below the row, enters a from the right', () => {
+    const e = backEdge('LR')
+    expect(e.faceLane).toBe(true)
+    expect(e.path[0]).toEqual({ x: 8, y: 1 })
+    expect(e.path[e.path.length - 1]).toEqual({ x: 2, y: 1 })
+    expect(Math.max(...e.path.map((p) => p.y))).toBe(3)
+    const out = renderMermaidASCII(CYCLE('LR'), { colorMode: 'none' })
+    expect(out).toContain('◄─┐')
+    expect(out).toContain('┌──┤')
+  })
+
+  it('BT and RL mirror TD and LR', () => {
+    const bt = renderMermaidASCII(CYCLE('BT'), { colorMode: 'none' })
+    expect(bt).toContain('▼')
+    const rl = renderMermaidASCII(CYCLE('RL'), { colorMode: 'none' })
+    expect(rl).toContain('┌─►')
+  })
+
+  it('leaves a reciprocal pair as two strokes between the faces', () => {
+    const g = convertToAsciiGraph(
+      parseMermaid('flowchart TD\n a --> b\n b --> a'),
+      {
+        useAscii: false,
+        paddingX: 5,
+        paddingY: 5,
+        boxBorderPadding: 1,
+        graphDirection: 'TD',
+      },
+    )
+    createMapping(g)
+    expect(g.edges.some((e) => e.faceLane)).toBe(false)
+  })
+})

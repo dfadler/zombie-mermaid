@@ -396,6 +396,18 @@ export function spreadCandidates(
     targets.set(e.to, [...(targets.get(e.to) ?? []), e])
   }
   const out = new Map<AsciiNode, SpreadCandidate[]>()
+  // #2121: a TD back-edge takes a port a stroke spacing beside the forward
+  // stem on each end's face, so both nodes need the width of a 3-stroke face.
+  for (const e of graph.edges) {
+    if (!isFaceLaneCandidate(graph, e, graph.config.graphDirection)) continue
+    if (graph.config.graphDirection !== 'TD') continue
+    for (const n of [e.from, e.to]) {
+      out.set(n, [
+        ...(out.get(n) ?? []),
+        { vertical: true, strokes: 3, rows: 0, below: false },
+      ])
+    }
+  }
   for (const [from, targets] of byPair) {
     for (const [to, group] of targets) {
       if (group.length < 3 || !labelsFitBesideStrokes(group)) continue
@@ -1139,6 +1151,67 @@ function loopEntersTop(
 }
 
 /**
+ * Mermaid's back-edge shape (#2121): out of the source's near flow face, one
+ * gutter cell on, across to a lane in the gutter beside the column (right in
+ * TD, below in LR), back along the flow to the target's far face, and in.
+ * Only for a plain back-edge between nodes in one column (row, in LR); null
+ * otherwise, or when the shape runs into a node.
+ */
+/**
+ * Whether `edge` is a plain back-edge between nodes in one column (row, in
+ * LR) that `buildFaceLaneRoute` may draw on the flow-axis faces. Needs grid
+ * coordinates, so it can run during layout (see `spreadCandidates`).
+ */
+function isFaceLaneCandidate(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  dir: string,
+): boolean {
+  if (edge.from === edge.to) return false
+  if (dir !== 'TD' && dir !== 'LR') return false
+  if (edge.parallelLane || edge.bundle) return false
+  if (edge.clusterSource || edge.clusterTarget) return false
+  // A reciprocal pair (`A --> B` beside `B --> A`) is drawn as two strokes
+  // between the facing faces (#530, #1284), not as a lane round the column.
+  if (graph.edges.some((o) => o.from === edge.to && o.to === edge.from)) {
+    return false
+  }
+  const f = requireGridCoord(edge.from)
+  const t = requireGridCoord(edge.to)
+  return dir === 'TD' ? f.x === t.x && t.y < f.y : f.y === t.y && t.x < f.x
+}
+
+function buildFaceLaneRoute(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+): { path: GridCoord[]; startDir: Direction; endDir: Direction } | null {
+  if (!isFaceLaneCandidate(graph, edge, effectiveDir)) return null
+  const f = requireGridCoord(edge.from)
+  const t = requireGridCoord(edge.to)
+  const vertical = effectiveDir === 'TD'
+  const [fm, fc, tm, tc] = vertical
+    ? [f.y, f.x, t.y, t.x]
+    : [f.x, f.y, t.x, t.y]
+  const pt = (c: number, m: number): GridCoord =>
+    vertical ? { x: c, y: m } : { x: m, y: c }
+  const lane = fc + 3
+  const path = lanePath([
+    pt(fc + 1, fm),
+    pt(fc + 1, fm - 1),
+    pt(lane, fm - 1),
+    pt(lane, tm + 3),
+    pt(tc + 1, tm + 3),
+    pt(tc + 1, tm + 2),
+  ])
+  if (!interiorCellsClearOfNodes(graph, pathCells(path))) return null
+  if (runTaken(graph, edge, path)) return null
+  return vertical
+    ? { path, startDir: Up, endDir: Down }
+    : { path, startDir: Left, endDir: Right }
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -1236,6 +1309,17 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       return
     }
     edge.clusterEntered = false
+  }
+
+  // A back-edge between nodes in one column (row, in LR) leaves the source's
+  // near flow face and enters the target's far one (#2121).
+  const faceRoute = buildFaceLaneRoute(graph, edge, effectiveDir)
+  if (faceRoute) {
+    edge.startDir = faceRoute.startDir
+    edge.endDir = faceRoute.endDir
+    edge.path = faceRoute.path
+    edge.faceLane = true
+    return
   }
 
   // Edges after the first in a true-parallel (same source AND target) group

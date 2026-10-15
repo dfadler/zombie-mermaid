@@ -154,8 +154,10 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
         B --> C
         C <--> A
     `)
-    expect(result).toContain('►')
-    expect(result).toContain('▲')
+    // Both ends of the lane under the row get a head of their own, on the
+    // flow-axis faces (#2121): into A's right face and into C's left face.
+    expect(result).toContain('◄─┐')
+    expect(result).toContain('┌─►')
   })
 
   it('draws a labeled bidirectional edge', () => {

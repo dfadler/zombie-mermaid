@@ -421,6 +421,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   const startGroups = new Map<string, FanOutMember[]>()
   for (const edge of graph.edges) {
     if (edge.from === edge.to || edge.path.length < 2) continue
+    // A flow-face back-edge takes the free cell beside the stems in allocateFaces
+    // below; it must not push those stems off their ports.
+    if (edge.faceLane) continue
     if (isFixed(edge)) {
       // A bundled, lane or cluster edge stays where it was routed, at both
       // ends; without a run of its own it still occupies its ports.
@@ -599,6 +602,7 @@ function allocateFaces(
       e.path.length >= 2 &&
       !result.has(e) &&
       (e.from === e.to ||
+        e.faceLane === true ||
         (e.parallelLane !== undefined &&
           !e.bundle &&
           !e.clusterSource &&
