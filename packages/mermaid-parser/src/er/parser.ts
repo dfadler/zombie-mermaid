@@ -76,7 +76,7 @@ export function parseErDiagram(lines: Statement[]): ErDiagram {
       }
 
       // Attribute line: type name [PK|FK|UK] ["comment"]
-      const attr = parseAttribute(line)
+      const attr = parseAttribute(line, stmt.line)
       if (attr) {
         currentEntity.attributes.push(attr)
       }
@@ -113,7 +113,7 @@ export function parseErDiagram(lines: Statement[]): ErDiagram {
         .split(';')
         .map((s) => s.trim())
         .filter(Boolean)) {
-        const attr = parseAttribute(part)
+        const attr = parseAttribute(part, stmt.line)
         if (attr) entity.attributes.push(attr)
       }
 
@@ -161,8 +161,8 @@ function ensureEntity(
 }
 
 /** Parse an attribute line inside an entity block */
-function parseAttribute(line: string): ErAttribute | null {
-  // Format: type name [PK|FK|UK [...]] ["comment"]
+function parseAttribute(line: string, lineNumber: number): ErAttribute | null {
+  // Format: type name [PK|FK|UK [, ...]] ["comment"]
   const match = line.match(/^(\S+)\s+(\S+)(?:\s+(.+))?$/)
   if (!match) return null
 
@@ -180,11 +180,21 @@ function parseAttribute(line: string): ErAttribute | null {
     comment = normalizeBrTags(commentMatch[1]!)
   }
 
-  // Extract key constraints
+  // Key list: `PK`, `FK`, `UK`, comma-separated, with or without a space
+  // after the comma (`PK,FK`, `PK, FK`). Like mermaid.js, a space-only list
+  // (`PK FK`), a dangling comma or an unknown word is a parse error rather
+  // than a silently dropped key.
   const restWithoutComment = rest.replace(/"[^"]*"/, '').trim()
-  for (const part of restWithoutComment.split(/\s+/)) {
-    const upper = part.toUpperCase()
-    if (upper === 'PK' || upper === 'FK' || upper === 'UK') {
+  if (restWithoutComment) {
+    for (const part of restWithoutComment.split(',')) {
+      const upper = part.trim().toUpperCase()
+      if (upper !== 'PK' && upper !== 'FK' && upper !== 'UK') {
+        throw new MermaidParseError(
+          `Line ${lineNumber}: Invalid ER attribute keys "${restWithoutComment}" in "${line}". ` +
+            'Keys must be PK, FK or UK, separated by commas (e.g. "PK, FK"), before an optional "comment".',
+          { diagramType: 'er' },
+        )
+      }
       keys.push(upper)
     }
   }

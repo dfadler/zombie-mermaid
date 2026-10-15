@@ -2471,4 +2471,20 @@ pie title Pets adopted by volunteers
   b --> c
   c --> a`,
   },
+  {
+    title: 'ER: Multiple Keys per Attribute',
+    category: 'ER',
+    description:
+      'An attribute can carry several keys, comma-separated with or without a space (`PK, FK` / `PK,FK`), with or without a comment (#2115). Both spellings render as `PK,FK`.',
+    source: `erDiagram
+  T {
+    string a PK, FK "c"
+    string b PK,FK
+    string d PK
+    string e FK
+    string f UK
+    string g PK, FK, UK
+    string h PK,FK,UK "with comment"
+  }`,
+  },
 ]
