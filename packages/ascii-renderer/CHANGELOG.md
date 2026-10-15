@@ -1,5 +1,32 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.5.0
+
+### Minor Changes
+
+- [#2076](https://github.com/dfadler/zombie-mermaid/pull/2076) [`b8f3e39`](https://github.com/dfadler/zombie-mermaid/commit/b8f3e39e83ee256cf80b885dd6201686d3196e6a) Thanks [@dfadler](https://github.com/dfadler)! - ASCII `erDiagram` now stacks entities top to bottom the way mermaid.js does, instead of packing them into side-by-side rows ([#1917](https://github.com/dfadler/zombie-mermaid/issues/1917)). `direction LR` and `RL` keep the side-by-side layout.
+
+- [#2067](https://github.com/dfadler/zombie-mermaid/pull/2067) [`e21b993`](https://github.com/dfadler/zombie-mermaid/commit/e21b993aec9aa7b3c6f3e747aeb0e98bdf9ac08b) Thanks [@dfadler](https://github.com/dfadler)! - Draw the sequence `participant X@{ "type": ... }` kinds (boundary, control, entity, database, collections, queue). SVG draws Mermaid's icons and box variants with the theme's node tokens; ASCII adds a one-line marker above the label, the same in the unicode and ASCII charsets. Unknown types keep the plain box.
+
+### Patch Changes
+
+- [#2063](https://github.com/dfadler/zombie-mermaid/pull/2063) [`50c39dc`](https://github.com/dfadler/zombie-mermaid/commit/50c39dcbb149519e92225d464cf99e46799bed6f) Thanks [@dfadler](https://github.com/dfadler)! - ASCII class diagrams: a detour around an intermediate box now enters its target on a row above the arrowhead, so the head has a stem, and leaves a shared anchor below the straight edge's stem instead of replacing it ([#2056](https://github.com/dfadler/zombie-mermaid/issues/2056)).
+
+- [#2040](https://github.com/dfadler/zombie-mermaid/pull/2040) [`df88acb`](https://github.com/dfadler/zombie-mermaid/commit/df88acb864e45a6876b1744385c5db863a402176) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: duplicate self-loops, and reciprocal or duplicate edges between two nodes, no longer leave a stroke that ends in blank space or a canvas of unequal line widths. A second self-loop stays off its node's corner, and a parallel-lane search that runs out of room keeps the edge's earlier route instead of a placeholder hundreds of rows out. Fixes [#2025](https://github.com/dfadler/zombie-mermaid/issues/2025), [#2028](https://github.com/dfadler/zombie-mermaid/issues/2028) and [#2030](https://github.com/dfadler/zombie-mermaid/issues/2030).
+
+- [#2092](https://github.com/dfadler/zombie-mermaid/pull/2092) [`ffdc68e`](https://github.com/dfadler/zombie-mermaid/commit/ffdc68e2e8a19332ea8f075ca709b0e65df67814) Thanks [@dfadler](https://github.com/dfadler)! - ASCII ER: vertical cardinality markers with a zero-circle (`zero-one`, `zero-many`) now take two rows, like mermaid's own: the tick or crow's foot against the entity box, the circle on the line one row further along instead of beside it. Vertical gaps between rows grow by up to two rows in diagrams that have such a marker ([#2083](https://github.com/dfadler/zombie-mermaid/issues/2083)).
+
+- [#2082](https://github.com/dfadler/zombie-mermaid/pull/2082) [`ec37506`](https://github.com/dfadler/zombie-mermaid/commit/ec3750657f88ec2466344e556b77d6f2a147319a) Thanks [@dfadler](https://github.com/dfadler)! - ASCII ER: `many`, `zero-many` and `zero-one` cardinality markers on a vertical edge are now drawn along the vertical axis (`╤`/`╧`, `V`/`^` in ASCII), no longer as the horizontal `╟`/`╢`/`<`/`>` glyphs beside the line ([#2081](https://github.com/dfadler/zombie-mermaid/issues/2081)).
+
+- [#2080](https://github.com/dfadler/zombie-mermaid/pull/2080) [`242335c`](https://github.com/dfadler/zombie-mermaid/commit/242335c43afd4d50894435c49993abf69d7f017c) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: parallel edges past the three cells of a box face no longer merge at the target. A group of five or more plain lanes (and a reciprocal folded into one) lengthens the box face so each lane keeps its own arrowhead, and a group of six or seven cluster exit siblings (up to seven edges in total) spreads over both side faces of the target ([#1826](https://github.com/dfadler/zombie-mermaid/issues/1826), [#1743](https://github.com/dfadler/zombie-mermaid/issues/1743), [#1689](https://github.com/dfadler/zombie-mermaid/issues/1689)).
+
+- [#2093](https://github.com/dfadler/zombie-mermaid/pull/2093) [`cf53ce5`](https://github.com/dfadler/zombie-mermaid/commit/cf53ce5b38fef7d10be32edd8112904deeda89c7) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: more parallel-lane groups keep one arrowhead per edge. A top-down or bottom-up forward group and its back group between the same two nodes (for example four edges down and two back) lengthen the faces they share; a subgraph whose only exit is a group of three or more edges now uses the cluster exit lanes; and eight or more edges from one subgraph to one target give the target a longer face ([#1826](https://github.com/dfadler/zombie-mermaid/issues/1826), [#1689](https://github.com/dfadler/zombie-mermaid/issues/1689)).
+
+- [#2062](https://github.com/dfadler/zombie-mermaid/pull/2062) [`4a29ac5`](https://github.com/dfadler/zombie-mermaid/commit/4a29ac5939409c08bf89d6fecf913cbb2719b8f2) Thanks [@dfadler](https://github.com/dfadler)! - Output change: in an LR flowchart, an edge that jumps a node on its own row (`A --> C` past `B`) now runs under the row, out of the bottom of its origin and into the bottom of its target. It used to leave the origin along the line of `A --> B` and join `B --> C` in one arrowhead before the target. A node that a jumping edge enters while another leaves it, a node with a self-loop or backwards edge, and labeled jumping edges that share an end keep the previous route. Fixes [#2043](https://github.com/dfadler/zombie-mermaid/issues/2043) and [#2044](https://github.com/dfadler/zombie-mermaid/issues/2044).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.5.0
+  - @zombie-mermaid/mermaid-parser@5.5.0
+
 ## 5.4.0
 
 ### Minor Changes

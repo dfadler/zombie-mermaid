@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.5.0
+
+### Patch Changes
+
+- [#2089](https://github.com/dfadler/zombie-mermaid/pull/2089) [`3794be4`](https://github.com/dfadler/zombie-mermaid/commit/3794be419bbcaaab154b1892ec5f4d52c415de75) Thanks [@dfadler](https://github.com/dfadler)! - `dist/cli.js` is now minified with Oxc (the Vite 8 default) instead of esbuild; the bundle-size scripts measure with Vite too, and `esbuild` is no longer a direct devDependency ([#2066](https://github.com/dfadler/zombie-mermaid/issues/2066)).
+- Updated dependencies [[`50c39dc`](https://github.com/dfadler/zombie-mermaid/commit/50c39dcbb149519e92225d464cf99e46799bed6f), [`df88acb`](https://github.com/dfadler/zombie-mermaid/commit/df88acb864e45a6876b1744385c5db863a402176), [`b8f3e39`](https://github.com/dfadler/zombie-mermaid/commit/b8f3e39e83ee256cf80b885dd6201686d3196e6a), [`ffdc68e`](https://github.com/dfadler/zombie-mermaid/commit/ffdc68e2e8a19332ea8f075ca709b0e65df67814), [`ec37506`](https://github.com/dfadler/zombie-mermaid/commit/ec3750657f88ec2466344e556b77d6f2a147319a), [`242335c`](https://github.com/dfadler/zombie-mermaid/commit/242335c43afd4d50894435c49993abf69d7f017c), [`cf53ce5`](https://github.com/dfadler/zombie-mermaid/commit/cf53ce5b38fef7d10be32edd8112904deeda89c7), [`4a29ac5`](https://github.com/dfadler/zombie-mermaid/commit/4a29ac5939409c08bf89d6fecf913cbb2719b8f2), [`0a493e2`](https://github.com/dfadler/zombie-mermaid/commit/0a493e21c78e6d259996bb2b65dbd63ae689ab3c), [`efb2ade`](https://github.com/dfadler/zombie-mermaid/commit/efb2ade09c6bfbe05b49ea5b7f3961b1d5794fb6), [`e21b993`](https://github.com/dfadler/zombie-mermaid/commit/e21b993aec9aa7b3c6f3e747aeb0e98bdf9ac08b)]:
+  - @zombie-mermaid/ascii-renderer@5.5.0
+  - @zombie-mermaid/svg-renderer@5.5.0
+  - @zombie-mermaid/mcp@5.5.0
+  - @zombie-mermaid/core@5.5.0
+  - @zombie-mermaid/mermaid-parser@5.5.0
+
 ## 5.4.0
 
 ### Minor Changes
