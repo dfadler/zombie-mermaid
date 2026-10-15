@@ -40,7 +40,7 @@ describe('parseClassDiagram – malformed relationships', () => {
     expect(() =>
       parse(`classDiagram
         Animal <|--`),
-    ).toThrow(/<\|--, <\|\.\., \*--, o--, -->/)
+    ).toThrow(/<\|--, --\|>, <\|--\|>, <\|\.\., .*, -->, .*\(\)--\(\)/)
   })
 
   it('reports the 1-based line number', () => {

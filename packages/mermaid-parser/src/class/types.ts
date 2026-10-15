@@ -75,6 +75,7 @@ export type RelationshipType =
   | 'association' // A --> B    (solid line, open arrow)
   | 'dependency' // A ..> B    (dashed line, open arrow)
   | 'realization' // A ..|> B   (dashed line, hollow triangle)
+  | 'lollipop' // A ()-- B   (solid line, circle: interface)
 
 export interface ClassRelationship {
   from: string
@@ -85,8 +86,9 @@ export interface ClassRelationship {
    * Determined by the arrow syntax direction:
    *   - Prefix markers like `<|--`, `*--`, `o--` → 'from' (marker on left/from side)
    *   - Suffix markers like `..|>`, `-->`, `..>`, `--*`, `--o` → 'to' (marker on right/to side)
+   *   - Both ends like `<|--|>`, `<-->`, `()--()` → 'both' (same marker at each end)
    */
-  markerAt: 'from' | 'to'
+  markerAt: 'from' | 'to' | 'both'
   /** Label on the relationship line */
   label?: string
   /** Cardinality at the "from" end (e.g., "1", "*", "0..1") */
@@ -168,7 +170,7 @@ export interface PositionedClassRelationship {
   to: string
   type: RelationshipType
   /** Which end of the line has the UML marker — propagated from ClassRelationship */
-  markerAt: 'from' | 'to'
+  markerAt: 'from' | 'to' | 'both'
   label?: string
   fromCardinality?: string
   toCardinality?: string

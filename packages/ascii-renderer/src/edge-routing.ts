@@ -396,6 +396,41 @@ export function spreadCandidates(
     targets.set(e.to, [...(targets.get(e.to) ?? []), e])
   }
   const out = new Map<AsciiNode, SpreadCandidate[]>()
+  // #2121: a face holding k flow-axis lane ends needs the interior of a face
+  // with k + 1 strokes (the forward stem and a port per lane, outer side).
+  const vertical = graph.config.graphDirection !== 'LR'
+  // Strokes of the widest same-pair group a node's face takes beside its lanes.
+  const spread = new Map<AsciiNode, number>()
+  for (const [from, targets] of byPair) {
+    for (const [to, group] of targets) {
+      if (group.length < 2) continue
+      const a = requireGridCoord(from)
+      const b = requireGridCoord(to)
+      if (Math.abs(vertical ? a.y - b.y : a.x - b.x) > 4) continue
+      for (const n of [from, to]) {
+        spread.set(n, Math.max(spread.get(n) ?? 0, group.length))
+      }
+    }
+  }
+  for (const [n, load] of faceLaneLoads(graph)) {
+    // The strokes of a spread group sit a stroke spacing apart about the
+    // centre, a lane port per cell beyond the outermost.
+    const wide = spread.get(n)
+    out.set(n, [
+      ...(out.get(n) ?? []),
+      {
+        vertical,
+        // TD keeps a stroke spacing beside the stem for a single lane.
+        strokes: wide
+          ? wide + load
+          : vertical
+            ? Math.max(3, load + 1)
+            : load + 1,
+        rows: 0,
+        below: false,
+      },
+    ])
+  }
   for (const [from, targets] of byPair) {
     for (const [to, group] of targets) {
       if (group.length < 3 || !labelsFitBesideStrokes(group)) continue
@@ -466,6 +501,8 @@ function spreadsOnFaces(
   const axis = vertical ? 'y' : 'x'
   for (const e of graph.edges) {
     if (group.includes(e) || e.from === e.to) continue
+    // Face lanes take the outer end of the faces, beside the strokes (#2121).
+    if (e.faceLanePlan) continue
     for (const [node, here, there] of [
       [from, a, b],
       [to, b, a],
@@ -515,6 +552,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   const groups = new Map<string, AsciiEdge[]>()
   for (const edge of graph.edges) {
     if (edge.from === edge.to) continue // self-loop: not in scope here
+    // A planned face lane is its own route (#2121); no lane group for it.
+    if (edge.faceLanePlan) continue
     const key = parallelGroupKey(edge)
     const existing = groups.get(key)
     if (existing) existing.push(edge)
@@ -754,10 +793,13 @@ function runTaken(
   graph: AsciiGraph,
   edge: AsciiEdge,
   path: GridCoord[],
+  ignorePlanned = false,
 ): boolean {
   const own = segmentsOf(path)
+  // Planned face lanes (assignFaceLanes) share gutter rows by design: each
+  // horizontal run is drawn on a row of its own.
   const others = graph.edges.flatMap((o) =>
-    o === edge ? [] : segmentsOf(o.path),
+    o === edge || (ignorePlanned && o.faceLanePlan) ? [] : segmentsOf(o.path),
   )
   return own
     .slice(1, -1)
@@ -1148,6 +1190,210 @@ function loopEntersTop(
 }
 
 /**
+ * Flow-axis face lanes (#2121). Mermaid draws an edge that runs along the
+ * flow between nodes in one column (row, in LR) but not between neighbouring
+ * levels on the flow-axis faces: out of the source's face, one gutter cell on,
+ * across to a lane in the gutter beside the column (right in TD, below in
+ * LR), along the flow, and in at the target's face. A back-edge leaves the near
+ * face and enters the far one; a forward skip (`A --> C` over `B`) shares the
+ * gutter, its lanes inside the back-edges'. Ports are spread along each face,
+ * outer lanes at the outer end, and the horizontal runs of lanes in one
+ * gutter row take rows of their own, so nothing crosses.
+ */
+interface FaceLaneCandidate {
+  edge: AsciiEdge
+  /** +1 along the flow (forward skip), -1 against it (back-edge). */
+  sign: 1 | -1
+  vertical: boolean
+  /** Grid coordinate along / across the flow, at the source and target. */
+  fm: number
+  fc: number
+  tm: number
+  tc: number
+}
+
+/** Direction `determinePath` routes `edge` in (a subgraph can override it). */
+function effectiveDirection(graph: AsciiGraph, edge: AsciiEdge): string {
+  const sourceSg = getNodeSubgraph(graph, edge.from)
+  const targetSg = getNodeSubgraph(graph, edge.to)
+  return sourceSg && sourceSg === targetSg && sourceSg.direction
+    ? sourceSg.direction
+    : graph.config.graphDirection
+}
+
+/**
+ * The edges that take flow-axis face lanes: back-edges between nodes in one
+ * column (row, in LR), and forward skips over a level in a column that has
+ * one. A reciprocal pair on neighbouring levels is excluded: it is two
+ * strokes between the facing faces (#530, #1284). Needs grid coordinates.
+ */
+function faceLaneCandidates(graph: AsciiGraph): FaceLaneCandidate[] {
+  const all: FaceLaneCandidate[] = []
+  for (const [i, edge] of graph.edges.entries()) {
+    if (edge.from === edge.to || edge.clusterSource || edge.clusterTarget) {
+      continue
+    }
+    if (graph.faceLaneOff?.has(i)) continue
+    const dir = effectiveDirection(graph, edge)
+    if (dir !== 'TD' && dir !== 'LR') continue
+    const vertical = dir === 'TD'
+    const f = requireGridCoord(edge.from)
+    const t = requireGridCoord(edge.to)
+    const [fm, fc, tm, tc] = vertical
+      ? [f.y, f.x, t.y, t.x]
+      : [f.x, f.y, t.x, t.y]
+    if (fc !== tc || fm === tm) continue
+    const sign = tm > fm ? 1 : -1
+    // Neighbouring levels are 4 grid units apart (3 for the node, 1 gutter).
+    if (Math.abs(tm - fm) <= 4) {
+      if (sign === 1) continue
+      if (graph.edges.some((o) => o.from === edge.to && o.to === edge.from)) {
+        continue
+      }
+    }
+    all.push({ edge, sign, vertical, fm, fc, tm, tc })
+  }
+  const backColumns = new Set(
+    all.filter((c) => c.sign === -1).map((c) => `${c.vertical}|${c.fc}`),
+  )
+  return all.filter(
+    (c) => c.sign === -1 || backColumns.has(`${c.vertical}|${c.fc}`),
+  )
+}
+
+/**
+ * Most lane ends any one face of `node` takes, for `spreadCandidates`: the
+ * face holds the forward stem and a port per lane on its outer side.
+ */
+export function faceLaneLoads(graph: AsciiGraph): Map<AsciiNode, number> {
+  const faces = new Map<string, number>()
+  const bump = (n: AsciiNode, face: string): void => {
+    const k = `${n.index}|${face}`
+    faces.set(k, (faces.get(k) ?? 0) + 1)
+  }
+  for (const c of faceLaneCandidates(graph)) {
+    bump(c.edge.from, c.sign === 1 ? 'after' : 'before')
+    bump(c.edge.to, c.sign === 1 ? 'before' : 'after')
+  }
+  const out = new Map<AsciiNode, number>()
+  for (const n of graph.nodes) {
+    const load = Math.max(
+      faces.get(`${n.index}|before`) ?? 0,
+      faces.get(`${n.index}|after`) ?? 0,
+    )
+    if (load > 0) out.set(n, load)
+  }
+  return out
+}
+
+/**
+ * Plan every flow-axis face lane before any edge is routed (#2121): a gutter
+ * lane per edge (forward skips inside back-edges, so the lanes nest), and a
+ * row of its own for each horizontal run in a gutter row, with the gutter
+ * grown to hold them. Run after node placement and `assignParallelEdgeLanes`.
+ */
+export function assignFaceLanes(graph: AsciiGraph): void {
+  const cands = faceLaneCandidates(graph)
+  const columns = new Map<string, FaceLaneCandidate[]>()
+  for (const c of cands) {
+    const k = `${c.vertical}|${c.fc}`
+    columns.set(k, [...(columns.get(k) ?? []), c])
+  }
+  interface Run {
+    c: FaceLaneCandidate
+    slot: number
+    which: 'dep' | 'arr'
+    /** The face the run attaches to lies before the gutter along the flow. */
+    upper: boolean
+  }
+  const gutters = new Map<string, Run[]>()
+  for (const list of columns.values()) {
+    const ordered = [
+      ...list.filter((c) => c.sign === 1),
+      ...list.filter((c) => c.sign === -1),
+    ]
+    ordered.forEach((c, slot) => {
+      c.edge.faceLanePlan = { slot, dep: 0, arr: 0 }
+      const depG = c.sign === 1 ? c.fm + 3 : c.fm - 1
+      const arrG = c.sign === 1 ? c.tm - 1 : c.tm + 3
+      for (const [which, g, upper] of [
+        ['dep', depG, c.sign === 1],
+        ['arr', arrG, c.sign === -1],
+      ] as const) {
+        const k = `${c.vertical}|${c.fc}|${g}`
+        gutters.set(k, [...(gutters.get(k) ?? []), { c, slot, which, upper }])
+      }
+    })
+  }
+  for (const [k, runs] of gutters) {
+    const g = Number(k.split('|')[2])
+    const top = [...runs].filter((r) => r.upper).sort((a, b) => b.slot - a.slot)
+    const bottom = [...runs]
+      .filter((r) => !r.upper)
+      .sort((a, b) => a.slot - b.slot)
+    const rows = [...top, ...bottom]
+    rows.forEach((r, j) => {
+      r.c.edge.faceLanePlan![r.which] = (j - (rows.length - 1) / 2) * 2
+    })
+    const size = 2 * rows.length + 3
+    const sizes = rows[0]!.c.vertical ? graph.rowHeight : graph.columnWidth
+    sizes.set(g, Math.max(sizes.get(g) ?? 0, size))
+  }
+}
+
+/**
+ * Note the planned face lanes that did not come out as planned: routed some
+ * other way, or run along an edge routed after them (#2121). The caller lays
+ * the graph out again without them (`faceLaneOff`), so the room they asked
+ * for is not left behind.
+ */
+export function noteRejectedFaceLanes(graph: AsciiGraph): void {
+  for (const [i, e] of graph.edges.entries()) {
+    if (!e.faceLanePlan) continue
+    if (!e.faceLane || runTaken(graph, e, e.path, true)) {
+      graph.faceLaneRejected ??= new Set()
+      graph.faceLaneRejected.add(i)
+    }
+  }
+}
+
+function buildFaceLaneRoute(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { path: GridCoord[]; startDir: Direction; endDir: Direction } | null {
+  const plan = edge.faceLanePlan
+  if (!plan || edge.bundle) return null
+  const c = faceLaneCandidates(graph).find((x) => x.edge === edge)
+  if (!c) return null
+  const { sign, vertical, fm, fc, tm, tc } = c
+  const pt = (cross: number, m: number): GridCoord =>
+    vertical ? { x: cross, y: m } : { x: m, y: cross }
+  const lane = fc + 3 + plan.slot
+  const srcFace = sign === 1 ? fm + 2 : fm
+  const dstFace = sign === 1 ? tm : tm + 2
+  const path = lanePath([
+    pt(fc + 1, srcFace),
+    pt(fc + 1, srcFace + sign),
+    pt(lane, srcFace + sign),
+    pt(lane, dstFace - sign),
+    pt(tc + 1, dstFace - sign),
+    pt(tc + 1, dstFace),
+  ])
+  if (path.length !== 6) return null
+  if (!interiorCellsClearOfNodes(graph, pathCells(path))) return null
+  if (runTaken(graph, edge, path, true)) return null
+  const [out, into] =
+    sign === 1
+      ? vertical
+        ? [Down, Up]
+        : [Right, Left]
+      : vertical
+        ? [Up, Down]
+        : [Left, Right]
+  return { path, startDir: out, endDir: into }
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -1245,6 +1491,17 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       return
     }
     edge.clusterEntered = false
+  }
+
+  // A back-edge between nodes in one column (row, in LR) leaves the source's
+  // near flow face and enters the target's far one (#2121).
+  const faceRoute = buildFaceLaneRoute(graph, edge)
+  edge.faceLane = faceRoute !== null
+  if (faceRoute) {
+    edge.startDir = faceRoute.startDir
+    edge.endDir = faceRoute.endDir
+    edge.path = faceRoute.path
+    return
   }
 
   // Edges after the first in a true-parallel (same source AND target) group

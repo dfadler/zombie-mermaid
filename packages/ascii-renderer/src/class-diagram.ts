@@ -18,6 +18,7 @@ import type {
   ClassDiagram,
   ClassNode,
   ClassNote,
+  ClassRelationship,
   RelationshipType,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -80,7 +81,7 @@ interface RelMarker {
   /** Relationship type (determines marker shape) */
   type: RelationshipType
   /** Which end the marker is placed at */
-  markerAt: 'from' | 'to'
+  markerAt: 'from' | 'to' | 'both'
   /** Whether the line is dashed */
   dashed: boolean
 }
@@ -91,7 +92,7 @@ interface RelMarker {
  */
 function getRelMarker(
   type: RelationshipType,
-  markerAt: 'from' | 'to',
+  markerAt: 'from' | 'to' | 'both',
 ): RelMarker {
   const dashed = type === 'dependency' || type === 'realization'
   return { type, markerAt, dashed }
@@ -131,6 +132,9 @@ function getMarkerShape(
     case 'aggregation':
       // Hollow diamond - omnidirectional shape
       return useAscii ? 'o' : '◇'
+    case 'lollipop':
+      // Hollow circle (interface) - omnidirectional shape
+      return useAscii ? 'O' : '○'
     case 'association':
     case 'dependency':
       // Directional arrow - rotate based on line direction
@@ -145,6 +149,26 @@ function getMarkerShape(
         return useAscii ? '>' : '▶'
       }
   }
+}
+
+/**
+ * Marker for the `from` end, drawn with the line's travel direction at that
+ * end. Hierarchical triangles already point back into the box for that
+ * direction; directional arrows must point the opposite way (into the box),
+ * so flip them. Omnidirectional markers ignore the direction.
+ */
+function getFromMarkerShape(
+  type: RelationshipType,
+  useAscii: boolean,
+  direction: 'up' | 'down' | 'left' | 'right',
+): string {
+  const hierarchical = type === 'inheritance' || type === 'realization'
+  const flip = { up: 'down', down: 'up', left: 'right', right: 'left' } as const
+  return getMarkerShape(
+    type,
+    useAscii,
+    hierarchical ? direction : flip[direction],
+  )
 }
 
 /**
@@ -275,6 +299,7 @@ interface AsciiNamespaceFrame {
 function resolveFrames(
   diagram: ClassDiagram,
   notesById: Map<string, ClassNote>,
+  lollipops: Map<string, AsciiLollipop>,
 ): AsciiNamespaceFrame[] {
   const known = new Set(diagram.classes.map((c) => c.id))
   const claimed = new Set<string>()
@@ -287,6 +312,9 @@ function resolveFrames(
       ids.push(id)
       for (const [noteId, note] of notesById) {
         if (note.forClass === id) ids.push(noteId)
+      }
+      for (const [lolliId, lolli] of lollipops) {
+        if (lolli.host === id) ids.push(lolliId)
       }
     }
     if (ids.length > 0) frames.push({ name: ns.name, ids })
@@ -337,11 +365,14 @@ export function renderClassAscii(
 ): string {
   const lines = splitStatements(text)
   // Notes ride through the layout as pseudo-classes — see withNotePseudoClasses.
-  const { diagram, notesById } = withNotePseudoClasses(parseClassDiagram(lines))
+  const { diagram: lollipopDiagram, lollipops } = withLollipopPseudoClasses(
+    parseClassDiagram(lines),
+  )
+  const { diagram, notesById } = withNotePseudoClasses(lollipopDiagram)
 
   if (diagram.classes.length === 0) return ''
 
-  const frames = resolveFrames(diagram, notesById)
+  const frames = resolveFrames(diagram, notesById, lollipops)
   const frameOf = new Map<string, number>()
   for (const [i, fr] of frames.entries()) {
     for (const id of fr.ids) frameOf.set(id, i)
@@ -365,6 +396,14 @@ export function renderClassAscii(
   for (const cls of diagram.classes) {
     const sections = buildClassSections(cls)
     classSections.set(cls.id, sections)
+
+    // An interface name has no box: one text row, with the circle drawn by
+    // the lollipop edge just above or below it.
+    if (lollipops.has(cls.id)) {
+      classBoxW.set(cls.id, displayWidth(cls.label))
+      classBoxH.set(cls.id, 1)
+      continue
+    }
 
     // Reserve exactly what drawMultiBox will draw — measuring it here rather
     // than re-deriving the arithmetic keeps layout and drawing in lockstep for
@@ -487,7 +526,11 @@ export function renderClassAscii(
       from !== undefined &&
       to !== undefined &&
       from < to &&
-      (outDeg.get(rel.from)! > 1 || inDeg.get(rel.to)! > 1)
+      // A marker at both ends leaves no stem between the two heads and the
+      // label, so a labelled two-ended line always needs the extra room.
+      (rel.markerAt === 'both' ||
+        outDeg.get(rel.from)! > 1 ||
+        inDeg.get(rel.to)! > 1)
     ) {
       labelRoomLevels.add(from)
     }
@@ -896,6 +939,24 @@ export function renderClassAscii(
       (detourRoomLevels?.has(lv) ? DETOUR_EXTRA_VGAP : 0)
   }
 
+  // Centre each interface name on its host so the stem runs straight, unless
+  // a neighbour on the name's row is in the way.
+  for (const [id, lolli] of lollipops) {
+    const p = placed.get(id)
+    const host = placed.get(lolli.host)
+    if (!p || !host) continue
+    const x = host.x + Math.floor((host.width - p.width) / 2)
+    const clear = [...placed.values()].every(
+      (o) =>
+        o === p ||
+        o.y + o.height <= p.y ||
+        o.y >= p.y + p.height ||
+        o.x + o.width + 1 <= x ||
+        o.x >= x + p.width + 1,
+    )
+    if (x >= 0 && clear) p.x = x
+  }
+
   // --- Frame rectangles ---
   // Each frame wraps the boxes of its members; the whole diagram shifts
   // right/down so the outermost frame's border lands on the canvas.
@@ -976,6 +1037,11 @@ export function renderClassAscii(
 
   // --- Draw class boxes ---
   for (const p of placed.values()) {
+    if (lollipops.has(p.cls.id)) {
+      const cells = toDisplayCells(p.cls.label)
+      for (const [i, cell] of cells.entries()) setC(p.x + i, p.y, cell, 'text')
+      continue
+    }
     const boxCanvas = drawMultiBox(
       p.sections,
       useAscii,
@@ -1455,7 +1521,7 @@ export function renderClassAscii(
           }
 
           // Markers for detour case
-          if (marker.markerAt === 'to') {
+          if (marker.markerAt !== 'from') {
             // Target sits below this point — the arrowhead must point down
             // into it. Hierarchical markers (inheritance/realization) rotate
             // opposite to directional ones (association/dependency): passing
@@ -1472,8 +1538,8 @@ export function renderClassAscii(
             )
             setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
           }
-          if (marker.markerAt === 'from') {
-            const markerChar = getMarkerShape(marker.type, useAscii, 'down')
+          if (marker.markerAt !== 'to') {
+            const markerChar = getFromMarkerShape(marker.type, useAscii, 'down')
             setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
           }
         })
@@ -1531,7 +1597,7 @@ export function renderClassAscii(
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 
         // Markers for no-collision case
-        if (marker.markerAt === 'to') {
+        if (marker.markerAt !== 'from') {
           // Same rotation compensation as the detour case above — target is
           // below this point, so hierarchical markers need 'up' to point
           // down into it.
@@ -1548,11 +1614,11 @@ export function renderClassAscii(
             'arrow',
           )
         }
-        if (marker.markerAt === 'from') {
+        if (marker.markerAt !== 'to') {
           setCGuarded(
             fromAnchorX,
             fromBY + 1,
-            getMarkerShape(marker.type, useAscii, 'down'),
+            getFromMarkerShape(marker.type, useAscii, 'down'),
             'arrow',
           )
         }
@@ -1598,8 +1664,8 @@ export function renderClassAscii(
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - arrows point in the direction of the vertical segment (upward)
-      if (marker.markerAt === 'from') {
-        const markerChar = getMarkerShape(marker.type, useAscii, 'up')
+      if (marker.markerAt !== 'to') {
+        const markerChar = getFromMarkerShape(marker.type, useAscii, 'up')
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
           setCGuarded(
@@ -1610,7 +1676,7 @@ export function renderClassAscii(
           )
         }
       }
-      if (marker.markerAt === 'to') {
+      if (marker.markerAt !== 'from') {
         const isHierarchical =
           marker.type === 'inheritance' || marker.type === 'realization'
         const markerDir = isHierarchical ? 'down' : 'up'
@@ -1679,8 +1745,8 @@ export function renderClassAscii(
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - same-level routing uses vertical segments at both ends
-      if (marker.markerAt === 'from') {
-        const markerChar = getMarkerShape(marker.type, useAscii, 'down')
+      if (marker.markerAt !== 'to') {
+        const markerChar = getFromMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
           setCGuarded(
@@ -1691,7 +1757,7 @@ export function renderClassAscii(
           )
         }
       }
-      if (marker.markerAt === 'to') {
+      if (marker.markerAt !== 'from') {
         // Target sits above this point (line detours below both boxes then
         // comes back up) — mirrors the "target is above source" branch's
         // compensation above.
@@ -2315,4 +2381,66 @@ function decorateAsciiNotes(
       if (canvas[x]?.[y] === ' ') setC(x, y, dash, 'line')
     }
   }
+}
+
+// ============================================================================
+// Lollipop interfaces
+//
+// Mermaid draws `A ()-- B` as the name `A` above a small circle, joined to
+// `B` by a stem, with no edge to a class `A` (and no `A` box at all when `A`
+// is used only this way). Same here: each lollipop's interface end becomes a
+// one-row, box-less pseudo-class (id has a space, so it can't collide with a
+// class id) that the normal layout and edge routing treat like any class, so
+// `from` lands above `to`. The edge's circle marker is the lollipop. `()--()`
+// has no single host and stays an ordinary relationship.
+// ============================================================================
+
+interface AsciiLollipop {
+  host: string
+}
+
+function withLollipopPseudoClasses(parsed: ClassDiagram): {
+  diagram: ClassDiagram
+  lollipops: Map<string, AsciiLollipop>
+} {
+  const lollipops = new Map<string, AsciiLollipop>()
+  const relationships: ClassRelationship[] = []
+  const interfaceIds = new Set<string>()
+  const pseudo: ClassNode[] = []
+  for (const rel of parsed.relationships) {
+    if (rel.type !== 'lollipop' || rel.markerAt === 'both') {
+      relationships.push(rel)
+      continue
+    }
+    const left = rel.markerAt === 'from'
+    const host = left ? rel.to : rel.from
+    const name = left ? rel.from : rel.to
+    const id = `lollipop ${lollipops.size}`
+    lollipops.set(id, { host })
+    interfaceIds.add(name)
+    pseudo.push({ id, label: name, attributes: [], methods: [] })
+    relationships.push(left ? { ...rel, from: id } : { ...rel, to: id })
+  }
+  if (lollipops.size === 0) return { diagram: parsed, lollipops }
+
+  // An interface keeps its box only when something else gives it one.
+  const kept = new Set(
+    relationships
+      .filter((r) => r.type !== 'lollipop' || r.markerAt === 'both')
+      .flatMap((r) => [r.from, r.to]),
+  )
+  for (const { host } of lollipops.values()) kept.add(host)
+  for (const note of parsed.notes) if (note.forClass) kept.add(note.forClass)
+  for (const ns of parsed.namespaces) for (const id of ns.classIds) kept.add(id)
+  const drop = (c: ClassNode): boolean =>
+    interfaceIds.has(c.id) &&
+    !kept.has(c.id) &&
+    !c.annotation &&
+    c.attributes.length === 0 &&
+    c.methods.length === 0
+
+  // Pseudo-classes go last, in source order: mermaid lays real classes out
+  // first and hangs each interface name off its host afterwards.
+  const classes = [...parsed.classes.filter((c) => !drop(c)), ...pseudo]
+  return { diagram: { ...parsed, classes, relationships }, lollipops }
 }
