@@ -469,123 +469,79 @@ describe('runRender – coords overlay', () => {
 // --max-width
 // ============================================================================
 
-describe('runRender – max-width warning', () => {
-  it('warns on stderr when ASCII output exceeds an explicit --max-width', async () => {
-    const mockStdout = createMockStdout()
-    const mockStderr = createMockStdout()
-    await runRender(
-      renderArgs({ ascii: true, maxWidth: 10 }),
-      mockStdout,
-      SIMPLE_FLOWCHART,
-      mockStderr,
-    )
+describe('runRender – max-width (hard error, #2057)', () => {
+  const CHAIN = `graph LR
+  A --> B --> C --> D --> E`
 
-    expect(mockStderr.output()).toContain('Warning:')
-    expect(mockStderr.output()).toContain('exceeding --max-width of 10')
-    // stdout still gets the full, unmodified diagram — no truncation.
-    expect(mockStdout.output()).toContain('A')
-    expect(mockStdout.output()).toContain('C')
+  async function failure(
+    args: Parameters<typeof renderArgs>[0],
+    text: string,
+  ): Promise<{ message: string; stdout: string }> {
+    const stdout = createMockStdout()
+    const err = await runRender(renderArgs(args), stdout, text).then(
+      () => undefined,
+      (e: unknown) => e,
+    )
+    if (!(err instanceof Error)) throw new Error('expected runRender to throw')
+    return { message: err.message, stdout: stdout.output() }
+  }
+
+  it('throws, writing nothing, when output exceeds an explicit --max-width', async () => {
+    const { message, stdout } = await failure(
+      { ascii: true, maxWidth: 10 },
+      SIMPLE_FLOWCHART,
+    )
+    expect(message).toContain('exceeding --max-width of 10')
+    expect(stdout).toBe('')
   })
 
-  it('does not warn when ASCII output fits within --max-width', async () => {
+  it('does not throw when ASCII output fits within --max-width', async () => {
     const mockStdout = createMockStdout()
-    const mockStderr = createMockStdout()
     await runRender(
       renderArgs({ ascii: true, maxWidth: 1000 }),
       mockStdout,
       SIMPLE_FLOWCHART,
-      mockStderr,
     )
-
-    expect(mockStderr.output()).toBe('')
-  })
-
-  it('does not warn when --max-width is not given', async () => {
-    const mockStdout = createMockStdout()
-    const mockStderr = createMockStdout()
-    await runRender(
-      renderArgs({ ascii: true }),
-      mockStdout,
-      SIMPLE_FLOWCHART,
-      mockStderr,
-    )
-
-    expect(mockStderr.output()).toBe('')
+    expect(mockStdout.output()).toContain('A')
   })
 
   it('automatically applies compact spacing to fit a diagram that only overflows at default spacing', async () => {
-    // A longer chain than SIMPLE_FLOWCHART so default spacing (45 cols)
-    // overflows a mid-size target while compact spacing (19 cols) fits it.
-    const chain = `graph LR
-  A --> B --> C --> D --> E`
-
     const mockStdout = createMockStdout()
-    const mockStderr = createMockStdout()
     await runRender(
       renderArgs({ ascii: true, maxWidth: 30 }),
       mockStdout,
-      chain,
-      mockStderr,
+      CHAIN,
     )
-
-    // No overflow warning — compaction alone was enough to fit.
-    expect(mockStderr.output()).not.toContain('Warning:')
-    expect(mockStderr.output()).toContain('applied compact spacing')
-    expect(mockStderr.output()).toContain('to fit')
-
-    const lines = mockStdout.output().split('\n')
-    const width = Math.max(...lines.map((line) => line.length))
+    const width = Math.max(
+      ...mockStdout
+        .output()
+        .split('\n')
+        .map((line) => line.length),
+    )
     expect(width).toBeLessThanOrEqual(30)
-    // Content survives compaction unmodified — no truncation.
     expect(mockStdout.output()).toContain('A')
     expect(mockStdout.output()).toContain('E')
   })
 
-  it('still warns when the diagram exceeds --max-width even after compact spacing', async () => {
-    const chain = `graph LR
-  A --> B --> C --> D --> E`
-
-    const mockStdout = createMockStdout()
-    const mockStderr = createMockStdout()
-    await runRender(
-      renderArgs({ ascii: true, maxWidth: 10 }),
-      mockStdout,
-      chain,
-      mockStderr,
-    )
-
-    expect(mockStderr.output()).toContain('Warning:')
-    expect(mockStderr.output()).toContain('already applied automatically')
-    expect(mockStderr.output()).toContain(
-      'https://github.com/dfadler/zombie-mermaid/issues/335',
-    )
-    // Still no truncation — full diagram content still present.
-    expect(mockStdout.output()).toContain('A')
-    expect(mockStdout.output()).toContain('E')
+  it('throws after compact spacing was applied and still did not fit', async () => {
+    const { message } = await failure({ ascii: true, maxWidth: 10 }, CHAIN)
+    expect(message).toContain('Compact spacing')
+    expect(message).toContain('already applied')
   })
 
   it('does not attempt compaction when explicit padding is already at or below compact levels', async () => {
-    const chain = `graph LR
-  A --> B --> C --> D --> E`
-
-    const mockStdout = createMockStdout()
-    const mockStderr = createMockStdout()
-    await runRender(
-      renderArgs({
+    const { message } = await failure(
+      {
         ascii: true,
         maxWidth: 10,
         paddingX: 1,
         paddingY: 1,
         borderPadding: 0,
-      }),
-      mockStdout,
-      chain,
-      mockStderr,
+      },
+      CHAIN,
     )
-
-    expect(mockStderr.output()).toContain('Warning:')
-    // No compaction note — nothing left to tighten.
-    expect(mockStderr.output()).not.toContain('already applied automatically')
+    expect(message).toContain('exceeding --max-width')
+    expect(message).not.toContain('already applied')
   })
 
   it('resolves --max-width auto against the detected terminal width', async () => {
@@ -600,16 +556,11 @@ describe('runRender – max-width warning', () => {
     })
 
     try {
-      const mockStdout = createMockStdout()
-      const mockStderr = createMockStdout()
-      await runRender(
-        renderArgs({ ascii: true, maxWidth: 'auto' }),
-        mockStdout,
+      const { message } = await failure(
+        { ascii: true, maxWidth: 'auto' },
         SIMPLE_FLOWCHART,
-        mockStderr,
       )
-
-      expect(mockStderr.output()).toContain('detected terminal width of 5')
+      expect(message).toContain('detected terminal width of 5')
     } finally {
       if (originalDescriptor === undefined) {
         delete (process.stdout as { columns?: number }).columns
@@ -619,73 +570,27 @@ describe('runRender – max-width warning', () => {
     }
   })
 
-  it('measures width in terminal display columns, not UTF-16 code units', async () => {
-    // Every row of the ASCII canvas is padded to the same fixed grid width,
-    // and a wide (CJK) glyph's second column is an empty placeholder cell
-    // that contributes zero characters to the emitted string (see
-    // `WIDE_CHAR_PLACEHOLDER` in ascii/display-width.ts) — so a row's own
-    // `.length` is always exactly `canvasWidth - <wide chars in that row>`,
-    // while its true rendered display width is always exactly
-    // `canvasWidth`. Consequently `Math.max(...lines.map(l => l.length))`
-    // over the *whole* rendered diagram ties the true display width for any
-    // diagram that has at least one plain-ASCII row (a border, a blank
-    // separator row — virtually guaranteed), so deriving a maxWidth from
-    // that code-unit measurement can never manufacture a case where display
-    // width exceeds it. Assert the regression this test actually guards
-    // against directly instead: force overflow with a maxWidth well below
-    // the true width, and check the warning reports the CJK-correct
-    // display-column count (not the smaller UTF-16 code-unit count a
-    // `.length`-based regression would report).
+  it('reports width in terminal display columns, not UTF-16 code units', async () => {
     const wideSequence = `sequenceDiagram
   participant A
   participant B
   A->>B: 中文很长的消息内容说明文字超长`
 
-    const mockStdout = createMockStdout()
-    await runRender(
-      renderArgs({ ascii: true, maxWidth: 1000 }),
-      mockStdout,
+    const uncapped = createMockStdout()
+    await runRender(renderArgs({ ascii: true }), uncapped, wideSequence)
+    const trueWidth = Math.max(
+      ...uncapped
+        .output()
+        .split('\n')
+        .map((line) => displayWidth(line)),
+    )
+    const { message } = await failure(
+      { ascii: true, maxWidth: 10 },
       wideSequence,
-      createMockStdout(),
     )
-    const rendered = mockStdout.output()
-    const codeUnitWidth = Math.max(
-      ...rendered.split('\n').map((line) => line.length),
-    )
-    const trueDisplayWidth = Math.max(
-      ...rendered.split('\n').map((line) => displayWidth(line)),
-    )
-    // The CJK label makes this diagnostic (not the fix itself) worth
-    // keeping: on a `.length`-based renderer these differed; the correct,
-    // canvas-uniform-width renderer ties them, which is why maxWidth below
-    // must be an independent constant rather than derived from either.
-    expect(trueDisplayWidth).toBe(codeUnitWidth)
-
-    // At maxWidth 10, the automatic compact-spacing fallback (see issue
-    // #335) kicks in and narrows the diagram below its uncapped width
-    // above — so the warning's reported width must be re-derived from
-    // *this* render's actual (possibly compacted) output, not the uncapped
-    // one, while still exercising the same CJK display-width correctness.
-    const mockStdoutCapped = createMockStdout()
-    const mockStderr = createMockStdout()
-    await runRender(
-      renderArgs({ ascii: true, maxWidth: 10 }),
-      mockStdoutCapped,
-      wideSequence,
-      mockStderr,
-    )
-    const renderedCapped = mockStdoutCapped.output()
-    const trueDisplayWidthCapped = Math.max(
-      ...renderedCapped.split('\n').map((line) => displayWidth(line)),
-    )
-
-    // The reported column count must reflect true display width (double
-    // for each CJK character) — a `.length`-based regression would report
-    // a smaller UTF-16 code-unit count instead.
-    expect(mockStderr.output()).toContain('Warning:')
-    expect(mockStderr.output()).toContain(
-      `is ${trueDisplayWidthCapped} columns`,
-    )
+    const reported = Number(/is (\d+) columns/.exec(message)?.[1])
+    expect(reported).toBeGreaterThan(10)
+    expect(reported).toBeLessThanOrEqual(trueWidth)
   })
 })
 

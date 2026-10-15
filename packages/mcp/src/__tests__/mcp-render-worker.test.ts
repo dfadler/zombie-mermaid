@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import ELK from 'elkjs/lib/elk.bundled.js'
 import { registerElk } from '@zombie-mermaid/svg-renderer'
 import { MermaidParseError } from '@zombie-mermaid/core'
+import { AsciiWidthError } from '@zombie-mermaid/ascii-renderer'
 import { createWorkerRenderer } from '../tools/render-worker-client.ts'
 import { renderErrorResult } from '../tools/parse-diagnostics.ts'
 import { renderSvgHandler, svgRenderOptions } from '../tools/render-svg.ts'
@@ -74,6 +75,19 @@ describe('worker timeout and OOM', () => {
     })
   })
 
+  it('rebuilds AsciiWidthError with its name, code and fields (#2057)', async () => {
+    const r = make({})
+    const err = await r.render(req('width')).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(AsciiWidthError)
+    expect(err).toMatchObject({
+      name: 'AsciiWidthError',
+      code: 'WIDTH_EXCEEDED',
+      actualWidth: 31,
+      maxWidth: 20,
+      compactApplied: true,
+    })
+  })
+
   it('surfaces a worker crash and an unexpected exit, then respawns', async () => {
     const r = make({})
     await expect(r.render(req('crash'))).rejects.toThrow('boom')
@@ -131,6 +145,19 @@ describe.skipIf(!existsSync(BUILT))('built worker output', () => {
     expect({ content: [{ type: 'text', text: ascii }] }).toEqual(
       renderAsciiHandler(asciiIn),
     )
+    // maxWidth crosses the thread in the options and the error crosses back.
+    const wide = { diagram: asciiIn.diagram, maxWidth: 3 }
+    const wideErr = await r
+      .render({
+        kind: 'ascii',
+        diagram: wide.diagram,
+        options: asciiRenderOptions(wide),
+      })
+      .catch((e: unknown) => e)
+    expect(wideErr).toBeInstanceOf(AsciiWidthError)
+    expect(
+      renderErrorResult('Failed to render diagram to ASCII', wideErr, ''),
+    ).toEqual(renderAsciiHandler(wide))
     // Errors keep their result (incl. parse diagnostics) across the thread hop.
     const bad = {
       diagram: 'classDiagram\n  class Animal {\n    <<interface\n  }',

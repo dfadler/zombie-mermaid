@@ -45,6 +45,7 @@ export { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 export {
   renderMermaidASCII,
   renderMermaidAscii,
+  AsciiWidthError,
 } from '@zombie-mermaid/ascii-renderer'
 export type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
 export {
