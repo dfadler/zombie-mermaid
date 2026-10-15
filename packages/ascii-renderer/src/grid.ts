@@ -25,6 +25,8 @@ import {
   determineLabelLine,
   createLabelContext,
   assignParallelEdgeLanes,
+  assignFaceLanes,
+  noteRejectedFaceLanes,
   splitSharedLabeledLane,
   reserveUnderRow,
   spreadCandidates,
@@ -414,7 +416,7 @@ function rerouteAroundStyleConflicts(
         findStyleConflict(nodeOnlyGrid, cellStyles, edge.path, edge.style) ??
         // A lane already keeps off other edges' runs (`runTaken`); the stem
         // it shares with a chain partner is split by port-offsets.ts.
-        (edge.parallelLane?.index
+        (edge.parallelLane?.index || edge.faceLane
           ? null
           : findUnrelatedOverlap(
               nodeOnlyGrid,
@@ -2008,6 +2010,7 @@ export function createMapping(graph: AsciiGraph): void {
   // analysis runs, so determinePath below can route sibling edges past the
   // first through distinct offset lanes instead of all computing the
   // identical center path (see #329).
+  assignFaceLanes(graph)
   assignParallelEdgeLanes(graph)
 
   // Give edges that leave a cluster through a shared exit (2+ of them) a
@@ -2050,9 +2053,12 @@ export function createMapping(graph: AsciiGraph): void {
     { count: number; usedOffsets: Set<number> }
   >()
   // Offset lanes go last so they can keep off every other edge's runs (#2025).
+  // Flow-axis face lanes go first: their gutter slots are planned, so nothing
+  // routed later may take them (#2121).
   const lanesLast = [
-    ...graph.edges.filter((e) => !e.parallelLane?.index),
-    ...graph.edges.filter((e) => e.parallelLane?.index),
+    ...graph.edges.filter((e) => e.faceLanePlan),
+    ...graph.edges.filter((e) => !e.faceLanePlan && !e.parallelLane?.index),
+    ...graph.edges.filter((e) => !e.faceLanePlan && e.parallelLane?.index),
   ]
   for (const edge of lanesLast) {
     // Skip edges that were already routed as part of a bundle
@@ -2087,6 +2093,8 @@ export function createMapping(graph: AsciiGraph): void {
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
   }
+
+  noteRejectedFaceLanes(graph)
 
   // A self-loop that runs along another edge's cells gets one more drawn
   // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).

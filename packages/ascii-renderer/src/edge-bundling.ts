@@ -201,8 +201,8 @@ function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
   // source must be strictly above the shared target (or every target
   // strictly below the shared source). Those two conditions happen to be
   // complementary today; nothing structural keeps them that way.
-  /* v8 ignore next */
-  if (edges.some((e) => e.parallelLane)) return false
+  // A planned flow-axis face lane (#2121) keeps its own route likewise.
+  if (edges.some((e) => e.parallelLane || e.faceLanePlan)) return false
 
   // Bundling assumes every source sits strictly before the shared target
   // along the graph-direction axis for fan-in (TD: above it; LR: left of

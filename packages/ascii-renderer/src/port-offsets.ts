@@ -421,6 +421,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   const startGroups = new Map<string, FanOutMember[]>()
   for (const edge of graph.edges) {
     if (edge.from === edge.to || edge.path.length < 2) continue
+    // A flow-face back-edge takes the free cell beside the stems in allocateFaces
+    // below; it must not push those stems off their ports.
+    if (edge.faceLane) continue
     if (isFixed(edge)) {
       // A bundled, lane or cluster edge stays where it was routed, at both
       // ends; without a run of its own it still occupies its ports.
@@ -561,7 +564,37 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     result.set(edge, shift)
   }
   allocateFaces(graph, result, shiftedRun)
+  spreadFaceLaneRuns(graph, result)
   return result
+}
+
+/**
+ * Draw the departure and arrival runs of flow-axis face lanes on the rows the
+ * plan gave them (#2121), so lanes sharing a gutter row do not run along one
+ * another. Path points 1-2 are the departure run, 3-4 the arrival run.
+ */
+function spreadFaceLaneRuns(
+  graph: AsciiGraph,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  const vertical = graph.config.graphDirection !== 'LR'
+  for (const e of graph.edges) {
+    const plan = e.faceLanePlan
+    if (!plan || !e.faceLane || e.path.length !== 6) continue
+    const shift = result.get(e) ?? { start: 0, end: 0 }
+    const at = (by: number): DrawingCoord =>
+      vertical ? { x: 0, y: by } : { x: by, y: 0 }
+    const zero = at(0)
+    shift.points = [
+      zero,
+      at(plan.dep),
+      at(plan.dep),
+      at(plan.arr),
+      at(plan.arr),
+      zero,
+    ]
+    result.set(e, shift)
+  }
 }
 
 /** One end of a lane edge or self-loop on a node face, for `allocateFaces`. */
@@ -598,6 +631,7 @@ function allocateFaces(
       e.path.length >= 2 &&
       !result.has(e) &&
       (e.from === e.to ||
+        e.faceLane === true ||
         (e.parallelLane !== undefined &&
           !e.bundle &&
           !e.clusterSource &&
@@ -668,7 +702,10 @@ function shapeOf(f: FaceEnd) {
     role: f.role,
     heading: f.role === 'S' ? f.run.turn : -f.run.turn,
     // A loop hugs its node: inside any lane it shares the face with.
-    depth: runExtent(f.edge, f.run) - (f.edge.from === f.edge.to ? 0.5 : 0),
+    // Flow-axis face lanes: the outer lane's port sits farther out.
+    depth: f.edge.faceLanePlan
+      ? -f.edge.faceLanePlan.slot
+      : runExtent(f.edge, f.run) - (f.edge.from === f.edge.to ? 0.5 : 0),
   }
 }
 
@@ -706,6 +743,8 @@ function placeFace(
       key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}`,
       // A straight lane: the #1284 pair side (down-travelling right).
       push: pushOf(f.run, f.role),
+      // A flow-axis face lane stays on its outer side of every stem.
+      lane: f.edge.faceLanePlan !== undefined,
       at: fixed.get(f.edge),
     }
   })
@@ -742,7 +781,10 @@ function placeFace(
         if (h.at === p && (gap > 0 || h.role !== r.role)) return Infinity
         if (Math.abs(h.at - p) < gap) return Infinity
         if (h.at === p) c += 4
-        else if (Math.sign(h.at - p) === r.heading) c += 3
+        else if (Math.sign(h.at - p) === r.heading) {
+          if (r.lane) return Infinity
+          c += 3
+        }
       }
       return c
     }
