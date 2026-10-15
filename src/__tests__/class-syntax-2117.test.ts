@@ -106,6 +106,52 @@ describe('both-ends and lollipop arrows', () => {
     )
   })
 
+  it("ASCII keeps lollipop names inside the host's namespace frame", () => {
+    const out = renderMermaidASCII(
+      'classDiagram\n  namespace N {\n    class Version\n  }\n  Comparable ()-- Version',
+    )
+    const rows = out.split('\n')
+    const name = rows.findIndex((r) => r.includes('Comparable'))
+    const title = rows.findIndex((r) => r.includes('N'))
+    expect(title).toBeLessThan(name) // name sits under the frame's title row
+    expect(out).toContain('│ Version │')
+  })
+
+  it('ASCII keeps the box of an interface that has members or is also related', () => {
+    const withMember = renderMermaidASCII(
+      'classDiagram\n  class A {\n    +run()\n  }\n  A ()-- B',
+    )
+    expect(withMember).toContain('│ A ')
+    const noted = renderMermaidASCII(
+      'classDiagram\n  A ()-- B\n  note for A "hi"',
+    )
+    expect(noted).toContain('│ A │')
+  })
+
+  it('ASCII keeps a free note and a note on a framed lollipop host', () => {
+    const out = renderMermaidASCII(
+      'classDiagram\n  namespace N {\n    class V\n  }\n  I ()-- V\n  note for V "attached"\n  note "free"',
+    )
+    for (const t of ['attached', 'free', 'I']) expect(out).toContain(t)
+  })
+
+  it('ASCII leaves ()--() as an ordinary two-ended line', () => {
+    const out = renderMermaidASCII('classDiagram\n  A ()--() B')
+    expect(out).toContain('│ A │')
+    expect(out).toContain('│ B │')
+    expect(out.match(/○/g)).toHaveLength(2)
+  })
+
+  it('ASCII draws two lollipops on one host in the --ascii charset', () => {
+    const out = renderMermaidASCII(
+      'classDiagram\n  I ()-- C\n  J ()-- C\n  C --() K',
+      { useAscii: true },
+    )
+    expect(out.match(/O/g)!.length).toBeGreaterThanOrEqual(3)
+    for (const n of ['I', 'J', 'K']) expect(out).toContain(n)
+    expect(out).not.toContain('| I |')
+  })
+
   it('still rejects a mixed pair, which has no single marker', () => {
     expect(() => parse('classDiagram\n  A <|--* B')).toThrow(/Malformed/)
   })
