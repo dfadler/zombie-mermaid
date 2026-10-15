@@ -99,7 +99,7 @@ export function tryApplyClassAssignment(
   target: StyleDirectives,
 ): boolean {
   const match = line.match(
-    /^class\s+([\w-]+(?:\s*,\s*[\w-]+)*)\s+([\w-]+)\s*;?\s*$/,
+    /^class\s+([\p{L}\p{N}\p{M}_-]+(?:\s*,\s*[\p{L}\p{N}\p{M}_-]+)*)\s+([\w-]+)\s*;?\s*$/u,
   )
   if (!match) return false
   const className = match[2]!
@@ -140,7 +140,7 @@ export function tryApplyStyleStatement(
   line: string,
   target: StyleDirectives,
 ): boolean {
-  const match = line.match(/^style\s+([\w,-]+)\s+(.+)$/)
+  const match = line.match(/^style\s+([\p{L}\p{N}\p{M}_,-]+)\s+(.+)$/u)
   if (!match) return false
   const props = parseStyleProps(match[2]!)
   for (const id of match[1]!.split(',').map((s) => s.trim())) {
@@ -186,6 +186,12 @@ export function resolveNodeStyle(
   directives: StyleDirectives,
 ): Record<string, string> | undefined {
   let result: Record<string, string> | undefined
+  // Drop invalid colours per layer, before merging: a browser drops the bad
+  // declaration only, so an invalid `style` fill must not erase the valid
+  // fill an earlier layer set.
+  const merge = (layer: Record<string, string>) => {
+    result = { ...result, ...dropInvalidColors(layer) }
+  }
 
   /*
    * `classDef default` applies to every node without being assigned. It was
@@ -194,26 +200,20 @@ export function resolveNodeStyle(
    * its nodes via `classDef default` rendered unstyled with no error.
    */
   const defaultDef = directives.classDefs.get('default')
-  if (defaultDef) {
-    result = { ...defaultDef }
-  }
+  if (defaultDef) merge(defaultDef)
 
   // Then the node's own class, overriding the default property by property.
   const className = directives.classAssignments.get(nodeId)
   if (className) {
     const classDef = directives.classDefs.get(className)
-    if (classDef) {
-      result = result ? { ...result, ...classDef } : { ...classDef }
-    }
+    if (classDef) merge(classDef)
   }
 
   // Then, apply explicit style directives (override class styles)
   const nodeStyle = directives.nodeStyles.get(nodeId)
-  if (nodeStyle) {
-    result = result ? { ...result, ...nodeStyle } : { ...nodeStyle }
-  }
+  if (nodeStyle) merge(nodeStyle)
 
-  return result && dropInvalidColors(result)
+  return result
 }
 
 /**
