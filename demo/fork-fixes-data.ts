@@ -671,4 +671,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: row `a` shows only `FK` and row `b` shows no key. After: both show `PK,FK`.',
   },
+  {
+    id: 'er-style-classdef',
+    title: 'ER style, classDef and class were ignored',
+    symptom:
+      'An ER entity given `style`, `classDef` plus `class`, or the `:::` shorthand rendered unstyled, although mermaid paints it.',
+    source:
+      'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  classDef hot fill:#fecaca,stroke:#dc2626\n  class ORDER hot\n  style CUSTOMER fill:#dbeafe,stroke:#2563eb',
+    fixCommit: '10ce9a2a',
+    pr: 2132,
+    render: 'svg',
+    lookFor:
+      'Before: both entities use the theme colours. After: `CUSTOMER` is blue and `ORDER` is red.',
+  },
 ]
