@@ -51,6 +51,7 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { stampFile } from './build-stamp.ts'
 
 /** One extra file to write (with its parent directory created first)
  * before the main `content` in {@link GeneratePageOptions}. */
@@ -105,8 +106,7 @@ export async function generatePage({
   }
 
   await mkdir(new URL('./', outPath), { recursive: true })
-  await writeFile(outPath, content, 'utf8')
-
+  await writeFile(outPath, stampFile(outPath, content), 'utf8')
   const resolvedPath = fileURLToPath(outPath)
   if (log) {
     console.log(

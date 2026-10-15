@@ -2472,6 +2472,46 @@ pie title Pets adopted by volunteers
   c --> a`,
   },
   {
+    title: 'Flowchart: Dense Duplicate Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Ten edges over three nodes, four of them duplicates of one pair (#2072). In the ASCII panel every edge keeps a lane and an arrowhead of its own, as Mermaid draws one path per edge, and the faces grow to hold them.',
+    source: `flowchart TD
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> b
+  a --> b
+  a --> b
+  a --> b
+  b --> c
+  b --> c
+  a --> c
+  a --> c
+  c --> a
+  c --> a`,
+  },
+  {
+    title: 'Flowchart: Dense Duplicate Edges (LR)',
+    category: 'Flowchart',
+    description:
+      'Ten edges over three nodes, four of them duplicates of one pair (#2072). In the ASCII panel every edge keeps a lane and an arrowhead of its own, as Mermaid draws one path per edge, and the faces grow to hold them.',
+    source: `flowchart LR
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> b
+  a --> b
+  a --> b
+  a --> b
+  b --> c
+  b --> c
+  a --> c
+  a --> c
+  c --> a
+  c --> a`,
+  },
+  {
     title: 'ER: Multiple Keys per Attribute',
     category: 'ER',
     description:

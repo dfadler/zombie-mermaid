@@ -2,7 +2,10 @@ name: Site vs npm drift
 
 # Daily check that the live demo site's version (JSON-LD softwareVersion)
 # hasn't fallen more than a day behind npm latest (#1574). A red run is the
-# alert. Zero-dependency script, so no install step.
+# alert. Also (#1613) compares the build-sha stamp in the live HTML with the
+# HEAD of main: red when the site lacks deploy-triggering changes from a main
+# HEAD older than SHA_GRACE_HOURS (default 2). Zero-dependency script, so no
+# install step.
 on:
   schedule:
     - cron: '30 16 * * *'
@@ -24,11 +27,12 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: '.nvmrc'
-      - name: Compare live site to npm latest
+      - name: Compare live site to npm latest and main
         env:
           GH_TOKEN: ${{ github.token }}
           SITE_URL: https://dfadler.github.io/zombie-mermaid/
           PACKAGE: zombie-mermaid
+          REPO: ${{ github.repository }}
         run: |
           LAST_PAGES_SUCCESS=$(gh run list --workflow pages.yml --status success -L1 --json createdAt -q '.[0].createdAt' || true)
           export LAST_PAGES_SUCCESS
