@@ -21,4 +21,4 @@
    │ █████  █████  █████  █████  █████  █████         █████
    │ █████  █████  █████  █████  █████  █████  █████  █████
    ┼───┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬───
-      Eng   SalesMarketinSupport  HR   Finance Legal   Ops
+      Eng   Sales Marke… Suppo…   HR   Finance Legal   Ops

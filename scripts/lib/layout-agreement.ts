@@ -435,6 +435,11 @@ export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   'Class: Relationship Labels': 0.65,
   'Class: MVC Architecture': 0.65,
   'Class: Namespaces': 0.65,
+  // 14 of 15 pairs agree. The one that does not is Animal/Cat: Cat's centre is
+  // 26px left of Animal's in mermaid 12.1.0 and 12.2.0 and 19px in ours, so the
+  // 20px tolerance splits it. Same layers, same order; mermaid's boxes are wider
+  // (text metrics), see docs/known-differences.md (#2103).
+  'Class: Full Hierarchy': 0.9,
 }
 
 /** Samples real mermaid itself rejects, so an oracle error is expected, not a regression. */
