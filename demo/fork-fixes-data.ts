@@ -698,7 +698,8 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'er-ascii-crossings-labels',
-    title: 'ER ASCII edges crossed without a junction and labels were ambiguous',
+    title:
+      'ER ASCII edges crossed without a junction and labels were ambiguous',
     symptom:
       'In ASCII, crossing ER edges drew no junction, a label could sit between two verticals or against another edge’s corner, and an edge could run along its box’s border.',
     source:
