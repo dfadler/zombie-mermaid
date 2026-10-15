@@ -126,6 +126,39 @@ Chromium through `scripts/lib/real-mermaid.ts`; four `flowchart-link` paths, fou
 GitHub for this sample, the `ascii` charset, and fan-ins with more than the four sources
 above.
 
+## ASCII: a self-loop sits on the flow-side faces, not where mermaid puts it
+
+Not fixed ([#2101](https://github.com/dfadler/zombie-mermaid/issues/2101)). Mermaid
+12.1.0 and 12.2.0 (and mermaid.live, which runs 12.2.0) draw `a --> a` as a small loop on
+the node's **left** face in `TD` and `BT`, and on its **top** face in `LR` and `RL`,
+alone or beside other edges. The ASCII renderer draws it on the flow-side faces: out of
+the bottom and back in at the right in `TD`/`BT`, out of the right and back in at the
+bottom in `LR`/`RL` (`selfReferenceDirection`, `edge-routing.ts`).
+
+```mermaid
+flowchart TD
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a
+```
+
+- **Why not moved.** The left (`TD`/`BT`) or top (`LR`/`RL`) face of a node in the first
+  grid column or row has no gutter beside it, so the layout would have to grow a leading
+  column or row for it, and in the middle of a diagram that face is usually another
+  edge's. The loop's legs, its arrowhead cell, duplicate loops, hugging a neighbour's lane
+  (`hugLoop`, #2025/#2070) and labelled loops are all built around the current faces, so
+  the move touches every self-loop, for a difference in where a small loop is drawn.
+- **What does hold.** The loop shares no stroke with another edge ([#2098](https://github.com/dfadler/zombie-mermaid/pull/2098)),
+  and the edges around it get a stroke and an arrowhead each ([#2100](https://github.com/dfadler/zombie-mermaid/issues/2100)).
+- **Layout.** The two samples sit under the default 85% oracle floor for a placement
+  reason that has nothing to do with the loop: mermaid staggers the three nodes
+  (`SAMPLE_FLOORS`, `scripts/lib/layout-agreement.ts`).
+
+Checked on mermaid 12.1.0 and 12.2.0 (headless Playwright) and mermaid.live (12.2.0, `TD`
+only); GitHub's render was not reachable. See the comment on #2101 for the numbers.
+
 ## Class: lollipop interfaces
 
 Not a difference any more for one-ended lollipops
