@@ -652,12 +652,19 @@ classDiagram-v2
   (`` class `Animal Class!` ``, `` `Animal Class!` <|-- Duck ``,
   `` `Animal Class!` : +int age ``); the backticks are not drawn.
 
+- A cardinality (`A "1" --> "*" B`) is drawn beside its own end of the line, on the
+  row next to its box, to the right of the line when there is room and to the left
+  otherwise. The gap between two levels grows to at least three rows (five for a
+  two-line label) so each end keeps its own row; a cardinality is never drawn over a
+  marker, label, border or another line, and in an extremely crowded fan one that fits
+  nowhere is left out. The unicode and `--ascii` charsets place them identically.
+
 Checked against mermaid 12.1.0 (repo pin) and 12.2.0.
 
 ### Known limitations
 
-- `direction LR|RL|BT`, ASCII cardinalities and `class A["Label"]` aliases are
-  not honoured yet (tracked separately: #2116, #2114).
+- `direction LR|RL|BT` and `class A["Label"]` aliases are not honoured yet
+  (tracked separately: #2116).
 - The `$` / `*` classifier after a method's `)` is styled but also left in the
   member text.
 - A dotted lollipop (`()..`, `..()`) is a parse error.

@@ -283,6 +283,18 @@ const LABEL_EXTRA_VGAP = 2
 // an intermediate box: the detour's entry run needs its own row above the
 // arrowhead row so the head has a stem (issue #2056), clear of the labels.
 const DETOUR_EXTRA_VGAP = 2
+// Blank columns between a cardinality and the line it labels (the marker
+// takes the cell on the line itself).
+const CARDINALITY_GAP = 1
+
+// Rows needed between two levels joined by a relationship that carries a
+// cardinality (issue #2114): one row hugging each box, so each cardinality
+// sits beside the line next to its own end, around the `labelLines` rows the
+// label takes (a multi-line label is centred on the middle row, so an even
+// count needs one more row to stay clear of both).
+function cardinalityGapRows(labelLines: number): number {
+  return Math.max(labelLines, 1) + 2 + (labelLines % 2 === 0 ? 1 : 0)
+}
 
 /** A `namespace` block with at least one member class in the diagram. */
 interface AsciiNamespaceFrame {
@@ -362,6 +374,9 @@ export function renderClassAscii(
   // Levels whose gap below needs DETOUR_EXTRA_VGAP rows; set by the second
   // layout pass (see `detourEntryLevels`).
   detourRoomLevels?: ReadonlySet<number>,
+  // Columns the whole diagram shifts right, set by the second layout pass
+  // when a cardinality had no room left of the line (see the cardinality pass).
+  cardinalityLeftPad = 0,
 ): string {
   const lines = splitStatements(text)
   // Notes ride through the layout as pseudo-classes — see withNotePseudoClasses.
@@ -533,6 +548,29 @@ export function renderClassAscii(
         inDeg.get(rel.to)! > 1)
     ) {
       labelRoomLevels.add(from)
+    }
+  }
+
+  // Levels whose gap holds a relationship's cardinality (either end): that
+  // gap is never narrower than `cardinalityGapRows` (issue #2114).
+  const cardinalityGapByLevel = new Map<number, number>()
+  for (const rel of diagram.relationships) {
+    const from = level.get(rel.from)
+    const to = level.get(rel.to)
+    if (
+      (rel.fromCardinality || rel.toCardinality) &&
+      from !== undefined &&
+      to !== undefined &&
+      from !== to
+    ) {
+      const lv = Math.min(from, to)
+      cardinalityGapByLevel.set(
+        lv,
+        Math.max(
+          cardinalityGapByLevel.get(lv) ?? 0,
+          cardinalityGapRows(rel.label ? splitLines(rel.label).length : 0),
+        ),
+      )
     }
   }
 
@@ -932,11 +970,11 @@ export function renderClassAscii(
       }
     }
 
-    currentY +=
-      maxH +
+    const gapRows =
       vGap +
       (labelRoomLevels.has(lv) ? LABEL_EXTRA_VGAP : 0) +
       (detourRoomLevels?.has(lv) ? DETOUR_EXTRA_VGAP : 0)
+    currentY += maxH + Math.max(gapRows, cardinalityGapByLevel.get(lv) ?? 0)
   }
 
   // Centre each interface name on its host so the stem runs straight, unless
@@ -968,6 +1006,10 @@ export function renderClassAscii(
     y1: number
   }
   const frameRects: FrameRect[] = []
+  if (cardinalityLeftPad > 0) {
+    for (const p of placed.values()) p.x += cardinalityLeftPad
+    maxSlotEnd += cardinalityLeftPad
+  }
   if (frames.length > 0) {
     for (const p of placed.values()) {
       p.x += FRAME_SIDE_PAD
@@ -1414,6 +1456,16 @@ export function renderClassAscii(
   // straight stems already on the canvas at the anchor it shares.
   const lateDetours: (() => void)[] = []
 
+  // Where each relationship's two ends touch their boxes — the marker cell
+  // (or the stem cell when that end has no marker) and which way the line
+  // runs away from the box (+1 down, -1 up). The cardinality pass reads it.
+  interface RelEnd {
+    x: number
+    y: number
+    dy: 1 | -1
+  }
+  const relEnds = new Map<number, { from: RelEnd; to: RelEnd }>()
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -1474,6 +1526,11 @@ export function renderClassAscii(
           // uses this to keep a detour label's whole width clear of that
           // box, not just the single column `routeX` itself.
           clearSide: routeX > fromCX ? 'right' : 'left',
+        })
+
+        relEnds.set(relIndex, {
+          from: { x: fromAnchorX, y: fromBY + 1, dy: 1 },
+          to: { x: toAnchorX, y: entryY, dy: -1 },
         })
 
         // Drawn after every other relationship (see `lateDetours`).
@@ -1557,6 +1614,10 @@ export function renderClassAscii(
         const midY = fromBY + Math.floor((toTY - fromBY) / 2)
         const fromJogs = fromCX !== fromAnchorX
         const toJogs = toCX !== toAnchorX
+        relEnds.set(relIndex, {
+          from: { x: fromAnchorX, y: fromBY + 1, dy: 1 },
+          to: { x: toAnchorX, y: toTY - 1, dy: -1 },
+        })
 
         // 1. Jog from the source anchor out to the lane, then vertical from
         //    the source bottom (or from below the jog) to midY
@@ -1630,6 +1691,10 @@ export function renderClassAscii(
       const midY = toBY + Math.floor((fromTY - toBY) / 2)
       const fromJogs = fromCX !== fromAnchorX
       const toJogs = toCX !== toAnchorX
+      relEnds.set(relIndex, {
+        from: { x: fromAnchorX, y: fromTY - 1, dy: -1 },
+        to: { x: toAnchorX, y: toBY + 1, dy: 1 },
+      })
 
       // Jog along the row above the source from its anchor out to the lane
       // (mirror of the downward case), then vertical up to midY
@@ -1728,6 +1793,10 @@ export function renderClassAscii(
       increaseRoleCanvasSize(rc, totalW, detourY + 1)
       const fromJogs = fromCX !== fromAnchorX
       const toJogs = toCX !== toAnchorX
+      relEnds.set(relIndex, {
+        from: { x: fromAnchorX, y: fromBY + 1, dy: 1 },
+        to: { x: toAnchorX, y: toBY + 1, dy: 1 },
+      })
 
       // Jog out to the lane under the source, then vertical down from it
       drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
@@ -1793,6 +1862,7 @@ export function renderClassAscii(
       theme,
       options,
       detourEntryLevels,
+      cardinalityLeftPad,
     )
   }
 
@@ -2218,6 +2288,84 @@ export function renderClassAscii(
         }
       }
     }
+  }
+
+  // --- Draw relationship cardinalities (issue #2114) ---
+  // Each cardinality sits beside the line next to its own end: on the row
+  // hugging the box (where the marker is), to the right of the line like
+  // mermaid, otherwise to the left, otherwise one row further along the line.
+  // Drawn after the lines and labels and only into blank cells, so it can
+  // never overwrite a marker, a border, a label or another line. The rows
+  // are nearest-first and stop short of the line's middle, so a cardinality
+  // never reads as belonging to the other end. If nothing is free (a very
+  // crowded fan), the cardinality is left out rather than drawn over
+  // something else.
+  const CARDINALITY_ROWS = 2
+  // Columns the diagram would need to move right for a cardinality that fits
+  // nowhere else but off the left edge.
+  let cardinalityNeedsLeft = 0
+  const isFree = (x: number, y: number): boolean =>
+    x < 0 ||
+    y < 0 ||
+    (!boxCells.has(`${x},${y}`) && (canvas[x]?.[y] ?? ' ') === ' ')
+  for (const [relIndex, rel] of diagram.relationships.entries()) {
+    const ends = relEnds.get(relIndex)
+    if (!ends) continue
+    for (const [raw, end] of [
+      [rel.fromCardinality, ends.from],
+      [rel.toCardinality, ends.to],
+    ] as const) {
+      if (!raw) continue
+      const cells = toDisplayCells(raw.replace(/\s*\n\s*/g, ' '))
+      const w = cells.length
+      let spot: { x: number; y: number } | undefined
+      for (let k = 0; k < CARDINALITY_ROWS && !spot; k++) {
+        const y = end.y + end.dy * k
+        // Right of the line, then left; one blank column kept around the text.
+        for (const x0 of [
+          end.x + 1 + CARDINALITY_GAP,
+          end.x - CARDINALITY_GAP - w,
+        ]) {
+          if (x0 < 0) continue
+          let free = true
+          for (let x = x0 - 1; x <= x0 + w && free; x++) {
+            free = isFree(x, y)
+          }
+          if (free) {
+            spot = { x: x0, y }
+            break
+          }
+        }
+      }
+      if (!spot) {
+        // Right of the line was blocked: the left side is the way out, if the
+        // canvas edge allows it.
+        cardinalityNeedsLeft = Math.max(
+          cardinalityNeedsLeft,
+          CARDINALITY_GAP + w - end.x,
+        )
+        continue
+      }
+      increaseSize(canvas, spot.x + w + 1, spot.y + 1)
+      increaseRoleCanvasSize(rc, spot.x + w + 1, spot.y + 1)
+      for (const [i, cell] of cells.entries()) {
+        setC(spot.x + i, spot.y, cell, 'text')
+      }
+    }
+  }
+
+  // A cardinality had room nowhere but off the left edge: lay out again with
+  // the diagram moved right by that much (at most once).
+  if (cardinalityNeedsLeft > 0 && cardinalityLeftPad === 0) {
+    return renderClassAscii(
+      text,
+      config,
+      colorMode,
+      theme,
+      options,
+      detourRoomLevels,
+      cardinalityNeedsLeft,
+    )
   }
 
   // --- Draw namespace frames ---
