@@ -11,6 +11,9 @@ import type {
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 
+/** Least length of an edge's first or last leg after a node is snapped, in px. */
+const MIN_STUB = 12
+
 /**
  * ELK's orthogonal edge routing staggers nodes within the same layer to create
  * space for edge bends. This post-processing step groups nodes into layers and
@@ -124,6 +127,37 @@ export function alignLayerNodes(
 
   if (deltas.size === 0) return
 
+  const k = isHorizontal ? 'x' : 'y'
+  /**
+   * An end node that moved toward the edge's cross-flow run shortens the last
+   * leg, and if it moved by the whole leg the run lies along the node's face
+   * and the arrowhead is half-clipped (#2110). Move the run back to leave
+   * `MIN_STUB` between it and the node. `end`/`step` walk from the node's
+   * point (0/1 for a source, n-1/-1 for a target); `oldAt` is where the node's
+   * point was before the shift.
+   */
+  const keepStub = (
+    pts: PositionedEdge['points'],
+    end: number,
+    step: 1 | -1,
+    oldAt: number,
+  ): void => {
+    const a = pts[end]!
+    const b = pts[end + step]
+    const c = pts[end + 2 * step]
+    const d = pts[end + 3 * step]
+    // Only a perpendicular leg into a cross-flow run (a Z-shaped route).
+    if (!b || !c || !d || b[k] === oldAt || c[k] !== b[k]) return
+    const sign = Math.sign(b[k] - oldAt)
+    const gap = sign * (b[k] - a[k])
+    if (gap >= MIN_STUB) return
+    const run = b[k] + sign * (MIN_STUB - gap)
+    // Keep the leg before the run pointing the same way.
+    if (sign * (d[k] - run) <= 0) return
+    b[k] = run
+    c[k] = run
+  }
+
   // Adjust edge endpoints to match shifted node positions
   for (const edge of edges) {
     if (edge.points.length < 2) continue
@@ -142,7 +176,7 @@ export function alignLayerNodes(
           edge.points[1]!.x === first.x - srcDelta
         ) {
           edge.points[1]!.x += srcDelta
-        }
+        } else keepStub(edge.points, 0, 1, first.x - srcDelta)
       } else {
         first.y += srcDelta
         if (
@@ -150,7 +184,7 @@ export function alignLayerNodes(
           edge.points[1]!.y === first.y - srcDelta
         ) {
           edge.points[1]!.y += srcDelta
-        }
+        } else keepStub(edge.points, 0, 1, first.y - srcDelta)
       }
     }
 
@@ -161,12 +195,16 @@ export function alignLayerNodes(
         if (edge.points.length > 1) {
           const prev = edge.points[edge.points.length - 2]!
           if (prev.x === last.x - tgtDelta) prev.x += tgtDelta
+          else
+            keepStub(edge.points, edge.points.length - 1, -1, last.x - tgtDelta)
         }
       } else {
         last.y += tgtDelta
         if (edge.points.length > 1) {
           const prev = edge.points[edge.points.length - 2]!
           if (prev.y === last.y - tgtDelta) prev.y += tgtDelta
+          else
+            keepStub(edge.points, edge.points.length - 1, -1, last.y - tgtDelta)
         }
       }
     }
