@@ -1,6 +1,16 @@
-┌───────────────┐                  ┌─────────┐                 
-│ <<interface>> │    Comparable ○──│ Version │──○ Printable    
-│ Comparable    │                  └─────────┘                 
-└───────────────┘                                              
-                                                               
-                                                               
+┌───────────────┐    Comparable     
+│ <<interface>> │         ○         
+│ Comparable    │         │         
+└───────────────┘         │         
+                          │         
+                          │         
+                          │         
+                     ┌─────────┐    
+                     │ Version │    
+                     └─────────┘    
+                          │         
+                          │         
+                          ○         
+                      Printable     
+                                    
+                                    

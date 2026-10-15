@@ -86,15 +86,24 @@ describe('both-ends and lollipop arrows', () => {
     expect(ascii).toContain('O')
   })
 
-  it('ASCII hangs the interface off its host: name and circle on the host row, no box, no edge', () => {
-    const left = renderMermaidASCII('classDiagram\n  Comparable ()-- Version')
-    expect(left.split('\n')[1]).toMatch(/^Comparable ○─+│ Version │/)
-    expect(left).not.toContain('┌───────────┐') // no Comparable box
-    const right = renderMermaidASCII('classDiagram\n  Version --() Printable')
-    expect(right.split('\n')[1]).toMatch(/│ Version │─+○ Printable/)
+  it('ASCII stacks the interface above or below its host: name, circle, stem, box', () => {
+    const above = renderMermaidASCII('classDiagram\n  Comparable ()-- Version')
+    const rows = above.split('\n').map((r) => r.trimEnd())
+    const at = (re: RegExp): number => rows.findIndex((r) => re.test(r))
+    expect(at(/Comparable/)).toBeLessThan(at(/○/))
+    expect(at(/○/)).toBeLessThan(at(/│ Version │/))
+    expect(above).not.toContain('┌────────────┐') // no Comparable box
+    const below = renderMermaidASCII('classDiagram\n  Version --() Printable')
+    const r2 = below.split('\n').map((r) => r.trimEnd())
+    const i = (re: RegExp): number => r2.findIndex((r) => re.test(r))
+    expect(i(/│ Version │/)).toBeLessThan(i(/○/))
+    expect(i(/○/)).toBeLessThan(i(/Printable/))
+    // The circle is the only glyph on its row: it sits right above the name.
+    expect(r2[i(/○/)]!.trim()).toBe('○')
     // Used elsewhere too, the interface name keeps its own box.
-    const both = renderMermaidASCII('classDiagram\n  A ()-- B\n  A --> C')
-    expect(both).toContain('│ A │')
+    expect(renderMermaidASCII('classDiagram\n  A ()-- B\n  A --> C')).toContain(
+      '│ A │',
+    )
   })
 
   it('still rejects a mixed pair, which has no single marker', () => {

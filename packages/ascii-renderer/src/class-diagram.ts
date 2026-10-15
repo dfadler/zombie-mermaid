@@ -397,11 +397,11 @@ export function renderClassAscii(
     const sections = buildClassSections(cls)
     classSections.set(cls.id, sections)
 
-    // An interface name has no box: one text row, centred on the host's
-    // first content row (see decorateAsciiLollipops).
+    // An interface name has no box: one text row, with the circle drawn by
+    // the lollipop edge just above or below it.
     if (lollipops.has(cls.id)) {
       classBoxW.set(cls.id, displayWidth(cls.label))
-      classBoxH.set(cls.id, 3)
+      classBoxH.set(cls.id, 1)
       continue
     }
 
@@ -490,10 +490,6 @@ export function renderClassAscii(
   // move it onto its class's row so the row placement below puts it right
   // beside that class.
   pinNoteLevels(notesById, level)
-  for (const [id, lolli] of lollipops) {
-    const hostLevel = level.get(lolli.host)
-    if (hostLevel !== undefined) level.set(id, hostLevel)
-  }
 
   // --- Position classes by level ---
   // Group classes by level
@@ -943,6 +939,24 @@ export function renderClassAscii(
       (detourRoomLevels?.has(lv) ? DETOUR_EXTRA_VGAP : 0)
   }
 
+  // Centre each interface name on its host so the stem runs straight, unless
+  // a neighbour on the name's row is in the way.
+  for (const [id, lolli] of lollipops) {
+    const p = placed.get(id)
+    const host = placed.get(lolli.host)
+    if (!p || !host) continue
+    const x = host.x + Math.floor((host.width - p.width) / 2)
+    const clear = [...placed.values()].every(
+      (o) =>
+        o === p ||
+        o.y + o.height <= p.y ||
+        o.y >= p.y + p.height ||
+        o.x + o.width + 1 <= x ||
+        o.x >= x + p.width + 1,
+    )
+    if (x >= 0 && clear) p.x = x
+  }
+
   // --- Frame rectangles ---
   // Each frame wraps the boxes of its members; the whole diagram shifts
   // right/down so the outermost frame's border lands on the canvas.
@@ -1025,8 +1039,7 @@ export function renderClassAscii(
   for (const p of placed.values()) {
     if (lollipops.has(p.cls.id)) {
       const cells = toDisplayCells(p.cls.label)
-      for (const [i, cell] of cells.entries())
-        setC(p.x + i, p.y + 1, cell, 'text')
+      for (const [i, cell] of cells.entries()) setC(p.x + i, p.y, cell, 'text')
       continue
     }
     const boxCanvas = drawMultiBox(
@@ -2257,7 +2270,6 @@ export function renderClassAscii(
   // each attached note to its class. Last, so a connector never lands on
   // top of a relationship line or label.
   decorateAsciiNotes(notesById, placed, canvas, useAscii, setC)
-  decorateAsciiLollipops(lollipops, placed, canvas, useAscii, setC)
 
   return canvasToString(canvas, {
     roleCanvas: rc,
@@ -2374,19 +2386,17 @@ function decorateAsciiNotes(
 // ============================================================================
 // Lollipop interfaces
 //
-// Mermaid draws `A ()-- B` as a small circle node carrying the name `A`,
-// hung off `B` by a short stem, with no edge to a class `A` (and no `A` box
-// at all when `A` is used only this way). Same idea here as for notes: the
-// interface name rides through the layout as a one-row pseudo-class pinned
-// to its host's level and placed beside it in source order (`A ()-- B` puts
-// it left of B, `B --() A` right of B), then `decorateAsciiLollipops` draws
-// `Name ○──` / `──○ Name` between them. `()--()` has no single host and
-// stays an ordinary relationship.
+// Mermaid draws `A ()-- B` as the name `A` above a small circle, joined to
+// `B` by a stem, with no edge to a class `A` (and no `A` box at all when `A`
+// is used only this way). Same here: each lollipop's interface end becomes a
+// one-row, box-less pseudo-class (id has a space, so it can't collide with a
+// class id) that the normal layout and edge routing treat like any class, so
+// `from` lands above `to`. The edge's circle marker is the lollipop. `()--()`
+// has no single host and stays an ordinary relationship.
 // ============================================================================
 
 interface AsciiLollipop {
   host: string
-  name: string
   side: 'left' | 'right'
 }
 
@@ -2407,16 +2417,21 @@ function withLollipopPseudoClasses(parsed: ClassDiagram): {
     const host = left ? rel.to : rel.from
     const name = left ? rel.from : rel.to
     const id = `lollipop ${lollipops.size}`
-    lollipops.set(id, { host, name, side: left ? 'left' : 'right' })
+    lollipops.set(id, { host, side: left ? 'left' : 'right' })
     interfaceIds.add(name)
     const list = pseudoByHost.get(host) ?? []
     list.push({ id, label: name, attributes: [], methods: [] })
     pseudoByHost.set(host, list)
+    relationships.push(left ? { ...rel, from: id } : { ...rel, to: id })
   }
   if (lollipops.size === 0) return { diagram: parsed, lollipops }
 
   // An interface keeps its box only when something else gives it one.
-  const kept = new Set(relationships.flatMap((r) => [r.from, r.to]))
+  const kept = new Set(
+    relationships
+      .filter((r) => r.type !== 'lollipop' || r.markerAt === 'both')
+      .flatMap((r) => [r.from, r.to]),
+  )
   for (const { host } of lollipops.values()) kept.add(host)
   for (const note of parsed.notes) if (note.forClass) kept.add(note.forClass)
   for (const ns of parsed.namespaces) for (const id of ns.classIds) kept.add(id)
@@ -2438,39 +2453,4 @@ function withLollipopPseudoClasses(parsed: ClassDiagram): {
       if (lollipops.get(ps.id)!.side === 'right') classes.push(ps)
   }
   return { diagram: { ...parsed, classes, relationships }, lollipops }
-}
-
-/** Draw each interface's stem and circle in the gap beside its host. */
-function decorateAsciiLollipops(
-  lollipops: Map<string, AsciiLollipop>,
-  placed: Map<string, PlacedClass>,
-  canvas: Canvas,
-  useAscii: boolean,
-  setC: (x: number, y: number, ch: string, role: CharRole) => void,
-): void {
-  const stem = useAscii ? '-' : '─'
-  const circle = useAscii ? 'O' : '○'
-  for (const [id, lolli] of lollipops) {
-    const p = placed.get(id)
-    const host = placed.get(lolli.host)
-    if (!p || !host || p.y !== host.y) continue
-    const y = p.y + 1
-    // [x0, x1): the gap between the two; the circle sits next to the name.
-    const [x0, x1] =
-      lolli.side === 'right'
-        ? [host.x + host.width, p.x]
-        : [p.x + p.width, host.x]
-    if (x1 <= x0) continue
-    const circleX =
-      lolli.side === 'right'
-        ? x1 - (x1 - x0 >= 3 ? 2 : 1)
-        : x0 + (x1 - x0 >= 3 ? 1 : 0)
-    for (let x = x0; x < x1; x++) {
-      if (canvas[x]?.[y] !== ' ') continue
-      const onCircle = x === circleX
-      const onName = lolli.side === 'right' ? x > circleX : x < circleX
-      if (onName) continue
-      setC(x, y, onCircle ? circle : stem, onCircle ? 'arrow' : 'line')
-    }
-  }
 }
