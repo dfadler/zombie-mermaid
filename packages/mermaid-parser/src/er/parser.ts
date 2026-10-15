@@ -188,14 +188,13 @@ function parseAttribute(line: string, lineNumber: number): ErAttribute | null {
   if (restWithoutComment) {
     for (const part of restWithoutComment.split(',')) {
       const upper = part.trim().toUpperCase()
-      if (upper !== 'PK' && upper !== 'FK' && upper !== 'UK') {
+      if (!/^[PFU]K$/.test(upper)) {
         throw new MermaidParseError(
-          `Line ${lineNumber}: Invalid ER attribute keys "${restWithoutComment}" in "${line}". ` +
-            'Keys must be PK, FK or UK, separated by commas (e.g. "PK, FK"), before an optional "comment".',
+          `Line ${lineNumber}: Invalid ER attribute keys "${restWithoutComment}"; use PK, FK or UK separated by commas.`,
           { diagramType: 'er' },
         )
       }
-      keys.push(upper)
+      keys.push(upper as ErAttribute['keys'][number])
     }
   }
 

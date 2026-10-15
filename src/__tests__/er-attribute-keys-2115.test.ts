@@ -9,7 +9,8 @@ import { parseErDiagram } from '@zombie-mermaid/mermaid-parser'
 import { splitStatements } from '@zombie-mermaid/core'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
-const src = (attr: string) => `erDiagram\n  T {\n    string a ${attr}\n  }`
+const src = (attr: string, more = '') =>
+  `erDiagram\n  T {\n    string a ${attr}\n${more}  }`
 const keysOf = (attr: string) =>
   parseErDiagram(splitStatements(src(attr))).entities[0]!.attributes[0]!
 
@@ -41,7 +42,7 @@ describe('ER attribute key lists', () => {
   )
 
   it('shows PK,FK in SVG and ASCII for both spellings', () => {
-    const source = src('PK, FK "c"').replace('}', '    string b PK,FK\n  }')
+    const source = src('PK, FK "c"', '    string b PK,FK\n')
     expect(renderMermaidSVG(source).match(/>PK,FK</g)).toHaveLength(2)
     expect(
       renderMermaidASCII(source)
