@@ -164,6 +164,7 @@ function withLollipopNodes(parsed: ClassDiagram): LollipopLayout {
     interfaceIds.add(name)
     pseudo.push({
       id,
+      /* v8 ignore next -- the parser creates a class for every relationship end */
       label: parsed.classes.find((c) => c.id === name)?.label ?? name,
       attributes: [],
       methods: [],
@@ -194,6 +195,7 @@ function withLollipopNodes(parsed: ClassDiagram): LollipopLayout {
     classIds: [
       ...ns.classIds,
       ...pseudo
+        /* v8 ignore next -- every pseudo-class has a host */
         .filter((c) => ns.classIds.includes(hostOf.get(c.id) ?? ''))
         .map((c) => c.id),
     ],
@@ -513,6 +515,23 @@ function extractClassLayout(
   const backEdges = classBackEdges(lollipops.diagram)
   const childById = new Map<string, ElkNode>()
   for (const child of flatChildren) childById.set(child.id, child)
+  // Lollipop interface names, by pseudo-class id.
+  const interfaceBoxes = new Map<
+    string,
+    NonNullable<PositionedClassRelationship['interfaceLabel']>
+  >()
+  for (const [id, text] of lollipops.labels) {
+    const child = childById.get(id)
+    /* v8 ignore start -- ELK positions every node it was given */
+    interfaceBoxes.set(id, {
+      text,
+      x: child?.x ?? 0,
+      y: child?.y ?? 0,
+      width: child?.width ?? 0,
+      height: child?.height ?? 0,
+    })
+    /* v8 ignore stop */
+  }
   const elkEdges = result.edges ?? []
   // The first diagram.relationships.length edges are the relationships, in
   // order — buildClassElkGraph creates exactly one ELK edge per relationship
@@ -531,20 +550,9 @@ function extractClassLayout(
     const points = backEdges.has(i) ? laidOut.reverse() : laidOut
     const labelPosition = extractEdgeLabelPosition(elkEdge, off.x, off.y)
 
-    const interfaceId = lollipops.byRelationship.get(i)
-    const node = interfaceId ? childById.get(interfaceId) : undefined
-    const size = interfaceId ? classSizes.get(interfaceId) : undefined
-    const text = interfaceId ? lollipops.labels.get(interfaceId) : undefined
-    const interfaceLabel =
-      node && size && text !== undefined
-        ? {
-            text,
-            x: node.x ?? 0,
-            y: node.y ?? 0,
-            width: node.width ?? size.width,
-            height: node.height ?? size.height,
-          }
-        : undefined
+    const interfaceLabel = interfaceBoxes.get(
+      lollipops.byRelationship.get(i) ?? '',
+    )
 
     relationships.push({
       from: rel.from,
