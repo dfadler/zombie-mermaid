@@ -544,6 +544,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     slotEdges,
     rolesAt,
     portOf,
+    slotOffset,
   )
 
   for (const [edge, { r, s, e }] of runs) {
@@ -897,6 +898,7 @@ function separateFanIns(
   slotEdges: ReadonlyMap<string, number>,
   rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
   portOf: (key: string) => string,
+  slotOffset: (key: string) => number,
 ): Map<AsciiEdge, Landing> {
   const groups = new Map<string, AsciiEdge[]>()
   for (const [edge, { r, e }] of runs) {
@@ -908,10 +910,17 @@ function separateFanIns(
   const out = new Map<AsciiEdge, Landing>()
   for (const [key, group] of groups) {
     const port = portOf(key)
-    if (group.length < 2 || rolesAt.get(port)!.size > 1) continue
+    if (group.length < 2) continue
     if ([...slots].some(([k, m]) => m.fixed && portOf(k) === port)) continue
     if (new Set(group.map((g) => g.from)).size < 2) continue
-    landFanIn(graph, runs, slotEdges, rolesAt, portOf, group, out)
+    // A port that also sends an edge up (#2100): the cells those ends hold
+    // stay where `offsets` put them, and the fan-in lands beyond them.
+    const held =
+      rolesAt.get(port)!.size > 1
+        ? [...slots.keys()].filter((k) => portOf(k) === port).map(slotOffset)
+        : undefined
+    const crowded = held && { held, own: slotOffset(key) }
+    landFanIn(graph, runs, slotEdges, rolesAt, portOf, group, out, crowded)
   }
   return out
 }
@@ -924,6 +933,7 @@ function landFanIn(
   portOf: (key: string) => string,
   group: AsciiEdge[],
   out: Map<AsciiEdge, Landing>,
+  crowded?: { held: number[]; own: number },
 ): void {
   // Which side each edge comes from, and how far its lane is from the port.
   const info = group.map((edge) => {
@@ -977,6 +987,23 @@ function landFanIn(
   ]
   const at = order.findIndex((m) => !m.bent)
   if (at >= 0) spacings.push(order.map((_, i) => STROKE_SPACING * (i - at)))
+  if (crowded) {
+    // The port's other ends keep their cells (and a straight edge its tied
+    // one); each bent edge takes the next cell beyond them on its own side.
+    const { held, own } = crowded
+    spacings.length = 0
+    spacings.push(
+      order.map((m) => {
+        if (!m.bent) return own
+        const rank = order.filter(
+          (o) => o.bent && o.from === m.from && o.dist <= m.dist,
+        ).length
+        return m.from > 0
+          ? Math.max(...held) + STROKE_SPACING * rank
+          : Math.min(...held) - STROKE_SPACING * rank
+      }),
+    )
+  }
   const offs =
     geo &&
     spacings.find((os) =>
@@ -984,7 +1011,7 @@ function landFanIn(
         (m, i) =>
           Number.isInteger(os[i]) &&
           attachesAt(m.end, geo.centre + os[i]!, geo) &&
-          (m.bent || os[i] === 0 || startOk(m, os[i]!)),
+          (m.bent || os[i] === 0 || crowded || startOk(m, os[i]!)),
       ),
     )
   if (!offs) return

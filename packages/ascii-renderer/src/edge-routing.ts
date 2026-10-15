@@ -29,6 +29,7 @@ import {
   requireCardinalDirection,
 } from './types.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
+import { crowdedTopFaceEnds } from './edge-bundling.ts'
 import {
   getNodeSubgraph,
   gridToDrawingCoord,
@@ -430,6 +431,18 @@ export function spreadCandidates(
         below: false,
       },
     ])
+  }
+  // #2100: a top face holding a fan-in and an edge going up gives every end a
+  // cell: the reciprocal pair sits either side of the centre, the rest beyond.
+  if (vertical) {
+    for (const n of graph.nodes) {
+      const ends = crowdedTopFaceEnds(graph, n)
+      if (ends === 0) continue
+      out.set(n, [
+        ...(out.get(n) ?? []),
+        { vertical, strokes: 2 * ends - 2, rows: 0, below: false },
+      ])
+    }
   }
   for (const [from, targets] of byPair) {
     for (const [to, group] of targets) {

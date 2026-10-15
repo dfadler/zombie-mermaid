@@ -260,7 +260,38 @@ function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
     }
   }
 
+  // An edge landing on a top face that also sends an edge up (`C --> A` beside
+  // `A --> C`) has no room for a trunk and a junction: such fan-ins are landed
+  // stroke by stroke instead (`separateFanIns`, port-offsets.ts, #2100), and
+  // a fan-out into one is split so its edge there is not swallowed.
+  if (edges.some((e) => crowdedTopFaceEnds(graph, e.to) > 0)) return false
+
   return true
+}
+
+/**
+ * Edges on the top face of `node` (TD) when 2+ edges from different sources
+ * above arrive there and the node also sends an edge up to a node above it, so
+ * the face holds both roles at once; 0 otherwise. Each end needs a cell of its
+ * own, so the node must be wide enough (`spreadCandidates`) for them (#2100).
+ */
+export function crowdedTopFaceEnds(graph: AsciiGraph, node: AsciiNode): number {
+  const y = requireGridCoord(node).y
+  const above = (n: AsciiNode): boolean => requireGridCoord(n).y < y
+  const ins = graph.edges.filter(
+    (e) => e.to === node && e.from !== node && above(e.from),
+  )
+  const outs = graph.edges.filter(
+    (e) => e.from === node && e.to !== node && above(e.to),
+  )
+  // Duplicate edges take lanes (#2025) and keep to their own routes.
+  const ends = [...ins, ...outs]
+  const plain = new Set(ends.map((e) => `${e.from.index}>${e.to.index}`)).size
+  return new Set(ins.map((e) => e.from)).size > 1 &&
+    outs.length > 0 &&
+    plain === ends.length
+    ? ends.length
+    : 0
 }
 
 // ============================================================================

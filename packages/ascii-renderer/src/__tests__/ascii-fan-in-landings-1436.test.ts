@@ -2,7 +2,7 @@
  * #1436: edges into one node from different sources each keep their own
  * stem and arrowhead. These cover the arrangements `separateFanIns` has to
  * order or decline: edges arriving from the left, a straight edge among them,
- * and a port that also starts an edge.
+ * and a port that also starts an edge (kept merged until #2100).
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -48,11 +48,11 @@ describe('TD fan-in landings (#1436)', () => {
       expect(headsAbove(render(FROM_LEFT, useAscii), 'D', head)).toBe(2)
     })
 
-    it(`keeps one trunk where the port also starts an edge (${mode})`, () => {
+    it(`lands every arrival where the port also starts an edge (${mode})`, () => {
       const rows = render(BACK_EDGE, useAscii)
-      // D sends an edge back out of its top face, so its arrivals stay
-      // merged, while C still gets one arrowhead per edge.
-      expect(headsAbove(rows, 'D', head)).toBe(1)
+      // D sends an edge back out of its top face (#2100): the three arrivals
+      // land beside the cells that edge holds, one arrowhead each, as at C.
+      expect(headsAbove(rows, 'D', head)).toBe(3)
       expect(headsAbove(rows, 'C', head)).toBe(2)
     })
   }

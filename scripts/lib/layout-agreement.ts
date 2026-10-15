@@ -431,6 +431,13 @@ export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   // are 37px tall here, 48px there), so the 20px tolerance splits the pair (#2058).
   'LR Fan-In With Bypass Edge': 0.3,
   'State: Notes': 0.8,
+  // Placement, not the loop (#2100, #2101). Mermaid 12.1.0 and 12.2.0 stagger
+  // the three nodes: TD puts b 48px right of a and c 37px right of it, where
+  // ours stacks all three in one column (only b-c agrees, 1 of 3 pairs); LR
+  // puts b 22px below a, which the 20px tolerance splits (2 of 3 pairs agree).
+  // Where the loop goes is in docs/known-differences.md.
+  'Flowchart: Self-Loop with In and Out Neighbours (TD)': 0.3,
+  'Flowchart: Self-Loop with In and Out Neighbours (LR)': 0.65,
   // Ratcheted 2026-10-15 (#2129): 100/100 on mermaid 12.1.0 and 12.2.0 since #2023.
   // A 3-node sample moves in steps of 1/3, so 0.95 means any split pair fails.
   'Class: Inheritance (<|--)': 0.95,
