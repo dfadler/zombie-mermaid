@@ -17,6 +17,7 @@ import type {
   AsciiSubgraph,
 } from './types.ts'
 import { requireGridCoord } from './types.ts'
+import { subgraphsTied } from '@zombie-mermaid/core'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
@@ -1595,7 +1596,17 @@ function computeMinLevels(
   const dfs = (node: AsciiNode): void => {
     state.set(node, 'open')
     const out: AsciiNode[] = []
-    for (const child of getChildren(graph, node)) {
+    // A subgraph feedback edge ranks as if it ran the other way (#2111).
+    const rankChildren = graph.edges.flatMap((e) =>
+      e.feedback
+        ? e.to === node
+          ? [e.from]
+          : []
+        : e.from === node
+          ? [e.to]
+          : [],
+    )
+    for (const child of rankChildren) {
       if (child === node || state.get(child) === 'open') continue
       out.push(child)
       if (!state.has(child)) dfs(child)
@@ -2171,11 +2182,16 @@ export function createMapping(graph: AsciiGraph): void {
   // Each trial width also re-clears the avoiding edges: left where they were,
   // they fall inside the growing frame and read as title collisions, so the
   // frame over-widens (Layer Two came out 24 wide for a 9-wide title).
-  widenFramesForTitleStrokes(graph, () => {
-    refreshBoxes()
-    widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
-  })
+  const widenForTitles = (): void =>
+    widenFramesForTitleStrokes(graph, () => {
+      refreshBoxes()
+      widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
+    })
+  widenForTitles()
   // The room a frame was given may reach its neighbour; open the gap (#1248).
+  // That gap restores a pushed neighbour to its natural width, so its title
+  // can only now be seen to meet an entering edge: check again (#2111).
+  if (widenGapsForFrameTitles(graph)) widenForTitles()
   widenGapsForFrameTitles(graph)
   widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
   offsetDrawingForSubgraphs(graph)
@@ -2261,7 +2277,16 @@ function compareBySiblingSubgraphOrder(
   // relative declaration order is recovered from each one's position in the
   // flat `graph.subgraphs` list, which preserves source order (see
   // `convertSubgraph`'s pre-order-DFS push in converter.ts).
-  return graph.subgraphs.indexOf(sgB) - graph.subgraphs.indexOf(sgA)
+  const byDeclaration =
+    graph.subgraphs.indexOf(sgB) - graph.subgraphs.indexOf(sgA)
+  // Mermaid 12 (ELK) keeps declaration order for siblings tied by an edge
+  // (#2111); mermaid 11 / unconnected siblings are reversed.
+  return graph.parsed &&
+    sgA.source &&
+    sgB.source &&
+    subgraphsTied(graph.parsed, sgA.source, sgB.source)
+    ? -byDeclaration
+    : byDeclaration
 }
 
 /** Get all direct children of a node (targets of outgoing edges). */

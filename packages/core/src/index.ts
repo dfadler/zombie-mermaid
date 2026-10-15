@@ -21,6 +21,7 @@
 // ============================================================================
 
 export * from './click-directive.ts'
+export * from './back-edges.ts'
 export * from './cluster-edges.ts'
 export * from './accessibility.ts'
 export * from './color-utils.ts'

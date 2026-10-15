@@ -274,15 +274,17 @@ describe('cluster-exit anchoring: engagement and fallbacks', () => {
 
 describe('cluster-exit anchoring: overlapping root subgraphs (#1165)', () => {
   // S1's long title widens its box on both sides until it collides with its
-  // neighbour S2, which is exactly what ensureSubgraphSpacing resolves.
+  // neighbour S2, which is exactly what ensureSubgraphSpacing resolves. S2 is
+  // declared first: siblings tied through `X` keep declaration order (#2111),
+  // so S2 sits on the left.
   // `b --> C` gives C a second parent, so `a` is not centred over its targets
   // (#1462) and the frames still overlap before the pass.
   const src = `flowchart TD
-  subgraph S1["Long cluster title"]
-    a
-  end
   subgraph S2
     b
+  end
+  subgraph S1["Long cluster title"]
+    a
   end
   X --> a
   X --> b

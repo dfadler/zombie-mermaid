@@ -12,7 +12,7 @@ import {
   layoutFlowchartSync,
   layoutGraphSync,
 } from '@zombie-mermaid/svg-renderer'
-import { findBackEdgeIndexes } from '../../packages/svg-renderer/src/layout-engine/back-edges.ts'
+import { findBackEdgeIndexes } from '@zombie-mermaid/core'
 import { edgesReversedForLayout } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
 import type { PositionedGraph } from '@zombie-mermaid/core'
 
