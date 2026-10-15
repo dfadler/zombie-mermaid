@@ -129,84 +129,37 @@ export function alignLayerNodes(
 
   const k = isHorizontal ? 'x' : 'y'
   /**
-   * An end node that moved toward the edge's cross-flow run shortens the last
-   * leg, and if it moved by the whole leg the run lies along the node's face
-   * and the arrowhead is half-clipped (#2110). Move the run back to leave
-   * `MIN_STUB` between it and the node. `end`/`step` walk from the node's
-   * point (0/1 for a source, n-1/-1 for a target); `oldAt` is where the node's
-   * point was before the shift.
+   * Move an edge's end point with its node, and the leg after it if that leg is
+   * collinear. A node that moved toward the edge's cross-flow run can leave the
+   * run lying along its face and the arrowhead half-clipped (#2110), so the run
+   * moves back to leave `MIN_STUB`. `end`/`step` walk from the node's point
+   * (0/1 for a source, n-1/-1 for a target).
    */
-  const keepStub = (
+  const move = (
     pts: PositionedEdge['points'],
     end: number,
     step: 1 | -1,
-    oldAt: number,
+    delta: number,
   ): void => {
     const a = pts[end]!
-    const b = pts[end + step]
-    const c = pts[end + 2 * step]
-    const d = pts[end + 3 * step]
-    // Only a perpendicular leg into a cross-flow run (a Z-shaped route).
-    if (!b || !c || !d || b[k] === oldAt || c[k] !== b[k]) return
-    const sign = Math.sign(b[k] - oldAt)
-    const gap = sign * (b[k] - a[k])
-    if (gap >= MIN_STUB) return
-    const run = b[k] + sign * (MIN_STUB - gap)
-    // Keep the leg before the run pointing the same way.
-    if (sign * (d[k] - run) <= 0) return
-    b[k] = run
-    c[k] = run
+    const old = a[k]
+    a[k] += delta
+    const [b, c, d] = [1, 2, 3].map((i) => pts[end + i * step])
+    if (b![k] === old) b![k] += delta
+    else if (c && d && c[k] === b![k]) {
+      const sign = Math.sign(b![k] - old)
+      const run = b![k] + sign * Math.max(0, MIN_STUB - sign * (b![k] - a[k]))
+      // Keep the leg before the run pointing the same way.
+      if (sign * (d[k] - run) > 0) b![k] = c[k] = run
+    }
   }
 
-  // Adjust edge endpoints to match shifted node positions
   for (const edge of edges) {
-    if (edge.points.length < 2) continue
-
-    const srcDelta = deltas.get(edge.source)
-    const tgtDelta = deltas.get(edge.target)
-
-    if (srcDelta != null) {
-      // Shift first point and any subsequent points in the initial vertical/horizontal run
-      const first = edge.points[0]!
-      if (isHorizontal) {
-        first.x += srcDelta
-        // Shift second point if it's part of a straight vertical exit
-        if (
-          edge.points.length > 1 &&
-          edge.points[1]!.x === first.x - srcDelta
-        ) {
-          edge.points[1]!.x += srcDelta
-        } else keepStub(edge.points, 0, 1, first.x - srcDelta)
-      } else {
-        first.y += srcDelta
-        if (
-          edge.points.length > 1 &&
-          edge.points[1]!.y === first.y - srcDelta
-        ) {
-          edge.points[1]!.y += srcDelta
-        } else keepStub(edge.points, 0, 1, first.y - srcDelta)
-      }
-    }
-
-    if (tgtDelta != null) {
-      const last = edge.points[edge.points.length - 1]!
-      if (isHorizontal) {
-        last.x += tgtDelta
-        if (edge.points.length > 1) {
-          const prev = edge.points[edge.points.length - 2]!
-          if (prev.x === last.x - tgtDelta) prev.x += tgtDelta
-          else
-            keepStub(edge.points, edge.points.length - 1, -1, last.x - tgtDelta)
-        }
-      } else {
-        last.y += tgtDelta
-        if (edge.points.length > 1) {
-          const prev = edge.points[edge.points.length - 2]!
-          if (prev.y === last.y - tgtDelta) prev.y += tgtDelta
-          else
-            keepStub(edge.points, edge.points.length - 1, -1, last.y - tgtDelta)
-        }
-      }
-    }
+    const { points } = edge
+    if (points.length < 2) continue
+    const src = deltas.get(edge.source)
+    const tgt = deltas.get(edge.target)
+    if (src != null) move(points, 0, 1, src)
+    if (tgt != null) move(points, points.length - 1, -1, tgt)
   }
 }
