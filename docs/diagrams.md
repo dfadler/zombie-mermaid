@@ -629,10 +629,37 @@ connector; a free note goes on the top row after the classes.
            ╰─────────────╯
 ```
 
+### Header alias, both-ends arrows, lollipops, backtick names
+
+```mermaid
+classDiagram-v2
+  `Base Shape` <|--|> Circle
+  Circle <--> Canvas : draws
+  Canvas ()-- Renderer
+  Plugin --() Renderer
+```
+
+- `classDiagram-v2` is the same diagram type as `classDiagram`, as in Mermaid.
+- `<|--|>`, `<|..|>`, `<-->`, `<..>`, `*--*` and `o--o` draw the relationship's
+  marker at both ends of the line (a mixed pair such as `<|--*` is still an error).
+- `()--`, `--()` and `()--()` end the line in a hollow circle (lollipop interface):
+  `○`, or `O` in the `--ascii` charset. The class box is kept; see
+  [known differences](known-differences.md#class-lollipop-interfaces).
+- A backtick-quoted class name may hold spaces and punctuation
+  (`` class `Animal Class!` ``, `` `Animal Class!` <|-- Duck ``,
+  `` `Animal Class!` : +int age ``); the backticks are not drawn.
+
+Checked against mermaid 12.1.0 (repo pin) and 12.2.0.
+
 ### Known limitations
 
-None currently — `note`/`note for` and `classDef`/`style`/`class`/`:::`
-styling are all recognized (see above).
+- `direction LR|RL|BT`, ASCII cardinalities and `class A["Label"]` aliases are
+  not honoured yet (tracked separately: #2116, #2114).
+- The `$` / `*` classifier after a method's `)` is styled but also left in the
+  member text.
+- A dotted lollipop (`()..`, `..()`) is a parse error.
+- `note`/`note for` and `classDef`/`style`/`class`/`:::` styling are
+  recognized (see above).
 
 ## ER Diagrams
 

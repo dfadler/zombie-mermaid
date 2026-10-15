@@ -117,6 +117,16 @@ Chromium through `scripts/lib/real-mermaid.ts`; four `flowchart-link` paths, fou
 GitHub for this sample, the `ascii` charset, and fan-ins with more than the four sources
 above.
 
+## Class: lollipop interfaces
+
+Intentional ([#2117](https://github.com/dfadler/zombie-mermaid/issues/2117)). For `A ()-- B` /
+`A --() B`, mermaid.js (12.1.0 and 12.2.0 agree) turns the lollipop end into a small circle
+node with the class name beside it, and draws no class box for a class that is only used that
+way. zombie-mermaid keeps the class box and ends the line in a hollow circle marker on it
+(`○`, or `O` in the `--ascii` charset). Both show a circle at the interface end; the layout
+and the name placement differ. Dotted lollipops (`()..`, `..()`), which mermaid accepts, are
+a parse error here.
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams

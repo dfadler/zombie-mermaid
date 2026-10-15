@@ -80,7 +80,7 @@ interface RelMarker {
   /** Relationship type (determines marker shape) */
   type: RelationshipType
   /** Which end the marker is placed at */
-  markerAt: 'from' | 'to'
+  markerAt: 'from' | 'to' | 'both'
   /** Whether the line is dashed */
   dashed: boolean
 }
@@ -91,7 +91,7 @@ interface RelMarker {
  */
 function getRelMarker(
   type: RelationshipType,
-  markerAt: 'from' | 'to',
+  markerAt: 'from' | 'to' | 'both',
 ): RelMarker {
   const dashed = type === 'dependency' || type === 'realization'
   return { type, markerAt, dashed }
@@ -131,6 +131,9 @@ function getMarkerShape(
     case 'aggregation':
       // Hollow diamond - omnidirectional shape
       return useAscii ? 'o' : '◇'
+    case 'lollipop':
+      // Hollow circle (interface) - omnidirectional shape
+      return useAscii ? 'O' : '○'
     case 'association':
     case 'dependency':
       // Directional arrow - rotate based on line direction
@@ -145,6 +148,26 @@ function getMarkerShape(
         return useAscii ? '>' : '▶'
       }
   }
+}
+
+/**
+ * Marker for the `from` end, drawn with the line's travel direction at that
+ * end. Hierarchical triangles already point back into the box for that
+ * direction; directional arrows must point the opposite way (into the box),
+ * so flip them. Omnidirectional markers ignore the direction.
+ */
+function getFromMarkerShape(
+  type: RelationshipType,
+  useAscii: boolean,
+  direction: 'up' | 'down' | 'left' | 'right',
+): string {
+  const hierarchical = type === 'inheritance' || type === 'realization'
+  const flip = { up: 'down', down: 'up', left: 'right', right: 'left' } as const
+  return getMarkerShape(
+    type,
+    useAscii,
+    hierarchical ? direction : flip[direction],
+  )
 }
 
 /**
@@ -487,7 +510,11 @@ export function renderClassAscii(
       from !== undefined &&
       to !== undefined &&
       from < to &&
-      (outDeg.get(rel.from)! > 1 || inDeg.get(rel.to)! > 1)
+      // A marker at both ends leaves no stem between the two heads and the
+      // label, so a labelled two-ended line always needs the extra room.
+      (rel.markerAt === 'both' ||
+        outDeg.get(rel.from)! > 1 ||
+        inDeg.get(rel.to)! > 1)
     ) {
       labelRoomLevels.add(from)
     }
@@ -1455,7 +1482,7 @@ export function renderClassAscii(
           }
 
           // Markers for detour case
-          if (marker.markerAt === 'to') {
+          if (marker.markerAt !== 'from') {
             // Target sits below this point — the arrowhead must point down
             // into it. Hierarchical markers (inheritance/realization) rotate
             // opposite to directional ones (association/dependency): passing
@@ -1472,8 +1499,8 @@ export function renderClassAscii(
             )
             setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
           }
-          if (marker.markerAt === 'from') {
-            const markerChar = getMarkerShape(marker.type, useAscii, 'down')
+          if (marker.markerAt !== 'to') {
+            const markerChar = getFromMarkerShape(marker.type, useAscii, 'down')
             setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
           }
         })
@@ -1531,7 +1558,7 @@ export function renderClassAscii(
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 
         // Markers for no-collision case
-        if (marker.markerAt === 'to') {
+        if (marker.markerAt !== 'from') {
           // Same rotation compensation as the detour case above — target is
           // below this point, so hierarchical markers need 'up' to point
           // down into it.
@@ -1548,11 +1575,11 @@ export function renderClassAscii(
             'arrow',
           )
         }
-        if (marker.markerAt === 'from') {
+        if (marker.markerAt !== 'to') {
           setCGuarded(
             fromAnchorX,
             fromBY + 1,
-            getMarkerShape(marker.type, useAscii, 'down'),
+            getFromMarkerShape(marker.type, useAscii, 'down'),
             'arrow',
           )
         }
@@ -1598,8 +1625,8 @@ export function renderClassAscii(
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - arrows point in the direction of the vertical segment (upward)
-      if (marker.markerAt === 'from') {
-        const markerChar = getMarkerShape(marker.type, useAscii, 'up')
+      if (marker.markerAt !== 'to') {
+        const markerChar = getFromMarkerShape(marker.type, useAscii, 'up')
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
           setCGuarded(
@@ -1610,7 +1637,7 @@ export function renderClassAscii(
           )
         }
       }
-      if (marker.markerAt === 'to') {
+      if (marker.markerAt !== 'from') {
         const isHierarchical =
           marker.type === 'inheritance' || marker.type === 'realization'
         const markerDir = isHierarchical ? 'down' : 'up'
@@ -1679,8 +1706,8 @@ export function renderClassAscii(
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - same-level routing uses vertical segments at both ends
-      if (marker.markerAt === 'from') {
-        const markerChar = getMarkerShape(marker.type, useAscii, 'down')
+      if (marker.markerAt !== 'to') {
+        const markerChar = getFromMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
           setCGuarded(
@@ -1691,7 +1718,7 @@ export function renderClassAscii(
           )
         }
       }
-      if (marker.markerAt === 'to') {
+      if (marker.markerAt !== 'from') {
         // Target sits above this point (line detours below both boxes then
         // comes back up) — mirrors the "target is above source" branch's
         // compensation above.

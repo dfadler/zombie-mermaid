@@ -42,6 +42,50 @@ import {
 // ============================================================================
 
 /**
+ * Every relationship arrow the parser accepts, with the relationship type it
+ * draws and which end(s) carry the marker. The single source of truth: the
+ * arrow regex below is built from these keys, so an arrow can't be recognized
+ * without a meaning. `both` puts the same marker at each end (`<|--|>`,
+ * `<-->`, `()--()`), as mermaid does. A bare `--` stays an association.
+ */
+const ARROWS: Record<
+  string,
+  { type: RelationshipType; markerAt: 'from' | 'to' | 'both' }
+> = {
+  '<|--': { type: 'inheritance', markerAt: 'from' },
+  '--|>': { type: 'inheritance', markerAt: 'to' },
+  '<|--|>': { type: 'inheritance', markerAt: 'both' },
+  '<|..': { type: 'realization', markerAt: 'from' },
+  '..|>': { type: 'realization', markerAt: 'to' },
+  '<|..|>': { type: 'realization', markerAt: 'both' },
+  '*--': { type: 'composition', markerAt: 'from' },
+  '--*': { type: 'composition', markerAt: 'to' },
+  '*--*': { type: 'composition', markerAt: 'both' },
+  'o--': { type: 'aggregation', markerAt: 'from' },
+  '--o': { type: 'aggregation', markerAt: 'to' },
+  'o--o': { type: 'aggregation', markerAt: 'both' },
+  '-->': { type: 'association', markerAt: 'to' },
+  '<--': { type: 'association', markerAt: 'from' },
+  '<-->': { type: 'association', markerAt: 'both' },
+  '..>': { type: 'dependency', markerAt: 'to' },
+  '<..': { type: 'dependency', markerAt: 'from' },
+  '<..>': { type: 'dependency', markerAt: 'both' },
+
+  '()--': { type: 'lollipop', markerAt: 'from' },
+  '--()': { type: 'lollipop', markerAt: 'to' },
+  '()--()': { type: 'lollipop', markerAt: 'both' },
+  '--': { type: 'association', markerAt: 'to' },
+}
+
+/** A class id token: a backtick-quoted name (may hold spaces) or a bare run of non-space. */
+const CLASS_ID = '`[^`]+`|\\S+?'
+
+/** Strip the backticks off a backtick-quoted class name. */
+function unquoteClassId(id: string): string {
+  return /^`[^`]+`$/.test(id) ? id.slice(1, -1) : id
+}
+
+/**
  * The set of relationship-arrow tokens `parseRelationship` recognizes,
  * shared with the "does this line even look like a relationship attempt"
  * check below so the two can't drift apart. Order matters for regex
@@ -49,7 +93,10 @@ import {
  * the bare `--` fallback).
  */
 const RELATIONSHIP_ARROW_SOURCE =
-  '<\\|--|<\\|\\.\\.|\\*--|o--|-->|--\\*|--o|--\\|>|\\.\\.>|\\.\\.\\|>|<--|<\\.\\.?|--'
+  Object.keys(ARROWS)
+    .sort((a, b) => b.length - a.length)
+    .map((a) => a.replace(/[|.*()]/g, '\\$&'))
+    .join('|') + '|<\\.\\.?'
 
 /**
  * Matches a line that *contains* a relationship-arrow token somewhere, even
@@ -190,7 +237,9 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     }
 
     // --- Class block start: `class ClassName {` or `class ClassName:::style {` ---
-    const classBlockMatch = line.match(/^class\s+(\S+?)(?:\s*~(\w+)~)?\s*\{$/)
+    const classBlockMatch = line.match(
+      new RegExp(`^class\\s+(${CLASS_ID})(?:\\s*~(\\w+)~)?\\s*\\{$`),
+    )
     if (classBlockMatch) {
       const id = declareClass(classBlockMatch[1]!, classBlockMatch[2])
       currentClass = classMap.get(id) ?? null
@@ -200,7 +249,9 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     }
 
     // --- Standalone class declaration (no body): `class ClassName` / `class ClassName:::style` ---
-    const classOnlyMatch = line.match(/^class\s+(\S+?)(?:\s*~(\w+)~)?\s*$/)
+    const classOnlyMatch = line.match(
+      new RegExp(`^class\\s+(${CLASS_ID})(?:\\s*~(\\w+)~)?\\s*$`),
+    )
     if (classOnlyMatch) {
       declareClass(classOnlyMatch[1]!, classOnlyMatch[2])
       continue
@@ -210,7 +261,9 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     // One annotation or one member; `;`-separated members on a single line
     // are already split into separate statements upstream, so a multi-member
     // body can't reach here intact.
-    const inlineBodyMatch = line.match(/^class\s+(\S+?)\s*\{\s*(.*?)\s*\}$/)
+    const inlineBodyMatch = line.match(
+      new RegExp(`^class\\s+(${CLASS_ID})\\s*\\{\\s*(.*?)\\s*\\}$`),
+    )
     if (inlineBodyMatch) {
       const id = declareClass(inlineBodyMatch[1]!, undefined)
       const cls = classMap.get(id)
@@ -232,12 +285,18 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     }
 
     // --- Inline attribute: `ClassName : +String name` ---
-    const inlineAttrMatch = line.match(/^(\S+?)\s*:\s*(.+)$/)
+    const inlineAttrMatch = line.match(
+      new RegExp(`^(${CLASS_ID})\\s*:\\s*(.+)$`),
+    )
     if (inlineAttrMatch) {
       // Make sure this isn't a relationship line (those have arrows)
       const rest = inlineAttrMatch[2]!
       if (!rest.match(/<\|--|--|\*--|o--|-->|\.\.>|\.\.\|>/)) {
-        addMember(ensureClass(classMap, inlineAttrMatch[1]!), rest, stmt.line)
+        addMember(
+          ensureClass(classMap, unquoteClassId(inlineAttrMatch[1]!)),
+          rest,
+          stmt.line,
+        )
         continue
       }
     }
@@ -267,7 +326,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     // no arrow at all keeps falling through silently (#761).
     if (RELATIONSHIP_ARROW_MARKER.test(line)) {
       throw new MermaidParseError(
-        `Line ${stmt.line}: Malformed class-diagram relationship "${line}". Expected "FROM ARROW TO" (optionally with cardinalities and a ": label"), e.g. "Animal <|-- Dog" or 'A "1" --> "*" B : label'. ARROW must be one of <|--, <|.., *--, o--, -->, --*, --o, --|>, ..>, ..|>, <--, <.., or --.`,
+        `Line ${stmt.line}: Malformed class-diagram relationship "${line}". Expected "FROM ARROW TO" (optionally with cardinalities and a ": label"), e.g. "Animal <|-- Dog" or 'A "1" --> "*" B : label'. ARROW must be one of ${Object.keys(ARROWS).join(', ')}.`,
         { diagramType: 'class' },
       )
     }
@@ -297,7 +356,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     inNamespace: boolean = true,
   ): string {
     const { id: rawId, className } = splitClassShorthand(token)
-    let id = rawId
+    let id = unquoteClassId(rawId)
     let resolvedGeneric = generic
     if (!resolvedGeneric) {
       // The declaration regexes only split a `~T~` generic off the bare id
@@ -518,7 +577,7 @@ function parseRelationship(line: string): ClassRelationship | null {
   // it's re-joined onto the id here and split off again by the caller.
   const match = line.match(
     new RegExp(
-      `^(\\S+?)\\s+(?:"([^"]*?)"\\s+)?(${RELATIONSHIP_ARROW_SOURCE})\\s+(?:"([^"]*?)"\\s+)?(\\S+?)(?::::([\\w][\\w-]*))?(?:\\s*:\\s*(.+))?$`,
+      `^(${CLASS_ID})\\s+(?:"([^"]*?)"\\s+)?(${RELATIONSHIP_ARROW_SOURCE})\\s+(?:"([^"]*?)"\\s+)?(${CLASS_ID})(?::::([\\w][\\w-]*))?(?:\\s*:\\s*(.+))?$`,
     ),
   )
   if (!match) return null
@@ -551,44 +610,9 @@ function parseRelationship(line: string): ClassRelationship | null {
   }
 }
 
-/**
- * Map arrow syntax to relationship type and marker placement side.
- * Prefix markers (`<|--`, `*--`, `o--`) place the UML shape at the 'from' end.
- * Suffix markers (`..|>`, `-->`, `..>`, `--*`, `--o`) place it at the 'to' end.
- */
+/** Map arrow syntax to relationship type and marker placement (see {@link ARROWS}). */
 function parseArrow(
   arrow: string,
-): { type: RelationshipType; markerAt: 'from' | 'to' } | null {
-  // Trim whitespace that might be captured by the regex
-  const a = arrow.trim()
-  switch (a) {
-    case '<|--':
-      return { type: 'inheritance', markerAt: 'from' }
-    case '--|>':
-      return { type: 'inheritance', markerAt: 'to' }
-    case '<|..':
-      return { type: 'realization', markerAt: 'from' }
-    case '..|>':
-      return { type: 'realization', markerAt: 'to' }
-    case '*--':
-      return { type: 'composition', markerAt: 'from' }
-    case '--*':
-      return { type: 'composition', markerAt: 'to' }
-    case 'o--':
-      return { type: 'aggregation', markerAt: 'from' }
-    case '--o':
-      return { type: 'aggregation', markerAt: 'to' }
-    case '-->':
-      return { type: 'association', markerAt: 'to' }
-    case '<--':
-      return { type: 'association', markerAt: 'from' }
-    case '..>':
-      return { type: 'dependency', markerAt: 'to' }
-    case '<..':
-      return { type: 'dependency', markerAt: 'from' }
-    case '--':
-      return { type: 'association', markerAt: 'to' }
-    default:
-      return null
-  }
+): { type: RelationshipType; markerAt: 'from' | 'to' | 'both' } | null {
+  return ARROWS[arrow.trim()] ?? null
 }
