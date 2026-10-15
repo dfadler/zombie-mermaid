@@ -198,7 +198,9 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // which in turn changes where "tagged-with"'s jog (and so its label)
     // lands. The label is preceded by the jog's own corner glyph ('┌ ')
     // rather than sitting flush after the marker on the same row.
-    expect(row.slice(idx - 2, idx)).toBe('┌ ')
+    // (Two-row markers, #2083, leave the jog row above the label row, so
+    // the label is now preceded by the vertical line the jog turned into.)
+    expect(row.slice(idx - 2, idx)).toBe('│ ')
     const cornerCol = idx - 2
     // The marker sits at or adjacent to the corner's column, connected by
     // the vertical line the corner turns into — but not necessarily on the
@@ -211,9 +213,9 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
       labelRowIdx + 2,
       labelRowIdx + 3,
     ].filter((r) => r < lines.length)
-    const hasAlignedMarker = nearbyRows.some((r) =>
-      lines[r]!.slice(cornerCol - 1, cornerCol + 2).includes('○╧'),
-    )
+    const hasAlignedMarker =
+      nearbyRows.some((r) => lines[r]![cornerCol] === '○') &&
+      nearbyRows.some((r) => lines[r]![cornerCol] === '╧')
     expect(hasAlignedMarker).toBe(true)
   })
 
@@ -360,9 +362,11 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // since every entity box's own border also has solid corners and a
     // naive substring search can match those instead (they're a different
     // row, but a row can contain more than one corner pair).
-    const markerRowIdx = lines.findIndex((l) => l.includes('○╤'))
+    const markerRowIdx = lines.findIndex((l) => l.includes('╤'))
     expect(markerRowIdx).toBeGreaterThanOrEqual(0)
-    const detourRow = lines[markerRowIdx + 1]!
+    // The marker is two rows ('╤' against the box, '○' below it, #2083);
+    // the detour runs on the row after the circle.
+    const detourRow = lines[markerRowIdx + 2]!
     const detourStart = detourRow.indexOf('└╌')
     const detourEnd = detourRow.indexOf('╌┘') + 1
     expect(detourStart).toBeGreaterThanOrEqual(0)
@@ -423,9 +427,11 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // fill itself now solid too (styles swapped for this test), a naive
     // substring search matches ORDER's own box border instead of the
     // detour row.
-    const markerRowIdx = lines.findIndex((l) => l.includes('○╤'))
+    const markerRowIdx = lines.findIndex((l) => l.includes('╤'))
     expect(markerRowIdx).toBeGreaterThanOrEqual(0)
-    const detourRow = lines[markerRowIdx + 1]!
+    // The marker is two rows ('╤' against the box, '○' below it, #2083);
+    // the detour runs on the row after the circle.
+    const detourRow = lines[markerRowIdx + 2]!
     const detourStart = detourRow.indexOf('└─') // index of the '└' corner
     const detourEnd = detourRow.indexOf('─┘') + 1 // index of the '┘' corner
     expect(detourStart).toBeGreaterThanOrEqual(0)
