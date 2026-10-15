@@ -39,6 +39,7 @@ import { displayWidth } from './display-width.ts'
 import {
   buildClusterExitRoute,
   buildClusterEntryRoute,
+  clusterFaceCapacity,
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
@@ -520,22 +521,53 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
     else groups.set(key, [edge])
   }
 
+  const laneGroups: AsciiEdge[][] = []
   for (const group of groups.values()) {
     if (group.length < 2 || spreadsOnFaces(graph, group)) continue
     const usedOffsets = new Set<number>()
     for (let i = 0; i < group.length; i++) {
       group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
     }
-    // #1826: past the 3 cells of a box face, every sibling still needs a cell of
-    // its own, so lengthen the face rather than let them merge. Cluster exits
-    // split over two faces instead (`laneFace`, cluster-boundary.ts).
-    if (group.length > 4 && !group[0]!.clusterSource) {
-      const lr = graph.config.graphDirection === 'LR'
-      const sizes = lr ? graph.columnWidth : graph.rowHeight
-      for (const n of [group[0]!.from, group[0]!.to]) {
-        const at = requireGridCoord(n)[lr ? 'x' : 'y'] + 1
-        sizes.set(at, Math.max(sizes.get(at)!, group.length - 1))
+    laneGroups.push(group)
+  }
+
+  // #1826: past the 3 cells of a box face, every sibling still needs a cell of
+  // its own, so lengthen the face rather than let them merge. A stacked
+  // (TD/BT) pair's forward and back groups are separate groups but share the
+  // same two side faces, so their siblings (all but each group's first, which
+  // takes the flow face) are counted together. Cluster exits split over two
+  // faces instead (`laneSide`, cluster-boundary.ts).
+  // Deliberately not covered: lane groups from several sources into one
+  // target (`splitSharedLabeledLane`) keep sharing the target's face, which
+  // keeps `Labeled Fan-In (LR)` as it is (#1826). docs/known-differences.md
+  // gets the entry once PR #2090 lands.
+  const need = new Map<string, number>()
+  for (const group of laneGroups) {
+    const to = group[0]!.to
+    if (group[0]!.clusterSource) {
+      // The target's side faces take the siblings two ways (`laneSide`).
+      const cells = clusterFaceCapacity(group.length)
+      if (cells > 3) {
+        const lr = graph.config.graphDirection === 'LR'
+        const sizes = lr ? graph.columnWidth : graph.rowHeight
+        const at = requireGridCoord(to)[lr ? 'x' : 'y'] + 1
+        sizes.set(at, Math.max(sizes.get(at)!, cells))
       }
+      continue
+    }
+    const key = [group[0]!.from.index, group[0]!.to.index].sort().join('|')
+    need.set(key, (need.get(key) ?? 0) + group.length - 1)
+  }
+  for (const group of laneGroups) {
+    const total = need.get(
+      [group[0]!.from.index, group[0]!.to.index].sort().join('|'),
+    )
+    if (total === undefined || total < 4) continue
+    const lr = graph.config.graphDirection === 'LR'
+    const sizes = lr ? graph.columnWidth : graph.rowHeight
+    for (const n of [group[0]!.from, group[0]!.to]) {
+      const at = requireGridCoord(n)[lr ? 'x' : 'y'] + 1
+      sizes.set(at, Math.max(sizes.get(at)!, total))
     }
   }
 }

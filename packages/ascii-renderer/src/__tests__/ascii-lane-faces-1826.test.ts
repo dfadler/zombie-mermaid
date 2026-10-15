@@ -208,8 +208,8 @@ describe('cluster exit siblings past the fifth (#1689, #1826)', () => {
     // Three siblings on each side face (rows -1, 0, +1), the first drops in.
     const shifts = lanes.map((e) => clusterLaneEndShift(graph, e))
     expect(shifts.sort()).toEqual([-1, -1, 0, 0, 0, 1, 1].sort())
-    // An eighth edge keeps ordinary routing (documented limit).
-    expect(plan(8).lanes).toHaveLength(0)
+    // An eighth edge gets a longer target face and still engages.
+    expect(plan(8).lanes).toHaveLength(8)
   })
 
   it('a track that would land on the gutter column is refused', () => {
