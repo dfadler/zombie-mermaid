@@ -20,9 +20,11 @@ const BASE = `erDiagram
 `
 const parse = (src: string) => parseErDiagram(splitStatements(src))
 const entityGroup = (svg: string, id: string) => {
-  const start = svg.indexOf(`<g class="entity`)
-  const re = new RegExp(`<g class="entity[^"]*" data-id="${id}"[\\s\\S]*?</g>`)
-  return start < 0 ? '' : (svg.match(re)?.[0] ?? '')
+  const start = svg.indexOf(`data-id="${id}"`)
+  const open = svg.lastIndexOf('<g class="entity', start)
+  return start < 0 || open < 0
+    ? ''
+    : svg.slice(open, svg.indexOf('</g>', start))
 }
 
 describe('ER style statements are parsed', () => {
