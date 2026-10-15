@@ -658,4 +658,16 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: two arrowheads merge on a shared face. After: each of the six edges ends in its own head.',
   },
+  {
+    id: 'ascii-back-edges-flow-faces',
+    title: 'ASCII back-edges looped round the side faces, unlike mermaid',
+    symptom:
+      'A TD back-edge left and re-entered a node’s right face (LR: the bottom face). mermaid 12.1.0 draws it on the flow-axis faces: out of the source’s top, up a lane beside the column, into the target’s bottom, with its own port and arrowhead.',
+    source: 'flowchart TD\n  a --> b\n  b --> c\n  c --> a',
+    fixCommit: '3dea4e87',
+    pr: 2137,
+    render: 'ascii',
+    lookFor:
+      'Before: the back-edge hooks round the right side into `a`’s right face. After: it leaves `c`’s top and enters `a`’s bottom.',
+  },
 ]
