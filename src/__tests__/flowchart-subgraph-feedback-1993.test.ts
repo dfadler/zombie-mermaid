@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../index.ts'
 import { layoutFlowchartSync } from '@zombie-mermaid/svg-renderer'
-import { subgraphFeedbackEdges } from '../../packages/svg-renderer/src/layout-engine/back-edges.ts'
+import { subgraphFeedbackEdges } from '@zombie-mermaid/core'
 
 const CI_CD = `graph TD
   subgraph ci [CI Pipeline]

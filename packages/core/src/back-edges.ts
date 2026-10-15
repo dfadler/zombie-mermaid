@@ -17,7 +17,7 @@
  * has a cycle to break.
  */
 
-import type { MermaidGraph } from '@zombie-mermaid/core'
+import type { MermaidGraph, MermaidSubgraph } from './types.ts'
 
 /**
  * Indices into `graph.edges` of the edges a depth-first walk reverses.
@@ -197,4 +197,39 @@ export function findBackEdges(
     }
   }
   return back
+}
+
+/** Every node id in `sg`, including those of its nested subgraphs. */
+export function subgraphMembers(sg: MermaidSubgraph): Set<string> {
+  const out = new Set<string>(sg.nodeIds)
+  for (const child of sg.children) {
+    for (const id of subgraphMembers(child)) out.add(id)
+  }
+  return out
+}
+
+/**
+ * Whether mermaid 12's ELK layout keeps two sibling subgraphs in declaration
+ * order: an edge joins them, or a node outside both has an edge to each
+ * (`E --> A`, `E --> C` into two subgraphs). Untied siblings are reversed.
+ * Shared by the SVG compound layout and the ASCII grid (#2111).
+ */
+export function subgraphsTied(
+  graph: MermaidGraph,
+  a: MermaidSubgraph,
+  b: MermaidSubgraph,
+): boolean {
+  const inA = subgraphMembers(a)
+  const inB = subgraphMembers(b)
+  const touches = (x: string, set: Set<string>): boolean =>
+    graph.edges.some(
+      (e) =>
+        (e.source === x && set.has(e.target)) ||
+        (e.target === x && set.has(e.source)),
+    )
+  return [...graph.nodes.keys()].some((x) =>
+    inA.has(x) || inB.has(x)
+      ? (inA.has(x) && touches(x, inB)) || (inB.has(x) && touches(x, inA))
+      : touches(x, inA) && touches(x, inB),
+  )
 }

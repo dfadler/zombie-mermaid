@@ -6,7 +6,11 @@
 // and graph structures used by the ASCII/Unicode renderer.
 // ============================================================================
 
-import type { NodeShape } from '@zombie-mermaid/core'
+import type {
+  MermaidGraph,
+  MermaidSubgraph,
+  NodeShape,
+} from '@zombie-mermaid/core'
 import type { Grid } from './grid-occupancy.ts'
 
 // Re-export NodeShape for convenience
@@ -175,6 +179,11 @@ export interface AsciiEdge {
   from: AsciiNode
   to: AsciiNode
   text: string
+  /**
+   * Closes a cycle through a subgraph boundary (mermaid 12's
+   * `orientFeedbackEdges`): layered as if it ran target -> source (#2111).
+   */
+  feedback?: boolean
   path: GridCoord[]
   labelLine: GridCoord[]
   startDir: Direction
@@ -323,6 +332,8 @@ export interface AsciiSubgraph {
    * clear a vertical edge entering the frame (#1222). Set by layout only.
    */
   titleRoom?: number
+  /** The parsed subgraph this was built from (sibling-order ties, #2111). */
+  source?: MermaidSubgraph
 }
 
 // ============================================================================
@@ -395,6 +406,8 @@ export interface LabelRect {
 
 /** Full ASCII graph state used during layout and rendering. */
 export interface AsciiGraph {
+  /** The parsed graph, for the sibling-order rules shared with SVG (#2111). */
+  parsed?: MermaidGraph
   /** Edges (by index) that must not take flow-axis face lanes (#2121). */
   faceLaneOff?: ReadonlySet<number>
   /** Planned face lanes that were rejected by this layout (#2121). */

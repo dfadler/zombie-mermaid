@@ -24,7 +24,10 @@ import {
   subgraphDirectionIsHonored,
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
-import { findBackEdgeIndexes, subgraphFeedbackEdges } from './back-edges.ts'
+import {
+  findBackEdgeIndexes,
+  subgraphFeedbackEdges,
+} from '@zombie-mermaid/core'
 import type { LayoutHints } from './layout-hints.ts'
 import {
   ELK_DIRECTION_FALLBACK,

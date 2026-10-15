@@ -26,7 +26,7 @@ import {
   FONT_WEIGHTS,
   resolveFontSizes,
 } from '../styles.ts'
-import { findBackEdges } from '../layout-engine/back-edges.ts'
+import { findBackEdges } from '@zombie-mermaid/core'
 import { elkLayoutSync } from '../elk-instance.ts'
 import {
   extractEdgePoints,

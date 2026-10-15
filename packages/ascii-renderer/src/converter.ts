@@ -21,6 +21,7 @@ import {
   isEdgeWithinOwnCluster,
   stripFormattingTags,
   subgraphDirectionIsHonored,
+  subgraphFeedbackEdges,
 } from '@zombie-mermaid/core'
 
 /**
@@ -94,7 +95,8 @@ export function convertToAsciiGraph(
   // below once those exist — see AsciiEdge.clusterSource.
   const clusterSourced = new Map<AsciiEdge, MermaidSubgraph>()
   const clusterTargeted = new Map<AsciiEdge, MermaidSubgraph>()
-  for (const mEdge of parsed.edges) {
+  const feedback = subgraphFeedbackEdges(parsed)
+  for (const [mIndex, mEdge] of parsed.edges.entries()) {
     let sourceId = mEdge.source
     let targetId = mEdge.target
     let clusterMSg: MermaidSubgraph | undefined
@@ -133,6 +135,7 @@ export function convertToAsciiGraph(
       from,
       to,
       text: mEdge.label ? stripFormattingTags(mEdge.label) : '',
+      ...(feedback.has(mIndex) ? { feedback: true } : {}),
       path: [],
       labelLine: [],
       startDir: { x: 0, y: 0 },
@@ -202,6 +205,7 @@ export function convertToAsciiGraph(
   }
 
   return {
+    parsed,
     nodes,
     edges,
     canvas: mkCanvas(0, 0),
@@ -313,6 +317,7 @@ function convertSubgraph(
     direction: normalizedDirection,
     rawDirection,
     ...(mSg.region ? { region: true } : {}),
+    source: mSg,
   }
 
   // Resolve node references

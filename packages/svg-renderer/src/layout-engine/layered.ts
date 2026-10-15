@@ -15,7 +15,7 @@
  * exactly.
  */
 
-import { findBackEdges } from './back-edges.ts'
+import { findBackEdges } from '@zombie-mermaid/core'
 
 /** Size of a node in the abstract frame. */
 export interface LayeredNode {
@@ -92,7 +92,7 @@ export function layered(
   const down: number[][] = nodes.map(() => [])
 
   // 1. Acyclic: reverse the edges a depth-first walk finds closing a cycle,
-  // the same ones the ELK path reverses (see back-edges.ts).
+  // the same ones the ELK path reverses (see core/back-edges.ts).
   const live = edges.flatMap((e, index) => (e.from === e.to ? [] : [index]))
   const back = findBackEdges(
     live.map((i) => ({
