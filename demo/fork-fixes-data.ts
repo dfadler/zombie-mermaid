@@ -563,4 +563,99 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the `▼` under `G` is shifted one column from the vertical line above it. After: head and stem line up.',
   },
+  {
+    id: 'node-text-contrast-on-custom-fill',
+    title: 'Node text was unreadable on a dark classDef/style fill',
+    symptom:
+      'A node with a custom `fill` but no explicit `color` always got the theme’s text colour, so dark text could land on a dark fill (and light text on a light one).',
+    source:
+      'flowchart LR\n  A[Dark fill] --> B[Light fill]\n  classDef dark fill:#1e293b\n  classDef light fill:#fde68a\n  class A dark\n  class B light',
+    fixCommit: 'f2e76bb0',
+    pr: 76,
+    render: 'svg',
+    lookFor:
+      'Before: both labels use the same theme text colour, so one of them is hard to read. After: each label is black or white, picked from its own fill. An explicit `color` still wins.',
+    upstreamIssues: [115],
+  },
+  {
+    id: 'svg-coordinates-two-decimals',
+    title: 'SVG coordinates carried float noise like 142.38427299999998',
+    symptom:
+      'Layout and curve maths wrote full floating-point precision into every coordinate, bloating the SVG for no visible benefit. Numbers are now rounded to 2 decimal places and a non-finite value is written as 0, not `NaN`.',
+    source:
+      'graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Do thing]\n  B -->|No| D[Other thing]\n  C --> E((End))\n  D --> E',
+    fixCommit: '5cc12f3f',
+    pr: 1163,
+    render: 'svg',
+    excerpt: { from: '<polyline', to: '/>' },
+    lookFor:
+      'The picture is the same, so this shows the first edge’s markup. Before: `points` carries long decimal tails. After: at most 2 decimal places.',
+    upstreamIssues: [77],
+  },
+  {
+    id: 'ascii-longest-path-layering',
+    title: 'ASCII put a node in the row of the parent that placed it first',
+    symptom:
+      'A node took the level of whichever parent placed it first and was never revisited, so with `A --> D` and `B --> D` it landed beside `B` and `B --> D` ran sideways. Nodes are now ranked by longest path, with back edges ignored, as mermaid does.',
+    source:
+      'graph TD\nA -->|x| B\nB -->|long label| A\nA -->|long label| C\nC -->|ab| A\nB -->|mid| D\nA -->|ab| D\nD -->|x| A',
+    fixCommit: '7a4925a3',
+    pr: 1345,
+    render: 'ascii',
+    lookFor:
+      'Before: `D` sits in the same row as `B`. After: `D` is below `B` and `B --> D` drops straight down.',
+    upstreamIssues: [69],
+  },
+  {
+    id: 'labeled-sink-layer',
+    title: 'Leaves of labelled edges drifted a layer past their siblings',
+    symptom:
+      'With inline edge labels, ELK’s post-compaction slid a sink into the gap the label layer leaves, one layer past its siblings. mermaid keeps the sink level with them.',
+    source:
+      'graph TD\n  A{Is it raining?} -->|Yes| B{Have umbrella?}\n  A -->|No| C([Go outside])\n  B -->|Yes| D([Go with umbrella])\n  B -->|No| E{Is it heavy?}\n  E -->|Yes| F([Stay inside])\n  E -->|No| G([Run for it])',
+    fixCommit: '97586aa0',
+    pr: 2018,
+    render: 'svg',
+    lookFor:
+      'Before: `Go outside` hangs below `Have umbrella?`. After: it sits level with it, as in mermaid 12.1.0 and 12.2.0.',
+  },
+  {
+    id: 'class-balanced-placement',
+    title: 'A class diagram’s parent was not centred over its children',
+    symptom:
+      'Class layouts did not set ELK’s balanced node placement, which flowcharts and ER diagrams already did, so a parent sat off-centre from its children.',
+    source:
+      'classDiagram\n  class Animal {\n    +String name\n    +eat() void\n  }\n  class Dog {\n    +String breed\n    +bark() void\n  }\n  class Cat {\n    +bool isIndoor\n    +meow() void\n  }\n  Animal <|-- Dog\n  Animal <|-- Cat',
+    fixCommit: '43a96c11',
+    pr: 2023,
+    render: 'svg',
+    lookFor:
+      'Before: `Animal` is off to one side. After: it is centred above `Dog` and `Cat`.',
+  },
+  {
+    id: 'ascii-lane-faces-five-parallel',
+    title: 'Five or more parallel ASCII edges merged their arrowheads',
+    symptom:
+      'Each parallel edge gets its own cell on a node’s face, but a default box face has three cells, so past that the extra edges shared one arrowhead. The face is now lengthened to one cell per edge, and cluster exits handle six siblings.',
+    source:
+      'flowchart TD\n  A -->|first| B\n  A -->|second| B\n  A -->|third| B\n  A -->|fourth| B\n  A -->|fifth| B',
+    fixCommit: '44dc4754',
+    pr: 2080,
+    render: 'ascii',
+    lookFor:
+      'Before: fewer arrowheads than edges. After: one arrowhead per labelled edge.',
+  },
+  {
+    id: 'ascii-lane-faces-forward-and-back',
+    title: 'ASCII forward and back edge groups shared faces and merged heads',
+    symptom:
+      'In TD/BT, the forward and back edge groups between one pair use the same side faces but were sized separately, so with more than three edges in all two arrowheads merged. A lone cluster exit group and eight or more cluster siblings had the same problem.',
+    source:
+      'flowchart TD\n  A -->|f1| B\n  A -->|f2| B\n  A -->|f3| B\n  A -->|f4| B\n  B -->|b1| A\n  B -->|b2| A',
+    fixCommit: '72e0eb78',
+    pr: 2093,
+    render: 'ascii',
+    lookFor:
+      'Before: two arrowheads merge on a shared face. After: each of the six edges ends in its own head.',
+  },
 ]
