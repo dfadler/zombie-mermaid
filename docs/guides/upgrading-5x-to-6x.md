@@ -7,7 +7,7 @@ release's full notes are in the [CHANGELOG](../../CHANGELOG.md).
 
 | You…                                        | Change needed                                          |
 | ------------------------------------------- | ------------------------------------------------------ |
-| pass `-w` / `--max-width` to the CLI        | [Handle the non-zero exit](#max-width-is-now-an-error) |
+| pass `-w` / `--max-width` to the CLI        | [Handle the non-zero exit](#--max-width-is-now-an-error) |
 | call `renderMermaidASCII` with `maxWidth`   | none: the option is new (5.x ignored unknown options)  |
 | use only the library or MCP without a width | none                                                   |
 
