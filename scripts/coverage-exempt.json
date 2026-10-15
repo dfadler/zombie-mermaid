@@ -174,10 +174,5 @@
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 338,
     "legacy": true
-  },
-  {
-    "file": "packages/mcp/src/tools/render-worker.ts",
-    "reason": "worker-thread entry: runs only inside a Worker, which Vitest coverage cannot see; exercised by the built-worker test in mcp-render-worker.test.ts and the packed-tarball smoke test",
-    "maxLines": 40
   }
 ]
