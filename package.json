@@ -184,7 +184,6 @@
     "@types/react-dom": "^19.2.7",
     "@vitest/coverage-v8": "^4.1.11",
     "@xterm/headless": "^6.0.0",
-    "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
     "fast-check": "4.10.2",

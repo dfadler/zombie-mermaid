@@ -19,7 +19,7 @@
 
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { gzipSync } from 'node:zlib'
-import { build } from 'esbuild'
+import { bundleSource } from './vite-bundle.ts'
 import { fileURLToPath } from 'node:url'
 
 interface BudgetFile {
@@ -80,20 +80,10 @@ console.log('\nConsumer bundles, elkjs unregistered (minified, gzip)')
 console.log('─'.repeat(70))
 for (const [relPath, budget] of Object.entries(budgetFile.consumerBundles)) {
   const entry = fileURLToPath(new URL(`../${relPath}`, import.meta.url))
-  const result = await build({
-    stdin: {
-      contents: `export * from ${JSON.stringify(entry)}`,
-      resolveDir: fileURLToPath(new URL('..', import.meta.url)),
-    },
-    bundle: true,
-    minify: true,
-    format: 'esm',
-    platform: 'browser',
-    mainFields: ['module', 'main'],
-    conditions: ['import'],
-    write: false,
-    logLevel: 'silent',
-  }).catch(() => null)
+  const result = await bundleSource(
+    `export * from ${JSON.stringify(entry)}`,
+    fileURLToPath(new URL('..', import.meta.url)),
+  ).catch(() => null)
   if (!result) {
     console.error(
       `  ${relPath.padEnd(20)} MISSING — run \`pnpm run build\` first`,
@@ -101,7 +91,7 @@ for (const [relPath, budget] of Object.entries(budgetFile.consumerBundles)) {
     anyMissing = true
     continue
   }
-  const gzipSize = gzipSync(Buffer.from(result.outputFiles[0]!.contents)).length
+  const gzipSize = gzipSync(Buffer.from(result)).length
   if (report(relPath, gzipSize, budget)) anyOverBudget = true
 }
 

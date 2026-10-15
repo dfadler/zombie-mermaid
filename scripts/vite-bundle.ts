@@ -16,7 +16,7 @@
  * previously (Vite 8 build API: https://vite.dev/guide/api-javascript#build). See zombie-mermaid#310.
  */
 import { fileURLToPath } from 'node:url'
-import { build as viteBuild } from 'vite'
+import { build as viteBuild, type Plugin } from 'vite'
 
 // Resolve workspace packages from source, mirroring tsconfig.json `paths` and
 // config/vitest.config.ts. Their package.json `exports` point at `dist/`, so
@@ -74,16 +74,59 @@ export interface BundleForBrowserOptions {
  */
 export async function bundleForBrowser(
   entryPath: string,
+  options: BundleForBrowserOptions,
+): Promise<string> {
+  return buildChunk(entryPath, options)
+}
+
+const VIRTUAL_ENTRY = '\0virtual-entry'
+
+/**
+ * Bundle (and minify) an in-memory ES module `contents`, resolving its
+ * imports from `resolveDir` — the Vite stand-in for esbuild's `stdin`
+ * option, used by the bundle-size scripts (#2066).
+ */
+export function bundleSource(
+  contents: string,
+  resolveDir: string,
+): Promise<string> {
+  // No workspace aliases: these scripts measure what ships, i.e. `dist/`.
+  return buildChunk(
+    VIRTUAL_ENTRY,
+    { minify: true },
+    [
+      {
+        name: 'virtual-entry',
+        resolveId(source, importer, opts) {
+          if (source === VIRTUAL_ENTRY) return source
+          if (importer !== VIRTUAL_ENTRY) return null
+          return this.resolve(source, `${resolveDir}/__virtual__.js`, {
+            ...opts,
+            skipSelf: true,
+          })
+        },
+        load: (id) => (id === VIRTUAL_ENTRY ? contents : null),
+      },
+    ],
+    false,
+  )
+}
+
+async function buildChunk(
+  entryPath: string,
   { minify, treeshake = true, format = 'es' }: BundleForBrowserOptions,
+  plugins: Plugin[] = [],
+  alias = true,
 ): Promise<string> {
   const result = await viteBuild({
+    plugins,
     // Skip loading vite.config.ts entirely — its plugin is dev-server-only
     // (rebuild-on-change + serving generated HTML) and irrelevant here.
     configFile: false,
     // Vite's own "building for production..." banner would otherwise mix
     // into these generators' own progress logging.
     logLevel: 'warn',
-    resolve: { alias: workspaceAliases },
+    resolve: { alias: alias ? workspaceAliases : {} },
     build: {
       write: false,
       minify,
@@ -93,6 +136,8 @@ export async function bundleForBrowser(
       rolldownOptions: {
         input: entryPath,
         treeshake,
+        // Keep the entry's exports: bundleSource entries are pure re-exports.
+        preserveEntrySignatures: 'strict',
         output: {
           format,
           codeSplitting: false,

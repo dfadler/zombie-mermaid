@@ -91,9 +91,6 @@ importers:
       '@xterm/headless':
         specifier: ^6.0.0
         version: 6.0.0
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
       eslint:
         specifier: ^10.9.1
         version: 10.9.1
