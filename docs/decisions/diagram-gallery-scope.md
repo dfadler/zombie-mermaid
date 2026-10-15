@@ -1,5 +1,7 @@
 # Diagram gallery scope: curated real-world examples, not exhaustive coverage
 
+Status: implemented
+
 ## Context
 
 The #590 redesign split the pre-existing single-page sample gallery

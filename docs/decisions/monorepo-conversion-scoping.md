@@ -1,6 +1,8 @@
 # Monorepo conversion scoping
 
-Status: proposal — answers #416's open questions with a recommendation each,
+Status: historical (describes the pre-#623 tree: about 50 `src/` paths and `files: ["src/"]` below predate the package split and are now wrong; kept unedited)
+
+Written as a proposal; it answers #416's open questions with a recommendation each,
 but the publish-strategy question for `mcp` (see below) needs the repo
 owner's product call, not just a technical one. Everything else here is a
 technical recommendation ready to drive a follow-up implementation plan.

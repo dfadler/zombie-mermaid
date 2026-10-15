@@ -1,0 +1,27 @@
+# Near-miss: shares "label overlap / screenshot" vocabulary but touches only the SVG renderer.
+schema_version: '1.1'
+name: verify-ascii-terminal-quiet-on-svg-fix
+description: >
+  An SVG-only edge-label overlap fix must not fire verify-ascii-terminal.
+  expected_outcome: PASS when no verify-ascii-terminal Skill call is made; FAIL otherwise.
+tags: [verify-ascii-terminal, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Fix the SVG edge-label overlap in src/layout/edge-labels.ts: labels on parallel edges
+    collide. I'll want a before/after screenshot in the PR. In one sentence, what would you
+    check first? Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: skill_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-ascii-terminal"'
+    min: 0
+    max: 0
+    arm: both

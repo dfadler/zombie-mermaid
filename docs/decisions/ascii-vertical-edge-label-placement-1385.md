@@ -1,5 +1,7 @@
 # ASCII vertical edge-label placement vs. Mermaid (#1385)
 
+Status: implemented
+
 ## Context
 
 [#1385](https://github.com/dfadler/zombie-mermaid/issues/1385) asked whether

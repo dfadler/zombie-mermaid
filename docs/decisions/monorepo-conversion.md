@@ -1,5 +1,7 @@
 # Monorepo conversion: current status and the implemented publish strategy
 
+Status: implemented
+
 This was requested as a pre-implementation proposal synthesizing #416, #620,
 #621, and #622 — written as if the package split were still a future
 decision. That premise no longer matches the tree: the split is **done**.

@@ -1,0 +1,28 @@
+# Should-fire: ASCII renderer diff plus a before/after screenshot request. Free graders only.
+# Sabotage map: deleting the skill's description trigger list drops the Skill call (skill_fired).
+schema_version: '1.1'
+name: verify-ascii-terminal-fires-on-renderer-change
+description: >
+  A line-wrapping change in packages/ascii-renderer fires verify-ascii-terminal and the reply
+  points at the real-terminal capture script.
+tags: [verify-ascii-terminal, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I changed the line wrapping in packages/ascii-renderer/src/index.ts so long node labels
+    wrap at 40 columns. Add before/after screenshots to the PR. Don't run anything; tell me
+    in a few sentences how you would produce them.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-ascii-terminal"'
+  - name: names_capture_script
+    type: regex
+    pattern: 'ascii-terminal-capture'

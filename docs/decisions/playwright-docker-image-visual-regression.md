@@ -1,5 +1,7 @@
 # Shared Playwright Docker image for visual regression: no adopt yet
 
+Status: partially superseded (see the amendments below for which half won)
+
 > **Superseded in part.** The "no adopt — yet" call below was the 2026-09-06
 > decision and is kept as written. Both gaps it named have since been measured;
 > see [Amendment (2026-09-07)](#amendment-2026-09-07) for the current position

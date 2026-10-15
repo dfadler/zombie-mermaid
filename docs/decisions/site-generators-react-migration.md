@@ -1,5 +1,7 @@
 # Remaining #423 scope (client-side interactivity) stays vanilla TS, not React
 
+Status: superseded (hydrated React clients now exist, e.g. `demo/nav-client.tsx`)
+
 ## Context
 
 [#423](https://github.com/dfadler/zombie-mermaid/issues/423) proposed two

@@ -1,5 +1,7 @@
 # Monorepo test layout (#627): per-package trees, one shared config
 
+Status: implemented
+
 ## Context
 
 [#627](https://github.com/dfadler/zombie-mermaid/issues/627) (part of the

@@ -1,6 +1,8 @@
 # Versioning and deprecation policy
 
-Status: **accepted, one choice open** (batching gap, section 3). Tracks
+Status: accepted (one choice still open, section 3)
+
+Tracks
 [#1568](https://github.com/dfadler/zombie-mermaid/issues/1568), part of
 [#1502](https://github.com/dfadler/zombie-mermaid/issues/1502).
 

@@ -338,7 +338,7 @@ export default defineConfig({
         // dependency bloat, `isExternal` already keeps
         // `@modelcontextprotocol/sdk`/`zod` out. Minifying restores parity
         // with the other entries.
-        minify: 'esbuild',
+        minify: true,
         // The CLI is a standalone
         // executable, not a debugged-by-consumers library entry.
         sourcemap: false,

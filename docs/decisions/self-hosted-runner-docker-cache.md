@@ -1,5 +1,7 @@
 # Self-hosted GitHub Actions runner for a warm Docker cache: no-go
 
+Status: not adopted
+
 [#738](https://github.com/dfadler/zombie-mermaid/issues/738) asked whether
 moving `visual-regression` to a **self-hosted** runner would eliminate the
 job's repeated container-pull cost, since only a self-hosted runner can

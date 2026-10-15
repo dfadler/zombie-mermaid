@@ -3,6 +3,7 @@ import {
   anchors,
   checkAll,
   checkDoc,
+  decisionStatus,
   engineMatches,
   forkFixesCount,
   main,
@@ -153,6 +154,22 @@ describe('check-docs research guard (#1642)', () => {
         }),
       ),
     ).toEqual([])
+  })
+})
+
+describe('decisionStatus', () => {
+  it('flags a missing Status line and a missing index row', () => {
+    const files: Record<string, string> = {
+      'docs/decisions/README.md': '[a](a.md)',
+      'docs/decisions/a.md': '# A\n\nStatus: implemented\n',
+      'docs/decisions/b.md': '# B\n\nno status\n',
+    }
+    const errs = decisionStatus({
+      read: (p) => files[p] ?? '',
+      ls: () => Object.keys(files),
+    })
+    expect(errs).toHaveLength(2)
+    expect(errs.every((e) => e.startsWith('docs/decisions/b.md'))).toBe(true)
   })
 })
 
