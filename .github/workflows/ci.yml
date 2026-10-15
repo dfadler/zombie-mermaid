@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Merge queue (#1578): required checks must also report on the queue's
+  # temporary gh-readonly-queue/main/* ref or a queued PR waits forever.
+  merge_group:
+    types: [checks_requested]
 
 # Least-privilege default (#1732): every job below also declares its own block,
 # so this only guards a future job that forgets to.
@@ -17,6 +21,8 @@ permissions:
 # native CI badge renders that as "failing". CI runs have no side effects
 # worth protecting mid-flight, so cancelling PR runs is safe (see
 # publish.yml's concurrency block for why it deliberately isn't).
+# merge_group runs are keyed by their unique queue ref and never cancelled
+# (cancelling one would eject the PR from the queue).
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.sha || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -770,7 +776,9 @@ jobs:
     # this does/doesn't protect against. (The additional event_name check
     # here is unrelated to that guard — it just skips this check on push
     # events, since a changeset is only relevant for a PR that hasn't
-    # merged yet.) The final clause exempts the changesets/action Version
+    # merged yet. The same condition skips it on merge_group: there is no
+    # PR context, it already passed on the PR, and a skipped required check
+    # counts as passing in the queue.) The final clause exempts the changesets/action Version
     # PR: it always modifies package.json/CHANGELOG.md while consuming (and
     # thus never adding) a changeset, so this check would otherwise fail on
     # every release. It's scoped to same-repo PRs (not just the branch name)
