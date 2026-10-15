@@ -2397,7 +2397,6 @@ function decorateAsciiNotes(
 
 interface AsciiLollipop {
   host: string
-  side: 'left' | 'right'
 }
 
 function withLollipopPseudoClasses(parsed: ClassDiagram): {
@@ -2407,7 +2406,7 @@ function withLollipopPseudoClasses(parsed: ClassDiagram): {
   const lollipops = new Map<string, AsciiLollipop>()
   const relationships: ClassRelationship[] = []
   const interfaceIds = new Set<string>()
-  const pseudoByHost = new Map<string, ClassNode[]>()
+  const pseudo: ClassNode[] = []
   for (const rel of parsed.relationships) {
     if (rel.type !== 'lollipop' || rel.markerAt === 'both') {
       relationships.push(rel)
@@ -2417,11 +2416,9 @@ function withLollipopPseudoClasses(parsed: ClassDiagram): {
     const host = left ? rel.to : rel.from
     const name = left ? rel.from : rel.to
     const id = `lollipop ${lollipops.size}`
-    lollipops.set(id, { host, side: left ? 'left' : 'right' })
+    lollipops.set(id, { host })
     interfaceIds.add(name)
-    const list = pseudoByHost.get(host) ?? []
-    list.push({ id, label: name, attributes: [], methods: [] })
-    pseudoByHost.set(host, list)
+    pseudo.push({ id, label: name, attributes: [], methods: [] })
     relationships.push(left ? { ...rel, from: id } : { ...rel, to: id })
   }
   if (lollipops.size === 0) return { diagram: parsed, lollipops }
@@ -2442,15 +2439,8 @@ function withLollipopPseudoClasses(parsed: ClassDiagram): {
     c.attributes.length === 0 &&
     c.methods.length === 0
 
-  const classes: ClassNode[] = []
-  for (const cls of parsed.classes) {
-    if (drop(cls)) continue
-    const pseudo = pseudoByHost.get(cls.id) ?? []
-    for (const ps of pseudo)
-      if (lollipops.get(ps.id)!.side === 'left') classes.push(ps)
-    classes.push(cls)
-    for (const ps of pseudo)
-      if (lollipops.get(ps.id)!.side === 'right') classes.push(ps)
-  }
+  // Pseudo-classes go last, in source order: mermaid lays real classes out
+  // first and hangs each interface name off its host afterwards.
+  const classes = [...parsed.classes.filter((c) => !drop(c)), ...pseudo]
   return { diagram: { ...parsed, classes, relationships }, lollipops }
 }
