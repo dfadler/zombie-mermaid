@@ -6,6 +6,7 @@ import {
   createEdgeCellOwners,
   findUnrelatedOverlap,
   claimPathOwners,
+  loopTracksSharedWithEdge,
 } from '../edge-cell-styles.ts'
 import { createGrid, placeBlock } from '../grid-occupancy.ts'
 import type { AsciiEdge, AsciiNode } from '../types.ts'
@@ -274,5 +275,74 @@ describe('edge-cell-styles — chain overlap (multi-owner cells)', () => {
     claimPathOwners(grid, owners, corridor, edgeXY)
 
     expect(findUnrelatedOverlap(grid, owners, corridor, edgeBC)).toBeNull()
+  })
+})
+
+describe('loopTracksSharedWithEdge (#2070)', () => {
+  const a = makeNode('A')
+  const b = makeNode('B')
+  const c = makeNode('C')
+  const loop = makeEdge(a, a)
+  // Down from A's bottom, right along row 7, up col 3, left into A (x 0-2).
+  loop.path = [
+    { x: 1, y: 6 },
+    { x: 1, y: 7 },
+    { x: 3, y: 7 },
+    { x: 3, y: 5 },
+    { x: 2, y: 5 },
+  ]
+  const owned = (edge: AsciiEdge, path: { x: number; y: number }[]) => {
+    const owners = createEdgeCellOwners()
+    claimPathOwners(createGrid(), owners, path, edge)
+    return owners
+  }
+  const node = { x: 0, y: 4 }
+  const beside = makeEdge(b, c)
+
+  it('lists the gutter tracks outside its own node when a run is shared', () => {
+    const owners = owned(beside, [
+      { x: 3, y: 3 },
+      { x: 3, y: 7 },
+    ])
+    const { cols, rows } = loopTracksSharedWithEdge(
+      createGrid(),
+      owners,
+      loop,
+      node,
+    )
+    expect(cols).toEqual([3])
+    expect(rows).toEqual([7])
+  })
+
+  it('keeps a single shared cell as a crossing', () => {
+    const owners = owned(beside, [{ x: 3, y: 6 }])
+    expect(loopTracksSharedWithEdge(createGrid(), owners, loop, node)).toEqual({
+      cols: [],
+      rows: [],
+    })
+  })
+
+  it('ignores edges that touch its own node', () => {
+    const owners = owned(makeEdge(b, a), [
+      { x: 3, y: 3 },
+      { x: 3, y: 7 },
+    ])
+    expect(loopTracksSharedWithEdge(createGrid(), owners, loop, node)).toEqual({
+      cols: [],
+      rows: [],
+    })
+  })
+
+  it('ignores node-occupied cells', () => {
+    const grid = createGrid()
+    placeBlock(grid, { x: 3, y: 5 })
+    const owners = owned(beside, [
+      { x: 3, y: 3 },
+      { x: 3, y: 7 },
+    ])
+    expect(loopTracksSharedWithEdge(grid, owners, loop, node)).toEqual({
+      cols: [],
+      rows: [],
+    })
   })
 })
