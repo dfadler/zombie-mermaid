@@ -2010,8 +2010,8 @@ export function createMapping(graph: AsciiGraph): void {
   // analysis runs, so determinePath below can route sibling edges past the
   // first through distinct offset lanes instead of all computing the
   // identical center path (see #329).
-  assignParallelEdgeLanes(graph)
   assignFaceLanes(graph)
+  assignParallelEdgeLanes(graph)
 
   // Give edges that leave a cluster through a shared exit (2+ of them) a
   // common flow-side stub — see cluster-boundary.ts. Needs the lane tags

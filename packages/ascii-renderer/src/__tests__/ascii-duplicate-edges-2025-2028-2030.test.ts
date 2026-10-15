@@ -489,15 +489,13 @@ const FACE_CASES: [string, string, number][] = [
 ]
 
 /**
- * Closed stroke rectangles a case cannot avoid. TD many duplicates: `a --> c`
- * (lane 0, routed first) takes the only gutter column beside `b`, and lanes
- * only grow outward (#2071), so the short `a --> b` and `b --> c` lanes must
- * cross it and the long `c --> a` lane. Every edge keeps a lane of its own
- * (#2072), so these are three crossings, not one.
+ * Closed stroke rectangles a case cannot avoid. None now: the short `a --> b`
+ * and `b --> c` duplicates are strokes on the facing faces and the skip and
+ * back lanes of `a --> c` / `c --> a` nest in the gutter beside the column
+ * (#2121), so nothing crosses. It was three (#2071, #2072) while the
+ * duplicates took side lanes round the column.
  */
-const CROSSINGS: Record<string, number> = {
-  'TD many duplicates around a middle node': 3,
-}
+const CROSSINGS: Record<string, number> = {}
 
 describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
   for (const [name, source] of Object.entries(CASES)) {

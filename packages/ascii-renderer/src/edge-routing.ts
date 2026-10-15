@@ -399,13 +399,33 @@ export function spreadCandidates(
   // #2121: a face holding k flow-axis lane ends needs the interior of a face
   // with k + 1 strokes (the forward stem and a port per lane, outer side).
   const vertical = graph.config.graphDirection !== 'LR'
+  // Strokes of the widest same-pair group a node's face takes beside its lanes.
+  const spread = new Map<AsciiNode, number>()
+  for (const [from, targets] of byPair) {
+    for (const [to, group] of targets) {
+      if (group.length < 2) continue
+      const a = requireGridCoord(from)
+      const b = requireGridCoord(to)
+      if (Math.abs(vertical ? a.y - b.y : a.x - b.x) > 4) continue
+      for (const n of [from, to]) {
+        spread.set(n, Math.max(spread.get(n) ?? 0, group.length))
+      }
+    }
+  }
   for (const [n, load] of faceLaneLoads(graph)) {
+    // The strokes of a spread group sit a stroke spacing apart about the
+    // centre, a lane port per cell beyond the outermost.
+    const wide = spread.get(n)
     out.set(n, [
       ...(out.get(n) ?? []),
       {
         vertical,
         // TD keeps a stroke spacing beside the stem for a single lane.
-        strokes: vertical ? Math.max(3, load + 1) : load + 1,
+        strokes: wide
+          ? wide + load
+          : vertical
+            ? Math.max(3, load + 1)
+            : load + 1,
         rows: 0,
         below: false,
       },
@@ -481,6 +501,8 @@ function spreadsOnFaces(
   const axis = vertical ? 'y' : 'x'
   for (const e of graph.edges) {
     if (group.includes(e) || e.from === e.to) continue
+    // Face lanes take the outer end of the faces, beside the strokes (#2121).
+    if (e.faceLanePlan) continue
     for (const [node, here, there] of [
       [from, a, b],
       [to, b, a],
@@ -530,6 +552,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   const groups = new Map<string, AsciiEdge[]>()
   for (const edge of graph.edges) {
     if (edge.from === edge.to) continue // self-loop: not in scope here
+    // A planned face lane is its own route (#2121); no lane group for it.
+    if (edge.faceLanePlan) continue
     const key = parallelGroupKey(edge)
     const existing = groups.get(key)
     if (existing) existing.push(edge)
@@ -1229,38 +1253,11 @@ function faceLaneCandidates(graph: AsciiGraph): FaceLaneCandidate[] {
     }
     all.push({ edge, sign, vertical, fm, fc, tm, tc })
   }
-  // ponytail: duplicate edges between neighbouring levels still take side
-  // lanes that wrap round the column and cross every face lane, so a column
-  // holding such a pair keeps the old routing until they take the faces too.
-  const dupColumns = new Set<string>()
-  const seen = new Map<string, number>()
-  for (const e of graph.edges) {
-    if (e.from === e.to) continue
-    const key = `${e.from.index}|${e.to.index}`
-    seen.set(key, (seen.get(key) ?? 0) + 1)
-  }
-  for (const e of graph.edges) {
-    if (
-      e.from === e.to ||
-      (seen.get(`${e.from.index}|${e.to.index}`) ?? 0) < 2
-    ) {
-      continue
-    }
-    const f = requireGridCoord(e.from)
-    const t = requireGridCoord(e.to)
-    const vertical = effectiveDirection(graph, e) !== 'LR'
-    const [fm, fc, tm, tc] = vertical
-      ? [f.y, f.x, t.y, t.x]
-      : [f.x, f.y, t.x, t.y]
-    if (fc === tc && Math.abs(tm - fm) <= 4) dupColumns.add(`${vertical}|${fc}`)
-  }
   const backColumns = new Set(
     all.filter((c) => c.sign === -1).map((c) => `${c.vertical}|${c.fc}`),
   )
   return all.filter(
-    (c) =>
-      !dupColumns.has(`${c.vertical}|${c.fc}`) &&
-      (c.sign === -1 || backColumns.has(`${c.vertical}|${c.fc}`)),
+    (c) => c.sign === -1 || backColumns.has(`${c.vertical}|${c.fc}`),
   )
 }
 

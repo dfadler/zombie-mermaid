@@ -132,13 +132,18 @@ describe('ASCII back-edge on the flow-axis faces (#2121)', () => {
       },
     )
 
-    it('keeps the old routing in a column holding duplicate neighbour edges', () => {
+    it('plans the skips and back-edges beside duplicates between neighbours', () => {
       const g = layout(
         'flowchart TD\n a --> b\n a --> b\n b --> c\n a --> c\n c --> a',
         'TD',
       )
-      expect(g.edges.some((e) => e.faceLane)).toBe(false)
-      expect(g.edges.some((e) => e.faceLanePlan)).toBe(false)
+      expect(g.edges.filter((e) => e.faceLane)).toHaveLength(2)
+      // The neighbour duplicates are two strokes on the facing faces, not lanes.
+      const dups = g.edges.filter(
+        (e) => e.from.name === 'a' && e.to.name === 'b',
+      )
+      expect(dups.every((e) => e.parallelLane === undefined)).toBe(true)
+      expect(dups.every((e) => e.path.length === 2)).toBe(true)
     })
   })
 })
