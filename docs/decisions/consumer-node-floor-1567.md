@@ -1,5 +1,7 @@
 # Consumer Node floor stays at the current LTS (24)
 
+Status: implemented
+
 ## Context
 
 4.0.0 ([#1291](https://github.com/dfadler/zombie-mermaid/issues/1291)) raised `engines.node` from `>=22` to `>=24`. [#1567](https://github.com/dfadler/zombie-mermaid/issues/1567) asked whether the library needs 24 at runtime or only the dev toolchain does. The sub-package gap from [#1545](https://github.com/dfadler/zombie-mermaid/issues/1545) is already closed: all five `@zombie-mermaid/*` manifests declare `engines.node >=24`.

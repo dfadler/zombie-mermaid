@@ -1,5 +1,7 @@
 # `cli` and `demo` stay apps, not workspace packages
 
+Status: implemented
+
 ## Context
 
 [#416](https://github.com/dfadler/zombie-mermaid/issues/416) proposed converting

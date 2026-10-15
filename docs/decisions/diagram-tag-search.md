@@ -1,5 +1,7 @@
 # Diagram tag search: static for single tags and real combinations, dynamic beyond that
 
+Status: implemented
+
 ## Context
 
 The diagrams-pages redesign canvas

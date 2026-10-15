@@ -1,5 +1,7 @@
 # No-script interactivity
 
+Status: implemented
+
 ## Context
 
 `zombie-mermaid` renders Mermaid diagrams to static SVG (plus ASCII/terminal

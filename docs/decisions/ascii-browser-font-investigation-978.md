@@ -1,5 +1,7 @@
 # Self-hosted ASCII/terminal font (#978): don't build one — fix the loading/CSS gaps in what's already chosen
 
+Status: implemented
+
 Investigation for [#978](https://github.com/dfadler/zombie-mermaid/issues/978).
 Full investigation notes — method, findings, and candidate fonts
 considered — are posted on
@@ -7,7 +9,7 @@ considered — are posted on
 rather than carried inline here; this doc keeps only the decision and its
 consequences.
 
-**Status: implemented.** Recommendations 1-4 below shipped in
+Recommendations 1-4 below shipped in
 [PR #1059](https://github.com/dfadler/zombie-mermaid/pull/1059), which also
 found and fixed two real bugs this investigation didn't anticipate — an
 SVG-embedded `.mono` style cascading over the page's own `.mono` on pages

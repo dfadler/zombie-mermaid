@@ -1,5 +1,7 @@
 # Self-review checklist for decision docs
 
+Status: accepted
+
 ## Context
 
 PR #975's review discussion surfaced a process gap: an AI-authored design

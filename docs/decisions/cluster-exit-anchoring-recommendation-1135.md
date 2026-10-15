@@ -1,5 +1,7 @@
 # Recommendation: cluster-boundary edge-exit anchoring (#1135) — which plan to pursue
 
+Status: implemented
+
 ## Context
 
 [#1135](https://github.com/dfadler/zombie-mermaid/issues/1135) and

@@ -1,5 +1,7 @@
 # Site generators migrate to React page-by-page, static markup only
 
+Status: implemented
+
 ## Decision
 
 The site/demo page generators (#423) migrate to React one page at a time,
@@ -15,7 +17,7 @@ finished in #589) → `index.ts` → `fork-fixes.ts` → `pages.ts` → `blog.ts
 → `demo/client.ts` (separate, later decision — the only step that would
 actually introduce a client-side framework runtime).
 
-**Status: every page generator is migrated as of #589.** `index.ts`,
+Every page generator is migrated as of #589. `index.ts`,
 `editor.ts`, `fork-fixes.ts`, `pages.ts`, and `blog.ts` all render through
 `renderToStaticMarkup` now, `demo/site-shell.ts` and the repo-root
 `theme-picker.ts` are gone (replaced by `demo/components/site-chrome.tsx`

@@ -1,5 +1,7 @@
 # Core-plus-bindings split (#540): not adopted
 
+Status: not adopted
+
 ## Context
 
 [#540](https://github.com/dfadler/zombie-mermaid/issues/540) (split from

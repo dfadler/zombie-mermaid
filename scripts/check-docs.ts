@@ -199,6 +199,26 @@ export function orphanResearch(fs: Fs = realFs): string[] {
     )
 }
 
+// #1549: every decision doc carries a `Status:` line and a row in the README index.
+const STATUS =
+  /^Status: (accepted|implemented|not adopted|superseded|partially superseded|historical|proposal|unverified)\b/m
+export function decisionStatus(fs: Fs = realFs): string[] {
+  const index = fs.read('docs/decisions/README.md')
+  return fs
+    .ls('docs/decisions')
+    .filter((f) => f.endsWith('.md') && !f.endsWith('/README.md'))
+    .flatMap((f) => [
+      ...(STATUS.test(fs.read(f))
+        ? []
+        : [
+            `${f}: missing a valid "Status:" line (see docs/decisions/README.md)`,
+          ]),
+      ...(index.includes(`(${f.split('/')[2]})`)
+        ? []
+        : [`${f}: not listed in the docs/decisions/README.md index`]),
+    ])
+}
+
 // #1996: README says "(N fixes)"; N is forkFixes.length (the entries array,
 // not a grep of `fixCommit`, which also matches the interface docs).
 export function forkFixesCount(
@@ -223,6 +243,7 @@ export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
     errs: [
       ...nodeConsistency(want, fs),
       ...orphanResearch(fs),
+      ...decisionStatus(fs),
       ...forkFixesCount(fs),
       ...files.flatMap((f) => checkDoc(f, fs.read(f), want)),
     ],
