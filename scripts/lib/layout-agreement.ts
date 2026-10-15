@@ -419,8 +419,8 @@ export const DEFAULT_FLOOR = 0.85
 
 /**
  * Samples that sit below `DEFAULT_FLOOR` today (mermaid 12.1.0, tolerance
- * 20px), each pinned just under its measured figure. Class 67%: parent not
- * centred over its children (#2020). The flowchart ones are cross-axis
+ * 20px), each pinned just under its measured figure. The class
+ * ones are ratcheted (#2129). The flowchart ones are cross-axis
  * differences (#1834).
  */
 export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
@@ -431,10 +431,12 @@ export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   // are 37px tall here, 48px there), so the 20px tolerance splits the pair (#2058).
   'LR Fan-In With Bypass Edge': 0.3,
   'State: Notes': 0.8,
-  'Class: Inheritance (<|--)': 0.65,
-  'Class: Relationship Labels': 0.65,
-  'Class: MVC Architecture': 0.65,
-  'Class: Namespaces': 0.65,
+  // Ratcheted 2026-10-15 (#2129): 100/100 on mermaid 12.1.0 and 12.2.0 since #2023.
+  // A 3-node sample moves in steps of 1/3, so 0.95 means any split pair fails.
+  'Class: Inheritance (<|--)': 0.95,
+  'Class: Relationship Labels': 0.95,
+  'Class: MVC Architecture': 0.95,
+  'Class: Namespaces': 0.95,
   // 14 of 15 pairs agree. The one that does not is Animal/Cat: Cat's centre is
   // 26px left of Animal's in mermaid 12.1.0 and 12.2.0 and 19px in ours, so the
   // 20px tolerance splits it. Same layers, same order; mermaid's boxes are wider

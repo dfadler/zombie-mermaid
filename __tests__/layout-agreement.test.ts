@@ -456,10 +456,11 @@ describe('thresholds and machine-readable scorecard', () => {
 
   it('applies the default floor, per-sample overrides, and the boundary', () => {
     expect(floorFor('Anything new')).toBe(DEFAULT_FLOOR)
-    expect(floorFor('Class: MVC Architecture')).toBe(0.65)
+    expect(floorFor('Class: MVC Architecture')).toBe(0.95)
     expect(sampleStatus('x', ag(1, DEFAULT_FLOOR))).toBe('pass')
     expect(sampleStatus('x', ag(1, DEFAULT_FLOOR - 0.01))).toBe('fail')
-    expect(sampleStatus('Class: MVC Architecture', ag(1, 0.67))).toBe('pass')
+    expect(sampleStatus('Class: MVC Architecture', ag(1, 0.95))).toBe('pass')
+    expect(sampleStatus('Class: MVC Architecture', ag(1, 0.67))).toBe('fail')
     expect(sampleStatus('x', ag(null, null))).toBe('n/a')
     // 0.9 as a float sum must still meet a floor of 0.9.
     expect(sampleStatus('x', ag(1, 0.1 + 0.8), 0.9)).toBe('pass')
@@ -530,7 +531,7 @@ describe('thresholds and machine-readable scorecard', () => {
       [run({ 'Class: MVC Architecture': { ...ag(1, 0.5), subgraphs: false } })],
       [],
     )
-    expect(md).toContain('| 50% | - | 3 | 65% | fail |')
+    expect(md).toContain('| 50% | - | 3 | 95% | fail |')
     expect(md).toContain('## Diagram types not scored')
     expect(md).toContain('**sequence**')
   })
