@@ -1,5 +1,28 @@
 # Changelog
 
+## 5.6.1
+
+### Patch Changes
+
+- [#2123](https://github.com/dfadler/zombie-mermaid/pull/2123) [`972abd4`](https://github.com/dfadler/zombie-mermaid/commit/972abd4fa57bb73e071f04981f32cd9da7801543) Thanks [@dfadler](https://github.com/dfadler)! - ASCII XY charts no longer run category and value-axis labels together or overwrite them with the next label. A word label that would touch its neighbour is shortened to its band with an ellipsis (`Marke…`); numbers, dates and value-axis ticks that would touch are thinned to every n-th label, always leaving at least one blank cell. Tick marks stay.
+- Updated dependencies [[`972abd4`](https://github.com/dfadler/zombie-mermaid/commit/972abd4fa57bb73e071f04981f32cd9da7801543)]:
+  - @zombie-mermaid/ascii-renderer@5.6.1
+  - @zombie-mermaid/mcp@5.6.1
+  - @zombie-mermaid/core@5.6.1
+  - @zombie-mermaid/mermaid-parser@5.6.1
+  - @zombie-mermaid/svg-renderer@5.6.1
+
+## 5.6.0
+
+### Patch Changes
+
+- Updated dependencies [[`0d940f6`](https://github.com/dfadler/zombie-mermaid/commit/0d940f68a55f6f6812c5a243c53b7f94bcb1ad39), [`16f3fdb`](https://github.com/dfadler/zombie-mermaid/commit/16f3fdbaee19310de884fa1a31d3b722d2ad0148)]:
+  - @zombie-mermaid/ascii-renderer@5.6.0
+  - @zombie-mermaid/mcp@5.6.0
+  - @zombie-mermaid/core@5.6.0
+  - @zombie-mermaid/mermaid-parser@5.6.0
+  - @zombie-mermaid/svg-renderer@5.6.0
+
 ## 5.5.0
 
 ### Patch Changes
