@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.6.0
+
+### Patch Changes
+
+- Updated dependencies [[`0d940f6`](https://github.com/dfadler/zombie-mermaid/commit/0d940f68a55f6f6812c5a243c53b7f94bcb1ad39), [`16f3fdb`](https://github.com/dfadler/zombie-mermaid/commit/16f3fdbaee19310de884fa1a31d3b722d2ad0148)]:
+  - @zombie-mermaid/ascii-renderer@5.6.0
+  - @zombie-mermaid/mcp@5.6.0
+  - @zombie-mermaid/core@5.6.0
+  - @zombie-mermaid/mermaid-parser@5.6.0
+  - @zombie-mermaid/svg-renderer@5.6.0
+
 ## 5.5.0
 
 ### Patch Changes

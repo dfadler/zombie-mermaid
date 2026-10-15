@@ -1,5 +1,19 @@
 # @zombie-mermaid/mcp
 
+## 5.6.0
+
+### Minor Changes
+
+- [#2095](https://github.com/dfadler/zombie-mermaid/pull/2095) [`16f3fdb`](https://github.com/dfadler/zombie-mermaid/commit/16f3fdbaee19310de884fa1a31d3b722d2ad0148) Thanks [@dfadler](https://github.com/dfadler)! - MCP server: `render_mermaid_svg` and `render_mermaid_ascii` now render in a long-lived worker thread. A render that runs longer than 15 s, or exceeds 512 MB of heap, is stopped and returns the usual `isError` result ("render timed out ..." / "render ran out of memory ..."); the server stays responsive and the next request gets a fresh worker. Previously such a render stalled every request or killed the stdio server. Rendered output is byte-identical, and no tool name, schema or result shape changes. The package now ships `dist/render-worker.js` next to its entry files.
+
+### Patch Changes
+
+- Updated dependencies [[`0d940f6`](https://github.com/dfadler/zombie-mermaid/commit/0d940f68a55f6f6812c5a243c53b7f94bcb1ad39)]:
+  - @zombie-mermaid/ascii-renderer@5.6.0
+  - @zombie-mermaid/core@5.6.0
+  - @zombie-mermaid/mermaid-parser@5.6.0
+  - @zombie-mermaid/svg-renderer@5.6.0
+
 ## 5.5.0
 
 ### Patch Changes
