@@ -2575,7 +2575,7 @@ pie title Pets adopted by volunteers
     title: 'Class: Lollipop Interface',
     category: 'Class',
     description:
-      '`()--` and `--()` end the line in a circle, the lollipop interface notation (#2117). Mermaid draws the interface as a name and circle hung off its host. The ASCII panel does the same; the SVG keeps the class box and ends the line in the circle.',
+      '`()--` and `--()` end the line in a circle, the lollipop interface notation (#2117). Mermaid draws the interface as a name and circle hung off its host, with no class box unless the class has members or an annotation; the SVG and ASCII panels do the same.',
     source: `classDiagram
   class Comparable {
     <<interface>>

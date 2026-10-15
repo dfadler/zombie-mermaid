@@ -178,4 +178,17 @@ export interface PositionedClassRelationship {
   points: Array<{ x: number; y: number }>
   /** ELK-computed label center position (avoids overlaps between nearby edges) */
   labelPosition?: { x: number; y: number }
+  /**
+   * The interface end of a one-ended lollipop (`A ()-- B`, `B --() A`): a
+   * label-only node (no class box) the line starts or ends at, as mermaid.js
+   * draws it. `from`/`to` still name the interface and its host class.
+   */
+  interfaceLabel?: {
+    text: string
+    /** Top-left corner and size of the label's box; the circle marker sits on its inner edge */
+    x: number
+    y: number
+    width: number
+    height: number
+  }
 }

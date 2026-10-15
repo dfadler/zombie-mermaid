@@ -138,6 +138,12 @@ export function renderClassSvg(
     parts.push(renderClassBox(cls, fontSizes, linksEnabled))
   }
 
+  // 2b. Lollipop interface names (the circle is the line's marker)
+  for (const rel of diagram.relationships) {
+    const label = renderInterfaceLabel(rel, fontSizes)
+    if (label) parts.push(label)
+  }
+
   // 3. Notes
   for (const note of diagram.notes) {
     parts.push(renderNote(note, fontSizes))
@@ -548,6 +554,31 @@ function renderRelationship(rel: PositionedClassRelationship): string {
   return (
     f`<polyline ${dataAttrs.join(' ')} points="${pathData}" fill="none" stroke="var(--_line)" ` +
     f`stroke-width="${STROKE_WIDTHS.connector}"${dashArray}${markers} />`
+  )
+}
+
+/**
+ * Name of a one-ended lollipop's interface, drawn as bare text (no class box)
+ * at its end of the line, where the circle marker sits. Empty for any other
+ * relationship.
+ */
+function renderInterfaceLabel(
+  rel: PositionedClassRelationship,
+  fontSizes: FontSizes,
+): string {
+  const box = rel.interfaceLabel
+  if (!box) return ''
+  const name = rel.markerAt === 'from' ? rel.from : rel.to
+  return (
+    f`<g class="class-interface" data-id="${escapeAttr(name)}" data-label="${escapeAttr(box.text)}">\n  ` +
+    renderMultilineText(
+      box.text,
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+      fontSizes.nodeLabel,
+      f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text)"`,
+    ) +
+    '\n</g>'
   )
 }
 
