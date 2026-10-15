@@ -498,19 +498,6 @@ const CROSSINGS: Record<string, number> = {
   'TD many duplicates around a middle node': 1,
 }
 
-/**
- * Self-loops still drawn along a neighbour's route. `self-loop with in and out
- * neighbours`: the loop's corner sits in the one gutter row/column between
- * its node and the `b --> c` fan, which runs along the same gutter; drawn a
- * cell closer the loop would leave no cell for its arrowhead (`hugLoop`), and
- * the node has no free face to loop round instead. Needs a wider gutter.
- */
-const LOOP_ON_NEIGHBOUR = new Set(
-  ['TD', 'LR', 'BT', 'RL'].map(
-    (d) => `self-loop with in and out neighbours (${d})`,
-  ),
-)
-
 describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
   for (const [name, source] of Object.entries(CASES)) {
     for (const useAscii of [false, true]) {
@@ -627,18 +614,15 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
         expect(strokeComponents(out, boxes).cycles).toBe(CROSSINGS[name] ?? 0)
         expect(headsOnExitStems(out)).toEqual([])
       })
-      it.skipIf(LOOP_ON_NEIGHBOUR.has(name))(
-        `${name}: every self-loop is a stroke of its own`,
-        () => {
-          const out = renderMermaidASCII(source, { colorMode: 'none' })
-          const looped = new Set(
-            [...source.matchAll(/^\s*(\w+) --> (\w+)$/gm)]
-              .filter((m) => m[1] === m[2])
-              .map((m) => m[1]),
-          )
-          expect(selfLoops(out)).toBe(looped.size)
-        },
-      )
+      it(`${name}: every self-loop is a stroke of its own`, () => {
+        const out = renderMermaidASCII(source, { colorMode: 'none' })
+        const looped = new Set(
+          [...source.matchAll(/^\s*(\w+) --> (\w+)$/gm)]
+            .filter((m) => m[1] === m[2])
+            .map((m) => m[1]),
+        )
+        expect(selfLoops(out)).toBe(looped.size)
+      })
     }
   })
 

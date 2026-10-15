@@ -54,6 +54,7 @@ import {
   createEdgeCellOwners,
   claimPathOwners,
   findUnrelatedOverlap,
+  loopTracksSharedWithEdge,
   isPortFixedEdge,
   separateFanInLane,
   type EdgeCellStyles,
@@ -2085,6 +2086,24 @@ export function createMapping(graph: AsciiGraph): void {
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
+  }
+
+  // A self-loop that runs along another edge's cells gets one more drawn
+  // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).
+  for (const edge of graph.edges) {
+    if (edge.from !== edge.to || edge.path.length < 4) continue
+    const { cols, rows } = loopTracksSharedWithEdge(
+      nodeOnlyGrid,
+      cellOwners,
+      edge,
+      requireGridCoord(edge.from),
+    )
+    for (const x of cols) {
+      graph.columnWidth.set(x, graph.columnWidth.get(x)! + 2)
+    }
+    for (const y of rows) {
+      graph.rowHeight.set(y, graph.rowHeight.get(y)! + 2)
+    }
   }
 
   // Choose each label's segment only now that every path exists, so a label
