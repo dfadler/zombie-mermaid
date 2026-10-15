@@ -91,49 +91,63 @@ function getCrowsFootChars(
   card: Cardinality,
   useAscii: boolean,
   isRight = false,
-  vertical = false,
 ): string {
   if (useAscii) {
     switch (card) {
       case 'one':
-        // A bare '-' has no vertical extent, so it reads as a gap in the
-        // vertical line rather than a tick crossing it (issue: PR #442's
-        // fix made the marker visible but visually severed the line). '+'
-        // carries both strokes, matching how '|' crosses the horizontal
-        // line in the non-vertical case below.
-        return vertical ? '+' : '|'
+        return '|'
       case 'zero-one':
-        return vertical ? 'o+' : isRight ? 'o|' : '|o'
+        return isRight ? 'o|' : '|o'
       case 'many':
-        // Vertical: the crow's foot opens toward its entity ('V' under the
-        // upper entity, '^' above the lower one) instead of the
-        // horizontal '<' / '>', which would sit as a stray bracket
-        // beside the line (#2081).
-        return vertical ? (isRight ? '^' : 'V') : isRight ? '<' : '>'
+        return isRight ? '<' : '>'
       case 'zero-many':
-        return vertical ? (isRight ? 'o^' : 'oV') : isRight ? 'o<' : '>o'
+        return isRight ? 'o<' : '>o'
     }
   } else {
     // Use cleaner Unicode characters
     switch (card) {
       case 'one':
-        // Same reasoning as the ASCII '+' above: '┼' keeps the vertical
-        // stroke (line stays visually continuous) while adding the
-        // horizontal stroke that marks the "one" cardinality.
-        return vertical ? '┼' : '│'
+        return '│'
       case 'zero-one':
-        // Vertical markers put the circle first so the 2-cell centering in
-        // the vertical draw loop lands the stroke glyph on the line column
-        // (the horizontal order would leave it one column off the line).
-        return vertical ? '○┼' : isRight ? '○│' : '│○'
+        return isRight ? '○│' : '│○'
       case 'many':
-        // '╤' / '╧' are '╟' / '╢' rotated for a vertical edge: the double
-        // bar spans the entity-side edge, the stem runs along the line
-        // (#2081). Was '╟' / '╢', which read as a stray double bar.
-        return vertical ? (isRight ? '╧' : '╤') : isRight ? '╟' : '╢'
+        return isRight ? '╟' : '╢'
       case 'zero-many':
-        return vertical ? (isRight ? '○╧' : '○╤') : isRight ? '○╟' : '╢○'
+        return isRight ? '○╟' : '╢○'
     }
+  }
+}
+
+/**
+ * Marker glyphs for a vertical edge, one per row, ordered from the entity
+ * box outward (#2083). Like mermaid's own vertical markers, the tick or
+ * crow's foot sits against the box and the zero-circle sits on the line one
+ * row further along, instead of beside the stem.
+ *
+ * Stroke glyphs: '┼' / '+' keep the line continuous for "one". '╤' / '╧'
+ * are '╢' / '╟' rotated for a vertical edge: the double bar spans the
+ * entity-side edge, the stem runs along the line (#2081). The crow's foot
+ * opens toward its entity ('V' under the upper entity, '^' above the lower).
+ *
+ * @param atLower - True for the marker at the lower entity's top edge
+ */
+function getVerticalMarkerRows(
+  card: Cardinality,
+  useAscii: boolean,
+  atLower: boolean,
+): string[] {
+  const circle = useAscii ? 'o' : '○'
+  const foot = useAscii ? (atLower ? '^' : 'V') : atLower ? '╧' : '╤'
+  const tick = useAscii ? '+' : '┼'
+  switch (card) {
+    case 'one':
+      return [tick]
+    case 'zero-one':
+      return [tick, circle]
+    case 'many':
+      return [foot]
+    case 'zero-many':
+      return [foot, circle]
   }
 }
 
@@ -372,7 +386,25 @@ export function renderErAscii(
   // least 2 rows so the upper and lower markers don't land on the same
   // row. (See issue #343's CodeRabbit review.)
   const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 6, 6) // horizontal gap between entity boxes
-  const vGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 4, 2) // vertical gap between rows (for relationship lines)
+  // Two-row vertical markers (a zero-* circle on the line past the foot or
+  // tick, #2083) need one extra row per such end, so grow the gap by the
+  // most any single relationship needs beyond the usual 1 row per end, plus
+  // one spare row: relationships whose ends have different marker heights
+  // pick jog rows from offset bands, and with only the bare minimum they
+  // lose their jog/label rows to each other.
+  const extraMarkerRows = Math.max(
+    0,
+    ...diagram.relationships.map(
+      (r) =>
+        getVerticalMarkerRows(r.cardinality1, useAscii, false).length +
+        getVerticalMarkerRows(r.cardinality2, useAscii, true).length -
+        2,
+    ),
+  )
+  // vertical gap between rows (for relationship lines)
+  const vGap =
+    paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 4, 2) +
+    (extraMarkerRows > 0 ? extraMarkerRows + 1 : 0)
   // Vertical gap between disconnected components. Unlike vGap, this gap
   // never needs to fit a relationship line, a jog, or a label — disconnected
   // components have no edges between them by definition — so it only needs
@@ -1151,7 +1183,9 @@ export function renderErAscii(
         // detoured through the same row-gap band would otherwise land on
         // the exact same row and silently overwrite this one's label.
         const labelRows = rel.label ? splitLines(rel.label).length : 0
-        let detourY = rowBottom + 1
+        // Start below any two-row vertical marker (#2083): its circle row
+        // is the row a detour would otherwise cross.
+        let detourY = rowBottom + 1 + (extraMarkerRows > 0 ? 1 : 0)
         const maxDetourY = rowBottom + Math.max(vGap * 3, 4)
         while (
           detourY < maxDetourY &&
@@ -1284,8 +1318,14 @@ export function renderErAscii(
       // rows, not immediately at startY/endY — otherwise the marker ends up
       // sitting past where the line already turned away, disconnected from
       // it.
-      const markerStartY = startY
-      const markerEndY = endY
+      // A two-row marker is skipped over by the jog row (the jog starts on
+      // the first row past it); a one-row marker keeps its original
+      // behavior, where the jog may share the marker's row.
+      const upperRows = getVerticalMarkerRows(upperCard, useAscii, false)
+      const lowerRows = getVerticalMarkerRows(lowerCard, useAscii, true)
+      const markerStartY =
+        startY + (upperRows.length > 1 ? upperRows.length : 0)
+      const markerEndY = endY - (lowerRows.length > 1 ? lowerRows.length : 0)
 
       // The naive vertical midpoint can still sit inside a row-mate of
       // `upper` that's taller than `upper` itself, so a horizontal jog (or
@@ -1300,8 +1340,8 @@ export function renderErAscii(
           .map((p) => p.y + p.height),
       )
       const lowerRowTop = lower.y
-      const bandTop = Math.max(startY, upperRowBottom + 1)
-      const bandBottom = Math.min(endY, lowerRowTop - 1)
+      const bandTop = Math.max(markerStartY, upperRowBottom + 1)
+      const bandBottom = Math.min(markerEndY, lowerRowTop - 1)
 
       /**
        * Pick a row within the free row-gap band for a horizontal run across
@@ -1523,30 +1563,11 @@ export function renderErAscii(
       // hide the jog, so the label search below steers off it (#1917).
       const jogRow = !sideBySide && !multiRowObstruction && needsJog ? midY : -1
 
-      // Crow's foot markers (vertical direction) — markerStartY/markerEndY
-      // computed up front, above.
-      // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
-      const upperChars = getCrowsFootChars(upperCard, useAscii, false, true)
-      for (let i = 0; i < upperChars.length; i++) {
-        setCGuarded(
-          lineX - Math.floor(upperChars.length / 2) + i,
-          markerStartY,
-          upperChars[i]!,
-          'arrow',
-        )
-      }
-
-      // Lower marker (at lower entity's top edge) - treat as target side (isRight=true)
+      // Crow's foot markers (vertical direction), rows ordered outward from
+      // each entity box (see getVerticalMarkerRows).
       const targetX = lineX !== lowerCX ? lowerCX : lineX
-      const lowerChars = getCrowsFootChars(lowerCard, useAscii, true, true)
-      for (let i = 0; i < lowerChars.length; i++) {
-        setCGuarded(
-          targetX - Math.floor(lowerChars.length / 2) + i,
-          markerEndY,
-          lowerChars[i]!,
-          'arrow',
-        )
-      }
+      upperRows.forEach((ch, i) => setCGuarded(lineX, startY + i, ch, 'arrow'))
+      lowerRows.forEach((ch, i) => setCGuarded(targetX, endY - i, ch, 'arrow'))
 
       // Relationship label — placed to the right of the vertical line.
       // Anchored to routingX, not lineX/targetX: when the connection was
@@ -1559,21 +1580,9 @@ export function renderErAscii(
       // bounds. Supports multi-line labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
-        // How far a centered vertical marker's own rightmost glyph column
-        // extends past its own center column — see upperChars/lowerChars
-        // above, drawn via `center - Math.floor(chars.length / 2) + i`. For
-        // every current 1- or 2-cell marker this is 0 (centering always
-        // leans the extra cell left, never right), so labelX below reduces
-        // to routingX + 2, matching the flat constant this replaces — but
-        // it stays correct if a future marker's glyph or centering ever
-        // extended past the line column (issue #415).
-        const markerRightExtent = Math.max(
-          upperChars.length - 1 - Math.floor(upperChars.length / 2),
-          lowerChars.length - 1 - Math.floor(lowerChars.length / 2),
-        )
         // 1 cell for the line column itself + 1 cell of breathing room
-        // before the label starts. Was a flat `+ 2` (issue #415).
-        const labelX = routingX + markerRightExtent + 2
+        // before the label starts. Vertical markers are one column wide.
+        const labelX = routingX + 2
         const cellsPerLine = lines.map((line) => toDisplayCells(line))
         const maxCells = Math.max(...cellsPerLine.map((cells) => cells.length))
         const lastLx = labelX + maxCells - 1

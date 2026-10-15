@@ -42,22 +42,37 @@ describe('ASCII ER crow-foot cardinality markers', () => {
     expect(unicode).toContain('○│')
   })
 
-  it('draws many / zero-many / zero-one along the vertical axis on a vertical edge (#2081)', () => {
+  it('draws vertical markers as a foot or tick against the box, with the circle on the line one row further (#2081, #2083)', () => {
     // Default ER layout stacks entities top to bottom, so these markers sit
-    // on a vertical run: the upper entity's marker opens downward, the
-    // lower one's upward, and neither reuses the horizontal ╟/╢ glyphs.
-    const render = (src: string, useAscii = false) =>
-      renderMermaidASCII(`erDiagram\n  ${src}`, { useAscii })
+    // on a vertical run, like mermaid's own (foot against the entity, circle
+    // one marker further along the line). The upper entity's marker opens
+    // downward, the lower one's upward, and neither reuses ╟/╢.
+    const rows = (src: string, useAscii: boolean) =>
+      renderMermaidASCII(`erDiagram\n  ${src}`, { useAscii }).split('\n')
+    const col = (line: string | undefined, ch: string) => line?.indexOf(ch)
 
-    const manyUni = render('A }|--o{ B : r')
-    expect(manyUni).toContain('╤')
-    expect(manyUni).toContain('○╧')
-    expect(manyUni).not.toMatch(/[╟╢]/)
+    for (const [useAscii, foot, tick, circle, up, border, boxTop] of [
+      [false, '╤', '┼', '○', '╧', /└─+┘/, /┌─+┐/],
+      [true, 'V', '+', 'o', '^', /\+-+\+/, /\+-+\+/],
+    ] as const) {
+      // zero-many on both ends: foot flush on each box, circle on the line.
+      const both = rows('A }o--o{ B : r', useAscii)
+      const top = both.findIndex((l) => l.trim() === foot)
+      expect(top, `${foot} row`).toBeGreaterThan(0)
+      expect(both[top - 1]).toMatch(border)
+      expect(both[top + 1]!.trim()).toBe(circle)
+      expect(col(both[top + 1], circle)).toBe(col(both[top], foot))
+      const bottom = both.findIndex((l) => l.trim() === up)
+      expect(both[bottom - 1]!.trim()).toBe(circle)
+      expect(col(both[bottom - 1], circle)).toBe(col(both[bottom], up))
+      expect(both[bottom + 1]).toMatch(boxTop)
 
-    const manyAscii = render('A }|--o{ B : r', true)
-    expect(manyAscii).toMatch(/^\s*V\s*$/m)
-    expect(manyAscii).toMatch(/^\s*o\^\s*$/m)
-
-    expect(render('A ||--o| B : r')).toMatch(/^\s*○┼\s*$/m)
+      // zero-one: the tick takes the foot's place.
+      const one = rows('A |o--o| B : r', useAscii)
+      const t = one.findIndex((l) => l.trim() === tick)
+      expect(one[t - 1]).toMatch(border)
+      expect(one[t + 1]!.trim()).toBe(circle)
+      expect(one.join('\n')).not.toMatch(/[╟╢]/)
+    }
   })
 })

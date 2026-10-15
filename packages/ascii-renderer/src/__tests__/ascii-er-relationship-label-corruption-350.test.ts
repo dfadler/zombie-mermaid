@@ -474,6 +474,6 @@ describe('ASCII ER relationship routing — multi-row obstruction (CodeRabbit fo
     // the line was actually routed around D, not silently guarded away
     // inside it (setCGuarded would leave no trace at all in that case).
     const gapLine = lines[dTopIdx - 1]!
-    expect(gapLine).toMatch(/[│╢╟○┌└]/)
+    expect(gapLine).toMatch(/[│╢╟○┌└╧]/)
   })
 })

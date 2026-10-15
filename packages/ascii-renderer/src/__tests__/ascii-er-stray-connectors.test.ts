@@ -84,16 +84,17 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
     )
     const lines = ascii.split('\n')
 
-    // The zero-many marker for the A→C relationship ("○╧") must sit on the
-    // row immediately before C's box starts — not with a leftover plain
+    // The zero-many marker for the A→C relationship (a two-row marker since
+    // #2083: '○' on the line, then '╧' against the box) must end on the row
+    // immediately before C's box starts — not with a leftover plain
     // "│" line-fill row (visually indistinguishable from a second "one"
     // tick) still separating it from the border. Before the fix, that
-    // leftover row rendered as an extra stray "│" directly under "○╧".
-    // Match only the *vertical* marker's own row — a bare "○╧" with nothing
-    // but leading whitespace before it — not the A→B horizontal
-    // relationship's identical-looking marker earlier in the output.
-    const markerLineIdx = lines.findIndex((l) => /^\s*○╧\s*$/.test(l))
+    // leftover row rendered as an extra stray "│" directly under the marker.
+    // Match only the *vertical* marker's own row — a bare "╧" with nothing
+    // but leading whitespace around it — not the A→B horizontal marker.
+    const markerLineIdx = lines.findIndex((l) => /^\s*╧\s*$/.test(l))
     expect(markerLineIdx).toBeGreaterThan(-1)
+    expect(lines[markerLineIdx - 1]).toMatch(/^\s*○\s*$/)
     const nextLine = lines[markerLineIdx + 1]
     expect(nextLine).toBeDefined()
     expect(nextLine!.trimStart().startsWith('┌')).toBe(true)
@@ -139,14 +140,16 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
       { colorMode: 'none' },
     )
     const lines = ascii.split('\n')
-    // A's own end of the A→C relationship ("○┼") must sit on the row
+    // A's own end of the A→C relationship ('┼' against the border, then
+    // '○' on the line one row further, #2083) must start on the row
     // immediately after A's box bottom border — not with a leftover blank
     // row still separating it from the border.
     const aBoxBottomIdx = lines.findIndex((l) => l.includes('└───┘ ab'))
     expect(aBoxBottomIdx).toBeGreaterThan(-1)
     const markerLine = lines[aBoxBottomIdx + 1]
     expect(markerLine).toBeDefined()
-    expect(markerLine).toContain('○┼')
+    expect(markerLine).toMatch(/^\s*┼\s*$/)
+    expect(lines[aBoxBottomIdx + 2]).toMatch(/^\s*○\s*$/)
   })
 })
 

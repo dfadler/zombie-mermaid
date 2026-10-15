@@ -3,50 +3,71 @@
 +----------+         
       +              
     +-+              
+    |                
     | places         
-   o^                
+    |                
+    o                
+    ^                
 +-------+            
 | ORDER |            
 +-------+            
     +                
-    +-+ contains     
+    +-+              
       |              
-     o^              
+      | contains     
+      |              
+      o              
+      ^              
 +-----------+        
 | LINE_ITEM |        
 +-----------+        
-     o+              
+      +              
+      o              
      ++              
      | lists         
+     |               
+     |               
      ^               
 +---------+          
 | PRODUCT |          
 +---------+          
-    o+               
-     ++ sourced_from 
+     +               
+     o               
+     ++              
+      | sourced_from 
+      |              
       |              
       +              
 +----------+         
 | SUPPLIER |         
 +----------+         
-     oV              
+      V              
+      o              
+      |              
       | stocks       
       |              
-     o^              
+      o              
+      ^              
 +-----------+        
 | WAREHOUSE |        
 +-----------+        
       +              
     +.+              
+    :                
     : holds          
-   o^                
+    :                
+    o                
+    ^                
 +-------+            
 | SHELF |            
 +-------+            
     +                
    ++                
+   :                 
    : holds           
-  o^                 
+   :                 
+   o                 
+   ^                 
 +-----+              
 | BIN |              
 +-----+              

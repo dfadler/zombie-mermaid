@@ -62,7 +62,8 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     expect(lines[markerLineIndex]).not.toMatch(/^\s*[│─]\s*$/)
 
     // The line continues unbroken below the marker, through the label row.
-    expect(lines[markerLineIndex + 1]).toContain('│ ac')
+    expect(lines[markerLineIndex + 1]).toMatch(/^\s*│/)
+    expect(ascii).toContain('│ ac')
   })
 
   it('renders distinct ticks at both ends when both entities have "one" cardinality', () => {
@@ -108,6 +109,7 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // an earlier fix attempt used a bare '-', which visually severs the
     // line (no vertical extent) — see the header comment above.
     expect(lines[markerLineIndex]).not.toMatch(/^\s*[|-]\s*$/)
-    expect(lines[markerLineIndex + 1]).toContain('| ac')
+    expect(lines[markerLineIndex + 1]).toMatch(/^\s*\|/)
+    expect(ascii).toContain('| ac')
   })
 })

@@ -49,8 +49,8 @@ describe('ASCII ER — unrelated relationship stems stay visually separated (iss
     // A blank column now separates the two relationships' stems on every
     // row where both are present.
     expect(ascii).toContain('┌ appears_in')
-    expect(ascii).toContain('│ │ has')
-    expect(ascii).toContain('┼ └')
+    expect(ascii).toMatch(/│ +│ has/)
+    expect(ascii).toMatch(/┼[^\n]*\n +└/)
   })
 
   it('does not corrupt a corner glyph when escalating a jog to avoid an unrelated stem (issue #411 fix side effect)', () => {
@@ -95,6 +95,7 @@ describe('ASCII ER — unrelated relationship stems stay visually separated (iss
     // TEACHER→COURSE's own corner, where its jog turns down into COURSE,
     // must survive intact rather than being overwritten by
     // STUDENT→ENROLLMENT's bypass column landing on the same cell.
-    expect(ascii).toContain('┌ teaches')
+    expect(ascii).toMatch(/┌─+┘/)
+    expect(ascii).toMatch(/└─+ teaches/)
   })
 })

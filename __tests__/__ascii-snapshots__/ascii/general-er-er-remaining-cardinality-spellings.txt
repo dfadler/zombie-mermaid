@@ -4,28 +4,36 @@
      +          
     ++          
     | writes    
-   o^           
+    |           
+    o           
+    ^           
 +------+        
 | BOOK |        
 +------+        
     V           
-    ++ receives 
+    ++          
+     | receives 
      |          
-    o^          
+     o          
+     ^          
 +--------+      
 | REVIEW |      
 +--------+      
      V          
+     :          
      : attracts 
      :          
-    o^          
+     o          
+     ^          
 +---------+     
 | COMMENT |     
 +---------+     
      V          
     ++          
     | raises    
-   o+           
+    |           
+    o           
+    +           
 +------+        
 | FLAG |        
 +------+        
