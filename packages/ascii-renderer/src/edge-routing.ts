@@ -550,13 +550,14 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // its own, so lengthen the face rather than let them merge. A stacked
   // (TD/BT) pair's forward and back groups are separate groups but share the
   // same two side faces, so their siblings (all but each group's first, which
-  // takes the flow face) are counted together. Cluster exits split over two
+  // takes the flow face) are counted together. So are the pairs of a node with
+  // several neighbours, whose lanes share its faces (#2072). Cluster exits split over two
   // faces instead (`laneSide`, cluster-boundary.ts).
   // Deliberately not covered: lane groups from several sources into one
   // target (`splitSharedLabeledLane`) keep sharing the target's face, which
   // keeps `Labeled Fan-In (LR)` as it is (#1826). docs/known-differences.md
   // gets the entry once PR #2090 lands.
-  const need = new Map<string, number>()
+  const need = new Map<number, { siblings: number; pairs: Set<string> }>()
   for (const group of laneGroups) {
     const to = group[0]!.to
     if (group[0]!.clusterSource) {
@@ -570,17 +571,25 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
       }
       continue
     }
-    const key = [group[0]!.from.index, group[0]!.to.index].sort().join('|')
-    need.set(key, (need.get(key) ?? 0) + group.length - 1)
+    // #2072: the lane groups of every pair a node is in share its side faces,
+    // and the first edge of each pair beyond the first can land there too, so
+    // count per node: siblings, plus one for each further pair.
+    const pair = [group[0]!.from.index, group[0]!.to.index].sort().join('|')
+    for (const n of [group[0]!.from, group[0]!.to]) {
+      const at = need.get(n.index) ?? { siblings: 0, pairs: new Set<string>() }
+      at.siblings += group.length - 1
+      at.pairs.add(pair)
+      need.set(n.index, at)
+    }
   }
   for (const group of laneGroups) {
-    const total = need.get(
-      [group[0]!.from.index, group[0]!.to.index].sort().join('|'),
-    )
-    if (total === undefined || total < 4) continue
+    if (group[0]!.clusterSource) continue
     const lr = graph.config.graphDirection === 'LR'
     const sizes = lr ? graph.columnWidth : graph.rowHeight
     for (const n of [group[0]!.from, group[0]!.to]) {
+      const { siblings, pairs } = need.get(n.index)!
+      const total = siblings + pairs.size - 1
+      if (total < 4) continue
       const at = requireGridCoord(n)[lr ? 'x' : 'y'] + 1
       sizes.set(at, Math.max(sizes.get(at)!, total))
     }

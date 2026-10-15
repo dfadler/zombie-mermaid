@@ -615,11 +615,10 @@ const endsOf = (e: AsciiEdge): [PortRun | undefined, 'S' | 'E'][] => [
  * their ends starts at the port centre, on top of whatever else uses the face.
  * Every other edge's end is placed by now and holds its cell; the lane and loop
  * ends of a face then get cells of their own (`placeFace`). Ends of one route
- * (duplicate self-loops, #2028) share a cell. When a face is too short, the
- * deeper of two same-direction unlabeled duplicate lanes is drawn on the
- * other's route (drawn once) and the faces are placed again; with no such pair
- * left, ends of one role may share a cell (a fan), and failing that the
- * face's ends stay at the centre. Last, a self-loop that runs along another
+ * (duplicate self-loops, #2028) share a cell. Every edge keeps its own lane
+ * (#2072, as Mermaid draws one path per edge); when a face is too short, ends
+ * of one role may share a cell (a fan), and failing that the face's ends stay
+ * at the centre. Last, a self-loop that runs along another
  * edge is drawn a cell closer to its node (`hugLoop`).
  */
 function allocateFaces(
@@ -656,71 +655,44 @@ function allocateFaces(
       ])
     }
   }
-  // Duplicate lane -> the lane it is drawn on.
-  const onto = new Map<AsciiEdge, AsciiEdge>()
-  for (;;) {
-    const faces = new Map<string, FaceEnd[]>()
-    for (const edge of lanes) {
-      if (onto.has(edge)) continue
-      for (const [run, role] of endsOf(edge)) {
-        if (!run) continue
-        faces.set(faceOf(run), [
-          ...(faces.get(faceOf(run)) ?? []),
-          { edge, run, role },
-        ])
-      }
+  const faces = new Map<string, FaceEnd[]>()
+  for (const edge of lanes) {
+    for (const [run, role] of endsOf(edge)) {
+      if (!run) continue
+      faces.set(faceOf(run), [
+        ...(faces.get(faceOf(run)) ?? []),
+        { edge, run, role },
+      ])
     }
-    const placed = new Map<FaceEnd, number>()
-    // A straight lane is one run: the face placed first fixes it for both.
-    const fixed = new Map<AsciiEdge, number>()
-    let pair: [AsciiEdge, AsciiEdge] | undefined
-    for (const [face, list] of faces) {
-      const has = held.get(face) ?? []
-      let offs = placeFace(graph, list, has, fixed, false)
-      if (!offs) {
-        pair ??= duplicateLanes(list)
-        if (pair) continue
-        offs = placeFace(graph, list, has, fixed, true) ?? list.map(() => 0)
-      }
-      list.forEach((f, i) => {
-        placed.set(f, offs[i]!)
-        if (runsOf(f.edge)?.straight) fixed.set(f.edge, offs[i]!)
-      })
+  }
+  const placed = new Map<FaceEnd, number>()
+  // A straight lane is one run: the face placed first fixes it for both.
+  const fixed = new Map<AsciiEdge, number>()
+  for (const [face, list] of faces) {
+    const has = held.get(face) ?? []
+    const offs =
+      placeFace(graph, list, has, fixed, false) ??
+      placeFace(graph, list, has, fixed, true) ??
+      list.map(() => 0)
+    list.forEach((f, i) => {
+      placed.set(f, offs[i]!)
+      if (runsOf(f.edge)?.straight) fixed.set(f.edge, offs[i]!)
+    })
+  }
+  for (const [f, by] of placed) {
+    if (by === 0) continue
+    const shift = result.get(f.edge) ?? { start: 0, end: 0 }
+    if (f.role === 'S') {
+      shift.start = by
+      shift.startRun = shiftedRun(f.run)
+    } else {
+      shift.end = by
+      shift.endRun = shiftedRun(f.run)
     }
-    if (pair) {
-      onto.set(pair[0], pair[1])
-      continue
-    }
-    for (const [f, by] of placed) {
-      if (by === 0) continue
-      const shift = result.get(f.edge) ?? { start: 0, end: 0 }
-      if (f.role === 'S') {
-        shift.start = by
-        shift.startRun = shiftedRun(f.run)
-      } else {
-        shift.end = by
-        shift.endRun = shiftedRun(f.run)
-      }
-      result.set(f.edge, shift)
-    }
-    for (const [dup, lane] of onto) {
-      let root = lane
-      while (onto.has(root)) root = onto.get(root)!
-      const want = drawnPath(graph, root, result.get(root))
-      const base = lineToDrawing(graph, dup.path)
-      result.set(dup, {
-        start: 0,
-        end: 0,
-        points: base.map((b, i) => ({
-          x: want[i]!.x - b.x,
-          y: want[i]!.y - b.y,
-        })),
-      })
-    }
-    for (const loop of lanes) {
-      if (loop.from === loop.to) hugLoop(graph, loop, result)
-    }
-    return
+    result.set(f.edge, shift)
+  }
+  for (const loop of lanes) {
+    if (loop.from === loop.to) hugLoop(graph, loop, result)
   }
 }
 
@@ -895,28 +867,6 @@ function hugLoop(
   const tight = Math.abs(y.x - z.x) + Math.abs(y.y - z.y) < 2
   if (tight || along(hugged)) return
   result.set(loop, hugged)
-}
-
-/**
- * Two unlabeled lanes on `list` between the same nodes in the same direction
- * and of the same kind: the later one, to draw on the earlier one's route.
- */
-function duplicateLanes(list: FaceEnd[]): [AsciiEdge, AsciiEdge] | undefined {
-  const same = (a: AsciiEdge, b: AsciiEdge): boolean =>
-    a.from === b.from &&
-    a.to === b.to &&
-    a.text === '' &&
-    b.text === '' &&
-    a.style === b.style &&
-    a.hasArrowStart === b.hasArrowStart &&
-    a.hasArrowEnd === b.hasArrowEnd &&
-    a.path.length === b.path.length
-  const edges = [...new Set(list.map((f) => f.edge))]
-  for (const dup of [...edges].reverse()) {
-    const lane = edges.find((e) => e !== dup && same(e, dup))
-    if (lane && dup.parallelLane?.index) return [dup, lane]
-  }
-  return undefined
 }
 
 /** Where a fan-in edge lands and which row its last leg runs along. */

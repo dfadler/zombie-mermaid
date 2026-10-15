@@ -21,4 +21,4 @@
  200┤···████████·······████████·······████████···················
     │   ████████       ████████       ████████       ████████
     ┼───────┬──────────────┬──────────────┬──────────────┬───────
-       EngineeringProduct ManagemeCustomer SuccessHuman Resources
+       Engineering  Product Manag… Customer Succ… Human Resourc…
