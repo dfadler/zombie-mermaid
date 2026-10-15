@@ -5,11 +5,12 @@ release's full notes are in the [CHANGELOG](../../CHANGELOG.md).
 
 ## Do I need to change anything?
 
-| You…                                        | Change needed                                            |
-| ------------------------------------------- | -------------------------------------------------------- |
-| pass `-w` / `--max-width` to the CLI        | [Handle the non-zero exit](#--max-width-is-now-an-error) |
-| call `renderMermaidASCII` with `maxWidth`   | none: the option is new (5.x ignored unknown options)    |
-| use only the library or MCP without a width | none                                                     |
+| You…                                        | Change needed                                              |
+| ------------------------------------------- | ---------------------------------------------------------- |
+| pass `-w` / `--max-width` to the CLI        | [Handle the non-zero exit](#--max-width-is-now-an-error)   |
+| call `renderMermaidASCII` with `maxWidth`   | none: the option is new (5.x ignored unknown options)      |
+| write ER attributes with several keys       | [Use commas](#er-attribute-keys-are-parsed-like-mermaidjs) |
+| use only the library or MCP without a width | none                                                       |
 
 ## `--max-width` is now an error
 
@@ -49,3 +50,20 @@ tool's `maxWidth` argument apply the same limit. There is no default, and
 `profile: 'markdown'` does not set one. Over the limit, the library throws
 `AsciiWidthError` (`code: 'WIDTH_EXCEEDED'`) and the MCP tool returns an
 `isError` result. See [Width limit](../api-reference.md#width-limit-optionsmaxwidth).
+
+## ER attribute keys are parsed like mermaid.js
+
+In 5.x an ER attribute's key text was split on whitespace only, so `PK, FK`
+kept just `FK`, `PK,FK` kept nothing, and unknown words were ignored. In 6.x it
+is a comma-separated list of `PK` / `FK` / `UK` (space after the comma
+optional), kept in order, as in mermaid.js 12.1.0 and 12.2.0.
+
+| Source               | 5.x                    | 6.x              |
+| -------------------- | ---------------------- | ---------------- |
+| `PK, FK`, `PK,FK`    | `FK` / no key          | `PK,FK`          |
+| `PK FK` (space only) | `PK,FK`                | line-level error |
+| `PK,`, `PK,,FK`      | key dropped or partial | line-level error |
+| `PKX`                | ignored                | line-level error |
+
+Fix: write multiple keys with commas (`PK, FK`). Mermaid.js rejects the
+space-only form too, so a diagram that only passed here fails there.
