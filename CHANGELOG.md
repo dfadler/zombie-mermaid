@@ -1,5 +1,23 @@
 # Changelog
 
+## 5.7.0
+
+### Minor Changes
+
+- [#2132](https://github.com/dfadler/zombie-mermaid/pull/2132) [`10ce9a2`](https://github.com/dfadler/zombie-mermaid/commit/10ce9a2ae25f56c8f096267f89b20c65a944e812) Thanks [@dfadler](https://github.com/dfadler)! - ER diagrams now apply `style`, `classDef`, `class` and the `A:::name` shorthand, as mermaid.js 12.1.0 and 12.2.0 do. `fill` paints the entity box and its header, `stroke` and `stroke-width` the outline, and `color` the text; the cascade is the one flowcharts and class diagrams use (`classDef default`, then the assigned class, then `style`), and invalid colour values are dropped like in the other diagram types. The style class is also emitted on the entity's `<g class="entity ...">`. Output change: SVG for an ER diagram that already contains these statements now carries the colours (they were silently ignored before); diagrams without them render as before. ASCII ignores colour declarations in every diagram type, ER included, so `style`, `classDef` and `class` leave it unchanged; the `:::` shorthand on an entity name (`ORDER:::late {`, `A:::x ||--o{ B : has`) no longer creates a stray entity named `ORDER:::late`, so ASCII for those diagrams changes too. Minor under the versioning policy: new supported syntax, no newly throwing input. Fixes [#2107](https://github.com/dfadler/zombie-mermaid/issues/2107).
+
+### Patch Changes
+
+- [#2142](https://github.com/dfadler/zombie-mermaid/pull/2142) [`e50bbdf`](https://github.com/dfadler/zombie-mermaid/commit/e50bbdff499cd8c9ca1629ae0b019ceb25a2f160) Thanks [@dfadler](https://github.com/dfadler)! - ER diagrams in ASCII/Unicode now route vertical relationships legibly. Where two edges cross, the cell is a junction (`┼`, or `+` in the ASCII charset) instead of the later edge erasing the earlier one. Each edge takes its own jog row past the cardinality markers, so no edge runs along an entity's border, and the gap between rows grows by one row per edge that crosses it (plus room for same-row detours). A relationship label sits on its own horizontal run when one is long enough, otherwise beside its own stem with a blank on each side, and is placed only after every line is drawn so it can no longer cover another edge's stem. Rows are further apart when a vertical edge carries a label. Output change: ASCII/Unicode for ER diagrams that have relationships between entities in different rows; flowchart, class, state, sequence and the other diagram types are unchanged, as is every ER SVG. Fixes [#2112](https://github.com/dfadler/zombie-mermaid/issues/2112).
+
+- [#2132](https://github.com/dfadler/zombie-mermaid/pull/2132) [`63236db`](https://github.com/dfadler/zombie-mermaid/commit/63236dbb4b2beaff73a18ef15e538786de87c5f6) Thanks [@dfadler](https://github.com/dfadler)! - ER: an attribute with several keys now keeps all of them in order, in the SVG and the ASCII output. `string a PK, FK "c"` and `string b PK,FK` both render `PK,FK` (they used to show only `FK` and no key), and `UK` joins the list the same way. Like mermaid.js (12.1.0 and 12.2.0, checked with `parse`), a space-only list (`PK FK`), a dangling comma (`PK,`) or an unknown key word now raises a line-level error instead of being accepted or ignored. Output change: rows with more than one key now show `PK,FK` (they showed one key or none), in SVG and ASCII. Fixes [#2115](https://github.com/dfadler/zombie-mermaid/issues/2115).
+- Updated dependencies [[`3dea4e8`](https://github.com/dfadler/zombie-mermaid/commit/3dea4e87ad6f4f3d285368ca3d460396e51e6fba), [`1629a93`](https://github.com/dfadler/zombie-mermaid/commit/1629a93b59f74df129350aa69985039f2cc70cda), [`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903), [`90e2fdc`](https://github.com/dfadler/zombie-mermaid/commit/90e2fdc0527bab025bda9126ea525c6edca06259)]:
+  - @zombie-mermaid/ascii-renderer@5.7.0
+  - @zombie-mermaid/core@5.7.0
+  - @zombie-mermaid/mermaid-parser@5.7.0
+  - @zombie-mermaid/svg-renderer@5.7.0
+  - @zombie-mermaid/mcp@5.7.0
+
 ## 5.6.1
 
 ### Patch Changes

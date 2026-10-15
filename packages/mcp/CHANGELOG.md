@@ -1,5 +1,15 @@
 # @zombie-mermaid/mcp
 
+## 5.7.0
+
+### Patch Changes
+
+- Updated dependencies [[`3dea4e8`](https://github.com/dfadler/zombie-mermaid/commit/3dea4e87ad6f4f3d285368ca3d460396e51e6fba), [`1629a93`](https://github.com/dfadler/zombie-mermaid/commit/1629a93b59f74df129350aa69985039f2cc70cda), [`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903), [`90e2fdc`](https://github.com/dfadler/zombie-mermaid/commit/90e2fdc0527bab025bda9126ea525c6edca06259)]:
+  - @zombie-mermaid/ascii-renderer@5.7.0
+  - @zombie-mermaid/core@5.7.0
+  - @zombie-mermaid/mermaid-parser@5.7.0
+  - @zombie-mermaid/svg-renderer@5.7.0
+
 ## 5.6.1
 
 ### Patch Changes

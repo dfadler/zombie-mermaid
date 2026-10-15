@@ -1,5 +1,0 @@
----
-'@zombie-mermaid/ascii-renderer': patch
----
-
-fix(ascii): draw back-edges and forward skips on the flow-axis faces like mermaid (#2121). Output change: a flowchart edge between nodes in one column (TD/BT) or one row (LR/RL) that runs against the flow, such as `c --> a` in `a --> b --> c --> a`, or forward over a level (`a --> c` beside `a --> b --> c`) now leaves the source's top/bottom (LR: left/right) face, runs along a lane in the gutter beside the column (below the row in LR) and enters the target's opposite face, instead of looping out of the side faces (LR: the bottom faces). Ports are spread along each face, forward lanes inside back-edge lanes, and each lane's runs along a gutter row take a row of their own, so parallel back-edges nest without crossing. Nodes with such an edge grow to hold their ports a stroke spacing apart. Duplicate edges between neighbouring levels in such a column are strokes on the facing faces, so the dense duplicate-edge samples draw with no crossings. Reciprocal pairs on neighbouring levels and diagonal back-edges keep their previous shape. Checked against mermaid 12.1.0.
