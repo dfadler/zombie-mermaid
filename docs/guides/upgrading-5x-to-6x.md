@@ -5,11 +5,11 @@ release's full notes are in the [CHANGELOG](../../CHANGELOG.md).
 
 ## Do I need to change anything?
 
-| You…                                        | Change needed                                          |
-| ------------------------------------------- | ------------------------------------------------------ |
+| You…                                        | Change needed                                            |
+| ------------------------------------------- | -------------------------------------------------------- |
 | pass `-w` / `--max-width` to the CLI        | [Handle the non-zero exit](#--max-width-is-now-an-error) |
-| call `renderMermaidASCII` with `maxWidth`   | none: the option is new (5.x ignored unknown options)  |
-| use only the library or MCP without a width | none                                                   |
+| call `renderMermaidASCII` with `maxWidth`   | none: the option is new (5.x ignored unknown options)    |
+| use only the library or MCP without a width | none                                                     |
 
 ## `--max-width` is now an error
 
