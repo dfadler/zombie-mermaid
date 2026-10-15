@@ -85,6 +85,38 @@ renders the literal `Labels <&> "quotes"` and does not copy the bug. Duplicate s
 labels such as `"R&D"` keep the first value in both renderers
 ([#2084](https://github.com/dfadler/zombie-mermaid/issues/2084)).
 
+## ASCII: several sources into one target share the target's face
+
+Intentional ([#1826](https://github.com/dfadler/zombie-mermaid/issues/1826)). The ASCII
+renderer gives each of several edges between the _same pair_ of nodes its own lane and
+arrowhead (`assignParallelEdgeLanes`, `packages/ascii-renderer/src/edge-routing.ts`), and
+lengthens the box face when there are more than three. Edges from _different sources_ into
+one target are left out of that: they keep merging onto the target's face. Giving each
+its own face cell would change `Labeled Fan-In (LR)` and widen every fan-in diagram. No
+output target (charset, width, markdown profile, MCP) forces this; it is a choice.
+
+```mermaid
+flowchart LR
+  A -->|one| T
+  B -->|two| T
+  C -->|three| T
+  D -->|four| T
+```
+
+- **zombie-mermaid (ASCII).** The four edges join into one trunk ending in a single
+  arrowhead on `T` (`TD` does the same, one head per side). Each label stays on its own
+  source's stroke, so every edge is still readable and attributable, but a reader cannot
+  count four heads.
+- **mermaid.js.** Four separate paths, each with its own arrowhead, stacked against the
+  same face of `T`. The heads overlap and the stack looks cramped, but there are four.
+
+Checked on mermaid 12.1.0 (the pinned `node_modules` build, rendered headless in Playwright
+Chromium through `scripts/lib/real-mermaid.ts`; four `flowchart-link` paths, four
+`marker-end` arrowheads, both `LR` and `TD`) and on the current renderer's ASCII output
+(unicode charset). Not checked: mermaid 11.x, mermaid 12.2.0 or later, mermaid.live and
+GitHub for this sample, the `ascii` charset, and fan-ins with more than the four sources
+above.
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams

@@ -539,8 +539,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // faces instead (`laneSide`, cluster-boundary.ts).
   // Deliberately not covered: lane groups from several sources into one
   // target (`splitSharedLabeledLane`) keep sharing the target's face, which
-  // keeps `Labeled Fan-In (LR)` as it is (#1826). docs/known-differences.md
-  // gets the entry once PR #2090 lands.
+  // keeps `Labeled Fan-In (LR)` as it is (#1826); see
+  // docs/known-differences.md.
   const need = new Map<string, number>()
   for (const group of laneGroups) {
     const to = group[0]!.to
