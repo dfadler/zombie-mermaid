@@ -63,14 +63,17 @@ layers. The 12.1.0 comparison is in
 
 ## State diagram notes
 
-`note left of X` / `note right of X` place the note on the side the keyword names in
-zombie-mermaid. mermaid.js does not. Checked on mermaid 12.2.0 (jsDelivr, real Chrome,
-default config) for the "State: Notes" sample: `note right of Active` lands below
-`Active`, 20 px to its left, and `note left of Idle` lands above `Idle`, 20 px to its
-right. The maintainer-run oracle on 12.1.0 gives the same layout. This is why "State:
-Notes" scores 83% horizontal agreement; the floor in `scripts/lib/layout-agreement.ts`
-stays at 0.8. We keep the keyword's meaning rather than imitate a placement that
-contradicts the syntax ([#1942](https://github.com/dfadler/zombie-mermaid/issues/1942)).
+zombie-mermaid's parser reads `note left of X` / `note right of X` but ignores the side:
+swapping the keywords gives byte-identical output, and placement comes from the layout
+engine's dotted edge from the state to the note ([#2094](https://github.com/dfadler/zombie-mermaid/issues/2094)).
+mermaid.js does not place notes on the named side either. Checked on mermaid 12.2.0
+(jsDelivr, real Chrome, default config) for the "State: Notes" sample: `note right of
+Active` lands below `Active`, 20 px to its left, and `note left of Idle` lands above
+`Idle`, 20 px to its right. The maintainer-run oracle on 12.1.0 gives the same layout.
+The remaining gap is layout tie-breaks, which is why "State: Notes" scores 83% horizontal
+agreement; the floor in `scripts/lib/layout-agreement.ts` stays at 0.8
+([#1942](https://github.com/dfadler/zombie-mermaid/issues/1942)). Not checked: mermaid.live
+or GitHub for this sample.
 
 ## Escaped characters in pie titles
 
