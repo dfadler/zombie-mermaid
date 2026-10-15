@@ -12,6 +12,7 @@ async function run(
   gzip: {
     budgets?: Record<string, number>
     consumerBundles?: Record<string, number>
+    bundleFails?: boolean
   } = {},
 ) {
   vi.resetModules()
@@ -23,7 +24,10 @@ async function run(
   vi.spyOn(console, 'error').mockImplementation((m) => void out.push(String(m)))
 
   vi.doMock('../scripts/vite-bundle.ts', () => ({
-    bundleSource: async () => 'x'.repeat(10),
+    bundleSource: async () => {
+      if (gzip.bundleFails) throw new Error('bundle failed')
+      return 'x'.repeat(10)
+    },
   }))
   vi.doMock('node:fs/promises', () => {
     const dirOf = (p: string) =>
@@ -121,6 +125,16 @@ describe('scripts/check-bundle-size.ts unpacked budgets', () => {
     expect(r.text).toMatch(
       /pkg\/c\.js\s+\d+ B \/\s+100 B\s+headroom\s+[\d.]+%\s+ok/,
     )
+    expect(r.code).toBe(1)
+  })
+
+  it('reports a consumer bundle that fails to build as missing', async () => {
+    const r = await run(
+      {},
+      {},
+      { consumerBundles: { 'pkg/c.js': 100 }, bundleFails: true },
+    )
+    expect(r.text).toMatch(/pkg\/c\.js\s+MISSING/)
     expect(r.code).toBe(1)
   })
 })
