@@ -658,4 +658,30 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: two arrowheads merge on a shared face. After: each of the six edges ends in its own head.',
   },
+  {
+    id: 'er-multi-key-attributes',
+    title: 'An ER attribute with two keys lost one of them',
+    symptom:
+      'An attribute written `PK, FK` showed only `FK`, and `PK,FK` showed no key at all. Mermaid shows `PK,FK` for both spellings.',
+    source:
+      'erDiagram\n  T {\n    string a PK, FK "c"\n    string b PK,FK\n    string d PK\n  }',
+    fixCommit: '63236dbb',
+    pr: 2125,
+    render: 'svg',
+    lookFor:
+      'Before: row `a` shows only `FK` and row `b` shows no key. After: both show `PK,FK`.',
+  },
+  {
+    id: 'er-style-classdef',
+    title: 'ER style, classDef and class were ignored',
+    symptom:
+      'An ER entity given `style`, `classDef` plus `class`, or the `:::` shorthand rendered unstyled, although mermaid paints it.',
+    source:
+      'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  classDef hot fill:#fecaca,stroke:#dc2626\n  class ORDER hot\n  style CUSTOMER fill:#dbeafe,stroke:#2563eb',
+    fixCommit: '10ce9a2a',
+    pr: 2132,
+    render: 'svg',
+    lookFor:
+      'Before: both entities use the theme colours. After: `CUSTOMER` is blue and `ORDER` is red.',
+  },
 ]

@@ -15,6 +15,7 @@ import type {
   PositionedErRelationship,
 } from '@zombie-mermaid/mermaid-parser'
 import type { ErRenderOptions } from '@zombie-mermaid/core'
+import { resolveNodeStyle } from '@zombie-mermaid/core'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
@@ -171,6 +172,10 @@ function extractErLayout(
         height: child.height ?? size.height,
         headerHeight: ER.headerHeight,
         rowHeight: ER.rowHeight,
+        // Same cascade flowcharts and class diagrams use: classDef default →
+        // assigned class → `style`. Invalid colours are dropped there.
+        inlineStyle: resolveNodeStyle(entity.id, diagram),
+        className: diagram.classAssignments.get(entity.id),
       })
     }
   }
