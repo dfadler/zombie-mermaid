@@ -457,6 +457,16 @@ describe('thresholds and machine-readable scorecard', () => {
   it('applies the default floor, per-sample overrides, and the boundary', () => {
     expect(floorFor('Anything new')).toBe(DEFAULT_FLOOR)
     expect(floorFor('Class: MVC Architecture')).toBe(0.95)
+    // Every flowchart sample the oracle reports under the default floor has its own.
+    for (const t of [
+      'LR Bypass Edge In A Chain',
+      'Flowchart: Six Cluster Exit Siblings (TD)',
+      'Flowchart: Nine Cluster Exit Siblings (TD)',
+      'Flowchart: Dense Duplicate Edges (TD)',
+      'Flowchart: Dense Duplicate Edges (LR)',
+    ]) {
+      expect(floorFor(t), t).toBeLessThan(DEFAULT_FLOOR)
+    }
     expect(sampleStatus('x', ag(1, DEFAULT_FLOOR))).toBe('pass')
     expect(sampleStatus('x', ag(1, DEFAULT_FLOOR - 0.01))).toBe('fail')
     expect(sampleStatus('Class: MVC Architecture', ag(1, 0.95))).toBe('pass')
