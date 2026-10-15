@@ -658,4 +658,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: two arrowheads merge on a shared face. After: each of the six edges ends in its own head.',
   },
+  {
+    id: 'er-multi-key-attributes',
+    title: 'An ER attribute with two keys lost one of them',
+    symptom:
+      'An attribute written `PK, FK` showed only `FK`, and `PK,FK` showed no key at all. Mermaid shows `PK,FK` for both spellings.',
+    source:
+      'erDiagram\n  T {\n    string a PK, FK "c"\n    string b PK,FK\n    string d PK\n  }',
+    fixCommit: '63236dbb',
+    pr: 2125,
+    render: 'svg',
+    lookFor:
+      'Before: row `a` shows only `FK` and row `b` shows no key. After: both show `PK,FK`.',
+  },
 ]
