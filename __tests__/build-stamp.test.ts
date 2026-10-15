@@ -38,6 +38,8 @@ describe('build stamp (#1613)', () => {
     expect(s.version).toMatch(/^\d+\.\d+\.\d+/)
     expect(s.sha).toMatch(/^([0-9a-f]{40}|unknown)$/)
     expect(buildStamp()).toBe(s)
+    // default git lookup: a real sha in a checkout, `unknown` otherwise
+    expect(resolveBuildStamp({}).sha).toMatch(/^([0-9a-f]{40}|unknown)$/)
   })
 
   it('inserts both meta tags right after <head>', () => {
