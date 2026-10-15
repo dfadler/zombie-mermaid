@@ -2618,4 +2618,37 @@ pie title Pets adopted by volunteers
   PUBLISHER ||--o{ BOOK : prints
   PUBLISHER ||..o{ CATALOG : appears-in`,
   },
+  {
+    title: 'Class: Relationship Cardinalities',
+    category: 'Class',
+    description:
+      'A cardinality sits beside its own end of the line, next to the box, in the SVG and in the ASCII panel (#2114).',
+    source: `classDiagram
+  Customer "1" --> "*" Order : places
+  Order "1" --> "1..*" Item : contains
+  Item "0..1" --> "many" Tag : has`,
+  },
+  {
+    title: 'Class: Cardinalities on Every Relationship Kind',
+    category: 'Class',
+    description:
+      'Cardinalities at both ends, at one end, with and without a label, next to inheritance, composition, aggregation, dependency and realization markers (#2114).',
+    source: `classDiagram
+  Animal "1" <|-- "0..*" Dog
+  Car "1" *-- "4" Wheel
+  Library "1" o-- "*" Book : holds
+  Service "1" ..> "1..*" Config : reads
+  Duck "*" ..|> "1" Swimmer
+  Cart "1" --> Item`,
+  },
+  {
+    title: 'Class: Cardinalities with Shared Ends',
+    category: 'Class',
+    description:
+      'Relationships that leave one class keep each cardinality beside its own line, including under a two-line label (#2114).',
+    source: `classDiagram
+  Teacher "1" --> "*" Course : teaches
+  Teacher "1" --> "*" Lab
+  Course "1" --> "1" Syllabus : covers<br>topics`,
+  },
 ]
