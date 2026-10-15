@@ -1,36 +1,36 @@
-+-----------------+                            
-| CUSTOMER        |                            
-+-----------------+                            
-| int id PK       |                            
-| string name     |                            
-| string email UK |                            
-+-----------------+                            
-         +                                     
-         +-+                                   
-           | places                            
-           |                                   
-           o                                   
-           ^                                   
-+--------------------+      +-------------+    
-| ORDER              |      | PRODUCT     |    
-+--------------------+      +-------------+    
-| int id PK          |      | int id PK   |    
-| date created       |      | string name |    
-| int customer_id FK |      | float price |    
-+--------------------+      +-------------+    
-           +                       +           
- +---------+       +---------------+           
- | contains        | includes                  
- |                 |                           
- |                 o                           
- ^                 ^                           
-+-------------------+                          
-| LINE_ITEM         |                          
-+-------------------+                          
-| int id PK         |                          
-| int order_id FK   |                          
-| int product_id FK |                          
-| int quantity      |                          
-+-------------------+                          
-                                               
-                                               
++-----------------+                                 
+| CUSTOMER        |                                 
++-----------------+                                 
+| int id PK       |                                 
+| string name     |                                 
+| string email UK |                                 
++-----------------+                                 
+         +                                          
+         |                                          
+         +-+ places                                 
+           |                                        
+           o                                        
+           ^                                        
++--------------------+           +-------------+    
+| ORDER              |           | PRODUCT     |    
++--------------------+           +-------------+    
+| int id PK          |           | int id PK   |    
+| date created       |           | string name |    
+| int customer_id FK |           | float price |    
++--------------------+           +-------------+    
+           +                            +           
+           |                            |           
+           |                            |           
+ +---------+       +----- includes -----+           
+ | contains        o                                
+ ^                 ^                                
++-------------------+                               
+| LINE_ITEM         |                               
++-------------------+                               
+| int id PK         |                               
+| int order_id FK   |                               
+| int product_id FK |                               
+| int quantity      |                               
++-------------------+                               
+                                                    
+                                                    

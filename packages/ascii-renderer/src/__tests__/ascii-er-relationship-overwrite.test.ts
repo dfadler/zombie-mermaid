@@ -200,7 +200,9 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // rather than sitting flush after the marker on the same row.
     // (Two-row markers, #2083, leave the jog row above the label row, so
     // the label is now preceded by the vertical line the jog turned into.)
-    expect(row.slice(idx - 2, idx)).toBe('│ ')
+    // (#2112: the label now sits on its own jog, between the jog's corner
+    // and its line, so it can only belong to that edge.)
+    expect(row.slice(idx - 2, idx)).toBe('┌ ')
     const cornerCol = idx - 2
     // The marker sits at or adjacent to the corner's column, connected by
     // the vertical line the corner turns into — but not necessarily on the
@@ -371,13 +373,13 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     const detourEnd = detourRow.indexOf('╌┘') + 1
     expect(detourStart).toBeGreaterThanOrEqual(0)
 
-    // includes' own vertical stem (solid '│') crosses this same row exactly
-    // once, between the detour's two corners — that crossing cell must
-    // read as solid, not dashed.
-    const crossingIdx = detourRow.indexOf('│', detourStart)
+    // includes' own vertical stem (solid) crosses this same row exactly
+    // once, between the detour's two corners. Since #2112 the crossing cell
+    // is a '┼' junction, which carries neither style: it can't read as the
+    // dashed line having been interrupted or the solid one turned dashed.
+    const crossingIdx = detourRow.indexOf('┼', detourStart)
     expect(crossingIdx).toBeGreaterThan(detourStart)
     expect(crossingIdx).toBeLessThan(detourEnd)
-    expect(detourRow[crossingIdx]).toBe('│')
 
     // And the fill on either side of that crossing is still ships-via's own
     // dashed glyph — the fix only protects the one style-conflicting cell,
@@ -441,9 +443,10 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // No dashed glyph ('┊', includes' own now-dashed vertical stem's
     // style) may appear anywhere inside the solid detour fill.
     expect(fill).not.toContain('┊')
-    // And the fill is unbroken solid line across its whole span (not, say,
-    // silently dropped to a blank gap instead of dashed — the crossing
-    // cell must still carry a line glyph, just the solid one).
-    expect(fill).toBe('─'.repeat(fill.length))
+    // And the fill is unbroken solid line across its whole span except the
+    // one '┼' junction where includes' stem crosses it (#2112): not silently
+    // dropped to a blank gap, and not a plain '│' that would cut the line.
+    expect(fill.replace('┼', '─')).toBe('─'.repeat(fill.length))
+    expect(fill.match(/┼/g)).toHaveLength(1)
   })
 })

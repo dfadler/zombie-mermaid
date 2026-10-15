@@ -1,38 +1,38 @@
-+-------------------+                          
-| TEACHER           |                          
-+-------------------+                          
-| int id PK         |                          
-| string name       |                          
-| string department |                          
-+-------------------+                          
-          +                                    
-          |                                    
-          | teaches                            
-          |                                    
-          o                                    
-          ^                                    
-+-------------------+      +--------------+    
-| COURSE            |      | STUDENT      |    
-+-------------------+      +--------------+    
-| int id PK         |      | int id PK    |    
-| string title      |      | string name  |    
-| int teacher_id FK |      | date dob     |    
-| int credits       |      | string grade |    
-+-------------------+      +--------------+    
-          +                        +           
- +--------+        +---------------+           
- | has             | enrolled                  
- |                 |                           
- o                 o                           
- ^                 ^                           
-+-------------------+                          
-| ENROLLMENT        |                          
-+-------------------+                          
-| int id PK         |                          
-| int student_id FK |                          
-| int course_id FK  |                          
-| string semester   |                          
-| float grade       |                          
-+-------------------+                          
-                                               
-                                               
++-------------------+                              
+| TEACHER           |                              
++-------------------+                              
+| int id PK         |                              
+| string name       |                              
+| string department |                              
++-------------------+                              
+          +                                        
+          |                                        
+          | teaches                                
+          |                                        
+          o                                        
+          ^                                        
++-------------------+          +--------------+    
+| COURSE            |          | STUDENT      |    
++-------------------+          +--------------+    
+| int id PK         |          | int id PK    |    
+| string title      |          | string name  |    
+| int teacher_id FK |          | date dob     |    
+| int credits       |          | string grade |    
++-------------------+          +--------------+    
+          +                            +           
+          |                            |           
+          |                            |           
+ +- has --+        +---- enrolled -----+           
+ o                 o                               
+ ^                 ^                               
++-------------------+                              
+| ENROLLMENT        |                              
++-------------------+                              
+| int id PK         |                              
+| int student_id FK |                              
+| int course_id FK  |                              
+| string semester   |                              
+| float grade       |                              
++-------------------+                              
+                                                   
+                                                   

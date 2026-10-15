@@ -2,17 +2,17 @@
 | AUTHOR |      
 +--------+      
      +          
+     |          
+     | writes   
     ++          
-    | writes    
-    |           
     o           
     ^           
 +------+        
 | BOOK |        
 +------+        
     V           
-    ++          
-     | receives 
+    |           
+    ++ receives 
      |          
      o          
      ^          
@@ -29,11 +29,11 @@
 | COMMENT |     
 +---------+     
      V          
+     |          
+     |          
     ++          
-    | raises    
-    |           
     o           
-    +           
+    + raises    
 +------+        
 | FLAG |        
 +------+        

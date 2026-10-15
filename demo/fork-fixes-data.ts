@@ -696,4 +696,18 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: both entities use the theme colours. After: `CUSTOMER` is blue and `ORDER` is red.',
   },
+  {
+    id: 'er-ascii-crossings-labels',
+    title:
+      'ER ASCII edges crossed without a junction and labels were ambiguous',
+    symptom:
+      'In ASCII, crossing ER edges drew no junction, a label could sit between two verticals or against another edge’s corner, and an edge could run along its box’s border.',
+    source:
+      'erDiagram\n  ORDER ||--|{ LINE_ITEM : contains\n  ORDER ||..o{ SHIPMENT : ships-via\n  PRODUCT ||--o{ LINE_ITEM : includes\n  PRODUCT ||..o{ REVIEW : receives',
+    fixCommit: '2615a669',
+    pr: 2142,
+    render: 'ascii',
+    lookFor:
+      'Before: a plain `│` where two edges cross and labels beside two lines. After: a `┼` at the crossing and each label on or beside its own edge.',
+  },
 ]

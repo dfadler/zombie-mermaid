@@ -18,9 +18,9 @@ erDiagram
 | int age         |    
 +-----------------+    
          +             
+         |             
+         | places      
         ++             
-        | places       
-        |              
         o              
         ^              
 +---------------+      

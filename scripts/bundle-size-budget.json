@@ -14,21 +14,21 @@
     "packages/mermaid-parser/dist/index.cjs": 18972,
     "packages/svg-renderer/dist/index.js": 63200,
     "packages/svg-renderer/dist/index.cjs": 57543,
-    "packages/ascii-renderer/dist/index.js": 70900,
-    "packages/ascii-renderer/dist/index.cjs": 62400,
+    "packages/ascii-renderer/dist/index.js": 71807,
+    "packages/ascii-renderer/dist/index.cjs": 63098,
     "packages/mcp/dist/index.js": 7561,
     "packages/mcp/dist/index.cjs": 7690
   },
   "consumerBundles": {
     "packages/svg-renderer/dist/index.js": 84502,
-    "dist/index.js": 144553
+    "dist/index.js": 147681
   },
   "unpackedBudgets": {
     "dist": 49591,
     "packages/core/dist": 198133,
     "packages/mermaid-parser/dist": 210720,
     "packages/svg-renderer/dist": 450337,
-    "packages/ascii-renderer/dist": 461700,
+    "packages/ascii-renderer/dist": 466969,
     "packages/mcp/dist": 52445
   }
 }

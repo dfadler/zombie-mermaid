@@ -2607,4 +2607,15 @@ pie title Pets adopted by volunteers
   Canvas ()-- Renderer
   Plugin --() Renderer`,
   },
+  {
+    title: 'ER: Crossing Edges and Edge Labels',
+    category: 'ER',
+    description:
+      'Four relationships where a dashed edge crosses a solid one (#2112). In the ASCII panel every crossing is drawn as a junction, each label sits on its own edge or beside its own stem, and no edge runs along an entity border.',
+    source: `erDiagram
+  AUTHOR ||--o{ BOOK : writes
+  AUTHOR ||..o{ AWARD : receives-award
+  PUBLISHER ||--o{ BOOK : prints
+  PUBLISHER ||..o{ CATALOG : appears-in`,
+  },
 ]
