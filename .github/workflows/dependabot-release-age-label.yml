@@ -1,0 +1,71 @@
+name: Label release-age-blocked Dependabot PRs
+
+# Dependabot's `cooldown` only delays the dependency it bumps; transitive
+# dependencies resolve to their latest, so a PR can fail `pnpm install` with
+# ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION (pnpm's minimumReleaseAge) until they
+# age out. Label those PRs so they read as "wait, then `@dependabot rebase`"
+# rather than as real CI failures. Runs on `workflow_run` and never checks out
+# or executes PR code; the failed-job log is only grepped.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: ['dependabot/**']
+
+permissions: {}
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.repository == 'dfadler/zombie-mermaid' && github.event.workflow_run.event == 'pull_request'
+    permissions:
+      actions: read # gh run view --log-failed
+      pull-requests: write # add/remove the label
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+      LABEL: release-age-blocked
+    steps:
+      - name: Sync label with the run's failure cause
+        run: |
+          set -uo pipefail
+          [ -n "$PR" ] || { echo "no PR on this run; nothing to label"; exit 0; }
+          case "$CONCLUSION" in
+            success | failure) ;;
+            *) echo "conclusion=$CONCLUSION; leaving labels alone"; exit 0 ;;
+          esac
+
+          # A rebase or a rerun can finish an older run after a newer one; only
+          # the PR's current head SHA and the run's latest attempt may touch the label.
+          current_sha=$(gh pr view "$PR" --json headRefOid -q .headRefOid) \
+            || { echo "::warning::could not read PR head; leaving label alone"; exit 0; }
+          current_attempt=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID" -q .run_attempt) \
+            || { echo "::warning::could not read run attempt; leaving label alone"; exit 0; }
+          if [ "$current_sha" != "$HEAD_SHA" ] || [ "$current_attempt" != "$RUN_ATTEMPT" ]; then
+            echo "stale run (sha $HEAD_SHA attempt $RUN_ATTEMPT; current $current_sha attempt $current_attempt); leaving label alone"
+            exit 0
+          fi
+
+          blocked=false
+          if [ "$CONCLUSION" = failure ]; then
+            # Don't classify from a missing or partial log: keep the label as-is.
+            gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --log-failed > failed.log \
+              || { echo "::warning::could not fetch failed-job log; leaving label alone"; exit 0; }
+            if grep -q 'ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION' failed.log; then
+              blocked=true
+            fi
+          fi
+
+          if [ "$blocked" = true ]; then
+            gh label create "$LABEL" --color FBCA04 --force \
+              --description 'Dependabot PR failing pnpm minimumReleaseAge on a new transitive dep; wait, then @dependabot rebase'
+            gh pr edit "$PR" --add-label "$LABEL"
+          else
+            gh pr edit "$PR" --remove-label "$LABEL" || true
+          fi
