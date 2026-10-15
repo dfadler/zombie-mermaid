@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { computeStats, percentile } from '../scripts/bench-mcp.ts'
+import {
+  computeStats,
+  loadCreateMcpServer,
+  percentile,
+} from '../scripts/bench-mcp.ts'
+
+describe('loadCreateMcpServer', () => {
+  it('returns createMcpServer from the module at the given specifier', async () => {
+    const create = await loadCreateMcpServer(
+      '../packages/mcp/src/__tests__/fixtures/fake-built-server.mjs',
+    )
+    expect(create()).toBe('fake server')
+  })
+})
 
 describe('percentile', () => {
   it('returns 0 for an empty array', () => {

@@ -156,6 +156,51 @@ await check('svg + ascii render for every diagram type (ESM and CJS)', () => {
   node(app, 'render.cjs')
 })
 
+await check(
+  'MCP render runs in the worker, byte-identical (ESM and CJS)',
+  () => {
+    // One real tool call per renderer from the packed tarball (#1856): exercises
+    // dist/render-worker.js being shipped and found from index.js / index.cjs.
+    const body = `
+    const ELK = (await import('elkjs/lib/elk.bundled.js')).default
+    zm.registerElk(ELK)
+    const server = mcp.createMcpServer()
+    const client = new Client({ name: 'smoke', version: '0' })
+    const [ct, st] = InMemoryTransport.createLinkedPair()
+    await Promise.all([server.connect(st), client.connect(ct)])
+    const diagram = ${JSON.stringify(SVG_ELK.flowchart)}
+    const want = {
+      render_mermaid_svg: zm.renderMermaidSVG(diagram),
+      render_mermaid_ascii: zm.renderMermaidASCII(diagram, { colorMode: 'none' }),
+    }
+    for (const [name, text] of Object.entries(want)) {
+      const r = await client.callTool({ name, arguments: { diagram } })
+      if (r.isError || r.content[0].text !== text) throw new Error('worker output differs for ' + name)
+    }
+    await client.close()
+    await server.close()`
+    const sdk = '@modelcontextprotocol/sdk'
+    writeFileSync(
+      join(app, 'mcp-render.mjs'),
+      `import * as zm from 'zombie-mermaid'
+import * as mcp from 'zombie-mermaid/mcp'
+import { Client } from '${sdk}/client/index.js'
+import { InMemoryTransport } from '${sdk}/inMemory.js'
+${body}`,
+    )
+    writeFileSync(
+      join(app, 'mcp-render.cjs'),
+      `const zm = require('zombie-mermaid')
+const mcp = require('zombie-mermaid/mcp')
+const { Client } = require('${sdk}/client/index.js')
+const { InMemoryTransport } = require('${sdk}/inMemory.js')
+;(async () => {${body}})().catch((e) => { console.error(e); process.exit(1) })`,
+    )
+    run('node', ['mcp-render.mjs'], app, { timeout: 60000 })
+    run('node', ['mcp-render.cjs'], app, { timeout: 60000 })
+  },
+)
+
 await check('types resolve (tsc, ESM + CJS)', () => {
   const src = `import { renderMermaidSVG, registerElk } from 'zombie-mermaid'
 import { renderMermaidASCII } from 'zombie-mermaid/ascii'
@@ -194,34 +239,52 @@ await check('CLI: --version and render (svg + ascii)', () => {
     throw new Error('no ascii')
 })
 
-await check('MCP server starts and answers initialize', async () => {
+await check('MCP server starts, answers initialize and renders', async () => {
   const child = spawn(join(app, 'node_modules/.bin/zombie-mermaid'), ['mcp'], {
     cwd: app,
   })
   try {
-    const reply = new Promise((res, rej) => {
-      let buf = ''
-      child.stdout.on('data', (d) => {
-        buf += d
-        if (buf.includes('\n')) res(buf)
-      })
-      child.on('exit', (c) => rej(new Error(`mcp exited early (${c})`)))
-      setTimeout(() => rej(new Error('mcp initialize timed out')), 15000)
+    // JSON-RPC replies by id; each is one stdout line.
+    const waiting = new Map()
+    let buf = ''
+    child.stdout.on('data', (d) => {
+      buf += d
+      for (let nl; (nl = buf.indexOf('\n')) >= 0;) {
+        const msg = JSON.parse(buf.slice(0, nl))
+        buf = buf.slice(nl + 1)
+        waiting.get(msg.id)?.(msg)
+      }
     })
+    const call = (id, method, params) =>
+      new Promise((res, rej) => {
+        waiting.set(id, res)
+        child.on('exit', (c) => rej(new Error(`mcp exited early (${c})`)))
+        setTimeout(() => rej(new Error(`mcp ${method} timed out`)), 30000)
+        child.stdin.write(
+          JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n',
+        )
+      })
+    const init = await call(1, 'initialize', {
+      protocolVersion: '2025-03-26',
+      capabilities: {},
+      clientInfo: { name: 'smoke', version: '0' },
+    })
+    if (!init.result?.serverInfo) throw new Error('no serverInfo')
     child.stdin.write(
       JSON.stringify({
         jsonrpc: '2.0',
-        id: 1,
-        method: 'initialize',
-        params: {
-          protocolVersion: '2025-03-26',
-          capabilities: {},
-          clientInfo: { name: 'smoke', version: '0' },
-        },
+        method: 'notifications/initialized',
       }) + '\n',
     )
-    if (!JSON.parse(await reply).result?.serverInfo)
-      throw new Error('no serverInfo')
+    const rendered = await call(2, 'tools/call', {
+      name: 'render_mermaid_svg',
+      arguments: { diagram: SVG_ELK.flowchart },
+    })
+    if (
+      rendered.result?.isError ||
+      !rendered.result?.content[0].text.includes('<svg')
+    )
+      throw new Error('no svg from the CLI MCP server')
   } finally {
     child.kill()
   }

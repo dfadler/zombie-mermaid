@@ -11,3 +11,13 @@ export const MCP_LIMITS: RenderLimits = {
   maxEdges: 300,
   maxCanvasCells: 1_000_000,
 }
+
+/**
+ * Wall-clock budget for one render in the worker (#1856). Renders at the caps
+ * above take ~2-6 s; past this the worker is terminated and the call returns
+ * an error result. A constant, not user config.
+ */
+export const RENDER_TIMEOUT_MS = 15_000
+
+/** Worker V8 old-generation cap; 48 MB OOMs on legit inputs, 512 MB does not. */
+export const RENDER_MAX_OLD_GENERATION_MB = 512
