@@ -7,6 +7,7 @@
 
 import { Worker } from 'node:worker_threads'
 import { MermaidParseError } from '@zombie-mermaid/core'
+import { AsciiWidthError } from '@zombie-mermaid/ascii-renderer'
 import type { RenderOptions } from '../../../../src/index.ts'
 import type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
 import { RENDER_MAX_OLD_GENERATION_MB, RENDER_TIMEOUT_MS } from './limits.ts'
@@ -17,7 +18,14 @@ export type RenderRequest =
 
 export type RenderReply =
   | { ok: true; text: string }
-  | { ok: false; name: string; message: string; line: number | undefined }
+  | {
+      ok: false
+      name: string
+      message: string
+      line: number | undefined
+      /** AsciiWidthError's [actualWidth, maxWidth, compactApplied]. */
+      width?: [number, number, boolean] | undefined
+    }
 
 export interface WorkerRendererOptions {
   workerUrl?: URL
@@ -61,7 +69,9 @@ export function createWorkerRenderer(opts: WorkerRendererOptions = {}) {
         const err =
           r.name === 'MermaidParseError'
             ? new MermaidParseError(r.message, { line: r.line })
-            : Object.assign(new Error(r.message), { name: r.name })
+            : r.width
+              ? new AsciiWidthError(...r.width)
+              : Object.assign(new Error(r.message), { name: r.name })
         finish(err, '', true)
       }
       const onError = (e: Error & { code?: string }) =>

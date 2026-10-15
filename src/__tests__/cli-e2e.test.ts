@@ -304,4 +304,23 @@ describe('CLI e2e – error handling', () => {
 
     expect(exitCode).toBe(1)
   })
+
+  it('exits 1 with a message and empty stdout when --max-width cannot be met (#2057)', async () => {
+    const inputPath = join(tmpDir, 'wide.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const { exitCode, stdout, stderr } = await runCli([
+      'render',
+      inputPath,
+      '--ascii',
+      '--max-width',
+      '10',
+    ])
+    expect(exitCode).toBe(1)
+    expect(stdout).toBe('')
+    expect(stderr).toContain('exceeding --max-width of 10')
+
+    const ok = await runCli(['render', inputPath, '--ascii', '-w', '200'])
+    expect(ok.exitCode).toBe(0)
+  })
 })

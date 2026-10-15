@@ -173,6 +173,30 @@ describe('createMcpServer', () => {
     expect(bad.isError).toBe(true)
   })
 
+  it('render_mermaid_ascii maxWidth: fits, or isError with the width reached (#2057)', async () => {
+    const { tools } = await client.listTools()
+    const tool = tools.find((t) => t.name === 'render_mermaid_ascii')
+    expect(tool?.inputSchema.properties).toHaveProperty('maxWidth')
+
+    const call = (maxWidth: number) =>
+      client.callTool({
+        name: 'render_mermaid_ascii',
+        arguments: { diagram: 'graph LR\n  A --> B --> C', maxWidth },
+      })
+    expect((await call(200)).isError).toBeFalsy()
+    const tight = await call(5)
+    expect(tight.isError).toBe(true)
+    expect(tight.content).toEqual([
+      {
+        type: 'text',
+        text: expect.stringMatching(
+          /^Failed to render diagram to ASCII: ASCII output is \d+ columns wide, exceeding maxWidth of 5/,
+        ),
+      },
+    ])
+    expect((await call(0)).isError).toBe(true) // schema: positive integer
+  })
+
   it('rejects an out-of-range theme via input schema validation', async () => {
     const result = await client.callTool({
       name: 'render_mermaid_svg',
