@@ -97,7 +97,7 @@
 
 - [#1639](https://github.com/dfadler/zombie-mermaid/pull/1639) [`7104031`](https://github.com/dfadler/zombie-mermaid/commit/71040311cdca8de5f3c3ce41c6d9a54209ed8b8f) Thanks [@dfadler](https://github.com/dfadler)! - Ship `THIRD_PARTY_NOTICES.md` in the published tarballs.
 
-- [#1719](https://github.com/dfadler/zombie-mermaid/pull/1719) [`3ec564e`](https://github.com/dfadler/zombie-mermaid/commit/3ec564ea51616fceb6facb37709313e15fb8b7d6) Thanks [@dfadler](https://github.com/dfadler)! - Decode Mermaid entity codes (`#quot;`, `[#35](https://github.com/dfadler/zombie-mermaid/issues/35);`) in pie and xychart titles, slice labels, axis titles and categories.
+- [#1719](https://github.com/dfadler/zombie-mermaid/pull/1719) [`3ec564e`](https://github.com/dfadler/zombie-mermaid/commit/3ec564ea51616fceb6facb37709313e15fb8b7d6) Thanks [@dfadler](https://github.com/dfadler)! - Decode Mermaid entity codes (`#quot;`, `#35;`) in pie and xychart titles, slice labels, axis titles and categories.
 
 - [#1670](https://github.com/dfadler/zombie-mermaid/pull/1670) [`0d6711c`](https://github.com/dfadler/zombie-mermaid/commit/0d6711c1c51a57e25ede4c11e360c208ea4b9278) Thanks [@dfadler](https://github.com/dfadler)! - Fix SVG rendering of graph diagrams inside a browser Web Worker: hiding the worker-style `self` while constructing ELK no longer throws "Cannot set property self ... which has only a getter" ([#1524](https://github.com/dfadler/zombie-mermaid/issues/1524)).
 
