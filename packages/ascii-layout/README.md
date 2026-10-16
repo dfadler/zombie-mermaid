@@ -50,8 +50,23 @@ merged.
 **Merged lines hide edge multiplicity**: three `A --> B` edges can render as one line.
 `RasterResult.mergedGroups` lists the edge ids behind each merged line and `RasterResult.note`
 carries a sentence for callers to show. A grow-only "show every edge" policy (#2183) plugs in at
-the same place (`POLICIES` in `src/rasterize.ts`); a column cap (#2181) would act on the gap
-between node groups.
+the same place (`POLICIES` in `src/rasterize.ts`).
+
+## Column cap
+
+`maxCols` (default `DEFAULT_MAX_COLS` = 120; `Infinity` disables) caps the width by shrinking the
+blank gaps between node groups on the horizontal axis (`stats.gapKept` is the kept fraction,
+bisected to the largest that fits). That axis is the rank gap in LR/RL and the node gap within a
+rank in TD/BT: width is what is capped, so it is always the x axis. Boxes are never scaled, so
+sizes, lanes, line count and merged groups are identical to the uncapped render; routing still
+widens a gap when edges would not route (up to 8 cells), and the integrity checks run on the
+compressed output.
+
+**When the cap cannot be met** (the boxes plus the minimum routable gaps exceed it, e.g. a 5-node
+LR chain of 30-cell boxes) the result is the uncapped render with `capped: false`, and
+`stats.naturalCols === stats.cols`. The rasterizer never emits a half-compressed render that still
+misses the cap; the caller (#2182) decides: fall back to the grid renderer, or show the wide text.
+`naturalCols` is also set when compression happened, to report the before width.
 
 ## Tests
 
