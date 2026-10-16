@@ -338,3 +338,95 @@ describe('ascii-layout: column cap (compress gaps, never boxes)', () => {
     expect(r.text).toBe(nat.text)
   })
 })
+
+describe('ascii-layout: face policy (grow-only, show every edge)', () => {
+  const grow = (c: Case): Case => ({
+    ...c,
+    r: rasterizeLayout(c.layout, { facePolicy: 'grow-only' }),
+  })
+  const all = [...cases, ...galleryCases]
+  const growAll = all.map(grow)
+  const goldenNames = [
+    'd1.mmd',
+    'd2.mmd',
+    'd3.mmd',
+    'gallery-dense-duplicate-edges.mmd',
+    'gallery-labeled-fan-in-lr.mmd',
+  ]
+
+  it.each(
+    growAll
+      .filter((c) => goldenNames.includes(c.name))
+      .map((c) => [c.name, c] as const),
+  )('%s matches its grow-only golden', (name, c) => {
+    const golden = new URL(
+      name.replace(/\.mmd$/, '.grow-only.ascii.txt'),
+      GOLDENS,
+    )
+    if (process.env.UPDATE_ASCII_LAYOUT) writeFileSync(golden, c.r.text + '\n')
+    expect(c.r.text + '\n').toBe(readFileSync(golden, 'utf8'))
+  })
+  it('is opt-in: the default policy is still merge-then-grow', () => {
+    const d3 = cases.find((c) => c.name === 'd3.mmd')!
+    expect(d3.r.stats.merged).toBe(6)
+    expect(grow(d3).r.stats.merged).toBe(0)
+  })
+  it.each(growAll.map((c) => [c.name, c] as const))(
+    '%s: every edge is its own distinct line',
+    (_n, c) => {
+      expect(c.r.mergedGroups).toEqual([])
+      expect(c.r.note).toBe('')
+      expect(c.r.stats).toMatchObject({
+        edges: c.layout.edges.length,
+        lines: c.layout.edges.length,
+        merged: 0,
+      })
+      // Text-side count, independent of the rasterizer's bookkeeping: one arrowhead per arrow end.
+      const arrows = c.layout.edges.reduce(
+        (n, e) => n + +(e.arrowEnd !== false) + +!!e.arrowStart,
+        0,
+      )
+      expect(c.r.text.match(/[▲►▼◄]/g)?.length ?? 0).toBe(arrows)
+    },
+  )
+  it.each(growAll.map((c) => [c.name, c] as const))(
+    '%s: borders, arrowheads and crossings hold',
+    (_n, c) => {
+      expect(borderProblems(c)).toEqual([])
+      expect(arrowProblems(c)).toEqual([])
+      expect(crossingProblems(c)).toEqual([])
+      expect(c.r.stats.relaxed).toBe(false)
+    },
+  )
+  it('only ever grows a box relative to merge-then-grow; the distortion is expected, not a failure', () => {
+    const size = (r: RasterResult, id: string) => {
+      const b = r.boxes.find((q) => q.id === id)!
+      return [b.c1 - b.c0 + 1, b.r1 - b.r0 + 1] as const
+    }
+    for (const [i, c] of growAll.entries())
+      for (const b of c.r.boxes) {
+        const [mw, mh] = size(all[i]!.r, b.id)
+        const [gw, gh] = size(c.r, b.id)
+        expect(gw, `${c.name} ${b.id}`).toBeGreaterThanOrEqual(mw)
+        expect(gh, `${c.name} ${b.id}`).toBeGreaterThanOrEqual(mh)
+      }
+    // The dense reciprocal/duplicate fixtures are the costly cases (spike: ~150% on the dense RL sample).
+    const d3 = growAll.find((c) => c.name === 'd3.mmd')!
+    expect(maxBoxError(d3)).toBeGreaterThan(0.5)
+    expect(d3.r.stats.boxesOver15Pct).toBeGreaterThan(0)
+  })
+  it('maxCols still compresses gaps only: boxes match the uncapped grow-only render', () => {
+    for (const c of growAll) {
+      const nat = rasterizeLayout(c.layout, {
+        facePolicy: 'grow-only',
+        maxCols: Infinity,
+      })
+      const sizes = (r: RasterResult) =>
+        r.boxes.map((b) => `${b.id}:${b.c1 - b.c0 + 1}x${b.r1 - b.r0 + 1}`)
+      expect(sizes(c.r), c.name).toEqual(sizes(nat))
+      expect(c.r.stats.lines, c.name).toBe(nat.stats.lines)
+      if (c.r.capped) expect(c.r.stats.cols, c.name).toBeLessThanOrEqual(120)
+      else expect(c.r.text, c.name).toBe(nat.text) // cap unmet: natural width, capped:false
+    }
+  })
+})

@@ -39,9 +39,9 @@ model (subgraphs, some shapes); callers fall back to the grid renderer.
 - Edge labels are placed best-effort on a straight run of the edge; parity with mermaid's label
   placement is not a goal.
 
-## Face policy: merge, then grow
+## Face policy
 
-`facePolicy` (default and currently only value `'merge-then-grow'`) decides what happens when a
+`facePolicy` (`'merge-then-grow'` by default, or `'grow-only'`) decides what happens when a
 face has fewer interior cells than edge ends. Identical parallel edges (same faces, direction
 and arrows) are merged into one drawn line first; if the face is still short, the box grows on
 that face by the minimum number of cells. Reciprocal pairs get adjacent lanes and are never
@@ -49,8 +49,31 @@ merged.
 
 **Merged lines hide edge multiplicity**: three `A --> B` edges can render as one line.
 `RasterResult.mergedGroups` lists the edge ids behind each merged line and `RasterResult.note`
-carries a sentence for callers to show. A grow-only "show every edge" policy (#2183) plugs in at
-the same place (`POLICIES` in `src/rasterize.ts`).
+carries a sentence for callers to show. Policies live in `POLICIES` in `src/rasterize.ts`.
+
+### `grow-only`: show every edge (#2183)
+
+`renderFlowchartAscii(src, { facePolicy: 'grow-only' })` never merges: every mermaid edge is its
+own drawn line (`mergedGroups` is empty, `stats.lines === stats.edges`), and a face that lacks
+lanes grows the box by the minimum cells so each edge end keeps its own lane.
+
+**The trade-off, plainly: every edge is visible, but boxes are distorted.** Growing a face makes
+the box taller or wider than mermaid drew it, so `stats.maxBoxError` is large on dense graphs
+(over the flat gallery: worst box +108%, 5 of 38 samples with a box beyond 15%, against 1 for
+merge-then-grow; the fixture d3, six parallel edges, is 108%). That is the expected cost of the
+policy, not a failure: boxes only ever grow relative to `merge-then-grow`, never shrink. Use it
+when a missing or merged line would mislead; use the default when box proportions matter more.
+Graphs with no crowded face render identically under both policies.
+
+**With `maxCols`**: the cap behaves exactly as for the default policy. It compresses blank gaps
+only and never touches the (already grown) boxes, so the grown boxes are fixed before the cap
+acts and the cap cannot make them worse. Because grown boxes can be wider, the boxes alone may
+exceed the cap sooner; then the result is the uncapped render with `capped: false`
+(`stats.naturalCols === stats.cols`), same as before.
+
+Routing note: a dense face puts lanes in adjacent cells. If shortest-first routing cannot place
+every line at a given gap, the router retries longest-first before widening the gap, so
+grow-only stays free of overlaps (the default policy's output is unchanged by this).
 
 ## Column cap
 
@@ -71,12 +94,12 @@ misses the cap; the caller (#2182) decides: fall back to the grid renderer, or s
 ## Tests
 
 `pnpm exec vitest run -c config/vitest.config.ts packages/ascii-layout`. No Chromium. Goldens
-are `__tests__/fixtures/*.ascii.txt` for the elk-layout fixture sources (d1-d3 are the dense
+are `__tests__/fixtures/*.ascii.txt` (`*.grow-only.ascii.txt` for the grow-only policy) for the elk-layout fixture sources (d1-d3 are the dense
 duplicate, reciprocal and self-loop cases, **with node declarations**: declaration order moves
 mermaid's layout). There is no SVG golden because this path produces characters only; the SVG
 renderer is unchanged. Property tests check, on the text and box rectangles alone (not on the
 rasterizer's own bookkeeping): border integrity, arrowhead adjacency and stem, right-angle-only
 crossings, and box error under 15% for the fixtures.
 
-`pnpm exec tsx scripts/ascii-layout-table.ts [--show]` prints the measured table over the flat
+`pnpm exec tsx scripts/ascii-layout-table.ts [--show] [--policy=grow-only]` prints the measured table over the flat
 gallery samples.

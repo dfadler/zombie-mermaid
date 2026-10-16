@@ -1,14 +1,20 @@
 /**
  * Measure the layout-faithful rasterizer over every flat, supported flowchart in the gallery
  * (plus any .mmd passed as an argument). Prints one row per case and a summary.
- *   pnpm exec tsx scripts/ascii-layout-table.ts [--show] [file.mmd ...]
+ *   pnpm exec tsx scripts/ascii-layout-table.ts [--show] [--policy=grow-only] [file.mmd ...]
  */
 import { readFileSync } from 'node:fs'
 import { UnsupportedFlowchartError } from '../packages/elk-layout/src/index.ts'
-import { renderFlowchartAscii } from '../packages/ascii-layout/src/index.ts'
+import {
+  renderFlowchartAscii,
+  type FacePolicy,
+} from '../packages/ascii-layout/src/index.ts'
 import { samples } from '../packages/site/samples-data.ts'
 
 const show = process.argv.includes('--show')
+const facePolicy = (process.argv
+  .find((a) => a.startsWith('--policy='))
+  ?.slice(9) ?? 'merge-then-grow') as FacePolicy
 const targets = process.argv
   .slice(2)
   .filter((a) => !a.startsWith('--'))
@@ -34,7 +40,7 @@ let maxNat = 0
 let uncapped = 0
 for (const t of targets) {
   try {
-    const r = await renderFlowchartAscii(t.src)
+    const r = await renderFlowchartAscii(t.src, { facePolicy })
     const { text, stats: m } = r
     console.log(
       [
@@ -69,5 +75,5 @@ for (const t of targets) {
   }
 }
 console.log(
-  `SUMMARY cases=${n} boxes>15%=${over} merged edges=${merged} crossings=${cross} broken border cells=${broken} relaxed=${relaxed} avg cols=${(cols / n).toFixed(0)} (natural ${(natCols / n).toFixed(0)}) max cols=${maxCols} (natural ${maxNat}) cap unmet=${uncapped}`,
+  `SUMMARY policy=${facePolicy} cases=${n} boxes>15%=${over} merged edges=${merged} crossings=${cross} broken border cells=${broken} relaxed=${relaxed} avg cols=${(cols / n).toFixed(0)} (natural ${(natCols / n).toFixed(0)}) max cols=${maxCols} (natural ${maxNat}) cap unmet=${uncapped}`,
 )

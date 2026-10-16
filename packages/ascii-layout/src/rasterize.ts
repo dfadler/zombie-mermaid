@@ -6,12 +6,15 @@ import { BIT, DX, DY, route, type RouteGrid } from './route.ts'
  *  - `merge-then-grow`: merge identical parallel edges (same faces, direction and arrows) into
  *    one drawn line first, then grow the box on that face by the minimum cells. Merged lines
  *    hide edge multiplicity (reported in `RasterResult.mergedGroups`).
- * More policies (a grow-only "show every edge" one, #2183) plug in here: a policy is just
- * "may identical parallel edges be merged?".
+ *  - `grow-only` ("show every edge", #2183): never merge; every edge keeps its own lane and a
+ *    short face grows the box by the minimum cells. Nothing is hidden, but boxes can be far
+ *    taller/wider than the layout's (expected distortion, reported in `stats.maxBoxError`).
+ * A policy is just "may identical parallel edges be merged?".
  */
-export type FacePolicy = 'merge-then-grow'
+export type FacePolicy = 'merge-then-grow' | 'grow-only'
 const POLICIES: Record<FacePolicy, { mergeIdentical: boolean }> = {
   'merge-then-grow': { mergeIdentical: true },
+  'grow-only': { mergeIdentical: false },
 }
 
 export interface RasterOptions {
@@ -188,6 +191,7 @@ function attempt(
   gap: number,
   relaxed: boolean,
   keep: number,
+  longestFirst = false,
 ): RasterResult | null {
   const nodes = layout.nodes.map((n) => ({
     ...n,
@@ -438,7 +442,8 @@ function attempt(
     .map((_, i) => i)
     .sort(
       (a, b) =>
-        pathLength(bundles[a]!.guide) - pathLength(bundles[b]!.guide) || a - b,
+        (pathLength(bundles[a]!.guide) - pathLength(bundles[b]!.guide)) *
+          (longestFirst ? -1 : 1) || a - b,
     )
   for (const bi of order) {
     const bd = bundles[bi]!
@@ -688,10 +693,20 @@ export function rasterizeLayout(
   const { mergeIdentical } = POLICIES[facePolicy]
   // Widen the gap between node groups until every edge routes with right-angle crossings only.
   const render = (keep: number) => {
-    for (let gap = 0; gap <= 8; gap++) {
-      const r = attempt(layout, cellW, cellH, mergeIdentical, gap, false, keep)
-      if (r) return r
-    }
+    for (let gap = 0; gap <= 8; gap++)
+      for (const longestFirst of [false, true]) {
+        const r = attempt(
+          layout,
+          cellW,
+          cellH,
+          mergeIdentical,
+          gap,
+          false,
+          keep,
+          longestFirst,
+        )
+        if (r) return r
+      }
     return attempt(layout, cellW, cellH, mergeIdentical, 4, true, keep)!
   }
   const natural = render(1)
