@@ -13,6 +13,8 @@ import {
   renderMermaidASCII,
 } from '@zombie-mermaid/ascii-renderer'
 
+import { colorizeChar } from '../ansi.ts'
+
 const DARK = ['#1e1e1e', '#000000', '#282a36']
 const LIGHT = ['#ffffff', '#fdf6e3']
 const MIN_TEXT_RATIO = 4.5
@@ -39,6 +41,12 @@ describe('default ASCII theme text colour (#2165)', () => {
       expect(contrast(fg, bg)).toBeGreaterThanOrEqual(MIN_TEXT_RATIO)
     },
   )
+
+  it('colorizeChar leaves an inherit-coloured text char bare', () => {
+    expect(colorizeChar('A', 'text', DEFAULT_ASCII_THEME, 'truecolor')).toBe(
+      'A',
+    )
+  })
 
   it('emits no foreground escape for labels in any ANSI mode', () => {
     for (const colorMode of ['ansi16', 'ansi256', 'truecolor'] as const) {
