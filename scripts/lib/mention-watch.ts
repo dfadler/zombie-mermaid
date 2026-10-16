@@ -10,6 +10,8 @@ export interface Finding {
   title: string
   source: string
   date?: string
+  /** Login or username of whoever wrote it, when the source gives one. */
+  author?: string
   /** Text the name matcher runs on. Absent = the source already matched the phrase exactly. */
   text?: string
 }
@@ -17,6 +19,8 @@ export interface Finding {
 export interface Config {
   phrases: string[]
   excludeUrlPrefixes: string[]
+  /** Findings by these logins are dropped even when their URL is in someone else's repo. */
+  excludeAuthors: string[]
   maxPerQuery: number
   maxReported: number
 }
@@ -30,7 +34,8 @@ export interface Ctx {
   sleep: (ms: number) => Promise<void>
 }
 
-export type SeenSet = Record<string, { firstSeen: string }>
+/** `reportedIn` is the report issue URL, filled in by the workflow once the issue exists. */
+export type SeenSet = Record<string, { firstSeen: string; reportedIn?: string }>
 
 const NAME_RE = /zombie[\s_-]*mermaid/i
 const ZWSP = '​'
@@ -125,6 +130,7 @@ export const COLLECTORS: Collector[] = [
         title: i.title,
         source: 'GitHub issues and PRs',
         date: i.created_at,
+        author: i.user?.login,
         text: `${i.title}\n${i.body ?? ''}`,
       }))
     },
@@ -151,7 +157,7 @@ export const COLLECTORS: Collector[] = [
     source: 'GitHub discussions',
     github: true,
     run: async (ctx, phrase) => {
-      const query = `query($q: String!, $n: Int!) { search(query: $q, type: DISCUSSION, first: $n) { nodes { ... on Discussion { title url createdAt body } } } }`
+      const query = `query($q: String!, $n: Int!) { search(query: $q, type: DISCUSSION, first: $n) { nodes { ... on Discussion { title url createdAt body author { login } } } } }`
       const j = await getJson(ctx, 'https://api.github.com/graphql', {
         method: 'POST',
         headers: { ...ghHeaders(ctx), 'Content-Type': 'application/json' },
@@ -168,6 +174,7 @@ export const COLLECTORS: Collector[] = [
           title: n.title,
           source: 'GitHub discussions',
           date: n.createdAt,
+          author: n.author?.login,
           text: `${n.title}\n${n.body ?? ''}`,
         }))
     },
@@ -185,6 +192,7 @@ export const COLLECTORS: Collector[] = [
         title: `${p.name}${p.description ? ` - ${p.description}` : ''}`,
         source: 'npm',
         date: p.date,
+        author: p.publisher?.username,
         text: `${p.name}\n${p.description ?? ''}\n${(p.keywords ?? []).join(' ')}`,
       }))
     },
@@ -202,6 +210,7 @@ export const COLLECTORS: Collector[] = [
         title: h.title ?? `Comment on: ${h.story_title ?? 'a story'}`,
         source: 'Hacker News',
         date: h.created_at,
+        author: h.author,
         text: [
           h.title,
           h.story_title,
@@ -226,7 +235,7 @@ export interface CollectResult {
 /** Runs every collector for every phrase. A failing call is recorded, never thrown. */
 export async function collectAll(
   ctx: Ctx,
-  config: Pick<Config, 'phrases' | 'excludeUrlPrefixes'>,
+  config: Pick<Config, 'phrases' | 'excludeUrlPrefixes' | 'excludeAuthors'>,
   collectors: Collector[] = COLLECTORS,
 ): Promise<CollectResult> {
   const byUrl = new Map<string, Finding>()
@@ -238,6 +247,13 @@ export async function collectAll(
       try {
         for (const f of await c.run(ctx, phrase)) {
           if (!f.url) continue
+          if (
+            f.author &&
+            config.excludeAuthors.some(
+              (a) => a.toLowerCase() === f.author!.toLowerCase(),
+            )
+          )
+            continue
           if (f.text !== undefined && !matchesName(f.text)) continue
           if (isExcluded(f.url, config.excludeUrlPrefixes)) continue
           const key = canonicalizeUrl(f.url)
@@ -307,8 +323,9 @@ export function buildReport(opts: {
     const group = findings.filter((f) => f.source === source)
     lines.push('', `## ${source} (${group.length})`, '')
     for (const f of group) {
+      const by = f.author ? ` by ${sanitize(f.author, 40)}` : ''
       const when = f.date ? ` (${f.date.slice(0, 10)})` : ''
-      lines.push(`- [${sanitize(f.title)}](${linkUrl(f.url)})${when}`)
+      lines.push(`- [${sanitize(f.title)}](${linkUrl(f.url)})${by}${when}`)
     }
   }
   if (errors.length) {
@@ -320,4 +337,34 @@ export function buildReport(opts: {
     )
   }
   return lines.join('\n') + '\n'
+}
+
+export interface WatchResult {
+  report: string
+  nextSeen: SeenSet
+  newCount: number
+  found: number
+  errors: string[]
+  /** Every source call failed, so there is nothing trustworthy to report. */
+  allFailed: boolean
+}
+
+/** One full pass: collect, drop what was already reported, build the report and the next seen-set. */
+export async function runWatch(opts: {
+  config: Config
+  seen: SeenSet
+  date: string
+  ctx: Ctx
+}): Promise<WatchResult> {
+  const { config, seen, date, ctx } = opts
+  const { findings, errors, attempts } = await collectAll(ctx, config)
+  const fresh = selectNew(findings, seen, config.maxReported)
+  return {
+    report: buildReport({ findings: fresh, date, errors }),
+    nextSeen: mergeSeen(seen, fresh, date),
+    newCount: fresh.length,
+    found: findings.length,
+    errors,
+    allFailed: attempts > 0 && errors.length === attempts,
+  }
 }

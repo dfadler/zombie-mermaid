@@ -7,6 +7,7 @@ import {
   isExcluded,
   matchesName,
   mergeSeen,
+  runWatch,
   sanitize,
   selectNew,
   type Ctx,
@@ -116,7 +117,63 @@ describe('collectAll', () => {
   const cfg = {
     phrases: ['zombie mermaid'],
     excludeUrlPrefixes: ['https://github.com/dfadler'],
+    excludeAuthors: ['dfadler'],
   }
+
+  it('drops findings authored by an excluded login, whatever repo they are in', async () => {
+    const fetch: Ctx['fetch'] = (url) =>
+      url.includes('search/issues')
+        ? json({
+            items: [
+              {
+                html_url: 'https://github.com/o/r/issues/1',
+                title: 'zombie-mermaid',
+                user: { login: 'DFadler' },
+              },
+              {
+                html_url: 'https://github.com/o/r/issues/2',
+                title: 'zombie-mermaid',
+                user: { login: 'someone' },
+              },
+            ],
+          })
+        : json({})
+    const r = await collectAll(ctx(fetch), cfg)
+    expect(r.findings.map((x) => [x.url, x.author])).toEqual([
+      ['https://github.com/o/r/issues/2', 'someone'],
+    ])
+  })
+
+  it('runWatch skips already-seen URLs, flags a total outage, and reports authors', async () => {
+    const config = { ...cfg, maxPerQuery: 5, maxReported: 10 }
+    const hn = (url: string) =>
+      url.includes('algolia')
+        ? json({
+            hits: [
+              { objectID: '1', title: 'zombie mermaid', author: 'pg' },
+              { objectID: '2', title: 'zombie mermaid' },
+            ],
+          })
+        : json({})
+    const seen = {
+      'https://news.ycombinator.com/item?id=2': { firstSeen: '2026-10-01' },
+    }
+    const r = await runWatch({ config, seen, date: '2026-10-16', ctx: ctx(hn) })
+    expect(r.newCount).toBe(1)
+    expect(r.allFailed).toBe(false)
+    expect(r.report).toContain('by pg')
+    expect(Object.keys(r.nextSeen).sort()).toEqual([
+      'https://news.ycombinator.com/item?id=1',
+      'https://news.ycombinator.com/item?id=2',
+    ])
+    const down = await runWatch({
+      config,
+      seen: {},
+      date: '2026-10-16',
+      ctx: ctx(() => json({}, 500)),
+    })
+    expect(down.allFailed).toBe(true)
+  })
 
   it('parses each source, filters non-matches and excluded URLs, dedupes, records failures', async () => {
     const fetch: Ctx['fetch'] = (url) => {

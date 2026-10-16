@@ -81,10 +81,14 @@ jobs:
           set -euo pipefail
           gh label create mentions-report --color 5319e7 \
             --description "Weekly mentions watch report" 2>/dev/null || true
-          gh issue create \
+          url=$(gh issue create \
             --title "Mentions report: $(date -u +%F)" \
             --label mentions-report \
-            --body-file .mention-watch/report.md
+            --body-file .mention-watch/report.md)
+          # Record which issue each new URL was reported in (entries from earlier weeks keep theirs).
+          jq --arg u "$url" 'map_values(.reportedIn //= $u)' \
+            .mention-watch/seen.next.json > "$RUNNER_TEMP/seen.json"
+          mv "$RUNNER_TEMP/seen.json" .mention-watch/seen.next.json
 
       # Only after the issue exists. One force-pushed commit per run: history of
       # the seen-set is not needed (firstSeen is stored per URL), and the
