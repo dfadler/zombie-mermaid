@@ -10,7 +10,7 @@
   "dependencies": {
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mermaid-parser": "workspace:*",
-    "elkjs": "0.9.3"
+    "elkjs-0.9.3": "npm:elkjs@0.9.3"
   },
   "engines": {
     "node": ">=24"

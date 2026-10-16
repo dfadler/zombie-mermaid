@@ -91,6 +91,15 @@ importers:
       '@xterm/headless':
         specifier: ^6.0.0
         version: 6.0.0
+      '@zombie-mermaid/ascii-layout':
+        specifier: workspace:*
+        version: link:packages/ascii-layout
+      '@zombie-mermaid/elk-layout':
+        specifier: workspace:*
+        version: link:packages/elk-layout
+      elkjs-0.9.3:
+        specifier: npm:elkjs@0.9.3
+        version: elkjs@0.9.3
       eslint:
         specifier: ^10.9.1
         version: 10.9.1
@@ -184,9 +193,9 @@ importers:
       '@zombie-mermaid/mermaid-parser':
         specifier: workspace:*
         version: link:../mermaid-parser
-      elkjs:
-        specifier: 0.9.3
-        version: 0.9.3
+      elkjs-0.9.3:
+        specifier: npm:elkjs@0.9.3
+        version: elkjs@0.9.3
 
   packages/mcp:
     dependencies:

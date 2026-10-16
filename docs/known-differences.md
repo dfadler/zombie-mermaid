@@ -194,6 +194,30 @@ drawing flipped vertically (boxes kept upright) while `LR`/`RL` would need a col
 their own, as a separate renderer. mermaid.js 12.1.0 and 12.2.0 lay `LR` out in columns and `RL`
 as its mirror. The ER ASCII renderer has a similar approximation.
 
+## ASCII: opt-in layout-faithful mode (`--layout mermaid`)
+
+The default ASCII renderer lays flowcharts out on its own grid, so node order and spacing
+differ from mermaid's. `zombie-mermaid render <file> --ascii --layout mermaid` (library:
+`renderMermaidASCIIWithLayout(src, { layout: 'mermaid' })` from `zombie-mermaid/ascii-layout`)
+instead draws mermaid's own ELK layout (`packages/elk-layout`, `packages/ascii-layout`; #2177).
+Opt-in only: without the flag the output is byte-identical to before.
+
+- **Fallback, never silent.** Subgraphs, shapes the layout does not model, non-flowchart
+  diagrams, a layout error, or a missing `elkjs-0.9.3` make it use the standard renderer; the
+  CLI prints `layout-faithful: <reason>; used standard renderer` on stderr and the API returns
+  `path: 'standard'` plus `fallbackReason`. On success stderr says `layout-faithful: used
+mermaid's ELK layout` and the result carries a `note`.
+- **Merged lines hide edge multiplicity.** Identical parallel edges draw as one line (three
+  `A --> B` look like one).
+- **Plain drawing at a fixed scale.** `-x/-y/-p`, `--coords`, `--theme` colors, `--hyperlinks`
+  and `--max-width` compaction do not apply to it (they apply to a fallback render).
+- **Pinned to mermaid 12.1.0 + elkjs 0.9.3.** The layout is only faithful to that pair. When
+  the `mermaid` pin moves, re-run `pnpm run elk-layout:oracle` and update the module.
+- **Dependency.** `elkjs-0.9.3` (`npm:elkjs@0.9.3`) is an optional peer dependency of
+  `zombie-mermaid`, kept separate from the `elkjs` 0.11/0.12 the SVG renderer uses. The layout
+  code is bundled into lazy chunks that load only when the option is used. The MCP tool does not
+  expose it.
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams

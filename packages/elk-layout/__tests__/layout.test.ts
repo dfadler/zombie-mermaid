@@ -26,7 +26,7 @@ const normalise = (l: Awaited<ReturnType<typeof layoutFlowchart>>) => ({
 
 describe('elk-layout', () => {
   it('resolves its own exact elkjs 0.9.3 (the root also carries a newer elkjs)', () => {
-    const v = createRequire(import.meta.url)('elkjs/package.json') as {
+    const v = createRequire(import.meta.url)('elkjs-0.9.3/package.json') as {
       version: string
     }
     expect(v.version).toBe('0.9.3')
