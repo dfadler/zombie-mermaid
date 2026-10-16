@@ -12,7 +12,7 @@ regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
 Reference: mermaid 12.1.0. Since mermaid 12.0.0 its default layout engine for
 these diagram types is ELK (it was dagre before). Generated 2026-10-15 at
-9231164 with `pnpm run layout:scorecard`, tolerance 20px.
+c350141 with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
@@ -20,8 +20,8 @@ these diagram types is ELK (it was dagre before). Generated 2026-10-15 at
 | --------- | ------- | -------- | ---------- | ----------- |
 | Flowchart | 53      | 94%      | 98%        | 100%        |
 | State     | 7       | 100%     | 98%        | 100%        |
-| Class     | 17      | 100%     | 99%        | 100%        |
-| ER        | 18      | 100%     | 100%       | -           |
+| Class     | 25      | 100%     | 100%       | 100%        |
+| ER        | 20      | 100%     | 100%       | -           |
 
 ## Trend (last 20 recorded runs)
 
@@ -52,14 +52,14 @@ across that change.
 | Sample                                                   | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | -------------------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
 | LR Fan-In With Bypass Edge                               | 33%      | 100%       | -           | 3     | 30%   | pass   |
-| Flowchart: Self-Loop with In and Out Neighbours (TD)     | 100%     | 33%        | -           | 3     | 85%   | fail   |
-| Flowchart: Dense Duplicate Edges (LR)                    | 33%      | 100%       | -           | 3     | 85%   | fail   |
+| Flowchart: Self-Loop with In and Out Neighbours (TD)     | 100%     | 33%        | -           | 3     | 30%   | pass   |
+| Flowchart: Dense Duplicate Edges (LR)                    | 33%      | 100%       | -           | 3     | 30%   | pass   |
 | Flowchart: CJK Labels                                    | 50%      | 100%       | 100%        | 4     | 50%   | pass   |
-| LR Bypass Edge In A Chain                                | 50%      | 100%       | -           | 4     | 85%   | fail   |
-| Flowchart: Self-Loop with In and Out Neighbours (LR)     | 67%      | 100%       | -           | 3     | 85%   | fail   |
-| Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 67%        | -           | 3     | 85%   | fail   |
-| Flowchart: Six Cluster Exit Siblings (TD)                | 83%      | 100%       | 100%        | 4     | 85%   | fail   |
-| Flowchart: Nine Cluster Exit Siblings (TD)               | 83%      | 100%       | 100%        | 4     | 85%   | fail   |
+| LR Bypass Edge In A Chain                                | 50%      | 100%       | -           | 4     | 45%   | pass   |
+| Flowchart: Self-Loop with In and Out Neighbours (LR)     | 67%      | 100%       | -           | 3     | 65%   | pass   |
+| Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 67%        | -           | 3     | 65%   | pass   |
+| Flowchart: Six Cluster Exit Siblings (TD)                | 83%      | 100%       | 100%        | 4     | 80%   | pass   |
+| Flowchart: Nine Cluster Exit Siblings (TD)               | 83%      | 100%       | 100%        | 4     | 80%   | pass   |
 | System Architecture                                      | 89%      | 93%        | 100%        | 10    | 85%   | pass   |
 | CI/CD Pipeline                                           | 100%     | 90%        | 100%        | 7     | 85%   | pass   |
 | Fan-Out Under Half-Column Parent                         | 100%     | 97%        | -           | 9     | 85%   | pass   |
@@ -121,25 +121,33 @@ Not scored (the oracle errored): zombie-mermaid.
 
 ### Class (lowest first)
 
-| Sample                           | Vertical | Horizontal | Containment | Nodes | Floor | Status |
-| -------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
-| Class: Full Hierarchy            | 100%     | 93%        | -           | 6     | 90%   | pass   |
-| Class: Inheritance (<\|--)       | 100%     | 100%       | -           | 3     | 95%   | pass   |
-| Class: Composition (*--)         | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Aggregation (o--)         | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Association (-->)         | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Dependency (..>)          | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Realization (..\|>)       | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: All 6 Relationship Types  | 100%     | 100%       | -           | 12    | 85%   | pass   |
-| Class: Relationship Labels       | 100%     | 100%       | -           | 3     | 95%   | pass   |
-| Class: Design Pattern — Observer | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| Class: MVC Architecture          | 100%     | 100%       | -           | 3     | 95%   | pass   |
-| Class: Namespaces                | 100%     | 100%       | 100%        | 3     | 95%   | pass   |
-| Class: Basic Class               | -        | -          | -           | 1     | 85%   | n/a    |
-| Class: Visibility Markers        | -        | -          | -           | 1     | 85%   | n/a    |
-| Class: Interface Annotation      | -        | -          | -           | 1     | 85%   | n/a    |
-| Class: Abstract Annotation       | -        | -          | -           | 1     | 85%   | n/a    |
-| Class: Enum Annotation           | -        | -          | -           | 1     | 85%   | n/a    |
+| Sample                                          | Vertical | Horizontal | Containment | Nodes | Floor | Status |
+| ----------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
+| Class: Full Hierarchy                           | 100%     | 93%        | -           | 6     | 90%   | pass   |
+| Class: Inheritance (<\|--)                      | 100%     | 100%       | -           | 3     | 95%   | pass   |
+| Class: Composition (*--)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Aggregation (o--)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Association (-->)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Dependency (..>)                         | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Realization (..\|>)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: All 6 Relationship Types                 | 100%     | 100%       | -           | 12    | 85%   | pass   |
+| Class: Relationship Labels                      | 100%     | 100%       | -           | 3     | 95%   | pass   |
+| Class: Design Pattern — Observer                | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Class: MVC Architecture                         | 100%     | 100%       | -           | 3     | 95%   | pass   |
+| Class: Namespaces                               | 100%     | 100%       | 100%        | 3     | 95%   | pass   |
+| Class: classDiagram-v2 Header                   | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Bidirectional Relationships              | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Lollipop Interface                       | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Backtick Class Names                     | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Mixed Newly Accepted Syntax              | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Class: Relationship Cardinalities               | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Cardinalities on Every Relationship Kind | 100%     | 100%       | -           | 12    | 85%   | pass   |
+| Class: Cardinalities with Shared Ends           | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Basic Class                              | -        | -          | -           | 1     | 85%   | n/a    |
+| Class: Visibility Markers                       | -        | -          | -           | 1     | 85%   | n/a    |
+| Class: Interface Annotation                     | -        | -          | -           | 1     | 85%   | n/a    |
+| Class: Abstract Annotation                      | -        | -          | -           | 1     | 85%   | n/a    |
+| Class: Enum Annotation                          | -        | -          | -           | 1     | 85%   | n/a    |
 
 ### ER (lowest first)
 
@@ -160,6 +168,8 @@ Not scored (the oracle errored): zombie-mermaid.
 | ER: Word-Form Cardinalities and .- / -. Lines | 100%     | 100%       | -           | 8     | 85%   | pass   |
 | ER: Remaining Cardinality Spellings           | 100%     | 100%       | -           | 5     | 85%   | pass   |
 | ER: Style, classDef and Class                 | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| ER: Crossing Edges and Edge Labels            | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| ER: Attribute Comments                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | ER: Entity with Attributes                    | -        | -          | -           | 1     | 85%   | n/a    |
 | ER: Attribute Keys (PK, FK, UK)               | -        | -          | -           | 1     | 85%   | n/a    |
 | ER: Multiple Keys per Attribute               | -        | -          | -           | 1     | 85%   | n/a    |
