@@ -159,6 +159,12 @@ importers:
         specifier: ^2.6.2
         version: 2.6.2
 
+  packages/ascii-layout:
+    dependencies:
+      '@zombie-mermaid/elk-layout':
+        specifier: workspace:*
+        version: link:../elk-layout
+
   packages/ascii-renderer:
     dependencies:
       '@zombie-mermaid/core':
