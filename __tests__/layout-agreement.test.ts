@@ -460,8 +460,6 @@ describe('thresholds and machine-readable scorecard', () => {
     // Every flowchart sample the oracle reports under the default floor has its own.
     for (const t of [
       'LR Bypass Edge In A Chain',
-      'Flowchart: Six Cluster Exit Siblings (TD)',
-      'Flowchart: Nine Cluster Exit Siblings (TD)',
       'Flowchart: Dense Duplicate Edges (TD)',
       'Flowchart: Dense Duplicate Edges (LR)',
     ]) {

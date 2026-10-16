@@ -433,17 +433,12 @@ export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   'State: Notes': 0.8,
   // Measured 2026-10-15 on mermaid 12.1.0 and 12.2.0 (identical node boxes in both),
   // tolerance 20px; each floor sits just under the measured figure. Where they
-  // are set, see docs/known-differences.md ("Five more flowchart samples
+  // are set, see docs/known-differences.md ("Three more flowchart samples
   // sit under the default floor", #2058).
   // Same relative order as mermaid; B sits 15px above A in ours and 22px in
   // mermaid (nodes 37px tall here, 48px there), so the 20px tolerance splits the
   // A-B, B-C and B-D pairs (3 of 6 vertical pairs agree).
   'LR Bypass Edge In A Chain': 0.45,
-  // A real layer difference, not a tolerance split: mermaid puts T and U level
-  // (y 427), ours puts T a rank below U (489 vs 357, 5 of 6 vertical pairs
-  // agree). Only from six labelled edges to T on; with five they are level.
-  'Flowchart: Six Cluster Exit Siblings (TD)': 0.8,
-  'Flowchart: Nine Cluster Exit Siblings (TD)': 0.8,
   // Same order as mermaid (b left of a, c right of both). TD: c is 19px right of
   // a in ours and 30px in mermaid, so the 20px tolerance calls them level (2 of
   // 3 horizontal pairs agree). LR: b is 19px above a in ours and 26px in

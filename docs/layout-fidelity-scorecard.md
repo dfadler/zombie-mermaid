@@ -11,14 +11,14 @@ floor for its lowest figure (default 85%, lower overrides in
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
 Reference: mermaid 12.1.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-10-15 at
-c350141 with `pnpm run layout:scorecard`, tolerance 20px.
+these diagram types is ELK (it was dagre before). Generated 2026-10-16 at
+89d7175 with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
 | Type      | Samples | Vertical | Horizontal | Containment |
 | --------- | ------- | -------- | ---------- | ----------- |
-| Flowchart | 53      | 94%      | 98%        | 100%        |
+| Flowchart | 53      | 95%      | 98%        | 100%        |
 | State     | 7       | 100%     | 98%        | 100%        |
 | Class     | 25      | 100%     | 100%       | 100%        |
 | ER        | 20      | 100%     | 100%       | -           |
@@ -44,6 +44,10 @@ across that change.
 | 2026-10-15 | 9231164 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-15 | 9231164 | 12.1.0  | Class     | 17      | 100%     | 99%        | 100%        |
 | 2026-10-15 | 9231164 | 12.1.0  | ER        | 18      | 100%     | 100%       | -           |
+| 2026-10-16 | 89d7175 | 12.1.0  | Flowchart | 53      | 95%      | 98%        | 100%        |
+| 2026-10-16 | 89d7175 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-16 | 89d7175 | 12.1.0  | Class     | 25      | 100%     | 100%       | 100%        |
+| 2026-10-16 | 89d7175 | 12.1.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Per sample
 
@@ -58,8 +62,6 @@ across that change.
 | LR Bypass Edge In A Chain                                | 50%      | 100%       | -           | 4     | 45%   | pass   |
 | Flowchart: Self-Loop with In and Out Neighbours (LR)     | 67%      | 100%       | -           | 3     | 65%   | pass   |
 | Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 67%        | -           | 3     | 65%   | pass   |
-| Flowchart: Six Cluster Exit Siblings (TD)                | 83%      | 100%       | 100%        | 4     | 80%   | pass   |
-| Flowchart: Nine Cluster Exit Siblings (TD)               | 83%      | 100%       | 100%        | 4     | 80%   | pass   |
 | System Architecture                                      | 89%      | 93%        | 100%        | 10    | 85%   | pass   |
 | CI/CD Pipeline                                           | 100%     | 90%        | 100%        | 7     | 85%   | pass   |
 | Fan-Out Under Half-Column Parent                         | 100%     | 97%        | -           | 9     | 85%   | pass   |
@@ -101,8 +103,10 @@ across that change.
 | Decision Self-Loop with Duplicate Edges                  | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Flowchart: Five Parallel Edges (TD)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Five Parallel Edges with Reciprocals (LR)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Flowchart: Six Cluster Exit Siblings (TD)                | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Flowchart: Parallel Edges with Back Edges (TD)           | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Cluster Exit Siblings with No Other Exit (TD) | 100%     | 100%       | 100%        | 3     | 85%   | pass   |
+| Flowchart: Nine Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Duplicate Self-Loops                                     | -        | -          | -           | 1     | 85%   | n/a    |
 
 ### State (lowest first)
