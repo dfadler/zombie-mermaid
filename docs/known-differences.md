@@ -211,7 +211,7 @@ mermaid's ELK layout` and the result carries a `note`.
   `maxCols` sets another cap): blank gaps between node groups are shrunk to fit, boxes never
   are. A diagram whose boxes alone exceed the cap (e.g. a long LR chain of wide labels) falls
   back to the standard renderer by default, with `layout-faithful: layout-faithful output is N
-  columns, over the 120-column cap; used standard renderer` on stderr (API: `fallbackReason`).
+columns, over the 120-column cap; used standard renderer` on stderr (API: `fallbackReason`).
   To get the wide layout-faithful text anyway, use `--layout mermaid-wide` (API:
   `maxCols: Infinity`).
 - **Merged lines hide edge multiplicity.** Identical parallel edges draw as one line (three
