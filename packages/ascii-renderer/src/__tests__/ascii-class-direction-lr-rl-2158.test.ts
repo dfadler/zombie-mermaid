@@ -324,7 +324,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
           '  class A {\n    <<service>>\n    +int x\n  }\n  A --> B\n  click A href "https://example.com/a"',
           dir,
         )
-        // eslint-disable-next-line no-control-regex
+
         expect(out.replace(/\u001b\]8;;[^\u001b]*\u001b\\/g, '')).toBe(plain)
       })
     }
@@ -347,7 +347,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
         { colorMode: 'ansi16' },
       )
       const divider = rows(out).find((l) => l.includes('├'))!
-      // eslint-disable-next-line no-control-regex
+
       expect(divider).toMatch(/^\u001b\[\d+m├─+┤\u001b\[0m$/)
     })
   })
