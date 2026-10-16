@@ -1,0 +1,20 @@
+  <span style="color:#27272a">●</span>  
+  <span style="color:#0000ff">│</span>  
+  <span style="color:#0000ff">│</span>  
+  <span style="color:#0000ff">│</span>  
+  <span style="color:#52525b">▼</span>  
+<span style="color:#a1a1aa">╭───╮</span>
+<span style="color:#a1a1aa">│</span>   <span style="color:#a1a1aa">│</span>
+<span style="color:#a1a1aa">│</span> <span style="color:#27272a">A</span> <span style="color:#a1a1aa">│</span>
+<span style="color:#a1a1aa">│</span>   <span style="color:#a1a1aa">│</span>
+<span style="color:#a1a1aa">╰─</span><span style="color:#a1a1aa">┬</span><span style="color:#a1a1aa">─╯</span>
+  <span style="color:#0000ff">│</span>  
+  <span style="color:#0000ff">│</span>  
+  <span style="color:#0000ff">│</span>  
+  <span style="color:#0000ff">│</span>  
+  <span style="color:#52525b">▼</span>  
+<span style="color:#a1a1aa">╭───╮</span>
+<span style="color:#a1a1aa">│</span>   <span style="color:#a1a1aa">│</span>
+<span style="color:#a1a1aa">│</span> <span style="color:#27272a">B</span> <span style="color:#a1a1aa">│</span>
+<span style="color:#a1a1aa">│</span>   <span style="color:#a1a1aa">│</span>
+<span style="color:#a1a1aa">╰───╯</span>
