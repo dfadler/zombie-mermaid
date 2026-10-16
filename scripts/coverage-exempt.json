@@ -174,5 +174,20 @@
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 338,
     "legacy": true
+  },
+  {
+    "file": "scripts/elk-layout-font.ts",
+    "reason": "dev tooling CLI: runs on import and needs a real Chromium to measure the label font (regenerates font-advances.json)",
+    "maxLines": 28
+  },
+  {
+    "file": "scripts/elk-layout-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the layout itself is unit-tested in packages/elk-layout",
+    "maxLines": 99
+  },
+  {
+    "file": "scripts/lib/oracle-layout.ts",
+    "reason": "Playwright-driven helper: reads layout out of a real Chromium render, only reachable from scripts/elk-layout-oracle.ts",
+    "maxLines": 111
   }
 ]
