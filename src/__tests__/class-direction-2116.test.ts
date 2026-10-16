@@ -96,6 +96,25 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
     expect(circle).toBeLessThan(name)
   })
 
+  it('keeps the lollipop stem straight when host and name widths differ in parity', () => {
+    // "Drawable" box width is even, "Shape" odd: the stem must not jog.
+    const out = ascii(dir('BT', 'Shape ()-- Drawable')).split('\n')
+    const circle = out.findIndex((l) => l.includes('○'))
+    const col = [...out[circle]!].indexOf('○')
+    expect([...out[circle - 1]!][col]).toBe('│')
+    expect([...out[circle - 2]!][col]).toBe('│')
+  })
+
+  it('puts a note one rank below its class, linked by a dotted line', () => {
+    const out = ascii(
+      dir('BT', 'Shape <|-- Square\n  note for Square "all sides equal"'),
+    ).split('\n')
+    const square = out.findIndex((l) => l.includes('│ Square │'))
+    const note = out.findIndex((l) => l.includes('all sides equal'))
+    expect(note).toBeGreaterThan(square)
+    expect(out.slice(square + 1, note).some((l) => l.includes('┊'))).toBe(true)
+  })
+
   it('RenderOptions.direction still does not apply to class diagrams', () => {
     expect(ascii(dir('TB'), false, 'BT')).toBe(ascii(dir('TB')))
   })

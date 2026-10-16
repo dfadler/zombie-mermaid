@@ -517,7 +517,9 @@ export function renderClassAscii(
   // A `note for X` note has no relationships, so it landed on level 0 above;
   // move it onto its class's row so the row placement below puts it right
   // beside that class.
-  pinNoteLevels(notesById, level)
+  // Namespace frames keep the note beside its class: a note moved a level up
+  // could land inside another frame, with its link crossing the border.
+  pinNoteLevels(notesById, level, bottomUp && frames.length === 0)
 
   // --- Position classes by level ---
   // Group classes by level
@@ -996,7 +998,9 @@ export function renderClassAscii(
     const p = placed.get(id)
     const host = placed.get(lolli.host)
     if (!p || !host) continue
-    const x = host.x + Math.floor((host.width - p.width) / 2)
+    // Match the floor(width / 2) centre column edges attach to, so an odd/even
+    // width pair still gets a straight stem instead of a one-column jog.
+    const x = host.x + Math.floor(host.width / 2) - Math.floor(p.width / 2)
     const clear = [...placed.values()].every(
       (o) =>
         o === p ||
@@ -2510,15 +2514,21 @@ function withNotePseudoClasses(parsed: ClassDiagram): {
   return { diagram: { ...parsed, classes }, notesById }
 }
 
-/** Put each attached note on the same level as its class. */
+/**
+ * Put each attached note on the same level as its class. In BT mermaid puts
+ * it one rank toward the roots instead (below the class once flipped), so a
+ * non-root class's note moves up one level here.
+ */
 function pinNoteLevels(
   notesById: Map<string, ClassNote>,
   level: Map<string, number>,
+  bottomUp: boolean,
 ): void {
   for (const [id, note] of notesById) {
     if (note.forClass === undefined) continue
     const classLevel = level.get(note.forClass)
-    if (classLevel !== undefined) level.set(id, classLevel)
+    if (classLevel === undefined) continue
+    level.set(id, bottomUp && classLevel > 0 ? classLevel - 1 : classLevel)
   }
 }
 
@@ -2554,7 +2564,26 @@ function decorateAsciiNotes(
     // By construction the note sits directly right of its class on the same
     // row; anything else means the layout changed under us — skip the line
     // rather than draw one through the middle of the diagram.
-    if (!cls || cls.x + cls.width > p.x || cls.y !== p.y) continue
+    if (!cls) continue
+    if (cls.y > p.y + p.height - 1 && cls.x + cls.width <= p.x) {
+      // BT: the note sits on an earlier level, up and to the right of its
+      // class. Run the link up the class's right edge, then across into the
+      // note's middle row.
+      const x = cls.x + cls.width - 2
+      const midY = p.y + 1
+      for (let y = midY + 1; y < cls.y; y++) {
+        if (canvas[x]?.[y] === ' ') setC(x, y, useAscii ? ':' : '┊', 'line')
+      }
+      if (canvas[x]?.[midY] === ' ') {
+        // Drawn top-down, flipped to ╰ with the rest of the canvas.
+        setC(x, midY, useAscii ? ':' : '╭', 'line')
+      }
+      for (let cx = x + 1; cx < p.x; cx++) {
+        if (canvas[cx]?.[midY] === ' ') setC(cx, midY, dash, 'line')
+      }
+      continue
+    }
+    if (cls.x + cls.width > p.x || cls.y !== p.y) continue
     const y = cls.y + 1
     for (let x = cls.x + cls.width; x < p.x; x++) {
       if (canvas[x]?.[y] === ' ') setC(x, y, dash, 'line')
