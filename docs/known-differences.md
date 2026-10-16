@@ -60,7 +60,7 @@ layers. The 12.1.0 comparison is in
   sits relative to `B`, not text width (#1941). "Flowchart: Five Cluster Exit Siblings (TD)"
   agreed only after `elk.spacing.edgeEdge` was raised to 40 px for graphs with three or
   more labelled edges between the same pair (#1943).
-- **Five more flowchart samples sit under the default floor.** Node boxes are
+- **Three more flowchart samples sit under the default floor.** Node boxes are
   identical in mermaid 12.1.0 and 12.2.0 (12.2.0 from jsDelivr, headless Chromium);
   each got a floor just under its score on 2026-10-15 (#2058).
   - "LR Bypass Edge In A Chain" (50% vertical, floor 45%): the same tolerance split as
@@ -73,10 +73,6 @@ layers. The 12.1.0 comparison is in
     19 px right of `a` (30 px in mermaid), LR `b` is 19 px above `a` (26) and `c` 16 px
     below (29). The sample was added for ASCII routing (#2109), where it is not scored;
     as an SVG layout it is plausible next to mermaid's.
-  - "Six" and "Nine Cluster Exit Siblings (TD)" (83% vertical, floor 80%): not a
-    tolerance split. Mermaid puts `T` and `U` level (y 427 and 507); ours puts `T` a
-    rank below `U` (489 against 357, 537 against 381). With five labelled edges to `T`
-    ours is level, as in mermaid, so six is where it changes. Follow-up, not fixed here.
 - **"Class: Full Hierarchy" (93% horizontal) is a threshold effect.** Mermaid 12.1.0
   and 12.2.0 score it the same. Both put the same classes in the same layers and
   order, and the one disagreeing pair is Animal/Cat: Cat's centre is 26 px left of

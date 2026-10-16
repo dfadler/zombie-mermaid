@@ -444,14 +444,19 @@ export function mermaidToElk(
       padding: opts.padding,
     }),
     'elk.layered.thoroughness': String(DEFAULTS.thoroughness),
-    'elk.layered.highDegreeNodes.treatment': 'true',
-    'elk.layered.highDegreeNodes.threshold': '8',
+    // Off (ELK's default): it counts parallel edges, so a node with six edges
+    // to one target counted as high degree and the target dropped a layer
+    // below its sibling (#2154). dagre has no such treatment.
+    'elk.layered.highDegreeNodes.treatment': 'false',
     // Post-compaction slides a sink down the flow axis into the gap an inline
     // edge label leaves, one layer past its siblings (#1750); mermaid keeps
     // it beside them. Subgraph layouts (also the hinted compound pass) keep it:
     // their border clearance relies on it.
     'elk.layered.compaction.postCompaction.strategy':
-      graph.subgraphs.length === 0 && !hints?.forceNodeOrder
+      // A labelled parallel run widens the target's routing channel and
+      // compaction then pulls its siblings up past it (#2154).
+      (graph.subgraphs.length === 0 || hasLabelledParallelRun(graph)) &&
+      !hints?.forceNodeOrder
         ? 'NONE'
         : 'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
