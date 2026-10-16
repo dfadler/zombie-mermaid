@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidASCIIWithLayout } from '../src/ascii-layout.ts'
 import { parseArgs } from '../src/cli/parse-args.ts'
@@ -8,6 +8,9 @@ import { runRender } from '../src/cli/render.ts'
 const FLAT = 'graph TD\n  A[Start] --> B{Ok?}\n  B -->|yes| C[Done]\n'
 const SUBGRAPH = 'graph TD\n  subgraph S\n    A --> B\n  end\n'
 const SHAPE = 'graph LR\n  A[x] --> B[/y/]\n'
+// Boxes alone are wider than 120 columns, so the cap cannot be met.
+const WIDE =
+  'graph LR\n  A[Alpha service gateway node] --> B[Bravo processing pipeline stage] --> C[Charlie storage backend cluster] --> D[Delta notification dispatcher worker] --> E[Echo audit trail sink]\n'
 const SEQUENCE = 'sequenceDiagram\n  A->>B: hi\n'
 
 const sink = () => {
@@ -96,5 +99,68 @@ describe('layout-faithful ASCII opt-in (#2182)', () => {
     )
     expect(src).not.toMatch(/^import .*(elk-layout|ascii-layout)/m)
     expect(src).toMatch(/import\('@zombie-mermaid\/elk-layout'\)/)
+  })
+
+  it('falls back when the drawing cannot fit the width cap, unless opted out', async () => {
+    const r = await renderMermaidASCIIWithLayout(WIDE, { layout: 'mermaid' })
+    expect(r.path).toBe('standard')
+    expect(r.fallbackReason).toMatch(
+      /^layout-faithful output is \d+ columns, over the 120-column cap$/,
+    )
+    expect(r.text).toBe(renderMermaidASCII(WIDE))
+
+    const wide = await renderMermaidASCIIWithLayout(WIDE, {
+      layout: 'mermaid',
+      maxCols: Infinity,
+    })
+    expect(wide.path).toBe('layout-faithful')
+    expect(
+      Math.max(...wide.text.split('\n').map((l) => l.length)),
+    ).toBeGreaterThan(120)
+
+    // an explicit smaller cap that a compressible diagram cannot meet also falls back
+    const tight = await renderMermaidASCIIWithLayout(FLAT, {
+      layout: 'mermaid',
+      maxCols: 5,
+    })
+    expect(tight.fallbackReason).toMatch(/over the 5-column cap/)
+  })
+
+  it('a diagram that fits the cap does not fall back', async () => {
+    const r = await renderMermaidASCIIWithLayout(FLAT, { layout: 'mermaid' })
+    expect(r.path).toBe('layout-faithful')
+  })
+
+  it('CLI: wide diagram falls back with one stderr line; mermaid-wide and -w control the cap', async () => {
+    const fb = await cli(WIDE, '--layout', 'mermaid')
+    expect(fb.err).toMatch(
+      /^layout-faithful: layout-faithful output is \d+ columns, over the 120-column cap; used standard renderer\n$/,
+    )
+    expect(fb.out).toBe(renderMermaidASCII(WIDE, { colorMode: 'none' }) + '\n')
+
+    const wide = await cli(WIDE, '--layout', 'mermaid-wide')
+    expect(wide.err).toMatch(/^layout-faithful: used mermaid's ELK layout/)
+    expect(wide.out).not.toBe(fb.out)
+
+    const capped = await cli(WIDE, '--layout', 'mermaid', '-w', '400')
+    expect(capped.err).toMatch(/^layout-faithful: used mermaid's ELK layout/)
+  })
+
+  it('falls back with a reason when the layout packages cannot be imported', async () => {
+    vi.resetModules()
+    vi.doMock('@zombie-mermaid/elk-layout', () => {
+      throw new Error('Cannot find package elkjs-0.9.3')
+    })
+    try {
+      const { renderMermaidASCIIWithLayout: fresh } =
+        await import('../src/ascii-layout.ts')
+      const r = await fresh(FLAT, { layout: 'mermaid' })
+      expect(r.path).toBe('standard')
+      expect(r.fallbackReason).toMatch(/elkjs 0\.9\.3 is not installed/)
+      expect(r.text).toBe(renderMermaidASCII(FLAT))
+    } finally {
+      vi.doUnmock('@zombie-mermaid/elk-layout')
+      vi.resetModules()
+    }
   })
 })

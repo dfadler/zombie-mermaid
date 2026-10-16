@@ -195,10 +195,19 @@ async function renderText(
     if (args.hyperlinks && asciiFile === undefined) asciiOpts.hyperlinks = true
     let ascii: string
     let layoutFaithful = false
-    if (args.layout === 'mermaid') {
+    if (args.layout !== undefined) {
+      // mermaid-wide: no cap, so wide diagrams are drawn layout-faithfully instead of falling
+      // back. Otherwise --max-width (if given) is the cap, else the 120-column default.
+      const maxCols =
+        args.layout === 'mermaid-wide'
+          ? Infinity
+          : args.maxWidth === undefined
+            ? undefined
+            : resolveMaxWidth(args.maxWidth)
       const r = await renderMermaidASCIIWithLayout(text, {
         ...asciiOpts,
         layout: 'mermaid',
+        maxCols,
       })
       ascii = r.text
       layoutFaithful = r.path === 'layout-faithful'
@@ -214,7 +223,7 @@ async function renderText(
     }
 
     // The layout-faithful drawing has its own fixed scale: compact spacing does not apply, so
-    // --max-width only warns for it.
+    // --max-width is its column cap (or a warning under mermaid-wide).
     if (args.maxWidth !== undefined) {
       const targetWidth = resolveMaxWidth(args.maxWidth)
       let actualWidth = maxLineWidth(ascii)

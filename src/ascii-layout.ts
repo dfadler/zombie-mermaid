@@ -31,13 +31,23 @@ export interface AsciiLayoutResult {
  * Layout-faithful covers flat flowcharts only; anything else (subgraphs, unmodelled shapes,
  * other diagram types, a layout failure, elkjs 0.9.3 not installed) falls back to the standard
  * renderer and says so in `fallbackReason`. Layout-faithful output is plain text drawn on its
- * own grid, so spacing/color/profile options apply only to the fallback.
+ * own grid, so spacing/color/profile options apply only to the fallback. A drawing that cannot
+ * fit the width cap (`maxCols`, default 120) also falls back; pass `maxCols: Infinity` to get the
+ * wide layout-faithful text instead.
  */
 export async function renderMermaidASCIIWithLayout(
   text: string,
-  options: AsciiRenderOptions & { layout?: AsciiLayoutMode } = {},
+  options: AsciiRenderOptions & {
+    layout?: AsciiLayoutMode
+    /**
+     * Width cap for the layout-faithful drawing (default 120). The rasterizer shrinks blank gaps
+     * to fit; when the boxes alone are wider, the standard renderer runs instead (with
+     * `fallbackReason`). `Infinity` disables the cap: the wide layout-faithful text is returned.
+     */
+    maxCols?: number
+  } = {},
 ): Promise<AsciiLayoutResult> {
-  const { layout, ...asciiOptions } = options
+  const { layout, maxCols, ...asciiOptions } = options
   const standard = (fallbackReason?: string): AsciiLayoutResult => ({
     text: renderMermaidASCII(text, asciiOptions),
     path: 'standard',
@@ -63,7 +73,15 @@ export async function renderMermaidASCIIWithLayout(
     )
   }
   try {
-    const r = await asciiLayoutPkg.renderFlowchartAscii(text)
+    const r = await asciiLayoutPkg.renderFlowchartAscii(
+      text,
+      maxCols === undefined ? undefined : { maxCols },
+    )
+    if (!r.capped) {
+      return standard(
+        `layout-faithful output is ${r.stats.naturalCols} columns, over the ${maxCols ?? asciiLayoutPkg.DEFAULT_MAX_COLS}-column cap`,
+      )
+    }
     return { text: r.text, path: 'layout-faithful', note: r.note }
   } catch (e) {
     if (e instanceof layoutPkg.UnsupportedFlowchartError) {

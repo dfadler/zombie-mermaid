@@ -165,8 +165,11 @@ Options:
                        direction-flip — see issue #335).
   --layout mermaid     Opt in (flowcharts, --ascii): draw mermaid's own ELK layout
                        instead of the grid renderer. Subgraphs, some shapes,
-                       other diagram types and layout failures fall back to
-                       the default renderer; stderr says which one ran. Merged
+                       other diagram types, layout failures and drawings that
+                       cannot fit 120 columns (or -w <n>, used as the cap)
+                       fall back to the default renderer; stderr says which
+                       one ran. --layout mermaid-wide drops the cap and always
+                       draws the (possibly wide) layout-faithful text. Merged
                        parallel edges hide edge multiplicity. Depends on
                        mermaid 12.1.0 + elkjs 0.9.3: install the optional peer
                        with \`pnpm add elkjs-0.9.3@npm:elkjs@0.9.3\`. -x/-y/-p

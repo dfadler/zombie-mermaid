@@ -207,10 +207,17 @@ Opt-in only: without the flag the output is byte-identical to before.
   CLI prints `layout-faithful: <reason>; used standard renderer` on stderr and the API returns
   `path: 'standard'` plus `fallbackReason`. On success stderr says `layout-faithful: used
 mermaid's ELK layout` and the result carries a `note`.
+- **Width cap and fallback.** The drawing is capped at 120 columns (`--max-width <n>` /
+  `maxCols` sets another cap): blank gaps between node groups are shrunk to fit, boxes never
+  are. A diagram whose boxes alone exceed the cap (e.g. a long LR chain of wide labels) falls
+  back to the standard renderer by default, with `layout-faithful: layout-faithful output is N
+  columns, over the 120-column cap; used standard renderer` on stderr (API: `fallbackReason`).
+  To get the wide layout-faithful text anyway, use `--layout mermaid-wide` (API:
+  `maxCols: Infinity`).
 - **Merged lines hide edge multiplicity.** Identical parallel edges draw as one line (three
   `A --> B` look like one).
 - **Plain drawing at a fixed scale.** `-x/-y/-p`, `--coords`, `--theme` colors, `--hyperlinks`
-  and `--max-width` compaction do not apply to it (they apply to a fallback render).
+  and `--max-width` compaction (it is the column cap instead) do not apply to it (they apply to a fallback render).
 - **Pinned to mermaid 12.1.0 + elkjs 0.9.3.** The layout is only faithful to that pair. When
   the `mermaid` pin moves, re-run `pnpm run elk-layout:oracle` and update the module.
 - **Dependency.** `elkjs-0.9.3` (`npm:elkjs@0.9.3`) is an optional peer dependency of
