@@ -1,0 +1,8 @@
+---
+'@zombie-mermaid/ascii-renderer': patch
+'zombie-mermaid': patch
+---
+
+Class diagrams with `direction LR` or `direction RL` are now drawn left to right and right to left in ASCII, like the SVG (mermaid.js 12.1.0 and 12.2.0 agree): each level is a column, siblings are stacked, and `RL` is the mirror with the box text still reading left to right. They were drawn top-down. The diagram is lowered onto the flowchart ASCII grid (classes become compartment boxes, relationships become edges with the UML end markers, namespaces become frames), so end markers, labels, cardinalities, notes (left of their class in `LR`, right in `RL`), lollipop names, self-loops, hyperlinks and both charsets follow the axis. Because the grid is shared with flowcharts, boxes in one column share a width and boxes on one row share a height, and a parent with several children branches off one trunk; this is documented in `docs/known-differences.md`. Output change: ASCII for class diagrams that declare `direction LR` or `RL`; every other diagram, and class diagrams with no direction line or `TB`/`TD`/`BT`, are byte-identical (checked by hashing every gallery sample and ASCII testdata input in both charsets, before and after). SVG is untouched. Closes [#2158](https://github.com/dfadler/zombie-mermaid/issues/2158).
+
+Level: patch. Per [the versioning policy](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/versioning-and-deprecation-policy-1568.md) section 1, layout and glyph changes are not documented output contracts, no export, option or type changes, and `RenderOptions.direction` still does not apply to class diagrams; it closes the parity gap left by #2116, like #2153.

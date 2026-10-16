@@ -10,10 +10,7 @@
 // Relationship lines use simple Manhattan routing (vertical + horizontal).
 // ============================================================================
 
-import {
-  parseClassDiagram,
-  formatClassMember,
-} from '@zombie-mermaid/mermaid-parser'
+import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
   ClassDiagram,
   ClassNode,
@@ -55,32 +52,11 @@ import type { LinkCanvas } from './hyperlinks.ts'
 import { safeHref, splitStatements } from '@zombie-mermaid/core'
 import { getCorners } from './shapes/corners.ts'
 import { splitLines } from './multiline-utils.ts'
+import { buildClassSections } from './class-sections.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { findFreeLane } from './lane-search.ts'
+import { isSideways, renderClassFlowAscii } from './class-flow.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
-
-/** Build the text sections for a class box: [header], [attributes], [methods] */
-function buildClassSections(cls: ClassNode): string[][] {
-  // Header section: optional annotation + class name (may be multi-line)
-  const header: string[] = []
-  if (cls.annotation) header.push(`<<${cls.annotation}>>`)
-  // Support multi-line class names
-  const nameLines = splitLines(cls.label)
-  header.push(...nameLines)
-
-  // Attributes section
-  const attrs = cls.attributes.map(formatClassMember)
-
-  // Methods section
-  const methods = cls.methods.map(formatClassMember)
-
-  // Build sections from only the non-empty parts. Only attrs (2-section),
-  // only methods (2-section), both (3-section), or neither (1-section, header only).
-  const sections: string[][] = [header]
-  if (attrs.length > 0) sections.push(attrs)
-  if (methods.length > 0) sections.push(methods)
-  return sections
-}
 
 // ============================================================================
 // Relationship marker characters
@@ -306,7 +282,7 @@ function cardinalityGapRows(labelLines: number): number {
 }
 
 /** A `namespace` block with at least one member class in the diagram. */
-interface AsciiNamespaceFrame {
+export interface AsciiNamespaceFrame {
   name: string
   /** Member class ids, including the notes attached to those classes. */
   ids: string[]
@@ -399,8 +375,17 @@ export function renderClassAscii(
   const bottomUp = diagram.direction === 'BT'
 
   if (diagram.classes.length === 0) return ''
-
   const frames = resolveFrames(diagram, notesById, lollipops)
+  // LR and RL are laid out on the flowchart grid, not by the level rows below.
+  if (isSideways(diagram.direction)) {
+    return renderClassFlowAscii(
+      { diagram, lollipops, notesById, frames },
+      config,
+      colorMode,
+      theme,
+      options,
+    )
+  }
   const frameOf = new Map<string, number>()
   for (const [i, fr] of frames.entries()) {
     for (const id of fr.ids) frameOf.set(id, i)
@@ -2625,7 +2610,7 @@ function decorateAsciiNotes(
 // has no single host and stays an ordinary relationship.
 // ============================================================================
 
-interface AsciiLollipop {
+export interface AsciiLollipop {
   host: string
 }
 

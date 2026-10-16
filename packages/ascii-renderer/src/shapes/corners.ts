@@ -48,6 +48,20 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
     ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
   },
+  // Class diagram nodes (class-flow.ts) draw their own borders; these are the
+  // plain-box fallback getCorners would return.
+  'class-box': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'class-note': {
+    unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
+    ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
+  },
+  'class-name': {
+    unicode: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },
+    ascii: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },
+  },
 
   // Circular shapes - use circle markers at corners
   circle: {

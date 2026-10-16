@@ -1,0 +1,21 @@
+classDiagram
+  direction LR
+  namespace Domain {
+    class Order
+    class Item
+  }
+  namespace Infra {
+    class Repo
+  }
+  Order "1" --> "*" Item : contains
+  Repo ..> Order : stores
+---
++----------+    +-----------------------------+
+|   Infra  |    |            Domain           |
+|          |    |                             |
+|          |    |                             |
+| +------+ |    | +-------+1         +------+ |
+| | Repo +stores.>| Order +contains->| Item | |
+| +------+ |    | +-------+         *+------+ |
+|          |    |                             |
++----------+    +-----------------------------+

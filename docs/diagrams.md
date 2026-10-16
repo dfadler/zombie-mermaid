@@ -678,18 +678,20 @@ classDiagram
 - **SVG:** all four directions. `LR` puts each level in a column, `RL` mirrors it, `BT`
   flips the stack; markers, cardinalities, namespace frames, notes (beside their class on
   the flow axis, as in mermaid) and lollipop names follow the new axis.
-- **ASCII:** `TB`/`TD` and `BT` are drawn. `BT` is the top-down drawing flipped, with
-  every class box kept upright and a namespace title on the top border. `LR` and `RL` are
-  accepted and drawn top-down: the ASCII class layout is built from level rows (box
-  placement, relationship routing, labels and cardinalities all assume levels stacked
-  vertically), so a column layout would be a second renderer. The `--ascii` and unicode
-  charsets behave the same. See [known differences](known-differences.md#class-direction-in-ascii).
+- **ASCII:** all four directions
+  ([#2158](https://github.com/dfadler/zombie-mermaid/issues/2158)). `BT` is the top-down
+  drawing flipped, with every class box kept upright and a namespace title on the top
+  border. `LR` is drawn on the flowchart grid (each level a column, siblings stacked) and
+  `RL` is its mirror, with the boxes' text still reading left to right. End markers,
+  labels, cardinalities, notes (left of their class in `LR`, right in `RL`), lollipop names
+  and namespace frames follow the axis, in the unicode and `--ascii` charsets. Because the
+  grid is shared with flowcharts, boxes in one column share a width and boxes on one row
+  share a height, and a parent with several children branches off one trunk; see
+  [known differences](known-differences.md#class-lr-and-rl-in-ascii).
 
 ### Known limitations
 
 - `class A["Label"]` aliases are not honoured yet.
-- In ASCII, `direction LR` and `direction RL` are accepted but draw top-down (see
-  [Direction](#direction) above).
 - The `$` / `*` classifier after a method's `)` is styled but also left in the
   member text.
 - A dotted lollipop (`()..`, `..()`) is a parse error.
