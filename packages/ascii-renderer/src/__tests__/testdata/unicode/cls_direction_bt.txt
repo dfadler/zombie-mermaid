@@ -1,0 +1,27 @@
+classDiagram
+  direction BT
+  class Animal {
+    +String name
+    +eat() void
+  }
+  Animal <|-- Dog
+  Animal <|-- Cat
+  Animal "1" --> "*" Toy : owns
+---
+                                 
+                                 
+┌─────┐    ┌─────┐    ┌─────┐    
+│ Dog │    │ Cat │    │ Toy │    
+└─────┘    └─────┘    └─────┘    
+   │          │          ▲ *     
+   │          │     owns │       
+ ┌─┘    ┌─────┘┌─────────┘       
+ │      │      │                 
+ ▽      ▽      │ 1               
+┌───────────────┐                
+│ Animal        │                
+├───────────────┤                
+│ + String name │                
+├───────────────┤                
+│ + eat(): void │                
+└───────────────┘                

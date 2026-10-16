@@ -5,7 +5,11 @@
 // Class diagrams show UML class relationships, inheritance, composition, etc.
 // ============================================================================
 
-import type { NodeInteraction, StyleDirectives } from '@zombie-mermaid/core'
+import type {
+  Direction,
+  NodeInteraction,
+  StyleDirectives,
+} from '@zombie-mermaid/core'
 
 /**
  * Parsed class diagram — logical structure from mermaid text.
@@ -25,6 +29,11 @@ export interface ClassDiagram extends StyleDirectives {
   interactions: Map<string, NodeInteraction>
   /** Notes, in source order — `note "text"` and `note for X "text"` */
   notes: ClassNote[]
+  /**
+   * Layout direction from a top-level `direction TB|LR|BT|RL` statement;
+   * `undefined` when the source has none (laid out top-down).
+   */
+  direction?: Direction
 }
 
 /**

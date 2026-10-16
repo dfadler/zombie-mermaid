@@ -23,8 +23,10 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   AsciiConfig,
+  LabelRect,
   Canvas,
   CharRole,
+  RoleCanvas,
   AsciiTheme,
   ColorMode,
 } from './types.ts'
@@ -37,11 +39,18 @@ import {
   write,
   isJunctionChar,
   mergeJunctions,
+  flipCanvasVertically,
+  flipRoleCanvasVertically,
+  mirrorLabelRows,
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { allocateTerritory } from './territory.ts'
 import type { Territory } from './territory.ts'
-import { markBoxLabelLinks, mkLinkCanvas } from './hyperlinks.ts'
+import {
+  flipLinkCanvasVertically,
+  markBoxLabelLinks,
+  mkLinkCanvas,
+} from './hyperlinks.ts'
 import type { LinkCanvas } from './hyperlinks.ts'
 import { safeHref, splitStatements } from '@zombie-mermaid/core'
 import { getCorners } from './shapes/corners.ts'
@@ -384,6 +393,10 @@ export function renderClassAscii(
     parseClassDiagram(lines),
   )
   const { diagram, notesById } = withNotePseudoClasses(lollipopDiagram)
+  // Only BT is honoured here: it is the top-down layout flipped at the end
+  // (boxes kept upright). LR and RL need a column layout this level-row
+  // renderer does not have, so they stay top-down. See docs/diagrams.md.
+  const bottomUp = diagram.direction === 'BT'
 
   if (diagram.classes.length === 0) return ''
 
@@ -2209,6 +2222,7 @@ export function renderClassAscii(
   // the same midpoint row (issue #447, "teaches" truncated to "tea" and
   // merged into a box-drawing corner). Running all lines first means no
   // line write can ever land on top of label text again.
+  const labelRects: LabelRect[] = []
   for (const [relIndex, rel] of diagram.relationships.entries()) {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -2244,6 +2258,7 @@ export function renderClassAscii(
       const startY = labelY - halfHeight
 
       const territory = territoryByRel.get(rel)!
+      const rect: LabelRect = { x0: Infinity, y0: startY, x1: -1, y1: startY }
 
       for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
         const y = startY + lineIdx
@@ -2284,9 +2299,13 @@ export function renderClassAscii(
           const lx = labelStart + i
           if (lx >= 0 && y >= 0) {
             setC(lx, y, cells[i]!, 'text')
+            rect.x0 = Math.min(rect.x0, lx)
+            rect.x1 = Math.max(rect.x1, lx)
+            rect.y1 = Math.max(rect.y1, y)
           }
         }
       }
+      if (lines.length > 1 && rect.x1 >= 0) labelRects.push(rect)
     }
   }
 
@@ -2379,7 +2398,8 @@ export function renderClassAscii(
       ? { tl: '+', tr: '+', bl: '+', br: '+' }
       : { tl: '┌', tr: '┐', bl: '└', br: '┘' }
     const cells = toDisplayCells(` ${r.name} `)
-    const blank = (x: number): boolean => (canvas[x]?.[r.y0] ?? ' ') === ' '
+    const titleY = bottomUp ? r.y1 : r.y0
+    const blank = (x: number): boolean => (canvas[x]?.[titleY] ?? ' ') === ' '
     // Leftmost start, one dash in from the corner, whose cells plus a dash
     // each side hold no stroke.
     let start = r.x0 + 2
@@ -2410,7 +2430,8 @@ export function renderClassAscii(
     put(r.x0, r.y1, c.bl, 'border')
     put(r.x1, r.y1, c.br, 'border')
     for (const [i, cell] of cells.entries()) {
-      if (canvas[start + i]?.[r.y0] === h) setC(start + i, r.y0, cell, 'text')
+      if (canvas[start + i]?.[titleY] === h)
+        setC(start + i, titleY, cell, 'text')
     }
   }
 
@@ -2418,6 +2439,16 @@ export function renderClassAscii(
   // each attached note to its class. Last, so a connector never lands on
   // top of a relationship line or label.
   decorateAsciiNotes(notesById, placed, canvas, useAscii, setC)
+
+  if (bottomUp) {
+    flipClassCanvas(
+      canvas,
+      rc,
+      linkCanvas,
+      [...placed.values()].filter((p) => !lollipops.has(p.cls.id)),
+      labelRects,
+    )
+  }
 
   return canvasToString(canvas, {
     roleCanvas: rc,
@@ -2591,4 +2622,57 @@ function withLollipopPseudoClasses(parsed: ClassDiagram): {
   // first and hangs each interface name off its host afterwards.
   const classes = [...parsed.classes.filter((c) => !drop(c)), ...pseudo]
   return { diagram: { ...parsed, classes, relationships }, lollipops }
+}
+
+// ============================================================================
+// BT: the top-down drawing, flipped
+//
+// Flipping the whole canvas turns each box's border rows into valid borders
+// of the mirrored box (`└──┬──┘` becomes `┌──┴──┐`), but would also put its
+// compartments upside down, so the interior rows are put back as drawn. (A
+// namespace frame's title is drawn on the bottom border for BT, so the flip
+// lands it on the top one.)
+// ============================================================================
+
+function flipClassCanvas(
+  canvas: Canvas,
+  rc: RoleCanvas,
+  linkCanvas: LinkCanvas | undefined,
+  boxes: PlacedClass[],
+  labelRects: LabelRect[],
+): void {
+  const H = canvas[0]?.length ?? 0
+  // Interior rows of every box (between the two border rows), as drawn.
+  const saved = boxes.map((b) => {
+    const cols: { ch: string; role: CharRole | null; link: string | null }[][] =
+      []
+    for (let x = b.x; x < b.x + b.width; x++) {
+      const col = []
+      for (let y = b.y + 1; y < b.y + b.height - 1; y++) {
+        col.push({
+          ch: canvas[x]![y]!,
+          role: rc[x]![y] ?? null,
+          link: linkCanvas?.[x]?.[y] ?? null,
+        })
+      }
+      cols.push(col)
+    }
+    return cols
+  })
+
+  mirrorLabelRows(canvas, rc, labelRects, linkCanvas)
+  flipCanvasVertically(canvas, rc)
+  flipRoleCanvasVertically(rc)
+  if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
+
+  for (const [i, b] of boxes.entries()) {
+    const top = H - 1 - (b.y + b.height - 1)
+    for (const [cx, col] of saved[i]!.entries()) {
+      for (const [j, cell] of col.entries()) {
+        canvas[b.x + cx]![top + 1 + j] = cell.ch
+        rc[b.x + cx]![top + 1 + j] = cell.role as CharRole
+        if (linkCanvas) linkCanvas[b.x + cx]![top + 1 + j] = cell.link
+      }
+    }
+  }
 }

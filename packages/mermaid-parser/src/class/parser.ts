@@ -11,6 +11,7 @@ import {
   normalizeBrTags,
   applyClickStatement,
   splitClassShorthand,
+  toDirection,
   tryApplyClassAssignment,
   tryApplyClassDef,
   tryApplyCssClass,
@@ -190,6 +191,14 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     // --- click interaction: `click ClassName "url" "tooltip" _blank` / `click ClassName call fn()` ---
     if (/^click\s+/i.test(line)) {
       applyClickStatement(line, diagram.interactions)
+      continue
+    }
+
+    // --- `direction TB|TD|LR|BT|RL`: one top-level layout direction ---
+    // (a later statement wins, as in mermaid's classDb.setDirection).
+    const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
+    if (dirMatch) {
+      diagram.direction = toDirection(dirMatch[1]!)
       continue
     }
 

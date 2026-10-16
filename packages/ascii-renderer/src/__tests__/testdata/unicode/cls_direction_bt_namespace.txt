@@ -1,0 +1,44 @@
+classDiagram
+  direction BT
+  namespace Core {
+    class A
+    class B
+  }
+  class C
+  A <|-- B
+  B --> C : uses
+  Shape ()-- A
+  note for C "last"
+---
+                            
+                            
+   ┌───┐        ╭──────╮    
+   │ C │╌╌╌╌╌╌╌╌│ last │    
+   └───┘        ╰──────╯    
+     ▲                      
+     │                      
+     │                      
+   uses                     
+┌────│─ Core ─┐             
+│    │        │             
+│  ┌───┐      │             
+│  │ B │      │             
+│  └───┘      │             
+│    │        │             
+│    │        │             
+│    │        │             
+│   ┌┘        │             
+│   │         │             
+│   ▽         │             
+│ ┌───┐       │             
+│ │ A │       │             
+│ └───┘       │             
+│   │         │             
+│   │         │             
+│   │         │             
+│   │         │             
+│   │         │             
+│   ○         │             
+│ Shape       │             
+│             │             
+└─────────────┘             
