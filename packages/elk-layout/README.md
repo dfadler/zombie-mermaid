@@ -28,7 +28,7 @@ Do not bump it without re-running the oracle.
 
 ## Font strategy
 
-Label widths come from `src/font-advances.json`, per-character advances of mermaid's label
+Label widths come from `packages/elk-layout/src/font-advances.json`, per-character advances of mermaid's label
 font (`16px "trebuchet ms", verdana, arial, sans-serif`) measured in the oracle's Chromium. It
 is shipped (about 1 KB) rather than using `packages/core/src/text-metrics.ts` (Inter), which is
 1-6 px off per label and moves every node. "Exact" therefore means exact against this table's

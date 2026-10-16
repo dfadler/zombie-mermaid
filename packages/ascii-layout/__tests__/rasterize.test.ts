@@ -274,3 +274,67 @@ describe('ascii-layout: face policy (merge-then-grow)', () => {
     expect(s.r1 - s.r0 - 1).toBeGreaterThanOrEqual(8) // one interior cell per lane
   })
 })
+
+describe('ascii-layout: column cap (compress gaps, never boxes)', () => {
+  const all = [...cases, ...galleryCases]
+  const natural = new Map(
+    all.map((c) => [c, rasterizeLayout(c.layout, { maxCols: Infinity })]),
+  )
+  const sizes = (r: RasterResult) =>
+    r.boxes.map((b) => `${b.id}:${b.c1 - b.c0 + 1}x${b.r1 - b.r0 + 1}`)
+
+  it('every case fits the default 120 columns, or reports capped:false at natural width', () => {
+    for (const c of all) {
+      const nat = natural.get(c)!
+      if (c.r.capped) expect(c.r.stats.cols, c.name).toBeLessThanOrEqual(120)
+      else {
+        expect(nat.stats.cols, c.name).toBeGreaterThan(120)
+        expect(c.r.text, c.name).toBe(nat.text)
+      }
+      expect(c.r.stats.naturalCols, c.name).toBe(nat.stats.cols)
+    }
+  })
+  it('compresses only where needed, and some gallery cases really are compressed', () => {
+    const compressed = all.filter((c) => c.r.stats.gapKept < 1)
+    expect(compressed.length).toBeGreaterThanOrEqual(3)
+    for (const c of compressed) {
+      expect(c.r.capped, c.name).toBe(true)
+      expect(natural.get(c)!.stats.cols, c.name).toBeGreaterThan(120)
+    }
+  })
+  it('keeps box sizes, lines (no extra merges) and edge labels', () => {
+    for (const c of all) {
+      const nat = natural.get(c)!
+      expect(sizes(c.r), c.name).toEqual(sizes(nat))
+      expect(c.r.stats.lines, c.name).toBe(nat.stats.lines)
+      expect(c.r.mergedGroups, c.name).toEqual(nat.mergedGroups)
+      for (const e of c.layout.edges)
+        if (e.label && nat.text.includes(e.label))
+          expect(c.r.text, `${c.name} label ${e.label}`).toContain(e.label)
+    }
+  })
+  it('is an option: a tighter cap squeezes more, Infinity disables it', async () => {
+    const layout = await layoutFlowchart(
+      'flowchart LR\n  A[One] --> B[Two] --> C[Three]',
+    )
+    const wide = rasterizeLayout(layout, { maxCols: Infinity })
+    const tight = rasterizeLayout(layout, { maxCols: wide.stats.cols - 10 })
+    expect(wide).toMatchObject({ capped: true })
+    expect(wide.stats.gapKept).toBe(1)
+    expect(tight.capped).toBe(true)
+    expect(tight.stats.cols).toBeLessThanOrEqual(wide.stats.cols - 10)
+    expect(tight.stats.gapKept).toBeLessThan(1)
+    expect(tight.stats.brokenBorderCells).toBe(0)
+  })
+  it('cap unmet (boxes alone exceed it): natural render, capped:false, naturalCols reported', async () => {
+    const layout = await layoutFlowchart(
+      'graph LR\n  A[Step 1] --> B[Step 2] --> C[Step 3] --> D[Step 4] --> E[Step 5]',
+    )
+    const r = rasterizeLayout(layout)
+    const nat = rasterizeLayout(layout, { maxCols: Infinity })
+    expect(r.capped).toBe(false)
+    expect(r.stats.naturalCols).toBe(r.stats.cols)
+    expect(r.stats.cols).toBeGreaterThan(120)
+    expect(r.text).toBe(nat.text)
+  })
+})
