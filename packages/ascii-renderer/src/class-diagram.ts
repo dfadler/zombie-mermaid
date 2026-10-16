@@ -2403,7 +2403,9 @@ export function renderClassAscii(
       : { tl: '┌', tr: '┐', bl: '└', br: '┘' }
     const cells = toDisplayCells(` ${r.name} `)
     const titleY = bottomUp ? r.y1 : r.y0
-    const blank = (x: number): boolean => (canvas[x]?.[titleY] ?? ' ') === ' '
+    // Columns past the current canvas edge count as blank.
+    const blank = (x: number): boolean =>
+      !canvas[x] || canvas[x][titleY] === ' '
     // Leftmost start, one dash in from the corner, whose cells plus a dash
     // each side hold no stroke.
     let start = r.x0 + 2
@@ -2433,9 +2435,9 @@ export function renderClassAscii(
     put(r.x1, r.y0, c.tr, 'border')
     put(r.x0, r.y1, c.bl, 'border')
     put(r.x1, r.y1, c.br, 'border')
+    // The loop above left these cells blank, so the border pass wrote dashes there.
     for (const [i, cell] of cells.entries()) {
-      if (canvas[start + i]?.[titleY] === h)
-        setC(start + i, titleY, cell, 'text')
+      setC(start + i, titleY, cell, 'text')
     }
   }
 
@@ -2684,7 +2686,7 @@ function flipClassCanvas(
   boxes: PlacedClass[],
   labelRects: LabelRect[],
 ): void {
-  const H = canvas[0]?.length ?? 0
+  const H = canvas[0]!.length
   // Interior rows of every box (between the two border rows), as drawn.
   const saved = boxes.map((b) => {
     const cols: { ch: string; role: CharRole | null; link: string | null }[][] =

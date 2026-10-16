@@ -146,6 +146,35 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
     expect(out).not.toMatch(/[┊╌]/)
   })
 
+  it('leaves the BT note link out when the note lands left of its class', () => {
+    const out = ascii(
+      dir(
+        'BT',
+        'Shape <|-- Circle\n  Shape <|-- Square\n  note for Square "n"',
+      ),
+    )
+    expect(out).toContain('│ Square │')
+    expect(out).not.toMatch(/[┊╌]/)
+  })
+
+  it('starts the BT note link after a detour line beside its class', () => {
+    const out = ascii(
+      dir(
+        'BT',
+        'Shape <|-- Mid\n  Mid <|-- Top\n  Shape <|-- Top\n  note for Mid "n"',
+      ),
+    )
+    expect(out).toMatch(/│ Mid ││╌+╮/)
+  })
+
+  it('does not draw the BT note link over a relationship line it crosses', () => {
+    const out = ascii(
+      dir('BT', 'Sh <|-- Square\n  Sh <|-- Right\n  note for Square "n"'),
+    )
+    expect(out).toContain(' ┌───┌────────────┘')
+    expect(out).toMatch(/│ Square │╌+╮/)
+  })
+
   it('RenderOptions.direction still does not apply to class diagrams', () => {
     expect(ascii(dir('TB'), false, 'BT')).toBe(ascii(dir('TB')))
   })
