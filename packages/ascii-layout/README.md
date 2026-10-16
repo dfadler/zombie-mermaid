@@ -50,7 +50,7 @@ merged.
 **Merged lines hide edge multiplicity**: three `A --> B` edges can render as one line.
 `RasterResult.mergedGroups` lists the edge ids behind each merged line and `RasterResult.note`
 carries a sentence for callers to show. A grow-only "show every edge" policy (#2183) plugs in at
-the same place (`POLICIES` in `src/rasterize.ts`).
+the same place (`POLICIES` in `packages/ascii-layout/src/rasterize.ts`).
 
 ## Column cap
 
