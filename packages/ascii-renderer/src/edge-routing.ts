@@ -634,13 +634,19 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
       need.set(n.index, at)
     }
   }
+  // #2071: a self-loop re-enters a node by the same side faces, so its end
+  // needs a cell of its own beside the lanes' (else two ends share a stem and
+  // close a box).
+  const looped = new Set(
+    graph.edges.filter((e) => e.from === e.to).map((e) => e.from.index),
+  )
   for (const group of laneGroups) {
     if (group[0]!.clusterSource) continue
     const lr = graph.config.graphDirection === 'LR'
     const sizes = lr ? graph.columnWidth : graph.rowHeight
     for (const n of [group[0]!.from, group[0]!.to]) {
       const { siblings, pairs } = need.get(n.index)!
-      const total = siblings + pairs.size - 1
+      const total = siblings + pairs.size - 1 + (looped.has(n.index) ? 1 : 0)
       if (total < 4) continue
       const at = requireGridCoord(n)[lr ? 'x' : 'y'] + 1
       sizes.set(at, Math.max(sizes.get(at)!, total))

@@ -247,12 +247,62 @@ const CASES: Record<string, string> = {
   n1 --> n0
   n0 --> n1
   n1 --> n0`,
+  // #2071: the long edge runs outside the lanes of the nodes it passes.
+  '#2071 back edge round the lanes of the nodes it passes (TD)': `flowchart TD
+  n0["n0"]
+  n1["n1"]
+  n2["n2"]
+  n2 --> n0
+  n1 --> n1
+  n1 --> n1
+  n1 --> n0
+  n0 --> n1
+  n1 --> n0
+  n1 --> n0
+  n0 --> n1
+  n1 --> n2
+  n1 --> n2
+  n1 --> n2
+  n1 --> n2`,
+  '#2071 duplicate skip lanes round shorter lanes and loops (LR)': `flowchart LR
+  n0["n0"]
+  n1["n1"]
+  n2["n2"]
+  n2 --> n1
+  n1 --> n1
+  n1 --> n0
+  n2 --> n0
+  n2 --> n0
+  n2 --> n2
+  n2 --> n2
+  n1 --> n2
+  n1 --> n2
+  n0 --> n1
+  n0 --> n1
+  n0 --> n0`,
+  // #2071: six lanes and a loop on one face: every end gets a cell.
+  '#2071 loops and many lanes on one face (RL)': `flowchart RL
+  n0["n0"]
+  n1["n1"]
+  n1 --> n0
+  n0 --> n1
+  n1 --> n0
+  n1 --> n0
+  n1 --> n1
+  n0 --> n0
+  n0 --> n1
+  n1 --> n0
+  n0 --> n1
+  n0 --> n1`,
 }
 
 const NODES: Record<string, number> = {
   '#2025 decision self-loop + duplicates + labeled back edge': 4,
   '#2028 duplicate self-loops': 1,
   '#2030 RL reciprocal + duplicate edges': 2,
+  '#2071 back edge round the lanes of the nodes it passes (TD)': 3,
+  '#2071 duplicate skip lanes round shorter lanes and loops (LR)': 3,
+  '#2071 loops and many lanes on one face (RL)': 2,
 }
 
 /**
@@ -643,6 +693,10 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
   // now none of the former, and the totals below (crossings the grid
   // cannot route round) are a ratchet. #2072: each edge keeps a lane of its
   // own, as in Mermaid, so lanes that used to merge now cross (9 -> 15).
+  // #2071: lanes route shortest first so the longer ones run outside them, a
+  // long plain edge over the lanes it encloses likewise, and a self-loop's
+  // end counts toward the face length (15 -> 4). What is left is seed 32, a
+  // diagonal group whose lanes run through the box of the node between.
   it('random duplicate/reciprocal/self-loop graphs: no broken arms, few boxes', () => {
     let cycles = 0
     let heads = 0
@@ -658,7 +712,7 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
       cycles += strokeComponents(out, nodeBoxes(out)).cycles
       heads += headsOnExitStems(out).length
     }
-    expect(cycles).toBeLessThanOrEqual(15)
+    expect(cycles).toBeLessThanOrEqual(4)
     expect(heads).toBeLessThanOrEqual(3)
   })
 })

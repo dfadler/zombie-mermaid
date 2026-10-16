@@ -74,6 +74,44 @@ import { displayWidth } from './display-width.ts'
 // edge-bundling.ts) don't need to change.
 export { requireGridCoord }
 
+/**
+ * The edges routed after all others, shortest span first (#2071): offset lanes,
+ * and an unlabelled plain edge that skips a level over a node whose lanes it
+ * encloses. They run in the gutter beside the nodes they pass, and lanes only
+ * grow outward, so the longer one must run farther out than the shorter ones
+ * nested inside it; routed first, it took the inner track and every nested
+ * lane crossed it.
+ */
+function outerRoutes(graph: AsciiGraph): AsciiEdge[] {
+  const spans = (e: AsciiEdge) => {
+    const a = requireGridCoord(e.from)
+    const b = requireGridCoord(e.to)
+    return { a, b, len: Math.abs(a.x - b.x) + Math.abs(a.y - b.y) }
+  }
+  const lanes = graph.edges.filter((e) => e.parallelLane?.index)
+  const encloses = (e: AsciiEdge): boolean => {
+    if (e.faceLanePlan || e.parallelLane || e.from === e.to) return false
+    if (e.bundle || e.text) return false
+    const { a, b } = spans(e)
+    // Neighbouring levels are 4 grid units apart (3 for the node, 1 gutter).
+    const [lo, hi] = [a, b]
+      .map((c) => (a.x === b.x ? c.y : c.x))
+      .sort((u, v) => u - v) as [number, number]
+    return lanes.some((l) => {
+      const { a: p, b: q } = spans(l)
+      const col = a.x === b.x && p.x === a.x && q.x === a.x
+      const row = a.y === b.y && p.y === a.y && q.y === a.y
+      const [m, n] = col ? [p.y, q.y] : [p.x, q.x]
+      return (
+        (col || row) && hi - lo > 4 && m >= lo && m <= hi && n >= lo && n <= hi
+      )
+    })
+  }
+  return graph.edges
+    .filter((e) => !e.faceLanePlan && (e.parallelLane?.index || encloses(e)))
+    .sort((x, y) => spans(x).len - spans(y).len)
+}
+
 // ============================================================================
 // Grid coordinate → drawing coordinate conversion
 // ============================================================================
@@ -2066,10 +2104,11 @@ export function createMapping(graph: AsciiGraph): void {
   // Offset lanes go last so they can keep off every other edge's runs (#2025).
   // Flow-axis face lanes go first: their gutter slots are planned, so nothing
   // routed later may take them (#2121).
+  const outer = new Set(outerRoutes(graph))
   const lanesLast = [
     ...graph.edges.filter((e) => e.faceLanePlan),
-    ...graph.edges.filter((e) => !e.faceLanePlan && !e.parallelLane?.index),
-    ...graph.edges.filter((e) => !e.faceLanePlan && e.parallelLane?.index),
+    ...graph.edges.filter((e) => !e.faceLanePlan && !outer.has(e)),
+    ...outer,
   ]
   for (const edge of lanesLast) {
     // Skip edges that were already routed as part of a bundle
