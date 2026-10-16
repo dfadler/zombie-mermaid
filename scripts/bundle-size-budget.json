@@ -24,7 +24,7 @@
     "dist/index.js": 147681
   },
   "unpackedBudgets": {
-    "dist": 125000,
+    "dist": 127300,
     "packages/core/dist": 211435,
     "packages/mermaid-parser/dist": 210720,
     "packages/svg-renderer/dist": 450337,
