@@ -115,6 +115,25 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
     expect(out.slice(square + 1, note).some((l) => l.includes('┊'))).toBe(true)
   })
 
+  it('draws the BT note link with ASCII-only characters under useAscii', () => {
+    const out = ascii(
+      dir('BT', 'Shape <|-- Square\n  note for Square "all sides equal"'),
+      true,
+    )
+    expect(out).toContain(':')
+    expect(out).not.toMatch(/[┊╮╯╌]/)
+  })
+
+  it('keeps the BT note link clear of the boxes when the class is wider', () => {
+    const out = ascii(
+      dir('BT', 'Shape <|-- Square\n  note for Square "all sides equal"'),
+    ).split('\n')
+    const square = out.findIndex((l) => l.includes('│ Square │'))
+    expect(out[square]).toMatch(/│ Square │╌+╮/)
+    expect(out.find((l) => l.includes('│ Shape │'))).toContain('│ Shape │ ')
+    expect(out.join('\n')).toContain('│ all sides equal │')
+  })
+
   it('RenderOptions.direction still does not apply to class diagrams', () => {
     expect(ascii(dir('TB'), false, 'BT')).toBe(ascii(dir('TB')))
   })

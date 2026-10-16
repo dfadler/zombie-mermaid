@@ -2565,22 +2565,36 @@ function decorateAsciiNotes(
     // row; anything else means the layout changed under us — skip the line
     // rather than draw one through the middle of the diagram.
     if (!cls) continue
-    if (cls.y > p.y + p.height - 1 && cls.x + cls.width <= p.x) {
+    if (cls.y >= p.y + p.height && cls.x + cls.width <= p.x) {
       // BT: the note sits on an earlier level, up and to the right of its
-      // class. Run the link up the class's right edge, then across into the
-      // note's middle row.
-      const x = cls.x + cls.width - 2
-      const midY = p.y + 1
-      for (let y = midY + 1; y < cls.y; y++) {
-        if (canvas[x]?.[y] === ' ') setC(x, y, useAscii ? ':' : '┊', 'line')
+      // class. Run the link out of the class's right side, then along the
+      // note's centre column up to the note; leave it out if another box is
+      // in that path.
+      const x0 = cls.x + cls.width
+      const x = p.x + (p.width >> 1)
+      const y = cls.y + 1
+      const up = useAscii ? ':' : '┊'
+      const top = p.y + p.height
+      if (
+        [...placed.values()].some(
+          (o) =>
+            o !== p &&
+            o !== cls &&
+            o.x <= x &&
+            o.x + o.width > x0 &&
+            o.y <= y &&
+            o.y + o.height > top,
+        )
+      )
+        continue
+      for (let cx = x0; cx < x; cx++) {
+        if (canvas[cx]?.[y] === ' ') setC(cx, y, dash, 'line')
       }
-      if (canvas[x]?.[midY] === ' ') {
-        // Drawn top-down, flipped to ╰ with the rest of the canvas.
-        setC(x, midY, useAscii ? ':' : '╭', 'line')
+      for (let cy = top; cy < y; cy++) {
+        if (canvas[x]?.[cy] === ' ') setC(x, cy, up, 'line')
       }
-      for (let cx = x + 1; cx < p.x; cx++) {
-        if (canvas[cx]?.[midY] === ' ') setC(cx, midY, dash, 'line')
-      }
+      // Drawn top-down, the corner flips to ╮ with the rest of the canvas.
+      setC(x, y, useAscii ? up : '╯', 'line')
       continue
     }
     if (cls.x + cls.width > p.x || cls.y !== p.y) continue
