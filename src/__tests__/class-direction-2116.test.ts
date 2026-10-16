@@ -175,6 +175,17 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
     expect(out).toMatch(/│ Square │╌+╮/)
   })
 
+  it('keeps the BT note link when a taller box only sits between its segments', () => {
+    const out = ascii(
+      dir(
+        'BT',
+        'class Shape {\n    +area() double\n    +perimeter() double\n    +describe() string\n  }\n  Shape <|-- Sq\n  note for Sq "n"',
+      ),
+    )
+    expect(out).toMatch(/│ Sq │╌+╮/)
+    expect(out).toContain('┊')
+  })
+
   it('RenderOptions.direction still does not apply to class diagrams', () => {
     expect(ascii(dir('TB'), false, 'BT')).toBe(ascii(dir('TB')))
   })

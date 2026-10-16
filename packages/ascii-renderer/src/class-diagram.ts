@@ -2577,15 +2577,21 @@ function decorateAsciiNotes(
       const y = cls.y + 1
       const up = useAscii ? ':' : '┊'
       const top = p.y + p.height
+      // The link is the row segment x0..x at y plus the column segment top..y
+      // at x; only a box on one of those segments is in the way.
+      const hits = (
+        o: PlacedClass,
+        xa: number,
+        xb: number,
+        ya: number,
+        yb: number,
+      ) => o.x <= xb && o.x + o.width > xa && o.y <= yb && o.y + o.height > ya
       if (
         [...placed.values()].some(
           (o) =>
             o !== p &&
             o !== cls &&
-            o.x <= x &&
-            o.x + o.width > x0 &&
-            o.y <= y &&
-            o.y + o.height > top,
+            (hits(o, x0, x, y, y) || hits(o, x, x, top, y)),
         )
       )
         continue
