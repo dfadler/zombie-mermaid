@@ -1,7 +1,8 @@
 /**
  * #2102: a lone labelled vertical edge keeps its label off the node borders at
- * a small `paddingY`. The gap grows to hold the label rows, an arrowhead and a
- * plain stroke cell (goldens: testdata/*\/label_short_gap_*_2102.txt). The SVG
+ * a small `paddingY`, and draws it ON the stroke as Mermaid does (not beside
+ * it). The gap grows to hold the label rows, a plain stroke cell above, and a
+ * plain stroke cell plus the arrowhead below (goldens: testdata/*\/label_short_gap_*_2102.txt). The SVG
  * renderer has no `paddingY` and is untouched.
  */
 import { describe, it, expect } from 'vitest'
@@ -34,6 +35,23 @@ describe('label off the borders at small paddingY (#2102)', () => {
           // The stroke (or the border junction it leaves) sits above the label.
           const first = lines.findIndex((l) => l.includes(words[0]!))
           expect(lines[first - 1]).toMatch(/[|│+┬]/)
+          // Inline: the label is centred on the stroke column, and the stroke
+          // carries on in that column on the rows just above and below it.
+          const col =
+            lines.findIndex((l) => /^[+└]/.test(l)) >= 0
+              ? lines[first - 1]!.search(/[|│+┬]/)
+              : -1
+          const last = first + words.length - 1
+          for (let r = first; r <= last; r++) {
+            const l = lines[r]!
+            const w = words[r - first]!
+            const at = l.indexOf(w)
+            expect(col, `${w} covers the stroke column`).toBeGreaterThanOrEqual(
+              at,
+            )
+            expect(col).toBeLessThan(at + w.length)
+          }
+          expect(lines[last + 1]![col]).toMatch(/[|│]/)
         })
       }
     }

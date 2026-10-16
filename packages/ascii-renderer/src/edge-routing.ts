@@ -449,12 +449,13 @@ export function spreadCandidates(
       const a = requireGridCoord(from)
       const b = requireGridCoord(to)
       // #2102: a lone labelled edge between adjacent stacked nodes needs its
-      // label rows, an arrowhead row and a plain stroke row in the gap, or
-      // the label lands on a box border at a small `paddingY`.
-      // `rows + 3` (setColumnWidth) is then label rows + 2.
+      // label rows, a plain stroke row above, and a plain stroke row plus the
+      // arrowhead below, so the label sits ON the stroke (onStrokePlacement,
+      // as Mermaid centres it) rather than on a box border or beside it at a
+      // small `paddingY`. `rows + 3` (setColumnWidth) is then label rows + 3.
       const text = group.length === 1 ? group[0]!.text : ''
       if (text && a.x === b.x && Math.abs(a.y - b.y) <= 4) {
-        const rows = splitLines(text).length - 1
+        const rows = splitLines(text).length
         const entry = { vertical: true, strokes: 1, rows }
         out.set(from, [
           ...(out.get(from) ?? []),
