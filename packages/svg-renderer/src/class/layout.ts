@@ -393,10 +393,12 @@ function buildClassElkGraph(
     id: 'root',
     layoutOptions: {
       ...baseElkLayoutOptions({
-        // Class diagrams have no `direction` concept — they always lay out
-        // top-down. See ELK_DIRECTION_FALLBACK for why that default is
-        // per-diagram-type rather than shared with ER's.
-        direction: directionToElk(undefined, ELK_DIRECTION_FALLBACK.class),
+        // `direction` statement, else top-down. See ELK_DIRECTION_FALLBACK
+        // for why that default is per-diagram-type rather than shared.
+        direction: directionToElk(
+          diagram.direction,
+          ELK_DIRECTION_FALLBACK.class,
+        ),
         nodeSpacing: CLS.nodeSpacing,
         layerSpacing: CLS.layerSpacing,
         padding: CLS.padding,

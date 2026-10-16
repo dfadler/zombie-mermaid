@@ -2668,4 +2668,52 @@ pie title Pets adopted by volunteers
   Teacher "1" --> "*" Lab
   Course "1" --> "1" Syllabus : covers<br>topics`,
   },
+  {
+    title: 'Class: Direction LR',
+    category: 'Class',
+    description:
+      '`direction LR` lays the classes out left to right, as mermaid.js does (#2116): each level is a column and the markers face the new axis. The ASCII panel draws class diagrams top-down for LR and RL; BT is drawn.',
+    source: `classDiagram
+  direction LR
+  class Animal {
+    +String name
+    +eat() void
+  }
+  Animal <|-- Dog
+  Animal <|-- Cat
+  Animal "1" --> "*" Toy : owns`,
+  },
+  {
+    title: 'Class: Direction BT',
+    category: 'Class',
+    description:
+      '`direction BT` stacks the classes bottom to top (#2116): the parent sits at the bottom, a lollipop name hangs below its host and a note keeps its class. The boxes stay upright in both panels.',
+    source: `classDiagram
+  direction BT
+  class Shape {
+    <<abstract>>
+    +area() double
+  }
+  Shape <|-- Circle
+  Shape <|-- Square
+  Shape ()-- Drawable
+  note for Square "all sides equal"`,
+  },
+  {
+    title: 'Class: Direction RL with Namespaces',
+    category: 'Class',
+    description:
+      '`direction RL` runs right to left and a namespace frame still wraps its classes (#2116). The ASCII panel draws class diagrams top-down for RL.',
+    source: `classDiagram
+  direction RL
+  namespace Domain {
+    class Order
+    class Item
+  }
+  namespace Infra {
+    class Repo
+  }
+  Order "1" --> "*" Item : contains
+  Repo ..> Order : stores`,
+  },
 ]

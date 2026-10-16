@@ -184,6 +184,16 @@ circle at both ends, in mermaid and here.
 
 Dotted lollipops (`()..`, `..()`), which mermaid accepts, are a parse error here.
 
+## Class: direction in ASCII
+
+`direction LR` and `direction RL` in a class diagram change the SVG layout
+([#2116](https://github.com/dfadler/zombie-mermaid/issues/2116)) but not the ASCII one, which stays
+top-down. `direction BT` is drawn in both. The ASCII class renderer places classes in level rows
+and routes every relationship, label and cardinality on that assumption, so `BT` is the finished
+drawing flipped vertically (boxes kept upright) while `LR`/`RL` would need a column layout of
+their own, as a separate renderer. mermaid.js 12.1.0 and 12.2.0 lay `LR` out in columns and `RL`
+as its mirror. The ER ASCII renderer has a similar approximation.
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams

@@ -23,8 +23,10 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   AsciiConfig,
+  LabelRect,
   Canvas,
   CharRole,
+  RoleCanvas,
   AsciiTheme,
   ColorMode,
 } from './types.ts'
@@ -37,11 +39,18 @@ import {
   write,
   isJunctionChar,
   mergeJunctions,
+  flipCanvasVertically,
+  flipRoleCanvasVertically,
+  mirrorLabelRows,
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { allocateTerritory } from './territory.ts'
 import type { Territory } from './territory.ts'
-import { markBoxLabelLinks, mkLinkCanvas } from './hyperlinks.ts'
+import {
+  flipLinkCanvasVertically,
+  markBoxLabelLinks,
+  mkLinkCanvas,
+} from './hyperlinks.ts'
 import type { LinkCanvas } from './hyperlinks.ts'
 import { safeHref, splitStatements } from '@zombie-mermaid/core'
 import { getCorners } from './shapes/corners.ts'
@@ -384,6 +393,10 @@ export function renderClassAscii(
     parseClassDiagram(lines),
   )
   const { diagram, notesById } = withNotePseudoClasses(lollipopDiagram)
+  // Only BT is honoured here: it is the top-down layout flipped at the end
+  // (boxes kept upright). LR and RL need a column layout this level-row
+  // renderer does not have, so they stay top-down. See docs/diagrams.md.
+  const bottomUp = diagram.direction === 'BT'
 
   if (diagram.classes.length === 0) return ''
 
@@ -504,7 +517,9 @@ export function renderClassAscii(
   // A `note for X` note has no relationships, so it landed on level 0 above;
   // move it onto its class's row so the row placement below puts it right
   // beside that class.
-  pinNoteLevels(notesById, level)
+  // Namespace frames keep the note beside its class: a note moved a level up
+  // could land inside another frame, with its link crossing the border.
+  pinNoteLevels(notesById, level, bottomUp && frames.length === 0)
 
   // --- Position classes by level ---
   // Group classes by level
@@ -983,7 +998,9 @@ export function renderClassAscii(
     const p = placed.get(id)
     const host = placed.get(lolli.host)
     if (!p || !host) continue
-    const x = host.x + Math.floor((host.width - p.width) / 2)
+    // Match the floor(width / 2) centre column edges attach to, so an odd/even
+    // width pair still gets a straight stem instead of a one-column jog.
+    const x = host.x + Math.floor(host.width / 2) - Math.floor(p.width / 2)
     const clear = [...placed.values()].every(
       (o) =>
         o === p ||
@@ -2209,6 +2226,7 @@ export function renderClassAscii(
   // the same midpoint row (issue #447, "teaches" truncated to "tea" and
   // merged into a box-drawing corner). Running all lines first means no
   // line write can ever land on top of label text again.
+  const labelRects: LabelRect[] = []
   for (const [relIndex, rel] of diagram.relationships.entries()) {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -2244,6 +2262,7 @@ export function renderClassAscii(
       const startY = labelY - halfHeight
 
       const territory = territoryByRel.get(rel)!
+      const rect: LabelRect = { x0: Infinity, y0: startY, x1: -1, y1: startY }
 
       for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
         const y = startY + lineIdx
@@ -2284,9 +2303,13 @@ export function renderClassAscii(
           const lx = labelStart + i
           if (lx >= 0 && y >= 0) {
             setC(lx, y, cells[i]!, 'text')
+            rect.x0 = Math.min(rect.x0, lx)
+            rect.x1 = Math.max(rect.x1, lx)
+            rect.y1 = Math.max(rect.y1, y)
           }
         }
       }
+      if (lines.length > 1 && rect.x1 >= 0) labelRects.push(rect)
     }
   }
 
@@ -2379,7 +2402,10 @@ export function renderClassAscii(
       ? { tl: '+', tr: '+', bl: '+', br: '+' }
       : { tl: '┌', tr: '┐', bl: '└', br: '┘' }
     const cells = toDisplayCells(` ${r.name} `)
-    const blank = (x: number): boolean => (canvas[x]?.[r.y0] ?? ' ') === ' '
+    const titleY = bottomUp ? r.y1 : r.y0
+    // Columns past the current canvas edge count as blank.
+    const blank = (x: number): boolean =>
+      !canvas[x] || canvas[x][titleY] === ' '
     // Leftmost start, one dash in from the corner, whose cells plus a dash
     // each side hold no stroke.
     let start = r.x0 + 2
@@ -2409,8 +2435,9 @@ export function renderClassAscii(
     put(r.x1, r.y0, c.tr, 'border')
     put(r.x0, r.y1, c.bl, 'border')
     put(r.x1, r.y1, c.br, 'border')
+    // The loop above left these cells blank, so the border pass wrote dashes there.
     for (const [i, cell] of cells.entries()) {
-      if (canvas[start + i]?.[r.y0] === h) setC(start + i, r.y0, cell, 'text')
+      setC(start + i, titleY, cell, 'text')
     }
   }
 
@@ -2418,6 +2445,16 @@ export function renderClassAscii(
   // each attached note to its class. Last, so a connector never lands on
   // top of a relationship line or label.
   decorateAsciiNotes(notesById, placed, canvas, useAscii, setC)
+
+  if (bottomUp) {
+    flipClassCanvas(
+      canvas,
+      rc,
+      linkCanvas,
+      [...placed.values()].filter((p) => !lollipops.has(p.cls.id)),
+      labelRects,
+    )
+  }
 
   return canvasToString(canvas, {
     roleCanvas: rc,
@@ -2479,15 +2516,21 @@ function withNotePseudoClasses(parsed: ClassDiagram): {
   return { diagram: { ...parsed, classes }, notesById }
 }
 
-/** Put each attached note on the same level as its class. */
+/**
+ * Put each attached note on the same level as its class. In BT mermaid puts
+ * it one rank toward the roots instead (below the class once flipped), so a
+ * non-root class's note moves up one level here.
+ */
 function pinNoteLevels(
   notesById: Map<string, ClassNote>,
   level: Map<string, number>,
+  bottomUp: boolean,
 ): void {
   for (const [id, note] of notesById) {
     if (note.forClass === undefined) continue
     const classLevel = level.get(note.forClass)
-    if (classLevel !== undefined) level.set(id, classLevel)
+    if (classLevel === undefined) continue
+    level.set(id, bottomUp && classLevel > 0 ? classLevel - 1 : classLevel)
   }
 }
 
@@ -2523,7 +2566,46 @@ function decorateAsciiNotes(
     // By construction the note sits directly right of its class on the same
     // row; anything else means the layout changed under us — skip the line
     // rather than draw one through the middle of the diagram.
-    if (!cls || cls.x + cls.width > p.x || cls.y !== p.y) continue
+    if (!cls) continue
+    if (cls.y >= p.y + p.height && cls.x + cls.width <= p.x) {
+      // BT: the note sits on an earlier level, up and to the right of its
+      // class. Run the link out of the class's right side, then along the
+      // note's centre column up to the note; leave it out if another box is
+      // in that path.
+      const x0 = cls.x + cls.width
+      const x = p.x + (p.width >> 1)
+      const y = cls.y + 1
+      const up = useAscii ? ':' : '┊'
+      const top = p.y + p.height
+      // The link is the row segment x0..x at y plus the column segment top..y
+      // at x; only a box on one of those segments is in the way.
+      const hits = (
+        o: PlacedClass,
+        xa: number,
+        xb: number,
+        ya: number,
+        yb: number,
+      ) => o.x <= xb && o.x + o.width > xa && o.y <= yb && o.y + o.height > ya
+      if (
+        [...placed.values()].some(
+          (o) =>
+            o !== p &&
+            o !== cls &&
+            (hits(o, x0, x, y, y) || hits(o, x, x, top, y)),
+        )
+      )
+        continue
+      for (let cx = x0; cx < x; cx++) {
+        if (canvas[cx]?.[y] === ' ') setC(cx, y, dash, 'line')
+      }
+      for (let cy = top; cy < y; cy++) {
+        if (canvas[x]?.[cy] === ' ') setC(x, cy, up, 'line')
+      }
+      // Drawn top-down, the corner flips to ╮ with the rest of the canvas.
+      setC(x, y, useAscii ? up : '╯', 'line')
+      continue
+    }
+    if (cls.x + cls.width > p.x || cls.y !== p.y) continue
     const y = cls.y + 1
     for (let x = cls.x + cls.width; x < p.x; x++) {
       if (canvas[x]?.[y] === ' ') setC(x, y, dash, 'line')
@@ -2591,4 +2673,57 @@ function withLollipopPseudoClasses(parsed: ClassDiagram): {
   // first and hangs each interface name off its host afterwards.
   const classes = [...parsed.classes.filter((c) => !drop(c)), ...pseudo]
   return { diagram: { ...parsed, classes, relationships }, lollipops }
+}
+
+// ============================================================================
+// BT: the top-down drawing, flipped
+//
+// Flipping the whole canvas turns each box's border rows into valid borders
+// of the mirrored box (`└──┬──┘` becomes `┌──┴──┐`), but would also put its
+// compartments upside down, so the interior rows are put back as drawn. (A
+// namespace frame's title is drawn on the bottom border for BT, so the flip
+// lands it on the top one.)
+// ============================================================================
+
+function flipClassCanvas(
+  canvas: Canvas,
+  rc: RoleCanvas,
+  linkCanvas: LinkCanvas | undefined,
+  boxes: PlacedClass[],
+  labelRects: LabelRect[],
+): void {
+  const H = canvas[0]!.length
+  // Interior rows of every box (between the two border rows), as drawn.
+  const saved = boxes.map((b) => {
+    const cols: { ch: string; role: CharRole | null; link: string | null }[][] =
+      []
+    for (let x = b.x; x < b.x + b.width; x++) {
+      const col = []
+      for (let y = b.y + 1; y < b.y + b.height - 1; y++) {
+        col.push({
+          ch: canvas[x]![y]!,
+          role: rc[x]![y] ?? null,
+          link: linkCanvas?.[x]?.[y] ?? null,
+        })
+      }
+      cols.push(col)
+    }
+    return cols
+  })
+
+  mirrorLabelRows(canvas, rc, labelRects, linkCanvas)
+  flipCanvasVertically(canvas, rc)
+  flipRoleCanvasVertically(rc)
+  if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
+
+  for (const [i, b] of boxes.entries()) {
+    const top = H - 1 - (b.y + b.height - 1)
+    for (const [cx, col] of saved[i]!.entries()) {
+      for (const [j, cell] of col.entries()) {
+        canvas[b.x + cx]![top + 1 + j] = cell.ch
+        rc[b.x + cx]![top + 1 + j] = cell.role as CharRole
+        if (linkCanvas) linkCanvas[b.x + cx]![top + 1 + j] = cell.link
+      }
+    }
+  }
 }
