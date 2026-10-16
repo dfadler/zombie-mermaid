@@ -49,7 +49,7 @@ merged.
 
 **Merged lines hide edge multiplicity**: three `A --> B` edges can render as one line.
 `RasterResult.mergedGroups` lists the edge ids behind each merged line and `RasterResult.note`
-carries a sentence for callers to show. Policies live in `POLICIES` in `src/rasterize.ts`.
+carries a sentence for callers to show. Policies live in `POLICIES` in `packages/ascii-layout/src/rasterize.ts`.
 
 ### `grow-only`: show every edge (#2183)
 
