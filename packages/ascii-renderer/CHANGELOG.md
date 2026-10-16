@@ -1,5 +1,20 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.7.1
+
+### Patch Changes
+
+- [#2149](https://github.com/dfadler/zombie-mermaid/pull/2149) [`8a8c482`](https://github.com/dfadler/zombie-mermaid/commit/8a8c482cd45570fb76c7757986236d1170b0d301) Thanks [@dfadler](https://github.com/dfadler)! - fix(ascii): give every edge into a crowded top face a stroke and an arrowhead of its own ([#2100](https://github.com/dfadler/zombie-mermaid/issues/2100)). Output change: in a TD/BT flowchart, a node that takes edges from two or more sources above it and also sends an edge up to a node above it (`a --> c`, `b --> c` beside `c --> a`) no longer bundles those arrivals onto one trunk with one shared arrowhead. The node is widened so each end has a cell, the reciprocal pair sits either side of the centre, and the other arrivals land beyond them. A fan-out into such a node is split too, so `b --> a` and `b --> c` leave `b` on their own strokes. Fan-ins with labels that land on a port which also starts an edge now keep one arrowhead each instead of merging. Duplicate (parallel) edges, LR/RL layouts and every other gallery sample and golden are unchanged. Self-loop placement (left face in mermaid TD/BT, top face in LR/RL) is a documented difference ([#2101](https://github.com/dfadler/zombie-mermaid/issues/2101)). Checked against mermaid 12.1.0 and 12.2.0.
+
+  Versioning: patch per docs/decisions/versioning-and-deprecation-policy-1568.md section 1, "Output changes": layout, spacing and glyph changes are not documented output contracts, and this corrects merged arrowheads.
+
+- [#2148](https://github.com/dfadler/zombie-mermaid/pull/2148) [`b55b7fa`](https://github.com/dfadler/zombie-mermaid/commit/b55b7fae2b576173e6b438094d21238119947ace) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII flowcharts now order sibling subgraphs and orient feedback edges the way mermaid 12 and the SVG renderer do ([#2111](https://github.com/dfadler/zombie-mermaid/issues/2111)). Sibling subgraphs tied by an edge or a shared outside node keep declaration order (Nested Subgraphs lists US East before US West), and an edge that closes a cycle through a subgraph boundary is ranked as running the other way (CI/CD puts `Fix & Retry` beside `Build Image`). Titles of frames pushed back to their natural width are rechecked against entering edges. The SVG back-edge helpers moved to `@zombie-mermaid/core` so both renderers share them. Patch, not minor: a layout fix with no documented output contract involved (versioning policy, section 1, "Output changes").
+
+- [#2146](https://github.com/dfadler/zombie-mermaid/pull/2146) [`d88b061`](https://github.com/dfadler/zombie-mermaid/commit/d88b0619fd0d5cd5f7e8c59abb0ad1dc2029eec1) Thanks [@dfadler](https://github.com/dfadler)! - fix(ascii): render ER attribute comments ([#2127](https://github.com/dfadler/zombie-mermaid/issues/2127)). Output change: an attribute with a comment, such as `string a PK "the key"`, now ends its row with the comment in quotes (`string a PK "the key"`), where it was dropped before. Mermaid shows the comment as a fourth column and does not wrap it; neither does this, so the entity box grows to the widest row, and a `<br>` becomes a space. Entities without comments render exactly as before. Patch because it fixes missing content and no documented output contract (accessibility, theming keys, documented options) changes (versioning policy section 1, "Output changes"). Checked against mermaid 12.1.0 and 12.2.0.
+- Updated dependencies [[`b55b7fa`](https://github.com/dfadler/zombie-mermaid/commit/b55b7fae2b576173e6b438094d21238119947ace), [`f5e5454`](https://github.com/dfadler/zombie-mermaid/commit/f5e5454136070993bb1552dec3616c2750a6f15f)]:
+  - @zombie-mermaid/core@5.7.1
+  - @zombie-mermaid/mermaid-parser@5.7.1
+
 ## 5.7.0
 
 ### Minor Changes

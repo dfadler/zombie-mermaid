@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.7.1
+
+### Patch Changes
+
+- [#2147](https://github.com/dfadler/zombie-mermaid/pull/2147) [`6b64ead`](https://github.com/dfadler/zombie-mermaid/commit/6b64eadc2f2cff2263b4ea2f955412eca19e2f1f) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams in ASCII/Unicode now draw relationship cardinalities (`A "1" --> "*" B`), which they used to drop while the SVG and mermaid.js drew them. Each cardinality sits beside its own end of the line, on the row next to its box and to the right of the line (to the left when that side is taken), and is only ever written into blank cells, so it never covers a marker, label, border or another line. The gap between two levels grows to at least three rows (five for a two-line label) when a relationship in it carries a cardinality, so each end keeps its own row. The unicode and `--ascii` charsets place them identically. Semver level: patch, a pure fix of dropped content under section 1 of the versioning policy ("Output changes": ASCII output changes are minor or patch for a pure fix, and no documented output contract changes). Output change: ASCII/Unicode for class diagrams whose relationships have cardinalities; every other diagram, every class diagram without cardinalities and every SVG are unchanged. Checked against mermaid 12.1.0 and 12.2.0, which draw the same cardinalities next to the ends. Fixes [#2114](https://github.com/dfadler/zombie-mermaid/issues/2114).
+
+- [#2145](https://github.com/dfadler/zombie-mermaid/pull/2145) [`f5e5454`](https://github.com/dfadler/zombie-mermaid/commit/f5e5454136070993bb1552dec3616c2750a6f15f) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams (SVG): `A ()-- B` and `B --() A` now draw the interface the way mermaid.js does (12.1.0 and 12.2.0 agree): the name sits above or below its host with a small circle and a stem between them, instead of a class box with a circle marker on it. A class used only as an interface end gets no box; one with members, an annotation, another relationship, a note or a namespace keeps it. `()--()` is unchanged. Output change: SVG for any diagram with a one-ended lollipop moves; no other diagram changes. `PositionedClassRelationship` gains an optional `interfaceLabel` (the name's box) for these lines. Closes [#2135](https://github.com/dfadler/zombie-mermaid/issues/2135).
+
+  Level: patch. Per [the versioning policy](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/versioning-and-deprecation-policy-1568.md) section 1, SVG layout and glyph changes are not output contracts (the accessibility guarantees, theme keys and documented options are unchanged), and this one brings the output in line with mermaid.js; the new type field is optional.
+
+- Updated dependencies [[`8a8c482`](https://github.com/dfadler/zombie-mermaid/commit/8a8c482cd45570fb76c7757986236d1170b0d301), [`b55b7fa`](https://github.com/dfadler/zombie-mermaid/commit/b55b7fae2b576173e6b438094d21238119947ace), [`f5e5454`](https://github.com/dfadler/zombie-mermaid/commit/f5e5454136070993bb1552dec3616c2750a6f15f), [`d88b061`](https://github.com/dfadler/zombie-mermaid/commit/d88b0619fd0d5cd5f7e8c59abb0ad1dc2029eec1)]:
+  - @zombie-mermaid/ascii-renderer@5.7.1
+  - @zombie-mermaid/core@5.7.1
+  - @zombie-mermaid/svg-renderer@5.7.1
+  - @zombie-mermaid/mermaid-parser@5.7.1
+  - @zombie-mermaid/mcp@5.7.1
+
 ## 5.7.0
 
 ### Minor Changes
