@@ -199,5 +199,10 @@
     "file": "scripts/lib/oracle-layout.ts",
     "reason": "Playwright-driven helper: reads layout out of a real Chromium render, only reachable from scripts/elk-layout-oracle.ts",
     "maxLines": 111
+  },
+  {
+    "file": "scripts/ascii-layout-table.ts",
+    "reason": "measurement CLI: runs on import and prints a table over the gallery, no assertable logic (the rasterizer it measures is unit-tested in packages/ascii-layout)",
+    "maxLines": 65
   }
 ]

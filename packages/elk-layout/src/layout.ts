@@ -26,6 +26,9 @@ export interface LayoutEdge {
   label?: string
   lw: number
   lh: number
+  /** Present only when not the default (`-->`: arrow at the target only). */
+  arrowStart?: true
+  arrowEnd?: false
 }
 /** x/y are node centres; edge `pts` run from the source outline to the target outline. */
 export interface FlowchartLayout {
@@ -328,6 +331,8 @@ export async function layoutFlowchart(src: string): Promise<FlowchartLayout> {
         label: e.label,
         lw: e.lw,
         lh: e.lh,
+        ...(e.arrowStart && { arrowStart: true as const }),
+        ...(!e.arrowEnd && { arrowEnd: false as const }),
       }
     }),
   }
