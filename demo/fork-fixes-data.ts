@@ -724,4 +724,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: a plain `│` where two edges cross and labels beside two lines. After: a `┼` at the crossing and each label on or beside its own edge.',
   },
+  {
+    id: 'ascii-face-capacity-loops',
+    title: 'ASCII dense duplicate edges and self-loops shared one cell',
+    symptom:
+      'A node’s side face was sized for reciprocal and duplicate edges only. Self-loop ends and back-edges also take a cell, so the face came out short and two edge ends shared a cell: merged arrowheads and `├`/`┤` tick marks.',
+    source:
+      'flowchart RL\n  n0["n0"]\n  n1["n1"]\n  n1 --> n0\n  n0 --> n1\n  n1 --> n0\n  n1 --> n0\n  n1 --> n1\n  n0 --> n0\n  n0 --> n1\n  n1 --> n0\n  n0 --> n1\n  n0 --> n1',
+    fixCommit: '12c90faa',
+    pr: 2186,
+    render: 'ascii',
+    lookFor:
+      'Before: arrowheads merge and tick marks are lost where edges share a cell. After: each edge end has its own cell.',
+  },
 ]
