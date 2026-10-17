@@ -508,6 +508,32 @@ export interface RenderOptions {
   curve?: CurveStyle
 
   /**
+   * Opt in to a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours.
+   * Default: false, which leaves the output byte-identical (a diagram cannot
+   * recolour itself against the host's `bg`/`fg`/CSS-variable theme).
+   *
+   * When true, a small subset of Mermaid's `themeVariables` is mapped onto
+   * this library's colour tokens, each value validated like a `style`
+   * colour (an invalid one is ignored, never thrown):
+   *
+   * - `primaryColor` → `surface` (node fill), `primaryBorderColor` → `border`,
+   *   `primaryTextColor` → `fg`: only with `theme: "base"` in the same
+   *   directive, as in Mermaid (flowchart and state diagrams).
+   * - `lineColor` → `line` (flowchart: any theme; state diagram: `base` only).
+   * - `pie1`..`pie12` → the pie slice and legend colours (any theme; other
+   *   slices keep the theme palette).
+   *
+   * A colour you pass yourself (`bg`, `fg`, `line`, `surface`, `border`)
+   * always wins over the diagram's. Every other variable is not read and
+   * Mermaid's derived colours (secondary/tertiary, a border derived from
+   * `primaryColor`) are not computed: see docs/known-differences.md. The
+   * ASCII renderer has the same option, mapping `lineColor`,
+   * `primaryBorderColor`, `primaryTextColor` and `pie1..pie12` (hex values
+   * only); `primaryColor` has no ASCII meaning.
+   */
+  honorThemeVariables?: boolean
+
+  /**
    * Font size overrides (px). Fields left unspecified fall back to their
    * default. Applies to all diagram types (flowchart, sequence, class, ER).
    */
@@ -655,6 +681,7 @@ export type FlowchartRenderOptions = CommonRenderOptions &
     | 'mergeEdges'
     | 'direction'
     | 'curve'
+    | 'honorThemeVariables'
     | 'fontSizes'
     | 'interactivity'
     | 'layoutCache'
