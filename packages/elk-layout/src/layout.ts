@@ -63,8 +63,8 @@ const rootOptions = (dir: Model['dir']) => ({
 })
 
 // ---- geometry (elk/geometry.ts + render.ts), specialised to non-group nodes ----
-type Box = { x: number; y: number; w: number; h: number } // centre + size
-const onBorder = (b: Box, p: Pt, tol = 0.5) => {
+export type Box = { x: number; y: number; w: number; h: number } // centre + size
+export const onBorder = (b: Box, p: Pt, tol = 0.5) => {
   const l = b.x - b.w / 2,
     r = b.x + b.w / 2,
     t = b.y - b.h / 2,
@@ -78,11 +78,11 @@ const onBorder = (b: Box, p: Pt, tol = 0.5) => {
       p.x <= r + tol)
   )
 }
-const outsideNode = (b: Box, p: Pt) =>
+export const outsideNode = (b: Box, p: Pt) =>
   Math.abs(p.x - b.x) >= b.w / 2 || Math.abs(p.y - b.y) >= b.h / 2
 
 /** outlineAttachPoint: slide along the edge's departure axis to the node outline (bisection). */
-function attach(n: MNode, b: Box, port: Pt, next: Pt): Pt | null {
+export function attach(n: MNode, b: Box, port: Pt, next: Pt): Pt | null {
   const dx = next.x - port.x,
     dy = next.y - port.y
   if ((dx === 0 && dy === 0) || (Math.abs(dx) > 1e-6 && Math.abs(dy) > 1e-6))
@@ -106,7 +106,7 @@ function attach(n: MNode, b: Box, port: Pt, next: Pt): Pt | null {
   return at(inner)
 }
 
-function rectRay(b: Box, outside: Pt): Pt {
+export function rectRay(b: Box, outside: Pt): Pt {
   // fallback intersection(): centre-ray to the box, good enough for rects
   const dx = outside.x - b.x,
     dy = outside.y - b.y
@@ -117,14 +117,20 @@ function rectRay(b: Box, outside: Pt): Pt {
   return { x: b.x + dx * s, y: b.y + dy * s }
 }
 
-function replaceEndpoint(pts: Pt[], which: 'start' | 'end', v: Pt) {
+export function replaceEndpoint(pts: Pt[], which: 'start' | 'end', v: Pt) {
   const i = which === 'start' ? 0 : pts.length - 1
   if (Math.abs(pts[i]!.x - v.x) < 0.1 && Math.abs(pts[i]!.y - v.y) < 0.1)
     pts.splice(i, 1)
   else pts[i] = v
 }
 
-function cutter2(sn: MNode, en: MNode, sb: Box, eb: Box, orig: Pt[]): Pt[] {
+export function cutter2(
+  sn: MNode,
+  en: MNode,
+  sb: Box,
+  eb: Box,
+  orig: Pt[],
+): Pt[] {
   const pts = [...orig]
   const si = pts.findIndex((p) => outsideNode(sb, p))
   if (si !== -1) {
@@ -159,7 +165,7 @@ const dedupe = (pts: Pt[]) =>
   )
 
 const MARKER = 4 // arrow_point
-function trimMarkerSegments(
+export function trimMarkerSegments(
   pts: Pt[],
   sb: Box,
   eb: Box,
@@ -197,7 +203,7 @@ const axisOf = (a: Pt, b: Pt) => {
       ? 'v'
       : undefined
 }
-function straightenFront(pts: Pt[]): Pt[] | null {
+export function straightenFront(pts: Pt[]): Pt[] | null {
   if (pts.length < 5) return null
   const [p0, p1, p2, p3] = pts as [Pt, Pt, Pt, Pt]
   const axis = axisOf(p0, p1)
@@ -247,7 +253,7 @@ const crossings = (a: Pt[], b: Pt[]) => {
       n += +cross(a[i]!, a[i + 1]!, b[j]!, b[j + 1]!)
   return n
 }
-function straighten(routes: Pt[][]) {
+export function straighten(routes: Pt[][]) {
   routes.forEach((orig, idx) => {
     if (orig.length < 5) return
     let cand = straightenFront(orig) ?? orig
@@ -291,13 +297,13 @@ export async function layoutFlowchart(src: string): Promise<FlowchartLayout> {
   }
   const res = await new ELK().layout(graph)
   const byId = new Map<string, { n: MNode; b: Box }>()
-  for (const c of res.children ?? []) {
+  for (const c of res.children!) {
     const n = m.nodes.find((x) => x.id === c.id)!
     const [x, y, w, h] = [c.x!, c.y!, c.width!, c.height!]
     byId.set(c.id, { n, b: { x: x + w / 2, y: y + h / 2, w, h } })
   }
   const edgeBy = new Map(m.edges.map((e) => [e.id, e]))
-  const laidOut = res.edges ?? []
+  const laidOut = res.edges!
   const routes = laidOut.map((re) => {
     const e = edgeBy.get(re.id)!
     const s = byId.get(e.from)!
