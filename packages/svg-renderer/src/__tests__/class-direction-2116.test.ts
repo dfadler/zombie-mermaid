@@ -30,7 +30,8 @@ describe('class direction: level axis', () => {
     const [a, b, c] = ['A', 'B', 'C'].map((id) => box(p, id))
     expect(a!.y).toBeLessThan(b!.y)
     expect(b!.y).toBeLessThan(c!.y)
-    expect(a!.x).toBe(c!.x)
+    // Same column: centres line up (box widths follow the name now, #2128).
+    expect(a!.x + a!.width / 2).toBeCloseTo(c!.x + c!.width / 2)
   })
   it('LR puts A, B, C in one row, left to right', () => {
     const p = layout(src('LR', chain))
@@ -51,7 +52,8 @@ describe('class direction: level axis', () => {
     const [a, b, c] = ['A', 'B', 'C'].map((id) => box(p, id))
     expect(a!.y).toBeGreaterThan(b!.y)
     expect(b!.y).toBeGreaterThan(c!.y)
-    expect(a!.x).toBe(c!.x)
+    // Same column: centres line up (box widths follow the name now, #2128).
+    expect(a!.x + a!.width / 2).toBeCloseTo(c!.x + c!.width / 2)
   })
   it('no direction line is top-down, identical to `direction TB`', () => {
     expect(renderMermaidSVG(`classDiagram\n${chain}`)).toBe(

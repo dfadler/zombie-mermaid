@@ -175,6 +175,11 @@
     "legacy": true
   },
   {
+    "file": "scripts/size-report.ts",
+    "reason": "report CLI: runs on import, reads dist/ and shells out to npm pack; all logic is in scripts/lib/size-report.ts (tested)",
+    "maxLines": 143
+  },
+  {
     "file": "scripts/visual-diff.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 338,
