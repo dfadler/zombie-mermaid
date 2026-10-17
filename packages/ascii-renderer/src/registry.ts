@@ -55,6 +55,8 @@ export interface AsciiRenderExtras {
   hyperlinks?: boolean
   direction?: Direction
   limits?: RenderLimits
+  /** Read by `pie` only (`pie1..pie12`); the rest ride on the theme. */
+  honorThemeVariables?: boolean
 }
 
 /**
@@ -95,6 +97,6 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
 
   c4: (text, config, colorMode, theme, extras) =>
     renderC4Ascii(text, config, colorMode, theme, extras),
-  pie: (text, config, colorMode, theme) =>
-    renderPieAscii(text, config, colorMode, theme),
+  pie: (text, config, colorMode, theme, extras) =>
+    renderPieAscii(text, config, colorMode, theme, extras.honorThemeVariables),
 }

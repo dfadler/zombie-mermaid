@@ -1,0 +1,7 @@
+                        <span style="color:inherit">Pets</span>
+
+<span style="color:#a1a1aa">[</span><span style="color:#ff0000;background:#ff0000">████████████████████</span><span style="color:#00aa00">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</span><span style="color:#0000ff">▒▒▒▒▒▒▒▒▒▒▒▒</span><span style="color:#a1a1aa">]</span>
+
+  <span style="color:#ff0000;background:#ff0000">█</span> <span style="color:inherit">Dogs</span>   <span style="color:inherit"> 40%</span>
+  <span style="color:#00aa00">▓</span> <span style="color:inherit">Cats</span>   <span style="color:inherit"> 35%</span>
+  <span style="color:#0000ff">▒</span> <span style="color:inherit">Rats</span>   <span style="color:inherit"> 25%</span>

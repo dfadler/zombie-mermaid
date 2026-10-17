@@ -73,15 +73,6 @@ layers. The 12.1.0 comparison is in
     19 px right of `a` (30 px in mermaid), LR `b` is 19 px above `a` (26) and `c` 16 px
     below (29). The sample was added for ASCII routing (#2109), where it is not scored;
     as an SVG layout it is plausible next to mermaid's.
-- **"Class: Full Hierarchy" (93% horizontal) is a threshold effect.** Mermaid 12.1.0
-  and 12.2.0 score it the same. Both put the same classes in the same layers and
-  order, and the one disagreeing pair is Animal/Cat: Cat's centre is 26 px left of
-  Animal's in mermaid and 19 px in ours, so the 20 px tolerance calls it level in
-  ours only. Mermaid's class boxes are wider than ours (Parrot 180 px to 149 px, Cat
-  137 px to 121 px, from text measurement), which spreads the Mammal subtree further.
-  The gaps between boxes match (40 px between Dog and Cat in both). Nothing in the
-  class layout is mis-ordered, so there is no sample-independent change to make
-  (#2103). Floor 90% in `SAMPLE_FLOORS`.
 
 ## State diagram notes
 
@@ -193,6 +184,32 @@ and routes every relationship, label and cardinality on that assumption, so `BT`
 drawing flipped vertically (boxes kept upright) while `LR`/`RL` would need a column layout of
 their own, as a separate renderer. mermaid.js 12.1.0 and 12.2.0 lay `LR` out in columns and `RL`
 as its mirror. The ER ASCII renderer has a similar approximation.
+
+## `themeVariables` are opt-in, and only a subset
+
+Decided in [#2108](https://github.com/dfadler/zombie-mermaid/issues/2108).
+Mermaid applies `%%{init: {"themeVariables": {...}}}%%`; zombie-mermaid ignores it
+unless the caller sets `honorThemeVariables: true`, because the colours of a
+diagram should come from the host's `bg`/`fg` theme, not from text inside the
+diagram. Checked on mermaid 12.1.0 and 12.2.0 (headless Chromium, computed
+paint, identical results):
+
+| Input                                                                                             | mermaid.js 12.1.0 / 12.2.0              | zombie-mermaid                                   |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------ |
+| `theme: base` + `primaryColor`, flowchart                                                         | node fill follows it                    | ignored; with the option: node fill (`surface`)  |
+| `primaryColor` under the default, `dark`, `forest`, `neutral` themes                              | ignored                                 | same                                             |
+| `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; a solid `border` |
+| `lineColor`, any theme                                                                            | edge and arrowhead colour               | ignored; with the option: `line`                 |
+| `pie1`..`pie12`, any theme                                                                        | the Nth slice in source order, wrapping | ignored; with the option: same                   |
+| invalid `primaryColor` (`#12345`)                                                                 | throws `Unsupported color format`       | ignored, renders                                 |
+| invalid `pie1` (`notacolor`)                                                                      | slice painted `#333`                    | ignored, theme colour kept                       |
+| `secondaryColor`, `tertiaryColor`, `background`, `fontFamily`, `nodeBorder`, `pie*TextColor`, ... | applied or used to derive other colours | not supported, listed in `InitConfig.ignored`    |
+
+Mermaid derives many colours from `primaryColor` (secondary/tertiary, subgraph
+fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
+`base` diagram with only `primaryColor` set does not look the same in both. Only
+flowchart, state and pie read the directive. Details and the opt-in table:
+[Configuration directives](diagrams.md#themevariables-opt-in).
 
 ## Known limitations (not intentional, not yet fixed)
 

@@ -1,0 +1,5 @@
+<span style="color:#00aa00">┌───────┐</span>     <span style="color:#00aa00">┌──────┐</span>
+<span style="color:#00aa00">│</span>       <span style="color:#00aa00">│</span>     <span style="color:#00aa00">│</span>      <span style="color:#00aa00">│</span>
+<span style="color:#00aa00">│</span> <span style="color:#aa00aa">Alpha</span> <span style="color:#00aa00">├</span><span style="color:#0000ff">────</span><span style="color:#52525b">►</span><span style="color:#00aa00">│</span> <span style="color:#aa00aa">Beta</span> <span style="color:#00aa00">│</span>
+<span style="color:#00aa00">│</span>       <span style="color:#00aa00">│</span>     <span style="color:#00aa00">│</span>      <span style="color:#00aa00">│</span>
+<span style="color:#00aa00">└───────┘</span>     <span style="color:#00aa00">└──────┘</span>

@@ -1,0 +1,109 @@
+# Weekly mentions watch (#2176): searches GitHub (code, issues/PRs, repos,
+# discussions), npm and Hacker News for "zombie mermaid" and its spelling
+# variants (scripts/mention-watch.config.json), and opens a report issue
+# listing the NEW mentions with links, for review.
+#
+# Dedupe: the set of already-reported URLs lives in seen.json on the orphan
+# branch `mentions-cache` (durable, unlike actions/cache, which evicts after 7
+# days idle and weekly runs sit right at that edge). The cache is only written
+# after the report issue was created, so a failed run never drops findings.
+#
+# Needs no extra secrets: the built-in GITHUB_TOKEN covers GitHub search, issue
+# creation and the cache-branch push. A week with no new mentions opens no issue.
+# Text from third-party pages is untrusted; scripts/lib/mention-watch.ts
+# neutralizes it (no @mentions, #refs, markup or autolinks) before it reaches
+# the issue body. Recommend a manual `workflow_dispatch` run to confirm it works
+# end to end before trusting the schedule.
+name: Mentions watch
+
+on:
+  schedule:
+    # Every Monday at 16:00 UTC, an hour after form-judge-weekly.
+    - cron: '0 16 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mention-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    # Same fork-of-this-fork guard as upstream-watch.yml / ci.yml.
+    if: github.repository == 'dfadler/zombie-mermaid'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # push the mentions-cache branch
+      issues: write # create the report issue and its label
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Restore seen-set from mentions-cache branch
+        run: |
+          set -euo pipefail
+          mkdir -p .mention-watch
+          auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          if git -c "http.https://github.com/.extraheader=$auth" ls-remote --exit-code --heads origin mentions-cache >/dev/null; then
+            git -c "http.https://github.com/.extraheader=$auth" fetch --depth=1 origin mentions-cache
+            git show FETCH_HEAD:seen.json > .mention-watch/seen.json
+          else
+            echo "No mentions-cache branch yet; first run reports everything it finds."
+          fi
+
+      - name: Collect mentions
+        id: collect
+        run: pnpm run mention-watch
+
+      - name: Open report issue
+        if: steps.collect.outputs.new_count != '0'
+        run: |
+          set -euo pipefail
+          gh label create mentions-report --color 5319e7 \
+            --description "Weekly mentions watch report" 2>/dev/null || true
+          url=$(gh issue create \
+            --title "Mentions report: $(date -u +%F)" \
+            --label mentions-report \
+            --body-file .mention-watch/report.md)
+          # Record which issue each new URL was reported in (entries from earlier weeks keep theirs).
+          jq --arg u "$url" 'map_values(.reportedIn //= $u)' \
+            .mention-watch/seen.next.json > "$RUNNER_TEMP/seen.json"
+          mv "$RUNNER_TEMP/seen.json" .mention-watch/seen.next.json
+
+      # Only after the issue exists. One force-pushed commit per run: history of
+      # the seen-set is not needed (firstSeen is stored per URL), and the
+      # concurrency group above rules out racing writers.
+      - name: Save seen-set to mentions-cache branch
+        if: steps.collect.outputs.new_count != '0'
+        run: |
+          set -euo pipefail
+          auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          cp .mention-watch/seen.next.json "$RUNNER_TEMP/seen.json"
+          git switch --orphan mentions-cache
+          git rm -rfq --cached . >/dev/null 2>&1 || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp "$RUNNER_TEMP/seen.json" seen.json
+          git add seen.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "chore: update mentions seen-set"
+          git -c "http.https://github.com/.extraheader=$auth" push --force origin mentions-cache

@@ -409,11 +409,13 @@ export function parsePieChart(text: string): PieChart {
     pieDonutHole,
     pieLegendPosition,
     pieHighlightSlice,
+    themeVariables,
   } = extractInitConfig(text.split(/\r\n?|\n/))
   if (pieTextPosition !== undefined) chart.textPosition = pieTextPosition
   if (pieDonutHole !== undefined) chart.donutHole = pieDonutHole
   if (pieLegendPosition !== undefined) chart.legendPosition = pieLegendPosition
   if (pieHighlightSlice !== undefined) chart.highlightSlice = pieHighlightSlice
+  if (themeVariables?.pieColors) chart.sliceColors = themeVariables.pieColors
   if (title) chart.title = title
   if (accTitle) chart.accTitle = accTitle
   if (accDescr) chart.accDescr = accDescr
