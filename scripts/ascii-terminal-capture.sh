@@ -45,6 +45,10 @@ ASCII_AGG_DOCKER_IMAGE="${ASCII_AGG_DOCKER_IMAGE:-ghcr.io/asciinema/agg:latest}"
 # .cast -> .png rasteriser: "agg" (default) or "chromium" (see --help).
 ASCII_RASTERISER="${ASCII_RASTERISER:-agg}"
 
+# agg colour theme (terminal background); github-dark by default. Set e.g.
+# ASCII_AGG_THEME=github-light to capture on a light terminal (`agg --help`).
+agg_theme="${ASCII_AGG_THEME:-github-dark}"
+
 # Floor for the recording PTY when [cols]/[rows] aren't given. The actual
 # default is max(floor, the size this sample renders at + SIZE_MARGIN), so a
 # tall or wide sample is never clipped by an arbitrary fixed default - 39 of
@@ -126,6 +130,9 @@ with ASCII_AGG_DOCKER_IMAGE (e.g. to pin a digest). Requires `docker` on
 PATH and a reachable daemon instead of a local `agg` install; python3 and
 the font install are still required either way (the crop step runs
 locally).
+
+Set ASCII_AGG_THEME=github-light (any `agg --theme` name) to capture on a different
+terminal background than the default github-dark (agg rasteriser only).
 
 Set ASCII_RASTERISER=chromium to rasterize the .cast with headless Chromium
 instead of agg. The recording is still a real PTY, and it is replayed through
@@ -414,13 +421,13 @@ else
     out_base="$(basename "$out_prefix")"
     docker run --rm -v "${out_abs_dir}:/data" "$ASCII_AGG_DOCKER_IMAGE" \
       --font-family "$agg_font_family" \
-      --theme github-dark \
+      --theme "$agg_theme" \
       --select 100% \
       "/data/${out_base}.cast" "/data/${out_base}.gif"
   else
     agg --quiet \
       --font-family "$agg_font_family" \
-      --theme github-dark \
+      --theme "$agg_theme" \
       --select 100% \
       "${out_prefix}.cast" "${out_prefix}.gif"
   fi

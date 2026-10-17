@@ -71,7 +71,7 @@ describe('diagramColorsToAsciiTheme', () => {
 describe('DEFAULT_ASCII_THEME', () => {
   it('matches the documented zinc palette', () => {
     expect(DEFAULT_ASCII_THEME).toEqual({
-      fg: '#27272a',
+      fg: 'inherit', // text keeps the terminal's own foreground (#2165)
       border: '#a1a1aa',
       line: '#71717a',
       arrow: '#52525b',
