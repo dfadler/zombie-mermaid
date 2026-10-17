@@ -3,10 +3,10 @@ pie title Pets adopted by volunteers
   "Cats" : 85
   "Rats" : 15
 ---
-             <span style="color:#27272a">Pets adopted by volunteers</span>
+             <span style="color:inherit">Pets adopted by volunteers</span>
 
 <span style="color:#a1a1aa">[</span><span style="color:#3b82f6;background:#3b82f6">████████████████████████████████████████</span><span style="color:#0d5ba5">▓▓▓▓▓▓▓▓▓</span><span style="color:#5fb4f2">▒</span><span style="color:#a1a1aa">]</span>
 
-  <span style="color:#3b82f6;background:#3b82f6">█</span> <span style="color:#27272a">Dogs</span>   <span style="color:#27272a"> 79%</span>
-  <span style="color:#0d5ba5">▓</span> <span style="color:#27272a">Cats</span>   <span style="color:#27272a"> 17%</span>
-  <span style="color:#5fb4f2">▒</span> <span style="color:#27272a">Rats</span>   <span style="color:#27272a">  3%</span>
+  <span style="color:#3b82f6;background:#3b82f6">█</span> <span style="color:inherit">Dogs</span>   <span style="color:inherit"> 79%</span>
+  <span style="color:#0d5ba5">▓</span> <span style="color:inherit">Cats</span>   <span style="color:inherit"> 17%</span>
+  <span style="color:#5fb4f2">▒</span> <span style="color:inherit">Rats</span>   <span style="color:inherit">  3%</span>
