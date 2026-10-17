@@ -45,6 +45,16 @@ describe('class box width matches mermaid 12.1.0 / 12.2.0', () => {
     expect(w.M).toBeGreaterThan(70)
   })
 
+  it('keeps the space after a visibility marker, as mermaid does', () => {
+    const src = (m: string) => `classDiagram\n  class S {\n    ${m}\n  }`
+    const gap =
+      widths(src('+ aVeryLongMemberNameHere')).S! -
+      widths(src('+aVeryLongMemberNameHere')).S!
+    expect(gap).toBeCloseTo(mermaidTextWidth(' ', false), 1)
+    const m = widths(src('+ doIt()')).S! - widths(src('+doIt()')).S!
+    expect(m).toBeGreaterThan(0)
+  })
+
   it('a long name sets the width', () => {
     within(
       widths('classDiagram\n  class AVeryLongClassNameIndeedForMeasuring')
