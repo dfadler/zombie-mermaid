@@ -1,5 +1,5 @@
 # Weekly mentions watch (#2176): searches GitHub (code, issues/PRs, repos,
-# discussions), npm and Hacker News for "zombie mermaid" and its spelling
+# discussions), npm, Hacker News and (when a key is set) the web for "zombie mermaid" and its spelling
 # variants (scripts/mention-watch.config.json), and opens a report issue
 # listing the NEW mentions with links, for review.
 #
@@ -8,8 +8,10 @@
 # days idle and weekly runs sit right at that edge). The cache is only written
 # after the report issue was created, so a failed run never drops findings.
 #
-# Needs no extra secrets: the built-in GITHUB_TOKEN covers GitHub search, issue
-# creation and the cache-branch push. A week with no new mentions opens no issue.
+# The built-in GITHUB_TOKEN covers GitHub search, issue creation and the
+# cache-branch push. The optional BRAVE_API_KEY repo secret (Brave Search API,
+# #2201) adds a general web source; without it that source is skipped and the
+# run is unchanged. A week with no new mentions opens no issue.
 # Text from third-party pages is untrusted; scripts/lib/mention-watch.ts
 # neutralizes it (no @mentions, #refs, markup or autolinks) before it reaches
 # the issue body. Recommend a manual `workflow_dispatch` run to confirm it works
@@ -41,6 +43,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GITHUB_TOKEN: ${{ github.token }}
+      BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -28,6 +28,8 @@ export interface Config {
 export interface Ctx {
   fetch: (url: string, init?: RequestInit) => Promise<Response>
   token?: string
+  /** Brave Search API key; the Web collector is skipped without it. */
+  braveKey?: string
   max: number
   /** Pause between GitHub search calls (code search allows ~10 requests/min). */
   githubDelayMs: number
@@ -93,9 +95,22 @@ function ghHeaders(ctx: Ctx): Record<string, string> {
 
 const q = (phrase: string) => encodeURIComponent(`"${phrase}"`)
 
+// Hosts the GitHub, npm and Hacker News collectors already search, so the web
+// collector drops them instead of reporting the same page twice.
+const COVERED_HOST_RE = /(^|\.)(github\.com|npmjs\.com|ycombinator\.com)$/i
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return ''
+  }
+}
+
 type Collector = {
   source: string
   github: boolean
+  /** Skipped (not counted as an attempt or an error) unless ctx.braveKey is set. */
+  needsBraveKey?: boolean
   run: (ctx: Ctx, phrase: string) => Promise<Finding[]>
 }
 
@@ -224,6 +239,32 @@ export const COLLECTORS: Collector[] = [
       }))
     },
   },
+  {
+    source: 'Web',
+    github: false,
+    needsBraveKey: true,
+    run: async (ctx, phrase) => {
+      // https://api-dashboard.search.brave.com/app/documentation/web-search/get-started
+      const j = await getJson(
+        ctx,
+        `https://api.search.brave.com/res/v1/web/search?q=${q(phrase)}&count=${Math.min(ctx.max, 20)}`,
+        {
+          headers: {
+            Accept: 'application/json',
+            'X-Subscription-Token': ctx.braveKey!,
+          },
+        },
+      )
+      return (j.web?.results ?? [])
+        .filter((r: any) => r?.url && !COVERED_HOST_RE.test(hostOf(r.url)))
+        .map((r: any) => ({
+          url: r.url,
+          title: r.title ?? r.url,
+          source: 'Web',
+          text: `${r.title ?? ''}\n${r.description ?? ''}`,
+        }))
+    },
+  },
 ]
 
 export interface CollectResult {
@@ -242,6 +283,7 @@ export async function collectAll(
   const errors: string[] = []
   let attempts = 0
   for (const c of collectors) {
+    if (c.needsBraveKey && !ctx.braveKey) continue
     for (const phrase of config.phrases) {
       attempts++
       try {
