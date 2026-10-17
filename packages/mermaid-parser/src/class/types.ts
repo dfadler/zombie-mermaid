@@ -74,6 +74,8 @@ export interface ClassMember {
   isMethod?: boolean
   /** Method parameters (e.g., "data", "key, val") — only for methods */
   params?: string
+  /** Source had whitespace after the visibility marker (`+ name`); mermaid measures and draws it (#2128) */
+  visibilitySpace?: boolean
 }
 
 /** Relationship types following UML conventions */
