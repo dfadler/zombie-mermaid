@@ -67,7 +67,7 @@ function pieStyles(
 
   const vars = indices.map(
     (i) =>
-      `    --pie-color-${i}: ${pieColorValue(i, colors.accent, colors.bg)};`,
+      `    --pie-color-${i}: ${chart.sliceColors?.[i] ?? pieColorValue(i, colors.accent, colors.bg)};`,
   )
   const rules = indices.map(
     (i) =>

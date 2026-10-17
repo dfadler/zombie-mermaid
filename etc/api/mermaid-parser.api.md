@@ -525,6 +525,7 @@ export interface PieChart {
     highlightSlice?: string;
     legendPosition?: PieLegendPosition;
     showData: boolean;
+    sliceColors?: Record<number, string>;
     slices: PieSlice[];
     textPosition?: number;
     title?: string;
@@ -914,6 +915,7 @@ export interface PositionedPieChart {
     legend: PositionedPieLegendItem[];
     outerRadius: number;
     radius: number;
+    sliceColors?: Record<number, string>;
     slices: PositionedPieSlice[];
     title?: {
         text: string;

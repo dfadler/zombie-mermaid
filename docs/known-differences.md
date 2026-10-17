@@ -185,6 +185,32 @@ drawing flipped vertically (boxes kept upright) while `LR`/`RL` would need a col
 their own, as a separate renderer. mermaid.js 12.1.0 and 12.2.0 lay `LR` out in columns and `RL`
 as its mirror. The ER ASCII renderer has a similar approximation.
 
+## `themeVariables` are opt-in, and only a subset
+
+Decided in [#2108](https://github.com/dfadler/zombie-mermaid/issues/2108).
+Mermaid applies `%%{init: {"themeVariables": {...}}}%%`; zombie-mermaid ignores it
+unless the caller sets `honorThemeVariables: true`, because the colours of a
+diagram should come from the host's `bg`/`fg` theme, not from text inside the
+diagram. Checked on mermaid 12.1.0 and 12.2.0 (headless Chromium, computed
+paint, identical results):
+
+| Input                                                                                             | mermaid.js 12.1.0 / 12.2.0              | zombie-mermaid                                   |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------ |
+| `theme: base` + `primaryColor`, flowchart                                                         | node fill follows it                    | ignored; with the option: node fill (`surface`)  |
+| `primaryColor` under the default, `dark`, `forest`, `neutral` themes                              | ignored                                 | same                                             |
+| `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; a solid `border` |
+| `lineColor`, any theme                                                                            | edge and arrowhead colour               | ignored; with the option: `line`                 |
+| `pie1`..`pie12`, any theme                                                                        | the Nth slice in source order, wrapping | ignored; with the option: same                   |
+| invalid `primaryColor` (`#12345`)                                                                 | throws `Unsupported color format`       | ignored, renders                                 |
+| invalid `pie1` (`notacolor`)                                                                      | slice painted `#333`                    | ignored, theme colour kept                       |
+| `secondaryColor`, `tertiaryColor`, `background`, `fontFamily`, `nodeBorder`, `pie*TextColor`, ... | applied or used to derive other colours | not supported, listed in `InitConfig.ignored`    |
+
+Mermaid derives many colours from `primaryColor` (secondary/tertiary, subgraph
+fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
+`base` diagram with only `primaryColor` set does not look the same in both. Only
+flowchart, state and pie read the directive. Details and the opt-in table:
+[Configuration directives](diagrams.md#themevariables-opt-in).
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams

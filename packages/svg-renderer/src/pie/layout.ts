@@ -287,5 +287,6 @@ export function layoutPieChart(
     legend,
     accTitle: chart.accTitle,
     accDescr: chart.accDescr,
+    sliceColors: chart.sliceColors,
   }
 }
