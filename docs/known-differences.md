@@ -3,12 +3,30 @@
 Places where zombie-mermaid renders or parses differently from mermaid.js and the
 difference is either intentional or not yet fixed. The reference is the pinned
 `mermaid` devDependency (12.1.0), rendered headless through
-`scripts/lib/real-mermaid.ts`; mermaid.live and GitHub render the same layout.
+`scripts/lib/real-mermaid.ts`; GitHub renders 12.1.0 and mermaid.live 12.2.0 (see the
+table below).
 The pin moved from 11.17.2 in the bump that added this note, and entries not
 listed below as re-checked were measured on 11.17.2: other versions may differ.
 The "Labeled Fan-In (LR)" mirrored-order entry that used to sit under layout
 tie-breaks was removed after a re-check: on 12.1.0 mermaid and zombie-mermaid agree
 (100% / 100%, it was 17% on 11.17.2).
+
+## Which mermaid each surface renders (checked 2026-10-16, #2184)
+
+| Surface                        | mermaid | Default layout | Evidence                                                                                                                   |
+| ------------------------------ | ------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Pinned oracle (`package.json`) | 12.1.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                  |
+| GitHub ` ```mermaid ` blocks   | 12.1.0  | ELK (config)   | Renderer bundle `viewscreen.githubusercontent.com/static/assets/mermaidMarkdown-*.js` matches 12.1.0, not 12.0.0 or 12.2.0 |
+| mermaid.live                   | 12.2.0  | ELK            | The editor shows `v12.2.0`; node positions equal the headless ELK render                                                   |
+
+GitHub's bundle reports `version:"0.0.0"` and its renderer sits in a cross-origin
+iframe, so its version is inferred, not read: it contains identifiers added in 12.1.0
+(`orientFeedbackEdges`, `applyOverride`) and none of the 12.2.0 additions
+(`upperCaseDirection`, `isUnconnected`, `colorBy`). 12.1.0 and 12.2.0 place the dense
+samples identically (gallery "Dense Duplicate Edges" TD and LR, and the #2160 sample 3
+with and without `n0["n0"]`/`n1["n1"]` declarations), so the pin is a valid target on
+both surfaces; `layout: dagre` places them differently. Re-run the check when the pin
+moves; `tsx scripts/lib/mermaid-pin-freshness.ts` prints the last versions seen.
 
 ## Subgraph inner direction
 
