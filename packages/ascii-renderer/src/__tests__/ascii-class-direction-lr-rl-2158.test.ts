@@ -340,6 +340,20 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
     }
   })
 
+  describe('hyperlinks on a centred lone compartment', () => {
+    for (const dir of ['LR', 'RL']) {
+      it(`links a member-less class drawn taller than its natural height (${dir})`, () => {
+        const out = render(
+          '  class A {\n    +int x\n    +y() void\n  }\n  A --> B\n  click B href "https://example.com/b"',
+          dir,
+          false,
+          { hyperlinks: true },
+        )
+        expect(out).toContain('\u001b]8;;https://example.com/b\u001b\\B')
+      })
+    }
+  })
+
   describe('dividers and crossings', () => {
     it('joins a line that meets a compartment divider into a cross', () => {
       const out = render(

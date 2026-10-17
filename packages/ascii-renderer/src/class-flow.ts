@@ -27,6 +27,7 @@ import { buildClassSections } from './class-sections.ts'
 import { DEFAULT_ASCII_THEME } from './ansi.ts'
 import { renderGraphAscii } from './flowchart.ts'
 import { encodeSections } from './shapes/class-box.ts'
+import { measureMultiBox } from './draw-boxes.ts'
 import {
   Left,
   Right,
@@ -192,11 +193,22 @@ export function renderClassFlowAscii(
 
   const linkRows = (node: AsciiNode) => {
     const cls = diagram.classes.find((c) => c.id === node.name)
-    if (!cls || node.shape !== 'class-box') return undefined
+    if (!cls || node.shape !== 'class-box' || !node.drawing) return undefined
+    const sections = buildClassSections(cls)
+    // drawMultiBox centres a lone compartment in a taller cell, so the header
+    // starts below that slack.
+    const slack =
+      sections.length === 1
+        ? Math.floor(
+            (node.drawing[0]!.length -
+              measureMultiBox(sections, config.boxBorderPadding).height) /
+              2,
+          )
+        : 0
     // The class name line(s) of the header, as the top-down drawing links.
     return {
-      from: 1 + (cls.annotation ? 1 : 0),
-      to: buildClassSections(cls)[0]!.length,
+      from: 1 + slack + (cls.annotation ? 1 : 0),
+      to: slack + sections[0]!.length,
     }
   }
 
