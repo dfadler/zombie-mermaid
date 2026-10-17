@@ -26,6 +26,7 @@ import {
   MONO_FONT_FACE_CSS,
   MONO_FONT_FAMILY,
 } from '../demo/components/generated/mono-font-subset.ts'
+import { MONO_FONT_FACE_CSS as SVG_MONO_FONT_FACE_CSS } from '../packages/svg-renderer/src/generated/mono-font-subset.ts'
 
 /**
  * Codepoints allowed to be missing from JetBrainsMonoNL-Regular.ttf's cmap
@@ -41,8 +42,8 @@ import {
  */
 const KNOWN_MISSING_FROM_SOURCE_FONT = new Set<number>([])
 
-function decodeEmbeddedFont() {
-  const match = /base64,([A-Za-z0-9+/=]+)\)/.exec(MONO_FONT_FACE_CSS)
+function decodeEmbeddedFont(css = MONO_FONT_FACE_CSS) {
+  const match = /base64,([A-Za-z0-9+/=]+)\)/.exec(css)
   if (!match) {
     throw new Error(
       'MONO_FONT_FACE_CSS has no base64 data URI — has its shape changed?',
@@ -105,5 +106,22 @@ describe('self-hosted mono font subset', () => {
     // some narrow non-ASCII glyphs (box-drawing at minimum) for this
     // check to mean anything.
     expect(narrowNonAsciiChecked).toBeGreaterThan(100)
+  })
+
+  // #2197: the SVG renderer embeds this subset in every class/ER SVG, so its
+  // coverage is pinned exactly. Widening it costs ~1.4 KB gzip per Latin-1
+  // symbol block; narrowing it changes how identifiers render.
+  it('pins the svg-renderer subset to Basic Latin + Latin-1 letters', () => {
+    const font = decodeEmbeddedFont(SVG_MONO_FONT_FACE_CSS)
+    const covered = new Set<number>(
+      (font.characterSet as number[]).filter((cp) => cp !== 0 && cp !== 0xffff),
+    )
+    const expected = new Set<number>()
+    for (let cp = 0x20; cp <= 0x7e; cp++) expected.add(cp)
+    expected.add(0xa0)
+    for (let cp = 0xc0; cp <= 0xff; cp++) expected.add(cp)
+    const hex = (set: Set<number>) =>
+      [...set].sort((a, b) => a - b).map((cp) => cp.toString(16))
+    expect(hex(covered)).toEqual(hex(expected))
   })
 })

@@ -181,17 +181,16 @@ const SITE_EXTRA_CODEPOINTS: ReadonlyArray<number> = [
 ]
 
 /** [start, end] Unicode code point ranges the core SVG-mono subset covers
- * (#1061) — deliberately just Basic Latin + Latin-1 Supplement. The `.mono`
- * rule this subset backs (packages/svg-renderer/src/styles.ts's `buildSvgStyleBlock()`)
- * only ever styles class-diagram method signatures and ER-diagram attribute
- * types: plain identifiers and type names, never box drawing, block
- * elements, geometric shapes, or arrows — so this subset skips every range
- * the site subset needs only for ASCII-art glyphs, keeping the embed this
- * repo bakes into *every* SVG a consumer renders as small as the actual
- * `.mono` use case requires. */
+ * (#1061): Basic Latin + the Latin-1 letters. The `.mono` rule it backs
+ * (packages/svg-renderer/src/styles.ts's `buildSvgStyleBlock()`) only styles
+ * class method signatures and ER attribute types: identifiers and type names,
+ * never box drawing or arrows. U+00A1-U+00BF (symbols like £ © ° µ) is
+ * dropped (#2197, ~1.4 KB gzip per SVG); such a character falls back to the
+ * next monospace face in the `.mono` stack. */
 const CORE_UNICODE_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x0020, 0x007e], // Basic Latin (printable)
-  [0x00a0, 0x00ff], // Latin-1 Supplement — accented identifiers/labels
+  [0x00a0, 0x00a0], // no-break space
+  [0x00c0, 0x00ff], // Latin-1 letters (À–ÿ, incl. × ÷)
 ]
 
 const hex = (cp: number) => cp.toString(16).toUpperCase().padStart(4, '0')
@@ -321,7 +320,7 @@ const CORE_GENERATED_TS_HEADER = `/**
  * Regenerate with \`pnpm run build:mono-font\`
  * (scripts/build-mono-font-subset.ts), which subsets
  * third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf down to
- * Basic Latin + Latin-1 Supplement — the self-hosted, embeddable
+ * Basic Latin + Latin-1 letters (U+00A0, U+00C0–U+00FF) — the self-hosted, embeddable
  * \`@font-face\` packages/svg-renderer/src/styles.ts's \`buildSvgStyleBlock()\` inlines
  * into an SVG's own \`<style>\` for its \`.mono\` rule (class-diagram method
  * signatures, ER-diagram attribute types), replacing a Google Fonts CDN
