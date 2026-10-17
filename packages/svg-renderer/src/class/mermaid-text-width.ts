@@ -45,8 +45,6 @@ const BOLD = [
   0.5859,
 ]
 
-const GUILLEMET = { regular: [0.5244, 0.5244], bold: [0.5859, 0.5859] }
-
 /** Advance of a glyph outside the table: average Latin, or a full em for CJK and emoji. */
 function fallbackAdvance(cp: number): number {
   return cp >= 0x1100 ? 1 : 0.6
@@ -58,13 +56,12 @@ function fallbackAdvance(cp: number): number {
  */
 export function mermaidTextWidth(text: string, bold: boolean): number {
   const table = bold ? BOLD : REGULAR
-  const gm = bold ? GUILLEMET.bold : GUILLEMET.regular
+  const guillemet = bold ? 0.5859 : 0.5244
   let em = 0
   for (const ch of text) {
-    const cp = ch.codePointAt(0) ?? 0
-    if (cp >= 0x20 && cp <= 0x7e) em += table[cp - 0x20] ?? 0.6
-    else if (cp === 0xab) em += gm[0] ?? 0.6
-    else if (cp === 0xbb) em += gm[1] ?? 0.6
+    const cp = ch.codePointAt(0) as number
+    if (cp >= 0x20 && cp <= 0x7e) em += table[cp - 0x20] as number
+    else if (cp === 0xab || cp === 0xbb) em += guillemet
     else em += fallbackAdvance(cp)
   }
   return em * 16

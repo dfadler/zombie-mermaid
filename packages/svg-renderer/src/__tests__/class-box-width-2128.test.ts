@@ -38,6 +38,13 @@ describe('class box width matches mermaid 12.1.0 / 12.2.0', () => {
     within(x.C, 345.78)
   })
 
+  it('members with no marker, params or type are measured as written', () => {
+    const w = widths(
+      'classDiagram\n  class M {\n    plain\n    run()\n    +get(int a) : String\n  }',
+    )
+    expect(w.M).toBeGreaterThan(70)
+  })
+
   it('a long name sets the width', () => {
     within(
       widths('classDiagram\n  class AVeryLongClassNameIndeedForMeasuring')
@@ -69,6 +76,11 @@ describe('mermaidTextWidth', () => {
     within(mermaidTextWidth('Parrot', true), 46.23)
     within(mermaidTextWidth('+bool canTalk', false), 97.58)
     within(mermaidTextWidth('«interface»', false), 82.34)
+  })
+  it('measures guillemets in both weights and Latin-1 glyphs outside the table', () => {
+    expect(mermaidTextWidth('\u00ab\u00bb', true)).toBeCloseTo(18.75, 1)
+    expect(mermaidTextWidth('\u00ab\u00bb', false)).toBeCloseTo(16.78, 1)
+    expect(mermaidTextWidth('\u00e9', false)).toBeCloseTo(9.6, 5)
   })
   it('measures a glyph outside the table instead of dropping it', () => {
     expect(mermaidTextWidth('中', false)).toBe(16)

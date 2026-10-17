@@ -674,8 +674,8 @@ function memberTextWidth(text: string): number {
 
 /** A member as mermaid prints it: `+name`, `+name(params) : type`, no space after the marker. */
 function mermaidMemberText(m: ClassMember): string {
-  const call = m.isMethod ? `${m.name}(${m.params ?? ''})` : m.name
-  return `${m.visibility ?? ''}${call}${m.isMethod && m.type ? ` : ${m.type}` : ''}`
+  const call = m.isMethod ? `${m.name}(${m.params || ''})` : m.name
+  return `${m.visibility || ''}${call}${m.isMethod && m.type ? ` : ${m.type}` : ''}`
 }
 
 /**
