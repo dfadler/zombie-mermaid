@@ -232,9 +232,19 @@ export function definePackageBuild(options: PackageBuildOptions) {
         build: {
           emptyOutDir: true,
           lib: { entry, formats: ES_ONLY, fileName: () => 'index.js' },
-          ...(serverConsumer
-            ? { rolldownOptions: { output: { entryFileNames: 'index.js' } } }
-            : {}),
+          rolldownOptions: {
+            output: {
+              // Vite's lib-ES default is `{ compress, mangle, codegen: false }`,
+              // which keeps tabs, newlines and comments (and `minify: true` is
+              // a no-op: the default is already "oxc"). `codegen: true` strips
+              // them: ~-20.7 KB gzip across the five packages (#2198). It also
+              // drops `/* @__PURE__ */`; a one-export consumer bundle was
+              // unchanged. `serverConsumer` packages default to `minify: false`
+              // so this also mangles them.
+              minify: { compress: true, mangle: true, codegen: true },
+              ...(serverConsumer ? { entryFileNames: 'index.js' } : {}),
+            },
+          },
         },
       },
       cjs: {
