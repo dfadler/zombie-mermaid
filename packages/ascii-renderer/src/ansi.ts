@@ -22,11 +22,20 @@ declare const document: unknown
 // ============================================================================
 
 /**
+ * `AsciiTheme.fg` value meaning "no explicit colour": ANSI modes emit no escape
+ * (the terminal's own foreground shows), HTML emits `color:inherit`.
+ */
+export const INHERIT_COLOR = 'inherit'
+
+/**
  * Default ASCII theme derived from the SVG renderer's color palette.
  * Uses the same mixing ratios to maintain visual consistency.
  */
 export const DEFAULT_ASCII_THEME: AsciiTheme = {
-  fg: '#27272a', // zinc-800 — primary text
+  // Text keeps the terminal's own foreground (#2165): no single colour reads
+  // on both dark and light backgrounds at 4.5:1, and the old near-black
+  // zinc-800 (#27272a) was 1.05-1.41:1 on common dark terminals.
+  fg: INHERIT_COLOR,
   border: '#a1a1aa', // zinc-400 — node borders (12% mix)
   line: '#71717a', // zinc-500 — edge lines (35% mix)
   arrow: '#52525b', // zinc-600 — arrowheads (60% mix)
@@ -323,6 +332,7 @@ export function getAnsiColor(
   if (mode === 'none') return ''
 
   const hex = getRoleColor(role, theme)
+  if (hex === INHERIT_COLOR) return ''
 
   switch (mode) {
     case 'truecolor':
@@ -357,7 +367,18 @@ export function colorizeChar(
   }
 
   const colorCode = getAnsiColor(role, theme, mode)
-  return `${colorCode}${char}${RESET}`
+  return colorCode ? `${colorCode}${char}${RESET}` : char
+}
+
+/** One same-role run: coloured, or bare when the role has no colour (null role, or INHERIT_COLOR). */
+function paintRun(
+  role: CharRole | null,
+  text: string,
+  theme: AsciiTheme,
+  mode: ColorMode,
+): string {
+  const code = role === null ? '' : getAnsiColor(role, theme, mode)
+  return code ? code + text + RESET : text
 }
 
 /**
@@ -400,11 +421,7 @@ export function colorizeLine(
     if (char === ' ') {
       // Flush any buffered characters (with or without color)
       if (buffer.length > 0) {
-        if (currentRole !== null) {
-          result += getAnsiColor(currentRole, theme, mode) + buffer + RESET
-        } else {
-          result += buffer
-        }
+        result += paintRun(currentRole, buffer, theme, mode)
         buffer = ''
         currentRole = null
       }
@@ -420,21 +437,15 @@ export function colorizeLine(
 
     // Role changed — flush buffer (with or without color) and start new
     if (buffer.length > 0) {
-      if (currentRole !== null) {
-        result += getAnsiColor(currentRole, theme, mode) + buffer + RESET
-      } else {
-        result += buffer
-      }
+      result += paintRun(currentRole, buffer, theme, mode)
     }
     buffer = linkMarker + char
     currentRole = role
   }
 
   // Flush remaining buffer
-  if (buffer.length > 0 && currentRole !== null) {
-    result += getAnsiColor(currentRole, theme, mode) + buffer + RESET
-  } else if (buffer.length > 0) {
-    result += buffer
+  if (buffer.length > 0) {
+    result += paintRun(currentRole, buffer, theme, mode)
   }
 
   return result + linkRuns.finish()
@@ -499,6 +510,7 @@ export function colorizeText(
   mode: ColorMode,
 ): string {
   if (mode === 'none' || text.length === 0) return text
+  if (mode !== 'html' && hex === INHERIT_COLOR) return text
   if (mode === 'html') return htmlSpan(hex, text)
   let code: string
   switch (mode) {

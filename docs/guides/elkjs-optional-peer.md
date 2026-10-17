@@ -2,6 +2,7 @@
 
 **Breaking change** (major release, [#1370](https://github.com/dfadler/zombie-mermaid/issues/1370)).
 Design and measurements: [docs/research/1370-elkjs-optional-peer-dep.md](../research/1370-elkjs-optional-peer-dep.md).
+Decision record: [elkjs-optional-peer-1370.md](../decisions/elkjs-optional-peer-1370.md).
 
 [`elkjs`](https://github.com/kieler/elkjs) (about 466 KB gzipped) lays out
 flowchart, state, class, ER and architecture diagrams. The library no longer
