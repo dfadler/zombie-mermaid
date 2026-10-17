@@ -165,6 +165,18 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
     })
   })
 
+  describe('labels across namespace frames', () => {
+    const src =
+      '  namespace A {\n    class X\n  }\n  namespace B {\n    class Y\n  }\n  Y ..> X : stores'
+    for (const dir of ['LR', 'RL']) {
+      it(`keeps a label between both frame walls, not over them (${dir})`, () => {
+        const out = render(src, dir)
+        // both walls are crossed (┼), the label sits wholly between them
+        expect(out).toMatch(/┼stores┼/)
+      })
+    }
+  })
+
   describe('cardinalities', () => {
     it('sets each beside its own end: source above the line, target below (LR)', () => {
       const out = render('  A "1" --> "many" B : owns', 'LR')
