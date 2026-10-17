@@ -163,4 +163,78 @@ describe('layout-faithful ASCII opt-in (#2182)', () => {
       vi.resetModules()
     }
   })
+
+  it.each([
+    ['an Error', new Error('elk blew up'), 'layout failed (elk blew up)'],
+    ['a non-Error', 'plain string', 'layout failed (plain string)'],
+  ])(
+    'falls back with a reason when the layout throws %s',
+    async (_n, thrown, reason) => {
+      vi.resetModules()
+      vi.doMock('@zombie-mermaid/ascii-layout', async (orig) => ({
+        ...(await orig<object>()),
+        renderFlowchartAscii: () => Promise.reject(thrown),
+      }))
+      try {
+        const { renderMermaidASCIIWithLayout: fresh } =
+          await import('../src/ascii-layout.ts')
+        const r = await fresh(FLAT, { layout: 'mermaid' })
+        expect(r.path).toBe('standard')
+        expect(r.fallbackReason).toBe(reason)
+        expect(r.text).toBe(renderMermaidASCII(FLAT))
+      } finally {
+        vi.doUnmock('@zombie-mermaid/ascii-layout')
+        vi.resetModules()
+      }
+    },
+  )
+
+  it('--layout without a value is rejected with an empty "got"', () => {
+    expect(() => parseArgs(['render', '--ascii', '--layout'])).toThrow(
+      /got: ""/,
+    )
+  })
+
+  it('CLI: -w auto is accepted as the layout cap', async () => {
+    const r = await cli(FLAT, '--layout', 'mermaid', '-w', 'auto')
+    expect(r.err).toMatch(/^layout-faithful: /)
+  })
+
+  it.each([
+    [
+      'layout-faithful without a note',
+      { text: 'X', path: 'layout-faithful' },
+      "layout-faithful: used mermaid's ELK layout (mermaid 12.1.0 + elkjs 0.9.3).\n",
+    ],
+    [
+      'standard without a reason',
+      { text: 'X', path: 'standard' },
+      'layout-faithful: unavailable; used standard renderer\n',
+    ],
+  ])(
+    'CLI stderr line is well-formed when the result has %s',
+    async (_n, result, line) => {
+      vi.resetModules()
+      vi.doMock('../src/ascii-layout.ts', () => ({
+        renderMermaidASCIIWithLayout: () => Promise.resolve(result),
+      }))
+      try {
+        const { runRender: fresh } = await import('../src/cli/render.ts')
+        const args = parseArgs([
+          'render',
+          '--ascii',
+          '--layout',
+          'mermaid',
+        ]) as RenderArgs
+        const out = sink()
+        const err = sink()
+        await fresh(args, out, FLAT, err)
+        expect(err.chunks.join('')).toBe(line)
+        expect(out.chunks.join('')).toBe('X\n')
+      } finally {
+        vi.doUnmock('../src/ascii-layout.ts')
+        vi.resetModules()
+      }
+    },
+  )
 })
