@@ -234,6 +234,8 @@ export interface AsciiEdge {
    * occupy) and the way the line travels through each. Set by `drawArrow`;
    * read by the class diagram's LR/RL cardinality pass.
    */
+  /** Leave the source's right face and enter the target's left face (LR), even on a diagonal. */
+  sideFaces?: boolean
   ends?: {
     start: DrawingCoord & { dir: Direction }
     end: DrawingCoord & { dir: Direction }

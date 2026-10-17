@@ -144,15 +144,13 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       expect(render('  A <--> B', 'RL')).toMatch(/│ B │◀─+▶│ A │/)
     })
 
-    it('points a vertical head into its box (lines that leave by a side face)', () => {
+    it('leaves by the right face so the shared inheritance head points sideways into its box', () => {
       const out = render(
         '  Animal <|-- Dog\n  Animal <|-- Cat\n  Animal <|-- Duck\n  Animal <|-- Bird',
         'LR',
       )
-      expect(out).toContain('△')
-      const { x, y } = at(out, '△')
-      // a vertical stroke continues below the head
-      expect(rows(out)[y + 1]![x]).toBe('│')
+      expect(out).not.toContain('△')
+      expect(out.match(/◁/g)).toHaveLength(1)
     })
 
     it('writes a label on its own line', () => {

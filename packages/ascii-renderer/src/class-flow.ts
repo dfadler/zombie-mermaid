@@ -186,6 +186,7 @@ export function renderClassFlowAscii(
       const m = markers[i]
       if (m?.start) edge.startMarker = m.start
       if (m?.end) edge.endMarker = m.end
+      edge.sideFaces = true
     }
   }
 
