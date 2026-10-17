@@ -69,6 +69,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run bench` — render benchmarks (full end-to-end SVG + ASCII render time)
 - `pnpm run metrics:history:append` — append a snapshot of GitHub stars, npm weekly downloads, latest package versions and unpacked package sizes to `metrics-history.jsonl`; wired into `.github/workflows/dashboard-refresh.yml`'s weekly schedule — you shouldn't normally need to run this by hand
 - `pnpm run smoke:packed` — pack every public package, install the tarballs into clean temp projects and smoke-test them as a consumer would (run `pnpm run build` first; what CI's "Packed tarball smoke test" job and publish.yml run)
+- `pnpm run size:report` — print where the bytes are: per-file raw/gzip/brotli, per-module breakdown from sourcemaps, ESM duplicates and `npm pack` composition for every package (run `pnpm run build` first)
 - `pnpm run api:report` — regenerates the committed public-API reports (`etc/api/*.api.md`) with @microsoft/api-extractor from each built rolled `.d.ts` (run `pnpm run build` first); the report-only `api-report` CI job diffs them (#1870).
 - `pnpm run mutation` — Stryker mutation run on the parser and pathfinder (`stryker.config.json`, #1862); advisory, wired into `.github/workflows/mutation.yml`'s weekly schedule; the HTML report lands in `reports/mutation/`
 - `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
