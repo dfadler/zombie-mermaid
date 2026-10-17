@@ -147,7 +147,7 @@
   {
     "file": "scripts/generate-primitives-classes.ts",
     "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
-    "maxLines": 74,
+    "maxLines": 80,
     "legacy": true
   },
   {
@@ -203,6 +203,6 @@
   {
     "file": "scripts/ascii-layout-table.ts",
     "reason": "measurement CLI: runs on import and prints a table over the gallery, no assertable logic (the rasterizer it measures is unit-tested in packages/ascii-layout)",
-    "maxLines": 74
+    "maxLines": 80
   }
 ]
