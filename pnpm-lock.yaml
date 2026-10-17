@@ -170,6 +170,18 @@ importers:
 
   packages/core: {}
 
+  packages/elk-layout:
+    dependencies:
+      '@zombie-mermaid/core':
+        specifier: workspace:*
+        version: link:../core
+      '@zombie-mermaid/mermaid-parser':
+        specifier: workspace:*
+        version: link:../mermaid-parser
+      elkjs:
+        specifier: 0.9.3
+        version: 0.9.3
+
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
