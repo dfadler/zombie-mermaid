@@ -1,15 +1,15 @@
 <span style="color:#a1a1aa">[</span><span style="color:#ff0000;background:#ff0000">█</span><span style="color:#0d5ba5">▓</span><span style="color:#5fb4f2">▒▒</span><span style="color:#0a5076">░░</span><span style="color:#92e0f6;background:#92e0f6">███</span><span style="color:#0a5e76">▓▓▓</span><span style="color:#97f5f7">▒▒▒▒</span><span style="color:#0a6d76">░░░░</span><span style="color:#97f7e5;background:#97f7e5">█████</span><span style="color:#0a7671">▓▓▓▓▓</span><span style="color:#97f7d2">▒▒▒▒▒▒</span><span style="color:#00aa00">░░░░░░░</span><span style="color:#ff0000;background:#ff0000">███████</span><span style="color:#a1a1aa">]</span>
 
-  <span style="color:#ff0000;background:#ff0000">█</span> <span style="color:#27272a">S1</span>    <span style="color:#27272a">  1%</span>
-  <span style="color:#0d5ba5">▓</span> <span style="color:#27272a">S2</span>    <span style="color:#27272a">  2%</span>
-  <span style="color:#5fb4f2">▒</span> <span style="color:#27272a">S3</span>    <span style="color:#27272a">  3%</span>
-  <span style="color:#0a5076">░</span> <span style="color:#27272a">S4</span>    <span style="color:#27272a">  4%</span>
-  <span style="color:#92e0f6;background:#92e0f6">█</span> <span style="color:#27272a">S5</span>    <span style="color:#27272a">  5%</span>
-  <span style="color:#0a5e76">▓</span> <span style="color:#27272a">S6</span>    <span style="color:#27272a">  7%</span>
-  <span style="color:#97f5f7">▒</span> <span style="color:#27272a">S7</span>    <span style="color:#27272a">  8%</span>
-  <span style="color:#0a6d76">░</span> <span style="color:#27272a">S8</span>    <span style="color:#27272a">  9%</span>
-  <span style="color:#97f7e5;background:#97f7e5">█</span> <span style="color:#27272a">S9</span>    <span style="color:#27272a"> 10%</span>
-  <span style="color:#0a7671">▓</span> <span style="color:#27272a">S10</span>   <span style="color:#27272a"> 11%</span>
-  <span style="color:#97f7d2">▒</span> <span style="color:#27272a">S11</span>   <span style="color:#27272a"> 12%</span>
-  <span style="color:#00aa00">░</span> <span style="color:#27272a">S12</span>   <span style="color:#27272a"> 13%</span>
-  <span style="color:#ff0000;background:#ff0000">█</span> <span style="color:#27272a">S13</span>   <span style="color:#27272a"> 14%</span>
+  <span style="color:#ff0000;background:#ff0000">█</span> <span style="color:inherit">S1</span>    <span style="color:inherit">  1%</span>
+  <span style="color:#0d5ba5">▓</span> <span style="color:inherit">S2</span>    <span style="color:inherit">  2%</span>
+  <span style="color:#5fb4f2">▒</span> <span style="color:inherit">S3</span>    <span style="color:inherit">  3%</span>
+  <span style="color:#0a5076">░</span> <span style="color:inherit">S4</span>    <span style="color:inherit">  4%</span>
+  <span style="color:#92e0f6;background:#92e0f6">█</span> <span style="color:inherit">S5</span>    <span style="color:inherit">  5%</span>
+  <span style="color:#0a5e76">▓</span> <span style="color:inherit">S6</span>    <span style="color:inherit">  7%</span>
+  <span style="color:#97f5f7">▒</span> <span style="color:inherit">S7</span>    <span style="color:inherit">  8%</span>
+  <span style="color:#0a6d76">░</span> <span style="color:inherit">S8</span>    <span style="color:inherit">  9%</span>
+  <span style="color:#97f7e5;background:#97f7e5">█</span> <span style="color:inherit">S9</span>    <span style="color:inherit"> 10%</span>
+  <span style="color:#0a7671">▓</span> <span style="color:inherit">S10</span>   <span style="color:inherit"> 11%</span>
+  <span style="color:#97f7d2">▒</span> <span style="color:inherit">S11</span>   <span style="color:inherit"> 12%</span>
+  <span style="color:#00aa00">░</span> <span style="color:inherit">S12</span>   <span style="color:inherit"> 13%</span>
+  <span style="color:#ff0000;background:#ff0000">█</span> <span style="color:inherit">S13</span>   <span style="color:inherit"> 14%</span>

@@ -1,5 +1,5 @@
 <span style="color:#a1a1aa">┌───────┐</span>     <span style="color:#a1a1aa">┌──────┐</span>
 <span style="color:#a1a1aa">│</span>       <span style="color:#a1a1aa">│</span>     <span style="color:#a1a1aa">│</span>      <span style="color:#a1a1aa">│</span>
-<span style="color:#a1a1aa">│</span> <span style="color:#27272a">Alpha</span> <span style="color:#a1a1aa">├</span><span style="color:#71717a">────</span><span style="color:#52525b">►</span><span style="color:#a1a1aa">│</span> <span style="color:#27272a">Beta</span> <span style="color:#a1a1aa">│</span>
+<span style="color:#a1a1aa">│</span> <span style="color:inherit">Alpha</span> <span style="color:#a1a1aa">├</span><span style="color:#71717a">────</span><span style="color:#52525b">►</span><span style="color:#a1a1aa">│</span> <span style="color:inherit">Beta</span> <span style="color:#a1a1aa">│</span>
 <span style="color:#a1a1aa">│</span>       <span style="color:#a1a1aa">│</span>     <span style="color:#a1a1aa">│</span>      <span style="color:#a1a1aa">│</span>
 <span style="color:#a1a1aa">└───────┘</span>     <span style="color:#a1a1aa">└──────┘</span>
