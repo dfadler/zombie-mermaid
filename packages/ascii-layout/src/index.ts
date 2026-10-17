@@ -5,7 +5,7 @@ import {
   type RasterResult,
 } from './rasterize.ts'
 
-export { rasterizeLayout } from './rasterize.ts'
+export { rasterizeLayout, DEFAULT_MAX_COLS } from './rasterize.ts'
 export type {
   FacePolicy,
   RasterBox,

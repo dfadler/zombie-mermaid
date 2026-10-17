@@ -20,7 +20,16 @@ export interface RasterOptions {
   /** Layout pixels per character row (default 10). */
   cellH?: number
   facePolicy?: FacePolicy
+  /**
+   * Target output width in columns (default 120; `Infinity` disables the cap). Met by shrinking
+   * the blank gaps between node groups on the horizontal axis (rank gaps in LR/RL, node gaps in
+   * TD/BT), never by scaling boxes. If boxes alone do not fit, the result is the uncapped render
+   * and `RasterResult.capped` is false.
+   */
+  maxCols?: number
 }
+
+export const DEFAULT_MAX_COLS = 120
 
 export interface RasterBox {
   id: string
@@ -34,6 +43,10 @@ export interface RasterBox {
 export interface RasterStats {
   rows: number
   cols: number
+  /** Width with no compression (equals `cols` when the cap did not need to act). */
+  naturalCols: number
+  /** Fraction of the natural inter-group gap kept on the horizontal axis (1 = uncompressed). */
+  gapKept: number
   /** Worst relative size error of any box against the layout (0.04 = 4%). */
   maxBoxError: number
   boxesOver15Pct: number
@@ -61,6 +74,12 @@ export interface RasterResult {
   mergedGroups: string[][]
   /** Human-readable caveat for callers to show when edges were merged (empty otherwise). */
   note: string
+  /**
+   * True when `stats.cols <= maxCols`. False means the cap cannot be met without scaling boxes or
+   * merging lanes: `text` is then the natural-width render (`stats.cols === stats.naturalCols`)
+   * and callers should fall back to another renderer or accept the width.
+   */
+  capped: boolean
   stats: RasterStats
 }
 
@@ -118,6 +137,7 @@ function makeAxis(
   spans: { lo: number; hi: number; need: number }[],
   cell: number,
   gap: number,
+  keep = 1,
 ) {
   const sorted = [...spans].sort((a, b) => a.lo - b.lo)
   const groups: { lo: number; hi: number; extra: number }[] = []
@@ -142,7 +162,8 @@ function makeAxis(
         a +
         g.extra * clamp01((v - g.lo) / (g.hi - g.lo)) +
         (groups[i + 1]
-          ? gap * clamp01((v - g.hi) / (groups[i + 1]!.lo - g.hi))
+          ? clamp01((v - g.hi) / (groups[i + 1]!.lo - g.hi)) *
+            (gap - ((1 - keep) * (groups[i + 1]!.lo - g.hi)) / cell)
           : 0),
       0,
     )
@@ -166,6 +187,7 @@ function attempt(
   mergeIdentical: boolean,
   gap: number,
   relaxed: boolean,
+  keep: number,
 ): RasterResult | null {
   const nodes = layout.nodes.map((n) => ({
     ...n,
@@ -310,6 +332,7 @@ function attempt(
     nodes.map((n, i) => ({ lo: n.l, hi: n.r, need: needW[i]! })),
     cw,
     gap,
+    keep,
   )
   const fy = makeAxis(
     nodes.map((n, i) => ({ lo: n.t, hi: n.b, need: needH[i]! })),
@@ -601,6 +624,7 @@ function attempt(
     mergedGroups: bundles
       .filter((b) => b.members.length > 1)
       .map((b) => b.members.map((m) => layout.edges[m]!.id)),
+    capped: true,
     note:
       layout.edges.length === bundles.length
         ? ''
@@ -608,6 +632,8 @@ function attempt(
     stats: {
       rows: kept.length,
       cols: Math.max(...kept.map((r) => r.length - indent)),
+      naturalCols: 0,
+      gapKept: keep,
       maxBoxError: maxErr,
       boxesOver15Pct: over,
       edges: layout.edges.length,
@@ -634,9 +660,12 @@ export function rasterizeLayout(
       boxes: [],
       mergedGroups: [],
       note: '',
+      capped: true,
       stats: {
         rows: 0,
         cols: 0,
+        naturalCols: 0,
+        gapKept: 1,
         maxBoxError: 0,
         boxesOver15Pct: 0,
         edges: 0,
@@ -650,12 +679,44 @@ export function rasterizeLayout(
         relaxed: false,
       },
     }
-  const { cellW = 5, cellH = 10, facePolicy = 'merge-then-grow' } = opts
+  const {
+    cellW = 5,
+    cellH = 10,
+    facePolicy = 'merge-then-grow',
+    maxCols = DEFAULT_MAX_COLS,
+  } = opts
   const { mergeIdentical } = POLICIES[facePolicy]
   // Widen the gap between node groups until every edge routes with right-angle crossings only.
-  for (let gap = 0; gap <= 8; gap++) {
-    const r = attempt(layout, cellW, cellH, mergeIdentical, gap, false)
-    if (r) return r
+  const render = (keep: number) => {
+    for (let gap = 0; gap <= 8; gap++) {
+      const r = attempt(layout, cellW, cellH, mergeIdentical, gap, false, keep)
+      if (r) return r
+    }
+    return attempt(layout, cellW, cellH, mergeIdentical, 4, true, keep)!
   }
-  return attempt(layout, cellW, cellH, mergeIdentical, 4, true)!
+  const natural = render(1)
+  const naturalCols = natural.stats.cols
+  natural.stats.naturalCols = naturalCols
+  if (naturalCols <= maxCols) return natural
+  // Squeeze the blank gaps: find the largest kept fraction that fits and still routes cleanly.
+  // Width is monotone in `keep` up to routing's own gap widening, so bisect.
+  const fits = (r: RasterResult) => r.stats.cols <= maxCols && !r.stats.relaxed
+  const floor = render(0)
+  if (!fits(floor)) {
+    natural.capped = false
+    return natural
+  }
+  let best = floor
+  let lo = 0
+  let hi = 1
+  for (let i = 0; i < 7; i++) {
+    const mid = (lo + hi) / 2
+    const r = render(mid)
+    if (fits(r)) {
+      best = r
+      lo = mid
+    } else hi = mid
+  }
+  best.stats.naturalCols = naturalCols
+  return best
 }

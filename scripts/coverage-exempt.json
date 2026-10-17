@@ -203,6 +203,6 @@
   {
     "file": "scripts/ascii-layout-table.ts",
     "reason": "measurement CLI: runs on import and prints a table over the gallery, no assertable logic (the rasterizer it measures is unit-tested in packages/ascii-layout)",
-    "maxLines": 65
+    "maxLines": 74
   }
 ]
