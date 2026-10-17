@@ -190,7 +190,7 @@ the #590 redesign each landed as their own targeted PR (see
 `.changeset/theme-picker-aria-expanded.md` for the change each one made) —
 those changesets describe the pre-redesign gallery this section used to
 cover, not the current per-family scoping above.
-**Partly covered:** `pnpm run test:a11y` (CI: `.github/workflows/a11y.yml`)
+**Partly covered:** `pnpm run test:a11y` (CI: the `axe` job in `.github/workflows/ci.yml`)
 runs axe-core (wcag2a, wcag2aa, wcag22aa; serious/critical) over a sample of
 the built pages of every family. Violations that exist today are listed in
 `KNOWN` in `__tests__/a11y/site.a11y.test.ts` with their tracking issue; the

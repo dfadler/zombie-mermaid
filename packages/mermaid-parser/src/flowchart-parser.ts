@@ -199,6 +199,11 @@ export function parseMermaid(text: string): MermaidGraph {
     ? parseStateDiagram(lines)
     : parseFlowchart(lines)
 
+  // Mermaid reads a state diagram's `lineColor` under `theme: base` only (a
+  // flowchart's under every theme; measured on 12.1.0 and 12.2.0).
+  if (isState && initConfig.theme !== 'base') {
+    delete initConfig.themeVariables?.lineColor
+  }
   graph.initConfig = initConfig
   return graph
 }

@@ -16,6 +16,7 @@
 // should not be able to override the host application's rendering choices.
 // ============================================================================
 
+import { isValidCssColor } from './css-color.ts'
 import type { RenderOptions } from './types.ts'
 
 /** How an edge path is interpolated between its routed points. */
@@ -39,6 +40,49 @@ const PIE_LEGEND_POSITIONS = new Set([
   'center',
 ])
 
+/**
+ * The `themeVariables` subset this renderer can map onto its own colour
+ * tokens (see `RenderOptions.honorThemeVariables`). Every value has passed
+ * `isValidCssColor` and a stricter safe-character check; invalid ones are
+ * dropped, never thrown.
+ */
+export interface ThemeVariables {
+  /** → `surface` (node fill). Mermaid reads it under `theme: base` only. */
+  primaryColor?: string
+  /** → `border`. Mermaid reads it under `theme: base` only. */
+  primaryBorderColor?: string
+  /** → `fg`. Mermaid reads it under `theme: base` only. */
+  primaryTextColor?: string
+  /** → `line`. Mermaid reads it under every theme. */
+  lineColor?: string
+  /** `pie1`..`pie12` by slot (0..11). Mermaid reads them under every theme. */
+  pieColors?: Record<number, string>
+}
+
+const BASE_ONLY_VARIABLES = [
+  'primaryColor',
+  'primaryBorderColor',
+  'primaryTextColor',
+] as const
+const ANY_THEME_VARIABLES = ['lineColor'] as const
+const PIE_VARIABLE = /^pie([1-9]|1[0-2])$/
+
+/**
+ * A directive colour comes from diagram text, which may be untrusted, and
+ * lands in a `style` attribute: beyond `isValidCssColor`, allow only the
+ * characters a colour literal needs and no `url()`/`var()`/`env()`/`calc()`.
+ */
+function directiveColor(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const v = value.trim()
+  return v.length <= 100 &&
+    /^[#\w\s(),.%/+-]+$/.test(v) &&
+    !/\b(?:url|var|env|calc)\s*\(/i.test(v) &&
+    isValidCssColor(v)
+    ? v
+    : undefined
+}
+
 /** Configuration a diagram can set for itself via `%%{init: ...}%%`. */
 export interface InitConfig {
   theme?: string
@@ -52,6 +96,13 @@ export interface InitConfig {
   pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center'
   /** `pie.highlightSlice`: label of the slice to emphasise. */
   pieHighlightSlice?: string
+  /**
+   * `themeVariables` the renderer can map, applied only when the caller opts
+   * in with `RenderOptions.honorThemeVariables`. `primaryColor`,
+   * `primaryBorderColor` and `primaryTextColor` are present only when the
+   * merged config says `theme: base`, as in Mermaid.
+   */
+  themeVariables?: ThemeVariables
   /** Recognized but not acted on — see `IGNORED_KEYS`. */
   ignored: string[]
 }
@@ -63,7 +114,7 @@ export interface InitConfig {
  */
 const IGNORED_KEYS: Record<string, string> = {
   theme:
-    "colors come from the caller's bg/fg render options, which are usually CSS variables so a diagram inherits the host page's light/dark. A diagram-supplied theme would hard-code colors that fight it. Mermaid's theme names (default/dark/forest/neutral) also have no equivalent in this renderer's palettes — pass `bg`/`fg`, or a THEMES entry, instead",
+    "colors come from the caller's bg/fg render options, which are usually CSS variables so a diagram inherits the host page's light/dark. A diagram-supplied theme would hard-code colors that fight it (it is read only as the `base` gate for themeVariables when `honorThemeVariables` is set). Mermaid's theme names (default/dark/forest/neutral) also have no equivalent in this renderer's palettes — pass `bg`/`fg`, or a THEMES entry, instead",
   securitylevel:
     'this renderer emits static SVG and never executes diagram-supplied script, so there is no sandbox to configure',
   defaultrenderer:
@@ -73,6 +124,8 @@ const IGNORED_KEYS: Record<string, string> = {
     'labels are always rendered as SVG text; there is no HTML label mode',
   maxtextsize: 'no text-size limit is enforced',
   startonload: 'not a browser auto-render integration',
+  themevariables:
+    "only primaryColor, primaryBorderColor, primaryTextColor, lineColor and pie1..pie12 are mapped, and only when the caller sets `honorThemeVariables`; every other variable (secondary/tertiary colours, fontFamily, background, per-diagram variables) is not read, and Mermaid's colours derived from primaryColor are not computed",
 }
 
 /**
@@ -202,6 +255,25 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'themevariables' && typeof value === 'object' && value) {
+      const tv: ThemeVariables = {}
+      for (const [vk, vv] of Object.entries({ ...value })) {
+        const color = directiveColor(vv)
+        if (PIE_VARIABLE.test(vk)) {
+          if (color) (tv.pieColors ??= {})[Number(vk.slice(3)) - 1] = color
+        } else if (
+          (BASE_ONLY_VARIABLES as readonly string[]).includes(vk) ||
+          (ANY_THEME_VARIABLES as readonly string[]).includes(vk)
+        ) {
+          if (color) tv[vk as 'lineColor'] = color
+        } else {
+          config.ignored.push(`${key}.${vk}`)
+        }
+      }
+      config.themeVariables = tv
+      continue
+    }
+
     if (lower === 'flowchart' && typeof value === 'object' && value !== null) {
       const flowchart: Record<string, unknown> = { ...value }
       for (const [fk, fv] of Object.entries(flowchart)) {
@@ -266,7 +338,19 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.pieHighlightSlice !== undefined) {
       merged.pieHighlightSlice = config.pieHighlightSlice
     }
+    if (config.themeVariables) {
+      const { pieColors, ...rest } = config.themeVariables
+      const mergedTv = (merged.themeVariables ??= {})
+      Object.assign(mergedTv, rest)
+      if (pieColors)
+        mergedTv.pieColors = { ...mergedTv.pieColors, ...pieColors }
+    }
     merged.ignored.push(...config.ignored)
+  }
+
+  // Mermaid reads the primary* variables under `theme: base` only.
+  if (merged.themeVariables && merged.theme !== 'base') {
+    for (const k of BASE_ONLY_VARIABLES) delete merged.themeVariables[k]
   }
 
   return merged
@@ -286,9 +370,30 @@ export function applyInitConfig(
   return { ...options, curve: config.curve }
 }
 
+/**
+ * Fold the honoured `themeVariables` into render options, for a caller that
+ * opted in with `honorThemeVariables`. Like `applyInitConfig`, a directive
+ * only fills what the caller left unset: `bg`/`fg`/`line`/`surface`/`border`
+ * passed in `options` always win.
+ */
+export function applyThemeVariables(
+  options: RenderOptions,
+  config: InitConfig | undefined,
+): RenderOptions {
+  const tv = config?.themeVariables
+  if (!tv) return options
+  const out = { ...options }
+  out.surface ??= tv.primaryColor
+  out.border ??= tv.primaryBorderColor
+  out.fg ??= tv.primaryTextColor
+  out.line ??= tv.lineColor
+  return out
+}
+
 /** Human-readable note about directive keys that were parsed but not applied. */
 export function describeIgnored(config: InitConfig): string[] {
   return [...new Set(config.ignored)].map(
-    (key) => `${key}: ${IGNORED_KEYS[key.toLowerCase()] ?? 'not supported'}`,
+    (key) =>
+      `${key}: ${IGNORED_KEYS[key.toLowerCase()] ?? IGNORED_KEYS[key.split('.')[0]!.toLowerCase()] ?? 'not supported'}`,
   )
 }

@@ -28,6 +28,7 @@ import {
 } from '../styles.ts'
 import { findBackEdges } from '@zombie-mermaid/core'
 import { elkLayoutSync } from '../elk-instance.ts'
+import { mermaidTextWidth } from './mermaid-text-width.ts'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
@@ -51,7 +52,8 @@ export const CLS = {
   memberRowHeight: 20,
   sectionPadY: 8,
   emptySectionHeight: 8,
-  minWidth: 120,
+  /** Padding each side of mermaid's class box (`class.padding`), see {@link mermaidClassBoxWidth} */
+  mermaidPad: 12,
   memberFontSize: 11,
   memberFontWeight: 400,
   nodeSpacing: 40,
@@ -276,7 +278,8 @@ function buildClassElkGraph(
     const maxAttrW = maxMemberWidth(cls.attributes)
     const maxMethodW = maxMemberWidth(cls.methods)
     const width = Math.max(
-      CLS.minWidth,
+      mermaidClassBoxWidth(cls),
+      // Never narrower than our own text needs
       headerTextW + CLS.boxPadX * 2,
       maxAttrW + CLS.boxPadX * 2,
       maxMethodW + CLS.boxPadX * 2,
@@ -667,6 +670,43 @@ export function layoutClassDiagramSync(
  */
 function memberTextWidth(text: string): number {
   return text.length * Math.ceil(estimateMonoTextWidth('M', CLS.memberFontSize))
+}
+
+/** A member as mermaid prints it: `+name`, `+name(params) : type`, no space after the marker. */
+function mermaidMemberText(m: ClassMember): string {
+  const call = m.isMethod ? `${m.name}(${m.params || ''})` : m.name
+  return `${m.visibility || ''}${m.visibilitySpace ? ' ' : ''}${call}${m.isMethod && m.type ? ` : ${m.type}` : ''}`
+}
+
+/**
+ * Width of a class box as mermaid sizes it (#2128), so boxes (and so the
+ * layout) come out the same size. Mermaid has no minimum width: it takes the
+ * bounding box of the annotation and class name (both centred on x = 0) and the
+ * member and method lists (left-aligned starting at x = 0), then adds 12px
+ * (`class.padding`) on each side. A box is therefore the wider half of the
+ * centred text, plus the widest member, plus 24, which is why a long member
+ * leaves the right edge `name / 2 + 12` clear. Text is measured as mermaid does
+ * (16px Trebuchet MS), not in the fonts we draw with. Checked on mermaid 12.1.0
+ * and 12.2.0, which agree.
+ */
+function mermaidClassBoxWidth(cls: {
+  label: string
+  annotation?: string
+  attributes: ClassMember[]
+  methods: ClassMember[]
+}): number {
+  const name = mermaidTextWidth(cls.label, true)
+  const annotation = cls.annotation
+    ? mermaidTextWidth(`\u00ab${cls.annotation}\u00bb`, false)
+    : 0
+  const members = Math.max(
+    0,
+    ...[...cls.attributes, ...cls.methods].map((m) =>
+      mermaidTextWidth(mermaidMemberText(m), false),
+    ),
+  )
+  const centred = Math.max(name, annotation)
+  return centred / 2 + Math.max(centred / 2, members) + CLS.mermaidPad * 2
 }
 
 /** Calculate the max width of a list of class members (uses mono metrics) */

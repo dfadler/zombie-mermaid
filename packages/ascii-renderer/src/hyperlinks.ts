@@ -26,7 +26,7 @@
 // never emits it at all.
 // ============================================================================
 
-import type { Canvas, DrawingCoord, AsciiGraph } from './types.ts'
+import type { Canvas, DrawingCoord, AsciiGraph, AsciiNode } from './types.ts'
 import type { NodeInteraction } from '@zombie-mermaid/core'
 import { safeHref } from '@zombie-mermaid/core'
 
@@ -193,6 +193,8 @@ export function markBoxLabelLinks(
 export function buildNodeLinkCanvas(
   graph: AsciiGraph,
   interactions: ReadonlyMap<string, NodeInteraction>,
+  /** Rows of a node's box to link (default: every interior row). */
+  rowsOf?: (node: AsciiNode) => { from: number; to: number } | undefined,
 ): LinkCanvas {
   const [maxX, maxY] = canvasBounds(graph.canvas)
   const linkCanvas = mkLinkCanvas(maxX, maxY)
@@ -201,7 +203,13 @@ export function buildNodeLinkCanvas(
     if (!node.drawing || !node.drawingCoord) continue
     const href = safeHref(interactions.get(node.name)?.href)
     if (href === undefined) continue
-    markBoxLabelLinks(linkCanvas, node.drawing, node.drawingCoord, href)
+    markBoxLabelLinks(
+      linkCanvas,
+      node.drawing,
+      node.drawingCoord,
+      href,
+      rowsOf?.(node),
+    )
   }
 
   return linkCanvas

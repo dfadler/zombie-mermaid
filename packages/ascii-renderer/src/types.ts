@@ -20,7 +20,14 @@ export type { NodeShape }
  * Shape type for ASCII rendering — maps parser shapes to ASCII renderers.
  * Most shapes from the parser are supported, with fallback to 'rectangle'.
  */
-export type AsciiNodeShape = NodeShape
+export type AsciiNodeShape = NodeShape | ClassNodeShape
+
+/**
+ * Shapes only the class diagram's LR/RL lowering (class-flow.ts) produces: a
+ * multi-compartment class box, a rounded note box, and a box-less interface
+ * name. They are set on the converted `AsciiNode`, never by a parser.
+ */
+export type ClassNodeShape = 'class-box' | 'class-note' | 'class-name'
 
 /** Logical grid coordinate — nodes occupy 3x3 blocks on this grid. */
 export interface GridCoord {
@@ -161,6 +168,11 @@ export interface AsciiNode {
    * inferring which text cells belong to one label.
    */
   labelRows?: { top: number; bottom: number }
+  /**
+   * `class-name` nodes only: which end of its cell the text hugs, so it
+   * sits next to the circle its edge ends in (see class-flow.ts).
+   */
+  textAlign?: 'start' | 'end'
   styleClassName: string
   styleClass: AsciiStyleClass
 }
@@ -173,6 +185,21 @@ export interface AsciiStyleClass {
 
 /** Edge line style for ASCII rendering. */
 export type AsciiEdgeStyle = 'solid' | 'dotted' | 'thick' | 'invisible'
+
+/**
+ * Terminator drawn at an edge end instead of the plain arrowhead. `circle` and
+ * `cross` come from flowchart `o--`/`x--`; the `class-*` ones from the class
+ * diagram's LR/RL lowering, where the glyph also follows the way the line
+ * arrives (see `markerArrowChar`).
+ */
+export type AsciiEdgeMarker =
+  | 'circle'
+  | 'cross'
+  | 'class-triangle'
+  | 'class-arrow'
+  | 'class-diamond'
+  | 'class-diamond-filled'
+  | 'class-circle'
 
 /** An edge in the ASCII graph, with a routed path. */
 export interface AsciiEdge {
@@ -199,9 +226,20 @@ export interface AsciiEdge {
    * (`o--`/`x--`) rather than a plain arrowhead. Undefined draws the
    * regular arrowhead glyph (per `hasArrowStart`). See issue #330.
    */
-  startMarker?: 'circle' | 'cross'
+  startMarker?: AsciiEdgeMarker
   /** Terminator shape at the target end (`--o`/`--x`). See `startMarker`. */
-  endMarker?: 'circle' | 'cross'
+  endMarker?: AsciiEdgeMarker
+  /**
+   * The first and last stroke cell as drawn (the cells the end markers
+   * occupy) and the way the line travels through each. Set by `drawArrow`;
+   * read by the class diagram's LR/RL cardinality pass.
+   */
+  /** Leave the source's right face and enter the target's left face (LR), even on a diagonal. */
+  sideFaces?: boolean
+  ends?: {
+    start: DrawingCoord & { dir: Direction }
+    end: DrawingCoord & { dir: Direction }
+  }
   /** Bundle this edge belongs to (if any). Set during bundling analysis. */
   bundle?: EdgeBundle
   /**
@@ -536,7 +574,7 @@ export type RoleCanvas = (CharRole | null)[][]
  * Derived from the SVG theme system for visual consistency.
  */
 export interface AsciiTheme {
-  /** Text color (node labels, edge labels) */
+  /** Text color (labels); default `'inherit'` = the terminal's own foreground */
   fg: string
   /** Box border color (node borders, subgraph borders) */
   border: string

@@ -496,6 +496,7 @@ function parseMember(
   // Extract visibility prefix
   let visibility: ClassMember['visibility'] = ''
   let rest = trimmed
+  let visibilitySpace = false
   const visibilityChar = rest[0]
   if (
     visibilityChar === '+' ||
@@ -504,6 +505,7 @@ function parseMember(
     visibilityChar === '~'
   ) {
     visibility = visibilityChar
+    visibilitySpace = /^\s/.test(rest.slice(1))
     rest = rest.slice(1).trim()
   }
 
@@ -547,6 +549,7 @@ function parseMember(
         isAbstract,
         isMethod: true,
         params,
+        ...(visibilitySpace && { visibilitySpace }),
       },
       isMethod: true,
     }
@@ -572,6 +575,7 @@ function parseMember(
       isStatic,
       isAbstract,
       isMethod: false,
+      ...(visibilitySpace && { visibilitySpace }),
     },
     isMethod: false,
   }
