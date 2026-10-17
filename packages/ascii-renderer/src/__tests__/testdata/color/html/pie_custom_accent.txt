@@ -6,12 +6,12 @@ pie title Pets adopted by volunteers
   "Birds" : 60
   "Fish" : 30
 ---
-             <span style="color:#27272a">Pets adopted by volunteers</span>
+             <span style="color:inherit">Pets adopted by volunteers</span>
 
 <span style="color:#a1a1aa">[</span><span style="color:#d33682;background:#d33682">██████████████████████████████████</span><span style="color:#922067">▓▓▓▓▓▓▓</span><span style="color:#e071bd">▒</span><span style="color:#691754">░░░░░</span><span style="color:#ea9fe1;background:#ea9fe1">███</span><span style="color:#a1a1aa">]</span>
 
-  <span style="color:#d33682;background:#d33682">█</span> <span style="color:#27272a">Dogs</span>    <span style="color:#27272a"> 67%</span>
-  <span style="color:#922067">▓</span> <span style="color:#27272a">Cats</span>    <span style="color:#27272a"> 15%</span>
-  <span style="color:#e071bd">▒</span> <span style="color:#27272a">Rats</span>    <span style="color:#27272a">  3%</span>
-  <span style="color:#691754">░</span> <span style="color:#27272a">Birds</span>   <span style="color:#27272a"> 10%</span>
-  <span style="color:#ea9fe1;background:#ea9fe1">█</span> <span style="color:#27272a">Fish</span>    <span style="color:#27272a">  5%</span>
+  <span style="color:#d33682;background:#d33682">█</span> <span style="color:inherit">Dogs</span>    <span style="color:inherit"> 67%</span>
+  <span style="color:#922067">▓</span> <span style="color:inherit">Cats</span>    <span style="color:inherit"> 15%</span>
+  <span style="color:#e071bd">▒</span> <span style="color:inherit">Rats</span>    <span style="color:inherit">  3%</span>
+  <span style="color:#691754">░</span> <span style="color:inherit">Birds</span>   <span style="color:inherit"> 10%</span>
+  <span style="color:#ea9fe1;background:#ea9fe1">█</span> <span style="color:inherit">Fish</span>    <span style="color:inherit">  5%</span>

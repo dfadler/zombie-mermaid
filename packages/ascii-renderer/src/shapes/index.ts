@@ -31,6 +31,7 @@ import {
   GLYPH_DIMENSIONS,
 } from './state.ts'
 import { stadiumRenderer } from './stadium.ts'
+import { classBoxRenderer, classNameRenderer } from './class-box.ts'
 import {
   subroutineRenderer,
   doublecircleRenderer,
@@ -139,6 +140,11 @@ export const shapeRegistry: ShapeRegistry = new Map<
   ['state-start', stateStartRenderer],
   ['state-end', stateEndRenderer],
   ['fork-join', forkJoinRenderer],
+
+  // Class diagram LR/RL lowering (class-flow.ts)
+  ['class-box', classBoxRenderer],
+  ['class-note', classBoxRenderer],
+  ['class-name', classNameRenderer],
 ])
 
 /**

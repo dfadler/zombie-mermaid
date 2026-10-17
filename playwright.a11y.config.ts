@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 // Separate from playwright.config.ts on purpose: the visual suite pins a
 // Docker image and screenshot baselines; the axe scan needs neither, so it
-// runs in its own workflow (.github/workflows/a11y.yml) and `pnpm test:visual`
+// runs in its own CI job (`axe` in .github/workflows/ci.yml) and `pnpm test:visual`
 // never picks it up (that config's testMatch is *.visual.test.ts).
 export default defineConfig({
   testDir: '__tests__/a11y',

@@ -100,6 +100,11 @@ ALLOWLIST=(
   # editor component test; the .txt files under __tests__/__ascii-snapshots__/
   # are reviewed via `git diff` (`pnpm run test:ascii-text:update`).
   "__tests__/ascii-text-snapshots.test.ts"
+  # SVG + ASCII goldens for the opt-in themeVariables mapping (#2108): the
+  # repo rule is an SVG and an ASCII snapshot per case. Not a component test;
+  # the files under src/__tests__/__theme-variables-snapshots__/ are reviewed
+  # via `git diff` (`vitest -u`).
+  "src/__tests__/theme-variables-2108.test.ts"
 )
 
 is_allowlisted() {

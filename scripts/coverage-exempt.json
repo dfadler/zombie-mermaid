@@ -1,5 +1,10 @@
 [
   {
+    "file": "scripts/mention-watch.ts",
+    "reason": "thin CLI: runs on import and hits the network; all logic is in scripts/lib/mention-watch.ts (tested with an injected fetch)",
+    "maxLines": 60
+  },
+  {
     "file": "scripts/determinism-manifest.ts",
     "reason": "thin CLI: runs on import and prints; all logic is in scripts/lib/determinism-manifest.ts (tested)",
     "maxLines": 20
@@ -168,6 +173,11 @@
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 27,
     "legacy": true
+  },
+  {
+    "file": "scripts/size-report.ts",
+    "reason": "report CLI: runs on import, reads dist/ and shells out to npm pack; all logic is in scripts/lib/size-report.ts (tested)",
+    "maxLines": 143
   },
   {
     "file": "scripts/visual-diff.ts",

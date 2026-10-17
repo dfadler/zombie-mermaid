@@ -6,12 +6,12 @@ pie title Labels <&> "quotes"
   "R&D" : 99
   'It\'s' : 10
 ---
-                <span style="color:#27272a">Labels &lt;&amp;&gt; "quotes"</span>
+                <span style="color:inherit">Labels &lt;&amp;&gt; "quotes"</span>
 
 <span style="color:#a1a1aa">[</span><span style="color:#3b82f6;background:#3b82f6">███████████████</span><span style="color:#0d5ba5">▓▓▓▓▓▓▓▓▓▓▓▓▓</span><span style="color:#5fb4f2">▒▒▒▒▒▒▒▒▒▒</span><span style="color:#0a5076">░░░░░░░</span><span style="color:#92e0f6;background:#92e0f6">█████</span><span style="color:#a1a1aa">]</span>
 
-  <span style="color:#3b82f6;background:#3b82f6">█</span> <span style="color:#27272a">R&amp;D</span>             <span style="color:#27272a"> 30%</span>
-  <span style="color:#0d5ba5">▓</span> <span style="color:#27272a">Single quoted</span>   <span style="color:#27272a"> 25%</span>
-  <span style="color:#5fb4f2">▒</span> <span style="color:#27272a">&lt;script&gt;</span>        <span style="color:#27272a"> 20%</span>
-  <span style="color:#0a5076">░</span> <span style="color:#27272a">Say "hi"</span>        <span style="color:#27272a"> 15%</span>
-  <span style="color:#92e0f6;background:#92e0f6">█</span> <span style="color:#27272a">It's</span>            <span style="color:#27272a"> 10%</span>
+  <span style="color:#3b82f6;background:#3b82f6">█</span> <span style="color:inherit">R&amp;D</span>             <span style="color:inherit"> 30%</span>
+  <span style="color:#0d5ba5">▓</span> <span style="color:inherit">Single quoted</span>   <span style="color:inherit"> 25%</span>
+  <span style="color:#5fb4f2">▒</span> <span style="color:inherit">&lt;script&gt;</span>        <span style="color:inherit"> 20%</span>
+  <span style="color:#0a5076">░</span> <span style="color:inherit">Say "hi"</span>        <span style="color:inherit"> 15%</span>
+  <span style="color:#92e0f6;background:#92e0f6">█</span> <span style="color:inherit">It's</span>            <span style="color:inherit"> 10%</span>

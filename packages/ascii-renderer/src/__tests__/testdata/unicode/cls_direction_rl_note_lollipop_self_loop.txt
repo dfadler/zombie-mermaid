@@ -1,0 +1,24 @@
+classDiagram
+  direction RL
+  class Shape {
+    <<abstract>>
+    +area() double
+  }
+  Shape <|-- Circle
+  Shape ()-- Drawable
+  note for Shape "root"
+  Circle --> Circle : self
+---
+      ┌────────┐     ┌──────────────────┐     ╭──────╮
+      │        │     │ <<abstract>>     │     │      │
+      │ Circle │     │ Shape            │     │ root │
+  ┌───┤        ├────▷├──────────────────┼┄┄┄┄┄┤      │
+  │   │        │     │ + area(): double │     │      │
+  │   └────────┘     └──────────────────┘     ╰──────╯
+  │       ▲
+  │       │
+  └──self─┘
+
+                     ┌──────────────────┐
+                     │ Drawable         ├────○Shape
+                     └──────────────────┘
