@@ -193,15 +193,27 @@ circle at both ends, in mermaid and here.
 
 Dotted lollipops (`()..`, `..()`), which mermaid accepts, are a parse error here.
 
-## Class: direction in ASCII
+## Class: LR and RL in ASCII
 
-`direction LR` and `direction RL` in a class diagram change the SVG layout
-([#2116](https://github.com/dfadler/zombie-mermaid/issues/2116)) but not the ASCII one, which stays
-top-down. `direction BT` is drawn in both. The ASCII class renderer places classes in level rows
-and routes every relationship, label and cardinality on that assumption, so `BT` is the finished
-drawing flipped vertically (boxes kept upright) while `LR`/`RL` would need a column layout of
-their own, as a separate renderer. mermaid.js 12.1.0 and 12.2.0 lay `LR` out in columns and `RL`
-as its mirror. The ER ASCII renderer has a similar approximation.
+Class diagrams with `direction LR` or `direction RL` are drawn in ASCII like the SVG, with
+each level in a column and `RL` as the mirror
+([#2158](https://github.com/dfadler/zombie-mermaid/issues/2158); mermaid.js 12.1.0 and 12.2.0
+agree on the arrangement). The top-down and `BT` drawings are the class renderer's own level
+rows; `LR` and `RL` are lowered onto the flowchart ASCII grid instead (classes become boxed
+nodes, relationships become edges, namespaces become frames), so a few things follow the
+flowchart, not mermaid:
+
+- Boxes in a column share one width and boxes on a row share one height; the extra rows stay
+  empty at the bottom of the last compartment (a box with one compartment is centred).
+  mermaid.js keeps each box at its own size.
+- A parent with several children leaves by one face and branches off a shared trunk, instead
+  of one line per child from the parent's flow-side face.
+- A line that meets a box side on a compartment divider row is joined to it (`┼`); it can
+  look as if it crosses the box.
+- Namespace frames, labels and routing around obstacles are the flowchart's, so they differ
+  in detail from the top-down class drawing.
+
+`RenderOptions.direction` still does not apply to class diagrams.
 
 ## `themeVariables` are opt-in, and only a subset
 

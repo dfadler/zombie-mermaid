@@ -867,6 +867,11 @@ const HORIZONTAL_FLIP_MAP: Record<string, string> = {
   '◄': '►',
   '>': '<',
   '<': '>',
+  // Class diagram end markers (class-flow.ts): hollow triangle, open arrow
+  '▷': '◁',
+  '◁': '▷',
+  '▶': '◀',
+  '◀': '▶',
   // Diagonal arrowheads (U+2196-U+2199)
   '↖': '↗',
   '↗': '↖',

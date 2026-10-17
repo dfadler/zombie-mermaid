@@ -17,6 +17,7 @@ import { mkCanvas, write } from './canvas.ts'
 import { splitLines } from './multiline-utils.ts'
 import { getCorners } from './shapes/corners.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
+import { decodeSections } from './shapes/class-box.ts'
 
 // ============================================================================
 // Node drawing — renders a node using shape-aware rendering
@@ -116,6 +117,38 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     write(box, gx, cy, glyph)
     node.labelRows = { top: cy, bottom: cy }
     return box
+  }
+
+  // Class diagram nodes (LR/RL lowering, class-flow.ts): a compartment box at
+  // the size the grid gave it, or the bare interface name.
+  if (node.shape === 'class-name') {
+    // On the row edges land on, like a pseudo-state glyph (see below).
+    const row = (i: number) => graph.rowHeight.get(gc.y + i) ?? 0
+    const cy = row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
+    const cells = toDisplayCells(node.displayLabel)
+    const x0 = node.textAlign === 'end' ? to.x + 1 - cells.length : from.x
+    for (const [i, cell] of cells.entries()) write(box, x0 + i, cy, cell)
+    node.labelRows = { top: cy, bottom: cy }
+    return box
+  }
+  if (node.shape === 'class-box' || node.shape === 'class-note') {
+    const drawn = drawMultiBox(
+      decodeSections(node.displayLabel),
+      useAscii,
+      graph.config.boxBorderPadding,
+      { width: w + 1, height: h + 1 },
+    )
+    if (node.shape === 'class-note') {
+      const r = getCorners('rounded', useAscii)
+      write(drawn, 0, 0, r.tl)
+      write(drawn, w, 0, r.tr)
+      write(drawn, 0, h, r.bl)
+      write(drawn, w, h, r.br)
+    }
+    // Every interior row is one label rectangle, so the RL flip keeps the
+    // member text reading left to right (see mirrorLabelColumns).
+    node.labelRows = { top: 1, bottom: Math.max(h - 1, 1) }
+    return drawn
   }
 
   // Get corner characters for this shape type
@@ -256,15 +289,20 @@ export function drawMultiBox(
   sections: string[][],
   useAscii: boolean,
   padding: number = 1,
+  fit?: { width: number; height: number },
 ): Canvas {
   // Clamp here too (not just inside measureMultiBox) since `padding` is also
   // used directly below for each line's startX — see the comment in
   // measureMultiBox for why a negative value can reach this function.
   const clampedPadding = Math.max(0, padding)
-  const { width: boxWidth, height: boxHeight } = measureMultiBox(
-    sections,
-    clampedPadding,
-  )
+  const natural = measureMultiBox(sections, clampedPadding)
+  // `fit` stretches the box to a cell the layout allotted (flowchart grid):
+  // wider is plain space on the right, taller leaves the extra rows empty at
+  // the bottom — or around a single compartment, which is centred instead.
+  const boxWidth = Math.max(natural.width, fit?.width ?? 0)
+  const boxHeight = Math.max(natural.height, fit?.height ?? 0)
+  const topSlack =
+    sections.length === 1 ? Math.floor((boxHeight - natural.height) / 2) : 0
 
   // Box-drawing characters
   const hLine = useAscii ? '-' : '─'
@@ -295,7 +333,7 @@ export function drawMultiBox(
   }
 
   // Render sections with dividers
-  let row = 1 // current y position (starts after top border)
+  let row = 1 + topSlack // current y position (starts after top border)
   for (let s = 0; s < sections.length; s++) {
     const section = sections[s]!
     const lines = section.length > 0 ? section : ['']
