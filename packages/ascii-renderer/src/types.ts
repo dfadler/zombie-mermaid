@@ -574,7 +574,7 @@ export type RoleCanvas = (CharRole | null)[][]
  * Derived from the SVG theme system for visual consistency.
  */
 export interface AsciiTheme {
-  /** Text color (node labels, edge labels) */
+  /** Text color (labels); default `'inherit'` = the terminal's own foreground */
   fg: string
   /** Box border color (node borders, subgraph borders) */
   border: string

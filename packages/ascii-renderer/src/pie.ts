@@ -48,6 +48,7 @@ import {
   getSeriesColor,
   CHART_ACCENT_FALLBACK,
 } from '@zombie-mermaid/mermaid-parser'
+import { parseHexColor } from '@zombie-mermaid/core'
 import type { PieChart } from '@zombie-mermaid/mermaid-parser'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { colorizeText } from './ansi.ts'
@@ -197,7 +198,12 @@ export function layoutPieAscii(
 }
 
 /** Palette colour for slot `index`, as the SVG's pieColorValue() picks it. */
-function sliceColor(index: number, theme: AsciiTheme): string {
+function sliceColor(
+  index: number,
+  theme: AsciiTheme,
+  override?: string,
+): string {
+  if (override && parseHexColor(override)) return override
   return getSeriesColor(index, theme.accent ?? CHART_ACCENT_FALLBACK, theme.bg)
 }
 
@@ -206,8 +212,17 @@ export function renderPieAscii(
   config: AsciiConfig,
   colorMode: ColorMode,
   theme: AsciiTheme,
+  honorThemeVariables = false,
 ): string {
-  const layout = layoutPieAscii(parsePieChart(text))
+  const chart = parsePieChart(text)
+  const layout = layoutPieAscii(chart)
+  // `pie1..pie12` from the directive, only when the caller opted in.
+  const slot = (i: number) =>
+    sliceColor(
+      i,
+      theme,
+      honorThemeVariables ? chart.sliceColors?.[i] : undefined,
+    )
   const ch = config.useAscii ? ASC : UNI
   // colorizeText leaves an empty string (e.g. a `"" : 1` label) uncoloured.
   const paint = (s: string, hex: string): string =>
@@ -235,7 +250,7 @@ export function renderPieAscii(
   let used = 0
   for (const row of layout.rows) {
     if (row.cells <= 0) continue
-    bar += paint(fill(row).repeat(row.cells), sliceColor(row.colorIndex, theme))
+    bar += paint(fill(row).repeat(row.cells), slot(row.colorIndex))
     used += row.cells
   }
   bar += ' '.repeat(Math.max(0, layout.barWidth - used))
@@ -245,7 +260,7 @@ export function renderPieAscii(
     lines.push('')
     const labelWidth = Math.max(...layout.rows.map((r) => displayWidth(r.text)))
     for (const row of layout.rows) {
-      const swatch = paint(fill(row), sliceColor(row.colorIndex, theme))
+      const swatch = paint(fill(row), slot(row.colorIndex))
       const label =
         paint(row.text, theme.fg) +
         ' '.repeat(labelWidth - displayWidth(row.text))

@@ -23,6 +23,9 @@ export function applyClickStatement(line: string, interactions: Map<string, Node
 export function applyInitConfig(options: RenderOptions, config: InitConfig): RenderOptions;
 
 // @public
+export function applyThemeVariables(options: RenderOptions, config: InitConfig | undefined): RenderOptions;
+
+// @public
 export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string): string;
 
 // @public
@@ -207,7 +210,7 @@ export function extractInitConfig(lines: string[]): InitConfig;
 export function f(strings: TemplateStringsArray, ...values: unknown[]): string;
 
 // @public
-export type FlowchartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'padding' | 'nodeSpacing' | 'layerSpacing' | 'mergeEdges' | 'direction' | 'curve' | 'fontSizes' | 'interactivity' | 'layoutCache' | 'layout'>;
+export type FlowchartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'padding' | 'nodeSpacing' | 'layerSpacing' | 'mergeEdges' | 'direction' | 'curve' | 'honorThemeVariables' | 'fontSizes' | 'interactivity' | 'layoutCache' | 'layout'>;
 
 // @public
 export function formatCssColor(c: RgbaColor): string;
@@ -234,6 +237,7 @@ export interface InitConfig {
     pieTextPosition?: number;
     // (undocumented)
     theme?: string;
+    themeVariables?: ThemeVariables;
 }
 
 // @public
@@ -561,6 +565,7 @@ export interface RenderOptions {
         edgeLabel?: number;
         groupHeader?: number;
     };
+    honorThemeVariables?: boolean;
     // @deprecated (undocumented)
     interactive?: boolean;
     interactivity?: 'none' | 'static' | 'full';
@@ -669,6 +674,15 @@ export const THEMES: Record<string, DiagramColors>;
 
 // @public
 export function themeStyleDeclarations(colors: DiagramColors, transparent?: boolean): string;
+
+// @public
+export interface ThemeVariables {
+    lineColor?: string;
+    pieColors?: Record<number, string>;
+    primaryBorderColor?: string;
+    primaryColor?: string;
+    primaryTextColor?: string;
+}
 
 // @public
 export function toDirection(raw: string | undefined): Direction;

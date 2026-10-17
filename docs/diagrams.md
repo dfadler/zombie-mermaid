@@ -163,6 +163,62 @@ option.** The caller is closer to the user's intent than text embedded in a
 diagram, and a diagram from an untrusted source should not be able to
 override a host application's rendering choices.
 
+### `themeVariables` (opt-in)
+
+Mermaid applies `%%{init: {"themeVariables": {...}}}%%` colours; by default
+zombie-mermaid does not, so a diagram cannot recolour itself against the
+host page's `bg`/`fg` (or CSS-variable) theme. Set `honorThemeVariables: true`
+(`renderMermaidSVG` and `renderMermaidASCII`) to map a small subset onto the
+theme tokens:
+
+| Variable             | Needs                     | Becomes                      | Diagrams         |
+| -------------------- | ------------------------- | ---------------------------- | ---------------- |
+| `primaryColor`       | `theme: "base"`           | `surface` (node fill)        | flowchart, state |
+| `primaryBorderColor` | `theme: "base"`           | `border` (node/group stroke) | flowchart, state |
+| `primaryTextColor`   | `theme: "base"`           | `fg`                         | flowchart, state |
+| `lineColor`          | any theme (state: `base`) | `line` (edges)               | flowchart, state |
+| `pie1`..`pie12`      | any theme                 | slice and legend colour      | pie              |
+
+```
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ffd9d9", "lineColor": "#c00"}}}%%
+flowchart LR
+  A --> B
+```
+
+```ts
+renderMermaidSVG(source, { honorThemeVariables: true })
+```
+
+- **The caller wins.** A `bg`, `fg`, `line`, `surface` or `border` you pass is
+  never replaced (for ASCII, a key in `theme`).
+- **Invalid values are ignored, never thrown**: the same colour check as
+  `style`/`classDef` colours, plus no `url()`/`var()`/`env()`/`calc()`,
+  since the value comes from diagram text. Mermaid itself throws on an
+  invalid `primaryColor` and paints a bad `pie1` `#333`.
+- **Not derived.** Mermaid computes secondary/tertiary colours, a gradient
+  node border and the other pie slices from `primaryColor`; zombie-mermaid
+  does not. Under `theme: "base"` a lone `primaryColor` fills the nodes and
+  nothing else changes. `primaryBorderColor` is a solid stroke here, where
+  Mermaid 12.1.0/12.2.0 start a border gradient with it.
+- **`primaryTextColor` becomes `fg`**, so it also moves the colours derived
+  from `fg` when `line`/`border` are not given.
+- **ASCII** maps `lineColor`, `primaryBorderColor`, `primaryTextColor` and
+  `pie1`..`pie12`, hex values only (the ANSI and HTML colour modes need a hex
+  literal). `primaryColor` has no ASCII meaning: a node has no fill.
+- **Every other variable is not supported** (`secondaryColor`,
+  `tertiaryColor`, `background`, `fontFamily`, `fontSize`, `nodeBorder`,
+  `clusterBkg`, `pie*TextColor`, `pieStrokeColor`, `pieOpacity`, the
+  sequence/class/state/journey variables, ...). `extractInitConfig()`
+  lists them in `ignored` as `themeVariables.<name>`, and `describeIgnored()`
+  explains why. Only flowchart, state and pie diagrams read the directive, so
+  the other types ignore `themeVariables` even when opted in.
+- `themeCssVariables(options)` sees only your options, not the diagram, so
+  with `styleAttribute: false` the directive colours are not in that string.
+
+Checked against mermaid 12.1.0 (`scripts/lib/real-mermaid.ts`) and 12.2.0
+(jsDelivr), headless Chromium, computed paint; both gave the same results.
+See [known differences](known-differences.md#themevariables-are-opt-in-and-only-a-subset).
+
 Keys parsed but deliberately not acted on, and why:
 
 | Key               | Why                                                                          |
@@ -895,8 +951,9 @@ total are left out of the pie but stay in the legend, so the drawn slices
 fill the circle and the labels may not add up to 100%. A `pie` with no
 slices draws an empty circle.
 
-Colours follow the theme instead of Mermaid's `pie1`..`pie12`: the first
-slice uses the accent colour, the next eleven use the XY chart series
+Colours follow the theme instead of Mermaid's `pie1`..`pie12` (unless you opt
+in with `honorThemeVariables`, see [`themeVariables`](#themevariables-opt-in)):
+the first slice uses the accent colour, the next eleven use the XY chart series
 shades, and the twelve repeat after that. Slices are drawn at Mermaid's 0.7
 opacity with a 2px outline in the theme's foreground colour.
 
