@@ -7,7 +7,7 @@
  * Must run on elkjs 0.9.3 (mermaid's own dependency): 0.11/0.12 lay the dense samples out
  * differently. This package pins it exactly and resolves it package-locally.
  */
-import ELK from 'elkjs/lib/elk.bundled.js'
+import ELK from 'elkjs-0.9.3/lib/elk.bundled.js'
 import { buildModel, inside, type MNode, type Model, type Pt } from './model.ts'
 
 export interface LayoutNode {

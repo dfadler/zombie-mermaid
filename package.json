@@ -28,6 +28,16 @@
         "default": "./dist/ascii.cjs"
       }
     },
+    "./ascii-layout": {
+      "import": {
+        "types": "./dist/ascii-layout.d.ts",
+        "default": "./dist/ascii-layout.js"
+      },
+      "require": {
+        "types": "./dist/ascii-layout.d.cts",
+        "default": "./dist/ascii-layout.cjs"
+      }
+    },
     "./mcp": {
       "import": {
         "types": "./dist/mcp.d.ts",
@@ -188,6 +198,9 @@
     "@types/react-dom": "^19.2.7",
     "@vitest/coverage-v8": "^4.1.11",
     "@xterm/headless": "^6.0.0",
+    "@zombie-mermaid/ascii-layout": "workspace:*",
+    "@zombie-mermaid/elk-layout": "workspace:*",
+    "elkjs-0.9.3": "npm:elkjs@0.9.3",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
     "fast-check": "4.10.2",
@@ -212,5 +225,13 @@
   },
   "optionalDependencies": {
     "@resvg/resvg-js": "^2.6.2"
+  },
+  "peerDependencies": {
+    "elkjs-0.9.3": "0.9.3"
+  },
+  "peerDependenciesMeta": {
+    "elkjs-0.9.3": {
+      "optional": true
+    }
   }
 }

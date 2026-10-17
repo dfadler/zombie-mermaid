@@ -23,7 +23,7 @@ double circle, hexagon, subroutine and cylinder. Catch it and fall back.
 
 That is the version mermaid itself depends on; 0.11/0.12 lay the dense duplicate-edge samples
 out differently. The rest of the repo uses elkjs 0.12, which is fine: pnpm resolves
-`packages/elk-layout/node_modules/elkjs` (0.9.3) for this package only, and a test asserts it.
+the alias `elkjs-0.9.3` (npm:elkjs@0.9.3) for this package, and a test asserts it. The alias is also how the published umbrella declares the pin (optional peer, see the ASCII layout docs).
 Do not bump it without re-running the oracle.
 
 ## Font strategy

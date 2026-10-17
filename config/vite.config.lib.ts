@@ -103,6 +103,9 @@ const DIST = resolve(ROOT, 'dist')
 // A prefix-matching function closes that gap for any current or future
 // subpath import.
 //
+// `elkjs-0.9.3` is the npm alias for elkjs 0.9.3, the pin the opt-in layout-faithful ASCII mode
+// (src/ascii-layout.ts, #2182) needs; an OPTIONAL peer, only imported from a lazy chunk.
+//
 // `@modelcontextprotocol/sdk` and `zod` are only needed by the `mcp` entry
 // (and, transitively, the CLI's `mcp` subcommand, src/cli/mcp.ts) — kept
 // external here too so they never end up bundled into `dist/index.*` or
@@ -131,6 +134,8 @@ function isExternal(id: string): boolean {
   return (
     id === 'elkjs' ||
     id.startsWith('elkjs/') ||
+    id === 'elkjs-0.9.3' ||
+    id.startsWith('elkjs-0.9.3/') ||
     id === 'entities' ||
     id.startsWith('entities/') ||
     id === '@modelcontextprotocol/sdk' ||
@@ -207,7 +212,7 @@ const WORKSPACE_REF_RE: Record<string, RegExp> = {
 async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
   const files = [...emitted.keys()].filter((file) => file.endsWith('.d.ts'))
   const found = files.map((file) => basename(file)).sort()
-  const expected = ['ascii.d.ts', 'index.d.ts', 'mcp.d.ts']
+  const expected = ['ascii-layout.d.ts', 'ascii.d.ts', 'index.d.ts', 'mcp.d.ts']
   if (found.join() !== expected.join()) {
     throw new Error(
       `Expected exactly ${expected.join(', ')} from the types build, found: ${found.join(', ') || '(none)'}`,
@@ -306,6 +311,21 @@ export default defineConfig({
         },
       },
     },
+    // Opt-in layout-faithful ASCII (#2182): its own entry so the private layout packages and
+    // the optional elkjs-0.9.3 peer never enter `index`/`ascii` (a bundler resolving the
+    // browser-oriented entries would otherwise have to resolve them). They load through a
+    // dynamic import inside `src/ascii-layout.ts`, so even this entry stays small until called.
+    asciiLayout: {
+      consumer: 'client',
+      build: {
+        lib: {
+          entry: resolve(ROOT, 'src/ascii-layout.ts'),
+          formats: ES_AND_CJS,
+          fileName: (format) =>
+            `ascii-layout.${format === 'es' ? 'js' : 'cjs'}`,
+        },
+      },
+    },
     // Before #769, `mcp` was split into an ESM and a CJS environment
     // because its entry (`packages/mcp/src/index.ts`, bundled directly)
     // transitively pulled in `src/package-info.ts`'s
@@ -367,6 +387,7 @@ export default defineConfig({
             index: resolve(ROOT, 'src/index.ts'),
             ascii: resolve(ROOT, 'src/ascii-entry.ts'),
             mcp: resolve(ROOT, 'src/mcp-entry.ts'),
+            'ascii-layout': resolve(ROOT, 'src/ascii-layout.ts'),
           },
           formats: ES_ONLY,
         },
