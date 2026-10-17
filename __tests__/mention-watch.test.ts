@@ -263,7 +263,7 @@ describe('collectAll', () => {
     expect(r.errors).toEqual([
       'GitHub repositories ("zombie mermaid"): HTTP 403',
     ])
-    expect(r.attempts).toBe(COLLECTORS.length)
+    expect(r.attempts).toBe(COLLECTORS.filter((c) => !c.needsBraveKey).length)
   })
 
   it('treats a thrown fetch as a per-source error, not a crash', async () => {
@@ -272,6 +272,83 @@ describe('collectAll', () => {
       cfg,
     )
     expect(r.findings).toEqual([])
-    expect(r.errors).toHaveLength(COLLECTORS.length)
+    expect(r.errors).toHaveLength(
+      COLLECTORS.filter((c) => !c.needsBraveKey).length,
+    )
+  })
+
+  describe('Web source (Brave, #2201)', () => {
+    const web = (url: string, init?: RequestInit) => {
+      if (!url.startsWith('https://api.search.brave.com/res/v1/web/search'))
+        return json({}, 500)
+      expect(new Headers(init?.headers).get('X-Subscription-Token')).toBe('k')
+      return json({
+        web: {
+          results: [
+            {
+              url: 'https://blog.example.com/post',
+              title: 'Trying zombie-mermaid',
+              description: 'a review',
+            },
+            { url: 'https://dev.to/x', title: 'Unrelated', description: 'no' },
+            {
+              url: 'https://github.com/o/r',
+              title: 'zombie-mermaid',
+              description: '',
+            },
+            {
+              url: 'https://www.npmjs.com/package/x',
+              title: 'zombie-mermaid',
+              description: '',
+            },
+            { url: 'https://dfadler.dev/zm', title: 'zombie-mermaid' },
+          ],
+        },
+      })
+    }
+    const only = COLLECTORS.filter((c) => c.source === 'Web')
+    const withKey = { ...ctx(web), braveKey: 'k' }
+
+    it('reports matching pages, dropping non-matches, covered hosts and excluded URLs', async () => {
+      const r = await collectAll(
+        withKey,
+        { ...cfg, excludeUrlPrefixes: ['https://dfadler.dev'] },
+        only,
+      )
+      expect(r.findings.map((x) => [x.url, x.source])).toEqual([
+        ['https://blog.example.com/post', 'Web'],
+      ])
+      expect(r.errors).toEqual([])
+    })
+
+    it('is skipped without a key: no fetch, no attempt, no error', async () => {
+      let calls = 0
+      const r = await collectAll(
+        ctx(() => {
+          calls++
+          return json({})
+        }),
+        cfg,
+        only,
+      )
+      expect(calls).toBe(0)
+      expect(r).toEqual({ findings: [], errors: [], attempts: 0 })
+    })
+
+    it('records an HTTP error and treats an empty result as nothing found', async () => {
+      const bad = await collectAll(
+        { ...ctx(() => json({}, 429)), braveKey: 'k' },
+        cfg,
+        only,
+      )
+      expect(bad.errors).toEqual(['Web ("zombie mermaid"): HTTP 429'])
+      const empty = await collectAll(
+        { ...ctx(() => json({ web: {} })), braveKey: 'k' },
+        cfg,
+        only,
+      )
+      expect(empty.findings).toEqual([])
+      expect(empty.errors).toEqual([])
+    })
   })
 })
