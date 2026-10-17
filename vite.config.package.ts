@@ -130,7 +130,10 @@ export const sharedDtsOptions = {
 export const sharedBuild = {
   emptyOutDir: false,
   target: 'es2022',
-  sourcemap: true,
+  // 'hidden': emit the .map files (repo tooling reads them) but no
+  // `//# sourceMappingURL=` comment; each package's `files` keeps them out of
+  // the tarball (#2195), so a comment would dangle for consumers' bundlers.
+  sourcemap: 'hidden',
   rolldownOptions: { output: { sourcemapExcludeSources: true } },
 } as const
 

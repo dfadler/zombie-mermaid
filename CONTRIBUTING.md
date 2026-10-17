@@ -262,7 +262,11 @@ By contributing, you agree your contributions are licensed under this project's 
 
 `pnpm run check:bundle-size` (the "Check bundle size" step of the CI job "Packed tarball smoke test") fails a PR if any
 `dist/` file exceeds its gzip budget, or any package's unpacked `dist/` (no
-source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. It prints
+source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. Source
+maps are still emitted into `dist/` for local tooling (`sourcemap: 'hidden'` in
+`vite.config.package.ts`, so no `sourceMappingURL` comment) but never published:
+each package's `files` has `!dist/**/*.map`, and `pnpm run check:pack-dist` and
+`pnpm run smoke:packed` fail on a packed `.map` or a dangling reference (#2195). It prints
 bytes, budget and remaining headroom per entry. Each budget is the size CI
 measured plus 2% (reset 2026-10-14, #1994); budgets are never auto-regenerated.
 Measure on a clean `pnpm install --frozen-lockfile && pnpm run build`: sizes are
