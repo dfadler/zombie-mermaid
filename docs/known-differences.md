@@ -73,15 +73,6 @@ layers. The 12.1.0 comparison is in
     19 px right of `a` (30 px in mermaid), LR `b` is 19 px above `a` (26) and `c` 16 px
     below (29). The sample was added for ASCII routing (#2109), where it is not scored;
     as an SVG layout it is plausible next to mermaid's.
-- **"Class: Full Hierarchy" (93% horizontal) is a threshold effect.** Mermaid 12.1.0
-  and 12.2.0 score it the same. Both put the same classes in the same layers and
-  order, and the one disagreeing pair is Animal/Cat: Cat's centre is 26 px left of
-  Animal's in mermaid and 19 px in ours, so the 20 px tolerance calls it level in
-  ours only. Mermaid's class boxes are wider than ours (Parrot 180 px to 149 px, Cat
-  137 px to 121 px, from text measurement), which spreads the Mammal subtree further.
-  The gaps between boxes match (40 px between Dog and Cat in both). Nothing in the
-  class layout is mis-ordered, so there is no sample-independent change to make
-  (#2103). Floor 90% in `SAMPLE_FLOORS`.
 
 ## State diagram notes
 
