@@ -11,7 +11,7 @@ import { BREAKPOINTS } from './tokens.tsx'
  *
  * Promoted out of nav.tsx's own `NAV_MOBILE_MENU_SCRIPT` template-literal
  * string constant into this real, type-checked source file
- * (zombie-mermaid#933) — tsc/eslint/prettier all now check this logic like
+ * (zombie-mermaid#933) — tsc/oxlint/prettier all now check this logic like
  * any other module instead of treating it as opaque text. It stops short
  * of pages.ts/blog.ts/dashboard.ts's own `bundleForBrowser()`-based
  * pattern for their client scripts: those bundles get threaded through

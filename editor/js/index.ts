@@ -8,7 +8,7 @@
  * (DOM lookups and `addEventListener` registration) exactly as it did when
  * concatenated by hand -- the only thing that changed is that each file now
  * says what it needs via `import`, instead of relying on a hand-maintained
- * order array and implicit global scope. `tsc`/ESLint can now verify the
+ * order array and implicit global scope. `tsc`/oxlint can now verify the
  * graph statically; a wrong reorder here is a compile error, not a
  * `ReferenceError` at runtime.
  *
