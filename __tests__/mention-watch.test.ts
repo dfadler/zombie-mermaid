@@ -100,7 +100,7 @@ describe('sanitize / buildReport', () => {
     expect(md).toContain('# Mentions report: 2026-10-16')
     expect(md).toContain('## npm (1)')
     expect(md).toContain('## Hacker News (1)')
-    expect(md).toContain('[A](https://a.com/x%281%29) (2026-10-01)')
+    expect(md).toContain('- [ ] [A](https://a.com/x%281%29) (2026-10-01)')
     expect(md).toContain('## Sources that failed this run')
   })
 })
