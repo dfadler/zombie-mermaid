@@ -9,7 +9,7 @@
 # after the report issue was created, so a failed run never drops findings.
 #
 # The built-in GITHUB_TOKEN covers GitHub search, issue creation and the
-# cache-branch push. The optional BRAVE_API_KEY repo secret (Brave Search API,
+# cache-branch push. The optional TAVILY_API_KEY repo secret (Tavily Search API,
 # #2201) adds a general web source; without it that source is skipped and the
 # run is unchanged. A week with no new mentions opens no issue.
 # Text from third-party pages is untrusted; scripts/lib/mention-watch.ts
@@ -43,7 +43,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GITHUB_TOKEN: ${{ github.token }}
-      BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

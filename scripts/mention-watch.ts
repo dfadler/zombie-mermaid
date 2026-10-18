@@ -3,7 +3,7 @@
 // persists seen.next.json after the report issue was created, so a failed run
 // never drops findings.
 //
-//   env: GITHUB_TOKEN, BRAVE_API_KEY (optional; enables the Web source),
+//   env: GITHUB_TOKEN, TAVILY_API_KEY (optional; enables the Web source),
 //        SEEN_FILE (default .mention-watch/seen.json),
 //        OUT_DIR (default .mention-watch), GITHUB_OUTPUT (optional)
 import {
@@ -32,7 +32,7 @@ const r = await runWatch({
   ctx: {
     fetch,
     token: process.env.GITHUB_TOKEN,
-    braveKey: process.env.BRAVE_API_KEY || undefined,
+    tavilyKey: process.env.TAVILY_API_KEY || undefined,
     max: config.maxPerQuery,
     githubDelayMs: 7000,
     sleep: (ms) => new Promise((done) => setTimeout(done, ms)),

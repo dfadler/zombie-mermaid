@@ -28,8 +28,8 @@ export interface Config {
 export interface Ctx {
   fetch: (url: string, init?: RequestInit) => Promise<Response>
   token?: string
-  /** Brave Search API key; the Web collector is skipped without it. */
-  braveKey?: string
+  /** Tavily API key; the Web collector is skipped without it. */
+  tavilyKey?: string
   max: number
   /** Pause between GitHub search calls (code search allows ~10 requests/min). */
   githubDelayMs: number
@@ -109,8 +109,8 @@ const hostOf = (url: string) => {
 type Collector = {
   source: string
   github: boolean
-  /** Skipped (not counted as an attempt or an error) unless ctx.braveKey is set. */
-  needsBraveKey?: boolean
+  /** Skipped (not counted as an attempt or an error) unless ctx.tavilyKey is set. */
+  needsTavilyKey?: boolean
   run: (ctx: Ctx, phrase: string) => Promise<Finding[]>
 }
 
@@ -242,26 +242,30 @@ export const COLLECTORS: Collector[] = [
   {
     source: 'Web',
     github: false,
-    needsBraveKey: true,
+    needsTavilyKey: true,
     run: async (ctx, phrase) => {
-      // https://api-dashboard.search.brave.com/app/documentation/web-search/get-started
-      const j = await getJson(
-        ctx,
-        `https://api.search.brave.com/res/v1/web/search?q=${q(phrase)}&count=${Math.min(ctx.max, 20)}`,
-        {
-          headers: {
-            Accept: 'application/json',
-            'X-Subscription-Token': ctx.braveKey!,
-          },
+      // https://docs.tavily.com/documentation/api-reference/endpoint/search
+      const j = await getJson(ctx, 'https://api.tavily.com/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${ctx.tavilyKey}`,
         },
-      )
-      return (j.web?.results ?? [])
+        body: JSON.stringify({
+          query: `"${phrase}"`,
+          max_results: Math.min(ctx.max, 20),
+          search_depth: 'basic',
+          include_published_date: true,
+        }),
+      })
+      return (j.results ?? [])
         .filter((r: any) => r?.url && !COVERED_HOST_RE.test(hostOf(r.url)))
         .map((r: any) => ({
           url: r.url,
           title: r.title ?? r.url,
           source: 'Web',
-          text: `${r.title ?? ''}\n${r.description ?? ''}`,
+          date: r.published_date ?? undefined,
+          text: `${r.title ?? ''}\n${r.content ?? ''}`,
         }))
     },
   },
@@ -283,7 +287,7 @@ export async function collectAll(
   const errors: string[] = []
   let attempts = 0
   for (const c of collectors) {
-    if (c.needsBraveKey && !ctx.braveKey) continue
+    if (c.needsTavilyKey && !ctx.tavilyKey) continue
     for (const phrase of config.phrases) {
       attempts++
       try {
