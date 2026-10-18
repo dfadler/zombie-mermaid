@@ -91,6 +91,15 @@ importers:
       '@xterm/headless':
         specifier: ^6.0.0
         version: 6.0.0
+      '@zombie-mermaid/ascii-layout':
+        specifier: workspace:*
+        version: link:packages/ascii-layout
+      '@zombie-mermaid/elk-layout':
+        specifier: workspace:*
+        version: link:packages/elk-layout
+      elkjs-0.9.3:
+        specifier: npm:elkjs@0.9.3
+        version: elkjs@0.9.3
       fast-check:
         specifier: 4.10.2
         version: 4.10.2
@@ -153,6 +162,12 @@ importers:
         specifier: ^2.6.2
         version: 2.6.2
 
+  packages/ascii-layout:
+    dependencies:
+      '@zombie-mermaid/elk-layout':
+        specifier: workspace:*
+        version: link:../elk-layout
+
   packages/ascii-renderer:
     dependencies:
       '@zombie-mermaid/core':
@@ -163,6 +178,18 @@ importers:
         version: link:../mermaid-parser
 
   packages/core: {}
+
+  packages/elk-layout:
+    dependencies:
+      '@zombie-mermaid/core':
+        specifier: workspace:*
+        version: link:../core
+      '@zombie-mermaid/mermaid-parser':
+        specifier: workspace:*
+        version: link:../mermaid-parser
+      elkjs-0.9.3:
+        specifier: npm:elkjs@0.9.3
+        version: elkjs@0.9.3
 
   packages/mcp:
     dependencies:

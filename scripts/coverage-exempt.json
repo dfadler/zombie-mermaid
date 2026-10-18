@@ -147,7 +147,7 @@
   {
     "file": "scripts/generate-primitives-classes.ts",
     "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
-    "maxLines": 74,
+    "maxLines": 80,
     "legacy": true
   },
   {
@@ -175,9 +175,34 @@
     "legacy": true
   },
   {
+    "file": "scripts/size-report.ts",
+    "reason": "report CLI: runs on import, reads dist/ and shells out to npm pack; all logic is in scripts/lib/size-report.ts (tested)",
+    "maxLines": 143
+  },
+  {
     "file": "scripts/visual-diff.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 338,
     "legacy": true
+  },
+  {
+    "file": "scripts/elk-layout-font.ts",
+    "reason": "dev tooling CLI: runs on import and needs a real Chromium to measure the label font (regenerates font-advances.json)",
+    "maxLines": 28
+  },
+  {
+    "file": "scripts/elk-layout-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the layout itself is unit-tested in packages/elk-layout",
+    "maxLines": 99
+  },
+  {
+    "file": "scripts/lib/oracle-layout.ts",
+    "reason": "Playwright-driven helper: reads layout out of a real Chromium render, only reachable from scripts/elk-layout-oracle.ts",
+    "maxLines": 111
+  },
+  {
+    "file": "scripts/ascii-layout-table.ts",
+    "reason": "measurement CLI: runs on import and prints a table over the gallery, no assertable logic (the rasterizer it measures is unit-tested in packages/ascii-layout)",
+    "maxLines": 80
   }
 ]

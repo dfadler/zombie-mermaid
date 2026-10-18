@@ -135,7 +135,7 @@ export function determineStartAndEndDir(
 
   if (
     graphDirection === 'LR' &&
-    edge.to.fanInCentered &&
+    (edge.to.fanInCentered || edge.sideFaces) &&
     (dirEquals(d, LowerRight) || dirEquals(d, UpperRight))
   ) {
     // A fan-in child centered between its parents (grid.ts `fanInCenter`):
@@ -634,13 +634,25 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
       need.set(n.index, at)
     }
   }
+  // A back-edge or skip not in a lane group also lands on a side face.
+  const grouped = new Set(laneGroups.flat())
+  const others = (n: AsciiNode): number =>
+    graph.edges.filter((e) => {
+      if (grouped.has(e) || e.from === e.to) return false
+      if (e.from !== n && e.to !== n) return false
+      const axis = graph.config.graphDirection === 'LR' ? 'x' : 'y'
+      const d = requireGridCoord(e.to)[axis] - requireGridCoord(e.from)[axis]
+      return d < 0 || d > 4
+    }).length
   for (const group of laneGroups) {
     if (group[0]!.clusterSource) continue
     const lr = graph.config.graphDirection === 'LR'
     const sizes = lr ? graph.columnWidth : graph.rowHeight
     for (const n of [group[0]!.from, group[0]!.to]) {
       const { siblings, pairs } = need.get(n.index)!
-      const total = siblings + pairs.size - 1
+      // Each self-loop end takes a cell of its own on the same face.
+      const loops = graph.edges.filter((e) => e.from === n && e.to === n).length
+      const total = siblings + pairs.size - 1 + loops + others(n)
       if (total < 4) continue
       const at = requireGridCoord(n)[lr ? 'x' : 'y'] + 1
       sizes.set(at, Math.max(sizes.get(at)!, total))

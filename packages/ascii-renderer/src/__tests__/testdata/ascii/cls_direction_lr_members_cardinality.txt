@@ -1,0 +1,31 @@
+classDiagram
+  direction LR
+  class Animal {
+    +String name
+    +eat() void
+  }
+  Animal <|-- Dog
+  Animal <|-- Cat
+  Animal "1" --> "*" Toy : owns
+---
++---------------+      +-----+
+| Animal        |      |     |
++---------------+      |     |
+| + String name |<-----+ Dog |
++---------------+1     |     |
+| + eat(): void +<--+  |     |
++---------------+   |  +-----+
+                    |
+                    |
+                    |
+                    |
+                    |  +-----+
+                    +--+ Cat |
+                    |  +-----+
+                  owns
+                    |
+                    |
+                    |
+                    |  +-----+
+                    +->| Toy |
+                      *+-----+
