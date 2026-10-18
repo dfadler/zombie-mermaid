@@ -20,6 +20,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { mapProblems } from './check-pack-dist.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const rootPkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
@@ -75,6 +76,11 @@ const overrides = Object.fromEntries(
     .filter(([n]) => n.startsWith('@'))
     .map(([n, t]) => [n, `file:${t}`]),
 )
+
+await check('tarballs ship no .map and no dangling sourceMappingURL', () => {
+  const bad = pkgDirs.flatMap((d) => mapProblems(d).map((p) => `${d}: ${p}`))
+  if (bad.length) throw new Error(bad.join('\n'))
+})
 
 function project(name, deps) {
   const dir = join(tmp, name)
