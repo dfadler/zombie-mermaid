@@ -98,9 +98,10 @@ const q = (phrase: string) => encodeURIComponent(`"${phrase}"`)
 // Hosts the GitHub, npm and Hacker News collectors already search, so the web
 // collector drops them instead of reporting the same page twice.
 const COVERED_HOST_RE = /(^|\.)(github\.com|npmjs\.com|ycombinator\.com)$/i
-const hostOf = (url: string) => {
+// '' for a missing or malformed URL, so the filter below drops it too.
+const hostOf = (url: unknown) => {
   try {
-    return new URL(url).hostname
+    return new URL(String(url)).hostname
   } catch {
     return ''
   }
@@ -259,7 +260,10 @@ export const COLLECTORS: Collector[] = [
         }),
       })
       return (j.results ?? [])
-        .filter((r: any) => r?.url && !COVERED_HOST_RE.test(hostOf(r.url)))
+        .filter((r: any) => {
+          const host = hostOf(r?.url)
+          return host !== '' && !COVERED_HOST_RE.test(host)
+        })
         .map((r: any) => ({
           url: r.url,
           title: r.title ?? r.url,

@@ -298,21 +298,37 @@ describe('collectAll', () => {
           { url: 'https://github.com/o/r', title: 'zombie-mermaid' },
           { url: 'https://www.npmjs.com/package/x', title: 'zombie-mermaid' },
           { url: 'https://dfadler.dev/zm', title: 'zombie-mermaid' },
+          { title: 'zombie-mermaid', content: 'no url' },
+          { url: 'not a url', title: 'zombie-mermaid' },
+          { url: 'https://forum.example.com/t/1', content: 'zombie-mermaid' },
         ],
       })
     }
     const only = COLLECTORS.filter((c) => c.source === 'Web')
     const withKey = { ...ctx(web), tavilyKey: 'k' }
 
-    it('reports matching pages, dropping non-matches, covered hosts and excluded URLs', async () => {
+    it('reports matching pages, dropping non-matches, covered hosts, excluded and bad URLs', async () => {
       const r = await collectAll(
         withKey,
         { ...cfg, excludeUrlPrefixes: ['https://dfadler.dev'] },
         only,
       )
-      expect(r.findings.map((x) => [x.url, x.source, x.date])).toEqual([
-        ['https://blog.example.com/post', 'Web', '2026-10-01'],
-      ])
+      expect(r.findings.map((x) => [x.url, x.title, x.source, x.date])).toEqual(
+        [
+          [
+            'https://blog.example.com/post',
+            'Trying zombie-mermaid',
+            'Web',
+            '2026-10-01',
+          ],
+          [
+            'https://forum.example.com/t/1',
+            'https://forum.example.com/t/1',
+            'Web',
+            undefined,
+          ],
+        ],
+      )
       expect(r.errors).toEqual([])
     })
 
