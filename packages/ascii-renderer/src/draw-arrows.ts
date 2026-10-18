@@ -19,6 +19,7 @@ import type {
   Direction,
   AsciiGraph,
   AsciiEdge,
+  AsciiEdgeMarker,
   AsciiEdgeStyle,
   AsciiNode,
   AsciiSubgraph,
@@ -90,6 +91,17 @@ export function drawArrow(
   // both are skipped instead of indexing into the empty linesDrawn/lineDirs
   // arrays.
   const hasSegments = linesDrawn.length > 0
+  if (hasSegments) {
+    // Where the two ends were drawn, for passes that label them afterwards.
+    const lastLine = linesDrawn[linesDrawn.length - 1]!
+    edge.ends = {
+      start: { ...linesDrawn[0]![0]!, dir: lineDirs[0]! },
+      end: {
+        ...lastLine[lastLine.length - 1]!,
+        dir: lineDirs[lineDirs.length - 1]!,
+      },
+    }
+  }
 
   /*
    * An invisible link (`A ~~~ B`) routes and reserves space like any other
@@ -749,10 +761,30 @@ function drawBoxEnd(
  */
 export function markerArrowChar(
   useAscii: boolean,
-  marker: 'circle' | 'cross' | undefined,
+  marker: AsciiEdgeMarker | undefined,
+  dir?: Direction,
 ): string | undefined {
   if (marker === 'circle') return useAscii ? 'o' : '○'
   if (marker === 'cross') return useAscii ? 'x' : '✕'
+  if (marker === 'class-circle') return useAscii ? 'O' : '○'
+  if (marker === 'class-diamond-filled') return useAscii ? '*' : '◆'
+  if (marker === 'class-diamond') return useAscii ? 'o' : '◇'
+  if (marker === 'class-triangle' || marker === 'class-arrow') {
+    // `dir` is the way the line arrives at the glyph, into the box it marks;
+    // the head points that way (the same glyphs class-diagram.ts's top-down
+    // drawing uses).
+    const i = dir
+      ? [Up, Down, Left, Right].findIndex((d) => dirEquals(dir, d))
+      : 3
+    const hollow = marker === 'class-triangle'
+    return (
+      useAscii
+        ? ['^', 'v', '<', '>']
+        : hollow
+          ? ['△', '▽', '◁', '▷']
+          : ['▲', '▼', '◀', '▶']
+    )[i < 0 ? 3 : i]
+  }
   return undefined
 }
 
@@ -813,7 +845,7 @@ function drawArrowHead(
   graph: AsciiGraph,
   lastLine: DrawingCoord[],
   fallbackDir: Direction,
-  marker?: 'circle' | 'cross',
+  marker?: AsciiEdgeMarker,
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   if (lastLine.length === 0) return canvas
@@ -833,7 +865,7 @@ function drawArrowHead(
   let dir = determineDirection(from, lastPos)
   if (lastLine.length === 1 || dirEquals(dir, Middle)) dir = fallbackDir
 
-  const markerChar = markerArrowChar(graph.config.useAscii, marker)
+  const markerChar = markerArrowChar(graph.config.useAscii, marker, dir)
   let char: string
   if (markerChar !== undefined) {
     char = markerChar

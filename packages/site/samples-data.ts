@@ -2672,7 +2672,7 @@ pie title Pets adopted by volunteers
     title: 'Class: Direction LR',
     category: 'Class',
     description:
-      '`direction LR` lays the classes out left to right, as mermaid.js does (#2116): each level is a column and the markers face the new axis. The ASCII panel draws class diagrams top-down for LR and RL; BT is drawn.',
+      '`direction LR` lays the classes out left to right, as mermaid.js does (#2116): each level is a column and the markers face the new axis.',
     source: `classDiagram
   direction LR
   class Animal {
@@ -2703,7 +2703,7 @@ pie title Pets adopted by volunteers
     title: 'Class: Direction RL with Namespaces',
     category: 'Class',
     description:
-      '`direction RL` runs right to left and a namespace frame still wraps its classes (#2116). The ASCII panel draws class diagrams top-down for RL.',
+      '`direction RL` runs right to left and a namespace frame still wraps its classes (#2116).',
     source: `classDiagram
   direction RL
   namespace Domain {

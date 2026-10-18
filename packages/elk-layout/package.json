@@ -1,0 +1,18 @@
+{
+  "name": "@zombie-mermaid/elk-layout",
+  "version": "5.7.1",
+  "private": true,
+  "description": "Browser-free reproduction of mermaid.js's default (ELK) flowchart layout. Internal: not published, not bundled into the umbrella's dist.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@zombie-mermaid/core": "workspace:*",
+    "@zombie-mermaid/mermaid-parser": "workspace:*",
+    "elkjs-0.9.3": "npm:elkjs@0.9.3"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

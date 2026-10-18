@@ -46,6 +46,12 @@ export interface PieChart {
    */
   highlightSlice?: string
   /**
+   * `themeVariables` `pie1`..`pie12` from the init directive, by slot (0..11).
+   * The renderer applies them only when the caller opts in with
+   * `honorThemeVariables`.
+   */
+  sliceColors?: Record<number, string>
+  /**
    * Slices in source order. A label that repeats keeps its first value and
    * position; later duplicates are ignored, as in Mermaid. May be empty:
    * Mermaid accepts a bare `pie` with no slices.
@@ -121,6 +127,8 @@ export interface PositionedPieChart {
   slices: PositionedPieSlice[]
   /** Legend rows, one per parsed slice, in source order. */
   legend: PositionedPieLegendItem[]
+  /** `pie1`..`pie12` overrides by slot, when honoured (see `PieChart.sliceColors`). */
+  sliceColors?: Record<number, string>
   /** `accTitle`, carried through for the SVG accessible name. */
   accTitle?: string
   /** `accDescr`, carried through for the SVG `<desc>`. */

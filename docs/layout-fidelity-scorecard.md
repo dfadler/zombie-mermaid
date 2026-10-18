@@ -12,7 +12,7 @@ regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
 Reference: mermaid 12.1.0. Since mermaid 12.0.0 its default layout engine for
 these diagram types is ELK (it was dagre before). Generated 2026-10-16 at
-89d7175 with `pnpm run layout:scorecard`, tolerance 20px.
+65741f1 with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
@@ -20,7 +20,7 @@ these diagram types is ELK (it was dagre before). Generated 2026-10-16 at
 | --------- | ------- | -------- | ---------- | ----------- |
 | Flowchart | 53      | 95%      | 98%        | 100%        |
 | State     | 7       | 100%     | 98%        | 100%        |
-| Class     | 25      | 100%     | 100%       | 100%        |
+| Class     | 28      | 100%     | 100%       | 100%        |
 | ER        | 20      | 100%     | 100%       | -           |
 
 ## Trend (last 20 recorded runs)
@@ -31,7 +31,6 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-10 | b05ce34 | 11.17.2 | Flowchart | 27      | 96%      | 98%        | 100%        |
 | 2026-10-12 | 86a7d2f | 12.1.0  | Flowchart | 37      | 98%      | 95%        | 100%        |
 | 2026-10-12 | 86a7d2f | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-12 | 86a7d2f | 12.1.0  | Class     | 17      | 100%     | 88%        | 100%        |
@@ -48,6 +47,10 @@ across that change.
 | 2026-10-16 | 89d7175 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-16 | 89d7175 | 12.1.0  | Class     | 25      | 100%     | 100%       | 100%        |
 | 2026-10-16 | 89d7175 | 12.1.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-16 | 65741f1 | 12.1.0  | Flowchart | 53      | 95%      | 98%        | 100%        |
+| 2026-10-16 | 65741f1 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-16 | 65741f1 | 12.1.0  | Class     | 28      | 100%     | 100%       | 100%        |
+| 2026-10-16 | 65741f1 | 12.1.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Per sample
 
@@ -127,7 +130,6 @@ Not scored (the oracle errored): zombie-mermaid.
 
 | Sample                                          | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | ----------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
-| Class: Full Hierarchy                           | 100%     | 93%        | -           | 6     | 90%   | pass   |
 | Class: Inheritance (<\|--)                      | 100%     | 100%       | -           | 3     | 95%   | pass   |
 | Class: Composition (*--)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Class: Aggregation (o--)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
@@ -138,6 +140,7 @@ Not scored (the oracle errored): zombie-mermaid.
 | Class: Relationship Labels                      | 100%     | 100%       | -           | 3     | 95%   | pass   |
 | Class: Design Pattern — Observer                | 100%     | 100%       | -           | 5     | 85%   | pass   |
 | Class: MVC Architecture                         | 100%     | 100%       | -           | 3     | 95%   | pass   |
+| Class: Full Hierarchy                           | 100%     | 100%       | -           | 6     | 95%   | pass   |
 | Class: Namespaces                               | 100%     | 100%       | 100%        | 3     | 95%   | pass   |
 | Class: classDiagram-v2 Header                   | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Class: Bidirectional Relationships              | 100%     | 100%       | -           | 4     | 85%   | pass   |
@@ -147,6 +150,9 @@ Not scored (the oracle errored): zombie-mermaid.
 | Class: Relationship Cardinalities               | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Class: Cardinalities on Every Relationship Kind | 100%     | 100%       | -           | 12    | 85%   | pass   |
 | Class: Cardinalities with Shared Ends           | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Direction LR                             | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Direction BT                             | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Direction RL with Namespaces             | 100%     | 100%       | 100%        | 3     | 85%   | pass   |
 | Class: Basic Class                              | -        | -          | -           | 1     | 85%   | n/a    |
 | Class: Visibility Markers                       | -        | -          | -           | 1     | 85%   | n/a    |
 | Class: Interface Annotation                     | -        | -          | -           | 1     | 85%   | n/a    |

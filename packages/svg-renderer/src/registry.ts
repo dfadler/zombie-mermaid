@@ -394,7 +394,14 @@ const architectureModule: DiagramModule<
 const pieModule: DiagramModule<PieChart, PositionedPieChart> = {
   type: 'pie',
   parse: (_lines, text) => parsePieChart(text),
-  layoutForSvg: layoutPieChart,
+  // `pie1..pie12` from the directive only when the caller opted in.
+  layoutForSvg: (chart, options) =>
+    layoutPieChart(
+      options.honorThemeVariables
+        ? chart
+        : { ...chart, sliceColors: undefined },
+      options,
+    ),
   renderSvg(positioned, ctx) {
     return renderPieSvg(
       positioned,

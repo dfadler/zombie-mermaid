@@ -47,6 +47,7 @@ import {
 import type {
   AsciiConfig,
   AsciiGraph,
+  AsciiNode,
   AsciiSubgraph,
   AsciiTheme,
   ColorMode,
@@ -212,6 +213,19 @@ function flipRegion(
 }
 
 /**
+ * Steps a diagram type that lowers onto the flowchart model can add around the
+ * shared pipeline (the class diagram's LR/RL drawing, class-flow.ts).
+ * `afterConvert` runs on every freshly converted graph, before layout;
+ * `afterDraw` once the canvas is drawn, before any direction flip.
+ */
+export interface GraphHooks {
+  afterConvert?: (graph: AsciiGraph) => void
+  afterDraw?: (graph: AsciiGraph) => void
+  /** Rows of a node to hyperlink instead of every interior row. */
+  linkRows?: (node: AsciiNode) => { from: number; to: number } | undefined
+}
+
+/**
  * Render an already-parsed graph to ASCII text art. Shared by the diagram
  * types that lower to the flowchart model (see `renderArchitectureAscii`).
  */
@@ -221,6 +235,7 @@ export function renderGraphAscii(
   colorMode: ColorMode,
   theme: AsciiTheme,
   extras: FlowchartAsciiExtras,
+  hooks: GraphHooks = {},
 ): string {
   // Normalize direction for grid layout.
   // BT is laid out as TD then flipped vertically after drawing.
@@ -233,6 +248,7 @@ export function renderGraphAscii(
 
   checkGraphSize(parsed.nodes.size, parsed.edges.length, extras.limits)
   let graph = convertToAsciiGraph(parsed, config)
+  hooks.afterConvert?.(graph)
   createMapping(graph)
   // Flow-axis face lanes (#2121) that did not come out as planned are dropped
   // and the layout redone, so the room planned for them is not left behind.
@@ -240,6 +256,7 @@ export function renderGraphAscii(
   for (let pass = 0; pass < 4 && graph.faceLaneRejected?.size; pass++) {
     for (const i of graph.faceLaneRejected) off.add(i)
     graph = convertToAsciiGraph(parsed, config)
+    hooks.afterConvert?.(graph)
     graph.faceLaneOff = new Set(off)
     createMapping(graph)
   }
@@ -254,11 +271,12 @@ export function renderGraphAscii(
     extras.limits,
   )
   drawGraph(graph)
+  hooks.afterDraw?.(graph)
 
   // Opt-in OSC 8 hyperlinks: mark each `click`-linked node's label cells
   // now, from the drawn node positions, before any flip below moves them.
   const linkCanvas = extras.hyperlinks
-    ? buildNodeLinkCanvas(graph, parsed.interactions)
+    ? buildNodeLinkCanvas(graph, parsed.interactions, hooks.linkRows)
     : undefined
 
   flipSubgraphRegions(graph, linkCanvas, parsed.direction)
