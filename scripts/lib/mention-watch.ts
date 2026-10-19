@@ -46,7 +46,8 @@ export function matchesName(text: string): boolean {
   return NAME_RE.test(text)
 }
 
-const TRACKING_PARAM = /^(utm_|fbclid$|gclid$|ref$|ref_src$)/i
+// xstg: Google's click tracking on YouTube results, which made one video two URLs.
+const TRACKING_PARAM = /^(utm_|fbclid$|gclid$|ref$|ref_src$|xstg$)/i
 
 export function canonicalizeUrl(raw: string): string {
   let u: URL
@@ -99,6 +100,16 @@ const q = (phrase: string) => encodeURIComponent(`"${phrase}"`)
 // collector drops them instead of reporting the same page twice.
 const COVERED_HOST_RE = /(^|\.)(github\.com|npmjs\.com|ycombinator\.com)$/i
 // '' for a missing or malformed URL, so the filter below drops it too.
+// The project name is also a Halloween costume, so web hits must also talk about
+// diagrams or rendering. ponytail: keyword match on Tavily's snippet only, so a real
+// mention whose snippet lacks these words is dropped; widen the list if that bites.
+const WEB_CONTEXT_RE =
+  /\b(diagrams?|flowcharts?|render(?:er|ing|s)?|ascii|svg|npm|typescript|mermaid\.?js)\b/i
+// Tavily dates are RFC 2822 ("Sun, 19 Oct 2025 ..."); the report wants YYYY-MM-DD.
+const isoDate = (raw: unknown) => {
+  const t = typeof raw === 'string' ? Date.parse(raw) : NaN
+  return Number.isNaN(t) ? undefined : new Date(t).toISOString().slice(0, 10)
+}
 const hostOf = (url: unknown) => {
   try {
     return new URL(String(url)).hostname
@@ -253,7 +264,7 @@ export const COLLECTORS: Collector[] = [
           Authorization: `Bearer ${ctx.tavilyKey}`,
         },
         body: JSON.stringify({
-          query: `"${phrase}"`,
+          query: `"${phrase}" diagram renderer`,
           max_results: Math.min(ctx.max, 20),
           search_depth: 'basic',
           include_published_date: true,
@@ -262,13 +273,17 @@ export const COLLECTORS: Collector[] = [
       return (j.results ?? [])
         .filter((r: any) => {
           const host = hostOf(r?.url)
-          return host !== '' && !COVERED_HOST_RE.test(host)
+          return (
+            host !== '' &&
+            !COVERED_HOST_RE.test(host) &&
+            WEB_CONTEXT_RE.test(`${r.title ?? ''}\n${r.content ?? ''}`)
+          )
         })
         .map((r: any) => ({
           url: r.url,
           title: r.title ?? r.url,
           source: 'Web',
-          date: r.published_date ?? undefined,
+          date: isoDate(r.published_date),
           text: `${r.title ?? ''}\n${r.content ?? ''}`,
         }))
     },
