@@ -263,7 +263,7 @@ describe('collectAll', () => {
     expect(r.errors).toEqual([
       'GitHub repositories ("zombie mermaid"): HTTP 403',
     ])
-    expect(r.attempts).toBe(COLLECTORS.length)
+    expect(r.attempts).toBe(COLLECTORS.filter((c) => !c.needsTavilyKey).length)
   })
 
   it('treats a thrown fetch as a per-source error, not a crash', async () => {
@@ -272,6 +272,94 @@ describe('collectAll', () => {
       cfg,
     )
     expect(r.findings).toEqual([])
-    expect(r.errors).toHaveLength(COLLECTORS.length)
+    expect(r.errors).toHaveLength(
+      COLLECTORS.filter((c) => !c.needsTavilyKey).length,
+    )
+  })
+
+  describe('Web source (Tavily, #2201)', () => {
+    const web = (url: string, init?: RequestInit) => {
+      if (url !== 'https://api.tavily.com/search') return json({}, 500)
+      expect(init?.method).toBe('POST')
+      expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer k')
+      expect(JSON.parse(String(init?.body))).toMatchObject({
+        query: '"zombie mermaid"',
+        max_results: 5,
+      })
+      return json({
+        results: [
+          {
+            url: 'https://blog.example.com/post',
+            title: 'Trying zombie-mermaid',
+            content: 'a review',
+            published_date: '2026-10-01',
+          },
+          { url: 'https://dev.to/x', title: 'Unrelated', content: 'no' },
+          { url: 'https://github.com/o/r', title: 'zombie-mermaid' },
+          { url: 'https://www.npmjs.com/package/x', title: 'zombie-mermaid' },
+          { url: 'https://dfadler.dev/zm', title: 'zombie-mermaid' },
+          { title: 'zombie-mermaid', content: 'no url' },
+          { url: 'not a url', title: 'zombie-mermaid' },
+          { url: 'https://forum.example.com/t/1', content: 'zombie-mermaid' },
+        ],
+      })
+    }
+    const only = COLLECTORS.filter((c) => c.source === 'Web')
+    const withKey = { ...ctx(web), tavilyKey: 'k' }
+
+    it('reports matching pages, dropping non-matches, covered hosts, excluded and bad URLs', async () => {
+      const r = await collectAll(
+        withKey,
+        { ...cfg, excludeUrlPrefixes: ['https://dfadler.dev'] },
+        only,
+      )
+      expect(r.findings.map((x) => [x.url, x.title, x.source, x.date])).toEqual(
+        [
+          [
+            'https://blog.example.com/post',
+            'Trying zombie-mermaid',
+            'Web',
+            '2026-10-01',
+          ],
+          [
+            'https://forum.example.com/t/1',
+            'https://forum.example.com/t/1',
+            'Web',
+            undefined,
+          ],
+        ],
+      )
+      expect(r.errors).toEqual([])
+    })
+
+    it('is skipped without a key: no fetch, no attempt, no error', async () => {
+      let calls = 0
+      const r = await collectAll(
+        ctx(() => {
+          calls++
+          return json({})
+        }),
+        cfg,
+        only,
+      )
+      expect(calls).toBe(0)
+      expect(r).toEqual({ findings: [], errors: [], attempts: 0 })
+    })
+
+    it('records an HTTP error and treats an empty result as nothing found', async () => {
+      const bad = await collectAll(
+        { ...ctx(() => json({}, 429)), tavilyKey: 'k' },
+        cfg,
+        only,
+      )
+      expect(bad.errors).toEqual(['Web ("zombie mermaid"): HTTP 429'])
+      const empty = await collectAll(
+        { ...ctx(() => json({})), tavilyKey: 'k' },
+        cfg,
+        only,
+      )
+      expect(empty.findings).toEqual([])
+      expect(empty.errors).toEqual([])
+    })
   })
 })

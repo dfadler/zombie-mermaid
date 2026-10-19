@@ -28,6 +28,8 @@ export interface Config {
 export interface Ctx {
   fetch: (url: string, init?: RequestInit) => Promise<Response>
   token?: string
+  /** Tavily API key; the Web collector is skipped without it. */
+  tavilyKey?: string
   max: number
   /** Pause between GitHub search calls (code search allows ~10 requests/min). */
   githubDelayMs: number
@@ -93,9 +95,23 @@ function ghHeaders(ctx: Ctx): Record<string, string> {
 
 const q = (phrase: string) => encodeURIComponent(`"${phrase}"`)
 
+// Hosts the GitHub, npm and Hacker News collectors already search, so the web
+// collector drops them instead of reporting the same page twice.
+const COVERED_HOST_RE = /(^|\.)(github\.com|npmjs\.com|ycombinator\.com)$/i
+// '' for a missing or malformed URL, so the filter below drops it too.
+const hostOf = (url: unknown) => {
+  try {
+    return new URL(String(url)).hostname
+  } catch {
+    return ''
+  }
+}
+
 type Collector = {
   source: string
   github: boolean
+  /** Skipped (not counted as an attempt or an error) unless ctx.tavilyKey is set. */
+  needsTavilyKey?: boolean
   run: (ctx: Ctx, phrase: string) => Promise<Finding[]>
 }
 
@@ -224,6 +240,39 @@ export const COLLECTORS: Collector[] = [
       }))
     },
   },
+  {
+    source: 'Web',
+    github: false,
+    needsTavilyKey: true,
+    run: async (ctx, phrase) => {
+      // https://docs.tavily.com/documentation/api-reference/endpoint/search
+      const j = await getJson(ctx, 'https://api.tavily.com/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${ctx.tavilyKey}`,
+        },
+        body: JSON.stringify({
+          query: `"${phrase}"`,
+          max_results: Math.min(ctx.max, 20),
+          search_depth: 'basic',
+          include_published_date: true,
+        }),
+      })
+      return (j.results ?? [])
+        .filter((r: any) => {
+          const host = hostOf(r?.url)
+          return host !== '' && !COVERED_HOST_RE.test(host)
+        })
+        .map((r: any) => ({
+          url: r.url,
+          title: r.title ?? r.url,
+          source: 'Web',
+          date: r.published_date ?? undefined,
+          text: `${r.title ?? ''}\n${r.content ?? ''}`,
+        }))
+    },
+  },
 ]
 
 export interface CollectResult {
@@ -242,6 +291,7 @@ export async function collectAll(
   const errors: string[] = []
   let attempts = 0
   for (const c of collectors) {
+    if (c.needsTavilyKey && !ctx.tavilyKey) continue
     for (const phrase of config.phrases) {
       attempts++
       try {
