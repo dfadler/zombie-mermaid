@@ -44,6 +44,11 @@ describe('canonicalizeUrl', () => {
     expect(canonicalizeUrl('https://example.com/')).toBe('https://example.com/')
     expect(canonicalizeUrl(' not a url ')).toBe('not a url')
   })
+  it('drops the YouTube xstg click-tracking param so one video is one URL', () => {
+    expect(canonicalizeUrl('https://www.youtube.com/watch?v=a&xstg=CAMS')).toBe(
+      canonicalizeUrl('https://www.youtube.com/watch?v=a'),
+    )
+  })
 })
 
 describe('isExcluded', () => {
@@ -283,7 +288,7 @@ describe('collectAll', () => {
       expect(init?.method).toBe('POST')
       expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer k')
       expect(JSON.parse(String(init?.body))).toMatchObject({
-        query: '"zombie mermaid"',
+        query: '"zombie mermaid" diagram renderer',
         max_results: 5,
       })
       return json({
@@ -291,8 +296,31 @@ describe('collectAll', () => {
           {
             url: 'https://blog.example.com/post',
             title: 'Trying zombie-mermaid',
-            content: 'a review',
+            content: 'a diagram renderer review',
             published_date: '2026-10-01',
+          },
+          {
+            url: 'https://blog.example.com/rfc-date',
+            title: 'zombie-mermaid SVG output',
+            published_date: 'Sun, 19 Oct 2025 07:00:00 GMT',
+          },
+          {
+            url: 'https://blog.example.com/bad-date',
+            title: 'zombie-mermaid npm package',
+            published_date: 'Sun, 19 Oc',
+          },
+          {
+            url: 'https://shop.example.com/costume',
+            title: 'Zombie Mermaid Costume for Kids',
+            content: 'Halloween costume, sizes 4-12',
+          },
+          {
+            url: 'https://www.youtube.com/watch?v=a&xstg=CAMS',
+            title: 'zombie-mermaid ASCII demo',
+          },
+          {
+            url: 'https://www.youtube.com/watch?v=a',
+            title: 'zombie-mermaid ASCII demo',
           },
           { url: 'https://dev.to/x', title: 'Unrelated', content: 'no' },
           { url: 'https://github.com/o/r', title: 'zombie-mermaid' },
@@ -300,7 +328,10 @@ describe('collectAll', () => {
           { url: 'https://dfadler.dev/zm', title: 'zombie-mermaid' },
           { title: 'zombie-mermaid', content: 'no url' },
           { url: 'not a url', title: 'zombie-mermaid' },
-          { url: 'https://forum.example.com/t/1', content: 'zombie-mermaid' },
+          {
+            url: 'https://forum.example.com/t/1',
+            content: 'zombie-mermaid flowchart',
+          },
         ],
       })
     }
@@ -320,6 +351,24 @@ describe('collectAll', () => {
             'Trying zombie-mermaid',
             'Web',
             '2026-10-01',
+          ],
+          [
+            'https://blog.example.com/rfc-date',
+            'zombie-mermaid SVG output',
+            'Web',
+            '2025-10-19',
+          ],
+          [
+            'https://blog.example.com/bad-date',
+            'zombie-mermaid npm package',
+            'Web',
+            undefined,
+          ],
+          [
+            'https://www.youtube.com/watch?v=a&xstg=CAMS',
+            'zombie-mermaid ASCII demo',
+            'Web',
+            undefined,
           ],
           [
             'https://forum.example.com/t/1',
