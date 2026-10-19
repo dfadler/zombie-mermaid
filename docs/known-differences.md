@@ -3,12 +3,30 @@
 Places where zombie-mermaid renders or parses differently from mermaid.js and the
 difference is either intentional or not yet fixed. The reference is the pinned
 `mermaid` devDependency (12.1.0), rendered headless through
-`scripts/lib/real-mermaid.ts`; mermaid.live and GitHub render the same layout.
+`scripts/lib/real-mermaid.ts`; GitHub renders 12.1.0 and mermaid.live 12.2.0 (see the
+table below).
 The pin moved from 11.17.2 in the bump that added this note, and entries not
 listed below as re-checked were measured on 11.17.2: other versions may differ.
 The "Labeled Fan-In (LR)" mirrored-order entry that used to sit under layout
 tie-breaks was removed after a re-check: on 12.1.0 mermaid and zombie-mermaid agree
 (100% / 100%, it was 17% on 11.17.2).
+
+## Which mermaid each surface renders (checked 2026-10-16, #2184)
+
+| Surface                        | mermaid | Default layout | Evidence                                                                                                                   |
+| ------------------------------ | ------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Pinned oracle (`package.json`) | 12.1.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                  |
+| GitHub ` ```mermaid ` blocks   | 12.1.0  | ELK (config)   | Renderer bundle `viewscreen.githubusercontent.com/static/assets/mermaidMarkdown-*.js` matches 12.1.0, not 12.0.0 or 12.2.0 |
+| mermaid.live                   | 12.2.0  | ELK            | The editor shows `v12.2.0`; node positions equal the headless ELK render                                                   |
+
+GitHub's bundle reports `version:"0.0.0"` and its renderer sits in a cross-origin
+iframe, so its version is inferred, not read: it contains identifiers added in 12.1.0
+(`orientFeedbackEdges`, `applyOverride`) and none of the 12.2.0 additions
+(`upperCaseDirection`, `isUnconnected`, `colorBy`). 12.1.0 and 12.2.0 place the dense
+samples identically (gallery "Dense Duplicate Edges" TD and LR, and the #2160 sample 3
+with and without `n0["n0"]`/`n1["n1"]` declarations), so the pin is a valid target on
+both surfaces; `layout: dagre` places them differently. Re-run the check when the pin
+moves; `tsx scripts/lib/mermaid-pin-freshness.ts` prints the last versions seen.
 
 ## Subgraph inner direction
 
@@ -175,15 +193,27 @@ circle at both ends, in mermaid and here.
 
 Dotted lollipops (`()..`, `..()`), which mermaid accepts, are a parse error here.
 
-## Class: direction in ASCII
+## Class: LR and RL in ASCII
 
-`direction LR` and `direction RL` in a class diagram change the SVG layout
-([#2116](https://github.com/dfadler/zombie-mermaid/issues/2116)) but not the ASCII one, which stays
-top-down. `direction BT` is drawn in both. The ASCII class renderer places classes in level rows
-and routes every relationship, label and cardinality on that assumption, so `BT` is the finished
-drawing flipped vertically (boxes kept upright) while `LR`/`RL` would need a column layout of
-their own, as a separate renderer. mermaid.js 12.1.0 and 12.2.0 lay `LR` out in columns and `RL`
-as its mirror. The ER ASCII renderer has a similar approximation.
+Class diagrams with `direction LR` or `direction RL` are drawn in ASCII like the SVG, with
+each level in a column and `RL` as the mirror
+([#2158](https://github.com/dfadler/zombie-mermaid/issues/2158); mermaid.js 12.1.0 and 12.2.0
+agree on the arrangement). The top-down and `BT` drawings are the class renderer's own level
+rows; `LR` and `RL` are lowered onto the flowchart ASCII grid instead (classes become boxed
+nodes, relationships become edges, namespaces become frames), so a few things follow the
+flowchart, not mermaid:
+
+- Boxes in a column share one width and boxes on a row share one height; the extra rows stay
+  empty at the bottom of the last compartment (a box with one compartment is centred).
+  mermaid.js keeps each box at its own size.
+- A parent with several children leaves by one face and branches off a shared trunk, instead
+  of one line per child from the parent's flow-side face.
+- A line that meets a box side on a compartment divider row is joined to it (`┼`); it can
+  look as if it crosses the box.
+- Namespace frames, labels and routing around obstacles are the flowchart's, so they differ
+  in detail from the top-down class drawing.
+
+`RenderOptions.direction` still does not apply to class diagrams.
 
 ## `themeVariables` are opt-in, and only a subset
 
@@ -210,6 +240,37 @@ fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
 `base` diagram with only `primaryColor` set does not look the same in both. Only
 flowchart, state and pie read the directive. Details and the opt-in table:
 [Configuration directives](diagrams.md#themevariables-opt-in).
+
+## ASCII: opt-in layout-faithful mode (`--layout mermaid`)
+
+The default ASCII renderer lays flowcharts out on its own grid, so node order and spacing
+differ from mermaid's. `zombie-mermaid render <file> --ascii --layout mermaid` (library:
+`renderMermaidASCIIWithLayout(src, { layout: 'mermaid' })` from `zombie-mermaid/ascii-layout`)
+instead draws mermaid's own ELK layout (`packages/elk-layout`, `packages/ascii-layout`; #2177).
+Opt-in only: without the flag the output is byte-identical to before.
+
+- **Fallback, never silent.** Subgraphs, shapes the layout does not model, non-flowchart
+  diagrams, a layout error, or a missing `elkjs-0.9.3` make it use the standard renderer; the
+  CLI prints `layout-faithful: <reason>; used standard renderer` on stderr and the API returns
+  `path: 'standard'` plus `fallbackReason`. On success stderr says `layout-faithful: used
+mermaid's ELK layout` and the result carries a `note`.
+- **Width cap and fallback.** The drawing is capped at 120 columns (`--max-width <n>` /
+  `maxCols` sets another cap): blank gaps between node groups are shrunk to fit, boxes never
+  are. A diagram whose boxes alone exceed the cap (e.g. a long LR chain of wide labels) falls
+  back to the standard renderer by default, with `layout-faithful: layout-faithful output is N
+columns, over the 120-column cap; used standard renderer` on stderr (API: `fallbackReason`).
+  To get the wide layout-faithful text anyway, use `--layout mermaid-wide` (API:
+  `maxCols: Infinity`).
+- **Merged lines hide edge multiplicity.** Identical parallel edges draw as one line (three
+  `A --> B` look like one).
+- **Plain drawing at a fixed scale.** `-x/-y/-p`, `--coords`, `--theme` colors, `--hyperlinks`
+  and `--max-width` compaction (it is the column cap instead) do not apply to it (they apply to a fallback render).
+- **Pinned to mermaid 12.1.0 + elkjs 0.9.3.** The layout is only faithful to that pair. When
+  the `mermaid` pin moves, re-run `pnpm run elk-layout:oracle` and update the module.
+- **Dependency.** `elkjs-0.9.3` (`npm:elkjs@0.9.3`) is an optional peer dependency of
+  `zombie-mermaid`, kept separate from the `elkjs` 0.11/0.12 the SVG renderer uses. The layout
+  code is bundled into lazy chunks that load only when the option is used. The MCP tool does not
+  expose it.
 
 ## Known limitations (not intentional, not yet fixed)
 

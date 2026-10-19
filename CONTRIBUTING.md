@@ -12,7 +12,7 @@ pnpm run doctor     # check your toolchain; ASCII/Docker tools are optional
 pnpm run verify     # typecheck + lint/format/tests for what you changed
 ```
 
-`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, eslint and prettier on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or `--related <file>`) runs only affected tests. Rough path-to-suite map:
+`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and prettier on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or `--related <file>`) runs only affected tests. Rough path-to-suite map:
 
 | Changed path                                   | Run                                                                |
 | ---------------------------------------------- | ------------------------------------------------------------------ |
@@ -128,15 +128,15 @@ Investigation and measurement findings belong on the issue, not in the repo. Pos
 
 ### Mutation and reassignment
 
-`eslint.config.js` enforces a small, deliberately narrow set of rules against reassignment ([#481](https://github.com/dfadler/zombie-mermaid/issues/481)): [`prefer-const`](https://eslint.org/docs/latest/rules/prefer-const), [`no-var`](https://eslint.org/docs/latest/rules/no-var), and [`no-param-reassign`](https://eslint.org/docs/latest/rules/no-param-reassign) with `props: false`. The line is drawn at the _binding_: a `let` that's never reassigned, a `var`, or a function that overwrites its own parameter (`padding = Math.max(0, padding)` — bind a new `const` instead) is an error. Writing _into_ an object a parameter points at (`canvas[y][x] = ch`, `edge.path = route`, `grid.add(key)`) is not: the ASCII renderer's grid, pathfinding, and layout passes are in-place by design, and rebuilding a canvas or an edge list per step to satisfy a lint rule would cost real time on large diagrams. That in-place work is the performance exception #481 carves out, which is why the stricter variants (`no-param-reassign` with `props: true`, `eslint-plugin-functional`'s `immutable-data`/`no-let`/`no-loop-statements`) are measured and tracked on the issue rather than enabled — each would flag hundreds of lines under `packages/ascii-renderer/src/**`.
+`.oxlintrc.json` (oxlint) enforces a small, deliberately narrow set of rules against reassignment ([#481](https://github.com/dfadler/zombie-mermaid/issues/481)): [`prefer-const`](https://oxc.rs/docs/guide/usage/linter/rules/eslint/prefer-const.html), [`no-var`](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-var.html), and [`no-param-reassign`](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-param-reassign.html) with `props: false`. The line is drawn at the _binding_: a `let` that's never reassigned, a `var`, or a function that overwrites its own parameter (`padding = Math.max(0, padding)` — bind a new `const` instead) is an error. Writing _into_ an object a parameter points at (`canvas[y][x] = ch`, `edge.path = route`, `grid.add(key)`) is not: the ASCII renderer's grid, pathfinding, and layout passes are in-place by design, and rebuilding a canvas or an edge list per step to satisfy a lint rule would cost real time on large diagrams. That in-place work is the performance exception #481 carves out, which is why the stricter variants (`no-param-reassign` with `props: true`, `eslint-plugin-functional`'s `immutable-data`/`no-let`/`no-loop-statements`) are measured and tracked on the issue rather than enabled — each would flag hundreds of lines under `packages/ascii-renderer/src/**`.
 
-If you do need to reassign a binding for performance, suppress the rule on that line only, and say why, using ESLint's [`-- description`](https://eslint.org/docs/latest/use/configure/rules#comment-descriptions) form with a `perf:` prefix:
+If you do need to reassign a binding for performance, suppress the rule on that line only, and say why, using the `eslint-disable-next-line ... -- description` form (oxlint honours ESLint's directive comments) with a `perf:` prefix:
 
 ```ts
 // eslint-disable-next-line no-param-reassign -- perf: hot loop, avoids a per-cell allocation
 ```
 
-A reviewer should be able to read the reason without opening the issue. The description isn't optional decoration: [`linterOptions.reportUnusedDisableDirectives`](https://eslint.org/docs/latest/use/configure/rules#report-unused-eslint-disable-comments) is set to `error` (ESLint's default is only `warn`, and CI runs `eslint .` without `--max-warnings`, so a warning would never fail the build), so a suppression whose rule no longer fires on that line — because the code under it was later rewritten — fails lint until it's removed. That keeps the list of exceptions honest over time instead of accreting.
+A reviewer should be able to read the reason without opening the issue. The description isn't optional decoration: `pnpm run lint` passes `--report-unused-disable-directives-severity=error` (oxlint's default is only a warning, which would never fail the build), so a suppression whose rule no longer fires on that line — because the code under it was later rewritten — fails lint until it's removed. That keeps the list of exceptions honest over time instead of accreting.
 
 ### Test coverage
 
@@ -262,7 +262,11 @@ By contributing, you agree your contributions are licensed under this project's 
 
 `pnpm run check:bundle-size` (the "Check bundle size" step of the CI job "Packed tarball smoke test") fails a PR if any
 `dist/` file exceeds its gzip budget, or any package's unpacked `dist/` (no
-source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. It prints
+source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. Source
+maps are still emitted into `dist/` for local tooling (`sourcemap: 'hidden'` in
+`vite.config.package.ts`, so no `sourceMappingURL` comment) but never published:
+each package's `files` has `!dist/**/*.map`, and `pnpm run check:pack-dist` and
+`pnpm run smoke:packed` fail on a packed `.map` or a dangling reference (#2195). It prints
 bytes, budget and remaining headroom per entry. Each budget is the size CI
 measured plus 2% (reset 2026-10-14, #1994); budgets are never auto-regenerated.
 Measure on a clean `pnpm install --frozen-lockfile && pnpm run build`: sizes are

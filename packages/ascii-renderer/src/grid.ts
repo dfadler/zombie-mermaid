@@ -67,6 +67,7 @@ import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
 import { splitLines } from './multiline-utils.ts'
 import { displayWidth } from './display-width.ts'
+import { edgeLabelPlacement } from './draw-arrows.ts'
 
 // `requireGridCoord` is defined in types.ts (a pure predicate over
 // AsciiNode with no grid-state dependency) and re-exported here so the two
@@ -833,6 +834,57 @@ export function widenGapsForFrameTitles(graph: AsciiGraph): boolean {
     if (!widened) break
   }
   calculateSubgraphBoundingBoxes(graph)
+  return changed
+}
+
+/**
+ * Widen the gap column an edge label sits in until the label text clears every
+ * frame wall. The frames take their padding and wall out of the gap between
+ * two nodes' columns, so a label sized for the bare gap (`increaseGridSizeForPath`)
+ * is drawn over the wall of a frame the edge crosses, erasing it. LR only. Returns
+ * whether any column changed; boxes are recomputed here.
+ */
+function widenGapsForCrossingLabels(graph: AsciiGraph): boolean {
+  const framed = graph.subgraphs.filter((sg) => sg.nodes.length > 0)
+  // LR only: there the walls cross the flow axis a label is laid along.
+  if (framed.length === 0 || graph.config.graphDirection !== 'LR') return false
+  let changed = false
+  for (let pass = 0; pass < 64; pass++) {
+    let widened = false
+    for (const edge of graph.edges) {
+      if (edge.text === '') continue
+      for (const { x, y, text } of edgeLabelPlacement(graph, edge) ?? []) {
+        const end = x + displayWidth(text) - 1
+        const hit = framed.some(
+          (sg) =>
+            y >= sg.minY &&
+            y <= sg.maxY &&
+            [sg.minX, sg.maxX].some((wall) => wall >= x && wall <= end),
+        )
+        if (!hit) continue
+        const mid = x + (end - x) / 2
+        let best: GridCoord | null = null
+        for (const c of edge.path) {
+          if (
+            !best ||
+            Math.abs(gridToDrawingCoord(graph, c).x - mid) <
+              Math.abs(gridToDrawingCoord(graph, best).x - mid)
+          )
+            best = c
+        }
+        if (!best) continue
+        graph.columnWidth.set(best.x, (graph.columnWidth.get(best.x) ?? 0) + 1)
+        for (const node of graph.nodes) {
+          node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+        }
+        calculateSubgraphBoundingBoxes(graph)
+        widened = changed = true
+        break
+      }
+      if (widened) break
+    }
+    if (!widened) break
+  }
   return changed
 }
 
@@ -2157,6 +2209,7 @@ export function createMapping(graph: AsciiGraph): void {
   // Keep side-by-side frames at their natural width when a wide title makes
   // them touch (#1254).
   widenGapsForFrameTitles(graph)
+  widenGapsForCrossingLabels(graph)
   // A cluster-exit gutter narrower than its cluster's drawn wall (padding,
   // nesting, or LR label widening) is widened here, where the wall is first
   // known. Widening only shifts what lies past the gutter, so node drawing

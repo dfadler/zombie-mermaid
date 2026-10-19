@@ -28,6 +28,16 @@
         "default": "./dist/ascii.cjs"
       }
     },
+    "./ascii-layout": {
+      "import": {
+        "types": "./dist/ascii-layout.d.ts",
+        "default": "./dist/ascii-layout.js"
+      },
+      "require": {
+        "types": "./dist/ascii-layout.d.cts",
+        "default": "./dist/ascii-layout.cjs"
+      }
+    },
     "./mcp": {
       "import": {
         "types": "./dist/mcp.d.ts",
@@ -79,6 +89,7 @@
   },
   "files": [
     "dist/",
+    "!dist/**/*.map",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "README.md"
@@ -141,7 +152,7 @@
     "build": "pnpm run build:packages && vite build --app --config config/vite.config.lib.ts",
     "build:packages": "vite build --app --config packages/core/vite.config.ts && vite build --app --config packages/mermaid-parser/vite.config.ts && vite build --app --config packages/svg-renderer/vite.config.ts && vite build --app --config packages/ascii-renderer/vite.config.ts && vite build --app --config packages/mcp/vite.config.ts && vite build --config packages/mcp/vite.worker.config.ts",
     "build:site": "rm -rf site && mkdir -p site && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/index.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/editor.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/fork-fixes.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/pages.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/blog.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/dashboard.ts && cp -r public/* site/",
-    "lint": "eslint .",
+    "lint": "oxlint --report-unused-disable-directives-severity=error .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepublishOnly": "pnpm run build",
@@ -152,6 +163,8 @@
     "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts",
     "audit:responsive": "tsx scripts/audit-responsive.ts",
     "layout:oracle": "tsx scripts/layout-oracle.ts",
+    "elk-layout:oracle": "tsx scripts/elk-layout-oracle.ts --gallery",
+    "elk-layout:font": "tsx scripts/elk-layout-font.ts",
     "layout:scorecard": "tsx scripts/layout-oracle.ts --history=layout-fidelity-history.jsonl --scorecard=docs/layout-fidelity-scorecard.md && prettier --write docs/layout-fidelity-scorecard.md",
     "label:oracle": "tsx scripts/label-position-oracle.ts",
     "verify": "scripts/verify.sh",
@@ -186,14 +199,16 @@
     "@types/react-dom": "^19.2.7",
     "@vitest/coverage-v8": "^4.1.11",
     "@xterm/headless": "^6.0.0",
-    "eslint": "^10.9.1",
-    "eslint-config-prettier": "^10.1.8",
+    "@zombie-mermaid/ascii-layout": "workspace:*",
+    "@zombie-mermaid/elk-layout": "workspace:*",
+    "elkjs-0.9.3": "npm:elkjs@0.9.3",
     "fast-check": "4.10.2",
     "fontkit": "^2.0.4",
     "jsdom": "^30.0.1",
     "lightningcss": "^1.33.0",
     "marked": "^18.0.11",
     "mermaid": "12.1.0",
+    "oxlint": "1.87.0",
     "prettier": "^3.9.6",
     "publint": "0.3.25",
     "react": "^19.2.8",
@@ -202,7 +217,6 @@
     "subset-font": "^2.7.0",
     "tsx": "^4.23.12",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.68.0",
     "unplugin-dts": "^1.0.3",
     "vite": "^8.2.2",
     "vitest": "^4.1.11",
@@ -210,5 +224,13 @@
   },
   "optionalDependencies": {
     "@resvg/resvg-js": "^2.6.2"
+  },
+  "peerDependencies": {
+    "elkjs-0.9.3": "0.9.3"
+  },
+  "peerDependenciesMeta": {
+    "elkjs-0.9.3": {
+      "optional": true
+    }
   }
 }

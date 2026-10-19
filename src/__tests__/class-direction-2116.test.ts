@@ -191,13 +191,17 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
   })
 })
 
-describe('ASCII: TB is unchanged and LR/RL stay top-down', () => {
+describe('ASCII: TB is unchanged and LR/RL are drawn sideways (#2158)', () => {
   it('`direction TB` equals no direction line', () => {
     expect(ascii(dir('TB'))).toBe(ascii(`classDiagram\n  ${chain}`))
   })
   for (const d of ['LR', 'RL']) {
-    it(`\`direction ${d}\` equals no direction line`, () => {
-      expect(ascii(dir(d))).toBe(ascii(`classDiagram\n  ${chain}`))
+    it(`\`direction ${d}\` is no longer the top-down drawing`, () => {
+      const out = ascii(dir(d))
+      expect(out).not.toBe(ascii(`classDiagram\n  ${chain}`))
+      // one row of boxes, one column per level
+      const row = out.split('\n').find((l) => /A/.test(l) && /C/.test(l))
+      expect(row).toMatch(d === 'LR' ? /A.*B.*C/ : /C.*B.*A/)
     })
   }
 })

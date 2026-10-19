@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast local verify: typecheck (3 tsc projects in parallel), eslint + prettier
+# Fast local verify: typecheck (3 tsc projects in parallel), oxlint + prettier
 # on files changed vs origin/main, then vitest on tests affected by the change.
 # --full mirrors CI: whole-repo lint/format and test:coverage.
 set -euo pipefail
@@ -39,7 +39,7 @@ fi
 changed=$( { git diff --name-only --diff-filter=d "$base"...HEAD; git diff --name-only --diff-filter=d HEAD; } | sort -u)
 lintable=$(printf '%s\n' "$changed" | grep -E '\.(ts|tsx|js|mjs|cjs)$' || true)
 if [ -n "$lintable" ]; then
-  printf '%s\n' "$lintable" | xargs pnpm exec eslint
+  printf '%s\n' "$lintable" | xargs pnpm exec oxlint --report-unused-disable-directives-severity=error
 fi
 if [ -n "$changed" ]; then
   printf '%s\n' "$changed" | xargs pnpm exec prettier --check --ignore-unknown
