@@ -375,7 +375,7 @@ export function buildReport(opts: {
     for (const f of group) {
       const by = f.author ? ` by ${sanitize(f.author, 40)}` : ''
       const when = f.date ? ` (${f.date.slice(0, 10)})` : ''
-      lines.push(`- [${sanitize(f.title)}](${linkUrl(f.url)})${by}${when}`)
+      lines.push(`- [ ] [${sanitize(f.title)}](${linkUrl(f.url)})${by}${when}`)
     }
   }
   if (errors.length) {
