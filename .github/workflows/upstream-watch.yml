@@ -40,7 +40,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 # A cron run overlapping a manual dispatch would race on the issue body.
 concurrency:
@@ -49,6 +48,9 @@ concurrency:
 
 jobs:
   watch-upstream:
+    permissions:
+      contents: read
+      issues: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Fork-of-this-fork guard, same as ci.yml: a downstream fork owner running
@@ -149,6 +151,9 @@ jobs:
   # upstream data used (names and URLs, never release-note text, which is
   # third-party content). The audited version lives in docs/diagrams.md.
   check-mermaid-releases:
+    permissions:
+      contents: read
+      issues: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: github.repository == 'dfadler/zombie-mermaid'

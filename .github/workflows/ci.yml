@@ -120,6 +120,7 @@ jobs:
           # Full history so check-diff-coverage.ts can diff against
           # origin/main below (a shallow checkout wouldn't have it).
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -201,6 +202,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -271,6 +274,7 @@ jobs:
           # the source tree at a historical commit, which a shallow checkout
           # does not contain.
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -565,8 +569,8 @@ jobs:
           {
             echo "## Visual regression failures (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
             echo
-            if [ -n "${{ steps.upload-report.outputs.artifact-url }}" ]; then
-              echo "[Download the full interactive Playwright report](${{ steps.upload-report.outputs.artifact-url }}) (the \`visual-regression-failures-${{ matrix.shardIndex }}\` artifact) — extract it and run \`pnpm exec playwright show-report playwright-report\` for the side-by-side diff/trace viewer."
+            if [ -n "${STEPS_UPLOAD_REPORT_OUTPUTS_ARTIFACT_URL}" ]; then
+              echo "[Download the full interactive Playwright report](${STEPS_UPLOAD_REPORT_OUTPUTS_ARTIFACT_URL}) (the \`visual-regression-failures-${{ matrix.shardIndex }}\` artifact) — extract it and run \`pnpm exec playwright show-report playwright-report\` for the side-by-side diff/trace viewer."
               echo
             fi
             echo "Failed screenshots:"
@@ -580,6 +584,8 @@ jobs:
               done <<< "$diffs"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          STEPS_UPLOAD_REPORT_OUTPUTS_ARTIFACT_URL: ${{ steps.upload-report.outputs.artifact-url }}
 
   # The `visual-regression-comment` / `visual-regression-resolved` jobs that
   # used to live here (added by #1138) were removed in favor of
@@ -609,6 +615,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -704,6 +712,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -801,6 +811,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # `--config auto` pulls Semgrep's community rulesets keyed off the
       # languages detected in this repo (no account/token needed — verified
@@ -841,6 +853,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # Also exempt: badges/ and bench-history.jsonl, the bot-written data
       # files (publish.yml, dashboard-refresh.yml) that used to carry an empty
@@ -905,6 +918,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # The PR body goes through env, never interpolated into the script.
       - name: No TEMP commits; follow-ups must link an issue
