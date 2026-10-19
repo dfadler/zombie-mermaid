@@ -89,6 +89,7 @@
   },
   "files": [
     "dist/",
+    "!dist/**/*.map",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "README.md"
