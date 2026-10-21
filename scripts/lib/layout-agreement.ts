@@ -441,7 +441,7 @@ export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   'State: Notes': 0.8,
   // Measured 2026-10-21 on mermaid 12.1.0 with the dead-band (#2155); each floor sits
   // just under the measured figure. See docs/known-differences.md.
-  // Dense (TD): c is 19px right of a in ours and 30px in mermaid, past the band.
+  // Dense (TD): c is 18.5px right of a in ours and 30.1px in mermaid, 0.1px outside the band.
   'Flowchart: Dense Duplicate Edges (TD)': 0.65,
   // Placement, not the loop (#2100, #2101). Mermaid staggers the three nodes 48px
   // and 37px apart where ours stacks all three in one column (1 of 3 pairs agree).

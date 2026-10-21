@@ -63,7 +63,7 @@ layers. The 12.1.0 comparison is in
   12 does neither. "Nested Subgraphs" puts the second subgraph on the left in ours and
   the first on the left in mermaid 12.1.0 and mermaid.live (horizontal 20%), and in
   "CI/CD Pipeline" mermaid 12.1.0 keeps `Fix & Retry` beside `Build Image` where ours
-  puts it below `QA Approved?` (horizontal 48%). Tracked in
+  puts it below `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
   [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
 - **Remaining small differences are tie-breaks.** "System Architecture" and "Flowchart:
   CJK Labels" score 50-93% against 12.1.0, but every
@@ -85,8 +85,8 @@ layers. The 12.1.0 comparison is in
   Measured on mermaid 12.1.0 across all 105 samples: 29 of 1802 pair-axes disagreed,
   13 of them such splits; the band clears 15 and moves no sample under its floor. The
   bypass, "Dense Duplicate Edges (LR)", "Self-Loop ... (LR)" and "CI/CD Pipeline"
-  samples now score 100%. "Dense Duplicate Edges (TD)" (`c` 19 px right of `a`, 30 px in
-  mermaid) and "Self-Loop ... (TD)" (mermaid staggers 48 and 37 px, ours stacks) stay
+  samples now score 100%. "Dense Duplicate Edges (TD)" (`c` 18.5 px right of `a`, 30.1 px in
+  mermaid, 0.1 px outside the band) and "Self-Loop ... (TD)" (mermaid staggers 48 and 37 px, ours stacks) stay
   under the default floor, as do "CJK Labels" (sign reversal) and "State: Notes".
   A fixed 15, 25 or 30 px tolerance, or one scaled by node height, only moved the
   cliff or split other samples; marking samples "oracle n/a" would not reach the
