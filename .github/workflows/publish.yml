@@ -187,8 +187,15 @@ jobs:
           commit-message: 'chore: version packages'
           pr-title: 'chore: version packages'
           create-github-releases: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # #1579: a Version PR pushed with the job's GITHUB_TOKEN never
+          # triggers CI (events from GITHUB_TOKEN don't start workflows), so
+          # each one sat in action_required until approved by hand. A PAT's
+          # pushes do trigger it. changesets/action v2 reads this input, not
+          # a GITHUB_TOKEN env var (it errors if the two disagree), so the
+          # env var is deliberately unset. Fine-grained PAT, this repo only:
+          # Contents + Pull requests read/write. Record its expiry next to
+          # DASHBOARD_REFRESH_PAT's.
+          github-token: ${{ secrets.RELEASE_PR_PAT }}
           # No NPM_TOKEN / NODE_AUTH_TOKEN: publishing uses npm trusted
           # publishing (OIDC), authenticated via the id-token permission
           # above plus the trusted-publisher link configured on npmjs.com.
