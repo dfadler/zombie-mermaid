@@ -754,7 +754,8 @@ function clearLabel(
     y1: Math.max(...pts.map((p) => p.y)),
   }))
   let best:
-    { v: LabelVariant; at: Point; penalty: number; cost: number } | undefined
+    | { v: LabelVariant; at: Point; penalty: number; cost: number }
+    | undefined
   // Once a trial touches nothing, only a cheaper one can beat it.
   const settled = (cost: number): boolean =>
     best?.penalty === 0 && cost >= best.cost

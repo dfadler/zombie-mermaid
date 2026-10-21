@@ -21,7 +21,12 @@ import type { RenderOptions } from './types.ts'
 
 /** How an edge path is interpolated between its routed points. */
 export type CurveStyle =
-  'linear' | 'basis' | 'natural' | 'step' | 'stepBefore' | 'stepAfter'
+  | 'linear'
+  | 'basis'
+  | 'natural'
+  | 'step'
+  | 'stepBefore'
+  | 'stepAfter'
 
 const CURVE_STYLES = new Set<CurveStyle>([
   'linear',

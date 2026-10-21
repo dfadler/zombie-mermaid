@@ -578,7 +578,7 @@
   packages (`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`)
   now have genuinely publishable `package.json` shapes — real `exports`/
   `main`/`module`/`types` pointing at their own `dist/`, `publishConfig:
-{ access: "public", provenance: true }`, `"private"` removed — and each gets
+  { access: "public", provenance: true }`, `"private"` removed — and each gets
   its own independent Vite build (`packages/*/vite.config.ts`, via the shared
   `vite.config.package.ts` factory), runnable standalone via the new
   `build:packages` script.
@@ -612,7 +612,7 @@
   five packages) stayed complete and correct.
 
   `files` now also lists `packages/{core,mermaid-parser,svg-renderer,
-ascii-renderer,mcp}/src/`. This is a stopgap: see RELEASING.md's `files`
+  ascii-renderer,mcp}/src/`. This is a stopgap: see RELEASING.md's `files`
   stopgap note for why, and remove it as part of a major release once the
   five packages are externalized and published on their own (RELEASING.md's
   "Future: multi-package publish" section) — at that point their source no
