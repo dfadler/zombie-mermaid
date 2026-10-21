@@ -53,6 +53,9 @@
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mermaid-parser": "workspace:*"
   },
+  "scripts": {
+    "build": "vite build --app --config vite.config.ts"
+  },
   "engines": {
     "node": ">=24"
   }

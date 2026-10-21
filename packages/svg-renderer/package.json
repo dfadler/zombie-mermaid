@@ -64,6 +64,9 @@
   "devDependencies": {
     "elkjs": "^0.12.0"
   },
+  "scripts": {
+    "build": "vite build --app --config vite.config.ts"
+  },
   "engines": {
     "node": ">=24"
   }

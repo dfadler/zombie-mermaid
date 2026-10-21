@@ -146,7 +146,7 @@
     "form-judge-calibrate": "tsx scripts/form-judge-calibrate.ts",
     "mention-watch": "tsx scripts/mention-watch.ts",
     "build": "pnpm run build:packages && vite build --app --config config/vite.config.lib.ts",
-    "build:packages": "vite build --app --config packages/core/vite.config.ts && vite build --app --config packages/mermaid-parser/vite.config.ts && vite build --app --config packages/svg-renderer/vite.config.ts && vite build --app --config packages/ascii-renderer/vite.config.ts && vite build --app --config packages/mcp/vite.config.ts && vite build --config packages/mcp/vite.worker.config.ts",
+    "build:packages": "pnpm -r --filter './packages/*' build",
     "build:site": "rm -rf site && vite build --app -c vite.site.config.ts",
     "lint": "oxlint --report-unused-disable-directives-severity=error .",
     "format": "oxfmt .",
