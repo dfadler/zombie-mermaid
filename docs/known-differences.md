@@ -63,10 +63,10 @@ layers. The 12.1.0 comparison is in
   12 does neither. "Nested Subgraphs" puts the second subgraph on the left in ours and
   the first on the left in mermaid 12.1.0 and mermaid.live (horizontal 20%), and in
   "CI/CD Pipeline" mermaid 12.1.0 keeps `Fix & Retry` beside `Build Image` where ours
-  puts it below `QA Approved?` (horizontal 48%). Tracked in
+  puts it below `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
   [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
-- **Remaining small differences are tie-breaks.** "System Architecture", "Flowchart:
-  CJK Labels" and "LR Fan-In With Bypass Edge" score 33-93% against 12.1.0, but every
+- **Remaining small differences are tie-breaks.** "System Architecture" and "Flowchart:
+  CJK Labels" score 50-93% against 12.1.0, but every
   disagreeing node pair is one renderer calling two centres level (within the 20 px
   tolerance) and the other offsetting them. In "LR Fan-In With Bypass Edge" `B` sits
   above `A` and `C` in both renderers, 22 px in mermaid (12.1.0 and 12.2.0) and 15 px
@@ -78,19 +78,19 @@ layers. The 12.1.0 comparison is in
   sits relative to `B`, not text width (#1941). "Flowchart: Five Cluster Exit Siblings (TD)"
   agreed only after `elk.spacing.edgeEdge` was raised to 40 px for graphs with three or
   more labelled edges between the same pair (#1943).
-- **Three more flowchart samples sit under the default floor.** Node boxes are
-  identical in mermaid 12.1.0 and 12.2.0 (12.2.0 from jsDelivr, headless Chromium);
-  each got a floor just under its score on 2026-10-15 (#2058).
-  - "LR Bypass Edge In A Chain" (50% vertical, floor 45%): the same tolerance split as
-    "LR Fan-In With Bypass Edge". `B` is above `A`, `C` and `D` in both; 22 px in
-    mermaid, 15 px in ours (37 px boxes to 48 px), so 3 of 6 pairs disagree.
-  - "Dense Duplicate Edges (TD)" (67% horizontal, floor 65%) and "(LR)" (33% vertical,
-    floor 30%): both put the nodes in the same order (TD: `b` left of `a`, `c` right of
-    both; LR: `b` above `a`, `c` below) and ours is more compact. The disagreeing pairs
-    are offsets under the 20 px tolerance in ours that mermaid draws wider: TD `c` is
-    19 px right of `a` (30 px in mermaid), LR `b` is 19 px above `a` (26) and `c` 16 px
-    below (29). The sample was added for ASCII routing (#2109), where it is not scored;
-    as an SVG layout it is plausible next to mermaid's.
+- **The 20 px tolerance has a dead-band.** A fixed cut-off split pairs whose offsets
+  sat on either side of it ("LR Bypass Edge In A Chain": 15 px in ours, 22 px in
+  mermaid, from 37 px against 48 px boxes). A pair now also agrees when both layouts'
+  offsets are within 10 px of the tolerance and point the same way (`TOLERANCE_BAND`).
+  Measured on mermaid 12.1.0 across all 105 samples: 29 of 1802 pair-axes disagreed,
+  13 of them such splits; the band clears 15 and moves no sample under its floor. The
+  bypass, "Dense Duplicate Edges (LR)", "Self-Loop ... (LR)" and "CI/CD Pipeline"
+  samples now score 100%. "Dense Duplicate Edges (TD)" (`c` 18.5 px right of `a`, 30.1 px in
+  mermaid, 0.1 px outside the band) and "Self-Loop ... (TD)" (mermaid staggers 48 and 37 px, ours stacks) stay
+  under the default floor, as do "CJK Labels" (sign reversal) and "State: Notes".
+  A fixed 15, 25 or 30 px tolerance, or one scaled by node height, only moved the
+  cliff or split other samples; marking samples "oracle n/a" would not reach the
+  non-ASCII ones (#2155).
 
 ## State diagram notes
 
