@@ -210,8 +210,16 @@ export default defineConfig({
   server: {
     port: defaultPort(ROOT),
     // Build outputs/intermediates must never feed Vite's own watcher (its
-    // tsconfig-change handling would force reloads mid-build).
-    watch: { ignored: ['**/.site-ssr/**', '**/.site-dev/**', '**/site/**'] },
+    // tsconfig-change handling would force reloads mid-build). `site/` is
+    // anchored to the repo root: an unanchored `**/site/**` would also match
+    // `packages/site/`, whose edits must trigger a rebuild.
+    watch: {
+      ignored: [
+        '**/.site-ssr/**',
+        '**/.site-dev/**',
+        `${normalizePath(join(ROOT, 'site'))}/**`,
+      ],
+    },
   },
   plugins: [siteRebuildPlugin()],
 })
