@@ -96,6 +96,9 @@ temp/
 .stryker-tmp/
 reports/mutation/
 
+# build:site:vite SSR bundle
+/.site-ssr/
+
 # deep-research skill output (untracked scratch; findings go in issues)
 research_notes/
 reports/

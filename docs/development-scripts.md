@@ -24,6 +24,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run build` — build the publishable packages and the library bundle
 - `pnpm run build:packages` — build only the internal `@zombie-mermaid/*` packages (part of `build`)
 - `pnpm run build:site` — build every site page into `site/` (what CI's "Build site generator check" job runs, as a generator check only)
+- `pnpm run build:site:vite` — build the whole site into `site/` with the single Vite SSR/prerender pipeline in `vite.site.config.ts` (transitional: replaces `build:site` once the old generators are removed, #1844)
 - `pnpm run lint` — oxlint (`.oxlintrc.json`)
 - `pnpm run format` — oxfmt, writing
 - `pnpm run format:check` — oxfmt, checking only
