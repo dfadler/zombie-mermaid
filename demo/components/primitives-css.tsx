@@ -41,6 +41,8 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
+// Node-only (SSR/build time): demo/tsconfig.json has `types: []`, so opt in here.
+/// <reference types="node" />
 import { resolve as resolvePath } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compileModuleCss } from '../../scripts/css-module-hooks.mjs'

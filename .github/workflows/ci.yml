@@ -288,7 +288,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Runs the same generator scripts (index.ts/editor.ts via esbuild) that
+      # Runs the same Vite SSR prerender build (vite.site.config.ts) that
       # pages.yml deploys to GitHub Pages, without the actual deploy step —
       # this only proves the site builds, it never publishes anything and
       # needs no deploy credentials. Output isn't committed; it is handed to

@@ -5,17 +5,12 @@ import {
   type FunctionComponent,
 } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import {
-  daysSince,
-  formatDate,
-  formatDateTime,
-  pluralDays,
-  generate,
-  renderDashboardHtml,
-  type RepoStats,
-} from '../packages/site/dashboard.ts'
+import { readFile } from 'node:fs/promises'
+import { sharedPageCss } from '../demo/components/shared-page-css.tsx'
+import { renderHtmlDocument } from '../demo/render-html.ts'
 import {
   DashboardApp,
+  DashboardPage,
   DASHBOARD_PROPS_ELEMENT_ID,
   DASHBOARD_ROOT_ID,
   MetricsSection,
@@ -25,7 +20,13 @@ import {
 } from '../demo/components/dashboard-page.tsx'
 import {
   buildDashboardViewModel,
+  daysSince,
+  formatDate,
+  formatDateTime,
   parseDashboardData,
+  pluralDays,
+  type DashboardData,
+  type RepoStats,
 } from '../demo/dashboard-model.ts'
 import dashboardData from '../demo/dashboard-data.json' with { type: 'json' }
 
@@ -327,6 +328,28 @@ describe('parseDashboardData', () => {
     expect(() => parseDashboardData(broken)).toThrow(/state/)
   })
 })
+
+/** Mirrors packages/site/ssr/dashboard-routes.ts (the page the site build writes). */
+function renderDashboardHtml(
+  data: DashboardData,
+  css: string,
+  clientScript = '',
+): string {
+  return renderHtmlDocument(
+    createElement(DashboardPage, { data, css, clientScript }),
+  )
+}
+
+async function generate(): Promise<string> {
+  const pageCss = await readFile(
+    new URL('../demo/dashboard.css', import.meta.url),
+    'utf8',
+  )
+  return renderDashboardHtml(
+    parseDashboardData(dashboardData),
+    sharedPageCss(pageCss),
+  )
+}
 
 describe('renderDashboardHtml', () => {
   const data = parseDashboardData(dashboardData)

@@ -95,7 +95,6 @@ const LEGACY_EXEMPT = new Set([
   'scripts/generate-bundle-badge.ts',
   'scripts/generate-hero.ts',
   'scripts/generate-logo-lockup.ts',
-  'scripts/generate-page.ts',
   'scripts/generate-primitives-classes.ts',
   'scripts/label-position-oracle.ts',
   'scripts/layout-oracle.ts',

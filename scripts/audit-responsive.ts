@@ -114,7 +114,7 @@
  *
  * This deliberately does not start the dev server itself: point --base-url
  * at whatever's already serving the pages (a `pnpm run dev` instance on any
- * port, or a plain static server over `pnpm run samples`/`build:site`
+ * port, or a plain static server over `pnpm run build:site`
  * output) — see this repo's CLAUDE.md on why a headless capture against a
  * *live* dev server needs care (below).
  */

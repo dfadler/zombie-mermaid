@@ -1,6 +1,6 @@
 name: Deploy demo site to GitHub Pages
 
-# Builds the static demo site (index.ts/editor.ts -> site/) and publishes it
+# Builds the static demo site (vite.site.config.ts -> site/) and publishes it
 # to GitHub Pages. Requires the repo's Pages source to be set to "GitHub
 # Actions" (Settings -> Pages) — this workflow's deploy step fails otherwise.
 #

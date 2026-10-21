@@ -2,10 +2,9 @@
  * Bundle a single browser-facing entry point through Vite's own `build()`
  * API, returning the result as an in-memory ES module string.
  *
- * index.ts and editor.ts each generate one self-contained HTML file with
- * the bundled client script inlined directly into a `<script
- * type="module">` tag (see vite.config.ts's header comment for why that
- * model is deliberate). Vite's normal build pipeline is built around
+ * Used by the bundle-size scripts and the visual-test harness (the site
+ * build itself bundles its client entries as Vite environments, see
+ * vite.site.config.ts). Vite's normal build pipeline is built around
  * `index.html` as the entry and writing a multi-file `dist/`, which doesn't
  * fit that model — but its underlying JS bundler is reachable directly via
  * `build()` with `rolldownOptions.input` pointed at a script instead of an
