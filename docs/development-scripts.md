@@ -25,8 +25,8 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run build:packages` — build only the internal `@zombie-mermaid/*` packages (part of `build`)
 - `pnpm run build:site` — build every site page into `site/` (what CI's "Build site generator check" job runs, as a generator check only)
 - `pnpm run lint` — oxlint (`.oxlintrc.json`)
-- `pnpm run format` — Prettier, writing
-- `pnpm run format:check` — Prettier, checking only
+- `pnpm run format` — oxfmt, writing
+- `pnpm run format:check` — oxfmt, checking only
 - `pnpm run prepublishOnly` — runs `build` before `npm publish`; not meant to be run by hand
 - `pnpm run typecheck` — type-check the library, `demo/`, and `editor/` configs
 
@@ -86,5 +86,5 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run elk-layout:font` — regenerate `packages/elk-layout/src/font-advances.json`, the per-character advances of mermaid's label font as this machine's Chromium resolves it (machine-specific); re-run `elk-layout:oracle` afterwards. Needs Chromium.
 - `pnpm run layout:scorecard` — runs the layout oracle and records it (#1572): appends a one-line mean summary to `layout-fidelity-history.jsonl` and regenerates `docs/layout-fidelity-scorecard.md` (latest figures, trend, per-sample table). Each sample has an explicit floor (regression guard, not a parity claim); the table shows floor and pass/fail. Scores flowchart, state, class and ER samples (all four, whatever `--type` says) and records one history line per type, tagged with the mermaid version it ran against (#1905). The oracle accepts the same via `--history=<file>` / `--scorecard=<file>`. Needs Chromium; run it by hand, not in CI.
 - `pnpm run label:oracle` — edge-label position oracle (#1385): for a few labelled-edge cases (TD, LR, reciprocal pair) prints where the label sits along the edge (0 = source end, 1 = target end, between the two nodes' facing sides) and how far off the node centre line, in real mermaid.js and in our ASCII output. A diagnostic (needs `pnpm exec playwright install chromium`), not part of CI. See `scripts/label-position-oracle.ts` and `docs/decisions/ascii-vertical-edge-label-placement-1385.md`.
-- `pnpm run verify` — fast local gate: the three tsc projects in parallel (incremental), oxlint and prettier on files changed vs `origin/main`, then `vitest run --changed origin/main`. `--full` mirrors CI (whole-repo lint, format check, `test:coverage`).
+- `pnpm run verify` — fast local gate: the three tsc projects in parallel (incremental), oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`. `--full` mirrors CI (whole-repo lint, format check, `test:coverage`).
 - `pnpm run doctor` — checks the local toolchain: Node >=24 and pnpm (required); Playwright Chromium, asciinema, agg, JetBrains Mono, and docker (optional, for ASCII captures and visual baselines).

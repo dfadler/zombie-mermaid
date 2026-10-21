@@ -6,7 +6,11 @@
 import type { CombinedSample } from './form-judge-cache.ts'
 
 export type Mutation =
-  'missingNode' | 'dropEdge' | 'swapDirection' | 'truncateLabel' | 'wrongLabel'
+  | 'missingNode'
+  | 'dropEdge'
+  | 'swapDirection'
+  | 'truncateLabel'
+  | 'wrongLabel'
 export const MUTATIONS: Mutation[] = [
   'missingNode',
   'dropEdge',

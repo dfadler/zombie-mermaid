@@ -45,7 +45,7 @@ lints the first rule. Majors are batched: see "Batching majors" below.
 a PR merges) and does one of two things:
 
 1. **Pending changesets exist** — it opens (or updates) a `chore: version
-packages` pull request. That PR contains the version bump in
+   packages` pull request. That PR contains the version bump in
    `package.json` and the generated `CHANGELOG.md` entries, computed from
    all pending `.changeset/*.md` files, which it deletes.
 2. **No pending changesets, and the previous push was that Version PR being
@@ -56,7 +56,7 @@ packages` pull request. That PR contains the version bump in
      publishing, with [provenance](https://docs.npmjs.com/generating-provenance-statements)
      attached — see `publishConfig.provenance` in `package.json`)
    - creates a git tag for that package's release, named `<package
-name>@<version>` (e.g. `zombie-mermaid@2.2.5`,
+     name>@<version>` (e.g. `zombie-mermaid@2.2.5`,
      `@zombie-mermaid/core@2.2.5`) — not a single shared `vX.Y.Z` tag
    - creates a GitHub Release from that package's changelog entry
      (`create-github-releases: true` in the workflow)

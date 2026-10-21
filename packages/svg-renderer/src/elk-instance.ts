@@ -116,7 +116,8 @@ function autoLoadElk(): ElkConstructor | null {
     return null
   }
   const mod = proc.getBuiltinModule('node:module') as
-    { createRequire(from: string): (id: string) => unknown } | undefined
+    | { createRequire(from: string): (id: string) => unknown }
+    | undefined
   if (!mod) return null
   const specifier = ['elkjs', 'lib', 'elk.bundled.js'].join('/')
   // CJS build: rolldown rewrites `import.meta` to `{}`, so prefer `__filename`.
@@ -129,7 +130,8 @@ function autoLoadElk(): ElkConstructor | null {
   for (const base of bases) {
     try {
       const loaded = mod.createRequire(base)(specifier) as
-        ElkConstructor | { default?: ElkConstructor }
+        | ElkConstructor
+        | { default?: ElkConstructor }
       const ctor = typeof loaded === 'function' ? loaded : loaded.default
       if (typeof ctor === 'function') return ctor
     } catch {

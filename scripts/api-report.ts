@@ -10,14 +10,16 @@ import { resolve } from 'node:path'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const ENTRIES: Record<string, string> = {
-  'zombie-mermaid': 'dist/index.d.ts',
-  'zombie-mermaid-ascii': 'dist/ascii.d.ts',
-  'zombie-mermaid-mcp': 'dist/mcp.d.ts',
-  core: 'packages/core/dist/index.d.ts',
-  'mermaid-parser': 'packages/mermaid-parser/dist/index.d.ts',
-  'svg-renderer': 'packages/svg-renderer/dist/index.d.ts',
-  'ascii-renderer': 'packages/ascii-renderer/dist/index.d.ts',
-  'packages-mcp': 'packages/mcp/dist/index.d.ts',
+  // The rolled-up declarations live in `dist/shared/`; `dist/<name>.d.ts` is a
+  // one-line re-export stub (#2196).
+  'zombie-mermaid': 'dist/shared/index.d.ts',
+  'zombie-mermaid-ascii': 'dist/shared/ascii.d.ts',
+  'zombie-mermaid-mcp': 'dist/shared/mcp.d.ts',
+  core: 'packages/core/dist/shared/index.d.ts',
+  'mermaid-parser': 'packages/mermaid-parser/dist/shared/index.d.ts',
+  'svg-renderer': 'packages/svg-renderer/dist/shared/index.d.ts',
+  'ascii-renderer': 'packages/ascii-renderer/dist/shared/index.d.ts',
+  'packages-mcp': 'packages/mcp/dist/shared/index.d.ts',
 }
 
 let failed = false

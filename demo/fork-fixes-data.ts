@@ -525,6 +525,19 @@ export const forkFixes: ForkFix[] = [
       'Before: the ╟ marker collides with ORDER’s └ corner. After: the line meets ORDER at a ├ junction inside the box.',
   },
   {
+    id: 'ascii-er-stacked-center',
+    title: 'A narrower stacked ER entity sat off-center, so its edge jogged',
+    symptom:
+      'Each stacked ER row started at the left edge, so a narrower entity was left-aligned under its neighbor while the relationship attaches at each box’s center, and the edge jogged sideways between two off-center stems.',
+    source:
+      'erDiagram\n  INSTALL }o--|| PROJECT : scopes\n  INSTALL {\n    string scope\n    string installPath\n  }',
+    fixCommit: '436c50ed',
+    pr: 2245,
+    render: 'ascii',
+    lookFor:
+      'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL and one straight vertical edge joins them.',
+  },
+  {
     id: 'c4-empty-boundary-frame-width',
     title: 'A C4 empty boundary frame ran past the right edge of the SVG',
     symptom:
@@ -736,5 +749,18 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: arrowheads merge and tick marks are lost where edges share a cell. After: each edge end has its own cell.',
+  },
+  {
+    id: 'sequence-rect-color',
+    title: 'Sequence `rect <color>` highlights were drawn as labelled frames',
+    symptom:
+      'The colour after `rect` was parsed as a block label, so it was never applied and its text was printed in a frame header (`rect [rgb(255,0,0)]`) instead of painting the background.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  rect rgba(200,150,255,0.5)\n    A->>B: hi\n    B-->>A: ok\n  end\n  A->>B: after',
+    fixCommit: 'eae88b98',
+    pr: 2241,
+    render: 'svg',
+    lookFor:
+      'Before: a grey frame with the colour text in its header tab. After: a purple background behind the two messages, with no frame.',
   },
 ]

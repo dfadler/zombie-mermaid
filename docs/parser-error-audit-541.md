@@ -22,7 +22,7 @@ Every parser in this codebase currently falls into one of two buckets, and
 neither is good:
 
 1. **Throws, but with no line/column position, ever.** Every `throw new
-Error(...)` across all five parsers (`src/parser.ts`,
+   Error(...)` across all five parsers (`src/parser.ts`,
    `src/sequence/parser.ts`) is a bare message string with no position
    information. Zero occurrences of line/column in any thrown error.
 2. **Doesn't throw at all — silently drops the malformed line and keeps
@@ -246,9 +246,9 @@ parsers, and needed no changes to `detectDiagramType` itself.
 - Split the invalid-header throw into two cases:
   - Header starts with `graph`/`flowchart` but has a bad/missing direction
     token → a direction-specific message (`Invalid direction "XYZ" in
-header "graph XYZ". Expected one of: TD, TB, LR, BT, RL.` /
+    header "graph XYZ". Expected one of: TD, TB, LR, BT, RL.` /
     `Missing direction in header "graph". Expected e.g. "graph TD" or
-"flowchart LR" — one of: TD, TB, LR, BT, RL.`).
+    "flowchart LR" — one of: TD, TB, LR, BT, RL.`).
   - Anything else → the generic message now lists **all six** supported
     header forms (previously only three, and worded as "graph TD",
     "flowchart LR", "stateDiagram-v2", "etc." with no real enumeration of

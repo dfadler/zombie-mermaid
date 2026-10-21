@@ -21,7 +21,8 @@
 import type { SequenceDiagram, Message } from './types.ts'
 
 export type ActivationIssueCode =
-  'DANGLING_ACTIVATION' | 'UNMATCHED_DEACTIVATION'
+  | 'DANGLING_ACTIVATION'
+  | 'UNMATCHED_DEACTIVATION'
 
 export interface ActivationIssue {
   code: ActivationIssueCode

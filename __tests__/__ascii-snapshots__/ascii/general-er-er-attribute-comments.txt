@@ -1,13 +1,13 @@
-+------------------------------------------------+                                               
-| CUSTOMER                                       |                                               
-+------------------------------------------------+                                               
-| string name PK "the primary key"               |                                               
-| string email UK "login address must be unique" |                                               
-| int age                                        |                                               
-+------------------------------------------------+                                               
-                         +                                                                       
-                         |                                                                       
-                         +------ places ------+                                                  
+                     +------------------------------------------------+                          
+                     | CUSTOMER                                       |                          
+                     +------------------------------------------------+                          
+                     | string name PK "the primary key"               |                          
+                     | string email UK "login address must be unique" |                          
+                     | int age                                        |                          
+                     +------------------------------------------------+                          
+                                              +                                                  
+                                              |                                                  
+                                              | places                                           
                                               |                                                  
                                               o                                                  
                                               ^                                                  

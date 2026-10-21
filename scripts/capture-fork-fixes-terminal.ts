@@ -165,7 +165,8 @@ async function renderPlain(indexPath: string, source: string): Promise<string> {
     maxBuffer: 64 * 1024 * 1024,
   })
   const result = JSON.parse(stdout) as
-    { ok: true; output: string } | { ok: false; error: string }
+    | { ok: true; output: string }
+    | { ok: false; error: string }
   if (!result.ok) {
     throw new Error(result.error)
   }

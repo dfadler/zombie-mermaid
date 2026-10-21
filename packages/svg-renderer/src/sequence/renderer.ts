@@ -368,6 +368,7 @@ function collectLabelBoxes(
   }
 
   for (const block of diagram.blocks) {
+    if (isHighlightRect(block)) continue
     const tab = `${block.type}${block.label ? ` [${block.label}]` : ''}`
     const tabWidth =
       estimateTextWidth(
@@ -629,12 +630,31 @@ function renderParticipantBox(
   return parts.join('\n')
 }
 
+/** A `rect <color>` highlight: drawn as a filled region, with no frame or header tab. */
+function isHighlightRect(
+  block: PositionedBlock,
+): block is PositionedBlock & { color: string } {
+  return block.type === 'rect' && block.color !== undefined
+}
+
 /**
  * Render a block background (loop/alt/opt).
  * Wrapped in <g class="block"> with semantic data attributes.
  */
 function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   const parts: string[] = []
+
+  // `rect <color>`: a bare filled region, no frame or tab (as in Mermaid).
+  // `block.color` is emitted verbatim — safe for the same reason as
+  // `box.color`: the parser only records a value that passed `isCssColor`.
+  if (isHighlightRect(block)) {
+    return [
+      f`<g class="block" data-type="rect" data-color="${escapeAttr(block.color)}">`,
+      f`  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
+        f`fill="${escapeAttr(block.color)}" />`,
+      '</g>',
+    ].join('\n')
+  }
 
   // Semantic wrapper with block metadata
   const labelAttr = block.label

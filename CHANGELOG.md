@@ -1,5 +1,19 @@
 # Changelog
 
+## 5.8.1
+
+### Patch Changes
+
+- [#2222](https://github.com/dfadler/zombie-mermaid/pull/2222) [`0d4348f`](https://github.com/dfadler/zombie-mermaid/commit/0d4348fe48d22f6b4983b6093deadd2a9424737d) Thanks [@dfadler](https://github.com/dfadler)! - Raise the `@modelcontextprotocol/sdk` floor to `^1.32.1` so installs pick up the patched `hono`, `proxy-addr`, `ip-address` and `fast-uri` transitive dependencies.
+
+- [#2229](https://github.com/dfadler/zombie-mermaid/pull/2229) [`69f5734`](https://github.com/dfadler/zombie-mermaid/commit/69f5734c8190c1327d0c695e67437442c6e75b84) Thanks [@dfadler](https://github.com/dfadler)! - Fix ELK layout failing inside a browser module Worker (`Cannot set properties of undefined (setting 'stackTraceLimit')`): `ensureElk()` now defines `globalThis.global` while it hides `self`, so elk-worker.min.js can find its global object. ([#2219](https://github.com/dfadler/zombie-mermaid/issues/2219))
+- Updated dependencies [[`0d4348f`](https://github.com/dfadler/zombie-mermaid/commit/0d4348fe48d22f6b4983b6093deadd2a9424737d), [`69f5734`](https://github.com/dfadler/zombie-mermaid/commit/69f5734c8190c1327d0c695e67437442c6e75b84), [`611736e`](https://github.com/dfadler/zombie-mermaid/commit/611736e43dc3371525f7d0a6573e74495f5b30d2)]:
+  - @zombie-mermaid/mcp@5.8.1
+  - @zombie-mermaid/svg-renderer@5.8.1
+  - @zombie-mermaid/core@5.8.1
+  - @zombie-mermaid/ascii-renderer@5.8.1
+  - @zombie-mermaid/mermaid-parser@5.8.1
+
 ## 5.8.0
 
 ### Minor Changes
@@ -578,7 +592,7 @@
   packages (`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`)
   now have genuinely publishable `package.json` shapes — real `exports`/
   `main`/`module`/`types` pointing at their own `dist/`, `publishConfig:
-{ access: "public", provenance: true }`, `"private"` removed — and each gets
+  { access: "public", provenance: true }`, `"private"` removed — and each gets
   its own independent Vite build (`packages/*/vite.config.ts`, via the shared
   `vite.config.package.ts` factory), runnable standalone via the new
   `build:packages` script.
@@ -612,7 +626,7 @@
   five packages) stayed complete and correct.
 
   `files` now also lists `packages/{core,mermaid-parser,svg-renderer,
-ascii-renderer,mcp}/src/`. This is a stopgap: see RELEASING.md's `files`
+  ascii-renderer,mcp}/src/`. This is a stopgap: see RELEASING.md's `files`
   stopgap note for why, and remove it as part of a major release once the
   five packages are externalized and published on their own (RELEASING.md's
   "Future: multi-package publish" section) — at that point their source no

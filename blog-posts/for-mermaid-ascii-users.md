@@ -328,7 +328,7 @@ mermaid-ascii also has.
 - **A plain-ASCII charset switch on the CLI.** `mermaid-ascii --ascii`
   swaps box-drawing characters for `+`, `-`, `|` and `>`. zombie-mermaid
   exposes that only through the library (`renderMermaidASCII(src, { useAscii:
-true })`); the CLI's `--ascii` flag means "print the terminal rendering",
+  true })`); the CLI's `--ascii` flag means "print the terminal rendering",
   not "restrict to 7-bit ASCII".
 - **A single static binary.** mermaid-ascii is one file with no runtime.
   `npx zombie-mermaid` needs Node.js and downloads the package on first run.
