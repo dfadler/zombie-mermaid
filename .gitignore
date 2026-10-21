@@ -95,3 +95,6 @@ temp/
 # Stryker mutation testing (#1862)
 .stryker-tmp/
 reports/mutation/
+
+# build:site:vite SSR bundle
+/.site-ssr/
