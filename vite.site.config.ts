@@ -20,7 +20,7 @@ const abs = (p: string) => fileURLToPath(new URL(p, import.meta.url))
  * top-level side effects (DOM lookups, listeners), not to export a value:
  * the package declares `"sideEffects": false`, which a concatenation-replacement
  * bundle like editor/js must not be subject to. A failing client build fails
- * the whole build (vite exits non-zero), as the old editor.ts did explicitly.
+ * the whole build (vite exits non-zero), as the retired editor generator did explicitly.
  */
 const CLIENTS: Record<string, [string, boolean, boolean?]> = {
   'editor-browser': ['src/browser.ts', true],

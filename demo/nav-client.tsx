@@ -8,10 +8,8 @@
  * (contrast `demo/dashboard-client.tsx`): `dashboard.html` already has its
  * own hydration entry (`dashboard-client.tsx`, hydrating `DashboardApp`
  * into `DASHBOARD_ROOT_ID`) and imports {@link hydrateNav} directly to also
- * hydrate its Nav, rather than shipping two separately-bundled scripts. The
- * other five page generators — which have no hydration entry point of
- * their own yet — bundle `demo/nav-only-client.tsx` instead, a two-line
- * entry that just calls this function; see that file's header comment.
+ * hydrate its Nav, rather than shipping two separately-bundled scripts. Every
+ * page's client entry (vite.site.config.ts `CLIENTS`) does the same.
  *
  * Imports {@link Nav} and the id constants from `nav.tsx` directly, *not*
  * from `nav-island.tsx` — that file imports `react-dom/server` for its own

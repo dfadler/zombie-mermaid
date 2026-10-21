@@ -4,7 +4,7 @@
  * `.github/workflows/determinism.yml` runs it per OS/Node and diffs the manifests.
  * Logic lives in scripts/lib/determinism-manifest.ts (tested).
  *
- * Usage: scripts/tsx-css.sh scripts/determinism-manifest.ts > manifest.txt
+ * Usage: tsx scripts/determinism-manifest.ts > manifest.txt
  */
 import { renderMermaidASCII, renderMermaidSVG } from '../src/index.ts'
 import { samples } from '../packages/site/samples-data.ts'

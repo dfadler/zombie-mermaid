@@ -1,37 +1,15 @@
 /**
- * Node module customization hooks (zombie-mermaid#1103) that let a plain
- * `import styles from './x.module.css'` resolve under `tsx`, without
- * changing how the site generators execute (see this file's registration
- * entry, css-module-register.mjs, and #965's revised-plan comment for the
- * full "why not a runner swap" reasoning).
- *
- * Only `load` needs to intercept anything: the default ESM resolver already
- * turns a relative `./x.module.css` specifier into a `file:` URL just fine
- * (resolution doesn't need to know the file's content type), it's only the
- * *format* step — deciding how to interpret the file's bytes — where a bare
- * `.css` extension has no built-in handling and would otherwise throw
- * `ERR_UNKNOWN_FILE_EXTENSION`. Everything that isn't a `.module.css`
- * specifier is handed straight through to whatever hook is registered
- * underneath this one (`nextLoad`) — chained after tsx's own hook, so its
- * `.ts`/`.tsx` handling is untouched.
- *
- * `compileModuleCss` below (this hook's actual compile step, minus the
- * loader-hook plumbing) is also imported directly by
- * `demo/components/primitives-css.tsx` and `scripts/
- * generate-primitives-classes.ts` (zombie-mermaid#968) — Vitest's own
- * bundler-based module graph (`vite-node`) intercepts a plain `.module.css`
- * specifier with *its own* CSS Modules handling before this file's `load`
- * hook (registered only via `node --import`/`NODE_OPTIONS`, which `vite-node`
- * doesn't go through) ever sees it — confirmed empirically: under Vitest, a
- * bare `import styles from './primitives.module.css'` resolves to Vite's own
- * differently-hashed classes and no compiled-CSS-text export at all, not
- * this hook's output. A direct function call sidesteps that split entirely
- * — same Lightning CSS transform, same result, regardless of which runner
- * imports it.
+ * Compiles a `.module.css` file through Lightning CSS (zombie-mermaid#1103):
+ * the one compile step behind `demo/components/primitives-css.tsx` (SSR/build
+ * time) and `scripts/generate-primitives-classes.ts`. It is a plain function
+ * call rather than a Node loader hook (the old `node --import` registration
+ * was retired with the tsx site generators): Vitest's and the site build's
+ * own bundlers intercept a bare `.module.css` import with their own CSS
+ * Modules handling (differently hashed classes, no compiled-CSS export), so a
+ * direct call is what keeps the output identical whichever runner imports it.
  */
 import { readFile } from 'node:fs/promises'
 import { basename, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { transform } from 'lightningcss'
 
 /**
@@ -48,7 +26,7 @@ import { transform } from 'lightningcss'
  * empirically, `new URL('..', import.meta.url)` in that case resolves
  * nowhere near the repo root. Every caller here already runs with the repo
  * root as its working directory (a `pnpm run` script, Vitest, or this
- * hook's own `node --import` process), matching the same assumption
+ * tsx script), matching the same assumption
  * primitives-css.tsx's `siblingCssPath()` already makes.
  */
 const REPO_ROOT = process.cwd()
@@ -78,11 +56,6 @@ const HASHED_MODULE_CSS_BASENAMES = new Set(['primitives.module.css'])
  */
 const HASHED_PATTERN = '[local]_[hash]'
 const UNHASHED_PATTERN = '[local]'
-
-/** @param {string} url */
-function isModuleCss(url) {
-  return url.endsWith('.module.css')
-}
 
 /**
  * A conservative, comment-blind scan for a local `@import` rule. Lightning
@@ -115,9 +88,7 @@ function hasComposition(exports) {
 
 /**
  * Compiles a `.module.css` file at `filePath` (an absolute filesystem path)
- * through Lightning CSS, the same way for every caller: this hook's own
- * `load()`, and anything importing this function directly (see this file's
- * header comment for why direct calls exist at all).
+ * through Lightning CSS, the same way for every caller.
  *
  * @param {string} filePath
  * @returns {Promise<{ css: string, classes: Record<string, string> }>}
@@ -173,14 +144,4 @@ export async function compileModuleCss(filePath) {
 
   const css = Buffer.from(code).toString('utf8')
   return { css, classes }
-}
-
-export async function load(url, context, nextLoad) {
-  if (!isModuleCss(url)) return nextLoad(url, context)
-
-  const filePath = fileURLToPath(url)
-  const { css, classes } = await compileModuleCss(filePath)
-  const moduleSource = `export const css = ${JSON.stringify(css)};\nexport default ${JSON.stringify(classes)};\n`
-
-  return { format: 'module', source: moduleSource, shortCircuit: true }
 }

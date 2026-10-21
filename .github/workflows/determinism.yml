@@ -21,8 +21,6 @@ on:
       - 'src/**'
       - 'scripts/determinism-manifest.ts'
       - 'scripts/lib/determinism-manifest.ts'
-      - 'scripts/css-module-register.mjs'
-      - 'scripts/css-module-hooks.mjs'
       - '.github/workflows/determinism.yml'
       - 'pnpm-lock.yaml'
   workflow_dispatch: {}
@@ -63,7 +61,7 @@ jobs:
 
       - name: Render hash manifest
         run: >
-          node --import ./scripts/css-module-register.mjs --import tsx
+          node --import tsx
           scripts/determinism-manifest.ts > manifest.txt
 
       - name: Upload manifest

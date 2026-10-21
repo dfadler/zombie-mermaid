@@ -1,14 +1,9 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   buildStamp,
   resolveBuildStamp,
   stampHtml,
 } from '../scripts/build-stamp.ts'
-import { generatePage } from '../scripts/generate-page.ts'
 
 const SHA = 'a'.repeat(40)
 const noGit = () => {
@@ -53,24 +48,5 @@ describe('build stamp (#1613)', () => {
     expect(stampHtml('<p>no head</p>', { sha: SHA, version: '1' })).toBe(
       '<p>no head</p>',
     )
-  })
-
-  it('generatePage stamps .html but not other files', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'stamp-'))
-    const base = pathToFileURL(`${dir}/`)
-    await generatePage({
-      outPath: new URL('a.html', base),
-      content: '<html><head></head></html>',
-      log: false,
-    })
-    await generatePage({
-      outPath: new URL('b.xml', base),
-      content: '<head></head>',
-      log: false,
-    })
-    expect(await readFile(join(dir, 'a.html'), 'utf8')).toMatch(
-      /<meta name="build-sha" content="([0-9a-f]{40}|unknown)"\/>/,
-    )
-    expect(await readFile(join(dir, 'b.xml'), 'utf8')).toBe('<head></head>')
   })
 })
