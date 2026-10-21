@@ -655,6 +655,7 @@ export function layoutSequenceDiagram(
     return {
       type: block.type,
       label: block.label,
+      ...(block.color !== undefined ? { color: block.color } : {}),
       x: blockLeft,
       y: blockTop,
       width: blockRight - blockLeft,

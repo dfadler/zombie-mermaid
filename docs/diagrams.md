@@ -559,6 +559,13 @@ reflects only the members actually present in that row (a created
 participant has no header box to bracket; a destroyed one has no footer
 box).
 
+`rect <color> … end` is a background highlight (named colour, hex, `rgb()`/`rgba()`,
+`hsl()`/`hsla()`). SVG paints the region behind the lifelines with the colour as
+written and draws no frame or header tab, as Mermaid 12.1.0 and 12.2.0 do. Text
+that isn't a recognised colour is ignored (Mermaid paints a dark default
+there). `rect` takes no label. ASCII has no fill, so it keeps a plain `rect`
+frame (#2239).
+
 ### Known limitations
 
 - `participant X@{ "type": "database" }` / `actor X@{ ... }` (Mermaid 12: `boundary`, `control`, `entity`, `database`, `collections`, `queue`; [Mermaid sequence docs](https://mermaid.js.org/syntax/sequenceDiagram.html#participants)) is parsed, including the `alias` key, `as` labels, `create participant`, hyphenated ids and a space before `@{`. The type is drawn, matching Mermaid 12.1.0 and 12.2.0 (same shapes in both): `boundary` (circle with a wall), `control` (circle with an arrow), `entity` (circle on a line) and `database` (cylinder) are free-standing icons with the label below, like the stick figure; `collections` is two stacked boxes and `queue` a horizontal cylinder, each with the label inside. SVG uses the theme's node tokens. ASCII has no circles or cylinders, so each type gets a one-line pictogram above the label inside the usual box, identical in the unicode and `--ascii` charsets: `|-O` boundary, `(@)` control, `_O_` entity, `(_)` database, `[[]]` collections, `>>>` queue. An unknown type, or a type on `actor`, renders as before (plain box / stick figure), as in Mermaid 12.1.0. A malformed `@{ ... }` is a parse error naming the line (#1973).
