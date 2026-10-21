@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { resetSvgIdCounters, svgOpenTag } from '../theme.ts'
 
 const colors = { bg: '#fff', fg: '#000' }
-const render = () => svgOpenTag(400, 300, colors, false, 'A title', false, false, true, 'A desc')
+const render = () =>
+  svgOpenTag(400, 300, colors, false, 'A title', false, false, true, 'A desc')
 
 describe('resetSvgIdCounters', () => {
   it('makes consecutive renders of the same input yield identical ids', () => {
