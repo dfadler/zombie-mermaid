@@ -586,8 +586,7 @@ export function drawJunctionCharacter(
       )
       // This is the direction the edge ARRIVES at junction from
       // e.g., if arrivalDir is Right, the line comes FROM the left
-      if (dirEquals(arrivalDir, Down))
-        hasUp = true // arrived going down = came from up
+      if (dirEquals(arrivalDir, Down)) hasUp = true // arrived going down = came from up
       else if (dirEquals(arrivalDir, Up)) hasDown = true
       else if (dirEquals(arrivalDir, Right)) hasLeft = true
       else if (dirEquals(arrivalDir, Left)) hasRight = true

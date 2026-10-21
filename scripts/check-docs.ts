@@ -159,7 +159,8 @@ const realFs: Fs = {
 export function nodeConsistency(want: string, fs: Fs = realFs): string[] {
   const errs: string[] = []
   const eng = JSON.parse(fs.read('package.json')).engines?.node as
-    string | undefined
+    | string
+    | undefined
   if (eng && !engineMatches(eng, want))
     errs.push(`package.json engines.node "${eng}" vs .nvmrc ${want}`)
   for (const f of fs.ls('.github/workflows'))

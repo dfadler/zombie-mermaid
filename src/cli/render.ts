@@ -345,7 +345,9 @@ async function renderText(
  * being re-derived per format.
  */
 type OutputTarget =
-  { kind: 'stdout' } | { kind: 'file'; path: string } | { kind: 'skip' }
+  | { kind: 'stdout' }
+  | { kind: 'file'; path: string }
+  | { kind: 'skip' }
 
 /**
  * Decide a format's output target: stdout when `toStdout`, else the given

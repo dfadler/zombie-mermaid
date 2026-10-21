@@ -246,22 +246,14 @@ function ansi16Fg(hex: string): string {
 
   // Determine base color based on dominant channel
   let code: number
-  if (r > 180 && g < 100 && b < 100)
-    code = 31 // red
-  else if (g > 180 && r < 100 && b < 100)
-    code = 32 // green
-  else if (r > 150 && g > 150 && b < 100)
-    code = 33 // yellow
-  else if (b > 180 && r < 100 && g < 100)
-    code = 34 // blue
-  else if (r > 150 && b > 150 && g < 100)
-    code = 35 // magenta
-  else if (g > 150 && b > 150 && r < 100)
-    code = 36 // cyan
-  else if (luma > 200)
-    code = 37 // white
-  else if (luma < 50)
-    code = 30 // black
+  if (r > 180 && g < 100 && b < 100) code = 31 // red
+  else if (g > 180 && r < 100 && b < 100) code = 32 // green
+  else if (r > 150 && g > 150 && b < 100) code = 33 // yellow
+  else if (b > 180 && r < 100 && g < 100) code = 34 // blue
+  else if (r > 150 && b > 150 && g < 100) code = 35 // magenta
+  else if (g > 150 && b > 150 && r < 100) code = 36 // cyan
+  else if (luma > 200) code = 37 // white
+  else if (luma < 50) code = 30 // black
   else code = 37 // default to white for grays
 
   return `${ESC}${code + bright}m`

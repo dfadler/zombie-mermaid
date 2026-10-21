@@ -16,14 +16,14 @@ erDiagram
          +            
          |            
          | lives_at   
-        ++            
-        o             
-        ^             
-+---------------+     
-| ADDRESS       |     
-+---------------+     
-| string street |     
-| string city   |     
-+---------------+     
+         |            
+         o            
+         ^            
+ +---------------+    
+ | ADDRESS       |    
+ +---------------+    
+ | string street |    
+ | string city   |    
+ +---------------+    
                       
                       
