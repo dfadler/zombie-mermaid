@@ -118,8 +118,7 @@ fixes.
 ## Demo/editor site: keyboard and focus behavior
 
 The site this repo builds and deploys itself (`demo/`, `editor/`, and the
-per-page generators in `packages/site/` — `index.ts`, `pages.ts`, `blog.ts`, `fork-fixes.ts`,
-`dashboard.ts`, `editor.ts` — what
+Vite SSR prerender pipeline in `packages/site/ssr/` (`pnpm run build:site`) — what
 [dfadler.github.io/zombie-mermaid](https://dfadler.github.io/zombie-mermaid/)
 serves) is no longer one gallery-plus-editor page: the #590 "Diagram-Native
 Showcase" redesign (see
@@ -134,7 +133,7 @@ of any single one of them:
   `:focus-visible` ring (`a:focus-visible, button:focus-visible { … }`)
   is present on the **Diagrams hub and per-type pages**
   (`diagrams/*.html`, via `demo/styles.css` + `demo/diagram-page.css`,
-  concatenated into `diagrams/assets/diagram-page.css` by `packages/site/pages.ts`) and
+  concatenated into `diagrams/assets/diagram-page.css` by `packages/site/ssr/diagram-routes.ts`) and
   on **Fork fixes** (`fork-fixes.html`, via `demo/fork-fixes.css`) —
   relevant to
   [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)

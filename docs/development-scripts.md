@@ -23,7 +23,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run build:mono-font` — rebuild the subsetted monospace font and the files that embed it (`scripts/build-mono-font-subset.ts`)
 - `pnpm run build` — build the publishable packages and the library bundle
 - `pnpm run build:packages` — build only the internal `@zombie-mermaid/*` packages (part of `build`)
-- `pnpm run build:site` — build every site page into `site/` (what CI's "Build site generator check" job runs, as a generator check only)
+- `pnpm run build:site` — build every site page into `site/` with the Vite SSR prerender pipeline (`vite.site.config.ts`; what CI's "Build site generator check" job and the Pages deploy run)
 - `pnpm run lint` — oxlint (`.oxlintrc.json`)
 - `pnpm run format` — Prettier, writing
 - `pnpm run format:check` — Prettier, checking only
@@ -51,17 +51,11 @@ Every `package.json` script and what it does. Visual-regression workflow details
 
 ## Site and asset generators
 
-- `pnpm run samples` — render the marketing home page (`packages/site/index.ts`) to `index.html`
-- `pnpm run editor` — build the live editor page (`packages/site/editor.ts`) to `editor.html`
-- `pnpm run pages` — render the static site pages (`packages/site/pages.ts`), including `sitemap.xml`
-- `pnpm run blog` — render the blog (`packages/site/blog.ts`) from `blog-posts/*.md` to `blog/`; must run after `pnpm run pages` in `build:site` since it appends to the `sitemap.xml` that `packages/site/pages.ts` generates. See `blog-posts/README.md` for the post frontmatter format.
 - `pnpm run generate:hero` — regenerate the committed README hero asset `public/hero.svg` (`scripts/generate-hero.ts`)
 - `pnpm run generate:primitives-classes` — regenerate `demo/components/generated/primitives-classes.ts` from `primitives.module.css`; run it whenever that CSS module changes
 - `pnpm run generate:logo-lockup` — regenerate the logo lockup asset (`scripts/generate-logo-lockup.ts`)
 - `pnpm run docs:scripts` — regenerate this file from `package.json` and `scripts/script-descriptions.json`; the `development-scripts-doc` test fails if it is stale
 - `pnpm run badge:bundle-size` — regenerate `badges/bundle-size.json` (the README's Bundle Size badge data) from the built `dist/index.js` (run `pnpm run build` first; `pnpm install` must also have run, since the SVG and umbrella figures include `entities`, and also report a with-`elkjs` figure). Wired into `.github/workflows/publish.yml` to run automatically after every npm publish — you shouldn't normally need to run this by hand.
-- `pnpm run fork-fixes` — build the fork-fixes showcase (`packages/site/fork-fixes.ts`; see "Adding a fork-fixes entry" in [CONTRIBUTING.md](../CONTRIBUTING.md))
-- `pnpm run dashboard` — build the maintenance-transparency dashboard (`packages/site/dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot. Its markup comes from React components in `demo/components/` rendered with `react-dom/server` (the [#423](https://github.com/dfadler/zombie-mermaid/issues/423) pilot); every `.tsx` file there must open with `/** @jsxRuntime automatic */` — see the `jsx` comment in `demo/tsconfig.json` for why
 - `pnpm run dashboard:data` — refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand
 
 ## Other tooling
