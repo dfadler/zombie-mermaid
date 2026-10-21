@@ -108,3 +108,5 @@ Contributors never need this. It matters to whoever administers the repo's secre
 5. If a token may have leaked, do steps 1 to 4 immediately.
 
 Rotate on expiry, whenever the maintainer who created it loses repo access, and on any suspected exposure.
+
+**Expiry.** The current token has a 90-day expiry and expires on **2027-01-19** (rotated 2026-10-21, [#1800](https://github.com/dfadler/zombie-mermaid/issues/1800)). Nothing alerts on it: unlike `DASHBOARD_REFRESH_PAT`, no health check covers this token, and an expired one only degrades to text-only comments, so set a calendar reminder about two weeks ahead and update the date here when you rotate.
