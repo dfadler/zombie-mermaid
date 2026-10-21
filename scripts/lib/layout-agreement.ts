@@ -33,6 +33,14 @@ export interface LayoutBoxes {
  */
 export const DEFAULT_TOLERANCE = 20
 
+/**
+ * Half-width of the dead-band around the tolerance. A pair whose offsets in
+ * both layouts are within this of the tolerance, on the same side, counts as
+ * agreeing: 19px against 22px is not a disagreement just because the line
+ * falls between them (#2155).
+ */
+export const TOLERANCE_BAND = 10
+
 /** Each figure is 0..1, or null when the layouts share too little to compare. */
 export interface Agreement {
   /** Pairs of nodes in the same above / below / level relation. */
@@ -52,6 +60,18 @@ const centreY = (b: Box): number => b.y + b.h / 2
 function relation(a: number, b: number, tolerance: number): -1 | 0 | 1 {
   if (Math.abs(a - b) <= tolerance) return 0
   return a < b ? -1 : 1
+}
+
+/** Whether two offsets (a - b in each layout) put the pair in the same relation, allowing the dead-band. */
+function agrees(official: number, ours: number, tolerance: number): boolean {
+  if (relation(official, 0, tolerance) === relation(ours, 0, tolerance)) {
+    return true
+  }
+  const inBand = (d: number): boolean =>
+    Math.abs(Math.abs(d) - tolerance) <= TOLERANCE_BAND
+  return (
+    inBand(official) && inBand(ours) && Math.sign(official) === Math.sign(ours)
+  )
 }
 
 function inside(node: Box, group: Box): boolean {
@@ -81,23 +101,15 @@ export function agreement(
       const a = ids[i]!
       const b = ids[j]!
       pairs++
+      const [oa, ob] = [official.nodes[a]!, official.nodes[b]!]
+      const [ua, ub] = [ours.nodes[a]!, ours.nodes[b]!]
       if (
-        relation(
-          centreY(official.nodes[a]!),
-          centreY(official.nodes[b]!),
-          tolerance,
-        ) ===
-        relation(centreY(ours.nodes[a]!), centreY(ours.nodes[b]!), tolerance)
+        agrees(centreY(oa) - centreY(ob), centreY(ua) - centreY(ub), tolerance)
       ) {
         vertical++
       }
       if (
-        relation(
-          centreX(official.nodes[a]!),
-          centreX(official.nodes[b]!),
-          tolerance,
-        ) ===
-        relation(centreX(ours.nodes[a]!), centreX(ours.nodes[b]!), tolerance)
+        agrees(centreX(oa) - centreX(ob), centreX(ua) - centreX(ub), tolerance)
       ) {
         horizontal++
       }
@@ -426,32 +438,14 @@ export const DEFAULT_FLOOR = 0.85
 export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   'Nested Subgraphs': 0.2,
   'Flowchart: CJK Labels': 0.5,
-  // Same shape as mermaid (B above A and C, both A->C and A->B->C drawn), but
-  // B sits 15px above A in ours and 21-22px in mermaid 12.1.0 and 12.2.0 (nodes
-  // are 37px tall here, 48px there), so the 20px tolerance splits the pair (#2058).
-  'LR Fan-In With Bypass Edge': 0.3,
   'State: Notes': 0.8,
-  // Measured 2026-10-15 on mermaid 12.1.0 and 12.2.0 (identical node boxes in both),
-  // tolerance 20px; each floor sits just under the measured figure. Where they
-  // are set, see docs/known-differences.md ("Three more flowchart samples
-  // sit under the default floor", #2058).
-  // Same relative order as mermaid; B sits 15px above A in ours and 22px in
-  // mermaid (nodes 37px tall here, 48px there), so the 20px tolerance splits the
-  // A-B, B-C and B-D pairs (3 of 6 vertical pairs agree).
-  'LR Bypass Edge In A Chain': 0.45,
-  // Same order as mermaid (b left of a, c right of both). TD: c is 19px right of
-  // a in ours and 30px in mermaid, so the 20px tolerance calls them level (2 of
-  // 3 horizontal pairs agree). LR: b is 19px above a in ours and 26px in
-  // mermaid, c 16px below and 29px (1 of 3 vertical pairs agree).
+  // Measured 2026-10-21 on mermaid 12.1.0 with the dead-band (#2155); each floor sits
+  // just under the measured figure. See docs/known-differences.md.
+  // Dense (TD): c is 19px right of a in ours and 30px in mermaid, past the band.
   'Flowchart: Dense Duplicate Edges (TD)': 0.65,
-  'Flowchart: Dense Duplicate Edges (LR)': 0.3,
-  // Placement, not the loop (#2100, #2101). Mermaid 12.1.0 and 12.2.0 stagger
-  // the three nodes: TD puts b 48px right of a and c 37px right of it, where
-  // ours stacks all three in one column (only b-c agrees, 1 of 3 pairs); LR
-  // puts b 22px below a, which the 20px tolerance splits (2 of 3 pairs agree).
-  // Where the loop goes is in docs/known-differences.md.
+  // Placement, not the loop (#2100, #2101). Mermaid staggers the three nodes 48px
+  // and 37px apart where ours stacks all three in one column (1 of 3 pairs agree).
   'Flowchart: Self-Loop with In and Out Neighbours (TD)': 0.3,
-  'Flowchart: Self-Loop with In and Out Neighbours (LR)': 0.65,
   // Ratcheted 2026-10-15 (#2129): 100/100 on mermaid 12.1.0 and 12.2.0 since #2023.
   // A 3-node sample moves in steps of 1/3, so 0.95 means any split pair fails.
   'Class: Inheritance (<|--)': 0.95,
