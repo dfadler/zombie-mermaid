@@ -278,18 +278,30 @@ function ensureElk(): RawFakeWorker {
   // Worker `self` is a getter-only accessor on WorkerGlobalScope's prototype,
   // so `delete` is a no-op (elk still sees it) and the old `g.self = origSelf`
   // restore threw "Cannot set property self ... which has only a getter".
-  const g = globalThis as { self?: unknown; document?: unknown }
+  //
+  // elk-worker.min.js then looks for `window`, then `global`, then `self` to
+  // find its global object. Node/Bun have `global`; a browser Worker has
+  // none of the three once `self` is hidden, so `$wnd` stays undefined and
+  // construction throws (#2219). Alias `global` to `globalThis` for the same
+  // window and remove it again afterwards.
+  const g = globalThis as {
+    self?: unknown
+    document?: unknown
+    global?: unknown
+  }
   const ownSelf = Object.getOwnPropertyDescriptor(g, 'self')
   const hideSelf =
     'self' in g &&
     typeof g.document === 'undefined' &&
     ownSelf?.configurable !== false
+  const aliasGlobal = hideSelf && typeof g.global === 'undefined'
   if (hideSelf) {
     Object.defineProperty(g, 'self', {
       value: undefined,
       configurable: true,
       writable: true,
     })
+    if (aliasGlobal) g.global = globalThis
   }
 
   let instance: unknown
@@ -301,6 +313,7 @@ function ensureElk(): RawFakeWorker {
     if (hideSelf) {
       if (ownSelf) Object.defineProperty(g, 'self', ownSelf)
       else delete g.self
+      if (aliasGlobal) delete g.global
     }
     globalThis.setTimeout = origSetTimeout
   }
