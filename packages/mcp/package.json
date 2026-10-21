@@ -58,6 +58,9 @@
     "zod": "^4.5.4",
     "elkjs": "^0.12.0"
   },
+  "scripts": {
+    "build": "vite build --app --config vite.config.ts && vite build --config vite.worker.config.ts"
+  },
   "engines": {
     "node": ">=24"
   }
