@@ -15,7 +15,7 @@ erDiagram
 +----------------+    
          +            
          |            
-         | lives_at   
+      lives_at        
          |            
          o            
          ^            

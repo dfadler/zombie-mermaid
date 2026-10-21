@@ -61,9 +61,10 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // severs the line — see the header comment above).
     expect(lines[markerLineIndex]).not.toMatch(/^\s*[│─]\s*$/)
 
-    // The line continues unbroken below the marker, through the label row.
+    // The line continues below the marker, broken only by the label sitting
+    // on it (#2253).
     expect(lines[markerLineIndex + 1]).toMatch(/^\s*│/)
-    expect(ascii).toContain('│ ac')
+    expect(ascii).toMatch(/^\s*ac\s*$/m)
   })
 
   it('renders distinct ticks at both ends when both entities have "one" cardinality', () => {
@@ -88,7 +89,9 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // the plain '│' line-fill character.
     expect(lines[upperTick - 1]).toContain('└───┘')
     expect(lines[lowerTick + 1]).toContain('┌───┐')
+    // (the row holding the label is the one place the line is broken, #2253)
     for (let i = upperTick + 1; i < lowerTick; i++) {
+      if (/^\s*ac\s*$/.test(lines[i]!)) continue
       expect(lines[i]).toMatch(/^\s*│/)
     }
   })
@@ -110,6 +113,6 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // line (no vertical extent) — see the header comment above.
     expect(lines[markerLineIndex]).not.toMatch(/^\s*[|-]\s*$/)
     expect(lines[markerLineIndex + 1]).toMatch(/^\s*\|/)
-    expect(ascii).toContain('| ac')
+    expect(ascii).toMatch(/^\s*ac\s*$/m)
   })
 })

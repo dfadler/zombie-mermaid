@@ -4,7 +4,7 @@
  ┼     ┼              ┼       ┼                               
  │     ┊              │       ┊                               
  │     └╌ ships-via ╌╌┼╌╌╌╌╌╌╌┊                               
- │ contains           │       └╌╌╌╌╌╌ receives ╌╌╌╌╌╌┐        
+ contains             │       └╌╌╌╌╌╌ receives ╌╌╌╌╌╌┐        
  │                    │       ┊                      ┊        
  │         ┌ includes ┘       ┊                      ┊        
  │         ○                  ○                      ○        
