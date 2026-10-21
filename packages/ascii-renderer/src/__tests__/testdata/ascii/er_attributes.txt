@@ -19,7 +19,7 @@ erDiagram
 +-----------------+    
          +             
          |             
-         | places      
+       places          
          |             
          o             
          ^             

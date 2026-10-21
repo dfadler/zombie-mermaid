@@ -3,7 +3,7 @@
 +---------+    
      V         
      |         
-     | teaches 
+  teaches      
      |         
      o         
      ^         

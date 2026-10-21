@@ -1805,6 +1805,57 @@ export function renderErAscii(
               return
             }
           }
+          // Next best for a one-line label: on this edge's own vertical
+          // stem, centered on it and as near the middle of the run as a
+          // clear row allows, so the line is broken by the text like
+          // mermaid's label sitting on the path (#2253). The row needs the
+          // stem in the cells above and below (never a corner or marker) and
+          // a blank margin either side of the text; otherwise fall through to
+          // the label-beside-the-stem search below.
+          if (blockHeight === 1) {
+            const rowOfBox = (y: number): boolean =>
+              [...placed.values()].some((p) => y >= p.y && y < p.y + p.height)
+            const stem = (x: number, y: number): boolean =>
+              ownLineCells.has(`${x},${y}`) &&
+              rc[x]?.[y] === 'line' &&
+              canvas[x]?.[y] === lineV
+            const ink = (x: number, y: number): boolean =>
+              boxCells.has(`${x},${y}`) || (canvas[x]?.[y] ?? ' ') !== ' '
+            const target = Math.floor((startY + endY) / 2)
+            for (const anchorX of new Set([routingX, lineX])) {
+              // Centered on the stem; a label too wide for the room to its
+              // left slides right until the stem is still under its text.
+              const start = Math.max(
+                1,
+                Math.min(anchorX - Math.floor((maxCells - 1) / 2), anchorX),
+              )
+              for (let off = 0; off <= endY - startY; off++) {
+                for (const y of off === 0
+                  ? [target]
+                  : [target + off, target - off]) {
+                  if (y <= startY || y >= endY) continue
+                  if (
+                    !stem(anchorX, y) ||
+                    !stem(anchorX, y - 1) ||
+                    !stem(anchorX, y + 1)
+                  )
+                    continue
+                  if (rowOfBox(y)) continue
+                  let clear = true
+                  for (let x = start - 1; x <= start + maxCells; x++) {
+                    if (x !== anchorX && ink(x, y)) clear = false
+                  }
+                  if (!clear) continue
+                  increaseSize(canvas, start + maxCells, endY + 1)
+                  increaseRoleCanvasSize(rc, start + maxCells, endY + 1)
+                  cellsPerLine[0]!.forEach((c, i) =>
+                    setCGuarded(start + i, y, c, 'text'),
+                  )
+                  return
+                }
+              }
+            }
+          }
           // Geometric midpoint, used only as a starting point for the
           // collision search below — the jog itself no longer shares this
           // value (chooseFreeRow was removed; multiRowObstruction routing

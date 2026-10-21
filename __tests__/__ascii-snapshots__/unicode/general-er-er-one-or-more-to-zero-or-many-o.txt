@@ -3,7 +3,7 @@
 └─────────┘    
      ╤         
      │         
-     │ teaches 
+  teaches      
      │         
      ○         
      ╧         

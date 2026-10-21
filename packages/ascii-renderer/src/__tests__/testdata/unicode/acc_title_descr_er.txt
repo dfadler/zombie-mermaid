@@ -11,7 +11,7 @@ erDiagram
 └───┘    
   ┼      
   │      
-  │ has  
+ has     
   │      
   ○      
   ╧      
