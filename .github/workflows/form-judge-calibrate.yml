@@ -84,7 +84,11 @@ jobs:
 
       - name: Judge calibration cases
         # Same pinned action, tool restrictions and model as the judge step
-        # in form-judge-weekly.yml; keep the two in sync.
+        # in form-judge-weekly.yml; keep the two in sync, except --max-turns:
+        # one session here covers ~74 cases (batches of 5) and used 135-151
+        # turns in runs 38623728548, 38626546048 and 39595638257, so 150 was
+        # a coin flip. 200 leaves ~30% headroom over the observed max; a
+        # successful run costs the same ($7-9), only the cap moves (#2254).
         timeout-minutes: 30
         uses: anthropics/claude-code-base-action@646b4a772085257c35182cd167bdd6b3b1017675 # main HEAD as of 2026-09-06, no newer tag exists
         with:
@@ -92,7 +96,7 @@ jobs:
           claude_args: |
             --allowedTools "Read,Write"
             --disallowedTools "Task,Bash,Glob,Grep,LS,ExitPlanMode,Edit,MultiEdit,NotebookEdit,WebFetch,TodoWrite,WebSearch,BashOutput,KillBash"
-            --max-turns 150
+            --max-turns 200
             --model claude-sonnet-5
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
