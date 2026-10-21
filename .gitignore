@@ -95,3 +95,7 @@ temp/
 # Stryker mutation testing (#1862)
 .stryker-tmp/
 reports/mutation/
+
+# deep-research skill output (untracked scratch; findings go in issues)
+research_notes/
+reports/
