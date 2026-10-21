@@ -525,6 +525,19 @@ export const forkFixes: ForkFix[] = [
       'Before: the ╟ marker collides with ORDER’s └ corner. After: the line meets ORDER at a ├ junction inside the box.',
   },
   {
+    id: 'ascii-er-stacked-center',
+    title: 'A narrower stacked ER entity sat off-center, so its edge jogged',
+    symptom:
+      'Each stacked ER row started at the left edge, so a narrower entity was left-aligned under its neighbor while the relationship attaches at each box’s center, and the edge jogged sideways between two off-center stems.',
+    source:
+      'erDiagram\n  INSTALL }o--|| PROJECT : scopes\n  INSTALL {\n    string scope\n    string installPath\n  }',
+    fixCommit: '436c50ed',
+    pr: 2245,
+    render: 'ascii',
+    lookFor:
+      'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL and one straight vertical edge joins them.',
+  },
+  {
     id: 'c4-empty-boundary-frame-width',
     title: 'A C4 empty boundary frame ran past the right edge of the SVG',
     symptom:
