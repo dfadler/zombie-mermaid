@@ -8,12 +8,26 @@
  */
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { defineConfig, type EnvironmentOptions } from 'vite'
+import { forkFixes } from './demo/fork-fixes-data.ts'
+import { renderBeforeAll } from './packages/site/ssr/fork-fixes-before.ts'
 import { prerender } from './packages/site/ssr/prerender.ts'
 
 const abs = (p: string) => fileURLToPath(new URL(p, import.meta.url))
 
-/** name -> [entry, minify]; names are what entry-server.ts reads from `clients`. */
-const CLIENTS: Record<string, [string, boolean]> = {
+/**
+ * name -> [entry, minify, treeshake?]; names are what the routes read from
+ * `clients`. `treeshake: false` is for a bundle that exists to run its modules'
+ * top-level side effects (DOM lookups, listeners), not to export a value:
+ * the package declares `"sideEffects": false`, which a concatenation-replacement
+ * bundle like editor/js must not be subject to. A failing client build fails
+ * the whole build (vite exits non-zero), as the old editor.ts did explicitly.
+ */
+const CLIENTS: Record<string, [string, boolean, boolean?]> = {
+  'editor-browser': ['src/browser.ts', true],
+  'editor-client': ['demo/editor-client.tsx', true],
+  'editor-app': ['editor/js/index.ts', false, false],
+  'fork-fixes-client': ['demo/fork-fixes-client.tsx', true],
+  'dashboard-client': ['demo/dashboard-client.tsx', true],
   'index-client': ['demo/index-client.tsx', true],
   'index-page-client': ['demo/index-page-client.ts', false],
   'blog-post-client': ['demo/blog-post-client.tsx', true],
@@ -41,22 +55,13 @@ const environments: Record<string, EnvironmentOptions> = {
       target: 'esnext',
       rolldownOptions: {
         input: abs('packages/site/ssr/entry-server.ts'),
-        // Whitespace-only minify: nav's inlined `initMobileMenu` script is
-        // `Function.prototype.toString()` output, which the old tsx/esbuild
-        // pipeline emitted compact; this keeps it (nearly) byte-identical
-        // instead of +512B/page. No mangling, so names and behavior stay.
-        output: {
-          minify: {
-            mangle: false,
-            compress: false,
-            codegen: { removeWhitespace: true },
-          },
-        },
       },
     },
   },
 }
-for (const [name, [entry, minify]] of Object.entries(CLIENTS)) {
+for (const [name, [entry, minify, treeshake = true]] of Object.entries(
+  CLIENTS,
+)) {
   environments[envName(name)] = {
     consumer: 'client',
     build: {
@@ -65,6 +70,7 @@ for (const [name, [entry, minify]] of Object.entries(CLIENTS)) {
       target: 'esnext',
       rolldownOptions: {
         input: abs(entry),
+        treeshake,
         preserveEntrySignatures: 'strict',
         output: {
           format: 'es',
@@ -114,6 +120,10 @@ export default defineConfig({
   builder: {
     async buildApp(builder) {
       const clients: Record<string, string> = {}
+      // The slow part (an archived tree per fix, see fork-fixes-before.ts) starts
+      // first and overlaps the SSR and client builds.
+      const befores = renderBeforeAll(forkFixes, abs('.site-ssr/fork-fixes'))
+      befores.catch(() => {}) // surfaced by the await below; no unhandled rejection meanwhile
       await Promise.all([
         builder.build(builder.environments.ssr!),
         ...Object.keys(CLIENTS).map(async (name) => {
@@ -125,7 +135,12 @@ export default defineConfig({
           clients[name] = chunk.code
         }),
       ])
-      await prerender(SSR_OUT, clients, process.env.SITE_OUT_DIR ?? 'site')
+      await prerender(
+        SSR_OUT,
+        clients,
+        await befores,
+        process.env.SITE_OUT_DIR ?? 'site',
+      )
     },
   },
 })
