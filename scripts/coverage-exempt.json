@@ -82,7 +82,7 @@
   {
     "file": "scripts/capture-fork-fixes-terminal.ts",
     "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
-    "maxLines": 342,
+    "maxLines": 343,
     "legacy": true
   },
   {

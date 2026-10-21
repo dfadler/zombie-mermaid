@@ -253,12 +253,12 @@ Opt-in only: without the flag the output is byte-identical to before.
   diagrams, a layout error, or a missing `elkjs-0.9.3` make it use the standard renderer; the
   CLI prints `layout-faithful: <reason>; used standard renderer` on stderr and the API returns
   `path: 'standard'` plus `fallbackReason`. On success stderr says `layout-faithful: used
-mermaid's ELK layout` and the result carries a `note`.
+  mermaid's ELK layout` and the result carries a `note`.
 - **Width cap and fallback.** The drawing is capped at 120 columns (`--max-width <n>` /
   `maxCols` sets another cap): blank gaps between node groups are shrunk to fit, boxes never
   are. A diagram whose boxes alone exceed the cap (e.g. a long LR chain of wide labels) falls
   back to the standard renderer by default, with `layout-faithful: layout-faithful output is N
-columns, over the 120-column cap; used standard renderer` on stderr (API: `fallbackReason`).
+  columns, over the 120-column cap; used standard renderer` on stderr (API: `fallbackReason`).
   To get the wide layout-faithful text anyway, use `--layout mermaid-wide` (API:
   `maxCols: Infinity`).
 - **Merged lines hide edge multiplicity.** Identical parallel edges draw as one line (three

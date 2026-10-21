@@ -148,7 +148,13 @@ export function findDuplicates(
 }
 
 export type TarballKind =
-  'esm' | 'cjs' | 'sourcemap' | 'dts' | 'docs' | 'manifest' | 'other'
+  | 'esm'
+  | 'cjs'
+  | 'sourcemap'
+  | 'dts'
+  | 'docs'
+  | 'manifest'
+  | 'other'
 
 export function classify(path: string): TarballKind {
   if (/\.map$/.test(path)) return 'sourcemap'

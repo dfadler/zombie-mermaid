@@ -7,7 +7,11 @@ import type { Direction, Point } from '@zombie-mermaid/core'
 // ============================================================================
 
 export type C4Variant =
-  'context' | 'container' | 'component' | 'dynamic' | 'deployment'
+  | 'context'
+  | 'container'
+  | 'component'
+  | 'dynamic'
+  | 'deployment'
 
 export type C4ElementKind = 'person' | 'system' | 'container' | 'component'
 

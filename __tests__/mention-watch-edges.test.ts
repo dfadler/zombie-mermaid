@@ -25,8 +25,9 @@ describe('collector edge cases', () => {
         githubDelayMs: 7,
         sleep: async (ms) => void slept.push(ms),
         fetch: (url, init) => {
-          seen[url.split('?')[0]!] = (init?.headers as Record<string, string>)
-            ?.Authorization
+          seen[url.split('?')[0]!] = (
+            init?.headers as Record<string, string>
+          )?.Authorization
           return json({})
         },
       },
