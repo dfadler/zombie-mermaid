@@ -2,7 +2,15 @@
   "name": "@zombie-mermaid/core",
   "version": "5.8.0",
   "license": "MIT",
-  "description": "Shared types, theme, and text/statement utilities used by every zombie-mermaid renderer.",
+  "description": "Shared types, theme, and text/statement utilities used by every zombie-mermaid renderer (maintained continuation of beautiful-mermaid).",
+  "keywords": [
+    "mermaid",
+    "zombie-mermaid",
+    "beautiful-mermaid",
+    "diagram",
+    "theme",
+    "types"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/dfadler/zombie-mermaid",

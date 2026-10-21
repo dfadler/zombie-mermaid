@@ -2,7 +2,18 @@
   "name": "@zombie-mermaid/mcp",
   "version": "5.8.0",
   "license": "MIT",
-  "description": "Model Context Protocol server exposing zombie-mermaid's SVG and ASCII rendering as MCP tools.",
+  "description": "Model Context Protocol server exposing zombie-mermaid's SVG and ASCII rendering as MCP tools (maintained continuation of beautiful-mermaid).",
+  "keywords": [
+    "mermaid",
+    "zombie-mermaid",
+    "beautiful-mermaid",
+    "diagram",
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
+    "ai-agent",
+    "llm-tools"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/dfadler/zombie-mermaid",
