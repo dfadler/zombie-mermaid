@@ -600,6 +600,44 @@ export function renderErAscii(
       maxRowH = Math.max(maxRowH, h)
     }
 
+    // Center a lone entity on the component's widest row like dagre, so it
+    // sits under its parent and a single edge runs straight (#2237).
+    // Aligning the center columns (floor(w / 2), as attachments use) avoids a
+    // one-column jog on odd/even width differences. `direction LR`/`RL` keeps
+    // its left-aligned row packing.
+    if (!sideBySide) {
+      const rows = new Map<number, PlacedEntity[]>()
+      for (const e of componentEntities) {
+        const p = placed.get(e.id)!
+        rows.set(p.y, [...(rows.get(p.y) ?? []), p])
+      }
+      const rowW = (r: PlacedEntity[]) =>
+        r[r.length - 1]!.x + r[r.length - 1]!.width
+      const center = Math.floor(Math.max(...[...rows.values()].map(rowW)) / 2)
+      const lone = new Set(
+        [...rows.values()]
+          .filter((r) => r.length === 1)
+          .map((r) => r[0]!.entity.id),
+      )
+      for (const r of rows.values()) {
+        // ponytail: only a chain of lone entities is centered. A fan-out
+        // (one parent over several children) moves same-row edge detours and
+        // labels (#2112) and needs the layout deep dive (#2238).
+        const id = r[0]!.entity.id
+        if (
+          r.length > 1 ||
+          diagram.relationships.some(
+            (rel) =>
+              (rel.entity1 === id && !lone.has(rel.entity2)) ||
+              (rel.entity2 === id && !lone.has(rel.entity1)),
+          )
+        )
+          continue
+        const shift = Math.max(0, center - Math.floor(rowW(r) / 2))
+        for (const p of r) placed.set(p.entity.id, { ...p, x: p.x + shift })
+      }
+    }
+
     // Move to next component row (add gap between components)
     currentY += maxRowH + componentGap
   }

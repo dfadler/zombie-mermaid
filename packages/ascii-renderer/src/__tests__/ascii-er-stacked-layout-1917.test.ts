@@ -34,7 +34,8 @@ describe('ASCII ER stacked layout (issue #1917)', () => {
     for (const useAscii of [false, true]) {
       const out = renderMermaidASCII(TWO, { useAscii })
       expect(row(out, 'CUSTOMER')).toBeLessThan(row(out, 'ORDER'))
-      expect(col(out, 'CUSTOMER')).toBe(col(out, 'ORDER'))
+      // ORDER is the narrower box, centered under CUSTOMER (#2237).
+      expect(col(out, 'ORDER')).toBeGreaterThan(col(out, 'CUSTOMER'))
       expect(out).toContain('places')
     }
   })
