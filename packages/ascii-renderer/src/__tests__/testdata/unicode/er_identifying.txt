@@ -16,14 +16,14 @@ erDiagram
          ┼            
          │            
          │ lives_at   
-        ┌┘            
-        ○             
-        ╧             
-┌───────────────┐     
-│ ADDRESS       │     
-├───────────────┤     
-│ string street │     
-│ string city   │     
-└───────────────┘     
+         │            
+         ○            
+         ╧            
+ ┌───────────────┐    
+ │ ADDRESS       │    
+ ├───────────────┤    
+ │ string street │    
+ │ string city   │    
+ └───────────────┘    
                       
                       
