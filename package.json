@@ -171,7 +171,7 @@
     "doctor": "scripts/doctor.sh"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@zombie-mermaid/ascii-renderer": "workspace:*",
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mcp": "workspace:*",
