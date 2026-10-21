@@ -750,4 +750,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: arrowheads merge and tick marks are lost where edges share a cell. After: each edge end has its own cell.',
   },
+  {
+    id: 'sequence-rect-color',
+    title: 'Sequence `rect <color>` highlights were drawn as labelled frames',
+    symptom:
+      'The colour after `rect` was parsed as a block label, so it was never applied and its text was printed in a frame header (`rect [rgb(255,0,0)]`) instead of painting the background.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  rect rgba(200,150,255,0.5)\n    A->>B: hi\n    B-->>A: ok\n  end\n  A->>B: after',
+    fixCommit: 'eae88b98',
+    pr: 2241,
+    render: 'svg',
+    lookFor:
+      'Before: a grey frame with the colour text in its header tab. After: a purple background behind the two messages, with no frame.',
+  },
 ]

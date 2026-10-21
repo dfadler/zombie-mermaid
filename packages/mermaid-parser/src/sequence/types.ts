@@ -120,8 +120,14 @@ export interface Message {
 export interface Block {
   /** Block type keyword */
   type: 'loop' | 'alt' | 'opt' | 'par' | 'critical' | 'break' | 'rect'
-  /** Label for the block header */
+  /** Label for the block header. Always empty for `rect`, whose text is a colour. */
   label: string
+  /**
+   * `rect <color>` only: the highlight colour, exactly as written. Unset for
+   * every other block, and for a `rect` whose text isn't a recognised colour
+   * (see `isCssColor`) — the declaration is then ignored.
+   */
+  color?: string
   /** Index of the first message inside this block */
   startIndex: number
   /** Index of the last message inside this block (inclusive) */
@@ -231,6 +237,8 @@ export interface Activation {
 export interface PositionedBlock {
   type: Block['type']
   label: string
+  /** See {@link Block.color}. */
+  color?: string
   x: number
   y: number
   width: number

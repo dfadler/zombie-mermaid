@@ -4,7 +4,7 @@ import {
   normalizeBrTags,
   type Statement,
 } from '@zombie-mermaid/core'
-import { parseBoxHeader } from './box-color.ts'
+import { isCssColor, parseBoxHeader } from './box-color.ts'
 
 /**
  * Which `box … end` group (index into `diagram.boxes`) is currently open,
@@ -201,6 +201,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
   const blockStack: Array<{
     type: Block['type']
     label: string
+    color?: string
     startIndex: number
     dividers: Block['dividers']
     line: number
@@ -372,10 +373,17 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     if (blockMatch) {
       const blockType = toBlockType(blockMatch[1]!)
       const rawBlockLabel = blockMatch[2]?.trim() ?? ''
-      const label = normalizeBrTags(rawBlockLabel)
+      // `rect <color>` is Mermaid's background highlight: the rest of the line
+      // is a colour, never a label. A value that isn't a recognised colour is
+      // ignored (#2239), as an invalid style colour is (#1918).
+      const isRect = blockType === 'rect'
+      const color =
+        isRect && isCssColor(rawBlockLabel) ? rawBlockLabel : undefined
+      const label = isRect ? '' : normalizeBrTags(rawBlockLabel)
       blockStack.push({
         type: blockType,
         label,
+        ...(color !== undefined ? { color } : {}),
         startIndex: diagram.messages.length,
         dividers: [],
         line: stmt.line,
@@ -414,6 +422,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       diagram.blocks.push({
         type: completed.type,
         label: completed.label,
+        ...(completed.color !== undefined ? { color: completed.color } : {}),
         startIndex: completed.startIndex,
         endIndex: Math.max(diagram.messages.length - 1, completed.startIndex),
         dividers: completed.dividers,

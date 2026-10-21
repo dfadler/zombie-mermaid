@@ -268,7 +268,7 @@ maps are still emitted into `dist/` for local tooling (`sourcemap: 'hidden'` in
 each package's `files` has `!dist/**/*.map`, and `pnpm run check:pack-dist` and
 `pnpm run smoke:packed` fail on a packed `.map` or a dangling reference (#2195). It prints
 bytes, budget and remaining headroom per entry. Each budget is the size CI
-measured plus 2% (reset 2026-10-14, #1994); budgets are never auto-regenerated.
+measured plus 2% (reset 2026-10-14, #1994; package ESM and unpacked entries reset 2026-10-21, #2198); budgets are never auto-regenerated.
 Measure on a clean `pnpm install --frozen-lockfile && pnpm run build`: sizes are
 deterministic for a given lockfile, but a stale `dist/` or a main checkout with
 drifted dependencies reads differently from CI, and CI is what counts.
