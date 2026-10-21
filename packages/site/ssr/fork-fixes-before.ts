@@ -134,6 +134,10 @@ async function pool<T>(items: T[], limit: number, fn: (t: T) => Promise<void>) {
 function archivedPackages(root: string): Plugin {
   return {
     name: 'fork-fixes:archived-packages',
+    // `pre`: otherwise Vite's own resolver wins for a bare specifier that resolves
+    // (the live workspace link into packages/*/dist once that has been built),
+    // and a "before" silently renders the current code.
+    enforce: 'pre',
     resolveId(source, importer) {
       if (!source.startsWith('@zombie-mermaid/') || !importer?.startsWith(root))
         return null
