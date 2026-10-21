@@ -28,4 +28,4 @@ The guards are `pnpm run check:pack-dist` and `pnpm run smoke:packed` (added in 
 - Re-adding `src/` or maps to `files` re-proposes what steps 1 to 3 removed. The alternatives named in #1426, #1871 and #2169 (ESM-only maps, maps on GitHub Releases) were not done; revisit those, not `files`, if consumers ask for debuggable stacks.
 - Step 1 on its own left an inconsistency: its description said maps "still resolve" the source, which stopped being true at step 2. Read the table, not the #1446 body, for the current state.
 - #1446 also removed the unused `entities` declaration from `@zombie-mermaid/mcp` and kept root `elkjs` and `entities` (bundled and used by `scripts/bench.ts`). That is a dependency cleanup, not part of this decision.
-- Not verified: that `npm pack --dry-run` lists no `*.map` for all six packages on current `main`. Only the `files` globs were read.
+- Verified 2026-10-21 on a tree that differs from `main` only by these docs, after `pnpm run build`: `npm pack --dry-run --json` lists 0 `.map` files and 0 `src/` files for the root and all five packages, and `node scripts/check-pack-dist.mjs` reports 6 packages checked, 0 failing.
