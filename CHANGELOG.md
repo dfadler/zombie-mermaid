@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.8.2
+
+### Patch Changes
+
+- [#2245](https://github.com/dfadler/zombie-mermaid/pull/2245) [`436c50e`](https://github.com/dfadler/zombie-mermaid/commit/436c50ede0ee847381e2eefbe2a32b9fe35e764b) Thanks [@dfadler](https://github.com/dfadler)! - Center a lone ASCII ER entity under or over its neighbor in a stacked chain, like mermaid.js, so a single relationship runs as one straight vertical edge instead of jogging between two off-center stems. A parent over several children and `direction LR`/`RL` are unchanged. ([#2237](https://github.com/dfadler/zombie-mermaid/issues/2237))
+
+- [#2241](https://github.com/dfadler/zombie-mermaid/pull/2241) [`eae88b9`](https://github.com/dfadler/zombie-mermaid/commit/eae88b98a22dd9c710540970d1447d51602b2cc9) Thanks [@dfadler](https://github.com/dfadler)! - Sequence diagrams: `rect <color>` is now a background highlight, as in Mermaid. The SVG paints the block region with the colour and draws no frame or tab; a text that isn't a recognised colour is ignored. Previously the colour was treated as a block label, so the SVG and ASCII output printed `rect [rgb(255,0,0)]` and applied no colour. ([#2239](https://github.com/dfadler/zombie-mermaid/issues/2239))
+
+- [#2244](https://github.com/dfadler/zombie-mermaid/pull/2244) [`629429c`](https://github.com/dfadler/zombie-mermaid/commit/629429ccf35213bf58df4826a9da7b8aa26414ec) Thanks [@dfadler](https://github.com/dfadler)! - Ship each package's type declarations once instead of twice. The rolled-up declaration now lives in `dist/shared/`, and `dist/*.d.ts` and `dist/*.d.cts` are one-line re-exports of it, so install size drops by about 62 KB packed. The `exports` map and the types your editor sees are unchanged, and `node16`, `nodenext` and `bundler` consumers still resolve them with `skipLibCheck` off. ([#2196](https://github.com/dfadler/zombie-mermaid/issues/2196))
+- Updated dependencies [[`436c50e`](https://github.com/dfadler/zombie-mermaid/commit/436c50ede0ee847381e2eefbe2a32b9fe35e764b), [`eae88b9`](https://github.com/dfadler/zombie-mermaid/commit/eae88b98a22dd9c710540970d1447d51602b2cc9), [`629429c`](https://github.com/dfadler/zombie-mermaid/commit/629429ccf35213bf58df4826a9da7b8aa26414ec), [`35adab7`](https://github.com/dfadler/zombie-mermaid/commit/35adab7b60034b639db9f207a1f7139b026a1b7c)]:
+  - @zombie-mermaid/ascii-renderer@5.8.2
+  - @zombie-mermaid/mermaid-parser@5.8.2
+  - @zombie-mermaid/svg-renderer@5.8.2
+  - @zombie-mermaid/core@5.8.2
+  - @zombie-mermaid/mcp@5.8.2
+
 ## 5.8.1
 
 ### Patch Changes
