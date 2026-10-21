@@ -1,18 +1,20 @@
 import { cp, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import type { BeforeResult } from './fork-fixes-before.ts'
 import { stampFile } from '../../../scripts/build-stamp.ts'
 
 /** Import the built render module, loop its route table, write files, copy `public/`. */
 export async function prerender(
   ssrDir: string,
   clients: Record<string, string>,
+  befores: Map<string, BeforeResult>,
   outDir: string,
 ) {
   const { renderSite } = await import(
     pathToFileURL(join(ssrDir, 'entry-server.js')).href
   )
-  const routes: Map<string, string> = await renderSite(clients)
+  const routes: Map<string, string> = await renderSite(clients, befores)
   await Promise.all(
     [...routes].map(async ([path, content]) => {
       const file = join(outDir, path)

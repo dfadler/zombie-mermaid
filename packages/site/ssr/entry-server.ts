@@ -12,16 +12,28 @@ import { SITE_URL, type Clients, type Routes } from './shared.ts'
 import { blogRoutes } from './blog-routes.ts'
 import { diagramRoutes } from './diagram-routes.ts'
 import { homeRoutes } from './home-routes.ts'
+import { editorRoutes } from './editor-routes.ts'
+import { forkFixesRoutes } from './fork-fixes-routes.ts'
+import { dashboardRoutes } from './dashboard-routes.ts'
+import type { BeforeResult } from './fork-fixes-before.ts'
 
 export type { Clients, Routes }
 
 /**
  * One sitemap, built in route order. The old generators were separate
- * processes (index, pages, blog), each starting its svg id counters at 0, so
- * the counters are reset at each of those boundaries to keep ids identical;
- * route order within a group therefore still matters for zm-title-N ids.
+ * processes (index, editor, fork-fixes, pages, blog, dashboard), each starting
+ * its svg id counters at 0, so the counters are reset at each of those
+ * boundaries to keep ids identical; route order within a group therefore still
+ * matters for zm-title-N ids. Groups run one after another (never
+ * concurrently) because the counters are shared module state.
+ *
+ * `befores` is the fork-fixes page's "before" renders, which the build config
+ * starts early and runs concurrently with the SSR/client builds.
  */
-export async function renderSite(clients: Clients): Promise<Routes> {
+export async function renderSite(
+  clients: Clients,
+  befores: Map<string, BeforeResult>,
+): Promise<Routes> {
   const out: Routes = new Map()
   const sitemap = [
     `${SITE_URL}/`,
@@ -33,9 +45,15 @@ export async function renderSite(clients: Clients): Promise<Routes> {
   resetSvgIdCounters()
   await homeRoutes(clients, out)
   resetSvgIdCounters()
+  await editorRoutes(clients, out)
+  resetSvgIdCounters()
+  await forkFixesRoutes(clients, out, befores)
+  resetSvgIdCounters()
   await diagramRoutes(clients, out, sitemap)
   resetSvgIdCounters()
   await blogRoutes(clients, out, sitemap)
+  resetSvgIdCounters()
+  await dashboardRoutes(clients, out)
   out.set(
     'sitemap.xml',
     `<?xml version="1.0" encoding="UTF-8"?>
