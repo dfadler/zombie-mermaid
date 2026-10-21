@@ -23,6 +23,10 @@ on:
       - 'scripts/lib/determinism-manifest.ts'
       - '.github/workflows/determinism.yml'
       - 'pnpm-lock.yaml'
+      # Version Packages PRs only bump versions/changelogs (#2250); output is
+      # unchanged. Dependency edits still arrive via pnpm-lock.yaml above.
+      - '!packages/*/CHANGELOG.md'
+      - '!packages/*/package.json'
   workflow_dispatch: {}
 
 permissions:
