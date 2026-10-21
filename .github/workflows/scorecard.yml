@@ -5,6 +5,9 @@ name: Scorecard
 # reach 10 for a solo-maintained repo; see docs/RELEASING.md "Supply-chain
 # signals" for what is expected and which settings the maintainer owns.
 #
+# No `push: [main]` trigger (#2250): ~20 runs/day re-scored an unchanged
+# repo; the weekly run plus branch_protection_rule keep the score fresh.
+#
 # Restrictions imposed by `publish_results: true`
 # (https://github.com/ossf/scorecard-action#workflow-restrictions): no
 # top-level env/defaults, no workflow-level write permissions, id-token: write
@@ -12,8 +15,6 @@ name: Scorecard
 on:
   schedule:
     - cron: '23 5 * * 1' # weekly, Monday
-  push:
-    branches: [main]
   branch_protection_rule: # re-score when protection settings change
   workflow_dispatch:
 
