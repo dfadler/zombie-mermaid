@@ -87,6 +87,14 @@ Used by `dashboard-refresh.yml` (and the other PAT-using workflows) to push the 
 
 **Rotating.** Create a new fine-grained PAT with the same scope and a short expiry, then run `gh secret set DASHBOARD_REFRESH_PAT --repo dfadler/zombie-mermaid` (it prompts for the value; never paste it into an issue, PR, log or chat). Verify the next run succeeds, then delete the previous token in Settings > Developer settings > Fine-grained tokens (replacing the secret does not revoke it), and close the alert issue.
 
+## The `BASELINES_PUSH_TOKEN` secret (maintainers)
+
+Used by `.github/workflows/update-linux-baselines.yml` (`actions/checkout` with `token:`) to push regenerated Linux baselines to a PR branch. A `GITHUB_TOKEN` push would not trigger CI on the new commit. Repository secret `BASELINES_PUSH_TOKEN`: a fine-grained PAT limited to `dfadler/zombie-mermaid` with `Contents: Read and write` only. Add `Workflows: Read and write` only if a push is rejected because the branch touches `.github/workflows/*`.
+
+**Expiry.** Set to 90 days on 2026-10-21, so it expires **2027-01-19**. No health check covers it (only `DASHBOARD_REFRESH_PAT` has one, [#1736](https://github.com/dfadler/zombie-mermaid/issues/1736)), so no 14-day warning fires; an expired token shows up as a checkout/auth error in `update-linux-baselines`. Rotate before that date. Tracked in [#1801](https://github.com/dfadler/zombie-mermaid/issues/1801).
+
+**Rotating.** Create a new fine-grained PAT with the same scope and a finite expiry, then run `gh secret set BASELINES_PUSH_TOKEN --repo dfadler/zombie-mermaid` (it prompts for the value; never paste it into an issue, PR, log or chat). Verify with Actions > update-linux-baselines > Run workflow on a non-main branch (the job is skipped on `main`), then delete the previous token in Settings > Developer settings > Fine-grained tokens (replacing the secret does not revoke it).
+
 ## The `VISUAL_REGRESSION_ATTACH_PAT` secret (maintainers)
 
 Contributors never need this. It matters to whoever administers the repo's secrets.
