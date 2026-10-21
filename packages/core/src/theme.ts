@@ -575,14 +575,19 @@ function nextDescId(): string {
 }
 
 /**
- * Test-only: reset the title-id counter so id assertions in tests don't
- * depend on how many titled diagrams earlier tests in the same file rendered.
- * Not part of the public API (not re-exported from src/index.ts).
+ * Restart the root `<title>`/`<desc>` id counters at 1. Ids are process-wide so several
+ * diagrams inlined into one page never collide; a host that renders many pages in one
+ * process (the static-site pipeline) calls this at each point where a separate process
+ * would have started, so `zm-title-N` doesn't depend on what rendered earlier.
+ * Not re-exported from the root `src/index.ts`, so not part of the published API.
  */
-export function __resetSvgTitleIdCounterForTests(): void {
+export function resetSvgIdCounters(): void {
   titleIdCounter = 0
   descIdCounter = 0
 }
+
+/** Test-only alias of {@link resetSvgIdCounters}. */
+export const __resetSvgTitleIdCounterForTests = resetSvgIdCounters
 
 /**
  * The exact CSS declaration list the root `<svg style="…">` attribute
