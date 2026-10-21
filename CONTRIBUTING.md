@@ -252,7 +252,7 @@ Contributors don't cut releases. Merging a PR with a changeset lets the release 
 
 ## Code of conduct
 
-Be respectful and constructive in issues, PRs, and reviews. There's no separate CODE_OF_CONDUCT.md yet — until there is, the short version is: assume good faith, keep feedback about the code rather than the person, and expect the same in return.
+This project follows the [Contributor Covenant](./CODE_OF_CONDUCT.md). The short version: assume good faith, keep feedback about the code rather than the person, and expect the same in return.
 
 ## License
 
