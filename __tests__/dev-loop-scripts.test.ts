@@ -53,7 +53,7 @@ function run(
   try {
     calls = readFileSync(sb.log, 'utf8').trim().split('\n').filter(Boolean)
   } catch {
-    // no stub was called
+    // No stub was called
   }
   return { code: r.status, out: r.stdout, err: r.stderr, calls }
 }

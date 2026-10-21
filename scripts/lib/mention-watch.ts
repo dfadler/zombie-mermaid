@@ -46,7 +46,7 @@ export function matchesName(text: string): boolean {
   return NAME_RE.test(text)
 }
 
-// xstg: Google's click tracking on YouTube results, which made one video two URLs.
+// Xstg: Google's click tracking on YouTube results, which made one video two URLs.
 const TRACKING_PARAM = /^(utm_|fbclid$|gclid$|ref$|ref_src$|xstg$)/i
 
 export function canonicalizeUrl(raw: string): string {

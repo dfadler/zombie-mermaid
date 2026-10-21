@@ -145,7 +145,7 @@ describe('stick-figure actor label clears the first message (#1242)', () => {
 
   it('places the first message arrow clear of the label', () => {
     const first = layout.messages[0]!
-    // label is 13px-ish text centred at textY; arrow must be well below it
+    // Label is 13px-ish text centred at textY; arrow must be well below it
     expect(first.y).toBeGreaterThan(textY(svg, 'User') + 16)
   })
 

@@ -55,8 +55,8 @@ describe('besideCellsFree rejects cells held by another edge label (#1338)', () 
     const w = displayWidth('hello')
     const at = (px: number) => [{ x: px, y, text: 'abc' }]
     expect(besideCellsFree(graph, probe, at(x + 40))).toBe(true)
-    expect(besideCellsFree(graph, probe, at(x - 2))).toBe(false) // abc ends on x
-    expect(besideCellsFree(graph, probe, at(x + w - 1))).toBe(false) // starts on last cell
+    expect(besideCellsFree(graph, probe, at(x - 2))).toBe(false) // Abc ends on x
+    expect(besideCellsFree(graph, probe, at(x + w - 1))).toBe(false) // Starts on last cell
     expect(besideCellsFree(graph, probe, at(x + w))).toBe(true)
     expect(besideCellsFree(graph, probe, [{ x: x - 1, y, text: 'a' }])).toBe(
       true,

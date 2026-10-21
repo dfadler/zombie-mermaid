@@ -623,10 +623,10 @@ function boundaryObstacles(boundaries: LaidOutBoundary[]): Obstacle[] {
       children: [],
     })
     return [
-      frame(b.x, b.x + b.width, b.y, b.y, FRAME_PAD), // top
-      frame(b.x, b.x + b.width, b.y + b.height, b.y + b.height, FRAME_PAD), // bottom
-      frame(b.x, b.x, b.y, b.y + b.height, FRAME_PAD), // left
-      frame(b.x + b.width, b.x + b.width, b.y, b.y + b.height, FRAME_PAD), // right
+      frame(b.x, b.x + b.width, b.y, b.y, FRAME_PAD), // Top
+      frame(b.x, b.x + b.width, b.y + b.height, b.y + b.height, FRAME_PAD), // Bottom
+      frame(b.x, b.x, b.y, b.y + b.height, FRAME_PAD), // Left
+      frame(b.x + b.width, b.x + b.width, b.y, b.y + b.height, FRAME_PAD), // Right
       text(b.label, b.labelY, C4.boundarySize + 2, 700),
       ...(typeLine ? [text(typeLine, b.typeY!, C4.boundarySize, 400)] : []),
       ...(b.description

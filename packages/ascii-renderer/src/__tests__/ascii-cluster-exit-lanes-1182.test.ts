@@ -273,7 +273,7 @@ ${LABELS.slice(0, siblings)
 
     it('TD: three siblings render with the target kept off the layout edge', () => {
       const lines = render(many('TD', 3, ['other']))
-      // first drops straight above T, second and third to its right (source order).
+      // First drops straight above T, second and third to its right (source order).
       const labels = lines.find((l) => l.includes('third'))!
       expect(labels.indexOf('first')).toBeLessThan(labels.indexOf('second'))
       expect(labels.indexOf('second')).toBeLessThan(labels.indexOf('third'))

@@ -152,7 +152,7 @@ export function useOutputPanelViewport({
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return
       try {
-        // jsdom (this repo's DOM test environment) implements no
+        // Jsdom (this repo's DOM test environment) implements no
         // setPointerCapture at all -- see __tests__/dom/output-panel-
         // viewport.test.ts's header comment -- so this stays optional
         // chaining rather than a hard dependency real browsers all

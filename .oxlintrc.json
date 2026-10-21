@@ -52,8 +52,27 @@
         "typescript/no-wrapper-object-types": "error",
         "typescript/prefer-as-const": "error",
         "typescript/prefer-namespace-keyword": "error",
-        "typescript/triple-slash-reference": "error"
+        "typescript/triple-slash-reference": "error",
+        "capitalized-comments": [
+          "error",
+          "always",
+          {
+            "ignoreConsecutiveComments": true,
+            "ignoreInlineComments": true,
+            "ignorePattern": "^\\s*(v8 |c8 |nosemgrep|istanbul |prettier-|oxlint-|eslint-|ts-|@ts|[^\\s]*[/._(#\\[=][^\\s]*|[a-z]+[A-Z][^\\s]*|[a-z]+-[a-z-]+|[a-z]:|[a-z]+')"
+          }
+        ]
       }
+    },
+    {
+      "files": [
+        "packages/ascii-renderer/src/er-diagram.ts",
+        "packages/ascii-renderer/src/grid.ts",
+        "packages/ascii-renderer/src/edge-routing.ts",
+        "packages/ascii-renderer/src/port-offsets.ts",
+        "packages/ascii-renderer/src/flowchart.ts"
+      ],
+      "rules": { "capitalized-comments": "off" }
     }
   ]
 }

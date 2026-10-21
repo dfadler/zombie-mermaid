@@ -108,7 +108,7 @@ describe('ASCII sequence diagrams — padding (issue #343)', () => {
     // first belongs to the actor header box), so isolate it before
     // comparing width.
     const noteBorder = (ascii: string) => {
-      const line = ascii.split('\n')[4] // note top border row
+      const line = ascii.split('\n')[4] // Note top border row
       const match = line ? /\+-+\+/.exec(line) : null
       if (!match) throw new Error(`no note border found: ${line}`)
       return match[0].length

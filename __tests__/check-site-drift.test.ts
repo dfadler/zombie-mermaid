@@ -102,7 +102,7 @@ describe('check-site-drift', () => {
     it('main emits a ::error:: annotation and exits 1 when stale', async () => {
       const log = vi.spyOn(console, 'log').mockImplementation(() => {})
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      // registry time far in the past vs real Date.now()
+      // Registry time far in the past vs real Date.now()
       const f = mkFetch(reg('2020-01-01T00:00:00Z'), html('4.2.0'))
       expect(await main(env, f)).toBe(1)
       expect(errSpy).toHaveBeenCalledWith(

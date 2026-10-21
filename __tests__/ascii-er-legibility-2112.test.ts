@@ -70,7 +70,7 @@ describe('ER ASCII routing (#2112)', () => {
       [true, '+'],
     ] as const) {
       const out = renderMermaidASCII(MIXED, { colorMode: 'none', useAscii })
-      // a stem crossing a jog: the glyph sits between two line strokes
+      // A stem crossing a jog: the glyph sits between two line strokes
       expect(out).toMatch(
         useAscii ? /[.-]\+[.-]/ : new RegExp(`[╌─]${glyph}[╌─]`),
       )
@@ -81,7 +81,7 @@ describe('ER ASCII routing (#2112)', () => {
     const out = renderMermaidASCII(BLOG, { colorMode: 'none' })
     const rows = out.split('\n')
     const bottom = rows.findIndex((r) => r.startsWith('└'))
-    // the row under USER holds only marker ticks, never a horizontal run
+    // The row under USER holds only marker ticks, never a horizontal run
     expect(rows[bottom + 1]).not.toMatch(/[─╌]/)
     expect(checkAll(out, { unicode: true, er: true, skip: ['arms'] })).toEqual(
       [],
@@ -96,7 +96,7 @@ describe('ER ASCII routing (#2112)', () => {
 
   it('does not erase another edge when a label is placed', () => {
     const out = renderMermaidASCII(BLOG, { colorMode: 'none' })
-    // every relationship keeps both of its markers
+    // Every relationship keeps both of its markers
     expect(out.match(/○/g)).toHaveLength(4)
     expect(out.match(/[╧╤]/g)).toHaveLength(5)
   })

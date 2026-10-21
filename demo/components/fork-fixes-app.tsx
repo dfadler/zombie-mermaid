@@ -784,7 +784,7 @@ export function FixSection({
   return (
     <section id={id}>
       <Card
-        // padding lives in fork-fixes.css instead of via this prop (which
+        // Padding lives in fork-fixes.css instead of via this prop (which
         // would render as an inline style) so the breakpoint overrides
         // below can win via plain cascade order instead of needing
         // !important to beat an inline style (zombie-mermaid#1080).

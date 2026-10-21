@@ -36,7 +36,7 @@ describe('class diagrams drawn LR and RL keep the canvas invariants (#2158)', ()
           })
           const hits = takeCapHits()
           expect(hits, `A* cap hit ${hits} time(s)`).toBe(0)
-          // the direction was honoured: not the top-down drawing
+          // The direction was honoured: not the top-down drawing
           const top = renderMermaidASCII(
             source.replace(`direction ${dir}`, 'direction TB'),
             { colorMode: 'none', useAscii },

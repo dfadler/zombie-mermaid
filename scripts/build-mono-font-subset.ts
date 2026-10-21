@@ -119,7 +119,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import subsetFont from 'subset-font'
 import { create as createFont } from 'fontkit'
 
-/** fontkit ships no TypeScript types; this is the one method this script
+/** Fontkit ships no TypeScript types; this is the one method this script
  * actually calls on the object `createFont()` returns. */
 interface GlyphAvailabilityCheck {
   hasGlyphForCodePoint(cp: number): boolean

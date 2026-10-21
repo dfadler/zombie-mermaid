@@ -82,7 +82,7 @@ if (process.env.UPDATE_CONTRAST_FLOORS) {
   try {
     old = JSON.parse(readFileSync(FLOORS_PATH, 'utf8'))
   } catch {
-    /* first run */
+    /* First run */
   }
   const next: Floors = {}
   for (const [t, toks] of Object.entries(current)) {

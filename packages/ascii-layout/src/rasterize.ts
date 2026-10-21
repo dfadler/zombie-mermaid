@@ -135,7 +135,7 @@ interface Bundle {
   guide: [number, number][]
 }
 
-/** px -> cell axis. Stretches only inside node spans that need more cells than px/cell gives, and puts `gap` cells between node groups. */
+/** Px -> cell axis. Stretches only inside node spans that need more cells than px/cell gives, and puts `gap` cells between node groups. */
 function makeAxis(
   spans: { lo: number; hi: number; need: number }[],
   cell: number,

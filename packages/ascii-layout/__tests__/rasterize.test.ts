@@ -271,7 +271,7 @@ describe('ascii-layout: face policy (merge-then-grow)', () => {
     const r = rasterizeLayout(layout)
     expect(r.stats.lines).toBe(8)
     const s = r.boxes.find((b) => b.id === 'S')!
-    expect(s.r1 - s.r0 - 1).toBeGreaterThanOrEqual(8) // one interior cell per lane
+    expect(s.r1 - s.r0 - 1).toBeGreaterThanOrEqual(8) // One interior cell per lane
   })
 })
 
@@ -426,7 +426,7 @@ describe('ascii-layout: face policy (grow-only, show every edge)', () => {
       expect(sizes(c.r), c.name).toEqual(sizes(nat))
       expect(c.r.stats.lines, c.name).toBe(nat.stats.lines)
       if (c.r.capped) expect(c.r.stats.cols, c.name).toBeLessThanOrEqual(120)
-      else expect(c.r.text, c.name).toBe(nat.text) // cap unmet: natural width, capped:false
+      else expect(c.r.text, c.name).toBe(nat.text) // Cap unmet: natural width, capped:false
     }
   })
 })

@@ -42,7 +42,7 @@ export interface PrepareResult {
   combinedData: CombinedSample[]
   /** Verdict lines already known without an LLM call — skips and cache hits. */
   seededResultLines: string[]
-  /** title -> content hash, for every judgeable entry this run (hit or miss). */
+  /** Title -> content hash, for every judgeable entry this run (hit or miss). */
   hashSideFile: Record<string, string>
 }
 

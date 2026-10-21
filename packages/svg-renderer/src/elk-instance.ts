@@ -135,7 +135,7 @@ function autoLoadElk(): ElkConstructor | null {
       const ctor = typeof loaded === 'function' ? loaded : loaded.default
       if (typeof ctor === 'function') return ctor
     } catch {
-      // not resolvable from this base; try the next
+      // Not resolvable from this base; try the next
     }
   }
   return null

@@ -33,7 +33,7 @@ import {
 } from './activation-check.ts'
 
 export interface ActivationFixResult {
-  /** true when the returned diagram has no remaining activation issues. */
+  /** True when the returned diagram has no remaining activation issues. */
   ok: boolean
   /** Original diagram, unchanged if there was nothing fixable. */
   originalDiagram: string

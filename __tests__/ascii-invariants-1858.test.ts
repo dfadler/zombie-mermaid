@@ -18,14 +18,14 @@ import {
   type Rule,
 } from './helpers/ascii-invariants.ts'
 
-/** sample title -> issue tracking the renderer bug (unicode charset). */
+/** Sample title -> issue tracking the renderer bug (unicode charset). */
 const KNOWN: Record<string, string> = {}
 
 /** Rules a diagram kind does not promise (pie/xychart are ragged by design). */
 function skipFor(source: string): Rule[] {
   if (/^\s*(xychart|pie)/m.test(source)) return ['equal-width', 'arms']
   if (/^\s*sequenceDiagram/m.test(source)) return ['arms'] // lifelines/frames
-  if (/^\s*erDiagram/m.test(source)) return ['arms'] // crow's-foot `│` marks
+  if (/^\s*erDiagram/m.test(source)) return ['arms'] // Crow's-foot `│` marks
   return []
 }
 

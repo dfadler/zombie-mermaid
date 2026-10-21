@@ -205,7 +205,7 @@ describe('sequence layout – block positioning', () => {
       end`)
 
     const block = result.blocks[0]!
-    const firstMsg = result.messages[1]! // msg at index 1 is startIndex
+    const firstMsg = result.messages[1]! // Msg at index 1 is startIndex
     // Block top should be above message Y by blockPadTop (40px)
     expect(block.y).toBeLessThan(firstMsg.y)
     expect(firstMsg.y - block.y).toBe(40) // SEQ.blockPadTop
@@ -807,7 +807,7 @@ describe('sequence layout – pre-message notes', () => {
     const n1 = result.notes[1]!
     expect(n1.y).toBeGreaterThanOrEqual(n0.y + n0.height)
     expect(n1.y + n1.height).toBeLessThanOrEqual(result.messages[0]!.y)
-    // spanning note is centered between actors
+    // Spanning note is centered between actors
     const spanning = result.notes.find((n) => n.text === 'spanning note')!
     const aActor = result.actors.find((a) => a.id === 'A')!
     const bActor = result.actors.find((a) => a.id === 'B')!

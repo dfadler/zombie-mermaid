@@ -36,7 +36,7 @@ describe('ASCII back-edge on the flow-axis faces (#2121)', () => {
   it('TD: leaves c up, runs right of the column, enters a from below', () => {
     const e = backEdge('TD')
     expect(e.faceLane).toBe(true)
-    // up, right, up, left, up: the path c.top -> gutter -> lane -> gutter -> a.bottom
+    // Up, right, up, left, up: the path c.top -> gutter -> lane -> gutter -> a.bottom
     expect(e.path).toEqual([
       { x: 1, y: 8 },
       { x: 1, y: 7 },
@@ -51,12 +51,12 @@ describe('ASCII back-edge on the flow-axis faces (#2121)', () => {
     const rows = renderMermaidASCII(CYCLE('TD'), { colorMode: 'none' }).split(
       '\n',
     )
-    // a's bottom border: forward stem at the centre, back-edge arrowhead two
+    // A's bottom border: forward stem at the centre, back-edge arrowhead two
     // cells right; no stem or head on the left half.
     const border = rows.findIndex((r) => r.startsWith('└──┬──┘'))
     expect(border).toBeGreaterThan(0)
     expect(rows[border + 1]!.trimEnd()).toBe('   │ ▲')
-    // c's top border: the back-edge leaves two cells right of the stem.
+    // C's top border: the back-edge leaves two cells right of the stem.
     const top = rows.findIndex((r, i) => i > border && r.startsWith('┌────┴┐'))
     expect(top).toBeGreaterThan(border)
   })
@@ -119,7 +119,7 @@ describe('ASCII back-edge on the flow-axis faces (#2121)', () => {
       (dir) => {
         const g = layout(SKIPS(dir), dir)
         const shifts = portShifts(g)
-        // a's far gutter holds the forward departure (points 1-2) and both
+        // A's far gutter holds the forward departure (points 1-2) and both
         // back-edge arrivals (points 3-4), so their offsets differ.
         const at = (e: (typeof g.edges)[number], i: number) => {
           const p = shifts.get(e)!.points![i]!

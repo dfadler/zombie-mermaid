@@ -146,7 +146,7 @@ export function buildModel(src: string): Model {
     const k = `${e.source}\0${e.target}`
     const c = seen.get(k) ?? 0
     seen.set(k, c + 1)
-    // mermaid's flowDb ids: L_<a>_<b>_<0,2,3,4...> (the 2nd edge between a pair skips 1)
+    // Mermaid's flowDb ids: L_<a>_<b>_<0,2,3,4...> (the 2nd edge between a pair skips 1)
     const id = `L_${e.source}_${e.target}_${c === 0 ? 0 : c + 1}`
     return {
       id: e.id ?? id,

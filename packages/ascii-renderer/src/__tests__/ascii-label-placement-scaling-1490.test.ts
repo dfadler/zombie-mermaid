@@ -48,7 +48,7 @@ describe('label placement scaling (#1490)', () => {
   })
 
   it('grows no worse than ~cubic from n=20 to n=40', () => {
-    bestPair(10, 10, 1) // warm up JIT before timing
+    bestPair(10, 10, 1) // Warm up JIT before timing
     // Transient load (a parallel typecheck, a busy CI runner) can inflate one
     // attempt to ~17x; a real regression is slow in every attempt. So take the
     // best ratio of up to 3 attempts, stopping at the first that passes.

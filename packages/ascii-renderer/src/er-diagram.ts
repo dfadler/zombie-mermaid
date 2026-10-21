@@ -317,7 +317,7 @@ export function isRowFree(
   for (let x = xStart; x <= xEnd; x++) {
     if (x === skipX) continue
     const col = canvas[x]
-    if (col === undefined) continue // not drawn yet — not occupied
+    if (col === undefined) continue // Not drawn yet — not occupied
     if (col[y] !== ' ' && col[y] !== undefined) return false
   }
   return true
@@ -391,7 +391,7 @@ export function renderErAscii(
   // horizontal-marker section below). A vertical relationship needs at
   // least 2 rows so the upper and lower markers don't land on the same
   // row. (See issue #343's CodeRabbit review.)
-  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 6, 6) // horizontal gap between entity boxes
+  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 6, 6) // Horizontal gap between entity boxes
   // Two-row vertical markers (a zero-* circle on the line past the foot or
   // tick, #2083) need one extra row per such end, so grow the gap by the
   // most any single relationship needs beyond the usual 1 row per end, plus
@@ -416,7 +416,7 @@ export function renderErAscii(
       getVerticalMarkerRows(r.cardinality2, useAscii, true).length,
     ]),
   )
-  // vertical gap between rows (for relationship lines)
+  // Vertical gap between rows (for relationship lines)
   const vGap =
     paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 4, 2) +
     (extraMarkerRows > 0 ? extraMarkerRows + 1 : 0)
@@ -501,7 +501,7 @@ export function renderErAscii(
       : assignLayers(declared, diagram.relationships)
     const componentEntities: ErEntity[] = []
     const rowStarts = new Set<string>()
-    const slot = new Map<string, number>() // index in componentEntities
+    const slot = new Map<string, number>() // Index in componentEntities
     for (let l = 0; componentEntities.length < declared.length; l++) {
       // Order a layer by its earliest-placed parent so children sit under
       // their parents; declaration order breaks ties.
@@ -620,7 +620,7 @@ export function renderErAscii(
           .map((r) => r[0]!.entity.id),
       )
       for (const r of rows.values()) {
-        // ponytail: only a chain of lone entities is centered. A fan-out
+        // Ponytail: only a chain of lone entities is centered. A fan-out
         // (one parent over several children) moves same-row edge detours and
         // labels (#2112) and needs the layout deep dive (#2238).
         const id = r[0]!.entity.id
@@ -1811,7 +1811,7 @@ export function renderErAscii(
           // picks its own row independently), so this is a fresh, local
           // fallback rather than a value reused from the line/jog above.
           const midY = Math.floor((startY + endY) / 2)
-          // the search for the label's block there rather than at a freshly
+          // The search for the label's block there rather than at a freshly
           // recomputed geometric midpoint — otherwise the label could still
           // drift onto a different row than its own horizontal segment.
           const naturalStartY = midY - Math.floor((blockHeight - 1) / 2)

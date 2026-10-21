@@ -266,7 +266,7 @@ export function measureMultiBox(
   // Height: sum of all section line counts + dividers + 2 border rows
   let totalLines = 0
   for (const section of sections) {
-    totalLines += Math.max(section.length, 1) // at least 1 row per section
+    totalLines += Math.max(section.length, 1) // At least 1 row per section
   }
 
   return {
@@ -333,7 +333,7 @@ export function drawMultiBox(
   }
 
   // Render sections with dividers
-  let row = 1 + topSlack // current y position (starts after top border)
+  let row = 1 + topSlack // Current y position (starts after top border)
   for (let s = 0; s < sections.length; s++) {
     const section = sections[s]!
     const lines = section.length > 0 ? section : ['']

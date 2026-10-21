@@ -957,7 +957,7 @@ function groupRootsByDownstreamTarget(
   const firstIndexForTarget = new Map<string, number>()
   const anchorIndex: number[] = roots.map((node, i) => {
     const key = primaryTargetKey(node)
-    if (key === null) return i // no downstream target: anchor to self
+    if (key === null) return i // No downstream target: anchor to self
     const existing = firstIndexForTarget.get(key)
     if (existing !== undefined) return existing
     firstIndexForTarget.set(key, i)
@@ -1075,7 +1075,7 @@ function findSubgraphAdjacentSlot(
       if (isBlockFree(graph.grid, candidate, NODE_BLOCK_SIZE)) return candidate
       const occupant = findNodeAtGridOrigin(graph, candidate)
       if (!occupant || getTopLevelSubgraph(graph, occupant) !== ownTopSg) {
-        return null // a foreign subgraph (or unexpected gap) blocks this side
+        return null // A foreign subgraph (or unexpected gap) blocks this side
       }
       offset += 4
     }
@@ -1373,7 +1373,7 @@ function placeReachableChildren(
 
     for (const node of placedNodes) {
       const gc = node.gridCoord
-      if (gc === null) continue // unreachable: `placedNodes` is pre-filtered
+      if (gc === null) continue // Unreachable: `placedNodes` is pre-filtered
 
       // Sort children so siblings that land in different subgraphs get
       // mermaid.js's reversed-declaration-order sibling placement (see
@@ -1384,7 +1384,7 @@ function placeReachableChildren(
         compareBySiblingSubgraphOrder(graph, x, y),
       )
       for (const child of children) {
-        if (child.gridCoord !== null) continue // already placed
+        if (child.gridCoord !== null) continue // Already placed
 
         // An edge addressed to a subgraph (`Y --> Sub`) must land the whole
         // cluster below its source, as real mermaid ranks the cluster as

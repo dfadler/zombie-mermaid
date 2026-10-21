@@ -119,7 +119,7 @@ describe('edge-cell-styles', () => {
    */
   it('does not flag a shared node-border cell as a conflict', () => {
     const grid = createGrid()
-    placeBlock(grid, { x: 4, y: 8 }) // node D's reserved 3x3 block
+    placeBlock(grid, { x: 4, y: 8 }) // Node D's reserved 3x3 block
     const cellStyles = createEdgeCellStyles()
 
     // Incoming solid edge terminating at D's top-center port, (5, 8).
@@ -152,7 +152,7 @@ describe('edge-cell-styles', () => {
 
   it('still flags a genuine open-space conflict alongside a shared node border', () => {
     const grid = createGrid()
-    placeBlock(grid, { x: 4, y: 8 }) // node D's reserved 3x3 block
+    placeBlock(grid, { x: 4, y: 8 }) // Node D's reserved 3x3 block
     const cellStyles = createEdgeCellStyles()
 
     claimPathCells(
@@ -236,7 +236,7 @@ describe('edge-cell-styles — chain overlap (multi-owner cells)', () => {
 
     const edgeAB = makeEdge(a, b)
     const edgeBC = makeEdge(b, c)
-    const edgeXY = makeEdge(x, y) // unrelated to the A->B->C chain
+    const edgeXY = makeEdge(x, y) // Unrelated to the A->B->C chain
 
     const corridor = [
       { x: 0, y: 0 },

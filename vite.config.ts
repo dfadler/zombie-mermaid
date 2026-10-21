@@ -136,7 +136,7 @@ function siteRebuildPlugin(): Plugin {
       server.watcher.add(WATCHED_PREFIXES.map((prefix) => join(ROOT, prefix)))
 
       server.watcher.on('all', (_event, file) => {
-        // normalize to forward slashes (matching WATCHED_PREFIXES) so this
+        // Normalize to forward slashes (matching WATCHED_PREFIXES) so this
         // doesn't silently stop matching on Windows.
         const relPath = normalizePath(relative(ROOT, file))
         if (!isWatchedPath(relPath)) return
@@ -186,7 +186,7 @@ function siteRebuildPlugin(): Plugin {
         if (!path.endsWith('.html')) {
           const type = CONTENT_TYPES[extname(path)]
           if (!type) {
-            next() // images etc.: Vite's own public/ handling serves them
+            next() // Images etc.: Vite's own public/ handling serves them
             return
           }
           res.setHeader('Content-Type', type)

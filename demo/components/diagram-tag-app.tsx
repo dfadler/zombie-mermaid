@@ -185,7 +185,7 @@ export function DiagramTagApp({
             >
               <div
                 className="gallery-thumb"
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
                 dangerouslySetInnerHTML={{ __html: item.diagramHtml }}
               />
               <div className="gallery-label">

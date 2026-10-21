@@ -98,7 +98,7 @@ export const DEFAULTS: Readonly<{ bg: string; fg: string; muted: string }> = {
 
 export const MIX = {
   /** Primary text: near-full fg */
-  text: 100, // just use --fg directly
+  text: 100, // Just use --fg directly
   /** Secondary text (group headers): fg mixed at 60% */
   textSec: 60,
   /** Muted text (edge labels, notes): fg mixed at 40% */
@@ -132,12 +132,12 @@ export const THEMES: Record<string, DiagramColors> = {
   'zinc-light': {
     bg: '#FFFFFF',
     fg: '#27272A',
-    muted: '#71717A', // zinc-500, 4.83:1 (the 40/60% mixes were 2.35/4.08:1, #2000)
+    muted: '#71717A', // Zinc-500, 4.83:1 (the 40/60% mixes were 2.35/4.08:1, #2000)
   },
   'zinc-dark': {
     bg: '#18181B',
     fg: '#FAFAFA',
-    muted: '#A1A1AA', // zinc-400, 7.3:1 (the 40% mix was 3.71:1, #2000)
+    muted: '#A1A1AA', // Zinc-400, 7.3:1 (the 40% mix was 3.71:1, #2000)
   },
   'tokyo-night': {
     bg: '#1a1b26',

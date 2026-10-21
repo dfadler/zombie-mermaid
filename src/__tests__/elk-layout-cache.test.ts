@@ -33,7 +33,7 @@ describe('elkLayoutSync layout cache', () => {
     const graph = parseMermaid('graph TD\n  A --> B')
     const elkGraph1 = convertToElkFormat(graph)
     const elkGraph2 = convertToElkFormat(graph)
-    expect(elkGraph1).not.toBe(elkGraph2) // distinct objects, same content
+    expect(elkGraph1).not.toBe(elkGraph2) // Distinct objects, same content
 
     const result1 = elkLayoutSync(elkGraph1)
     const result2 = elkLayoutSync(elkGraph2)
@@ -121,7 +121,7 @@ describe('elkLayoutSync layout cache', () => {
     // Touch A again -> A becomes the most-recently-used entry, B becomes
     // the least-recently-used one.
     const resultA2 = elkLayoutSync(convertToElkFormat(graphA), cache)
-    expect(resultA2).toBe(resultA1) // still cached, still a hit
+    expect(resultA2).toBe(resultA1) // Still cached, still a hit
 
     // maxSize is 2, and B is now the LRU entry -> caching C evicts B, not A.
     elkLayoutSync(convertToElkFormat(graphC), cache)
@@ -153,12 +153,12 @@ describe('RenderOptions.layoutCache wiring', () => {
     expect(cache.map.size).toBe(1)
 
     layoutGraphSync(graph, { layoutCache: cache })
-    expect(cache.map.size).toBe(1) // hit, no new entry
+    expect(cache.map.size).toBe(1) // Hit, no new entry
 
     layoutGraphSync(parseMermaid('graph TD\n  A --> B --> C'), {
       layoutCache: cache,
     })
-    expect(cache.map.size).toBe(2) // genuinely different graph, new entry
+    expect(cache.map.size).toBe(2) // Genuinely different graph, new entry
   })
 
   it('layoutClassDiagramSync: repeated identical calls reuse one cache entry', () => {

@@ -161,8 +161,8 @@ describe('ASCII sequence diagrams: -x lost-message glyph', () => {
     const result = renderMermaidASCII(`sequenceDiagram
       A-)B: async
       A-xB: lost`)
-    expect(result).toContain('▷') // async keeps its existing open arrowhead
-    expect(result).toContain('✕') // lost message gets a distinct cross
+    expect(result).toContain('▷') // Async keeps its existing open arrowhead
+    expect(result).toContain('✕') // Lost message gets a distinct cross
   })
 
   it('draws a distinct cross glyph for -x in ascii mode', () => {
@@ -179,7 +179,7 @@ describe('ASCII sequence diagrams: -x lost-message glyph', () => {
     const result = renderMermaidASCII(`sequenceDiagram
       A->>B: normal
       A-xB: lost`)
-    expect(result).toContain('▶') // normal ->> keeps its filled arrowhead
+    expect(result).toContain('▶') // Normal ->> keeps its filled arrowhead
     expect(result).toContain('✕')
   })
 

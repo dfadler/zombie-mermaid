@@ -818,10 +818,10 @@ function renderDiamond(
   const hw = w / 2
   const hh = h / 2
   const points = [
-    f`${cx},${cy - hh}`, // top
-    f`${cx + hw},${cy}`, // right
-    f`${cx},${cy + hh}`, // bottom
-    f`${cx - hw},${cy}`, // left
+    f`${cx},${cy - hh}`, // Top
+    f`${cx + hw},${cy}`, // Right
+    f`${cx},${cy + hh}`, // Bottom
+    f`${cx - hw},${cy}`, // Left
   ].join(' ')
 
   return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
@@ -839,7 +839,7 @@ function renderSubroutine(
   stroke: string,
   sw: string,
 ): string {
-  const inset = 8 // distance from edge to inner vertical line
+  const inset = 8 // Distance from edge to inner vertical line
   return (
     f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
     f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
@@ -882,7 +882,7 @@ function renderHexagon(
   stroke: string,
   sw: string,
 ): string {
-  const inset = h / 4 // horizontal inset for the angled sides
+  const inset = h / 4 // Horizontal inset for the angled sides
   const points = [
     f`${x + inset},${y}`, // top-left
     f`${x + w - inset},${y}`, // top-right
@@ -907,7 +907,7 @@ function renderCylinder(
   stroke: string,
   sw: string,
 ): string {
-  const ry = 7 // ellipse vertical radius for the cap
+  const ry = 7 // Ellipse vertical radius for the cap
   const cx = x + w / 2
   const bodyTop = y + ry
   const bodyH = h - 2 * ry
@@ -938,13 +938,13 @@ function renderAsymmetric(
   stroke: string,
   sw: string,
 ): string {
-  const indent = 12 // how far the point indents
+  const indent = 12 // How far the point indents
   const points = [
     f`${x + indent},${y}`, // top-left (indented)
     f`${x + w},${y}`, // top-right
     f`${x + w},${y + h}`, // bottom-right
     f`${x + indent},${y + h}`, // bottom-left (indented)
-    f`${x},${y + h / 2}`, // left point
+    f`${x},${y + h / 2}`, // Left point
   ].join(' ')
 
   return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
@@ -960,7 +960,7 @@ function renderTrapezoid(
   stroke: string,
   sw: string,
 ): string {
-  const inset = w * 0.15 // top edge is narrower by this amount on each side
+  const inset = w * 0.15 // Top edge is narrower by this amount on each side
   const points = [
     f`${x + inset},${y}`, // top-left (indented)
     f`${x + w - inset},${y}`, // top-right (indented)
@@ -981,7 +981,7 @@ function renderTrapezoidAlt(
   stroke: string,
   sw: string,
 ): string {
-  const inset = w * 0.15 // bottom edge is narrower
+  const inset = w * 0.15 // Bottom edge is narrower
   const points = [
     f`${x},${y}`, // top-left (full width)
     f`${x + w},${y}`, // top-right (full width)

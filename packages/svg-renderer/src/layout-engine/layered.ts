@@ -270,7 +270,7 @@ function placeComponent(
       const segs = layers[r]!.flatMap((a) =>
         down[a]!.map((b) => [position.get(a)!, position.get(b)!] as const),
       )
-      // ponytail: pairwise count, O(E^2) per rank pair; a BIT makes it E log E
+      // Ponytail: pairwise count, O(E^2) per rank pair; a BIT makes it E log E
       for (let i = 0; i < segs.length; i++) {
         for (let k = i + 1; k < segs.length; k++) {
           const [a1, b1] = segs[i]!

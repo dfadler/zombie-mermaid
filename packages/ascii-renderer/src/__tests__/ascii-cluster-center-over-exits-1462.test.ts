@@ -96,7 +96,7 @@ describe('cluster centred over its exit targets (#1462)', () => {
     // Each lane's corner (`┘` past T's border) shares a row with its arrowhead.
     const arrowRows = lines.filter((l) => l.includes('◄'))
     for (const row of arrowRows) expect(row.indexOf('┘')).toBeGreaterThan(9)
-    expect(text.match(/◄/g)).toHaveLength(2) // second and third lanes
+    expect(text.match(/◄/g)).toHaveLength(2) // Second and third lanes
     expect(text.match(/▼/g)).toHaveLength(3) // Start->S, first, other
   })
 

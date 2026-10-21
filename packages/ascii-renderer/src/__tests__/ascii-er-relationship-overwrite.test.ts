@@ -434,8 +434,8 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // The marker is two rows ('╤' against the box, '○' below it, #2083);
     // the detour runs on the row after the circle.
     const detourRow = lines[markerRowIdx + 2]!
-    const detourStart = detourRow.indexOf('└─') // index of the '└' corner
-    const detourEnd = detourRow.indexOf('─┘') + 1 // index of the '┘' corner
+    const detourStart = detourRow.indexOf('└─') // Index of the '└' corner
+    const detourEnd = detourRow.indexOf('─┘') + 1 // Index of the '┘' corner
     expect(detourStart).toBeGreaterThanOrEqual(0)
     // Everything strictly between the two corners.
     const fill = detourRow.slice(detourStart + 1, detourEnd)

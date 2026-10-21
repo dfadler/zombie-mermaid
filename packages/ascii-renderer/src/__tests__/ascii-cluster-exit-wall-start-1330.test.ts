@@ -25,7 +25,7 @@ const source = (dir: 'TD' | 'LR'): string => `flowchart ${dir}
 describe('cluster exits start on the cluster wall (#1330)', () => {
   it('TD: the member keeps a plain bottom border and the wall carries the junction', () => {
     const lines = render(source('TD'))
-    // a's bottom border: the box corner row inside the cluster. No tee.
+    // A's bottom border: the box corner row inside the cluster. No tee.
     const memberBottom = lines.findIndex((l) => /^ *│ └─+┘ │$/.test(l))
     expect(memberBottom).toBeGreaterThan(-1)
     // The cluster's bottom wall is the next full-width border row below it.

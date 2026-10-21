@@ -67,7 +67,7 @@ describe('one-ended lollipop is a label node, not a class box', () => {
     expect(b!.y).toBeLessThan(host.y)
     expect(c!.y).toBeGreaterThan(host.y)
     expect(d!.y).toBeGreaterThan(host.y)
-    expect(a!.x + a!.width).toBeLessThanOrEqual(b!.x) // siblings don't overlap
+    expect(a!.x + a!.width).toBeLessThanOrEqual(b!.x) // Siblings don't overlap
   })
 
   it('keeps the relationship label and cardinalities on the stem', () => {

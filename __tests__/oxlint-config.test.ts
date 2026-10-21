@@ -43,6 +43,7 @@ export interface Ctor { new (): Ctor }
 export function id<T extends unknown>(t: T) { return t }
 namespace N { export const n = 1 }
 module M { export const m = 1 }
+// lowercase comment
 `
 
 // Hard-coded on purpose: deleting a rule from the config must fail this test.
@@ -55,6 +56,7 @@ const EXPECTED_RULES = [
   'no-unused-vars',
   'no-unused-expressions',
   'no-array-constructor',
+  'capitalized-comments',
   'typescript/ban-ts-comment',
   'typescript/no-duplicate-enum-values',
   'typescript/no-empty-object-type',

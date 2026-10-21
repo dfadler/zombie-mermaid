@@ -17,7 +17,7 @@ const COLORS = {
   dracula: { bg: '#282a36', fg: '#f8f8f2' },
 }
 
-// jsdom normalizes an assigned `rgba(r,g,b,a)` background to spaced commas
+// Jsdom normalizes an assigned `rgba(r,g,b,a)` background to spaced commas
 // when read back via `.style.background` — match that normalization rather
 // than the compact format `chrome-theme-client.ts` itself writes.
 const DEFAULT_NAV_BG = 'rgba(10, 13, 22, 0.85)'

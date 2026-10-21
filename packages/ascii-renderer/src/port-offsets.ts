@@ -486,7 +486,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     }
   }
 
-  const offsets = new Map<string, number>() // component root -> offset
+  const offsets = new Map<string, number>() // Component root -> offset
   for (const [root, keys] of components) {
     if (pairOnly.has(root)) continue
     const members = keys.map((k) => slots.get(k)!)

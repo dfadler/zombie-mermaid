@@ -55,7 +55,7 @@ export interface AsciiRenderOptions {
   profile?: 'markdown'
   /** Size limits checked before layout; exceeding one throws `LimitExceededError`. See `RenderLimits`. */
   limits?: RenderLimits
-  /** true = ASCII chars (+,-,|,>), false = Unicode box-drawing (┌,─,│,►). Default: false */
+  /** True = ASCII chars (+,-,|,>), false = Unicode box-drawing (┌,─,│,►). Default: false */
   useAscii?: boolean
   /** Horizontal spacing between nodes. Default: 5 */
   paddingX?: number
@@ -185,7 +185,7 @@ export function renderMermaidASCII(
     paddingX: options.paddingX ?? DEFAULT_PADDING_X,
     paddingY: options.paddingY ?? DEFAULT_PADDING_Y,
     boxBorderPadding: options.boxBorderPadding ?? DEFAULT_BOX_BORDER_PADDING,
-    graphDirection: 'TD', // default; renderFlowchartAscii overrides this for flowcharts/state diagrams
+    graphDirection: 'TD', // Default; renderFlowchartAscii overrides this for flowcharts/state diagrams
   }
 
   // Resolve color mode ('auto' or unset → detect environment, otherwise use specified mode)

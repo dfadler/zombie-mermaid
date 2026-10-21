@@ -164,7 +164,7 @@ export function RepoMetricsCard({
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          // gap lives in dashboard.css instead of here (not inline) so its
+          // Gap lives in dashboard.css instead of here (not inline) so its
           // mobile breakpoint override can win via plain cascade order
           // instead of needing !important to beat this inline style
           // (zombie-mermaid#1080).

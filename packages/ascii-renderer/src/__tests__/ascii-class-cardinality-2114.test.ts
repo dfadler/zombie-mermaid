@@ -30,8 +30,8 @@ describe('ASCII class diagram: relationship cardinalities (issue #2114)', () => 
       // Both ends of each edge, next to the box they belong to.
       const lines = out.split('\n')
       const idx = (t: string) => lines.findIndex((l) => l.includes(t))
-      expect(lines[idx('Customer') + 2]).toMatch(/ 1\s*$/) // below Customer
-      expect(lines[idx('Order') - 2]).toMatch(/ \*\s*$/) // above Order
+      expect(lines[idx('Customer') + 2]).toMatch(/ 1\s*$/) // Below Customer
+      expect(lines[idx('Order') - 2]).toMatch(/ \*\s*$/) // Above Order
       expect(lines[idx('Item') - 2]).toMatch(/ 1\.\.\*\s*$/)
       expect(lines[idx('Item') + 2]).toMatch(/ 0\.\.1\s*$/)
       expect(lines[idx('Tag') - 2]).toMatch(/ many\s*$/)

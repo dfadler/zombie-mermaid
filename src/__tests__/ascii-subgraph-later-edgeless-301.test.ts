@@ -109,7 +109,7 @@ describe('ASCII: a later edge-less subgraph is not absorbed into an earlier one 
     const groupB = findSubgraph(graph, 'Group B')
     expect(boxesOverlap(groupA, groupB)).toBe(false)
 
-    // delta belongs to Group B and must be drawn inside Group B's frame,
+    // Delta belongs to Group B and must be drawn inside Group B's frame,
     // not dragged into Group A's.
     expect(nodeInsideBox(graph, 'b1', groupB)).toBe(true)
     expect(nodeInsideBox(graph, 'b1', groupA)).toBe(false)
@@ -185,7 +185,7 @@ describe('ASCII: a later edge-less subgraph is not absorbed into an earlier one 
   })
 
   it('slides a second edge-less sibling past the first instead of colliding with it', () => {
-    // a3 and a4 are both edge-less and both unreachable from a1, so both
+    // A3 and a4 are both edge-less and both unreachable from a1, so both
     // get deferred and both attach to a1. The second one (a4) must slide
     // past the first (a3) — exercising findSubgraphAdjacentSlot's "occupant
     // belongs to the same subgraph, keep sliding" branch — rather than
@@ -217,7 +217,7 @@ describe('ASCII: a later edge-less subgraph is not absorbed into an earlier one 
   })
 
   it('falls back gracefully (no crash, titles intact) when a non-root anchor is foreign-blocked on both sides', () => {
-    // b2 is edge-less and unreachable from b1, so it's deferred and anchors
+    // B2 is edge-less and unreachable from b1, so it's deferred and anchors
     // to b1 — but b1 is itself a *non-root* (a child of a1 via an edge), so
     // this only resolves in the later fallback pass, after an unrelated
     // external node's own child (e2) has already claimed the slot

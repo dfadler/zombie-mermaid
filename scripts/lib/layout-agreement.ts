@@ -272,7 +272,7 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
       args.thresholds = true
       continue
     }
-    // pnpm forwards the `--` in `pnpm run layout:oracle -- --filter=x` to the
+    // Pnpm forwards the `--` in `pnpm run layout:oracle -- --filter=x` to the
     // script. (The `--` is needed: pnpm claims `--filter` for itself without it.)
     if (arg === '--') continue
     const match = /^--([a-z-]+)=(.*)$/.exec(arg)
@@ -356,7 +356,7 @@ export interface HistoryEntry {
   tolerance: number
   /** Diagram type scored; entries recorded before #1905 omit it and are flowcharts. */
   type?: OracleType
-  /** mermaid version of the reference; entries recorded before #1905 omit it (11.17.2). */
+  /** Mermaid version of the reference; entries recorded before #1905 omit it (11.17.2). */
   mermaid?: string
   /** Samples scored. */
   samples: number

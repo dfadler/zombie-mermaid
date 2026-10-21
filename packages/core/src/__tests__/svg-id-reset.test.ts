@@ -9,7 +9,7 @@ describe('resetSvgIdCounters', () => {
   it('makes consecutive renders of the same input yield identical ids', () => {
     resetSvgIdCounters()
     const first = render()
-    render() // an intervening render must not leak into the next page
+    render() // An intervening render must not leak into the next page
     resetSvgIdCounters()
     expect(render()).toBe(first)
     expect(first).toContain('zm-title-1')

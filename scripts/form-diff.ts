@@ -96,7 +96,7 @@ async function generate(): Promise<string> {
   const indexed = samples
     .map((sample, i) => ({ sample, i }))
     .filter(({ sample }) => {
-      if (sample.category === 'Hero') return false // no ASCII panel for Hero samples
+      if (sample.category === 'Hero') return false // No ASCII panel for Hero samples
       if (CATEGORY_FILTER && sample.category !== CATEGORY_FILTER) return false
       return true
     })

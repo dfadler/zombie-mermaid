@@ -125,7 +125,7 @@ export function IndexHeroApp({ asciiHtml }: IndexHeroAppProps) {
       <div
         className="hero-copy"
         style={{
-          // flex lives in homePageCss() instead of here (not inline) so
+          // Flex lives in homePageCss() instead of here (not inline) so
           // the hero-stack breakpoint override can win via plain cascade
           // order instead of needing !important to beat an inline style
           // (zombie-mermaid#1080).

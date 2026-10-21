@@ -21,7 +21,7 @@ describe('size-report', () => {
   })
 
   it('attribute: each segment owns text up to the next one', () => {
-    // fields: [col, srcDelta, line, srcCol]. "ICAA" = col 4, next source.
+    // Fields: [col, srcDelta, line, srcCol]. "ICAA" = col 4, next source.
     // Line 2 "EDAA" = col 2, source delta -1 (negative VLQ) back to a.ts.
     const map = { sources: ['a.ts', 'b.ts'], mappings: 'AAAA,ICAA;EDAA' }
     const out = attribute('abcdefghij\nxyz', map)

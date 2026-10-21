@@ -45,7 +45,7 @@ describe('worker timeout and OOM', () => {
     expect(Date.now() - t0).toBeLessThan(1300)
     const after = await r.render(req('ok'))
     expect(after).toMatch(/^thread \d+$/)
-    expect(after).not.toBe(first) // a fresh worker thread
+    expect(after).not.toBe(first) // A fresh worker thread
   })
 
   it('turns a heap blowup into an error, then respawns', async () => {
@@ -62,7 +62,7 @@ describe('worker timeout and OOM', () => {
     const err = await r.render(req('throw')).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(MermaidParseError)
     expect((err as MermaidParseError).line).toBe(2)
-    expect(await r.render(req('ok'))).toBe(a) // same thread: not respawned
+    expect(await r.render(req('ok'))).toBe(a) // Same thread: not respawned
   })
 
   it('rebuilds other render errors by name and message', async () => {
@@ -146,7 +146,7 @@ describe.skipIf(!existsSync(BUILT))('built worker output', () => {
         (e: unknown) =>
           renderErrorResult('Failed to render diagram to SVG', e, bad.diagram),
       )
-    expect(viaWorker?.content).toHaveLength(2) // message + diagnostics block
+    expect(viaWorker?.content).toHaveLength(2) // Message + diagnostics block
     expect(viaWorker).toEqual(renderSvgHandler(bad))
   })
 })

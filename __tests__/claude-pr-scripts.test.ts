@@ -224,7 +224,7 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
     it('ignores commands other than gh pr create', () => {
       const repo = makeRepo({ 'src/a.ts': 'x' })
       const r = check(repo, '--hook')
-      // no stdin payload at all: still no output and exit 0
+      // No stdin payload at all: still no output and exit 0
       expect(r.code).toBe(0)
       expect(r.stdout).toBe('')
       const r2 = bash(PRE_PR, ['--base', 'main', '--hook'], {

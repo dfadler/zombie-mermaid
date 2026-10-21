@@ -138,6 +138,8 @@ If you do need to reassign a binding for performance, suppress the rule on that 
 
 A reviewer should be able to read the reason without opening the issue. The description isn't optional decoration: `pnpm run lint` passes `--report-unused-disable-directives-severity=error` (oxlint's default is only a warning, which would never fail the build), so a suppression whose rule no longer fires on that line — because the code under it was later rewritten — fails lint until it's removed. That keeps the list of exceptions honest over time instead of accreting.
 
+Comment style ([#1644](https://github.com/dfadler/zombie-mermaid/issues/1644)) is enforced by oxlint's [`capitalized-comments`](https://oxc.rs/docs/guide/usage/linter/rules/eslint/capitalized-comments.html) rule (see `.oxlintrc.json`): a comment starts with a capital letter, and `pnpm exec oxlint --fix` fixes it. oxlint has no `spaced-comment` or `multiline-comment-style`, and `no-inline-comments` is left off because trailing comments are used deliberately throughout.
+
 ### Test coverage
 
 CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. The repo-wide floor is `coverage.thresholds` in `config/vitest.config.ts`, kept a bit under the measured baseline as headroom; `pnpm run test:coverage` fails the build if coverage drops below it, so it's a hard gate against silent regression, not just visibility. On top of that, `pnpm run coverage:diff` holds new and changed lines to a stricter 95%.

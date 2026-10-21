@@ -415,7 +415,7 @@ function deduplicateSubgraphNodes(
       if (!nodeId) return false
 
       const owner = nodeOwner.get(nodeId)
-      if (!owner) return true // not in any subgraph claim — keep as-is
+      if (!owner) return true // Not in any subgraph claim — keep as-is
 
       // Keep the node if this subgraph is the owner or an ancestor of the owner
       return isAncestorOrSelf(asciiSg, owner)

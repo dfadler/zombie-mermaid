@@ -855,7 +855,7 @@ describe('normalizeBrTags – markdown formatting', () => {
 
   it('handles ***bold italic*** (bold outer, italic inner)', () => {
     const result = normalizeBrTags('***text***')
-    // ** matches first → <b>*text</b>, then * italic wraps across tag boundary
+    // ** Matches first → <b>*text</b>, then * italic wraps across tag boundary
     // Functionally correct: parseInlineFormatting() uses boolean state, not tag nesting
     expect(result).toBe('<b><i>text</b></i>')
   })

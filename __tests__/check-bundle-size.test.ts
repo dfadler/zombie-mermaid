@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 // unpacked-size gate (#1569) is tested without a build. The script is all
 // top-level code, so each case re-imports it with fresh mocks.
 
-type Files = Record<string, number | null> // path under dist/ -> size; null = not a file
+type Files = Record<string, number | null> // Path under dist/ -> size; null = not a file
 
 async function run(
   unpackedBudgets: Record<string, number>,

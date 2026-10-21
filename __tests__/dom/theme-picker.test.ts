@@ -91,7 +91,7 @@ describe('initial paint', () => {
 
     for (const el of pill(''))
       expect(el.classList.contains('active')).toBe(false)
-    // dracula is an inline pill (INLINE_THEMES) -- appears inline + dropdown.
+    // Dracula is an inline pill (INLINE_THEMES) -- appears inline + dropdown.
     for (const el of pill('dracula')) {
       expect(el.classList.contains('active')).toBe(true)
     }
@@ -113,7 +113,7 @@ describe('picking a theme', () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, 'dracula')
     render(createElement(ThemePicker, DEFAULT_PROPS))
 
-    fireEvent.click(pill('')[0]!) // dropdown's own Default pill
+    fireEvent.click(pill('')[0]!) // Dropdown's own Default pill
 
     for (const el of pill(''))
       expect(el.classList.contains('active')).toBe(true)
