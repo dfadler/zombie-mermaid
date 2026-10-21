@@ -154,7 +154,11 @@ beforeEach(() => {
   }) as unknown as typeof window.matchMedia
 })
 
-afterEach(() => {
+afterEach(async () => {
+  // The module's import-time hydrateRoot() calls queue React scheduler work;
+  // flush it while jsdom is still alive, or it fires after teardown as
+  // "window is not defined" / EnvironmentTeardownError (#2220).
+  await act(async () => {})
   document.body.innerHTML = ''
 })
 
