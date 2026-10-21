@@ -46,7 +46,11 @@ const environments: Record<string, EnvironmentOptions> = {
         // pipeline emitted compact; this keeps it (nearly) byte-identical
         // instead of +512B/page. No mangling, so names and behavior stay.
         output: {
-          minify: { mangle: false, compress: false, codegen: { removeWhitespace: true } },
+          minify: {
+            mangle: false,
+            compress: false,
+            codegen: { removeWhitespace: true },
+          },
         },
       },
     },
