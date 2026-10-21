@@ -1,0 +1,49 @@
+# Covers upstream-rescue step 4 as edited in PR #2252: `pnpm run fork-fixes` was removed and
+# the before/after pair is now confirmed by `pnpm run build:site` (which fails if the pair
+# renders identically). Sabotage map: revert that sentence to `pnpm run fork-fixes` and
+# `uses_build_site` / `no_stale_fork_fixes_script` both fail.
+# Reference-good: "...add the fork-fixes-data.ts entry, then run `pnpm run build:site`; the build fails if the pair renders the same."
+# Known-bad:      "...then run `pnpm run fork-fixes` to confirm the pair renders differently."
+# Can fail: the prompt names neither script; without the skill the model cannot know the repo's command.
+schema_version: '1.1'
+name: upstream-rescue-confirms-fix-via-site-build
+description: >
+  After porting an upstream rendering fix and adding its fork-fixes-data.ts entry, the model
+  fires upstream-rescue and confirms the pair renders differently with `pnpm run build:site`,
+  not the removed `fork-fixes` script. expected_outcome: PASS when the skill fires and the reply
+  names build:site and not `pnpm run fork-fixes`; FAIL otherwise.
+tags: [upstream-rescue, step-4, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I've ported the fix from upstream PR lukilabs/beautiful-mermaid#312 into our fork and
+    added its entry to demo/fork-fixes-data.ts. It changes rendered output. Following our
+    upstream rescue process, what exact pnpm command do I run next to confirm the
+    before/after pair really renders differently? One short paragraph, don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+    - Read
+    - Glob
+    - Grep
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?upstream-rescue"'
+    min: 1
+    arm: both
+
+  - name: uses_build_site
+    type: regex
+    target: last_message
+    pattern: 'pnpm run build:site'
+    match: contains
+
+  - name: no_stale_fork_fixes_script
+    type: regex
+    target: last_message
+    pattern: 'pnpm run fork-fixes\b'
+    match: not_contains
