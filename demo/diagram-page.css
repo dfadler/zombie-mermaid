@@ -28,11 +28,7 @@ body {
   --t-muted: color-mix(in srgb, var(--t-fg) 55%, var(--t-bg));
   --t-border: color-mix(in srgb, var(--t-fg) 12%, var(--t-bg));
 
-  font-family:
-    'Geist',
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
   background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
   color: var(--t-fg);
   line-height: 1.6;

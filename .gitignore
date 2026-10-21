@@ -81,3 +81,7 @@ reports/mutation/
 # Site build intermediates (SSR bundle) and the dev server's output dir
 /.site-ssr/
 /.site-dev/
+
+# deep-research skill output (untracked scratch; findings go in issues)
+research_notes/
+reports/

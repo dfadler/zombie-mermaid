@@ -101,9 +101,9 @@ Replace the silent assumption with an explicit, typed error thrown from `ensureE
 slot is empty and auto-load fails, for example:
 
 > `zombie-mermaid: rendering a flowchart/state/class/ER/architecture diagram needs the optional
-peer dependency "elkjs". Install it (npm i elkjs) and call registerElk(ELK) with
-`import ELK from 'elkjs/lib/elk.bundled.js'`. Sequence, pie, xychart, C4 and ASCII output do
-not need it.`
+> peer dependency "elkjs". Install it (npm i elkjs) and call registerElk(ELK) with
+> `import ELK from 'elkjs/lib/elk.bundled.js'`. Sequence, pie, xychart, C4 and ASCII output do
+> not need it.`
 
 Sequence/pie/xychart/C4 and all ASCII render without it, as today.
 

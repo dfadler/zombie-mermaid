@@ -1,5 +1,16 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.8.1
+
+### Patch Changes
+
+- [#2229](https://github.com/dfadler/zombie-mermaid/pull/2229) [`69f5734`](https://github.com/dfadler/zombie-mermaid/commit/69f5734c8190c1327d0c695e67437442c6e75b84) Thanks [@dfadler](https://github.com/dfadler)! - Fix ELK layout failing inside a browser module Worker (`Cannot set properties of undefined (setting 'stackTraceLimit')`): `ensureElk()` now defines `globalThis.global` while it hides `self`, so elk-worker.min.js can find its global object. ([#2219](https://github.com/dfadler/zombie-mermaid/issues/2219))
+
+- [#2227](https://github.com/dfadler/zombie-mermaid/pull/2227) [`611736e`](https://github.com/dfadler/zombie-mermaid/commit/611736e43dc3371525f7d0a6573e74495f5b30d2) Thanks [@dfadler](https://github.com/dfadler)! - Add npm keywords and a "maintained continuation of beautiful-mermaid" line to each published sub-package's description so they are findable on npm.
+- Updated dependencies [[`611736e`](https://github.com/dfadler/zombie-mermaid/commit/611736e43dc3371525f7d0a6573e74495f5b30d2)]:
+  - @zombie-mermaid/core@5.8.1
+  - @zombie-mermaid/mermaid-parser@5.8.1
+
 ## 5.8.0
 
 ### Minor Changes

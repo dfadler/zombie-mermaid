@@ -125,7 +125,8 @@ function getMermaidBridge(): EditorMermaidBridge | undefined {
 
 /** `window.__mermaid.THEMES`, or `undefined` under SSR/tests/before the renderer bundle has loaded -- mirrors `editor-config.tsx`'s identical `readMermaidThemes()`. */
 export function readMermaidThemes():
-  Record<string, EditorMermaidTheme> | undefined {
+  | Record<string, EditorMermaidTheme>
+  | undefined {
   return getMermaidBridge()?.THEMES
 }
 

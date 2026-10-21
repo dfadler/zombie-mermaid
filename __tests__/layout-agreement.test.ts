@@ -88,6 +88,17 @@ describe('agreement: node pairs', () => {
     expect(agreement(o, past).vertical).toBe(0)
   })
 
+  it('forgives offsets on either side of the tolerance, but not a sign flip or a real gap', () => {
+    const o = layout({ A: at(100, 100), B: at(300, 122) })
+    const ours = (dy: number) =>
+      layout({ A: at(100, 100), B: at(300, 100 + dy) })
+    // 22px against 15px: the line falls between them.
+    expect(agreement(o, ours(15)).vertical).toBe(1)
+    // Opposite direction, or level with the other side outside the band.
+    expect(agreement(o, ours(-18)).vertical).toBe(0)
+    expect(agreement(o, ours(0)).vertical).toBe(0)
+  })
+
   it('takes the tolerance as an argument', () => {
     const o = layout({ A: at(100, 100), B: at(300, 100) })
     const ours = layout({ A: at(100, 100), B: at(300, 150) })
@@ -459,9 +470,8 @@ describe('thresholds and machine-readable scorecard', () => {
     expect(floorFor('Class: MVC Architecture')).toBe(0.95)
     // Every flowchart sample the oracle reports under the default floor has its own.
     for (const t of [
-      'LR Bypass Edge In A Chain',
       'Flowchart: Dense Duplicate Edges (TD)',
-      'Flowchart: Dense Duplicate Edges (LR)',
+      'Flowchart: Self-Loop with In and Out Neighbours (TD)',
     ]) {
       expect(floorFor(t), t).toBeLessThan(DEFAULT_FLOOR)
     }

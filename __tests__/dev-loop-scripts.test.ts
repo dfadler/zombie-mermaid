@@ -108,18 +108,18 @@ describe('scripts/verify.sh', () => {
     expect(r.calls).toContain(
       'exec oxlint --report-unused-disable-directives-severity=error a.ts',
     )
-    expect(r.calls).toContain('exec prettier --check --ignore-unknown a.ts')
+    expect(r.calls).toContain('exec oxfmt --check a.ts')
     expect(r.calls).toContain(
       'exec vitest run -c config/vitest.config.ts --changed HEAD',
     )
   })
 
-  it('skips oxlint and prettier when nothing changed', () => {
+  it('skips oxlint and oxfmt when nothing changed', () => {
     const sb = verifySandbox()
     const r = run('verify.sh', [], sb, { BASE: 'HEAD' })
     expect(r.code).toBe(0)
     expect(
-      r.calls.some((c) => c.includes('oxlint') || c.includes('prettier')),
+      r.calls.some((c) => c.includes('oxlint') || c.includes('oxfmt')),
     ).toBe(false)
     expect(r.calls.at(-1)).toContain('vitest run')
   })

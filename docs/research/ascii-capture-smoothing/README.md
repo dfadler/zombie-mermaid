@@ -9,7 +9,7 @@ the renderer's output, agg's rasteriser, or the font, and can the capture be mad
 ## Findings
 
 1. **The renderer's output is fine.** The row is `├ ─ ─ ┼ ─ ┼ ─ ►` (`U+251C U+2500 U+2500 U+253C
-U+2500 U+253C U+2500 U+25BA`), all standard box-drawing characters. `main` emits the same.
+   U+2500 U+253C U+2500 U+25BA`), all standard box-drawing characters. `main` emits the same.
 2. **agg is the cause.** Feeding `├──┼─┼─►` alone to agg 1.9.0 reproduces the step. Measured bar rows
    (text row 0, `plain` = `─`, `junc` = the arm of `┼`/`├`), JetBrains Mono, line-height 1.4:
 

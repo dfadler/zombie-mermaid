@@ -11,7 +11,7 @@
  */
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { format, resolveConfig } from 'prettier'
+import { format } from 'oxfmt'
 
 const GROUPS: ReadonlyArray<{ title: string; match: RegExp }> = [
   { title: 'Testing', match: /^test(:|$)|^coverage:/ },
@@ -83,8 +83,9 @@ export async function generateDevelopmentScriptsDoc(): Promise<string> {
     ),
   ) as Record<string, string>
   const raw = renderDevelopmentScriptsDoc(pkg.scripts, descriptions)
-  const config = await resolveConfig(DOC_PATH)
-  return format(raw, { ...config, parser: 'markdown' })
+  // The API does not read .oxfmtrc.json; mirror its printWidth.
+  const { code } = await format(DOC_PATH, raw, { printWidth: 80 })
+  return code
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

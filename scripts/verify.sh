@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast local verify: typecheck (3 tsc projects in parallel), oxlint + prettier
+# Fast local verify: typecheck (3 tsc projects in parallel), oxlint + oxfmt
 # on files changed vs origin/main, then vitest on tests affected by the change.
 # --full mirrors CI: whole-repo lint/format and test:coverage.
 set -euo pipefail
@@ -42,6 +42,6 @@ if [ -n "$lintable" ]; then
   printf '%s\n' "$lintable" | xargs pnpm exec oxlint --report-unused-disable-directives-severity=error
 fi
 if [ -n "$changed" ]; then
-  printf '%s\n' "$changed" | xargs pnpm exec prettier --check --ignore-unknown
+  printf '%s\n' "$changed" | xargs pnpm exec oxfmt --check
 fi
 pnpm exec vitest run -c config/vitest.config.ts --changed "$base"

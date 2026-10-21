@@ -230,7 +230,27 @@ void [s, a, registerElk, createMcpServer]
       files: ['types.mts', 'types.cts'],
     }),
   )
-  run(join(app, 'node_modules/.bin/tsc'), ['-p', '.'], app)
+  const tsc = join(app, 'node_modules/.bin/tsc')
+  run(tsc, ['-p', '.'], app)
+  // node16 is the one that rejects a .d.cts re-exporting an ESM .d.ts
+  // (TS1479) — nodenext allows it, so it can't catch a missing
+  // dist/shared/package.json (#2196). No `zombie-mermaid/mcp` import here: the
+  // MCP SDK's own declarations don't pass node16 with skipLibCheck off.
+  writeFileSync(
+    join(app, 'types-node16.cts'),
+    src
+      .replace(/^import \{ createMcpServer.*\n/m, '')
+      .replace(', createMcpServer', ''),
+  )
+  writeFileSync(
+    join(app, 'tsconfig.node16.json'),
+    JSON.stringify({
+      extends: './tsconfig.json',
+      compilerOptions: { module: 'node16', moduleResolution: 'node16' },
+      files: ['types-node16.cts'],
+    }),
+  )
+  run(tsc, ['-p', 'tsconfig.node16.json'], app)
 })
 
 await check('CLI: --version and render (svg + ascii)', () => {
