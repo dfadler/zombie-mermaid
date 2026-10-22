@@ -33,7 +33,8 @@ jobs:
     name: Build tarball and SBOM
     if: >-
       github.repository == 'dfadler/zombie-mermaid' &&
-      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -46,7 +47,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
 
       - name: Decide whether assets are needed
