@@ -1,6 +1,6 @@
 {
   "name": "@zombie-mermaid/svg-renderer",
-  "version": "5.8.4",
+  "version": "5.9.0",
   "license": "MIT",
   "description": "SVG rendering primitives and the ELK-backed layout engine behind zombie-mermaid's SVG output (maintained continuation of beautiful-mermaid).",
   "keywords": [

@@ -193,6 +193,12 @@ circle at both ends, in mermaid and here.
 
 Dotted lollipops (`()..`, `..()`), which mermaid accepts, are a parse error here.
 
+## Class: edge corners in SVG
+
+mermaid 12.1.0 and 12.2.0 draw class edges orthogonally with 7 px rounded corners (not
+smooth curves, [#2104](https://github.com/dfadler/zombie-mermaid/issues/2104)); ours has
+sharp corners. Relationship labels sit on the edge over a background plate in both.
+
 ## Class: LR and RL in ASCII
 
 Class diagrams with `direction LR` or `direction RL` are drawn in ASCII like the SVG, with

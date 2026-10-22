@@ -1,5 +1,11 @@
 # @zombie-mermaid/core
 
+## 5.9.0
+
+### Minor Changes
+
+- [#2286](https://github.com/dfadler/zombie-mermaid/pull/2286) [`382449d`](https://github.com/dfadler/zombie-mermaid/commit/382449d62597fbfcf99640d0d066d6833f2897f3) Thanks [@dfadler](https://github.com/dfadler)! - Add an opt-in `embedFont: 'subset'` render option that inlines a base64 Inter subset (Basic Latin, weights 400-700, about 14.7 KB per SVG) instead of the Google Fonts `@import`, so the font also loads when the SVG is used as an `<img>`. Output is unchanged by default. The font data is a lazily loaded chunk, not part of the default bundle: `renderMermaidSVGAsync()` loads it, and the sync `renderMermaidSVG()` needs `await loadEmbeddedFont()` (new export) first. Takes effect only with `font: 'Inter'` (the default). ([#1867](https://github.com/dfadler/zombie-mermaid/issues/1867))
+
 ## 5.8.4
 
 ## 5.8.3
