@@ -217,10 +217,14 @@ export function renderSequenceAscii(
   // is drawn mid-diagram at its own height, so a tall created actor figure
   // must not pad the other participants' headers (#2281). The footer row
   // still holds every surviving participant, so it keeps `actorBoxH`.
+  // A self-message can't create its own recipient (see "DRAW: messages"), so
+  // that actor keeps its header box and counts here.
   const headerBoxH = Math.max(
-    ...diagram.actors.flatMap((a, i) =>
-      a.createdAt === undefined ? [actorBoxHeights[i]!] : [],
-    ),
+    ...diagram.actors.flatMap((a, i) => {
+      const m =
+        a.createdAt === undefined ? undefined : diagram.messages[a.createdAt]
+      return m === undefined || m.from === m.to ? [actorBoxHeights[i]!] : []
+    }),
     3,
   )
   // Left border column of each actor's box — drawActorBox derives the same

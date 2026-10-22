@@ -136,4 +136,14 @@ describe('ASCII sequence diagrams – creating message label (#2281)', () => {
     expect(out[2]).toContain('└')
     expect(out[1]).not.toContain('Donald')
   })
+
+  it('keeps the full header box of an actor whose creating message is a self-message', () => {
+    const out = lines(`sequenceDiagram
+      participant A
+      create actor C as Donald
+      C->>C: self`)
+    // Self-messages can't create their recipient, so Donald stays in the header.
+    // so the label shows in the header as well as the footer.
+    expect(out.filter((l) => l.includes('Donald'))).toHaveLength(2)
+  })
 })
