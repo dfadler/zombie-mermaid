@@ -673,8 +673,10 @@ export function renderSequenceAscii(
       // the created box's rows below it.
       // The label stays on the rows directly above the arrow; a tall created
       // box just adds blank rows above the label (#2281).
-      const boxAbove = createdIdx === undefined ? 0 : createdBoxAbove(createdIdx)
-      const boxBelow = createdIdx === undefined ? 0 : createdBoxBelow(createdIdx)
+      const boxAbove =
+        createdIdx === undefined ? 0 : createdBoxAbove(createdIdx)
+      const boxBelow =
+        createdIdx === undefined ? 0 : createdBoxBelow(createdIdx)
       const above = Math.max(msgLineCount, boxAbove)
       msgArrowY[m] = curY + above
       msgLabelY[m] = msgArrowY[m]! - msgLineCount

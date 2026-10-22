@@ -132,7 +132,7 @@ describe('ASCII sequence diagrams – creating message label (#2281)', () => {
       A->>B: x
       create actor D as Donald
       A->>D: Hi!`)
-    // header: top border, label, bottom border
+    // Header: top border, label, bottom border
     expect(out[2]).toContain('└')
     expect(out[1]).not.toContain('Donald')
   })
