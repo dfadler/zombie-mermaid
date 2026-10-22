@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
 // This file lives in config/, one level below the repo root (#997) —
-// REPO_ROOT points at the actual root so the aliases below still resolve
+// REPO_ROOT points at the actual root so the tsconfig `paths` below still resolve
 // `packages/*/src/index.ts` the same way they did when this file lived at
 // the repo root itself. `setupFiles` below is a separate case: Vitest
 // resolves that path against the *run's* root (repo root, since scripts
@@ -19,28 +19,10 @@ export default defineConfig({
   // resolver would then need every package built before a single test file
   // could even load (unlike `tsc`, which honors tsconfig.json's `paths`
   // override for the same specifiers regardless of package.json — see that
-  // file's comment). These aliases keep the test suite doing what it always
+  // file's comment). `tsconfigPaths` keeps the test suite doing what it always
   // did: running straight against live source, no build step required —
-  // mirroring tsconfig.json's `paths` so both stay in sync by construction
-  // rather than by two people remembering to update two files.
-  resolve: {
-    alias: {
-      '@zombie-mermaid/core': resolve(REPO_ROOT, 'packages/core/src/index.ts'),
-      '@zombie-mermaid/mermaid-parser': resolve(
-        REPO_ROOT,
-        'packages/mermaid-parser/src/index.ts',
-      ),
-      '@zombie-mermaid/svg-renderer': resolve(
-        REPO_ROOT,
-        'packages/svg-renderer/src/index.ts',
-      ),
-      '@zombie-mermaid/ascii-renderer': resolve(
-        REPO_ROOT,
-        'packages/ascii-renderer/src/index.ts',
-      ),
-      '@zombie-mermaid/mcp': resolve(REPO_ROOT, 'packages/mcp/src/index.ts'),
-    },
-  },
+  // reading tsconfig.json's `paths` directly so there is one source of truth.
+  resolve: { tsconfigPaths: true },
   test: {
     include: [
       'src/__tests__/**/*.test.ts',
