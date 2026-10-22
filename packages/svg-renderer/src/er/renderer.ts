@@ -338,7 +338,7 @@ function renderRelationshipLabel(
 ): string {
   if (!rel.label || rel.points.length < 2) return ''
 
-  const mid = midpoint(rel.points)
+  const mid = rel.labelPoint ?? midpoint(rel.points)
   const metrics = measureMultilineText(
     rel.label,
     fontSizes.edgeLabel,
