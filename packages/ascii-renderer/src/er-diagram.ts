@@ -443,6 +443,30 @@ export function renderErAscii(
     ]),
   )
 
+  // A self-relationship (`A ||--o{ A`) is drawn as a loop on the entity's left
+  // side with its label further left, like mermaid (#2284).
+  const selfRels = diagram.relationships.filter((r) => r.entity1 === r.entity2)
+  /** Columns a loop's markers take left of the box: glyphs plus a border inset. */
+  const selfMarkerW = (rel: (typeof selfRels)[number]): number =>
+    Math.max(
+      ...[rel.cardinality1, rel.cardinality2].map((c) => {
+        const chars = getCrowsFootChars(c, useAscii, true)
+        return (
+          chars.length +
+          (chars[chars.length - 1] === (useAscii ? '|' : '│') ? 1 : 0)
+        )
+      }),
+    )
+  /** Columns left of an entity's box that its self loops and labels need. */
+  const selfReserve = new Map<string, number>()
+  for (const rel of selfRels) {
+    const label = rel.label ? maxLineWidth(rel.label) + 2 : 0
+    selfReserve.set(
+      rel.entity1,
+      Math.max(selfReserve.get(rel.entity1) ?? 0, selfMarkerW(rel) + 2 + label),
+    )
+  }
+
   // --- Build entity box dimensions ---
   const entitySections = new Map<string, string[][]>()
   const entityBoxW = new Map<string, number>()
@@ -452,6 +476,14 @@ export function renderErAscii(
   for (const ent of diagram.entities) {
     entityById.set(ent.id, ent)
     const sections = buildEntitySections(ent)
+    // Each self-relationship loop takes two rows of the box's left side plus
+    // a blank row between loops (#2284): pad a short box with blank rows.
+    const loops = selfRels.filter((r) => r.entity1 === ent.id).length
+    const interior = (): number =>
+      sections.reduce((n, sec) => n + sec.length, sections.length - 1)
+    while (loops > 0 && interior() < 3 * loops - 1) {
+      sections[sections.length - 1]!.push('')
+    }
     entitySections.set(ent.id, sections)
 
     // Reserve exactly what drawMultiBox will draw — measuring it here rather
@@ -526,6 +558,7 @@ export function renderErAscii(
     let currentX = 0
     let maxRowH = 0
     let rowStartIdx = 0
+    let lastGap = 0
 
     for (let idx = 0; idx < componentEntities.length; idx++) {
       const ent = componentEntities[idx]!
@@ -558,9 +591,13 @@ export function renderErAscii(
           maxRowH + Math.max(vGap, 2 * markerBand + crossing + 2 * detours)
         rowStartIdx = idx
         currentX = 0
+        lastGap = 0
         maxRowH = 0
       }
 
+      // Leave room left of a box with a self loop; the gap after the previous
+      // entity already counts.
+      currentX += Math.max(0, (selfReserve.get(ent.id) ?? 0) - lastGap)
       placed.set(ent.id, {
         entity: ent,
         sections: mustGetEntityValue(entitySections, ent.id, 'sections'),
@@ -597,6 +634,7 @@ export function renderErAscii(
       }
 
       currentX += w + gap
+      lastGap = gap
       maxRowH = Math.max(maxRowH, h)
     }
 
@@ -1175,6 +1213,45 @@ export function renderErAscii(
 
     const lineH = rel.identifying ? H : dashH
     const lineV = rel.identifying ? V : dashV
+
+    if (e1 === e2) {
+      // Self loop on the left side: markers on two adjacent rows joined by a
+      // `┌`/`└` pair, the label left of it. Each loop on one entity gets the
+      // next free row pair (3 rows apart).
+      const k = selfRels.filter((r) => r.entity1 === rel.entity1).indexOf(rel)
+      const rows = [e1.y + 1 + 3 * k, e1.y + 2 + 3 * k]
+      const marks = [rel.cardinality1, rel.cardinality2].map((c) =>
+        getCrowsFootChars(c, useAscii, true),
+      )
+      const width = selfMarkerW(rel)
+      const lx = e1.x - 1 - width - 1
+      rows.forEach((y, i) => {
+        const chars = marks[i]!
+        const inset = chars[chars.length - 1] === V ? 1 : 0
+        setCGuarded(
+          lx,
+          y,
+          getCornerChar(i === 0 ? 'down' : 'up', 'right'),
+          'line',
+        )
+        for (let x = lx + 1; x < e1.x - inset - chars.length; x++) {
+          setCGuardedH(x, y, lineH, 'line')
+        }
+        for (let c = 0; c < chars.length; c++) {
+          setCGuarded(e1.x - inset - chars.length + c, y, chars[c]!, 'arrow')
+        }
+      })
+      if (rel.label) {
+        const labelW = maxLineWidth(rel.label)
+        splitLines(rel.label).forEach((line, i) => {
+          const cells = toDisplayCells(line)
+          for (let c = 0; c < cells.length; c++) {
+            setCGuarded(lx - 1 - labelW + c, rows[0]! + i, cells[c]!, 'text')
+          }
+        })
+      }
+      continue
+    }
 
     // Determine connection direction based on relative position.
     // Connect from right side of left entity to left side of right entity (horizontal),

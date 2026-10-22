@@ -106,4 +106,6 @@ export interface PositionedErRelationship {
   identifying: boolean
   /** Path points from entity1 to entity2 */
   points: Array<{ x: number; y: number }>
+  /** Centre of the label; absent means the midpoint of `points`. */
+  labelPoint?: { x: number; y: number }
 }
