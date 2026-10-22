@@ -10,6 +10,7 @@
  */
 
 import type { Point, PositionedNode } from '@zombie-mermaid/core'
+import { ASYMMETRIC_NOTCH } from './styles.ts'
 
 /**
  * Clip an edge endpoint to the actual shape boundary of a node.
@@ -47,6 +48,18 @@ export function clipEdgeToShape(
         points[lastIdx - 1]!,
         node,
       )
+    }
+  }
+
+  if (node.shape === 'asymmetric') {
+    // An endpoint on the left bbox edge sits in the notch's mouth: pull it
+    // onto the notch outline (tip at mid-height, sloping out to the corners).
+    const i = isStart ? 0 : points.length - 1
+    const p = points[i]!
+    const half = node.height / 2
+    const dy = Math.abs(p.y - (node.y + half))
+    if (Math.abs(p.x - node.x) < 0.5 && dy < half) {
+      result[i] = { x: node.x + ASYMMETRIC_NOTCH * (1 - dy / half), y: p.y }
     }
   }
   // Future: add clipping for hexagon, circle, etc.

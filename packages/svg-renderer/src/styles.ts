@@ -84,6 +84,9 @@ export const FONT_WEIGHTS = {
  * Increased from 8 to 12 to provide more clearance for edges routing near headers. */
 export const GROUP_HEADER_CONTENT_PAD = 12
 
+/** Depth of the asymmetric (`>text]`) shape's left notch, matching mermaid. */
+export const ASYMMETRIC_NOTCH = 12
+
 /** Padding inside node shapes */
 export const NODE_PADDING = {
   /** Horizontal padding inside rectangles/rounded/stadium (increased from 16 for better label fit) */
