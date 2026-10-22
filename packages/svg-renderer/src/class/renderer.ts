@@ -13,6 +13,8 @@ import {
   getReadableTextColor,
   sanitizeClassName,
   renderMultilineText,
+  renderMultilineTextWithBackground,
+  measureMultilineText,
   escapeXml as escapeXmlUtil,
   escapeAttr,
   safeHref,
@@ -630,16 +632,31 @@ function renderRelationshipLabels(
 
   const parts: string[] = []
 
-  // Label — prefer layout-computed position (collision-aware), fall back to midpoint
+  // Label — mermaid.js sits it ON the edge over a background plate that
+  // hides the line behind it (#2104, checked against 12.1.0 and 12.2.0).
+  // ELK places the label box beside the edge, so snap its centre onto the
+  // nearest point of the route; the box was reserved by layout either way.
   if (rel.label) {
-    const pos = rel.labelPosition ?? midpoint(rel.points)
+    const pos = nearestPointOnPolyline(
+      rel.points,
+      rel.labelPosition ?? midpoint(rel.points),
+    )
+    const m = measureMultilineText(
+      rel.label,
+      fontSizes.edgeLabel,
+      FONT_WEIGHTS.edgeLabel,
+    )
     parts.push(
-      renderMultilineText(
+      renderMultilineTextWithBackground(
         rel.label,
         pos.x,
-        pos.y - 8,
+        pos.y,
+        m.width,
+        m.height,
         fontSizes.edgeLabel,
+        4,
         f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        'class="class-relationship-label-bg" fill="var(--bg)"',
       ),
     )
   }
@@ -677,6 +694,34 @@ function renderRelationshipLabels(
   }
 
   return parts.join('\n')
+}
+
+/** Closest point to `p` on the polyline through `points`. */
+function nearestPointOnPolyline(
+  points: Array<{ x: number; y: number }>,
+  p: { x: number; y: number },
+): { x: number; y: number } {
+  let best = points[0]!
+  let bestD = Infinity
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!
+    const b = points[i]!
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const len2 = dx * dx + dy * dy
+    // A zero-length segment gives NaN, which never beats bestD, so it is skipped.
+    const t = Math.max(
+      0,
+      Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2),
+    )
+    const q = { x: a.x + t * dx, y: a.y + t * dy }
+    const d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2
+    if (d < bestD) {
+      bestD = d
+      best = q
+    }
+  }
+  return best
 }
 
 /** Get the midpoint of a point array */
