@@ -17,7 +17,9 @@ describe('SVG class label and classifier', () => {
   })
   it('does not print * or $ and styles the members', () => {
     // Collect text nodes of <text>/<tspan> only (no tag stripping, so style CSS is never read).
-    const text = [...svg.matchAll(/<(?:text|tspan)\b[^>]*>([^<]*)</g)].map((m) => m[1]).join('')
+    const text = [...svg.matchAll(/<(?:text|tspan)\b[^>]*>([^<]*)</g)]
+      .map((m) => m[1])
+      .join('')
     expect(text).toContain('size()')
     expect(text).not.toMatch(/[*$]/)
     expect(svg).toMatch(/font-style="italic"/)
