@@ -39,6 +39,9 @@ jobs:
       version: ${{ steps.meta.outputs.version }}
       run: ${{ steps.meta.outputs.run }}
     steps:
+      # The triggering "Release" workflow runs only on push to main (publish.yml), so head_sha is
+      # merged code, never a PR head; this job holds contents: read only.
+      # nosemgrep: yaml.github-actions.security.workflow-run-target-code-checkout.workflow-run-target-code-checkout
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
