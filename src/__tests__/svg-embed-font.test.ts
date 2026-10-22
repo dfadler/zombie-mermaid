@@ -66,7 +66,7 @@ describe('embedFont', () => {
   it('does not change layout (embedFont only touches the <style> block)', async () => {
     const { renderMermaidSVGAsync } = await import('../index.ts')
     const strip = (s: string) =>
-      s.replace(/<style[\s\S]*?<\/style>/g, '').replace(/zm[a-z0-9]+-/g, 'zm-')
+      s.slice(s.indexOf('</style>')).replace(/zm[a-z0-9]+-/g, 'zm-')
     const on = await renderMermaidSVGAsync(SRC, { embedFont: 'subset' })
     const off = await renderMermaidSVGAsync(SRC)
     expect(strip(on)).toBe(strip(off))
