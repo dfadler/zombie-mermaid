@@ -497,7 +497,11 @@ sequenceDiagram
 a plain declaration, so the alias and the participant/actor kind are kept.
 The created participant's box is drawn centred on the row of the message
 that creates it, instead of in the header, and its lifeline starts there;
-the creating arrow stops at the box's edge. `destroy X` ends `X`'s lifeline
+the creating arrow stops at the box's edge, and the message label sits on the
+row directly above that arrow (as in Mermaid 12.1.0 and 12.2.0). A created
+actor figure's height does not pad the other participants' header boxes (the
+footer row, which holds every surviving participant, is still uniform).
+`destroy X` ends `X`'s lifeline
 at the next message with a cross, and no footer box is drawn for it.
 
 Mermaid's binding rules apply, with Mermaid's own error text: the message
