@@ -275,6 +275,15 @@ Opt-in only: without the flag the output is byte-identical to before.
   code is bundled into lazy chunks that load only when the option is used. The MCP tool does not
   expose it.
 
+## C4: a title-only diagram draws its title
+
+`C4Context` with a `title` and no elements: mermaid.js 12.1.0 and 12.2.0 both emit
+`viewBox="0 -70 200 187"` with the title at `x="-150"`, which is left of the
+viewBox, so the title is clipped and invisible (checked headless in Chromium, #2282).
+zombie-mermaid deliberately draws it: the SVG canvas is `2 * 50 + title width` by 80,
+with the title inside, and the ASCII output prints the title (mermaid has no ASCII
+output). A diagram with neither a title nor elements still renders nothing.
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams
