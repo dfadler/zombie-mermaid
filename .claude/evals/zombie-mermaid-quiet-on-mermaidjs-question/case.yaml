@@ -1,0 +1,27 @@
+# Near-miss: Mermaid vocabulary (mermaid.js, mermaid-cli) but nothing to render with the CLI.
+schema_version: '1.1'
+name: zombie-mermaid-quiet-on-mermaidjs-question
+description: >
+  A conceptual question about how mermaid.js parses subgraphs, plus a mermaid-cli install
+  question, must not fire zombie-mermaid.
+  expected_outcome: PASS when no zombie-mermaid Skill call is made; FAIL otherwise.
+tags: [zombie-mermaid, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Conceptual question, no diagram to draw: in mermaid.js, how does the parser handle nested
+    subgraphs and edges that cross a subgraph boundary? Also, which npm package is mermaid-cli?
+    Answer in two sentences. Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+    min: 0
+    max: 0
+    arm: both
