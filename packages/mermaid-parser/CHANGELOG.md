@@ -1,5 +1,15 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.9.0
+
+### Patch Changes
+
+- [#2290](https://github.com/dfadler/zombie-mermaid/pull/2290) [`d4a608d`](https://github.com/dfadler/zombie-mermaid/commit/d4a608d0587d9336e4de1efe70173821ca193e23) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams: `class Id["Label"]` now shows the label in the box (relationships still use `Id`), and the `*` / `$` classifier after a method's `)` styles the member instead of leaking into its text.
+
+- [#2292](https://github.com/dfadler/zombie-mermaid/pull/2292) [`0bcc115`](https://github.com/dfadler/zombie-mermaid/commit/0bcc115dd5a943627f795a111442ae08d3c62af1) Thanks [@dfadler](https://github.com/dfadler)! - Draw an ER self-relationship (`A ||--o{ A : label`) as a loop left of the entity with its markers and label clear of the box, in SVG and ASCII ([#2284](https://github.com/dfadler/zombie-mermaid/issues/2284)).
+- Updated dependencies [[`382449d`](https://github.com/dfadler/zombie-mermaid/commit/382449d62597fbfcf99640d0d066d6833f2897f3)]:
+  - @zombie-mermaid/core@5.9.0
+
 ## 5.8.4
 
 ### Patch Changes
