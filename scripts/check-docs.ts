@@ -200,6 +200,16 @@ export function orphanResearch(fs: Fs = realFs): string[] {
     )
 }
 
+// #1936: a kept research doc carries an `As of: YYYY-MM-DD` line, so a reader
+// can tell how stale its numbers are; re-measure or drop the doc when it ages out.
+export function researchAsOf(fs: Fs = realFs): string[] {
+  return fs
+    .ls('docs/research')
+    .filter((f) => f.endsWith('.md') && f !== 'docs/research/README.md')
+    .filter((f) => !/^As of: \d{4}-\d{2}-\d{2}/m.test(fs.read(f)))
+    .map((f) => `${f}: missing an "As of: YYYY-MM-DD" line (#1936)`)
+}
+
 // #1549: every decision doc carries a `Status:` line and a row in the README index.
 const STATUS =
   /^Status: (accepted|implemented|not adopted|superseded|partially superseded|historical|proposal|unverified)\b/m
@@ -244,6 +254,7 @@ export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
     errs: [
       ...nodeConsistency(want, fs),
       ...orphanResearch(fs),
+      ...researchAsOf(fs),
       ...decisionStatus(fs),
       ...forkFixesCount(fs),
       ...files.flatMap((f) => checkDoc(f, fs.read(f), want)),

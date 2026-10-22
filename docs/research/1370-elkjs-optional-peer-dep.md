@@ -1,5 +1,7 @@
 # Research: `elkjs` as an optional peer dependency vs. the async-entry plan
 
+As of: 2026-10-22, reviewed against `main` @ `bd0a701c`. The measurements below were taken on `0d61de15` and not re-run; paths were re-checked. Re-run `pnpm run build` and the size commands before quoting a number as current.
+
 Status: **answered; recommendation below.** Written for
 [#1370](https://github.com/dfadler/zombie-mermaid/issues/1370) (reduce the cost of bundling
 `elkjs`, ~1.6 MB `elkjs/lib/elk.bundled.js`). Compares the issue's async-entry proposal
@@ -122,7 +124,7 @@ Sequence/pie/xychart/C4 and all ASCII render without it, as today.
 - **Demo/site (`demo/*`, `packages/site/*`, bundled via `scripts/vite-bundle.ts` /
   `demo/build-nav-client.ts`):** each browser bundle that renders diagrams must register elk
   (client entry files: `demo/diagram-type-client.tsx`, `demo/components/*-app.tsx`,
-  `editor-rendering.ts`). Site SSR scripts (`packages/site/pages.ts`, `blog.ts`, `fork-fixes*.ts`)
+  `editor-rendering.ts`). Site SSR routes (`packages/site/ssr/*-routes.ts`)
   are Node and can register in one shared helper.
 - **Tests:** 27 files in `packages/svg-renderer/src` plus `__tests__/visual/helpers`,
   `__tests__/dom/*`, `scripts/{layout-oracle,form-diff,visual-diff}.ts` call sync layout. One
