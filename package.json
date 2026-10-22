@@ -50,6 +50,19 @@
       }
     }
   },
+  "typesVersions": {
+    "*": {
+      "ascii": [
+        "dist/ascii.d.ts"
+      ],
+      "ascii-layout": [
+        "dist/ascii-layout.d.ts"
+      ],
+      "mcp": [
+        "dist/mcp.d.ts"
+      ]
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/dfadler/zombie-mermaid"
