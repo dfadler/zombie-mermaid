@@ -1,5 +1,18 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.9.0
+
+### Patch Changes
+
+- [#2289](https://github.com/dfadler/zombie-mermaid/pull/2289) [`38a4718`](https://github.com/dfadler/zombie-mermaid/commit/38a47185c0f1fc2595f9783be4ad1ee752a6882e) Thanks [@dfadler](https://github.com/dfadler)! - ASCII sequence diagrams: the label of a message that creates a participant now sits on the row above its arrow, and a created actor figure no longer pads the other participants' header boxes ([#2281](https://github.com/dfadler/zombie-mermaid/issues/2281)).
+
+- [#2293](https://github.com/dfadler/zombie-mermaid/pull/2293) [`0625bdd`](https://github.com/dfadler/zombie-mermaid/commit/0625bdd73684445d741663c9888a22002399c04f) Thanks [@dfadler](https://github.com/dfadler)! - C4: a title-only diagram (`C4Context` with just a `title`) now draws the title inside a canvas sized to it, in SVG and ASCII, instead of a 0x0 viewBox and empty output ([#2282](https://github.com/dfadler/zombie-mermaid/issues/2282)).
+
+- [#2292](https://github.com/dfadler/zombie-mermaid/pull/2292) [`0bcc115`](https://github.com/dfadler/zombie-mermaid/commit/0bcc115dd5a943627f795a111442ae08d3c62af1) Thanks [@dfadler](https://github.com/dfadler)! - Draw an ER self-relationship (`A ||--o{ A : label`) as a loop left of the entity with its markers and label clear of the box, in SVG and ASCII ([#2284](https://github.com/dfadler/zombie-mermaid/issues/2284)).
+- Updated dependencies [[`d4a608d`](https://github.com/dfadler/zombie-mermaid/commit/d4a608d0587d9336e4de1efe70173821ca193e23), [`382449d`](https://github.com/dfadler/zombie-mermaid/commit/382449d62597fbfcf99640d0d066d6833f2897f3), [`0bcc115`](https://github.com/dfadler/zombie-mermaid/commit/0bcc115dd5a943627f795a111442ae08d3c62af1)]:
+  - @zombie-mermaid/mermaid-parser@5.9.0
+  - @zombie-mermaid/core@5.9.0
+
 ## 5.8.4
 
 ### Patch Changes
