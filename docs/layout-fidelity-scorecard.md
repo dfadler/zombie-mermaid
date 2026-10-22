@@ -10,15 +10,15 @@ floor for its lowest figure (default 85%, lower overrides in
 `SAMPLE_FLOORS`); `--thresholds` exits 1 on a breach. Floors guard against
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
-Reference: mermaid 12.1.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-10-16 at
-65741f1 with `pnpm run layout:scorecard`, tolerance 20px.
+Reference: mermaid 12.2.0. Since mermaid 12.0.0 its default layout engine for
+these diagram types is ELK (it was dagre before). Generated 2026-10-22 at
+1aca1b7 with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
 | Type      | Samples | Vertical | Horizontal | Containment |
 | --------- | ------- | -------- | ---------- | ----------- |
-| Flowchart | 53      | 95%      | 98%        | 100%        |
+| Flowchart | 53      | 99%      | 98%        | 100%        |
 | State     | 7       | 100%     | 98%        | 100%        |
 | Class     | 28      | 100%     | 100%       | 100%        |
 | ER        | 20      | 100%     | 100%       | -           |
@@ -31,10 +31,6 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-12 | 86a7d2f | 12.1.0  | Flowchart | 37      | 98%      | 95%        | 100%        |
-| 2026-10-12 | 86a7d2f | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-12 | 86a7d2f | 12.1.0  | Class     | 17      | 100%     | 88%        | 100%        |
-| 2026-10-12 | 86a7d2f | 12.1.0  | ER        | 15      | 100%     | 100%       | -           |
 | 2026-10-14 | af76561 | 12.1.0  | Flowchart | 38      | 98%      | 97%        | 100%        |
 | 2026-10-14 | af76561 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-14 | af76561 | 12.1.0  | Class     | 17      | 100%     | 88%        | 100%        |
@@ -51,6 +47,10 @@ across that change.
 | 2026-10-16 | 65741f1 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-16 | 65741f1 | 12.1.0  | Class     | 28      | 100%     | 100%       | 100%        |
 | 2026-10-16 | 65741f1 | 12.1.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-22 | 1aca1b7 | 12.2.0  | Flowchart | 53      | 99%      | 98%        | 100%        |
+| 2026-10-22 | 1aca1b7 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-22 | 1aca1b7 | 12.2.0  | Class     | 28      | 100%     | 100%       | 100%        |
+| 2026-10-22 | 1aca1b7 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Per sample
 
@@ -58,15 +58,10 @@ across that change.
 
 | Sample                                                   | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | -------------------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
-| LR Fan-In With Bypass Edge                               | 33%      | 100%       | -           | 3     | 30%   | pass   |
 | Flowchart: Self-Loop with In and Out Neighbours (TD)     | 100%     | 33%        | -           | 3     | 30%   | pass   |
-| Flowchart: Dense Duplicate Edges (LR)                    | 33%      | 100%       | -           | 3     | 30%   | pass   |
 | Flowchart: CJK Labels                                    | 50%      | 100%       | 100%        | 4     | 50%   | pass   |
-| LR Bypass Edge In A Chain                                | 50%      | 100%       | -           | 4     | 45%   | pass   |
-| Flowchart: Self-Loop with In and Out Neighbours (LR)     | 67%      | 100%       | -           | 3     | 65%   | pass   |
 | Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 67%        | -           | 3     | 65%   | pass   |
-| System Architecture                                      | 89%      | 93%        | 100%        | 10    | 85%   | pass   |
-| CI/CD Pipeline                                           | 100%     | 90%        | 100%        | 7     | 85%   | pass   |
+| System Architecture                                      | 89%      | 100%       | 100%        | 10    | 85%   | pass   |
 | Fan-Out Under Half-Column Parent                         | 100%     | 97%        | -           | 9     | 85%   | pass   |
 | Simple Flow                                              | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Original Node Shapes                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
@@ -88,6 +83,7 @@ across that change.
 | Subgraph Direction Override                              | 100%     | 100%       | 100%        | 6     | 85%   | pass   |
 | ::: Class Shorthand                                      | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Inline Style Overrides                                   | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| CI/CD Pipeline                                           | 100%     | 100%       | 100%        | 7     | 85%   | pass   |
 | Decision Tree                                            | 100%     | 100%       | -           | 7     | 85%   | pass   |
 | Git Branching Workflow                                   | 100%     | 100%       | -           | 7     | 85%   | pass   |
 | Interactivity: Links and Tooltips                        | 100%     | 100%       | -           | 3     | 85%   | pass   |
@@ -102,14 +98,18 @@ across that change.
 | Flowchart: Three Parallel Edges Plus Reciprocal (TD)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Four Parallel Edges (TD)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Five Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| LR Fan-In With Bypass Edge                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Reciprocal and Duplicate Edges RL                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Decision Self-Loop with Duplicate Edges                  | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| LR Bypass Edge In A Chain                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Flowchart: Five Parallel Edges (TD)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Five Parallel Edges with Reciprocals (LR)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Six Cluster Exit Siblings (TD)                | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Flowchart: Parallel Edges with Back Edges (TD)           | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Cluster Exit Siblings with No Other Exit (TD) | 100%     | 100%       | 100%        | 3     | 85%   | pass   |
 | Flowchart: Nine Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Flowchart: Self-Loop with In and Out Neighbours (LR)     | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Flowchart: Dense Duplicate Edges (LR)                    | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Duplicate Self-Loops                                     | -        | -          | -           | 1     | 85%   | n/a    |
 
 ### State (lowest first)

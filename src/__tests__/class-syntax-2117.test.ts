@@ -2,7 +2,7 @@
  * Class syntax mermaid accepts that the parser used to reject (#2117):
  * the `classDiagram-v2` header, bidirectional `<|--|>` / `<-->`, lollipop
  * `()--` / `--()`, and backtick-quoted class names. Parity: mermaid 12.1.0
- * (repo pin) and 12.2.0 draw both ends / a circle / the unquoted name.
+ * and 12.2.0 (repo pin) draw both ends / a circle / the unquoted name.
  */
 import { describe, it, expect } from 'vitest'
 import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'

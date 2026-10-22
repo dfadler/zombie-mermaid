@@ -28,7 +28,7 @@ export function isBehind(pinned: string, latest: string): boolean {
   return lMaj > pMaj || (lMaj === pMaj && lMin > pMin)
 }
 
-/** The `mermaid` devDependency version, e.g. `12.1.0`. */
+/** The `mermaid` devDependency version, e.g. `12.2.0`. */
 export function pinnedMermaidVersion(): string {
   return (
     JSON.parse(
@@ -74,7 +74,7 @@ export function pinFreshness(
 }
 
 /**
- * Last observed mermaid version per user-facing surface (2026-10-16, #2184;
+ * Last observed mermaid version per user-facing surface (2026-10-22, #2184;
  * method in docs/known-differences.md). Re-check by hand when the pin moves:
  * the page cannot be queried from a script.
  */
@@ -87,6 +87,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const r = pinFreshness()
   const seen = Object.entries(SURFACE_VERSIONS).map(([k, v]) => `${k} ${v}`)
   console.log(
-    `${r.stale ? 'STALE   ' : 'ok      '} ${r.message}\n         last checked 2026-10-16: ${seen.join('; ')}`,
+    `${r.stale ? 'STALE   ' : 'ok      '} ${r.message}\n         last checked 2026-10-22: ${seen.join('; ')}`,
   )
 }
