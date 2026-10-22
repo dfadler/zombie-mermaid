@@ -97,7 +97,8 @@ comment (long ones in a collapsed `<details>`), with a permalink to any script o
 artifact in the repo. Do not add a `docs/research/*.md` doc: write one only when something
 else (a guide, a code comment, a script) links to it and it is worth keeping current.
 `pnpm run check:docs` fails on a doc under `docs/research/` that nothing outside it
-references, and `scripts/pre-pr-check.sh` (the warn-only `gh pr create` hook) warns when a PR adds one. Former research docs and where their findings now live are indexed in
+references, and `scripts/pre-pr-check.sh` (the warn-only `gh pr create` hook) warns when a PR adds one, and
+`scripts/research-nudge.sh` (a warn-only `Write` hook) nudges when you create one. Former research docs and where their findings now live are indexed in
 [`docs/research/README.md`](docs/research/README.md). See
 [#1479](https://github.com/dfadler/zombie-mermaid/issues/1479) and
 [#1642](https://github.com/dfadler/zombie-mermaid/issues/1642).
