@@ -1127,7 +1127,7 @@ describe('parseMermaid – subgraphs', () => {
         end
         C --> D
       end`)
-    expect(g.subgraphs).toHaveLength(1) // only top-level
+    expect(g.subgraphs).toHaveLength(1) // Only top-level
     const outer = g.subgraphs[0]!
     expect(outer.label).toBe('Outer')
     expect(outer.children).toHaveLength(1)

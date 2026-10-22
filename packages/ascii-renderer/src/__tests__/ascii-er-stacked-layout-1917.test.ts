@@ -56,7 +56,7 @@ describe('ASCII ER stacked layout (issue #1917)', () => {
     const out = renderMermaidASCII(
       'erDiagram\n  A ||--o{ B : x\n  B ||--o{ C : y\n  D ||--o{ C : z',
     )
-    // mermaid: A, D in different layers than B; here A/D above B/C chain.
+    // Mermaid: A, D in different layers than B; here A/D above B/C chain.
     expect(row(out, '│ A ')).toBeLessThan(row(out, '│ B '))
     expect(row(out, '│ B ')).toBeLessThan(row(out, '│ C '))
     expect(row(out, '│ D ')).toBeGreaterThan(row(out, '│ A '))

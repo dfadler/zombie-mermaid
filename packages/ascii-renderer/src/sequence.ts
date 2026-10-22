@@ -137,10 +137,10 @@ export function renderSequenceAscii(
   const TR = useAscii ? '+' : '┐'
   const BL = useAscii ? '+' : '└'
   const BR = useAscii ? '+' : '┘'
-  const JT = useAscii ? '+' : '┬' // top junction on lifeline
-  const JB = useAscii ? '+' : '┴' // bottom junction on lifeline
-  const JL = useAscii ? '+' : '├' // left junction
-  const JR = useAscii ? '+' : '┤' // right junction
+  const JT = useAscii ? '+' : '┬' // Top junction on lifeline
+  const JB = useAscii ? '+' : '┴' // Bottom junction on lifeline
+  const JL = useAscii ? '+' : '├' // Left junction
+  const JR = useAscii ? '+' : '┤' // Right junction
   // Activation bar: the double-line glyph a lifeline gets while a
   // participant is actively processing a call (issue #1133), overlaid in
   // place of the plain lifeline `V`. Same Unicode/ASCII pairing draw-boxes.ts
@@ -211,7 +211,7 @@ export function renderSequenceAscii(
   )
   const halfBox = actorBoxWidths.map((w) => Math.ceil(w / 2))
   // Calculate actor box heights based on number of lines in label
-  const actorBoxHeights = diagram.actors.map((a) => actorContentHeight(a) + 2) // content lines + top/bottom border
+  const actorBoxHeights = diagram.actors.map((a) => actorContentHeight(a) + 2) // Content lines + top/bottom border
   const actorBoxH = Math.max(...actorBoxHeights, 3) // Use max height for consistent lifeline positioning
   // Left border column of each actor's box — drawActorBox derives the same
   // `left` from the lifeline centre, so a creating arrow can stop just short
@@ -553,7 +553,7 @@ export function renderSequenceAscii(
   // Start right below the header boxes — and below the group bracket's
   // bottom border when there is one (its top border row sits above them).
   const headerBoxTop = bracketRows
-  const headerBottom = headerBoxTop + actorBoxH // first row after the boxes
+  const headerBottom = headerBoxTop + actorBoxH // First row after the boxes
   let curY = headerBottom + bracketRows
 
   // rowGap: the blank rows around messages, notes, and blocks. See
@@ -579,7 +579,7 @@ export function renderSequenceAscii(
   // Pre-message notes: afterIndex === -1 — position before message loop
   for (const note of diagram.notes) {
     if (note.afterIndex !== -1) continue
-    curY += rowGap // gap before note
+    curY += rowGap // Gap before note
     const nLines = splitLines(note.text)
     const nWidth = noteBoxWidth(note)
     const nHeight = nLines.length + 2
@@ -615,7 +615,7 @@ export function renderSequenceAscii(
     // Block openings at this message
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.startIndex === m) {
-        curY += rowGap + 1 // blank rows + 1 fixed header row
+        curY += rowGap + 1 // Blank rows + 1 fixed header row
         blockStartY.set(b, curY - 1)
       }
     }
@@ -631,7 +631,7 @@ export function renderSequenceAscii(
       }
     }
 
-    curY += rowGap // blank row before message
+    curY += rowGap // Blank row before message
 
     const msg = diagram.messages[m]!
     const isSelf = msg.from === msg.to
@@ -724,7 +724,7 @@ export function renderSequenceAscii(
     }
   }
 
-  curY += minSeparatorGap // gap before footer (mandatory — see minSeparatorGap)
+  curY += minSeparatorGap // Gap before footer (mandatory — see minSeparatorGap)
   // With brackets, footerY is the footer bracket's top border row and the
   // footer boxes start one row under it; otherwise it is the boxes' own top.
   const footerY = curY
@@ -1267,7 +1267,7 @@ export function renderSequenceAscii(
         }
       }
 
-      // autonumber badge: overwrite the start of the arrow line with the
+      // Autonumber badge: overwrite the start of the arrow line with the
       // sequence number, mirroring the small circled number the SVG
       // renderer draws over the start of the arrow (see renderer.ts's
       // renderSeqNumberBadge). Skipped if it wouldn't fit before the

@@ -1,5 +1,5 @@
 /**
- * profile: 'markdown' (#1866) — plain, paste-safe ASCII. SVG n/a: the option
+ * Profile: 'markdown' (#1866) — plain, paste-safe ASCII. SVG n/a: the option
  * only affects ASCII output, so there is no SVG snapshot counterpart.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest'

@@ -132,7 +132,7 @@ describe('buildStyleBlock – font handling', () => {
 })
 
 describe('buildStyleBlock – mono font embed (#1061, #1319)', () => {
-  // core ships no font data; the caller supplies the embed (svg-renderer's
+  // Core ships no font data; the caller supplies the embed (svg-renderer's
   // buildSvgStyleBlock supplies the real subset — see src/__tests__/styles.test.ts).
   const embed = {
     family: 'Test Mono',

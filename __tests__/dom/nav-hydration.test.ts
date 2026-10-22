@@ -405,7 +405,7 @@ describe('mobile menu resize reset', () => {
   })
 
   /**
-   * jsdom doesn't implement matchMedia (see
+   * Jsdom doesn't implement matchMedia (see
    * demo-diagram-page-client.test.ts's own stub for the same gap) -- this
    * stands in a mutable `.matches` plus the captured 'change' listener, so
    * a test can drive both of NAV_MOBILE_MENU_SCRIPT's two reset paths: the
@@ -579,7 +579,7 @@ describe('mobile menu resize reset', () => {
     fireEvent.click(toggle)
     expect(panel.classList.contains('is-open')).toBe(true)
 
-    // matches stays false (still within the mobile band) -- a resize tick
+    // Matches stays false (still within the mobile band) -- a resize tick
     // that doesn't cross the breakpoint must not close the menu.
     mediaQuery.setMatches(false)
     window.dispatchEvent(new Event('resize'))

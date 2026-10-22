@@ -212,8 +212,8 @@ function fitLabelToAvailableWidth(
     textCells.length <= innerWidth
       ? textCells
       : clippedLeft && !clippedRight
-        ? textCells.slice(textCells.length - innerWidth) // keep the tail
-        : textCells.slice(0, innerWidth) // keep the head
+        ? textCells.slice(textCells.length - innerWidth) // Keep the tail
+        : textCells.slice(0, innerWidth) // Keep the head
 
   const cells = [
     ...(clippedLeft ? ['…'] : []),
@@ -396,10 +396,10 @@ export function renderClassAscii(
   // from the padding defaults rather than the raw config values.
   const hGap =
     paddingOffset(config.paddingX, DEFAULT_PADDING_X, 4, 1) +
-    (frames.length > 0 ? FRAME_EXTRA_HGAP : 0) // horizontal gap between class boxes
+    (frames.length > 0 ? FRAME_EXTRA_HGAP : 0) // Horizontal gap between class boxes
   const vGap =
     paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 3, 1) +
-    (frames.length > 0 ? FRAME_EXTRA_VGAP : 0) // vertical gap between levels (enough for relationship lines)
+    (frames.length > 0 ? FRAME_EXTRA_VGAP : 0) // Vertical gap between levels (enough for relationship lines)
 
   // --- Build box dimensions for each class ---
   const classSections = new Map<string, string[][]>()
@@ -442,8 +442,8 @@ export function renderClassAscii(
   const classById = new Map<string, ClassNode>()
   for (const cls of diagram.classes) classById.set(cls.id, cls)
 
-  const parents = new Map<string, Set<string>>() // child → set of parent IDs
-  const children = new Map<string, Set<string>>() // parent → set of child IDs
+  const parents = new Map<string, Set<string>>() // Child → set of parent IDs
+  const children = new Map<string, Set<string>>() // Parent → set of child IDs
 
   for (const rel of diagram.relationships) {
     // Level assignment always places "from" above "to", for every relationship
@@ -486,7 +486,7 @@ export function renderClassAscii(
     if (!childSet) continue
     for (const childId of childSet) {
       const newLevel = (level.get(id) ?? 0) + 1
-      if (newLevel > levelCap) continue // cycle detected — skip to prevent infinite loop
+      if (newLevel > levelCap) continue // Cycle detected — skip to prevent infinite loop
       if (!level.has(childId) || level.get(childId)! < newLevel) {
         level.set(childId, newLevel)
         queue.push(childId)
@@ -606,7 +606,7 @@ export function renderClassAscii(
       const widestLabel = Math.max(
         ...group.map((i) => {
           const label = diagram.relationships[i]!.label
-          if (!label) return 3 // room for just a line/arrow
+          if (!label) return 3 // Room for just a line/arrow
           return labelCellWidth(label)
         }),
       )
@@ -663,7 +663,7 @@ export function renderClassAscii(
     ): void => {
       const groups = new Map<string, number[]>()
       diagram.relationships.forEach((rel, i) => {
-        if (relColumnOffset.has(i)) return // already fanned as a duplicate pair
+        if (relColumnOffset.has(i)) return // Already fanned as a duplicate pair
         if (!classById.has(rel.from) || !classById.has(rel.to)) return
         const fromLevel = level.get(rel.from) ?? 0
         const toLevel = level.get(rel.to) ?? 0
@@ -679,7 +679,7 @@ export function renderClassAscii(
         const widestLabel = Math.max(
           ...group.map((i) => {
             const label = diagram.relationships[i]!.label
-            if (!label) return 3 // room for just a line/arrow
+            if (!label) return 3 // Room for just a line/arrow
             return labelCellWidth(label)
           }),
         )
@@ -2256,7 +2256,7 @@ export function renderClassAscii(
         // Grid cells, not code units: a wide glyph occupies two columns, so
         // measuring/writing by code unit would centre the label wrong and
         // overrun the space cleared for it.
-        const naturalCells = toDisplayCells(` ${text} `) // space padding on both sides
+        const naturalCells = toDisplayCells(` ${text} `) // Space padding on both sides
         // Clamped to never go negative — matches the clamp the territory
         // precomputation above already applied when deciding whether this
         // label and its neighbors' natural spans overlap, so the two stay

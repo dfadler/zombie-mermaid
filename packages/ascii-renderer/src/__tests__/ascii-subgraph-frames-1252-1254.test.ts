@@ -120,7 +120,7 @@ describe('#1254: edge labels and subgraph titles', () => {
       for (const title of ['Layer One', 'Layer Two', 'Layer Three']) {
         expect(out).toContain(title)
       }
-      // each title is flanked by its frame's walls, unclipped
+      // Each title is flanked by its frame's walls, unclipped
       expect(out).toMatch(/│Layer One│/)
     })
   }

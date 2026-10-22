@@ -517,7 +517,7 @@ function drawPath(
   startOverride?: DrawingCoord,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
-  // path is non-empty: drawArrow (drawPath's sole caller) already returns
+  // Path is non-empty: drawArrow (drawPath's sole caller) already returns
   // early when edge.path.length === 0.
   let previousCoord = path[0]!
   const linesDrawn: DrawingCoord[][] = []

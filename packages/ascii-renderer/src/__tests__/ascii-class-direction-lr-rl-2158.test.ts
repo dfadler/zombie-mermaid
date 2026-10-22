@@ -86,7 +86,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       const none = renderMermaidASCII(`classDiagram\n${INHERIT}`)
       expect(render(INHERIT, 'TB')).toBe(none)
       expect(render(INHERIT, 'LR')).not.toBe(none)
-      // a top-down drawing stacks Dog and Cat on one row
+      // A top-down drawing stacks Dog and Cat on one row
       expect(at(none, 'Dog').y).toBe(at(none, 'Cat').y)
       expect(render(INHERIT, 'BT')).not.toBe(none)
     })
@@ -133,7 +133,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
 
     it('marks the from end for `<|--` and the to end for `..|>`', () => {
       const from = render('  A <|-- B', 'LR')
-      // the head sits against A's right border, on the line to B
+      // The head sits against A's right border, on the line to B
       expect(from).toMatch(/│ A │◁─+┤ B │/)
       const to = render('  A ..|> B', 'LR')
       expect(to).toMatch(/│ A ├┄+▷│ B │/)
@@ -171,7 +171,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
     for (const dir of ['LR', 'RL']) {
       it(`keeps a label between both frame walls, not over them (${dir})`, () => {
         const out = render(src, dir)
-        // both walls are crossed (┼), the label sits wholly between them
+        // Both walls are crossed (┼), the label sits wholly between them
         expect(out).toMatch(/┼stores┼/)
       })
     }
@@ -185,7 +185,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       const many = at(out, 'many')
       expect(one.y).toBe(line.y - 1)
       expect(many.y).toBe(line.y + 1)
-      // hugging their boxes
+      // Hugging their boxes
       expect(one.x).toBeLessThan(many.x)
     })
 
@@ -197,7 +197,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       expect(one.y).toBe(line.y - 1)
       expect(many.y).toBe(line.y + 1)
       expect(one.x).toBeGreaterThan(many.x)
-      // text still reads left to right
+      // Text still reads left to right
       expect(out).toContain('many')
     })
 
@@ -329,7 +329,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
         expect(out).not.toContain(`${open}<<service>>`)
         expect(out).not.toContain(`${open}+`)
         expect(out.split(open)).toHaveLength(2)
-        // stripping the links leaves the unlinked drawing
+        // Stripping the links leaves the unlinked drawing
         const plain = render(
           '  class A {\n    <<service>>\n    +int x\n  }\n  A --> B\n  click A href "https://example.com/a"',
           dir,
@@ -361,7 +361,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
         'LR',
       )
       expect(out).toContain('┼')
-      // never a bare `─├` / `┤─`: a stroke into a divider is joined
+      // Never a bare `─├` / `┤─`: a stroke into a divider is joined
       expect(out).not.toMatch(/[─┄]├|┤[─┄]/)
     })
 
@@ -386,7 +386,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       expect(box[0]).toHaveLength(7)
       expect(box[8]![2]).toBe('┤')
       expect(box[8]![0]).toBe('┐')
-      // the extra rows sit at the bottom of the last compartment
+      // The extra rows sit at the bottom of the last compartment
       expect(box[2]![1]).toBe('A')
       expect(box[2]![3]).toBe('x')
       expect(box[2]![4]).toBe(' ')

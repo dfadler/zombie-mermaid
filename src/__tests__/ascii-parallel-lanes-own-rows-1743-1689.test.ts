@@ -41,7 +41,7 @@ const count = (text: string, ch: string): number => text.split(ch).length - 1
 describe('plain parallel lanes each get an arrowhead (#1743)', () => {
   it.each([3, 4, 5, 6])('TD, %i lanes', (n) => {
     const out = draw(lanes('TD', n))
-    // one straight arrowhead on top, one per side lane on the right face
+    // One straight arrowhead on top, one per side lane on the right face
     expect(count(out, '◄')).toBe(n - 1)
     expect(out).not.toMatch(/◄[─]*┴|┼/)
   })
@@ -60,7 +60,7 @@ describe('plain parallel lanes each get an arrowhead (#1743)', () => {
 describe('cluster exit siblings each get an arrowhead (#1689)', () => {
   it.each([4, 5, 6, 7])('%i siblings into one target', (n) => {
     const out = draw(cluster(n))
-    // sibling 1 drops in from the top; the rest enter a side face
+    // Sibling 1 drops in from the top; the rest enter a side face
     expect(count(out, '◄') + count(out, '►')).toBe(n - 1)
     expect(out).not.toContain('┼')
     for (let i = 1; i <= n; i++) expect(out).toContain(String(i))

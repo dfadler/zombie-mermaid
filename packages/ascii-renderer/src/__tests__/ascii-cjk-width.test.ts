@@ -77,7 +77,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
           l.includes('日本語テスト'),
         )
         const labelLine = lines[labelLineIndex]!
-        const blankLineAbove = lines[labelLineIndex - 2]! // top padding row
+        const blankLineAbove = lines[labelLineIndex - 2]! // Top padding row
 
         // The right border character's *string* index differs between the
         // CJK row and an all-ASCII row in the same box (because the CJK row

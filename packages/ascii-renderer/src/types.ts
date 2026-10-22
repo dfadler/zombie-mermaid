@@ -422,7 +422,7 @@ export function paddingOffset(
 
 /** Configuration for ASCII rendering. */
 export interface AsciiConfig {
-  /** true = ASCII chars (+,-,|), false = Unicode box-drawing (┌,─,│). Default: false */
+  /** True = ASCII chars (+,-,|), false = Unicode box-drawing (┌,─,│). Default: false */
   useAscii: boolean
   /** Horizontal spacing between nodes. Default: 5 */
   paddingX: number

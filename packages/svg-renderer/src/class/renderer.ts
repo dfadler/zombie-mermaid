@@ -426,7 +426,7 @@ function renderMember(
     : member.name
   // False positive: displayName is passed through escapeXml() (see packages/core/src/multiline-utils.ts),
   // which escapes &, <, >, ", ' before interpolation, so this is not raw/unescaped HTML.
-  spans.push(f`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
+  spans.push(f`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // Nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
 
   if (member.type) {
     spans.push(f`<tspan fill="${faint}">: </tspan>`)

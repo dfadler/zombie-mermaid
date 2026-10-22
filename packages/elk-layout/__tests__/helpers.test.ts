@@ -32,13 +32,13 @@ const near = (p: Pt | null, x: number, y: number) => {
 describe('onBorder / outsideNode', () => {
   const b = box()
   it.each([
-    [P(50, 0), true], // right edge
-    [P(-50, 10), true], // left edge
-    [P(10, -25), true], // top edge
-    [P(10, 25), true], // bottom edge
-    [P(0, 0), false], // centre
-    [P(50, 30), false], // on the right line but below the box
-    [P(60, 25), false], // on the bottom line but right of the box
+    [P(50, 0), true], // Right edge
+    [P(-50, 10), true], // Left edge
+    [P(10, -25), true], // Top edge
+    [P(10, 25), true], // Bottom edge
+    [P(0, 0), false], // Centre
+    [P(50, 30), false], // On the right line but below the box
+    [P(60, 25), false], // On the bottom line but right of the box
     [P(10, 60), false],
   ])('onBorder(%j) is %s', (p, want) => expect(onBorder(b, p)).toBe(want))
 
@@ -85,9 +85,9 @@ describe('attach', () => {
 describe('rectRay / replaceEndpoint', () => {
   const b = box()
   it('projects the centre ray onto the rectangle', () => {
-    near(rectRay(b, P(100, 0)), 50, 0) // dy = 0
-    near(rectRay(b, P(0, 100)), 0, 25) // dx = 0
-    near(rectRay(b, P(100, 100)), 25, 25) // diagonal: the 25-tall side wins
+    near(rectRay(b, P(100, 0)), 50, 0) // Dy = 0
+    near(rectRay(b, P(0, 100)), 0, 25) // Dx = 0
+    near(rectRay(b, P(100, 100)), 25, 25) // Diagonal: the 25-tall side wins
   })
   it('replaces an endpoint, or drops it when the new one coincides', () => {
     const a = [P(0, 0), P(10, 0), P(20, 0)]
@@ -144,7 +144,7 @@ describe('cutter2', () => {
 describe('trimMarkerSegments', () => {
   const sb = box(0, 0)
   const eb = box(200, 0)
-  // end marker: entry sits on the target border, < 8px before the end
+  // End marker: entry sits on the target border, < 8px before the end
   const endPts = [P(50, 0), P(100, 10), P(150, 5), P(150, 0)]
   it('drops the marker entry point at the target end', () => {
     expect(trimMarkerSegments(endPts, sb, eb, false, true)).toEqual([

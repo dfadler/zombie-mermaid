@@ -159,8 +159,8 @@ describe('layout of a flowchart with a cycle', () => {
     const e = p.edges.find((q) => q.source === 'D' && q.target === 'A')!
     const a = p.nodes.find((n) => n.id === 'A')!
     const d = p.nodes.find((n) => n.id === 'D')!
-    expect(e.points[0]!.y).toBeCloseTo(d.y, 0) // leaves the top of Fix & Retry
-    expect(e.points.at(-1)!.y).toBeCloseTo(a.y + a.height, 0) // enters A's bottom
+    expect(e.points[0]!.y).toBeCloseTo(d.y, 0) // Leaves the top of Fix & Retry
+    expect(e.points.at(-1)!.y).toBeCloseTo(a.y + a.height, 0) // Enters A's bottom
   })
 })
 

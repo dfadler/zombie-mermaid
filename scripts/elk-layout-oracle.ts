@@ -34,7 +34,7 @@ if (process.argv.includes('--gallery')) {
   })
 }
 
-// mermaid 12.1.0 already defaults to ELK for flowcharts, so forcing `layout: elk` is harmless
+// Mermaid 12.1.0 already defaults to ELK for flowcharts, so forcing `layout: elk` is harmless
 // but redundant; it is kept so the oracle stays on ELK if a future default changes.
 const withElk = (src: string) => `%%{init: {"layout": "elk"}}%%\n${src}`
 

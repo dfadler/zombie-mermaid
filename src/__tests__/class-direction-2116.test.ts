@@ -199,7 +199,7 @@ describe('ASCII: TB is unchanged and LR/RL are drawn sideways (#2158)', () => {
     it(`\`direction ${d}\` is no longer the top-down drawing`, () => {
       const out = ascii(dir(d))
       expect(out).not.toBe(ascii(`classDiagram\n  ${chain}`))
-      // one row of boxes, one column per level
+      // One row of boxes, one column per level
       const row = out.split('\n').find((l) => /A/.test(l) && /C/.test(l))
       expect(row).toMatch(d === 'LR' ? /A.*B.*C/ : /C.*B.*A/)
     })

@@ -11,7 +11,7 @@ import { takeCapHits } from '../packages/ascii-renderer/src/pathfinder.ts'
 import { samples } from '../packages/site/samples-data.ts'
 import { xychartSamples } from '../packages/site/xychart-samples-data.ts'
 
-/** sample title -> issue tracking why it hits the cap. */
+/** Sample title -> issue tracking why it hits the cap. */
 const KNOWN: Record<string, string> = {}
 
 describe('A* cap hits over all samples (#1859)', () => {

@@ -24,9 +24,9 @@ describe('fetchRepoStats', () => {
   it('combines repo info, search counts, and releases into one RepoStats', async () => {
     const ghFn = ghSequence([
       { pushed_at: '2026-08-01T00:00:00Z', open_issues_count: 99 },
-      { total_count: 3 }, // open issues (search)
-      { total_count: 2 }, // open PRs
-      { total_count: 41 }, // merged PRs
+      { total_count: 3 }, // Open issues (search)
+      { total_count: 2 }, // Open PRs
+      { total_count: 41 }, // Merged PRs
       [
         { tag_name: 'v1.2.0', published_at: '2026-07-15T00:00:00Z' },
         { tag_name: 'v1.1.0', published_at: '2026-06-01T00:00:00Z' },
@@ -256,7 +256,7 @@ describe('fetchResponseTimeStats', () => {
 
     const result = await fetchResponseTimeStats(20, ghFn)
 
-    // sorted: [1, 4, 10] -> median is the middle value, 4
+    // Sorted: [1, 4, 10] -> median is the middle value, 4
     expect(result!.medianHours).toBe(4)
     expect(result!.sampleSize).toBe(3)
   })
@@ -285,7 +285,7 @@ describe('fetchResponseTimeStats', () => {
 
     const result = await fetchResponseTimeStats(20, ghFn)
 
-    // sorted: [2, 6] -> average of both middle values, 4
+    // Sorted: [2, 6] -> average of both middle values, 4
     expect(result!.medianHours).toBe(4)
     expect(result!.sampleSize).toBe(2)
   })

@@ -267,7 +267,7 @@ describe('buildReducedSetAndSeededResults', () => {
 
     expect(result.combinedData).toEqual([])
     expect(JSON.parse(result.seededResultLines[0]!)).toEqual({
-      id: entry.id, // rewritten to this run's id, not the stale cached one
+      id: entry.id, // Rewritten to this run's id, not the stale cached one
       title: entry.title,
       faithful: true,
       findings: [],

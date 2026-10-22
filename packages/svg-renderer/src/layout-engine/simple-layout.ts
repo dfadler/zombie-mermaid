@@ -180,7 +180,7 @@ export function layoutSimple(
         crossStart: SUBGRAPH_PADDING.top,
         crossEnd: SUBGRAPH_PADDING.bottom,
       }
-  // abstract (axis, cross) extents of a real (width, height)
+  // Abstract (axis, cross) extents of a real (width, height)
   const abstractSize = (w: number, h: number) =>
     vertical ? { aSize: h, cSize: w } : { aSize: w, cSize: h }
 

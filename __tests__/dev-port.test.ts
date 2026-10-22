@@ -13,7 +13,7 @@ describe('defaultPort', () => {
     const p = defaultPort(WT, undefined)
     expect(p).toBeGreaterThanOrEqual(3500)
     expect(p).toBeLessThanOrEqual(3999)
-    expect(p).toBe(3767) // pins the hash so a formula change is deliberate
+    expect(p).toBe(3767) // Pins the hash so a formula change is deliberate
   })
 
   it('spreads different worktrees across ports', () => {

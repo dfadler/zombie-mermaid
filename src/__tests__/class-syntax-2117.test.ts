@@ -92,7 +92,7 @@ describe('both-ends and lollipop arrows', () => {
     const at = (re: RegExp): number => rows.findIndex((r) => re.test(r))
     expect(at(/Comparable/)).toBeLessThan(at(/○/))
     expect(at(/○/)).toBeLessThan(at(/│ Version │/))
-    expect(above).not.toContain('┌────────────┐') // no Comparable box
+    expect(above).not.toContain('┌────────────┐') // No Comparable box
     const below = renderMermaidASCII('classDiagram\n  Version --() Printable')
     const r2 = below.split('\n').map((r) => r.trimEnd())
     const i = (re: RegExp): number => r2.findIndex((r) => re.test(r))
@@ -113,7 +113,7 @@ describe('both-ends and lollipop arrows', () => {
     const rows = out.split('\n')
     const name = rows.findIndex((r) => r.includes('Comparable'))
     const title = rows.findIndex((r) => r.includes('N'))
-    expect(title).toBeLessThan(name) // name sits under the frame's title row
+    expect(title).toBeLessThan(name) // Name sits under the frame's title row
     expect(out).toContain('│ Version │')
   })
 

@@ -233,7 +233,7 @@ function scopeSvgIds(svg: string): string {
     h = Math.imul(h ^ svg.charCodeAt(i), 0x01000193)
   }
   const prefix = `zm${(h >>> 0).toString(36)}-`
-  // ids already carrying the zm- prefix (aria title/desc, title-gap mask) are unique already
+  // Ids already carrying the zm- prefix (aria title/desc, title-gap mask) are unique already
   const scoped = (id: string) =>
     ids.has(id) && !id.startsWith('zm-') ? prefix + id : id
   return svg

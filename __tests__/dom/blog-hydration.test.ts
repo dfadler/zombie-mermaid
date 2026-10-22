@@ -122,7 +122,7 @@ describe('BlogPostApp hydration (#803)', () => {
         name: /shipping v1 of a zombie/i,
       }),
     ).toBeInTheDocument()
-    expect(screen.getByText('markup')).toBeInTheDocument() // from bodyHtml's <em>
+    expect(screen.getByText('markup')).toBeInTheDocument() // From bodyHtml's <em>
   })
 })
 

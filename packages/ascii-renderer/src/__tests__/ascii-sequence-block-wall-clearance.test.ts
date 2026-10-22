@@ -97,7 +97,7 @@ sequenceDiagram
 
     const llCols = lifelineColumns(lines)
     const rightmostLL = Math.max(...llCols) // Database
-    const authServiceLL = llCols[2]! // touched by alt directly
+    const authServiceLL = llCols[2]! // Touched by alt directly
 
     const loopRight = blockWallRightColumn(lines, 'loop [token refresh]')
     const altRight = blockWallRightColumn(lines, 'alt [credentials valid]')
@@ -115,7 +115,7 @@ sequenceDiagram
     expect(loopRight).toBeGreaterThan(rightmostLL)
     expect(optRight).toBeGreaterThan(rightmostLL)
 
-    // alt never messages Database — real mermaid stops alt's wall well
+    // Alt never messages Database — real mermaid stops alt's wall well
     // short of it rather than widening to enclose it, so alt must NOT
     // match loop/opt's right column here. It still clears the lifeline it
     // does touch (Auth Service).

@@ -15,7 +15,7 @@ import { prerender } from './packages/site/ssr/prerender.ts'
 const abs = (p: string) => fileURLToPath(new URL(p, import.meta.url))
 
 /**
- * name -> [entry, minify, treeshake?]; names are what the routes read from
+ * Name -> [entry, minify, treeshake?]; names are what the routes read from
  * `clients`. `treeshake: false` is for a bundle that exists to run its modules'
  * top-level side effects (DOM lookups, listeners), not to export a value:
  * the package declares `"sideEffects": false`, which a concatenation-replacement
@@ -123,7 +123,7 @@ export default defineConfig({
       // The slow part (an archived tree per fix, see fork-fixes-before.ts) starts
       // first and overlaps the SSR and client builds.
       const befores = renderBeforeAll(forkFixes, abs('.site-ssr/fork-fixes'))
-      befores.catch(() => {}) // surfaced by the await below; no unhandled rejection meanwhile
+      befores.catch(() => {}) // Surfaced by the await below; no unhandled rejection meanwhile
       await Promise.all([
         builder.build(builder.environments.ssr!),
         ...Object.keys(CLIENTS).map(async (name) => {

@@ -185,7 +185,7 @@ async function main(): Promise<number> {
     )
     return 4
   }
-  // tsx (esbuild) wraps named functions in a `__name` helper the page lacks.
+  // Tsx (esbuild) wraps named functions in a `__name` helper the page lacks.
   await session.page.evaluate('window.__name = (f) => f')
 
   const runs: ScorecardRun[] = []

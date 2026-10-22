@@ -459,7 +459,7 @@ describe('initThemeShowcaseFullscreen: pan/pinch (#988), fullscreen-gated', () =
   it('a two-finger touch pinch zooms from 100% scale, keeping the reset label in sync', async () => {
     const api = stubFullscreenApi()
     try {
-      mockOverflow(0, 0) // nothing to pan yet -- proves pinch isn't gated by maxPanX/maxPanY the way a lone drag is
+      mockOverflow(0, 0) // Nothing to pan yet -- proves pinch isn't gated by maxPanX/maxPanY the way a lone drag is
       await import('../../demo/index-page-client.ts')
       api.enterSettles(grid())
 
@@ -572,7 +572,7 @@ describe('initThemeShowcaseFullscreen: pan/pinch (#988), fullscreen-gated', () =
         clientX: 10100,
         clientY: 0,
       })
-      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px') // clamped, per the test above
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px') // Clamped, per the test above
 
       fireEvent.pointerUp(body(), { pointerId: 2, pointerType: 'touch' })
       // The remaining finger (id 1, last at x=10000) moves by -50 -- if
@@ -596,7 +596,7 @@ describe('initThemeShowcaseFullscreen: pan/pinch (#988), fullscreen-gated', () =
       mockOverflow(200, 100)
       await import('../../demo/index-page-client.ts')
       api.enterSettles(grid())
-      zoomIn() // something to pan into, so a plain wheel afterward has an observable effect
+      zoomIn() // Something to pan into, so a plain wheel afterward has an observable effect
 
       fireEvent.wheel(body(), { deltaY: -500, ctrlKey: true })
       const scale = body().style.getPropertyValue('--tsd-scale')
@@ -606,7 +606,7 @@ describe('initThemeShowcaseFullscreen: pan/pinch (#988), fullscreen-gated', () =
       const panXBefore = body().style.getPropertyValue('--tsd-pan-x')
       fireEvent.wheel(body(), { deltaX: 10, deltaY: 0, ctrlKey: false })
       expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-10px')
-      expect(body().style.getPropertyValue('--tsd-scale')).toBe(scale) // unchanged by the plain wheel
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe(scale) // Unchanged by the plain wheel
       expect(panXBefore).not.toBe(body().style.getPropertyValue('--tsd-pan-x'))
     } finally {
       api.restore()

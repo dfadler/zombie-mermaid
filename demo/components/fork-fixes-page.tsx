@@ -165,7 +165,7 @@ export function ForkFixesPage({
       <div
         id={FORK_FIXES_ROOT_ID}
         dangerouslySetInnerHTML={{
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own ForkFixesApp component tree rendered via renderToString (see the comment above); never user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own ForkFixesApp component tree rendered via renderToString (see the comment above); never user input
           __html: renderToString(<ForkFixesApp fixes={fixes} />),
         }}
       />
@@ -173,7 +173,7 @@ export function ForkFixesPage({
         type="application/json"
         id={FORK_FIXES_PROPS_ELEMENT_ID}
         dangerouslySetInnerHTML={{
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own ForkFixesAppProps, escaped with escapeJsonForScriptTag; never user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own ForkFixesAppProps, escaped with escapeJsonForScriptTag; never user input
           __html: escapeJsonForScriptTag(
             JSON.stringify({ fixes } satisfies ForkFixesAppProps),
           ),
@@ -183,7 +183,7 @@ export function ForkFixesPage({
       <Footer columns={FOOTER_COLUMNS} />
       <script
         type="module"
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/fork-fixes-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/fork-fixes-client.tsx bundle, under version control and produced at build time; never live/runtime user input
         dangerouslySetInnerHTML={{ __html: clientScript }}
       />
       <NavMobileMenuScript />

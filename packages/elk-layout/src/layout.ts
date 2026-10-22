@@ -63,7 +63,7 @@ const rootOptions = (dir: Model['dir']) => ({
 })
 
 // ---- geometry (elk/geometry.ts + render.ts), specialised to non-group nodes ----
-export type Box = { x: number; y: number; w: number; h: number } // centre + size
+export type Box = { x: number; y: number; w: number; h: number } // Centre + size
 export const onBorder = (b: Box, p: Pt, tol = 0.5) => {
   const l = b.x - b.w / 2,
     r = b.x + b.w / 2,
@@ -107,7 +107,7 @@ export function attach(n: MNode, b: Box, port: Pt, next: Pt): Pt | null {
 }
 
 export function rectRay(b: Box, outside: Pt): Pt {
-  // fallback intersection(): centre-ray to the box, good enough for rects
+  // Fallback intersection(): centre-ray to the box, good enough for rects
   const dx = outside.x - b.x,
     dy = outside.y - b.y
   const s = Math.min(

@@ -833,12 +833,12 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
     const section = fixSection(renderDocument(), 'ascii-fix')
     const scope = within(section)
 
-    // before: { kind: 'error', message: ... } — FixPanel's error branch.
+    // Before: { kind: 'error', message: ... } — FixPanel's error branch.
     expect(
       scope.getByText('Cannot read property "x" of undefined'),
     ).toBeInTheDocument()
 
-    // after: { kind: 'ascii', html: ... } — ascii-html.ts's own HTML
+    // After: { kind: 'ascii', html: ... } — ascii-html.ts's own HTML
     // approximation, injected verbatim; the fixture's glyphs are real text
     // content of the resulting <pre class="fix-ascii">.
     expect(section.querySelector('pre.fix-ascii')).not.toBeNull()
@@ -853,12 +853,12 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
     const section = fixSection(renderDocument(), 'excerpt-fix')
     const scope = within(section)
 
-    // before: { kind: 'empty' }
+    // Before: { kind: 'empty' }
     expect(
       scope.getByText('Rendered nothing — the diagram was dropped entirely.'),
     ).toBeInTheDocument()
 
-    // after: { kind: 'excerpt', text: '<marker id="arrow"></marker>' } —
+    // After: { kind: 'excerpt', text: '<marker id="arrow"></marker>' } —
     // React text-escapes this (it's a child, not raw HTML via
     // dangerouslySetInnerHTML), so the accessible text is the literal
     // excerpt string, angle brackets and all.

@@ -98,7 +98,7 @@ function makeGraph(
 const label = (x: number, y: number, text = 'ab') => [{ x, y, text }]
 
 describe('besideCellsFree (#1284)', () => {
-  const a = makeNode('A', 0, 0) // occupies x 0..4, y 0..3
+  const a = makeNode('A', 0, 0) // Occupies x 0..4, y 0..3
   const b = makeNode('B', 0, 20)
 
   it('accepts a label with nothing under it', () => {
@@ -179,8 +179,8 @@ describe('besideCellsFree (#1284)', () => {
     it('accepts a label beside, above or below that path', () => {
       const edge = makeEdge(a, b, [])
       const graph = makeGraph([a, b], [edge, other()])
-      expect(besideCellsFree(graph, edge, label(10, 6))).toBe(true) // x 10..11
-      expect(besideCellsFree(graph, edge, label(13, 20))).toBe(true) // below it
+      expect(besideCellsFree(graph, edge, label(10, 6))).toBe(true) // X 10..11
+      expect(besideCellsFree(graph, edge, label(13, 20))).toBe(true) // Below it
     })
 
     it("does not count the edge's own path", () => {
@@ -195,8 +195,8 @@ describe('besideCellsFree (#1284)', () => {
     const graph = makeGraph([a, b], [edge])
     const lines = [
       { x: 10, y: 10, text: 'ab' },
-      { x: 10, y: 3, text: 'cd' }, // last row of node A, but x is clear
-      { x: 2, y: 2, text: 'ef' }, // on node A
+      { x: 10, y: 3, text: 'cd' }, // Last row of node A, but x is clear
+      { x: 2, y: 2, text: 'ef' }, // On node A
     ]
     expect(besideCellsFree(graph, edge, lines)).toBe(false)
     expect(besideCellsFree(graph, edge, lines.slice(0, 2))).toBe(true)

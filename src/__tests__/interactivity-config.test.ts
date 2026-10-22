@@ -189,7 +189,7 @@ describe('edge curve styles (#198 row 9)', () => {
   })
 
   it('emits one basis segment per point beyond the first two', () => {
-    // d3 draws a cubic per point from the third onward, plus a closing cubic
+    // D3 draws a cubic per point from the third onward, plus a closing cubic
     // against a repeated last point. Four points therefore give three.
     const four = [
       { x: 0, y: 0 },

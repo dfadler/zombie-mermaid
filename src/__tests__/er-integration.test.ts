@@ -87,7 +87,7 @@ describe('renderMermaidSVG – ER diagrams', () => {
       }`)
     // Should have rectangles for entity box and header
     const rectCount = (svg.match(/<rect /g) ?? []).length
-    expect(rectCount).toBeGreaterThanOrEqual(2) // outer box + header
+    expect(rectCount).toBeGreaterThanOrEqual(2) // Outer box + header
   })
 
   it('renders an aliased entity using the alias as its label, not the raw `id[Alias]` text', () => {
@@ -495,7 +495,7 @@ describe('renderMermaidSVG – ER label positioning (multi-segment paths)', () =
         const dx = positions[i]!.x - positions[j]!.x
         const dy = positions[i]!.y - positions[j]!.y
         const dist = Math.sqrt(dx * dx + dy * dy)
-        expect(dist).toBeGreaterThan(10) // at least 10px apart
+        expect(dist).toBeGreaterThan(10) // At least 10px apart
       }
     }
   })

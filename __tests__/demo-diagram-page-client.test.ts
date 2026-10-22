@@ -144,7 +144,7 @@ beforeEach(() => {
   window.__diagramPageThemes = THEMES
   window.__diagramPageSource = 'graph TD\n  A --> B'
   window.__diagramPageNarrowSource = null
-  // jsdom doesn't implement matchMedia -- stub a MediaQueryList-shaped
+  // Jsdom doesn't implement matchMedia -- stub a MediaQueryList-shaped
   // object wide enough for the narrow-viewport code paths to no-op safely.
   window.matchMedia = vi.fn().mockReturnValue({
     matches: false,
@@ -246,7 +246,7 @@ describe('cross-source re-theme via theme-state.ts subscribe()', () => {
     setTheme('one-dark')
     expect(svg().style.getPropertyValue('--line')).toBe('#4b5263')
 
-    // dracula (in the THEMES fixture above) has no `line` -- switching to
+    // Dracula (in the THEMES fixture above) has no `line` -- switching to
     // it must remove the property, not leave one-dark's value behind.
     setTheme('dracula')
     expect(svg().style.getPropertyValue('--line')).toBe('')

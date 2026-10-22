@@ -57,7 +57,7 @@ describe('grid-occupancy', () => {
 
     it('detects partial overlap with an already-placed block', () => {
       const grid = createGrid()
-      placeBlock(grid, { x: 0, y: 0 }) // occupies (0,0)..(2,2)
+      placeBlock(grid, { x: 0, y: 0 }) // Occupies (0,0)..(2,2)
       // Shifted by 1 in each axis: overlaps the first block at (1,1)-(2,2)
       // even though its own origin cell (1,1) is inside the first block too.
       expect(isBlockFree(grid, { x: 1, y: 1 })).toBe(false)

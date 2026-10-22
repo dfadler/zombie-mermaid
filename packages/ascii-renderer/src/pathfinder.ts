@@ -383,7 +383,7 @@ function isAxisRunFree(
 ): boolean {
   if (from.x === to.x && from.y === to.y) return true
   const alongY = from.x === to.x
-  if (!alongY && from.y !== to.y) return false // not axis-aligned
+  if (!alongY && from.y !== to.y) return false // Not axis-aligned
 
   const step = alongY ? (to.y > from.y ? 1 : -1) : to.x > from.x ? 1 : -1
   let pos = alongY ? from.y : from.x

@@ -48,7 +48,7 @@ function classGroup(svg: string, id: string): string {
   // regardless of escaping. Every caller passes a hardcoded test-file
   // identifier, never untrusted input.
   const pattern = `<g class="class-node[^"]*" data-id="${escapeRegExp(id)}"[^>]*>`
-  const match = svg.match(new RegExp(pattern)) // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  const match = svg.match(new RegExp(pattern)) // Nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   expect(match, `no class-node group for ${id}`).not.toBeNull()
   return match![0]
 }
@@ -378,12 +378,12 @@ describe('renderMermaidSVG – class diagram styling', () => {
       classDef default fill:#f96,color:red
       classDef pink color:#f9f
       style Rock fill:#00f`)
-    // default fill everywhere it isn't overridden
+    // Default fill everywhere it isn't overridden
     expect(classRects(svg, 'Animal')[0]).toContain('fill="#f96"')
     expect(classRects(svg, 'Mineral')[0]).toContain('fill="#f96"')
-    // explicit style beats default
+    // Explicit style beats default
     expect(classRects(svg, 'Rock')[0]).toContain('fill="#00f"')
-    // the class's own color beats default's color; default's still applies elsewhere
+    // The class's own color beats default's color; default's still applies elsewhere
     const animalName = svg.slice(
       svg.indexOf('data-id="Animal"'),
       svg.indexOf('</g>', svg.indexOf('data-id="Animal"')),

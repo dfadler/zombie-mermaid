@@ -72,9 +72,9 @@ describe('C4 SVG rendering', () => {
 
   it('applies the C4 palette to people and external systems', () => {
     const svg = renderMermaidSVG(CONTEXT)
-    expect(svg).toContain('#08427b') // person
-    expect(svg).toContain('#1168bd') // internal system
-    expect(svg).toContain('#999999') // external system
+    expect(svg).toContain('#08427b') // Person
+    expect(svg).toContain('#1168bd') // Internal system
+    expect(svg).toContain('#999999') // External system
   })
 
   it('draws a cylinder for Db variants', () => {

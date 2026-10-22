@@ -185,7 +185,7 @@ async function renderPostBody(
   bodyMarkdown: string,
   sourceFile: string,
 ): Promise<string> {
-  // marked never awaits an async renderer.code(); `async: true` makes it await
+  // Marked never awaits an async renderer.code(); `async: true` makes it await
   // walkTokens instead, so shiki's async highlighting happens there and the
   // synchronous renderer.code() below just returns the resolved HTML.
   const marked = new Marked({
@@ -198,7 +198,7 @@ async function renderPostBody(
       codeToken.highlightedHtml = await highlightCode(
         highlighter,
         codeToken.text,
-        // shiki ships a `mermaid` grammar but doesn't know the build-only tag.
+        // Shiki ships a `mermaid` grammar but doesn't know the build-only tag.
         isMermaidRender ? 'mermaid' : codeToken.lang,
       )
     },

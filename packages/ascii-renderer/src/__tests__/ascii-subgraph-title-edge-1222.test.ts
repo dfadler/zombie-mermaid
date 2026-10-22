@@ -58,12 +58,12 @@ describe('#1222/#1248: forward edge stays continuous through a frame title row',
           useAscii,
           colorMode: 'none',
         }).split('\n')
-        // the whole title is on one row: nothing splits it
+        // The whole title is on one row: nothing splits it
         const title = lines.findIndex((l) => l.includes(c.title))
         expect(title, 'title row present and unsplit').toBeGreaterThan(0)
         const first = lines[title]!.indexOf(c.title)
         const last = first + c.title.length - 1
-        // the stroke crosses the border row inside the frame, beside the title
+        // The stroke crosses the border row inside the frame, beside the title
         const border = lines[title - 1]!
         const cols = [...border]
           .map((ch, i) => (ch === '┼' || ch === '|' ? i : -1))

@@ -228,7 +228,7 @@ describe('pie SVG: init donutHole', () => {
     /<path d="([^"]+)" class="pie-slice/.exec(svg)![1]
 
   it('cuts an inner arc at donutHole * radius', () => {
-    // radius 185 * 0.5 = 92.5 inner arc, drawn back the other way (sweep 0)
+    // Radius 185 * 0.5 = 92.5 inner arc, drawn back the other way (sweep 0)
     expect(slicePath(hole('0.5'))).toContain('A92.5,92.5,0,0,0,')
   })
 
@@ -294,7 +294,7 @@ describe('pie SVG: init legendPosition', () => {
     expect(g.w).toBe(Math.ceil(g.cx + 265))
     expect(g.w).toBe(def.w)
     expect(g.h).toBe(450)
-    // the title stays centred on the frame, not on the shifted pie
+    // The title stays centred on the frame, not on the shifted pie
     expect(g.title).toEqual({ x: 225, y: 25 })
   })
 
@@ -326,7 +326,7 @@ describe('pie SVG: init legendPosition', () => {
       cy: 225,
     })
     expect(g.rects.map((r) => r.y)).toEqual([192, 214, 236])
-    // painted after the slices, so it sits on top of them
+    // Painted after the slices, so it sits on top of them
     expect(svg.indexOf('class="pie-legend"')).toBeGreaterThan(
       svg.lastIndexOf('class="pie-slice '),
     )
@@ -372,7 +372,7 @@ describe('pie SVG: init highlightSlice', () => {
 
   it('leaves a chart without a match byte-identical to the plain one', () => {
     expect(renderMermaidSVG(src('"Fish"'))).toBe(plain)
-    expect(renderMermaidSVG(src('"cats"'))).toBe(plain) // labels match exactly
+    expect(renderMermaidSVG(src('"cats"'))).toBe(plain) // Labels match exactly
     expect(renderMermaidSVG(src('""'))).toBe(plain)
     expect(renderMermaidSVG(src('7'))).toBe(plain)
   })

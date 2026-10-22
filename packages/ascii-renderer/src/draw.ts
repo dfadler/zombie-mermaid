@@ -406,7 +406,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
       graph,
       (x, y) =>
         isVerticalStroke(graph.canvas[x + sg.minX]?.[y + sg.minY]) &&
-        // continues below, so it is an edge passing through, not a stray glyph
+        // Continues below, so it is an edge passing through, not a stray glyph
         (graph.canvas[x + sg.minX]?.[y + sg.minY + 1] ?? ' ') !== ' ',
     )
     graph.canvas = mergeCanvases(graph.canvas, offset, useAscii, labelCanvas)

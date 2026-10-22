@@ -25,7 +25,7 @@ describe('LR labeled fan-in lanes (#1467)', () => {
     const seventh = lines.findIndex((l) => l.includes('seventh'))
     expect(sixth).not.toBe(seventh)
     for (const i of [sixth, seventh]) {
-      // exactly one label on the row: nothing else shares the lane
+      // Exactly one label on the row: nothing else shares the lane
       expect(lines[i]!.match(/[a-z]{4,}/g)).toHaveLength(1)
     }
   })

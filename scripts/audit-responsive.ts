@@ -233,7 +233,7 @@ function parseWidthList(raw: string): number[] {
     .filter((w) => Number.isFinite(w) && w > 0)
 }
 
-// node:util's parseArgs schema for every flag this script accepts. `strict:
+// Node:util's parseArgs schema for every flag this script accepts. `strict:
 // false` (passed below) keeps this a drop-in for the old flagValue scanner,
 // which silently ignored anything it didn't recognize rather than throwing.
 const PARSE_ARGS_OPTIONS = {

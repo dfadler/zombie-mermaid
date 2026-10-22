@@ -33,7 +33,7 @@ export interface ActivationIssue {
 }
 
 export interface ActivationCheckResult {
-  /** true when every activation is balanced (no issues found). */
+  /** True when every activation is balanced (no issues found). */
   ok: boolean
   issues: ActivationIssue[]
 }

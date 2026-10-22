@@ -72,7 +72,7 @@ describe('findFreeLane', () => {
   })
 
   it('returns undefined when the bounds leave no candidates at all', () => {
-    // min > max — ER's narrow-gap case, where only `preferred` is probed.
+    // Min > max — ER's narrow-gap case, where only `preferred` is probed.
     const probed: number[] = []
     const result = findFreeLane(5, 6, 4, (c) => {
       probed.push(c)

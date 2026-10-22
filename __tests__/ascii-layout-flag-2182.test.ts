@@ -118,7 +118,7 @@ describe('layout-faithful ASCII opt-in (#2182)', () => {
       Math.max(...wide.text.split('\n').map((l) => l.length)),
     ).toBeGreaterThan(120)
 
-    // an explicit smaller cap that a compressible diagram cannot meet also falls back
+    // An explicit smaller cap that a compressible diagram cannot meet also falls back
     const tight = await renderMermaidASCIIWithLayout(FLAT, {
       layout: 'mermaid',
       maxCols: 5,

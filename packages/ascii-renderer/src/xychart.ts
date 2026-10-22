@@ -841,15 +841,15 @@ function drawLegend(
   // Calculate total legend width: "symbol space label  symbol space label ..."
   let totalLen = 0
   for (let i = 0; i < items.length; i++) {
-    if (i > 0) totalLen += 2 // gap between items
-    totalLen += 1 + 1 + items[i]!.label.length // symbol + space + label
+    if (i > 0) totalLen += 2 // Gap between items
+    totalLen += 1 + 1 + items[i]!.label.length // Symbol + space + label
   }
 
   const startCol = Math.max(0, Math.floor(totalW / 2 - totalLen / 2))
   let col = startCol
 
   for (let i = 0; i < items.length; i++) {
-    if (i > 0) col += 2 // gap
+    if (i > 0) col += 2 // Gap
     const item = items[i]!
     // Symbol with series-specific color
     set(

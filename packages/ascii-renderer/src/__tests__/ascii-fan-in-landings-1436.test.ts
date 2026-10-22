@@ -44,7 +44,7 @@ describe('TD fan-in landings (#1436)', () => {
     const mode = useAscii ? 'ascii' : 'unicode'
 
     it(`lands edges from the left beside a straight one (${mode})`, () => {
-      // sixth (bent, from the left) and seventh (straight) get a head each.
+      // Sixth (bent, from the left) and seventh (straight) get a head each.
       expect(headsAbove(render(FROM_LEFT, useAscii), 'D', head)).toBe(2)
     })
 

@@ -203,10 +203,10 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
     // and centered both horizontally and vertically within the box.
     // Stroke width is inverse-scaled so the visual thickness matches STROKE_WIDTHS.outerBox.
     const s = (height / 24) * 0.9
-    const tx = x - 12 * s // center icon horizontally on actor.x
-    const ty = y + (height - 24 * s) / 2 // center icon vertically in actor box
-    const sw = STROKE_WIDTHS.outerBox / s // compensate for scale transform
-    const iconStroke = 'var(--_line)' // use line color for actor icon strokes
+    const tx = x - 12 * s // Center icon horizontally on actor.x
+    const ty = y + (height - 24 * s) / 2 // Center icon vertically in actor box
+    const sw = STROKE_WIDTHS.outerBox / s // Compensate for scale transform
+    const iconStroke = 'var(--_line)' // Use line color for actor icon strokes
 
     parts.push(
       f`  <g transform="translate(${tx},${ty}) scale(${s})">` +

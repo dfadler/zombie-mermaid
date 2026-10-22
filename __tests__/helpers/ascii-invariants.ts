@@ -307,7 +307,7 @@ export function checkLabels(grid: string[][]): Violation[] {
     for (let x = 0; x < row.length; x++) {
       if (!isText(x, y)) continue
       let x1 = x
-      // words of one label are one blank apart
+      // Words of one label are one blank apart
       while (
         isText(x1 + 1, y) ||
         (at(grid, x1 + 1, y) === ' ' && isText(x1 + 2, y))

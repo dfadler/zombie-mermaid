@@ -36,11 +36,11 @@ export const DEFAULT_ASCII_THEME: AsciiTheme = {
   // on both dark and light backgrounds at 4.5:1, and the old near-black
   // zinc-800 (#27272a) was 1.05-1.41:1 on common dark terminals.
   fg: INHERIT_COLOR,
-  border: '#a1a1aa', // zinc-400 — node borders (12% mix)
-  line: '#71717a', // zinc-500 — edge lines (35% mix)
-  arrow: '#52525b', // zinc-600 — arrowheads (60% mix)
-  corner: '#71717a', // same as line
-  junction: '#a1a1aa', // same as border
+  border: '#a1a1aa', // Zinc-400 — node borders (12% mix)
+  line: '#71717a', // Zinc-500 — edge lines (35% mix)
+  arrow: '#52525b', // Zinc-600 — arrowheads (60% mix)
+  corner: '#71717a', // Same as line
+  junction: '#a1a1aa', // Same as border
 }
 
 // ============================================================================
@@ -246,15 +246,15 @@ function ansi16Fg(hex: string): string {
 
   // Determine base color based on dominant channel
   let code: number
-  if (r > 180 && g < 100 && b < 100) code = 31 // red
-  else if (g > 180 && r < 100 && b < 100) code = 32 // green
-  else if (r > 150 && g > 150 && b < 100) code = 33 // yellow
-  else if (b > 180 && r < 100 && g < 100) code = 34 // blue
-  else if (r > 150 && b > 150 && g < 100) code = 35 // magenta
-  else if (g > 150 && b > 150 && r < 100) code = 36 // cyan
-  else if (luma > 200) code = 37 // white
-  else if (luma < 50) code = 30 // black
-  else code = 37 // default to white for grays
+  if (r > 180 && g < 100 && b < 100) code = 31 // Red
+  else if (g > 180 && r < 100 && b < 100) code = 32 // Green
+  else if (r > 150 && g > 150 && b < 100) code = 33 // Yellow
+  else if (b > 180 && r < 100 && g < 100) code = 34 // Blue
+  else if (r > 150 && b > 150 && g < 100) code = 35 // Magenta
+  else if (g > 150 && b > 150 && r < 100) code = 36 // Cyan
+  else if (luma > 200) code = 37 // White
+  else if (luma < 50) code = 30 // Black
+  else code = 37 // Default to white for grays
 
   return `${ESC}${code + bright}m`
 }

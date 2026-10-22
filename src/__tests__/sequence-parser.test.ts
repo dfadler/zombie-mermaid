@@ -138,7 +138,7 @@ describe('parseSequenceDiagram – blocks', () => {
     expect(d.blocks).toHaveLength(1)
     expect(d.blocks[0]!.type).toBe('loop')
     expect(d.blocks[0]!.label).toBe('Every 5s')
-    expect(d.blocks[0]!.startIndex).toBe(1) // second message
+    expect(d.blocks[0]!.startIndex).toBe(1) // Second message
   })
 
   it('parses alt/else block', () => {

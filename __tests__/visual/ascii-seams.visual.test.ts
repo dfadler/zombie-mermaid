@@ -113,7 +113,7 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
               let ratio: number
               let detail = ''
               if (p.kind === 'b') {
-                // fill intensity from the middle of the cell; the seam is the
+                // Fill intensity from the middle of the cell; the seam is the
                 // dimmest pixel straddling the shared edge, over the middle rows
                 const s = dist(
                   Math.round(x0 + m.cellW / 2),
@@ -131,7 +131,7 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
                 ratio = lo / s
                 detail = ` px[${xb - 2}..${xb + 1}]@mid=${[-2, -1, 0, 1].map((k) => dist(xb + k, Math.round(y0 + m.lineH / 2))).join(',')} s=${s}`
               } else if (p.kind === 'w') {
-                // block above block: the seam is the dimmest pixel straddling
+                // Block above block: the seam is the dimmest pixel straddling
                 // the shared horizontal edge, over the middle columns
                 const s = dist(
                   Math.round(x0 + m.cellW / 2),
@@ -149,7 +149,7 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
                 ratio = lo / s
                 detail = ` py[${yb - 2}..${yb + 1}]@mid=${[-2, -1, 0, 1].map((k) => dist(Math.round(x0 + m.cellW / 2), yb + k)).join(',')} s=${s}`
               } else if (p.kind === 'h') {
-                // stroke row: brightest pixel row down the middle of the cell
+                // Stroke row: brightest pixel row down the middle of the cell
                 // stroke row = the row with the highest median intensity across
                 // the cell's interior columns, so a stray bright pixel can't win
                 const cols: number[] = []
@@ -157,7 +157,7 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
                   cols.push(x)
                 let sy = -1
                 let s = 0
-                // middle band only: the rows above/below can overhang into the
+                // Middle band only: the rows above/below can overhang into the
                 // cell's first/last pixel row (e.g. a block char's bottom edge)
                 for (
                   let y = Math.ceil(y0 + 0.25 * m.lineH);
@@ -204,7 +204,7 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
           {
             b64: png.toString('base64'),
             probes,
-            // the screenshot is in device pixels; the probe works in them too
+            // The screenshot is in device pixels; the probe works in them too
             m: {
               ...m,
               cellW: m.cellW * dpr,

@@ -777,10 +777,10 @@ function initThemeShowcaseFullscreen(): void {
   const onPointerDown = (e: PointerEvent): void => {
     if (!isFullscreenActive()) return
     if (e.pointerType === 'mouse' && e.button !== 0) return
-    if (pointers.size >= 2) return // no more than two active pointers -- a third finger is ignored
+    if (pointers.size >= 2) return // No more than two active pointers -- a third finger is ignored
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
     try {
-      // jsdom (this repo's DOM test environment) implements no
+      // Jsdom (this repo's DOM test environment) implements no
       // setPointerCapture at all, and a real browser can still throw for a
       // pointerId it doesn't recognize as currently active -- see
       // output-panel-viewport.ts's own identical try/catch for why this
@@ -794,7 +794,7 @@ function initThemeShowcaseFullscreen(): void {
     beginGesture()
     if (!panStart && !pinchStart) return
     body.classList.add('panning')
-    e.preventDefault() // stop native text/image drag-select while panning/pinching
+    e.preventDefault() // Stop native text/image drag-select while panning/pinching
   }
   const onPointerMove = (e: PointerEvent): void => {
     if (!isFullscreenActive() || !pointers.has(e.pointerId)) return

@@ -59,7 +59,7 @@ function nearBorderRuns(svg: string): string[] {
         [0, 1],
         [1, 0],
       ] as const) {
-        if (Math.abs(a[c]! - b[c]!) > EPS) continue // not constant on axis c
+        if (Math.abs(a[c]! - b[c]!) > EPS) continue // Not constant on axis c
         const lo = Math.min(a[d]!, b[d]!)
         const hi = Math.max(a[d]!, b[d]!)
         for (const bx of boxes) {
@@ -104,7 +104,7 @@ describe('subgraph border clearance (#1796)', () => {
       samples.find((s) => s.title === 'System Architecture')!.source,
     )
     const { boxes } = geometry(svg)
-    const client = boxes[0]! // first <g class="subgraph"> is clients (graph LR)
+    const client = boxes[0]! // First <g class="subgraph"> is clients (graph LR)
     const right = client.x + client.w
     const out = [
       ...svg.matchAll(
@@ -119,7 +119,7 @@ describe('subgraph border clearance (#1796)', () => {
           .split(/\s+/)
           .map((p) => +p.split(',')[0]!)[1]!,
     )
-    // one shared trunk x, exactly BORDER_GAP right of the Client Layer side
+    // One shared trunk x, exactly BORDER_GAP right of the Client Layer side
     expect(new Set(trunks).size).toBe(1)
     expect(trunks[0]! - right).toBeCloseTo(BORDER_GAP, 1)
   })

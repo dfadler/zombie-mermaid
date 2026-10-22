@@ -140,9 +140,9 @@ describe('<EditorApp> theme dropdown (#810)', () => {
     expect(document.activeElement).toBe(items()[1])
     await key(items()[1], 'End')
     expect(document.activeElement).toBe(items()[items().length - 1])
-    await key(document.activeElement!, 'ArrowDown') // wraps
+    await key(document.activeElement!, 'ArrowDown') // Wraps
     expect(document.activeElement).toBe(items()[0])
-    await key(items()[0], 'ArrowUp') // wraps back
+    await key(items()[0], 'ArrowUp') // Wraps back
     expect(document.activeElement).toBe(items()[items().length - 1])
     await key(document.activeElement!, 'Home')
     expect(document.activeElement).toBe(items()[0])

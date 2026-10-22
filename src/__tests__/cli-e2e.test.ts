@@ -27,7 +27,7 @@ beforeAll(() => {
   if (!existsSync(CLI)) {
     throw new Error(`Expected ${CLI} to exist after 'pnpm run build'`)
   }
-}, 180_000) // build is ~15s alone but slows several-fold under full-suite worker contention
+}, 180_000) // Build is ~15s alone but slows several-fold under full-suite worker contention
 
 const SIMPLE_FLOWCHART = `graph LR
   A[Start] --> B[Middle] --> C[End]`

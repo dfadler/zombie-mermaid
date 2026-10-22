@@ -64,7 +64,7 @@ export function resolveBaseRef(): string | null {
       git(['rev-parse', '--verify', ref])
       return ref
     } catch {
-      // try the next candidate
+      // Try the next candidate
     }
   }
   return null
@@ -194,7 +194,7 @@ export function computeDiffCoverage(
 
   for (const [file, lines] of changedLines) {
     const fileCoverage = lcov.get(file)
-    if (!fileCoverage) continue // file has no instrumented lines at all (e.g. a type-only file)
+    if (!fileCoverage) continue // File has no instrumented lines at all (e.g. a type-only file)
 
     let covered = 0
     let total = 0

@@ -63,7 +63,7 @@ describe('pathfinder', () => {
       // Create a wall that blocks access to the target region
       const occupied: GridCoord[] = []
       for (let i = 0; i < 100; i++) {
-        occupied.push({ x: 5, y: i }) // vertical wall at x=5
+        occupied.push({ x: 5, y: i }) // Vertical wall at x=5
       }
       const grid = buildGrid(occupied)
       // Target is behind the wall; only reachable via y<0 (disallowed) or y>=100 (very far)
@@ -193,7 +193,7 @@ describe('pathfinder', () => {
 
     it('never lets budget.remaining go negative', () => {
       const grid = buildGrid([])
-      const budget = createPathBudget(3) // deliberately smaller than this search needs
+      const budget = createPathBudget(3) // Deliberately smaller than this search needs
       getPath(grid, { x: 0, y: 0 }, { x: 0, y: 50 }, budget)
       expect(budget.remaining).toBeGreaterThanOrEqual(0)
     })
