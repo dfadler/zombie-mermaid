@@ -3,7 +3,8 @@ name: zombie-mermaid-editor
 description: >-
   Architecture, patterns, and change guide for the zombie-mermaid live editor.
   Use when modifying packages/site/ssr/editor-routes.ts, adding Config options, changing the UI, adding
-  export formats, wiring new diagram options, or debugging the editor page.
+  export formats, wiring new diagram options, restyling the editor page or its buttons, debugging the
+  editor page, or deciding which source file to edit instead of the generated site/editor.html.
 ---
 
 # zombie-mermaid — Live Editor
