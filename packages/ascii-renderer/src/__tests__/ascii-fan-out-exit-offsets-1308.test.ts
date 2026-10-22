@@ -40,11 +40,16 @@ const BRANCHING = `graph LR
   G -->|pass| A
   G -->|fail| F`
 
+// In a subgraph so the fan-out keeps the one-sided layout (an unwrapped LR
+// fan-out is centred over its children since #2163, which splits the bends
+// between the top and bottom borders).
 const THREE_BENDS = `graph LR
+  subgraph s
   Source --> T
   Source --> M
   Source --> B
-  Source --> C`
+  Source --> C
+  end`
 
 /** The start run of an edge that leaves its source going down, then right. */
 function downThenRight(e: AsciiEdge, straight = false): FanOutMember {
