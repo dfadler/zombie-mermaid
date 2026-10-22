@@ -10,7 +10,7 @@ const sample = samples.find((s) =>
 )!
 
 function num(tag: string, attr: string): number {
-  return Number(new RegExp(`\\b${attr}="([^"]+)"`).exec(tag)![1])
+  return Number(tag.split(` ${attr}="`)[1]!.split('"')[0])
 }
 
 describe('alt/else label vs lifeline (#2280)', () => {
