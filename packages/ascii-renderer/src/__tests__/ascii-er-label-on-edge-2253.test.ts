@@ -70,4 +70,30 @@ describe('ASCII ER label on the edge (issue #2253)', () => {
     expect(lines[i - 1]!.trim()).toBe('│')
     expect(lines[i + 1]!.trim()).toBe('│')
   })
+
+  // #2264: repeated relationships can share a column only through attachment
+  // rounding, which packs their stems into adjacent columns. The centered
+  // placement must then neither drop a label nor cut a line that has no
+  // other stem to carry on: every label stays whole.
+  for (const useAscii of [false, true]) {
+    for (let n = 2; n <= 6; n++) {
+      it(`keeps ${n} repeated relationships intact (useAscii=${useAscii})`, () => {
+        const labels = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta']
+        const src =
+          'erDiagram\n' +
+          labels
+            .slice(0, n)
+            .map((l) => `  A ||--o{ B : ${l}`)
+            .join('\n')
+        const lines = renderMermaidASCII(src, { useAscii }).split('\n')
+        for (const l of labels.slice(0, n)) {
+          const i = lines.findIndex((row) => row.includes(l))
+          expect(i, l).toBeGreaterThan(0)
+          const col = lines[i]!.indexOf(l)
+          // Whole word on its row, not split by a line glyph.
+          expect(lines[i]!.slice(col, col + l.length)).toBe(l)
+        }
+      })
+    }
+  }
 })

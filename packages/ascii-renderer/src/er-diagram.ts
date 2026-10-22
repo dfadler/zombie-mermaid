@@ -1812,6 +1812,17 @@ export function renderErAscii(
           // stem in the cells above and below (never a corner or marker) and
           // a blank margin either side of the text; otherwise fall through to
           // the label-beside-the-stem search below.
+          //
+          // Invariant (#2264): the anchor cell is never one another edge also
+          // draws on. Parallel or repeated relationships only share a column
+          // through attachmentX's rounding, which happens when a narrow box
+          // side holds more attachments than it has columns; those stems then
+          // sit in adjacent columns, and the blank margin required on both
+          // sides of the text below rejects every row. Checked by rendering
+          // thousands of random diagrams with and without an exclusive-owner
+          // check on this cell: the output was identical, so none is kept.
+          // If a layout change ever makes the case reachable, track per-cell
+          // owners in setCGuarded and require exactly one here.
           if (blockHeight === 1) {
             const rowOfBox = (y: number): boolean =>
               [...placed.values()].some((p) => y >= p.y && y < p.y + p.height)
