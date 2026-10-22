@@ -127,7 +127,7 @@ export function renderSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   // Keyframes for animated edges (`e1@{ animate: true }`). Emitted only when
   // an animated edge exists and animation is enabled, so an ordinary diagram
   // (or one rendered with `interactivity: 'none'`) gains no extra markup.

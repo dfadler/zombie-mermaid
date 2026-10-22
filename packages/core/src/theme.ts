@@ -35,6 +35,11 @@ export interface SvgEmitOptions {
   styleAttribute?: boolean
   /** Root `<desc>` text (Mermaid's `accDescr`); see `svgOpenTag`. */
   description?: string
+  /**
+   * Self-hosted body-text font from `RenderOptions.embedFont` (#1867);
+   * resolved by svg-renderer, which owns the data. See `buildStyleBlock`.
+   */
+  bodyFont?: MonoFontEmbed
 }
 
 /**
@@ -438,11 +443,18 @@ export function styleOpenTag(nonce?: string): string {
  * block (#1061). The font data itself lives in `@zombie-mermaid/svg-renderer`
  * (see its `buildSvgStyleBlock`), not here, so ASCII-only consumers of
  * `core` never carry it (#1319). Pass `false` to omit the `.mono` rule.
+ *
+ * `body` (`RenderOptions.embedFont`, #1867) is the same idea for the main
+ * `text` font: when its `family` is the (literal, non-`var()`) `font`, its
+ * `@font-face` is inlined and the Google Fonts `@import` is dropped. For any
+ * other `font` it is ignored, since embedding Inter would not change what
+ * renders.
  */
 export function buildStyleBlock(
   font: string,
   mono: MonoFontEmbed | false,
   nonce?: string,
+  body?: MonoFontEmbed,
 ): string {
   const isVarReference = isSafeCssVarReference(font)
   // Literal font names are sanitized before quoting (strip characters that
@@ -450,7 +462,10 @@ export function buildStyleBlock(
   // var() reference is passed through as-is so `var(--x, 'Fallback')` keeps
   // its own internal quotes intact.
   const safeFont = isVarReference ? font.trim() : font.replace(/[<>{};'"]/g, '')
-  const skipImport = isVarReference || isFontStackOrGenericFamily(font)
+  const embedBody =
+    body !== undefined && !isVarReference && safeFont === body.family
+  const skipImport =
+    embedBody || isVarReference || isFontStackOrGenericFamily(font)
 
   const fontImports = skipImport
     ? []
@@ -481,6 +496,7 @@ export function buildStyleBlock(
     // Self-hosted, embedded @font-face for `.mono` text — see the doc
     // comment above for why this never goes through the CDN-import/skip
     // logic `font` above does.
+    ...(embedBody ? [`  ${body.faceCss}`] : []),
     ...(mono ? [`  ${mono.faceCss}`] : []),
     `  text { font-family: ${isVarReference ? safeFont : `'${safeFont}'`}, system-ui, sans-serif; }`,
     ...(mono

@@ -44,6 +44,7 @@
 // header for why it's a separate module from the ASCII side's table.
 // ============================================================================
 
+export { loadEmbeddedFont } from './embedded-font.ts'
 export * from './edge-curves.ts'
 export * from './elk-instance.ts'
 export * from './layout-engine.ts'
@@ -87,6 +88,7 @@ import {
 } from '@zombie-mermaid/core'
 import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
+import { loadEmbeddedFont, resolveBodyFont } from './embedded-font.ts'
 import { diagramRegistry } from './registry.ts'
 import type { SvgRenderContext } from './registry.ts'
 
@@ -149,6 +151,7 @@ function resolveSvgEmit(options: RenderOptions): SvgEmitOptions {
   return {
     nonce: options.nonce,
     styleAttribute: options.styleAttribute,
+    bodyFont: resolveBodyFont(options),
   }
 }
 
@@ -334,6 +337,7 @@ export async function renderMermaidSVGAsync(
   text: string,
   options: RenderOptions = {},
 ): Promise<string> {
+  if (options.embedFont === 'subset') await loadEmbeddedFont()
   return renderMermaidSVG(text, options)
 }
 

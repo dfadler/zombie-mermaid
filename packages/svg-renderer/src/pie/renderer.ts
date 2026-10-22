@@ -126,7 +126,7 @@ export function renderPieSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   parts.push(pieStyles(chart, colors, emit.nonce))
 
   parts.push(

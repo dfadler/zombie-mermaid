@@ -96,3 +96,11 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+---
+
+The opt-in `embedFont: 'subset'` option embeds a glyph subset (Basic Latin,
+weights 400-700) of Inter 4.1 (https://github.com/rsms/inter), a Modified
+Version under the same SIL Open Font License 1.1 (full text above):
+
+Copyright (c) 2016-2018 The Inter Project Authors (https://github.com/rsms/inter)
