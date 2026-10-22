@@ -1240,9 +1240,7 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
  *    (else the shift would drag unrelated branches wider, so it stays put).
  */
 function centerParentsOverChildren(graph: AsciiGraph): void {
-  const dir = graph.config.graphDirection
-  if (dir !== 'TD' && dir !== 'LR') return
-  const lr = dir === 'LR'
+  const lr = graph.config.graphDirection === 'LR'
   // ponytail: LR graphs with subgraphs keep the old layout; the cluster-exit
   // wall/lane routing is tuned to it. Extend once those routes are re-checked.
   if (lr && graph.subgraphs.length > 0) return
@@ -1299,6 +1297,8 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     // are integers (a fractional one hangs the pathfinder), so leave it be.
     if (!Number.isInteger(mid)) continue
     if (mid % 4 !== 0) {
+      // Defensive: placement puts a parent at or left of its children's midpoint.
+      /* v8 ignore next */
       if (mid + 2 <= crossOf(gc)) continue
       if (fitsStraddled(graph, node)) {
         relocateNode(graph, node, at(rankOf(gc), mid))
