@@ -12,9 +12,15 @@ import {
 import { samples } from '../packages/site/samples-data.ts'
 
 const show = process.argv.includes('--show')
-const facePolicy = (process.argv
-  .find((a) => a.startsWith('--policy='))
-  ?.slice(9) ?? 'merge-then-grow') as FacePolicy
+const POLICIES: readonly FacePolicy[] = ['merge-then-grow', 'grow-only']
+const policyArg = process.argv.find((a) => a.startsWith('--policy='))?.slice(9)
+const facePolicy = (policyArg ?? 'merge-then-grow') as FacePolicy
+if (!POLICIES.includes(facePolicy)) {
+  console.error(
+    `Invalid --policy=${JSON.stringify(policyArg)}; supported values: ${POLICIES.join(', ')}`,
+  )
+  process.exit(1)
+}
 const targets = process.argv
   .slice(2)
   .filter((a) => !a.startsWith('--'))
