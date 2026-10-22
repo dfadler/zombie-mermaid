@@ -45,7 +45,8 @@ describe('label placement scaling (#1490)', () => {
     expect(renderMermaidASCII(labelled(40), { colorMode: 'none' })).toContain(
       'l79',
     )
-  })
+    // 30 s timeout: ~4 s alone, several-fold slower under full-suite load (#1825).
+  }, 30_000)
 
   it('grows no worse than ~cubic from n=20 to n=40', () => {
     bestPair(10, 10, 1) // Warm up JIT before timing
@@ -58,6 +59,7 @@ describe('label placement scaling (#1490)', () => {
       ratio = Math.min(ratio, t40 / t20)
     }
     expect(ratio).toBeLessThan(10)
-    // 60 s timeout: up to ~36 renders; coverage + a loaded runner blow the 5 s default.
-  }, 60_000)
+    // 180 s timeout: up to ~36 renders, ~17 s alone; under `verify --full`
+    // worker contention it exceeded 60 s (#1825).
+  }, 180_000)
 })

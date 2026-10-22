@@ -107,8 +107,18 @@ describe('worker timeout and OOM', () => {
 })
 
 const BUILT = new URL('../../dist/render-worker.js', import.meta.url)
+// The built worker imports these packages by name, which resolves to their
+// own dist/ (the vitest aliases don't apply inside a worker thread). A partial
+// or mid-rebuild dist (vite empties each outDir first) otherwise fails with
+// "Cannot find module .../dist/index.js" instead of skipping (#1825).
+const WORKER_DEPS = ['svg-renderer', 'ascii-renderer', 'core', 'mermaid-parser']
+const BUILT_COMPLETE =
+  existsSync(BUILT) &&
+  WORKER_DEPS.every((p) =>
+    existsSync(new URL(`../../../${p}/dist/index.js`, import.meta.url)),
+  )
 
-describe.skipIf(!existsSync(BUILT))('built worker output', () => {
+describe.skipIf(!BUILT_COMPLETE)('built worker output', () => {
   it('is byte-identical to in-thread output (ELK registered in the worker)', async () => {
     registerElk(ELK)
     const r = make({ workerUrl: pathToFileURL(BUILT.pathname) as URL })

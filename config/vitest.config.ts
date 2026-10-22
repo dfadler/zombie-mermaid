@@ -94,6 +94,12 @@ export default defineConfig({
     // omitting it fails loudly (`document is not defined`) rather than
     // silently passing under the wrong environment.
     setupFiles: ['./config/vitest.setup.ts'],
+    // 20 s instead of the 5 s default (#1825). Under a full run (~12 workers,
+    // `pnpm run verify --full`) sub-second tests such as ascii-html-mockup-parity
+    // and ascii-label-attribution stretch past 5 s, and a different 2-4 tests
+    // time out each run. Per-test timeouts would be whack-a-mole; a test that
+    // genuinely hangs still fails, just 15 s later. Slow tests keep their own.
+    testTimeout: 20_000,
     // CI-only (#1838); local runs keep the default reporter and no retry.
     // - `github-actions`: annotations plus the job summary written to
     //   $GITHUB_STEP_SUMMARY, which lists every test that passed only after
