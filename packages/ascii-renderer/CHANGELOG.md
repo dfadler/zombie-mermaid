@@ -1,5 +1,14 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.8.3
+
+### Patch Changes
+
+- [#2262](https://github.com/dfadler/zombie-mermaid/pull/2262) [`e217ee9`](https://github.com/dfadler/zombie-mermaid/commit/e217ee9fe9d68878402cbaa69a453e83e24733f8) Thanks [@dfadler](https://github.com/dfadler)! - Draw a one-line ASCII ER relationship label on its vertical edge, centered and with the line broken around it, like mermaid.js, instead of beside the stem. Labels that cannot sit on a clear stem row keep their old spot. ([#2253](https://github.com/dfadler/zombie-mermaid/issues/2253))
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.8.3
+  - @zombie-mermaid/mermaid-parser@5.8.3
+
 ## 5.8.2
 
 ### Patch Changes
