@@ -215,8 +215,8 @@ renderMermaidSVG(source, { honorThemeVariables: true })
 - `themeCssVariables(options)` sees only your options, not the diagram, so
   with `styleAttribute: false` the directive colours are not in that string.
 
-Checked against mermaid 12.1.0 (`scripts/lib/real-mermaid.ts`) and 12.2.0
-(jsDelivr), headless Chromium, computed paint; both gave the same results.
+Checked against mermaid 12.1.0 and 12.2.0 (`scripts/lib/real-mermaid.ts`;
+12.1.0 via jsDelivr), headless Chromium, computed paint; both gave the same results.
 See [known differences](known-differences.md#themevariables-are-opt-in-and-only-a-subset).
 
 Keys parsed but deliberately not acted on, and why:
@@ -722,14 +722,14 @@ classDiagram-v2
   marker, label, border or another line, and in an extremely crowded fan one that fits
   nowhere is left out. The unicode and `--ascii` charsets place them identically.
 
-Checked against mermaid 12.1.0 (repo pin) and 12.2.0.
+Checked against mermaid 12.1.0 and 12.2.0 (repo pin).
 
 ### Direction
 
 `direction TB|TD|LR|RL|BT` on its own line sets the layout direction
 ([#2116](https://github.com/dfadler/zombie-mermaid/issues/2116)); the last one wins.
 `RenderOptions.direction` does not apply to class diagrams. Checked against
-mermaid 12.1.0 (repo pin) and 12.2.0, which agree.
+mermaid 12.1.0 and 12.2.0 (repo pin), which agree.
 
 ```mermaid
 classDiagram
