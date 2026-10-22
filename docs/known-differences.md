@@ -282,7 +282,7 @@ Opt-in only: without the flag the output is byte-identical to before.
 viewBox, so the title is clipped and invisible (checked headless in Chromium, #2282).
 zombie-mermaid deliberately draws it: the SVG canvas is `2 * 50 + title width` by 80,
 with the title inside, and the ASCII output prints the title (mermaid has no ASCII
-output). A diagram with neither a title nor elements still renders nothing.
+output). A diagram with no title, elements, or boundaries still renders nothing.
 
 ## Known limitations (not intentional, not yet fixed)
 
