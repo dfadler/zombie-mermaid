@@ -42,17 +42,17 @@ describe('C4 title-only diagram (#2282)', () => {
     expect(long.h).toBe(short.h)
   })
 
-  it('matches the snapshot', () => {
+  it('draws the exact SVG', () => {
     const svg = renderMermaidSVG(src('Only a title'))
     const stable = svg
       .replace(/<style>[\s\S]*?<\/style>/, '<style/>')
       .replace(/zm-title-\d+/g, 'zm-title-N')
-    expect(stable).toMatchInlineSnapshot(`
-        "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 80" width="176" height="80" role="img" aria-labelledby="zm-title-N" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
-          <title id="zm-title-N">Only a title</title>
-        <style/>
-        <text class="c4-title" x="50" y="40" dy="0.35em" font-size="16" fill="var(--_text)">Only a title</text>
-        </svg>"
-      `)
+    expect(stable.split('\n')).toEqual([
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 80" width="176" height="80" role="img" aria-labelledby="zm-title-N" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">',
+      '  <title id="zm-title-N">Only a title</title>',
+      '<style/>',
+      '<text class="c4-title" x="50" y="40" dy="0.35em" font-size="16" fill="var(--_text)">Only a title</text>',
+      '</svg>',
+    ])
   })
 })

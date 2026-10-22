@@ -4,23 +4,16 @@ import { renderMermaidASCII } from '../../../../src/index.ts'
 // Mermaid has no ASCII output; a title-only C4 diagram prints its title (#2282).
 const src = 'C4Context\n  title Only a title'
 
+const OUT =
+  '                 \n  Only a title   \n                 \n                 '
+
 describe('C4 ASCII title-only diagram (#2282)', () => {
   it('prints the title (Unicode)', () => {
-    expect(renderMermaidASCII(src)).toMatchInlineSnapshot(`
-      "                 
-        Only a title   
-                       
-                       "
-    `)
+    expect(renderMermaidASCII(src)).toBe(OUT)
   })
 
   it('prints the title (ASCII-only)', () => {
-    expect(renderMermaidASCII(src, { useAscii: true })).toMatchInlineSnapshot(`
-      "                 
-        Only a title   
-                       
-                       "
-    `)
+    expect(renderMermaidASCII(src, { useAscii: true })).toBe(OUT)
   })
 
   it('keeps a wide title on the canvas', () => {
