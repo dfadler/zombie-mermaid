@@ -43,6 +43,12 @@ export interface ForkFix {
    */
   excerpt?: { from: string; to: string }
   /**
+   * Extra `renderMermaidSVG` options merged over the page's fixed colors, for a
+   * fix that only shows up with a specific option set (e.g. `font`). SVG
+   * entries only; the ASCII path ignores it.
+   */
+  options?: Record<string, unknown>
+  /**
    * Upstream `lukilabs/beautiful-mermaid` issue number(s) this fix resolves.
    *
    * Several entries share one commit but map to distinct upstream reports
@@ -210,6 +216,21 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: a spurious "class" node appears. After: B is simply styled.',
+  },
+  {
+    id: 'font-css-variable',
+    title: 'A CSS `var(...)` font was quoted into a dead font name',
+    symptom:
+      "`{ font: 'var(--font-family-body)' }` is the natural way to inherit a host page's font, but the value was wrapped in quotes (an inert font name, not a `var()` call) and also URL-encoded into a Google Fonts `@import` that can never resolve.",
+    source: 'flowchart LR\n  A --> B',
+    fixCommit: '6b5da99',
+    pr: 79,
+    render: 'svg',
+    options: { font: 'var(--font-family-body)' },
+    excerpt: { from: 'text { font-family:', to: 'sans-serif;' },
+    lookFor:
+      "The browser renders both the same until a host page defines the variable, so this pair shows the `font-family` rule. Before: the reference is quoted, an inert font name (the build also emitted a failing Google Fonts `@import` for it). After: it is unquoted, so the host page's variable resolves, and the `@import` is gone.",
+    upstreamIssues: [18],
   },
   {
     id: 'sequence-leading-note',
