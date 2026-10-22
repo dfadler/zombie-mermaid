@@ -18,7 +18,7 @@ import type {
   RenderOptions,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from '../styles.ts'
-import { FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
+import { ASYMMETRIC_NOTCH, FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
 import {
   measureMultilineText,
   subgraphDirectionIsHonored,
@@ -265,7 +265,7 @@ export function estimateNodeSize(
   }
 
   if (shape === 'asymmetric') {
-    width += 12
+    width += ASYMMETRIC_NOTCH
   }
 
   if (shape === 'cylinder') {
