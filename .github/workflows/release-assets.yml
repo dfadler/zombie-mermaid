@@ -19,11 +19,6 @@ on:
     workflows: [Release]
     types: [completed]
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag to (re)attach assets to, e.g. zombie-mermaid@5.3.0'
-        required: true
 
 permissions:
   contents: read
@@ -54,17 +49,16 @@ jobs:
         id: meta
         env:
           GH_TOKEN: ${{ github.token }}
-          DISPATCH_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
           version=$(node -p "require('./package.json').version")
-          tag="${DISPATCH_TAG:-zombie-mermaid@${version}}"
+          tag="zombie-mermaid@${version}"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           if ! assets=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null); then
             echo "No release for ${tag} (Version PR run?); nothing to do."
             echo "run=false" >> "$GITHUB_OUTPUT"
-          elif grep -q '\.cdx\.json$' <<<"$assets" && [ -z "$DISPATCH_TAG" ]; then
+          elif grep -q '\.cdx\.json$' <<<"$assets"; then
             echo "${tag} already has an SBOM; nothing to do."
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
