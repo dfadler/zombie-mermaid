@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.8.4
+
+### Patch Changes
+
+- [#2277](https://github.com/dfadler/zombie-mermaid/pull/2277) [`55925f7`](https://github.com/dfadler/zombie-mermaid/commit/55925f7ba6ac635ab42607256ff9734565c1009d) Thanks [@dfadler](https://github.com/dfadler)! - Add `mcpName` to package.json so the package can be published to the official MCP Registry, and fix the tool count in the MCP package README.
+- Updated dependencies [[`55925f7`](https://github.com/dfadler/zombie-mermaid/commit/55925f7ba6ac635ab42607256ff9734565c1009d)]:
+  - @zombie-mermaid/mcp@5.8.4
+  - @zombie-mermaid/ascii-renderer@5.8.4
+  - @zombie-mermaid/core@5.8.4
+  - @zombie-mermaid/mermaid-parser@5.8.4
+  - @zombie-mermaid/svg-renderer@5.8.4
+
 ## 5.8.3
 
 ### Patch Changes
