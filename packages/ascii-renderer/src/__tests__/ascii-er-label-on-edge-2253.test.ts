@@ -96,4 +96,28 @@ describe('ASCII ER label on the edge (issue #2253)', () => {
       })
     }
   }
+
+  // #2267: guards the blank margin the centered search requires either side
+  // of the text. Here the stems sit two columns apart and "a" is already
+  // centered on the left one, so "abc" centered on the right one would butt
+  // against it ("aabc"); only the margin check rejects that row.
+  for (const [useAscii, v] of [
+    [false, '│'],
+    [true, '|'],
+  ] as const) {
+    it(`keeps a blank margin between a centered label and a neighbouring stem (useAscii=${useAscii})`, () => {
+      const lines = renderMermaidASCII(
+        'erDiagram\n  A ||--o{ B : a\n  A ||--o{ B : abc',
+        { useAscii },
+      ).split('\n')
+      const row = lines.find((l) => l.includes('abc'))!
+      // "a" sits on the left stem, "abc" beside the right stem, each whole,
+      // with a blank on both sides of the text and the stem cell kept.
+      expect(row.trimEnd()).toBe(` a ${v} abc`)
+      // Both stems run on the rows above and below the label row.
+      const i = lines.indexOf(row)
+      expect(lines[i - 1]!.trimEnd()).toBe(` ${v} ${v}`)
+      expect(lines[i + 1]!.trimEnd()).toBe(` ${v} ${v}`)
+    })
+  }
 })
