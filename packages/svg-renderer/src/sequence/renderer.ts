@@ -93,7 +93,7 @@ export function renderSequenceSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   parts.push('<defs>')
 
   // Arrow marker definitions

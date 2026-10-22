@@ -20,6 +20,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 ## Build, lint, and dev server
 
 - `pnpm run dev` — start the Vite dev server (`/` home page, `/editor` live editor) with live reload on port 3456; set `PORT` to change it
+- `pnpm run build:inter-font` — rebuild the opt-in embedded Inter subset behind `embedFont: 'subset'` (`scripts/build-inter-font-subset.ts`)
 - `pnpm run build:mono-font` — rebuild the subsetted monospace font and the files that embed it (`scripts/build-mono-font-subset.ts`)
 - `pnpm run build` — build the publishable packages and the library bundle
 - `pnpm run build:packages` — build only the internal `@zombie-mermaid/*` packages (part of `build`)

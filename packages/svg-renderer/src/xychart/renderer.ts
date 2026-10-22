@@ -104,7 +104,7 @@ export function renderXYChartSvg(
     embedSource,
   )
   parts.push(svgTag)
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
 
   // Sparse lines (≤12 points) show dots by default
   const maxLinePoints = Math.max(...chart.lines.map((l) => l.points.length), 0)

@@ -16,6 +16,7 @@
   "bench:svg-renderer": "isolated per-package benchmark that times only that package's own code (see the script's header comment for exactly what's included), so a regression can be attributed to a specific package instead of just \"render got slower\"",
   "bench:trend": "print how the combined render total (and each category) has moved across the most recent entries in `bench-history.jsonl`, for a \"weeks/months of drift\" view that complements `bench:compare`'s single current-vs-baseline check",
   "build": "build the publishable packages and the library bundle",
+  "build:inter-font": "rebuild the opt-in embedded Inter subset behind `embedFont: 'subset'` (`scripts/build-inter-font-subset.ts`)",
   "build:mono-font": "rebuild the subsetted monospace font and the files that embed it (`scripts/build-mono-font-subset.ts`)",
   "build:packages": "build only the internal `@zombie-mermaid/*` packages (part of `build`)",
   "build:site": "build every site page into `site/` with the Vite SSR prerender pipeline (`vite.site.config.ts`; what CI's \"Build site generator check\" job and the Pages deploy run)",

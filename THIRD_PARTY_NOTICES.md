@@ -10,5 +10,8 @@ package ships only the notices that apply to it (see its own
 - JetBrains Mono NL font subset: SIL OFL 1.1, Copyright 2020 The JetBrains Mono
   Project Authors (`packages/svg-renderer/THIRD_PARTY_NOTICES.md`,
   `third_party/fonts/`).
+- Inter font subset (opt-in `embedFont: 'subset'`): SIL OFL 1.1, Copyright (c) 2016-2018
+  The Inter Project Authors (`packages/svg-renderer/THIRD_PARTY_NOTICES.md`,
+  `third_party/fonts/inter/`).
 - Forked from [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid),
   MIT, Copyright (c) 2026 Craft Docs (see `LICENSE`).

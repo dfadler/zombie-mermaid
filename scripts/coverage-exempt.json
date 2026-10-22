@@ -1,5 +1,10 @@
 [
   {
+    "file": "scripts/build-inter-font-subset.ts",
+    "reason": "thin CLI: runs on import and writes a file; all logic is in scripts/lib/inter-font-subset.ts (tested by __tests__/generated-inter-font.test.ts)",
+    "maxLines": 25
+  },
+  {
     "file": "scripts/mention-watch.ts",
     "reason": "thin CLI: runs on import and hits the network; all logic is in scripts/lib/mention-watch.ts (tested with an injected fetch)",
     "maxLines": 60

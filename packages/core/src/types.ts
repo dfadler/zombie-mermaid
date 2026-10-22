@@ -299,6 +299,24 @@ export interface RenderOptions {
 
   /** Font family for all text. Default: 'Inter' */
   font?: string
+  /**
+   * Inline the font as a base64 `woff2` `@font-face` in the SVG's own
+   * `<style>` instead of the default Google Fonts `@import` (#1867).
+   * Default: false (output unchanged).
+   *
+   * An SVG used as an `<img>` loads no external resources, and the `@import`
+   * also makes a per-viewer request to Google. `'subset'` embeds Basic Latin
+   * (U+0020-007E) of Inter 4.1 (SIL OFL 1.1, weights 400-700) at about 14.7
+   * KB of base64 per SVG; other characters fall back to `system-ui`. It takes
+   * effect only when `font` is `'Inter'` (the default); for any other `font`
+   * it is ignored.
+   *
+   * The data is not in the default bundle. `renderMermaidSVGAsync()` loads it
+   * on demand; the synchronous `renderMermaidSVG()` needs `await
+   * loadEmbeddedFont()` (from `@zombie-mermaid/svg-renderer`) once first, and
+   * throws otherwise.
+   */
+  embedFont?: false | 'subset'
   /** Canvas padding in px. Default: 40. Flowchart/state diagrams only — class/ER diagrams use fixed internal padding. */
   padding?: number
   /** Horizontal spacing between sibling nodes. Default: 28. Flowchart/state diagrams only — class/ER diagrams use fixed internal spacing. */
@@ -653,6 +671,7 @@ export type CommonRenderOptions = Pick<
   | 'surface'
   | 'border'
   | 'font'
+  | 'embedFont'
   | 'transparent'
   | 'embedSource'
   | 'resolveColors'

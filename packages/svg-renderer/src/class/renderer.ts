@@ -111,7 +111,7 @@ export function renderClassSvg(
       embedSource,
     ),
   )
-  parts.push(buildSvgStyleBlock(font, true, emit.nonce))
+  parts.push(buildSvgStyleBlock(font, true, emit.nonce, emit.bodyFont))
   parts.push('<defs>')
   parts.push(
     relationshipMarkerDefs(

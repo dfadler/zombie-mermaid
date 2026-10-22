@@ -102,7 +102,7 @@ export function renderErSvg(
       embedSource,
     ),
   )
-  parts.push(buildSvgStyleBlock(font, true, emit.nonce))
+  parts.push(buildSvgStyleBlock(font, true, emit.nonce, emit.bodyFont))
   parts.push('<defs>')
   parts.push('</defs>') // No marker defs — we draw crow's foot inline
 
