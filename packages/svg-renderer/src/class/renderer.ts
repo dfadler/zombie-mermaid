@@ -709,10 +709,10 @@ function nearestPointOnPolyline(
     const dx = b.x - a.x
     const dy = b.y - a.y
     const len2 = dx * dx + dy * dy
-    // A zero-length segment divides by 1: t = 0, the segment's start.
+    // A zero-length segment gives NaN, which never beats bestD, so it is skipped.
     const t = Math.max(
       0,
-      Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (len2 || 1)),
+      Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2),
     )
     const q = { x: a.x + t * dx, y: a.y + t * dy }
     const d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2
