@@ -15,6 +15,6 @@ pie showData title Browser share
   <span style="color:#0d5ba5">▓</span> <span style="color:inherit">Safari [190]</span>    <span style="color:inherit"> 19%</span>
   <span style="color:#5fb4f2">▒</span> <span style="color:inherit">Firefox [120]</span>   <span style="color:inherit"> 12%</span>
   <span style="color:#0a5076">░</span> <span style="color:inherit">Edge [45]</span>       <span style="color:inherit">  5%</span>
-  <span style="color:#92e0f6">·</span> <span style="color:inherit">Opera [4]</span>       <span style="color:inherit"> &lt;1%</span>
-  <span style="color:#0a5e76">·</span> <span style="color:inherit">Lynx [1]</span>        <span style="color:inherit"> &lt;1%</span>
-  <span style="color:#97f5f7">·</span> <span style="color:inherit">Netscape [0]</span>    <span style="color:inherit">  0%</span>
+  <span style="color:#92e0f6">·</span> <span style="color:inherit">Opera [4]</span>
+  <span style="color:#0a5e76">·</span> <span style="color:inherit">Lynx [1]</span>
+  <span style="color:#97f5f7">·</span> <span style="color:inherit">Netscape [0]</span>
