@@ -96,7 +96,7 @@ function unquoteClassId(id: string): string {
 const RELATIONSHIP_ARROW_SOURCE =
   Object.keys(ARROWS)
     .sort((a, b) => b.length - a.length)
-    .map((a) => a.replace(/[|.*()]/g, '\\$&'))
+    .map((a) => a.replace(/[\\|.*()]/g, '\\$&'))
     .join('|') + '|<\\.\\.?'
 
 /**

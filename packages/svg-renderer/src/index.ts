@@ -83,6 +83,7 @@ import {
   splitStatements,
   extractAccessibility,
   checkLimit,
+  checkLineLength,
   checkGraphSize,
   applyThemeVariables,
 } from '@zombie-mermaid/core'
@@ -275,6 +276,7 @@ function renderMermaidSVGRaw(
   // string the caller passed in, not this entity-decoded copy used
   // internally for parsing.
   checkLimit('maxInputLength', text.length, options.limits)
+  checkLineLength(text, options.limits)
   const acc = extractAccessibility(decodeXML(text))
   const decoded = acc.text
 

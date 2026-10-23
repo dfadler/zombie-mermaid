@@ -10,6 +10,8 @@
 export interface RenderLimits {
   /** Max source length in UTF-16 code units. Default 100,000. */
   maxInputLength?: number
+  /** Max length of any single source line. Default 10,000. */
+  maxLineLength?: number
   /** Max flowchart/state/architecture nodes. Default 400. */
   maxNodes?: number
   /** Max flowchart/state/architecture edges. Default 600. */
@@ -20,6 +22,7 @@ export interface RenderLimits {
 
 export const DEFAULT_RENDER_LIMITS: Required<RenderLimits> = {
   maxInputLength: 100_000,
+  maxLineLength: 10_000,
   maxNodes: 400,
   maxEdges: 600,
   maxCanvasCells: 2_000_000,
@@ -59,4 +62,23 @@ export function checkGraphSize(
 ): void {
   checkLimit('maxNodes', nodes, limits)
   checkLimit('maxEdges', edges, limits)
+}
+
+/**
+ * Throw {@link LimitExceededError} when any single line is over `maxLineLength`.
+ * The parsers run per-line regexes that are quadratic on one very long line
+ * (CodeQL js/polynomial-redos); capping line length bounds that cost without
+ * rewriting each regex.
+ */
+export function checkLineLength(
+  text: string,
+  limits: RenderLimits | undefined,
+): void {
+  let start = 0
+  while (start <= text.length) {
+    let end = text.indexOf('\n', start)
+    if (end === -1) end = text.length
+    checkLimit('maxLineLength', end - start, limits)
+    start = end + 1
+  }
 }
