@@ -139,6 +139,29 @@ B --> D`)
     }
   })
 
+  // Both skip-level edges (A -> C and B -> D) detour around a box; they take
+  // their own columns, and the two edges into D arrive on different columns.
+  it('keeps detours and arrivals on separate lines (#2312)', () => {
+    const rows = lines(`classDiagram
+namespace One {
+  class A
+  class B
+}
+namespace Two {
+  class C
+  class D
+}
+A <|-- B
+C <|-- D
+A --> C
+B --> D`)
+    const oneBottom = rows.findIndex((l) => l.startsWith('└'))
+    expect(rows[oneBottom + 1]!.match(/│/g)).toHaveLength(2)
+    const arrival = rows.findLast((l) => l.includes('▼'))!
+    // B -> D's head sits beside the C <|-- D stem, not on top of it.
+    expect(arrival).toMatch(/▼│/)
+  })
+
   // Edges running both ways between two frames can't be stacked; the frames
   // stay on shared rows and are pushed apart instead of overlapping.
   it('keeps frames with edges in both directions apart (#2312)', () => {

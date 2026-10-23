@@ -1257,6 +1257,10 @@ export function renderClassAscii(
     return false
   }
 
+  // Vertical runs of detours already routed, so a later detour takes its own
+  // column instead of drawing over theirs.
+  const detourLanes: { x: number; y1: number; y2: number }[] = []
+
   /** Find a clear vertical column for routing that doesn't pass through any boxes */
   function findClearColumn(
     startX: number,
@@ -1268,7 +1272,15 @@ export function renderClassAscii(
       for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
         if (isInsideBox(x, y, excludeIds)) return false
       }
-      return true
+      // A detour column other than the straight one must not run along
+      // another detour's column or a frame's side border.
+      return (
+        x === startX ||
+        (!detourLanes.some((l) => l.x === x && l.y1 <= y2 && y1 <= l.y2) &&
+          !frameRects.some(
+            (r) => (x === r.x0 || x === r.x1) && r.y0 <= y2 && y1 <= r.y1,
+          ))
+      )
     }
 
     // Scan outward from `startX`, right before left at each distance, never
@@ -1558,11 +1570,9 @@ export function renderClassAscii(
     // Connection points: the lanes the line runs along (`fromCX`/`toCX`)
     // and the anchors where it touches each box border — see
     // `connectionColumns` for why those can differ.
-    const { fromCX, toCX, fromAnchorX, toAnchorX } = connectionColumns(
-      relIndex,
-      fromP,
-      toP,
-    )
+    const cols = connectionColumns(relIndex, fromP, toP)
+    const { fromCX, toCX, fromAnchorX } = cols
+    let toAnchorX = cols.toAnchorX
     const fromBY = fromP.y + fromP.height - 1
     const toTY = toP.y
 
@@ -1587,8 +1597,26 @@ export function renderClassAscii(
         // so a fanned-out lane needs no separate jog here — the detour's
         // own horizontal already runs along the jog row.
 
+        // Skip-level edges aren't in the fan-out group, so step the anchor
+        // off any column another edge into this box already uses.
+        const taken = new Set<number>()
+        diagram.relationships.forEach((other, i) => {
+          const otherFrom = placed.get(other.from)
+          if (i !== relIndex && other.to === rel.to && otherFrom) {
+            taken.add(connectionColumns(i, otherFrom, toP).toAnchorX)
+          }
+        })
+        const step = routeX > toAnchorX ? 1 : -1
+        for (
+          let x = toAnchorX + step;
+          taken.has(toAnchorX) && x > toP.x && x < toP.x + toP.width - 1;
+          x += step
+        ) {
+          if (!taken.has(x)) toAnchorX = x
+        }
         const exitY = fromBY + 1
         const entryY = toTY - 1
+        detourLanes.push({ x: routeX, y1: exitY, y2: entryY })
         detourRoutes.set(relIndex, {
           routeX,
           exitY,
