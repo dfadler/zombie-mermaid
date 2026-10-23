@@ -19,6 +19,7 @@
 
 import {
   checkLimit,
+  checkLineLength,
   detectDiagramType,
   extractAccessibility,
   extractInitConfig,
@@ -198,6 +199,7 @@ export function renderMermaidASCII(
 
   // Merge user theme with defaults
   checkLimit('maxInputLength', source.length, options.limits)
+  checkLineLength(source, options.limits)
   // accTitle/accDescr have no place in text output: drop them, never print.
   const text = extractAccessibility(source).text
   const theme: AsciiTheme = {

@@ -95,6 +95,7 @@ layout and throw `LimitExceededError` (`code: 'LIMIT_EXCEEDED'`, plus `limit`,
 | Limit            | Default   | MCP tools | Applies to                                               |
 | ---------------- | --------- | --------- | -------------------------------------------------------- |
 | `maxInputLength` | 100,000   | 50,000    | Source length, every diagram type                        |
+| `maxLineLength`  | 10,000    | 10,000    | Longest single source line, every diagram type           |
 | `maxNodes`       | 400       | 150       | Flowchart, state and architecture diagrams               |
 | `maxEdges`       | 600       | 300       | Flowchart, state and architecture diagrams               |
 | `maxCanvasCells` | 2,000,000 | 1,000,000 | ASCII flowchart/state/architecture: width x height cells |
