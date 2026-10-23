@@ -106,4 +106,27 @@ namespace Empty {
   it('leaves diagrams without namespaces unchanged', () => {
     expect(renderMermaidASCII('classDiagram\nA --> B')).not.toContain('Core')
   })
+
+  // Issue #2312: D has parents in both frames, so it lands between them and
+  // the bounding-box frames used to overlap.
+  it('keeps sibling frames apart when members interleave (#2312)', () => {
+    const rows = lines(`classDiagram
+namespace One {
+  class A
+  class B
+}
+namespace Two {
+  class C
+  class D
+}
+A <|-- B
+C <|-- D
+A --> C
+B --> D`)
+    const one = find(rows, '┌─ One')
+    const oneEnd = rows[one.row]!.indexOf('┐')
+    const two = find(rows, ' Two ')
+    const twoStart = rows[two.row]!.indexOf('┌')
+    expect(twoStart).toBeGreaterThan(oneEnd)
+  })
 })

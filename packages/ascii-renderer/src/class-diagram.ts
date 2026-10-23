@@ -1018,7 +1018,9 @@ export function renderClassAscii(
       p.y += FRAME_TOP_PAD
     }
     maxSlotEnd += FRAME_SIDE_PAD
-    for (const fr of frames) {
+    const extent = (
+      fr: AsciiNamespaceFrame,
+    ): { minX: number; minY: number; maxX: number; maxY: number } => {
       let minX = Infinity
       let minY = Infinity
       let maxX = -Infinity
@@ -1031,6 +1033,39 @@ export function renderClassAscii(
         maxX = Math.max(maxX, p.x + p.width - 1)
         maxY = Math.max(maxY, p.y + p.height - 1)
       }
+      return { minX, minY, maxX, maxY }
+    }
+    // A frame is the bounding box of its members, so members of two frames
+    // can interleave (a child placed between parents from another frame) and
+    // the boxes overlap. Push the right-hand frame, and everything right of
+    // it that is not in the left-hand frame, clear of the left-hand one.
+    const nsIds = (fr: AsciiNamespaceFrame): Set<string> => new Set(fr.ids)
+    for (let pass = 0; pass <= frames.length * frames.length; pass++) {
+      let moved = false
+      for (const a of frames) {
+        for (const b of frames) {
+          if (a === b) continue
+          const ea = extent(a)
+          const eb = extent(b)
+          if (ea.minX === Infinity || eb.minX === Infinity) continue
+          const yOverlap =
+            ea.minY - FRAME_TOP_PAD <= eb.maxY + FRAME_BOTTOM_PAD &&
+            eb.minY - FRAME_TOP_PAD <= ea.maxY + FRAME_BOTTOM_PAD
+          const delta = ea.maxX + 2 * FRAME_SIDE_PAD + 2 - eb.minX
+          // `b` is the frame starting right of `a`'s start.
+          if (!yOverlap || eb.minX < ea.minX || delta <= 0) continue
+          const inA = nsIds(a)
+          for (const p of placed.values()) {
+            if (!inA.has(p.cls.id) && p.x >= eb.minX) p.x += delta
+          }
+          maxSlotEnd += delta
+          moved = true
+        }
+      }
+      if (!moved) break
+    }
+    for (const fr of frames) {
+      const { minX, minY, maxX, maxY } = extent(fr)
       if (minX === Infinity) continue
       const x0 = minX - FRAME_SIDE_PAD
       // Wide enough for ` Title ` between the corners, plus a dash each side.
