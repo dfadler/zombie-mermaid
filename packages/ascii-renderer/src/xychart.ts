@@ -145,12 +145,32 @@ function renderVertical(
     /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
-  const yTicks = niceTickValues(yRange.min, yRange.max)
-  const yLabels = formatTickLabels(yTicks)
-  const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
-
   const plotW = Math.max(PLOT_WIDTH, dataCount * 6)
   const plotH = PLOT_HEIGHT
+  const allTicks = niceTickValues(yRange.min, yRange.max)
+  const allLabels = formatTickLabels(allTicks)
+  // The plot has fewer rows than ticks can need (d3 gives ~10 intervals over
+  // plotH rows), so adjacent ticks can round onto neighbouring rows. Keep
+  // every Nth tick, with the smallest N that leaves an unlabeled row between
+  // labels, so they land on evenly spaced rows (#2310).
+  const tickRow = (v: number): number =>
+    Math.round(
+      ((v - yRange.min) / (yRange.max - yRange.min || 1)) * (plotH - 1),
+    )
+  let tickStride = 1
+  while (
+    tickStride < allTicks.length &&
+    allTicks.some(
+      (t, i) =>
+        i >= tickStride && tickRow(t) - tickRow(allTicks[i - tickStride]!) < 2,
+    )
+  ) {
+    tickStride++
+  }
+  const yTicks = allTicks.filter((_, i) => i % tickStride === 0)
+  const yLabels = allLabels.filter((_, i) => i % tickStride === 0)
+  const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
+
   const bandW = Math.floor(plotW / dataCount)
   const catLabels = ellipsizeTouching(
     getCategoryLabels(chart, dataCount),
