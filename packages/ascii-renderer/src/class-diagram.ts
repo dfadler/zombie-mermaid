@@ -1047,7 +1047,6 @@ export function renderClassAscii(
           if (a === b) continue
           const ea = extent(a)
           const eb = extent(b)
-          if (ea.minX === Infinity || eb.minX === Infinity) continue
           const yOverlap =
             ea.minY - FRAME_TOP_PAD <= eb.maxY + FRAME_BOTTOM_PAD &&
             eb.minY - FRAME_TOP_PAD <= ea.maxY + FRAME_BOTTOM_PAD
