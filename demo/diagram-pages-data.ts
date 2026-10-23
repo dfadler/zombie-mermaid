@@ -129,7 +129,7 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     slug: 'state',
     label: 'State diagram',
     keyword: 'stateDiagram-v2',
-    source: sampleSource('Basic State Diagram'),
+    source: sampleSource('State: Basic State Diagram'),
     intro:
       'State diagrams show every state a system can be in and the events that move it between them — useful for anything with a lifecycle: a connection, an order, a UI component. zombie-mermaid supports nested composite states, start/end pseudostates, and animated edge transitions.',
     accent: 'violet',
