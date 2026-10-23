@@ -834,18 +834,31 @@ function runTaken(
   edge: AsciiEdge,
   path: GridCoord[],
   ignorePlanned = false,
+  // Other edges' segments; callers probing many candidate paths pass a
+  // precomputed list (the other edges' paths do not change between probes).
+  others = otherSegments(graph, edge, ignorePlanned),
 ): boolean {
   const own = segmentsOf(path)
+  return own.slice(1, -1).some(
+    ([a, b], i) =>
+      runsAlong(
+        a,
+        b,
+        own.filter((_, j) => j !== i + 1),
+      ) || runsAlong(a, b, others),
+  )
+}
+
+function otherSegments(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  ignorePlanned: boolean,
+) {
   // Planned face lanes (assignFaceLanes) share gutter rows by design: each
   // horizontal run is drawn on a row of its own.
-  const others = graph.edges.flatMap((o) =>
+  return graph.edges.flatMap((o) =>
     o === edge || (ignorePlanned && o.faceLanePlan) ? [] : segmentsOf(o.path),
   )
-  return own
-    .slice(1, -1)
-    .some(([a, b], i) =>
-      runsAlong(a, b, [...own.filter((_, j) => j !== i + 1), ...others]),
-    )
 }
 
 /** `mergePath` after dropping repeated points (gutter cells can coincide). */
@@ -865,8 +878,16 @@ function buildParallelLanePath(
   laneIndex: number,
   avoidRuns: boolean,
 ): ParallelLaneRoute {
+  let others: ReturnType<typeof otherSegments> | undefined
   const clear = (path: GridCoord[]): boolean =>
-    !avoidRuns || !runTaken(graph, edge, path)
+    !avoidRuns ||
+    !runTaken(
+      graph,
+      edge,
+      path,
+      false,
+      (others ??= otherSegments(graph, edge, false)),
+    )
   const fromAttach = gridCoordDirection(
     requireGridCoord(edge.from),
     preferredDir,
