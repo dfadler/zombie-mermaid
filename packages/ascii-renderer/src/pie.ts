@@ -26,10 +26,8 @@
 //     in source order. The row text is the label, or `label [value]` with
 //     `showData` (`String(value)`, no number formatting). The percentage is
 //     the SVG's slice label: `toFixed(0)` of the share of the *whole* total.
-//     A slice with no bar segment (under 1%, or left without a cell) keeps
-//     its percentage, which the legend can always afford, so the table never
-//     drops data the bar cannot show; a nonzero share that rounds to 0% reads
-//     `<1%`. The swatch is a dot. Only a zero total leaves the column empty.
+//     A slice with no bar segment (under 1%, or left without a cell) has no
+//     percentage, the way a slice left out of the SVG pie has no label.
 //   - Colours are the SVG's: palette slot `index % 12` in source order, slot
 //     0 the theme accent and the rest getSeriesColor() shades of it.
 //   - Each bar segment gets a fill pattern, cycled by its position in the
@@ -84,7 +82,7 @@ const ASC = {
 export interface PieAsciiRow {
   /** Label, or `label [value]` with showData. */
   text: string
-  /** Percentage text; empty only when the total is zero. */
+  /** Percentage text, or '' when the slice has no bar segment. */
   percentText: string
   /** Palette slot: source index modulo 12. */
   colorIndex: number
@@ -180,20 +178,12 @@ export function layoutPieAscii(
     const sliceCells = cellsBySlice.get(index) ?? 0
     // A drawn slice can still end up with no cell when there are more drawn
     // slices than cells; it is shown like an omitted one, not as a segment.
-    const share = (slice.value / total) * 100
-    // Unlike the SVG, whose labels sit on pie wedges, the table shows every
-    // slice's share (#2313); a zero total gives NaN and stays blank.
-    const percentText = !(share >= 0)
-      ? ''
-      : share > 0 && share < 0.5
-        ? '<1%'
-        : `${share.toFixed(0)}%`
     if (sliceCells === 0) {
-      return { text, percentText, colorIndex, cells: 0, drawnIndex: -1 }
+      return { text, percentText: '', colorIndex, cells: 0, drawnIndex: -1 }
     }
     return {
       text,
-      percentText,
+      percentText: `${((slice.value / total) * 100).toFixed(0)}%`,
       colorIndex,
       cells: sliceCells,
       drawnIndex: segment++,

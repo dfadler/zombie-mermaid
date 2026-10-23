@@ -6,6 +6,6 @@
   ▓ Safari [190]     19%
   ▒ Firefox [120]    12%
   ░ Edge [45]         5%
-  · Opera [4]        <1%
-  · Lynx [1]         <1%
-  · Netscape [0]      0%
+  · Opera [4]
+  · Lynx [1]
+  · Netscape [0]

@@ -142,9 +142,9 @@ describe('pie ASCII – layout', () => {
       layout.rows.map((r) => [r.text, r.percentText, r.cells > 0]),
     ).toEqual([
       ['Big', '99%', true],
-      ['Small', '1%', false],
-      ['Tiny', '<1%', false],
-      ['None', '0%', false],
+      ['Small', '', false],
+      ['Tiny', '', false],
+      ['None', '', false],
     ])
     // The drawn slices share the whole bar, like the SVG's drawn slices
     // share the whole circle.
@@ -160,7 +160,7 @@ describe('pie ASCII – layout', () => {
   "B" : 491
   "C" : 9`),
     )
-    expect(layout.rows.map((r) => r.percentText)).toEqual(['50%', '49%', '1%'])
+    expect(layout.rows.map((r) => r.percentText)).toEqual(['50%', '49%', ''])
   })
 
   it('formats showData values with String(value), no separators', () => {
@@ -204,13 +204,13 @@ describe('pie ASCII – layout', () => {
     )
     expect(left).toHaveLength(10)
     for (const r of left) {
-      expect([r.cells, r.percentText, r.drawnIndex]).toEqual([0, '2%', -1])
+      expect([r.cells, r.percentText, r.drawnIndex]).toEqual([0, '', -1])
     }
 
     const out = render(src)
     expect(out).toContain('  ▓ S50     2%')
     expect(out.split('\n').slice(-10)).toEqual(
-      Array.from({ length: 10 }, (_, i) => `  · S${i + 51}     2%`),
+      Array.from({ length: 10 }, (_, i) => `  · S${i + 51}`),
     )
   })
 
@@ -294,19 +294,17 @@ describe('pie ASCII – output', () => {
     expect(swatches).toEqual(runs.map((r) => r[0]))
   })
 
-  it('shows omitted slices with a dot swatch and their percentage', () => {
+  it('shows omitted slices with a dot swatch and no percentage', () => {
     const out = render(`pie showData
   "Chrome" : 640
   "Lynx" : 1
   "Netscape" : 0`)
     expect(out.split('\n').slice(-3)).toEqual([
       '  █ Chrome [640]   100%',
-      '  · Lynx [1]        <1%',
-      '  · Netscape [0]     0%',
+      '  · Lynx [1]',
+      '  · Netscape [0]',
     ])
-    expect(render('pie\n  "A" : 999\n  "B" : 1', true)).toContain(
-      '  . B    <1%',
-    )
+    expect(render('pie\n  "A" : 999\n  "B" : 1', true)).toContain('  . B')
   })
 
   it('renders an empty bar for a chart with no slices', () => {
