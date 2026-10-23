@@ -108,8 +108,9 @@ namespace Empty {
   })
 
   // Issue #2312: D has parents in both frames, so it lands between them and
-  // the bounding-box frames used to overlap.
-  it('keeps sibling frames apart when members interleave (#2312)', () => {
+  // the bounding-box frames used to overlap. The frames now stack, one wholly
+  // below the other (as mermaid draws them), and each stays a closed box.
+  it('stacks sibling frames and keeps each border intact (#2312)', () => {
     const rows = lines(`classDiagram
 namespace One {
   class A
@@ -123,10 +124,18 @@ A <|-- B
 C <|-- D
 A --> C
 B --> D`)
-    const one = find(rows, '┌─ One')
-    const oneEnd = rows[one.row]!.indexOf('┐')
-    const two = find(rows, ' Two ')
-    const twoStart = rows[two.row]!.indexOf('┌')
-    expect(twoStart).toBeGreaterThan(oneEnd)
+    const oneTop = find(rows, ' One ').row
+    const twoTop = find(rows, ' Two ').row
+    const oneBottom = rows.findIndex((l, i) => i > oneTop && l.startsWith('└'))
+    expect(oneBottom).toBeGreaterThan(oneTop)
+    expect(twoTop).toBeGreaterThan(oneBottom)
+    // `Two`: one corner pair on its top border (an edge run along the border
+    // would add more), and a left border on every row down to its bottom.
+    expect(rows[twoTop]!.match(/[┌┐]/g)).toHaveLength(2)
+    const twoBottom = rows.findIndex((l, i) => i > twoTop && l.startsWith('└'))
+    expect(twoBottom).toBeGreaterThan(twoTop)
+    for (let i = twoTop + 1; i < twoBottom; i++) {
+      expect(rows[i]!.startsWith('│')).toBe(true)
+    }
   })
 })

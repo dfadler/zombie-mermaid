@@ -499,6 +499,47 @@ export function renderClassAscii(
     if (!level.has(cls.id)) level.set(cls.id, 0)
   }
 
+  // A frame is the bounding box of its members, so a class that sits between
+  // two namespaces' rows interleaves them and the boxes overlap. When all
+  // edges between two frames run one way, put the target frame wholly below
+  // the source frame, as mermaid does, then restore parent-above-child for
+  // everything pushed down. Frames in a cycle keep their levels.
+  if (frames.length > 1) {
+    const before = new Map(level)
+    const frameEdges = new Set<string>()
+    for (const rel of diagram.relationships) {
+      const a = frameOf.get(rel.from)
+      const b = frameOf.get(rel.to)
+      if (a !== undefined && b !== undefined && a !== b) {
+        frameEdges.add(`${a}>${b}`)
+      }
+    }
+    let stable = false
+    for (let pass = 0; pass <= frames.length && !stable; pass++) {
+      stable = true
+      for (const key of frameEdges) {
+        const [a, b] = key.split('>').map(Number) as [number, number]
+        if (frameEdges.has(`${b}>${a}`)) continue
+        const maxA = Math.max(...frames[a]!.ids.map((id) => level.get(id)!))
+        const minB = Math.min(...frames[b]!.ids.map((id) => level.get(id)!))
+        const delta = maxA + 1 - minB
+        if (delta <= 0) continue
+        for (const id of frames[b]!.ids) level.set(id, level.get(id)! + delta)
+        stable = false
+      }
+      for (let i = 0; i < diagram.classes.length; i++) {
+        for (const rel of diagram.relationships) {
+          const need = level.get(rel.from)! + 1
+          if (rel.from !== rel.to && level.get(rel.to)! < need) {
+            level.set(rel.to, need)
+            stable = false
+          }
+        }
+      }
+    }
+    if (!stable) for (const [id, lv] of before) level.set(id, lv)
+  }
+
   // A `note for X` note has no relationships, so it landed on level 0 above;
   // move it onto its class's row so the row placement below puts it right
   // beside that class.
@@ -1574,7 +1615,13 @@ export function renderClassAscii(
           // The entry run sits one row above the arrowhead row, so the head
           // has a stem above it. The first layout pass may lack the room
           // (its result is discarded below); the second pass always has it.
-          const runY = entryY - 1
+          // A frame's top border sits on that row for a box at the frame's
+          // top, so the run goes one row higher instead of along the border.
+          const onBorder = frameRects.some(
+            (r) =>
+              r.y0 === entryY - 1 && toAnchorX >= r.x0 && toAnchorX <= r.x1,
+          )
+          const runY = entryY - (onBorder ? 2 : 1)
           if (routeX !== toAnchorX) {
             detourEntryLevels.add(level.get(rel.to)! - 1)
           }
@@ -1611,6 +1658,9 @@ export function renderClassAscii(
               routeX < toAnchorX ? '┐' : '┌',
               lineH,
             )
+            for (let y = runY + 1; y < entryY; y++) {
+              setCGuarded(toAnchorX, y, lineV, 'line')
+            }
           }
 
           // Markers for detour case
