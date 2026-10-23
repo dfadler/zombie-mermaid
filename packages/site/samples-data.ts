@@ -103,7 +103,7 @@ export const samples: Sample[] = [
   D --> E((Circle))`,
   },
   {
-    title: 'Batch 1 Shapes',
+    title: 'Subroutine and Hexagon Shapes',
     category: 'Flowchart',
     description:
       'Subroutine, double circle, and hexagon — three specialty shapes for a predefined process, a double terminal, or a preparation step, beyond the five most common ones in Original Node Shapes.',
@@ -112,21 +112,21 @@ export const samples: Sample[] = [
   B --> C{{Hexagon}}`,
   },
   {
-    title: 'Batch 2 Shapes',
+    title: 'Cylinder and Trapezoid Shapes',
     category: 'Flowchart',
     description:
-      'Cylinder, asymmetric, trapezoid, and inverse trapezoid — four more specialty shapes, for a database, a flag or priority marker, or a manual operation, rounding out the full set alongside Batch 1 Shapes.',
+      'Cylinder, asymmetric, trapezoid, and inverse trapezoid — four more specialty shapes, for a database, a flag or priority marker, or a manual operation, rounding out the full set alongside Subroutine and Hexagon Shapes.',
     source: `graph LR
   A[(Database)] --> B>Flag Shape]
   B --> C[/Wider Bottom\\]
   C --> D[\\Wider Top/]`,
   },
   {
-    title: 'All 12 Flowchart Shapes',
+    title: 'Twelve Core Flowchart Shapes',
     category: 'Flowchart',
     gallery: true,
     description:
-      'Every shape from Original Node Shapes and both Batch pages, chained into one reference diagram — the single chart to screenshot or copy from when you need to see all twelve at a glance instead of checking three separate pages.',
+      'Every shape from Original Node Shapes, Subroutine and Hexagon Shapes and Cylinder and Trapezoid Shapes, chained into one reference diagram — the single chart to screenshot or copy from when you need to see all twelve at a glance instead of checking three separate pages.',
     source: `graph LR
   A[Rectangle] --> B(Rounded)
   B --> C{Diamond}
@@ -939,7 +939,7 @@ flowchart LR
   Car *-- Engine`,
   },
   {
-    title: 'Class: Aggregation (o--)',
+    title: 'Class: Aggregation',
     category: 'Class',
     description: 'Aggregation — "has" relationship with hollow diamond marker.',
     source: `classDiagram
@@ -1187,21 +1187,21 @@ flowchart LR
   PERSON ||--|| PASSPORT : has`,
   },
   {
-    title: 'ER: Exactly One to Zero-or-Many (||--o{)',
+    title: 'ER: Exactly One to Zero-or-Many',
     category: 'ER',
     description: "Classic one-to-many optional relationship (crow's foot).",
     source: `erDiagram
   CUSTOMER ||--o{ ORDER : places`,
   },
   {
-    title: 'ER: Zero-or-One to One-or-Many (|o--|{)',
+    title: 'ER: Zero-or-One to One-or-Many',
     category: 'ER',
     description: 'Optional on one side, at-least-one on the other.',
     source: `erDiagram
   SUPERVISOR |o--|{ EMPLOYEE : manages`,
   },
   {
-    title: 'ER: One-or-More to Zero-or-Many (}|--o{)',
+    title: 'ER: One-or-More to Zero-or-Many',
     category: 'ER',
     description: 'At-least-one to zero-or-many relationship.',
     source: `erDiagram

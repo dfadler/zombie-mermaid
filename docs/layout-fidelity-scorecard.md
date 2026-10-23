@@ -65,9 +65,9 @@ across that change.
 | Fan-Out Under Half-Column Parent                         | 100%     | 97%        | -           | 9     | 85%   | pass   |
 | Simple Flow                                              | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Original Node Shapes                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| Batch 1 Shapes                                           | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Batch 2 Shapes                                           | 100%     | 100%       | -           | 4     | 85%   | pass   |
-| All 12 Flowchart Shapes                                  | 100%     | 100%       | -           | 12    | 85%   | pass   |
+| Subroutine and Hexagon Shapes                            | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Cylinder and Trapezoid Shapes                            | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Twelve Core Flowchart Shapes                             | 100%     | 100%       | -           | 12    | 85%   | pass   |
 | All Edge Styles                                          | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | No-Arrow Edges                                           | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Text-Embedded Labels                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
@@ -132,7 +132,7 @@ Not scored (the oracle errored): zombie-mermaid.
 | ----------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
 | Class: Inheritance (<\|--)                      | 100%     | 100%       | -           | 3     | 95%   | pass   |
 | Class: Composition (*--)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Aggregation (o--)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Aggregation                              | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Class: Association (-->)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Class: Dependency (..>)                         | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Class: Realization (..\|>)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |

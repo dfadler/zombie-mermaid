@@ -63,16 +63,6 @@
           }
         ]
       }
-    },
-    {
-      "files": [
-        "packages/ascii-renderer/src/er-diagram.ts",
-        "packages/ascii-renderer/src/grid.ts",
-        "packages/ascii-renderer/src/edge-routing.ts",
-        "packages/ascii-renderer/src/port-offsets.ts",
-        "packages/ascii-renderer/src/flowchart.ts"
-      ],
-      "rules": { "capitalized-comments": "off" }
     }
   ]
 }

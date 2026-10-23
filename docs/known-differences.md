@@ -274,7 +274,7 @@ Opt-in only: without the flag the output is byte-identical to before.
 - **Pinned to mermaid 12.1.0 + elkjs 0.9.3.** The layout is only faithful to that pair. The
   repo's oracle pin is now 12.2.0, and `pnpm run elk-layout:oracle` on 12.2.0 differs from
   12.1.0 in three gallery samples (circle and double-circle node sizes in "Original Node
-  Shapes" and "Batch 1 Shapes", one edge path in "Labeled Fan-In (LR)"); the module still
+  Shapes" and "Subroutine and Hexagon Shapes", one edge path in "Labeled Fan-In (LR)"); the module still
   matches 12.1.0, which is what GitHub renders. The module is not yet updated to 12.2.0.
 - **Dependency.** `elkjs-0.9.3` (`npm:elkjs@0.9.3`) is an optional peer dependency of
   `zombie-mermaid`, kept separate from the `elkjs` 0.11/0.12 the SVG renderer uses. The layout
