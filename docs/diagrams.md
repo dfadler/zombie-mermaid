@@ -999,6 +999,27 @@ Known differences from Mermaid:
 Mermaid has no text output for pie charts; see
 [ASCII Pie Charts](#ascii-pie-charts) for this library's.
 
+## Unsupported upstream diagram types
+
+These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
+
+| Type                                                                  | Header                                                                                                          |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Use case                                                              | `usecase-beta`                                                                                                  |
+| Mindmap                                                               | `mindmap`                                                                                                       |
+| Packet                                                                | `packet` / `packet-beta`                                                                                        |
+| Gantt                                                                 | `gantt`                                                                                                         |
+| Timeline                                                              | `timeline`                                                                                                      |
+| User journey                                                          | `journey`                                                                                                       |
+| Quadrant chart                                                        | `quadrantChart`                                                                                                 |
+| Requirement                                                           | `requirementDiagram`                                                                                            |
+| Git graph                                                             | `gitGraph`                                                                                                      |
+| Kanban                                                                | `kanban`                                                                                                        |
+| Radar                                                                 | `radar-beta`                                                                                                    |
+| Treemap                                                               | `treemap-beta`                                                                                                  |
+| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
+| Sankey, Block                                                         | `sankey-beta`, `block-beta` (12.2.0 rejects them with an empty body; header names per upstream docs)            |
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
