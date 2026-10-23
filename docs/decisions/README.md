@@ -11,6 +11,8 @@ Only when both are true:
 
 Most changes don't need one. Don't write new records for past decisions, or write one speculatively — add it the first time a qualifying decision actually comes up. Keeping the `Status:` line and the index row of an existing doc current is not backfilling, and is expected.
 
+Investigation findings (method, measurements, tables) belong on the issue, per [docs/research/README.md](../research/README.md); a decision page keeps the decision and its consequences and links to the issue comment. `ascii-browser-font-investigation-978.md` and `ascii-orientation-audit-vs-beautiful-mermaid-1372.md` stay here for that reason ([#1937](https://github.com/dfadler/zombie-mermaid/issues/1937)): each closes off an alternative and carries a `Status:` line.
+
 ## Format
 
 One page, one decision:

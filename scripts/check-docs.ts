@@ -14,7 +14,6 @@ const FROZEN =
 // ponytail: whole-file skip, per-line baseline if this list grows.
 const KNOWN_STALE = new Set([
   'CLAUDE.md', // demo/client.ts (renamed; needs owner decision)
-  'docs/parser-error-audit-541.md', // pre-monorepo src/ paths
   'docs/xychart-design.md', // pre-monorepo src/ paths
   'docs/promotion/258-pr-rescue-candidates.md', // pre-monorepo src/ paths
 ])
