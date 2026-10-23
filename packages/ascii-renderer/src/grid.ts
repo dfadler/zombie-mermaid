@@ -1241,7 +1241,7 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
  */
 function centerParentsOverChildren(graph: AsciiGraph): void {
   const lr = graph.config.graphDirection === 'LR'
-  // ponytail: LR graphs with subgraphs keep the old layout; the cluster-exit
+  // Ponytail: LR graphs with subgraphs keep the old layout; the cluster-exit
   // wall/lane routing is tuned to it. Extend once those routes are re-checked.
   if (lr && graph.subgraphs.length > 0) return
   // Rank axis (flow direction) and cross axis (where siblings spread).
