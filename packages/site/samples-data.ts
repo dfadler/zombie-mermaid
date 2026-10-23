@@ -270,7 +270,8 @@ export const samples: Sample[] = [
     title: 'Subgraphs',
     category: 'Flowchart',
     gallery: true,
-    description: 'Grouped nodes inside labeled subgraph containers.',
+    description:
+      'Two sibling subgraphs (flat, one level) with an edge crossing between them.',
     source: `graph TD
   subgraph Frontend
     A[React App] --> B[State Manager]
@@ -284,7 +285,8 @@ export const samples: Sample[] = [
     title: 'Nested Subgraphs',
     category: 'Flowchart',
     gallery: true,
-    description: 'Subgraphs inside subgraphs for hierarchical grouping.',
+    description:
+      'A subgraph nested inside another (two levels), with edges entering the inner containers.',
     source: `graph TD
   subgraph Cloud
     subgraph us-east [US East Region]
@@ -1097,7 +1099,7 @@ flowchart LR
     category: 'Class',
     gallery: true,
     description:
-      'A complete class hierarchy with abstract base, interfaces, and concrete classes.',
+      'A three-level inheritance tree with an abstract base class and typed members on every class — for member layout and deep hierarchies, not relationship markers.',
     source: `classDiagram
   class Animal {
     <<abstract>>
@@ -1376,7 +1378,7 @@ flowchart LR
     title: 'XY: Line Chart',
     category: 'XY Chart',
     gallery: true,
-    description: 'Line chart showing revenue growth over years.',
+    description: 'A single line series — the simplest line chart.',
     source: `xychart-beta
     title "Revenue Growth"
     x-axis [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
@@ -1423,7 +1425,7 @@ flowchart LR
     title: 'XY: Dual Lines',
     category: 'XY Chart',
     gallery: true,
-    description: 'Two lines comparing planned vs actual values.',
+    description: 'Two line series on shared axes, where the lines cross.',
     source: `xychart-beta
     title "Planned vs Actual"
     x-axis [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug]
