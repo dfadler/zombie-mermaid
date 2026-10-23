@@ -277,7 +277,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const right = Math.max(
     XY.padding,
     estimateTextWidth(
-      valueLabels[valueLabels.length - 1] ?? '',
+      valueLabels[valueLabels.length - 1]!,
       XY.axisLabelFontSize,
       XY.axisLabelFontWeight,
     ) /
