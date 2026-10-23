@@ -42,7 +42,7 @@ non-hero, non-Interactivity samples:
 | XY Chart  | 10    | 7       | 2 (1 already featured) |
 
 Cuts are either redundant with a broader reference sample already kept
-(e.g. "All 12 Flowchart Shapes" supersedes three narrower shape batches),
+(e.g. "Twelve Core Flowchart Shapes" supersedes three narrower shape batches),
 or explicit regression/edge-case fixtures (identifiable from their own
 description text) that belong in the visual-test suite but never in a
 gallery. Every category's real-world-shaped examples (a CI/CD pipeline, an
