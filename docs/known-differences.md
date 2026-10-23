@@ -116,6 +116,50 @@ renders the literal `Labels <&> "quotes"` and does not copy the bug. Duplicate s
 labels such as `"R&D"` keep the first value in both renderers
 ([#2084](https://github.com/dfadler/zombie-mermaid/issues/2084)).
 
+## Pie charts
+
+Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 (the pin, which is
+also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub renders.
+
+- **Palette.** zombie-mermaid colours slices with a blue/teal scale derived from the
+  theme accent; mermaid uses its pastel `pie1`..`pie12` scale (`#ECECFF`, `#ffffde`, ...).
+  `themeVariables` `pie1`..`pie12` are honoured only when opted in (see the
+  `themeVariables` section below).
+- **Empty pie.** When every slice is zero, zombie-mermaid draws a full outline circle;
+  mermaid draws a half arc, which reads as a rendering glitch.
+- **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
+  share of the whole total, including slices that get no bar cell (under 1%, or past the
+  bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
+  ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
+
+## XY charts
+
+Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
+also covered 12.1.0). Unless noted, these are choices, not bugs.
+
+- **SVG styling.** zombie-mermaid draws rounded bars, a dotted grid, point markers on
+  lines, monotone-smoothed lines, a generated `Bar 1` / `Line 1` legend when there is more
+  than one series, and grouped bar series side by side. Mermaid draws square bars, no grid,
+  no markers, no legend and straight line segments, and draws the second bar series over
+  the first.
+- **Horizontal charts.** The value axis sits at the bottom; mermaid puts it at the top
+  (its `top-axis` group).
+- **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
+  mermaid 12.2.0 renders `NewUsers`.
+- **Degenerate ranges.** An all-zero series gets a -0.1..0.1 axis and a single value 42
+  gets 41.9..42.1, so the data has a visible scale; mermaid shows one lone `0` or `42`
+  tick and no scale.
+- **ASCII y-axis.** Mermaid has no ASCII output. The plot is 20 rows tall, fewer than
+  mermaid's ~10 d3 ticks need once they round to rows, so the renderer labels every Nth
+  tick (the smallest N that leaves an unlabeled row between labels) rather than putting
+  labels on adjacent rows
+  ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310)).
+- **Known limitation, not intentional.** `smoothCurvePath` treats y as a function of x.
+  On a horizontal line chart the points are (value, category), so a series that is not
+  monotone in value can make the smoothed line hook back on itself (the `xychart-53`
+  sample). It has not been decided whether to fix this by smoothing along the category
+  axis or to fall back to straight segments in horizontal mode.
+
 ## ASCII: several sources into one target share the target's face
 
 Intentional ([#1826](https://github.com/dfadler/zombie-mermaid/issues/1826)). The ASCII
