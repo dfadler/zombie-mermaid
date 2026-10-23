@@ -186,7 +186,9 @@ export function renderXYChartSvg(
   // 3. Lines — shadow first (wider, low opacity), then crisp line on top
   for (const line of chart.lines) {
     if (line.points.length === 0) continue
-    const d = smoothCurvePath(line.points)
+    const d = chart.horizontal
+      ? straightLinePath(line.points)
+      : smoothCurvePath(line.points)
     parts.push(
       `<path d="${d}" class="xychart-line-shadow xychart-color-${line.colorIndex}" transform="translate(0,2)"/>`,
     )
@@ -505,6 +507,16 @@ function roundedRightBarPath(
     `Q${r(x)},${r(y)} ${r(x + rr)},${r(y)}`, // top-left
     'Z',
   ].join(' ')
+}
+
+// Horizontal charts plot (value, category) and mermaid draws straight segments
+// in category order there, so no smoothing (smoothCurvePath needs y = f(x)).
+export function straightLinePath(
+  points: Array<{ x: number; y: number }>,
+): string {
+  return points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${r(p.x)},${r(p.y)}`)
+    .join(' ')
 }
 
 // ============================================================================

@@ -138,7 +138,8 @@ Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (th
 also covered 12.1.0). Unless noted, these are choices, not bugs.
 
 - **SVG styling.** zombie-mermaid draws rounded bars, a dotted grid, point markers on
-  lines, monotone-smoothed lines, a generated `Bar 1` / `Line 1` legend when there is more
+  lines, monotone-smoothed lines on vertical charts (horizontal charts use straight
+  segments in category order, as mermaid does, [#2334](https://github.com/dfadler/zombie-mermaid/issues/2334)), a generated `Bar 1` / `Line 1` legend when there is more
   than one series, and grouped bar series side by side. Mermaid draws square bars, no grid,
   no markers, no legend and straight line segments, and draws the second bar series over
   the first.
@@ -154,11 +155,6 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   tick (the smallest N that leaves an unlabeled row between labels) rather than putting
   labels on adjacent rows
   ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310)).
-- **Known limitation, not intentional.** `smoothCurvePath` treats y as a function of x.
-  On a horizontal line chart the points are (value, category), so a series that is not
-  monotone in value can make the smoothed line hook back on itself (the `xychart-53`
-  sample). It has not been decided whether to fix this by smoothing along the category
-  axis or to fall back to straight segments in horizontal mode.
 
 ## ASCII: several sources into one target share the target's face
 
