@@ -272,7 +272,18 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     maxCatLabelWidth +
     XY.yLabelGap +
     (hasXTitle ? XY.axisTitlePad : 0)
-  const right = XY.padding
+  // The last value label is centered on the plot's right edge, so reserve
+  // half its width there (#2311).
+  const right = Math.max(
+    XY.padding,
+    estimateTextWidth(
+      valueLabels[valueLabels.length - 1] ?? '',
+      XY.axisLabelFontSize,
+      XY.axisLabelFontWeight,
+    ) /
+      2 +
+      4,
+  )
 
   const plotW = XY.plotWidth
   const plotH = XY.plotHeight
