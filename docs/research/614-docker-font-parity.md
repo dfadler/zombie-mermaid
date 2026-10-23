@@ -1,5 +1,7 @@
 # Research: font-corrected Playwright Docker image, ASCII/terminal baseline parity
 
+As of: 2026-10-22, reviewed against `main` @ `bd0a701c`. Cited files exist; the measured numbers were not re-run. Re-measure before quoting one as current.
+
 Status: **answered, with a correction to the recommended fix.** Written for
 [#614](https://github.com/dfadler/zombie-mermaid/issues/614), part of the
 [#544](https://github.com/dfadler/zombie-mermaid/issues/544) Docker tracking cluster.

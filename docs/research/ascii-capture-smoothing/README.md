@@ -1,5 +1,7 @@
 # Spike: smoothing the lines in real-PTY ASCII captures
 
+As of: 2026-10-22, reviewed against `main` @ `bd0a701c`. `scripts/ascii-terminal-capture.sh` and `scripts/ascii-cast-to-png.mjs` still exist as described.
+
 Status: **spike, answered. Outcome: the artefact is the rasteriser, not the renderer; no renderer change. Context: [#1278](https://github.com/dfadler/zombie-mermaid/issues/1278).**
 
 Context: on #1278 the PR screenshots (`scripts/ascii-terminal-capture.sh`, asciinema + agg) show a
