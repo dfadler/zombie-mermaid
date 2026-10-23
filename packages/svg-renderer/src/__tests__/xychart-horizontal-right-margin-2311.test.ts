@@ -20,4 +20,17 @@ describe('horizontal XY chart right margin (#2311)', () => {
     const half = estimateTextWidth(last.label, 14, 400) / 2
     expect(last.labelX + half).toBeLessThanOrEqual(l.width)
   })
+
+  it('keeps the default padding when the last label is short', () => {
+    const l = layoutXYChart(
+      parseXYChart(
+        splitStatements(
+          `xychart-beta horizontal
+    x-axis [A, B]
+    bar [1, 2]`,
+        ),
+      ),
+    )
+    expect(l.width - (l.plotArea.x + l.plotArea.width)).toBe(22)
+  })
 })
