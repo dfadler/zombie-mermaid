@@ -316,6 +316,34 @@ await check('MCP server starts, answers initialize and renders', async () => {
   }
 })
 
+// #1986: legacy `moduleResolution: node` has no `exports` support, so the
+// subpaths resolve only through the root `typesVersions` map.
+await check('types resolve under moduleResolution node10', () => {
+  writeFileSync(
+    join(app, 'node10.ts'),
+    `import { renderMermaidASCII } from 'zombie-mermaid/ascii'
+import { createMcpServer } from 'zombie-mermaid/mcp'
+void [renderMermaidASCII, createMcpServer]
+`,
+  )
+  writeFileSync(
+    join(app, 'tsconfig.node10.json'),
+    JSON.stringify({
+      compilerOptions: {
+        module: 'commonjs',
+        moduleResolution: 'node10',
+        ignoreDeprecations: '6.0',
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+        types: ['node'],
+      },
+      files: ['node10.ts'],
+    }),
+  )
+  run(join(app, 'node_modules/.bin/tsc'), ['-p', 'tsconfig.node10.json'], app)
+})
+
 await check('Vite bundles a consumer app', () => {
   writeFileSync(
     // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag -- static markup written to this script's own temp dir
