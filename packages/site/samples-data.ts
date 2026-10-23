@@ -480,7 +480,7 @@ flowchart LR
   // ══════════════════════════════════════════════════════════════════════════
 
   {
-    title: 'Basic State Diagram',
+    title: 'State: Basic State Diagram',
     category: 'State',
     description:
       'A simple `stateDiagram-v2` with start/end pseudostates and transitions.',

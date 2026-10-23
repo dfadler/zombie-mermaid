@@ -117,7 +117,7 @@ across that change.
 | Sample                       | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | ---------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
 | State: Notes                 | 100%     | 83%        | -           | 4     | 80%   | pass   |
-| Basic State Diagram          | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| State: Basic State Diagram   | 100%     | 100%       | -           | 5     | 85%   | pass   |
 | State: Composite States      | 100%     | 100%       | 100%        | 8     | 85%   | pass   |
 | State: Connection Lifecycle  | 100%     | 100%       | -           | 7     | 85%   | pass   |
 | State: CJK State Names       | 100%     | 100%       | -           | 6     | 85%   | pass   |
