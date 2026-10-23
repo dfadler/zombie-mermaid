@@ -2715,4 +2715,23 @@ pie title Pets adopted by volunteers
   Order "1" --> "*" Item : contains
   Repo ..> Order : stores`,
   },
+  {
+    title: 'Class: Two Namespaces with Cross Edges',
+    category: 'Class',
+    description:
+      'Two namespaces whose classes are linked across the frames; the frames stay apart and each keeps its own members (#2312).',
+    source: `classDiagram
+  namespace One {
+    class A
+    class B
+  }
+  namespace Two {
+    class C
+    class D
+  }
+  A <|-- B
+  C <|-- D
+  A --> C
+  B --> D`,
+  },
 ]

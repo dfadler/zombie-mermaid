@@ -499,6 +499,47 @@ export function renderClassAscii(
     if (!level.has(cls.id)) level.set(cls.id, 0)
   }
 
+  // A frame is the bounding box of its members, so a class that sits between
+  // two namespaces' rows interleaves them and the boxes overlap. When all
+  // edges between two frames run one way, put the target frame wholly below
+  // the source frame, as mermaid does, then restore parent-above-child for
+  // everything pushed down. Frames in a cycle keep their levels.
+  if (frames.length > 1) {
+    const before = new Map(level)
+    const frameEdges = new Set<string>()
+    for (const rel of diagram.relationships) {
+      const a = frameOf.get(rel.from)
+      const b = frameOf.get(rel.to)
+      if (a !== undefined && b !== undefined && a !== b) {
+        frameEdges.add(`${a}>${b}`)
+      }
+    }
+    let stable = false
+    for (let pass = 0; pass <= frames.length && !stable; pass++) {
+      stable = true
+      for (const key of frameEdges) {
+        const [a, b] = key.split('>').map(Number) as [number, number]
+        if (frameEdges.has(`${b}>${a}`)) continue
+        const maxA = Math.max(...frames[a]!.ids.map((id) => level.get(id)!))
+        const minB = Math.min(...frames[b]!.ids.map((id) => level.get(id)!))
+        const delta = maxA + 1 - minB
+        if (delta <= 0) continue
+        for (const id of frames[b]!.ids) level.set(id, level.get(id)! + delta)
+        stable = false
+      }
+      for (let i = 0; i < diagram.classes.length; i++) {
+        for (const rel of diagram.relationships) {
+          const need = level.get(rel.from)! + 1
+          if (rel.from !== rel.to && level.get(rel.to)! < need) {
+            level.set(rel.to, need)
+            stable = false
+          }
+        }
+      }
+    }
+    if (!stable) for (const [id, lv] of before) level.set(id, lv)
+  }
+
   // A `note for X` note has no relationships, so it landed on level 0 above;
   // move it onto its class's row so the row placement below puts it right
   // beside that class.
@@ -1018,7 +1059,9 @@ export function renderClassAscii(
       p.y += FRAME_TOP_PAD
     }
     maxSlotEnd += FRAME_SIDE_PAD
-    for (const fr of frames) {
+    const extent = (
+      fr: AsciiNamespaceFrame,
+    ): { minX: number; minY: number; maxX: number; maxY: number } => {
       let minX = Infinity
       let minY = Infinity
       let maxX = -Infinity
@@ -1031,6 +1074,38 @@ export function renderClassAscii(
         maxX = Math.max(maxX, p.x + p.width - 1)
         maxY = Math.max(maxY, p.y + p.height - 1)
       }
+      return { minX, minY, maxX, maxY }
+    }
+    // A frame is the bounding box of its members, so members of two frames
+    // can interleave (a child placed between parents from another frame) and
+    // the boxes overlap. Push the right-hand frame, and everything right of
+    // it that is not in the left-hand frame, clear of the left-hand one.
+    const nsIds = (fr: AsciiNamespaceFrame): Set<string> => new Set(fr.ids)
+    for (let pass = 0; pass <= frames.length * frames.length; pass++) {
+      let moved = false
+      for (const a of frames) {
+        for (const b of frames) {
+          if (a === b) continue
+          const ea = extent(a)
+          const eb = extent(b)
+          const yOverlap =
+            ea.minY - FRAME_TOP_PAD <= eb.maxY + FRAME_BOTTOM_PAD &&
+            eb.minY - FRAME_TOP_PAD <= ea.maxY + FRAME_BOTTOM_PAD
+          const delta = ea.maxX + 2 * FRAME_SIDE_PAD + 2 - eb.minX
+          // `b` is the frame starting right of `a`'s start.
+          if (!yOverlap || eb.minX < ea.minX || delta <= 0) continue
+          const inA = nsIds(a)
+          for (const p of placed.values()) {
+            if (!inA.has(p.cls.id) && p.x >= eb.minX) p.x += delta
+          }
+          maxSlotEnd += delta
+          moved = true
+        }
+      }
+      if (!moved) break
+    }
+    for (const fr of frames) {
+      const { minX, minY, maxX, maxY } = extent(fr)
       if (minX === Infinity) continue
       const x0 = minX - FRAME_SIDE_PAD
       // Wide enough for ` Title ` between the corners, plus a dash each side.
@@ -1182,6 +1257,10 @@ export function renderClassAscii(
     return false
   }
 
+  // Vertical runs of detours already routed, so a later detour takes its own
+  // column instead of drawing over theirs.
+  const detourLanes: { x: number; y1: number; y2: number }[] = []
+
   /** Find a clear vertical column for routing that doesn't pass through any boxes */
   function findClearColumn(
     startX: number,
@@ -1193,7 +1272,15 @@ export function renderClassAscii(
       for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
         if (isInsideBox(x, y, excludeIds)) return false
       }
-      return true
+      // A detour column other than the straight one must not run along
+      // another detour's column or a frame's side border.
+      return (
+        x === startX ||
+        (!detourLanes.some((l) => l.x === x && l.y1 <= y2 && y1 <= l.y2) &&
+          !frameRects.some(
+            (r) => (x === r.x0 || x === r.x1) && r.y0 <= y2 && y1 <= r.y1,
+          ))
+      )
     }
 
     // Scan outward from `startX`, right before left at each distance, never
@@ -1483,11 +1570,9 @@ export function renderClassAscii(
     // Connection points: the lanes the line runs along (`fromCX`/`toCX`)
     // and the anchors where it touches each box border — see
     // `connectionColumns` for why those can differ.
-    const { fromCX, toCX, fromAnchorX, toAnchorX } = connectionColumns(
-      relIndex,
-      fromP,
-      toP,
-    )
+    const cols = connectionColumns(relIndex, fromP, toP)
+    const { fromCX, toCX, fromAnchorX } = cols
+    let toAnchorX = cols.toAnchorX
     const fromBY = fromP.y + fromP.height - 1
     const toTY = toP.y
 
@@ -1512,8 +1597,26 @@ export function renderClassAscii(
         // so a fanned-out lane needs no separate jog here — the detour's
         // own horizontal already runs along the jog row.
 
+        // Skip-level edges aren't in the fan-out group, so step the anchor
+        // off any column another edge into this box already uses.
+        const taken = new Set<number>()
+        diagram.relationships.forEach((other, i) => {
+          const otherFrom = placed.get(other.from)
+          if (i !== relIndex && other.to === rel.to && otherFrom) {
+            taken.add(connectionColumns(i, otherFrom, toP).toAnchorX)
+          }
+        })
+        const step = routeX > toAnchorX ? 1 : -1
+        for (
+          let x = toAnchorX + step;
+          taken.has(toAnchorX) && x > toP.x && x < toP.x + toP.width - 1;
+          x += step
+        ) {
+          if (!taken.has(x)) toAnchorX = x
+        }
         const exitY = fromBY + 1
         const entryY = toTY - 1
+        detourLanes.push({ x: routeX, y1: exitY, y2: entryY })
         detourRoutes.set(relIndex, {
           routeX,
           exitY,
@@ -1540,7 +1643,13 @@ export function renderClassAscii(
           // The entry run sits one row above the arrowhead row, so the head
           // has a stem above it. The first layout pass may lack the room
           // (its result is discarded below); the second pass always has it.
-          const runY = entryY - 1
+          // A frame's top border sits on that row for a box at the frame's
+          // top, so the run goes one row higher instead of along the border.
+          const onBorder = frameRects.some(
+            (r) =>
+              r.y0 === entryY - 1 && toAnchorX >= r.x0 && toAnchorX <= r.x1,
+          )
+          const runY = entryY - (onBorder ? 2 : 1)
           if (routeX !== toAnchorX) {
             detourEntryLevels.add(level.get(rel.to)! - 1)
           }
@@ -1577,6 +1686,9 @@ export function renderClassAscii(
               routeX < toAnchorX ? '┐' : '┌',
               lineH,
             )
+            for (let y = runY + 1; y < entryY; y++) {
+              setCGuarded(toAnchorX, y, lineV, 'line')
+            }
           }
 
           // Markers for detour case
