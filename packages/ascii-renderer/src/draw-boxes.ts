@@ -17,6 +17,7 @@ import { mkCanvas, write } from './canvas.ts'
 import { splitLines } from './multiline-utils.ts'
 import { getCorners } from './shapes/corners.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
+import { decodeSections } from './shapes/class-box.ts'
 
 // ============================================================================
 // Node drawing — renders a node using shape-aware rendering
@@ -49,6 +50,18 @@ export function drawNode(node: AsciiNode, graph: AsciiGraph): Canvas {
  * All shapes are rendered as rectangles with distinctive corner characters
  * (defined in corners.ts) to indicate shape type.
  */
+/** The glyph a state start/end/choice node is drawn as, if it is one. */
+export function pseudoStateGlyph(
+  node: AsciiNode,
+  useAscii: boolean,
+): string | undefined {
+  if (node.shape === 'state-start') return useAscii ? '*' : '●'
+  if (node.shape === 'state-end') return useAscii ? '@' : '◉'
+  if (node.shape === 'diamond' && node.displayLabel === '')
+    return useAscii ? 'o' : '◇'
+  return undefined
+}
+
 function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   // Every node is guaranteed a gridCoord before drawing starts —
   // createMapping (grid.ts) seeds even nodes in otherwise-unreachable
@@ -75,14 +88,67 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   const to: DrawingCoord = { x: w, y: h }
   const box = mkCanvas(Math.max(from.x, to.x), Math.max(from.y, to.y))
 
-  // An unlabeled fork/join is a solid one-row bar, not an outlined box. Its
-  // blank top and bottom rows are where edges attach, so they stay clear of it.
+  // An unlabeled fork/join is a solid one-row bar (a 1-row cell, so edges
+  // attach flush to it, #2027), not an outlined box.
   if (node.shape === 'fork-join' && node.displayLabel === '') {
-    const mid = from.y + Math.floor(h / 2)
+    const mid = from.y
     for (let x = from.x; x <= to.x; x++)
       write(box, x, mid, useAscii ? '#' : '█')
     node.labelRows = { top: mid, bottom: mid }
     return box
+  }
+
+  // Pseudo-states are one glyph (#2027), not a box. It sits at the start of
+  // its cell along the flow axis, where edges land (a taller sibling in the
+  // row/column would otherwise strand it), and centred across it.
+  const glyph = pseudoStateGlyph(node, useAscii)
+  if (glyph !== undefined) {
+    const lr = graph.config.graphDirection === 'LR'
+    // Same arithmetic as gridToDrawingCoord (the box is drawn half its first
+    // column in, edges land half the middle one in), so edges meet the glyph.
+    const col = (i: number) => graph.columnWidth.get(gc.x + i) ?? 0
+    const row = (i: number) => graph.rowHeight.get(gc.y + i) ?? 0
+    const gx = lr
+      ? from.x
+      : col(0) + Math.floor(col(1) / 2) - Math.floor(col(0) / 2)
+    const cy = lr
+      ? row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
+      : from.y
+    write(box, gx, cy, glyph)
+    node.labelRows = { top: cy, bottom: cy }
+    return box
+  }
+
+  // Class diagram nodes (LR/RL lowering, class-flow.ts): a compartment box at
+  // the size the grid gave it, or the bare interface name.
+  if (node.shape === 'class-name') {
+    // On the row edges land on, like a pseudo-state glyph (see below).
+    const row = (i: number) => graph.rowHeight.get(gc.y + i) ?? 0
+    const cy = row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
+    const cells = toDisplayCells(node.displayLabel)
+    const x0 = node.textAlign === 'end' ? to.x + 1 - cells.length : from.x
+    for (const [i, cell] of cells.entries()) write(box, x0 + i, cy, cell)
+    node.labelRows = { top: cy, bottom: cy }
+    return box
+  }
+  if (node.shape === 'class-box' || node.shape === 'class-note') {
+    const drawn = drawMultiBox(
+      decodeSections(node.displayLabel),
+      useAscii,
+      graph.config.boxBorderPadding,
+      { width: w + 1, height: h + 1 },
+    )
+    if (node.shape === 'class-note') {
+      const r = getCorners('rounded', useAscii)
+      write(drawn, 0, 0, r.tl)
+      write(drawn, w, 0, r.tr)
+      write(drawn, 0, h, r.bl)
+      write(drawn, w, h, r.br)
+    }
+    // Every interior row is one label rectangle, so the RL flip keeps the
+    // member text reading left to right (see mirrorLabelColumns).
+    node.labelRows = { top: 1, bottom: Math.max(h - 1, 1) }
+    return drawn
   }
 
   // Get corner characters for this shape type
@@ -200,7 +266,7 @@ export function measureMultiBox(
   // Height: sum of all section line counts + dividers + 2 border rows
   let totalLines = 0
   for (const section of sections) {
-    totalLines += Math.max(section.length, 1) // at least 1 row per section
+    totalLines += Math.max(section.length, 1) // At least 1 row per section
   }
 
   return {
@@ -223,15 +289,20 @@ export function drawMultiBox(
   sections: string[][],
   useAscii: boolean,
   padding: number = 1,
+  fit?: { width: number; height: number },
 ): Canvas {
   // Clamp here too (not just inside measureMultiBox) since `padding` is also
   // used directly below for each line's startX — see the comment in
   // measureMultiBox for why a negative value can reach this function.
   const clampedPadding = Math.max(0, padding)
-  const { width: boxWidth, height: boxHeight } = measureMultiBox(
-    sections,
-    clampedPadding,
-  )
+  const natural = measureMultiBox(sections, clampedPadding)
+  // `fit` stretches the box to a cell the layout allotted (flowchart grid):
+  // wider is plain space on the right, taller leaves the extra rows empty at
+  // the bottom — or around a single compartment, which is centred instead.
+  const boxWidth = Math.max(natural.width, fit?.width ?? 0)
+  const boxHeight = Math.max(natural.height, fit?.height ?? 0)
+  const topSlack =
+    sections.length === 1 ? Math.floor((boxHeight - natural.height) / 2) : 0
 
   // Box-drawing characters
   const hLine = useAscii ? '-' : '─'
@@ -262,7 +333,7 @@ export function drawMultiBox(
   }
 
   // Render sections with dividers
-  let row = 1 // current y position (starts after top border)
+  let row = 1 + topSlack // Current y position (starts after top border)
   for (let s = 0; s < sections.length; s++) {
     const section = sections[s]!
     const lines = section.length > 0 ? section : ['']

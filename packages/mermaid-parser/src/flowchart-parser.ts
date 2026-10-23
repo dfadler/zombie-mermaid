@@ -186,7 +186,9 @@ export function parseMermaid(text: string): MermaidGraph {
   const lines = isState ? groups.flat() : mergeContinuationLines(groups)
 
   if (lines.length === 0) {
-    throw new Error('Empty mermaid diagram')
+    throw new MermaidParseError('Empty mermaid diagram', {
+      diagramType: 'flowchart',
+    })
   }
 
   // Detect diagram type from header
@@ -197,6 +199,11 @@ export function parseMermaid(text: string): MermaidGraph {
     ? parseStateDiagram(lines)
     : parseFlowchart(lines)
 
+  // Mermaid reads a state diagram's `lineColor` under `theme: base` only (a
+  // flowchart's under every theme; measured on 12.1.0 and 12.2.0).
+  if (isState && initConfig.theme !== 'base') {
+    delete initConfig.themeVariables?.lineColor
+  }
   graph.initConfig = initConfig
   return graph
 }
@@ -213,7 +220,9 @@ function parseFlowchart(lines: Statement[]): MermaidGraph {
   const headerStmt = lines[0]
   if (headerStmt === undefined) {
     /* v8 ignore next */
-    throw new Error('parseFlowchart called with no lines')
+    throw new MermaidParseError('parseFlowchart called with no lines', {
+      diagramType: 'flowchart',
+    })
   }
   const header = headerStmt.text
 
@@ -233,6 +242,7 @@ function parseFlowchart(lines: Statement[]): MermaidGraph {
         rest.length > 0
           ? `Line ${headerStmt.line}: Invalid direction "${rest}" in header "${header}". Expected one of: TD, TB, LR, BT, RL.`
           : `Line ${headerStmt.line}: Missing direction in header "${header}". Expected e.g. "graph TD" or "flowchart LR" — one of: TD, TB, LR, BT, RL.`,
+        { diagramType: 'flowchart' },
       )
     }
 
@@ -246,6 +256,7 @@ function parseFlowchart(lines: Statement[]): MermaidGraph {
         : ''
     throw new MermaidParseError(
       `Line ${headerStmt.line}: Invalid mermaid header: "${header}".${hint} Supported headers: ${SUPPORTED_HEADERS}.`,
+      { diagramType: 'flowchart' },
     )
   }
 
@@ -689,8 +700,9 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   }
 
   if (noteBlock) {
-    throw new Error(
+    throw new MermaidParseError(
       `Unterminated note block for state "${noteBlock.target}": missing "end note"`,
+      { diagramType: 'flowchart' },
     )
   }
 

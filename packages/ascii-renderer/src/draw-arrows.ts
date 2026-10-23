@@ -19,6 +19,7 @@ import type {
   Direction,
   AsciiGraph,
   AsciiEdge,
+  AsciiEdgeMarker,
   AsciiEdgeStyle,
   AsciiNode,
   AsciiSubgraph,
@@ -36,6 +37,7 @@ import {
   drawingCoordEquals,
   requireGridCoord,
 } from './types.ts'
+import { pseudoStateGlyph } from './draw-boxes.ts'
 import { blankLayer, copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
@@ -89,6 +91,17 @@ export function drawArrow(
   // both are skipped instead of indexing into the empty linesDrawn/lineDirs
   // arrays.
   const hasSegments = linesDrawn.length > 0
+  if (hasSegments) {
+    // Where the two ends were drawn, for passes that label them afterwards.
+    const lastLine = linesDrawn[linesDrawn.length - 1]!
+    edge.ends = {
+      start: { ...linesDrawn[0]![0]!, dir: lineDirs[0]! },
+      end: {
+        ...lastLine[lastLine.length - 1]!,
+        dir: lineDirs[lineDirs.length - 1]!,
+      },
+    }
+  }
 
   /*
    * An invisible link (`A ~~~ B`) routes and reserves space like any other
@@ -504,7 +517,7 @@ function drawPath(
   startOverride?: DrawingCoord,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
-  // path is non-empty: drawArrow (drawPath's sole caller) already returns
+  // Path is non-empty: drawArrow (drawPath's sole caller) already returns
   // early when edge.path.length === 0.
   let previousCoord = path[0]!
   const linesDrawn: DrawingCoord[][] = []
@@ -578,6 +591,8 @@ function drawPath(
 
 /** Vertical box-border characters a horizontal connector can genuinely merge with. */
 const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊', '|', '‖'])
+/** Solid fork/join bar cell (Unicode / ASCII): nothing to connect to, nothing to overwrite. */
+const BAR_CHARS = new Set(['█', '#'])
 /** Horizontal box-border characters a vertical connector can genuinely merge with. */
 const HORIZONTAL_BORDER_CHARS = new Set(['─', '━', '═', '╌', '┄', '-', '='])
 
@@ -609,7 +624,7 @@ function drawBoxStart(
   // bordered design), unless the exit starts on a cluster wall (#1330).
   if (
     !wallAt &&
-    (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end')
+    pseudoStateGlyph(sourceNode, graph.config.useAscii) !== undefined
   ) {
     return canvas
   }
@@ -647,6 +662,7 @@ function drawBoxStart(
     const x = from.x
     const y = from.y - 1
     const existing = existingOnBox(x, y)
+    if (existing !== undefined && BAR_CHARS.has(existing)) return canvas
     const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
     write(canvas, x, y, hasBorder ? (junction ?? '┬') : useAscii ? '|' : '│')
@@ -690,6 +706,10 @@ function drawBoxStart(
           ? '-'
           : '─',
     )
+    // A widened border column starts the stroke past the real border; bridge
+    // the blank cells between them so the connector isn't an orphan (#2027).
+    const [lo, hi] = x < from.x ? [x + 1, from.x - 1] : [from.x + 1, x - 1]
+    for (let gx = lo; gx <= hi; gx++) write(canvas, gx, y, useAscii ? '-' : '─')
   }
 
   return canvas
@@ -741,10 +761,30 @@ function drawBoxEnd(
  */
 export function markerArrowChar(
   useAscii: boolean,
-  marker: 'circle' | 'cross' | undefined,
+  marker: AsciiEdgeMarker | undefined,
+  dir?: Direction,
 ): string | undefined {
   if (marker === 'circle') return useAscii ? 'o' : '○'
   if (marker === 'cross') return useAscii ? 'x' : '✕'
+  if (marker === 'class-circle') return useAscii ? 'O' : '○'
+  if (marker === 'class-diamond-filled') return useAscii ? '*' : '◆'
+  if (marker === 'class-diamond') return useAscii ? 'o' : '◇'
+  if (marker === 'class-triangle' || marker === 'class-arrow') {
+    // `dir` is the way the line arrives at the glyph, into the box it marks;
+    // the head points that way (the same glyphs class-diagram.ts's top-down
+    // drawing uses).
+    const i = dir
+      ? [Up, Down, Left, Right].findIndex((d) => dirEquals(dir, d))
+      : 3
+    const hollow = marker === 'class-triangle'
+    return (
+      useAscii
+        ? ['^', 'v', '<', '>']
+        : hollow
+          ? ['△', '▽', '◁', '▷']
+          : ['▲', '▼', '◀', '▶']
+    )[i < 0 ? 3 : i]
+  }
   return undefined
 }
 
@@ -805,7 +845,7 @@ function drawArrowHead(
   graph: AsciiGraph,
   lastLine: DrawingCoord[],
   fallbackDir: Direction,
-  marker?: 'circle' | 'cross',
+  marker?: AsciiEdgeMarker,
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   if (lastLine.length === 0) return canvas
@@ -825,7 +865,7 @@ function drawArrowHead(
   let dir = determineDirection(from, lastPos)
   if (lastLine.length === 1 || dirEquals(dir, Middle)) dir = fallbackDir
 
-  const markerChar = markerArrowChar(graph.config.useAscii, marker)
+  const markerChar = markerArrowChar(graph.config.useAscii, marker, dir)
   let char: string
   if (markerChar !== undefined) {
     char = markerChar
@@ -1533,6 +1573,19 @@ function hitsOtherLabel(
  * (`labelAware = false`) so this stays a pure function of the layout.
  */
 function otherLabelPlacements(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { x: number; y: number; text: string }[] {
+  // Memoised like `resolveLabelPlacement`: every slide candidate re-asks.
+  const key = `${graph.edges.indexOf(edge)}:others`
+  const hit = placementMemo.get(key)
+  if (hit) return hit
+  const out = computeOtherLabelPlacements(graph, edge)
+  placementMemo.set(key, out)
+  return out
+}
+
+function computeOtherLabelPlacements(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] {

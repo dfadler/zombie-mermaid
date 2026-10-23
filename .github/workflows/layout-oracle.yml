@@ -1,0 +1,119 @@
+name: Layout oracle
+
+# Weekly layout-fidelity scorecard against the pinned mermaid (#2037, umbrella
+# #1502). Runs scripts/layout-oracle.ts --thresholds in headless Chromium and
+# reports any sample that fell below its floor. Scheduled only, never on
+# pull_request: it needs Chromium, takes minutes, and the pinned mermaid does not
+# change per PR, so it cannot fail an unrelated PR.
+#
+# Reporting (least noisy): the job goes red on a breach, the run summary carries
+# the table, the JSON is an artifact, and ONE open issue labelled `layout-oracle`
+# is created on the first breach and edited in place afterwards (no comment
+# per week, no second issue). It never pushes to main; refreshing
+# layout-fidelity-history.jsonl and the scorecard doc stays a manual
+# `pnpm run layout:scorecard` PR. The pin is not bumped or bypassed here: the
+# min-release-age guard applies, and a stale pin shows up in the summary.
+on:
+  schedule:
+    - cron: '47 6 * * 1' # Monday, staggered from the other weekly crons
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: layout-oracle
+  cancel-in-progress: false
+
+jobs:
+  oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.repository == 'dfadler/zombie-mermaid'
+    outputs:
+      breach: ${{ steps.report.outputs.breach }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
+        with:
+          node-version: '24'
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # The oracle's exit code (1 = breach) is re-raised by the last step so the
+      # report and artifact still run.
+      - name: Run layout oracle
+        id: oracle
+        continue-on-error: true
+        run: pnpm exec tsx scripts/layout-oracle.ts --thresholds --scorecard-json=layout-scorecard.json
+
+      - name: Report
+        id: report
+        if: always()
+        run: |
+          rc=0
+          node scripts/layout-oracle-report.mjs layout-scorecard.json > layout-oracle-report.md || rc=$?
+          {
+            echo '## Layout oracle'
+            echo
+            cat layout-oracle-report.md
+            echo
+            pnpm exec tsx scripts/lib/mermaid-pin-freshness.ts || true
+          } >> "$GITHUB_STEP_SUMMARY"
+          # rc 1 = floor breach (the issue job runs); 2 = no scorecard, the oracle step's own failure is the signal
+          if [ "$rc" = 1 ]; then echo 'breach=true' >> "$GITHUB_OUTPUT"; else echo 'breach=false' >> "$GITHUB_OUTPUT"; fi
+
+      - name: Upload scorecard
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: layout-scorecard
+          path: |
+            layout-scorecard.json
+            layout-oracle-report.md
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Fail on breach
+        if: steps.oracle.outcome == 'failure'
+        run: |
+          echo 'layout oracle failed or found floor breaches; see the summary' >&2
+          exit 1
+
+  issue:
+    needs: oracle
+    if: always() && needs.oracle.outputs.breach == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: layout-scorecard
+
+      - name: Create or update the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "The weekly layout oracle found samples below their floor. Run: $RUN_URL (scorecard JSON attached as an artifact)."
+            echo "This issue is edited in place each run and can be closed once the floors hold."
+            echo
+            cat layout-oracle-report.md
+          } > body.md
+          gh label create layout-oracle --color BFD4F2 --description 'Layout oracle floor breach' 2>/dev/null || true
+          n=$(gh issue list --label layout-oracle --state open --json number -q '.[0].number')
+          if [ -n "$n" ]; then
+            gh issue edit "$n" --body-file body.md
+          else
+            gh issue create --title 'Layout oracle: floors breached' --label layout-oracle --body-file body.md
+          fi

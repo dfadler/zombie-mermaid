@@ -21,4 +21,4 @@ D       │ ██████
         │ ██████  ██████  ██████  ██████  ██████  ██████  ██████
        0┼·██████··██████··██████··██████··██████··██████··██████·
         ┼────┬───────┬───────┬───────┬───────┬───────┬───────┬───
-          Compute StorageDatabase Network   CDN Monitoring Other
+          Compute Storage Databa… Network   CDN Monitoring Other

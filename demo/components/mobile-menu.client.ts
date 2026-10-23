@@ -1,3 +1,4 @@
+import { MOBILE_MENU_SCRIPT_SOURCE } from './mobile-menu-script.ts'
 import { BREAKPOINTS } from './tokens.tsx'
 
 /**
@@ -11,7 +12,7 @@ import { BREAKPOINTS } from './tokens.tsx'
  *
  * Promoted out of nav.tsx's own `NAV_MOBILE_MENU_SCRIPT` template-literal
  * string constant into this real, type-checked source file
- * (zombie-mermaid#933) — tsc/eslint/prettier all now check this logic like
+ * (zombie-mermaid#933) — tsc/oxlint/oxfmt all now check this logic like
  * any other module instead of treating it as opaque text. It stops short
  * of pages.ts/blog.ts/dashboard.ts's own `bundleForBrowser()`-based
  * pattern for their client scripts: those bundles get threaded through
@@ -20,10 +21,9 @@ import { BREAKPOINTS } from './tokens.tsx'
  * component that renders `<NavMobileMenuScript>` — a far larger blast
  * radius than splitting nav.tsx, and one that would collide with the
  * concurrent #932/#935 work on exactly those page components. Instead,
- * nav.tsx derives `NAV_MOBILE_MENU_SCRIPT` by serializing {@link
- * initMobileMenu} via `Function.prototype.toString()` (see that constant's
- * doc comment) — real, checked TypeScript in this file, a synchronous
- * string at every existing call site, identical runtime behavior.
+ * nav.tsx uses `NAV_MOBILE_MENU_SCRIPT`, the compact literal form of {@link
+ * initMobileMenu} (see that constant's doc comment) — a synchronous string
+ * at every existing call site, identical runtime behavior.
  *
  * Pairs each `.nav-bar` with the `.mobile-nav-panel` that follows it —
  * `MobileNavPanel`'s own doc comment explains why that panel renders as
@@ -164,46 +164,11 @@ export function initMobileMenu(desktopMinWidthPx: number): void {
 }
 
 /**
- * Strips `__name(fn, "fn")` calls out of a function's serialized source.
- *
- * `tsx` — what every site generator (`dashboard.ts`, `index.ts`, …) runs
- * under — compiles this file with esbuild's `keepNames` transform option
- * on, which wraps every named function declaration in a call to a `__name`
- * helper so `.name` survives whatever renaming a later minify pass might
- * do. That helper is defined once in *this module's own* compiled output,
- * not inside {@link initMobileMenu} itself, so it never appears in that
- * function's own `Function.prototype.toString()` text — but the *calls*
- * to it, injected directly into the function bodies, do. Left in, every
- * page's embedded `<script>` would throw `__name is not defined` the
- * instant a browser ran it, since no such global exists there. (Vitest's
- * own esbuild transform — what runs this repo's test suite, including the
- * `eval(NAV_MOBILE_MENU_SCRIPT)` tests — doesn't set that option, which is
- * exactly why this went unnoticed by any test until the real generator
- * output was diffed against `main`: see this issue's PR description.)
- *
- * The pattern is safe to strip unconditionally: `__name` is esbuild's own
- * reserved helper name, never one real code would define or call, and its
- * two arguments (an identifier, a string literal) never contain parens of
- * their own.
+ * The script every page's `<script>` tag runs (nav.tsx's
+ * `NavMobileMenuScript`) and the string `__tests__/demo-nav.test.ts` and
+ * `__tests__/dom/nav-hydration.test.ts` `eval` against jsdom: the compact form
+ * of {@link initMobileMenu} (mobile-menu-script.ts), called with the desktop
+ * breakpoint. A literal rather than `initMobileMenu.toString()` so the output
+ * is the same whichever transformer built the page (tsx, Vite SSR).
  */
-function stripEsbuildKeepNamesHelperCalls(source: string): string {
-  return source.replace(/__name\([^()]*\);?/g, '')
-}
-
-/**
- * `initMobileMenu`, serialized as an immediately-invoked function
- * expression — the literal string every page's `<script>` tag runs
- * (nav.tsx's `NavMobileMenuScript`), and the same string
- * `__tests__/demo-nav.test.ts`/`__tests__/dom/nav-hydration.test.ts` `eval`
- * directly to exercise this behavior against jsdom.
- *
- * `Function.prototype.toString()` returns a function's own source text as
- * it exists at runtime — by the time this module has finished loading
- * (under `tsx`, or bundled by Vite/esbuild for a test run), TypeScript's
- * type annotations on {@link initMobileMenu} are already stripped, so this
- * produces plain, directly-`eval`-able JavaScript with no build step of
- * its own, the same way the pre-#933 template literal did — modulo
- * {@link stripEsbuildKeepNamesHelperCalls}'s cleanup, see that function's
- * doc comment.
- */
-export const NAV_MOBILE_MENU_SCRIPT = `(${stripEsbuildKeepNamesHelperCalls(initMobileMenu.toString())})(${BREAKPOINTS.tablet + 1})`
+export const NAV_MOBILE_MENU_SCRIPT = `${MOBILE_MENU_SCRIPT_SOURCE}(${BREAKPOINTS.tablet + 1})`

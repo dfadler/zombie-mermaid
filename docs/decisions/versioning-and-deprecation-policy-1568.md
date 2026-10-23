@@ -1,6 +1,8 @@
 # Versioning and deprecation policy
 
-Status: **accepted, one choice open** (batching gap, section 3). Tracks
+Status: accepted (one choice still open, section 3)
+
+Tracks
 [#1568](https://github.com/dfadler/zombie-mermaid/issues/1568), part of
 [#1502](https://github.com/dfadler/zombie-mermaid/issues/1502).
 
@@ -13,8 +15,9 @@ Majors were driven by a Node floor raise (4.0.0, `engines.node >=24`,
 optional peer dependency (5.0.0, `elkjs`,
 [#1444](https://github.com/dfadler/zombie-mermaid/pull/1444)). Nothing writes
 down what counts as breaking, so each call was made ad hoc. The lockstep
-rationale itself is [#1550](https://github.com/dfadler/zombie-mermaid/issues/1550)'s
-job; this doc covers only the rules.
+rationale itself is in [`lockstep-versioning.md`](lockstep-versioning.md)
+([#1550](https://github.com/dfadler/zombie-mermaid/issues/1550)); this doc
+covers only the rules.
 
 Premise check (the issue was written from a report, not from code):
 

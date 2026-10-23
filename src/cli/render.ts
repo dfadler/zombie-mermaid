@@ -12,6 +12,7 @@ import {
   DEFAULT_BOX_BORDER_PADDING,
 } from '../../packages/ascii-renderer/src/types.ts'
 import { renderMermaidSVG } from '../index.ts'
+import { renderMermaidASCIIWithLayout } from '../ascii-layout.ts'
 import type { RenderOptions, DiagramColors } from '@zombie-mermaid/core'
 import { THEMES } from '@zombie-mermaid/core'
 import { withSourceLine } from './diagnostics.ts'
@@ -186,19 +187,49 @@ async function renderText(
     if (args.borderPadding !== undefined)
       asciiOpts.boxBorderPadding = args.borderPadding
     if (args.coords) asciiOpts.showCoords = true
+    if (args.profile !== undefined) asciiOpts.profile = args.profile
     if (args.direction !== undefined) asciiOpts.direction = args.direction
     // Only for terminal output: a .txt file gets no escape codes regardless
     // (same contract as the ANSI color guard above), so OSC 8 hyperlink
     // sequences must never be written into a file target.
     if (args.hyperlinks && asciiFile === undefined) asciiOpts.hyperlinks = true
-    let ascii = renderMermaidASCII(text, asciiOpts)
+    let ascii: string
+    let layoutFaithful = false
+    if (args.layout !== undefined) {
+      // mermaid-wide: no cap, so wide diagrams are drawn layout-faithfully instead of falling
+      // back. Otherwise --max-width (if given) is the cap, else the 120-column default.
+      const maxCols =
+        args.layout === 'mermaid-wide'
+          ? Infinity
+          : args.maxWidth === undefined
+            ? undefined
+            : resolveMaxWidth(args.maxWidth)
+      const r = await renderMermaidASCIIWithLayout(text, {
+        ...asciiOpts,
+        layout: 'mermaid',
+        maxCols,
+      })
+      ascii = r.text
+      layoutFaithful = r.path === 'layout-faithful'
+      // Never differ silently: one stderr line says which renderer ran.
+      err.write(
+        layoutFaithful
+          ? `layout-faithful: used mermaid's ELK layout (mermaid 12.1.0 + elkjs 0.9.3). ${r.note ?? ''}`.trimEnd() +
+              '\n'
+          : `layout-faithful: ${r.fallbackReason ?? 'unavailable'}; used standard renderer\n`,
+      )
+    } else {
+      ascii = renderMermaidASCII(text, asciiOpts)
+    }
 
+    // The layout-faithful drawing has its own fixed scale: compact spacing does not apply, so
+    // --max-width is its column cap (or a warning under mermaid-wide).
     if (args.maxWidth !== undefined) {
       const targetWidth = resolveMaxWidth(args.maxWidth)
       let actualWidth = maxLineWidth(ascii)
       let compactApplied = false
 
-      if (actualWidth > targetWidth) {
+      if (actualWidth > targetWidth && !layoutFaithful) {
         const currentPaddingX = asciiOpts.paddingX ?? DEFAULT_PADDING_X
         const currentPaddingY = asciiOpts.paddingY ?? DEFAULT_PADDING_Y
         const currentBorderPadding =
@@ -314,7 +345,9 @@ async function renderText(
  * being re-derived per format.
  */
 type OutputTarget =
-  { kind: 'stdout' } | { kind: 'file'; path: string } | { kind: 'skip' }
+  | { kind: 'stdout' }
+  | { kind: 'file'; path: string }
+  | { kind: 'skip' }
 
 /**
  * Decide a format's output target: stdout when `toStdout`, else the given

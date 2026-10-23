@@ -24,6 +24,7 @@ import {
 } from '@zombie-mermaid/core'
 import type { FontSizes } from './styles.ts'
 import {
+  ASYMMETRIC_NOTCH,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
@@ -121,11 +122,12 @@ export function renderSvg(
         decorative,
         hasInteractiveLinks,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   // Keyframes for animated edges (`e1@{ animate: true }`). Emitted only when
   // an animated edge exists and animation is enabled, so an ordinary diagram
   // (or one rendered with `interactivity: 'none'`) gains no extra markup.
@@ -817,10 +819,10 @@ function renderDiamond(
   const hw = w / 2
   const hh = h / 2
   const points = [
-    f`${cx},${cy - hh}`, // top
-    f`${cx + hw},${cy}`, // right
-    f`${cx},${cy + hh}`, // bottom
-    f`${cx - hw},${cy}`, // left
+    f`${cx},${cy - hh}`, // Top
+    f`${cx + hw},${cy}`, // Right
+    f`${cx},${cy + hh}`, // Bottom
+    f`${cx - hw},${cy}`, // Left
   ].join(' ')
 
   return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
@@ -838,7 +840,7 @@ function renderSubroutine(
   stroke: string,
   sw: string,
 ): string {
-  const inset = 8 // distance from edge to inner vertical line
+  const inset = 8 // Distance from edge to inner vertical line
   return (
     f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
     f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
@@ -881,7 +883,7 @@ function renderHexagon(
   stroke: string,
   sw: string,
 ): string {
-  const inset = h / 4 // horizontal inset for the angled sides
+  const inset = h / 4 // Horizontal inset for the angled sides
   const points = [
     f`${x + inset},${y}`, // top-left
     f`${x + w - inset},${y}`, // top-right
@@ -906,7 +908,7 @@ function renderCylinder(
   stroke: string,
   sw: string,
 ): string {
-  const ry = 7 // ellipse vertical radius for the cap
+  const ry = 7 // Ellipse vertical radius for the cap
   const cx = x + w / 2
   const bodyTop = y + ry
   const bodyH = h - 2 * ry
@@ -927,7 +929,7 @@ function renderCylinder(
   )
 }
 
-/** Asymmetric / flag: rectangle with a pointed left edge */
+/** Asymmetric / flag: rectangle with a notch cut into the left edge */
 function renderAsymmetric(
   x: number,
   y: number,
@@ -937,13 +939,12 @@ function renderAsymmetric(
   stroke: string,
   sw: string,
 ): string {
-  const indent = 12 // how far the point indents
   const points = [
-    f`${x + indent},${y}`, // top-left (indented)
-    f`${x + w},${y}`, // top-right
-    f`${x + w},${y + h}`, // bottom-right
-    f`${x + indent},${y + h}`, // bottom-left (indented)
-    f`${x},${y + h / 2}`, // left point
+    f`${x},${y}`, // Top-left
+    f`${x + w},${y}`, // Top-right
+    f`${x + w},${y + h}`, // Bottom-right
+    f`${x},${y + h}`, // Bottom-left
+    f`${x + ASYMMETRIC_NOTCH},${y + h / 2}`, // Notch tip (points inward)
   ].join(' ')
 
   return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
@@ -959,7 +960,7 @@ function renderTrapezoid(
   stroke: string,
   sw: string,
 ): string {
-  const inset = w * 0.15 // top edge is narrower by this amount on each side
+  const inset = w * 0.15 // Top edge is narrower by this amount on each side
   const points = [
     f`${x + inset},${y}`, // top-left (indented)
     f`${x + w - inset},${y}`, // top-right (indented)
@@ -980,7 +981,7 @@ function renderTrapezoidAlt(
   stroke: string,
   sw: string,
 ): string {
-  const inset = w * 0.15 // bottom edge is narrower
+  const inset = w * 0.15 // Bottom edge is narrower
   const points = [
     f`${x},${y}`, // top-left (full width)
     f`${x + w},${y}`, // top-right (full width)
@@ -1482,7 +1483,11 @@ function renderNodeLabel(
     if (!node.label) return ''
   }
 
-  const cx = node.x + node.width / 2
+  // The asymmetric notch eats the left edge, so centre in the body (as mermaid does).
+  const cx =
+    node.x +
+    node.width / 2 +
+    (node.shape === 'asymmetric' ? ASYMMETRIC_NOTCH / 2 : 0)
   const cy = node.y + node.height / 2
 
   // Resolve text color — inline styles can override the CSS variable default.

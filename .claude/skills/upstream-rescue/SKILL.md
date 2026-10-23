@@ -34,9 +34,10 @@ origin.
    the upstream PR was abandoned.
 4. If it fixes rendered output, add the `demo/fork-fixes-data.ts` entry
    (`source`, `fixCommit`, PR number, `lookFor`) and record the upstream
-   issue numbers in `upstreamIssues`; run `pnpm run fork-fixes` to confirm the
-   pair renders differently. For `render: 'ascii'` also re-run
+   issue numbers in `upstreamIssues`; run `pnpm run build:site` to confirm the
+   pair renders differently (the build fails if it does not). For `render: 'ascii'` also re-run
    `tsx scripts/capture-fork-fixes-terminal.ts` and commit the PNGs.
 5. Add a changeset (code change) describing the port; never bump versions or
    touch CHANGELOG.
-6. Replying upstream is a public post: only on the user's explicit request.
+6. Replying upstream is a public post: draft only, via the `upstream-outreach`
+   skill, and post only with the maintainer's go-ahead for that exact text.

@@ -11,14 +11,15 @@
  *
  * Usage: pnpm run build && tsx scripts/check-bundle-size.ts
  *
- * To raise a budget after an intentional, reviewed size increase, edit
+ * Budgets = measured CI size + 2% (CONTRIBUTING.md, "Bundle size budgets" says
+ * when a raise is justified). To raise one, edit
  * bundle-size-budget.json directly (no separate "update" mode — a size
  * budget should be a deliberate, visible diff, not a regenerated snapshot).
  */
 
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { gzipSync } from 'node:zlib'
-import { build } from 'esbuild'
+import { bundleSource } from './vite-bundle.ts'
 import { fileURLToPath } from 'node:url'
 
 interface BudgetFile {
@@ -33,13 +34,14 @@ interface BudgetFile {
 const EXIT_OK = 0
 const EXIT_FAILURE = 1
 
-function fmtBytes(bytes: number): string {
-  return `${(bytes / 1024).toFixed(1)} KB`
-}
-
-function fmtPct(pct: number): string {
-  const sign = pct >= 0 ? '+' : ''
-  return `${sign}${pct.toFixed(1)}%`
+/** One row: exact bytes, budget, remaining headroom (negative = over). Returns true if over. */
+function report(label: string, size: number, budget: number): boolean {
+  const headroom = ((budget - size) / budget) * 100
+  const over = size > budget
+  console.log(
+    `  ${label.padEnd(42)} ${String(size).padStart(7)} B / ${String(budget).padStart(7)} B  headroom ${`${headroom.toFixed(1)}%`.padStart(6)}  ${over ? 'OVER' : 'ok'}`,
+  )
+  return over
 }
 
 const budgetFile = JSON.parse(
@@ -69,13 +71,7 @@ for (const [relPath, budget] of Object.entries(budgetFile.budgets)) {
   }
 
   const gzipSize = gzipSync(raw).length
-  const pct = ((gzipSize - budget) / budget) * 100
-  const status = gzipSize > budget ? 'OVER' : 'ok'
-  console.log(
-    `  ${relPath.padEnd(20)} ${fmtBytes(gzipSize).padStart(10)} / ${fmtBytes(budget).padStart(10)} budget  ${fmtPct(pct).padStart(7)}  ${status}`,
-  )
-
-  if (gzipSize > budget) anyOverBudget = true
+  if (report(relPath, gzipSize, budget)) anyOverBudget = true
 }
 
 // A consumer's bundler must not pull in `elkjs` unless the consumer registers
@@ -84,20 +80,10 @@ console.log('\nConsumer bundles, elkjs unregistered (minified, gzip)')
 console.log('─'.repeat(70))
 for (const [relPath, budget] of Object.entries(budgetFile.consumerBundles)) {
   const entry = fileURLToPath(new URL(`../${relPath}`, import.meta.url))
-  const result = await build({
-    stdin: {
-      contents: `export * from ${JSON.stringify(entry)}`,
-      resolveDir: fileURLToPath(new URL('..', import.meta.url)),
-    },
-    bundle: true,
-    minify: true,
-    format: 'esm',
-    platform: 'browser',
-    mainFields: ['module', 'main'],
-    conditions: ['import'],
-    write: false,
-    logLevel: 'silent',
-  }).catch(() => null)
+  const result = await bundleSource(
+    `export * from ${JSON.stringify(entry)}`,
+    fileURLToPath(new URL('..', import.meta.url)),
+  ).catch(() => null)
   if (!result) {
     console.error(
       `  ${relPath.padEnd(20)} MISSING — run \`pnpm run build\` first`,
@@ -105,12 +91,8 @@ for (const [relPath, budget] of Object.entries(budgetFile.consumerBundles)) {
     anyMissing = true
     continue
   }
-  const gzipSize = gzipSync(Buffer.from(result.outputFiles[0]!.contents)).length
-  const status = gzipSize > budget ? 'OVER' : 'ok'
-  console.log(
-    `  ${relPath.padEnd(20)} ${fmtBytes(gzipSize).padStart(10)} / ${fmtBytes(budget).padStart(10)} budget  ${status}`,
-  )
-  if (gzipSize > budget) anyOverBudget = true
+  const gzipSize = gzipSync(Buffer.from(result)).length
+  if (report(relPath, gzipSize, budget)) anyOverBudget = true
 }
 
 // Per-package unpacked size (#1569): total bytes of dist/, minus .map files
@@ -134,11 +116,7 @@ for (const [relDir, budget] of Object.entries(budgetFile.unpackedBudgets)) {
     anyMissing = true
     continue
   }
-  const status = size > budget ? 'OVER' : 'ok'
-  console.log(
-    `  ${relDir.padEnd(20)} ${fmtBytes(size).padStart(10)} / ${fmtBytes(budget).padStart(10)} budget  ${status}`,
-  )
-  if (size > budget) anyOverBudget = true
+  if (report(relDir, size, budget)) anyOverBudget = true
 }
 
 if (anyMissing) {
@@ -151,7 +129,7 @@ if (anyOverBudget) {
     '\nFAIL: one or more dist/ files exceeded their gzip size budget.',
   )
   console.error(
-    'If the increase is intentional and reviewed, raise the budget in bundle-size-budget.json in the same PR and justify the increase in the PR description (see CONTRIBUTING.md, "Bundle size budgets").',
+    'If the increase is intentional and reviewed, raise the budget in bundle-size-budget.json in the same PR and justify the increase in the PR description and say in the PR body whether it is new feature code (raise) or a regression (fix instead); see CONTRIBUTING.md, "Bundle size budgets".',
   )
   process.exit(EXIT_FAILURE)
 }

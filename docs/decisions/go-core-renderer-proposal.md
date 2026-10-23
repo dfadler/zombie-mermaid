@@ -1,5 +1,7 @@
 # Go core renderer with TypeScript bindings (#495): recommendation
 
+Status: not adopted
+
 ## Context
 
 [#495](https://github.com/dfadler/zombie-mermaid/issues/495) proposed

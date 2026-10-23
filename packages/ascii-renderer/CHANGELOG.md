@@ -1,5 +1,212 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.9.0
+
+### Patch Changes
+
+- [#2289](https://github.com/dfadler/zombie-mermaid/pull/2289) [`38a4718`](https://github.com/dfadler/zombie-mermaid/commit/38a47185c0f1fc2595f9783be4ad1ee752a6882e) Thanks [@dfadler](https://github.com/dfadler)! - ASCII sequence diagrams: the label of a message that creates a participant now sits on the row above its arrow, and a created actor figure no longer pads the other participants' header boxes ([#2281](https://github.com/dfadler/zombie-mermaid/issues/2281)).
+
+- [#2293](https://github.com/dfadler/zombie-mermaid/pull/2293) [`0625bdd`](https://github.com/dfadler/zombie-mermaid/commit/0625bdd73684445d741663c9888a22002399c04f) Thanks [@dfadler](https://github.com/dfadler)! - C4: a title-only diagram (`C4Context` with just a `title`) now draws the title inside a canvas sized to it, in SVG and ASCII, instead of a 0x0 viewBox and empty output ([#2282](https://github.com/dfadler/zombie-mermaid/issues/2282)).
+
+- [#2292](https://github.com/dfadler/zombie-mermaid/pull/2292) [`0bcc115`](https://github.com/dfadler/zombie-mermaid/commit/0bcc115dd5a943627f795a111442ae08d3c62af1) Thanks [@dfadler](https://github.com/dfadler)! - Draw an ER self-relationship (`A ||--o{ A : label`) as a loop left of the entity with its markers and label clear of the box, in SVG and ASCII ([#2284](https://github.com/dfadler/zombie-mermaid/issues/2284)).
+- Updated dependencies [[`d4a608d`](https://github.com/dfadler/zombie-mermaid/commit/d4a608d0587d9336e4de1efe70173821ca193e23), [`382449d`](https://github.com/dfadler/zombie-mermaid/commit/382449d62597fbfcf99640d0d066d6833f2897f3), [`0bcc115`](https://github.com/dfadler/zombie-mermaid/commit/0bcc115dd5a943627f795a111442ae08d3c62af1)]:
+  - @zombie-mermaid/mermaid-parser@5.9.0
+  - @zombie-mermaid/core@5.9.0
+
+## 5.8.4
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.8.4
+  - @zombie-mermaid/mermaid-parser@5.8.4
+
+## 5.8.3
+
+### Patch Changes
+
+- [#2262](https://github.com/dfadler/zombie-mermaid/pull/2262) [`e217ee9`](https://github.com/dfadler/zombie-mermaid/commit/e217ee9fe9d68878402cbaa69a453e83e24733f8) Thanks [@dfadler](https://github.com/dfadler)! - Draw a one-line ASCII ER relationship label on its vertical edge, centered and with the line broken around it, like mermaid.js, instead of beside the stem. Labels that cannot sit on a clear stem row keep their old spot. ([#2253](https://github.com/dfadler/zombie-mermaid/issues/2253))
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.8.3
+  - @zombie-mermaid/mermaid-parser@5.8.3
+
+## 5.8.2
+
+### Patch Changes
+
+- [#2245](https://github.com/dfadler/zombie-mermaid/pull/2245) [`436c50e`](https://github.com/dfadler/zombie-mermaid/commit/436c50ede0ee847381e2eefbe2a32b9fe35e764b) Thanks [@dfadler](https://github.com/dfadler)! - Center a lone ASCII ER entity under or over its neighbor in a stacked chain, like mermaid.js, so a single relationship runs as one straight vertical edge instead of jogging between two off-center stems. A parent over several children and `direction LR`/`RL` are unchanged. ([#2237](https://github.com/dfadler/zombie-mermaid/issues/2237))
+
+- [#2244](https://github.com/dfadler/zombie-mermaid/pull/2244) [`629429c`](https://github.com/dfadler/zombie-mermaid/commit/629429ccf35213bf58df4826a9da7b8aa26414ec) Thanks [@dfadler](https://github.com/dfadler)! - Ship each package's type declarations once instead of twice. The rolled-up declaration now lives in `dist/shared/`, and `dist/*.d.ts` and `dist/*.d.cts` are one-line re-exports of it, so install size drops by about 62 KB packed. The `exports` map and the types your editor sees are unchanged, and `node16`, `nodenext` and `bundler` consumers still resolve them with `skipLibCheck` off. ([#2196](https://github.com/dfadler/zombie-mermaid/issues/2196))
+- Updated dependencies [[`eae88b9`](https://github.com/dfadler/zombie-mermaid/commit/eae88b98a22dd9c710540970d1447d51602b2cc9), [`629429c`](https://github.com/dfadler/zombie-mermaid/commit/629429ccf35213bf58df4826a9da7b8aa26414ec), [`35adab7`](https://github.com/dfadler/zombie-mermaid/commit/35adab7b60034b639db9f207a1f7139b026a1b7c)]:
+  - @zombie-mermaid/mermaid-parser@5.8.2
+  - @zombie-mermaid/core@5.8.2
+
+## 5.8.1
+
+### Patch Changes
+
+- [#2227](https://github.com/dfadler/zombie-mermaid/pull/2227) [`611736e`](https://github.com/dfadler/zombie-mermaid/commit/611736e43dc3371525f7d0a6573e74495f5b30d2) Thanks [@dfadler](https://github.com/dfadler)! - Add npm keywords and a "maintained continuation of beautiful-mermaid" line to each published sub-package's description so they are findable on npm.
+- Updated dependencies [[`611736e`](https://github.com/dfadler/zombie-mermaid/commit/611736e43dc3371525f7d0a6573e74495f5b30d2)]:
+  - @zombie-mermaid/core@5.8.1
+  - @zombie-mermaid/mermaid-parser@5.8.1
+
+## 5.8.0
+
+### Minor Changes
+
+- [#2172](https://github.com/dfadler/zombie-mermaid/pull/2172) [`423ce40`](https://github.com/dfadler/zombie-mermaid/commit/423ce401a2f9ffaad3ecfdb3241e0615d2c9bc1c) Thanks [@dfadler](https://github.com/dfadler)! - New opt-in render option `honorThemeVariables` (`RenderOptions` and `AsciiRenderOptions`, default `false`) that applies a small subset of a diagram's own `%%{init: {"themeVariables": {...}}}%%`: `primaryColor` (node fill, `surface`), `primaryBorderColor` (`border`) and `primaryTextColor` (`fg`) under `theme: "base"`, `lineColor` (`line`; flowchart under any theme, state diagram under `base`), and `pie1`..`pie12` (pie slices and legend, any theme). A colour you pass yourself always wins over the diagram's, invalid or unsafe values are ignored rather than thrown, and every other `themeVariables` key is reported in `InitConfig.ignored` as `themeVariables.<name>` instead of vanishing silently. Mermaid's derived colours (secondary/tertiary, the `base` border gradient, the other pie slices) are not computed. ASCII maps `lineColor`, `primaryBorderColor`, `primaryTextColor` and the pie colours, hex values only; `primaryColor` has no ASCII meaning. Checked against mermaid 12.1.0 and 12.2.0. With the option off, output is byte-identical (checked by hashing every gallery sample and ASCII testdata input, SVG and ASCII, before and after). New exports: `applyThemeVariables()` and the `ThemeVariables` type in `@zombie-mermaid/core`, `PieChart.sliceColors` in `@zombie-mermaid/mermaid-parser`. Closes [#2108](https://github.com/dfadler/zombie-mermaid/issues/2108).
+
+  Level: minor. Per [the versioning policy](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/versioning-and-deprecation-policy-1568.md) section 1, a new opt-in option is a minor change; nothing existing changes behaviour.
+
+### Patch Changes
+
+- [#2173](https://github.com/dfadler/zombie-mermaid/pull/2173) [`4839c72`](https://github.com/dfadler/zombie-mermaid/commit/4839c726bc5e0a7438948e1046022eb3dc4fb267) Thanks [@dfadler](https://github.com/dfadler)! - fix(ascii): default coloured output no longer paints labels near-black ([#2165](https://github.com/dfadler/zombie-mermaid/issues/2165)). `DEFAULT_ASCII_THEME.fg` was `#27272a`, which is 1.05-1.41:1 against common dark terminal backgrounds (`#1e1e1e`, `#000`, `#282a36`), so every label was close to invisible whenever colour was on. The default text colour is now `'inherit'`: in `ansi16`, `ansi256` and `truecolor` no foreground escape is emitted for text (the terminal's own foreground shows, so it is legible on dark and light), and in `html` the span is `color:inherit`. No single colour clears 4.5:1 on both dark and light backgrounds, which is why the default carries no colour instead of a mid-grey. Output change: coloured modes (`ansi16`, `ansi256`, `truecolor`, `html`) with no `theme.fg` only; the label colour code is the only difference (re-rendering with `theme: { fg: '#27272a' }` reproduces the old output byte for byte). `colorMode: 'none'`, the markdown profile, an explicit `theme`/`fg`, and all SVG output are byte-identical (checked by hashing every gallery sample and ASCII testdata input, SVG and both ASCII charsets, before and after). `AsciiTheme.fg` may now be the string `'inherit'` (the type is still `string`); `DEFAULT_ASCII_THEME.fg` changes value accordingly.
+
+  Versioning: patch per docs/decisions/versioning-and-deprecation-policy-1568.md section 1, "Output changes": it is a pure fix to an unreadable default, and the default label colour is not a documented output contract (`docs/api-reference.md` documents `theme` only as "override default colors", with no default hex values promised).
+
+- [#2152](https://github.com/dfadler/zombie-mermaid/pull/2152) [`e5d95aa`](https://github.com/dfadler/zombie-mermaid/commit/e5d95aa6f0cd01acc2fb2ba7f59cbfea685ecd03) Thanks [@dfadler](https://github.com/dfadler)! - fix(ascii): draw a lone edge's label on its stroke, clear of the box borders, at a small `paddingY` ([#2102](https://github.com/dfadler/zombie-mermaid/issues/2102)). Output change at `paddingY` 3 or less only: in a TD/BT flowchart, a labelled edge between two stacked nodes now gets a gap of at least its label lines plus three rows (a plain stroke row above, a plain stroke row and the arrowhead below), so the existing on-stroke placement ([#1408](https://github.com/dfadler/zombie-mermaid/issues/1408)) applies and the label is centred on the stroke the way Mermaid draws it. Before, at `paddingY` 1 or 2 the label was drawn over the source box's bottom border (`└─push = build─┘`) and at 1 the stroke vanished; at 3 it sat beside the stroke. Default `paddingY` (5) output is unchanged for one- and two-line labels (a lone label of three or more lines gets a gap of its line count plus three rows, so 6 for three lines and 7 for four, up from 5, so it can sit on the stroke); LR/RL layouts, and every golden and snapshot suite pass unmodified. Compared against the inline label in Mermaid's own render of `A -->|push = build| B`; the SVG renderer is untouched.
+
+  Versioning: patch per docs/decisions/versioning-and-deprecation-policy-1568.md section 1, "Output changes": spacing and glyph placement are not documented output contracts, and `paddingY` is documented only as "vertical node spacing" with a default that is unchanged.
+
+- [#2175](https://github.com/dfadler/zombie-mermaid/pull/2175) [`7c23dec`](https://github.com/dfadler/zombie-mermaid/commit/7c23dec0f3d87499eaff0452a0dea520a160b4de) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams with `direction LR` or `direction RL` are now drawn left to right and right to left in ASCII, like the SVG (mermaid.js 12.1.0 and 12.2.0 agree): each level is a column, siblings are stacked, and `RL` is the mirror with the box text still reading left to right. They were drawn top-down. The diagram is lowered onto the flowchart ASCII grid (classes become compartment boxes, relationships become edges with the UML end markers, namespaces become frames), so end markers, labels, cardinalities, notes (left of their class in `LR`, right in `RL`), lollipop names, self-loops, hyperlinks and both charsets follow the axis. Because the grid is shared with flowcharts, boxes in one column share a width and boxes on one row share a height, and a parent with several children branches off one trunk; this is documented in `docs/known-differences.md`. Output change: ASCII for class diagrams that declare `direction LR` or `RL`; every other diagram, and class diagrams with no direction line or `TB`/`TD`/`BT`, are byte-identical (checked by hashing every gallery sample and ASCII testdata input in both charsets, before and after). SVG is untouched. Closes [#2158](https://github.com/dfadler/zombie-mermaid/issues/2158).
+
+  Level: patch. Per [the versioning policy](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/versioning-and-deprecation-policy-1568.md) section 1, layout and glyph changes are not documented output contracts, no export, option or type changes, and `RenderOptions.direction` still does not apply to class diagrams; it closes the parity gap left by [#2116](https://github.com/dfadler/zombie-mermaid/issues/2116), like [#2153](https://github.com/dfadler/zombie-mermaid/issues/2153).
+
+- [#2153](https://github.com/dfadler/zombie-mermaid/pull/2153) [`2ec3f0b`](https://github.com/dfadler/zombie-mermaid/commit/2ec3f0b91990ca6fb4d8fcf6565889bd5683f9ce) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams now honour `direction TB|TD|LR|RL|BT`, which the parser accepted and ignored (every class diagram was laid out top-down). SVG: all four directions, as mermaid.js lays them out (12.1.0 and 12.2.0 agree): `LR` puts each level in a column, `RL` mirrors it, `BT` flips the stack; markers, cardinalities, namespace frames, notes and lollipop names follow the new axis. ASCII: `BT` is drawn (the top-down drawing flipped, boxes kept upright, a namespace title kept on the top border, a note one rank below its class); `LR` and `RL` stay top-down, because the ASCII class layout is built from stacked level rows end to end, and this is documented in `docs/diagrams.md` and `docs/known-differences.md`. `ClassDiagram` gains an optional `direction` field. `RenderOptions.direction` still does not apply to class diagrams. Output change: SVG for class diagrams that declare `direction LR`, `RL` or `BT`, and ASCII for those that declare `BT`; every other diagram, and class diagrams with no direction line or `TB`/`TD`, are byte-identical (checked by hashing every gallery sample and ASCII testdata input, SVG and both ASCII charsets, before and after). Layout oracle for class samples unchanged, and the three new direction samples score 100% against mermaid 12.1.0. Refs [#2116](https://github.com/dfadler/zombie-mermaid/issues/2116); ASCII `LR`/`RL` are tracked in [#2158](https://github.com/dfadler/zombie-mermaid/issues/2158).
+
+  Level: patch. Per [the versioning policy](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/versioning-and-deprecation-policy-1568.md) section 1, layout and glyph changes are not documented output contracts, no option semantics change (the render-time `direction` option is deliberately left ignored for class diagrams) and the new type field is optional; it fixes a parity gap, like [#2135](https://github.com/dfadler/zombie-mermaid/issues/2135).
+
+- [#2186](https://github.com/dfadler/zombie-mermaid/pull/2186) [`12c90fa`](https://github.com/dfadler/zombie-mermaid/commit/12c90faaccfbb3d97359c4488212cc5cd4edb4cf) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: a node's side face now has a cell for each self-loop and each back-edge or skip beside its parallel-edge lanes, so lane ends no longer merge into one arrowhead or a `├`/`┤` tick in dense duplicate-edge graphs ([#2178](https://github.com/dfadler/zombie-mermaid/issues/2178)). Patch: lane placement in a dense graph is not a documented output contract (versioning policy section 1).
+
+- [#2205](https://github.com/dfadler/zombie-mermaid/pull/2205) [`9d4c816`](https://github.com/dfadler/zombie-mermaid/commit/9d4c8165af383219b4ff76493f3b47193b986e53) Thanks [@dfadler](https://github.com/dfadler)! - Package ESM output (`dist/index.js`) is now minified: tabs, newlines and comments are removed, and `@zombie-mermaid/mcp` gets identifier mangling too. About 20.7 KB less gzip across the five packages. Behavior and exports are unchanged; stack traces from the ESM build are harder to read, and the `/* @__PURE__ */` annotations are no longer in the shipped ESM (a one-export consumer bundle was the same size). Refs [#2198](https://github.com/dfadler/zombie-mermaid/issues/2198).
+
+- [#2200](https://github.com/dfadler/zombie-mermaid/pull/2200) [`2ef78c5`](https://github.com/dfadler/zombie-mermaid/commit/2ef78c5d4fd07e3aa486929a5037a1bbf77b0cfb) Thanks [@dfadler](https://github.com/dfadler)! - The published tarballs no longer contain `*.map` files, and the built `.js`/`.cjs` no longer end with a `//# sourceMappingURL=` comment (so a bundler does not warn about a missing map). The maps had no `sourcesContent` and pointed at `../src/*.ts` files that are not in the tarball, so no debugger could use them; they were 46% of the unpacked bytes (1,261,680 of 2,761,290 B across the six packages), and the packed size across the six drops from 751,731 B to 464,791 B. Runtime JS (apart from that comment), types, SVG and ASCII output are unchanged. Refs [#2195](https://github.com/dfadler/zombie-mermaid/issues/2195).
+
+  Level: patch. Per [the versioning policy](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/versioning-and-deprecation-policy-1568.md) section 1, source maps are tarball contents nobody can import through `exports`, so removing them is not breaking; no API, option or output changes.
+
+- Updated dependencies [[`2ec3f0b`](https://github.com/dfadler/zombie-mermaid/commit/2ec3f0b91990ca6fb4d8fcf6565889bd5683f9ce), [`9d4c816`](https://github.com/dfadler/zombie-mermaid/commit/9d4c8165af383219b4ff76493f3b47193b986e53), [`2ef78c5`](https://github.com/dfadler/zombie-mermaid/commit/2ef78c5d4fd07e3aa486929a5037a1bbf77b0cfb), [`423ce40`](https://github.com/dfadler/zombie-mermaid/commit/423ce401a2f9ffaad3ecfdb3241e0615d2c9bc1c)]:
+  - @zombie-mermaid/mermaid-parser@5.8.0
+  - @zombie-mermaid/core@5.8.0
+
+## 5.7.1
+
+### Patch Changes
+
+- [#2149](https://github.com/dfadler/zombie-mermaid/pull/2149) [`8a8c482`](https://github.com/dfadler/zombie-mermaid/commit/8a8c482cd45570fb76c7757986236d1170b0d301) Thanks [@dfadler](https://github.com/dfadler)! - fix(ascii): give every edge into a crowded top face a stroke and an arrowhead of its own ([#2100](https://github.com/dfadler/zombie-mermaid/issues/2100)). Output change: in a TD/BT flowchart, a node that takes edges from two or more sources above it and also sends an edge up to a node above it (`a --> c`, `b --> c` beside `c --> a`) no longer bundles those arrivals onto one trunk with one shared arrowhead. The node is widened so each end has a cell, the reciprocal pair sits either side of the centre, and the other arrivals land beyond them. A fan-out into such a node is split too, so `b --> a` and `b --> c` leave `b` on their own strokes. Fan-ins with labels that land on a port which also starts an edge now keep one arrowhead each instead of merging. Duplicate (parallel) edges, LR/RL layouts and every other gallery sample and golden are unchanged. Self-loop placement (left face in mermaid TD/BT, top face in LR/RL) is a documented difference ([#2101](https://github.com/dfadler/zombie-mermaid/issues/2101)). Checked against mermaid 12.1.0 and 12.2.0.
+
+  Versioning: patch per docs/decisions/versioning-and-deprecation-policy-1568.md section 1, "Output changes": layout, spacing and glyph changes are not documented output contracts, and this corrects merged arrowheads.
+
+- [#2148](https://github.com/dfadler/zombie-mermaid/pull/2148) [`b55b7fa`](https://github.com/dfadler/zombie-mermaid/commit/b55b7fae2b576173e6b438094d21238119947ace) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII flowcharts now order sibling subgraphs and orient feedback edges the way mermaid 12 and the SVG renderer do ([#2111](https://github.com/dfadler/zombie-mermaid/issues/2111)). Sibling subgraphs tied by an edge or a shared outside node keep declaration order (Nested Subgraphs lists US East before US West), and an edge that closes a cycle through a subgraph boundary is ranked as running the other way (CI/CD puts `Fix & Retry` beside `Build Image`). Titles of frames pushed back to their natural width are rechecked against entering edges. The SVG back-edge helpers moved to `@zombie-mermaid/core` so both renderers share them. Patch, not minor: a layout fix with no documented output contract involved (versioning policy, section 1, "Output changes").
+
+- [#2146](https://github.com/dfadler/zombie-mermaid/pull/2146) [`d88b061`](https://github.com/dfadler/zombie-mermaid/commit/d88b0619fd0d5cd5f7e8c59abb0ad1dc2029eec1) Thanks [@dfadler](https://github.com/dfadler)! - fix(ascii): render ER attribute comments ([#2127](https://github.com/dfadler/zombie-mermaid/issues/2127)). Output change: an attribute with a comment, such as `string a PK "the key"`, now ends its row with the comment in quotes (`string a PK "the key"`), where it was dropped before. Mermaid shows the comment as a fourth column and does not wrap it; neither does this, so the entity box grows to the widest row, and a `<br>` becomes a space. Entities without comments render exactly as before. Patch because it fixes missing content and no documented output contract (accessibility, theming keys, documented options) changes (versioning policy section 1, "Output changes"). Checked against mermaid 12.1.0 and 12.2.0.
+- Updated dependencies [[`b55b7fa`](https://github.com/dfadler/zombie-mermaid/commit/b55b7fae2b576173e6b438094d21238119947ace), [`f5e5454`](https://github.com/dfadler/zombie-mermaid/commit/f5e5454136070993bb1552dec3616c2750a6f15f)]:
+  - @zombie-mermaid/core@5.7.1
+  - @zombie-mermaid/mermaid-parser@5.7.1
+
+## 5.7.0
+
+### Minor Changes
+
+- [#2126](https://github.com/dfadler/zombie-mermaid/pull/2126) [`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903) Thanks [@dfadler](https://github.com/dfadler)! - Class diagrams: the parser now accepts syntax mermaid.js accepts and it used to reject with an error: the `classDiagram-v2` header (an alias of `classDiagram`), `<|--|>` / `<|..|>` / `<-->` / `<..>` / `*--*` / `o--o` (the marker is drawn at both ends, in SVG and ASCII), lollipop interfaces `()--`, `--()` and `()--()` (a hollow circle at the end of the line: `○`, or `O` with `useAscii`), and backtick-quoted class names such as `` class `Animal Class!` `` (the backticks are not drawn). Nothing that parsed before is rejected, and no existing input renders differently except the output change below; the arrow regex is built from one table, so the error for a malformed relationship now lists the longer arrow set. `ClassRelationship.markerAt` gains `'both'` and `RelationshipType` gains `'lollipop'`. Parity checked against mermaid 12.1.0 (the pin) and 12.2.0.
+
+  Output change: in ASCII, a directional arrowhead at the `from` end of a relationship (`A <-- B`, `A <.. B`) now points into the `from` box (`▲` under it) instead of away from it (`▼`). Fixes [#2117](https://github.com/dfadler/zombie-mermaid/issues/2117).
+
+### Patch Changes
+
+- [#2137](https://github.com/dfadler/zombie-mermaid/pull/2137) [`3dea4e8`](https://github.com/dfadler/zombie-mermaid/commit/3dea4e87ad6f4f3d285368ca3d460396e51e6fba) Thanks [@dfadler](https://github.com/dfadler)! - fix(ascii): draw back-edges and forward skips on the flow-axis faces like mermaid ([#2121](https://github.com/dfadler/zombie-mermaid/issues/2121)). Output change: a flowchart edge between nodes in one column (TD/BT) or one row (LR/RL) that runs against the flow, such as `c --> a` in `a --> b --> c --> a`, or forward over a level (`a --> c` beside `a --> b --> c`) now leaves the source's top/bottom (LR: left/right) face, runs along a lane in the gutter beside the column (below the row in LR) and enters the target's opposite face, instead of looping out of the side faces (LR: the bottom faces). Ports are spread along each face, forward lanes inside back-edge lanes, and each lane's runs along a gutter row take a row of their own, so parallel back-edges nest without crossing. Nodes with such an edge grow to hold their ports a stroke spacing apart. Duplicate edges between neighbouring levels in such a column are strokes on the facing faces, so the dense duplicate-edge samples draw with no crossings. Reciprocal pairs on neighbouring levels and diagonal back-edges keep their previous shape. Checked against mermaid 12.1.0.
+
+- [#2109](https://github.com/dfadler/zombie-mermaid/pull/2109) [`1629a93`](https://github.com/dfadler/zombie-mermaid/commit/1629a93b59f74df129350aa69985039f2cc70cda) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII flowcharts draw every duplicate or reciprocal edge on a lane and arrowhead of its own, as mermaid.js draws one path per edge (checked on mermaid 12.1.0 and 12.2.0). A too-short node face used to draw the later of two identical same-direction edges on its twin's route, so two edges showed as one; the node face now grows to hold every lane of every neighbour pair, and the lanes are no longer merged. Only dense graphs of duplicates between three or more nodes change (no gallery sample or golden file does), and lanes that were merged can now cross. Semver: patch, a layout fix; layout and spacing are not a documented output contract (versioning-and-deprecation-policy-1568, section 1, "Output changes"). Fixes [#2072](https://github.com/dfadler/zombie-mermaid/issues/2072).
+- Updated dependencies [[`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903)]:
+  - @zombie-mermaid/core@5.7.0
+  - @zombie-mermaid/mermaid-parser@5.7.0
+
+## 5.6.1
+
+### Patch Changes
+
+- [#2123](https://github.com/dfadler/zombie-mermaid/pull/2123) [`972abd4`](https://github.com/dfadler/zombie-mermaid/commit/972abd4fa57bb73e071f04981f32cd9da7801543) Thanks [@dfadler](https://github.com/dfadler)! - ASCII XY charts no longer run category and value-axis labels together or overwrite them with the next label. A word label that would touch its neighbour is shortened to its band with an ellipsis (`Marke…`); numbers, dates and value-axis ticks that would touch are thinned to every n-th label, always leaving at least one blank cell. Tick marks stay.
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.6.1
+  - @zombie-mermaid/mermaid-parser@5.6.1
+
+## 5.6.0
+
+### Patch Changes
+
+- [#2098](https://github.com/dfadler/zombie-mermaid/pull/2098) [`0d940f6`](https://github.com/dfadler/zombie-mermaid/commit/0d940f68a55f6f6812c5a243c53b7f94bcb1ad39) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: a self-loop on a node that also has incoming and outgoing neighbours no longer runs along another edge's lane in the gutter beside its node. The gutter is widened where the loop shares cells with an edge that does not touch its node, so the loop is drawn as a stroke of its own, nested inside that edge, in all four directions. Fixes [#2070](https://github.com/dfadler/zombie-mermaid/issues/2070).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.6.0
+  - @zombie-mermaid/mermaid-parser@5.6.0
+
+## 5.5.0
+
+### Minor Changes
+
+- [#2076](https://github.com/dfadler/zombie-mermaid/pull/2076) [`b8f3e39`](https://github.com/dfadler/zombie-mermaid/commit/b8f3e39e83ee256cf80b885dd6201686d3196e6a) Thanks [@dfadler](https://github.com/dfadler)! - ASCII `erDiagram` now stacks entities top to bottom the way mermaid.js does, instead of packing them into side-by-side rows ([#1917](https://github.com/dfadler/zombie-mermaid/issues/1917)). `direction LR` and `RL` keep the side-by-side layout.
+
+- [#2067](https://github.com/dfadler/zombie-mermaid/pull/2067) [`e21b993`](https://github.com/dfadler/zombie-mermaid/commit/e21b993aec9aa7b3c6f3e747aeb0e98bdf9ac08b) Thanks [@dfadler](https://github.com/dfadler)! - Draw the sequence `participant X@{ "type": ... }` kinds (boundary, control, entity, database, collections, queue). SVG draws Mermaid's icons and box variants with the theme's node tokens; ASCII adds a one-line marker above the label, the same in the unicode and ASCII charsets. Unknown types keep the plain box.
+
+### Patch Changes
+
+- [#2063](https://github.com/dfadler/zombie-mermaid/pull/2063) [`50c39dc`](https://github.com/dfadler/zombie-mermaid/commit/50c39dcbb149519e92225d464cf99e46799bed6f) Thanks [@dfadler](https://github.com/dfadler)! - ASCII class diagrams: a detour around an intermediate box now enters its target on a row above the arrowhead, so the head has a stem, and leaves a shared anchor below the straight edge's stem instead of replacing it ([#2056](https://github.com/dfadler/zombie-mermaid/issues/2056)).
+
+- [#2040](https://github.com/dfadler/zombie-mermaid/pull/2040) [`df88acb`](https://github.com/dfadler/zombie-mermaid/commit/df88acb864e45a6876b1744385c5db863a402176) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: duplicate self-loops, and reciprocal or duplicate edges between two nodes, no longer leave a stroke that ends in blank space or a canvas of unequal line widths. A second self-loop stays off its node's corner, and a parallel-lane search that runs out of room keeps the edge's earlier route instead of a placeholder hundreds of rows out. Fixes [#2025](https://github.com/dfadler/zombie-mermaid/issues/2025), [#2028](https://github.com/dfadler/zombie-mermaid/issues/2028) and [#2030](https://github.com/dfadler/zombie-mermaid/issues/2030).
+
+- [#2092](https://github.com/dfadler/zombie-mermaid/pull/2092) [`ffdc68e`](https://github.com/dfadler/zombie-mermaid/commit/ffdc68e2e8a19332ea8f075ca709b0e65df67814) Thanks [@dfadler](https://github.com/dfadler)! - ASCII ER: vertical cardinality markers with a zero-circle (`zero-one`, `zero-many`) now take two rows, like mermaid's own: the tick or crow's foot against the entity box, the circle on the line one row further along instead of beside it. Vertical gaps between rows grow by up to two rows in diagrams that have such a marker ([#2083](https://github.com/dfadler/zombie-mermaid/issues/2083)).
+
+- [#2082](https://github.com/dfadler/zombie-mermaid/pull/2082) [`ec37506`](https://github.com/dfadler/zombie-mermaid/commit/ec3750657f88ec2466344e556b77d6f2a147319a) Thanks [@dfadler](https://github.com/dfadler)! - ASCII ER: `many`, `zero-many` and `zero-one` cardinality markers on a vertical edge are now drawn along the vertical axis (`╤`/`╧`, `V`/`^` in ASCII), no longer as the horizontal `╟`/`╢`/`<`/`>` glyphs beside the line ([#2081](https://github.com/dfadler/zombie-mermaid/issues/2081)).
+
+- [#2080](https://github.com/dfadler/zombie-mermaid/pull/2080) [`242335c`](https://github.com/dfadler/zombie-mermaid/commit/242335c43afd4d50894435c49993abf69d7f017c) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: parallel edges past the three cells of a box face no longer merge at the target. A group of five or more plain lanes (and a reciprocal folded into one) lengthens the box face so each lane keeps its own arrowhead, and a group of six or seven cluster exit siblings (up to seven edges in total) spreads over both side faces of the target ([#1826](https://github.com/dfadler/zombie-mermaid/issues/1826), [#1743](https://github.com/dfadler/zombie-mermaid/issues/1743), [#1689](https://github.com/dfadler/zombie-mermaid/issues/1689)).
+
+- [#2093](https://github.com/dfadler/zombie-mermaid/pull/2093) [`cf53ce5`](https://github.com/dfadler/zombie-mermaid/commit/cf53ce5b38fef7d10be32edd8112904deeda89c7) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: more parallel-lane groups keep one arrowhead per edge. A top-down or bottom-up forward group and its back group between the same two nodes (for example four edges down and two back) lengthen the faces they share; a subgraph whose only exit is a group of three or more edges now uses the cluster exit lanes; and eight or more edges from one subgraph to one target give the target a longer face ([#1826](https://github.com/dfadler/zombie-mermaid/issues/1826), [#1689](https://github.com/dfadler/zombie-mermaid/issues/1689)).
+
+- [#2062](https://github.com/dfadler/zombie-mermaid/pull/2062) [`4a29ac5`](https://github.com/dfadler/zombie-mermaid/commit/4a29ac5939409c08bf89d6fecf913cbb2719b8f2) Thanks [@dfadler](https://github.com/dfadler)! - Output change: in an LR flowchart, an edge that jumps a node on its own row (`A --> C` past `B`) now runs under the row, out of the bottom of its origin and into the bottom of its target. It used to leave the origin along the line of `A --> B` and join `B --> C` in one arrowhead before the target. A node that a jumping edge enters while another leaves it, a node with a self-loop or backwards edge, and labeled jumping edges that share an end keep the previous route. Fixes [#2043](https://github.com/dfadler/zombie-mermaid/issues/2043) and [#2044](https://github.com/dfadler/zombie-mermaid/issues/2044).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.5.0
+  - @zombie-mermaid/mermaid-parser@5.5.0
+
+## 5.4.0
+
+### Minor Changes
+
+- [#2048](https://github.com/dfadler/zombie-mermaid/pull/2048) [`d1b2d9a`](https://github.com/dfadler/zombie-mermaid/commit/d1b2d9a524e9e46fa1b4252cdb2952f48166742d) Thanks [@dfadler](https://github.com/dfadler)! - Support Mermaid's `accTitle:` / `accDescr:` (single-line and `accDescr { ... }`) on every diagram type, not just pie. In SVG, `accTitle` names the root (the `title` option still wins) and `accDescr` becomes `<desc>` with `aria-describedby`; both go through the one `svgOpenTag()`. ASCII output ignores the statements and is byte-identical. New `extractAccessibility()` in `@zombie-mermaid/core`.
+
+### Patch Changes
+
+- [#2036](https://github.com/dfadler/zombie-mermaid/pull/2036) [`520c6b1`](https://github.com/dfadler/zombie-mermaid/commit/520c6b1ceaddbb8c3817e528b4704b88740b6ee5) Thanks [@dfadler](https://github.com/dfadler)! - ASCII C4: arrowheads are now fed by a stroke running in their direction. Routes meet each headed end straight on instead of turning on the head's own cell.
+
+- [#2041](https://github.com/dfadler/zombie-mermaid/pull/2041) [`10f4259`](https://github.com/dfadler/zombie-mermaid/commit/10f425979fca1b6150ebc1139d5fc9bf9f3971e3) Thanks [@dfadler](https://github.com/dfadler)! - ASCII class diagrams: a relationship label no longer overwrites the horizontal run of its route, so arrowheads stay connected to their stems ([#2024](https://github.com/dfadler/zombie-mermaid/issues/2024)).
+
+- [#2034](https://github.com/dfadler/zombie-mermaid/pull/2034) [`344431e`](https://github.com/dfadler/zombie-mermaid/commit/344431ec91d52753988a6bce3b380c394a401c33) Thanks [@dfadler](https://github.com/dfadler)! - Speed up ASCII rendering of graphs with many labelled edges (about 2.5x at 160 labelled edges), with byte-identical output: copy-on-write canvas columns no longer use the slow `slice()` of a frozen array, label segments are looked up through a per-cell index instead of rescanned, and each label's competing placements are computed once per layout.
+
+- [#2016](https://github.com/dfadler/zombie-mermaid/pull/2016) [`0f89a9d`](https://github.com/dfadler/zombie-mermaid/commit/0f89a9db354f32fa14aa55455e28be0376d284ac) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: at a narrow `paddingX` (1 or 2), an LR edge that bypasses a same-row child now starts with a `┬` junction in the gap after its parent, instead of dropping from beside the child's arrowhead. The gap before such a child is kept 3 wide, as [#1404](https://github.com/dfadler/zombie-mermaid/issues/1404) did for fan-in children. Fixes [#1915](https://github.com/dfadler/zombie-mermaid/issues/1915).
+
+- [#2039](https://github.com/dfadler/zombie-mermaid/pull/2039) [`b7314ed`](https://github.com/dfadler/zombie-mermaid/commit/b7314ed0e47b0392573b36d6863036e0a05d2b4d) Thanks [@dfadler](https://github.com/dfadler)! - Fix orphan line stubs in ASCII state diagrams: a side exit from a box whose border column was widened now draws its stroke all the way from the connector (State Notes), and fork/join bars fill their border rows so stems and arrowheads touch the bar.
+
+- [#2013](https://github.com/dfadler/zombie-mermaid/pull/2013) [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8) Thanks [@dfadler](https://github.com/dfadler)! - Republish with `dist/` included. 5.1.0 and 5.2.0 of every package shipped without build output because the release job (split from the test job in [#1596](https://github.com/dfadler/zombie-mermaid/issues/1596)) never ran the build before `changeset publish`; imports of `zombie-mermaid` and the `@zombie-mermaid/*` packages failed to resolve. The release job now builds first and fails before publishing if any tarball lacks its entry files. Closes [#1991](https://github.com/dfadler/zombie-mermaid/issues/1991).
+- Updated dependencies [[`d1b2d9a`](https://github.com/dfadler/zombie-mermaid/commit/d1b2d9a524e9e46fa1b4252cdb2952f48166742d), [`c4c8d4f`](https://github.com/dfadler/zombie-mermaid/commit/c4c8d4fd0440e41eba62f43bc26f887d6160eba8), [`adf9f32`](https://github.com/dfadler/zombie-mermaid/commit/adf9f32494a78701c37894dfcb6c4a96344b7447), [`38e2b3c`](https://github.com/dfadler/zombie-mermaid/commit/38e2b3c00efe238bb9afe8683f6758a6f23a0996)]:
+  - @zombie-mermaid/core@5.4.0
+  - @zombie-mermaid/mermaid-parser@5.4.0
+
+## 5.3.0
+
+### Minor Changes
+
+- [#2006](https://github.com/dfadler/zombie-mermaid/pull/2006) [`8daa5ee`](https://github.com/dfadler/zombie-mermaid/commit/8daa5ee7f10ac14bf161ba48e1cd54dd0155b077) Thanks [@dfadler](https://github.com/dfadler)! - Add `profile: 'markdown'` to the ASCII renderer: ASCII-only charset and no color for output that pastes cleanly into issues, commits and fenced blocks. Explicit options still win; default output is unchanged. Closes [#1866](https://github.com/dfadler/zombie-mermaid/issues/1866).
+
+- [#1984](https://github.com/dfadler/zombie-mermaid/pull/1984) [`2fe4e00`](https://github.com/dfadler/zombie-mermaid/commit/2fe4e0006481a32fdd37faf45f9ee584d4d1696a) Thanks [@dfadler](https://github.com/dfadler)! - Add `limits` to `renderMermaidSVG` and `renderMermaidASCII`: `maxInputLength`, `maxNodes`, `maxEdges` (and `maxCanvasCells` for ASCII) are checked before layout and throw `LimitExceededError` (`code: 'LIMIT_EXCEEDED'`). Defaults are 100,000 characters, 400 nodes, 600 edges and 2,000,000 canvas cells, so a flowchart above 400 nodes or 600 edges now throws unless you raise the limit (`Infinity` disables one). The MCP render tools use tighter limits (50,000 / 150 / 300 / 1,000,000). See the API reference.
+
+### Patch Changes
+
+- [#1989](https://github.com/dfadler/zombie-mermaid/pull/1989) [`d028603`](https://github.com/dfadler/zombie-mermaid/commit/d028603dbe31376e1e1b26c05749f8719445a7a5) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a TD fan-out whose target box has an even width (a half-column centre) no longer draws one arrowhead a column right of its stem; the bundled-edge arrowhead and junction connector now use the same column as the routed stem. Fixes [#1914](https://github.com/dfadler/zombie-mermaid/issues/1914).
+
+- [#1964](https://github.com/dfadler/zombie-mermaid/pull/1964) [`ef0f872`](https://github.com/dfadler/zombie-mermaid/commit/ef0f872d83bf76fa65cbcf1ff630700dc5470d4e) Thanks [@dfadler](https://github.com/dfadler)! - ASCII color auto-detection now honors `NO_COLOR` and `FORCE_COLOR` (`FORCE_COLOR` wins), and `TERM=dumb` now beats `COLORTERM`. Fixes [#1863](https://github.com/dfadler/zombie-mermaid/issues/1863).
+
+- [#1968](https://github.com/dfadler/zombie-mermaid/pull/1968) [`315dcb8`](https://github.com/dfadler/zombie-mermaid/commit/315dcb86ecb4688248c8c1ef35df90e50da303ce) Thanks [@dfadler](https://github.com/dfadler)! - Source maps no longer embed `sourcesContent`, cutting the shipped `.map` files by about 70% (svg-renderer 1532K to 404K, ascii-renderer 2384K to 556K on disk). Stack traces keep their line numbers. Refs [#1871](https://github.com/dfadler/zombie-mermaid/issues/1871).
+- Updated dependencies [[`2fe4e00`](https://github.com/dfadler/zombie-mermaid/commit/2fe4e0006481a32fdd37faf45f9ee584d4d1696a), [`315dcb8`](https://github.com/dfadler/zombie-mermaid/commit/315dcb86ecb4688248c8c1ef35df90e50da303ce), [`5e4a9a7`](https://github.com/dfadler/zombie-mermaid/commit/5e4a9a71b2f07c8eceaed50dc764504525065675), [`88bf8a5`](https://github.com/dfadler/zombie-mermaid/commit/88bf8a5abed27d76a775ca5269605090311c34d5), [`8360227`](https://github.com/dfadler/zombie-mermaid/commit/8360227eb337146a923e14781a87bc63ce74f44d)]:
+  - @zombie-mermaid/core@5.3.0
+  - @zombie-mermaid/mermaid-parser@5.3.0
+
 ## 5.2.0
 
 ### Patch Changes

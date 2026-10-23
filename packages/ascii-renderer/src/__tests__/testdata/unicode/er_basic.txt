@@ -1,8 +1,17 @@
 erDiagram
   CUSTOMER ||--o{ ORDER : places
 ---
-┌──────────┐        ┌───────┐    
-│ CUSTOMER │─│────○╟│ ORDER │    
-└──────────┘ places └───────┘    
-                                 
-                                 
+┌──────────┐    
+│ CUSTOMER │    
+└──────────┘    
+      ┼         
+      │         
+    places      
+      │         
+      ○         
+      ╧         
+  ┌───────┐     
+  │ ORDER │     
+  └───────┘     
+                
+                

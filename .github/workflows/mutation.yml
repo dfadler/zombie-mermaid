@@ -1,0 +1,63 @@
+name: Mutation testing
+
+# Weekly Stryker mutation run on the parser and pathfinder (#1862). Advisory:
+# never a PR gate (runtime cost, and Vitest Browser Mode is unsupported so
+# Playwright-covered code reads low). Scope lives in stryker.config.json.
+#
+# Incremental mode (.stryker-tmp/incremental.json) is cached between runs, but
+# Stryker does not detect snapshot or dependency changes, so a stale cache can
+# hide survivors; the cache key includes pnpm-lock.yaml to bound that.
+#
+# continue-on-error keeps a failed/timed-out run from turning the workflow red.
+on:
+  schedule:
+    - cron: '43 4 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation
+  cancel-in-progress: true
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    continue-on-error: true # advisory, see header
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
+
+      - name: Restore incremental cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .stryker-tmp/incremental.json
+          key: stryker-incremental-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}
+          restore-keys: stryker-incremental-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Run Stryker
+        run: pnpm run mutation
+
+      - name: Job summary
+        if: always()
+        run: |
+          if [ -f reports/mutation/mutation.json ]; then
+            node scripts/mutation-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No mutation report produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 14
+          if-no-files-found: warn

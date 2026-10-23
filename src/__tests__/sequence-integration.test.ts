@@ -95,7 +95,7 @@ describe('renderMermaidSVG – sequence diagrams', () => {
     // Lifelines are dashed vertical lines
     const dashedLines = svg.match(/stroke-dasharray="6 4"/g)
     expect(dashedLines).toBeTruthy()
-    expect(dashedLines!.length).toBeGreaterThanOrEqual(2) // at least 2 lifelines
+    expect(dashedLines!.length).toBeGreaterThanOrEqual(2) // At least 2 lifelines
   })
 
   it('renders a complex authentication flow', () => {

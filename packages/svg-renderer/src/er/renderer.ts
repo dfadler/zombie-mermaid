@@ -8,6 +8,8 @@ import type {
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
+  getReadableTextColor,
+  sanitizeClassName,
   renderMultilineText,
   escapeXml as escapeXmlUtil,
   escapeAttr,
@@ -95,11 +97,12 @@ export function renderErSvg(
         decorative,
         undefined,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),
   )
-  parts.push(buildSvgStyleBlock(font, true, emit.nonce))
+  parts.push(buildSvgStyleBlock(font, true, emit.nonce, emit.bodyFont))
   parts.push('<defs>')
   parts.push('</defs>') // No marker defs — we draw crow's foot inline
 
@@ -149,24 +152,47 @@ function renderEntityBox(
     rowHeight,
     label,
     attributes,
+    inlineStyle,
   } = entity
   const parts: string[] = []
 
-  // Semantic wrapper with entity metadata
+  // Box colors: inline styles (from `classDef` / `class` / `:::` / `style`)
+  // override the theme variables, as for class diagrams. With no inline style
+  // the variables keep deriving from the theme. A custom fill paints the
+  // header band too, and an explicit `color:` (or, failing that, a readable
+  // black/white for the fill) recolours every text in the box.
+  const fill = escapeAttr(inlineStyle?.fill ?? 'var(--_node-fill)')
+  const stroke = escapeAttr(inlineStyle?.stroke ?? 'var(--_node-stroke)')
+  const strokeWidth = escapeAttr(
+    inlineStyle?.['stroke-width'] ?? String(STROKE_WIDTHS.outerBox),
+  )
+  const innerWidth = escapeAttr(
+    inlineStyle?.['stroke-width'] ?? String(STROKE_WIDTHS.innerBox),
+  )
+  const headerFill = inlineStyle?.fill ? fill : 'var(--_group-hdr)'
+  const textColor = inlineStyle?.color
+    ? escapeAttr(inlineStyle.color)
+    : inlineStyle?.fill
+      ? escapeAttr(getReadableTextColor(inlineStyle.fill, 'var(--_text)'))
+      : undefined
+
+  // Semantic wrapper with entity metadata; a style class is emitted after the
+  // same allowlist the flowchart renderer applies, so external CSS can use it.
+  const safeClassName = sanitizeClassName(entity.className)
   parts.push(
-    f`<g class="entity" data-id="${escapeAttr(id)}" data-label="${escapeAttr(label)}">`,
+    f`<g class="${safeClassName ? f`entity ${safeClassName}` : 'entity'}" data-id="${escapeAttr(id)}" data-label="${escapeAttr(label)}">`,
   )
 
   // Outer rectangle
   parts.push(
     f`  <rect x="${x}" y="${y}" width="${width}" height="${height}" ` +
-      f`rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
   )
 
   // Header background
   parts.push(
     f`  <rect x="${x}" y="${y}" width="${width}" height="${headerHeight}" ` +
-      f`rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`rx="0" ry="0" fill="${headerFill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
   )
 
   // Entity name (supports multi-line via <br> tags)
@@ -177,7 +203,7 @@ function renderEntityBox(
         x + width / 2,
         y + headerHeight / 2,
         fontSizes.nodeLabel,
-        f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="var(--_text)"`,
+        f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="${textColor ?? 'var(--_text)'}"`,
       ),
   )
 
@@ -185,7 +211,7 @@ function renderEntityBox(
   const attrTop = y + headerHeight
   parts.push(
     f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
-      f`stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+      f`stroke="${stroke}" stroke-width="${innerWidth}" />`,
   )
 
   // Attribute rows
@@ -193,7 +219,8 @@ function renderEntityBox(
     const attr = attributes[i]!
     const rowY = attrTop + i * rowHeight + rowHeight / 2
     parts.push(
-      '  ' + renderAttribute(attr, x, rowY, width).replace(/\n/g, '\n  '),
+      '  ' +
+        renderAttribute(attr, x, rowY, width, textColor).replace(/\n/g, '\n  '),
     )
   }
 
@@ -201,7 +228,7 @@ function renderEntityBox(
   if (attributes.length === 0) {
     parts.push(
       f`  <text x="${x + width / 2}" y="${attrTop + rowHeight / 2}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
-        f`font-size="${ER_FONT.attrSize}" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>`,
+        f`font-size="${ER_FONT.attrSize}" fill="${textColor ?? 'var(--_text-muted)'}" font-style="italic">(no attributes)</text>`,
     )
   }
 
@@ -222,6 +249,7 @@ function renderAttribute(
   boxX: number,
   y: number,
   boxWidth: number,
+  textColor?: string,
 ): string {
   const parts: string[] = []
 
@@ -245,7 +273,7 @@ function renderAttribute(
     )
     parts.push(
       f`<text x="${boxX + 6 + keyWidth / 2}" y="${y}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
-        f`font-size="${ER_FONT.keySize}" font-weight="${ER_FONT.keyWeight}" fill="var(--_text-sec)">${attr.keys.join(',')}</text>`,
+        f`font-size="${ER_FONT.keySize}" font-weight="${ER_FONT.keyWeight}" fill="${textColor ?? 'var(--_text-sec)'}">${attr.keys.join(',')}</text>`,
     )
   }
 
@@ -254,7 +282,7 @@ function renderAttribute(
   parts.push(
     f`<text x="${typeX}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
       f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
-      f`<tspan fill="var(--_text-muted)">${escapeXml(attr.type)}</tspan></text>`,
+      f`<tspan fill="${textColor ?? 'var(--_text-muted)'}">${escapeXml(attr.type)}</tspan></text>`,
   )
 
   // Name (right-aligned, monospace with syntax highlighting)
@@ -262,7 +290,7 @@ function renderAttribute(
   parts.push(
     f`<text x="${nameX}" y="${y}" class="mono" text-anchor="end" dy="${TEXT_BASELINE_SHIFT}" ` +
       f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
-      f`<tspan fill="var(--_text-sec)">${escapeXml(attr.name)}</tspan></text>`,
+      f`<tspan fill="${textColor ?? 'var(--_text-sec)'}">${escapeXml(attr.name)}</tspan></text>`,
   )
 
   // Close the group if we opened one
@@ -310,7 +338,7 @@ function renderRelationshipLabel(
 ): string {
   if (!rel.label || rel.points.length < 2) return ''
 
-  const mid = midpoint(rel.points)
+  const mid = rel.labelPoint ?? midpoint(rel.points)
   const metrics = measureMultilineText(
     rel.label,
     fontSizes.edgeLabel,

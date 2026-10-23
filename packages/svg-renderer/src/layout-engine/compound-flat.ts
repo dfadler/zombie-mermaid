@@ -49,6 +49,7 @@ import { ARROW_HEAD, FONT_WEIGHTS } from '../styles.ts'
 import { DEFAULTS } from './constants.ts'
 import { resolveEdgeStyle } from './from-elk.ts'
 import { labelSpot, routeInnerEdge } from './inner-edges.ts'
+import { subgraphFeedbackEdges, subgraphsTied } from '@zombie-mermaid/core'
 import type { LayoutHints } from './layout-hints.ts'
 import {
   REGION_PADDING,
@@ -578,7 +579,8 @@ export function layoutCompoundFlat(
 ): PositionedGraph | undefined {
   const realOrder = [...graph.nodes.keys()]
   const flat: MermaidGraph = { ...graph, subgraphs: [] }
-  const first = layout(flat)
+  const feedbackEdges = subgraphFeedbackEdges(graph)
+  const first = layout(flat, { feedbackEdges })
   const layer = layerIndexes(first.nodes, graph.direction)
   const vertical = isVertical(graph.direction)
   const firstNode = new Map(first.nodes.map((n) => [n.id, n]))
@@ -606,23 +608,8 @@ export function layoutCompoundFlat(
       graph.edges.some((e) => from.has(e.source) && to.has(e.target))
     return run(inA, inB) && run(inB, inA)
   }
-  // Two siblings are tied when an edge joins them, or a node outside both
-  // has an edge to each (mermaid 12: `E --> A`, `E --> C` into two subgraphs).
-  const tied = (a: MermaidSubgraph, b: MermaidSubgraph): boolean => {
-    const inA = membersOf(a)
-    const inB = membersOf(b)
-    const touches = (x: string, set: Set<string>): boolean =>
-      graph.edges.some(
-        (e) =>
-          (e.source === x && set.has(e.target)) ||
-          (e.target === x && set.has(e.source)),
-      )
-    return [...graph.nodes.keys()].some((x) =>
-      inA.has(x) || inB.has(x)
-        ? (inA.has(x) && touches(x, inB)) || (inB.has(x) && touches(x, inA))
-        : touches(x, inA) && touches(x, inB),
-    )
-  }
+  const tied = (a: MermaidSubgraph, b: MermaidSubgraph): boolean =>
+    subgraphsTied(graph, a, b)
   orderSiblings(graph.subgraphs, layer, keys, joins, tied)
   for (const g of plan.ghosts) {
     const sg = clusters.find((c) => c.id === g.subgraph)!
@@ -675,6 +662,7 @@ export function layoutCompoundFlat(
         looseEdges,
         detachedEdges,
         walkOrder: realOrder,
+        feedbackEdges,
         forceNodeOrder: true,
       })
       const real = new Map(

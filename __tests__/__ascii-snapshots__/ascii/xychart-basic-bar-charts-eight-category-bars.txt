@@ -21,4 +21,4 @@
    | #####  #####  #####  #####  #####  #####         #####
    | #####  #####  #####  #####  #####  #####  #####  #####
    +---+------+------+------+------+------+------+------+---
-      Eng   SalesMarketinSupport  HR   Finance Legal   Ops
+      Eng   Sales Mar... Sup...   HR   Finance Legal   Ops

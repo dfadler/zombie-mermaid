@@ -5,7 +5,7 @@
  *   - __tests__/visual/*.visual.test.ts — the Playwright visual-regression suite
  *   - scripts/visual-diff.ts            — before/after rendering report
  *   - demo/diagram-pages-data.ts        — looks up one sample per diagram type by title
- *   - bench.ts                          — runs performance benchmarks in Bun (no browser)
+ *   - bench.ts                          — runs performance benchmarks under tsx (no browser)
  *   - vite.config.ts                    — dev server with live reload
  *
  * index.ts (the marketing home page) does not consume this file.
@@ -103,7 +103,7 @@ export const samples: Sample[] = [
   D --> E((Circle))`,
   },
   {
-    title: 'Batch 1 Shapes',
+    title: 'Subroutine and Hexagon Shapes',
     category: 'Flowchart',
     description:
       'Subroutine, double circle, and hexagon — three specialty shapes for a predefined process, a double terminal, or a preparation step, beyond the five most common ones in Original Node Shapes.',
@@ -112,21 +112,21 @@ export const samples: Sample[] = [
   B --> C{{Hexagon}}`,
   },
   {
-    title: 'Batch 2 Shapes',
+    title: 'Cylinder and Trapezoid Shapes',
     category: 'Flowchart',
     description:
-      'Cylinder, asymmetric, trapezoid, and inverse trapezoid — four more specialty shapes, for a database, a flag or priority marker, or a manual operation, rounding out the full set alongside Batch 1 Shapes.',
+      'Cylinder, asymmetric, trapezoid, and inverse trapezoid — four more specialty shapes, for a database, a flag or priority marker, or a manual operation, rounding out the full set alongside Subroutine and Hexagon Shapes.',
     source: `graph LR
   A[(Database)] --> B>Flag Shape]
   B --> C[/Wider Bottom\\]
   C --> D[\\Wider Top/]`,
   },
   {
-    title: 'All 12 Flowchart Shapes',
+    title: 'Twelve Core Flowchart Shapes',
     category: 'Flowchart',
     gallery: true,
     description:
-      'Every shape from Original Node Shapes and both Batch pages, chained into one reference diagram — the single chart to screenshot or copy from when you need to see all twelve at a glance instead of checking three separate pages.',
+      'Every shape from Original Node Shapes, Subroutine and Hexagon Shapes and Cylinder and Trapezoid Shapes, chained into one reference diagram — the single chart to screenshot or copy from when you need to see all twelve at a glance instead of checking three separate pages.',
     source: `graph LR
   A[Rectangle] --> B(Rounded)
   B --> C{Diamond}
@@ -939,7 +939,7 @@ flowchart LR
   Car *-- Engine`,
   },
   {
-    title: 'Class: Aggregation (o--)',
+    title: 'Class: Aggregation',
     category: 'Class',
     description: 'Aggregation — "has" relationship with hollow diamond marker.',
     source: `classDiagram
@@ -1187,21 +1187,21 @@ flowchart LR
   PERSON ||--|| PASSPORT : has`,
   },
   {
-    title: 'ER: Exactly One to Zero-or-Many (||--o{)',
+    title: 'ER: Exactly One to Zero-or-Many',
     category: 'ER',
     description: "Classic one-to-many optional relationship (crow's foot).",
     source: `erDiagram
   CUSTOMER ||--o{ ORDER : places`,
   },
   {
-    title: 'ER: Zero-or-One to One-or-Many (|o--|{)',
+    title: 'ER: Zero-or-One to One-or-Many',
     category: 'ER',
     description: 'Optional on one side, at-least-one on the other.',
     source: `erDiagram
   SUPERVISOR |o--|{ EMPLOYEE : manages`,
   },
   {
-    title: 'ER: One-or-More to Zero-or-Many (}|--o{)',
+    title: 'ER: One-or-More to Zero-or-Many',
     category: 'ER',
     description: 'At-least-one to zero-or-many relationship.',
     source: `erDiagram
@@ -2259,5 +2259,461 @@ pie title Pets adopted by volunteers
     F --> G
     G --> H
     G --> I`,
+  },
+  {
+    title: 'LR Fan-In With Bypass Edge',
+    category: 'Flowchart',
+    description:
+      'The long edge from `A` to `C` runs under `B` from its own exit on `A` to its own arrowhead on `C`, instead of sharing the line out of `A` and the arrowhead of `B --> C` (#1915, #2043, #2044).',
+    source: `flowchart LR
+    A --> B
+    A --> C
+    B --> C`,
+  },  {
+    title: 'Sequence: Participant Types',
+    category: 'Sequence',
+    gallery: true,
+    description:
+      'All six `participant X@{ "type": ... }` kinds from Mermaid 12: boundary, control, entity and database draw an icon with the label below it, collections stacks two boxes, and queue is a horizontal cylinder (#2059). ASCII marks each with a one-line glyph above the label.',
+    source: `sequenceDiagram
+    participant B@{ "type": "boundary" }
+    participant C@{ "type": "control" }
+    participant E@{ "type": "entity" }
+    participant D@{ "type": "database" }
+    participant L@{ "type": "collections" }
+    participant Q@{ "type": "queue" }
+    participant P as Plain
+    B->>C: request
+    C->>E: load
+    E->>D: select
+    D->>L: rows
+    L->>Q: enqueue
+    Q->>P: done`,
+  },
+  {
+    title: 'Duplicate Self-Loops',
+    category: 'Flowchart',
+    description:
+      'Two identical self-loops on one node. They draw as one clean loop, with no junction leading into blank space (#2028).',
+    source: `flowchart TD
+    n0["a"]
+    n0 --> n0
+    n0 --> n0`,
+  },
+  {
+    title: 'Reciprocal and Duplicate Edges RL',
+    category: 'Flowchart',
+    description:
+      'A reciprocal pair plus a duplicate between two nodes in a right-to-left graph. Every stroke connects to something (#2030).',
+    source: `flowchart RL
+    n0["L6rc9iw"]
+    n1(["9B531Zk"])
+    n1 --> n0
+    n0 --> n1
+    n1 --> n0`,
+  },
+  {
+    title: 'Decision Self-Loop with Duplicate Edges',
+    category: 'Flowchart',
+    description:
+      'A decision node with a self-loop, duplicate parallel edges and a labeled back edge. The canvas stays rectangular (#2025).',
+    source: `flowchart LR
+    n0{"gSQ21Q"}
+    n1["C"]
+    n2(["OkfK"])
+    n3("Q552S")
+    n0 --> n0
+    n0 --> n2
+    n0 --> n2
+    n0 --> n1
+    n1 -->|000A| n0
+    n0 --> n1`,
+  },
+  {
+    title: 'LR Bypass Edge In A Chain',
+    category: 'Flowchart',
+    description:
+      'In a chain, the edge from `A` to `C` leaves the bottom of `A`, runs under `B` and enters the bottom of `C`, so `B --> C` keeps its own arrowhead (#2043, #2044).',
+    source: `flowchart LR
+    A --> B
+    B --> C
+    C --> D
+    A --> C`,
+  },
+  {
+    title: 'Flowchart: Five Parallel Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Five labeled edges between the same two nodes (#1826). In the ASCII panel the boxes grow so each lane still enters the target on its own row with its own arrowhead.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  A -->|fourth| B
+  A -->|fifth| B`,
+  },
+  {
+    title: 'Flowchart: Five Parallel Edges with Reciprocals (LR)',
+    category: 'Flowchart',
+    description:
+      'Three edges one way and two back between the same two nodes in a left-to-right graph (#1826). In the ASCII panel the reciprocals share the group and each edge keeps its own arrowhead.',
+    source: `flowchart LR
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  B -->|back one| A
+  B -->|back two| A`,
+  },
+  {
+    title: 'Flowchart: Six Cluster Exit Siblings (TD)',
+    category: 'Flowchart',
+    description:
+      'Six labeled edges leave a subgraph for one target beside another exit (#1826). In the ASCII panel the siblings share both side faces of the target, each on its own row.',
+    source: `flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|1| T
+  S -->|2| T
+  S -->|3| T
+  S -->|4| T
+  S -->|5| T
+  S -->|6| T
+  S -->|other| U`,
+  },
+  {
+    title: 'ER: Remaining Cardinality Spellings',
+    category: 'ER',
+    description:
+      'The other word and symbol spellings mermaid accepts: `only one`, `zero or more`, `one or many`, `many(0)`, `many(1)`, `1+`, `0+`, `zero or one`, and the `to` / `optionally to` connectors. Complements the word-form sample (#1788).',
+    source: `erDiagram
+  AUTHOR only one to zero or more BOOK : writes
+  BOOK one or many to many(0) REVIEW : receives
+  REVIEW many(1) optionally to 0+ COMMENT : attracts
+  COMMENT 1+ to zero or one FLAG : raises`,
+  },
+  {
+    title: 'Flowchart: Parallel Edges with Back Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Four edges down and two back between the same two nodes in a top-down graph (#1826). In the ASCII panel the faces they share grow so each edge keeps its own arrowhead.',
+    source: `flowchart TD
+  A -->|f1| B
+  A -->|f2| B
+  A -->|f3| B
+  A -->|f4| B
+  B -->|b1| A
+  B -->|b2| A`,
+  },
+  {
+    title: 'Flowchart: Cluster Exit Siblings with No Other Exit (TD)',
+    category: 'Flowchart',
+    description:
+      'Three labeled edges are the only way out of a subgraph (#1826). In the ASCII panel they leave on a shared stub and each enters the target on a face of its own.',
+    source: `flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|1| T
+  S -->|2| T
+  S -->|3| T`,
+  },
+  {
+    title: 'Flowchart: Nine Cluster Exit Siblings (TD)',
+    category: 'Flowchart',
+    description:
+      'Nine labeled edges leave a subgraph for one target beside another exit (#1826). In the ASCII panel the target grows a longer face so each sibling keeps an arrowhead of its own.',
+    source: `flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|1| T
+  S -->|2| T
+  S -->|3| T
+  S -->|4| T
+  S -->|5| T
+  S -->|6| T
+  S -->|7| T
+  S -->|8| T
+  S -->|9| T
+  S -->|other| U`,
+  },
+  {
+    title: 'Flowchart: Self-Loop with In and Out Neighbours (TD)',
+    category: 'Flowchart',
+    description:
+      'A self-loop on a node that also has incoming and outgoing neighbours (#2070). In the ASCII panel the loop is a stroke of its own, nested inside the fan that passes its node.',
+    source: `flowchart TD
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a`,
+  },
+  {
+    title: 'Flowchart: Self-Loop with In and Out Neighbours (LR)',
+    category: 'Flowchart',
+    description:
+      'A self-loop on a node that also has incoming and outgoing neighbours (#2070). In the ASCII panel the loop is a stroke of its own, nested inside the fan that passes its node.',
+    source: `flowchart LR
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a`,
+  },
+  {
+    title: 'Flowchart: Dense Duplicate Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Ten edges over three nodes, four of them duplicates of one pair (#2072). In the ASCII panel every edge keeps a lane and an arrowhead of its own, as Mermaid draws one path per edge, and the faces grow to hold them.',
+    source: `flowchart TD
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> b
+  a --> b
+  a --> b
+  a --> b
+  b --> c
+  b --> c
+  a --> c
+  a --> c
+  c --> a
+  c --> a`,
+  },
+  {
+    title: 'Flowchart: Dense Duplicate Edges (LR)',
+    category: 'Flowchart',
+    description:
+      'Ten edges over three nodes, four of them duplicates of one pair (#2072). In the ASCII panel every edge keeps a lane and an arrowhead of its own, as Mermaid draws one path per edge, and the faces grow to hold them.',
+    source: `flowchart LR
+  a["a"]
+  b["b"]
+  c["c"]
+  a --> b
+  a --> b
+  a --> b
+  a --> b
+  b --> c
+  b --> c
+  a --> c
+  a --> c
+  c --> a
+  c --> a`,
+  },
+  {
+    title: 'ER: Multiple Keys per Attribute',
+    category: 'ER',
+    description:
+      'An attribute can carry several keys, comma-separated with or without a space (`PK, FK` / `PK,FK`), with or without a comment (#2115). Both spellings render as `PK,FK`.',
+    source: `erDiagram
+  T {
+    string a PK, FK "c"
+    string b PK,FK
+    string d PK
+    string e FK
+    string f UK
+    string g PK, FK, UK
+    string h PK,FK,UK "with comment"
+  }`,
+  },
+  {
+    title: 'ER: Style, classDef and Class',
+    category: 'ER',
+    description:
+      'Entities styled three ways, as mermaid 12.1.0 and 12.2.0 paint them (#2107): `classDef` with `class`, the `:::` shorthand, and an inline `style` (which wins over the class). `classDef default` sets the stroke of every entity. In the ASCII panel the colours are ignored, as in every other diagram type.',
+    source: `erDiagram
+  CUSTOMER ||--o{ ORDER : places
+  ORDER ||--|{ LINE_ITEM : contains
+  CUSTOMER {
+    int id PK
+    string name
+  }
+  ORDER:::late {
+    int id PK
+    date due
+  }
+  LINE_ITEM {
+    int qty
+  }
+  classDef default stroke:#475569
+  classDef vip fill:#fef3c7,stroke:#d97706,stroke-width:3px
+  classDef late fill:#fecaca,stroke:#dc2626,color:#7f1d1d
+  class CUSTOMER vip
+  style LINE_ITEM fill:#dbeafe,stroke:#2563eb`,
+  },
+  {
+    title: 'Class: classDiagram-v2 Header',
+    category: 'Class',
+    description:
+      '`classDiagram-v2` is accepted as an alias of `classDiagram`, as in Mermaid (#2117).',
+    source: `classDiagram-v2
+  Animal <|-- Duck
+  Animal : +int age
+  Animal : +eat()`,
+  },
+  {
+    title: 'Class: Bidirectional Relationships',
+    category: 'Class',
+    description:
+      '`<|--|>` and `<-->` draw their marker at both ends of the line (#2117).',
+    source: `classDiagram
+  Person <|--|> Employee
+  Order <--> Customer : places`,
+  },
+  {
+    title: 'Class: Lollipop Interface',
+    category: 'Class',
+    description:
+      '`()--` and `--()` end the line in a circle, the lollipop interface notation (#2117). Mermaid draws the interface as a name and circle hung off its host, with no class box unless the class has members or an annotation; the SVG and ASCII panels do the same.',
+    source: `classDiagram
+  class Comparable {
+    <<interface>>
+  }
+  Comparable ()-- Version
+  Version --() Printable`,
+  },
+  {
+    title: 'Class: Backtick Class Names',
+    category: 'Class',
+    description:
+      'A backtick-quoted class name may contain spaces and punctuation, in `class` statements, relationships and members (#2117).',
+    source: `classDiagram
+  class \`Animal Class!\` {
+    +int age
+    +eat()
+  }
+  \`Animal Class!\` <|-- Duck
+  \`Animal Class!\` : +String name`,
+  },
+  {
+    title: 'Class: Mixed Newly Accepted Syntax',
+    category: 'Class',
+    description:
+      'The `classDiagram-v2` header, a backtick name, bidirectional ends and lollipop interfaces in one diagram (#2117).',
+    source: `classDiagram-v2
+  \`Base Shape\` <|--|> Circle
+  Circle <--> Canvas : draws
+  Canvas ()-- Renderer
+  Plugin --() Renderer`,
+  },
+  {
+    title: 'ER: Crossing Edges and Edge Labels',
+    category: 'ER',
+    description:
+      'Four relationships where a dashed edge crosses a solid one (#2112). In the ASCII panel every crossing is drawn as a junction, each label sits on its own edge or beside its own stem, and no edge runs along an entity border.',
+    source: `erDiagram
+  AUTHOR ||--o{ BOOK : writes
+  AUTHOR ||..o{ AWARD : receives-award
+  PUBLISHER ||--o{ BOOK : prints
+  PUBLISHER ||..o{ CATALOG : appears-in`,
+  },
+  {
+    title: 'ER: Attribute Comments',
+    category: 'ER',
+    description:
+      'Attribute comments (#2127). Mermaid shows them as a fourth column after the keys and never wraps them; the ASCII panel appends them to the row in quotes, also unwrapped, and a `<br>` becomes a space. The SVG keeps them as a hover tooltip. An entity without comments is drawn as before.',
+    source: `erDiagram
+  CUSTOMER ||--o{ ORDER : places
+  CUSTOMER {
+    string name PK "the primary key"
+    string email UK "login address<br>must be unique"
+    int age
+  }
+  ORDER {
+    int id PK
+    int customer_id FK "references CUSTOMER, deleted orders are archived rather than removed"
+  }`,
+  },
+  {
+    title: 'Class: Relationship Cardinalities',
+    category: 'Class',
+    description:
+      'A cardinality sits beside its own end of the line, next to the box, in the SVG and in the ASCII panel (#2114).',
+    source: `classDiagram
+  Customer "1" --> "*" Order : places
+  Order "1" --> "1..*" Item : contains
+  Item "0..1" --> "many" Tag : has`,
+  },
+  {
+    title: 'Class: Cardinalities on Every Relationship Kind',
+    category: 'Class',
+    description:
+      'Cardinalities at both ends, at one end, with and without a label, next to inheritance, composition, aggregation, dependency and realization markers (#2114).',
+    source: `classDiagram
+  Animal "1" <|-- "0..*" Dog
+  Car "1" *-- "4" Wheel
+  Library "1" o-- "*" Book : holds
+  Service "1" ..> "1..*" Config : reads
+  Duck "*" ..|> "1" Swimmer
+  Cart "1" --> Item`,
+  },
+  {
+    title: 'Class: Cardinalities with Shared Ends',
+    category: 'Class',
+    description:
+      'Relationships that leave one class keep each cardinality beside its own line, including under a two-line label (#2114).',
+    source: `classDiagram
+  Teacher "1" --> "*" Course : teaches
+  Teacher "1" --> "*" Lab
+  Course "1" --> "1" Syllabus : covers<br>topics`,
+  },
+  {
+    title: 'Class: Direction LR',
+    category: 'Class',
+    description:
+      '`direction LR` lays the classes out left to right, as mermaid.js does (#2116): each level is a column and the markers face the new axis.',
+    source: `classDiagram
+  direction LR
+  class Animal {
+    +String name
+    +eat() void
+  }
+  Animal <|-- Dog
+  Animal <|-- Cat
+  Animal "1" --> "*" Toy : owns`,
+  },
+  {
+    title: 'Class: Direction BT',
+    category: 'Class',
+    description:
+      '`direction BT` stacks the classes bottom to top (#2116): the parent sits at the bottom, a lollipop name hangs below its host and a note keeps its class. The boxes stay upright in both panels.',
+    source: `classDiagram
+  direction BT
+  class Shape {
+    <<abstract>>
+    +area() double
+  }
+  Shape <|-- Circle
+  Shape <|-- Square
+  Shape ()-- Drawable
+  note for Square "all sides equal"`,
+  },
+  {
+    title: 'Class: Direction RL with Namespaces',
+    category: 'Class',
+    description:
+      '`direction RL` runs right to left and a namespace frame still wraps its classes (#2116).',
+    source: `classDiagram
+  direction RL
+  namespace Domain {
+    class Order
+    class Item
+  }
+  namespace Infra {
+    class Repo
+  }
+  Order "1" --> "*" Item : contains
+  Repo ..> Order : stores`,
   },
 ]

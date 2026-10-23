@@ -11,6 +11,8 @@
  * relation (above, below, or level) and the same horizontal one.
  */
 
+import { writeFile } from 'node:fs/promises'
+
 export interface Box {
   x: number
   y: number
@@ -31,6 +33,14 @@ export interface LayoutBoxes {
  */
 export const DEFAULT_TOLERANCE = 20
 
+/**
+ * Half-width of the dead-band around the tolerance. A pair whose offsets in
+ * both layouts are within this of the tolerance, on the same side, counts as
+ * agreeing: 19px against 22px is not a disagreement just because the line
+ * falls between them (#2155).
+ */
+export const TOLERANCE_BAND = 10
+
 /** Each figure is 0..1, or null when the layouts share too little to compare. */
 export interface Agreement {
   /** Pairs of nodes in the same above / below / level relation. */
@@ -50,6 +60,18 @@ const centreY = (b: Box): number => b.y + b.h / 2
 function relation(a: number, b: number, tolerance: number): -1 | 0 | 1 {
   if (Math.abs(a - b) <= tolerance) return 0
   return a < b ? -1 : 1
+}
+
+/** Whether two offsets (a - b in each layout) put the pair in the same relation, allowing the dead-band. */
+function agrees(official: number, ours: number, tolerance: number): boolean {
+  if (relation(official, 0, tolerance) === relation(ours, 0, tolerance)) {
+    return true
+  }
+  const inBand = (d: number): boolean =>
+    Math.abs(Math.abs(d) - tolerance) <= TOLERANCE_BAND
+  return (
+    inBand(official) && inBand(ours) && Math.sign(official) === Math.sign(ours)
+  )
 }
 
 function inside(node: Box, group: Box): boolean {
@@ -79,23 +101,15 @@ export function agreement(
       const a = ids[i]!
       const b = ids[j]!
       pairs++
+      const [oa, ob] = [official.nodes[a]!, official.nodes[b]!]
+      const [ua, ub] = [ours.nodes[a]!, ours.nodes[b]!]
       if (
-        relation(
-          centreY(official.nodes[a]!),
-          centreY(official.nodes[b]!),
-          tolerance,
-        ) ===
-        relation(centreY(ours.nodes[a]!), centreY(ours.nodes[b]!), tolerance)
+        agrees(centreY(oa) - centreY(ob), centreY(ua) - centreY(ub), tolerance)
       ) {
         vertical++
       }
       if (
-        relation(
-          centreX(official.nodes[a]!),
-          centreX(official.nodes[b]!),
-          tolerance,
-        ) ===
-        relation(centreX(ours.nodes[a]!), centreX(ours.nodes[b]!), tolerance)
+        agrees(centreX(oa) - centreX(ob), centreX(ua) - centreX(ub), tolerance)
       ) {
         horizontal++
       }
@@ -150,6 +164,10 @@ export interface OracleArgs {
   scorecard?: string
   /** Fail (exit 1) if any sample's worst figure is below this percentage. */
   failBelow?: number
+  /** Write the stable machine-readable scorecard (JSON, schema in `scorecardJson`) to this file. */
+  scorecardJson?: string
+  /** Exit 1 if any sample is under its explicit floor (see `floorFor`) or errored unexpectedly. */
+  thresholds: boolean
   tolerance: number
   /** Which diagram type to score; flowchart unless `--type=` says otherwise. */
   type: OracleType
@@ -228,8 +246,9 @@ mermaid.js draws, as the share of node pairs placed in the same relation.
   --json=<file>        write the per-sample figures to <file>
   --history=<file>     append one summary line per type to <file> (JSON Lines); scores all four types
   --scorecard=<file>   write a Markdown scorecard to <file> (trend read from --history); scores all four types
+  --scorecard-json=<file>  write the stable machine-readable scorecard (JSON) to <file>; scores all four types
+  --thresholds         exit 1 if any sample is under its explicit floor (see SAMPLE_FLOORS in scripts/lib/layout-agreement.ts)
   --fail-below=<pct>   exit 1 if any sample's lowest figure is under <pct> (0-100)
-  --layout=<engine>    elk (default) or simple (built-in, flowchart only, #1685)
   --layout=<engine>    elk (default) or simple (built-in, flowchart only, #1685)
   --tolerance=<px>     centres this close count as level (default ${DEFAULT_TOLERANCE})
   -h, --help           show this help
@@ -241,6 +260,7 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     tolerance: DEFAULT_TOLERANCE,
     type: 'flowchart',
     layout: 'elk',
+    thresholds: false,
     help: false,
   }
   for (const arg of argv) {
@@ -248,7 +268,11 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
       args.help = true
       continue
     }
-    // pnpm forwards the `--` in `pnpm run layout:oracle -- --filter=x` to the
+    if (arg === '--thresholds') {
+      args.thresholds = true
+      continue
+    }
+    // Pnpm forwards the `--` in `pnpm run layout:oracle -- --filter=x` to the
     // script. (The `--` is needed: pnpm claims `--filter` for itself without it.)
     if (arg === '--') continue
     const match = /^--([a-z-]+)=(.*)$/.exec(arg)
@@ -268,7 +292,10 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     } else if (name === 'json') args.json = value
     else if (name === 'history') args.history = value
     else if (name === 'scorecard') args.scorecard = value
-    else if (name === 'fail-below' || name === 'tolerance') {
+    else if (name === 'scorecard-json') {
+      if (value === '') throw new Error('--scorecard-json needs a file path')
+      args.scorecardJson = value
+    } else if (name === 'fail-below' || name === 'tolerance') {
       const n = Number(value)
       if (value === '' || !Number.isFinite(n) || n < 0) {
         throw new Error(`--${name} needs a non-negative number, got "${value}"`)
@@ -287,8 +314,13 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
   if (args.layout === 'simple' && args.type !== 'flowchart') {
     throw new Error('--layout=simple only lays out flowcharts.')
   }
-  if (args.layout !== 'elk' && (args.history || args.scorecard)) {
-    throw new Error('--history and --scorecard record the elk layout only.')
+  if (
+    args.layout !== 'elk' &&
+    (args.history || args.scorecard || args.scorecardJson || args.thresholds)
+  ) {
+    throw new Error(
+      '--history, --scorecard, --scorecard-json and --thresholds record the elk layout only.',
+    )
   }
   return args
 }
@@ -324,7 +356,7 @@ export interface HistoryEntry {
   tolerance: number
   /** Diagram type scored; entries recorded before #1905 omit it and are flowcharts. */
   type?: OracleType
-  /** mermaid version of the reference; entries recorded before #1905 omit it (11.17.2). */
+  /** Mermaid version of the reference; entries recorded before #1905 omit it (11.17.2). */
   mermaid?: string
   /** Samples scored. */
   samples: number
@@ -384,6 +416,176 @@ export function historyLines(entries: HistoryEntry[]): string {
   return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
 }
 
+// ---------------------------------------------------------------------------
+// Thresholds
+// ---------------------------------------------------------------------------
+
+/**
+ * The lowest acceptable "worst figure" (0..1) for a sample unless it has its
+ * own entry in `SAMPLE_FLOORS`. A sample passes when its worst figure is at or
+ * above its floor. Floors are regression guards at today's level, not claims
+ * of parity: a layout change may not push a sample under its floor, and an
+ * improvement should raise the floor in the same PR (ratchet).
+ */
+export const DEFAULT_FLOOR = 0.85
+
+/**
+ * Samples that sit below `DEFAULT_FLOOR` today (mermaid 12.1.0, tolerance
+ * 20px), each pinned just under its measured figure. The class
+ * ones are ratcheted (#2129). The flowchart ones are cross-axis
+ * differences (#1834).
+ */
+export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
+  'Nested Subgraphs': 0.2,
+  'Flowchart: CJK Labels': 0.5,
+  'State: Notes': 0.8,
+  // Measured 2026-10-21 on mermaid 12.1.0 with the dead-band (#2155); each floor sits
+  // just under the measured figure. See docs/known-differences.md.
+  // Dense (TD): c is 18.5px right of a in ours and 30.1px in mermaid, 0.1px outside the band.
+  'Flowchart: Dense Duplicate Edges (TD)': 0.65,
+  // Placement, not the loop (#2100, #2101). Mermaid staggers the three nodes 48px
+  // and 37px apart where ours stacks all three in one column (1 of 3 pairs agree).
+  'Flowchart: Self-Loop with In and Out Neighbours (TD)': 0.3,
+  // Ratcheted 2026-10-15 (#2129): 100/100 on mermaid 12.1.0 and 12.2.0 since #2023.
+  // A 3-node sample moves in steps of 1/3, so 0.95 means any split pair fails.
+  'Class: Inheritance (<|--)': 0.95,
+  'Class: Relationship Labels': 0.95,
+  'Class: MVC Architecture': 0.95,
+  'Class: Namespaces': 0.95,
+  // Ratcheted (#2128): 100/100 since class boxes are sized the way mermaid sizes
+  // them. 15 pairs, so 0.95 means any split pair fails.
+  'Class: Full Hierarchy': 0.95,
+}
+
+/** Samples real mermaid itself rejects, so an oracle error is expected, not a regression. */
+export const EXPECTED_ERRORS: readonly string[] = ['zombie-mermaid']
+
+/**
+ * Diagram types the oracle does not score, and why. A relative-placement
+ * comparison only means something where both renderers run a layout engine
+ * over a graph and source order does not dictate positions.
+ */
+export const EXCLUDED_TYPES: Readonly<Record<string, string>> = {
+  sequence:
+    'mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, and emits no g.node elements. Agreement would be 100% by construction.',
+  'architecture-beta':
+    'we have no architecture layout to measure, and mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port directions in the source.',
+  'pie, xychart-beta':
+    'no nodes: positions come from data values, so there is no arrangement to compare.',
+  c4: 'mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges.',
+}
+
+const EPS = 1e-9
+
+/** The floor that applies to a sample title. */
+export function floorFor(title: string): number {
+  return SAMPLE_FLOORS[title] ?? DEFAULT_FLOOR
+}
+
+export type SampleStatus = 'pass' | 'fail' | 'n/a'
+
+/** Pass/fail of one sample against its floor; `n/a` when it has no figures (a single node). */
+export function sampleStatus(
+  title: string,
+  a: Agreement,
+  floor: number = floorFor(title),
+): SampleStatus {
+  const low = worst(a)
+  if (low === null) return 'n/a'
+  return low + EPS >= floor ? 'pass' : 'fail'
+}
+
+/** Samples under their floor, or errored when that was not expected; empty when within thresholds. */
+export function breaches(runs: ScorecardRun[]): string[] {
+  const out: string[] = []
+  for (const { results, sampled = [] } of runs) {
+    for (const [title, r] of Object.entries(results)) {
+      if (sampleStatus(title, r) === 'fail') {
+        out.push(
+          `${title} (${Math.round(worst(r)! * 100)}% < ${Math.round(floorFor(title) * 100)}%)`,
+        )
+      }
+    }
+    for (const t of sampled) {
+      if (!(t in results) && !EXPECTED_ERRORS.includes(t)) {
+        out.push(`${t} (error)`)
+      }
+    }
+  }
+  return out
+}
+
+/** Whether the run scores every type (history, scorecard, JSON, thresholds), so `--type` is ignored. */
+export const recordsAllTypes = (a: OracleArgs): boolean =>
+  Boolean(a.history || a.scorecard || a.scorecardJson || a.thresholds)
+
+/** Writes `--scorecard-json` if asked; returns the `--thresholds` breaches (none unless asked). */
+export async function finishScorecard(
+  args: OracleArgs,
+  runs: ScorecardRun[],
+): Promise<string[]> {
+  if (args.scorecardJson) {
+    await writeFile(args.scorecardJson, scorecardJson(runs))
+  }
+  return args.thresholds ? breaches(runs) : []
+}
+
+/** Bumped when the shape of `scorecardJson` changes incompatibly. */
+export const SCORECARD_SCHEMA = 1
+
+const r4 = (n: number | null): number | null =>
+  n === null ? null : Math.round(n * 1e4) / 1e4
+
+/**
+ * Stable machine-readable scorecard: fixed key order, samples sorted by title,
+ * figures rounded to 4 places, so two runs on the same code diff to nothing.
+ * Shape: { schema, mermaid, tolerance, commit, date, defaultFloor, excluded,
+ * types: { <type>: { summary: {samples, vertical, horizontal, containment},
+ * passing, failing, samples: [{title, vertical, horizontal, containment,
+ * nodes, subgraphs, floor, status}], errored: [title] } } }.
+ */
+export function scorecardJson(runs: ScorecardRun[]): string {
+  const first = runs[0]!.entry
+  const types: Record<string, unknown> = {}
+  for (const { entry, results, sampled = [] } of runs) {
+    const samples = Object.entries(results)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([title, r]) => ({
+        title,
+        vertical: r4(r.vertical),
+        horizontal: r4(r.horizontal),
+        containment: r4(r.containment),
+        nodes: r.nodes,
+        subgraphs: r.subgraphs,
+        floor: floorFor(title),
+        status: sampleStatus(title, r),
+      }))
+    types[entry.type ?? 'flowchart'] = {
+      summary: {
+        samples: entry.samples,
+        vertical: r4(entry.vertical),
+        horizontal: r4(entry.horizontal),
+        containment: r4(entry.containment),
+      },
+      passing: samples.filter((s) => s.status === 'pass').length,
+      failing: samples.filter((s) => s.status === 'fail').length,
+      samples,
+      errored: sampled.filter((t) => !(t in results)).sort(),
+    }
+  }
+  const out = {
+    schema: SCORECARD_SCHEMA,
+    mermaid: first.mermaid ?? LEGACY_MERMAID,
+    tolerance: first.tolerance,
+    commit: first.commit,
+    date: first.date,
+    defaultFloor: DEFAULT_FLOOR,
+    excluded: EXCLUDED_TYPES,
+    types,
+  }
+  return `${JSON.stringify(out, null, 2)}\n`
+}
+
 const cell = (n: number | null): string =>
   n === null ? '-' : `${Math.round(n * 100)}%`
 
@@ -435,12 +637,12 @@ export function scorecardMarkdown(
       .sort(([, a], [, b]) => (worst(a) ?? 2) - (worst(b) ?? 2))
       .map(
         ([t, r]) =>
-          `| ${t.replace(/\|/g, '\\|')} | ${cell(r.vertical)} | ${cell(r.horizontal)} | ${cell(r.containment)} | ${r.nodes} |`,
+          `| ${t.replace(/\|/g, '\\|')} | ${cell(r.vertical)} | ${cell(r.horizontal)} | ${cell(r.containment)} | ${r.nodes} | ${cell(floorFor(t))} | ${sampleStatus(t, r)} |`,
       )
     return `### ${TYPE_LABEL[entry.type ?? 'flowchart']} (lowest first)
 
-| Sample | Vertical | Horizontal | Containment | Nodes |
-| --- | --- | --- | --- | --- |
+| Sample | Vertical | Horizontal | Containment | Nodes | Floor | Status |
+| --- | --- | --- | --- | --- | --- | --- |
 ${rows.join('\n')}${note}`
   })
   return `<!-- Generated by \`${command}\`. Do not edit by hand. -->
@@ -450,8 +652,10 @@ ${rows.join('\n')}${note}`
 How closely our flowchart, state, class and ER layouts match official
 mermaid.js: the share of node pairs placed in the same above/below/beside
 relation (\`vertical\`, \`horizontal\`) and of node/subgraph pairs that agree on
-containment. Only relative placement is compared. These are descriptive
-figures, not pass/fail thresholds. Method: \`scripts/layout-oracle.ts\`.
+containment. Only relative placement is compared. Each sample has an explicit
+floor for its lowest figure (default ${cell(DEFAULT_FLOOR)}, lower overrides in
+\`SAMPLE_FLOORS\`); \`--thresholds\` exits 1 on a breach. Floors guard against
+regressions, they do not claim parity. Method: \`scripts/layout-oracle.ts\`.
 
 Reference: mermaid ${first.mermaid ?? LEGACY_MERMAID}. Since mermaid 12.0.0 its default layout engine for
 these diagram types is ELK (it was dagre before). Generated ${first.date} at
@@ -476,5 +680,11 @@ ${trend.join('\n')}
 ## Per sample
 
 ${sections.join('\n\n')}
+
+## Diagram types not scored
+
+${Object.entries(EXCLUDED_TYPES)
+  .map(([t, why]) => `- **${t}**: ${why}`)
+  .join('\n')}
 `
 }

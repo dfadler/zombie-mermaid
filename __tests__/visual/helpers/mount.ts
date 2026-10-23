@@ -5,11 +5,11 @@
  * test's own copy drifting from it) and mounts/unmounts a sample's output
  * into a panel so every screenshot is framed consistently.
  */
-// @ts-expect-error -- this file is only ever consumed by the esbuild bundle
-// build-harness.ts produces, which loads .css as the `text` loader (raw file
-// contents as a JS string) — not a type worth declaring project-wide for
-// one file.
-import demoStylesheet from '../../../demo/styles.css'
+// @ts-expect-error -- this file is only ever consumed by the Vite bundle
+// build-harness.ts produces, where `?raw` imports the file's contents as a JS
+// string (https://vite.dev/guide/assets#importing-asset-as-string) — not a type
+// worth declaring project-wide for one file.
+import demoStylesheet from '../../../demo/styles.css?raw'
 
 /**
  * Cap on how wide a panel screenshot grows. Panels shrink-wrap to their
@@ -23,10 +23,10 @@ const PANEL_MAX_WIDTH = '960px'
 /**
  * The ASCII panel's own cap. A terminal panel is `columns x cell width` wide
  * (7px per column now that `.ascii-output` uses an exact 7px cell), so the
- * widest sample ("All 12 Flowchart Shapes", 210 columns) needs 1470px;
+ * widest sample ("Twelve Core Flowchart Shapes", 210 columns) needs 1470px;
  * ascii-seams.visual.test.ts fails if any sample outgrows this cap. Capping it at the
  * SVG panels' 960px silently clipped the right side of "XY: Numeric X-Axis"
- * and "All 12 Flowchart Shapes" in their baselines (`.ascii-output` scrolls
+ * and "Twelve Core Flowchart Shapes" in their baselines (`.ascii-output` scrolls
  * horizontally, so the screenshot shows only the visible part). Panels still
  * shrink-wrap, so only a panel that would exceed 960px is affected; this
  * cap just guards against a runaway diagram.
@@ -80,9 +80,32 @@ function ensureStylesInjected(): void {
  * loading, silently defeating the wait it's supposed to provide.
  */
 async function waitForFonts(): Promise<void> {
+  const deadline = Date.now() + FONT_WAIT_TIMEOUT_MS
+  const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()))
+  // renderMermaidSVG's Inter arrives via an `@import` of the Google Fonts
+  // stylesheet inside the SVG's <style>. Until that sheet has loaded, the
+  // document has no Inter @font-face at all, so `document.fonts.ready` is
+  // already resolved and the wait below would be a no-op: the screenshot loop
+  // then races the network, and a baseline captured in the fallback font
+  // (DejaVu) passed or failed depending on which side won (#1825, A/B Test
+  // Results). A CSSImportRule's `styleSheet` is null until its sheet loads.
+  const importsPending = () =>
+    [...document.styleSheets].some((sheet) =>
+      [...sheet.cssRules].some(
+        (rule) => rule instanceof CSSImportRule && !rule.styleSheet,
+      ),
+    )
+  while (importsPending() && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 25))
+  }
+  // Let style recalc/layout start loading the now-registered faces.
+  await frame()
+  await frame()
   await Promise.race([
     document.fonts.ready.then(() => undefined),
-    new Promise<void>((resolve) => setTimeout(resolve, FONT_WAIT_TIMEOUT_MS)),
+    new Promise<void>((resolve) =>
+      setTimeout(resolve, Math.max(0, deadline - Date.now())),
+    ),
   ])
 }
 

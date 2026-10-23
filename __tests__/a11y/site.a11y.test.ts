@@ -57,28 +57,7 @@ const PAGES = [
  * OTHER serious/critical violation on the page still fails, and an entry that
  * no longer reproduces ALSO fails (delete it) so this list only shrinks.
  */
-const KNOWN: Record<string, Record<string, string>> = {
-  // color-contrast on every page (footer, pills, code-panel labels, status
-  // text) is added below and tracked by #1759 (site chrome beyond it: #1815).
-  'index.html': {
-    'link-in-text-block': '#1810', // inline links distinguished by colour only
-    'scrollable-region-focusable': '#1811', // .hero-code-panel
-  },
-  'fork-fixes.html': {
-    'link-in-text-block': '#1810',
-    'scrollable-region-focusable': '#1811', // .ba-grid panels
-    'svg-img-alt': '#1812', // role=img SVGs rendered without a title
-  },
-  // Editor: #1763/#1764 are fixing editor semantics; these two were not in
-  // their titles, so re-check after they merge.
-  'editor.html': {
-    'scrollable-region-focusable': '#1811', // #preview-body
-    'svg-img-alt': '#1812', // preview SVG has no accessible name
-  },
-  'blog/294-prs-14-days.html': { 'svg-img-alt': '#1812' },
-}
-for (const path of PAGES)
-  (KNOWN[path] ??= {})['color-contrast'] = '#1759, #1815'
+const KNOWN: Record<string, Record<string, string>> = {}
 
 const MIME: Record<string, string> = {
   '.html': 'text/html',

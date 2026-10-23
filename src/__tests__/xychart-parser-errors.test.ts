@@ -2,7 +2,7 @@
  * Error-message quality tests for the xychart-beta parser (issue #541).
  *
  * Before this pass, `parseXYChart` had zero `throw`/`Error` statements in
- * the entire file (see docs/parser-error-audit-541.md): every malformed
+ * the entire file (see issue #541, original audit at https://github.com/dfadler/zombie-mermaid/blob/bd0a701c3e5f7f78f338582854e25cf591eaa82a/docs/parser-error-audit-541.md): every malformed
  * line — an unclosed bracket, a non-numeric value inside a numeric series —
  * was silently dropped or silently coerced to `NaN`, producing a diagram
  * that was missing content or subtly corrupted with no indication why.

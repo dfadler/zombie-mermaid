@@ -482,7 +482,7 @@ describe('runRender – max-width warning', () => {
 
     expect(mockStderr.output()).toContain('Warning:')
     expect(mockStderr.output()).toContain('exceeding --max-width of 10')
-    // stdout still gets the full, unmodified diagram — no truncation.
+    // Stdout still gets the full, unmodified diagram — no truncation.
     expect(mockStdout.output()).toContain('A')
     expect(mockStdout.output()).toContain('C')
   })
@@ -935,7 +935,7 @@ describe('runRender – --direction', () => {
   it('re-lays ASCII output out along the overridden axis', async () => {
     const plain = createMockStdout()
     await runRender(renderArgs({ ascii: true }), plain, SIMPLE_FLOWCHART)
-    // graph LR: every node on the same row.
+    // Graph LR: every node on the same row.
     expect(rowOf(plain.output(), 'A')).toBe(rowOf(plain.output(), 'C'))
 
     const overridden = createMockStdout()

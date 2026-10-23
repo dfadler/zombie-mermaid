@@ -11,13 +11,12 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { getPackageVersion } from '../../../src/package-info.ts'
-import ELK from 'elkjs/lib/elk.bundled.js'
-import { registerElk } from '@zombie-mermaid/svg-renderer'
-import { renderSvgInputShape, renderSvgHandler } from './tools/render-svg.ts'
+import { renderSvgInputShape } from './tools/render-svg.ts'
+import { renderAsciiInputShape } from './tools/render-ascii.ts'
 import {
-  renderAsciiInputShape,
-  renderAsciiHandler,
-} from './tools/render-ascii.ts'
+  renderSvgHandlerAsync,
+  renderAsciiHandlerAsync,
+} from './tools/render-async.ts'
 import {
   checkSequenceActivationsInputShape,
   checkSequenceActivationsOutputShape,
@@ -53,8 +52,7 @@ import {
  * in-process without spawning anything.
  */
 export function createMcpServer(): McpServer {
-  // elkjs is a regular dependency of this package; register it for the SVG tool.
-  registerElk(ELK)
+  // SVG/ASCII renders run in a worker (tools/render-worker.ts), which registers elkjs itself.
   const server = new McpServer({
     name: 'zombie-mermaid',
     version: getPackageVersion(),
@@ -82,7 +80,7 @@ export function createMcpServer(): McpServer {
         openWorldHint: false,
       },
     },
-    renderSvgHandler,
+    renderSvgHandlerAsync,
   )
 
   server.registerTool(
@@ -103,7 +101,7 @@ export function createMcpServer(): McpServer {
         openWorldHint: false,
       },
     },
-    renderAsciiHandler,
+    renderAsciiHandlerAsync,
   )
 
   server.registerTool(

@@ -90,9 +90,9 @@ function findGroupsContainingPoint(
  * move it just outside the outermost such group boundary.
  */
 function adjustJunctionForGroups(
-  junctionMain: number, // the junction coordinate along the flow axis (Y for TD, X for LR)
-  refX: number, // reference node center X (for finding its groups)
-  refY: number, // reference node center Y
+  junctionMain: number, // The junction coordinate along the flow axis (Y for TD, X for LR)
+  refX: number, // Reference node center X (for finding its groups)
+  refY: number, // Reference node center Y
   groups: PositionedGroup[],
   direction: Direction,
 ): number {

@@ -46,7 +46,13 @@ unlabeled group of child text nodes:
 | No `click`-based link, `decorative: true`                        | `aria-hidden="true"`, no `role`, no name                                                                                                                                                                                                                                                                                                                                                             |
 | Any node has a `click A "url"` link (real, focusable `<a href>`) | No `role` and no `aria-hidden` at all — both would hide the focusable link from assistive tech while leaving it Tab-reachable, an explicit WAI-ARIA violation. `title`, if supplied, still applies via `aria-labelledby` (a `role`-less element can still have a computed name). `decorative` is silently overridden — a diagram containing a real action is never fully hidden from assistive tech. |
 
-An optional `description` option adds a `<desc id>` child after the title and
+Mermaid's `accTitle:` / `accDescr:` source statements
+([syntax](https://mermaid.js.org/config/accessibility.html), supported on every
+diagram type here) feed the same mechanism: `accTitle` is the title when the
+`title` option is absent, and `accDescr` is the description. They are read
+once in `extractAccessibility()` (`packages/core/src/accessibility.ts`) before
+any parser runs, and emitted by the one `svgOpenTag()`
+([#1865](https://github.com/dfadler/zombie-mermaid/issues/1865)). An optional `description` option adds a `<desc id>` child after the title and
 an `aria-describedby` on the root, independent of the table above.
 
 This maps to two WCAG success criteria:
@@ -65,7 +71,7 @@ This maps to two WCAG success criteria:
   `click`-based link keeps its native `<a>` name/role/state instead of being
   masked by an ancestor's `role="img"`.
 
-**Enforced by:** `src/__tests__/svg-accessible-name-conformance.test.ts`
+**Enforced by:** `packages/svg-renderer/src/__tests__/acc-title-descr-1865.test.ts` (every type's `accTitle`/`accDescr`), and `src/__tests__/svg-accessible-name-conformance.test.ts`
 (added for [#294](https://github.com/dfadler/zombie-mermaid/issues/294)),
 which renders one real sample per `DiagramType` — a closed TypeScript union
 — plus a `stateDiagram-v2` sample, through every `title`/`decorative`
@@ -112,8 +118,7 @@ fixes.
 ## Demo/editor site: keyboard and focus behavior
 
 The site this repo builds and deploys itself (`demo/`, `editor/`, and the
-per-page generators in `packages/site/` — `index.ts`, `pages.ts`, `blog.ts`, `fork-fixes.ts`,
-`dashboard.ts`, `editor.ts` — what
+Vite SSR prerender pipeline in `packages/site/ssr/` (`pnpm run build:site`) — what
 [dfadler.github.io/zombie-mermaid](https://dfadler.github.io/zombie-mermaid/)
 serves) is no longer one gallery-plus-editor page: the #590 "Diagram-Native
 Showcase" redesign (see
@@ -128,7 +133,7 @@ of any single one of them:
   `:focus-visible` ring (`a:focus-visible, button:focus-visible { … }`)
   is present on the **Diagrams hub and per-type pages**
   (`diagrams/*.html`, via `demo/styles.css` + `demo/diagram-page.css`,
-  concatenated into `diagrams/assets/diagram-page.css` by `packages/site/pages.ts`) and
+  concatenated into `diagrams/assets/diagram-page.css` by `packages/site/ssr/diagram-routes.ts`) and
   on **Fork fixes** (`fork-fixes.html`, via `demo/fork-fixes.css`) —
   relevant to
   [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
@@ -184,7 +189,7 @@ the #590 redesign each landed as their own targeted PR (see
 `.changeset/theme-picker-aria-expanded.md` for the change each one made) —
 those changesets describe the pre-redesign gallery this section used to
 cover, not the current per-family scoping above.
-**Partly covered:** `pnpm run test:a11y` (CI: `.github/workflows/a11y.yml`)
+**Partly covered:** `pnpm run test:a11y` (CI: the `axe` job in `.github/workflows/ci.yml`)
 runs axe-core (wcag2a, wcag2aa, wcag22aa; serious/critical) over a sample of
 the built pages of every family. Violations that exist today are listed in
 `KNOWN` in `__tests__/a11y/site.a11y.test.ts` with their tracking issue; the

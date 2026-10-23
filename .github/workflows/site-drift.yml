@@ -2,10 +2,19 @@ name: Site vs npm drift
 
 # Daily check that the live demo site's version (JSON-LD softwareVersion)
 # hasn't fallen more than a day behind npm latest (#1574). A red run is the
-# alert. Zero-dependency script, so no install step.
+# alert. Also (#1613) compares the build-sha stamp in the live HTML with the
+# HEAD of main: red when the site lacks deploy-triggering changes from a main
+# HEAD older than SHA_GRACE_HOURS (default 2). Zero-dependency script, so no
+# install step.
+#
+# The `unstick` job (#1525) cancels a pages.yml run stuck unfinished for over
+# 30 min (a deploy `waiting` on the github-pages environment holds the `pages`
+# concurrency group and job timeouts do not apply there) and re-dispatches it.
+# It runs hourly; the drift check stays daily.
 on:
   schedule:
     - cron: '30 16 * * *'
+    - cron: '47 * * * *'
   workflow_dispatch: {}
 
 permissions:
@@ -16,20 +25,52 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: github.repository == 'dfadler/zombie-mermaid'
+    if: github.repository == 'dfadler/zombie-mermaid' && github.event.schedule != '47 * * * *'
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
-      - name: Compare live site to npm latest
+          node-version-file: '.nvmrc'
+      - name: Compare live site to npm latest and main
         env:
           GH_TOKEN: ${{ github.token }}
           SITE_URL: https://dfadler.github.io/zombie-mermaid/
           PACKAGE: zombie-mermaid
+          REPO: ${{ github.repository }}
         run: |
           LAST_PAGES_SUCCESS=$(gh run list --workflow pages.yml --status success -L1 --json createdAt -q '.[0].createdAt' || true)
           export LAST_PAGES_SUCCESS
           node scripts/check-site-drift.mjs
+
+  unstick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.repository == 'dfadler/zombie-mermaid'
+    permissions:
+      contents: read
+      actions: write # gh run cancel + workflow dispatch, this job only
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+      - name: Cancel stuck pages.yml runs and re-dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          RUNS=$(for s in waiting pending queued in_progress; do
+            gh run list --workflow pages.yml --status "$s" --json databaseId,status,createdAt
+          done | jq -s 'add')
+          IDS=$(printf '%s' "$RUNS" | node scripts/check-site-drift.mjs --stuck 30)
+          [ -n "$IDS" ] || { echo "no stuck pages.yml runs"; exit 0; }
+          for id in $IDS; do
+            echo "::warning::cancelling stuck pages.yml run $id"
+            gh run cancel "$id" || gh run cancel "$id" --force
+          done
+          gh workflow run pages.yml --ref main

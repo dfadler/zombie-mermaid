@@ -40,6 +40,6 @@ describe('demo/theme-state.ts (SSR / no window)', () => {
     unsubscribe()
 
     setTheme('dracula')
-    expect(listener).toHaveBeenCalledTimes(1) // no further calls after unsubscribe
+    expect(listener).toHaveBeenCalledTimes(1) // No further calls after unsubscribe
   })
 })

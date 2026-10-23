@@ -11,16 +11,16 @@
      |                           |        
      |  A customer of the bank   |        
      +---------------------------+        
-                    |           ^---+     
-                    |               |     
-                    |               |     
-                    |               |     
-                    | Uses          |     
-                    | [HTTPS]       |     
-  +-----------------|---------------|+    
-  : Bank            |               |:    
-  : [ENTERPRISE]    |               |:    
-  :                 v               |:    
+                    |           ^         
+                    |           |         
+                    |           |         
+                    |           |         
+                    | Uses      |         
+                    | [HTTPS]   |         
+  +-----------------|-----------|----+    
+  : Bank            |           |    :    
+  : [ENTERPRISE]    |           |    :    
+  :                 v           +---+:    
   : +------------------------------+|:    
   : |   Internet Banking System    ||:    
   : |      [Software System]       ||:    
@@ -45,8 +45,8 @@
        | Sends e-mail using         |     
        |                            |     
        |                            |     
-       |                            |     
-       +--v                 +-------+     
+       +--+                         |     
+          v                 +-------+     
          +...................+            
          :   E-mail System   :            
          : [Software System] :            

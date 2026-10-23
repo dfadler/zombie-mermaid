@@ -28,7 +28,7 @@ describe('ASCII ER attribute columns render as type/name/keys (issue #1134)', ()
     const ascii = renderMermaidASCII(
       `erDiagram
         LINE_ITEM {
-          int product_id PK FK
+          int product_id PK, FK
         }`,
       { colorMode: 'none' },
     )

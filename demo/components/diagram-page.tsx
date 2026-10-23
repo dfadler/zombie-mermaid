@@ -851,7 +851,7 @@ export function DiagramTypePage({
             <div
               id={DIAGRAM_TYPE_ROOT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTypeApp component tree rendered via renderToString (see the comment above); never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTypeApp component tree rendered via renderToString (see the comment above); never user input
                 __html: renderToString(<DiagramTypeApp {...appProps} />),
               }}
             />
@@ -859,7 +859,7 @@ export function DiagramTypePage({
               type="application/json"
               id={DIAGRAM_TYPE_PROPS_ELEMENT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTypeAppProps, escaped with escapeJsonForScriptTag; never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTypeAppProps, escaped with escapeJsonForScriptTag; never user input
                 __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
               }}
             />
@@ -870,7 +870,7 @@ export function DiagramTypePage({
       </div>
 
       <script
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from DIAGRAM_TYPE_PROFILES, escaped with escapeJsonForScriptTag; never user input
+        // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from DIAGRAM_TYPE_PROFILES, escaped with escapeJsonForScriptTag; never user input
         dangerouslySetInnerHTML={{ __html: themeDataScript }}
       />
       <script type="module" src={clientScriptSrc} />
@@ -1045,7 +1045,7 @@ export function DiagramHubPage({
             <div
               id={DIAGRAM_HUB_ROOT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramHubApp component tree rendered via renderToString (see the comment above); never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramHubApp component tree rendered via renderToString (see the comment above); never user input
                 __html: renderToString(<DiagramHubApp {...appProps} />),
               }}
             />
@@ -1053,7 +1053,7 @@ export function DiagramHubPage({
               type="application/json"
               id={DIAGRAM_HUB_PROPS_ELEMENT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramHubAppProps, escaped with escapeJsonForScriptTag; never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramHubAppProps, escaped with escapeJsonForScriptTag; never user input
                 __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
               }}
             />
@@ -1064,7 +1064,7 @@ export function DiagramHubPage({
       </div>
       <script
         type="module"
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-hub-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-hub-client.tsx bundle, under version control and produced at build time; never live/runtime user input
         dangerouslySetInnerHTML={{ __html: clientScript }}
       />
       <NavMobileMenuScript />
@@ -1145,7 +1145,7 @@ export function DiagramDetailPage({
             <div
               id={DIAGRAM_DETAIL_ROOT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramDetailApp component tree rendered via renderToString (see the comment above); never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramDetailApp component tree rendered via renderToString (see the comment above); never user input
                 __html: renderToString(<DiagramDetailApp {...appProps} />),
               }}
             />
@@ -1153,7 +1153,7 @@ export function DiagramDetailPage({
               type="application/json"
               id={DIAGRAM_DETAIL_PROPS_ELEMENT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramDetailAppProps, escaped with escapeJsonForScriptTag; never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramDetailAppProps, escaped with escapeJsonForScriptTag; never user input
                 __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
               }}
             />
@@ -1240,7 +1240,7 @@ export function DiagramTagPage({
             <div
               id={DIAGRAM_TAG_ROOT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTagApp component tree rendered via renderToString (see the comment above); never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTagApp component tree rendered via renderToString (see the comment above); never user input
                 __html: renderToString(<DiagramTagApp {...appProps} />),
               }}
             />
@@ -1248,7 +1248,7 @@ export function DiagramTagPage({
               type="application/json"
               id={DIAGRAM_TAG_PROPS_ELEMENT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTagAppProps, escaped with escapeJsonForScriptTag; never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTagAppProps, escaped with escapeJsonForScriptTag; never user input
                 __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
               }}
             />
@@ -1326,7 +1326,7 @@ export function DiagramAllPage({
             <div
               id={DIAGRAM_ALL_ROOT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramAllApp component tree rendered via renderToString (see the comment above); never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramAllApp component tree rendered via renderToString (see the comment above); never user input
                 __html: renderToString(<DiagramAllApp {...appProps} />),
               }}
             />
@@ -1334,7 +1334,7 @@ export function DiagramAllPage({
               type="application/json"
               id={DIAGRAM_ALL_PROPS_ELEMENT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramAllAppProps, escaped with escapeJsonForScriptTag; never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramAllAppProps, escaped with escapeJsonForScriptTag; never user input
                 __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
               }}
             />
@@ -1345,7 +1345,7 @@ export function DiagramAllPage({
       </div>
       <script
         type="module"
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-all-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-all-client.tsx bundle, under version control and produced at build time; never live/runtime user input
         dangerouslySetInnerHTML={{ __html: clientScript }}
       />
       <NavMobileMenuScript />

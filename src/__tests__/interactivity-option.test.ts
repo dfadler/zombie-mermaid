@@ -150,7 +150,7 @@ describe('deprecated `interactive` boolean', () => {
   })
 
   it('`interactivity`, when set, takes precedence over `interactive`', () => {
-    // interactivity: 'none' wins even though the deprecated boolean asks
+    // Interactivity: 'none' wins even though the deprecated boolean asks
     // for tooltips — 'full' is the only level that turns them on.
     const svgNone = renderMermaidSVG(BAR_CHART, {
       interactive: true,

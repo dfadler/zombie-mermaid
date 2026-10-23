@@ -106,7 +106,7 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
               const y = Math.round(m.originY + (s.row + 0.5) * m.lineH)
               let sum = 0
               let peak = 0
-              // interior columns only: the first and last pixel of the cell
+              // Interior columns only: the first and last pixel of the cell
               // can hold ink from a neighbouring cell's glyph
               for (let x = Math.ceil(x0 + 1); x < x0 + m.cellW - 1; x++) {
                 const d = dist(x, y)
@@ -122,7 +122,7 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
           {
             b64: png.toString('base64'),
             strokes,
-            // the screenshot is in device pixels; the probe works in them too
+            // The screenshot is in device pixels; the probe works in them too
             m: {
               ...m,
               cellW: m.cellW * dpr,

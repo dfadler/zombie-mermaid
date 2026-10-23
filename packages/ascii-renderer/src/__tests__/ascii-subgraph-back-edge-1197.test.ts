@@ -46,7 +46,7 @@ describe('#1197: cycle across sibling subgraphs', () => {
           const out = renderMermaidASCII(src, { useAscii, colorMode: 'none' })
           for (const id of NODES) {
             if (!new RegExp(`^\\s*${id}\\b`, 'm').test(src)) continue
-            // each node label appears exactly once (titles never contain it)
+            // Each node label appears exactly once (titles never contain it)
             const hits = out.match(new RegExp(`\\s${id}\\s`, 'g')) ?? []
             expect(hits, `node ${id}`).toHaveLength(1)
           }
@@ -83,14 +83,14 @@ E --> A`
       ['Layer Two', 'C'],
       ['Layer Three', 'E'],
     ] as const) {
-      // the title is never split by an edge entering the frame (#1248)
+      // The title is never split by an edge entering the frame (#1248)
       const titleRow = out.findIndex((ln) => ln.includes(title))
       const nodeRow = out.findIndex((ln) =>
         new RegExp(`│\\s+${id}\\s+[│├]`).test(ln),
       )
       expect(titleRow, title).toBeGreaterThanOrEqual(0)
       expect(nodeRow, id).toBeGreaterThan(titleRow)
-      // the next subgraph title (if any) comes after the node: box is inside its own frame
+      // The next subgraph title (if any) comes after the node: box is inside its own frame
       const nextTitleRow = out.findIndex(
         (ln, i) => i > titleRow && /Layer (One|Two|Three)/.test(ln),
       )

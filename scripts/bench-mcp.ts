@@ -39,7 +39,23 @@ import { fileURLToPath } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createMcpServer } from '../packages/mcp/src/server.ts'
+import type { createMcpServer as CreateMcpServer } from '../packages/mcp/src/server.ts'
+
+// Renders run in a worker thread that only exists in the built package
+// (#1856), so load the built server (`pnpm run build` first). A variable
+// specifier keeps the typecheck and the unit test that imports this file
+// from needing a build.
+const BUILT_SERVER = '../packages/mcp/dist/index.js'
+
+/** Import `createMcpServer` from the built package (or from `specifier`, for tests). */
+export async function loadCreateMcpServer(
+  specifier: string = BUILT_SERVER,
+): Promise<typeof CreateMcpServer> {
+  const mod: { createMcpServer: typeof CreateMcpServer } = await import(
+    specifier
+  )
+  return mod.createMcpServer
+}
 
 // ============================================================================
 // Fixtures
@@ -205,7 +221,7 @@ async function main() {
   let client: Client | undefined
 
   try {
-    server = createMcpServer()
+    server = (await loadCreateMcpServer())()
     client = new Client({ name: 'bench-mcp', version: '0.0.0' })
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair()

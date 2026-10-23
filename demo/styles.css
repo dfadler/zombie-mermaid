@@ -44,11 +44,7 @@ body {
   --shadow-blur-opacity: 0.06;
   --theme-bar-bg: #f9f9fa; /* Mixed bg for theme bar and top gradient — updated by JS on theme change */
 
-  font-family:
-    'Geist',
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
   background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
   color: var(--t-fg);
   line-height: 1.6;

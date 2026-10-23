@@ -120,6 +120,11 @@ renderMermaidASCII(source, { colorMode: 'truecolor' }) // 24-bit terminal
 renderMermaidASCII(source, { colorMode: 'html' }) // <span> tags for a browser
 ```
 
+With no `theme`, labels carry no colour of their own: they show in the
+terminal's foreground (and inherit the page colour in `html`), so they read on
+dark and light backgrounds alike. Lines, borders and arrowheads are still
+coloured. Pass `theme: { fg: '#...' }` to force a label colour.
+
 Use `none` for anything that gets committed to a repo — escape codes in a
 README help nobody.
 

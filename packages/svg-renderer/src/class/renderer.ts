@@ -13,6 +13,8 @@ import {
   getReadableTextColor,
   sanitizeClassName,
   renderMultilineText,
+  renderMultilineTextWithBackground,
+  measureMultilineText,
   escapeXml as escapeXmlUtil,
   escapeAttr,
   safeHref,
@@ -106,13 +108,18 @@ export function renderClassSvg(
         decorative,
         hasInteractiveLinks,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),
   )
-  parts.push(buildSvgStyleBlock(font, true, emit.nonce))
+  parts.push(buildSvgStyleBlock(font, true, emit.nonce, emit.bodyFont))
   parts.push('<defs>')
-  parts.push(relationshipMarkerDefs())
+  parts.push(
+    relationshipMarkerDefs(
+      diagram.relationships.some((r) => r.type === 'lollipop'),
+    ),
+  )
   parts.push('</defs>')
 
   // 0. Namespace frames (behind everything else)
@@ -131,6 +138,12 @@ export function renderClassSvg(
   // 2. Class boxes
   for (const cls of diagram.classes) {
     parts.push(renderClassBox(cls, fontSizes, linksEnabled))
+  }
+
+  // 2b. Lollipop interface names (the circle is the line's marker)
+  for (const rel of diagram.relationships) {
+    const label = renderInterfaceLabel(rel, fontSizes)
+    if (label) parts.push(label)
   }
 
   // 3. Notes
@@ -178,10 +191,11 @@ function renderNamespace(ns: PositionedClassNamespace): string {
  *   - association: open arrow (simple >)
  *   - dependency: open arrow (simple >)
  *   - realization: hollow triangle (same as inheritance)
+ *   - lollipop: hollow circle (interface)
  *
  * Uses var(--_arrow) for fill/stroke and var(--bg) for hollow marker fills.
  */
-function relationshipMarkerDefs(): string {
+function relationshipMarkerDefs(withLollipop: boolean): string {
   return (
     // Hollow triangle (inheritance, realization) — points at target
     `  <marker id="cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">` +
@@ -199,7 +213,14 @@ function relationshipMarkerDefs(): string {
     // Open arrow (association, dependency)
     `\n  <marker id="cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">` +
     `\n    <polyline points="0 0, 8 3, 0 6" fill="none" stroke="var(--_arrow)" stroke-width="1.5" />` +
-    `\n  </marker>`
+    `\n  </marker>` +
+    // Circle (lollipop interface) — its far edge sits on the endpoint. Only
+    // emitted when used, so diagrams without a lollipop keep their output.
+    (withLollipop
+      ? `\n  <marker id="cls-lollipop" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto-start-reverse">` +
+        `\n    <circle cx="6" cy="6" r="5" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />` +
+        `\n  </marker>`
+      : '')
   )
 }
 
@@ -407,7 +428,7 @@ function renderMember(
     : member.name
   // False positive: displayName is passed through escapeXml() (see packages/core/src/multiline-utils.ts),
   // which escapes &, <, >, ", ' before interpolation, so this is not raw/unescaped HTML.
-  spans.push(f`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
+  spans.push(f`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // Nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
 
   if (member.type) {
     spans.push(f`<tspan fill="${faint}">: </tspan>`)
@@ -539,6 +560,31 @@ function renderRelationship(rel: PositionedClassRelationship): string {
 }
 
 /**
+ * Name of a one-ended lollipop's interface, drawn as bare text (no class box)
+ * at its end of the line, where the circle marker sits. Empty for any other
+ * relationship.
+ */
+function renderInterfaceLabel(
+  rel: PositionedClassRelationship,
+  fontSizes: FontSizes,
+): string {
+  const box = rel.interfaceLabel
+  if (!box) return ''
+  const name = rel.markerAt === 'from' ? rel.from : rel.to
+  return (
+    f`<g class="class-interface" data-id="${escapeAttr(name)}" data-label="${escapeAttr(box.text)}">\n  ` +
+    renderMultilineText(
+      box.text,
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+      fontSizes.nodeLabel,
+      f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text)"`,
+    ) +
+    '\n</g>'
+  )
+}
+
+/**
  * Get marker-start/marker-end attributes for a relationship type.
  * Uses `markerAt` from the parser to place the marker on the correct end:
  *   - 'from' → marker-start (prefix arrows like `<|--`, `*--`, `o--`)
@@ -546,16 +592,14 @@ function renderRelationship(rel: PositionedClassRelationship): string {
  */
 function getRelationshipMarkers(
   type: RelationshipType,
-  markerAt: 'from' | 'to',
+  markerAt: 'from' | 'to' | 'both',
 ): string {
   const markerId = getMarkerDefId(type)
   if (!markerId) return ''
 
-  if (markerAt === 'from') {
-    return f` marker-start="url(#${markerId})"`
-  } else {
-    return f` marker-end="url(#${markerId})"`
-  }
+  const start = markerAt !== 'to' ? f` marker-start="url(#${markerId})"` : ''
+  const end = markerAt !== 'from' ? f` marker-end="url(#${markerId})"` : ''
+  return start + end
 }
 
 /** Map relationship type to its SVG marker definition ID */
@@ -571,6 +615,8 @@ function getMarkerDefId(type: RelationshipType): string | null {
     case 'association':
     case 'dependency':
       return 'cls-arrow'
+    case 'lollipop':
+      return 'cls-lollipop'
     default:
       return null
   }
@@ -586,16 +632,31 @@ function renderRelationshipLabels(
 
   const parts: string[] = []
 
-  // Label — prefer layout-computed position (collision-aware), fall back to midpoint
+  // Label — mermaid.js sits it ON the edge over a background plate that
+  // hides the line behind it (#2104, checked against 12.1.0 and 12.2.0).
+  // ELK places the label box beside the edge, so snap its centre onto the
+  // nearest point of the route; the box was reserved by layout either way.
   if (rel.label) {
-    const pos = rel.labelPosition ?? midpoint(rel.points)
+    const pos = nearestPointOnPolyline(
+      rel.points,
+      rel.labelPosition ?? midpoint(rel.points),
+    )
+    const m = measureMultilineText(
+      rel.label,
+      fontSizes.edgeLabel,
+      FONT_WEIGHTS.edgeLabel,
+    )
     parts.push(
-      renderMultilineText(
+      renderMultilineTextWithBackground(
         rel.label,
         pos.x,
-        pos.y - 8,
+        pos.y,
+        m.width,
+        m.height,
         fontSizes.edgeLabel,
+        4,
         f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        'class="class-relationship-label-bg" fill="var(--bg)"',
       ),
     )
   }
@@ -633,6 +694,34 @@ function renderRelationshipLabels(
   }
 
   return parts.join('\n')
+}
+
+/** Closest point to `p` on the polyline through `points`. */
+function nearestPointOnPolyline(
+  points: Array<{ x: number; y: number }>,
+  p: { x: number; y: number },
+): { x: number; y: number } {
+  let best = points[0]!
+  let bestD = Infinity
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!
+    const b = points[i]!
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const len2 = dx * dx + dy * dy
+    // A zero-length segment gives NaN, which never beats bestD, so it is skipped.
+    const t = Math.max(
+      0,
+      Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2),
+    )
+    const q = { x: a.x + t * dx, y: a.y + t * dy }
+    const d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2
+    if (d < bestD) {
+      bestD = d
+      best = q
+    }
+  }
+  return best
 }
 
 /** Get the midpoint of a point array */

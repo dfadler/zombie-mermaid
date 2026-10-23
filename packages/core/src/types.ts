@@ -87,8 +87,8 @@ export type NodeShape =
   | 'parallelogram' // [/text/]  — leans right
   | 'parallelogram-alt' // [\text\]  — leans left
   // Batch 3 state diagram pseudostates
-  | 'state-start' // filled circle (start pseudostate)
-  | 'state-end' // bullseye circle (end pseudostate)
+  | 'state-start' // Filled circle (start pseudostate)
+  | 'state-end' // Bullseye circle (end pseudostate)
   // ---------------------------------------------------------------------
   // Expanded-syntax shapes — reachable via `A@{ shape: ... }` only; the
   // classic bracket syntax has no spelling for them. See
@@ -96,28 +96,28 @@ export type NodeShape =
   // alias table.
   // ---------------------------------------------------------------------
   | 'document' // wavy-bottomed page
-  | 'stacked-document' // document with offset copies behind it
-  | 'stacked-process' // rectangle with offset copies behind it
-  | 'card' // rectangle with a notched top-left corner
-  | 'lined-process' // rectangle with a vertical rule inset from the left
-  | 'divided-process' // rectangle split by a horizontal rule
-  | 'window-pane' // rectangle quartered by a cross
-  | 'triangle' // apex up
-  | 'flipped-triangle' // apex down
-  | 'filled-circle' // solid dot — junction
-  | 'crossed-circle' // circle with an X through it — summary
-  | 'fork-join' // solid bar
-  | 'notched-pentagon' // rectangle with clipped top corners — loop limit
-  | 'sloped-rectangle' // sloped top edge — manual input
-  | 'flag' // wavy top and bottom — paper tape
-  | 'bow-tie-rectangle' // concave left and right edges — stored data
-  | 'half-rounded-rectangle' // one rounded end — delay
-  | 'brace' // left brace only
-  | 'brace-right' // right brace only
-  | 'braces' // braces on both sides
-  | 'bolt' // lightning bolt — communication link
-  | 'text' // label with no outline
-  | 'anchor' // invisible point
+  | 'stacked-document' // Document with offset copies behind it
+  | 'stacked-process' // Rectangle with offset copies behind it
+  | 'card' // Rectangle with a notched top-left corner
+  | 'lined-process' // Rectangle with a vertical rule inset from the left
+  | 'divided-process' // Rectangle split by a horizontal rule
+  | 'window-pane' // Rectangle quartered by a cross
+  | 'triangle' // Apex up
+  | 'flipped-triangle' // Apex down
+  | 'filled-circle' // Solid dot — junction
+  | 'crossed-circle' // Circle with an X through it — summary
+  | 'fork-join' // Solid bar
+  | 'notched-pentagon' // Rectangle with clipped top corners — loop limit
+  | 'sloped-rectangle' // Sloped top edge — manual input
+  | 'flag' // Wavy top and bottom — paper tape
+  | 'bow-tie-rectangle' // Concave left and right edges — stored data
+  | 'half-rounded-rectangle' // One rounded end — delay
+  | 'brace' // Left brace only
+  | 'brace-right' // Right brace only
+  | 'braces' // Braces on both sides
+  | 'bolt' // Lightning bolt — communication link
+  | 'text' // Label with no outline
+  | 'anchor' // Invisible point
   // State diagram `note left of X` / `note right of X`
   | 'note' // dog-eared box
 
@@ -299,6 +299,24 @@ export interface RenderOptions {
 
   /** Font family for all text. Default: 'Inter' */
   font?: string
+  /**
+   * Inline the font as a base64 `woff2` `@font-face` in the SVG's own
+   * `<style>` instead of the default Google Fonts `@import` (#1867).
+   * Default: false (output unchanged).
+   *
+   * An SVG used as an `<img>` loads no external resources, and the `@import`
+   * also makes a per-viewer request to Google. `'subset'` embeds Basic Latin
+   * (U+0020-007E) of Inter 4.1 (SIL OFL 1.1, weights 400-700) at about 14.7
+   * KB of base64 per SVG; other characters fall back to `system-ui`. It takes
+   * effect only when `font` is `'Inter'` (the default); for any other `font`
+   * it is ignored.
+   *
+   * The data is not in the default bundle. `renderMermaidSVGAsync()` loads it
+   * on demand; the synchronous `renderMermaidSVG()` needs `await
+   * loadEmbeddedFont()` (from `@zombie-mermaid/svg-renderer`) once first, and
+   * throws otherwise.
+   */
+  embedFont?: false | 'subset'
   /** Canvas padding in px. Default: 40. Flowchart/state diagrams only — class/ER diagrams use fixed internal padding. */
   padding?: number
   /** Horizontal spacing between sibling nodes. Default: 28. Flowchart/state diagrams only — class/ER diagrams use fixed internal spacing. */
@@ -508,6 +526,32 @@ export interface RenderOptions {
   curve?: CurveStyle
 
   /**
+   * Opt in to a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours.
+   * Default: false, which leaves the output byte-identical (a diagram cannot
+   * recolour itself against the host's `bg`/`fg`/CSS-variable theme).
+   *
+   * When true, a small subset of Mermaid's `themeVariables` is mapped onto
+   * this library's colour tokens, each value validated like a `style`
+   * colour (an invalid one is ignored, never thrown):
+   *
+   * - `primaryColor` → `surface` (node fill), `primaryBorderColor` → `border`,
+   *   `primaryTextColor` → `fg`: only with `theme: "base"` in the same
+   *   directive, as in Mermaid (flowchart and state diagrams).
+   * - `lineColor` → `line` (flowchart: any theme; state diagram: `base` only).
+   * - `pie1`..`pie12` → the pie slice and legend colours (any theme; other
+   *   slices keep the theme palette).
+   *
+   * A colour you pass yourself (`bg`, `fg`, `line`, `surface`, `border`)
+   * always wins over the diagram's. Every other variable is not read and
+   * Mermaid's derived colours (secondary/tertiary, a border derived from
+   * `primaryColor`) are not computed: see docs/known-differences.md. The
+   * ASCII renderer has the same option, mapping `lineColor`,
+   * `primaryBorderColor`, `primaryTextColor` and `pie1..pie12` (hex values
+   * only); `primaryColor` has no ASCII meaning.
+   */
+  honorThemeVariables?: boolean
+
+  /**
    * Font size overrides (px). Fields left unspecified fall back to their
    * default. Applies to all diagram types (flowchart, sequence, class, ER).
    */
@@ -627,6 +671,7 @@ export type CommonRenderOptions = Pick<
   | 'surface'
   | 'border'
   | 'font'
+  | 'embedFont'
   | 'transparent'
   | 'embedSource'
   | 'resolveColors'
@@ -655,6 +700,7 @@ export type FlowchartRenderOptions = CommonRenderOptions &
     | 'mergeEdges'
     | 'direction'
     | 'curve'
+    | 'honorThemeVariables'
     | 'fontSizes'
     | 'interactivity'
     | 'layoutCache'

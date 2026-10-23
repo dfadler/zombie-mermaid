@@ -673,7 +673,7 @@ export function DiagramDetailApp({
             <Card
               accent={accent}
               className="code-card"
-              // flex lives in diagram-page.tsx's pageCss() `.code-card,
+              // Flex lives in diagram-page.tsx's pageCss() `.code-card,
               // .output-card` rule instead of here (not inline) so the
               // tablet breakpoint override can win via plain cascade
               // order instead of needing !important to beat an inline
@@ -700,7 +700,7 @@ export function DiagramDetailApp({
               accent={accent}
               tone="glow"
               className="output-card"
-              // flex lives in diagram-page.tsx's pageCss() `.code-card,
+              // Flex lives in diagram-page.tsx's pageCss() `.code-card,
               // .output-card` rule instead of here (not inline) so the
               // tablet breakpoint override can win via plain cascade
               // order instead of needing !important to beat an inline

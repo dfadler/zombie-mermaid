@@ -2,7 +2,7 @@
  * Error-message quality tests for the ER diagram parser (issue #541).
  *
  * Before this pass, `parseErDiagram` had zero `throw`/`Error` statements in
- * the entire file (see docs/parser-error-audit-541.md): a relationship line
+ * the entire file (see issue #541, original audit at https://github.com/dfadler/zombie-mermaid/blob/bd0a701c3e5f7f78f338582854e25cf591eaa82a/docs/parser-error-audit-541.md): a relationship line
  * with invalid cardinality tokens or a missing `: label` silently dropped
  * the *entire* line — both entities included — with no indication anything
  * was wrong. These tests assert the parser now throws an actionable error

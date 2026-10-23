@@ -1,5 +1,7 @@
 # Diagram-type registry: partial adoption, not a single shared `layout` step
 
+Status: superseded (`diagramRegistry` in `packages/svg-renderer/src/registry.ts` is now `Record<DiagramType, ...>`, so every type is covered)
+
 > **Addendum (issue #533 follow-up):** `sequence` and `class` have since been
 > added to both `diagramRegistry` (`src/diagram-registry.ts`) and
 > `asciiRegistry` (`src/ascii/registry.ts`), following exactly the
@@ -18,7 +20,7 @@
 > need to change first" section didn't fully anticipate:
 >
 > - **ASCII side:** `renderFlowchartAscii(text, config, colorMode, theme,
-extras)` was extracted into its own `src/ascii/flowchart.ts`, mirroring
+>   extras)` was extracted into its own `src/ascii/flowchart.ts`, mirroring
 >   every other type's entry-point shape exactly — a pure, behavior-preserving
 >   move of the five calls (`parseMermaid`, `convertToAsciiGraph`,
 >   `createMapping`, `drawGraph`, `canvasToString`, plus the BT-flip and
@@ -155,7 +157,7 @@ its own parse+layout+render internally exactly as it does today.
   five separate calls (`parseMermaid`, `convertToAsciiGraph`,
   `createMapping`, `drawGraph`, `canvasToString`) directly in the switch,
   where every other ASCII type has a single `renderXxxAscii(text, config,
-colorMode, theme)` entry point. Registering flowchart would first require
+  colorMode, theme)` entry point. Registering flowchart would first require
   extracting that inline sequence into its own `renderFlowchartAscii`
   function — a pure, behavior-preserving extraction, but a separate, real
   piece of work, not something to fold silently into this registry PR.

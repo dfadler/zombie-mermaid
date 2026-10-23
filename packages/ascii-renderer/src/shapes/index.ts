@@ -23,12 +23,15 @@ import {
   getBoxAttachmentPoint,
 } from './rectangle.ts'
 import { getCorners } from './corners.ts'
+import { mkCanvas } from '../canvas.ts'
 import {
   stateStartRenderer,
   stateEndRenderer,
   forkJoinRenderer,
+  GLYPH_DIMENSIONS,
 } from './state.ts'
 import { stadiumRenderer } from './stadium.ts'
+import { classBoxRenderer, classNameRenderer } from './class-box.ts'
 import {
   subroutineRenderer,
   doublecircleRenderer,
@@ -84,7 +87,24 @@ function createCornerShapeRenderer(
 }
 
 export const circleRenderer = createCornerShapeRenderer('circle')
-export const diamondRenderer = createCornerShapeRenderer('diamond')
+const cornerDiamondRenderer = createCornerShapeRenderer('diamond')
+
+/**
+ * Unlabeled diamond (a state diagram's `<<choice>>`): a single `◇` glyph, not
+ * an empty box, like mermaid's small diamond.
+ */
+export const diamondRenderer: ShapeRenderer = {
+  ...cornerDiamondRenderer,
+  getDimensions: (label, options) =>
+    label === '' ? GLYPH_DIMENSIONS : getBoxDimensions(label, options),
+  render(label, dimensions, options) {
+    if (label !== '')
+      return cornerDiamondRenderer.render(label, dimensions, options)
+    const canvas = mkCanvas(0, 0)
+    canvas[0]![0] = options.useAscii ? 'o' : '◇'
+    return canvas
+  },
+}
 export const roundedRenderer = createCornerShapeRenderer('rounded')
 export const hexagonRenderer = createCornerShapeRenderer('hexagon')
 
@@ -120,6 +140,11 @@ export const shapeRegistry: ShapeRegistry = new Map<
   ['state-start', stateStartRenderer],
   ['state-end', stateEndRenderer],
   ['fork-join', forkJoinRenderer],
+
+  // Class diagram LR/RL lowering (class-flow.ts)
+  ['class-box', classBoxRenderer],
+  ['class-note', classBoxRenderer],
+  ['class-name', classNameRenderer],
 ])
 
 /**

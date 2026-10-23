@@ -1,6 +1,8 @@
 # Scoping: pluggable/domain-aware layout architecture
 
-Status: **scoping note, not a decision.** Written for
+Status: implemented
+
+Scoping note, not a decision. Written for
 [#538](https://github.com/dfadler/zombie-mermaid/issues/538), split from
 [#536](https://github.com/dfadler/zombie-mermaid/issues/536). No code under
 `src/layout-engine/**` or any renderer was changed to produce this — findings

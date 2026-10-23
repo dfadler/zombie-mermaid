@@ -66,7 +66,7 @@ function basisPath(points: Point[]): string {
     parts.push(segment(points[i - 2]!, points[i - 1]!, points[i]!))
   }
 
-  // d3 closes by feeding the last point twice, then drawing to it.
+  // D3 closes by feeding the last point twice, then drawing to it.
   parts.push(segment(points[points.length - 2]!, last, last))
   parts.push(f` L ${last.x} ${last.y}`)
 

@@ -4,7 +4,8 @@
  * mode, which builds every configured environment in order). Replaces the
  * imperative `scripts/build-lib.ts` (zombie-mermaid#404), which drove the
  * same builds by hand as separate `vite build()` calls. See
- * zombie-mermaid#378 for the original tsup -> Vite move.
+ * zombie-mermaid#378 for the original tsup -> Vite move (the only place
+ * tsup is discussed; comparisons below were dropped).
  *
  * This is ONE of six builds a full `pnpm run build` now runs (#769):
  * `packages/{core,mermaid-parser,svg-renderer,ascii-renderer,mcp}/vite.config.ts`
@@ -18,7 +19,7 @@
  * Why five environments (`client`/`ascii`/`mcp`/`cli`/`types`) rather than
  * one multi-entry `build.lib`: each public JS entry (`.`, `./ascii`,
  * `./mcp`) must be fully self-contained, with no shared runtime chunk
- * between them (tsup's `splitting: false`). Rolldown's multi-entry default
+ * between them (no code splitting). Rolldown's multi-entry default
  * is the opposite — it factors modules shared between entries
  * (`parser.ts`, say) into a separate chunk — and its only no-splitting
  * switch, `output.codeSplitting: false`, is rejected outright for
@@ -65,21 +66,28 @@
  *   on `dist/index.js`, clobbering the real `index` entry.
  *
  * Types: unplugin-dts's `bundleTypes` (one api-extractor-rolled `.d.ts` per
- * entry, like tsup's dts step) names its outputs after the entry keys only
+ * entry, like the old dts step) names its outputs after the entry keys only
  * for a multi-entry build; a single-entry build always resolves to
  * `package.json`'s `types` path, so three single-entry builds would all
  * collide on `dist/index.d.ts`. The `types` environment is therefore the
  * one multi-entry build here — its JS output is discarded
  * (`declarationOnly`), only the three bundled `.d.ts` files are kept, and
- * `afterBuild` writes each one's `.d.cts` twin (see `writeDctsTwins`).
+ * `afterBuild` moves each to `shared/` and stubs `.d.ts`/`.d.cts` (see
+ * `writeSharedTypes`).
  *
  * Usage: `pnpm run build` (`vite build --app --config vite.config.lib.ts`).
  */
 
-import { chmod, writeFile } from 'node:fs/promises'
+import { chmod } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import { defineConfig, type LibraryFormats, type Plugin } from 'vite'
 import dts from 'unplugin-dts/vite'
+import {
+  RELATIVE_IMPORT_RE,
+  sharedBuild,
+  sharedDtsOptions,
+  writeSharedDts,
+} from '../vite.config.package.ts'
 
 // This file lives in config/, one level below the repo root (#997) — ROOT
 // points at the actual repo root so `root`, every resolved entry below, and
@@ -89,13 +97,16 @@ const ROOT = resolve(import.meta.dirname, '..')
 const DIST = resolve(ROOT, 'dist')
 
 // Both are real npm dependencies (see package.json) kept external rather
-// than bundled. Unlike esbuild (which tsup used), Rolldown's `external`
+// than bundled. Rolldown's `external`
 // only matches an exact import specifier, not a package-name prefix —
 // `external: ['elkjs']` would NOT cover `packages/svg-renderer/src/elk-instance.ts`'s
 // `import ELKBundled from 'elkjs/lib/elk.bundled.js'`, silently inlining
 // elkjs's entire (huge) UMD bundle into `dist/index.js`/`dist/index.cjs`.
 // A prefix-matching function closes that gap for any current or future
 // subpath import.
+//
+// `elkjs-0.9.3` is the npm alias for elkjs 0.9.3, the pin the opt-in layout-faithful ASCII mode
+// (src/ascii-layout.ts, #2182) needs; an OPTIONAL peer, only imported from a lazy chunk.
 //
 // `@modelcontextprotocol/sdk` and `zod` are only needed by the `mcp` entry
 // (and, transitively, the CLI's `mcp` subcommand, src/cli/mcp.ts) — kept
@@ -125,6 +136,8 @@ function isExternal(id: string): boolean {
   return (
     id === 'elkjs' ||
     id.startsWith('elkjs/') ||
+    id === 'elkjs-0.9.3' ||
+    id.startsWith('elkjs-0.9.3/') ||
     id === 'entities' ||
     id.startsWith('entities/') ||
     id === '@modelcontextprotocol/sdk' ||
@@ -152,7 +165,7 @@ function isExternal(id: string): boolean {
 const ES_AND_CJS: LibraryFormats[] = ['es', 'cjs']
 const ES_ONLY: LibraryFormats[] = ['es']
 
-// tsup marked its shebang-banner CLI output executable; Rollup/Vite don't.
+// Rollup/Vite don't mark the shebang-banner CLI output executable.
 const cliExecutable: Plugin = {
   name: 'zombie-mermaid:cli-executable',
   applyToEnvironment: (env) => env.name === 'cli',
@@ -160,15 +173,6 @@ const cliExecutable: Plugin = {
     await chmod(resolve(DIST, 'cli.js'), 0o755)
   },
 }
-
-// `\bfrom\b` once, not `from` twice — the previous
-// `(?:import|export\s+[^;]*from)\s[^;]*from\s*['"]...` shape required the
-// `export` branch to contain the literal "from" twice, so a single-`from`
-// relative re-export (`export * from './foo'`) matched neither alternative
-// and silently passed the afterBuild guard below. Caught in PR review
-// (#769) — this invariant matters more once these packages are actually
-// published (same fix applied in vite.config.package.ts).
-const RELATIVE_IMPORT_RE = /^(?:import|export)\s[^;]*\bfrom\s*['"]\.\.?\//m
 
 /**
  * `ascii.d.ts`/`mcp.d.ts` MUST reference their `@zombie-mermaid/*` package
@@ -192,26 +196,23 @@ const WORKSPACE_REF_RE: Record<string, RegExp> = {
 }
 
 /**
- * Writes `index.d.cts`, `ascii.d.cts`, and `mcp.d.cts` as byte-for-byte
- * copies of the bundled `.d.ts` files unplugin-dts just emitted (its own
- * per-format `.d.cts` output only kicks in when each format gets its own
- * `outDir`, which they don't here — `dist/` is flat, matching tsup).
+ * Moves each bundled `.d.ts` unplugin-dts just emitted (`index`, `ascii`,
+ * `ascii-layout`, `mcp`) to `shared/<name>.d.ts` and writes `<name>.d.ts` and
+ * `<name>.d.cts` as one-line re-exports of it — see `writeSharedDts` (#2196).
+ * unplugin-dts's own per-format `.d.cts` output only kicks in when each format
+ * gets its own `outDir`, which they don't here — `dist/` is flat.
  *
- * Copying verbatim is safe because `bundleTypes` rolls each entry into one
- * fully self-contained file with no *relative* imports to other declaration
- * files whose extension would need to differ between the ESM and CJS
- * variant (unlike tsup's own `index.d.ts`/`index.d.cts`, which only
- * differed in the extension of an internal cross-file import). A bare
- * package-specifier import (e.g. `import { ElkNode } from 'elkjs'`, or —
- * as of #769 — `from '@zombie-mermaid/core'`) is fine to duplicate too —
- * Node resolves a bare specifier the same way regardless of the importing
- * file's own module format — so only a relative import (`./`, `../`) trips
- * the guard below.
+ * Moving a file down a directory is safe because `bundleTypes` rolls each
+ * entry into one fully self-contained file with no *relative* imports to other
+ * declaration files. A bare package-specifier import (e.g.
+ * `import { ElkNode } from 'elkjs'`, or — as of #769 —
+ * `from '@zombie-mermaid/core'`) resolves the same from `shared/` — so only a
+ * relative import (`./`, `../`) trips the guard below.
  */
-async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
+async function writeSharedTypes(emitted: Map<string, string>): Promise<void> {
   const files = [...emitted.keys()].filter((file) => file.endsWith('.d.ts'))
   const found = files.map((file) => basename(file)).sort()
-  const expected = ['ascii.d.ts', 'index.d.ts', 'mcp.d.ts']
+  const expected = ['ascii-layout.d.ts', 'ascii.d.ts', 'index.d.ts', 'mcp.d.ts']
   if (found.join() !== expected.join()) {
     throw new Error(
       `Expected exactly ${expected.join(', ')} from the types build, found: ${found.join(', ') || '(none)'}`,
@@ -224,7 +225,7 @@ async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
       if (RELATIVE_IMPORT_RE.test(content)) {
         throw new Error(
           `${name} has a relative import/re-export — no longer safe to duplicate verbatim ` +
-            `as its .d.cts twin. Update writeDctsTwins() to handle that.`,
+            `into shared/. Update writeSharedTypes() to handle that.`,
         )
       }
       const workspaceRef = WORKSPACE_REF_RE[name]
@@ -234,7 +235,7 @@ async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
             `it may have been inlined again instead of left external. See WORKSPACE_REF_RE above.`,
         )
       }
-      return writeFile(file.replace(/\.d\.ts$/, '.d.cts'), content)
+      return writeSharedDts(file, content)
     }),
   )
 }
@@ -251,20 +252,9 @@ export default defineConfig({
   plugins: [
     {
       ...dts({
-        // Build-only tsconfig (see its own header comment): resolves every
-        // `@zombie-mermaid/*` import through normal package resolution —
-        // each package's own `dist/index.d.ts` (built first; see the root
-        // `build` script's order) — rather than tsconfig.json's live-source
-        // `paths` overrides, which exist for typecheck/IDE use only.
-        tsconfigPath: resolve(ROOT, 'config/tsconfig.build.json'),
-        // Never process test files reachable via tsconfig's broad
-        // `src/**/*` include — they aren't part of the public API and
-        // some rely on devDependency-only ambient types (vitest, jsdom).
-        exclude: ['src/__tests__/**', '**/*.test.ts'],
-        // Roll each entry's declarations into a single bundled `.d.ts`
-        // (via @microsoft/api-extractor), matching tsup's dts output —
-        // one file per public entry point, not one per source module.
-        //
+        // tsconfigPath/exclude/bundleTypes/declarationOnly are shared with
+        // the package builds (see `sharedDtsOptions`).
+        ...sharedDtsOptions,
         // The five `@zombie-mermaid/*` workspace packages are real,
         // independently-built, published dependencies as of #769 (see
         // `isExternal` above) — absent from `bundledPackages` deliberately,
@@ -278,13 +268,10 @@ export default defineConfig({
         // emitted per-file declarations, since nothing built these packages
         // independently yet — see this file's git history on #769 for that
         // version if this ever needs to be reverted.
-        bundleTypes: true,
-        // Drop the `types` environment's JS from its bundle before it's
-        // written: that JS is a multi-entry build with shared chunks (see
-        // the header), never the real output — and it would land on the
-        // same `dist/index.js` etc. the real entries already wrote.
-        declarationOnly: true,
-        afterBuild: writeDctsTwins,
+        // (`declarationOnly` drops the `types` environment's JS: it is a
+        // multi-entry build with shared chunks, never the real output, and
+        // would land on the same `dist/index.js` etc. the real entries wrote.)
+        afterBuild: writeSharedTypes,
       }),
       applyToEnvironment: (env) => env.name === 'types',
     },
@@ -295,9 +282,7 @@ export default defineConfig({
     // `client` (the first environment built) empties `dist/` once; every
     // later environment must NOT, or it would wipe the earlier entries'
     // output.
-    emptyOutDir: false,
-    target: 'es2022',
-    sourcemap: true,
+    ...sharedBuild,
     // The `index` entry — this top-level block is the `client` environment
     // (see the header for why the entry has to be here and `formats`
     // can't be).
@@ -305,10 +290,7 @@ export default defineConfig({
       entry: resolve(ROOT, 'src/index.ts'),
       fileName: (format) => `index.${format === 'es' ? 'js' : 'cjs'}`,
     },
-    rolldownOptions: {
-      external: isExternal,
-      output: { sourcemapExcludeSources: true },
-    },
+    rolldownOptions: { ...sharedBuild.rolldownOptions, external: isExternal },
   },
   environments: {
     client: {
@@ -326,6 +308,21 @@ export default defineConfig({
           entry: resolve(ROOT, 'src/ascii-entry.ts'),
           formats: ES_AND_CJS,
           fileName: (format) => `ascii.${format === 'es' ? 'js' : 'cjs'}`,
+        },
+      },
+    },
+    // Opt-in layout-faithful ASCII (#2182): its own entry so the private layout packages and
+    // the optional elkjs-0.9.3 peer never enter `index`/`ascii` (a bundler resolving the
+    // browser-oriented entries would otherwise have to resolve them). They load through a
+    // dynamic import inside `src/ascii-layout.ts`, so even this entry stays small until called.
+    asciiLayout: {
+      consumer: 'client',
+      build: {
+        lib: {
+          entry: resolve(ROOT, 'src/ascii-layout.ts'),
+          formats: ES_AND_CJS,
+          fileName: (format) =>
+            `ascii-layout.${format === 'es' ? 'js' : 'cjs'}`,
         },
       },
     },
@@ -357,12 +354,12 @@ export default defineConfig({
         // A server-consumer build ships unminified by default (full
         // identifier names, comments, tab indentation) — that alone blew
         // `dist/cli.js` past its bundle-size budget (137.3 KB vs ~94 KB
-        // gzipped for the same module set under tsup); it wasn't
+        // gzipped for the same module set before the Vite move); it wasn't
         // dependency bloat, `isExternal` already keeps
         // `@modelcontextprotocol/sdk`/`zod` out. Minifying restores parity
         // with the other entries.
-        minify: 'esbuild',
-        // tsup's CLI config used sourcemap: false — the CLI is a standalone
+        minify: true,
+        // The CLI is a standalone
         // executable, not a debugged-by-consumers library entry.
         sourcemap: false,
         lib: {
@@ -372,8 +369,7 @@ export default defineConfig({
         },
         rolldownOptions: {
           output: {
-            // Matches tsup's `banner: { js: '#!/usr/bin/env node' }` — lets
-            // `dist/cli.js` run directly via the `bin` mechanism.
+            // Lets `dist/cli.js` run directly via the `bin` mechanism.
             banner: '#!/usr/bin/env node',
             entryFileNames: 'cli.js',
           },
@@ -391,6 +387,7 @@ export default defineConfig({
             index: resolve(ROOT, 'src/index.ts'),
             ascii: resolve(ROOT, 'src/ascii-entry.ts'),
             mcp: resolve(ROOT, 'src/mcp-entry.ts'),
+            'ascii-layout': resolve(ROOT, 'src/ascii-layout.ts'),
           },
           formats: ES_ONLY,
         },

@@ -11,6 +11,7 @@ import {
   normalizeBrTags,
   applyClickStatement,
   splitClassShorthand,
+  toDirection,
   tryApplyClassAssignment,
   tryApplyClassDef,
   tryApplyCssClass,
@@ -42,6 +43,50 @@ import {
 // ============================================================================
 
 /**
+ * Every relationship arrow the parser accepts, with the relationship type it
+ * draws and which end(s) carry the marker. The single source of truth: the
+ * arrow regex below is built from these keys, so an arrow can't be recognized
+ * without a meaning. `both` puts the same marker at each end (`<|--|>`,
+ * `<-->`, `()--()`), as mermaid does. A bare `--` stays an association.
+ */
+const ARROWS: Record<
+  string,
+  { type: RelationshipType; markerAt: 'from' | 'to' | 'both' }
+> = {
+  '<|--': { type: 'inheritance', markerAt: 'from' },
+  '--|>': { type: 'inheritance', markerAt: 'to' },
+  '<|--|>': { type: 'inheritance', markerAt: 'both' },
+  '<|..': { type: 'realization', markerAt: 'from' },
+  '..|>': { type: 'realization', markerAt: 'to' },
+  '<|..|>': { type: 'realization', markerAt: 'both' },
+  '*--': { type: 'composition', markerAt: 'from' },
+  '--*': { type: 'composition', markerAt: 'to' },
+  '*--*': { type: 'composition', markerAt: 'both' },
+  'o--': { type: 'aggregation', markerAt: 'from' },
+  '--o': { type: 'aggregation', markerAt: 'to' },
+  'o--o': { type: 'aggregation', markerAt: 'both' },
+  '-->': { type: 'association', markerAt: 'to' },
+  '<--': { type: 'association', markerAt: 'from' },
+  '<-->': { type: 'association', markerAt: 'both' },
+  '..>': { type: 'dependency', markerAt: 'to' },
+  '<..': { type: 'dependency', markerAt: 'from' },
+  '<..>': { type: 'dependency', markerAt: 'both' },
+
+  '()--': { type: 'lollipop', markerAt: 'from' },
+  '--()': { type: 'lollipop', markerAt: 'to' },
+  '()--()': { type: 'lollipop', markerAt: 'both' },
+  '--': { type: 'association', markerAt: 'to' },
+}
+
+/** A class id token: a backtick-quoted name (may hold spaces) or a bare run of non-space. */
+const CLASS_ID = '`[^`]+`|\\S+?'
+
+/** Strip the backticks off a backtick-quoted class name. */
+function unquoteClassId(id: string): string {
+  return /^`[^`]+`$/.test(id) ? id.slice(1, -1) : id
+}
+
+/**
  * The set of relationship-arrow tokens `parseRelationship` recognizes,
  * shared with the "does this line even look like a relationship attempt"
  * check below so the two can't drift apart. Order matters for regex
@@ -49,7 +94,10 @@ import {
  * the bare `--` fallback).
  */
 const RELATIONSHIP_ARROW_SOURCE =
-  '<\\|--|<\\|\\.\\.|\\*--|o--|-->|--\\*|--o|--\\|>|\\.\\.>|\\.\\.\\|>|<--|<\\.\\.?|--'
+  Object.keys(ARROWS)
+    .sort((a, b) => b.length - a.length)
+    .map((a) => a.replace(/[|.*()]/g, '\\$&'))
+    .join('|') + '|<\\.\\.?'
 
 /**
  * Matches a line that *contains* a relationship-arrow token somewhere, even
@@ -131,6 +179,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
       if (line.startsWith('<<')) {
         throw new MermaidParseError(
           `Line ${stmt.line}: Malformed class annotation "${line}" — expected "<<name>>" (e.g. "<<interface>>").`,
+          { diagramType: 'class' },
         )
       }
 
@@ -142,6 +191,14 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     // --- click interaction: `click ClassName "url" "tooltip" _blank` / `click ClassName call fn()` ---
     if (/^click\s+/i.test(line)) {
       applyClickStatement(line, diagram.interactions)
+      continue
+    }
+
+    // --- `direction TB|TD|LR|BT|RL`: one top-level layout direction ---
+    // (a later statement wins, as in mermaid's classDb.setDirection).
+    const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
+    if (dirMatch) {
+      diagram.direction = toDirection(dirMatch[1]!)
       continue
     }
 
@@ -189,9 +246,18 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     }
 
     // --- Class block start: `class ClassName {` or `class ClassName:::style {` ---
-    const classBlockMatch = line.match(/^class\s+(\S+?)(?:\s*~(\w+)~)?\s*\{$/)
+    const classBlockMatch = line.match(
+      new RegExp(
+        `^class\\s+(${CLASS_ID})(?:\\s*~(\\w+)~)?(?:\\s*\\["([^"]*)"\\])?\\s*\\{$`,
+      ),
+    )
     if (classBlockMatch) {
-      const id = declareClass(classBlockMatch[1]!, classBlockMatch[2])
+      const id = declareClass(
+        classBlockMatch[1]!,
+        classBlockMatch[2],
+        true,
+        classBlockMatch[3],
+      )
       currentClass = classMap.get(id) ?? null
       braceDepth = 1
       openClassLine = stmt.line
@@ -199,9 +265,18 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     }
 
     // --- Standalone class declaration (no body): `class ClassName` / `class ClassName:::style` ---
-    const classOnlyMatch = line.match(/^class\s+(\S+?)(?:\s*~(\w+)~)?\s*$/)
+    const classOnlyMatch = line.match(
+      new RegExp(
+        `^class\\s+(${CLASS_ID})(?:\\s*~(\\w+)~)?(?:\\s*\\["([^"]*)"\\])?\\s*$`,
+      ),
+    )
     if (classOnlyMatch) {
-      declareClass(classOnlyMatch[1]!, classOnlyMatch[2])
+      declareClass(
+        classOnlyMatch[1]!,
+        classOnlyMatch[2],
+        true,
+        classOnlyMatch[3],
+      )
       continue
     }
 
@@ -209,7 +284,9 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     // One annotation or one member; `;`-separated members on a single line
     // are already split into separate statements upstream, so a multi-member
     // body can't reach here intact.
-    const inlineBodyMatch = line.match(/^class\s+(\S+?)\s*\{\s*(.*?)\s*\}$/)
+    const inlineBodyMatch = line.match(
+      new RegExp(`^class\\s+(${CLASS_ID})\\s*\\{\\s*(.*?)\\s*\\}$`),
+    )
     if (inlineBodyMatch) {
       const id = declareClass(inlineBodyMatch[1]!, undefined)
       const cls = classMap.get(id)
@@ -222,6 +299,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
         // branch above, just on the single-line form (#761).
         throw new MermaidParseError(
           `Line ${stmt.line}: Malformed class annotation "${body}" — expected "<<name>>" (e.g. "<<interface>>").`,
+          { diagramType: 'class' },
         )
       } else if (cls && body) {
         addMember(cls, body, stmt.line)
@@ -230,12 +308,18 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     }
 
     // --- Inline attribute: `ClassName : +String name` ---
-    const inlineAttrMatch = line.match(/^(\S+?)\s*:\s*(.+)$/)
+    const inlineAttrMatch = line.match(
+      new RegExp(`^(${CLASS_ID})\\s*:\\s*(.+)$`),
+    )
     if (inlineAttrMatch) {
       // Make sure this isn't a relationship line (those have arrows)
       const rest = inlineAttrMatch[2]!
-      if (!rest.match(/<\|--|--|\*--|o--|-->|\.\.>|\.\.\|>/)) {
-        addMember(ensureClass(classMap, inlineAttrMatch[1]!), rest, stmt.line)
+      if (!parseRelationship(line)) {
+        addMember(
+          ensureClass(classMap, unquoteClassId(inlineAttrMatch[1]!)),
+          rest,
+          stmt.line,
+        )
         continue
       }
     }
@@ -265,7 +349,8 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     // no arrow at all keeps falling through silently (#761).
     if (RELATIONSHIP_ARROW_MARKER.test(line)) {
       throw new MermaidParseError(
-        `Line ${stmt.line}: Malformed class-diagram relationship "${line}". Expected "FROM ARROW TO" (optionally with cardinalities and a ": label"), e.g. "Animal <|-- Dog" or 'A "1" --> "*" B : label'. ARROW must be one of <|--, <|.., *--, o--, -->, --*, --o, --|>, ..>, ..|>, <--, <.., or --.`,
+        `Line ${stmt.line}: Malformed class-diagram relationship "${line}". Expected "FROM ARROW TO" (optionally with cardinalities and a ": label"), e.g. "Animal <|-- Dog" or 'A "1" --> "*" B : label'. ARROW must be one of ${Object.keys(ARROWS).join(', ')}.`,
+        { diagramType: 'class' },
       )
     }
   }
@@ -273,6 +358,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
   if (currentClass !== null) {
     throw new MermaidParseError(
       `Line ${openClassLine}: Unclosed class body for "${currentClass.id}" — expected a closing "}" before the diagram ends.`,
+      { diagramType: 'class' },
     )
   }
 
@@ -291,9 +377,10 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     token: string,
     generic: string | undefined,
     inNamespace: boolean = true,
+    label?: string,
   ): string {
     const { id: rawId, className } = splitClassShorthand(token)
-    let id = rawId
+    let id = unquoteClassId(rawId)
     let resolvedGeneric = generic
     if (!resolvedGeneric) {
       // The declaration regexes only split a `~T~` generic off the bare id
@@ -312,6 +399,8 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     if (resolvedGeneric) {
       cls.label = `${id}<${resolvedGeneric}>`
     }
+    // `class Id["Label"]` shows Label in the box; relationships still use Id.
+    if (label !== undefined) cls.label = normalizeBrTags(label)
     if (className) {
       diagram.classAssignments.set(id, className)
     }
@@ -424,6 +513,7 @@ function parseMember(
   // Extract visibility prefix
   let visibility: ClassMember['visibility'] = ''
   let rest = trimmed
+  let visibilitySpace = false
   const visibilityChar = rest[0]
   if (
     visibilityChar === '+' ||
@@ -432,6 +522,7 @@ function parseMember(
     visibilityChar === '~'
   ) {
     visibility = visibilityChar
+    visibilitySpace = /^\s/.test(rest.slice(1))
     rest = rest.slice(1).trim()
   }
 
@@ -443,6 +534,7 @@ function parseMember(
   if (rest.includes('(') && !rest.includes(')')) {
     throw new MermaidParseError(
       `Line ${lineNumber}: Malformed class member "${trimmed}" — unclosed "(" in a method signature. Expected e.g. "+eat() void" or "+eat(Food f) void".`,
+      { diagramType: 'class' },
     )
   }
 
@@ -462,18 +554,21 @@ function parseMember(
     const params = rawParams ? parseGenericTypes(rawParams) : undefined // Store the parameter string
     const rawType = methodMatch[3]?.trim()
     const type = rawType ? parseGenericTypes(rawType) : undefined
-    // Check for static ($) or abstract (*) markers
-    const isStatic = name.endsWith('$') || rest.includes('$')
-    const isAbstract = name.endsWith('*') || rest.includes('*')
+    // A `$` (static) / `*` (abstract) classifier follows the `)` (mermaid's
+    // ClassMember); it styles the member and is not part of its text (#2283).
+    const classifier = rawType?.match(/^[$*]/)?.[0]
+    const isStatic = classifier === '$' || name.endsWith('$')
+    const isAbstract = classifier === '*' || name.endsWith('*')
     return {
       member: {
         visibility,
         name: name.replace(/[$*]$/, ''),
-        type: type || undefined,
+        type: type?.replace(/^[$*]\s*/, '') || undefined,
         isStatic,
         isAbstract,
         isMethod: true,
         params,
+        ...(visibilitySpace && { visibilitySpace }),
       },
       isMethod: true,
     }
@@ -499,6 +594,7 @@ function parseMember(
       isStatic,
       isAbstract,
       isMethod: false,
+      ...(visibilitySpace && { visibilitySpace }),
     },
     isMethod: false,
   }
@@ -513,7 +609,7 @@ function parseRelationship(line: string): ClassRelationship | null {
   // it's re-joined onto the id here and split off again by the caller.
   const match = line.match(
     new RegExp(
-      `^(\\S+?)\\s+(?:"([^"]*?)"\\s+)?(${RELATIONSHIP_ARROW_SOURCE})\\s+(?:"([^"]*?)"\\s+)?(\\S+?)(?::::([\\w][\\w-]*))?(?:\\s*:\\s*(.+))?$`,
+      `^(${CLASS_ID})\\s+(?:"([^"]*?)"\\s+)?(${RELATIONSHIP_ARROW_SOURCE})\\s+(?:"([^"]*?)"\\s+)?(${CLASS_ID})(?::::([\\w][\\w-]*))?(?:\\s*:\\s*(.+))?$`,
     ),
   )
   if (!match) return null
@@ -546,44 +642,9 @@ function parseRelationship(line: string): ClassRelationship | null {
   }
 }
 
-/**
- * Map arrow syntax to relationship type and marker placement side.
- * Prefix markers (`<|--`, `*--`, `o--`) place the UML shape at the 'from' end.
- * Suffix markers (`..|>`, `-->`, `..>`, `--*`, `--o`) place it at the 'to' end.
- */
+/** Map arrow syntax to relationship type and marker placement (see {@link ARROWS}). */
 function parseArrow(
   arrow: string,
-): { type: RelationshipType; markerAt: 'from' | 'to' } | null {
-  // Trim whitespace that might be captured by the regex
-  const a = arrow.trim()
-  switch (a) {
-    case '<|--':
-      return { type: 'inheritance', markerAt: 'from' }
-    case '--|>':
-      return { type: 'inheritance', markerAt: 'to' }
-    case '<|..':
-      return { type: 'realization', markerAt: 'from' }
-    case '..|>':
-      return { type: 'realization', markerAt: 'to' }
-    case '*--':
-      return { type: 'composition', markerAt: 'from' }
-    case '--*':
-      return { type: 'composition', markerAt: 'to' }
-    case 'o--':
-      return { type: 'aggregation', markerAt: 'from' }
-    case '--o':
-      return { type: 'aggregation', markerAt: 'to' }
-    case '-->':
-      return { type: 'association', markerAt: 'to' }
-    case '<--':
-      return { type: 'association', markerAt: 'from' }
-    case '..>':
-      return { type: 'dependency', markerAt: 'to' }
-    case '<..':
-      return { type: 'dependency', markerAt: 'from' }
-    case '--':
-      return { type: 'association', markerAt: 'to' }
-    default:
-      return null
-  }
+): { type: RelationshipType; markerAt: 'from' | 'to' | 'both' } | null {
+  return ARROWS[arrow.trim()] ?? null
 }

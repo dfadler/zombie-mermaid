@@ -41,7 +41,11 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
       const rows = boxRows(lines)
       // The top border is a plain box edge; the lanes arrive at the right face.
       expect(rows[0]!.trim().slice(0, 9)).toBe('┌───────┐')
-      expect(rows[2]!.trim()).toMatch(/^│ {3}T {3}│◄[─┬┴┤┘┐┼│ ]+$/)
+      // Each lane on a row of its own (#1743, #2025).
+      const into = rows
+        .slice(1, 4)
+        .filter((r) => /^│ {3}. {3}│◄/.test(r.trim()))
+      expect(into).toHaveLength(heads)
       expect(lines.join('\n').match(/◄/g)).toHaveLength(heads)
       expect(lines.join('\n').match(/▼/g)).toHaveLength(2)
     })
@@ -50,7 +54,10 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
       const lines = render(lanes('TD', count), true)
       const rows = boxRows(lines)
       expect(rows[0]!.trim().slice(0, 9)).toBe('+-------+')
-      expect(rows[2]!.trim()).toMatch(/^\| {3}T {3}\|<[-+| ]+$/)
+      const into = rows
+        .slice(1, 4)
+        .filter((r) => /^\| {3}. {3}\|</.test(r.trim()))
+      expect(into).toHaveLength(heads)
       expect(lines.join('\n').match(/</g)).toHaveLength(heads)
     })
   }
@@ -68,8 +75,10 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
       for (const line of lines.slice(top, bottom + 1)) {
         expect('┌│└').toContain(line[col]!)
       }
-      // The arrowhead sits directly under T's bottom border, in T's centre column.
-      expect(lines[bottom + 1]![col + 2]).toBe('▲')
+      // Each arrowhead sits directly under T's bottom border, in a column of
+      // its own (#2025).
+      const under = [...lines[bottom + 1]!.slice(col + 1, col + 4)]
+      expect(under.filter((c) => c === '▲')).toHaveLength(count - 1)
     })
   }
 })

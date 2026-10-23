@@ -152,6 +152,14 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
     expect(check(repo).stderr).toContain('no published code')
   })
 
+  it('warns when a docs/research file is added, not when only README is', () => {
+    const added = makeRepo({ 'docs/research/9-x.md': '# x' })
+    expect(check(added).stderr).toContain('docs/research/ file added')
+    rmSync(added, { recursive: true, force: true })
+    const readme = makeRepo({ 'docs/research/README.md': '# r' })
+    expect(check(readme).stderr).not.toContain('docs/research/ file added')
+  })
+
   it('warns when a decision doc changes', () => {
     const repo = makeRepo({ 'docs/decisions/d.md': '# d' })
     expect(check(repo).stderr).toContain('self-review checklist')
@@ -216,7 +224,7 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
     it('ignores commands other than gh pr create', () => {
       const repo = makeRepo({ 'src/a.ts': 'x' })
       const r = check(repo, '--hook')
-      // no stdin payload at all: still no output and exit 0
+      // No stdin payload at all: still no output and exit 0
       expect(r.code).toBe(0)
       expect(r.stdout).toBe('')
       const r2 = bash(PRE_PR, ['--base', 'main', '--hook'], {
@@ -356,5 +364,32 @@ describe.skipIf(!available)('pr-snapshot.sh', () => {
     const prs = JSON.parse(r.stdout)
     expect(prs).toHaveLength(1)
     expect(prs[0].checks).toEqual([])
+  })
+})
+
+// --- research-nudge.sh (#2003) ---------------------------------------------
+
+describe.skipIf(!available)('research-nudge.sh', () => {
+  const NUDGE = join(REPO_ROOT, 'scripts/research-nudge.sh')
+  const run = (file_path: string) =>
+    bash(NUDGE, [], { input: JSON.stringify({ tool_input: { file_path } }) })
+
+  it('nudges when a new docs/research file is created', () => {
+    const r = run(join(tmp, 'docs/research/9-x.md'))
+    expect(r.code).toBe(0)
+    expect(JSON.parse(r.stdout).hookSpecificOutput.additionalContext).toContain(
+      'issue',
+    )
+  })
+
+  it('stays silent for an existing doc, the README and other paths', () => {
+    mkdirSync(join(tmp, 'docs/research'), { recursive: true })
+    writeFileSync(join(tmp, 'docs/research/kept.md'), 'x')
+    for (const p of [
+      join(tmp, 'docs/research/kept.md'),
+      join(tmp, 'docs/research/README.md'),
+      join(tmp, 'docs/guides/new.md'),
+    ])
+      expect(run(p).stdout).toBe('')
   })
 })

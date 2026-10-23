@@ -1,6 +1,6 @@
 name: Deploy demo site to GitHub Pages
 
-# Builds the static demo site (index.ts/editor.ts -> site/) and publishes it
+# Builds the static demo site (vite.site.config.ts -> site/) and publishes it
 # to GitHub Pages. Requires the repo's Pages source to be set to "GitHub
 # Actions" (Settings -> Pages) — this workflow's deploy step fails otherwise.
 #
@@ -65,18 +65,10 @@ jobs:
           # the source tree at a historical commit, which a shallow checkout
           # does not contain.
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
 
       - name: Build site
         run: pnpm run build:site

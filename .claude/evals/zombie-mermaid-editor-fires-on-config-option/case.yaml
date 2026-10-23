@@ -1,0 +1,31 @@
+# Should-fire: adding a Config option to the live editor.
+# Sabotage map: deleting the "How to add a Config option" section drops readConfig (names_config_hooks).
+schema_version: '1.1'
+name: zombie-mermaid-editor-fires-on-config-option
+description: >
+  Asked to add a new Config option to the live editor, the zombie-mermaid-editor skill fires and
+  the reply names readConfig and the editor/js partials. expected_outcome: PASS when the Skill
+  call is made and the reply contains "readConfig" and "editor/js"; FAIL otherwise.
+tags: [zombie-mermaid-editor, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Add a new "edge label padding" Config option to the live editor so users can tune it from
+    the Config panel. Don't edit anything; in a few sentences, which files and functions would
+    you touch?
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid-editor"'
+  - name: names_config_hooks
+    type: regex
+    pattern: 'readConfig'
+  - name: names_editor_partials
+    type: regex
+    pattern: 'editor/js'

@@ -40,11 +40,16 @@ const BRANCHING = `graph LR
   G -->|pass| A
   G -->|fail| F`
 
+// In a subgraph so the fan-out keeps the one-sided layout (an unwrapped LR
+// fan-out is centred over its children since #2163, which splits the bends
+// between the top and bottom borders).
 const THREE_BENDS = `graph LR
+  subgraph s
   Source --> T
   Source --> M
   Source --> B
-  Source --> C`
+  Source --> C
+  end`
 
 /** The start run of an edge that leaves its source going down, then right. */
 function downThenRight(e: AsciiEdge, straight = false): FanOutMember {
@@ -66,25 +71,25 @@ describe('ASCII fan-out exit offsets (#1308)', () => {
   it('gives the two edges leaving develop downward a stem each', () => {
     const g = layout(BRANCHING)
     const ui = portShifts(g).get(edge(g, 'B', 'D'))!
-    const release = portShifts(g).get(edge(g, 'B', 'F'))!
+    const release = portShifts(g).get(edge(g, 'B', 'F'))
     // The farther bend (release) keeps the port's slot, the nearer one (ui)
     // steps one stroke spacing toward the side it bends to.
-    expect(ui.start - release.start).toBe(2)
+    expect(ui.start - (release?.start ?? 0)).toBe(2)
   })
 
   it('draws two junctions under develop and one stem per branch', () => {
     const rows = renderMermaidASCII(BRANCHING, { colorMode: 'none' }).split(
       '\n',
     )
-    const border = rows.findIndex((r) => r.includes('└─────┬─┬─┘'))
+    const border = rows.findIndex((r) => r.includes('└────┬─┬──┘'))
     expect(border).toBeGreaterThan(0)
     const stems = [...rows[border + 1]!.matchAll(/│/g)].map((m) => m.index)
-    // Two stems below develop (plus the main loop-back column further left).
+    // Two stems below develop; the loop-back now enters develop's right face.
     const col = rows[border]!.indexOf('┬')
     expect(stems).toContain(col)
     expect(stems).toContain(col + 2)
     // feature/ui is entered from its own stem, release/1.0 from the other.
-    const uiRow = rows.findIndex((r) => r.includes('└───────►│  feature/ui'))
+    const uiRow = rows.findIndex((r) => r.includes('└────────►│  feature/ui'))
     expect(uiRow).toBeGreaterThan(border)
     expect(rows[uiRow]!.indexOf('└')).toBe(col + 2)
   })

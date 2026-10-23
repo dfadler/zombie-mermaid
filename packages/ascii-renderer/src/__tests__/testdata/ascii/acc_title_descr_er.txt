@@ -1,0 +1,22 @@
+erDiagram
+  accTitle: Accessible title
+  accDescr {
+    A description
+    over two lines.
+  }
+  A ||--o{ B : has
+---
++---+    
+| A |    
++---+    
+  +      
+  |      
+ has     
+  |      
+  o      
+  ^      
++---+    
+| B |    
++---+    
+         
+         

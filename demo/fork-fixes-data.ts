@@ -524,4 +524,243 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the ╟ marker collides with ORDER’s └ corner. After: the line meets ORDER at a ├ junction inside the box.',
   },
+  {
+    id: 'ascii-er-stacked-center',
+    title: 'A narrower stacked ER entity sat off-center, so its edge jogged',
+    symptom:
+      'Each stacked ER row started at the left edge, so a narrower entity was left-aligned under its neighbor while the relationship attaches at each box’s center, and the edge jogged sideways between two off-center stems.',
+    source:
+      'erDiagram\n  INSTALL }o--|| PROJECT : scopes\n  INSTALL {\n    string scope\n    string installPath\n  }',
+    fixCommit: '436c50ed',
+    pr: 2245,
+    render: 'ascii',
+    lookFor:
+      'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL and one straight vertical edge joins them.',
+  },
+  {
+    id: 'c4-empty-boundary-frame-width',
+    title: 'A C4 empty boundary frame ran past the right edge of the SVG',
+    symptom:
+      'An empty deployment node got its default 216px width after the diagram width was measured, so its frame was drawn partly outside the SVG and clipped at the edge.',
+    source:
+      'C4Deployment\n  Deployment_Node(dc, \"DC\", \"Ubuntu\") {\n    Container(app, \"App\", \"Java\")\n  }\n  Deployment_Node(empty, \"Empty\", \"x\")',
+    fixCommit: 'fa02ffe3a',
+    pr: 1965,
+    render: 'svg',
+    lookFor:
+      'Before: the `Empty` frame is cut off at the right edge. After: the SVG is wider and the frame is fully drawn. mermaid 12.2.0 rejects this input, so this shows only what our output does.',
+  },
+  {
+    id: 'elk-invalid-hitboxes-wide-labels',
+    title: 'Disconnected pairs with wide edge labels crashed the layout',
+    symptom:
+      'ELK’s post-compaction pass threw `Invalid hitboxes for scanline constraint calculation` when a graph had two or more components with wide inline edge labels, so nothing rendered. The layout now retries once without post-compaction.',
+    source:
+      'flowchart TD\n  A -->|a longer label here| B\n  C -->|a longer label here| D\n  E -->|a longer label here| F\n  G -->|a longer label here| H',
+    fixCommit: 'e63ed989d',
+    pr: 1976,
+    render: 'svg',
+    lookFor:
+      'Before: an error instead of a diagram. After: four labelled pairs.',
+  },
+  {
+    id: 'ascii-fanout-arrowhead-column',
+    title: 'An ASCII fan-out arrowhead sat one column off its stem',
+    symptom:
+      'Under an even-width box, the bundled arrowhead took its column from the box’s own centre while the stem was drawn in the middle grid column’s centre, so the head landed one column right of the line feeding it.',
+    source:
+      'flowchart TD\n    A --> B\n    A -->|no| C\n    C --> D\n    D --> E\n    D --> F\n    F --> G\n    G --> H\n    G --> I',
+    fixCommit: 'd028603db',
+    pr: 1989,
+    render: 'ascii',
+    lookFor:
+      'Before: the `▼` under `G` is shifted one column from the vertical line above it. After: head and stem line up.',
+  },
+  {
+    id: 'node-text-contrast-on-custom-fill',
+    title: 'Node text was unreadable on a dark classDef/style fill',
+    symptom:
+      'A node with a custom `fill` but no explicit `color` always got the theme’s text colour, so dark text could land on a dark fill (and light text on a light one).',
+    source:
+      'flowchart LR\n  A[Dark fill] --> B[Light fill]\n  classDef dark fill:#1e293b\n  classDef light fill:#fde68a\n  class A dark\n  class B light',
+    fixCommit: 'f2e76bb0',
+    pr: 76,
+    render: 'svg',
+    lookFor:
+      'Before: both labels use the same theme text colour, so one of them is hard to read. After: each label is black or white, picked from its own fill. An explicit `color` still wins.',
+    upstreamIssues: [115],
+  },
+  {
+    id: 'svg-coordinates-two-decimals',
+    title: 'SVG coordinates carried float noise like 142.38427299999998',
+    symptom:
+      'Layout and curve maths wrote full floating-point precision into every coordinate, bloating the SVG for no visible benefit. Numbers are now rounded to 2 decimal places and a non-finite value is written as 0, not `NaN`.',
+    source:
+      'graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Do thing]\n  B -->|No| D[Other thing]\n  C --> E((End))\n  D --> E',
+    fixCommit: '5cc12f3f',
+    pr: 1163,
+    render: 'svg',
+    excerpt: { from: '<polyline', to: '/>' },
+    lookFor:
+      'The picture is the same, so this shows the first edge’s markup. Before: `points` carries long decimal tails. After: at most 2 decimal places.',
+    upstreamIssues: [77],
+  },
+  {
+    id: 'ascii-longest-path-layering',
+    title: 'ASCII put a node in the row of the parent that placed it first',
+    symptom:
+      'A node took the level of whichever parent placed it first and was never revisited, so with `A --> D` and `B --> D` it landed beside `B` and `B --> D` ran sideways. Nodes are now ranked by longest path, with back edges ignored, as mermaid does.',
+    source:
+      'graph TD\nA -->|x| B\nB -->|long label| A\nA -->|long label| C\nC -->|ab| A\nB -->|mid| D\nA -->|ab| D\nD -->|x| A',
+    fixCommit: '7a4925a3',
+    pr: 1345,
+    render: 'ascii',
+    lookFor:
+      'Before: `D` sits in the same row as `B`. After: `D` is below `B` and `B --> D` drops straight down.',
+    upstreamIssues: [69],
+  },
+  {
+    id: 'labeled-sink-layer',
+    title: 'Leaves of labelled edges drifted a layer past their siblings',
+    symptom:
+      'With inline edge labels, ELK’s post-compaction slid a sink into the gap the label layer leaves, one layer past its siblings. mermaid keeps the sink level with them.',
+    source:
+      'graph TD\n  A{Is it raining?} -->|Yes| B{Have umbrella?}\n  A -->|No| C([Go outside])\n  B -->|Yes| D([Go with umbrella])\n  B -->|No| E{Is it heavy?}\n  E -->|Yes| F([Stay inside])\n  E -->|No| G([Run for it])',
+    fixCommit: '97586aa0',
+    pr: 2018,
+    render: 'svg',
+    lookFor:
+      'Before: `Go outside` hangs below `Have umbrella?`. After: it sits level with it, as in mermaid 12.1.0 and 12.2.0.',
+  },
+  {
+    id: 'class-balanced-placement',
+    title: 'A class diagram’s parent was not centred over its children',
+    symptom:
+      'Class layouts did not set ELK’s balanced node placement, which flowcharts and ER diagrams already did, so a parent sat off-centre from its children.',
+    source:
+      'classDiagram\n  class Animal {\n    +String name\n    +eat() void\n  }\n  class Dog {\n    +String breed\n    +bark() void\n  }\n  class Cat {\n    +bool isIndoor\n    +meow() void\n  }\n  Animal <|-- Dog\n  Animal <|-- Cat',
+    fixCommit: '43a96c11',
+    pr: 2023,
+    render: 'svg',
+    lookFor:
+      'Before: `Animal` is off to one side. After: it is centred above `Dog` and `Cat`.',
+  },
+  {
+    id: 'ascii-lane-faces-five-parallel',
+    title: 'Five or more parallel ASCII edges merged their arrowheads',
+    symptom:
+      'Each parallel edge gets its own cell on a node’s face, but a default box face has three cells, so past that the extra edges shared one arrowhead. The face is now lengthened to one cell per edge, and cluster exits handle six siblings.',
+    source:
+      'flowchart TD\n  A -->|first| B\n  A -->|second| B\n  A -->|third| B\n  A -->|fourth| B\n  A -->|fifth| B',
+    fixCommit: '44dc4754',
+    pr: 2080,
+    render: 'ascii',
+    lookFor:
+      'Before: fewer arrowheads than edges. After: one arrowhead per labelled edge.',
+  },
+  {
+    id: 'ascii-lane-faces-forward-and-back',
+    title: 'ASCII forward and back edge groups shared faces and merged heads',
+    symptom:
+      'In TD/BT, the forward and back edge groups between one pair use the same side faces but were sized separately, so with more than three edges in all two arrowheads merged. A lone cluster exit group and eight or more cluster siblings had the same problem.',
+    source:
+      'flowchart TD\n  A -->|f1| B\n  A -->|f2| B\n  A -->|f3| B\n  A -->|f4| B\n  B -->|b1| A\n  B -->|b2| A',
+    fixCommit: '72e0eb78',
+    pr: 2093,
+    render: 'ascii',
+    lookFor:
+      'Before: two arrowheads merge on a shared face. After: each of the six edges ends in its own head.',
+  },
+  {
+    id: 'ascii-back-edges-flow-faces',
+    title: 'ASCII back-edges looped round the side faces, unlike mermaid',
+    symptom:
+      'A TD back-edge left and re-entered a node’s right face (LR: the bottom face). mermaid 12.1.0 draws it on the flow-axis faces: out of the source’s top, up a lane beside the column, into the target’s bottom, with its own port and arrowhead.',
+    source: 'flowchart TD\n  a --> b\n  b --> c\n  c --> a',
+    fixCommit: '3dea4e87',
+    pr: 2137,
+    render: 'ascii',
+    lookFor:
+      'Before: the back-edge hooks round the right side into `a`’s right face. After: it leaves `c`’s top and enters `a`’s bottom.',
+  },
+  {
+    id: 'ascii-feedback-edge-sibling-order',
+    title:
+      'ASCII subgraph order and feedback edges followed mermaid 11, not 12',
+    symptom:
+      'In the CI/CD pipeline the ASCII layout put `Fix & Retry` at the very bottom, below `QA Approved?`; mermaid 12.1.0 and 12.2.0 draw it beside `Build Image`. Sibling subgraphs tied by a shared parent came out in reversed order (West left of East); mermaid 12 keeps declaration order.',
+    source:
+      'graph TD\n  subgraph ci [CI Pipeline]\n    A[Push Code] --> B{Tests Pass?}\n    B -->|Yes| C[Build Image]\n    B -->|No| D[Fix & Retry]\n    D -.-> A\n  end\n  C --> E([Deploy Staging])\n  E --> F{QA Approved?}\n  F -->|Yes| G((Production))\n  F -->|No| D',
+    fixCommit: 'b55b7fae',
+    pr: 2148,
+    render: 'ascii',
+    lookFor:
+      'Before: `Fix & Retry` hangs below `QA Approved?`. After: it sits beside `Build Image`, and the QA `No` edge rises into it.',
+  },
+  {
+    id: 'er-multi-key-attributes',
+    title: 'An ER attribute with two keys lost one of them',
+    symptom:
+      'An attribute written `PK, FK` showed only `FK`, and `PK,FK` showed no key at all. Mermaid shows `PK,FK` for both spellings.',
+    source:
+      'erDiagram\n  T {\n    string a PK, FK "c"\n    string b PK,FK\n    string d PK\n  }',
+    fixCommit: '63236dbb',
+    pr: 2125,
+    render: 'svg',
+    lookFor:
+      'Before: row `a` shows only `FK` and row `b` shows no key. After: both show `PK,FK`.',
+  },
+  {
+    id: 'er-style-classdef',
+    title: 'ER style, classDef and class were ignored',
+    symptom:
+      'An ER entity given `style`, `classDef` plus `class`, or the `:::` shorthand rendered unstyled, although mermaid paints it.',
+    source:
+      'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  classDef hot fill:#fecaca,stroke:#dc2626\n  class ORDER hot\n  style CUSTOMER fill:#dbeafe,stroke:#2563eb',
+    fixCommit: '10ce9a2a',
+    pr: 2132,
+    render: 'svg',
+    lookFor:
+      'Before: both entities use the theme colours. After: `CUSTOMER` is blue and `ORDER` is red.',
+  },
+  {
+    id: 'er-ascii-crossings-labels',
+    title:
+      'ER ASCII edges crossed without a junction and labels were ambiguous',
+    symptom:
+      'In ASCII, crossing ER edges drew no junction, a label could sit between two verticals or against another edge’s corner, and an edge could run along its box’s border.',
+    source:
+      'erDiagram\n  ORDER ||--|{ LINE_ITEM : contains\n  ORDER ||..o{ SHIPMENT : ships-via\n  PRODUCT ||--o{ LINE_ITEM : includes\n  PRODUCT ||..o{ REVIEW : receives',
+    fixCommit: '2615a669',
+    pr: 2142,
+    render: 'ascii',
+    lookFor:
+      'Before: a plain `│` where two edges cross and labels beside two lines. After: a `┼` at the crossing and each label on or beside its own edge.',
+  },
+  {
+    id: 'ascii-face-capacity-loops',
+    title: 'ASCII dense duplicate edges and self-loops shared one cell',
+    symptom:
+      'A node’s side face was sized for reciprocal and duplicate edges only. Self-loop ends and back-edges also take a cell, so the face came out short and two edge ends shared a cell: merged arrowheads and `├`/`┤` tick marks.',
+    source:
+      'flowchart RL\n  n0["n0"]\n  n1["n1"]\n  n1 --> n0\n  n0 --> n1\n  n1 --> n0\n  n1 --> n0\n  n1 --> n1\n  n0 --> n0\n  n0 --> n1\n  n1 --> n0\n  n0 --> n1\n  n0 --> n1',
+    fixCommit: '12c90faa',
+    pr: 2186,
+    render: 'ascii',
+    lookFor:
+      'Before: arrowheads merge and tick marks are lost where edges share a cell. After: each edge end has its own cell.',
+  },
+  {
+    id: 'sequence-rect-color',
+    title: 'Sequence `rect <color>` highlights were drawn as labelled frames',
+    symptom:
+      'The colour after `rect` was parsed as a block label, so it was never applied and its text was printed in a frame header (`rect [rgb(255,0,0)]`) instead of painting the background.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  rect rgba(200,150,255,0.5)\n    A->>B: hi\n    B-->>A: ok\n  end\n  A->>B: after',
+    fixCommit: 'eae88b98',
+    pr: 2241,
+    render: 'svg',
+    lookFor:
+      'Before: a grey frame with the colour text in its header tab. After: a purple background behind the two messages, with no frame.',
+  },
 ]

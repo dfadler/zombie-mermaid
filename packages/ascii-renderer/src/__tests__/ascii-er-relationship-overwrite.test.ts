@@ -31,6 +31,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // the line-vs-label collision from any label-vs-label collision.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac
         A ||--o{ D : helloworld
@@ -48,6 +49,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // guard, B-E's label characters land on top of the tail of A-D's label.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac
         A ||--o{ D : longlabelhere
@@ -67,6 +69,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // doesn't corrupt B's own header text.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac
         A ||--o{ D : helloworld
@@ -101,6 +104,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // never partially splice into whatever's already at its natural row.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER ||--o{ POST : writes
         USER ||--o{ COMMENT : authors
         POST ||--o{ COMMENT : has
@@ -126,6 +130,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // vanish.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER ||--o{ POST : writes
         USER ||--o{ COMMENT : authors
         POST ||--o{ COMMENT : has
@@ -150,6 +155,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // it sits immediately next to that marker instead.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER {
           int id PK
           string username UK
@@ -192,6 +198,10 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // which in turn changes where "tagged-with"'s jog (and so its label)
     // lands. The label is preceded by the jog's own corner glyph ('┌ ')
     // rather than sitting flush after the marker on the same row.
+    // (Two-row markers, #2083, leave the jog row above the label row, so
+    // the label is now preceded by the vertical line the jog turned into.)
+    // (#2112: the label now sits on its own jog, between the jog's corner
+    // and its line, so it can only belong to that edge.)
     expect(row.slice(idx - 2, idx)).toBe('┌ ')
     const cornerCol = idx - 2
     // The marker sits at or adjacent to the corner's column, connected by
@@ -205,9 +215,9 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
       labelRowIdx + 2,
       labelRowIdx + 3,
     ].filter((r) => r < lines.length)
-    const hasAlignedMarker = nearbyRows.some((r) =>
-      lines[r]!.slice(cornerCol - 1, cornerCol + 2).includes('○╟'),
-    )
+    const hasAlignedMarker =
+      nearbyRows.some((r) => lines[r]![cornerCol] === '○') &&
+      nearbyRows.some((r) => lines[r]![cornerCol] === '╧')
     expect(hasAlignedMarker).toBe(true)
   })
 
@@ -220,6 +230,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // label loop.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : early
         A ||--o{ C : longlonglabelhere
         A ||--o{ D : y
@@ -255,6 +266,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // leaving an open-looking, broken box. Border cells are protected too.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         ORDER ||--|{ LINE_ITEM : contains
         ORDER ||..o{ SHIPMENT : ships-via
         PRODUCT ||--o{ LINE_ITEM : includes
@@ -285,6 +297,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // actual corruption at a glance.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER {
           int id PK
           string username UK
@@ -335,6 +348,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // crossing rather than picking up ships-via's dash.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         ORDER ||--|{ LINE_ITEM : contains
         ORDER ||..o{ SHIPMENT : ships-via
         PRODUCT ||--o{ LINE_ITEM : includes
@@ -344,26 +358,28 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
 
     const lines = ascii.split('\n')
     // ships-via's detour fill sits one row below LINE_ITEM's own
-    // zero-many marker ('╢○', for "includes") — anchoring on that marker
+    // zero-many marker ('○╤', for "includes") — anchoring on that marker
     // (unambiguous: it's only ever drawn once, at LINE_ITEM's own bottom
     // edge) rather than searching for a '└...┘' corner pair directly,
     // since every entity box's own border also has solid corners and a
     // naive substring search can match those instead (they're a different
     // row, but a row can contain more than one corner pair).
-    const markerRowIdx = lines.findIndex((l) => l.includes('╢○'))
+    const markerRowIdx = lines.findIndex((l) => l.includes('╤'))
     expect(markerRowIdx).toBeGreaterThanOrEqual(0)
-    const detourRow = lines[markerRowIdx + 1]!
+    // The marker is two rows ('╤' against the box, '○' below it, #2083);
+    // the detour runs on the row after the circle.
+    const detourRow = lines[markerRowIdx + 2]!
     const detourStart = detourRow.indexOf('└╌')
     const detourEnd = detourRow.indexOf('╌┘') + 1
     expect(detourStart).toBeGreaterThanOrEqual(0)
 
-    // includes' own vertical stem (solid '│') crosses this same row exactly
-    // once, between the detour's two corners — that crossing cell must
-    // read as solid, not dashed.
-    const crossingIdx = detourRow.indexOf('│', detourStart)
+    // includes' own vertical stem (solid) crosses this same row exactly
+    // once, between the detour's two corners. Since #2112 the crossing cell
+    // is a '┼' junction, which carries neither style: it can't read as the
+    // dashed line having been interrupted or the solid one turned dashed.
+    const crossingIdx = detourRow.indexOf('┼', detourStart)
     expect(crossingIdx).toBeGreaterThan(detourStart)
     expect(crossingIdx).toBeLessThan(detourEnd)
-    expect(detourRow[crossingIdx]).toBe('│')
 
     // And the fill on either side of that crossing is still ships-via's own
     // dashed glyph — the fix only protects the one style-conflicting cell,
@@ -397,6 +413,7 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // character breaking it.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         ORDER ||--|{ LINE_ITEM : contains
         ORDER ||--o{ SHIPMENT : ships-via
         PRODUCT ||..o{ LINE_ITEM : includes
@@ -412,11 +429,13 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // fill itself now solid too (styles swapped for this test), a naive
     // substring search matches ORDER's own box border instead of the
     // detour row.
-    const markerRowIdx = lines.findIndex((l) => l.includes('╢○'))
+    const markerRowIdx = lines.findIndex((l) => l.includes('╤'))
     expect(markerRowIdx).toBeGreaterThanOrEqual(0)
-    const detourRow = lines[markerRowIdx + 1]!
-    const detourStart = detourRow.indexOf('└─') // index of the '└' corner
-    const detourEnd = detourRow.indexOf('─┘') + 1 // index of the '┘' corner
+    // The marker is two rows ('╤' against the box, '○' below it, #2083);
+    // the detour runs on the row after the circle.
+    const detourRow = lines[markerRowIdx + 2]!
+    const detourStart = detourRow.indexOf('└─') // Index of the '└' corner
+    const detourEnd = detourRow.indexOf('─┘') + 1 // Index of the '┘' corner
     expect(detourStart).toBeGreaterThanOrEqual(0)
     // Everything strictly between the two corners.
     const fill = detourRow.slice(detourStart + 1, detourEnd)
@@ -424,9 +443,10 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // No dashed glyph ('┊', includes' own now-dashed vertical stem's
     // style) may appear anywhere inside the solid detour fill.
     expect(fill).not.toContain('┊')
-    // And the fill is unbroken solid line across its whole span (not, say,
-    // silently dropped to a blank gap instead of dashed — the crossing
-    // cell must still carry a line glyph, just the solid one).
-    expect(fill).toBe('─'.repeat(fill.length))
+    // And the fill is unbroken solid line across its whole span except the
+    // one '┼' junction where includes' stem crosses it (#2112): not silently
+    // dropped to a blank gap, and not a plain '│' that would cut the line.
+    expect(fill.replace('┼', '─')).toBe('─'.repeat(fill.length))
+    expect(fill.match(/┼/g)).toHaveLength(1)
   })
 })

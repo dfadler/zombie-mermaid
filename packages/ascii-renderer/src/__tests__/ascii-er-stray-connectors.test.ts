@@ -21,6 +21,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   it('insets only the colliding "one" marker on a horizontal connector, leaving the non-colliding "zero-many" marker flush (Unicode) — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none' },
     )
@@ -44,6 +45,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   it('insets only the colliding "one" marker on a horizontal connector, leaving the non-colliding "zero-many" marker flush (ASCII) — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none', useAscii: true },
     )
@@ -55,6 +57,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   it('leaves both markers flush on a horizontal connector when neither collides with the border', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER }o--o{ ORDER : has`,
       { colorMode: 'none' },
     )
@@ -74,22 +77,24 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
     // sqrt-based row limit of 2 per row wrap C onto its own row below A/B.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac`,
       { colorMode: 'none' },
     )
     const lines = ascii.split('\n')
 
-    // The zero-many marker for the A→C relationship ("○╟") must sit on the
-    // row immediately before C's box starts — not with a leftover plain
+    // The zero-many marker for the A→C relationship (a two-row marker since
+    // #2083: '○' on the line, then '╧' against the box) must end on the row
+    // immediately before C's box starts — not with a leftover plain
     // "│" line-fill row (visually indistinguishable from a second "one"
     // tick) still separating it from the border. Before the fix, that
-    // leftover row rendered as an extra stray "│" directly under "○╟".
-    // Match only the *vertical* marker's own row — a bare "○╟" with nothing
-    // but leading whitespace before it — not the A→B horizontal
-    // relationship's identical-looking marker earlier in the output.
-    const markerLineIdx = lines.findIndex((l) => /^\s*○╟\s*$/.test(l))
+    // leftover row rendered as an extra stray "│" directly under the marker.
+    // Match only the *vertical* marker's own row — a bare "╧" with nothing
+    // but leading whitespace around it — not the A→B horizontal marker.
+    const markerLineIdx = lines.findIndex((l) => /^\s*╧\s*$/.test(l))
     expect(markerLineIdx).toBeGreaterThan(-1)
+    expect(lines[markerLineIdx - 1]).toMatch(/^\s*○\s*$/)
     const nextLine = lines[markerLineIdx + 1]
     expect(nextLine).toBeDefined()
     expect(nextLine!.trimStart().startsWith('┌')).toBe(true)
@@ -109,6 +114,7 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   it('insets the "zero-or-one" marker from the entity border on a horizontal connector, since it collides on both sides — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         C |o--|| D : owns`,
       { colorMode: 'none' },
     )
@@ -128,19 +134,22 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
     // involved, unlike the horizontal case immediately above.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A |o--|| C : owns`,
       { colorMode: 'none' },
     )
     const lines = ascii.split('\n')
-    // A's own end of the A→C relationship ("│○") must sit on the row
+    // A's own end of the A→C relationship ('┼' against the border, then
+    // '○' on the line one row further, #2083) must start on the row
     // immediately after A's box bottom border — not with a leftover blank
     // row still separating it from the border.
     const aBoxBottomIdx = lines.findIndex((l) => l.includes('└───┘ ab'))
     expect(aBoxBottomIdx).toBeGreaterThan(-1)
     const markerLine = lines[aBoxBottomIdx + 1]
     expect(markerLine).toBeDefined()
-    expect(markerLine).toContain('│○')
+    expect(markerLine).toMatch(/^\s*┼\s*$/)
+    expect(lines[aBoxBottomIdx + 2]).toMatch(/^\s*○\s*$/)
   })
 })
 
@@ -152,6 +161,7 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
     // identical row and overwrote each other.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : rel1
         B ||--o{ C : rel2
         A ||--o{ C : rel3`,
@@ -177,6 +187,7 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
     // e.g. "appears_in" rendered as "appear│_in".
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places
         ORDER ||--|{ LINE_ITEM : contains
         PRODUCT ||--o{ LINE_ITEM : appears_in
@@ -211,6 +222,7 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
     // no longer read as a single spliced word.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         DDDD ||--o{ A : x0
         BB ||--o{ A : l1
         DDDD ||--o{ CCC : longerlabelhere2`,
@@ -232,6 +244,7 @@ describe('ASCII ER — compact gutters between disconnected components (issue #3
   it('does not leave a large blank gutter between two small disconnected components', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         CUSTOMER ||--o{ ORDER : places
         PRODUCT ||--o{ LINE_ITEM : appears_in`,
       { colorMode: 'none' },
@@ -277,14 +290,14 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
 
   it('scans downward when the midpoint is occupied', () => {
     const canvas = mkCanvas(20, 20)
-    occupyRow(canvas, 3, 0, 10) // midpoint occupied
+    occupyRow(canvas, 3, 0, 10) // Midpoint occupied
     expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(4)
   })
 
   it('scans upward when the midpoint and every row below it are occupied', () => {
     const canvas = mkCanvas(20, 20)
-    occupyRow(canvas, 3, 0, 10) // midpoint
-    occupyRow(canvas, 4, 0, 10) // one below
+    occupyRow(canvas, 3, 0, 10) // Midpoint
+    occupyRow(canvas, 4, 0, 10) // One below
     // row 2 (one above the midpoint) stays free
     expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(2)
   })
@@ -297,7 +310,7 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
 
   it('ignores the skipped column when checking occupancy', () => {
     const canvas = mkCanvas(20, 20)
-    write(canvas, 5, 3, '#') // only the skipped column is occupied
+    write(canvas, 5, 3, '#') // Only the skipped column is occupied
     expect(isRowFree(canvas, 3, 0, 10, 5)).toBe(true)
     expect(isRowFree(canvas, 3, 0, 10, -1)).toBe(false)
   })
@@ -308,9 +321,9 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
   // grows the canvas on write (see increaseSize at the label call sites),
   // so a not-yet-allocated column is "not drawn", not "occupied".
   it('treats a column past the canvas width as free, not occupied', () => {
-    const canvas = mkCanvas(5, 5) // columns 0..5 only
+    const canvas = mkCanvas(5, 5) // Columns 0..5 only
     expect(isRowFree(canvas, 2, 0, 10, -1)).toBe(true)
-    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(3) // still the midpoint
+    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(3) // Still the midpoint
   })
 
   // CodeRabbit review on PR #390: renderErAscii's jog-row selection checked
@@ -321,8 +334,8 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
   // label span falls entirely outside that checked range.
   it('rejects a midpoint row whose label span (right of the jog range) is occupied', () => {
     const canvas = mkCanvas(30, 20)
-    const lineX = 10 // upper entity's center column
-    const lowerCX = 4 // lower entity's center column — left of lineX: a leftward jog
+    const lineX = 10 // Upper entity's center column
+    const lowerCX = 4 // Lower entity's center column — left of lineX: a leftward jog
     const lx = Math.min(lineX, lowerCX)
     const rx = Math.max(lineX, lowerCX) // === lineX; the label starts past this
     const labelEndX = lineX + 1 + 'some label'.length

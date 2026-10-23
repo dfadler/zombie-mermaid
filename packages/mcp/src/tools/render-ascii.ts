@@ -29,6 +29,13 @@ export const renderAsciiInputShape = {
       'true = plain ASCII characters (+, -, |, >); false/unset = Unicode ' +
         'box-drawing characters (┌, ─, │, ►). Default: false.',
     ),
+  profile: z
+    .enum(['markdown'])
+    .optional()
+    .describe(
+      "'markdown' = plain ASCII characters for pasting into issues, commits " +
+        'and fenced blocks (defaults useAscii to true; explicit useAscii wins).',
+    ),
   paddingX: z
     .number()
     .int()
@@ -58,9 +65,25 @@ export const renderAsciiInputShape = {
 export interface RenderAsciiToolArgs {
   diagram: string
   useAscii?: boolean | undefined
+  profile?: 'markdown' | undefined
   paddingX?: number | undefined
   paddingY?: number | undefined
   boxBorderPadding?: number | undefined
+}
+
+/** The options `renderAsciiHandler` renders with; shared with the worker wrapper. */
+export function asciiRenderOptions(
+  input: RenderAsciiToolArgs,
+): AsciiRenderOptions {
+  return {
+    useAscii: input.useAscii,
+    profile: input.profile,
+    paddingX: input.paddingX,
+    paddingY: input.paddingY,
+    boxBorderPadding: input.boxBorderPadding,
+    colorMode: 'none',
+    limits: MCP_LIMITS,
+  }
 }
 
 /**
@@ -78,15 +101,7 @@ export interface RenderAsciiToolArgs {
  */
 export function renderAsciiHandler(input: RenderAsciiToolArgs): CallToolResult {
   try {
-    const options: AsciiRenderOptions = {
-      useAscii: input.useAscii,
-      paddingX: input.paddingX,
-      paddingY: input.paddingY,
-      boxBorderPadding: input.boxBorderPadding,
-      colorMode: 'none',
-      limits: MCP_LIMITS,
-    }
-    const ascii = renderMermaidASCII(input.diagram, options)
+    const ascii = renderMermaidASCII(input.diagram, asciiRenderOptions(input))
     return { content: [{ type: 'text', text: ascii }] }
   } catch (err) {
     return renderErrorResult(

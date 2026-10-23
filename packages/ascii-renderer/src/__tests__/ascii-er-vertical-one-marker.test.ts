@@ -40,6 +40,7 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // more line".
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac`,
       { colorMode: 'none' },
@@ -60,13 +61,16 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // severs the line — see the header comment above).
     expect(lines[markerLineIndex]).not.toMatch(/^\s*[│─]\s*$/)
 
-    // The line continues unbroken below the marker, through the label row.
-    expect(lines[markerLineIndex + 1]).toContain('│ ac')
+    // The line continues below the marker, broken only by the label sitting
+    // on it (#2253).
+    expect(lines[markerLineIndex + 1]).toMatch(/^\s*│/)
+    expect(ascii).toMatch(/^\s*ac\s*$/m)
   })
 
   it('renders distinct ticks at both ends when both entities have "one" cardinality', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--|| C : ac`,
       { colorMode: 'none' },
@@ -85,7 +89,9 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // the plain '│' line-fill character.
     expect(lines[upperTick - 1]).toContain('└───┘')
     expect(lines[lowerTick + 1]).toContain('┌───┐')
+    // (the row holding the label is the one place the line is broken, #2253)
     for (let i = upperTick + 1; i < lowerTick; i++) {
+      if (/^\s*ac\s*$/.test(lines[i]!)) continue
       expect(lines[i]).toMatch(/^\s*│/)
     }
   })
@@ -93,6 +99,7 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
   it('renders the ASCII-mode equivalent ("+" instead of "|") for the vertical "one" marker', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         A ||--o{ C : ac`,
       { colorMode: 'none', useAscii: true },
@@ -105,6 +112,7 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     // an earlier fix attempt used a bare '-', which visually severs the
     // line (no vertical extent) — see the header comment above.
     expect(lines[markerLineIndex]).not.toMatch(/^\s*[|-]\s*$/)
-    expect(lines[markerLineIndex + 1]).toContain('| ac')
+    expect(lines[markerLineIndex + 1]).toMatch(/^\s*\|/)
+    expect(ascii).toMatch(/^\s*ac\s*$/m)
   })
 })

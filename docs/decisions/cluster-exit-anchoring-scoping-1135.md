@@ -1,6 +1,8 @@
 # Scoping: consistent cluster-boundary edge exits in the ASCII renderer
 
-Status: **scoping note, not a decision.** Written for
+Status: implemented
+
+Scoping note, not a decision. Written for
 [#1135](https://github.com/dfadler/zombie-mermaid/issues/1135). No code
 under `packages/ascii-renderer/src/**` was changed to produce this.
 

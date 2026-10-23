@@ -63,6 +63,8 @@ interface Token {
   text: string
   /** 1-based source line the token starts on. */
   line: number
+  /** 1-based column (code unit offset in the line) the token starts at. */
+  column: number
 }
 
 /**
@@ -134,11 +136,13 @@ function lineError(
   lines: readonly string[],
   line: number,
   message: string,
+  column?: number,
 ): Error {
   /* v8 ignore next -- every caller passes a line inside `lines` */
   const source = (lines[line - 1] ?? '').trim()
   return new MermaidParseError(
     `Line ${line}: ${message} in "${source}". ${SYNTAX_HELP}`,
+    { diagramType: 'pie', column },
   )
 }
 
@@ -166,6 +170,7 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
   const tokens: Token[] = []
   let pos = 0
   let line = 1
+  let lineStart = 0
 
   while (pos < source.length) {
     let matched = false
@@ -174,14 +179,22 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
       const match = pattern.exec(source)
       if (match === null || match[0].length === 0) continue
       const text = match[0]
-      if (kind !== null) tokens.push({ kind, text, line })
+      if (kind !== null)
+        tokens.push({ kind, text, line, column: pos - lineStart + 1 })
       line += countNewlines(text)
       pos += text.length
+      const nl = text.lastIndexOf('\n')
+      if (nl !== -1) lineStart = pos - text.length + nl + 1
       matched = true
       break
     }
     if (!matched) {
-      throw lineError(lines, line, lexHint(source, pos, tokens.at(-1)))
+      throw lineError(
+        lines,
+        line,
+        lexHint(source, pos, tokens.at(-1)),
+        pos - lineStart + 1,
+      )
     }
   }
 
@@ -301,7 +314,7 @@ export function parsePieChart(text: string): PieChart {
     } else if (token.kind === 'PIE') {
       message += '; the "pie" header may only appear once'
     }
-    return lineError(lines, token.line, message)
+    return lineError(lines, token.line, message, token.column)
   }
 
   /** Statements end at a newline or the end of the text (Mermaid's `EOL`). */
@@ -381,6 +394,7 @@ export function parsePieChart(text: string): PieChart {
     if (value < 0) {
       throw new MermaidParseError(
         `Line ${line}: "${label}" has invalid value: ${value}. Negative values are not allowed in pie charts. All slice values must be >= 0.`,
+        { diagramType: 'pie' },
       )
     }
     if (seen.has(label)) continue
@@ -395,11 +409,13 @@ export function parsePieChart(text: string): PieChart {
     pieDonutHole,
     pieLegendPosition,
     pieHighlightSlice,
+    themeVariables,
   } = extractInitConfig(text.split(/\r\n?|\n/))
   if (pieTextPosition !== undefined) chart.textPosition = pieTextPosition
   if (pieDonutHole !== undefined) chart.donutHole = pieDonutHole
   if (pieLegendPosition !== undefined) chart.legendPosition = pieLegendPosition
   if (pieHighlightSlice !== undefined) chart.highlightSlice = pieHighlightSlice
+  if (themeVariables?.pieColors) chart.sliceColors = themeVariables.pieColors
   if (title) chart.title = title
   if (accTitle) chart.accTitle = accTitle
   if (accDescr) chart.accDescr = accDescr

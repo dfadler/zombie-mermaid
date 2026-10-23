@@ -18,7 +18,7 @@
  *
  * `E`'s children were placed in the order its outgoing edges were declared
  * (`E --> A` before `E --> C`), putting `us-east` on the left and `us-west`
- * on the right. Real mermaid.js (verified against its bundled
+ * on the right. Real mermaid.js (mermaid 11, verified against its bundled
  * flowDb.getData() — see the comment on `compareBySiblingSubgraphOrder` in
  * src/ascii/grid.ts, and the matching comment in
  * packages/svg-renderer/src/layout-engine/to-elk.ts's `mermaidToElk`) instead orders sibling
@@ -32,6 +32,9 @@
  * cross-axis order rather than raw declaration order) so a child's
  * column/row stays aligned with its own parent once sibling order can
  * diverge from declaration order.
+ *
+ * Mermaid 12 keeps declaration order for siblings tied by an edge or a
+ * shared outside node (#2111); the tests below pin it.
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
@@ -77,11 +80,14 @@ describe('ASCII nested-subgraph sibling left-right order matches mermaid.js (#44
   E[Load Balancer] --> A
   E --> C`
 
-  it('places us-west (declared second) left of us-east (declared first)', () => {
+  // #2111: mermaid 12 (ELK) keeps declaration order for siblings tied by an
+  // edge or a shared outside node (`E --> A`, `E --> C`); mermaid 11's dagre
+  // reversed all of them. Checked on mermaid 12.1.0 and 12.2.0.
+  it('places us-east (declared first) left of us-west when a shared node ties them', () => {
     const graph = layoutFlowchart(repro)
     const a = requireGridCoord(findNode(graph, 'A')) // us-east member
     const c = requireGridCoord(findNode(graph, 'C')) // us-west member
-    expect(c.x).toBeLessThan(a.x)
+    expect(a.x).toBeLessThan(c.x)
   })
 
   it('keeps each nested subgraph member aligned in the same column as its sibling', () => {
@@ -94,7 +100,7 @@ describe('ASCII nested-subgraph sibling left-right order matches mermaid.js (#44
     expect(d.x).toBe(c.x) // C --> D stay in us-west's column
   })
 
-  it('renders "US West" before "US East" in the ASCII output', () => {
+  it('renders "US East" before "US West" in the ASCII output', () => {
     // The label may wrap around a routed edge line (e.g. "US East│Region"),
     // so match on the unambiguous "US West"/"US East" prefix rather than
     // the full two-word label.
@@ -103,6 +109,6 @@ describe('ASCII nested-subgraph sibling left-right order matches mermaid.js (#44
     const eastIdx = output.indexOf('US East')
     expect(westIdx).toBeGreaterThan(-1)
     expect(eastIdx).toBeGreaterThan(-1)
-    expect(westIdx).toBeLessThan(eastIdx)
+    expect(eastIdx).toBeLessThan(westIdx)
   })
 })

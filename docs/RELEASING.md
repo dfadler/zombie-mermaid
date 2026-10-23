@@ -45,7 +45,7 @@ lints the first rule. Majors are batched: see "Batching majors" below.
 a PR merges) and does one of two things:
 
 1. **Pending changesets exist** — it opens (or updates) a `chore: version
-packages` pull request. That PR contains the version bump in
+   packages` pull request. That PR contains the version bump in
    `package.json` and the generated `CHANGELOG.md` entries, computed from
    all pending `.changeset/*.md` files, which it deletes.
 2. **No pending changesets, and the previous push was that Version PR being
@@ -56,7 +56,7 @@ packages` pull request. That PR contains the version bump in
      publishing, with [provenance](https://docs.npmjs.com/generating-provenance-statements)
      attached — see `publishConfig.provenance` in `package.json`)
    - creates a git tag for that package's release, named `<package
-name>@<version>` (e.g. `zombie-mermaid@2.2.5`,
+     name>@<version>` (e.g. `zombie-mermaid@2.2.5`,
      `@zombie-mermaid/core@2.2.5`) — not a single shared `vX.Y.Z` tag
    - creates a GitHub Release from that package's changelog entry
      (`create-github-releases: true` in the workflow)
@@ -244,3 +244,20 @@ The published package doesn't bundle `elkjs`; consumers supply it with `register
 - The actual publish step (`pnpm changeset publish`) should generally not be
   run locally — it's meant to run in CI, immediately after the Version PR
   merges, using the OIDC credential minted for that run.
+
+## Supply-chain signals (Scorecard, signed assets, SBOM)
+
+`.github/workflows/scorecard.yml` runs OpenSSF Scorecard weekly and on pushes to
+`main`; the score is informational and not gated on. After each release,
+`.github/workflows/release-assets.yml` attaches `zombie-mermaid-<v>.tgz`, a
+CycloneDX SBOM (`pnpm sbom`) and a Sigstore bundle for each (`*.sigstore.json`) to
+the GitHub release. Re-run it for a tag with `workflow_dispatch`. npm provenance
+(`publishConfig.provenance`) is separate and does not count for Scorecard's
+Signed-Releases check. Verify an asset with
+`gh attestation verify <file>.tgz --repo dfadler/zombie-mermaid`.
+
+Settings the maintainer owns, which Scorecard reads but no workflow can change:
+branch protection and required reviews (Branch-Protection, Code-Review), and an
+admin token if classic protection should be fully scored (prefer migrating to
+repository rulesets, which the default token can read). Do not add a Scorecard
+badge to the README until a real score exists.

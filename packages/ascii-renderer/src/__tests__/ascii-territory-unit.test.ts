@@ -205,7 +205,7 @@ describe('allocateTerritory', () => {
   })
 
   it('treats spans touching at a single column as overlapping', () => {
-    // a ends exactly where b starts — one shared column is still a contest.
+    // A ends exactly where b starts — one shared column is still a contest.
     const items = [item('a', 5, 0, 10, 0, 0), item('b', 15, 10, 20, 0, 0)]
     expect(bounds(items, 'a').right).toBe(10)
     expect(bounds(items, 'b').left).toBe(11)

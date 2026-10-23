@@ -71,6 +71,12 @@ export interface Actor {
   /** 'participant' renders as a box, 'actor' renders as a stick figure */
   type: 'participant' | 'actor'
   /**
+   * `@{ "type": ... }` config (boundary, control, entity, database,
+   * collections, queue), drawn by both renderers as the matching icon or
+   * box variant. An unknown value keeps the plain box (docs/diagrams.md).
+   */
+  participantType?: string
+  /**
    * Index of the message that creates this participant (`create participant
    * X` on the line before it). The participant's box is drawn at that
    * message's row instead of in the header, and its lifeline starts there.
@@ -114,8 +120,14 @@ export interface Message {
 export interface Block {
   /** Block type keyword */
   type: 'loop' | 'alt' | 'opt' | 'par' | 'critical' | 'break' | 'rect'
-  /** Label for the block header */
+  /** Label for the block header. Always empty for `rect`, whose text is a colour. */
   label: string
+  /**
+   * `rect <color>` only: the highlight colour, exactly as written. Unset for
+   * every other block, and for a `rect` whose text isn't a recognised colour
+   * (see `isCssColor`) — the declaration is then ignored.
+   */
+  color?: string
   /** Index of the first message inside this block */
   startIndex: number
   /** Index of the last message inside this block (inclusive) */
@@ -167,6 +179,8 @@ export interface PositionedActor {
   id: string
   label: string
   type: 'participant' | 'actor'
+  /** `@{ "type": ... }` kind carried over from {@link Actor.participantType}. */
+  participantType?: string
   /** Center x of the actor box */
   x: number
   /** Top y of the actor box */
@@ -223,6 +237,8 @@ export interface Activation {
 export interface PositionedBlock {
   type: Block['type']
   label: string
+  /** See {@link Block.color}. */
+  color?: string
   x: number
   y: number
   width: number

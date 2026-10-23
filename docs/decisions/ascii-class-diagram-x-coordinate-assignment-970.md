@@ -1,5 +1,7 @@
 # ASCII class-diagram x-coordinate assignment (#970): a block-based priority method, not full Brandes-Köpf
 
+Status: implemented
+
 Decision for [#970](https://github.com/dfadler/zombie-mermaid/issues/970),
 staged from [#964](https://github.com/dfadler/zombie-mermaid/issues/964).
 This is the design/decision stage only — no changes to

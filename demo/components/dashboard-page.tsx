@@ -208,7 +208,7 @@ export function DashboardPage({
             <div
               id={DASHBOARD_ROOT_ID}
               dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
                 __html: renderToString(<DashboardApp viewModel={viewModel} />),
               }}
             />
@@ -221,14 +221,14 @@ export function DashboardPage({
         type="application/json"
         id={DASHBOARD_PROPS_ELEMENT_ID}
         dangerouslySetInnerHTML={{
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
           __html: escapeJsonForScriptTag(JSON.stringify(viewModel)),
         }}
       />
       <NavMobileMenuScript />
       <script
         type="module"
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/dashboard-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/dashboard-client.tsx bundle, under version control and produced at build time; never live/runtime user input
         dangerouslySetInnerHTML={{ __html: clientScript }}
       />
     </Document>

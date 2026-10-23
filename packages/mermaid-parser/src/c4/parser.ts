@@ -1,4 +1,8 @@
-import { normalizeBrTags, type Statement } from '@zombie-mermaid/core'
+import {
+  MermaidParseError,
+  normalizeBrTags,
+  type Statement,
+} from '@zombie-mermaid/core'
 import type {
   C4Boundary,
   C4Diagram,
@@ -105,7 +109,10 @@ function splitArgs(inner: string): string[] | null {
 const MACRO = /^([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)\s*(\{)?\s*$/
 
 function fail(stmt: Statement, msg: string): never {
-  throw new Error(`C4 diagram, line ${stmt.line}: ${msg} — "${stmt.text}"`)
+  throw new MermaidParseError(
+    `C4 diagram, line ${stmt.line}: ${msg} — "${stmt.text}"`,
+    { diagramType: 'c4', line: stmt.line },
+  )
 }
 
 /**
@@ -116,8 +123,9 @@ function fail(stmt: Statement, msg: string): never {
 export function parseC4Diagram(lines: Statement[]): C4Diagram {
   const variant = HEADERS[lines[0]?.text.trim().toLowerCase() ?? '']
   if (!variant) {
-    throw new Error(
+    throw new MermaidParseError(
       `C4 diagram: expected a header of C4Context, C4Container, C4Component, C4Dynamic or C4Deployment, got "${lines[0]?.text ?? ''}"`,
+      { diagramType: 'c4' },
     )
   }
 
@@ -247,8 +255,9 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
   }
 
   if (stack.length > 0) {
-    throw new Error(
+    throw new MermaidParseError(
       `C4 diagram: boundary "${stack.at(-1)!.alias}" is missing its closing "}"`,
+      { diagramType: 'c4' },
     )
   }
   // Mermaid ignores RelIndex's index argument: in C4Dynamic every relationship
@@ -261,8 +270,9 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
   for (const r of diagram.relationships) {
     for (const end of [r.from, r.to]) {
       if (!aliases.has(end)) {
-        throw new Error(
+        throw new MermaidParseError(
           `C4 diagram: relationship refers to undeclared alias "${end}"`,
+          { diagramType: 'c4' },
         )
       }
     }

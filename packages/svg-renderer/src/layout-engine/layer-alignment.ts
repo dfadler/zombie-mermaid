@@ -11,6 +11,9 @@ import type {
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 
+/** Least length of an edge's first or last leg after a node is snapped, in px. */
+const MIN_STUB = 12
+
 /**
  * ELK's orthogonal edge routing staggers nodes within the same layer to create
  * space for edge bends. This post-processing step groups nodes into layers and
@@ -124,51 +127,39 @@ export function alignLayerNodes(
 
   if (deltas.size === 0) return
 
-  // Adjust edge endpoints to match shifted node positions
+  const k = isHorizontal ? 'x' : 'y'
+  /**
+   * Move an edge's end point with its node, and the leg after it if that leg is
+   * collinear. A node that moved toward the edge's cross-flow run can leave the
+   * run lying along its face and the arrowhead half-clipped (#2110), so the run
+   * moves back to leave `MIN_STUB`. `end`/`step` walk from the node's point
+   * (0/1 for a source, n-1/-1 for a target).
+   */
+  const move = (
+    pts: PositionedEdge['points'],
+    end: number,
+    step: 1 | -1,
+    delta: number,
+  ): void => {
+    const a = pts[end]!
+    const old = a[k]
+    a[k] += delta
+    const [b, c, d] = [1, 2, 3].map((i) => pts[end + i * step])
+    if (b![k] === old) b![k] += delta
+    else if (c && d && c[k] === b![k]) {
+      const sign = Math.sign(b![k] - old)
+      const run = b![k] + sign * Math.max(0, MIN_STUB - sign * (b![k] - a[k]))
+      // Keep the leg before the run pointing the same way.
+      if (sign * (d[k] - run) > 0) b![k] = c[k] = run
+    }
+  }
+
   for (const edge of edges) {
-    if (edge.points.length < 2) continue
-
-    const srcDelta = deltas.get(edge.source)
-    const tgtDelta = deltas.get(edge.target)
-
-    if (srcDelta != null) {
-      // Shift first point and any subsequent points in the initial vertical/horizontal run
-      const first = edge.points[0]!
-      if (isHorizontal) {
-        first.x += srcDelta
-        // Shift second point if it's part of a straight vertical exit
-        if (
-          edge.points.length > 1 &&
-          edge.points[1]!.x === first.x - srcDelta
-        ) {
-          edge.points[1]!.x += srcDelta
-        }
-      } else {
-        first.y += srcDelta
-        if (
-          edge.points.length > 1 &&
-          edge.points[1]!.y === first.y - srcDelta
-        ) {
-          edge.points[1]!.y += srcDelta
-        }
-      }
-    }
-
-    if (tgtDelta != null) {
-      const last = edge.points[edge.points.length - 1]!
-      if (isHorizontal) {
-        last.x += tgtDelta
-        if (edge.points.length > 1) {
-          const prev = edge.points[edge.points.length - 2]!
-          if (prev.x === last.x - tgtDelta) prev.x += tgtDelta
-        }
-      } else {
-        last.y += tgtDelta
-        if (edge.points.length > 1) {
-          const prev = edge.points[edge.points.length - 2]!
-          if (prev.y === last.y - tgtDelta) prev.y += tgtDelta
-        }
-      }
-    }
+    const { points } = edge
+    if (points.length < 2) continue
+    const src = deltas.get(edge.source)
+    const tgt = deltas.get(edge.target)
+    if (src != null) move(points, 0, 1, src)
+    if (tgt != null) move(points, points.length - 1, -1, tgt)
   }
 }

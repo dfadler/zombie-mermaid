@@ -130,7 +130,10 @@ export function CliPanel() {
         >
           Render SVG, ASCII, HTML, or PNG straight from a script or CI job —
           themes, direction overrides, and terminal hyperlinks all pass through
-          as flags. <a href={`${FORK_URL}#cli`}>Full flag reference →</a>
+          as flags.{' '}
+          <a className="inline-link" href={`${FORK_URL}#cli`}>
+            Full flag reference →
+          </a>
         </p>
       </div>
     </div>

@@ -159,7 +159,7 @@ describe('FixPanel', () => {
     })
     expect(html).toContain('src="fork-fixes-screenshots/foo-before.png"')
     expect(html).toContain('width:100%')
-    expect(html).not.toContain('padding') // no inset frame around a terminal screenshot
+    expect(html).not.toContain('padding') // No inset frame around a terminal screenshot
   })
 
   it('injects ascii-html.ts output verbatim inside a <pre class="fix-ascii">', () => {
@@ -174,6 +174,6 @@ describe('FixPanel', () => {
   it('injects rendered SVG verbatim inside a <div class="fix-svg">', () => {
     const html = renderPanel({ kind: 'svg', html: '<svg data-x="1"></svg>' })
     expect(html).toContain('class="fix-svg"')
-    expect(html).toContain('<svg data-x="1"></svg>')
+    expect(html).toContain('<svg aria-label="Rendered diagram" data-x="1">')
   })
 })

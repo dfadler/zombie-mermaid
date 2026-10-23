@@ -273,7 +273,7 @@ ${LABELS.slice(0, siblings)
 
     it('TD: three siblings render with the target kept off the layout edge', () => {
       const lines = render(many('TD', 3, ['other']))
-      // first drops straight above T, second and third to its right (source order).
+      // First drops straight above T, second and third to its right (source order).
       const labels = lines.find((l) => l.includes('third'))!
       expect(labels.indexOf('first')).toBeLessThan(labels.indexOf('second'))
       expect(labels.indexOf('second')).toBeLessThan(labels.indexOf('third'))
@@ -287,7 +287,7 @@ ${LABELS.slice(0, siblings)
     })
 
     it.each(['TD', 'LR'] as const)(
-      "%s: six siblings keep today's routing (no lane in the plan)",
+      '%s: six siblings engage the plan too (#1826)',
       (dir) => {
         const src = many(dir, 6, ['other', 'more'])
         const graph = convertToAsciiGraph(parseMermaid(src), {
@@ -299,7 +299,7 @@ ${LABELS.slice(0, siblings)
         })
         createMapping(graph)
         const edges = [...(graph.clusterExitPlans?.values() ?? [])][0]?.edges
-        expect([...(edges ?? [])].some((e) => e.parallelLane)).toBe(false)
+        expect([...(edges ?? [])].filter((e) => e.parallelLane)).toHaveLength(6)
       },
     )
   })

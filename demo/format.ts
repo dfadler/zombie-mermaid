@@ -67,8 +67,8 @@ export function formatProse(text: string): string {
  */
 export function stripShikiFenceLines(html: string): string {
   return html
-    .replace(/(<code>)<span class="line">.*?<\/span>\n/, '$1') // first line
-    .replace(/\n<span class="line">.*?<\/span>(<\/code>)/, '$1') // last line
+    .replace(/(<code>)<span class="line">.*?<\/span>\n/, '$1') // First line
+    .replace(/\n<span class="line">.*?<\/span>(<\/code>)/, '$1') // Last line
 }
 
 /**

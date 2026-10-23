@@ -1,5 +1,7 @@
 # Spike: smoothing the lines in real-PTY ASCII captures
 
+As of: 2026-10-22, reviewed against `main` @ `bd0a701c`. `scripts/ascii-terminal-capture.sh` and `scripts/ascii-cast-to-png.mjs` still exist as described.
+
 Status: **spike, answered. Outcome: the artefact is the rasteriser, not the renderer; no renderer change. Context: [#1278](https://github.com/dfadler/zombie-mermaid/issues/1278).**
 
 Context: on #1278 the PR screenshots (`scripts/ascii-terminal-capture.sh`, asciinema + agg) show a
@@ -9,7 +11,7 @@ the renderer's output, agg's rasteriser, or the font, and can the capture be mad
 ## Findings
 
 1. **The renderer's output is fine.** The row is `├ ─ ─ ┼ ─ ┼ ─ ►` (`U+251C U+2500 U+2500 U+253C
-U+2500 U+253C U+2500 U+25BA`), all standard box-drawing characters. `main` emits the same.
+   U+2500 U+253C U+2500 U+25BA`), all standard box-drawing characters. `main` emits the same.
 2. **agg is the cause.** Feeding `├──┼─┼─►` alone to agg 1.9.0 reproduces the step. Measured bar rows
    (text row 0, `plain` = `─`, `junc` = the arm of `┼`/`├`), JetBrains Mono, line-height 1.4:
 

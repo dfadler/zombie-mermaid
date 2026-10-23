@@ -485,7 +485,10 @@ function homePageCss(): string {
   font-size: ${FONT_SIZE.micro}px;
   letter-spacing: ${LETTER_SPACING.eyebrow};
   text-transform: uppercase;
-  color: var(--tsd-muted);
+  /* Not --tsd-muted: that is a theme-derived token and sits near 2.9:1 on
+     some themes (#1815). Mixing the theme's own text toward its bg keeps it
+     muted but legible on every theme. */
+  color: color-mix(in srgb, var(--tsd-text) 75%, var(--tsd-bg));
 }
 /* Groups the SVG/ASCII segmented control with the scale button (#987) so
    .theme-showcase-output-toggle's own justify-content: space-between still
@@ -1657,7 +1660,7 @@ function ThemeShowcase() {
               <pre
                 id="theme-showcase-ascii"
                 className="theme-showcase-ascii mono"
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
+                // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
                 dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
               />
               <div
@@ -1688,7 +1691,7 @@ function ThemeShowcase() {
       <script
         type="application/json"
         id="theme-showcase-ascii-props"
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this file's own themeShowcaseAsciiHtmlByTheme, escaped with escapeJsonForScriptTag; never user input
+        // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this file's own themeShowcaseAsciiHtmlByTheme, escaped with escapeJsonForScriptTag; never user input
         dangerouslySetInnerHTML={{
           __html: escapeJsonForScriptTag(
             JSON.stringify(themeShowcaseAsciiHtmlByTheme),
@@ -1815,7 +1818,7 @@ export function IndexPage({
           <meta name="twitter:image" content={OG_IMAGE_URL} />
           <script
             type="application/ld+json"
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD built from package.json at build time and escaped with escapeJsonForScriptTag
+            // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD built from package.json at build time and escaped with escapeJsonForScriptTag
             dangerouslySetInnerHTML={{ __html: jsonLd }}
           />
           {/* Plausible Analytics */}
@@ -1860,7 +1863,7 @@ export function IndexPage({
         <div
           id={INDEX_HERO_ROOT_ID}
           dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexHeroApp component tree rendered via renderToString (see the comment above); never user input
+            // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexHeroApp component tree rendered via renderToString (see the comment above); never user input
             __html: renderToString(<IndexHeroApp asciiHtml={heroAsciiHtml} />),
           }}
         />
@@ -1868,7 +1871,7 @@ export function IndexPage({
           type="application/json"
           id={INDEX_HERO_PROPS_ELEMENT_ID}
           dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own IndexHeroAppProps, escaped with escapeJsonForScriptTag; never user input
+            // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own IndexHeroAppProps, escaped with escapeJsonForScriptTag; never user input
             __html: escapeJsonForScriptTag(
               JSON.stringify({
                 asciiHtml: heroAsciiHtml,
@@ -1880,7 +1883,7 @@ export function IndexPage({
         <div
           id={INDEX_MAIN_ROOT_ID}
           dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexMainApp component tree rendered via renderToString (see the comment above); never user input
+            // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexMainApp component tree rendered via renderToString (see the comment above); never user input
             __html: renderToString(<IndexMainApp />),
           }}
         />
@@ -1889,7 +1892,7 @@ export function IndexPage({
       <script type="module" src={clientScriptSrc} />
       <script
         type="module"
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/index-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/index-client.tsx bundle, under version control and produced at build time; never live/runtime user input
         dangerouslySetInnerHTML={{ __html: clientScript }}
       />
       <NavMobileMenuScript />

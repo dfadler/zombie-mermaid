@@ -246,3 +246,28 @@ export function pathCells(path: readonly GridCoord[]): GridCoord[] {
   }
   return cells
 }
+
+type Point = { x: number; y: number }
+type Segment = readonly [Point, Point]
+
+/** Consecutive point pairs of a path. */
+export const segmentsOf = (p: readonly Point[]): Segment[] =>
+  p.slice(1).map((q, i) => [p[i]!, q] as const)
+
+/** Whether `a`-`b` runs (for a cell or more) along one of `segs` (#2025). */
+export function runsAlong(
+  a: Point,
+  b: Point,
+  segs: readonly Segment[],
+): boolean {
+  const h = a.y === b.y
+  return segs.some(([p, q]) => {
+    if (h ? p.y !== a.y || q.y !== a.y : p.x !== a.x || q.x !== a.x)
+      return false
+    const [s, t, u, v] = h ? [a.x, b.x, p.x, q.x] : [a.y, b.y, p.y, q.y]
+    return (
+      Math.min(Math.max(s, t), Math.max(u, v)) >
+      Math.max(Math.min(s, t), Math.min(u, v))
+    )
+  })
+}

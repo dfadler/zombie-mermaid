@@ -5,10 +5,16 @@
 // ER diagrams show database entities, their attributes, and relationships.
 // ============================================================================
 
-import type { Direction } from '@zombie-mermaid/core'
+import type { Direction, StyleDirectives } from '@zombie-mermaid/core'
 
-/** Parsed ER diagram — logical structure from mermaid text */
-export interface ErDiagram {
+/**
+ * Parsed ER diagram — logical structure from mermaid text.
+ *
+ * Extends {@link StyleDirectives} so `classDef` / `class` / `style` / `:::`
+ * resolve through the same cascade flowcharts and class diagrams use (see
+ * packages/core/src/style-directives.ts).
+ */
+export interface ErDiagram extends StyleDirectives {
   /** All entity definitions */
   entities: ErEntity[]
   /** Relationships between entities */
@@ -85,6 +91,10 @@ export interface PositionedErEntity {
   headerHeight: number
   /** Height per attribute row */
   rowHeight: number
+  /** Inline styles resolved from classDef + `style` (fill, stroke, stroke-width, color) */
+  inlineStyle?: Record<string, string>
+  /** Style class assigned via `class A name` or `A:::name` — emitted onto the group's `class` attribute */
+  className?: string
 }
 
 export interface PositionedErRelationship {
@@ -96,4 +106,6 @@ export interface PositionedErRelationship {
   identifying: boolean
   /** Path points from entity1 to entity2 */
   points: Array<{ x: number; y: number }>
+  /** Centre of the label; absent means the midpoint of `points`. */
+  labelPoint?: { x: number; y: number }
 }

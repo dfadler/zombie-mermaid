@@ -1,0 +1,30 @@
+# Near-miss: Mermaid source authoring with no render/output request.
+# Depends on the positive zombie-mermaid cases in the same suite: skill_not_fired passes vacuously if the skill never loads.
+schema_version: '1.1'
+name: zombie-mermaid-quiet-on-syntax-fix
+description: >
+  Fixing a Mermaid syntax error in source text, with no request to render, must not fire
+  zombie-mermaid. expected_outcome: PASS when no zombie-mermaid Skill call is made; FAIL otherwise.
+tags: [zombie-mermaid, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    This Mermaid block in my README shows a parse error. What is wrong with it? Reply with the
+    corrected source only. Don't run anything.
+
+    flowchart TD
+      A[Start] -> B{Ok?}
+      B -- yes --> C[Done
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+    min: 0
+    max: 0
+    arm: both

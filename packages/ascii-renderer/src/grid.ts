@@ -17,14 +17,19 @@ import type {
   AsciiSubgraph,
 } from './types.ts'
 import { requireGridCoord } from './types.ts'
+import { subgraphsTied } from '@zombie-mermaid/core'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
   interiorCellsClearOfNodes,
+  laneSearchExhausted,
   determineLabelLine,
   createLabelContext,
   assignParallelEdgeLanes,
+  assignFaceLanes,
+  noteRejectedFaceLanes,
   splitSharedLabeledLane,
+  reserveUnderRow,
   spreadCandidates,
   type SpreadCandidate,
 } from './edge-routing.ts'
@@ -52,6 +57,7 @@ import {
   createEdgeCellOwners,
   claimPathOwners,
   findUnrelatedOverlap,
+  loopTracksSharedWithEdge,
   isPortFixedEdge,
   separateFanInLane,
   type EdgeCellStyles,
@@ -61,6 +67,7 @@ import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
 import { splitLines } from './multiline-utils.ts'
 import { displayWidth } from './display-width.ts'
+import { edgeLabelPlacement } from './draw-arrows.ts'
 
 // `requireGridCoord` is defined in types.ts (a pure predicate over
 // AsciiNode with no grid-state dependency) and re-exported here so the two
@@ -314,7 +321,20 @@ function lrFanInGap(graph: AsciiGraph, node: AsciiNode): number {
   for (const e of graph.edges) {
     if (e.to === node && e.from !== node) parents.add(e.from)
   }
-  return parents.size > 1 ? 3 : 0
+  if (parents.size > 1) return 3
+  // Origin gap (#1915): a same-row parent whose other edge bypasses this node
+  // to a farther same-row node leaves east and drops in this gap, sharing the
+  // parent's line. It too needs a junction column plus the arrowhead column.
+  const gc = requireGridCoord(node)
+  for (const p of parents) {
+    const pc = requireGridCoord(p)
+    if (pc.y !== gc.y) continue
+    for (const e of graph.edges) {
+      const c = e.from === p ? e.to.gridCoord : null
+      if (c && c.y === gc.y && c.x > gc.x) return 3
+    }
+  }
+  return 0
 }
 
 /** Ensure grid has width/height entries for all cells along an edge path. */
@@ -386,21 +406,31 @@ function rerouteAroundStyleConflicts(
   // staircase hugging the cluster wall (#1148's `retry` edge) or a stair-step
   // round a reciprocal edge (#1349's `D --> A`). Prefer fewest bends instead.
   graph.preferStraightRoutes = true
+  const entry = {
+    path: edge.path,
+    startDir: edge.startDir,
+    endDir: edge.endDir,
+    labelLine: edge.labelLine,
+  }
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
         findStyleConflict(nodeOnlyGrid, cellStyles, edge.path, edge.style) ??
-        findUnrelatedOverlap(
-          nodeOnlyGrid,
-          cellOwners,
-          edge.path,
-          edge,
-          (owner) =>
-            owner.clusterSource !== undefined &&
-            graph.clusterExitPlans
-              ?.get(owner.clusterSource)
-              ?.edges.has(owner) === true,
-        )
+        // A lane already keeps off other edges' runs (`runTaken`); the stem
+        // it shares with a chain partner is split by port-offsets.ts.
+        (edge.parallelLane?.index || edge.faceLane
+          ? null
+          : findUnrelatedOverlap(
+              nodeOnlyGrid,
+              cellOwners,
+              edge.path,
+              edge,
+              (owner) =>
+                owner.clusterSource !== undefined &&
+                graph.clusterExitPlans
+                  ?.get(owner.clusterSource)
+                  ?.edges.has(owner) === true,
+            ))
       if (!conflict) return
       graph.grid.add(conflict.x, conflict.y)
       temporarilyBlocked.push(conflict)
@@ -410,11 +440,21 @@ function rerouteAroundStyleConflicts(
       // determinePath then falls back to a straight line that ignores
       // occupancy (#1411: A --> D drawn through B). A line that overlaps
       // another edge is better than one through a node: keep the old path.
+      // A lane search that ran out of offsets returns a placeholder path
+      // hundreds of rows long, and every earlier detour was only a
+      // half-blocked fallback (a spike that draws a dangling stub, #2030):
+      // restore the route the edge had before any reroute.
+      if (laneSearchExhausted(edge)) {
+        Object.assign(edge, entry)
+        return
+      }
       if (
         !interiorCellsClearOfNodes(
           graph,
           pathCells(edge.path),
-          [edge.from, edge.to],
+          // A self-loop's detour must never cut through its own node's
+          // block (#2028): the own-node exemption would allow it.
+          edge.from === edge.to ? [] : [edge.from, edge.to],
           nodeOnlyGrid,
         )
       ) {
@@ -797,6 +837,57 @@ export function widenGapsForFrameTitles(graph: AsciiGraph): boolean {
   return changed
 }
 
+/**
+ * Widen the gap column an edge label sits in until the label text clears every
+ * frame wall. The frames take their padding and wall out of the gap between
+ * two nodes' columns, so a label sized for the bare gap (`increaseGridSizeForPath`)
+ * is drawn over the wall of a frame the edge crosses, erasing it. LR only. Returns
+ * whether any column changed; boxes are recomputed here.
+ */
+function widenGapsForCrossingLabels(graph: AsciiGraph): boolean {
+  const framed = graph.subgraphs.filter((sg) => sg.nodes.length > 0)
+  // LR only: there the walls cross the flow axis a label is laid along.
+  if (framed.length === 0 || graph.config.graphDirection !== 'LR') return false
+  let changed = false
+  for (let pass = 0; pass < 64; pass++) {
+    let widened = false
+    for (const edge of graph.edges) {
+      if (edge.text === '') continue
+      for (const { x, y, text } of edgeLabelPlacement(graph, edge) ?? []) {
+        const end = x + displayWidth(text) - 1
+        const hit = framed.some(
+          (sg) =>
+            y >= sg.minY &&
+            y <= sg.maxY &&
+            [sg.minX, sg.maxX].some((wall) => wall >= x && wall <= end),
+        )
+        if (!hit) continue
+        const mid = x + (end - x) / 2
+        let best: GridCoord | null = null
+        for (const c of edge.path) {
+          if (
+            !best ||
+            Math.abs(gridToDrawingCoord(graph, c).x - mid) <
+              Math.abs(gridToDrawingCoord(graph, best).x - mid)
+          )
+            best = c
+        }
+        if (!best) continue
+        graph.columnWidth.set(best.x, (graph.columnWidth.get(best.x) ?? 0) + 1)
+        for (const node of graph.nodes) {
+          node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+        }
+        calculateSubgraphBoundingBoxes(graph)
+        widened = changed = true
+        break
+      }
+      if (widened) break
+    }
+    if (!widened) break
+  }
+  return changed
+}
+
 export function calculateSubgraphBoundingBoxes(graph: AsciiGraph): void {
   for (const sg of graph.subgraphs) {
     calculateSubgraphBoundingBox(graph, sg)
@@ -866,7 +957,7 @@ function groupRootsByDownstreamTarget(
   const firstIndexForTarget = new Map<string, number>()
   const anchorIndex: number[] = roots.map((node, i) => {
     const key = primaryTargetKey(node)
-    if (key === null) return i // no downstream target: anchor to self
+    if (key === null) return i // No downstream target: anchor to self
     const existing = firstIndexForTarget.get(key)
     if (existing !== undefined) return existing
     firstIndexForTarget.set(key, i)
@@ -984,7 +1075,7 @@ function findSubgraphAdjacentSlot(
       if (isBlockFree(graph.grid, candidate, NODE_BLOCK_SIZE)) return candidate
       const occupant = findNodeAtGridOrigin(graph, candidate)
       if (!occupant || getTopLevelSubgraph(graph, occupant) !== ownTopSg) {
-        return null // a foreign subgraph (or unexpected gap) blocks this side
+        return null // A foreign subgraph (or unexpected gap) blocks this side
       }
       offset += 4
     }
@@ -1076,19 +1167,23 @@ function relocateNode(
   return dest === to
 }
 
-/** Shift every node strictly right of column `afterX` by `by` grid units. */
-function shiftColumnsRight(
+/**
+ * Shift every node strictly past `after` on the cross axis (x for TD, y for
+ * LR) by `by` grid units.
+ */
+function shiftCrossAxis(
   graph: AsciiGraph,
-  afterX: number,
+  lr: boolean,
+  after: number,
   by: number,
 ): void {
   const moved = graph.nodes.filter(
-    (n) => n.gridCoord !== null && n.gridCoord.x > afterX,
+    (n) => n.gridCoord !== null && (lr ? n.gridCoord.y : n.gridCoord.x) > after,
   )
   for (const n of moved) freeNodeBlock(graph, requireGridCoord(n))
   for (const n of moved) {
     const gc = requireGridCoord(n)
-    n.gridCoord = { x: gc.x + by, y: gc.y }
+    n.gridCoord = lr ? { x: gc.x, y: gc.y + by } : { x: gc.x + by, y: gc.y }
     placeBlock(graph.grid, n.gridCoord, NODE_BLOCK_SIZE)
   }
 }
@@ -1123,7 +1218,9 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
  * the first one (a fan-out like `A --> B & C & D` otherwise hangs A over B and
  * leaves its other edges to leave sideways and come back down).
  *
- * TD only, and only for graphs where every edge points to a lower row:
+ * TD and LR without subgraphs (RL is laid out as LR and mirrored afterwards;
+ * in LR the "row" below is a column and "x" is y), and only for graphs where every edge
+ * points to a later rank:
  * back edges and same-row edges route around the nodes they skip, and moving
  * nodes under them scrambles those routes. A node moves only when it is
  * outside every subgraph, or alone in each one and leaving only by cluster
@@ -1143,20 +1240,28 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
  *    (else the shift would drag unrelated branches wider, so it stays put).
  */
 function centerParentsOverChildren(graph: AsciiGraph): void {
-  if (graph.config.graphDirection !== 'TD') return
+  const lr = graph.config.graphDirection === 'LR'
+  // ponytail: LR graphs with subgraphs keep the old layout; the cluster-exit
+  // wall/lane routing is tuned to it. Extend once those routes are re-checked.
+  if (lr && graph.subgraphs.length > 0) return
+  // Rank axis (flow direction) and cross axis (where siblings spread).
+  const rankOf = (g: GridCoord): number => (lr ? g.x : g.y)
+  const crossOf = (g: GridCoord): number => (lr ? g.y : g.x)
+  const at = (rank: number, cross: number): GridCoord =>
+    lr ? { x: rank, y: cross } : { x: cross, y: rank }
   // Back edges and same-row edges route around the nodes they skip; moving
   // nodes under them scrambles those routes (State: Connection Lifecycle).
   // Only handle graphs where every edge points to a lower row.
   const flowsDown = graph.edges.every((e) => {
     const f = e.from.gridCoord
     const t = e.to.gridCoord
-    return f !== null && t !== null && f.y < t.y
+    return f !== null && t !== null && rankOf(f) < rankOf(t)
   })
   if (!flowsDown) return
   // Deepest first so a moved child doesn't invalidate its parent's span.
   const order = graph.nodes
     .filter((n) => n.gridCoord !== null)
-    .sort((a, b) => requireGridCoord(b).y - requireGridCoord(a).y)
+    .sort((a, b) => rankOf(requireGridCoord(b)) - rankOf(requireGridCoord(a)))
   for (const node of order) {
     const gc = requireGridCoord(node)
     if (
@@ -1173,7 +1278,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       const cgc = c.gridCoord
       if (
         cgc === null ||
-        cgc.y !== gc.y + 4 ||
+        rankOf(cgc) !== rankOf(gc) + 4 ||
         (isNodeInAnySubgraph(graph, c) &&
           !(children.length === 1 && onlyInLoneClusters(graph, c))) ||
         graph.edges.some((e) => e.to === c && e.from !== node)
@@ -1183,7 +1288,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       }
     }
     if (!ok) continue
-    const xs = children.map((c) => requireGridCoord(c).x)
+    const xs = children.map((c) => crossOf(requireGridCoord(c)))
     // Node slots sit on a stride of 4, so the midpoint of the outermost
     // children is a slot only for an odd count.
     let mid = (Math.min(...xs) + Math.max(...xs)) / 2
@@ -1192,9 +1297,11 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     // are integers (a fractional one hangs the pathfinder), so leave it be.
     if (!Number.isInteger(mid)) continue
     if (mid % 4 !== 0) {
-      if (mid + 2 <= gc.x) continue
+      // Defensive: placement puts a parent at or left of its children's midpoint.
+      /* v8 ignore next */
+      if (mid + 2 <= crossOf(gc)) continue
       if (fitsStraddled(graph, node)) {
-        relocateNode(graph, node, { x: mid, y: gc.y })
+        relocateNode(graph, node, at(rankOf(gc), mid))
         continue
       }
       const own = new Set<AsciiNode>([node])
@@ -1209,13 +1316,14 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       // keeps the node centered under both.
       for (const e of graph.edges) if (e.to === node) own.add(e.from)
       const foreign = graph.nodes.some(
-        (n) => n.gridCoord !== null && n.gridCoord.x > mid && !own.has(n),
+        (n) =>
+          n.gridCoord !== null && crossOf(n.gridCoord) > mid && !own.has(n),
       )
       if (foreign) continue
-      shiftColumnsRight(graph, mid, 4)
+      shiftCrossAxis(graph, lr, mid, 4)
       mid += 2
     }
-    if (mid > gc.x) relocateNode(graph, node, { x: mid, y: gc.y })
+    if (mid > crossOf(gc)) relocateNode(graph, node, at(rankOf(gc), mid))
   }
   markLabeledFanIn(graph)
 }
@@ -1282,7 +1390,7 @@ function placeReachableChildren(
 
     for (const node of placedNodes) {
       const gc = node.gridCoord
-      if (gc === null) continue // unreachable: `placedNodes` is pre-filtered
+      if (gc === null) continue // Unreachable: `placedNodes` is pre-filtered
 
       // Sort children so siblings that land in different subgraphs get
       // mermaid.js's reversed-declaration-order sibling placement (see
@@ -1293,7 +1401,7 @@ function placeReachableChildren(
         compareBySiblingSubgraphOrder(graph, x, y),
       )
       for (const child of children) {
-        if (child.gridCoord !== null) continue // already placed
+        if (child.gridCoord !== null) continue // Already placed
 
         // An edge addressed to a subgraph (`Y --> Sub`) must land the whole
         // cluster below its source, as real mermaid ranks the cluster as
@@ -1557,7 +1665,17 @@ function computeMinLevels(
   const dfs = (node: AsciiNode): void => {
     state.set(node, 'open')
     const out: AsciiNode[] = []
-    for (const child of getChildren(graph, node)) {
+    // A subgraph feedback edge ranks as if it ran the other way (#2111).
+    const rankChildren = graph.edges.flatMap((e) =>
+      e.feedback
+        ? e.to === node
+          ? [e.from]
+          : []
+        : e.from === node
+          ? [e.to]
+          : [],
+    )
+    for (const child of rankChildren) {
       if (child === node || state.get(child) === 'open') continue
       out.push(child)
       if (!state.has(child)) dfs(child)
@@ -1972,6 +2090,7 @@ export function createMapping(graph: AsciiGraph): void {
   // analysis runs, so determinePath below can route sibling edges past the
   // first through distinct offset lanes instead of all computing the
   // identical center path (see #329).
+  assignFaceLanes(graph)
   assignParallelEdgeLanes(graph)
 
   // Give edges that leave a cluster through a shared exit (2+ of them) a
@@ -2013,7 +2132,15 @@ export function createMapping(graph: AsciiGraph): void {
     AsciiNode,
     { count: number; usedOffsets: Set<number> }
   >()
-  for (const edge of graph.edges) {
+  // Offset lanes go last so they can keep off every other edge's runs (#2025).
+  // Flow-axis face lanes go first: their gutter slots are planned, so nothing
+  // routed later may take them (#2121).
+  const lanesLast = [
+    ...graph.edges.filter((e) => e.faceLanePlan),
+    ...graph.edges.filter((e) => !e.faceLanePlan && !e.parallelLane?.index),
+    ...graph.edges.filter((e) => !e.faceLanePlan && e.parallelLane?.index),
+  ]
+  for (const edge of lanesLast) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
       increaseGridSizeForPath(graph, edge.path)
@@ -2041,9 +2168,30 @@ export function createMapping(graph: AsciiGraph): void {
     if (graph.config.graphDirection === 'TD' && !isPortFixedEdge(edge)) {
       separateFanInLane(nodeOnlyGrid, cellOwners, edge)
     }
+    reserveUnderRow(graph, edge)
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
+  }
+
+  noteRejectedFaceLanes(graph)
+
+  // A self-loop that runs along another edge's cells gets one more drawn
+  // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).
+  for (const edge of graph.edges) {
+    if (edge.from !== edge.to || edge.path.length < 4) continue
+    const { cols, rows } = loopTracksSharedWithEdge(
+      nodeOnlyGrid,
+      cellOwners,
+      edge,
+      requireGridCoord(edge.from),
+    )
+    for (const x of cols) {
+      graph.columnWidth.set(x, graph.columnWidth.get(x)! + 2)
+    }
+    for (const y of rows) {
+      graph.rowHeight.set(y, graph.rowHeight.get(y)! + 2)
+    }
   }
 
   // Choose each label's segment only now that every path exists, so a label
@@ -2078,6 +2226,7 @@ export function createMapping(graph: AsciiGraph): void {
   // Keep side-by-side frames at their natural width when a wide title makes
   // them touch (#1254).
   widenGapsForFrameTitles(graph)
+  widenGapsForCrossingLabels(graph)
   // A cluster-exit gutter narrower than its cluster's drawn wall (padding,
   // nesting, or LR label widening) is widened here, where the wall is first
   // known. Widening only shifts what lies past the gutter, so node drawing
@@ -2103,11 +2252,16 @@ export function createMapping(graph: AsciiGraph): void {
   // Each trial width also re-clears the avoiding edges: left where they were,
   // they fall inside the growing frame and read as title collisions, so the
   // frame over-widens (Layer Two came out 24 wide for a 9-wide title).
-  widenFramesForTitleStrokes(graph, () => {
-    refreshBoxes()
-    widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
-  })
+  const widenForTitles = (): void =>
+    widenFramesForTitleStrokes(graph, () => {
+      refreshBoxes()
+      widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
+    })
+  widenForTitles()
   // The room a frame was given may reach its neighbour; open the gap (#1248).
+  // That gap restores a pushed neighbour to its natural width, so its title
+  // can only now be seen to meet an entering edge: check again (#2111).
+  if (widenGapsForFrameTitles(graph)) widenForTitles()
   widenGapsForFrameTitles(graph)
   widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
   offsetDrawingForSubgraphs(graph)
@@ -2193,7 +2347,16 @@ function compareBySiblingSubgraphOrder(
   // relative declaration order is recovered from each one's position in the
   // flat `graph.subgraphs` list, which preserves source order (see
   // `convertSubgraph`'s pre-order-DFS push in converter.ts).
-  return graph.subgraphs.indexOf(sgB) - graph.subgraphs.indexOf(sgA)
+  const byDeclaration =
+    graph.subgraphs.indexOf(sgB) - graph.subgraphs.indexOf(sgA)
+  // Mermaid 12 (ELK) keeps declaration order for siblings tied by an edge
+  // (#2111); mermaid 11 / unconnected siblings are reversed.
+  return graph.parsed &&
+    sgA.source &&
+    sgB.source &&
+    subgraphsTied(graph.parsed, sgA.source, sgB.source)
+    ? -byDeclaration
+    : byDeclaration
 }
 
 /** Get all direct children of a node (targets of outgoing edges). */

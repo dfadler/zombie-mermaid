@@ -1,0 +1,13 @@
+graph LR
+  accTitle: Accessible title
+  accDescr {
+    A description
+    over two lines.
+  }
+  A --> B
+---
+┌───┐     ┌───┐
+│   │     │   │
+│ A ├────►│ B │
+│   │     │   │
+└───┘     └───┘

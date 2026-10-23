@@ -5,6 +5,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import { forkFixes } from '../demo/fork-fixes-data.ts'
 import { DIAGRAM_TYPES } from '../packages/core/src/diagram-type.ts'
 
 const FROZEN =
@@ -13,7 +14,6 @@ const FROZEN =
 // ponytail: whole-file skip, per-line baseline if this list grows.
 const KNOWN_STALE = new Set([
   'CLAUDE.md', // demo/client.ts (renamed; needs owner decision)
-  'docs/parser-error-audit-541.md', // pre-monorepo src/ paths
   'docs/xychart-design.md', // pre-monorepo src/ paths
   'docs/promotion/258-pr-rescue-candidates.md', // pre-monorepo src/ paths
 ])
@@ -158,7 +158,8 @@ const realFs: Fs = {
 export function nodeConsistency(want: string, fs: Fs = realFs): string[] {
   const errs: string[] = []
   const eng = JSON.parse(fs.read('package.json')).engines?.node as
-    string | undefined
+    | string
+    | undefined
   if (eng && !engineMatches(eng, want))
     errs.push(`package.json engines.node "${eng}" vs .nvmrc ${want}`)
   for (const f of fs.ls('.github/workflows'))
@@ -198,6 +199,50 @@ export function orphanResearch(fs: Fs = realFs): string[] {
     )
 }
 
+// #1936: a kept research doc carries an `As of: YYYY-MM-DD` line, so a reader
+// can tell how stale its numbers are; re-measure or drop the doc when it ages out.
+export function researchAsOf(fs: Fs = realFs): string[] {
+  return fs
+    .ls('docs/research')
+    .filter((f) => f.endsWith('.md') && f !== 'docs/research/README.md')
+    .filter((f) => !/^As of: \d{4}-\d{2}-\d{2}/m.test(fs.read(f)))
+    .map((f) => `${f}: missing an "As of: YYYY-MM-DD" line (#1936)`)
+}
+
+// #1549: every decision doc carries a `Status:` line and a row in the README index.
+const STATUS =
+  /^Status: (accepted|implemented|not adopted|superseded|partially superseded|historical|proposal|unverified)\b/m
+export function decisionStatus(fs: Fs = realFs): string[] {
+  const index = fs.read('docs/decisions/README.md')
+  return fs
+    .ls('docs/decisions')
+    .filter((f) => f.endsWith('.md') && !f.endsWith('/README.md'))
+    .flatMap((f) => [
+      ...(STATUS.test(fs.read(f))
+        ? []
+        : [
+            `${f}: missing a valid "Status:" line (see docs/decisions/README.md)`,
+          ]),
+      ...(index.includes(`(${f.split('/')[2]})`)
+        ? []
+        : [`${f}: not listed in the docs/decisions/README.md index`]),
+    ])
+}
+
+// #1996: README says "(N fixes)"; N is forkFixes.length (the entries array,
+// not a grep of `fixCommit`, which also matches the interface docs).
+export function forkFixesCount(
+  fs: Fs = realFs,
+  n = forkFixes.length,
+): string[] {
+  const m = /\((\d+) fixes\)/.exec(fs.read('README.md'))
+  return m && Number(m[1]) !== n
+    ? [
+        `README.md: says ${m[1]} fixes but demo/fork-fixes-data.ts has ${n}; edit the "(${m[1]} fixes)" sentence to "(${n} fixes)"`,
+      ]
+    : []
+}
+
 export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
   const want = fs.read('.nvmrc').trim().replace(/^v/, '').split('.')[0]!
   const files = fs
@@ -208,6 +253,9 @@ export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
     errs: [
       ...nodeConsistency(want, fs),
       ...orphanResearch(fs),
+      ...researchAsOf(fs),
+      ...decisionStatus(fs),
+      ...forkFixesCount(fs),
       ...files.flatMap((f) => checkDoc(f, fs.read(f), want)),
     ],
   }

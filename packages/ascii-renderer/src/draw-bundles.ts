@@ -29,6 +29,7 @@ import { getShapeAttachmentPoint } from './shapes/index.ts'
 import type { ShapeDimensions } from './shapes/index.ts'
 import { drawLine } from './draw-lines.ts'
 import { markerArrowChar } from './draw-arrows.ts'
+import { pseudoStateGlyph } from './draw-boxes.ts'
 
 // ============================================================================
 // Node attachment point helper
@@ -195,7 +196,12 @@ export function drawBundledEdgeSegment(
   // The connector is placed at the first point coordinate (box border position)
   // since we use offsets 1,-1 for drawLine, the line starts one step past this point
   const boxStartCanvas = copyCanvas(graph.canvas)
-  if (bundle.type === 'fan-in' && pathToJunction.length >= 2) {
+  if (
+    bundle.type === 'fan-in' &&
+    pathToJunction.length >= 2 &&
+    // A glyph pseudo-state has no border to tee into (#2027).
+    pseudoStateGlyph(edge.from, useAscii) === undefined
+  ) {
     const firstPoint = drawingPath[0]!
     const dir = determineDirection(pathToJunction[0]!, pathToJunction[1]!)
 
@@ -351,13 +357,13 @@ export function drawBundleArrowhead(
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'
     else if (dirEquals(dir, Right)) char = '►'
-    else char = '▼' // default
+    else char = '▼' // Default
   } else {
     if (dirEquals(dir, Up)) char = '^'
     else if (dirEquals(dir, Down)) char = 'v'
     else if (dirEquals(dir, Left)) char = '<'
     else if (dirEquals(dir, Right)) char = '>'
-    else char = 'v' // default
+    else char = 'v' // Default
   }
 
   write(canvas, dc.x, dc.y, char)
@@ -401,13 +407,13 @@ export function drawBundledEdgeArrowhead(
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'
     else if (dirEquals(dir, Right)) char = '►'
-    else char = '▼' // default
+    else char = '▼' // Default
   } else {
     if (dirEquals(dir, Up)) char = '^'
     else if (dirEquals(dir, Down)) char = 'v'
     else if (dirEquals(dir, Left)) char = '<'
     else if (dirEquals(dir, Right)) char = '>'
-    else char = 'v' // default
+    else char = 'v' // Default
   }
 
   write(canvas, dc.x, dc.y, char)
@@ -458,13 +464,13 @@ export function drawBundleArrowheadStart(
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'
     else if (dirEquals(dir, Right)) char = '►'
-    else char = '▲' // default
+    else char = '▲' // Default
   } else {
     if (dirEquals(dir, Up)) char = '^'
     else if (dirEquals(dir, Down)) char = 'v'
     else if (dirEquals(dir, Left)) char = '<'
     else if (dirEquals(dir, Right)) char = '>'
-    else char = '^' // default
+    else char = '^' // Default
   }
 
   write(canvas, dc.x, dc.y, char)
@@ -505,13 +511,13 @@ export function drawBundledEdgeArrowheadStart(
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'
     else if (dirEquals(dir, Right)) char = '►'
-    else char = '▼' // default
+    else char = '▼' // Default
   } else {
     if (dirEquals(dir, Up)) char = '^'
     else if (dirEquals(dir, Down)) char = 'v'
     else if (dirEquals(dir, Left)) char = '<'
     else if (dirEquals(dir, Right)) char = '>'
-    else char = 'v' // default
+    else char = 'v' // Default
   }
 
   write(canvas, dc.x, dc.y, char)
@@ -580,8 +586,7 @@ export function drawJunctionCharacter(
       )
       // This is the direction the edge ARRIVES at junction from
       // e.g., if arrivalDir is Right, the line comes FROM the left
-      if (dirEquals(arrivalDir, Down))
-        hasUp = true // arrived going down = came from up
+      if (dirEquals(arrivalDir, Down)) hasUp = true // Arrived going down = came from up
       else if (dirEquals(arrivalDir, Up)) hasDown = true
       else if (dirEquals(arrivalDir, Right)) hasLeft = true
       else if (dirEquals(arrivalDir, Left)) hasRight = true
@@ -592,7 +597,7 @@ export function drawJunctionCharacter(
   let char: string
   if (!useAscii) {
     if (hasUp && hasDown && hasLeft && hasRight) {
-      char = '┼' // cross - all 4 directions
+      char = '┼' // Cross - all 4 directions
     } else if (hasDown && hasLeft && hasRight && !hasUp) {
       char = '┬' // T pointing down
     } else if (hasUp && hasLeft && hasRight && !hasDown) {
@@ -602,11 +607,11 @@ export function drawJunctionCharacter(
     } else if (hasUp && hasDown && hasLeft && !hasRight) {
       char = '┤' // T pointing left
     } else if (hasLeft && hasRight) {
-      char = '─' // horizontal only
+      char = '─' // Horizontal only
     } else if (hasUp && hasDown) {
-      char = '│' // vertical only
+      char = '│' // Vertical only
     } else if (hasDown && hasRight) {
-      char = '┌' // corner
+      char = '┌' // Corner
     } else if (hasDown && hasLeft) {
       char = '┐'
     } else if (hasUp && hasRight) {
@@ -614,7 +619,7 @@ export function drawJunctionCharacter(
     } else if (hasUp && hasLeft) {
       char = '┘'
     } else {
-      char = '┼' // fallback
+      char = '┼' // Fallback
     }
   } else {
     char = '+'

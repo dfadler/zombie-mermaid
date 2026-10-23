@@ -137,7 +137,7 @@ describe('horizontal flip helpers', () => {
       roles,
       [
         { x0: 0, x1: 3, y0: 0, y1: 0 },
-        { x0: 1, x1: 1, y0: 0, y1: 0 }, // single column: skipped
+        { x0: 1, x1: 1, y0: 0, y1: 0 }, // Single column: skipped
       ],
       links,
     )
@@ -155,18 +155,17 @@ describe('horizontal flip helpers', () => {
   })
 })
 
-describe('state-end double-line box under flips (#1372)', () => {
+describe('state-end bullseye under flips (#1372)', () => {
   const src = (d: string) => `stateDiagram-v2\n  direction ${d}\n  A --> [*]`
 
-  it('keeps the double box intact when mirrored for RL', () => {
+  it('draws the end state as a single glyph when mirrored for RL', () => {
     const out = render(src('RL'))
-    expect(out).toContain('╔═══╗')
-    expect(out).toContain('╚═══╝')
+    expect(out).toContain('◉')
+    expect(out).not.toContain('╔')
   })
 
-  it('puts the double box top corners on top when flipped for BT', () => {
+  it('puts the end glyph on top when flipped for BT', () => {
     const lines = render(src('BT')).split('\n')
-    expect(lines[0]).toBe('╔═══╗')
-    expect(lines[2]).toBe('╚═══╝')
+    expect(lines[0]!.trim()).toBe('◉')
   })
 })

@@ -154,11 +154,26 @@ Options:
                        VTE-based terminals render them as clickable links;
                        others may show the URL or nothing. Pagers need
                        OSC 8 support too (\`less -R\`, recent versions).
+  --profile <name>     ASCII preset: 'markdown' = plain ASCII characters, no
+                       color, for pasting into issues/commits/fenced blocks
+                       (explicit flags like --coords still win). Requires
+                       --ascii.
   -w, --max-width <n|auto>  Fit ASCII output within this many columns
                        ('auto' detects the terminal width): applies compact
                        spacing automatically when needed, and warns on
                        stderr if it still doesn't fit (no label wrapping or
                        direction-flip — see issue #335).
+  --layout mermaid     Opt in (flowcharts, --ascii): draw mermaid's own ELK layout
+                       instead of the grid renderer. Subgraphs, some shapes,
+                       other diagram types, layout failures and drawings that
+                       cannot fit 120 columns (or -w <n>, used as the cap)
+                       fall back to the default renderer; stderr says which
+                       one ran. --layout mermaid-wide drops the cap and always
+                       draws the (possibly wide) layout-faithful text. Merged
+                       parallel edges hide edge multiplicity. Depends on
+                       mermaid 12.1.0 + elkjs 0.9.3: install the optional peer
+                       with \`pnpm add elkjs-0.9.3@npm:elkjs@0.9.3\`. -x/-y/-p
+                       and --coords do not apply to the layout-faithful drawing.
   --port <n>           Port for the 'web' command (default: 3000)
   -h, --help           Show help
   -v, --version        Show version

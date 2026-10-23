@@ -12,12 +12,12 @@ export interface MeasuredCell {
   /** column/row derived from the drawn pixel position, not from the text */
   col: number
   row: number
-  /** offset (CSS px) of the glyph from its cell's origin */
+  /** Offset (CSS px) of the glyph from its cell's origin */
   dx: number
   dy: number
-  /** glyph width in cells */
+  /** Glyph width in cells */
   w: number
-  /** computed color, '#rrggbb' */
+  /** Computed color, '#rrggbb' */
   color: string
 }
 
@@ -25,11 +25,11 @@ export interface Measured {
   cells: MeasuredCell[]
   cellW: number
   lineH: number
-  /** page (CSS px) coordinates of the cell lattice origin */
+  /** Page (CSS px) coordinates of the cell lattice origin */
   originX: number
   originY: number
   defaultColor: string
-  /** computed background color of the mockup's <pre> */
+  /** Computed background color of the mockup's <pre> */
   background: string
   /**
    * The <pre> scrolls horizontally, so part of the diagram is not visible in
@@ -121,7 +121,7 @@ export async function mountAndMeasure(
       originY,
       defaultColor: toHex(cs.color),
       clipped: pre.scrollWidth > pre.clientWidth + 1,
-      // the <pre> itself is transparent; the color is painted by an ancestor
+      // The <pre> itself is transparent; the color is painted by an ancestor
       background: (() => {
         for (let el: Element | null = pre; el; el = el.parentElement) {
           const bg = getComputedStyle(el).backgroundColor

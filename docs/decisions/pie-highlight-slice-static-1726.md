@@ -1,5 +1,7 @@
 # Pie `highlightSlice` in static output
 
+Status: implemented
+
 ## Context
 
 [#1726](https://github.com/dfadler/zombie-mermaid/issues/1726): `pie.highlightSlice`

@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Merge queue (#1578): required checks must also report on the queue's
+  # temporary gh-readonly-queue/main/* ref or a queued PR waits forever.
+  merge_group:
+    types: [checks_requested]
 
 # Least-privilege default (#1732): every job below also declares its own block,
 # so this only guards a future job that forgets to.
@@ -17,6 +21,8 @@ permissions:
 # native CI badge renders that as "failing". CI runs have no side effects
 # worth protecting mid-flight, so cancelling PR runs is safe (see
 # publish.yml's concurrency block for why it deliberately isn't).
+# merge_group runs are keyed by their unique queue ref and never cancelled
+# (cancelling one would eject the PR from the queue).
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.sha || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -27,7 +33,7 @@ jobs:
   # suppresses the whole workflow leaves required checks never reporting and
   # blocks the PR forever. Here every required check (`test`, `Build site
   # generator check`, `Semgrep SAST scan`, `Changeset present`) is unconditional
-  # and does NOT depend on this job; only visual-regression, bundle-size and
+  # and does NOT depend on this job; only visual-regression and
   # packed-smoke (`code`) and bench (`bench`) are gated, and a job skipped via
   # `if:` reports as skipped, never as missing. Fails open: pushes to main, an
   # empty/failed diff, or any file outside the docs-only lists below set both
@@ -114,18 +120,10 @@ jobs:
           # Full history so check-diff-coverage.ts can diff against
           # origin/main below (a shallow checkout wouldn't have it).
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
 
       - name: Run tests with coverage
         run: pnpm run test:coverage
@@ -142,6 +140,18 @@ jobs:
       # (from codecov.io, once the repo is linked there) as a repo secret —
       # without it this step fails rather than silently skipping, so the
       # badge's data source stays honest about whether it's actually wired up.
+      # The junit report written by config/vitest.config.ts under CI (#1838).
+      # The job summary (Vitest's github-actions reporter) lists any test that
+      # passed only on retry; see CONTRIBUTING.md "Flaky tests".
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: junit-report
+          path: test-results/junit.xml
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
@@ -183,18 +193,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          persist-credentials: false
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
 
       - name: Lint
         run: pnpm run lint
@@ -253,25 +256,58 @@ jobs:
           # the source tree at a historical commit, which a shallow checkout
           # does not contain.
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
 
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # Runs the same generator scripts (index.ts/editor.ts via esbuild) that
+      # Runs the same Vite SSR prerender build (vite.site.config.ts) that
       # pages.yml deploys to GitHub Pages, without the actual deploy step —
       # this only proves the site builds, it never publishes anything and
-      # needs no deploy credentials. Output isn't committed or uploaded.
+      # needs no deploy credentials. Output isn't committed; it is handed to
+      # the `axe` job below as a one-day artifact so that job doesn't rebuild
+      # it (#2077). pages.yml still builds its own copy (see the PR for #2077).
       - name: Build site (generator check only, not deployed)
         run: pnpm run build:site
+
+      - name: Upload built site for the axe job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site
+          path: site
+          retention-days: 1
+          if-no-files-found: error
+
+  # Moved here from the former a11y.yml (#2077) so it reuses build-site's
+  # output. Not a required check and not in the `test` gate's needs, same as
+  # before: a red axe scan never blocked merging, it still shows as its own check.
+  axe:
+    name: axe-core scan of built site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build-site
+    permissions:
+      contents: read # only checks out code, downloads the artifact and scans
+    if: github.repository == 'dfadler/zombie-mermaid'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Download built site
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site
+          path: site
+
+      - name: Run axe scan
+        run: pnpm run test:a11y
 
   visual-regression:
     name: Visual regression (SVG + ASCII screenshots)
@@ -416,22 +452,13 @@ jobs:
           assert_family sans-serif "DejaVu Sans"
           assert_family serif "DejaVu Serif"
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
       # Pinned to 22 even though the image ships a newer Node: SVG and ASCII
       # output are generated in Node (only DOM mounting happens in the
       # browser — see playwright.config.ts and __tests__/visual/helpers/),
       # so the Node version is part of what produced the baselines, and the
       # rest of this workflow's jobs are on 22.
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
 
       # No `playwright install` and no actions/cache step: the container
       # already carries the Chrome-for-Testing build matching the pinned
@@ -489,12 +516,16 @@ jobs:
       # options that could close that remaining gap.
       - name: Write visual regression summary
         if: failure() && steps.visual-tests.conclusion == 'failure'
+        # The job's container (Playwright jammy image) has bash, but the
+        # container default is `sh -e` (dash); the here-string below is
+        # bash-only (#1992).
+        shell: bash
         run: |
           {
             echo "## Visual regression failures (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
             echo
-            if [ -n "${{ steps.upload-report.outputs.artifact-url }}" ]; then
-              echo "[Download the full interactive Playwright report](${{ steps.upload-report.outputs.artifact-url }}) (the \`visual-regression-failures-${{ matrix.shardIndex }}\` artifact) — extract it and run \`pnpm exec playwright show-report playwright-report\` for the side-by-side diff/trace viewer."
+            if [ -n "${STEPS_UPLOAD_REPORT_OUTPUTS_ARTIFACT_URL}" ]; then
+              echo "[Download the full interactive Playwright report](${STEPS_UPLOAD_REPORT_OUTPUTS_ARTIFACT_URL}) (the \`visual-regression-failures-${{ matrix.shardIndex }}\` artifact) — extract it and run \`pnpm exec playwright show-report playwright-report\` for the side-by-side diff/trace viewer."
               echo
             fi
             echo "Failed screenshots:"
@@ -508,6 +539,8 @@ jobs:
               done <<< "$diffs"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          STEPS_UPLOAD_REPORT_OUTPUTS_ARTIFACT_URL: ${{ steps.upload-report.outputs.artifact-url }}
 
   # The `visual-regression-comment` / `visual-regression-resolved` jobs that
   # used to live here (added by #1138) were removed in favor of
@@ -537,18 +570,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          persist-credentials: false
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
 
       - name: Run benchmark
         run: pnpm run bench -- --json=bench-current.json
@@ -620,43 +646,6 @@ jobs:
       # weekly schedule instead — see .github/workflows/dashboard-refresh.yml —
       # fully decoupled from how often main actually gets pushed to.
 
-  bundle-size:
-    name: Bundle size gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read # only checks out code, builds, and checks dist/ sizes; no writes back to the repo
-    # Same fork-of-this-fork guard as the `test` job above — see its comment
-    # for the full reasoning on what github.repository resolves to and what
-    # this does/doesn't protect against.
-    needs: changes
-    if: github.repository == 'dfadler/zombie-mermaid' && needs.changes.outputs.code == 'true'
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build package
-        run: pnpm run build
-
-      # Gates published dist/ output against bundle-size-budget.json — see
-      # scripts/check-bundle-size.ts for why this is an in-house gzip check
-      # rather than a size-limit/bundlewatch dependency, and how to raise a
-      # budget after an intentional, reviewed size increase.
-      - name: Check bundle size
-        run: pnpm run check:bundle-size
-
   packed-smoke:
     name: Packed tarball smoke test
     runs-on: ubuntu-latest
@@ -668,19 +657,12 @@ jobs:
     if: github.repository == 'dfadler/zombie-mermaid' && needs.changes.outputs.code == 'true'
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          persist-credentials: false
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
 
       - name: Build packages
         run: pnpm run build
@@ -707,6 +689,43 @@ jobs:
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      # Report-only (#1870): regenerates etc/api/*.api.md from the build above
+      # (folded in here from a separate job so the build runs once, #1839) and
+      # shows any drift in the job summary. continue-on-error keeps it from
+      # ever failing the PR; drop it to gate on public-API changes.
+      - name: Regenerate API reports (report-only)
+        continue-on-error: true
+        run: pnpm run api:report
+
+      - name: Diff API reports against committed (report-only)
+        continue-on-error: true
+        run: |
+          if git diff --exit-code --quiet -- etc/api; then
+            echo "Public API surface unchanged." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo '### Public API surface changed'
+              echo "Run pnpm run build && pnpm run api:report, then commit etc/api/."
+              echo "\`\`\`diff"
+              git diff -- etc/api
+              echo "\`\`\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Public API surface changed (report-only)"
+            exit 1
+          fi
+
+      # Gates published dist/ output against bundle-size-budget.json — see
+      # scripts/check-bundle-size.ts for why this is an in-house gzip check
+      # rather than a size-limit/bundlewatch dependency, and how to raise a
+      # budget after an intentional, reviewed size increase. Folded in here
+      # from the separate `Bundle size gate` job (not a required check) so the
+      # build runs once (#1839). It stays a blocking step; `!cancelled()` makes
+      # it run even if the smoke test failed, so neither signal hides the other.
+      # Nothing above modifies dist/ (pack and the report steps only read it).
+      - name: Check bundle size
+        if: ${{ !cancelled() }}
+        run: pnpm run check:bundle-size
+
   semgrep:
     name: Semgrep SAST scan
     runs-on: ubuntu-latest
@@ -729,6 +748,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # `--config auto` pulls Semgrep's community rulesets keyed off the
       # languages detected in this repo (no account/token needed — verified
@@ -754,7 +775,9 @@ jobs:
     # this does/doesn't protect against. (The additional event_name check
     # here is unrelated to that guard — it just skips this check on push
     # events, since a changeset is only relevant for a PR that hasn't
-    # merged yet.) The final clause exempts the changesets/action Version
+    # merged yet. The same condition skips it on merge_group: there is no
+    # PR context, it already passed on the PR, and a skipped required check
+    # counts as passing in the queue.) The final clause exempts the changesets/action Version
     # PR: it always modifies package.json/CHANGELOG.md while consuming (and
     # thus never adding) a changeset, so this check would otherwise fail on
     # every release. It's scoped to same-repo PRs (not just the branch name)
@@ -767,6 +790,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # Also exempt: badges/ and bench-history.jsonl, the bot-written data
       # files (publish.yml, dashboard-refresh.yml) that used to carry an empty
@@ -795,20 +819,9 @@ jobs:
       # Node/pnpm setup and install run only when the changeset steps will (they
       # are the only ones that need them), so demo/data-only PRs skip ~24 s of
       # setup (#1600). The job itself still always runs and reports.
-      - name: Setup pnpm
+      - name: Setup pnpm, Node.js and install
         if: steps.diff_scope.outputs.demo_only != 'true'
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        if: steps.diff_scope.outputs.demo_only != 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        if: steps.diff_scope.outputs.demo_only != 'true'
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/setup
 
       - name: Check for changeset
         if: steps.diff_scope.outputs.demo_only != 'true'
@@ -828,9 +841,10 @@ jobs:
       github.repository == 'dfadler/zombie-mermaid' && github.event_name == 'pull_request' &&
       !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # The PR body goes through env, never interpolated into the script.
       - name: No TEMP commits; follow-ups must link an issue

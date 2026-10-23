@@ -21,10 +21,10 @@ function rectanglesOverlap(
   r2: { x: number; y: number; width: number; height: number },
 ): boolean {
   return !(
-    r1.x + r1.width <= r2.x || // r1 is left of r2
-    r2.x + r2.width <= r1.x || // r2 is left of r1
-    r1.y + r1.height <= r2.y || // r1 is above r2
-    r2.y + r2.height <= r1.y // r2 is above r1
+    r1.x + r1.width <= r2.x || // R1 is left of r2
+    r2.x + r2.width <= r1.x || // R2 is left of r1
+    r1.y + r1.height <= r2.y || // R1 is above r2
+    r2.y + r2.height <= r1.y // R2 is above r1
   )
 }
 

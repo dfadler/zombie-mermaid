@@ -122,6 +122,8 @@ Tools (all but the `list_*` ones take a `diagram` string):
 - `render_mermaid_ascii` — plus `useAscii` (plain `+-|>` instead of Unicode
   box-drawing), `paddingX`, `paddingY`, `boxBorderPadding`. Never emits ANSI
   color, so the result pastes cleanly into a chat context.
+- `validate_mermaid` — parse-only syntax check; returns
+  `{ valid, diagnostics }` (invalid syntax is a normal result, not an error).
 - `check_mermaid_sequence_activations` — returns `{ ok, issues }` for a
   `sequenceDiagram`, flagging every `activate X` (or `+` arrow shorthand) with
   no matching `deactivate X`. Mechanical and deterministic, no LLM judgment.

@@ -19,10 +19,12 @@ import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 // `pairLabelWidth` widening in er-diagram.ts — which would make the
 // hGap-driven shift non-linear across padding values).
 const RELATED = `erDiagram
+  direction LR
   CUSTOMER ||--o{ ORDER : x`
 
 // Two disconnected entities — exercises componentGap (vertical stacking).
 const DISCONNECTED = `erDiagram
+  direction LR
   CUSTOMER {
     string name
   }

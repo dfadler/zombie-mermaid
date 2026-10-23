@@ -210,9 +210,11 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         // Every non-space cell on a label row between the side borders is
         // label text, even a `-` or `|` that isBorderChar would call a border.
         const { x: ox, y: oy } = node.drawingCoord
+        // A box-less interface name has no border cells to leave out.
+        const bare = node.shape === 'class-name' ? 1 : 0
         const rect: LabelRect = {
-          x0: ox + 1,
-          x1: ox + node.drawing.length - 2,
+          x0: ox + 1 - bare,
+          x1: ox + node.drawing.length - 2 + bare,
           y0: oy + node.labelRows.top,
           y1: oy + node.labelRows.bottom,
         }
@@ -404,7 +406,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
       graph,
       (x, y) =>
         isVerticalStroke(graph.canvas[x + sg.minX]?.[y + sg.minY]) &&
-        // continues below, so it is an edge passing through, not a stray glyph
+        // Continues below, so it is an edge passing through, not a stray glyph
         (graph.canvas[x + sg.minX]?.[y + sg.minY + 1] ?? ' ') !== ' ',
     )
     graph.canvas = mergeCanvases(graph.canvas, offset, useAscii, labelCanvas)

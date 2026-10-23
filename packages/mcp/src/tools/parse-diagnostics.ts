@@ -1,17 +1,15 @@
 // ============================================================================
 // zombie-mermaid MCP server — parse diagnostics for failed renders
 //
-// The parsers in packages/mermaid-parser (and the flowchart parser in src/)
-// already prefix most syntax errors with "Line N: " where N is the 1-based
-// physical line of the caller's source. This module lifts that into a
-// structured diagnostic (line + the offending source line) so an agent can
+// Every parser throw is a MermaidParseError (#1979), whose `line` is the
+// 1-based physical line of the caller's source. This module lifts that into
+// a structured diagnostic (line + the offending source line) so an agent can
 // fix the one bad line instead of resubmitting the whole diagram blind.
 //
 // Nothing here alters, strips, or partially renders the diagram — it only
-// describes the error. No parser reports a column today, so `column` is
-// never emitted rather than guessed. Errors without a "Line N:" prefix (or
-// whose line is outside the submitted source) get no diagnostic and fall
-// back to the plain message.
+// describes the error. Only the pie parser reports a column, so `column` is
+// not emitted here. Errors with no line (or whose line is outside the
+// submitted source) get no diagnostic and fall back to the plain message.
 // ============================================================================
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
@@ -29,19 +27,18 @@ export interface ParseDiagnostic {
 const LINE_PREFIX = /^Line (\d+): ([\s\S]*)$/
 
 /**
- * Extract a diagnostic from a parser error message, or `undefined` when the
- * message carries no usable line reference for `diagram`.
+ * Extract a diagnostic from a parser error, or `undefined` when it is not a
+ * `MermaidParseError` with a usable line for `diagram`.
  */
 export function extractParseDiagnostic(
-  message: string,
+  err: unknown,
   diagram: string,
-  typedLine?: number,
 ): ParseDiagnostic | undefined {
-  // Prefer the typed `MermaidParseError.line`; the "Line N: " regex is the
-  // fallback for throw sites that have not migrated yet.
+  if (!(err instanceof MermaidParseError) || err.line === undefined) {
+    return undefined
+  }
+  const { line, message } = err
   const match = LINE_PREFIX.exec(message)
-  const line = typedLine ?? (match === null ? NaN : Number(match[1]))
-  if (!Number.isSafeInteger(line)) return undefined
   const sourceLine = diagram.split(/\r?\n/)[line - 1]
   if (line < 1 || sourceLine === undefined) return undefined
   return { line, sourceLine, message: match?.[2] ?? message }
@@ -62,11 +59,7 @@ export function renderErrorResult(
   const content: CallToolResult['content'] = [
     { type: 'text', text: `${prefix}: ${message}` },
   ]
-  const diagnostic = extractParseDiagnostic(
-    message,
-    diagram,
-    err instanceof MermaidParseError ? err.line : undefined,
-  )
+  const diagnostic = extractParseDiagnostic(err, diagram)
   if (diagnostic !== undefined) {
     content.push({
       type: 'text',

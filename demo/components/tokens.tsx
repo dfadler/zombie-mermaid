@@ -56,7 +56,7 @@ export const COLORS = {
   /** Secondary ink: sub-heads, descriptions, nav links at rest. */
   '--text-dim': '#9aa3c4',
   /** Tertiary ink: captions, timestamps, disabled states. */
-  '--text-faint': '#6b7398',
+  '--text-faint': '#7f86a6',
   /** Accent — flowchart. */
   '--blue': '#4d8dff',
   /** Accent — state. */
@@ -505,6 +505,12 @@ a:hover {
   color: var(--pink);
 }
 
+/* Links inside running text: colour alone is not a cue (WCAG 1.4.1, #1810). */
+a.inline-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* The one shared keyboard-focus ring for every page that composes
  * designBaseCss() (#1762). Page stylesheets must not redeclare it. */
 a:focus-visible,
@@ -516,6 +522,12 @@ summary:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
+}
+
+/* The hero panel's edge-fade mask clips anything outside its border box,
+ * so the outset ring above is invisible there; draw it inside instead. */
+.hero-code-panel:focus-visible {
+  outline-offset: -2px;
 }`
 }
 

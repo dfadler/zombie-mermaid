@@ -1,8 +1,19 @@
 {
   "name": "@zombie-mermaid/mcp",
-  "version": "5.2.0",
+  "version": "5.9.0",
   "license": "MIT",
-  "description": "Model Context Protocol server exposing zombie-mermaid's SVG and ASCII rendering as MCP tools.",
+  "description": "Model Context Protocol server exposing zombie-mermaid's SVG and ASCII rendering as MCP tools (maintained continuation of beautiful-mermaid).",
+  "keywords": [
+    "mermaid",
+    "zombie-mermaid",
+    "beautiful-mermaid",
+    "diagram",
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
+    "ai-agent",
+    "llm-tools"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/dfadler/zombie-mermaid",
@@ -35,6 +46,7 @@
   },
   "files": [
     "dist/",
+    "!dist/**/*.map",
     "LICENSE"
   ],
   "dependencies": {
@@ -42,9 +54,12 @@
     "@zombie-mermaid/mermaid-parser": "workspace:*",
     "@zombie-mermaid/svg-renderer": "workspace:*",
     "@zombie-mermaid/ascii-renderer": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "zod": "^4.5.4",
-    "elkjs": "^0.11.0"
+    "elkjs": "^0.12.0"
+  },
+  "scripts": {
+    "build": "vite build --app --config vite.config.ts && vite build --config vite.worker.config.ts"
   },
   "engines": {
     "node": ">=24"

@@ -1,7 +1,8 @@
 /**
- * #1399: two labeled edges that reach one port of a node from opposite sides
- * (CI/CD's `Tests Pass? -->|No| Fix & Retry` and `QA Approved? -->|No| ...`)
- * each get their own column and arrowhead instead of merging into one.
+ * #1399: two labeled edges that reach one node (CI/CD's `Tests Pass? -->|No|
+ * Fix & Retry` and `QA Approved? -->|No| ...`) each get their own arrowhead
+ * instead of merging into one. Since #2111 the second one is a feedback edge
+ * (mermaid 12's `orientFeedbackEdges`) that rises into the node from below.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -27,10 +28,19 @@ const arrowheadsAbove = (out: string, label: string): number => {
   return [...span].filter((c) => c === '▼').length
 }
 
+const arrowheadsBelow = (out: string, label: string): number => {
+  const rows = out.split('\n')
+  const at = rows.findIndex((r) => r.includes(label))
+  const col = rows[at]!.indexOf(label)
+  const span = (rows[at + 3] ?? '').slice(col - 2, col + label.length + 2)
+  return [...span].filter((c) => c === '▲').length
+}
+
 describe('ASCII labeled arrivals from opposite sides (#1399)', () => {
   it('gives each labeled edge into Fix & Retry its own arrowhead', () => {
     const out = renderMermaidASCII(CI_CD, { colorMode: 'none' })
-    expect(arrowheadsAbove(out, 'Fix & Retry')).toBe(2)
+    expect(arrowheadsAbove(out, 'Fix & Retry')).toBe(1)
+    expect(arrowheadsBelow(out, 'Fix & Retry')).toBe(1)
   })
 
   it('leaves unlabeled fan-in sharing one arrowhead', () => {

@@ -2,6 +2,7 @@
 
 **Breaking change** (major release, [#1370](https://github.com/dfadler/zombie-mermaid/issues/1370)).
 Design and measurements: [docs/research/1370-elkjs-optional-peer-dep.md](../research/1370-elkjs-optional-peer-dep.md).
+Decision record: [elkjs-optional-peer-1370.md](../decisions/elkjs-optional-peer-1370.md).
 
 [`elkjs`](https://github.com/kieler/elkjs) (about 466 KB gzipped) lays out
 flowchart, state, class, ER and architecture diagrams. The library no longer
@@ -92,7 +93,7 @@ Nothing to do, and you no longer pay for elk in your bundle.
 ## Package manifests
 
 - `@zombie-mermaid/svg-renderer`: `elkjs` moved from `dependencies` to
-  `peerDependencies` (`^0.11.0`, `peerDependenciesMeta.optional`).
+  `peerDependencies` (`^0.11.0 || ^0.12.0`, `peerDependenciesMeta.optional`).
 - `@zombie-mermaid/core`: no dependencies (the `elkjs` type import is gone).
 - `zombie-mermaid` and `@zombie-mermaid/mcp`: still list `elkjs` under
   `dependencies`, because they ship the CLI and MCP server.

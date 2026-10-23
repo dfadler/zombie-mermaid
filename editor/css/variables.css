@@ -74,7 +74,9 @@
   --radius: 8px;
 
   /* Semantic status colors */
-  --green: #16a34a;
+  /* Mixed toward --t-fg so it clears 4.5:1 on both light and dark editor
+   * themes (plain #16a34a on white was 3.29:1, #1815). */
+  --green: color-mix(in srgb, #16a34a 75%, var(--t-fg));
   --red: #dc2626;
 }
 
@@ -85,11 +87,7 @@ body {
 }
 
 body {
-  font-family:
-    'Geist',
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--fg);
   display: flex;

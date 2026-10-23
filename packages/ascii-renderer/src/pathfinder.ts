@@ -154,6 +154,18 @@ const MOVE_DIRS: GridCoord[] = [
 const MAX_ITERATIONS = 50_000
 
 /**
+ * Count of searches abandoned at a cap (per-call MAX_ITERATIONS or the
+ * render-wide budget running dry). Test-only diagnostics (#1859): a cap hit
+ * silently degrades routing, so tests gate on it. Not re-exported publicly.
+ */
+let capHits = 0
+export const takeCapHits = (): number => {
+  const n = capHits
+  capHits = 0
+  return n
+}
+
+/**
  * A mutable, render-wide budget shared across every getPath call made while
  * laying out one graph (see grid.ts's createMapping, which creates one
  * fresh budget per render and threads it through edge-routing.ts and
@@ -238,10 +250,14 @@ export function getPath(
   let iterations = 0
   while (pq.length > 0) {
     if (++iterations > MAX_ITERATIONS) {
+      capHits++
       return null
     }
     if (budget) {
-      if (budget.remaining <= 0) return null
+      if (budget.remaining <= 0) {
+        capHits++
+        return null
+      }
       budget.remaining--
     }
 
@@ -367,7 +383,7 @@ function isAxisRunFree(
 ): boolean {
   if (from.x === to.x && from.y === to.y) return true
   const alongY = from.x === to.x
-  if (!alongY && from.y !== to.y) return false // not axis-aligned
+  if (!alongY && from.y !== to.y) return false // Not axis-aligned
 
   const step = alongY ? (to.y > from.y ? 1 : -1) : to.x > from.x ? 1 : -1
   let pos = alongY ? from.y : from.x

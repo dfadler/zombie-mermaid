@@ -50,7 +50,10 @@ function blankColumn(height: number): string[] {
  */
 function setCell(canvas: Canvas, x: number, y: number, ch: string): void {
   let col = canvas[x]!
-  if (Object.isFrozen(col)) canvas[x] = col = col.slice()
+  // A frozen column is always the all-space blank; V8's slice() of a frozen
+  // array is ~30x slower than a fresh fill and made per-edge layers cubic.
+  if (Object.isFrozen(col))
+    canvas[x] = col = new Array<string>(col.length).fill(' ')
   col[y] = ch
 }
 
@@ -709,6 +712,9 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
   // Unicode arrows
   '▲': '▼',
   '▼': '▲',
+  // Hollow triangles (class inheritance / realization markers)
+  '△': '▽',
+  '▽': '△',
   // Diagonal arrowheads — U+2196–U+2199, not the filled triangles (◢◣◤◥),
   // since JetBrains Mono NL has no glyph for those at all. See
   // draw-arrows.ts's drawArrowHead and issue #1062.
@@ -861,6 +867,11 @@ const HORIZONTAL_FLIP_MAP: Record<string, string> = {
   '◄': '►',
   '>': '<',
   '<': '>',
+  // Class diagram end markers (class-flow.ts): hollow triangle, open arrow
+  '▷': '◁',
+  '◁': '▷',
+  '▶': '◀',
+  '◀': '▶',
   // Diagonal arrowheads (U+2196-U+2199)
   '↖': '↗',
   '↗': '↖',

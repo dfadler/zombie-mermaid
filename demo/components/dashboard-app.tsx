@@ -119,9 +119,9 @@ export function RepoMetricsCard({
 }: RepoMetricsView) {
   // --text-faint here (opacity 0.75 on top of it) computes to a ~2.65:1
   // contrast ratio against the card background — well under WCAG AA's 3:1
-  // floor even for this card's large 32px numbers. --text-dim clears ~4.44:1,
-  // comfortably above 3:1 and effectively at the 4.5:1 normal-text threshold
-  // too, while the opacity still reads as "muted" against the highlighted
+  // floor even for this card's large 32px numbers. --text-dim at opacity 0.8
+  // clears ~4.9:1 (0.75 was 4.46:1, just under the 4.5:1 normal-text
+  // threshold axe enforces, #1815), while the opacity still reads as "muted" against the highlighted
   // fork card.
   const ink = highlight ? accentVar('green') : colorVar('--text-dim')
   return (
@@ -132,7 +132,7 @@ export function RepoMetricsCard({
         display: 'flex',
         flexDirection: 'column',
         gap: `${SPACE['7xl']}px`,
-        opacity: highlight ? 1 : 0.75,
+        opacity: highlight ? 1 : 0.8,
       }}
     >
       <div
@@ -164,7 +164,7 @@ export function RepoMetricsCard({
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          // gap lives in dashboard.css instead of here (not inline) so its
+          // Gap lives in dashboard.css instead of here (not inline) so its
           // mobile breakpoint override can win via plain cascade order
           // instead of needing !important to beat this inline style
           // (zombie-mermaid#1080).

@@ -39,6 +39,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // in ascii-er-relationship-label-corruption-350.test.ts uses.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         FIRST_ENTITY ||--|{ MIDDLE_ENTITY : contains
         MIDDLE_ENTITY ||--o{ THIRD_ENTITY : includes
         FIRST_ENTITY ||--o| THIRD_ENTITY : relates_to
@@ -63,23 +64,27 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // its dashes, with no separator — the same label-lands-on-a-foreign-line
     // defect issue #1119 fixes. "tracks" now relocates to its own row next
     // to its own marker instead.
-    expect(ascii).toContain('└─────────────────│─────────────────┘')
+    //
+    // The "tracks" stem (MIDDLE_ENTITY down to FIFTH_ENTITY) crosses the
+    // detour row, and the crossing is a '┼' junction (#2112), not a plain
+    // '│' that reads as the detour ending and restarting.
+    expect(ascii).toMatch(/└─+┼─+┘/)
     const lines = ascii.split('\n')
-    const detourLineIndex = lines.findIndex((l) =>
-      l.includes('└─────────────────│─────────────────┘'),
-    )
+    const detourLineIndex = lines.findIndex((l) => /└─+┼─+┘/.test(l))
     expect(detourLineIndex).toBeGreaterThan(0)
     // MIDDLE_ENTITY's "tracks" marker ('┼', flush against its own border)
-    // sits on the row immediately above the detour line.
-    expect(lines[detourLineIndex - 1]).toMatch(/┼/)
+    // sits above the detour line, which starts below the two-row markers
+    // (#2083) instead of crossing their circle row.
+    expect(lines.slice(0, detourLineIndex).some((l) => /┼/.test(l))).toBe(true)
     // "relates_to" (this detour's own label) sits on the row right below it.
     expect(lines[detourLineIndex + 1]).toContain('relates_to')
     expect(ascii).toContain('relates_to')
     expect(ascii).toContain('tracks')
-    // "tracks" renders next to its own bottom marker ('○╟'), not spliced
-    // onto the unrelated detour line above.
-    const tracksLine = lines.find((l) => l.includes('tracks'))
-    expect(tracksLine).toContain('○╟')
+    // "tracks" renders above its own two-row bottom marker ('○' then '╧',
+    // #2083), not spliced onto the unrelated detour line above.
+    const tracksIdx = lines.findIndex((l) => l.includes('tracks'))
+    expect(tracksIdx).not.toBe(detourLineIndex)
+    expect(lines.slice(tracksIdx + 1).some((l) => l.includes('╧'))).toBe(true)
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
 
@@ -89,6 +94,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // ascii-er-jog-stray-line.test.ts's stray-duplicate-line fix.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER ||--o{ LOG_ENTRY : generates
         USER ||..o{ SESSION : opens`,
       { colorMode: 'none' },
@@ -103,9 +109,12 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // (#390's flush-marker change, merged after this test was first
     // written, shifted the marker there).
     const lines = ascii.split('\n')
-    const jogLineIndex = lines.findIndex((l) => l.includes('└┐ opens'))
+    const jogLineIndex = lines.findIndex((l) => l.includes('└┐'))
     expect(jogLineIndex).toBeGreaterThan(0)
-    expect(lines[jogLineIndex - 1]).toMatch(/┼/)
+    // (#2112: the jog now starts past the marker rows, so a stem row sits
+    // between the marker and the corner and the marker is somewhere above.)
+    expect(lines.slice(0, jogLineIndex).some((l) => /┼/.test(l))).toBe(true)
+    expect(ascii).toContain('opens')
   })
 
   it('draws the ASCII-mode corner glyph ("+") at the same jog, in useAscii mode', () => {
@@ -119,6 +128,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // why there are two adjacent corners here at all.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         USER ||--o{ LOG_ENTRY : generates
         USER ||..o{ SESSION : opens`,
       { colorMode: 'none', useAscii: true },
@@ -129,7 +139,8 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // vertical "one" marker sits on its own row above this line, flush
     // against USER's border (#390's flush-marker change) — not fused onto
     // this line the way an earlier version of this comment assumed.
-    expect(ascii).toContain('++ opens')
+    expect(ascii).toContain('++')
+    expect(ascii).toContain('opens')
   })
 
   it("draws corner glyphs at a vertical relationship's multi-row-obstruction bypass", () => {
@@ -139,6 +150,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // two short jogs (one leaving A's row, one entering G's row).
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd
@@ -178,8 +190,10 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // exact shape — each jog's two corners now land on the very same row
     // (self-contained '┌'...'┘' runs) rather than sharing a row with a
     // marker glyph the way the pre-#1134 geometry did.
-    expect(ascii).toContain('┌─────────────────────────┘')
-    expect(ascii).toContain('┌────────────────────┘')
+    // (The bypass's own label now shares its horizontal run, since
+    // two-row markers (#2083) leave the jog row between them.)
+    expect(ascii).toMatch(/┌─+ cd ─+┘/)
+    expect(ascii).toMatch(/┌─+ fg ─+┘/)
     expect(ascii).toContain('ag')
   })
 
@@ -206,6 +220,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // integrity, not a specific rendered character.
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd
@@ -253,6 +268,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // not a specific rendered character).
     const ascii = renderMermaidASCII(
       `erDiagram
+        direction LR
         A ||--o{ B : ab
         B ||--o{ C : bc
         C ||--o{ D : cd

@@ -8,7 +8,11 @@ import type {
   PositionedNote,
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
-import { ACTOR_LABEL_OFFSET, boxLabelHeight } from './layout.ts'
+import {
+  ACTOR_LABEL_OFFSET,
+  boxLabelHeight,
+  hasLabelBelowIcon,
+} from './layout.ts'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
@@ -84,11 +88,12 @@ export function renderSequenceSvg(
         decorative,
         undefined,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   parts.push('<defs>')
 
   // Arrow marker definitions
@@ -159,12 +164,33 @@ function arrowMarkerDefs(): string {
 // ============================================================================
 
 /**
+ * Icons for `@{ "type": ... }` participants, in the stick figure's 24x24
+ * space, centred on x=12. `paint` carries fill + stroke for closed shapes,
+ * `line` is stroke-only for open ones.
+ */
+const ICON_SHAPES: Record<string, (paint: string, line: string) => string> = {
+  boundary: (paint, line) =>
+    `\n    <circle cx="15" cy="12" r="8" ${paint} />` +
+    `\n    <path d="M1 6V18M1 12H7" ${line} />`,
+  control: (paint, line) =>
+    `\n    <circle cx="12" cy="13" r="9" ${paint} />` +
+    `\n    <path d="M13 1L10 4L13 7" ${line} />`,
+  entity: (paint, line) =>
+    `\n    <circle cx="12" cy="11" r="9" ${paint} />` +
+    `\n    <path d="M3 22H21" ${line} />`,
+  database: (paint, line) =>
+    `\n    <path d="M2 5A10 3.5 0 0 1 22 5V19A10 3.5 0 0 1 2 19Z" ${paint} />` +
+    `\n    <path d="M2 5A10 3.5 0 0 0 22 5" ${line} />`,
+}
+
+/**
  * Render an actor box (participant = rectangle, actor = stick figure).
  * Wrapped in <g class="actor"> with semantic data attributes.
  */
 function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
-  const { id, x, y, width, height, label, type } = actor
+  const { id, x, y, width, height, label, type, participantType } = actor
   const parts: string[] = []
+  const labelStyle = f`font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`
 
   // Semantic wrapper with actor metadata
   parts.push(
@@ -177,10 +203,10 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
     // and centered both horizontally and vertically within the box.
     // Stroke width is inverse-scaled so the visual thickness matches STROKE_WIDTHS.outerBox.
     const s = (height / 24) * 0.9
-    const tx = x - 12 * s // center icon horizontally on actor.x
-    const ty = y + (height - 24 * s) / 2 // center icon vertically in actor box
-    const sw = STROKE_WIDTHS.outerBox / s // compensate for scale transform
-    const iconStroke = 'var(--_line)' // use line color for actor icon strokes
+    const tx = x - 12 * s // Center icon horizontally on actor.x
+    const ty = y + (height - 24 * s) / 2 // Center icon vertically in actor box
+    const sw = STROKE_WIDTHS.outerBox / s // Compensate for scale transform
+    const iconStroke = 'var(--_line)' // Use line color for actor icon strokes
 
     parts.push(
       f`  <g transform="translate(${tx},${ty}) scale(${s})">` +
@@ -200,24 +226,68 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
           x,
           y + height + ACTOR_LABEL_OFFSET,
           fontSizes.nodeLabel,
-          f`font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
+          labelStyle,
         ),
     )
-  } else {
-    // Participant: rectangle box with label (supports multi-line)
-    const boxX = x - width / 2
+  } else if (hasLabelBelowIcon(actor)) {
+    // `@{ "type": boundary | control | entity | database }`: a free-standing
+    // icon (same 24x24 scaling as the stick figure) with the label below it.
+    const s = (height / 24) * 0.9
+    const sw = STROKE_WIDTHS.outerBox / s
+    const paint = f`fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${sw}"`
+    const line = f`fill="none" stroke="var(--_node-stroke)" stroke-width="${sw}"`
+    const icon = ICON_SHAPES[participantType!]!(paint, line)
     parts.push(
-      f`  <rect x="${boxX}" y="${y}" width="${width}" height="${height}" rx="4" ry="4" ` +
-        f`fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`  <g transform="translate(${x - 12 * s},${y + (height - 24 * s) / 2}) scale(${s})">${icon}\n  </g>`,
     )
     parts.push(
       '  ' +
         renderMultilineText(
           label,
           x,
-          y + height / 2,
+          y + height + ACTOR_LABEL_OFFSET,
           fontSizes.nodeLabel,
-          f`font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
+          labelStyle,
+        ),
+    )
+  } else {
+    // Participant: rectangle box with label (supports multi-line). `queue`
+    // (horizontal cylinder) and `collections` (stacked boxes) swap the
+    // outline and keep the label inside.
+    const boxX = x - width / 2
+    const paint = f`fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}"`
+    let labelX = x
+    let labelY = y + height / 2
+    if (participantType === 'queue') {
+      const rx = 8
+      const ry = height / 2
+      const x0 = boxX + rx
+      const x1 = boxX + width - rx
+      parts.push(
+        f`  <path d="M${x0},${y}H${x1}A${rx},${ry} 0 0 1 ${x1},${y + height}H${x0}A${rx},${ry} 0 0 1 ${x0},${y}Z" ${paint} />`,
+        f`  <path d="M${x1},${y}A${rx},${ry} 0 0 0 ${x1},${y + height}" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      )
+    } else if (participantType === 'collections') {
+      const off = 4
+      parts.push(
+        f`  <rect x="${boxX + off}" y="${y}" width="${width - off}" height="${height - off}" rx="4" ry="4" ${paint} />`,
+        f`  <rect x="${boxX}" y="${y + off}" width="${width - off}" height="${height - off}" rx="4" ry="4" ${paint} />`,
+      )
+      labelX = x - off / 2
+      labelY = y + off / 2 + (height - off) / 2
+    } else {
+      parts.push(
+        f`  <rect x="${boxX}" y="${y}" width="${width}" height="${height}" rx="4" ry="4" ${paint} />`,
+      )
+    }
+    parts.push(
+      '  ' +
+        renderMultilineText(
+          label,
+          labelX,
+          labelY,
+          fontSizes.nodeLabel,
+          labelStyle,
         ),
     )
   }
@@ -298,6 +368,7 @@ function collectLabelBoxes(
   }
 
   for (const block of diagram.blocks) {
+    if (isHighlightRect(block)) continue
     const tab = `${block.type}${block.label ? ` [${block.label}]` : ''}`
     const tabWidth =
       estimateTextWidth(
@@ -559,12 +630,31 @@ function renderParticipantBox(
   return parts.join('\n')
 }
 
+/** A `rect <color>` highlight: drawn as a filled region, with no frame or header tab. */
+function isHighlightRect(
+  block: PositionedBlock,
+): block is PositionedBlock & { color: string } {
+  return block.type === 'rect' && block.color !== undefined
+}
+
 /**
  * Render a block background (loop/alt/opt).
  * Wrapped in <g class="block"> with semantic data attributes.
  */
 function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   const parts: string[] = []
+
+  // `rect <color>`: a bare filled region, no frame or tab (as in Mermaid).
+  // `block.color` is emitted verbatim — safe for the same reason as
+  // `box.color`: the parser only records a value that passed `isCssColor`.
+  if (isHighlightRect(block)) {
+    return [
+      f`<g class="block" data-type="rect" data-color="${escapeAttr(block.color)}">`,
+      f`  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
+        f`fill="${escapeAttr(block.color)}" />`,
+      '</g>',
+    ].join('\n')
+  }
 
   // Semantic wrapper with block metadata
   const labelAttr = block.label

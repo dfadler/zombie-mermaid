@@ -270,7 +270,7 @@ describe('renderMermaidSVG – styleAttribute: false', () => {
       })
 
       expect(rootStyleAttr(withAttr)).toBe(
-        '--bg:#FFFFFF;--fg:#27272A;background:var(--bg)',
+        '--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)',
       )
       expect(rootStyleAttr(without)).toBeUndefined()
 
@@ -414,12 +414,12 @@ describe('default output is unchanged when neither option is set', () => {
     (_name, { src, options }) => {
       const svg = renderMermaidSVG(src, options)
       const tag = rootTag(svg)
-      // xychart splices `data-xychart-colors` in front of xmlns, so check
+      // Xychart splices `data-xychart-colors` in front of xmlns, so check
       // for the attribute run rather than a fixed prefix.
       expect(tag).toContain('xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ')
       expect(
         tag.endsWith(
-          ' style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">',
+          ' style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">',
         ),
       ).toBe(true)
       expect(tag).not.toContain('nonce')

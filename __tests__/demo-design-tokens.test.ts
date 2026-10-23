@@ -52,7 +52,8 @@ const CANVAS_PALETTE = {
   '--border': '#2a3252',
   '--text': '#eef1fb',
   '--text-dim': '#9aa3c4',
-  '--text-faint': '#6b7398',
+  // Lifted from the canvas's #6b7398 to clear axe's 4.5:1 on --panel-2 (#1815).
+  '--text-faint': '#7f86a6',
   '--blue': '#4d8dff',
   '--violet': '#a374e8',
   '--cyan': '#38e0d0',

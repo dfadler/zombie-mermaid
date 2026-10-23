@@ -463,6 +463,12 @@ const SCROLL_FADE_WIDTH = 32
  * `dangerouslySetInnerHTML`, which this component has no other way to
  * style.
  */
+const SCROLL_REGION = {
+  tabIndex: 0,
+  role: 'region',
+  'aria-label': 'ASCII output (scrollable)',
+} as const
+
 const ASCII_WELL_STYLE: CSSProperties = {
   margin: 0,
   padding: `${SPACE.xl}px`,
@@ -546,12 +552,18 @@ function AsciiWellFade({ side }: { side: 'left' | 'right' }) {
  * chrome, which the site fully controls and already hydrates.
  */
 function AsciiWell({ text, html }: { text?: string; html?: string }) {
+  // Scrollable region: focusable + named so keyboard users can scroll it (#1811).
   const ref = useRef<HTMLPreElement>(null)
   const { left, right } = useScrollFade(ref)
   return (
     <div style={{ position: 'relative', minWidth: 0 }}>
       {html === undefined ? (
-        <pre ref={ref} className="fix-ascii mono" style={ASCII_WELL_STYLE}>
+        <pre
+          ref={ref}
+          className="fix-ascii mono"
+          style={ASCII_WELL_STYLE}
+          {...SCROLL_REGION}
+        >
           {text}
         </pre>
       ) : (
@@ -559,6 +571,7 @@ function AsciiWell({ text, html }: { text?: string; html?: string }) {
           ref={ref}
           className="fix-ascii mono"
           style={ASCII_WELL_STYLE}
+          {...SCROLL_REGION}
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- ascii-html.ts output for this repo's own build-time render, never user input
           dangerouslySetInnerHTML={{ __html: html }}
         />
@@ -573,9 +586,11 @@ function AsciiWell({ text, html }: { text?: string; html?: string }) {
 export function FixPanel({
   content,
   accent,
+  label = 'Rendered diagram',
 }: {
   content: PanelContent
   accent: Accent
+  label?: string
 }) {
   switch (content.kind) {
     case 'error':
@@ -642,7 +657,13 @@ export function FixPanel({
             minWidth: 0,
           }}
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- renderMermaidSVG output for this repo's own build-time render, never user input
-          dangerouslySetInnerHTML={{ __html: content.html }}
+          // aria-label names the role=img SVG for AT (svg-img-alt, #1812); the renderer's output is unchanged.
+          dangerouslySetInnerHTML={{
+            __html: content.html.replace(
+              '<svg',
+              `<svg aria-label="${label.replace(/"/g, '&quot;')}"`,
+            ),
+          }}
         />
       )
   }
@@ -692,9 +713,11 @@ function BeforeAfterLabel({ side }: { side: 'before' | 'after' }) {
 function BeforeAfterPanel({
   side,
   content,
+  title,
 }: {
   side: 'before' | 'after'
   content: PanelContent
+  title: string
 }) {
   const accent: Accent = side === 'before' ? 'amber' : 'green'
   return (
@@ -715,7 +738,11 @@ function BeforeAfterPanel({
       }}
     >
       <BeforeAfterLabel side={side} />
-      <FixPanel content={content} accent={accent} />
+      <FixPanel
+        content={content}
+        accent={accent}
+        label={`${side === 'before' ? 'Before' : 'After'}: ${title}`}
+      />
     </div>
   )
 }
@@ -757,7 +784,7 @@ export function FixSection({
   return (
     <section id={id}>
       <Card
-        // padding lives in fork-fixes.css instead of via this prop (which
+        // Padding lives in fork-fixes.css instead of via this prop (which
         // would render as an inline style) so the breakpoint overrides
         // below can win via plain cascade order instead of needing
         // !important to beat an inline style (zombie-mermaid#1080).
@@ -836,8 +863,8 @@ export function FixSection({
             gap: `${SPACE['4xl']}px`,
           }}
         >
-          <BeforeAfterPanel side="before" content={before} />
-          <BeforeAfterPanel side="after" content={after} />
+          <BeforeAfterPanel side="before" content={before} title={title} />
+          <BeforeAfterPanel side="after" content={after} title={title} />
         </div>
 
         <div
@@ -984,7 +1011,11 @@ export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
                 color: colorVar('--text-dim'),
               }}
             >
-              Many more ship in the <a href={CHANGELOG_URL}>changelog</a>.
+              Many more ship in the{' '}
+              <a className="inline-link" href={CHANGELOG_URL}>
+                changelog
+              </a>
+              .
             </span>
           </div>
         </div>

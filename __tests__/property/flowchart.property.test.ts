@@ -79,7 +79,9 @@ describe('flowchart properties (#1860)', () => {
       }),
       PARAMS,
     )
-  })
+    // 30 s timeout: two full SVG layouts per generated case, ~4 s alone and
+    // several-fold slower under full-suite worker contention (#1825).
+  }, 30_000)
 
   it('ASCII canvas is rectangular (equal-width lines)', () => {
     fc.assert(

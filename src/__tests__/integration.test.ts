@@ -191,7 +191,7 @@ describe('renderMermaidSVG – Batch 1 shapes', () => {
   it('renders subroutine shape with inner vertical lines', () => {
     const svg = renderMermaidSVG('graph TD\n  A[[Subroutine]] --> B')
     expect(svg).toContain('>Subroutine</text>')
-    expect(svg).toContain('<line') // inner vertical lines
+    expect(svg).toContain('<line') // Inner vertical lines
   })
 
   it('renders double circle with two <circle> elements', () => {
@@ -216,7 +216,7 @@ describe('renderMermaidSVG – Batch 2 shapes', () => {
   it('renders cylinder / database', () => {
     const svg = renderMermaidSVG('graph TD\n  A[(Database)] --> B')
     expect(svg).toContain('>Database</text>')
-    expect(svg).toContain('<ellipse') // cylinder cap
+    expect(svg).toContain('<ellipse') // Cylinder cap
   })
 
   it('renders asymmetric / flag', () => {
@@ -243,7 +243,7 @@ describe('renderMermaidSVG – Batch 2 edge features', () => {
   })
 
   it('renders bidirectional arrows', () => {
-    // ids carry a per-render scope prefix (#1397); strip it to check the name
+    // Ids carry a per-render scope prefix (#1397); strip it to check the name
     const svg = renderMermaidSVG('graph TD\n  A <--> B').replace(
       /zm[0-9a-z]+-/g,
       '',
@@ -680,7 +680,7 @@ describe('renderMermaidSVG – embedSource', () => {
     // Escaped form must not contain raw special characters that would break
     // a double-quoted attribute or XML well-formedness.
     expect(escaped).not.toContain('"')
-    expect(escaped).not.toMatch(/<[^!]/) // no raw '<' opening a tag
+    expect(escaped).not.toMatch(/<[^!]/) // No raw '<' opening a tag
     expect(escaped).toContain('&amp;')
     expect(escaped).toContain('&lt;')
     expect(escaped).toContain('&gt;')

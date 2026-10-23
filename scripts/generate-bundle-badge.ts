@@ -30,7 +30,7 @@
  * badges/bundle-size.json back to main if the number changed.
  */
 
-import { build } from 'esbuild'
+import { bundleSource } from './vite-bundle.ts'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname } from 'node:path'
@@ -84,22 +84,15 @@ async function readDep(dep: Dep): Promise<Buffer[]> {
   if (dep.kind === 'file') {
     return [await readFile(svgRequire.resolve(dep.specifier))]
   }
-  const result = await build({
-    stdin: {
-      contents: `export { ${dep.exports.join(', ')} } from '${dep.specifier}'`,
-      // Resolve from the SVG renderer's own node_modules (pnpm doesn't hoist).
-      resolveDir: SVG_PACKAGE_DIR,
-    },
-    bundle: true,
-    minify: true,
-    format: 'esm',
-    platform: 'neutral',
-    mainFields: ['module', 'main'],
-    conditions: ['import'],
-    write: false,
-    logLevel: 'silent',
-  })
-  return result.outputFiles.map((f) => Buffer.from(f.contents))
+  // Resolve from the SVG renderer's own node_modules (pnpm doesn't hoist).
+  return [
+    Buffer.from(
+      await bundleSource(
+        `export { ${dep.exports.join(', ')} } from '${dep.specifier}'`,
+        SVG_PACKAGE_DIR,
+      ),
+    ),
+  ]
 }
 
 const TARGETS = [

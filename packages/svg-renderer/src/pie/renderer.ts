@@ -67,7 +67,7 @@ function pieStyles(
 
   const vars = indices.map(
     (i) =>
-      `    --pie-color-${i}: ${pieColorValue(i, colors.accent, colors.bg)};`,
+      `    --pie-color-${i}: ${chart.sliceColors?.[i] ?? pieColorValue(i, colors.accent, colors.bg)};`,
   )
   const rules = indices.map(
     (i) =>
@@ -126,7 +126,7 @@ export function renderPieSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   parts.push(pieStyles(chart, colors, emit.nonce))
 
   parts.push(

@@ -1,0 +1,56 @@
+name: Scorecard
+
+# OpenSSF Scorecard (#1872). Informational: nothing gates on the score, and
+# the README carries no badge until a real score exists. Many checks cannot
+# reach 10 for a solo-maintained repo; see docs/RELEASING.md "Supply-chain
+# signals" for what is expected and which settings the maintainer owns.
+#
+# No `push: [main]` trigger (#2250): ~20 runs/day re-scored an unchanged
+# repo; the weekly run plus branch_protection_rule keep the score fresh.
+#
+# Restrictions imposed by `publish_results: true`
+# (https://github.com/ossf/scorecard-action#workflow-restrictions): no
+# top-level env/defaults, no workflow-level write permissions, id-token: write
+# only on the scorecard job, and only approved actions in that job.
+on:
+  schedule:
+    - cron: '23 5 * * 1' # weekly, Monday
+  branch_protection_rule: # re-score when protection settings change
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    # Same fork guard as publish.yml: publishing results from a fork would
+    # attribute them to the wrong repo.
+    if: github.repository == 'dfadler/zombie-mermaid'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      id-token: write # publish_results: true (OIDC to api.scorecard.dev)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      # Kept as an artifact (not uploaded to code scanning) so the per-check
+      # reasons are readable without adding a second SARIF producer.
+      - name: Upload results
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scorecard-sarif
+          path: results.sarif
+          retention-days: 14

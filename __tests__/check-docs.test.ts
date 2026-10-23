@@ -3,9 +3,12 @@ import {
   anchors,
   checkAll,
   checkDoc,
+  decisionStatus,
   engineMatches,
+  forkFixesCount,
   main,
   orphanResearch,
+  researchAsOf,
 } from '../scripts/check-docs.ts'
 
 const has = (set: string[]) => (p: string) => set.some((s) => p.endsWith(s))
@@ -95,6 +98,7 @@ describe('check-docs orchestration', () => {
       'package.json engines.node ">=20 || >=24" vs .nvmrc 24',
       '.github/workflows/ci.yml: node-version 22 vs .nvmrc 24',
       'docs/research/a: nothing links to it; post the findings on the issue instead (#1642)',
+      'docs/research/a.md: missing an "As of: YYYY-MM-DD" line (#1936)',
     ])
   })
   it('default fs reads the real repo, which has no drift', () => {
@@ -155,6 +159,41 @@ describe('check-docs research guard (#1642)', () => {
   })
 })
 
+describe('researchAsOf', () => {
+  it('flags a kept doc without an As of date, skips the README', () => {
+    const files: Record<string, string> = {
+      'docs/research/README.md': 'index',
+      'docs/research/a.md': '# A\n\nAs of: 2026-10-22, main\n',
+      'docs/research/b.md': '# B\n',
+      'docs/research/d/README.md': '# D\n',
+    }
+    const errs = researchAsOf({
+      read: (p) => files[p] ?? '',
+      ls: () => Object.keys(files),
+    })
+    expect(errs.map((e) => e.split(':')[0])).toEqual([
+      'docs/research/b.md',
+      'docs/research/d/README.md',
+    ])
+  })
+})
+
+describe('decisionStatus', () => {
+  it('flags a missing Status line and a missing index row', () => {
+    const files: Record<string, string> = {
+      'docs/decisions/README.md': '[a](a.md)',
+      'docs/decisions/a.md': '# A\n\nStatus: implemented\n',
+      'docs/decisions/b.md': '# B\n\nno status\n',
+    }
+    const errs = decisionStatus({
+      read: (p) => files[p] ?? '',
+      ls: () => Object.keys(files),
+    })
+    expect(errs).toHaveLength(2)
+    expect(errs.every((e) => e.startsWith('docs/decisions/b.md'))).toBe(true)
+  })
+})
+
 describe('check-docs main', () => {
   it('returns 0 and reports ok on a clean tree', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -173,5 +212,19 @@ describe('check-docs main', () => {
     expect(err.mock.calls[0]![0]).toContain('broken link ./gone.md')
     expect(err.mock.calls[0]![0]).toContain('1 docs drift problem(s)')
     err.mockRestore()
+  })
+})
+
+describe('forkFixesCount', () => {
+  const fs = (readme: string) => ({ read: () => readme, ls: () => [] })
+  it('passes when the README count matches the entries', () => {
+    expect(forkFixesCount(fs('showcase (7 fixes): x'), 7)).toEqual([])
+  })
+  it('fails with the number to write when stale', () => {
+    const [e] = forkFixesCount(fs('showcase (7 fixes): x'), 8)
+    expect(e).toContain('(8 fixes)')
+  })
+  it('matches the real README to the real data', () => {
+    expect(forkFixesCount()).toEqual([])
   })
 })

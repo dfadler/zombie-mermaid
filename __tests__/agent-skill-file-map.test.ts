@@ -17,7 +17,7 @@ const paths = [...md.matchAll(/^\|\s*([^|]+?)\s*\|/gm)]
   .filter((p) => /[./]/.test(p))
 
 // Generated output (gitignored), not a source file.
-const GENERATED = new Set(['editor.html'])
+const GENERATED = new Set(['editor.html', 'site/editor.html'])
 
 describe('.agents/skills/editor.md file table', () => {
   it('lists some paths', () => {

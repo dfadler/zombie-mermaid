@@ -1,0 +1,16 @@
++---------------+    Comparable     
+| <<interface>> |         O         
+| Comparable    |         |         
++---------------+         |         
+                          |         
+                          |         
+                          |         
+                     +---------+    
+                     | Version |    
+                     +---------+    
+                          |         
+                          |         
+                          O         
+                      Printable     
+                                    
+                                    

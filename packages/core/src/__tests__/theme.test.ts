@@ -132,7 +132,7 @@ describe('buildStyleBlock – font handling', () => {
 })
 
 describe('buildStyleBlock – mono font embed (#1061, #1319)', () => {
-  // core ships no font data; the caller supplies the embed (svg-renderer's
+  // Core ships no font data; the caller supplies the embed (svg-renderer's
   // buildSvgStyleBlock supplies the real subset — see src/__tests__/styles.test.ts).
   const embed = {
     family: 'Test Mono',
@@ -161,5 +161,28 @@ describe('buildStyleBlock – mono font embed (#1061, #1319)', () => {
     const block = buildStyleBlock('Inter', false)
     expect(block).not.toContain('@font-face')
     expect(block).not.toContain('.mono')
+  })
+})
+
+describe('buildStyleBlock – embedded body font (#1867)', () => {
+  const body = {
+    family: 'Inter',
+    faceCss: '@font-face { font-family: Inter; }',
+  }
+
+  it('inlines the face and drops the Google Fonts @import for a matching font', () => {
+    const block = buildStyleBlock('Inter', false, undefined, body)
+    expect(block).toContain(body.faceCss)
+    expect(block).not.toContain('fonts.googleapis.com')
+  })
+
+  it('ignores the embed when font is a different family (keeps its @import)', () => {
+    const block = buildStyleBlock('Roboto', false, undefined, body)
+    expect(block).not.toContain(body.faceCss)
+    expect(block).toContain('family=Roboto')
+  })
+
+  it('is unchanged without an embed', () => {
+    expect(buildStyleBlock('Inter', false)).toContain('fonts.googleapis.com')
   })
 })

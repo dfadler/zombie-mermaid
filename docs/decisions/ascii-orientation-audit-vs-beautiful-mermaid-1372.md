@@ -1,5 +1,7 @@
 # ASCII orientation options vs. beautiful-mermaid: audit and decisions
 
+Status: implemented
+
 ## Context
 
 [#1372](https://github.com/dfadler/zombie-mermaid/issues/1372) asked whether any

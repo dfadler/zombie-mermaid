@@ -172,8 +172,8 @@ describe('getCharWidth', () => {
         throw new Error(
           'unreachable: normalize() of a non-empty string always has index 0',
         )
-      expect(base).not.toBe(char) // sanity: this char does decompose
-      expect(hasMeasuredAdvance(base)).toBe(false) // sanity: base has no exact advance
+      expect(base).not.toBe(char) // Sanity: this char does decompose
+      expect(hasMeasuredAdvance(base)).toBe(false) // Sanity: base has no exact advance
 
       // None of the ASCII character-class buckets match a Cyrillic letter,
       // and its code point (0x0439) is outside both the A-Z and 0-9 ranges,
@@ -222,8 +222,8 @@ describe('getCharWidth', () => {
 describe('measureTextWidth', () => {
   const fontSize = 13
   const fontWeight = 500
-  const baseRatio = 0.57 // weight 500 (was 0.55, increased for edge truncation safety)
-  const minPadding = fontSize * 0.15 // minimum padding added to prevent truncation (increased for label separation)
+  const baseRatio = 0.57 // Weight 500 (was 0.55, increased for edge truncation safety)
+  const minPadding = fontSize * 0.15 // Minimum padding added to prevent truncation (increased for label separation)
 
   it('returns minPadding for empty text', () => {
     // Empty text still gets minimum padding to prevent edge truncation
@@ -278,7 +278,7 @@ describe('measureTextWidth', () => {
   it('handles decomposed accents (base + combining mark)', () => {
     // "café" with decomposed é = c + a + f + e + combining accent
     // Should be same width as "cafe" since combining mark is zero-width
-    const decomposed = 'cafe\u0301' // e + combining acute
+    const decomposed = 'cafe\u0301' // E + combining acute
     const precomposed = 'café'
     const widthDecomposed = measureTextWidth(decomposed, fontSize, fontWeight)
     const widthPrecomposed = measureTextWidth(precomposed, fontSize, fontWeight)
@@ -422,14 +422,14 @@ describe('isWideChar', () => {
     expect(isWideChar('日')).toBe(true)
     expect(isWideChar('本')).toBe(true)
     expect(isWideChar('語')).toBe(true)
-    expect(isWideChar('テ')).toBe(true) // katakana
-    expect(isWideChar('あ')).toBe(true) // hiragana
-    expect(isWideChar('한')).toBe(true) // hangul syllable
+    expect(isWideChar('テ')).toBe(true) // Katakana
+    expect(isWideChar('あ')).toBe(true) // Hiragana
+    expect(isWideChar('한')).toBe(true) // Hangul syllable
   })
 
   it('returns true for fullwidth-form characters', () => {
-    expect(isWideChar('Ａ')).toBe(true) // fullwidth Latin A (U+FF21)
-    expect(isWideChar('１')).toBe(true) // fullwidth digit 1 (U+FF11)
+    expect(isWideChar('Ａ')).toBe(true) // Fullwidth Latin A (U+FF21)
+    expect(isWideChar('１')).toBe(true) // Fullwidth digit 1 (U+FF11)
   })
 
   it('returns true for emoji', () => {
@@ -455,8 +455,8 @@ describe('isWideChar', () => {
     // Emoji_Presentation and render as a single narrow column in every real
     // terminal. Regression test for the ▶ (U+25B6) misclassification —
     // used as the sequence-diagram arrowhead in src/ascii/sequence.ts.
-    expect(isWideChar('▶')).toBe(false) // solid ->> / -->> arrowhead
-    expect(isWideChar('◀')).toBe(false) // solid self-message loop arrowhead
+    expect(isWideChar('▶')).toBe(false) // Solid ->> / -->> arrowhead
+    expect(isWideChar('◀')).toBe(false) // Solid self-message loop arrowhead
     expect(isWideChar('▼')).toBe(false)
     expect(isWideChar('▲')).toBe(false)
     expect(isWideChar('◄')).toBe(false)

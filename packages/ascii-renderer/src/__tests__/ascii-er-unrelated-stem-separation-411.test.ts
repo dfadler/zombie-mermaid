@@ -33,6 +33,7 @@ describe('ASCII ER — unrelated relationship stems stay visually separated (iss
     // do with each other, so their stems must read as visually distinct.)
     const ascii = renderMermaidASCII(
       `erDiagram
+    direction LR
     CUSTOMER ||--o{ ORDER : places
     ORDER ||--|{ LINE_ITEM : contains
     PRODUCT ||--o{ LINE_ITEM : appears_in
@@ -45,11 +46,11 @@ describe('ASCII ER — unrelated relationship stems stay visually separated (iss
     expect(ascii).not.toContain('┌│appears_in')
     expect(ascii).not.toContain('│└───────────────┐')
 
-    // A blank column now separates the two relationships' stems on every
-    // row where both are present.
-    expect(ascii).toContain('┌ appears_in')
-    expect(ascii).toContain('│ │ has')
-    expect(ascii).toContain('┼ └')
+    // The two relationships' jogs take separate rows, each with its label on
+    // its own line, and where they cross there is a '┼' junction (#2112)
+    // rather than a corner fused onto the other's stem.
+    expect(ascii).toMatch(/└─+ has ─+┐/)
+    expect(ascii).toMatch(/┌─+┼─+ appears_in ─+┘/)
   })
 
   it('does not corrupt a corner glyph when escalating a jog to avoid an unrelated stem (issue #411 fix side effect)', () => {
@@ -60,6 +61,7 @@ describe('ASCII ER — unrelated relationship stems stay visually separated (iss
     // silently overwriting its corner glyph with a plain vertical bar.
     const ascii = renderMermaidASCII(
       `erDiagram
+  direction LR
   STUDENT {
     int id PK
     string name
@@ -93,6 +95,7 @@ describe('ASCII ER — unrelated relationship stems stay visually separated (iss
     // TEACHER→COURSE's own corner, where its jog turns down into COURSE,
     // must survive intact rather than being overwritten by
     // STUDENT→ENROLLMENT's bypass column landing on the same cell.
-    expect(ascii).toContain('┌ teaches')
+    expect(ascii).toMatch(/┌─+ teaches ─+┘/)
+    expect(ascii).toMatch(/└─+ enrolled ─+┼─+┐/)
   })
 })

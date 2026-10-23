@@ -1,7 +1,10 @@
-import { MermaidParseError } from '@zombie-mermaid/core'
 import type { SequenceDiagram, Message, Block, Actor } from './types.ts'
-import { normalizeBrTags, type Statement } from '@zombie-mermaid/core'
-import { parseBoxHeader } from './box-color.ts'
+import {
+  MermaidParseError,
+  normalizeBrTags,
+  type Statement,
+} from '@zombie-mermaid/core'
+import { isCssColor, parseBoxHeader } from './box-color.ts'
 
 /**
  * Which `box … end` group (index into `diagram.boxes`) is currently open,
@@ -13,6 +16,55 @@ import { parseBoxHeader } from './box-color.ts'
 interface BoxContext {
   open: number | undefined
   membership: Map<string, number>
+}
+
+/** Participant `type`s Mermaid 12 defines for `participant X@{ "type": ... }`. */
+const PARTICIPANT_TYPES = [
+  'boundary',
+  'control',
+  'entity',
+  'database',
+  'collections',
+  'queue',
+]
+
+const DECL_CONFIG_RE =
+  /^((?:create\s+)?(?:participant|actor)\s+[^\s@]+)\s*@\{([^}]*)\}(.*)$/
+
+/**
+ * Split a `participant X@{ "type": "database" }` config off a declaration
+ * (mermaid 12, https://mermaid.js.org/syntax/sequenceDiagram.html#participants).
+ * Keys may be quoted or bare (JSON or YAML flow style); only `type` and
+ * `alias` are read, others are ignored like mermaid does. Returns the line
+ * with the config removed. The shape is not drawn, see docs/diagrams.md.
+ */
+function extractParticipantConfig(
+  text: string,
+  lineNo: number,
+): { text: string; type?: string; alias?: string } {
+  if (
+    !text.includes('@{') ||
+    !/^(?:create\s+)?(?:participant|actor)\s/.test(text)
+  )
+    return { text }
+  const m = DECL_CONFIG_RE.exec(text)
+  if (!m) {
+    throw new MermaidParseError(
+      `Line ${lineNo}: Sequence diagram: malformed participant config "@{ ... }", expected e.g. participant X@{ "type": "database" }`,
+      { diagramType: 'sequence' },
+    )
+  }
+  const cfg: Record<string, string> = {}
+  for (const kv of m[2]!.matchAll(
+    /["']?(\w+)["']?\s*:\s*(?:"([^"]*)"|'([^']*)'|([^,\s]+))/g,
+  )) {
+    cfg[kv[1]!] = kv[2] ?? kv[3] ?? kv[4]!
+  }
+  // Unknown types render as a plain box in mermaid 12.1.0, so do the same.
+  const lower = cfg.type?.toLowerCase()
+  const type =
+    lower !== undefined && PARTICIPANT_TYPES.includes(lower) ? lower : undefined
+  return { text: m[1]! + m[3]!, type, alias: cfg.alias }
 }
 
 /**
@@ -51,7 +103,9 @@ export function isBlockType(value: string): value is Block['type'] {
  */
 export function toBlockType(value: string): Block['type'] {
   if (!isBlockType(value)) {
-    throw new Error(`Invalid block type: "${value}"`)
+    throw new MermaidParseError(`Invalid block type: "${value}"`, {
+      diagramType: 'sequence',
+    })
   }
   return value
 }
@@ -147,6 +201,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
   const blockStack: Array<{
     type: Block['type']
     label: string
+    color?: string
     startIndex: number
     dividers: Block['dividers']
     line: number
@@ -169,7 +224,8 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
 
   for (let i = 1; i < lines.length; i++) {
     const stmt = lines[i]!
-    const line = stmt.text
+    const decl = extractParticipantConfig(stmt.text, stmt.line)
+    const line = decl.text
 
     // --- box <color?> <label?> ---
     // Opens a participant group; closed by `end`. Boxes cannot nest
@@ -180,6 +236,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       if (boxCtx.open !== undefined) {
         throw new MermaidParseError(
           `Line ${stmt.line}: Sequence diagram: a box cannot be nested inside another box — close the open box with "end" first`,
+          { diagramType: 'sequence' },
         )
       }
       const { color, label } = parseBoxHeader(boxMatch[1] ?? '')
@@ -210,13 +267,15 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
         // Mermaid's own wording (sequenceDb `createParticipant`).
         throw new MermaidParseError(
           `Line ${stmt.line}: It is not possible to have actors with the same id, even if one is destroyed before the next is created. Use 'AS' aliases to simulate the behavior`,
+          { diagramType: 'sequence' },
         )
       }
       actorIds.add(id)
       diagram.actors.push({
         id,
-        label: normalizeBrTags(createMatch[3]?.trim() ?? id),
+        label: normalizeBrTags(createMatch[3]?.trim() ?? decl.alias ?? id),
         type,
+        ...(decl.type && { participantType: decl.type }),
       })
       joinOpenBox(diagram, boxCtx, id, stmt.line)
       pendingCreate = id
@@ -261,11 +320,16 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       const type: 'participant' | 'actor' =
         actorMatch[1] === 'actor' ? 'actor' : 'participant'
       const id = actorMatch[2]!
-      const rawLabel = actorMatch[3]?.trim() ?? id
+      const rawLabel = actorMatch[3]?.trim() ?? decl.alias ?? id
       const label = normalizeBrTags(rawLabel)
       if (!actorIds.has(id)) {
         actorIds.add(id)
-        diagram.actors.push({ id, label, type })
+        diagram.actors.push({
+          id,
+          label,
+          type,
+          ...(decl.type && { participantType: decl.type }),
+        })
       }
       // A re-declaration inside a box joins it (or errors if it already
       // belongs to a different one) — Mermaid's `addActor` rule.
@@ -304,15 +368,22 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
 
     // --- Block start: loop, alt, opt, par, critical, break, rect ---
     const blockMatch = line.match(
-      /^(loop|alt|opt|par|critical|break|rect)\s*(.*)$/,
+      /^(loop|alt|opt|par|critical|break|rect)\b\s*(.*)$/,
     )
     if (blockMatch) {
       const blockType = toBlockType(blockMatch[1]!)
       const rawBlockLabel = blockMatch[2]?.trim() ?? ''
-      const label = normalizeBrTags(rawBlockLabel)
+      // `rect <color>` is Mermaid's background highlight: the rest of the line
+      // is a colour, never a label. A value that isn't a recognised colour is
+      // ignored (#2239), as an invalid style colour is (#1918).
+      const isRect = blockType === 'rect'
+      const color =
+        isRect && isCssColor(rawBlockLabel) ? rawBlockLabel : undefined
+      const label = isRect ? '' : normalizeBrTags(rawBlockLabel)
       blockStack.push({
         type: blockType,
         label,
+        ...(color !== undefined ? { color } : {}),
         startIndex: diagram.messages.length,
         dividers: [],
         line: stmt.line,
@@ -351,6 +422,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       diagram.blocks.push({
         type: completed.type,
         label: completed.label,
+        ...(completed.color !== undefined ? { color: completed.color } : {}),
         startIndex: completed.startIndex,
         endIndex: Math.max(diagram.messages.length - 1, completed.startIndex),
         dividers: completed.dividers,
@@ -366,6 +438,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     if (line === 'end') {
       throw new MermaidParseError(
         `Line ${stmt.line}: Sequence diagram: "end" does not match any open block ("loop"/"alt"/"opt"/"par"/"critical"/"break"/"rect") or "box" — nothing is currently open to close.`,
+        { diagramType: 'sequence' },
       )
     }
 
@@ -437,6 +510,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       if (toFirstChar === '>' || toFirstChar === ')') {
         throw new MermaidParseError(
           `Line ${stmt.line}: Malformed sequence-diagram arrow in "${line}" — "${arrowToken}${toFirstChar}" is not a recognized arrow. Expected one of: ->, -->, ->>, -->>, -x, --x, -), --), <<->>, <<-->>.`,
+          { diagramType: 'sequence' },
         )
       }
       pushMessage(
@@ -457,6 +531,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
         if (msg.to !== pendingCreate) {
           throw new MermaidParseError(
             `Line ${stmt.line}: The created participant ${pendingCreate} does not have an associated creating message after its declaration. Please check the sequence diagram.`,
+            { diagramType: 'sequence' },
           )
         }
         findActor(diagram, pendingCreate).createdAt = msgIndex
@@ -466,6 +541,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
         if (msg.from !== pendingDestroy && msg.to !== pendingDestroy) {
           throw new MermaidParseError(
             `Line ${stmt.line}: The destroyed participant ${pendingDestroy} does not have an associated destroying message after its declaration. Please check the sequence diagram.`,
+            { diagramType: 'sequence' },
           )
         }
         findActor(diagram, pendingDestroy).destroyedAt = msgIndex
@@ -485,12 +561,14 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     const unclosed = blockStack[blockStack.length - 1]!
     throw new MermaidParseError(
       `Line ${unclosed.line}: Sequence diagram: unclosed "${unclosed.type}" block — expected a matching "end" before the diagram ends.`,
+      { diagramType: 'sequence' },
     )
   }
   if (boxCtx.open !== undefined) {
     const openBox = diagram.boxes[boxCtx.open]!
     throw new MermaidParseError(
       `Line ${boxOpenLine}: Sequence diagram: unclosed "box${openBox.label ? ` ${openBox.label}` : ''}" — expected a matching "end" before the diagram ends.`,
+      { diagramType: 'sequence' },
     )
   }
 
@@ -506,7 +584,9 @@ function findActor(diagram: SequenceDiagram, id: string): Actor {
   const actor = diagram.actors.find((a) => a.id === id)
   if (actor === undefined) {
     /* v8 ignore next */
-    throw new Error(`Sequence diagram: unknown actor "${id}"`)
+    throw new MermaidParseError(`Sequence diagram: unknown actor "${id}"`, {
+      diagramType: 'sequence',
+    })
   }
   return actor
 }
@@ -546,6 +626,7 @@ function joinOpenBox(
     const to = diagram.boxes[open]!.label
     throw new MermaidParseError(
       `Line ${lineNumber}: A same participant should only be defined in one Box: ${id} can't be in '${from}' and in '${to}' at the same time.`,
+      { diagramType: 'sequence' },
     )
   }
   boxCtx.membership.set(id, open)

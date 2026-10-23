@@ -57,7 +57,13 @@ import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
  */
 function formatAttribute(attr: ErAttribute): string {
   const keySuffix = attr.keys.length > 0 ? ' ' + attr.keys.join(',') : ''
-  return `${attr.type} ${attr.name}${keySuffix}`
+  // Mermaid shows the comment as a fourth column (#2127). A terminal row has
+  // no column grid, so it trails quoted (the source syntax), which also keeps
+  // a keyless row's comment from reading as part of the name. Never wrapped,
+  // like mermaid; a <br> becomes a space so the row stays one line.
+  const comment = attr.comment?.replace(/\s*\n\s*/g, ' ').trim()
+  const commentSuffix = comment ? ` "${comment}"` : ''
+  return `${attr.type} ${attr.name}${keySuffix}${commentSuffix}`
 }
 
 /** Build sections for an entity box: [header], [attributes] */
@@ -91,17 +97,11 @@ function getCrowsFootChars(
   card: Cardinality,
   useAscii: boolean,
   isRight = false,
-  vertical = false,
 ): string {
   if (useAscii) {
     switch (card) {
       case 'one':
-        // A bare '-' has no vertical extent, so it reads as a gap in the
-        // vertical line rather than a tick crossing it (issue: PR #442's
-        // fix made the marker visible but visually severed the line). '+'
-        // carries both strokes, matching how '|' crosses the horizontal
-        // line in the non-vertical case below.
-        return vertical ? '+' : '|'
+        return '|'
       case 'zero-one':
         return isRight ? 'o|' : '|o'
       case 'many':
@@ -113,10 +113,7 @@ function getCrowsFootChars(
     // Use cleaner Unicode characters
     switch (card) {
       case 'one':
-        // Same reasoning as the ASCII '+' above: '┼' keeps the vertical
-        // stroke (line stays visually continuous) while adding the
-        // horizontal stroke that marks the "one" cardinality.
-        return vertical ? '┼' : '│'
+        return '│'
       case 'zero-one':
         return isRight ? '○│' : '│○'
       case 'many':
@@ -124,6 +121,39 @@ function getCrowsFootChars(
       case 'zero-many':
         return isRight ? '○╟' : '╢○'
     }
+  }
+}
+
+/**
+ * Marker glyphs for a vertical edge, one per row, ordered from the entity
+ * box outward (#2083). Like mermaid's own vertical markers, the tick or
+ * crow's foot sits against the box and the zero-circle sits on the line one
+ * row further along, instead of beside the stem.
+ *
+ * Stroke glyphs: '┼' / '+' keep the line continuous for "one". '╤' / '╧'
+ * are '╢' / '╟' rotated for a vertical edge: the double bar spans the
+ * entity-side edge, the stem runs along the line (#2081). The crow's foot
+ * opens toward its entity ('V' under the upper entity, '^' above the lower).
+ *
+ * @param atLower - True for the marker at the lower entity's top edge
+ */
+function getVerticalMarkerRows(
+  card: Cardinality,
+  useAscii: boolean,
+  atLower: boolean,
+): string[] {
+  const circle = useAscii ? 'o' : '○'
+  const foot = useAscii ? (atLower ? '^' : 'V') : atLower ? '╧' : '╤'
+  const tick = useAscii ? '+' : '┼'
+  switch (card) {
+    case 'one':
+      return [tick]
+    case 'zero-one':
+      return [tick, circle]
+    case 'many':
+      return [foot]
+    case 'zero-many':
+      return [foot, circle]
   }
 }
 
@@ -201,6 +231,40 @@ function findConnectedComponents(diagram: ErDiagram): Set<string>[] {
 // ============================================================================
 
 /**
+ * Assign each entity of one component a top-to-bottom layer, the way
+ * mermaid.js (dagre, default TB) stacks an erDiagram: `A ||--o{ B` puts B
+ * below A (#1917). Longest path from the sources by repeated relaxation
+ * (capped at n - 1 layers, which also stops a cycle from growing forever),
+ * then each source is pulled down next to its nearest successor like dagre.
+ * ponytail: an approximation of dagre's network-simplex ranking.
+ */
+function assignLayers(
+  entities: ErEntity[],
+  relationships: ErDiagram['relationships'],
+): Map<string, number> {
+  const n = entities.length
+  const layer = new Map(entities.map((e) => [e.id, 0]))
+  const rels = relationships.filter(
+    (r) =>
+      r.entity1 !== r.entity2 && layer.has(r.entity1) && layer.has(r.entity2),
+  )
+  for (let i = 0; i < n; i++) {
+    for (const r of rels) {
+      const l = layer.get(r.entity1)! + 1
+      if (l < n && l > layer.get(r.entity2)!) layer.set(r.entity2, l)
+    }
+  }
+  for (const e of entities) {
+    if (rels.some((r) => r.entity2 === e.id)) continue
+    const below = rels.filter((r) => r.entity1 === e.id)
+    if (below.length) {
+      layer.set(e.id, Math.min(...below.map((r) => layer.get(r.entity2)!)) - 1)
+    }
+  }
+  return layer
+}
+
+/**
  * Look up a per-entity value computed by renderErAscii's box-sizing pass.
  * Every entity in `diagram.entities` gets an entry in `entityBoxW`,
  * `entityBoxH`, and `entitySections` before layout runs, so this always
@@ -253,7 +317,7 @@ export function isRowFree(
   for (let x = xStart; x <= xEnd; x++) {
     if (x === skipX) continue
     const col = canvas[x]
-    if (col === undefined) continue // not drawn yet — not occupied
+    if (col === undefined) continue // Not drawn yet — not occupied
     if (col[y] !== ' ' && col[y] !== undefined) return false
   }
   return true
@@ -327,8 +391,35 @@ export function renderErAscii(
   // horizontal-marker section below). A vertical relationship needs at
   // least 2 rows so the upper and lower markers don't land on the same
   // row. (See issue #343's CodeRabbit review.)
-  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 6, 6) // horizontal gap between entity boxes
-  const vGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 4, 2) // vertical gap between rows (for relationship lines)
+  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 6, 6) // Horizontal gap between entity boxes
+  // Two-row vertical markers (a zero-* circle on the line past the foot or
+  // tick, #2083) need one extra row per such end, so grow the gap by the
+  // most any single relationship needs beyond the usual 1 row per end, plus
+  // one spare row: relationships whose ends have different marker heights
+  // pick jog rows from offset bands, and with only the bare minimum they
+  // lose their jog/label rows to each other.
+  const extraMarkerRows = Math.max(
+    0,
+    ...diagram.relationships.map(
+      (r) =>
+        getVerticalMarkerRows(r.cardinality1, useAscii, false).length +
+        getVerticalMarkerRows(r.cardinality2, useAscii, true).length -
+        2,
+    ),
+  )
+  // Rows a vertical edge's markers occupy at the tallest end of any
+  // relationship; jog rows start past them (#2112).
+  const markerBand = Math.max(
+    1,
+    ...diagram.relationships.flatMap((r) => [
+      getVerticalMarkerRows(r.cardinality1, useAscii, false).length,
+      getVerticalMarkerRows(r.cardinality2, useAscii, true).length,
+    ]),
+  )
+  // Vertical gap between rows (for relationship lines)
+  const vGap =
+    paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 4, 2) +
+    (extraMarkerRows > 0 ? extraMarkerRows + 1 : 0)
   // Vertical gap between disconnected components. Unlike vGap, this gap
   // never needs to fit a relationship line, a jog, or a label — disconnected
   // components have no edges between them by definition — so it only needs
@@ -352,6 +443,30 @@ export function renderErAscii(
     ]),
   )
 
+  // A self-relationship (`A ||--o{ A`) is drawn as a loop on the entity's left
+  // side with its label further left, like mermaid (#2284).
+  const selfRels = diagram.relationships.filter((r) => r.entity1 === r.entity2)
+  /** Columns a loop's markers take left of the box: glyphs plus a border inset. */
+  const selfMarkerW = (rel: (typeof selfRels)[number]): number =>
+    Math.max(
+      ...[rel.cardinality1, rel.cardinality2].map((c) => {
+        const chars = getCrowsFootChars(c, useAscii, true)
+        return (
+          chars.length +
+          (chars[chars.length - 1] === (useAscii ? '|' : '│') ? 1 : 0)
+        )
+      }),
+    )
+  /** Columns left of an entity's box that its self loops and labels need. */
+  const selfReserve = new Map<string, number>()
+  for (const rel of selfRels) {
+    const label = rel.label ? maxLineWidth(rel.label) + 2 : 0
+    selfReserve.set(
+      rel.entity1,
+      Math.max(selfReserve.get(rel.entity1) ?? 0, selfMarkerW(rel) + 2 + label),
+    )
+  }
+
   // --- Build entity box dimensions ---
   const entitySections = new Map<string, string[][]>()
   const entityBoxW = new Map<string, number>()
@@ -361,6 +476,14 @@ export function renderErAscii(
   for (const ent of diagram.entities) {
     entityById.set(ent.id, ent)
     const sections = buildEntitySections(ent)
+    // Each self-relationship loop takes two rows of the box's left side plus
+    // a blank row between loops (#2284): pad a short box with blank rows.
+    const loops = selfRels.filter((r) => r.entity1 === ent.id).length
+    const interior = (): number =>
+      sections.reduce((n, sec) => n + sec.length, sections.length - 1)
+    while (loops > 0 && interior() < 3 * loops - 1) {
+      sections[sections.length - 1]!.push('')
+    }
     entitySections.set(ent.id, sections)
 
     // Reserve exactly what drawMultiBox will draw — measuring it here rather
@@ -394,37 +517,87 @@ export function renderErAscii(
   // --- Layout: place each component, then stack components vertically ---
   const placed = new Map<string, PlacedEntity>()
   let currentY = 0
+  const sideBySide = diagram.direction === 'LR' || diagram.direction === 'RL'
 
   for (const component of components) {
     // Get entities in this component (preserve original order for consistency)
-    const componentEntities = diagram.entities.filter((e) =>
-      component.has(e.id),
-    )
+    const declared = diagram.entities.filter((e) => component.has(e.id))
 
-    // Layout entities within this component horizontally
-    // Use sqrt-based row limit for larger components
-    const maxPerRow = Math.max(
-      2,
-      Math.ceil(Math.sqrt(componentEntities.length)),
-    )
+    // Stack layers top to bottom like mermaid.js (#1917). A layer wider than
+    // the sqrt-based row limit wraps, which keeps the width bounded.
+    const maxPerRow = Math.max(2, Math.ceil(Math.sqrt(declared.length)))
+    // `direction LR`/`RL` keeps the side-by-side row packing (one layer).
+    // ponytail: BT stacks like TB (not flipped); LR is not true columns.
+    const layerOf = sideBySide
+      ? new Map(declared.map((e) => [e.id, 0]))
+      : assignLayers(declared, diagram.relationships)
+    const componentEntities: ErEntity[] = []
+    const rowStarts = new Set<string>()
+    const slot = new Map<string, number>() // Index in componentEntities
+    for (let l = 0; componentEntities.length < declared.length; l++) {
+      // Order a layer by its earliest-placed parent so children sit under
+      // their parents; declaration order breaks ties.
+      const parentSlot = (e: ErEntity): number =>
+        Math.min(
+          Infinity,
+          ...diagram.relationships
+            .filter((r) => r.entity2 === e.id)
+            .map((r) => slot.get(r.entity1) ?? Infinity),
+        )
+      const layer = declared
+        .filter((e) => layerOf.get(e.id) === l)
+        .map((e, i) => [e, parentSlot(e), i] as const)
+        .sort((a, b) => a[1] - b[1] || a[2] - b[2])
+        .map(([e]) => e)
+      layer.forEach((e, i) => {
+        if (i % maxPerRow === 0) rowStarts.add(e.id)
+        slot.set(e.id, componentEntities.push(e) - 1)
+      })
+    }
 
     let currentX = 0
     let maxRowH = 0
-    let colCount = 0
+    let rowStartIdx = 0
+    let lastGap = 0
 
     for (let idx = 0; idx < componentEntities.length; idx++) {
       const ent = componentEntities[idx]!
       const w = mustGetEntityValue(entityBoxW, ent.id, 'box width')
       const h = mustGetEntityValue(entityBoxH, ent.id, 'box height')
 
-      if (colCount >= maxPerRow) {
+      if (idx > 0 && rowStarts.has(ent.id)) {
         // Wrap to next row within this component
-        currentY += maxRowH + vGap
+        // Each edge crossing this boundary needs its own jog row between
+        // the marker rows of both ends (#2112), so a gap that carries more
+        // edges than the base gap holds grows by one row per edge.
+        const above = new Set(componentEntities.slice(0, idx).map((e) => e.id))
+        const crossing = diagram.relationships.filter(
+          (r) =>
+            r.entity1 !== r.entity2 &&
+            component.has(r.entity1) &&
+            above.has(r.entity1) !== above.has(r.entity2),
+        ).length
+        // A same-row relationship with an entity between its ends detours
+        // through this gap, and takes a row for the line and one for its label.
+        const rowIds = componentEntities
+          .slice(rowStartIdx, idx)
+          .map((e) => e.id)
+        const detours = diagram.relationships.filter((r) => {
+          const a = rowIds.indexOf(r.entity1)
+          const b = rowIds.indexOf(r.entity2)
+          return a >= 0 && b >= 0 && Math.abs(a - b) > 1
+        }).length
+        currentY +=
+          maxRowH + Math.max(vGap, 2 * markerBand + crossing + 2 * detours)
+        rowStartIdx = idx
         currentX = 0
+        lastGap = 0
         maxRowH = 0
-        colCount = 0
       }
 
+      // Leave room left of a box with a self loop; the gap after the previous
+      // entity already counts.
+      currentX += Math.max(0, (selfReserve.get(ent.id) ?? 0) - lastGap)
       placed.set(ent.id, {
         entity: ent,
         sections: mustGetEntityValue(entitySections, ent.id, 'sections'),
@@ -438,17 +611,69 @@ export function renderErAscii(
       // relationship's label fits with 1 char of padding on each side
       // instead of being truncated or crammed against a box border.
       let gap = hGap
-      const willWrapNext = colCount + 1 >= maxPerRow
       const nextEnt = componentEntities[idx + 1]
-      if (!willWrapNext && nextEnt) {
+      if (nextEnt && !rowStarts.has(nextEnt.id)) {
         const key = [ent.id, nextEnt.id].sort().join('|')
         const labelW = pairLabelWidth.get(key) ?? 0
         if (labelW > 0) gap = Math.max(gap, labelW + 2)
+        // A vertical edge's label sits right of its stem, which can be near
+        // this box's right edge: leave room so it does not run into the next
+        // entity's stems (#2112).
+        const vertLabelW = Math.max(
+          0,
+          ...diagram.relationships
+            .filter(
+              (r) =>
+                r.label &&
+                (r.entity1 === ent.id || r.entity2 === ent.id) &&
+                layerOf.get(r.entity1) !== layerOf.get(r.entity2),
+            )
+            .map((r) => maxLineWidth(r.label)),
+        )
+        if (vertLabelW > 0) gap = Math.max(gap, vertLabelW + 3)
       }
 
       currentX += w + gap
+      lastGap = gap
       maxRowH = Math.max(maxRowH, h)
-      colCount++
+    }
+
+    // Center a lone entity on the component's widest row like dagre, so it
+    // sits under its parent and a single edge runs straight (#2237).
+    // Aligning the center columns (floor(w / 2), as attachments use) avoids a
+    // one-column jog on odd/even width differences. `direction LR`/`RL` keeps
+    // its left-aligned row packing.
+    if (!sideBySide) {
+      const rows = new Map<number, PlacedEntity[]>()
+      for (const e of componentEntities) {
+        const p = placed.get(e.id)!
+        rows.set(p.y, [...(rows.get(p.y) ?? []), p])
+      }
+      const rowW = (r: PlacedEntity[]) =>
+        r[r.length - 1]!.x + r[r.length - 1]!.width
+      const center = Math.floor(Math.max(...[...rows.values()].map(rowW)) / 2)
+      const lone = new Set(
+        [...rows.values()]
+          .filter((r) => r.length === 1)
+          .map((r) => r[0]!.entity.id),
+      )
+      for (const r of rows.values()) {
+        // Ponytail: only a chain of lone entities is centered. A fan-out
+        // (one parent over several children) moves same-row edge detours and
+        // labels (#2112) and needs the layout deep dive (#2238).
+        const id = r[0]!.entity.id
+        if (
+          r.length > 1 ||
+          diagram.relationships.some(
+            (rel) =>
+              (rel.entity1 === id && !lone.has(rel.entity2)) ||
+              (rel.entity2 === id && !lone.has(rel.entity1)),
+          )
+        )
+          continue
+        const shift = Math.max(0, center - Math.floor(rowW(r) / 2))
+        for (const p of r) placed.set(p.entity.id, { ...p, x: p.x + shift })
+      }
     }
 
     // Move to next component row (add gap between components)
@@ -464,6 +689,22 @@ export function renderErAscii(
   }
   totalW += 4
   totalH += 2
+  // A relationship that skips a row routes down a free column (the via
+  // bypass below). Boxes fill the canvas width, so reserve a right gutter
+  // of two columns per such relationship plus room for its label.
+  // ponytail: an upper bound, not exact; the extra width is the cost of a
+  // legible bypass.
+  for (const rel of sideBySide ? [] : diagram.relationships) {
+    const a = placed.get(rel.entity1)
+    const b = placed.get(rel.entity2)
+    if (!a || !b) continue
+    const lo = Math.min(a.y, b.y)
+    const hi = Math.max(a.y, b.y)
+    const skipsRow = [...placed.values()].some((p) => p.y > lo && p.y < hi)
+    if (skipsRow) {
+      totalW += 2 + (rel.label ? maxLineWidth(rel.label) + 1 : 0)
+    }
+  }
 
   const canvas = mkCanvas(totalW - 1, totalH - 1)
   const rc = mkRoleCanvas(totalW - 1, totalH - 1)
@@ -544,7 +785,7 @@ export function renderErAscii(
     y: number,
     minX: number,
     maxX: number,
-    avoidForeignLines: boolean,
+    foreignMargin: number,
   ): boolean {
     for (let i = 0; i < cells.length; i++) {
       const x = startX + i
@@ -552,7 +793,7 @@ export function renderErAscii(
       if (isProtected(x, y) || rc[x]?.[y] === 'arrow') return false
       if (boxCells.has(`${x},${y}`)) return false
     }
-    if (!avoidForeignLines) return true
+    if (foreignMargin < 0) return true
     // A cell already holding a *different* relationship's line reads as
     // free above (isProtected only tracks text/border), so without this
     // check the search below would happily park this relationship's label
@@ -571,9 +812,18 @@ export function renderErAscii(
     // old, permissive check rather than dropping the label outright (a
     // worse information loss than the visual ambiguity this guards
     // against).
-    for (let x = startX - 2; x <= startX + cells.length; x++) {
-      if (x < minX - 2 || x > maxX + 1) continue
-      if (rc[x]?.[y] === 'line' && !currentRelLineCells.has(`${x},${y}`)) {
+    // Another edge's line or marker within `foreignMargin` cells of the text
+    // (two on the stem side), so the label cannot read as theirs (#2112).
+    for (
+      let x = startX - Math.min(foreignMargin, 2);
+      x <= startX + cells.length - 1 + foreignMargin;
+      x++
+    ) {
+      const role = rc[x]?.[y]
+      if (
+        (role === 'line' || role === 'arrow') &&
+        !currentRelLineCells.has(`${x},${y}`)
+      ) {
         return false
       }
     }
@@ -633,6 +883,19 @@ export function renderErAscii(
     // the same silent-corruption shape as issue #350, just between two
     // relationships instead of a relationship and a box.
     if (role !== 'text' && rc[x]?.[y] === 'text') return
+    // Two lines of different orientation meeting in one cell cross: draw the
+    // junction glyph instead of letting the later write erase the earlier
+    // line (#2112). An existing junction is never overwritten by a stroke.
+    if (role === 'line') {
+      const prev = canvas[x]?.[y]
+      const o = lineOrient(ch)
+      if (o && prev === crossChar) return
+      if (o && lineOrient(prev) && lineOrient(prev) !== o) {
+        setC(x, y, crossChar, 'line')
+        currentRelLineCells.add(`${x},${y}`)
+        return
+      }
+    }
     // A same-family crossing (solid-over-solid, dashed-over-dashed, or
     // either meeting a direction-agnostic corner/marker glyph — see
     // lineStyleFamily) is always allowed to overwrite: two relationship
@@ -664,7 +927,9 @@ export function renderErAscii(
     // tell "sits on my own line" (fine) apart from "sits on a *different*
     // relationship's line" (issue #1119 — a relocated label landing next to
     // an unrelated line reads as describing that line's style instead).
-    if (role === 'line') currentRelLineCells.add(`${x},${y}`)
+    if (role === 'line' || role === 'arrow') {
+      currentRelLineCells.add(`${x},${y}`)
+    }
   }
 
   /**
@@ -790,6 +1055,14 @@ export function renderErAscii(
    * into either family; see setCGuarded's use of this for why that
    * exclusion matters (issue #1145).
    */
+  const crossChar = useAscii ? '+' : '┼'
+  /** 'h' / 'v' for a straight relationship-line glyph, else undefined. */
+  function lineOrient(ch: string | undefined): 'h' | 'v' | undefined {
+    if (ch === H || ch === dashH) return 'h'
+    if (ch === V || ch === dashV) return 'v'
+    return undefined
+  }
+
   function lineStyleFamily(
     ch: string | undefined,
   ): 'solid' | 'dashed' | undefined {
@@ -910,6 +1183,24 @@ export function renderErAscii(
     return entity.x + margin + Math.round(idx * step)
   }
 
+  /**
+   * True when a horizontal run across [x0, x1] on row y would not merge with
+   * another edge's horizontal line or hit text/markers: every cell is blank
+   * or another edge's vertical stem (a crossing, drawn as a junction), and
+   * the run's own end columns are blank.
+   */
+  function rowRunClear(y: number, x0: number, x1: number): boolean {
+    for (let x = x0; x <= x1; x++) {
+      const ch = canvas[x]?.[y]
+      if (ch === undefined || ch === ' ') continue
+      if (x !== x0 && x !== x1 && lineOrient(ch) === 'v') continue
+      return false
+    }
+    return true
+  }
+
+  const deferredLabels: (() => void)[] = []
+
   // This relationship's own line cells, reset each iteration — see
   // setCGuarded and canPlaceLabelLineAvoidingMarkers above.
   let currentRelLineCells = new Set<string>()
@@ -922,6 +1213,45 @@ export function renderErAscii(
 
     const lineH = rel.identifying ? H : dashH
     const lineV = rel.identifying ? V : dashV
+
+    if (e1 === e2) {
+      // Self loop on the left side: markers on two adjacent rows joined by a
+      // `┌`/`└` pair, the label left of it. Each loop on one entity gets the
+      // next free row pair (3 rows apart).
+      const k = selfRels.filter((r) => r.entity1 === rel.entity1).indexOf(rel)
+      const rows = [e1.y + 1 + 3 * k, e1.y + 2 + 3 * k]
+      const marks = [rel.cardinality1, rel.cardinality2].map((c) =>
+        getCrowsFootChars(c, useAscii, true),
+      )
+      const width = selfMarkerW(rel)
+      const lx = e1.x - 1 - width - 1
+      rows.forEach((y, i) => {
+        const chars = marks[i]!
+        const inset = chars[chars.length - 1] === V ? 1 : 0
+        setCGuarded(
+          lx,
+          y,
+          getCornerChar(i === 0 ? 'down' : 'up', 'right'),
+          'line',
+        )
+        for (let x = lx + 1; x < e1.x - inset - chars.length; x++) {
+          setCGuardedH(x, y, lineH, 'line')
+        }
+        for (let c = 0; c < chars.length; c++) {
+          setCGuarded(e1.x - inset - chars.length + c, y, chars[c]!, 'arrow')
+        }
+      })
+      if (rel.label) {
+        const labelW = maxLineWidth(rel.label)
+        splitLines(rel.label).forEach((line, i) => {
+          const cells = toDisplayCells(line)
+          for (let c = 0; c < cells.length; c++) {
+            setCGuarded(lx - 1 - labelW + c, rows[0]! + i, cells[c]!, 'text')
+          }
+        })
+      }
+      continue
+    }
 
     // Determine connection direction based on relative position.
     // Connect from right side of left entity to left side of right entity (horizontal),
@@ -1071,7 +1401,9 @@ export function renderErAscii(
         // detoured through the same row-gap band would otherwise land on
         // the exact same row and silently overwrite this one's label.
         const labelRows = rel.label ? splitLines(rel.label).length : 0
-        let detourY = rowBottom + 1
+        // Start below any two-row vertical marker (#2083): its circle row
+        // is the row a detour would otherwise cross.
+        let detourY = rowBottom + 1 + (extraMarkerRows > 0 ? 1 : 0)
         const maxDetourY = rowBottom + Math.max(vGap * 3, 4)
         while (
           detourY < maxDetourY &&
@@ -1204,8 +1536,16 @@ export function renderErAscii(
       // rows, not immediately at startY/endY — otherwise the marker ends up
       // sitting past where the line already turned away, disconnected from
       // it.
-      const markerStartY = startY
-      const markerEndY = endY
+      // A two-row marker is skipped over by the jog row (the jog starts on
+      // the first row past it); a one-row marker keeps its original
+      // behavior, where the jog may share the marker's row.
+      const upperRows = getVerticalMarkerRows(upperCard, useAscii, false)
+      const lowerRows = getVerticalMarkerRows(lowerCard, useAscii, true)
+      // Jog rows start past the tallest marker of any relationship (not just
+      // this one's), so a jog never runs along a box border (#2112) or over
+      // another edge's circle.
+      const markerStartY = startY + markerBand
+      const markerEndY = endY - markerBand
 
       // The naive vertical midpoint can still sit inside a row-mate of
       // `upper` that's taller than `upper` itself, so a horizontal jog (or
@@ -1220,30 +1560,31 @@ export function renderErAscii(
           .map((p) => p.y + p.height),
       )
       const lowerRowTop = lower.y
-      const bandTop = Math.max(startY, upperRowBottom + 1)
-      const bandBottom = Math.min(endY, lowerRowTop - 1)
+      const bandTop = Math.max(markerStartY, upperRowBottom + 1)
+      const bandBottom = Math.min(markerEndY, lowerRowTop - 1)
 
       /**
        * Pick a row within the free row-gap band for a horizontal run across
-       * [xStart, xEnd] (plus `extraRows` below it, for a multi-line label).
+       * [xStart, xEnd].
        * Prefers a row that's still entirely blank — not already used by
        * another relationship's line or label routed through the same band
        * (issue #350) — falling back to the midpoint of the band (or of the
        * full startY..endY span, if the band is degenerate) when nothing is
        * fully clear.
        */
-      function pickBandY(
-        xStart: number,
-        xEnd: number,
-        extraRows: number,
-      ): number {
+      function pickBandY(xStart: number, xEnd: number): number {
+        // A jog toward the left takes the lowest free row and one toward the
+        // right the highest, so a stem is short on the side its label needs
+        // and the corridor between neighbouring stems stays open (#2112).
+        const fromBottom = lowerCX < lineX
         const fallback =
           bandTop <= bandBottom
             ? Math.floor((bandTop + bandBottom) / 2)
             : Math.floor((startY + endY) / 2)
         if (bandTop > bandBottom) return fallback
-        for (let y = bandTop; y <= bandBottom; y++) {
-          if (regionClear(xStart, xEnd, y, y + extraRows)) return y
+        for (let i = 0; i <= bandBottom - bandTop; i++) {
+          const y = fromBottom ? bandBottom - i : bandTop + i
+          if (rowRunClear(y, xStart, xEnd)) return y
         }
         return fallback
       }
@@ -1259,7 +1600,7 @@ export function renderErAscii(
       const needsJog = lineX !== lowerCX
       const lx = Math.min(lineX, lowerCX)
       const rx = Math.max(lineX, lowerCX)
-      const midY = needsJog ? pickBandY(lx, rx, 0) : endY
+      const midY = needsJog ? pickBandY(lx, rx) : endY
       const initialVertEnd = needsJog ? midY - 1 : endY
 
       // [bandTop, bandBottom] — not the wider [startY, endY] — is what the
@@ -1326,6 +1667,7 @@ export function renderErAscii(
           const left = lineX - offset
           if (
             offset > 0 &&
+            (sideBySide || left >= 0) &&
             columnClearOfBoxes(left, startY, endY) &&
             !viaColumnBlocked(left, startY, endY)
           ) {
@@ -1341,8 +1683,51 @@ export function renderErAscii(
         // Stay on lineX/lowerCX through the marker rows (so each crow's
         // foot marker still sits on a connected line, same as the
         // non-obstructed case below), then jog over to routingX for the
-        // long middle run.
-        for (let y = startY; y <= markerStartY; y++) {
+        // long middle run. Each jog takes its own free row in the gap under
+        // `upper` / above `lower` (never the row against a box border), so
+        // two bypasses leaving one box do not share a horizontal run (#2112).
+        const gapRows = (from: number, to: number): number[] => {
+          const rows: number[] = []
+          const step = from <= to ? 1 : -1
+          for (let y = from; step > 0 ? y <= to : y >= to; y += step)
+            rows.push(y)
+          return rows.length > 0 ? rows : [from]
+        }
+        const nextRowTop = Math.min(
+          ...[...placed.values()].filter((p) => p.y > upper.y).map((p) => p.y),
+        )
+        const prevRowBottom = Math.max(
+          ...[...placed.values()]
+            .filter((p) => p.y + p.height <= lower.y)
+            .map((p) => p.y + p.height),
+        )
+        const pickRow = (rows: number[], xa: number, xb: number): number =>
+          rows.find((y) =>
+            rowRunClear(y, Math.min(xa, xb), Math.max(xa, xb)),
+          ) ?? rows[0]!
+        const topJogY =
+          lineX === routingX
+            ? markerStartY
+            : pickRow(
+                gapRows(
+                  markerStartY,
+                  Math.min(nextRowTop - 1 - markerBand, markerEndY),
+                ),
+                lineX,
+                routingX,
+              )
+        const bottomJogY =
+          routingX === lowerCX
+            ? markerEndY
+            : pickRow(
+                gapRows(
+                  markerEndY,
+                  Math.max(prevRowBottom + markerBand, topJogY),
+                ),
+                routingX,
+                lowerCX,
+              )
+        for (let y = startY; y <= topJogY; y++) {
           setCGuarded(lineX, y, lineV, 'line')
         }
         for (
@@ -1350,9 +1735,9 @@ export function renderErAscii(
           x <= Math.max(lineX, routingX);
           x++
         ) {
-          setCGuardedH(x, markerStartY, lineH, 'line')
+          setCGuardedH(x, topJogY, lineH, 'line')
         }
-        for (let y = markerStartY; y <= markerEndY; y++) {
+        for (let y = topJogY; y <= bottomJogY; y++) {
           setCGuarded(routingX, y, lineV, 'line')
         }
         for (
@@ -1360,36 +1745,31 @@ export function renderErAscii(
           x <= Math.max(routingX, lowerCX);
           x++
         ) {
-          setCGuardedH(x, markerEndY, lineH, 'line')
+          setCGuardedH(x, bottomJogY, lineH, 'line')
         }
-        for (let y = markerEndY; y <= endY; y++) {
+        for (let y = bottomJogY; y <= endY; y++) {
           setCGuarded(lowerCX, y, lineV, 'line')
         }
         // Mark the bypass's four turns (issue #414). Drawn before the
         // crow's-foot markers below, so a marker centered on the same
-        // column/row still wins where the two coincide — same precedence
-        // as before this change, when the marker overwrote a plain line
-        // character there instead of a corner.
+        // column/row still wins where the two coincide.
         if (lineX !== routingX) {
           const horizDirAtLine = routingX > lineX ? 'right' : 'left'
           const horizDirAtRouting =
             horizDirAtLine === 'right' ? 'left' : 'right'
-          drawCorner(lineX, markerStartY, 'up', horizDirAtLine)
-          drawCorner(routingX, markerStartY, 'down', horizDirAtRouting)
+          drawCorner(lineX, topJogY, 'up', horizDirAtLine)
+          drawCorner(routingX, topJogY, 'down', horizDirAtRouting)
         }
         if (routingX !== lowerCX) {
           const horizDirAtRouting2 = lowerCX > routingX ? 'right' : 'left'
           const horizDirAtLower =
             horizDirAtRouting2 === 'right' ? 'left' : 'right'
-          drawCorner(routingX, markerEndY, 'up', horizDirAtRouting2)
-          drawCorner(lowerCX, markerEndY, 'down', horizDirAtLower)
+          drawCorner(routingX, bottomJogY, 'up', horizDirAtRouting2)
+          drawCorner(lowerCX, bottomJogY, 'down', horizDirAtLower)
         }
         // Register the long middle run so a later relationship's own
-        // vertical connector won't land adjacent to it either (#411). The
-        // short lineX/lowerCX stubs at the marker rows are only 1 row deep
-        // (markerStartY..markerStartY, markerEndY..markerEndY) — negligible
-        // for this check, so they're not registered separately.
-        registerVerticalLane(routingX, markerStartY, markerEndY)
+        // vertical connector won't land adjacent to it either (#411).
+        registerVerticalLane(routingX, topJogY, bottomJogY)
       } else {
         // Vertical line. Column lineX stays within upper's own x-range,
         // which by layout construction never overlaps a row-mate's box, so
@@ -1437,30 +1817,16 @@ export function renderErAscii(
         }
       }
 
-      // Crow's foot markers (vertical direction) — markerStartY/markerEndY
-      // computed up front, above.
-      // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
-      const upperChars = getCrowsFootChars(upperCard, useAscii, false, true)
-      for (let i = 0; i < upperChars.length; i++) {
-        setCGuarded(
-          lineX - Math.floor(upperChars.length / 2) + i,
-          markerStartY,
-          upperChars[i]!,
-          'arrow',
-        )
-      }
+      // Row of this relationship's own horizontal jog (none when it routes
+      // straight or through the via bypass). A label sitting on it would
+      // hide the jog, so the label search below steers off it (#1917).
+      const jogRow = !sideBySide && !multiRowObstruction && needsJog ? midY : -1
 
-      // Lower marker (at lower entity's top edge) - treat as target side (isRight=true)
+      // Crow's foot markers (vertical direction), rows ordered outward from
+      // each entity box (see getVerticalMarkerRows).
       const targetX = lineX !== lowerCX ? lowerCX : lineX
-      const lowerChars = getCrowsFootChars(lowerCard, useAscii, true, true)
-      for (let i = 0; i < lowerChars.length; i++) {
-        setCGuarded(
-          targetX - Math.floor(lowerChars.length / 2) + i,
-          markerEndY,
-          lowerChars[i]!,
-          'arrow',
-        )
-      }
+      upperRows.forEach((ch, i) => setCGuarded(lineX, startY + i, ch, 'arrow'))
+      lowerRows.forEach((ch, i) => setCGuarded(targetX, endY - i, ch, 'arrow'))
 
       // Relationship label — placed to the right of the vertical line.
       // Anchored to routingX, not lineX/targetX: when the connection was
@@ -1471,133 +1837,244 @@ export function renderErAscii(
       // disconnected, floating in the gap between the two. We expand the
       // canvas as needed since labels can extend beyond the initial
       // bounds. Supports multi-line labels.
-      if (rel.label) {
-        const lines = splitLines(rel.label)
-        // How far a centered vertical marker's own rightmost glyph column
-        // extends past its own center column — see upperChars/lowerChars
-        // above, drawn via `center - Math.floor(chars.length / 2) + i`. For
-        // every current 1- or 2-cell marker this is 0 (centering always
-        // leans the extra cell left, never right), so labelX below reduces
-        // to routingX + 2, matching the flat constant this replaces — but
-        // it stays correct if a future marker's glyph or centering ever
-        // extended past the line column (issue #415).
-        const markerRightExtent = Math.max(
-          upperChars.length - 1 - Math.floor(upperChars.length / 2),
-          lowerChars.length - 1 - Math.floor(lowerChars.length / 2),
-        )
-        // 1 cell for the line column itself + 1 cell of breathing room
-        // before the label starts. Was a flat `+ 2` (issue #415).
-        const labelX = routingX + markerRightExtent + 2
-        const cellsPerLine = lines.map((line) => toDisplayCells(line))
-        const maxCells = Math.max(...cellsPerLine.map((cells) => cells.length))
-        const lastLx = labelX + maxCells - 1
-        const blockHeight = lines.length
-        // Geometric midpoint, used only as a starting point for the
-        // collision search below — the jog itself no longer shares this
-        // value (chooseFreeRow was removed; multiRowObstruction routing
-        // picks its own row independently), so this is a fresh, local
-        // fallback rather than a value reused from the line/jog above.
-        const midY = Math.floor((startY + endY) / 2)
-        // the search for the label's block there rather than at a freshly
-        // recomputed geometric midpoint — otherwise the label could still
-        // drift onto a different row than its own horizontal segment.
-        const naturalStartY = midY - Math.floor((blockHeight - 1) / 2)
-
-        if (lastLx >= 0) {
-          increaseSize(canvas, lastLx + 1, endY + 1)
-          increaseRoleCanvasSize(rc, lastLx + 1, endY + 1)
-        }
-
-        // Multiple vertical relationships sharing the same upper/lower
-        // entity "rows" in the grid layout end up with the identical
-        // startY/endY — and so the identical natural midY — for their own
-        // labels. Without ever considering another row, only the first of
-        // them to draw would keep its label; the rest would find their
-        // natural row already taken and drop out entirely, even though
-        // there's room a row or two away. Try the natural row first, then
-        // scan outward (alternating below/above) within the relationship's
-        // own vertical run for the nearest row where the whole label fits
-        // cleanly. "Fits" means clear of every entity box (see boxCells) —
-        // not just text/border content already drawn — since a box's own
-        // blank interior padding never gets a role written to it and would
-        // otherwise look free; a bypass-routed relationship (routingX) can
-        // legitimately run its label past a box that never touched
-        // startY/endY's naive band (#350). It also means clear of markers,
-        // not just text/borders (#392) — before giving up.
-        // Two passes: first strict (also dodging a *different*
-        // relationship's own line — #1119), then permissive (the pre-#1119
-        // check) if nothing in range clears the strict bar. A dense diagram
-        // where every candidate row touches some other relationship's line
-        // would otherwise drop the label entirely — worse than the visual
-        // ambiguity the strict pass exists to avoid.
-        let placedAtY: number | null = null
-        for (const avoidForeignLines of [true, false]) {
-          for (
-            let offset = 0;
-            offset <= endY - startY && placedAtY === null;
-            offset++
-          ) {
-            const candidates =
-              offset === 0
-                ? [naturalStartY]
-                : [naturalStartY + offset, naturalStartY - offset]
-            for (const candidateStart of candidates) {
-              if (
-                candidateStart < startY ||
-                candidateStart + blockHeight - 1 > endY
-              ) {
-                continue
+      //
+      // Deferred until every relationship's lines are drawn (#2112): a label
+      // placed mid-loop could sit on the column a later edge then takes, and
+      // the later stem was simply dropped under the text.
+      const ownLineCells = currentRelLineCells
+      if (rel.label)
+        deferredLabels.push(() => {
+          currentRelLineCells = ownLineCells
+          const lines = splitLines(rel.label)
+          const cellsPerLine = lines.map((line) => toDisplayCells(line))
+          const maxCells = Math.max(
+            ...cellsPerLine.map((cells) => cells.length),
+          )
+          const blockHeight = lines.length
+          // Best home for a one-line label: on this edge's own horizontal
+          // run, like mermaid's label sitting on the path, with a blank on
+          // each side. It can only belong to the edge it interrupts (#2112).
+          if (blockHeight === 1) {
+            const ownH = (x: number, y: number): boolean =>
+              ownLineCells.has(`${x},${y}`) &&
+              lineOrient(canvas[x]?.[y]) === 'h'
+            let best: { y: number; x: number; len: number } | undefined
+            for (const y of new Set(
+              [...ownLineCells].map((k) => Number(k.split(',')[1])),
+            )) {
+              for (let x = 0; x < canvas.length; x++) {
+                if (!ownH(x, y)) continue
+                let x1 = x
+                while (ownH(x1 + 1, y)) x1++
+                const len = x1 - x + 1
+                if (len >= maxCells + 2 && (!best || len > best.len))
+                  best = { y, x, len }
+                x = x1
               }
-              const fits = cellsPerLine.every((cells, lineIdx) =>
-                canPlaceLabelLineAvoidingMarkers(
-                  cells,
-                  labelX,
-                  candidateStart + lineIdx,
-                  0,
-                  lastLx,
-                  avoidForeignLines,
-                ),
+            }
+            if (best) {
+              const start = best.x + Math.floor((best.len - maxCells) / 2)
+              cellsPerLine[0]!.forEach((c, i) =>
+                setCGuarded(start + i, best.y, c, 'text'),
               )
-              if (fits) {
-                placedAtY = candidateStart
-                break
+              setC(start - 1, best.y, ' ', 'line')
+              setC(start + maxCells, best.y, ' ', 'line')
+              return
+            }
+          }
+          // Next best for a one-line label: on this edge's own vertical
+          // stem, centered on it and as near the middle of the run as a
+          // clear row allows, so the line is broken by the text like
+          // mermaid's label sitting on the path (#2253). The row needs the
+          // stem in the cells above and below (never a corner or marker) and
+          // a blank margin either side of the text; otherwise fall through to
+          // the label-beside-the-stem search below.
+          //
+          // Invariant (#2264): the anchor cell is never one another edge also
+          // draws on. Parallel or repeated relationships only share a column
+          // through attachmentX's rounding, which happens when a narrow box
+          // side holds more attachments than it has columns; those stems then
+          // sit in adjacent columns, and the blank margin required on both
+          // sides of the text below rejects every row. Checked by rendering
+          // thousands of random diagrams with and without an exclusive-owner
+          // check on this cell: the output was identical, so none is kept.
+          // If a layout change ever makes the case reachable, track per-cell
+          // owners in setCGuarded and require exactly one here.
+          if (blockHeight === 1) {
+            const rowOfBox = (y: number): boolean =>
+              [...placed.values()].some((p) => y >= p.y && y < p.y + p.height)
+            const stem = (x: number, y: number): boolean =>
+              ownLineCells.has(`${x},${y}`) &&
+              rc[x]?.[y] === 'line' &&
+              canvas[x]?.[y] === lineV
+            const ink = (x: number, y: number): boolean =>
+              boxCells.has(`${x},${y}`) || (canvas[x]?.[y] ?? ' ') !== ' '
+            const target = Math.floor((startY + endY) / 2)
+            for (const anchorX of new Set([routingX, lineX])) {
+              // Centered on the stem; a label too wide for the room to its
+              // left slides right until the stem is still under its text.
+              const start = Math.max(
+                1,
+                Math.min(anchorX - Math.floor((maxCells - 1) / 2), anchorX),
+              )
+              for (let off = 0; off <= endY - startY; off++) {
+                for (const y of off === 0
+                  ? [target]
+                  : [target + off, target - off]) {
+                  if (y <= startY || y >= endY) continue
+                  if (
+                    !stem(anchorX, y) ||
+                    !stem(anchorX, y - 1) ||
+                    !stem(anchorX, y + 1)
+                  )
+                    continue
+                  if (rowOfBox(y)) continue
+                  let clear = true
+                  for (let x = start - 1; x <= start + maxCells; x++) {
+                    if (x !== anchorX && ink(x, y)) clear = false
+                  }
+                  if (!clear) continue
+                  increaseSize(canvas, start + maxCells, endY + 1)
+                  increaseRoleCanvasSize(rc, start + maxCells, endY + 1)
+                  cellsPerLine[0]!.forEach((c, i) =>
+                    setCGuarded(start + i, y, c, 'text'),
+                  )
+                  return
+                }
               }
             }
           }
-          if (placedAtY !== null) break
-        }
+          // Geometric midpoint, used only as a starting point for the
+          // collision search below — the jog itself no longer shares this
+          // value (chooseFreeRow was removed; multiRowObstruction routing
+          // picks its own row independently), so this is a fresh, local
+          // fallback rather than a value reused from the line/jog above.
+          const midY = Math.floor((startY + endY) / 2)
+          // The search for the label's block there rather than at a freshly
+          // recomputed geometric midpoint — otherwise the label could still
+          // drift onto a different row than its own horizontal segment.
+          const naturalStartY = midY - Math.floor((blockHeight - 1) / 2)
 
-        if (placedAtY !== null) {
-          for (let lineIdx = 0; lineIdx < blockHeight; lineIdx++) {
-            const cells = cellsPerLine[lineIdx]!
-            const y = placedAtY + lineIdx
-            for (let i = 0; i < cells.length; i++) {
-              const lx = labelX + i
-              if (lx >= 0) {
-                setCGuarded(lx, y, cells[i]!, 'text')
+          // Multiple vertical relationships sharing the same upper/lower
+          // entity "rows" in the grid layout end up with the identical
+          // startY/endY — and so the identical natural midY — for their own
+          // labels. Without ever considering another row, only the first of
+          // them to draw would keep its label; the rest would find their
+          // natural row already taken and drop out entirely, even though
+          // there's room a row or two away. Try the natural row first, then
+          // scan outward (alternating below/above) within the relationship's
+          // own vertical run for the nearest row where the whole label fits
+          // cleanly. "Fits" means clear of every entity box (see boxCells) —
+          // not just text/border content already drawn — since a box's own
+          // blank interior padding never gets a role written to it and would
+          // otherwise look free; a bypass-routed relationship (routingX) can
+          // legitimately run its label past a box that never touched
+          // startY/endY's naive band (#350). It also means clear of markers,
+          // not just text/borders (#392) — before giving up.
+          // Two passes: first strict (also dodging a *different*
+          // relationship's own line — #1119), then permissive (the pre-#1119
+          // check) if nothing in range clears the strict bar. A dense diagram
+          // where every candidate row touches some other relationship's line
+          // would otherwise drop the label entirely — worse than the visual
+          // ambiguity the strict pass exists to avoid.
+          // Passes, strictest first: label rows in a gap between entity rows
+          // (not alongside another entity's box, where it would read as that
+          // entity's), then any row; always beside this edge's own stem so the
+          // label belongs to one edge; the last pass drops that too rather than
+          // lose the label.
+          const rowHasBox = (y: number): boolean =>
+            [...placed.values()].some((p) => y >= p.y && y < p.y + p.height)
+          // The stems this edge owns: the one it ends on, then the one it
+          // leaves by (the label goes right of the stem, one blank between).
+          const anchors = [...new Set([routingX, lineX])]
+          const passes = [
+            [3, true, true],
+            [3, false, true],
+            [1, false, true],
+            [-1, false, true],
+            [-1, false, false],
+          ] as const
+          let spot: { x: number; y: number } | undefined
+          search: for (const [foreignMargin, gapOnly, ownStem] of passes) {
+            for (const anchorX of anchors) {
+              const labelX = anchorX + 2
+              const lastLx = labelX + maxCells - 1
+              increaseSize(canvas, lastLx + 1, endY + 1)
+              increaseRoleCanvasSize(rc, lastLx + 1, endY + 1)
+              const onOwnStem = (y: number): boolean =>
+                ownLineCells.has(`${anchorX},${y}`) &&
+                [lineV, crossChar].includes(canvas[anchorX]?.[y] ?? ' ')
+              for (let offset = 0; offset <= endY - startY; offset++) {
+                const candidates =
+                  offset === 0
+                    ? [naturalStartY]
+                    : [naturalStartY + offset, naturalStartY - offset]
+                for (const candidateStart of candidates) {
+                  if (
+                    candidateStart < startY ||
+                    candidateStart + blockHeight - 1 > endY
+                  ) {
+                    continue
+                  }
+                  const onJog =
+                    labelX - 1 <= rx &&
+                    lastLx >= lx &&
+                    jogRow >= candidateStart &&
+                    jogRow < candidateStart + blockHeight
+                  if (onJog) continue
+                  const rows = Array.from(
+                    { length: blockHeight },
+                    (_, i) => candidateStart + i,
+                  )
+                  if (gapOnly && rows.some(rowHasBox)) continue
+                  if (ownStem && !rows.every(onOwnStem)) continue
+                  const fits = cellsPerLine.every((cells, lineIdx) =>
+                    canPlaceLabelLineAvoidingMarkers(
+                      cells,
+                      labelX,
+                      candidateStart + lineIdx,
+                      0,
+                      lastLx,
+                      foreignMargin,
+                    ),
+                  )
+                  if (fits) {
+                    spot = { x: labelX, y: candidateStart }
+                    break search
+                  }
+                }
               }
             }
-            // A relationship's own jog can leave a line character
-            // immediately beside where its own label starts —
-            // setCGuardedH only stops a *different*, later write from
-            // crowding an already-placed label; it can't retroactively
-            // clean up a dash this same relationship left right there
-            // moments earlier, before the label existed to protect
-            // against it. Clear one cell of breathing room on each side
-            // whenever a line glyph (from any relationship) is sitting
-            // there.
-            if (rc[labelX - 1]?.[y] === 'line') {
-              setC(labelX - 1, y, ' ', 'line')
-            }
-            const afterX = labelX + cells.length
-            if (rc[afterX]?.[y] === 'line') {
-              setC(afterX, y, ' ', 'line')
+          }
+
+          if (spot) {
+            const labelX = spot.x
+            for (let lineIdx = 0; lineIdx < blockHeight; lineIdx++) {
+              const cells = cellsPerLine[lineIdx]!
+              const y = spot.y + lineIdx
+              for (let i = 0; i < cells.length; i++) {
+                const lx = labelX + i
+                if (lx >= 0) {
+                  setCGuarded(lx, y, cells[i]!, 'text')
+                }
+              }
+              // A relationship's own jog can leave a line character
+              // immediately beside the label: clear one cell of breathing
+              // room on each side, but only this edge's own cells (erasing
+              // another edge's line would leave it with a gap).
+              if (ownLineCells.has(`${labelX - 1},${y}`)) {
+                setC(labelX - 1, y, ' ', 'line')
+              }
+              const afterX = labelX + cells.length
+              if (ownLineCells.has(`${afterX},${y}`)) {
+                setC(afterX, y, ' ', 'line')
+              }
             }
           }
-        }
-      }
+        })
     }
   }
+  for (const placeLabel of deferredLabels) placeLabel()
 
   return canvasToString(canvas, { roleCanvas: rc, colorMode, theme })
 }
