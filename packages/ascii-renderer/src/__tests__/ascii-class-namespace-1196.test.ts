@@ -138,4 +138,43 @@ B --> D`)
       expect(rows[i]!.startsWith('│')).toBe(true)
     }
   })
+
+  // Edges running both ways between two frames can't be stacked; the frames
+  // stay on shared rows and are pushed apart instead of overlapping.
+  it('keeps frames with edges in both directions apart (#2312)', () => {
+    const rows = lines(`classDiagram
+namespace One {
+  class A
+  class B
+}
+namespace Two {
+  class C
+  class D
+}
+A <|-- B
+C <|-- D
+A --> C
+D --> B`)
+    const oneEnd = rows[find(rows, ' One ').row]!.lastIndexOf('┐')
+    expect(rows[find(rows, ' Two ').row]!.indexOf('┌')).toBeGreaterThan(oneEnd)
+  })
+
+  // Frame edges that loop X -> Y -> Z -> X have no stacking order, so the
+  // levels are left as they were; every frame is still drawn.
+  it('draws frames whose edges form a cycle (#2312)', () => {
+    const rows = lines(`classDiagram
+namespace X {
+  class A
+}
+namespace Y {
+  class B
+}
+namespace Z {
+  class C
+}
+A --> B
+B --> C
+C --> A`)
+    for (const title of [' X ', ' Y ', ' Z ']) find(rows, title)
+  })
 })
