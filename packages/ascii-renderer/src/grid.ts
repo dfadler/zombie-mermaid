@@ -1167,19 +1167,23 @@ function relocateNode(
   return dest === to
 }
 
-/** Shift every node strictly right of column `afterX` by `by` grid units. */
-function shiftColumnsRight(
+/**
+ * Shift every node strictly past `after` on the cross axis (x for TD, y for
+ * LR) by `by` grid units.
+ */
+function shiftCrossAxis(
   graph: AsciiGraph,
-  afterX: number,
+  lr: boolean,
+  after: number,
   by: number,
 ): void {
   const moved = graph.nodes.filter(
-    (n) => n.gridCoord !== null && n.gridCoord.x > afterX,
+    (n) => n.gridCoord !== null && (lr ? n.gridCoord.y : n.gridCoord.x) > after,
   )
   for (const n of moved) freeNodeBlock(graph, requireGridCoord(n))
   for (const n of moved) {
     const gc = requireGridCoord(n)
-    n.gridCoord = { x: gc.x + by, y: gc.y }
+    n.gridCoord = lr ? { x: gc.x, y: gc.y + by } : { x: gc.x + by, y: gc.y }
     placeBlock(graph.grid, n.gridCoord, NODE_BLOCK_SIZE)
   }
 }
@@ -1214,7 +1218,9 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
  * the first one (a fan-out like `A --> B & C & D` otherwise hangs A over B and
  * leaves its other edges to leave sideways and come back down).
  *
- * TD only, and only for graphs where every edge points to a lower row:
+ * TD and LR without subgraphs (RL is laid out as LR and mirrored afterwards;
+ * in LR the "row" below is a column and "x" is y), and only for graphs where every edge
+ * points to a later rank:
  * back edges and same-row edges route around the nodes they skip, and moving
  * nodes under them scrambles those routes. A node moves only when it is
  * outside every subgraph, or alone in each one and leaving only by cluster
@@ -1234,20 +1240,28 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
  *    (else the shift would drag unrelated branches wider, so it stays put).
  */
 function centerParentsOverChildren(graph: AsciiGraph): void {
-  if (graph.config.graphDirection !== 'TD') return
+  const lr = graph.config.graphDirection === 'LR'
+  // ponytail: LR graphs with subgraphs keep the old layout; the cluster-exit
+  // wall/lane routing is tuned to it. Extend once those routes are re-checked.
+  if (lr && graph.subgraphs.length > 0) return
+  // Rank axis (flow direction) and cross axis (where siblings spread).
+  const rankOf = (g: GridCoord): number => (lr ? g.x : g.y)
+  const crossOf = (g: GridCoord): number => (lr ? g.y : g.x)
+  const at = (rank: number, cross: number): GridCoord =>
+    lr ? { x: rank, y: cross } : { x: cross, y: rank }
   // Back edges and same-row edges route around the nodes they skip; moving
   // nodes under them scrambles those routes (State: Connection Lifecycle).
   // Only handle graphs where every edge points to a lower row.
   const flowsDown = graph.edges.every((e) => {
     const f = e.from.gridCoord
     const t = e.to.gridCoord
-    return f !== null && t !== null && f.y < t.y
+    return f !== null && t !== null && rankOf(f) < rankOf(t)
   })
   if (!flowsDown) return
   // Deepest first so a moved child doesn't invalidate its parent's span.
   const order = graph.nodes
     .filter((n) => n.gridCoord !== null)
-    .sort((a, b) => requireGridCoord(b).y - requireGridCoord(a).y)
+    .sort((a, b) => rankOf(requireGridCoord(b)) - rankOf(requireGridCoord(a)))
   for (const node of order) {
     const gc = requireGridCoord(node)
     if (
@@ -1264,7 +1278,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       const cgc = c.gridCoord
       if (
         cgc === null ||
-        cgc.y !== gc.y + 4 ||
+        rankOf(cgc) !== rankOf(gc) + 4 ||
         (isNodeInAnySubgraph(graph, c) &&
           !(children.length === 1 && onlyInLoneClusters(graph, c))) ||
         graph.edges.some((e) => e.to === c && e.from !== node)
@@ -1274,7 +1288,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       }
     }
     if (!ok) continue
-    const xs = children.map((c) => requireGridCoord(c).x)
+    const xs = children.map((c) => crossOf(requireGridCoord(c)))
     // Node slots sit on a stride of 4, so the midpoint of the outermost
     // children is a slot only for an odd count.
     let mid = (Math.min(...xs) + Math.max(...xs)) / 2
@@ -1283,9 +1297,11 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     // are integers (a fractional one hangs the pathfinder), so leave it be.
     if (!Number.isInteger(mid)) continue
     if (mid % 4 !== 0) {
-      if (mid + 2 <= gc.x) continue
+      // Defensive: placement puts a parent at or left of its children's midpoint.
+      /* v8 ignore next */
+      if (mid + 2 <= crossOf(gc)) continue
       if (fitsStraddled(graph, node)) {
-        relocateNode(graph, node, { x: mid, y: gc.y })
+        relocateNode(graph, node, at(rankOf(gc), mid))
         continue
       }
       const own = new Set<AsciiNode>([node])
@@ -1300,13 +1316,14 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       // keeps the node centered under both.
       for (const e of graph.edges) if (e.to === node) own.add(e.from)
       const foreign = graph.nodes.some(
-        (n) => n.gridCoord !== null && n.gridCoord.x > mid && !own.has(n),
+        (n) =>
+          n.gridCoord !== null && crossOf(n.gridCoord) > mid && !own.has(n),
       )
       if (foreign) continue
-      shiftColumnsRight(graph, mid, 4)
+      shiftCrossAxis(graph, lr, mid, 4)
       mid += 2
     }
-    if (mid > gc.x) relocateNode(graph, node, { x: mid, y: gc.y })
+    if (mid > crossOf(gc)) relocateNode(graph, node, at(rankOf(gc), mid))
   }
   markLabeledFanIn(graph)
 }
