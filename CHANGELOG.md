@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.9.1
+
+### Patch Changes
+
+- [#2321](https://github.com/dfadler/zombie-mermaid/pull/2321) [`5817019`](https://github.com/dfadler/zombie-mermaid/commit/5817019fbb3e11d9491632abaf97f0811275462f) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII LR/RL flowcharts now centre a fan-out parent over its children, as TD already did and as mermaid draws it, instead of putting the parent on the first child's row with the rest stacked below. LR graphs with subgraphs keep the old layout for now.
+
+- [#2337](https://github.com/dfadler/zombie-mermaid/pull/2337) [`c18cd26`](https://github.com/dfadler/zombie-mermaid/commit/c18cd2645b7aab54857df40be6ff4f43f499a168) Thanks [@dfadler](https://github.com/dfadler)! - Add a `maxLineLength` render limit (default 10,000 characters per source line). A single very long line could make the parsers' per-line regexes run quadratically; it now fails fast with `LimitExceededError`. Also escapes backslash in the class-diagram arrow regex builder.
+
+- [#2302](https://github.com/dfadler/zombie-mermaid/pull/2302) [`2cb9b76`](https://github.com/dfadler/zombie-mermaid/commit/2cb9b7615df08c2c8c683ad4b0fdeba4abf56ded) Thanks [@dfadler](https://github.com/dfadler)! - Add `typesVersions` so the `/ascii`, `/ascii-layout` and `/mcp` subpath types resolve under legacy `moduleResolution: node` ([#1986](https://github.com/dfadler/zombie-mermaid/issues/1986)).
+
+- [#2328](https://github.com/dfadler/zombie-mermaid/pull/2328) [`9ed0a46`](https://github.com/dfadler/zombie-mermaid/commit/9ed0a467fd7b127d07c754500305b667c5937e3f) Thanks [@dfadler](https://github.com/dfadler)! - Output change: horizontal XY chart SVGs now reserve room on the right for half the last value-axis label, so a wide label such as 220000 is no longer clipped at the viewBox edge.
+
+- [#2336](https://github.com/dfadler/zombie-mermaid/pull/2336) [`b5f9f06`](https://github.com/dfadler/zombie-mermaid/commit/b5f9f067d28019c3e88cdff67195475b6bbfefc4) Thanks [@dfadler](https://github.com/dfadler)! - Output change: horizontal XY charts now draw line series as straight segments in category order, as mermaid does, instead of a smoothed curve that could double back on a series that is not monotone in value. Vertical charts stay smoothed.
+- Updated dependencies [[`0ca073f`](https://github.com/dfadler/zombie-mermaid/commit/0ca073f153a8127616e385851d994e0e7d8ed9f5), [`5817019`](https://github.com/dfadler/zombie-mermaid/commit/5817019fbb3e11d9491632abaf97f0811275462f), [`f3023c7`](https://github.com/dfadler/zombie-mermaid/commit/f3023c7ab5ec7275c3e9d49374db3dc7fd425526), [`c18cd26`](https://github.com/dfadler/zombie-mermaid/commit/c18cd2645b7aab54857df40be6ff4f43f499a168), [`a1fcbbf`](https://github.com/dfadler/zombie-mermaid/commit/a1fcbbfc1a8e13180384539ff1351e31ead163ba), [`9ed0a46`](https://github.com/dfadler/zombie-mermaid/commit/9ed0a467fd7b127d07c754500305b667c5937e3f), [`b5f9f06`](https://github.com/dfadler/zombie-mermaid/commit/b5f9f067d28019c3e88cdff67195475b6bbfefc4), [`d398e27`](https://github.com/dfadler/zombie-mermaid/commit/d398e278f2d1f63eddfb27961d262a4541691929)]:
+  - @zombie-mermaid/ascii-renderer@5.9.1
+  - @zombie-mermaid/svg-renderer@5.9.1
+  - @zombie-mermaid/mcp@5.9.1
+  - @zombie-mermaid/core@5.9.1
+  - @zombie-mermaid/mermaid-parser@5.9.1
+
 ## 5.9.0
 
 ### Minor Changes

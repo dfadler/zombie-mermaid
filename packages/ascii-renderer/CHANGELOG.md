@@ -1,5 +1,24 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.9.1
+
+### Patch Changes
+
+- [#2331](https://github.com/dfadler/zombie-mermaid/pull/2331) [`0ca073f`](https://github.com/dfadler/zombie-mermaid/commit/0ca073f153a8127616e385851d994e0e7d8ed9f5) Thanks [@dfadler](https://github.com/dfadler)! - ASCII class diagrams now stack namespace frames whose edges all run one way (the source frame above the target frame, as mermaid draws them) instead of interleaving their classes, which made the frames overlap. An edge entering a class at the top of a frame no longer runs along that frame's border.
+
+- [#2321](https://github.com/dfadler/zombie-mermaid/pull/2321) [`5817019`](https://github.com/dfadler/zombie-mermaid/commit/5817019fbb3e11d9491632abaf97f0811275462f) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII LR/RL flowcharts now centre a fan-out parent over its children, as TD already did and as mermaid draws it, instead of putting the parent on the first child's row with the rest stacked below. LR graphs with subgraphs keep the old layout for now.
+
+- [#2320](https://github.com/dfadler/zombie-mermaid/pull/2320) [`f3023c7`](https://github.com/dfadler/zombie-mermaid/commit/f3023c7ab5ec7275c3e9d49374db3dc7fd425526) Thanks [@dfadler](https://github.com/dfadler)! - Faster ASCII rendering of graphs with many labelled edges that share a target (about 15-20% less CPU on 80-160 labelled edges); output is unchanged.
+
+- [#2337](https://github.com/dfadler/zombie-mermaid/pull/2337) [`c18cd26`](https://github.com/dfadler/zombie-mermaid/commit/c18cd2645b7aab54857df40be6ff4f43f499a168) Thanks [@dfadler](https://github.com/dfadler)! - Add a `maxLineLength` render limit (default 10,000 characters per source line). A single very long line could make the parsers' per-line regexes run quadratically; it now fails fast with `LimitExceededError`. Also escapes backslash in the class-diagram arrow regex builder.
+
+- [#2333](https://github.com/dfadler/zombie-mermaid/pull/2333) [`a1fcbbf`](https://github.com/dfadler/zombie-mermaid/commit/a1fcbbfc1a8e13180384539ff1351e31ead163ba) Thanks [@dfadler](https://github.com/dfadler)! - ASCII pie: every legend row now shows its percentage, including slices that get no bar cell (under 1%, or past the bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%` ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
+
+- [#2330](https://github.com/dfadler/zombie-mermaid/pull/2330) [`d398e27`](https://github.com/dfadler/zombie-mermaid/commit/d398e278f2d1f63eddfb27961d262a4541691929) Thanks [@dfadler](https://github.com/dfadler)! - ASCII XY chart: thin the y-axis tick labels to every Nth tick so they land on evenly spaced rows instead of bunching into adjacent rows ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310)).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.9.1
+  - @zombie-mermaid/mermaid-parser@5.9.1
+
 ## 5.9.0
 
 ### Patch Changes
