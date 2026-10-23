@@ -66,6 +66,7 @@ jobs:
         with:
           name: manifest-${{ matrix.os }}-node${{ matrix.node }}
           path: manifest.txt
+          retention-days: 1 # only the compare job in this run reads it
           if-no-files-found: error
 
   compare:
