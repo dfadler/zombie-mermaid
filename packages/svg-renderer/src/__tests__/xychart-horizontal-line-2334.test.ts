@@ -21,9 +21,9 @@ describe('horizontal XY line paths (#2334)', () => {
 
   it('keeps category (y) strictly increasing along the path', () => {
     const ys = [
-      ...linePath(body('xychart-beta horizontal', '10, 90, 20, 80, 30')).matchAll(
-        /,([\d.]+)/g,
-      ),
+      ...linePath(
+        body('xychart-beta horizontal', '10, 90, 20, 80, 30'),
+      ).matchAll(/,([\d.]+)/g),
     ].map((m) => Number(m[1]))
     expect(ys.length).toBe(5)
     expect(ys).toEqual([...ys].sort((a, b) => a - b))
@@ -43,7 +43,9 @@ describe('horizontal XY line paths (#2334)', () => {
     const two = renderMermaidSVG(
       'xychart-beta horizontal\n    x-axis [a, b]\n    y-axis "v" 0 --> 100\n    line [40, 60]',
     )
-    expect(two).toMatch(/<path d="M[\d.]+,[\d.]+ L[\d.]+,[\d.]+" class="xychart-line /)
+    expect(two).toMatch(
+      /<path d="M[\d.]+,[\d.]+ L[\d.]+,[\d.]+" class="xychart-line /,
+    )
   })
 
   it('still smooths vertical charts with cubic segments', () => {
