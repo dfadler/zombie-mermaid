@@ -154,12 +154,9 @@ function renderVertical(
   // every Nth tick, with the smallest N that leaves an unlabeled row between
   // labels, so they land on evenly spaced rows (#2310).
   const tickRow = (v: number): number =>
-    Math.round(
-      ((v - yRange.min) / (yRange.max - yRange.min || 1)) * (plotH - 1),
-    )
+    Math.round(((v - yRange.min) / (yRange.max - yRange.min)) * (plotH - 1))
   let tickStride = 1
   while (
-    tickStride < allTicks.length &&
     allTicks.some(
       (t, i) =>
         i >= tickStride && tickRow(t) - tickRow(allTicks[i - tickStride]!) < 2,
