@@ -114,7 +114,7 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     slug: 'flowchart',
     label: 'Flowchart',
     keyword: 'graph / flowchart',
-    source: sampleSource('Simple Flow'),
+    source: sampleSource('CI/CD Pipeline'),
     intro:
       'Flowcharts map a process as boxes and arrows and are the most commonly used Mermaid diagram — CI pipelines, decision trees, onboarding steps. zombie-mermaid supports the full shape set (rounded, diamond, stadium, subroutine, cylinder, hexagon, and more), subgraphs, and both straight and curved edges.',
     accent: 'blue',

@@ -345,7 +345,6 @@ export const samples: Sample[] = [
   {
     title: 'CI/CD Pipeline',
     category: 'Flowchart',
-    gallery: true,
     description:
       'A realistic CI/CD pipeline with decision points, feedback loops, and deployment stages.',
     source: `graph TD
