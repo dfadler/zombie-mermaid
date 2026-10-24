@@ -21,7 +21,7 @@ export function mobileMenuScript(): Plugin {
     async load(id) {
       if (id !== `\0${ID}`) return null
       this.addWatchFile(SOURCE)
-      const src = readFileSync(SOURCE, 'utf8')
+      const src = readFileSync(SOURCE, 'utf8').replace(/\r\n/g, '\n')
       const start = src.indexOf('export function initMobileMenu')
       const end = src.indexOf('\n}\n', start)
       if (start < 0 || end < 0) {
