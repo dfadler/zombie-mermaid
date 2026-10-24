@@ -1,11 +1,11 @@
+import source from 'virtual:mobile-menu-script'
+
 /**
  * `initMobileMenu` (mobile-menu.client.ts) as the compact script every page
- * inlines, kept as a literal so the site build's output does not depend on how
- * a bundler or minifier prints `Function.prototype.toString()` (#1844: the Vite
- * SSR build printed it differently from tsx/esbuild).
- *
- * Hand-synced with `initMobileMenu`; `__tests__/dom/mobile-menu-script.test.ts`
- * runs both against the same DOM and fails if their behavior diverges. When
- * `initMobileMenu` changes, paste its compact form here (no comments).
+ * inlines. Generated at build time by `mobileMenuScript()`
+ * (mobile-menu-script-plugin.ts), so nothing is hand-synced (#2256) and the
+ * output does not depend on how a bundler prints `Function.prototype.toString()`
+ * (#1844). Needs that plugin in any config that loads it (vite.site.config.ts,
+ * config/vitest.config.ts).
  */
-export const MOBILE_MENU_SCRIPT_SOURCE = `(function initMobileMenu(desktopMinWidthPx){function closeMenu(toggle,panel,returnFocus){panel.classList.remove("is-open");toggle.classList.remove("is-open");toggle.setAttribute("aria-expanded","false");document.documentElement.classList.remove("mobile-nav-open");if(returnFocus)toggle.focus()}function openMenu(toggle,panel){panel.classList.add("is-open");toggle.classList.add("is-open");toggle.setAttribute("aria-expanded","true");document.documentElement.classList.add("mobile-nav-open");const firstLink=panel.querySelector(".mobile-link");if(firstLink)firstLink.focus()}function wireMenu(toggle,panel,desktopQuery2){toggle.addEventListener("click",function(){if(panel.classList.contains("is-open")){closeMenu(toggle,panel,true)}else{openMenu(toggle,panel)}});panel.querySelectorAll(".mobile-link").forEach(function(link){link.addEventListener("click",function(){closeMenu(toggle,panel,false)})});panel.addEventListener("keydown",function(event){if(!(event instanceof KeyboardEvent))return;if(event.key==="Escape"){event.preventDefault();closeMenu(toggle,panel,true);return}if(event.key!=="Tab")return;const focusable=panel.querySelectorAll("a[href], button:not([disabled])");const first=focusable[0];const last=focusable[focusable.length-1];if(!first||!last)return;if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}});function closeIfDesktop(){if(desktopQuery2.matches&&panel.classList.contains("is-open")){closeMenu(toggle,panel,false)}}desktopQuery2.addEventListener("change",closeIfDesktop);let lastDesktopMatch=desktopQuery2.matches;window.addEventListener("resize",function(){if(desktopQuery2.matches===lastDesktopMatch)return;lastDesktopMatch=desktopQuery2.matches;closeIfDesktop()})}const desktopQuery=window.matchMedia("(min-width: "+desktopMinWidthPx+"px)");document.querySelectorAll(".nav-bar").forEach(function(bar){const toggle=bar.querySelector(".menu-toggle");const panel=bar.nextElementSibling;if(!toggle||!panel||!panel.classList.contains("mobile-nav-panel")){return}wireMenu(toggle,panel,desktopQuery)})})`
+export const MOBILE_MENU_SCRIPT_SOURCE = source

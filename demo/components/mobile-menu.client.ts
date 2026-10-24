@@ -167,8 +167,8 @@ export function initMobileMenu(desktopMinWidthPx: number): void {
  * The script every page's `<script>` tag runs (nav.tsx's
  * `NavMobileMenuScript`) and the string `__tests__/demo-nav.test.ts` and
  * `__tests__/dom/nav-hydration.test.ts` `eval` against jsdom: the compact form
- * of {@link initMobileMenu} (mobile-menu-script.ts), called with the desktop
- * breakpoint. A literal rather than `initMobileMenu.toString()` so the output
+ * of {@link initMobileMenu} (mobile-menu-script.ts, generated at build time),
+ * called with the desktop breakpoint. A generated string rather than `initMobileMenu.toString()` so the output
  * is the same whichever transformer built the page (tsx, Vite SSR).
  */
 export const NAV_MOBILE_MENU_SCRIPT = `${MOBILE_MENU_SCRIPT_SOURCE}(${BREAKPOINTS.tablet + 1})`

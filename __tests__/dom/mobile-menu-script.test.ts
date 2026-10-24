@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Drift guard for demo/components/mobile-menu-script.ts: the hand-synced
- * compact literal pages ship must behave exactly like `initMobileMenu`.
+ * Guard for the build-time generated mobile-menu script (#2256): the
+ * minified string pages ship must behave exactly like `initMobileMenu`.
  * Both run against the same <Nav> markup through open, link-click, Escape
  * and desktop-resize paths; the observable state traces must match.
  */
@@ -56,7 +56,7 @@ function trace(install: () => void): string[] {
   return out
 }
 
-describe('mobile menu script literal', () => {
+describe('mobile menu generated script', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('behaves like initMobileMenu', () => {
