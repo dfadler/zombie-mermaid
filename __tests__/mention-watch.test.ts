@@ -231,7 +231,7 @@ describe('collectAll', () => {
             },
           },
         })
-      if (url.includes('registry.npmjs.org'))
+      if (new URL(url).hostname === 'registry.npmjs.org')
         return json({
           objects: [
             {
@@ -295,7 +295,7 @@ describe('collectAll', () => {
       },
     })
     const fetch: Ctx['fetch'] = (url) =>
-      url.includes('registry.npmjs.org')
+      new URL(url).hostname === 'registry.npmjs.org'
         ? json({
             objects: [
               pkg('@zombie-mermaid/core', 'someone'),
