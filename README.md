@@ -201,7 +201,7 @@ Using this from React? See [React Integration](docs/react-integration.md) for a 
 
 ## CLI
 
-Installing the package also exposes a `zombie-mermaid` binary:
+Installing the package also exposes a `zombie-mermaid` binary. To run just the CLI, without the library's other entry points, use `npx @zombie-mermaid/cli render diagram.mmd --ascii` (same CLI, published as [`@zombie-mermaid/cli`](packages/cli/README.md)):
 
 ```bash
 zombie-mermaid render diagram.mmd --ascii              # Print ASCII/Unicode to terminal
