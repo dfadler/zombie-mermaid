@@ -1,5 +1,14 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.10.1
+
+### Patch Changes
+
+- [#2343](https://github.com/dfadler/zombie-mermaid/pull/2343) [`0932ec7`](https://github.com/dfadler/zombie-mermaid/commit/0932ec76666fc81574607829b819fd35715b9b9e) Thanks [@dfadler](https://github.com/dfadler)! - ASCII, `LR`/`RL`: a skip edge beside a reciprocal pair (`b --> c` over `a`, with `a --> c` and `c --> a`) now runs under the row from its own bottom faces, so it no longer reads as a branch of the edge into `a` or ends inside `a --> c`. The pair is drawn as two strokes between the facing side faces, and a self-loop on `a` sits above it ([#2100](https://github.com/dfadler/zombie-mermaid/issues/2100)).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.1
+  - @zombie-mermaid/mermaid-parser@5.10.1
+
 ## 5.10.0
 
 ### Patch Changes
