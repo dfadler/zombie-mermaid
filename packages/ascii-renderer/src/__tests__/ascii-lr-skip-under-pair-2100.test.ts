@@ -34,6 +34,16 @@ describe('LR skip edge under a reciprocal pair (#2100)', () => {
     )
   })
 
+  it.each([
+    ['c --> a first', ['c --> a', 'b --> a', 'a --> c', 'b --> c', 'a --> a']],
+    ['loop first', ['a --> a', 'b --> a', 'a --> c', 'b --> c', 'c --> a']],
+  ])('draws the same whichever edge is declared first (%s)', (_name, edges) => {
+    const src = `flowchart LR\n a["a"]\n b["b"]\n c["c"]\n ${edges.join('\n ')}`
+    // The loop leaves the top row of a's right face: nothing crosses it.
+    expect(render(src)).toBe(render(SAMPLE('LR')))
+    expect(render(src)).not.toMatch(/┼/)
+  })
+
   it('mirrors for RL', () => {
     const text = render(SAMPLE('RL'))
     expect(text).toMatch(/│ c ├────►│ a │◄────┤ b │/)
@@ -41,10 +51,21 @@ describe('LR skip edge under a reciprocal pair (#2100)', () => {
   })
 
   it('keeps the old route when the pair node is busy (4+ edges)', () => {
-    const text = render(
-      'flowchart LR\n b-->a\n a-->c\n b-->c\n c-->a\n c-->d',
+    // c has four edges: the pair keeps its U under the row, as before.
+    expect(
+      render('flowchart LR\n b-->a\n a-->c\n b-->c\n c-->a\n c-->d'),
+    ).toBe(
+      [
+        '┌───┐     ┌───┐     ┌───┐     ┌───┐',
+        '│   │     │   │     │   │     │   │',
+        '│ b ├──┬─►│ a ├──┬─►│ c ├────►│ d │',
+        '│   │  │  │   │  │  │   │     │   │',
+        '└───┘  │  └───┘  │  └─┬─┘     └───┘',
+        '       │    ▲    │    │',
+        '       └────┼────┘    │',
+        '            │         │',
+        '            └─────────┘',
+      ].join('\n'),
     )
-    // c has four edges: the pair keeps its U under the row.
-    expect(text).not.toMatch(/│ a │◄────┤ c │/)
   })
 })
