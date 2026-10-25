@@ -51,10 +51,8 @@ describe('LR skip edge under a reciprocal pair (#2100)', () => {
   })
 
   it('keeps the old route when the pair node is busy (4+ edges)', () => {
-    // c has four edges: the pair keeps its U under the row, as before.
-    expect(
-      render('flowchart LR\n b-->a\n a-->c\n b-->c\n c-->a\n c-->d'),
-    ).toBe(
+    // Node c has four edges: the pair keeps its U under the row, as before.
+    expect(render('flowchart LR\n b-->a\n a-->c\n b-->c\n c-->a\n c-->d')).toBe(
       [
         '┌───┐     ┌───┐     ┌───┐     ┌───┐',
         '│   │     │   │     │   │     │   │',
