@@ -8,6 +8,7 @@
  */
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { defineConfig, type EnvironmentOptions } from 'vite'
+import { mobileMenuScript } from './demo/components/mobile-menu-script-plugin.ts'
 import { forkFixes } from './demo/fork-fixes-data.ts'
 import { renderBeforeAll } from './packages/site/ssr/fork-fixes-before.ts'
 import { prerender } from './packages/site/ssr/prerender.ts'
@@ -101,6 +102,7 @@ export default defineConfig({
     ),
   },
   plugins: [
+    mobileMenuScript(),
     {
       // Bundled SSR output loses source-relative `import.meta.url` reads
       // (generators' `new URL('../x', import.meta.url)`, primitives-css.tsx's

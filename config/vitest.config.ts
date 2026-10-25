@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { mobileMenuScript } from '../demo/components/mobile-menu-script-plugin.ts'
 
 // This file lives in config/, one level below the repo root (#997) —
 // REPO_ROOT points at the actual root so the aliases below still resolve
@@ -13,6 +14,7 @@ import { defineConfig } from 'vitest/config'
 const REPO_ROOT = resolve(import.meta.dirname, '..')
 
 export default defineConfig({
+  plugins: [mobileMenuScript()],
   // As of #769, the five `@zombie-mermaid/*` packages' package.json
   // `exports`/`types` point at their own *built* `dist/index.js`/
   // `.d.ts` — correct for a real published consumer, but Vite's default
