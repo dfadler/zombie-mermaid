@@ -281,6 +281,8 @@ export interface AsciiEdge {
    * departure and arrival runs within their gutter rows.
    */
   faceLanePlan?: { slot: number; dep: number; arr: number }
+  /** determinePath wanted this self-loop on its top face but the first row has no room above (#2100). */
+  loopTopWanted?: boolean
   /**
    * Set by determinePath when the edge was routed as planned. Its ports are
    * placed by port-offsets.ts's allocateFaces, like a lane's.
@@ -450,6 +452,10 @@ export interface AsciiGraph {
   faceLaneOff?: ReadonlySet<number>
   /** Planned face lanes that were rejected by this layout (#2121). */
   faceLaneRejected?: Set<number>
+  /** Layout keeps a free grid row above the top node row (loops on a top face, #2100). */
+  topMargin?: boolean
+  /** A self-loop wanted a top face but the first row has no room above it. */
+  wantsTopMargin?: boolean
   nodes: AsciiNode[]
   edges: AsciiEdge[]
   canvas: Canvas
