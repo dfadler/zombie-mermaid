@@ -1,6 +1,6 @@
 {
   "name": "zombie-mermaid",
-  "version": "5.9.1",
+  "version": "5.10.0",
   "license": "MIT",
   "mcpName": "io.github.dfadler/zombie-mermaid",
   "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies. Maintained fork of beautiful-mermaid.",

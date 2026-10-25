@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.10.0
+
+### Minor Changes
+
+- [#2340](https://github.com/dfadler/zombie-mermaid/pull/2340) [`5bc64a1`](https://github.com/dfadler/zombie-mermaid/commit/5bc64a11b68a7cb3d8554b2b8cec4c2c1a60c171) Thanks [@dfadler](https://github.com/dfadler)! - Publish the CLI on its own as `@zombie-mermaid/cli`, so `npx @zombie-mermaid/cli render diagram.mmd --ascii` runs without installing the library's other entry points. It is the same CLI as the `zombie-mermaid` bin (one source, `src/cli.ts`), which is unchanged.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.10.0
+  - @zombie-mermaid/core@5.10.0
+  - @zombie-mermaid/mcp@5.10.0
+  - @zombie-mermaid/mermaid-parser@5.10.0
+  - @zombie-mermaid/svg-renderer@5.10.0
+
 ## 5.9.1
 
 ### Patch Changes
