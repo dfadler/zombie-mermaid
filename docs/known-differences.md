@@ -235,8 +235,9 @@ between `a` and `c`. It is not a full match:
   re-enters the top. The first row gets a blank margin row for it.
 - **Narrow trigger** (`backStraight`, `edge-routing.ts`): `LR`/`RL`, no subgraphs, no
   labels on the pair, a skip edge sharing an end with the pair, no loop on that skip
-  edge's ends, and at most 3 other edges on each node of the pair. Busier shapes and
-  every other reciprocal pair keep the U under the row.
+  edge's ends, and at most 3 non-loop edges in total on each node of the pair (the
+  pair's own two edges plus one more, the skip edge). Busier shapes and every other
+  reciprocal pair keep the U under the row.
 - **Boxes on the pair take 5 rows.** The two strokes need three cells on each side
   face (a 3-row box has one), so the pair's nodes grow, as boxes with several side-face
   edges already do. Mermaid's boxes do not change height.
