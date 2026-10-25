@@ -126,7 +126,10 @@ const app = project('app', {
 })
 
 const entries = ['zombie-mermaid', 'zombie-mermaid/ascii', 'zombie-mermaid/mcp']
-const scoped = Object.keys(tarballs).filter((n) => n.startsWith('@'))
+// @zombie-mermaid/cli is bin-only (no exports; importing it would run the CLI).
+const scoped = Object.keys(tarballs).filter(
+  (n) => n.startsWith('@') && n !== '@zombie-mermaid/cli',
+)
 
 await check('ESM + CJS import of every entry point', () => {
   const specs = JSON.stringify([...entries, ...scoped])
@@ -263,6 +266,22 @@ await check('CLI: --version and render (svg + ascii)', () => {
     throw new Error('no svg')
   if (!run(bin, ['render', 'in.mmd', '--ascii'], app).trim())
     throw new Error('no ascii')
+})
+
+// #1946: `npx @zombie-mermaid/cli` must work from its own tarball, without
+// the umbrella installed.
+await check('@zombie-mermaid/cli: standalone bin --version and render', () => {
+  const dir = project('cli-only', {
+    '@zombie-mermaid/cli': `file:${tarballs['@zombie-mermaid/cli']}`,
+  })
+  const bin = join(dir, 'node_modules/.bin/zombie-mermaid')
+  if (!run(bin, ['--version'], dir).includes(rootPkg.version))
+    throw new Error('version mismatch')
+  writeFileSync(join(dir, 'in.mmd'), SVG_ELK.flowchart)
+  if (!run(bin, ['render', 'in.mmd', '--ascii'], dir).trim())
+    throw new Error('no ascii')
+  if (existsSync(join(dir, 'node_modules/zombie-mermaid')))
+    throw new Error('umbrella was installed')
 })
 
 await check('MCP server starts, answers initialize and renders', async () => {

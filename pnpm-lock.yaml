@@ -177,6 +177,35 @@ importers:
         specifier: workspace:*
         version: link:../mermaid-parser
 
+  packages/cli:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.32.1
+        version: 1.32.1(zod@4.6.6)
+      '@zombie-mermaid/ascii-renderer':
+        specifier: workspace:*
+        version: link:../ascii-renderer
+      '@zombie-mermaid/core':
+        specifier: workspace:*
+        version: link:../core
+      '@zombie-mermaid/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+      '@zombie-mermaid/svg-renderer':
+        specifier: workspace:*
+        version: link:../svg-renderer
+      elkjs:
+        specifier: ^0.12.0
+        version: 0.12.0
+    devDependencies:
+      elkjs-0.9.3:
+        specifier: npm:elkjs@0.9.3
+        version: elkjs@0.9.3
+    optionalDependencies:
+      '@resvg/resvg-js':
+        specifier: ^2.6.2
+        version: 2.6.2
+
   packages/core: {}
 
   packages/elk-layout:
