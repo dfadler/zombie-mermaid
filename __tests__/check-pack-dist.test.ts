@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error plain .mjs script without types
-import { cliChunkProblems, mapProblems, missingEntries } from '../scripts/check-pack-dist.mjs'
+import {
+  cliChunkProblems,
+  mapProblems,
+  missingEntries,
+} from '../scripts/check-pack-dist.mjs'
 
 const pkgDir = (withDist: boolean) => {
   const d = mkdtempSync(join(tmpdir(), 'zm-pack-'))
@@ -69,12 +73,14 @@ describe('check-pack-dist cli chunks (#2272)', () => {
     return d
   }
   it('flags a cli that bundles its own src-* chunk', () => {
-    expect(cliChunkProblems(withCli('await import("./src-AbC123.js");'))).toEqual([
-      'dist/cli.js loads its own chunk ./src-AbC123.js',
-    ])
+    expect(
+      cliChunkProblems(withCli('await import("./src-AbC123.js");')),
+    ).toEqual(['dist/cli.js loads its own chunk ./src-AbC123.js'])
   })
   it('passes when the cli imports the shared ascii-layout entry', () => {
-    expect(cliChunkProblems(withCli('import{a}from"./ascii-layout.js";'))).toEqual([])
+    expect(
+      cliChunkProblems(withCli('import{a}from"./ascii-layout.js";')),
+    ).toEqual([])
   })
 })
 

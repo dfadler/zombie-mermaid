@@ -7,7 +7,7 @@
     "dist/ascii.cjs": 512,
     "dist/mcp.js": 512,
     "dist/mcp.cjs": 512,
-    "dist/cli.js": 13800,
+    "dist/cli.js": 13662,
     "packages/core/dist/index.js": 12568,
     "packages/core/dist/index.cjs": 12660,
     "packages/mermaid-parser/dist/index.js": 18923,
@@ -24,7 +24,7 @@
     "dist/index.js": 155066
   },
   "unpackedBudgets": {
-    "dist": 127300,
+    "dist": 97389,
     "packages/core/dist": 212685,
     "packages/mermaid-parser/dist": 200559,
     "packages/svg-renderer/dist": 405811,
