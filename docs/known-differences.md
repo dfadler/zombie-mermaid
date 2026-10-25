@@ -221,6 +221,29 @@ flowchart TD
 Checked on mermaid 12.1.0 and 12.2.0 (headless Playwright) and mermaid.live (12.2.0, `TD`
 only); GitHub's render was not reachable. See the comment on #2101 for the numbers.
 
+## ASCII: LR skip edge beside a reciprocal pair (partial match)
+
+[#2100](https://github.com/dfadler/zombie-mermaid/issues/2100). For the `LR`/`RL` form
+of the sample above, the renderer now follows mermaid 12.2.0's topology: `b --> a` and
+`b --> c` leave `b` on separate rows, `b --> c` runs under `a` with an arrowhead of its
+own at `c`, the loop on `a` sits above it, and `a --> c` / `c --> a` are two strokes
+between `a` and `c`. It is not a full match:
+
+- **`b --> c` enters `c`'s bottom face.** Mermaid enters `c`'s left face. A second
+  stroke on the left face would need a taller box.
+- **The loop leaves `a`'s right face and re-enters its top.** Mermaid leaves and
+  re-enters the top. The first row gets a blank margin row for it.
+- **Narrow trigger** (`backStraight`, `edge-routing.ts`): `LR`/`RL`, no subgraphs, no
+  labels on the pair, a skip edge sharing an end with the pair, no loop on that skip
+  edge's ends, and at most 3 other edges on each node of the pair. Busier shapes and
+  every other reciprocal pair keep the U under the row.
+- **Boxes on the pair take 5 rows.** The two strokes need three cells on each side
+  face (a 3-row box has one), so the pair's nodes grow, as boxes with several side-face
+  edges already do. Mermaid's boxes do not change height.
+
+Checked against mermaid 12.2.0 (the pin and npm latest), headless via
+`scripts/lib/real-mermaid.ts`.
+
 ## Class: lollipop interfaces
 
 Not a difference any more for one-ended lollipops
