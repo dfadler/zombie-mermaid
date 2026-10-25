@@ -44,6 +44,7 @@ import {
 } from './frame-avoidance.ts'
 import {
   isBlockFree,
+  createGrid,
   placeBlock,
   cloneGrid,
   pathCells,
@@ -2070,10 +2071,25 @@ export function createMapping(graph: AsciiGraph): void {
 
   separateNonMembersFromFrames(graph)
 
+  // A loop on a top face (#2100) needs a free grid row above the top nodes:
+  // push every node down one row and rebuild the occupancy map.
+  if (graph.topMargin && graph.subgraphs.length === 0) {
+    graph.grid = createGrid()
+    for (const n of graph.nodes) {
+      const gc = requireGridCoord(n)
+      n.gridCoord = { x: gc.x, y: gc.y + 1 }
+      placeBlock(graph.grid, n.gridCoord)
+    }
+  }
+
   // Compute column widths and row heights
   const spreads = spreadCandidates(graph)
   for (const node of graph.nodes) {
     setColumnWidth(graph, node, spreads.get(node))
+  }
+  // The margin row is only as tall as the loop needs.
+  if (graph.topMargin && graph.subgraphs.length === 0) {
+    graph.rowHeight.set(0, 3)
   }
 
   // Fresh render-wide A* iteration budget for this layout pass. Shared by
@@ -2175,6 +2191,7 @@ export function createMapping(graph: AsciiGraph): void {
   }
 
   noteRejectedFaceLanes(graph)
+  graph.wantsTopMargin = graph.edges.some((e) => e.loopTopWanted)
 
   // A self-loop that runs along another edge's cells gets one more drawn
   // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).

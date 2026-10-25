@@ -253,11 +253,21 @@ export function renderGraphAscii(
   // Flow-axis face lanes (#2121) that did not come out as planned are dropped
   // and the layout redone, so the room planned for them is not left behind.
   const off = new Set<number>()
+  // A self-loop that wants a top face on the first row gets a free row above
+  // the nodes, and the layout is redone (#2100).
+  const margin = graph.wantsTopMargin === true
+  if (margin) {
+    graph = convertToAsciiGraph(parsed, config)
+    hooks.afterConvert?.(graph)
+    graph.topMargin = true
+    createMapping(graph)
+  }
   for (let pass = 0; pass < 4 && graph.faceLaneRejected?.size; pass++) {
     for (const i of graph.faceLaneRejected) off.add(i)
     graph = convertToAsciiGraph(parsed, config)
     hooks.afterConvert?.(graph)
     graph.faceLaneOff = new Set(off)
+    graph.topMargin = margin
     createMapping(graph)
   }
   // The canvas is allocated from the finished grid; check its size before
