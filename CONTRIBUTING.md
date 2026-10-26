@@ -185,7 +185,7 @@ run in CI, fails on a new `toMatchSnapshot`/`toMatchFileSnapshot`/
 
 ### Visual regression tests
 
-`__tests__/visual/*.visual.test.ts` render every sample in `packages/site/samples-data.ts` and `packages/site/xychart-samples-data.ts` in a real headless Chromium page and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. They run under Playwright Test (`playwright.config.ts`), not Vitest, and need a Chromium binary installed once:
+`__tests__/visual/*.visual.test.ts` render every sample in `samples/samples-data.ts` and `samples/xychart-samples-data.ts` in a real headless Chromium page and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. They run under Playwright Test (`playwright.config.ts`), not Vitest, and need a Chromium binary installed once:
 
 ```bash
 pnpm exec playwright install --with-deps chromium

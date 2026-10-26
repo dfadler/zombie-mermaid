@@ -61,7 +61,7 @@ if (!indexModulePath || !sampleArg) {
 let source
 if (/^\d+$/.test(sampleArg)) {
   const { samples } = await import(
-    pathToFileURL(resolve('packages/site/samples-data.ts')).href
+    pathToFileURL(resolve('samples/samples-data.ts')).href
   )
   const sample = samples[Number(sampleArg)]
   if (!sample) {

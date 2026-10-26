@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 import { checkAll } from './helpers/ascii-invariants.ts'
 
 const rules = (out: string) =>

@@ -4,7 +4,7 @@
  * deltas, not just relative placement (that is scripts/layout-oracle.ts).
  *
  * Usage: tsx scripts/elk-layout-oracle.ts [--tol=1] [--gallery] [file.mmd ...]
- *   --gallery   every flat, supported flowchart sample in packages/site/samples-data.ts
+ *   --gallery   every flat, supported flowchart sample in samples/samples-data.ts
  * Needs Chromium (`pnpm exec playwright install chromium`); the unit tests do not.
  * Exit code 1 if any node or edge is off by more than --tol px.
  *
@@ -18,7 +18,7 @@ import {
   UnsupportedFlowchartError,
 } from '../packages/elk-layout/src/index.ts'
 import type { FlowchartLayout } from '../packages/elk-layout/src/index.ts'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 import { oracleLayout, startRealMermaid } from './lib/oracle-layout.ts'
 
 const tol = +(process.argv.find((a) => a.startsWith('--tol='))?.slice(6) ?? 1)

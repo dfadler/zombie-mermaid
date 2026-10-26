@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { UnsupportedFlowchartError } from '../packages/elk-layout/src/index.ts'
 import { renderFlowchartAscii } from '../packages/ascii-layout/src/index.ts'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 import { parsePolicy } from './lib/parse-policy.ts'
 
 const show = process.argv.includes('--show')

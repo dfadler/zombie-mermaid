@@ -27,7 +27,7 @@ The editor's CSS/JS source lives under `editor/` as modular partials that `packa
 | `packages/core/src/theme.ts`                                              | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                                                                                                                         |
 | `packages/svg-renderer/src/styles.ts`                                     | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                                                                                                                     |
 
-Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `packages/site/samples-data.ts` only feeds the separate showcase page (`packages/site/ssr/home-routes.ts` → `index.html`, served at `/` by `vite.config.ts`).
+Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `samples/samples-data.ts` only feeds the separate showcase page (`packages/site/ssr/home-routes.ts` → `index.html`, served at `/` by `vite.config.ts`).
 
 ## Build cycle
 
@@ -180,7 +180,7 @@ mySlider.addEventListener('input', function () {
 
 ## Sample presets
 
-The live editor currently has **no** built-in sample-preset picker (no `SAMPLES` array to edit). Presets by diagram category only exist on the separate showcase page — add/edit entries in `packages/site/samples-data.ts`, which feeds `packages/site/index.ts` → `index.html` (served at `/` by `vite.config.ts`), not the editor.
+The live editor currently has **no** built-in sample-preset picker (no `SAMPLES` array to edit). Presets by diagram category only exist on the separate showcase page — add/edit entries in `samples/samples-data.ts`, which feeds `packages/site/index.ts` → `index.html` (served at `/` by `vite.config.ts`), not the editor.
 
 ---
 

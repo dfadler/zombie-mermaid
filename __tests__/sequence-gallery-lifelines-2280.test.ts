@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../src/index.ts'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 
 function gallerySvg(title: string): string {
   const sample = samples.find((s) => s.title === title)

@@ -73,6 +73,7 @@ const WATCHED_PREFIXES = [
   'public/',
   'blog-posts/',
   'packages/site/',
+  'samples/',
   'packages/core/src/',
   'packages/mermaid-parser/src/',
   'packages/svg-renderer/src/',
