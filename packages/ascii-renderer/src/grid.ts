@@ -16,7 +16,7 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { requireGridCoord } from './types.ts'
+import { DEFAULT_PADDING_Y, paddingOffset, requireGridCoord } from './types.ts'
 import { subgraphsTied } from '@zombie-mermaid/core'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
@@ -294,7 +294,12 @@ export function setColumnWidth(
       )
     })
   if (gc.y > 0 && !rowAboveIsNodeBlock && !straddlesParent(graph, node, 'y')) {
-    let basePadding = graph.config.paddingY
+    // #2350: LR sibling gap is 4 at the default paddingY (5), offset from the
+    // default like the other renderers; TD keeps paddingY as-is.
+    let basePadding =
+      graph.config.graphDirection === 'LR'
+        ? paddingOffset(graph.config.paddingY, DEFAULT_PADDING_Y, 4, 1)
+        : graph.config.paddingY
     // Extra vertical padding for nodes with incoming edges from outside their subgraph
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
       const subgraphOverhead = 4
