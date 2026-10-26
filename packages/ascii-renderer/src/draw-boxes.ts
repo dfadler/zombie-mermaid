@@ -19,6 +19,9 @@ import { getCorners } from './shapes/corners.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { decodeSections } from './shapes/class-box.ts'
 import {
+  circleInsets,
+  diamondInsets,
+  drawCircle,
   drawHexagon,
   drawStadium,
   hexagonInsets,
@@ -189,6 +192,16 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
       startY,
     )
     drawHexagon(box, to.x, to.y, insets, useAscii)
+    node.labelInsets = insets
+  } else if (node.shape === 'diamond' && to.x >= 3 && to.y >= 2) {
+    // Rhombus with points at the top, bottom, left and right (#2164).
+    const insets = diamondInsets(to.x, to.y)
+    drawHexagon(box, to.x, to.y, insets, useAscii)
+    node.labelInsets = insets
+  } else if (node.shape === 'circle' && to.x >= 3 && to.y >= 2) {
+    // Ellipse: rounded top/bottom, `(` `)` at the middle (#2164).
+    const insets = circleInsets(to.x, to.y)
+    drawCircle(box, to.x, to.y, insets, useAscii)
     node.labelInsets = insets
   } else {
     // Draw box border with shape-specific corners
