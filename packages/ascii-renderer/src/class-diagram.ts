@@ -702,7 +702,7 @@ export function renderClassAscii(
    * converge on the box centre like mermaid's (#2335). Ends with two or more
    * heads keep their own anchors so no head is lost (#632, #2024).
    */
-  const mergeAtCentre = new Set<string>()
+  const mergeToAtCentre = new Set<number>()
   {
     const fanBySharedEndpoint = (
       endpointOf: (rel: (typeof diagram.relationships)[number]) => string,
@@ -740,8 +740,7 @@ export function renderClassAscii(
         group.forEach((relIndex, pos) => {
           offsetOut.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
           spreadOut.set(relIndex, (n - 1) * step)
-          if (heads <= 1 && isTo)
-            mergeAtCentre.add(`${isTo ? 'to' : 'from'}:${relIndex}`)
+          if (heads <= 1 && isTo) mergeToAtCentre.add(relIndex)
         })
       }
     }
@@ -1399,10 +1398,9 @@ export function renderClassAscii(
     // box centre like mermaid does; only a duplicate-pair group keeps its
     // anchors spread (#489). The lanes still carry the offset, so labels
     // stay apart and the jog row brings the lines together at the centre.
-    const fromSpread = mergeAtCentre.has(`from:${relIndex}`)
-      ? 0
-      : (relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0)
-    const toSpread = mergeAtCentre.has(`to:${relIndex}`)
+    const fromSpread =
+      relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0
+    const toSpread = mergeToAtCentre.has(relIndex)
       ? 0
       : (relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0)
     const fromCenter = fromP.x + Math.floor(fromP.width / 2)
@@ -1411,8 +1409,7 @@ export function renderClassAscii(
       fromCX: fromCenter + fromOffset,
       toCX: toCenter + toOffset,
       fromAnchorX:
-        fromCenter +
-        (fromSpread ? anchorOffset(fromOffset, fromSpread, fromP.width) : 0),
+        fromCenter + anchorOffset(fromOffset, fromSpread, fromP.width),
       toAnchorX:
         toCenter + (toSpread ? anchorOffset(toOffset, toSpread, toP.width) : 0),
     }
