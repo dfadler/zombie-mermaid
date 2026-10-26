@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.10.2
+
+### Patch Changes
+
+- [#2348](https://github.com/dfadler/zombie-mermaid/pull/2348) [`ae0acc5`](https://github.com/dfadler/zombie-mermaid/commit/ae0acc5a20d45ddc05bb73aa6869566acf6730e2) Thanks [@dfadler](https://github.com/dfadler)! - The published package is smaller: `dist/cli.js` now imports the `ascii-layout` entry instead of bundling a second copy of its chunks. Packed size 52,468 B to 46,941 B (-5,527 B); `check:pack-dist` now fails if the duplicate returns ([#2272](https://github.com/dfadler/zombie-mermaid/issues/2272)).
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.10.2
+  - @zombie-mermaid/core@5.10.2
+  - @zombie-mermaid/mcp@5.10.2
+  - @zombie-mermaid/mermaid-parser@5.10.2
+  - @zombie-mermaid/svg-renderer@5.10.2
+
 ## 5.10.1
 
 ### Patch Changes

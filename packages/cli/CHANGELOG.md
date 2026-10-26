@@ -1,5 +1,15 @@
 # @zombie-mermaid/cli
 
+## 5.10.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.10.2
+  - @zombie-mermaid/core@5.10.2
+  - @zombie-mermaid/mcp@5.10.2
+  - @zombie-mermaid/svg-renderer@5.10.2
+
 ## 5.10.1
 
 ### Patch Changes
