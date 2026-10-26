@@ -14,8 +14,8 @@ import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
 import { renderMermaidASCII } from '../src/index.ts'
-import { samples } from '../packages/site/samples-data.ts'
-import { xychartSamples } from '../packages/site/xychart-samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
+import { xychartSamples } from '../samples/xychart-samples-data.ts'
 import { TERMINAL_ASCII_OPTS } from './visual/helpers/terminal-panel.ts'
 
 const DIR = join(import.meta.dirname, '__ascii-snapshots__')

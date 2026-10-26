@@ -179,7 +179,7 @@ cat >.oxlintrc.json <<'EOF'
   "ignorePatterns": [
     "dist/**", "node_modules/**", ".claude/worktrees/**", "site/**", "coverage/**",
     "**/*.html", "editor/css/**", "editor/__tests__/**", "examples/**", "public/**",
-    "packages/site/samples-data.ts", "packages/site/xychart-samples-data.ts",
+    "samples/samples-data.ts", "samples/xychart-samples-data.ts",
     "scripts/*.workflow.mjs"
   ],
   "overrides": [

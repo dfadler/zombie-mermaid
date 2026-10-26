@@ -1220,6 +1220,22 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
 }
 
 /**
+ * LR decision (diamond) split two ways (yes/no): both branches leave the right
+ * face, as mermaid's ports do (#2351). Plain boxes keep their top/bottom faces
+ * (the upstream goldens in ascii.test.ts pin that), and three or more branches
+ * share a trunk that collides with a straight middle edge's label.
+ */
+function markDecisionSplit(
+  node: AsciiNode,
+  lr: boolean,
+  childCount: number,
+): void {
+  if (lr && childCount === 2 && node.shape === 'diamond') {
+    node.fanOutCentered = true
+  }
+}
+
+/**
  * Centre a node over its children, as dagre does, instead of leaving it above
  * the first one (a fan-out like `A --> B & C & D` otherwise hangs A over B and
  * leaves its other edges to leave sideways and come back down).
@@ -1308,6 +1324,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       if (mid + 2 <= crossOf(gc)) continue
       if (fitsStraddled(graph, node)) {
         relocateNode(graph, node, at(rankOf(gc), mid))
+        markDecisionSplit(node, lr, children.length)
         continue
       }
       const own = new Set<AsciiNode>([node])
@@ -1330,6 +1347,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       mid += 2
     }
     if (mid > crossOf(gc)) relocateNode(graph, node, at(rankOf(gc), mid))
+    markDecisionSplit(node, lr, children.length)
   }
   markLabeledFanIn(graph)
 }
