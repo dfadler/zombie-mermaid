@@ -20,7 +20,9 @@ const SRC = `classDiagram
 describe('ASCII class diagram — shared target merges at the centre (issue #2335)', () => {
   it('puts the arrowhead above the centre column of D, not a corner', () => {
     const rows = renderMermaidASCII(SRC).split('\n')
-    const dTop = rows.findIndex((r, i) => r.includes('┌───┐') && rows[i + 1]?.includes('│ D │'))
+    const dTop = rows.findIndex(
+      (r, i) => r.includes('┌───┐') && rows[i + 1]?.includes('│ D │'),
+    )
     expect(dTop).toBeGreaterThan(0)
     const left = rows[dTop]!.indexOf('┌')
     const head = rows[dTop - 1]!.indexOf('▼')
