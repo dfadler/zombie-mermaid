@@ -14,6 +14,12 @@
 - [Supported diagrams](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md)
 - [Theming](https://github.com/dfadler/zombie-mermaid/blob/main/docs/theming.md)
 
+## CLI and MCP server
+
+- [CLI](https://github.com/dfadler/zombie-mermaid/blob/main/packages/cli/README.md): `npx @zombie-mermaid/cli render diagram.mmd --ascii` renders SVG, ASCII, PNG or a self-contained HTML viewer from the terminal
+- [MCP server](https://github.com/dfadler/zombie-mermaid/blob/main/packages/mcp/README.md): `zombie-mermaid mcp` serves rendering and validation tools to MCP clients over stdio
+- [MCP tool reference](https://github.com/dfadler/zombie-mermaid/blob/main/docs/mcp-tools.md): arguments and return shapes for each tool, including `list_diagram_types` (the supported diagram types and their keywords)
+
 ## Package
 
 - [npm](https://www.npmjs.com/package/zombie-mermaid)
