@@ -66,16 +66,15 @@ layers. The 12.1.0 comparison is in
   puts it below `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
   [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
 - **Remaining small differences are tie-breaks.** "System Architecture" and "Flowchart:
-  CJK Labels" score 50-93% against 12.1.0, but every
+  CJK Labels" scored 50-93% against 12.1.0, but every
   disagreeing node pair is one renderer calling two centres level (within the 20 px
   tolerance) and the other offsetting them. In "LR Fan-In With Bypass Edge" `B` sits
   above `A` and `C` in both renderers, 22 px in mermaid (12.1.0 and 12.2.0) and 15 px
-  in ours, whose boxes are 37 px tall to mermaid's 48 px (#2058). In "CJK Labels"
-  mermaid puts `B` about 19 px below `A`, `C` and `D`, and ours puts it 29 px above.
-  The cause is not CJK text measurement: the same graph written in ASCII differs the
-  same way, and without the subgraph both renderers put `B` above. It needs a subgraph
-  around `A` and `B` plus the feedback edge `C --> A`, so it is where the edge's track
-  sits relative to `B`, not text width (#1941). "Flowchart: Five Cluster Exit Siblings (TD)"
+  in ours, whose boxes are 37 px tall to mermaid's 48 px (#2058). "CJK Labels"
+  used to differ too (mermaid put `B` about 19 px below `A`, `C` and `D`, ours 29 px above):
+  with the feedback edge `C --> A` reversed, its track sat on the wrong side of `B`. Listing
+  subgraph feedback edges first in the ELK edge order fixes it (100% on 12.1.0, #1941).
+  "Flowchart: Five Cluster Exit Siblings (TD)"
   agreed only after `elk.spacing.edgeEdge` was raised to 40 px for graphs with three or
   more labelled edges between the same pair (#1943).
 - **The 20 px tolerance has a dead-band.** A fixed cut-off split pairs whose offsets
@@ -87,7 +86,7 @@ layers. The 12.1.0 comparison is in
   bypass, "Dense Duplicate Edges (LR)", "Self-Loop ... (LR)" and "CI/CD Pipeline"
   samples now score 100%. "Dense Duplicate Edges (TD)" (`c` 18.5 px right of `a`, 30.1 px in
   mermaid, 0.1 px outside the band) and "Self-Loop ... (TD)" (mermaid staggers 48 and 37 px, ours stacks) stay
-  under the default floor, as do "CJK Labels" (sign reversal) and "State: Notes".
+  under the default floor, as do and "State: Notes".
   A fixed 15, 25 or 30 px tolerance, or one scaled by node height, only moved the
   cliff or split other samples; marking samples "oracle n/a" would not reach the
   non-ASCII ones (#2155).
