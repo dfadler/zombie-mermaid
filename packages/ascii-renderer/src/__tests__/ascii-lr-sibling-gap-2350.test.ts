@@ -19,6 +19,16 @@ describe('LR sibling gap is paddingY - 1 (#2350)', () => {
     expect(rows(lr, 6)).toBe(rows(lr) + 2)
   })
 
+  it('never goes below one blank row between siblings', () => {
+    const gap = (paddingY: number): number => {
+      const lines = renderMermaidASCII(lr, { paddingY }).split('\n')
+      const bBottom = lines.findIndex((l) => l[10] === '└')
+      const cTop = lines.findIndex((l, i) => i > bBottom && l[10] === '┌')
+      return cTop - bBottom - 1
+    }
+    expect([0, 1, 2, 3].map(gap)).toEqual([1, 1, 1, 2])
+  })
+
   it('leaves TD rank spacing at paddingY', () => {
     expect(rows(td, 5)).toBe(rows(td))
     expect(rows(td, 6)).toBe(rows(td) + 1)
