@@ -18,6 +18,11 @@ import { splitLines } from './multiline-utils.ts'
 import { getCorners } from './shapes/corners.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { decodeSections } from './shapes/class-box.ts'
+import {
+  drawHexagon,
+  drawStadium,
+  hexagonInsets,
+} from './shapes/silhouettes.ts'
 
 // ============================================================================
 // Node drawing — renders a node using shape-aware rendering
@@ -165,15 +170,37 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     : { tl: '╔', tr: '╗', bl: '╚', br: '╝' }
   const effectiveCorners = isDoubleBox ? doubleCorners : corners
 
-  // Draw box border with shape-specific corners
-  for (let x = from.x + 1; x < to.x; x++) write(box, x, from.y, hChar)
-  for (let x = from.x + 1; x < to.x; x++) write(box, x, to.y, hChar)
-  for (let y = from.y + 1; y < to.y; y++) write(box, from.x, y, vChar)
-  for (let y = from.y + 1; y < to.y; y++) write(box, to.x, y, vChar)
-  write(box, from.x, from.y, effectiveCorners.tl)
-  write(box, to.x, from.y, effectiveCorners.tr)
-  write(box, from.x, to.y, effectiveCorners.bl)
-  write(box, to.x, to.y, effectiveCorners.br)
+  // Label placement, shared by the border code below (the hexagon keeps its
+  // diagonals clear of the label rows).
+  const label = node.displayLabel
+  const lines = splitLines(label)
+  const textCenterY = from.y + Math.floor(h / 2)
+  const startY = textCenterY - Math.floor((lines.length - 1) / 2)
+
+  if (node.shape === 'stadium' && to.x >= 2 && to.y >= 2) {
+    // Pill: rounded top/bottom, `(` `)` sides (#2164).
+    drawStadium(box, to.x, to.y, useAscii)
+  } else if (node.shape === 'hexagon' && to.x >= 4 && to.y >= 2) {
+    // Points at the left and right middle (#2164).
+    const insets = hexagonInsets(
+      to.x,
+      to.y,
+      lines.map((l) => displayWidth(l)),
+      startY,
+    )
+    drawHexagon(box, to.x, to.y, insets, useAscii)
+    node.labelInsets = insets
+  } else {
+    // Draw box border with shape-specific corners
+    for (let x = from.x + 1; x < to.x; x++) write(box, x, from.y, hChar)
+    for (let x = from.x + 1; x < to.x; x++) write(box, x, to.y, hChar)
+    for (let y = from.y + 1; y < to.y; y++) write(box, from.x, y, vChar)
+    for (let y = from.y + 1; y < to.y; y++) write(box, to.x, y, vChar)
+    write(box, from.x, from.y, effectiveCorners.tl)
+    write(box, to.x, from.y, effectiveCorners.tr)
+    write(box, from.x, to.y, effectiveCorners.bl)
+    write(box, to.x, to.y, effectiveCorners.br)
+  }
 
   // Cylinder (database) gets a rim line just inside its top and bottom
   // border — the ellipse-pinch that makes it read as a cylinder rather than
@@ -190,10 +217,6 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   }
 
   // Center the multi-line display label inside the box
-  const label = node.displayLabel
-  const lines = splitLines(label)
-  const textCenterY = from.y + Math.floor(h / 2)
-  const startY = textCenterY - Math.floor((lines.length - 1) / 2)
   node.labelRows = { top: startY, bottom: startY + lines.length - 1 }
 
   for (let i = 0; i < lines.length; i++) {
