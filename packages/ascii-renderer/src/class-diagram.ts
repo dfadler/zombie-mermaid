@@ -696,6 +696,13 @@ export function renderClassAscii(
   const relFromSpread = new Map<number, number>()
   const relToOffset = new Map<number, number>()
   const relToSpread = new Map<number, number>()
+  /**
+   * Fanned target ends where at most one relationship carries an arrowhead
+   * (`from:<i>` / `to:<i>`): there is nothing to keep apart, so the anchors
+   * converge on the box centre like mermaid's (#2335). Ends with two or more
+   * heads keep their own anchors so no head is lost (#632, #2024).
+   */
+  const mergeAtCentre = new Set<string>()
   {
     const fanBySharedEndpoint = (
       endpointOf: (rel: (typeof diagram.relationships)[number]) => string,
@@ -725,9 +732,16 @@ export function renderClassAscii(
           }),
         )
         const step = widestLabel + 1 // +1 for a visual gap between labels
+        const isTo = offsetOut === relToOffset
+        const heads = group.filter((i) => {
+          const at = diagram.relationships[i]!.markerAt
+          return isTo ? at !== 'from' : at !== 'to'
+        }).length
         group.forEach((relIndex, pos) => {
           offsetOut.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
           spreadOut.set(relIndex, (n - 1) * step)
+          if (heads <= 1 && isTo)
+            mergeAtCentre.add(`${isTo ? 'to' : 'from'}:${relIndex}`)
         })
       }
     }
@@ -1381,18 +1395,26 @@ export function renderClassAscii(
       relColumnOffset.get(relIndex) ?? relFromOffset.get(relIndex) ?? 0
     const toOffset =
       relColumnOffset.get(relIndex) ?? relToOffset.get(relIndex) ?? 0
-    const fromSpread =
-      relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0
-    const toSpread =
-      relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0
+    // A shared endpoint (several parents/children, #2335) converges on the
+    // box centre like mermaid does; only a duplicate-pair group keeps its
+    // anchors spread (#489). The lanes still carry the offset, so labels
+    // stay apart and the jog row brings the lines together at the centre.
+    const fromSpread = mergeAtCentre.has(`from:${relIndex}`)
+      ? 0
+      : (relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0)
+    const toSpread = mergeAtCentre.has(`to:${relIndex}`)
+      ? 0
+      : (relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0)
     const fromCenter = fromP.x + Math.floor(fromP.width / 2)
     const toCenter = toP.x + Math.floor(toP.width / 2)
     return {
       fromCX: fromCenter + fromOffset,
       toCX: toCenter + toOffset,
       fromAnchorX:
-        fromCenter + anchorOffset(fromOffset, fromSpread, fromP.width),
-      toAnchorX: toCenter + anchorOffset(toOffset, toSpread, toP.width),
+        fromCenter +
+        (fromSpread ? anchorOffset(fromOffset, fromSpread, fromP.width) : 0),
+      toAnchorX:
+        toCenter + (toSpread ? anchorOffset(toOffset, toSpread, toP.width) : 0),
     }
   }
 
