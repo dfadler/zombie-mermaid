@@ -221,6 +221,28 @@ flowchart TD
 Checked on mermaid 12.1.0 and 12.2.0 (headless Playwright) and mermaid.live (12.2.0, `TD`
 only); GitHub's render was not reachable. See the comment on #2101 for the numbers.
 
+## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
+
+The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
+family per PR. Done: **stadium** and **hexagon**. Mermaid 12.2.0 (the pin and npm latest
+agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
+left and right middle.
+
+- **Stadium.** Rounded top and bottom rows (`╭─╮` / `╰─╯`, `.-.` / `'-'` in ASCII) with `(` `)` on
+  every row between. Same grid cell as before. A character grid cannot draw a true
+  semicircle, so the ends are the `(` `)` glyphs, not a curve.
+- **Hexagon.** Diagonals `╱ ╲` (`/ \`) cost one column per row and meet at `<` `>` on the
+  middle row. A one-line label keeps the rectangle's width; a taller label, or a narrow one
+  next to a tall one, grows the node so the diagonal stays a cell clear of the text.
+  When a neighbour makes the row count even there are two point rows.
+- **Charsets and wide glyphs.** No fallback to the old corner glyphs was needed: every
+  border glyph is one cell wide in both charsets, so a CJK or emoji label (two cells per
+  glyph) never moves the border, and `/ \ < >` read as a hexagon in ASCII.
+- **Edges.** They still attach at the box faces (middle row on the sides, middle column on
+  top and bottom); a side edge starts beside the `(`/`)`/`<`/`>` point instead of replacing it.
+- **Still approximated** (later PRs, per the owner's one-family-per-PR call): diamond,
+  circle, double circle, subroutine, asymmetric, parallelograms and trapezoids.
+
 ## ASCII: LR skip edge beside a reciprocal pair (partial match)
 
 [#2100](https://github.com/dfadler/zombie-mermaid/issues/2100). For the `LR`/`RL` form

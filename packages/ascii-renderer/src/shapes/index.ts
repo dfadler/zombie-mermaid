@@ -30,6 +30,7 @@ import {
   forkJoinRenderer,
   GLYPH_DIMENSIONS,
 } from './state.ts'
+import { hexagonDimensions, renderSilhouette } from './silhouettes.ts'
 import { stadiumRenderer } from './stadium.ts'
 import { classBoxRenderer, classNameRenderer } from './class-box.ts'
 import {
@@ -52,19 +53,17 @@ export type {
 }
 
 /**
- * Corner-decorated shape renderers — circle, diamond, rounded, hexagon.
- * Each one renders a rectangle (`getBoxDimensions`/`renderBox`/
- * `getBoxAttachmentPoint`) with a different corner-marker set pulled from
- * corners.ts's `SHAPE_CORNERS`, instead of drawing curves or diagonals:
+ * Corner-decorated shape renderers — circle, diamond, rounded. Each one
+ * renders a rectangle (`getBoxDimensions`/`renderBox`/`getBoxAttachmentPoint`)
+ * with a different corner-marker set pulled from corners.ts's
+ * `SHAPE_CORNERS`, instead of drawing curves or diagonals:
  *
  *   circle  (◯)       — circle markers indicate circular shape semantics
  *   diamond (◇)       — diamond markers indicate decision node semantics
  *   rounded (╭╮╰╯)    — rounded markers indicate soft edges
- *   hexagon (⌜⌝⌞⌟)    — crop-corner markers indicate process node semantics;
- *     not the hexagon glyph ⬡ (U+2B21) earlier docs here used to claim —
- *     JetBrains Mono NL has no glyph for ⬡ at all, and the renderer hasn't
- *     actually emitted it since corners.ts moved to the monospace-safe
- *     crop-corner style. See issue #1062.
+ *
+ * Stadium and hexagon are not here: they draw real silhouettes (#2164,
+ * silhouettes.ts). Diamond and circle are still approximated.
  *
  * Each renders as (TL/TR/BL/BR = that shape's four corner markers above):
  *   TL─────────TR
@@ -72,7 +71,7 @@ export type {
  *   BL─────────BR
  */
 function createCornerShapeRenderer(
-  shape: 'circle' | 'diamond' | 'rounded' | 'hexagon',
+  shape: 'circle' | 'diamond' | 'rounded',
 ): ShapeRenderer {
   return {
     getDimensions: getBoxDimensions,
@@ -106,7 +105,12 @@ export const diamondRenderer: ShapeRenderer = {
   },
 }
 export const roundedRenderer = createCornerShapeRenderer('rounded')
-export const hexagonRenderer = createCornerShapeRenderer('hexagon')
+export const hexagonRenderer: ShapeRenderer = {
+  getDimensions: hexagonDimensions,
+  render: (label, dimensions, options) =>
+    renderSilhouette('hexagon', label, dimensions, options.useAscii),
+  getAttachmentPoint: getBoxAttachmentPoint,
+}
 
 /**
  * Global shape registry — maps shape types to their renderers.
