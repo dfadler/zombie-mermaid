@@ -25,7 +25,7 @@ describe('ASCII class diagram — shared target merges at the centre (issue #233
     const left = rows[dTop]!.indexOf('┌')
     const head = rows[dTop - 1]!.indexOf('▼')
     expect(head).toBe(left + 2)
-    // both lines join in the row above the head (a merged `└─▼─┘` bar)
+    // Both lines join in the row above the head (a merged `└─▼─┘` bar)
     expect(rows[dTop - 1]).toContain('└─▼─┘')
   })
 })
