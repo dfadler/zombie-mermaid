@@ -311,6 +311,18 @@ fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
 flowchart, state and pie read the directive. Details and the opt-in table:
 [Configuration directives](diagrams.md#themevariables-opt-in).
 
+## Invalid colours are ignored, not refused
+
+Decided in [#2345](https://github.com/dfadler/zombie-mermaid/issues/2345) (policy from
+[#1523](https://github.com/dfadler/zombie-mermaid/issues/1523)). An invalid colour in a
+`style`/`classDef` line (`fill:notacolor`, `stroke:#zzz`) does not fail the render:
+mermaid.js 12.1.0 and 12.2.0 render the diagram without raising, and the browser drops
+the bad declaration, so the default paint stays. zombie-mermaid also renders and drops
+the value (it never reaches the SVG). The agentic-mermaid project refuses such input by
+name instead. The difference is deliberate, not a gap: parity with mermaid.js here means
+tolerating the input. (An invalid `themeVariables` colour is a separate case, listed in
+the table above, where mermaid itself throws.)
+
 ## ASCII: opt-in layout-faithful mode (`--layout mermaid`)
 
 The default ASCII renderer lays flowcharts out on its own grid, so node order and spacing
