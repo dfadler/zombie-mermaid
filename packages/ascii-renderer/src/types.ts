@@ -390,7 +390,9 @@ export interface AsciiSubgraph {
 // still visibly changes spacing. The flowchart/state grid layout (grid.ts)
 // predates this convention and uses `paddingX`/`paddingY` directly as its
 // column/row gap — don't "fix" that to go through these constants too, its
-// existing default already equals them, so behavior is identical.
+// existing default already equals them, so behavior is identical. The one
+// exception: grid.ts's LR sibling gap is `paddingY - 1` (#2350), so `-y 5` no
+// longer gives the old LR gap (use 6); TD still uses `paddingY` directly.
 // ============================================================================
 
 /** `AsciiConfig.paddingX`'s default — see the block comment above. */
@@ -430,7 +432,7 @@ export interface AsciiConfig {
   useAscii: boolean
   /** Horizontal spacing between nodes. Default: 5 */
   paddingX: number
-  /** Vertical spacing between nodes. Default: 5 */
+  /** Vertical spacing between nodes. Default: 5; in LR the gap between sibling nodes is `paddingY - 1` (#2350). */
   paddingY: number
   /** Padding inside node boxes. Default: 1 */
   boxBorderPadding: number

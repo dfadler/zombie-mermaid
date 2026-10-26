@@ -1124,7 +1124,7 @@ import { renderMermaidASCII } from 'zombie-mermaid/ascii'
 renderMermaidASCII(diagram, {
   useAscii: false,      // true = ASCII, false = Unicode (default)
   paddingX: 5,          // Horizontal spacing between nodes
-  paddingY: 5,          // Vertical spacing between nodes
+  paddingY: 5,          // Vertical spacing (default 5; in LR the gap between sibling nodes is paddingY - 1)
   boxBorderPadding: 1,  // Padding inside node boxes
   colorMode: 'auto',    // 'none' | 'auto' | 'ansi16' | 'ansi256' | 'truecolor' | 'html'
   theme: { ... },       // Partial<AsciiTheme> — override default colors
