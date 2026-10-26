@@ -759,7 +759,7 @@ export function renderClassAscii(
           const far = endpointOf(rel) === rel.to ? rel.from : rel.to
           return levelGroups[level.get(far)!]!.indexOf(far)
         }
-        group.sort((a, b) => farX(a) - farX(b)) // stable: ties keep source order
+        group.sort((a, b) => farX(a) - farX(b)) // Stable: ties keep source order
         const n = group.length
         const widestLabel = Math.max(
           ...group.map((i) => {
