@@ -28,7 +28,7 @@ const text = 'graph LR\n  A --> B'
 renderMermaidASCII(text, {
   useAscii: false, // true = plain ASCII (+,-,|,>), false = Unicode box-drawing (┌,─,│,►)
   paddingX: 5,
-  paddingY: 5, // Vertical spacing; in LR the gap between sibling nodes is paddingY - 1
+  paddingY: 5, // Vertical spacing; in LR the gap between sibling nodes is paddingY - 1, minimum 1
   boxBorderPadding: 1,
   colorMode: 'auto', // 'none' | 'auto' | 'ansi16' | 'ansi256' | 'truecolor' | 'html'
   theme: {/* partial AsciiTheme override */},

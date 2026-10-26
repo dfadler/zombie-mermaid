@@ -438,7 +438,7 @@ export interface AsciiConfig {
   useAscii: boolean
   /** Horizontal spacing between nodes. Default: 5 */
   paddingX: number
-  /** Vertical spacing between nodes. Default: 5; in LR the gap between sibling nodes is `paddingY - 1` (#2350). */
+  /** Vertical spacing between nodes. Default: 5; in LR the gap between sibling nodes is `paddingY - 1`, minimum 1 (#2350). */
   paddingY: number
   /** Padding inside node boxes. Default: 1 */
   boxBorderPadding: number
