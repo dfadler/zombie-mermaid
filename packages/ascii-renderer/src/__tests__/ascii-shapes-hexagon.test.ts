@@ -1,42 +1,64 @@
 import { describe, it, expect } from 'vitest'
 import { hexagonRenderer } from '../shapes/index.ts'
 import { canvasToString } from '../canvas.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import type { ShapeRenderOptions } from '../shapes/types.ts'
 
-describe('hexagonRenderer.render', () => {
-  it('draws Unicode hexagon corner markers around a single-line label', () => {
-    const options: ShapeRenderOptions = { useAscii: false, padding: 1 }
-    const dimensions = hexagonRenderer.getDimensions('Step', options)
+const render = (label: string, options: ShapeRenderOptions): string[] => {
+  const dimensions = hexagonRenderer.getDimensions(label, options)
+  return canvasToString(
+    hexagonRenderer.render(label, dimensions, options),
+  ).split('\n')
+}
 
-    const canvas = hexagonRenderer.render('Step', dimensions, options)
-    const text = canvasToString(canvas)
-    const lines = text.split('\n')
-
-    expect(lines[0]).toMatch(/^⌜─+⌝$/)
-    expect(lines[lines.length - 1]).toMatch(/^⌞─+⌟$/)
-    expect(text).toContain('Step')
-    for (const line of lines.slice(1, -1)) {
-      expect(line.startsWith('│')).toBe(true)
-      expect(line.endsWith('│')).toBe(true)
-    }
+describe('hexagonRenderer.render (#2164)', () => {
+  it('draws mermaid-style points at the left and right middle (unicode)', () => {
+    expect(render('Step', { useAscii: false, padding: 1 })).toEqual([
+      '  ╱──╲  ',
+      ' ╱    ╲ ',
+      '< Step >',
+      ' ╲    ╱ ',
+      '  ╲──╱  ',
+    ])
   })
 
-  it('draws ASCII hexagon corner markers around a multi-line label', () => {
-    const options: ShapeRenderOptions = { useAscii: true, padding: 1 }
-    const label = 'Long\nLabel'
-    const dimensions = hexagonRenderer.getDimensions(label, options)
+  it('uses / \\ < > in the ASCII charset and widens for a taller label', () => {
+    expect(render('Long\nLabel', { useAscii: true, padding: 1 })).toEqual([
+      '   /---\\   ',
+      '  /     \\  ',
+      ' /       \\ ',
+      '<   Long  >',
+      ' \\ Label / ',
+      '  \\     /  ',
+      '   \\---/   ',
+    ])
+  })
 
-    const canvas = hexagonRenderer.render(label, dimensions, options)
-    const text = canvasToString(canvas)
-    const lines = text.split('\n')
+  it('keeps the diagonals clear of a wide (CJK) label', () => {
+    const label = '日本語 long label'
+    const lines = render(label, { useAscii: false, padding: 1 })
+    const apex = lines[Math.floor(lines.length / 2)]!
+    expect(apex.startsWith('<')).toBe(true)
+    expect(apex.endsWith('>')).toBe(true)
+    expect(apex).toContain(label)
+    // Every row spans the same number of cells (wide glyphs count two).
+    const cells = (s: string) =>
+      [...s].reduce((n, c) => n + (c > '\u2e80' ? 2 : 1), 0)
+    expect(new Set(lines.map(cells)).size).toBe(1)
+  })
 
-    expect(lines[0]).toMatch(/^\*-+\*$/)
-    expect(lines[lines.length - 1]).toMatch(/^\*-+\*$/)
-    expect(text).toContain('Long')
-    expect(text).toContain('Label')
-    for (const line of lines.slice(1, -1)) {
-      expect(line.startsWith('|')).toBe(true)
-      expect(line.endsWith('|')).toBe(true)
-    }
+  it('takes the same width as a rectangle for a one-line label', () => {
+    const rect = renderMermaidASCII('graph LR\n A[Step]', { useAscii: false })
+    const hex = renderMermaidASCII('graph LR\n A{{Step}}', { useAscii: false })
+    const width = (s: string) => Math.max(...s.split('\n').map((l) => l.length))
+    expect(width(hex)).toBe(width(rect))
+  })
+})
+
+describe('hexagon in a flowchart', () => {
+  it('keeps the point when an edge leaves it, in both charsets', () => {
+    const src = 'graph LR\n A{{Step}} --> B[End]'
+    expect(renderMermaidASCII(src, { useAscii: false })).toContain('< Step >─')
+    expect(renderMermaidASCII(src, { useAscii: true })).toContain('< Step >-')
   })
 })

@@ -140,8 +140,13 @@ function fillRolesForNodeBox(
   roleCanvas: RoleCanvas,
   canvas: Canvas,
   offset: DrawingCoord,
+  silhouette = false,
 ): void {
-  const isBorderChar = (c: string) => /^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|.':]$/.test(c)
+  // Stadium/hexagon silhouette glyphs are border too (the label rows are
+  // re-marked as text by the caller).
+  const isBorderChar = (c: string) =>
+    (silhouette ? /^[()<>/\\╱╲]$/ : /^$/).test(c) ||
+    /^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|.':]$/.test(c)
 
   const [x0, y0, x1, y1] = scanBounds(canvas)
   for (let x = x0; x <= x1; x++) {
@@ -205,7 +210,12 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         node.drawing,
       )
       // Node boxes: detect border vs text characters
-      fillRolesForNodeBox(graph.roleCanvas, node.drawing, node.drawingCoord)
+      fillRolesForNodeBox(
+        graph.roleCanvas,
+        node.drawing,
+        node.drawingCoord,
+        node.shape === 'stadium' || node.shape === 'hexagon',
+      )
       if (node.labelRows) {
         // Every non-space cell on a label row between the side borders is
         // label text, even a `-` or `|` that isBorderChar would call a border.
@@ -219,8 +229,12 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
           y1: oy + node.labelRows.bottom,
         }
         labelRects.push(rect)
-        for (let x = rect.x0; x <= rect.x1; x++) {
-          for (let y = rect.y0; y <= rect.y1; y++) {
+        for (let y = rect.y0; y <= rect.y1; y++) {
+          // A hexagon's diagonal sits inside the rect on its label rows.
+          const inset = node.labelInsets?.[y - oy] ?? 0
+          const xa = Math.max(rect.x0, ox + inset + 1)
+          const xb = Math.min(rect.x1, ox + node.drawing.length - 2 - inset)
+          for (let x = xa; x <= xb; x++) {
             const ch = graph.canvas[x]?.[y]
             if (ch && ch !== ' ') setRole(graph.roleCanvas, x, y, 'text')
           }

@@ -66,8 +66,8 @@ describe('chained edges through a shared intermediate node stay visually distinc
   it("leaves a visual break between Mobile App's own row and User Service — they must not read as one connected line", () => {
     const mobileRow = lines.find((l) => l.includes('Mobile App'))
     expect(mobileRow).toBeDefined()
-    // Start just past Mobile App's own right border connector ('├' or
-    // '┤'), and end at User Service's own left border ('│  User Service').
+    // Start just past Mobile App's own right border connector ('├', '┤' or the
+    // stadium's ')'), and end at User Service's own left border ('│  User Service').
     // Both boxes' own padding ("Mobile App │" / "│  User Service")
     // contributes a harmless blank cell or two right next to the label
     // text itself — excluding both box borders from the scanned range
@@ -75,7 +75,7 @@ describe('chained edges through a shared intermediate node stay visually distinc
     // padding (see the sabotage check on this test, which caught exactly
     // this false pass on an earlier, looser version of this assertion).
     const afterLabel = mobileRow!.indexOf('Mobile App') + 'Mobile App'.length
-    const start = mobileRow!.slice(afterLabel).search(/[├┤]/) + afterLabel + 1
+    const start = mobileRow!.slice(afterLabel).search(/[├┤)]/) + afterLabel + 1
     const end = mobileRow!.indexOf('│  User Service')
     expect(end).toBeGreaterThan(start)
     const between = mobileRow!.slice(start, end)
