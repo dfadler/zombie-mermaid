@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { PositionedGraph } from '@zombie-mermaid/core'
-import { samples } from '../../../site/samples-data.ts'
+import { samples } from '../../../../samples/samples-data.ts'
 import { layered } from '../layout-engine/layered.ts'
 import { layoutFlowchartSync, renderMermaidSVG } from '../index.ts'
 import { parseMermaid } from '../../../../src/index.ts'

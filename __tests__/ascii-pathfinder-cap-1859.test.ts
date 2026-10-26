@@ -8,8 +8,8 @@
 import { describe, expect, it } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { takeCapHits } from '../packages/ascii-renderer/src/pathfinder.ts'
-import { samples } from '../packages/site/samples-data.ts'
-import { xychartSamples } from '../packages/site/xychart-samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
+import { xychartSamples } from '../samples/xychart-samples-data.ts'
 
 /** Sample title -> issue tracking why it hits the cap. */
 const KNOWN: Record<string, string> = {}

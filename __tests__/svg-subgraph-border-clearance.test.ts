@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../src/index.ts'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 
 const BORDER_GAP = 8
 const EPS = 0.01

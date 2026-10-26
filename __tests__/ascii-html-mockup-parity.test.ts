@@ -31,7 +31,7 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { asciiToHtml } from '../packages/site/ascii-html.ts'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 
 /** Inverts asciiToHtml's own transform: unwrap fix-wide spans, unescape entities. */
 function stripMockupHtml(html: string): string {

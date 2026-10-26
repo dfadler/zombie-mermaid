@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
-import { samples } from '../../packages/site/samples-data.ts'
+import { samples } from '../../samples/samples-data.ts'
 
 // #2280: the visual baseline for this sample went stale and still showed the
 // else-label touching the message label with lifeline A running through it,

@@ -15,7 +15,7 @@ fix helped, so the first useful thing to ship was a ruler.
 
 [#1314](https://github.com/dfadler/zombie-mermaid/pull/1314) added
 `pnpm run layout:oracle`. It renders every flowchart sample in
-`packages/site/samples-data.ts` twice, once through real mermaid.js in headless
+`samples/samples-data.ts` twice, once through real mermaid.js in headless
 Chromium and once through our layout engine, then reads node and subgraph
 positions back from both.
 
