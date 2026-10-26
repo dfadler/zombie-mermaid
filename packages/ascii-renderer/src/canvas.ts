@@ -343,6 +343,9 @@ export function isJunctionChar(c: string): boolean {
   return JUNCTION_CHARS.has(c)
 }
 
+/** Stadium side / hexagon point glyphs an edge line must not overwrite. */
+const SILHOUETTE_TIPS = new Set(['(', ')', '<', '>'])
+
 /** Check if a character is alphanumeric (part of a label). */
 function isAlphanumeric(c: string): boolean {
   return /^[a-zA-Z0-9]$/.test(c)
@@ -603,6 +606,9 @@ export function mergeCanvases(
           } else if (isAlphanumeric(current) && isAlphanumeric(c)) {
             // Don't overwrite existing label text with new label text
             // This prevents label collisions (first label wins)
+          } else if (SILHOUETTE_TIPS.has(current) && /^[─│\-|]$/.test(c)) {
+            // An edge leaving a stadium/hexagon starts beside its `(` `)`
+            // `<` `>` point rather than cutting it off (#2164).
           } else {
             merged[mx]![my] = c
           }
@@ -867,6 +873,9 @@ const HORIZONTAL_FLIP_MAP: Record<string, string> = {
   '◄': '►',
   '>': '<',
   '<': '>',
+  // Stadium sides (#2164)
+  '(': ')',
+  ')': '(',
   // Class diagram end markers (class-flow.ts): hollow triangle, open arrow
   '▷': '◁',
   '◁': '▷',

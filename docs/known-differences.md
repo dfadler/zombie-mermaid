@@ -66,16 +66,15 @@ layers. The 12.1.0 comparison is in
   puts it below `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
   [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
 - **Remaining small differences are tie-breaks.** "System Architecture" and "Flowchart:
-  CJK Labels" score 50-93% against 12.1.0, but every
+  CJK Labels" scored 50-93% against 12.1.0, but every
   disagreeing node pair is one renderer calling two centres level (within the 20 px
   tolerance) and the other offsetting them. In "LR Fan-In With Bypass Edge" `B` sits
   above `A` and `C` in both renderers, 22 px in mermaid (12.1.0 and 12.2.0) and 15 px
-  in ours, whose boxes are 37 px tall to mermaid's 48 px (#2058). In "CJK Labels"
-  mermaid puts `B` about 19 px below `A`, `C` and `D`, and ours puts it 29 px above.
-  The cause is not CJK text measurement: the same graph written in ASCII differs the
-  same way, and without the subgraph both renderers put `B` above. It needs a subgraph
-  around `A` and `B` plus the feedback edge `C --> A`, so it is where the edge's track
-  sits relative to `B`, not text width (#1941). "Flowchart: Five Cluster Exit Siblings (TD)"
+  in ours, whose boxes are 37 px tall to mermaid's 48 px (#2058). "CJK Labels"
+  used to differ too (mermaid put `B` about 19 px below `A`, `C` and `D`, ours 29 px above):
+  with the feedback edge `C --> A` reversed, its track sat on the wrong side of `B`. Listing
+  subgraph feedback edges first in the ELK edge order fixes it (100% on 12.1.0, #1941).
+  "Flowchart: Five Cluster Exit Siblings (TD)"
   agreed only after `elk.spacing.edgeEdge` was raised to 40 px for graphs with three or
   more labelled edges between the same pair (#1943).
 - **The 20 px tolerance has a dead-band.** A fixed cut-off split pairs whose offsets
@@ -87,7 +86,7 @@ layers. The 12.1.0 comparison is in
   bypass, "Dense Duplicate Edges (LR)", "Self-Loop ... (LR)" and "CI/CD Pipeline"
   samples now score 100%. "Dense Duplicate Edges (TD)" (`c` 18.5 px right of `a`, 30.1 px in
   mermaid, 0.1 px outside the band) and "Self-Loop ... (TD)" (mermaid staggers 48 and 37 px, ours stacks) stay
-  under the default floor, as do "CJK Labels" (sign reversal) and "State: Notes".
+  under the default floor, as do and "State: Notes".
   A fixed 15, 25 or 30 px tolerance, or one scaled by node height, only moved the
   cliff or split other samples; marking samples "oracle n/a" would not reach the
   non-ASCII ones (#2155).
@@ -221,6 +220,28 @@ flowchart TD
 Checked on mermaid 12.1.0 and 12.2.0 (headless Playwright) and mermaid.live (12.2.0, `TD`
 only); GitHub's render was not reachable. See the comment on #2101 for the numbers.
 
+## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
+
+The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
+family per PR. Done: **stadium** and **hexagon**. Mermaid 12.2.0 (the pin and npm latest
+agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
+left and right middle.
+
+- **Stadium.** Rounded top and bottom rows (`╭─╮` / `╰─╯`, `.-.` / `'-'` in ASCII) with `(` `)` on
+  every row between. Same grid cell as before. A character grid cannot draw a true
+  semicircle, so the ends are the `(` `)` glyphs, not a curve.
+- **Hexagon.** Diagonals `╱ ╲` (`/ \`) cost one column per row and meet at `<` `>` on the
+  middle row. A one-line label keeps the rectangle's width; a taller label, or a narrow one
+  next to a tall one, grows the node so the diagonal stays a cell clear of the text.
+  When a neighbour makes the row count even there are two point rows.
+- **Charsets and wide glyphs.** No fallback to the old corner glyphs was needed: every
+  border glyph is one cell wide in both charsets, so a CJK or emoji label (two cells per
+  glyph) never moves the border, and `/ \ < >` read as a hexagon in ASCII.
+- **Edges.** They still attach at the box faces (middle row on the sides, middle column on
+  top and bottom); a side edge starts beside the `(`/`)`/`<`/`>` point instead of replacing it.
+- **Still approximated** (later PRs, per the owner's one-family-per-PR call): diamond,
+  circle, double circle, subroutine, asymmetric, parallelograms and trapezoids.
+
 ## ASCII: LR skip edge beside a reciprocal pair (partial match)
 
 [#2100](https://github.com/dfadler/zombie-mermaid/issues/2100). For the `LR`/`RL` form
@@ -310,6 +331,18 @@ fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
 `base` diagram with only `primaryColor` set does not look the same in both. Only
 flowchart, state and pie read the directive. Details and the opt-in table:
 [Configuration directives](diagrams.md#themevariables-opt-in).
+
+## Invalid colours are ignored, not refused
+
+Decided in [#2345](https://github.com/dfadler/zombie-mermaid/issues/2345) (policy from
+[#1523](https://github.com/dfadler/zombie-mermaid/issues/1523)). An invalid colour in a
+`style`/`classDef` line (`fill:notacolor`, `stroke:#zzz`) does not fail the render:
+mermaid.js 12.1.0 and 12.2.0 render the diagram without raising, and the browser drops
+the bad declaration, so the default paint stays. zombie-mermaid also renders and drops
+the value (it never reaches the SVG). The agentic-mermaid project refuses such input by
+name instead. The difference is deliberate, not a gap: parity with mermaid.js here means
+tolerating the input. (An invalid `themeVariables` colour is a separate case, listed in
+the table above, where mermaid itself throws.)
 
 ## ASCII: opt-in layout-faithful mode (`--layout mermaid`)
 
