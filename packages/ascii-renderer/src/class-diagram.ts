@@ -643,7 +643,13 @@ export function renderClassAscii(
     group: number[],
     boxIds: string[],
   ): number {
-    if (group.some((i) => diagram.relationships[i]!.label)) return step
+    if (
+      group.some((i) => {
+        const r = diagram.relationships[i]!
+        return r.label || r.fromCardinality || r.toCardinality
+      })
+    )
+      return step
     const widths = boxIds.map((id) => classBoxW.get(id))
     if (widths.some((w) => w === undefined)) return step
     const cap = Math.floor(
@@ -1442,9 +1448,17 @@ export function renderClassAscii(
       relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0
     const toSpread =
       relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0
+    // Only an end that carries a marker (arrowhead, triangle, diamond) is
+    // pulled off the corner cells; a bare line may leave from a corner.
+    const markerAt = diagram.relationships[relIndex]!.markerAt
     const fromSize =
-      relGroupSize.get(relIndex) ?? relFromSize.get(relIndex) ?? 0
-    const toSize = relGroupSize.get(relIndex) ?? relToSize.get(relIndex) ?? 0
+      markerAt === 'to'
+        ? Infinity
+        : (relGroupSize.get(relIndex) ?? relFromSize.get(relIndex) ?? 0)
+    const toSize =
+      markerAt === 'from'
+        ? Infinity
+        : (relGroupSize.get(relIndex) ?? relToSize.get(relIndex) ?? 0)
     const fromCenter = fromP.x + Math.floor(fromP.width / 2)
     const toCenter = toP.x + Math.floor(toP.width / 2)
     return {

@@ -88,7 +88,7 @@ describe('ASCII class diagram: two incoming lines on one box (#2335)', () => {
         '   │        │',
         '  uses      │',
         '     │      │',
-        '     └─▼ ┌──┘',
+        '     └─▼  ┌─┘',
         '      ┌───┐',
         '      │ D │',
         '      └───┘',
