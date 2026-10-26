@@ -58,14 +58,10 @@ describe('issue #86: stray ├ on decision-node edge labels (LR, Unicode)', () =
     expect(yesLineIdx).toBeGreaterThanOrEqual(0)
 
     const yesRow = lines[yesLineIdx]!
-    const junctionCol = yesRow.indexOf('├')
-    expect(junctionCol).toBeGreaterThanOrEqual(0)
-
-    // The same column on the rows immediately above/below must be the
-    // decision box's own plain vertical border — confirming the junction
-    // sits exactly on a real border line, not on a blank/drifted cell.
-    expect(lines[yesLineIdx - 1]?.[junctionCol]).toBe('│')
-    expect(lines[yesLineIdx + 1]?.[junctionCol]).toBe('│')
+    // A diamond has no border column (#2164): the edge starts right beside
+    // its `>` point, with no junction glyph and no gap.
+    expect(yesRow).toContain('>─Yes')
+    expect(yesRow).not.toContain('├')
   })
 
   it('still renders a genuine ├ junction for a normal single-edge box-start', () => {
