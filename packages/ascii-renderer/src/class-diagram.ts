@@ -650,11 +650,8 @@ export function renderClassAscii(
       })
     )
       return step
-    const widths = boxIds.map((id) => classBoxW.get(id))
-    if (widths.some((w) => w === undefined)) return step
-    const cap = Math.floor(
-      (Math.min(...(widths as number[])) - 3) / (group.length - 1),
-    )
+    const widths = boxIds.map((id) => classBoxW.get(id)!)
+    const cap = Math.floor((Math.min(...widths) - 3) / (group.length - 1))
     return cap >= 2 && cap < step ? cap : step
   }
 
@@ -760,9 +757,9 @@ export function renderClassAscii(
         const farX = (i: number): number => {
           const rel = diagram.relationships[i]!
           const far = endpointOf(rel) === rel.to ? rel.from : rel.to
-          return levelGroups[level.get(far) ?? 0]!.indexOf(far)
+          return levelGroups[level.get(far)!]!.indexOf(far)
         }
-        group.sort((a, b) => farX(a) - farX(b) || a - b)
+        group.sort((a, b) => farX(a) - farX(b)) // stable: ties keep source order
         const n = group.length
         const widestLabel = Math.max(
           ...group.map((i) => {
