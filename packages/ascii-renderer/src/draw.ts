@@ -29,6 +29,7 @@ import type { RoleCanvas, CharRole, LabelRect } from './types.ts'
 import { setRole } from './canvas.ts'
 import { drawArrow, labelInteriorSpaces } from './draw-arrows.ts'
 import { withPortShifts } from './port-offsets.ts'
+import { isSilhouetteShape } from './shapes/silhouettes.ts'
 import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
@@ -214,7 +215,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         graph.roleCanvas,
         node.drawing,
         node.drawingCoord,
-        node.shape === 'stadium' || node.shape === 'hexagon',
+        isSilhouetteShape(node.shape),
       )
       if (node.labelRows) {
         // Every non-space cell on a label row between the side borders is

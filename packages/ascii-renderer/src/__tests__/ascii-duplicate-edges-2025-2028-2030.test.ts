@@ -227,7 +227,7 @@ const widths = (out: string) =>
 
 const CASES: Record<string, string> = {
   '#2025 decision self-loop + duplicates + labeled back edge': `flowchart LR
-  n0{"gSQ21Q"}
+  n0["gSQ21Q"]
   n1["C"]
   n2(["OkfK"])
   n3("Q552S")

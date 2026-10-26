@@ -207,6 +207,9 @@ describe('Diagonal validation', () => {
     for (const file of files) {
       const content = readFileSync(join(asciiDir, file), 'utf-8')
       const { mermaid, paddingX, paddingY } = parseTestCase(content)
+      // Diamond `{}` and circle `(())` nodes draw their own diagonals (#2164);
+      // this checks that edges stay orthogonal.
+      if (/\{|\(\(/.test(mermaid)) continue
       const output = renderMermaidASCII(mermaid, {
         useAscii: true,
         boxBorderPadding: paddingX,
@@ -226,6 +229,9 @@ describe('Diagonal validation', () => {
     for (const file of files) {
       const content = readFileSync(join(unicodeDir, file), 'utf-8')
       const { mermaid, paddingX, paddingY } = parseTestCase(content)
+      // Diamond `{}` and circle `(())` nodes draw their own diagonals (#2164);
+      // this checks that edges stay orthogonal.
+      if (/\{|\(\(/.test(mermaid)) continue
       const output = renderMermaidASCII(mermaid, {
         useAscii: false,
         boxBorderPadding: paddingX,
