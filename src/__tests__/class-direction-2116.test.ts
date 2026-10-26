@@ -171,7 +171,7 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
     const out = ascii(
       dir('BT', 'Sh <|-- Square\n  Sh <|-- Right\n  note for Square "n"'),
     )
-    expect(out).toContain(' ┌───┌────────────┘')
+    expect(out).toContain(' ┌───┼────────────┘')
     expect(out).toMatch(/│ Square │╌+╮/)
   })
 
