@@ -168,6 +168,8 @@ export interface AsciiNode {
    * inferring which text cells belong to one label.
    */
   labelRows?: { top: number; bottom: number }
+  /** Per drawing row, columns a hexagon's diagonal takes at each end (#2164). */
+  labelInsets?: number[]
   /**
    * `class-name` nodes only: which end of its cell the text hugs, so it
    * sits next to the circle its edge ends in (see class-flow.ts).

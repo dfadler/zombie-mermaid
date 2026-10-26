@@ -20,11 +20,24 @@ function run() {
 describe('validateHandler fallbacks', () => {
   it('uses the plain message when the error has no Line prefix', () => {
     state.thrown = new Error('boom')
-    expect(run()).toEqual({ valid: false, diagnostics: [{ message: 'boom' }] })
+    expect(run()).toEqual({
+      valid: false,
+      diagnostics: [{ message: 'boom', code: 'PARSE_ERROR' }],
+    })
+  })
+
+  it('passes through an error code, e.g. LIMIT_EXCEEDED', () => {
+    state.thrown = Object.assign(new Error('maxNodes exceeded: 401 > 400'), {
+      code: 'LIMIT_EXCEEDED',
+    })
+    expect(run().diagnostics[0].code).toBe('LIMIT_EXCEEDED')
   })
 
   it('stringifies a non-Error throw', () => {
     state.thrown = 'oops'
-    expect(run()).toEqual({ valid: false, diagnostics: [{ message: 'oops' }] })
+    expect(run()).toEqual({
+      valid: false,
+      diagnostics: [{ message: 'oops', code: 'PARSE_ERROR' }],
+    })
   })
 })

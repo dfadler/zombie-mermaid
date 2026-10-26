@@ -657,7 +657,18 @@ export function mermaidToElk(
   // zero-length-span polyline for them; from-elk.ts synthesizes a proper
   // side loop for these once node positions are known instead.
   const reversed = edgesReversedForLayout(graph, hints)
-  for (const { index, edge } of edgesBySubgraph.get(null)!) {
+  // Subgraph feedback edges go first: with `considerModelOrder`, an edge
+  // listed earlier keeps its track on the near side of a node it spans, as in
+  // mermaid (which lifts them ahead of the rest; CJK Labels, #1941).
+  const feedback = hints?.feedbackEdges
+  const rootList = edgesBySubgraph.get(null)!
+  const rootOrdered = feedback?.size
+    ? [
+        ...rootList.filter((e) => feedback.has(e.index)),
+        ...rootList.filter((e) => !feedback.has(e.index)),
+      ]
+    : rootList
+  for (const { index, edge } of rootOrdered) {
     if (edge.source === edge.target) continue
     if (hints?.detachedEdges?.has(index)) continue
     const elkEdge = buildElkEdge({

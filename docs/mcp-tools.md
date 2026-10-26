@@ -98,9 +98,14 @@ Parse-only check: nothing is laid out or drawn. Input: `diagram`. Always a norma
 {
   "valid": false,
   "diagnostics": [
-    { "line": 4, "sourceLine": "  loop forever", "message": "..." }
+    {
+      "line": 4,
+      "sourceLine": "  loop forever",
+      "message": "...",
+      "code": "PARSE_ERROR"
+    }
   ]
 }
 ```
 
-`line` and `sourceLine` appear when the parser names a line; otherwise the diagnostic is just `{ "message" }`. Diagnostics hold only the parser message and your own source line, never filesystem paths. The CLI equivalent is `zombie-mermaid validate [file]` (prints `valid`, or the error plus source line and exit code 1).
+`line` and `sourceLine` appear when the parser names a line; otherwise the diagnostic is just `{ "message", "code" }`. `code` is an optional stable string to branch on: `EMPTY_DIAGRAM` (blank input), or `PARSE_ERROR` (generic: the parser reports free-text messages, so every syntax error maps here). A code the thrown error already carries (e.g. `LIMIT_EXCEEDED`) is passed through unchanged, so treat the set as open. Diagnostics hold only the parser message and your own source line, never filesystem paths. The CLI equivalent is `zombie-mermaid validate [file]` (prints `valid`, or the error plus source line and exit code 1).
