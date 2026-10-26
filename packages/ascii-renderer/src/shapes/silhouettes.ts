@@ -118,7 +118,7 @@ export function hexagonDimensions(
   const base = getBoxDimensions(label, options)
   const lines = splitLines(label)
   const widths = lines.map((l) => displayWidth(l))
-  const rows = base.height // outer row count (odd)
+  const rows = base.height // Outer row count (odd)
   const startY = Math.floor((rows - 1) / 2) - Math.floor((lines.length - 1) / 2)
   let width = base.width
   // The top row needs one dash between its two diagonals.
