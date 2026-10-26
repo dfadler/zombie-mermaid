@@ -24,6 +24,7 @@ export const validateOutputShape = {
       line: z.number().optional(),
       sourceLine: z.string().optional(),
       message: z.string(),
+      code: z.string().optional(),
     }),
   ),
 }
@@ -39,7 +40,9 @@ export function validateHandler(input: { diagram: string }): CallToolResult {
   if (input.diagram.trim().length === 0) {
     return ok({
       valid: false,
-      diagnostics: [{ message: 'diagram must not be empty' }],
+      diagnostics: [
+        { message: 'diagram must not be empty', code: 'EMPTY_DIAGRAM' },
+      ],
     })
   }
   try {
@@ -47,7 +50,11 @@ export function validateHandler(input: { diagram: string }): CallToolResult {
     return ok({ valid: true, diagnostics: [] })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
+    // The parser only yields free text plus an optional `code` (e.g.
+    // LIMIT_EXCEEDED); everything else is the generic PARSE_ERROR.
+    const raw = (err as { code?: unknown } | null)?.code
+    const code = typeof raw === 'string' && raw !== '' ? raw : 'PARSE_ERROR'
     const d = extractParseDiagnostic(err, input.diagram)
-    return ok({ valid: false, diagnostics: [d ?? { message }] })
+    return ok({ valid: false, diagnostics: [{ ...(d ?? { message }), code }] })
   }
 }
