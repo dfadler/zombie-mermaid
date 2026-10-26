@@ -343,8 +343,23 @@ export function isJunctionChar(c: string): boolean {
   return JUNCTION_CHARS.has(c)
 }
 
-/** Stadium side / hexagon point glyphs an edge line must not overwrite. */
-const SILHOUETTE_TIPS = new Set(['(', ')', '<', '>'])
+/** Silhouette side, point and diagonal glyphs an edge line must not overwrite. */
+const SILHOUETTE_TIPS = new Set([
+  '(',
+  ')',
+  '<',
+  '>',
+  '╱',
+  '╲',
+  '/',
+  '\\',
+  '╭',
+  '╮',
+  '╰',
+  '╯',
+  '.',
+  "'",
+])
 
 /** Check if a character is alphanumeric (part of a label). */
 function isAlphanumeric(c: string): boolean {
