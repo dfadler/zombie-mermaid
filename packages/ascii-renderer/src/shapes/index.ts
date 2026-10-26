@@ -30,7 +30,12 @@ import {
   forkJoinRenderer,
   GLYPH_DIMENSIONS,
 } from './state.ts'
-import { hexagonDimensions, renderSilhouette } from './silhouettes.ts'
+import {
+  circleDimensions,
+  diamondDimensions,
+  hexagonDimensions,
+  renderSilhouette,
+} from './silhouettes.ts'
 import { stadiumRenderer } from './stadium.ts'
 import { classBoxRenderer, classNameRenderer } from './class-box.ts'
 import {
@@ -70,9 +75,7 @@ export type {
  *   │  Label  │
  *   BL─────────BR
  */
-function createCornerShapeRenderer(
-  shape: 'circle' | 'diamond' | 'rounded',
-): ShapeRenderer {
+function createCornerShapeRenderer(shape: 'rounded'): ShapeRenderer {
   return {
     getDimensions: getBoxDimensions,
 
@@ -85,20 +88,24 @@ function createCornerShapeRenderer(
   }
 }
 
-export const circleRenderer = createCornerShapeRenderer('circle')
-const cornerDiamondRenderer = createCornerShapeRenderer('diamond')
+export const circleRenderer: ShapeRenderer = {
+  getDimensions: circleDimensions,
+  render: (label, dimensions, options) =>
+    renderSilhouette('circle', label, dimensions, options.useAscii),
+  getAttachmentPoint: getBoxAttachmentPoint,
+}
 
 /**
  * Unlabeled diamond (a state diagram's `<<choice>>`): a single `◇` glyph, not
  * an empty box, like mermaid's small diamond.
  */
 export const diamondRenderer: ShapeRenderer = {
-  ...cornerDiamondRenderer,
   getDimensions: (label, options) =>
-    label === '' ? GLYPH_DIMENSIONS : getBoxDimensions(label, options),
+    label === '' ? GLYPH_DIMENSIONS : diamondDimensions(label, options),
+  getAttachmentPoint: getBoxAttachmentPoint,
   render(label, dimensions, options) {
     if (label !== '')
-      return cornerDiamondRenderer.render(label, dimensions, options)
+      return renderSilhouette('diamond', label, dimensions, options.useAscii)
     const canvas = mkCanvas(0, 0)
     canvas[0]![0] = options.useAscii ? 'o' : '◇'
     return canvas

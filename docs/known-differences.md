@@ -223,7 +223,7 @@ only); GitHub's render was not reachable. See the comment on #2101 for the numbe
 ## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
 
 The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
-family per PR. Done: **stadium** and **hexagon**. Mermaid 12.2.0 (the pin and npm latest
+family per PR. Done: **stadium**, **hexagon**, **diamond** and **circle**. Mermaid 12.2.0 (the pin and npm latest
 agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
 left and right middle.
 
@@ -239,8 +239,22 @@ left and right middle.
   glyph) never moves the border, and `/ \ < >` read as a hexagon in ASCII.
 - **Edges.** They still attach at the box faces (middle row on the sides, middle column on
   top and bottom); a side edge starts beside the `(`/`)`/`<`/`>` point instead of replacing it.
-- **Still approximated** (later PRs, per the owner's one-family-per-PR call): diamond,
-  circle, double circle, subroutine, asymmetric, parallelograms and trapezoids.
+- **Diamond** (`{x}`). A rhombus with `<` `>` at the left and right middle and the top and
+  bottom rows as a point (`╱╲` / `╲╱`, `/\` / `\/` in ASCII). The node keeps its row count
+  (5 at the default padding), so the slope is whatever lands the points on the centre:
+  two columns per row for a short label, shallower and sparser for a wide one. Mermaid's
+  diamond is as tall as it is wide, which a terminal cannot afford, so a wide-label diamond
+  is flatter than mermaid's. Widths are rounded up to an even count so the top point is two
+  glyphs; when a neighbour makes the width odd the point has a `─` between them. An edge
+  leaving the top or bottom starts beside the point glyph rather than replacing it.
+- **Circle** (`((x))`). An ellipse: rounded top and bottom rows, `╱ ╲` on the rows between,
+  `(` `)` on the middle row (`.-.` / `'-'`, `/ \` in ASCII). Mermaid's circle is round in
+  pixels; the cell grid makes it about twice as wide as tall, so it is a 7-column,
+  5-row minimum shape, not a true circle. Edges attach as for the stadium.
+- **Corner glyphs of the outline.** `╭ ╮ ╰ ╯ . '` and the diagonals are now protected from
+  an edge stroke like `( ) < >` are, so a port on a corner column starts beside it.
+- **Still approximated** (later PRs, per the owner's one-family-per-PR call): double circle,
+  subroutine, asymmetric, parallelograms and trapezoids.
 
 ## ASCII: LR skip edge beside a reciprocal pair (partial match)
 
