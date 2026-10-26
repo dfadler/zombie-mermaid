@@ -163,6 +163,12 @@ export interface AsciiNode {
    */
   fanInCentered?: boolean
   /**
+   * Set by grid layout when an LR node was centred over exactly two children
+   * (`centerParentsOverChildren`). Edge routing then leaves each branch
+   * through the right face and enters the child's left face (#2351).
+   */
+  fanOutCentered?: boolean
+  /**
    * Rows of `drawing` holding the label's lines (inclusive), set by drawBox.
    * Lets the BT flip restore the label's reading order exactly, rather than
    * inferring which text cells belong to one label.

@@ -135,7 +135,7 @@ export function determineStartAndEndDir(
 
   if (
     graphDirection === 'LR' &&
-    (edge.to.fanInCentered || edge.sideFaces) &&
+    (edge.to.fanInCentered || edge.sideFaces || edge.from.fanOutCentered) &&
     (dirEquals(d, LowerRight) || dirEquals(d, UpperRight))
   ) {
     // A fan-in child centered between its parents (grid.ts `fanInCenter`):
