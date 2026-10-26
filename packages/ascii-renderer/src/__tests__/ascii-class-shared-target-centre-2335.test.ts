@@ -1,8 +1,8 @@
 /**
  * Regression test for issue #2335: when two relationships share a class and
- * only one carries an arrowhead there, both lines now converge on the box's
- * centre (as mermaid does) instead of fanning to its corner columns, so the
- * arrowhead no longer sits over a corner glyph.
+ * only one carries an arrowhead there, both lines converge on the box's centre
+ * (as mermaid does) instead of fanning to its corner columns, so the head sits
+ * directly against the border and every junction keeps its arms.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -17,17 +17,29 @@ const SRC = `classDiagram
   A --> C
   B --> D`
 
-describe('ASCII class diagram — shared target merges at the centre (issue #2335)', () => {
-  it('puts the arrowhead above the centre column of D, not a corner', () => {
-    const rows = renderMermaidASCII(SRC).split('\n')
-    const dTop = rows.findIndex(
-      (r, i) => r.includes('┌───┐') && rows[i + 1]?.includes('│ D │'),
+describe('ASCII class diagram — shared ends merge at the centre (issue #2335)', () => {
+  it('draws one trunk under A and one head above D, with joined junctions', () => {
+    const rows = renderMermaidASCII(SRC)
+      .split('\n')
+      .map((r) => r.trimEnd())
+    expect(rows.join('\n').trimEnd()).toBe(
+      [
+        '┌───┐',
+        '│ A │',
+        '└───┘',
+        '  △',
+        '  ├────────┐',
+        '  │        ▼',
+        '┌───┐    ┌───┐',
+        '│ B │    │ C │',
+        '└───┘    └───┘',
+        '  │        △',
+        '  └────┬───┘',
+        '       ▼',
+        '     ┌───┐',
+        '     │ D │',
+        '     └───┘',
+      ].join('\n'),
     )
-    expect(dTop).toBeGreaterThan(0)
-    const left = rows[dTop]!.indexOf('┌')
-    const head = rows[dTop - 1]!.indexOf('▼')
-    expect(head).toBe(left + 2)
-    // Both lines join in the row above the head (a merged `└─▼─┘` bar)
-    expect(rows[dTop - 1]).toContain('└─▼─┘')
   })
 })
