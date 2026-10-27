@@ -14,26 +14,11 @@
  * wraps, standing in for the `esbuild.build()` calls these generators used
  * previously (Vite 8 build API: https://vite.dev/guide/api-javascript#build). See zombie-mermaid#310.
  */
-import { fileURLToPath } from 'node:url'
 import { build as viteBuild, type Plugin } from 'vite'
 
-// Resolve workspace packages from source, mirroring tsconfig.json `paths` and
-// config/vitest.config.ts. Their package.json `exports` point at `dist/`, so
-// without this a stale (or missing) dist breaks the bundle, e.g. a
-// `registerElk` MISSING_EXPORT (#1754).
-const WORKSPACE_PACKAGES = [
-  'core',
-  'mermaid-parser',
-  'svg-renderer',
-  'ascii-renderer',
-  'mcp',
-]
-const workspaceAliases = Object.fromEntries(
-  WORKSPACE_PACKAGES.map((name) => [
-    `@zombie-mermaid/${name}`,
-    fileURLToPath(new URL(`../packages/${name}/src/index.ts`, import.meta.url)),
-  ]),
-)
+// Workspace packages resolve from source via tsconfig.json `paths` (their
+// package.json `exports` point at `dist/`, so a stale or missing dist would
+// break the bundle, e.g. a `registerElk` MISSING_EXPORT, #1754).
 
 export interface BundleForBrowserOptions {
   /**
@@ -89,7 +74,7 @@ export function bundleSource(
   contents: string,
   resolveDir: string,
 ): Promise<string> {
-  // No workspace aliases: these scripts measure what ships, i.e. `dist/`.
+  // No tsconfig `paths`: these scripts measure what ships, i.e. `dist/`.
   return buildChunk(
     VIRTUAL_ENTRY,
     { minify: true },
@@ -129,7 +114,7 @@ async function buildChunk(
     // Vite's own "building for production..." banner would otherwise mix
     // into these generators' own progress logging.
     logLevel: 'warn',
-    resolve: { alias: alias ? workspaceAliases : {} },
+    resolve: { tsconfigPaths: alias },
     build: {
       write: false,
       minify,
