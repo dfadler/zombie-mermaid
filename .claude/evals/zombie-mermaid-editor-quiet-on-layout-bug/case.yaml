@@ -1,0 +1,28 @@
+# Near-miss: mentions the editor and a rendering defect, but the bug is in the layout engine.
+schema_version: '1.1'
+name: zombie-mermaid-editor-quiet-on-layout-bug
+description: >
+  A flowchart layout bug (node ordering in a rendered diagram) must not fire zombie-mermaid-editor,
+  even though the symptom was seen in the editor preview.
+  expected_outcome: PASS when no zombie-mermaid-editor Skill call is made; FAIL otherwise.
+tags: [zombie-mermaid-editor, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    In a flowchart, two sibling nodes in the same rank come out in the opposite left-to-right
+    order from the order they appear in the source. I noticed it in the editor preview but it
+    reproduces from the CLI too. In one sentence, which area of the code would you check first?
+    Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid-editor"'
+    min: 0
+    max: 0
+    arm: both

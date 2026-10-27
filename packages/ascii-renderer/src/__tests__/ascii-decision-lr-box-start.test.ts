@@ -43,20 +43,25 @@ describe('issue #86: stray ├ on decision-node edge labels (LR, Unicode)', () =
     // proves it's not orphaned; this test locks in that the junction's
     // column lines up with the box's own border on adjacent rows, which is
     // what "not drifted" means concretely.
-    const out = renderMermaidASCII(ISSUE_86_REPRO, { colorMode: 'none' })
+    // Wrapped in a subgraph: an unwrapped LR fan-out is now centred over its
+    // children (#2163), so "Yes" no longer leaves the right border at all.
+    const out = renderMermaidASCII(
+      `flowchart LR
+  subgraph s
+  A{Decision} -->|Yes| B[Do thing]
+  A -->|No| C[Other thing]
+  end`,
+      { colorMode: 'none' },
+    )
     const lines = out.split('\n')
     const yesLineIdx = lines.findIndex((l) => l.includes('Yes'))
     expect(yesLineIdx).toBeGreaterThanOrEqual(0)
 
     const yesRow = lines[yesLineIdx]!
-    const junctionCol = yesRow.indexOf('├')
-    expect(junctionCol).toBeGreaterThanOrEqual(0)
-
-    // The same column on the rows immediately above/below must be the
-    // decision box's own plain vertical border — confirming the junction
-    // sits exactly on a real border line, not on a blank/drifted cell.
-    expect(lines[yesLineIdx - 1]?.[junctionCol]).toBe('│')
-    expect(lines[yesLineIdx + 1]?.[junctionCol]).toBe('│')
+    // A diamond has no border column (#2164): the edge starts right beside
+    // its `>` point, with no junction glyph and no gap.
+    expect(yesRow).toContain('>─Yes')
+    expect(yesRow).not.toContain('├')
   })
 
   it('still renders a genuine ├ junction for a normal single-edge box-start', () => {

@@ -846,7 +846,18 @@ export function layoutC4DiagramSync(
       boundaries: [],
       relationships: [],
     }
-    if (diagram.title) empty.title = diagram.title
+    if (diagram.title) {
+      // Mermaid emits viewBox "0 -70 200 187" with the title at x=-150, off
+      // the canvas, so it is invisible there; here the canvas is sized to the
+      // title and the title is drawn inside it (docs/known-differences.md).
+      const height = 2 * C4.diagramMarginY + C4.titleExtra
+      empty.title = diagram.title
+      empty.width = Math.ceil(
+        2 * C4.diagramMarginX + c4TextWidth(diagram.title, 16, 400),
+      )
+      empty.height = height
+      empty.titlePosition = { x: C4.diagramMarginX, y: height / 2 }
+    }
     return empty
   }
 

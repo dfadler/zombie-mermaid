@@ -106,4 +106,98 @@ namespace Empty {
   it('leaves diagrams without namespaces unchanged', () => {
     expect(renderMermaidASCII('classDiagram\nA --> B')).not.toContain('Core')
   })
+
+  // Issue #2312: D has parents in both frames, so it lands between them and
+  // the bounding-box frames used to overlap. The frames now stack, one wholly
+  // below the other (as mermaid draws them), and each stays a closed box.
+  it('stacks sibling frames and keeps each border intact (#2312)', () => {
+    const rows = lines(`classDiagram
+namespace One {
+  class A
+  class B
+}
+namespace Two {
+  class C
+  class D
+}
+A <|-- B
+C <|-- D
+A --> C
+B --> D`)
+    const oneTop = find(rows, ' One ').row
+    const twoTop = find(rows, ' Two ').row
+    const oneBottom = rows.findIndex((l, i) => i > oneTop && l.startsWith('└'))
+    expect(oneBottom).toBeGreaterThan(oneTop)
+    expect(twoTop).toBeGreaterThan(oneBottom)
+    // `Two`: one corner pair on its top border (an edge run along the border
+    // would add more), and a left border on every row down to its bottom.
+    expect(rows[twoTop]!.match(/[┌┐]/g)).toHaveLength(2)
+    const twoBottom = rows.findIndex((l, i) => i > twoTop && l.startsWith('└'))
+    expect(twoBottom).toBeGreaterThan(twoTop)
+    for (let i = twoTop + 1; i < twoBottom; i++) {
+      expect(rows[i]!.startsWith('│')).toBe(true)
+    }
+  })
+
+  // Both skip-level edges (A -> C and B -> D) detour around a box; they take
+  // their own columns, and the two edges into D arrive on different columns.
+  it('keeps detours and arrivals on separate lines (#2312)', () => {
+    const rows = lines(`classDiagram
+namespace One {
+  class A
+  class B
+}
+namespace Two {
+  class C
+  class D
+}
+A <|-- B
+C <|-- D
+A --> C
+B --> D`)
+    const oneBottom = rows.findIndex((l) => l.startsWith('└'))
+    expect(rows[oneBottom + 1]!.match(/│/g)).toHaveLength(2)
+    const arrival = rows.findLast((l) => l.includes('▼'))!
+    // B -> D's head sits beside the C <|-- D stem, not on top of it.
+    expect(arrival).toMatch(/▼│/)
+  })
+
+  // Edges running both ways between two frames can't be stacked; the frames
+  // stay on shared rows and are pushed apart instead of overlapping.
+  it('keeps frames with edges in both directions apart (#2312)', () => {
+    const rows = lines(`classDiagram
+namespace One {
+  class A
+  class B
+}
+namespace Two {
+  class C
+  class D
+}
+A <|-- B
+C <|-- D
+A --> C
+D --> B`)
+    const oneEnd = rows[find(rows, ' One ').row]!.lastIndexOf('┐')
+    expect(rows[find(rows, ' Two ').row]!.indexOf('┌')).toBeGreaterThan(oneEnd)
+  })
+
+  // Frame edges that loop X -> Y -> Z -> X have no stacking order, so the
+  // levels are left as they were; every frame is still drawn.
+  it('draws frames whose edges form a cycle (#2312)', () => {
+    const rows = lines(`classDiagram
+namespace X {
+  class A
+}
+namespace Y {
+  class B
+}
+namespace Z {
+  class C
+}
+A --> B
+B --> C
+C --> A`)
+    for (const title of [' X ', ' Y ', ' Z ']) find(rows, title)
+  })
 })

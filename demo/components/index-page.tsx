@@ -1850,7 +1850,7 @@ export function IndexPage({
         // a page-specific CSS class for.
         installSlotKind="empty"
       />
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         {/*
             Plain, inert hydration containers -- see dashboard-app.tsx's
             DASHBOARD_ROOT_ID doc comment for why neither app's own root

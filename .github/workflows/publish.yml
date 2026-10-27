@@ -10,8 +10,8 @@ name: Release
 #
 # See docs/RELEASING.md for the full flow and the one-time npmjs.com trusted
 # publisher setup this depends on. As of #622, `pnpm changeset publish`
-# below publishes six packages (the `zombie-mermaid` umbrella plus five
-# @zombie-mermaid/* internal packages, kept on one version by
+# below publishes seven packages (the `zombie-mermaid` umbrella plus six
+# @zombie-mermaid/* packages incl. `cli` (#1946), kept on one version by
 # .changeset/config.json's `fixed` group) instead of one — each needs its
 # own trusted-publisher link configured on npmjs.com (same GitHub Actions
 # values, repeated per package name; see docs/RELEASING.md's "One-time
@@ -97,21 +97,11 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup pnpm
+      - name: Setup pnpm, Node.js and install
         if: steps.gate.outputs.publish == 'true'
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        if: steps.gate.outputs.publish == 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        if: steps.gate.outputs.publish == 'true'
-        run: pnpm install --frozen-lockfile
 
       - name: Run tests
         if: steps.gate.outputs.publish == 'true'
@@ -153,18 +143,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       # #1991: the packages under packages/ have no prepublishOnly, so
       # `changeset publish` ships whatever is on disk. #1596's split moved the

@@ -135,7 +135,7 @@ export function determineStartAndEndDir(
 
   if (
     graphDirection === 'LR' &&
-    (edge.to.fanInCentered || edge.sideFaces) &&
+    (edge.to.fanInCentered || edge.sideFaces || edge.from.fanOutCentered) &&
     (dirEquals(d, LowerRight) || dirEquals(d, UpperRight))
   ) {
     // A fan-in child centered between its parents (grid.ts `fanInCenter`):
@@ -834,18 +834,31 @@ function runTaken(
   edge: AsciiEdge,
   path: GridCoord[],
   ignorePlanned = false,
+  // Other edges' segments; callers probing many candidate paths pass a
+  // precomputed list (the other edges' paths do not change between probes).
+  others = otherSegments(graph, edge, ignorePlanned),
 ): boolean {
   const own = segmentsOf(path)
+  return own.slice(1, -1).some(
+    ([a, b], i) =>
+      runsAlong(
+        a,
+        b,
+        own.filter((_, j) => j !== i + 1),
+      ) || runsAlong(a, b, others),
+  )
+}
+
+function otherSegments(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  ignorePlanned: boolean,
+) {
   // Planned face lanes (assignFaceLanes) share gutter rows by design: each
   // horizontal run is drawn on a row of its own.
-  const others = graph.edges.flatMap((o) =>
+  return graph.edges.flatMap((o) =>
     o === edge || (ignorePlanned && o.faceLanePlan) ? [] : segmentsOf(o.path),
   )
-  return own
-    .slice(1, -1)
-    .some(([a, b], i) =>
-      runsAlong(a, b, [...own.filter((_, j) => j !== i + 1), ...others]),
-    )
 }
 
 /** `mergePath` after dropping repeated points (gutter cells can coincide). */
@@ -865,8 +878,16 @@ function buildParallelLanePath(
   laneIndex: number,
   avoidRuns: boolean,
 ): ParallelLaneRoute {
+  let others: ReturnType<typeof otherSegments> | undefined
   const clear = (path: GridCoord[]): boolean =>
-    !avoidRuns || !runTaken(graph, edge, path)
+    !avoidRuns ||
+    !runTaken(
+      graph,
+      edge,
+      path,
+      false,
+      (others ??= otherSegments(graph, edge, false)),
+    )
   const fromAttach = gridCoordDirection(
     requireGridCoord(edge.from),
     preferredDir,
@@ -952,8 +973,8 @@ function buildParallelLanePath(
           ]
       const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
       if (
-        interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes) &&
-        clear(sidePath)
+        clear(sidePath) &&
+        interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)
       ) {
         usedOffsets.add(offset)
         return {
@@ -995,8 +1016,8 @@ function buildParallelLanePath(
     // No exemption for the edge's own nodes: a lane that leaves along a
     // border row/column draws over the node's corner and edge glyphs (#2025).
     if (
-      interiorCellsClearOfNodes(graph, pathCells(wideCandidate)) &&
-      clear(wideCandidate)
+      clear(wideCandidate) &&
+      interiorCellsClearOfNodes(graph, pathCells(wideCandidate))
     ) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
@@ -1071,8 +1092,8 @@ function buildParallelLanePath(
           toAttach,
         ])
     if (
-      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes) &&
-      clear(gutterCandidate)
+      clear(gutterCandidate) &&
+      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes)
     ) {
       usedOffsets.add(offset)
       return { path: gutterCandidate, labelSegment: gutterLabelSegment }
@@ -1155,9 +1176,33 @@ function jumpsNodeOnRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
  * this one enters it (or the reverse), and a labeled edge that shares an end
  * with another jumping edge (each label needs a lane of its own, #1467).
  */
-function runsUnderRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
-  if (!jumpsNodeOnRow(graph, edge)) return false
+export function runsUnderRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  if (!underRunCandidate(graph, edge)) return false
   const ends = new Set([edge.from, edge.to])
+  // A self-loop at an end, or a back-edge that keeps its bottom-face U, would
+  // merge with the run. A back-edge `backStraight` draws as a stroke between
+  // the facing faces leaves the bottom faces free (#2100).
+  return !graph.edges.some(
+    (o) =>
+      o !== edge &&
+      (ends.has(o.from) || ends.has(o.to)) &&
+      (o.from === o.to || (isBackOnRow(o) && !backStraight(graph, o))),
+  )
+}
+
+function isBackOnRow(o: AsciiEdge): boolean {
+  const a = o.from.gridCoord
+  const b = o.to.gridCoord
+  return a !== null && b !== null && a.x > b.x
+}
+
+/**
+ * The part of `runsUnderRow` that does not look at self-loops or back-edges at
+ * the ends: the edge jumps a node and no other jumping edge, label or node
+ * role in the way would put two strokes on one bottom-face cell.
+ */
+function underRunCandidate(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  if (!jumpsNodeOnRow(graph, edge)) return false
   const sharedWith = graph.edges.filter(
     (o) =>
       o !== edge &&
@@ -1167,20 +1212,65 @@ function runsUnderRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
   if (edge.text.length > 0 && sharedWith.length > 0) return false
   // A node that one jumping edge enters and another leaves would have both on
   // its bottom face, in one cell.
-  if (
-    graph.edges.some(
-      (o) =>
-        (o.to === edge.from || o.from === edge.to) && jumpsNodeOnRow(graph, o),
-    )
-  ) {
+  return !graph.edges.some(
+    (o) =>
+      (o.to === edge.from || o.from === edge.to) && jumpsNodeOnRow(graph, o),
+  )
+}
+
+/**
+ * A back-edge on the row from a node to its right-hand neighbour's partner
+ * (`C --> A` beside `A --> C`, nothing between) that shares an end with an
+ * under-running skip edge (#2100). It is drawn as a second stroke between the
+ * facing side faces, beside the forward one, so the bottom faces stay free
+ * for the skip edge instead of holding this edge's U.
+ */
+export function backStraight(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  if (graph.config.graphDirection !== 'LR' || edge.text.length > 0) return false
+  const f = edge.from.gridCoord
+  const t = edge.to.gridCoord
+  if (!f || !t || f.y !== t.y || f.x <= t.x || edge.from === edge.to) {
     return false
   }
-  return !graph.edges.some((o) => {
-    if (o === edge || !(ends.has(o.from) || ends.has(o.to))) return false
-    const a = o.from.gridCoord
-    const b = o.to.gridCoord
-    return o.from === o.to || (a !== null && b !== null && a.x > b.x)
+  if (edge.clusterSource || edge.clusterTarget || edge.bundle) return false
+  const between = graph.nodes.some((n) => {
+    const c = n.gridCoord
+    return c !== null && c.y === f.y && c.x > t.x && c.x < f.x
   })
+  if (between) return false
+  const partner = graph.edges.some(
+    (o) =>
+      o !== edge &&
+      o.from === edge.to &&
+      o.to === edge.from &&
+      o.text.length === 0 &&
+      !o.bundle,
+  )
+  if (!partner) return false
+  // Ceiling: only the sample's shape, a pair, a skip edge and a loop at most
+  // on each end; busier nodes keep the U, whose side-face strokes this layout
+  // cannot yet keep apart (#2100).
+  const busy = [edge.from, edge.to].some(
+    (n) =>
+      graph.edges.filter((o) => o.from !== o.to && (o.from === n || o.to === n))
+        .length > 3,
+  )
+  if (busy) return false
+  // The loop-on-top margin row is not drawn around frames yet.
+  if (graph.subgraphs.length > 0) return false
+  return graph.edges.some(
+    (j) =>
+      j !== edge &&
+      underRunCandidate(graph, j) &&
+      // A loop at an end of `j` keeps `j` off the bottom faces (runsUnderRow).
+      !graph.edges.some(
+        (l) => l.from === l.to && (l.from === j.from || l.from === j.to),
+      ) &&
+      (j.from === edge.from ||
+        j.from === edge.to ||
+        j.to === edge.from ||
+        j.to === edge.to),
+  )
 }
 
 /**
@@ -1197,6 +1287,20 @@ export function reserveUnderRow(graph: AsciiGraph, edge: AsciiEdge): void {
       graph.rowHeight.set(c.y, Math.max(graph.rowHeight.get(c.y) ?? 0, 2))
     }
   }
+}
+
+/** A self-loop on a node that ends a `backStraight` pair (#2100). */
+function loopOnTop(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  if (edge.from !== edge.to) return false
+  return graph.edges.some(
+    (o) =>
+      o.from !== o.to &&
+      (o.from === edge.from || o.to === edge.from) &&
+      (backStraight(graph, o) ||
+        graph.edges.some(
+          (p) => p.from === o.to && p.to === o.from && backStraight(graph, p),
+        )),
+  )
 }
 
 /**
@@ -1467,6 +1571,19 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     ;[alternativeDir, alternativeOppositeDir] = [Right, Up]
   }
 
+  // #2100: a self-loop on a node whose side faces hold a straight pair
+  // leaves and re-enters the top face, as mermaid draws it. The first row has
+  // no room above it: ask for a margin row (the layout is redone with one).
+  edge.loopTopWanted = false
+  if (effectiveDir === 'LR' && loopOnTop(graph, edge)) {
+    if (graph.topMargin || requireGridCoord(edge.from).y > 0) {
+      ;[preferredDir, preferredOppositeDir] = [Right, Up]
+      ;[alternativeDir, alternativeOppositeDir] = [Right, Up]
+    } else {
+      edge.loopTopWanted = true
+    }
+  }
+
   // #2043/#2044: an LR edge that jumps over a node on its own row would leave
   // the origin's right face and enter the target's left face, the very cells
   // the edge through that node uses, so the two strokes and arrowheads merge.
@@ -1531,6 +1648,26 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       return
     }
     edge.clusterEntered = false
+  }
+
+  // #2100: a back-edge beside its forward partner, when a skip edge needs the
+  // bottom faces, is a second stroke between the facing side faces.
+  const back = backStraight(graph, edge)
+  if (
+    back ||
+    graph.edges.some(
+      (o) => o.from === edge.to && o.to === edge.from && backStraight(graph, o),
+    )
+  ) {
+    const [out, into] = back ? [Left, Right] : [Right, Left]
+    edge.startDir = out
+    edge.endDir = into
+    edge.faceLane = false
+    edge.path = [
+      gridCoordDirection(requireGridCoord(edge.from), out),
+      gridCoordDirection(requireGridCoord(edge.to), into),
+    ]
+    return
   }
 
   // A back-edge between nodes in one column (row, in LR) leaves the source's
@@ -2212,7 +2349,14 @@ function applyLabelLine(
   // A horizontal stroke's start arrowhead takes the first stroke cell (#1438),
   // beside the end arrowhead's, so the label needs one more cell.
   const horizontal = line[0].y === line[1].y
-  const need = lenLabel + 2 + (horizontal && edge.hasArrowStart ? 2 : 0)
+  // A straight edge out of a right-face decision crosses the branch trunk at
+  // its column's centre; the label sits right of it, between a gap cell and
+  // the arrowhead (#2366).
+  const crossesTrunk =
+    horizontal && edge.from.fanOutCentered === true && edge.path.length === 2
+  const need = crossesTrunk
+    ? 2 * lenLabel + 5
+    : lenLabel + 2 + (horizontal && edge.hasArrowStart ? 2 : 0)
   // A vertical segment's label goes beside the stroke and needs the column's
   // own width, so only a horizontal one is exempt.
   const wideEnough =

@@ -1004,7 +1004,7 @@ describe('blog.ts → blog/*.html', () => {
 
 /**
  * #1761: the shared `Document` shell puts a skip link first in `<body>`,
- * and every page renders exactly one `<main id="main">` for it to target.
+ * and every page renders exactly one `<main id="main" tabindex="-1">` for it to target.
  */
 describe('page shell landmarks (#1761)', () => {
   function expectSkipLinkAndMain(html: string): void {

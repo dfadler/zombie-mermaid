@@ -17,7 +17,7 @@
  * The fix pulls each label toward its own target (arrowhead) instead, so
  * the label next to a given arrowhead always belongs to that arrow.
  *
- * Uses the exact "Basic State Diagram" and "State: Connection Lifecycle"
+ * Uses the exact "State: Basic State Diagram" and "State: Connection Lifecycle"
  * samples from samples-data.ts (indices 29 and 31 in the sample list) that
  * the issue was filed against.
  */

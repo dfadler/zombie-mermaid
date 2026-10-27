@@ -23,5 +23,6 @@ describe.each([
       JSON.parse(out) as { files: { path: string }[] }[]
     )[0]!.files.map((f) => f.path)
     expect(files).toContain('THIRD_PARTY_NOTICES.md')
-  })
+    // 30 s timeout: spawns `npm pack`, 1-9 s depending on load (#1825).
+  }, 30_000)
 })

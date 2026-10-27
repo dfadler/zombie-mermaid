@@ -32,7 +32,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (54 fixes): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
 
-It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below.
+It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below. Who maintains it, how releases are published, and what is claimed: [provenance and continuity](docs/provenance.md).
 
 ### Migrating from `beautiful-mermaid`
 
@@ -201,7 +201,7 @@ Using this from React? See [React Integration](docs/react-integration.md) for a 
 
 ## CLI
 
-Installing the package also exposes a `zombie-mermaid` binary:
+Installing the package also exposes a `zombie-mermaid` binary. To run just the CLI, without the library's other entry points, use `npx @zombie-mermaid/cli render diagram.mmd --ascii` (same CLI, published as [`@zombie-mermaid/cli`](packages/cli/README.md)):
 
 ```bash
 zombie-mermaid render diagram.mmd --ascii              # Print ASCII/Unicode to terminal

@@ -551,9 +551,9 @@ describe('the mobile menu', () => {
   })
 
   it('behavior script pairs a toggle with the panel that follows it', () => {
-    expect(NAV_MOBILE_MENU_SCRIPT).toContain('bar.nextElementSibling')
-    // Quote- and whitespace-agnostic: the string is the compact literal in
-    // mobile-menu-script.ts.
-    expect(NAV_MOBILE_MENU_SCRIPT).toMatch(/event\.key ?=== ?['"]Escape['"]/)
+    expect(NAV_MOBILE_MENU_SCRIPT).toContain('.nextElementSibling')
+    // Quote-, whitespace- and name-agnostic: the string is minified at build
+    // time by the mobile-menu-script plugin.
+    expect(NAV_MOBILE_MENU_SCRIPT).toMatch(/\.key ?=== ?[`'"]Escape[`'"]/)
   })
 })

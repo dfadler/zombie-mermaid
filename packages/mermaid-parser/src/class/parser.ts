@@ -96,7 +96,7 @@ function unquoteClassId(id: string): string {
 const RELATIONSHIP_ARROW_SOURCE =
   Object.keys(ARROWS)
     .sort((a, b) => b.length - a.length)
-    .map((a) => a.replace(/[|.*()]/g, '\\$&'))
+    .map((a) => a.replace(/[\\|.*()]/g, '\\$&'))
     .join('|') + '|<\\.\\.?'
 
 /**
@@ -247,10 +247,17 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
 
     // --- Class block start: `class ClassName {` or `class ClassName:::style {` ---
     const classBlockMatch = line.match(
-      new RegExp(`^class\\s+(${CLASS_ID})(?:\\s*~(\\w+)~)?\\s*\\{$`),
+      new RegExp(
+        `^class\\s+(${CLASS_ID})(?:\\s*~(\\w+)~)?(?:\\s*\\["([^"]*)"\\])?\\s*\\{$`,
+      ),
     )
     if (classBlockMatch) {
-      const id = declareClass(classBlockMatch[1]!, classBlockMatch[2])
+      const id = declareClass(
+        classBlockMatch[1]!,
+        classBlockMatch[2],
+        true,
+        classBlockMatch[3],
+      )
       currentClass = classMap.get(id) ?? null
       braceDepth = 1
       openClassLine = stmt.line
@@ -259,10 +266,17 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
 
     // --- Standalone class declaration (no body): `class ClassName` / `class ClassName:::style` ---
     const classOnlyMatch = line.match(
-      new RegExp(`^class\\s+(${CLASS_ID})(?:\\s*~(\\w+)~)?\\s*$`),
+      new RegExp(
+        `^class\\s+(${CLASS_ID})(?:\\s*~(\\w+)~)?(?:\\s*\\["([^"]*)"\\])?\\s*$`,
+      ),
     )
     if (classOnlyMatch) {
-      declareClass(classOnlyMatch[1]!, classOnlyMatch[2])
+      declareClass(
+        classOnlyMatch[1]!,
+        classOnlyMatch[2],
+        true,
+        classOnlyMatch[3],
+      )
       continue
     }
 
@@ -363,6 +377,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     token: string,
     generic: string | undefined,
     inNamespace: boolean = true,
+    label?: string,
   ): string {
     const { id: rawId, className } = splitClassShorthand(token)
     let id = unquoteClassId(rawId)
@@ -384,6 +399,8 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
     if (resolvedGeneric) {
       cls.label = `${id}<${resolvedGeneric}>`
     }
+    // `class Id["Label"]` shows Label in the box; relationships still use Id.
+    if (label !== undefined) cls.label = normalizeBrTags(label)
     if (className) {
       diagram.classAssignments.set(id, className)
     }
@@ -537,14 +554,16 @@ function parseMember(
     const params = rawParams ? parseGenericTypes(rawParams) : undefined // Store the parameter string
     const rawType = methodMatch[3]?.trim()
     const type = rawType ? parseGenericTypes(rawType) : undefined
-    // Check for static ($) or abstract (*) markers
-    const isStatic = name.endsWith('$') || rest.includes('$')
-    const isAbstract = name.endsWith('*') || rest.includes('*')
+    // A `$` (static) / `*` (abstract) classifier follows the `)` (mermaid's
+    // ClassMember); it styles the member and is not part of its text (#2283).
+    const classifier = rawType?.match(/^[$*]/)?.[0]
+    const isStatic = classifier === '$' || name.endsWith('$')
+    const isAbstract = classifier === '*' || name.endsWith('*')
     return {
       member: {
         visibility,
         name: name.replace(/[$*]$/, ''),
-        type: type || undefined,
+        type: type?.replace(/^[$*]\s*/, '') || undefined,
         isStatic,
         isAbstract,
         isMethod: true,

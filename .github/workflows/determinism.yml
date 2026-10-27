@@ -1,7 +1,7 @@
 name: Render determinism
 
 # Cross-OS / cross-Node byte-identity check for rendered output (#1861).
-# Each matrix cell renders every gallery sample (packages/site/samples-data.ts)
+# Each matrix cell renders every gallery sample (samples/samples-data.ts)
 # to SVG and ASCII and uploads a hash manifest; `compare` diffs every manifest
 # against ubuntu/node-24 and fails on any mismatch.
 #
@@ -19,6 +19,7 @@ on:
     paths:
       - 'packages/**'
       - 'src/**'
+      - 'samples/**'
       - 'scripts/determinism-manifest.ts'
       - 'scripts/lib/determinism-manifest.ts'
       - '.github/workflows/determinism.yml'
@@ -51,17 +52,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
         with:
           node-version: ${{ matrix.node }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Render hash manifest
         run: >
@@ -73,6 +67,7 @@ jobs:
         with:
           name: manifest-${{ matrix.os }}-node${{ matrix.node }}
           path: manifest.txt
+          retention-days: 1 # only the compare job in this run reads it
           if-no-files-found: error
 
   compare:

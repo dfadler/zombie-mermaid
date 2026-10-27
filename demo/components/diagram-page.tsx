@@ -847,7 +847,7 @@ export function DiagramTypePage({
             detailed version of this comment for why renderToString (not
             renderToStaticMarkup) is needed here.
           */}
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_TYPE_ROOT_ID}
               dangerouslySetInnerHTML={{
@@ -1041,7 +1041,7 @@ export function DiagramHubPage({
             Plain, inert hydration container -- see DiagramTypePage's
             identical comment above.
           */}
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_HUB_ROOT_ID}
               dangerouslySetInnerHTML={{
@@ -1141,7 +1141,7 @@ export function DiagramDetailPage({
         <div style={{ overflow: 'hidden' }}>
           {/* Plain, inert hydration container -- see DiagramTypePage's
               identical comment above. */}
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_DETAIL_ROOT_ID}
               dangerouslySetInnerHTML={{
@@ -1236,7 +1236,7 @@ export function DiagramTagPage({
           installSlotKind="empty"
         />
         <div style={{ overflow: 'hidden' }}>
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_TAG_ROOT_ID}
               dangerouslySetInnerHTML={{
@@ -1322,7 +1322,7 @@ export function DiagramAllPage({
           installSlotKind="empty"
         />
         <div style={{ overflow: 'hidden' }}>
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_ALL_ROOT_ID}
               dangerouslySetInnerHTML={{

@@ -215,8 +215,8 @@ renderMermaidSVG(source, { honorThemeVariables: true })
 - `themeCssVariables(options)` sees only your options, not the diagram, so
   with `styleAttribute: false` the directive colours are not in that string.
 
-Checked against mermaid 12.1.0 (`scripts/lib/real-mermaid.ts`) and 12.2.0
-(jsDelivr), headless Chromium, computed paint; both gave the same results.
+Checked against mermaid 12.1.0 and 12.2.0 (`scripts/lib/real-mermaid.ts`;
+12.1.0 via jsDelivr), headless Chromium, computed paint; both gave the same results.
 See [known differences](known-differences.md#themevariables-are-opt-in-and-only-a-subset).
 
 Keys parsed but deliberately not acted on, and why:
@@ -497,7 +497,11 @@ sequenceDiagram
 a plain declaration, so the alias and the participant/actor kind are kept.
 The created participant's box is drawn centred on the row of the message
 that creates it, instead of in the header, and its lifeline starts there;
-the creating arrow stops at the box's edge. `destroy X` ends `X`'s lifeline
+the creating arrow stops at the box's edge, and the message label sits on the
+row directly above that arrow (as in Mermaid 12.1.0 and 12.2.0). A created
+actor figure's height does not pad the other participants' header boxes (the
+footer row, which holds every surviving participant, is still uniform).
+`destroy X` ends `X`'s lifeline
 at the next message with a cross, and no footer box is drawn for it.
 
 Mermaid's binding rules apply, with Mermaid's own error text: the message
@@ -722,14 +726,14 @@ classDiagram-v2
   marker, label, border or another line, and in an extremely crowded fan one that fits
   nowhere is left out. The unicode and `--ascii` charsets place them identically.
 
-Checked against mermaid 12.1.0 (repo pin) and 12.2.0.
+Checked against mermaid 12.1.0 and 12.2.0 (repo pin).
 
 ### Direction
 
 `direction TB|TD|LR|RL|BT` on its own line sets the layout direction
 ([#2116](https://github.com/dfadler/zombie-mermaid/issues/2116)); the last one wins.
 `RenderOptions.direction` does not apply to class diagrams. Checked against
-mermaid 12.1.0 (repo pin) and 12.2.0, which agree.
+mermaid 12.1.0 and 12.2.0 (repo pin), which agree.
 
 ```mermaid
 classDiagram
@@ -995,6 +999,27 @@ Known differences from Mermaid:
 Mermaid has no text output for pie charts; see
 [ASCII Pie Charts](#ascii-pie-charts) for this library's.
 
+## Unsupported upstream diagram types
+
+These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
+
+| Type                                                                  | Header                                                                                                          |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Use case                                                              | `usecase-beta`                                                                                                  |
+| Mindmap                                                               | `mindmap`                                                                                                       |
+| Packet                                                                | `packet` / `packet-beta`                                                                                        |
+| Gantt                                                                 | `gantt`                                                                                                         |
+| Timeline                                                              | `timeline`                                                                                                      |
+| User journey                                                          | `journey`                                                                                                       |
+| Quadrant chart                                                        | `quadrantChart`                                                                                                 |
+| Requirement                                                           | `requirementDiagram`                                                                                            |
+| Git graph                                                             | `gitGraph`                                                                                                      |
+| Kanban                                                                | `kanban`                                                                                                        |
+| Radar                                                                 | `radar-beta`                                                                                                    |
+| Treemap                                                               | `treemap-beta`                                                                                                  |
+| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
+| Sankey, Block                                                         | `sankey-beta`, `block-beta` (12.2.0 rejects them with an empty body; header names per upstream docs)            |
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
@@ -1099,7 +1124,7 @@ import { renderMermaidASCII } from 'zombie-mermaid/ascii'
 renderMermaidASCII(diagram, {
   useAscii: false,      // true = ASCII, false = Unicode (default)
   paddingX: 5,          // Horizontal spacing between nodes
-  paddingY: 5,          // Vertical spacing between nodes
+  paddingY: 5,          // Vertical spacing (default 5; in LR and RL the gap between sibling nodes is paddingY - 1, minimum 1)
   boxBorderPadding: 1,  // Padding inside node boxes
   colorMode: 'auto',    // 'none' | 'auto' | 'ansi16' | 'ansi256' | 'truecolor' | 'html'
   theme: { ... },       // Partial<AsciiTheme> — override default colors

@@ -8,6 +8,7 @@ import {
   forkFixesCount,
   main,
   orphanResearch,
+  researchAsOf,
 } from '../scripts/check-docs.ts'
 
 const has = (set: string[]) => (p: string) => set.some((s) => p.endsWith(s))
@@ -97,6 +98,7 @@ describe('check-docs orchestration', () => {
       'package.json engines.node ">=20 || >=24" vs .nvmrc 24',
       '.github/workflows/ci.yml: node-version 22 vs .nvmrc 24',
       'docs/research/a: nothing links to it; post the findings on the issue instead (#1642)',
+      'docs/research/a.md: missing an "As of: YYYY-MM-DD" line (#1936)',
     ])
   })
   it('default fs reads the real repo, which has no drift', () => {
@@ -154,6 +156,25 @@ describe('check-docs research guard (#1642)', () => {
         }),
       ),
     ).toEqual([])
+  })
+})
+
+describe('researchAsOf', () => {
+  it('flags a kept doc without an As of date, skips the README', () => {
+    const files: Record<string, string> = {
+      'docs/research/README.md': 'index',
+      'docs/research/a.md': '# A\n\nAs of: 2026-10-22, main\n',
+      'docs/research/b.md': '# B\n',
+      'docs/research/d/README.md': '# D\n',
+    }
+    const errs = researchAsOf({
+      read: (p) => files[p] ?? '',
+      ls: () => Object.keys(files),
+    })
+    expect(errs.map((e) => e.split(':')[0])).toEqual([
+      'docs/research/b.md',
+      'docs/research/d/README.md',
+    ])
   })
 })
 

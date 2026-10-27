@@ -7,8 +7,8 @@
  * Usage: tsx scripts/check-visual-baselines.ts   (exit 1 if any are missing)
  */
 import { existsSync } from 'node:fs'
-import { samples } from '../packages/site/samples-data.ts'
-import { xychartSamples } from '../packages/site/xychart-samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
+import { xychartSamples } from '../samples/xychart-samples-data.ts'
 
 const slug = (t: string) =>
   t

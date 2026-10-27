@@ -71,7 +71,7 @@ export function renderC4Svg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
 
   if (diagram.title && diagram.titlePosition) {
     // Mermaid sets the title as plain text at its start point.

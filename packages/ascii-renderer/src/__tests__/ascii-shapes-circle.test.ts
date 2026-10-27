@@ -10,32 +10,38 @@ function render(label: string, options: ShapeRenderOptions): string {
 }
 
 describe('circleRenderer', () => {
-  it('renders unicode circle corner markers around a short label', () => {
-    const output = render('Hi', { useAscii: false, padding: 1 })
-
-    expect(output).toBe(
-      ['◯────◯', '│    │', '│ Hi │', '│    │', '◯────◯'].join('\n'),
+  it('draws a rounded outline with ( ) at the middle (unicode)', () => {
+    expect(render('Hi', { useAscii: false, padding: 1 })).toBe(
+      [' ╭──╮ ', ' ╱  ╲ ', '( Hi )', ' ╲  ╱ ', ' ╰──╯ '].join('\n'),
     )
   })
 
-  it('renders ascii circle corner markers around a short label', () => {
-    const output = render('Hi', { useAscii: true, padding: 1 })
-
-    expect(output).toBe(
-      ['o----o', '|    |', '| Hi |', '|    |', 'o----o'].join('\n'),
+  it('draws the same outline in the ASCII charset', () => {
+    expect(render('Hi', { useAscii: true, padding: 1 })).toBe(
+      [' .--. ', ' /  \\ ', '( Hi )', ' \\  / ', " '--' "].join('\n'),
     )
   })
 
-  it('grows to fit a longer label and keeps it centered', () => {
-    const output = render('Longer Label', { useAscii: false, padding: 2 })
-    const lines = output.split('\n')
+  it('grows with a tall label so the arc never touches the text', () => {
+    expect(render('a\nb\nc', { useAscii: false, padding: 1 })).toBe(
+      [
+        '  ╭─╮  ',
+        '  ╱ ╲  ',
+        ' ╱ a ╲ ',
+        '(  b  )',
+        ' ╲ c ╱ ',
+        '  ╲ ╱  ',
+        '  ╰─╯  ',
+      ].join('\n'),
+    )
+  })
 
-    expect(lines[0]).toBe('◯' + '─'.repeat(16) + '◯')
-    expect(lines[lines.length - 1]).toBe('◯' + '─'.repeat(16) + '◯')
-    expect(lines.some((l) => l.includes('Longer Label'))).toBe(true)
-    for (const line of lines.slice(1, -1)) {
-      expect(line.startsWith('│')).toBe(true)
-      expect(line.endsWith('│')).toBe(true)
-    }
+  it('keeps the border where it is for a wide (CJK) label', () => {
+    const lines = render('日本語 label', { useAscii: false, padding: 1 }).split(
+      '\n',
+    )
+    expect(lines[2]!.startsWith('(')).toBe(true)
+    expect(lines[2]!.endsWith(')')).toBe(true)
+    expect(lines[2]).toContain('日本語 label')
   })
 })

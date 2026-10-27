@@ -74,17 +74,23 @@ describe('a cluster whose only exit is the lane group (#1826)', () => {
 })
 
 describe('eight or more siblings out of one cluster (#1689, #1826)', () => {
-  it.each([8, 9, 10, 12])('%i siblings keep one head each', (n) => {
-    for (const dir of ['TD', 'LR', 'BT', 'RL'] as const) {
-      for (const other of [true, false]) {
-        for (const useAscii of [false, true]) {
-          const out = render(cluster(dir, n, other), useAscii)
-          expect(violations(out, useAscii)).toEqual([])
-          expect(heads(out, useAscii)).toBe(n + 1 + (other ? 1 : 0))
+  // 30 s timeout: 16 renders per case, 2-7 s alone and slower under full-suite
+  // load; the 5 s default timed out in `pnpm test` (#1825).
+  it.each([8, 9, 10, 12])(
+    '%i siblings keep one head each',
+    { timeout: 30_000 },
+    (n) => {
+      for (const dir of ['TD', 'LR', 'BT', 'RL'] as const) {
+        for (const other of [true, false]) {
+          for (const useAscii of [false, true]) {
+            const out = render(cluster(dir, n, other), useAscii)
+            expect(violations(out, useAscii)).toEqual([])
+            expect(heads(out, useAscii)).toBe(n + 1 + (other ? 1 : 0))
+          }
         }
       }
-    }
-  })
+    },
+  )
 })
 
 describe('#1743 and #1689 repros', () => {

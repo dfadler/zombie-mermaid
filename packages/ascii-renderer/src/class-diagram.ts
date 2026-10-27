@@ -345,6 +345,24 @@ export interface ClassAsciiOptions {
   hyperlinks?: boolean
 }
 
+// Arm bitmasks (up 1, down 2, left 4, right 8) of the box-drawing line glyphs.
+const ARMS_OF: Record<string, number> = {
+  '│': 3,
+  '─': 12,
+  '└': 9,
+  '┘': 5,
+  '┌': 10,
+  '┐': 6,
+  '├': 11,
+  '┤': 7,
+  '┬': 14,
+  '┴': 13,
+  '┼': 15,
+}
+const GLYPH_OF: Record<number, string> = Object.fromEntries(
+  Object.entries(ARMS_OF).map(([g, m]) => [m, g]),
+)
+
 /**
  * Render a Mermaid class diagram to ASCII/Unicode text.
  *
@@ -499,6 +517,47 @@ export function renderClassAscii(
     if (!level.has(cls.id)) level.set(cls.id, 0)
   }
 
+  // A frame is the bounding box of its members, so a class that sits between
+  // two namespaces' rows interleaves them and the boxes overlap. When all
+  // edges between two frames run one way, put the target frame wholly below
+  // the source frame, as mermaid does, then restore parent-above-child for
+  // everything pushed down. Frames in a cycle keep their levels.
+  if (frames.length > 1) {
+    const before = new Map(level)
+    const frameEdges = new Set<string>()
+    for (const rel of diagram.relationships) {
+      const a = frameOf.get(rel.from)
+      const b = frameOf.get(rel.to)
+      if (a !== undefined && b !== undefined && a !== b) {
+        frameEdges.add(`${a}>${b}`)
+      }
+    }
+    let stable = false
+    for (let pass = 0; pass <= frames.length && !stable; pass++) {
+      stable = true
+      for (const key of frameEdges) {
+        const [a, b] = key.split('>').map(Number) as [number, number]
+        if (frameEdges.has(`${b}>${a}`)) continue
+        const maxA = Math.max(...frames[a]!.ids.map((id) => level.get(id)!))
+        const minB = Math.min(...frames[b]!.ids.map((id) => level.get(id)!))
+        const delta = maxA + 1 - minB
+        if (delta <= 0) continue
+        for (const id of frames[b]!.ids) level.set(id, level.get(id)! + delta)
+        stable = false
+      }
+      for (let i = 0; i < diagram.classes.length; i++) {
+        for (const rel of diagram.relationships) {
+          const need = level.get(rel.from)! + 1
+          if (rel.from !== rel.to && level.get(rel.to)! < need) {
+            level.set(rel.to, need)
+            stable = false
+          }
+        }
+      }
+    }
+    if (!stable) for (const [id, lv] of before) level.set(id, lv)
+  }
+
   // A `note for X` note has no relationships, so it landed on level 0 above;
   // move it onto its class's row so the row placement below puts it right
   // beside that class.
@@ -589,9 +648,38 @@ export function renderClassAscii(
   // Computed before positions are assigned (it depends only on the
   // relationship list) because the column reservation below needs to know
   // how far each group fans out from its boxes' centers.
+  /**
+   * Unlabelled lines fanned across narrow boxes: shrink the lane spacing so
+   * every lane stays inside the box's interior (corner cells excluded). Each
+   * line, arrowhead included, then lands on a border cell of its own rather
+   * than on a corner glyph or at the end of a jog beside the box (#2335).
+   * Labelled groups keep their label spacing, and a cap below 2 would pack
+   * lanes together, so the original step is kept then.
+   */
+  function capStepToInterior(
+    step: number,
+    group: number[],
+    boxIds: string[],
+  ): number {
+    if (
+      group.some((i) => {
+        const r = diagram.relationships[i]!
+        return r.label || r.fromCardinality || r.toCardinality
+      })
+    )
+      return step
+    const widths = boxIds.map((id) => classBoxW.get(id)!)
+    const cap = Math.floor((Math.min(...widths) - 3) / (group.length - 1))
+    return cap >= 2 && cap < step ? cap : step
+  }
+
   const relColumnOffset = new Map<number, number>()
   /** Distance between a group's outermost lanes, keyed by member — see `anchorOffset`. */
   const relGroupSpread = new Map<number, number>()
+  /** Member count of the group a relationship is fanned in, by relationship. */
+  const relGroupSize = new Map<number, number>()
+  const relFromSize = new Map<number, number>()
+  const relToSize = new Map<number, number>()
   {
     const pairGroups = new Map<string, number[]>()
     diagram.relationships.forEach((rel, i) => {
@@ -610,10 +698,15 @@ export function renderClassAscii(
           return labelCellWidth(label)
         }),
       )
-      const step = widestLabel + 1 // +1 for a visual gap between labels
+      let step = widestLabel + 1 // +1 for a visual gap between labels
+      step = capStepToInterior(step, group, [
+        diagram.relationships[group[0]!]!.from,
+        diagram.relationships[group[0]!]!.to,
+      ])
       group.forEach((relIndex, pos) => {
         relColumnOffset.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
         relGroupSpread.set(relIndex, (n - 1) * step)
+        relGroupSize.set(relIndex, n)
       })
     }
   }
@@ -655,11 +748,19 @@ export function renderClassAscii(
   const relFromSpread = new Map<number, number>()
   const relToOffset = new Map<number, number>()
   const relToSpread = new Map<number, number>()
+  /**
+   * Fanned target ends where at most one relationship carries an arrowhead
+   * (`from:<i>` / `to:<i>`): there is nothing to keep apart, so the anchors
+   * converge on the box centre like mermaid's (#2335). Ends with two or more
+   * heads keep their own anchors so no head is lost (#632, #2024).
+   */
+  const mergeAtCentre = new Set<string>()
   {
     const fanBySharedEndpoint = (
       endpointOf: (rel: (typeof diagram.relationships)[number]) => string,
       offsetOut: Map<number, number>,
       spreadOut: Map<number, number>,
+      sizeOut: Map<number, number>,
     ): void => {
       const groups = new Map<string, number[]>()
       diagram.relationships.forEach((rel, i) => {
@@ -675,6 +776,15 @@ export function renderClassAscii(
       })
       for (const group of groups.values()) {
         if (group.length < 2) continue
+        // Order lanes by where the far end sits in its row, so lines that
+        // leave left arrive left instead of crossing just above the shared
+        // box (mermaid keeps them uncrossed too). Ties keep source order.
+        const farX = (i: number): number => {
+          const rel = diagram.relationships[i]!
+          const far = endpointOf(rel) === rel.to ? rel.from : rel.to
+          return levelGroups[level.get(far)!]!.indexOf(far)
+        }
+        group.sort((a, b) => farX(a) - farX(b)) // Stable: ties keep source order
         const n = group.length
         const widestLabel = Math.max(
           ...group.map((i) => {
@@ -683,15 +793,37 @@ export function renderClassAscii(
             return labelCellWidth(label)
           }),
         )
-        const step = widestLabel + 1 // +1 for a visual gap between labels
+        let step = widestLabel + 1 // +1 for a visual gap between labels
+        step = capStepToInterior(step, group, [
+          endpointOf(diagram.relationships[group[0]!]!),
+        ])
+        const isTo = offsetOut === relToOffset
+        // Labels and cardinalities sit on the fanned lanes; merged lines
+        // would stack them in the same cells.
+        const plain = group.every((i) => {
+          const r = diagram.relationships[i]!
+          return !r.label && !r.fromCardinality && !r.toCardinality
+        })
+        const heads = group.filter((i) => {
+          const at = diagram.relationships[i]!.markerAt
+          return isTo ? at !== 'from' : at !== 'to'
+        }).length
         group.forEach((relIndex, pos) => {
           offsetOut.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
           spreadOut.set(relIndex, (n - 1) * step)
+          sizeOut.set(relIndex, n)
+          if (heads <= 1 && plain)
+            mergeAtCentre.add(`${isTo ? 'to' : 'from'}:${relIndex}`)
         })
       }
     }
-    fanBySharedEndpoint((rel) => rel.to, relToOffset, relToSpread)
-    fanBySharedEndpoint((rel) => rel.from, relFromOffset, relFromSpread)
+    fanBySharedEndpoint((rel) => rel.to, relToOffset, relToSpread, relToSize)
+    fanBySharedEndpoint(
+      (rel) => rel.from,
+      relFromOffset,
+      relFromSpread,
+      relFromSize,
+    )
   }
 
   // --- Reserve column room for relationship labels and fanned-out groups ---
@@ -1018,7 +1150,9 @@ export function renderClassAscii(
       p.y += FRAME_TOP_PAD
     }
     maxSlotEnd += FRAME_SIDE_PAD
-    for (const fr of frames) {
+    const extent = (
+      fr: AsciiNamespaceFrame,
+    ): { minX: number; minY: number; maxX: number; maxY: number } => {
       let minX = Infinity
       let minY = Infinity
       let maxX = -Infinity
@@ -1031,6 +1165,38 @@ export function renderClassAscii(
         maxX = Math.max(maxX, p.x + p.width - 1)
         maxY = Math.max(maxY, p.y + p.height - 1)
       }
+      return { minX, minY, maxX, maxY }
+    }
+    // A frame is the bounding box of its members, so members of two frames
+    // can interleave (a child placed between parents from another frame) and
+    // the boxes overlap. Push the right-hand frame, and everything right of
+    // it that is not in the left-hand frame, clear of the left-hand one.
+    const nsIds = (fr: AsciiNamespaceFrame): Set<string> => new Set(fr.ids)
+    for (let pass = 0; pass <= frames.length * frames.length; pass++) {
+      let moved = false
+      for (const a of frames) {
+        for (const b of frames) {
+          if (a === b) continue
+          const ea = extent(a)
+          const eb = extent(b)
+          const yOverlap =
+            ea.minY - FRAME_TOP_PAD <= eb.maxY + FRAME_BOTTOM_PAD &&
+            eb.minY - FRAME_TOP_PAD <= ea.maxY + FRAME_BOTTOM_PAD
+          const delta = ea.maxX + 2 * FRAME_SIDE_PAD + 2 - eb.minX
+          // `b` is the frame starting right of `a`'s start.
+          if (!yOverlap || eb.minX < ea.minX || delta <= 0) continue
+          const inA = nsIds(a)
+          for (const p of placed.values()) {
+            if (!inA.has(p.cls.id) && p.x >= eb.minX) p.x += delta
+          }
+          maxSlotEnd += delta
+          moved = true
+        }
+      }
+      if (!moved) break
+    }
+    for (const fr of frames) {
+      const { minX, minY, maxX, maxY } = extent(fr)
       if (minX === Infinity) continue
       const x0 = minX - FRAME_SIDE_PAD
       // Wide enough for ` Title ` between the corners, plus a dash each side.
@@ -1182,6 +1348,10 @@ export function renderClassAscii(
     return false
   }
 
+  // Vertical runs of detours already routed, so a later detour takes its own
+  // column instead of drawing over theirs.
+  const detourLanes: { x: number; y1: number; y2: number }[] = []
+
   /** Find a clear vertical column for routing that doesn't pass through any boxes */
   function findClearColumn(
     startX: number,
@@ -1193,7 +1363,15 @@ export function renderClassAscii(
       for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
         if (isInsideBox(x, y, excludeIds)) return false
       }
-      return true
+      // A detour column other than the straight one must not run along
+      // another detour's column or a frame's side border.
+      return (
+        x === startX ||
+        (!detourLanes.some((l) => l.x === x && l.y1 <= y2 && y1 <= l.y2) &&
+          !frameRects.some(
+            (r) => (x === r.x0 || x === r.x1) && r.y0 <= y2 && y1 <= r.y1,
+          ))
+      )
     }
 
     // Scan outward from `startX`, right before left at each distance, never
@@ -1234,11 +1412,18 @@ export function renderClassAscii(
     offset: number,
     spread: number,
     boxWidth: number,
+    groupSize: number,
   ): number {
     // Columns available on each side of the center — the center itself is
     // `floor(boxWidth / 2)` in from the left edge, matching `connectionColumns`.
-    const left = Math.floor(boxWidth / 2)
-    const right = boxWidth - 1 - left
+    // Corner cells hold the border glyphs, so an arrowhead there reads as
+    // sitting beside the box rather than on it (#2335): keep anchors
+    // inside the corners whenever the box has an interior to spare.
+    // A group with more members than the interior has cells (#489) needs
+    // the corner columns to keep its arrowheads distinct, so it keeps them.
+    const trim = boxWidth >= 3 && groupSize <= boxWidth - 2 ? 1 : 0
+    const left = Math.floor(boxWidth / 2) - trim
+    const right = boxWidth - 1 - Math.floor(boxWidth / 2) - trim
     const scale = spread > left + right ? (left + right) / spread : 1
     return Math.max(-left, Math.min(right, Math.round(offset * scale)))
   }
@@ -1294,19 +1479,66 @@ export function renderClassAscii(
       relColumnOffset.get(relIndex) ?? relFromOffset.get(relIndex) ?? 0
     const toOffset =
       relColumnOffset.get(relIndex) ?? relToOffset.get(relIndex) ?? 0
-    const fromSpread =
-      relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0
-    const toSpread =
-      relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0
+    // A shared endpoint (several parents/children, #2335) converges on the
+    // box centre like mermaid does; only a duplicate-pair group keeps its
+    // anchors spread (#489). The lanes still carry the offset, so labels
+    // stay apart and the jog row brings the lines together at the centre.
+    const fromSpread = mergeAtCentre.has(`from:${relIndex}`)
+      ? 0
+      : (relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0)
+    const toSpread = mergeAtCentre.has(`to:${relIndex}`)
+      ? 0
+      : (relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0)
+    // Only an end that carries a marker (arrowhead, triangle, diamond) is
+    // pulled off the corner cells; a bare line may leave from a corner.
+    const markerAt = diagram.relationships[relIndex]!.markerAt
+    const fromSize =
+      markerAt === 'to'
+        ? Infinity
+        : (relGroupSize.get(relIndex) ?? relFromSize.get(relIndex) ?? 0)
+    const toSize =
+      markerAt === 'from'
+        ? Infinity
+        : (relGroupSize.get(relIndex) ?? relToSize.get(relIndex) ?? 0)
     const fromCenter = fromP.x + Math.floor(fromP.width / 2)
     const toCenter = toP.x + Math.floor(toP.width / 2)
     return {
-      fromCX: fromCenter + fromOffset,
-      toCX: toCenter + toOffset,
+      fromCX: fromCenter + (fromSpread ? fromOffset : 0),
+      toCX: toCenter + (toSpread ? toOffset : 0),
       fromAnchorX:
-        fromCenter + anchorOffset(fromOffset, fromSpread, fromP.width),
-      toAnchorX: toCenter + anchorOffset(toOffset, toSpread, toP.width),
+        fromCenter +
+        (fromSpread
+          ? anchorOffset(fromOffset, fromSpread, fromP.width, fromSize)
+          : 0),
+      toAnchorX:
+        toCenter +
+        (toSpread ? anchorOffset(toOffset, toSpread, toP.width, toSize) : 0),
     }
+  }
+
+  /**
+   * Write a line/corner cell, taking the union of the arms of whatever line
+   * glyph is already there: two relationships sharing a merged anchor (#2335)
+   * overlap on a trunk, and a `└` over a `│` has to read `├`, not `└`. An
+   * arrowhead already placed there is left alone.
+   */
+  function setUnionCell(
+    x: number,
+    y: number,
+    ch: string,
+    role: CharRole,
+  ): void {
+    if (boxCells.has(`${x},${y}`)) return
+    if (rc[x]?.[y] === 'arrow') return
+    const existing = canvas[x]?.[y]
+    const had = existing === undefined ? undefined : ARMS_OF[existing]
+    const add = ARMS_OF[ch]
+    if (!useAscii && had !== undefined && add !== undefined) {
+      const glyph = GLYPH_OF[had | add]!
+      setC(x, y, glyph, glyph === ch ? role : 'junction')
+      return
+    }
+    setC(x, y, ch, role)
   }
 
   /**
@@ -1483,11 +1715,9 @@ export function renderClassAscii(
     // Connection points: the lanes the line runs along (`fromCX`/`toCX`)
     // and the anchors where it touches each box border — see
     // `connectionColumns` for why those can differ.
-    const { fromCX, toCX, fromAnchorX, toAnchorX } = connectionColumns(
-      relIndex,
-      fromP,
-      toP,
-    )
+    const cols = connectionColumns(relIndex, fromP, toP)
+    const { fromCX, toCX, fromAnchorX } = cols
+    let toAnchorX = cols.toAnchorX
     const fromBY = fromP.y + fromP.height - 1
     const toTY = toP.y
 
@@ -1512,8 +1742,26 @@ export function renderClassAscii(
         // so a fanned-out lane needs no separate jog here — the detour's
         // own horizontal already runs along the jog row.
 
+        // Skip-level edges aren't in the fan-out group, so step the anchor
+        // off any column another edge into this box already uses.
+        const taken = new Set<number>()
+        diagram.relationships.forEach((other, i) => {
+          const otherFrom = placed.get(other.from)
+          if (i !== relIndex && other.to === rel.to && otherFrom) {
+            taken.add(connectionColumns(i, otherFrom, toP).toAnchorX)
+          }
+        })
+        const step = routeX > toAnchorX ? 1 : -1
+        for (
+          let x = toAnchorX + step;
+          taken.has(toAnchorX) && x > toP.x && x < toP.x + toP.width - 1;
+          x += step
+        ) {
+          if (!taken.has(x)) toAnchorX = x
+        }
         const exitY = fromBY + 1
         const entryY = toTY - 1
+        detourLanes.push({ x: routeX, y1: exitY, y2: entryY })
         detourRoutes.set(relIndex, {
           routeX,
           exitY,
@@ -1540,7 +1788,13 @@ export function renderClassAscii(
           // The entry run sits one row above the arrowhead row, so the head
           // has a stem above it. The first layout pass may lack the room
           // (its result is discarded below); the second pass always has it.
-          const runY = entryY - 1
+          // A frame's top border sits on that row for a box at the frame's
+          // top, so the run goes one row higher instead of along the border.
+          const onBorder = frameRects.some(
+            (r) =>
+              r.y0 === entryY - 1 && toAnchorX >= r.x0 && toAnchorX <= r.x1,
+          )
+          const runY = entryY - (onBorder ? 2 : 1)
           if (routeX !== toAnchorX) {
             detourEntryLevels.add(level.get(rel.to)! - 1)
           }
@@ -1577,6 +1831,9 @@ export function renderClassAscii(
               routeX < toAnchorX ? '┐' : '┌',
               lineH,
             )
+            for (let y = runY + 1; y < entryY; y++) {
+              setCGuarded(toAnchorX, y, lineV, 'line')
+            }
           }
 
           // Markers for detour case
@@ -1624,8 +1881,11 @@ export function renderClassAscii(
         // 1. Jog from the source anchor out to the lane, then vertical from
         //    the source bottom (or from below the jog) to midY
         drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
-        for (let y = fromBY + (fromJogs ? 2 : 1); y <= midY; y++) {
-          setCGuarded(fromCX, y, lineV, 'line')
+        // The corner at `midY` is written below; a `│` there would union with
+        // it into a `├`/`┤`.
+        const lastY = fromCX !== toCX && !useAscii ? midY - 1 : midY
+        for (let y = fromBY + (fromJogs ? 2 : 1); y <= lastY; y++) {
+          setUnionCell(fromCX, y, lineV, 'line')
         }
 
         // 2. Horizontal from fromCX to toCX at midY (if needed)
@@ -1643,19 +1903,22 @@ export function renderClassAscii(
         if (fromCX !== toCX && midY < (canvas[0]?.length ?? 0)) {
           const lx = Math.min(fromCX, toCX)
           const rx = Math.max(fromCX, toCX)
-          for (let x = lx; x <= rx; x++) {
-            setCGuarded(x, midY, lineH, 'line')
+          // Unicode ends are corners written below; a bare `─` there would
+          // union with them into a `┼`.
+          const e = useAscii ? 0 : 1
+          for (let x = lx + e; x <= rx - e; x++) {
+            setUnionCell(x, midY, lineH, 'line')
           }
           if (!useAscii) {
-            setCGuarded(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
-            setCGuarded(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
+            setUnionCell(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
+            setUnionCell(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
           }
         }
 
         // 3. Vertical from midY to the target top (or to above the jog),
         //    then jog from the lane back in to the target anchor
         for (let y = midY + 1; y < toTY - (toJogs ? 1 : 0); y++) {
-          setCGuarded(toCX, y, lineV, 'line')
+          setUnionCell(toCX, y, lineV, 'line')
         }
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 

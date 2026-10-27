@@ -436,8 +436,10 @@ export const DEFAULT_FLOOR = 0.85
  * differences (#1834).
  */
 export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
-  'Nested Subgraphs': 0.2,
-  'Flowchart: CJK Labels': 0.5,
+  // Ratcheted (#1834): 100/100 on mermaid 12.2.0 (CJK Labels since #2358). The RL and BT
+  // Nested Subgraphs variants have no entry; they are 100/100 and sit under DEFAULT_FLOOR.
+  'Nested Subgraphs': 0.95,
+  'Flowchart: CJK Labels': 0.95,
   'State: Notes': 0.8,
   // Measured 2026-10-21 on mermaid 12.1.0 with the dead-band (#2155); each floor sits
   // just under the measured figure. See docs/known-differences.md.

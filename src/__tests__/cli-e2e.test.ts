@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -22,8 +22,38 @@ const CLI = join(REPO_ROOT, 'dist/cli.js')
 // runs a full `pnpm run build` before the test job) won't have it — only a
 // locally-built dev environment happens to. Rebuild here so this suite is
 // self-contained regardless of what already ran before it.
+//
+// Skip the rebuild when dist/cli.js is newer than every source file (#1825):
+// `vite build` empties each package's dist/ first, so an unconditional
+// rebuild here races other suites reading packages/*/dist (mcp-render-worker's
+// built-worker test fails with "Cannot find module .../dist/index.js").
+function newestMtime(dir: string): number {
+  let newest = 0
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.name === 'node_modules' || e.name === '__tests__') continue
+    const p = join(dir, e.name)
+    newest = Math.max(
+      newest,
+      e.isDirectory() ? newestMtime(p) : statSync(p).mtimeMs,
+    )
+  }
+  return newest
+}
+function distIsFresh(): boolean {
+  if (!existsSync(CLI)) return false
+  const built = statSync(CLI).mtimeMs
+  const roots = [
+    join(REPO_ROOT, 'src'),
+    ...readdirSync(join(REPO_ROOT, 'packages')).map((p) =>
+      join(REPO_ROOT, 'packages', p, 'src'),
+    ),
+  ].filter(existsSync)
+  return roots.every((r) => newestMtime(r) <= built)
+}
 beforeAll(() => {
-  execFileSync('pnpm', ['run', 'build'], { cwd: REPO_ROOT, stdio: 'inherit' })
+  if (!distIsFresh()) {
+    execFileSync('pnpm', ['run', 'build'], { cwd: REPO_ROOT, stdio: 'inherit' })
+  }
   if (!existsSync(CLI)) {
     throw new Error(`Expected ${CLI} to exist after 'pnpm run build'`)
   }

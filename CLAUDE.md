@@ -8,7 +8,7 @@ instead — this file only holds what's specific to _this_ repo's tooling.
 
 After a change, run `pnpm run verify` (typecheck in parallel, lint/format on changed files,
 `vitest run --changed origin/main`) instead of separate full-repo typecheck/oxlint/oxfmt/coverage
-runs. For a single file, `pnpm exec vitest run -c config/vitest.config.ts --related <file>`.
+runs. For a single source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`; for a test file, `pnpm exec vitest run -c config/vitest.config.ts <test-file>`.
 Path-to-suite map: `packages/ascii-renderer/**` -> its `__tests__` plus
 `pnpm exec playwright test -g ascii-samples`. Reserve `pnpm run verify --full` (CI parity) for
 the end. `pnpm run doctor` diagnoses a broken local toolchain.
@@ -97,7 +97,8 @@ comment (long ones in a collapsed `<details>`), with a permalink to any script o
 artifact in the repo. Do not add a `docs/research/*.md` doc: write one only when something
 else (a guide, a code comment, a script) links to it and it is worth keeping current.
 `pnpm run check:docs` fails on a doc under `docs/research/` that nothing outside it
-references, and `scripts/pre-pr-check.sh` (the warn-only `gh pr create` hook) warns when a PR adds one. Former research docs and where their findings now live are indexed in
+references, and `scripts/pre-pr-check.sh` (the warn-only `gh pr create` hook) warns when a PR adds one, and
+`scripts/research-nudge.sh` (a warn-only `Write` hook) nudges when you create one. Former research docs and where their findings now live are indexed in
 [`docs/research/README.md`](docs/research/README.md). See
 [#1479](https://github.com/dfadler/zombie-mermaid/issues/1479) and
 [#1642](https://github.com/dfadler/zombie-mermaid/issues/1642).
@@ -117,6 +118,26 @@ version it was checked against. See
 flipped uncrossed subgraphs, current mermaid and GitHub do not, and
 [#1820](https://github.com/dfadler/zombie-mermaid/pull/1820) built on the stale
 behavior.
+
+## Rules that used to live only in per-machine memory
+
+Subagents do not see auto-memory, so these repo rules live here (#1612). Batching
+issues across subagents: see the `issue-batch` skill (default cap 8 in flight across
+distinct modules, not a fixed 20).
+
+- **Releases:** never bump `package.json` versions or edit `CHANGELOG.md` in a feature
+  PR. Add a `.changeset/*.md` instead; only the bot's "Version Packages" PR
+  (`changeset-release/main`) consumes it. A version diff in a PR is fine only when
+  inherited through a merge of `main` that already carries it. See CONTRIBUTING.md
+  "Changesets".
+- **Snapshots cover both renderers:** every snapshot/golden case, edge cases and option
+  variants included, gets both an SVG and an ASCII snapshot. If a case has no analogue
+  in one renderer, say so in the PR rather than skipping silently. Hand-written
+  expected strings are not a substitute.
+- **`demo/` refactors need screenshots:** a PR touching anything under `demo/` gets a
+  "Visual verification" section with real before/after screenshots (default state plus
+  any interactive state the diff touches), taken from a static build, even when a
+  byte-diff already shows zero change. Pure non-rendering changes are exempt.
 
 ## Decision docs: run the self-review checklist before opening the PR
 

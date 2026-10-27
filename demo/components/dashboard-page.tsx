@@ -204,7 +204,7 @@ export function DashboardPage({
             copy this same `renderToString`-for-the-hydrated-island
             approach.
           */}
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DASHBOARD_ROOT_ID}
               dangerouslySetInnerHTML={{

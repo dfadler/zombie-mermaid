@@ -108,6 +108,9 @@ export function bundleSource(
       },
     ],
     false,
+    // Measure the entry chunk only: a real bundler splits lazy `import()`
+    // chunks (e.g. the embedded font) off, so they aren't initial weight.
+    true,
   )
 }
 
@@ -116,6 +119,7 @@ async function buildChunk(
   { minify, treeshake = true, format = 'es' }: BundleForBrowserOptions,
   plugins: Plugin[] = [],
   alias = true,
+  codeSplitting = false,
 ): Promise<string> {
   const result = await viteBuild({
     plugins,
@@ -139,7 +143,7 @@ async function buildChunk(
         preserveEntrySignatures: 'strict',
         output: {
           format,
-          codeSplitting: false,
+          codeSplitting,
           entryFileNames: 'bundle.js',
         },
       },
@@ -152,7 +156,9 @@ async function buildChunk(
       `Vite build of ${entryPath} returned no output (unexpected watch mode?)`,
     )
   }
-  const chunk = output.output.find((item) => item.type === 'chunk')
+  const chunk = output.output.find(
+    (item) => item.type === 'chunk' && item.isEntry,
+  )
   if (!chunk || chunk.type !== 'chunk') {
     throw new Error(`Vite build of ${entryPath} produced no JS chunk`)
   }

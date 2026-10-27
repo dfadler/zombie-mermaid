@@ -7,7 +7,11 @@
 // contains font metrics, spacing constants, and stroke widths.
 // ============================================================================
 
-import { buildStyleBlock, measureTextWidth } from '@zombie-mermaid/core'
+import {
+  buildStyleBlock,
+  measureTextWidth,
+  type MonoFontEmbed,
+} from '@zombie-mermaid/core'
 import {
   MONO_FONT_FAMILY as EMBEDDED_MONO_FONT_FAMILY,
   MONO_FONT_FACE_CSS as EMBEDDED_MONO_FONT_FACE_CSS,
@@ -84,6 +88,9 @@ export const FONT_WEIGHTS = {
  * Increased from 8 to 12 to provide more clearance for edges routing near headers. */
 export const GROUP_HEADER_CONTENT_PAD = 12
 
+/** Depth of the asymmetric (`>text]`) shape's left notch, matching mermaid. */
+export const ASYMMETRIC_NOTCH = 12
+
 /** Padding inside node shapes */
 export const NODE_PADDING = {
   /** Horizontal padding inside rectangles/rounded/stadium (increased from 16 for better label fit) */
@@ -131,6 +138,7 @@ export function buildSvgStyleBlock(
   font: string,
   hasMonoFont: boolean,
   nonce?: string,
+  bodyFont?: MonoFontEmbed,
 ): string {
   return buildStyleBlock(
     font,
@@ -141,5 +149,6 @@ export function buildSvgStyleBlock(
         }
       : false,
     nonce,
+    bodyFont,
   )
 }

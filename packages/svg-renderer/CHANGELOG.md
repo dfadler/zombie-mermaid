@@ -1,5 +1,75 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.11.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.0
+  - @zombie-mermaid/mermaid-parser@5.11.0
+
+## 5.10.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.2
+  - @zombie-mermaid/mermaid-parser@5.10.2
+
+## 5.10.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.1
+  - @zombie-mermaid/mermaid-parser@5.10.1
+
+## 5.10.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.0
+  - @zombie-mermaid/mermaid-parser@5.10.0
+
+## 5.9.1
+
+### Patch Changes
+
+- [#2328](https://github.com/dfadler/zombie-mermaid/pull/2328) [`9ed0a46`](https://github.com/dfadler/zombie-mermaid/commit/9ed0a467fd7b127d07c754500305b667c5937e3f) Thanks [@dfadler](https://github.com/dfadler)! - Output change: horizontal XY chart SVGs now reserve room on the right for half the last value-axis label, so a wide label such as 220000 is no longer clipped at the viewBox edge.
+
+- [#2336](https://github.com/dfadler/zombie-mermaid/pull/2336) [`b5f9f06`](https://github.com/dfadler/zombie-mermaid/commit/b5f9f067d28019c3e88cdff67195475b6bbfefc4) Thanks [@dfadler](https://github.com/dfadler)! - Output change: horizontal XY charts now draw line series as straight segments in category order, as mermaid does, instead of a smoothed curve that could double back on a series that is not monotone in value. Vertical charts stay smoothed.
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.9.1
+  - @zombie-mermaid/mermaid-parser@5.9.1
+
+## 5.9.0
+
+### Minor Changes
+
+- [#2286](https://github.com/dfadler/zombie-mermaid/pull/2286) [`382449d`](https://github.com/dfadler/zombie-mermaid/commit/382449d62597fbfcf99640d0d066d6833f2897f3) Thanks [@dfadler](https://github.com/dfadler)! - Add an opt-in `embedFont: 'subset'` render option that inlines a base64 Inter subset (Basic Latin, weights 400-700, about 14.7 KB per SVG) instead of the Google Fonts `@import`, so the font also loads when the SVG is used as an `<img>`. Output is unchanged by default. The font data is a lazily loaded chunk, not part of the default bundle: `renderMermaidSVGAsync()` loads it, and the sync `renderMermaidSVG()` needs `await loadEmbeddedFont()` (new export) first. Takes effect only with `font: 'Inter'` (the default). ([#1867](https://github.com/dfadler/zombie-mermaid/issues/1867))
+
+### Patch Changes
+
+- [#2291](https://github.com/dfadler/zombie-mermaid/pull/2291) [`8442116`](https://github.com/dfadler/zombie-mermaid/commit/8442116a8edda4dbbe7034920d0e98a2e0720189) Thanks [@dfadler](https://github.com/dfadler)! - Flowchart SVG: the asymmetric shape `A>text]` now draws a notch cut into its left edge, as mermaid does, instead of a point sticking out. The label is centred in the body and edges entering the left side end on the notch tip.
+
+- [#2293](https://github.com/dfadler/zombie-mermaid/pull/2293) [`0625bdd`](https://github.com/dfadler/zombie-mermaid/commit/0625bdd73684445d741663c9888a22002399c04f) Thanks [@dfadler](https://github.com/dfadler)! - C4: a title-only diagram (`C4Context` with just a `title`) now draws the title inside a canvas sized to it, in SVG and ASCII, instead of a 0x0 viewBox and empty output ([#2282](https://github.com/dfadler/zombie-mermaid/issues/2282)).
+
+- [#2297](https://github.com/dfadler/zombie-mermaid/pull/2297) [`959fb6f`](https://github.com/dfadler/zombie-mermaid/commit/959fb6f430546ec2f497373347c316772924a942) Thanks [@dfadler](https://github.com/dfadler)! - Class SVG: a relationship label now sits on its edge over a background plate that hides the line behind the text, as in mermaid, instead of floating beside the edge.
+
+- [#2292](https://github.com/dfadler/zombie-mermaid/pull/2292) [`0bcc115`](https://github.com/dfadler/zombie-mermaid/commit/0bcc115dd5a943627f795a111442ae08d3c62af1) Thanks [@dfadler](https://github.com/dfadler)! - Draw an ER self-relationship (`A ||--o{ A : label`) as a loop left of the entity with its markers and label clear of the box, in SVG and ASCII ([#2284](https://github.com/dfadler/zombie-mermaid/issues/2284)).
+- Updated dependencies [[`d4a608d`](https://github.com/dfadler/zombie-mermaid/commit/d4a608d0587d9336e4de1efe70173821ca193e23), [`382449d`](https://github.com/dfadler/zombie-mermaid/commit/382449d62597fbfcf99640d0d066d6833f2897f3), [`0bcc115`](https://github.com/dfadler/zombie-mermaid/commit/0bcc115dd5a943627f795a111442ae08d3c62af1)]:
+  - @zombie-mermaid/mermaid-parser@5.9.0
+  - @zombie-mermaid/core@5.9.0
+
+## 5.8.4
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.8.4
+  - @zombie-mermaid/mermaid-parser@5.8.4
+
 ## 5.8.3
 
 ### Patch Changes

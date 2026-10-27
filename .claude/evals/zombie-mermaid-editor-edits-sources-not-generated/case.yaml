@@ -1,0 +1,29 @@
+# The user points at the generated file / the route; the skill says edit editor/ and demo/components/.
+# Sabotage map: deleting the "Edit the partials/components, not editor-routes.ts" note and the
+# "Never edit editor.html directly" pitfall removes the redirect (points_at_sources).
+schema_version: '1.1'
+name: zombie-mermaid-editor-edits-sources-not-generated
+description: >
+  Asked to change an editor button's styling by editing site/editor.html or editor-routes.ts, the
+  reply redirects to editor/css or demo/components. expected_outcome: PASS when the Skill call is
+  made and the reply names editor/css or demo/components; FAIL otherwise.
+tags: [zombie-mermaid-editor, quick]
+runs: 3
+
+execution:
+  prompt: |
+    The Export button in the live editor topbar needs a bigger font. I was going to edit
+    site/editor.html directly. Which file(s) should I change instead? Name the paths in one or
+    two sentences. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid-editor"'
+  - name: points_at_sources
+    type: regex
+    pattern: '(?:editor/css|demo/components/editor-topbar)'

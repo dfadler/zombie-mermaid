@@ -89,8 +89,17 @@ test.beforeAll(async () => {
 })
 test.afterAll(() => server.close())
 
-for (const path of PAGES) {
-  test(path, async ({ page }) => {
+// Narrow pages scroll panels that fit at 1280 (scrollable-region-focusable,
+// #1792), so scan the hand-written pages again at phone width.
+const MOBILE_PAGES = PAGES.slice(0, 5)
+const SCANS = [
+  ...PAGES.map((path) => ({ path, width: 1280 })),
+  ...MOBILE_PAGES.map((path) => ({ path, width: 390 })),
+]
+
+for (const { path, width } of SCANS) {
+  test(`${path} @${width}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
     // No network: only the local static server.
     await page.route(
       (u) => u.origin !== origin,

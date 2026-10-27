@@ -1,7 +1,8 @@
 {
   "name": "zombie-mermaid",
-  "version": "5.8.3",
+  "version": "5.11.0",
   "license": "MIT",
+  "mcpName": "io.github.dfadler/zombie-mermaid",
   "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies. Maintained fork of beautiful-mermaid.",
   "type": "module",
   "sideEffects": false,
@@ -47,6 +48,19 @@
         "types": "./dist/mcp.d.cts",
         "default": "./dist/mcp.cjs"
       }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "ascii": [
+        "dist/ascii.d.ts"
+      ],
+      "ascii-layout": [
+        "dist/ascii-layout.d.ts"
+      ],
+      "mcp": [
+        "dist/mcp.d.ts"
+      ]
     }
   },
   "repository": {
@@ -131,6 +145,7 @@
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "size:report": "tsx scripts/size-report.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
+    "build:inter-font": "tsx scripts/build-inter-font-subset.ts && oxfmt packages/svg-renderer/src/generated/inter-font-subset.ts",
     "build:mono-font": "tsx scripts/build-mono-font-subset.ts && oxfmt demo/components/generated/mono-font-subset.ts demo/styles.css packages/svg-renderer/src/generated/mono-font-subset.ts",
     "generate:primitives-classes": "tsx scripts/generate-primitives-classes.ts && oxfmt demo/components/generated/primitives-classes.ts",
     "generate:logo-lockup": "tsx scripts/generate-logo-lockup.ts",
@@ -191,7 +206,7 @@
     "@types/node": "^24.13.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "@xterm/headless": "^6.0.0",
     "@zombie-mermaid/ascii-layout": "workspace:*",
     "@zombie-mermaid/elk-layout": "workspace:*",
@@ -201,7 +216,7 @@
     "jsdom": "^30.0.1",
     "lightningcss": "^1.33.0",
     "marked": "^18.0.11",
-    "mermaid": "12.1.0",
+    "mermaid": "12.2.0",
     "oxfmt": "0.73.0",
     "oxlint": "1.87.0",
     "publint": "0.3.25",
@@ -212,8 +227,8 @@
     "tsx": "^4.23.12",
     "typescript": "^6.0.3",
     "unplugin-dts": "^1.0.3",
-    "vite": "^8.2.2",
-    "vitest": "^4.1.11",
+    "vite": "^8.2.4",
+    "vitest": "^4.1.12",
     "zod": "^4.5.4"
   },
   "optionalDependencies": {

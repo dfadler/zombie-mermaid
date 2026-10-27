@@ -294,6 +294,11 @@ html.mobile-nav-open {
   top: ${SPACE.xl}px;
 }
 
+/* The skip link focuses <main tabindex="-1">; a ring round the whole page body is noise. */
+main:focus {
+  outline: none;
+}
+
 .mobile-nav-panel {
   position: fixed;
   inset: 0;

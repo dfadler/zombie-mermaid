@@ -26,8 +26,8 @@
  */
 import { expect, test } from '@playwright/test'
 import { renderMermaidASCII } from '../../src/index.ts'
-import { samples } from '../../packages/site/samples-data.ts'
-import { xychartSamples } from '../../packages/site/xychart-samples-data.ts'
+import { samples } from '../../samples/samples-data.ts'
+import { xychartSamples } from '../../samples/xychart-samples-data.ts'
 import { escapeHtml } from '../../demo/format.ts'
 import { TERMINAL_ASCII_OPTS } from './helpers/terminal-panel.ts'
 import { buildHarnessScript } from './helpers/build-harness.ts'

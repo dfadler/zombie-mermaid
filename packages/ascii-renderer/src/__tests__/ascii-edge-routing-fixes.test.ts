@@ -166,14 +166,18 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
 
   describe('bug 5: box-start connector stays on the source border', () => {
     it('keeps the ├ connector attached to the box border when a sibling label widens a shared column', () => {
+      // Wrapped in a subgraph: an unwrapped LR fan-out is now centred over
+      // its children (#2163), so the top edge no longer leaves the border.
       const out = renderMermaidASCII(`flowchart LR
+  subgraph s
   Src["Source"]
   Top["Top Target"]
   Mid["Middle Target"]
   Bot["Bottom Target"]
   Src -->|top*| Top
   Src -->|mid*| Mid
-  Src -->|bot*| Bot`)
+  Src -->|bot*| Bot
+  end`)
 
       const topRow = out.split('\n').find((l) => l.includes('top*'))!
       // The connector must be immediately adjacent to Source's box — no

@@ -5,16 +5,12 @@
  */
 import { readFileSync } from 'node:fs'
 import { UnsupportedFlowchartError } from '../packages/elk-layout/src/index.ts'
-import {
-  renderFlowchartAscii,
-  type FacePolicy,
-} from '../packages/ascii-layout/src/index.ts'
-import { samples } from '../packages/site/samples-data.ts'
+import { renderFlowchartAscii } from '../packages/ascii-layout/src/index.ts'
+import { samples } from '../samples/samples-data.ts'
+import { parsePolicy } from './lib/parse-policy.ts'
 
 const show = process.argv.includes('--show')
-const facePolicy = (process.argv
-  .find((a) => a.startsWith('--policy='))
-  ?.slice(9) ?? 'merge-then-grow') as FacePolicy
+const facePolicy = parsePolicy(process.argv)
 const targets = process.argv
   .slice(2)
   .filter((a) => !a.startsWith('--'))

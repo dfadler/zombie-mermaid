@@ -15,6 +15,6 @@ pie showData title Browser share
   [38;5;25m▓[0m Safari [190]     19%
   [38;5;75m▒[0m Firefox [120]    12%
   [38;5;24m░[0m Edge [45]         5%
-  [38;5;117m·[0m Opera [4]
-  [38;5;24m·[0m Lynx [1]
-  [38;5;123m·[0m Netscape [0]
+  [38;5;117m·[0m Opera [4]        <1%
+  [38;5;24m·[0m Lynx [1]         <1%
+  [38;5;123m·[0m Netscape [0]      0%

@@ -16,7 +16,7 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { requireGridCoord } from './types.ts'
+import { DEFAULT_PADDING_Y, paddingOffset, requireGridCoord } from './types.ts'
 import { subgraphsTied } from '@zombie-mermaid/core'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
@@ -44,6 +44,7 @@ import {
 } from './frame-avoidance.ts'
 import {
   isBlockFree,
+  createGrid,
   placeBlock,
   cloneGrid,
   pathCells,
@@ -293,7 +294,12 @@ export function setColumnWidth(
       )
     })
   if (gc.y > 0 && !rowAboveIsNodeBlock && !straddlesParent(graph, node, 'y')) {
-    let basePadding = graph.config.paddingY
+    // #2350: LR sibling gap is 4 at the default paddingY (5), offset from the
+    // default like the other renderers; TD keeps paddingY as-is.
+    let basePadding =
+      graph.config.graphDirection === 'LR'
+        ? paddingOffset(graph.config.paddingY, DEFAULT_PADDING_Y, 4, 1)
+        : graph.config.paddingY
     // Extra vertical padding for nodes with incoming edges from outside their subgraph
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
       const subgraphOverhead = 4
@@ -1167,19 +1173,23 @@ function relocateNode(
   return dest === to
 }
 
-/** Shift every node strictly right of column `afterX` by `by` grid units. */
-function shiftColumnsRight(
+/**
+ * Shift every node strictly past `after` on the cross axis (x for TD, y for
+ * LR) by `by` grid units.
+ */
+function shiftCrossAxis(
   graph: AsciiGraph,
-  afterX: number,
+  lr: boolean,
+  after: number,
   by: number,
 ): void {
   const moved = graph.nodes.filter(
-    (n) => n.gridCoord !== null && n.gridCoord.x > afterX,
+    (n) => n.gridCoord !== null && (lr ? n.gridCoord.y : n.gridCoord.x) > after,
   )
   for (const n of moved) freeNodeBlock(graph, requireGridCoord(n))
   for (const n of moved) {
     const gc = requireGridCoord(n)
-    n.gridCoord = { x: gc.x + by, y: gc.y }
+    n.gridCoord = lr ? { x: gc.x, y: gc.y + by } : { x: gc.x + by, y: gc.y }
     placeBlock(graph.grid, n.gridCoord, NODE_BLOCK_SIZE)
   }
 }
@@ -1210,11 +1220,29 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
 }
 
 /**
+ * LR decision (diamond) split two or more ways: every branch leaves the right
+ * face, as mermaid's ports do (#2351, #2366). Plain boxes keep their top/bottom
+ * faces (the upstream goldens in ascii.test.ts pin that). A straight middle
+ * edge's label gets room beside the shared trunk in `applyLabelLine`.
+ */
+function markDecisionSplit(
+  node: AsciiNode,
+  lr: boolean,
+  childCount: number,
+): void {
+  if (lr && childCount >= 2 && node.shape === 'diamond') {
+    node.fanOutCentered = true
+  }
+}
+
+/**
  * Centre a node over its children, as dagre does, instead of leaving it above
  * the first one (a fan-out like `A --> B & C & D` otherwise hangs A over B and
  * leaves its other edges to leave sideways and come back down).
  *
- * TD only, and only for graphs where every edge points to a lower row:
+ * TD and LR without subgraphs (RL is laid out as LR and mirrored afterwards;
+ * in LR the "row" below is a column and "x" is y), and only for graphs where every edge
+ * points to a later rank:
  * back edges and same-row edges route around the nodes they skip, and moving
  * nodes under them scrambles those routes. A node moves only when it is
  * outside every subgraph, or alone in each one and leaving only by cluster
@@ -1234,20 +1262,28 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
  *    (else the shift would drag unrelated branches wider, so it stays put).
  */
 function centerParentsOverChildren(graph: AsciiGraph): void {
-  if (graph.config.graphDirection !== 'TD') return
+  const lr = graph.config.graphDirection === 'LR'
+  // Ponytail: LR graphs with subgraphs keep the old layout; the cluster-exit
+  // wall/lane routing is tuned to it. Extend once those routes are re-checked.
+  if (lr && graph.subgraphs.length > 0) return
+  // Rank axis (flow direction) and cross axis (where siblings spread).
+  const rankOf = (g: GridCoord): number => (lr ? g.x : g.y)
+  const crossOf = (g: GridCoord): number => (lr ? g.y : g.x)
+  const at = (rank: number, cross: number): GridCoord =>
+    lr ? { x: rank, y: cross } : { x: cross, y: rank }
   // Back edges and same-row edges route around the nodes they skip; moving
   // nodes under them scrambles those routes (State: Connection Lifecycle).
   // Only handle graphs where every edge points to a lower row.
   const flowsDown = graph.edges.every((e) => {
     const f = e.from.gridCoord
     const t = e.to.gridCoord
-    return f !== null && t !== null && f.y < t.y
+    return f !== null && t !== null && rankOf(f) < rankOf(t)
   })
   if (!flowsDown) return
   // Deepest first so a moved child doesn't invalidate its parent's span.
   const order = graph.nodes
     .filter((n) => n.gridCoord !== null)
-    .sort((a, b) => requireGridCoord(b).y - requireGridCoord(a).y)
+    .sort((a, b) => rankOf(requireGridCoord(b)) - rankOf(requireGridCoord(a)))
   for (const node of order) {
     const gc = requireGridCoord(node)
     if (
@@ -1264,7 +1300,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       const cgc = c.gridCoord
       if (
         cgc === null ||
-        cgc.y !== gc.y + 4 ||
+        rankOf(cgc) !== rankOf(gc) + 4 ||
         (isNodeInAnySubgraph(graph, c) &&
           !(children.length === 1 && onlyInLoneClusters(graph, c))) ||
         graph.edges.some((e) => e.to === c && e.from !== node)
@@ -1274,7 +1310,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       }
     }
     if (!ok) continue
-    const xs = children.map((c) => requireGridCoord(c).x)
+    const xs = children.map((c) => crossOf(requireGridCoord(c)))
     // Node slots sit on a stride of 4, so the midpoint of the outermost
     // children is a slot only for an odd count.
     let mid = (Math.min(...xs) + Math.max(...xs)) / 2
@@ -1283,9 +1319,12 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     // are integers (a fractional one hangs the pathfinder), so leave it be.
     if (!Number.isInteger(mid)) continue
     if (mid % 4 !== 0) {
-      if (mid + 2 <= gc.x) continue
+      // Defensive: placement puts a parent at or left of its children's midpoint.
+      /* v8 ignore next */
+      if (mid + 2 <= crossOf(gc)) continue
       if (fitsStraddled(graph, node)) {
-        relocateNode(graph, node, { x: mid, y: gc.y })
+        relocateNode(graph, node, at(rankOf(gc), mid))
+        markDecisionSplit(node, lr, children.length)
         continue
       }
       const own = new Set<AsciiNode>([node])
@@ -1300,13 +1339,15 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       // keeps the node centered under both.
       for (const e of graph.edges) if (e.to === node) own.add(e.from)
       const foreign = graph.nodes.some(
-        (n) => n.gridCoord !== null && n.gridCoord.x > mid && !own.has(n),
+        (n) =>
+          n.gridCoord !== null && crossOf(n.gridCoord) > mid && !own.has(n),
       )
       if (foreign) continue
-      shiftColumnsRight(graph, mid, 4)
+      shiftCrossAxis(graph, lr, mid, 4)
       mid += 2
     }
-    if (mid > gc.x) relocateNode(graph, node, { x: mid, y: gc.y })
+    if (mid > crossOf(gc)) relocateNode(graph, node, at(rankOf(gc), mid))
+    markDecisionSplit(node, lr, children.length)
   }
   markLabeledFanIn(graph)
 }
@@ -2053,10 +2094,25 @@ export function createMapping(graph: AsciiGraph): void {
 
   separateNonMembersFromFrames(graph)
 
+  // A loop on a top face (#2100) needs a free grid row above the top nodes:
+  // push every node down one row and rebuild the occupancy map.
+  if (graph.topMargin && graph.subgraphs.length === 0) {
+    graph.grid = createGrid()
+    for (const n of graph.nodes) {
+      const gc = requireGridCoord(n)
+      n.gridCoord = { x: gc.x, y: gc.y + 1 }
+      placeBlock(graph.grid, n.gridCoord)
+    }
+  }
+
   // Compute column widths and row heights
   const spreads = spreadCandidates(graph)
   for (const node of graph.nodes) {
     setColumnWidth(graph, node, spreads.get(node))
+  }
+  // The margin row is only as tall as the loop needs.
+  if (graph.topMargin && graph.subgraphs.length === 0) {
+    graph.rowHeight.set(0, 3)
   }
 
   // Fresh render-wide A* iteration budget for this layout pass. Shared by
@@ -2158,6 +2214,7 @@ export function createMapping(graph: AsciiGraph): void {
   }
 
   noteRejectedFaceLanes(graph)
+  graph.wantsTopMargin = graph.edges.some((e) => e.loopTopWanted)
 
   // A self-loop that runs along another edge's cells gets one more drawn
   // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).

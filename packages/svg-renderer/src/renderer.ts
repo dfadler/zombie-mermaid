@@ -24,6 +24,7 @@ import {
 } from '@zombie-mermaid/core'
 import type { FontSizes } from './styles.ts'
 import {
+  ASYMMETRIC_NOTCH,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
@@ -126,7 +127,7 @@ export function renderSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   // Keyframes for animated edges (`e1@{ animate: true }`). Emitted only when
   // an animated edge exists and animation is enabled, so an ordinary diagram
   // (or one rendered with `interactivity: 'none'`) gains no extra markup.
@@ -928,7 +929,7 @@ function renderCylinder(
   )
 }
 
-/** Asymmetric / flag: rectangle with a pointed left edge */
+/** Asymmetric / flag: rectangle with a notch cut into the left edge */
 function renderAsymmetric(
   x: number,
   y: number,
@@ -938,13 +939,12 @@ function renderAsymmetric(
   stroke: string,
   sw: string,
 ): string {
-  const indent = 12 // How far the point indents
   const points = [
-    f`${x + indent},${y}`, // top-left (indented)
-    f`${x + w},${y}`, // top-right
-    f`${x + w},${y + h}`, // bottom-right
-    f`${x + indent},${y + h}`, // bottom-left (indented)
-    f`${x},${y + h / 2}`, // Left point
+    f`${x},${y}`, // Top-left
+    f`${x + w},${y}`, // Top-right
+    f`${x + w},${y + h}`, // Bottom-right
+    f`${x},${y + h}`, // Bottom-left
+    f`${x + ASYMMETRIC_NOTCH},${y + h / 2}`, // Notch tip (points inward)
   ].join(' ')
 
   return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
@@ -1483,7 +1483,11 @@ function renderNodeLabel(
     if (!node.label) return ''
   }
 
-  const cx = node.x + node.width / 2
+  // The asymmetric notch eats the left edge, so centre in the body (as mermaid does).
+  const cx =
+    node.x +
+    node.width / 2 +
+    (node.shape === 'asymmetric' ? ASYMMETRIC_NOTCH / 2 : 0)
   const cy = node.y + node.height / 2
 
   // Resolve text color — inline styles can override the CSS variable default.

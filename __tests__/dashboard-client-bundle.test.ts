@@ -35,6 +35,7 @@
 import { fileURLToPath } from 'node:url'
 import { build as viteBuild } from 'vite'
 import { describe, expect, it } from 'vitest'
+import { mobileMenuScript } from '../demo/components/mobile-menu-script-plugin'
 
 /**
  * Bundles `entryPath` exactly like `scripts/vite-bundle.ts`'s
@@ -47,6 +48,7 @@ import { describe, expect, it } from 'vitest'
 async function bundledModuleIds(entryPath: string): Promise<string[]> {
   const result = await viteBuild({
     configFile: false,
+    plugins: [mobileMenuScript()],
     logLevel: 'warn',
     build: {
       write: false,

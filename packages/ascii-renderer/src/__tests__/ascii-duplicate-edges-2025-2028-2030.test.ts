@@ -111,7 +111,7 @@ const OPPOSITE: Record<string, string> = { U: 'D', D: 'U', L: 'R', R: 'L' }
 type Cell = [number, number]
 const key = (x: number, y: number) => `${x},${y}`
 
-/** Border cells of every node box (rectangle, rounded, diamond, stadium). */
+/** Border cells of every node box (rectangle, rounded, diamond, stadium with `(` `)` sides). */
 function nodeBoxes(out: string): Set<string>[] {
   const g = out.split('\n').map((l) => [...l])
   const at = (x: number, y: number) => g[y]?.[x] ?? ' '
@@ -123,7 +123,7 @@ function nodeBoxes(out: string): Set<string>[] {
       while ('─┬┴'.includes(at(x2, y))) x2++
       if (!CORNER_TR.includes(at(x2, y))) return
       let y2 = y + 1
-      while ('│├┤'.includes(at(x, y2)) && '│├┤'.includes(at(x2, y2))) y2++
+      while ('│├┤('.includes(at(x, y2)) && '│├┤)'.includes(at(x2, y2))) y2++
       if (y2 === y + 1) return
       if (!CORNER_BL.includes(at(x, y2)) || !CORNER_BR.includes(at(x2, y2)))
         return
@@ -227,7 +227,7 @@ const widths = (out: string) =>
 
 const CASES: Record<string, string> = {
   '#2025 decision self-loop + duplicates + labeled back edge': `flowchart LR
-  n0{"gSQ21Q"}
+  n0["gSQ21Q"]
   n1["C"]
   n2(["OkfK"])
   n3("Q552S")

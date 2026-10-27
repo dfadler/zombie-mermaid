@@ -39,4 +39,5 @@ origin.
    `tsx scripts/capture-fork-fixes-terminal.ts` and commit the PNGs.
 5. Add a changeset (code change) describing the port; never bump versions or
    touch CHANGELOG.
-6. Replying upstream is a public post: only on the user's explicit request.
+6. Replying upstream is a public post: draft only, via the `upstream-outreach`
+   skill, and post only with the maintainer's go-ahead for that exact text.

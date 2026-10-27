@@ -20,6 +20,17 @@
         ]
       },
       {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/research-nudge.sh",
+            "timeout": 10,
+            "statusMessage": "Research-doc nudge (warn-only)..."
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {

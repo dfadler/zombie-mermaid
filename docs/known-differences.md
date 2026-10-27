@@ -2,20 +2,20 @@
 
 Places where zombie-mermaid renders or parses differently from mermaid.js and the
 difference is either intentional or not yet fixed. The reference is the pinned
-`mermaid` devDependency (12.1.0), rendered headless through
+`mermaid` devDependency (12.2.0), rendered headless through
 `scripts/lib/real-mermaid.ts`; GitHub renders 12.1.0 and mermaid.live 12.2.0 (see the
-table below).
+table below). The pin matches mermaid.live, not GitHub.
 The pin moved from 11.17.2 in the bump that added this note, and entries not
 listed below as re-checked were measured on 11.17.2: other versions may differ.
 The "Labeled Fan-In (LR)" mirrored-order entry that used to sit under layout
 tie-breaks was removed after a re-check: on 12.1.0 mermaid and zombie-mermaid agree
 (100% / 100%, it was 17% on 11.17.2).
 
-## Which mermaid each surface renders (checked 2026-10-16, #2184)
+## Which mermaid each surface renders (checked 2026-10-22, #2184)
 
 | Surface                        | mermaid | Default layout | Evidence                                                                                                                   |
 | ------------------------------ | ------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Pinned oracle (`package.json`) | 12.1.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                  |
+| Pinned oracle (`package.json`) | 12.2.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                  |
 | GitHub ` ```mermaid ` blocks   | 12.1.0  | ELK (config)   | Renderer bundle `viewscreen.githubusercontent.com/static/assets/mermaidMarkdown-*.js` matches 12.1.0, not 12.0.0 or 12.2.0 |
 | mermaid.live                   | 12.2.0  | ELK            | The editor shows `v12.2.0`; node positions equal the headless ELK render                                                   |
 
@@ -24,7 +24,7 @@ iframe, so its version is inferred, not read: it contains identifiers added in 1
 (`orientFeedbackEdges`, `applyOverride`) and none of the 12.2.0 additions
 (`upperCaseDirection`, `isUnconnected`, `colorBy`). 12.1.0 and 12.2.0 place the dense
 samples identically (gallery "Dense Duplicate Edges" TD and LR, and the #2160 sample 3
-with and without `n0["n0"]`/`n1["n1"]` declarations), so the pin is a valid target on
+with and without `n0["n0"]`/`n1["n1"]` declarations), so either version is a valid target on
 both surfaces; `layout: dagre` places them differently. Re-run the check when the pin
 moves; `tsx scripts/lib/mermaid-pin-freshness.ts` prints the last versions seen.
 
@@ -58,24 +58,25 @@ layers. The 12.1.0 comparison is in
 [#1834](https://github.com/dfadler/zombie-mermaid/issues/1834).
 
 - **Sibling subgraph order and feedback edges.** zombie-mermaid still imitates
-  mermaid 11's dagre layout in two places: sibling subgraphs are placed in reverse
-  declaration order, and depth-first back edges are reversed before ELK runs. Mermaid
-  12 does neither. "Nested Subgraphs" puts the second subgraph on the left in ours and
-  the first on the left in mermaid 12.1.0 and mermaid.live (horizontal 20%), and in
-  "CI/CD Pipeline" mermaid 12.1.0 keeps `Fix & Retry` beside `Build Image` where ours
-  puts it below `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
+  mermaid 11's dagre layout in one place: depth-first back edges are reversed before
+  ELK runs, which mermaid 12 does not do. Sibling subgraphs tied by an edge now keep
+  declaration order ([#1982](https://github.com/dfadler/zombie-mermaid/pull/1982)), so
+  "Nested Subgraphs" is 100% horizontal. The remaining difference is in "CI/CD Pipeline",
+  where mermaid 12.1.0 keeps `Fix & Retry` beside `Build Image` and ours puts it below
+  `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
   [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
-- **Remaining small differences are tie-breaks.** "System Architecture" and "Flowchart:
-  CJK Labels" score 50-93% against 12.1.0, but every
+- **Remaining small differences are tie-breaks.** "System Architecture" scores 89%
+  vertical against 12.2.0 (node-size tie-break, #2058) and is the accepted remaining
+  difference; "Flowchart: CJK Labels" is 100% since #2358. Every
   disagreeing node pair is one renderer calling two centres level (within the 20 px
   tolerance) and the other offsetting them. In "LR Fan-In With Bypass Edge" `B` sits
   above `A` and `C` in both renderers, 22 px in mermaid (12.1.0 and 12.2.0) and 15 px
-  in ours, whose boxes are 37 px tall to mermaid's 48 px (#2058). In "CJK Labels"
-  mermaid puts `B` about 19 px below `A`, `C` and `D`, and ours puts it 29 px above.
-  The cause is not CJK text measurement: the same graph written in ASCII differs the
-  same way, and without the subgraph both renderers put `B` above. It needs a subgraph
-  around `A` and `B` plus the feedback edge `C --> A`, so it is where the edge's track
-  sits relative to `B`, not text width (#1941). "Flowchart: Five Cluster Exit Siblings (TD)"
+  in ours, whose boxes are 37 px tall to mermaid's 48 px (#2058). "CJK Labels"
+  used to differ too (mermaid put `B` about 19 px below `A`, `C` and `D`, ours 29 px above):
+  with the feedback edge `C --> A` reversed, its track sat on the wrong side of `B`. Listing
+  subgraph feedback edges first in the ELK edge order fixes it (100% on 12.1.0, #2358; the
+  issue was #1941).
+  "Flowchart: Five Cluster Exit Siblings (TD)"
   agreed only after `elk.spacing.edgeEdge` was raised to 40 px for graphs with three or
   more labelled edges between the same pair (#1943).
 - **The 20 px tolerance has a dead-band.** A fixed cut-off split pairs whose offsets
@@ -87,7 +88,7 @@ layers. The 12.1.0 comparison is in
   bypass, "Dense Duplicate Edges (LR)", "Self-Loop ... (LR)" and "CI/CD Pipeline"
   samples now score 100%. "Dense Duplicate Edges (TD)" (`c` 18.5 px right of `a`, 30.1 px in
   mermaid, 0.1 px outside the band) and "Self-Loop ... (TD)" (mermaid staggers 48 and 37 px, ours stacks) stay
-  under the default floor, as do "CJK Labels" (sign reversal) and "State: Notes".
+  under the default floor, as do and "State: Notes".
   A fixed 15, 25 or 30 px tolerance, or one scaled by node height, only moved the
   cliff or split other samples; marking samples "oracle n/a" would not reach the
   non-ASCII ones (#2155).
@@ -115,6 +116,53 @@ quotes are fine). Checked on mermaid 12.2.0 (jsDelivr, real Chrome) and on merma
 renders the literal `Labels <&> "quotes"` and does not copy the bug. Duplicate slice
 labels such as `"R&D"` keep the first value in both renderers
 ([#2084](https://github.com/dfadler/zombie-mermaid/issues/2084)).
+
+## Pie charts
+
+Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 (the pin, which is
+also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub renders.
+
+- **Palette.** zombie-mermaid colours slices with a blue/teal scale derived from the
+  theme accent; mermaid uses its pastel `pie1`..`pie12` scale (`#ECECFF`, `#ffffde`, ...).
+  `themeVariables` `pie1`..`pie12` are honoured only when opted in (see the
+  `themeVariables` section below).
+- **Empty pie.** When every slice is zero, zombie-mermaid draws a full outline circle;
+  mermaid draws a half arc, which reads as a rendering glitch.
+- **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
+  share of the whole total, including slices that get no bar cell (under 1%, or past the
+  bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
+  ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
+
+## XY charts
+
+Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
+also covered 12.1.0). Unless noted, these are choices, not bugs.
+
+- **SVG styling.** zombie-mermaid draws rounded bars, a dotted grid, point markers on
+  lines, monotone-smoothed lines on vertical charts (horizontal charts use straight
+  segments in category order, as mermaid does, [#2334](https://github.com/dfadler/zombie-mermaid/issues/2334)), a generated `Bar 1` / `Line 1` legend when there is more
+  than one series, and grouped bar series side by side. Mermaid draws square bars, no grid,
+  no markers, no legend and straight line segments, and draws the second bar series over
+  the first.
+- **Horizontal charts.** The value axis sits at the bottom; mermaid puts it at the top
+  (its `top-axis` group).
+- **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
+  mermaid 12.2.0 renders `NewUsers`.
+- **Degenerate ranges.** An all-zero series gets a -0.1..0.1 axis and a single value 42
+  gets 41.9..42.1, so the data has a visible scale; mermaid shows one lone `0` or `42`
+  tick and no scale.
+- **ASCII y-axis.** Mermaid has no ASCII output. The plot is 20 rows tall, fewer than
+  mermaid's ~10 d3 ticks need once they round to rows, so the renderer labels every Nth
+  tick (the smallest N that leaves an unlabeled row between labels) rather than putting
+  labels on adjacent rows
+  ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310)).
+
+## ASCII: LR/RL sibling gap is `paddingY - 1` ([#2350](https://github.com/dfadler/zombie-mermaid/issues/2350))
+
+Intentional. In LR (and RL) layouts the blank-row gap between sibling nodes is `paddingY - 1` (never below 1),
+4 rows at the default of 5, against mermaid 12.2.0's 40 px gap between 48 px nodes. TD keeps
+`paddingY` as is. Because of the offset, `-y 5` no longer gives the old LR gap; pass `-y 6`
+for it.
 
 ## ASCII: several sources into one target share the target's face
 
@@ -181,6 +229,66 @@ flowchart TD
 Checked on mermaid 12.1.0 and 12.2.0 (headless Playwright) and mermaid.live (12.2.0, `TD`
 only); GitHub's render was not reachable. See the comment on #2101 for the numbers.
 
+## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
+
+The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
+family per PR. Done: **stadium**, **hexagon**, **diamond** and **circle**. Mermaid 12.2.0 (the pin and npm latest
+agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
+left and right middle.
+
+- **Stadium.** Rounded top and bottom rows (`╭─╮` / `╰─╯`, `.-.` / `'-'` in ASCII) with `(` `)` on
+  every row between. Same grid cell as before. A character grid cannot draw a true
+  semicircle, so the ends are the `(` `)` glyphs, not a curve.
+- **Hexagon.** Diagonals `╱ ╲` (`/ \`) cost one column per row and meet at `<` `>` on the
+  middle row. A one-line label keeps the rectangle's width; a taller label, or a narrow one
+  next to a tall one, grows the node so the diagonal stays a cell clear of the text.
+  When a neighbour makes the row count even there are two point rows.
+- **Charsets and wide glyphs.** No fallback to the old corner glyphs was needed: every
+  border glyph is one cell wide in both charsets, so a CJK or emoji label (two cells per
+  glyph) never moves the border, and `/ \ < >` read as a hexagon in ASCII.
+- **Edges.** They still attach at the box faces (middle row on the sides, middle column on
+  top and bottom); a side edge starts beside the `(`/`)`/`<`/`>` point instead of replacing it.
+- **Diamond** (`{x}`). A rhombus with `<` `>` at the left and right middle and the top and
+  bottom rows as a point (`╱╲` / `╲╱`, `/\` / `\/` in ASCII). The node keeps its row count
+  (5 at the default padding), so the slope is whatever lands the points on the centre:
+  two columns per row for a short label, shallower and sparser for a wide one. Mermaid's
+  diamond is as tall as it is wide, which a terminal cannot afford, so a wide-label diamond
+  is flatter than mermaid's. Widths are rounded up to an even count so the top point is two
+  glyphs; when a neighbour makes the width odd the point has a `─` between them. An edge
+  leaving the top or bottom starts beside the point glyph rather than replacing it.
+- **Circle** (`((x))`). An ellipse: rounded top and bottom rows, `╱ ╲` on the rows between,
+  `(` `)` on the middle row (`.-.` / `'-'`, `/ \` in ASCII). Mermaid's circle is round in
+  pixels; the cell grid makes it about twice as wide as tall, so it is a 7-column,
+  5-row minimum shape, not a true circle. Edges attach as for the stadium.
+- **Corner glyphs of the outline.** `╭ ╮ ╰ ╯ . '` and the diagonals are now protected from
+  an edge stroke like `( ) < >` are, so a port on a corner column starts beside it.
+- **Still approximated** (later PRs, per the owner's one-family-per-PR call): double circle,
+  subroutine, asymmetric, parallelograms and trapezoids.
+
+## ASCII: LR skip edge beside a reciprocal pair (partial match)
+
+[#2100](https://github.com/dfadler/zombie-mermaid/issues/2100). For the `LR`/`RL` form
+of the sample above, the renderer now follows mermaid 12.2.0's topology: `b --> a` and
+`b --> c` leave `b` on separate rows, `b --> c` runs under `a` with an arrowhead of its
+own at `c`, the loop on `a` sits above it, and `a --> c` / `c --> a` are two strokes
+between `a` and `c`. It is not a full match:
+
+- **`b --> c` enters `c`'s bottom face.** Mermaid enters `c`'s left face. A second
+  stroke on the left face would need a taller box.
+- **The loop leaves `a`'s right face and re-enters its top.** Mermaid leaves and
+  re-enters the top. The first row gets a blank margin row for it.
+- **Narrow trigger** (`backStraight`, `edge-routing.ts`): `LR`/`RL`, no subgraphs, no
+  labels on the pair, a skip edge sharing an end with the pair, no loop on that skip
+  edge's ends, and at most 3 non-loop edges in total on each node of the pair (the
+  pair's own two edges plus one more, the skip edge). Busier shapes and every other
+  reciprocal pair keep the U under the row.
+- **Boxes on the pair take 5 rows.** The two strokes need three cells on each side
+  face (a 3-row box has one), so the pair's nodes grow, as boxes with several side-face
+  edges already do. Mermaid's boxes do not change height.
+
+Checked against mermaid 12.2.0 (the pin and npm latest), headless via
+`scripts/lib/real-mermaid.ts`.
+
 ## Class: lollipop interfaces
 
 Not a difference any more for one-ended lollipops
@@ -192,6 +300,12 @@ as mermaid.js does (12.1.0 and 12.2.0 agree). `()--()` is an ordinary boxed line
 circle at both ends, in mermaid and here.
 
 Dotted lollipops (`()..`, `..()`), which mermaid accepts, are a parse error here.
+
+## Class: edge corners in SVG
+
+mermaid 12.1.0 and 12.2.0 draw class edges orthogonally with 7 px rounded corners (not
+smooth curves, [#2104](https://github.com/dfadler/zombie-mermaid/issues/2104)); ours has
+sharp corners. Relationship labels sit on the edge over a background plate in both.
 
 ## Class: LR and RL in ASCII
 
@@ -241,6 +355,18 @@ fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
 flowchart, state and pie read the directive. Details and the opt-in table:
 [Configuration directives](diagrams.md#themevariables-opt-in).
 
+## Invalid colours are ignored, not refused
+
+Decided in [#2345](https://github.com/dfadler/zombie-mermaid/issues/2345) (policy from
+[#1523](https://github.com/dfadler/zombie-mermaid/issues/1523)). An invalid colour in a
+`style`/`classDef` line (`fill:notacolor`, `stroke:#zzz`) does not fail the render:
+mermaid.js 12.1.0 and 12.2.0 render the diagram without raising, and the browser drops
+the bad declaration, so the default paint stays. zombie-mermaid also renders and drops
+the value (it never reaches the SVG). The agentic-mermaid project refuses such input by
+name instead. The difference is deliberate, not a gap: parity with mermaid.js here means
+tolerating the input. (An invalid `themeVariables` colour is a separate case, listed in
+the table above, where mermaid itself throws.)
+
 ## ASCII: opt-in layout-faithful mode (`--layout mermaid`)
 
 The default ASCII renderer lays flowcharts out on its own grid, so node order and spacing
@@ -265,12 +391,24 @@ Opt-in only: without the flag the output is byte-identical to before.
   `A --> B` look like one).
 - **Plain drawing at a fixed scale.** `-x/-y/-p`, `--coords`, `--theme` colors, `--hyperlinks`
   and `--max-width` compaction (it is the column cap instead) do not apply to it (they apply to a fallback render).
-- **Pinned to mermaid 12.1.0 + elkjs 0.9.3.** The layout is only faithful to that pair. When
-  the `mermaid` pin moves, re-run `pnpm run elk-layout:oracle` and update the module.
+- **Pinned to mermaid 12.1.0 + elkjs 0.9.3.** The layout is only faithful to that pair. The
+  repo's oracle pin is now 12.2.0, and `pnpm run elk-layout:oracle` on 12.2.0 differs from
+  12.1.0 in three gallery samples (circle and double-circle node sizes in "Original Node
+  Shapes" and "Subroutine and Hexagon Shapes", one edge path in "Labeled Fan-In (LR)"); the module still
+  matches 12.1.0, which is what GitHub renders. The module is not yet updated to 12.2.0.
 - **Dependency.** `elkjs-0.9.3` (`npm:elkjs@0.9.3`) is an optional peer dependency of
   `zombie-mermaid`, kept separate from the `elkjs` 0.11/0.12 the SVG renderer uses. The layout
   code is bundled into lazy chunks that load only when the option is used. The MCP tool does not
   expose it.
+
+## C4: a title-only diagram draws its title
+
+`C4Context` with a `title` and no elements: mermaid.js 12.1.0 and 12.2.0 both emit
+`viewBox="0 -70 200 187"` with the title at `x="-150"`, which is left of the
+viewBox, so the title is clipped and invisible (checked headless in Chromium, #2282).
+zombie-mermaid deliberately draws it: the SVG canvas is `2 * 50 + title width` by 80,
+with the title inside, and the ASCII output prints the title (mermaid has no ASCII
+output). A diagram with no title, elements, or boundaries still renders nothing.
 
 ## Known limitations (not intentional, not yet fixed)
 
