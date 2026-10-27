@@ -627,6 +627,7 @@ export function dashboardFooterColumns() {
         { label: 'Diagrams', href: ROUTES.diagrams },
         { label: 'Editor', href: ROUTES.editor },
         { label: 'Fork fixes', href: ROUTES.forkFixes },
+        { label: 'Layout fidelity', href: 'layout-fidelity.html' },
       ],
     },
     {
