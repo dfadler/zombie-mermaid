@@ -155,7 +155,7 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   labels on adjacent rows
   ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310)).
 
-## ASCII: LR sibling gap is `paddingY - 1` ([#2350](https://github.com/dfadler/zombie-mermaid/issues/2350))
+## ASCII: LR/RL sibling gap is `paddingY - 1` ([#2350](https://github.com/dfadler/zombie-mermaid/issues/2350))
 
 Intentional. In LR (and RL) layouts the blank-row gap between sibling nodes is `paddingY - 1` (never below 1),
 4 rows at the default of 5, against mermaid 12.2.0's 40 px gap between 48 px nodes. TD keeps

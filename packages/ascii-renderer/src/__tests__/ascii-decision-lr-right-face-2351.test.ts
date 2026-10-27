@@ -151,12 +151,34 @@ describe('LR decision node branches leave the right face (#2351)', () => {
   // Current renderer behavior, not mermaid parity: mermaid 12.2.0 leaves the
   // right side for all three branches (#2366).
   it('keeps a three-way decision on its top and bottom faces', () => {
-    const out = render(
-      'graph LR\n  A --> B{Ok?}\n  B --> C\n  B --> D\n  B --> E',
+    expect(
+      render('graph LR\n  A --> B{Ok?}\n  B --> C\n  B --> D\n  B --> E'),
+    ).toBe(
+      [
+        '                       ┌───┐',
+        '                       │   │',
+        '              ┌───────►│ C │',
+        '              │        │   │',
+        '              │        └───┘',
+        '              │',
+        '              │',
+        '              │',
+        '              │',
+        '┌───┐        ╱╲        ┌───┐',
+        '│   │       ╱  ╲       │   │',
+        '│ A ├────►< Ok?  >────►│ D │',
+        '│   │       ╲  ╱       │   │',
+        '└───┘        ╲╱        └───┘',
+        '              │',
+        '              │',
+        '              │',
+        '              │',
+        '              │        ┌───┐',
+        '              │        │   │',
+        '              └───────►│ E │',
+        '                       │   │',
+        '                       └───┘',
+      ].join('\n'),
     )
-    const rows = out.split('\n')
-    // The outer branches still leave the diamond's top and bottom tips.
-    expect(rows[8]![14]).toBe('│')
-    expect(rows[14]![14]).toBe('│')
   })
 })

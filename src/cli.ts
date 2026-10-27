@@ -145,7 +145,7 @@ Options:
                        (flowchart, state, and ER diagrams; nested subgraph
                        directions still apply on top of it)
   -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5)
-  -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5; LR sibling gap is n-1, min 1)
+  -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5; LR/RL sibling gap is n-1, min 1)
   -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)
   --coords             Overlay row/column index rulers (ASCII, debug layout)
   --hyperlinks         Emit OSC 8 terminal hyperlinks for \`click\` hrefs
