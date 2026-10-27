@@ -65,8 +65,9 @@ layers. The 12.1.0 comparison is in
   "CI/CD Pipeline" mermaid 12.1.0 keeps `Fix & Retry` beside `Build Image` where ours
   puts it below `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
   [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
-- **Remaining small differences are tie-breaks.** "System Architecture" and "Flowchart:
-  CJK Labels" scored 50-93% against 12.1.0, but every
+- **Remaining small differences are tie-breaks.** "System Architecture" scores 89%
+  vertical against 12.2.0 (node-size tie-break, #2058) and is the accepted remaining
+  difference; "Flowchart: CJK Labels" is 100% since #2358. Every
   disagreeing node pair is one renderer calling two centres level (within the 20 px
   tolerance) and the other offsetting them. In "LR Fan-In With Bypass Edge" `B` sits
   above `A` and `C` in both renderers, 22 px in mermaid (12.1.0 and 12.2.0) and 15 px
