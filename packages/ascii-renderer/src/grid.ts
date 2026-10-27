@@ -1215,17 +1215,17 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
 }
 
 /**
- * LR decision (diamond) split two ways (yes/no): both branches leave the right
- * face, as mermaid's ports do (#2351). Plain boxes keep their top/bottom faces
- * (the upstream goldens in ascii.test.ts pin that), and three or more branches
- * share a trunk that collides with a straight middle edge's label.
+ * LR decision (diamond) split two or more ways: every branch leaves the right
+ * face, as mermaid's ports do (#2351, #2366). Plain boxes keep their top/bottom
+ * faces (the upstream goldens in ascii.test.ts pin that). A straight middle
+ * edge's label gets room beside the shared trunk in `applyLabelLine`.
  */
 function markDecisionSplit(
   node: AsciiNode,
   lr: boolean,
   childCount: number,
 ): void {
-  if (lr && childCount === 2 && node.shape === 'diamond') {
+  if (lr && childCount >= 2 && node.shape === 'diamond') {
     node.fanOutCentered = true
   }
 }
