@@ -91,10 +91,10 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     ascii: { tl: '(', tr: ')', bl: '(', br: ')' },
   },
 
-  // Subroutine - double vertical bars
+  // Subroutine - plain box; drawNode adds the inner vertical bars (#2164)
   subroutine: {
-    unicode: { tl: '╟', tr: '╢', bl: '╟', br: '╢' },
-    ascii: { tl: '|', tr: '|', bl: '|', br: '|' },
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
   },
 
   // Cylinder/database

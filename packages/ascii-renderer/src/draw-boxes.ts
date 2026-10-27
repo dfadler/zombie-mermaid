@@ -24,6 +24,7 @@ import {
   drawCircle,
   drawHexagon,
   drawStadium,
+  drawSubroutineBars,
   hexagonInsets,
 } from './shapes/silhouettes.ts'
 
@@ -213,6 +214,12 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     write(box, to.x, from.y, effectiveCorners.tr)
     write(box, from.x, to.y, effectiveCorners.bl)
     write(box, to.x, to.y, effectiveCorners.br)
+  }
+
+  // Subroutine: a second vertical bar just inside each side (#2164).
+  if (node.shape === 'subroutine' && to.x >= 6 && to.y >= 2) {
+    drawSubroutineBars(box, to.x, to.y, useAscii)
+    node.labelInsets = Array<number>(to.y + 1).fill(1)
   }
 
   // Cylinder (database) gets a rim line just inside its top and bottom

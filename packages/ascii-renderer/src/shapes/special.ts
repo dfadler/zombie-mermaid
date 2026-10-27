@@ -52,7 +52,10 @@ export const subroutineRenderer: ShapeRenderer = {
         width: maxLineWidth,
         height: lineCount,
       },
-      gridColumns: [2, innerWidth, 2],
+      // One-cell border columns, like a plain box (a 2-wide first column
+      // would shift the drawn box off the edge anchors); the second bar on
+      // each side is counted into the content column.
+      gridColumns: [1, innerWidth + 2, 1],
       gridRows: [1, innerHeight, 1],
     }
   },

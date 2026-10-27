@@ -24,13 +24,34 @@ const unicodeOpts: ShapeRenderOptions = { useAscii: false, padding: 1 }
 const asciiOpts: ShapeRenderOptions = { useAscii: true, padding: 1 }
 
 describe('subroutine shape [[text]]', () => {
-  it('renders with its distinctive corner markers in a flowchart', () => {
+  it('draws a second bar inside each side in a flowchart (#2164)', () => {
     const src = `flowchart TD
-  A[[Subroutine]]`
-    const out = renderMermaidASCII(src, { useAscii: false })
-    expect(out).toContain('Subroutine')
-    expect(out).toContain('╟')
-    expect(out).toContain('╢')
+  A[[Task]]`
+    expect(renderMermaidASCII(src, { useAscii: false })).toBe(
+      [
+        '┌┬──────┬┐',
+        '││      ││',
+        '││ Task ││',
+        '││      ││',
+        '└┴──────┴┘',
+      ].join('\n'),
+    )
+    expect(renderMermaidASCII(src, { useAscii: true })).toBe(
+      [
+        '++------++',
+        '||      ||',
+        '|| Task ||',
+        '||      ||',
+        '++------++',
+      ].join('\n'),
+    )
+  })
+
+  it('leaves an LR edge the outer border to start from', () => {
+    const out = renderMermaidASCII('flowchart LR\n  A[[Task]] --> B', {
+      useAscii: false,
+    })
+    expect(out).toContain('││ Task │├')
   })
 
   it('renders the ASCII fallback in a flowchart', () => {
@@ -42,7 +63,7 @@ describe('subroutine shape [[text]]', () => {
 
   it('computes dimensions with double borders on each side', () => {
     const dims = subroutineRenderer.getDimensions('Hi', unicodeOpts)
-    expect(dims.gridColumns).toEqual([2, 4, 2])
+    expect(dims.gridColumns).toEqual([1, 6, 1])
     expect(dims.gridRows).toEqual([1, 3, 1])
     expect(dims.width).toBe(8)
     expect(dims.height).toBe(5)

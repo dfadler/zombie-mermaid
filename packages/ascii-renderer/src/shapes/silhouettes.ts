@@ -84,6 +84,21 @@ export function drawStadium(
   }
 }
 
+/** Add a subroutine's inner bars (columns 1 and w-1) to a drawn box border. */
+export function drawSubroutineBars(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  useAscii: boolean,
+): void {
+  const [top, bottom, bar] = useAscii ? ['+', '+', '|'] : ['┬', '┴', '│']
+  for (const x of [1, w - 1]) {
+    canvas[x]![0] = top!
+    canvas[x]![h] = bottom!
+    for (let y = 1; y < h; y++) canvas[x]![y] = bar!
+  }
+}
+
 /** Draw a hexagon border; `insets` comes from hexagonInsets. */
 export function drawHexagon(
   canvas: Canvas,
