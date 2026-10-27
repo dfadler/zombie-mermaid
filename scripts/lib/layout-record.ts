@@ -1,28 +1,13 @@
 /** History and scorecard recording for scripts/layout-oracle.ts (#1572, #1686). */
 
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
-import { pinnedMermaidVersion } from './real-mermaid.ts'
-import { measureLabels } from './label-position.ts'
 import {
   historyLines,
   scorecardMarkdown,
-  summarizeLabels,
   type HistoryEntry,
   type LabelEntry,
   type ScorecardRun,
 } from './layout-agreement.ts'
-
-/** Edge-label placement for the history and scorecard, descriptive only. */
-export async function labelEntryFor(
-  session: Parameters<typeof measureLabels>[0],
-  commit: string,
-): Promise<LabelEntry> {
-  return summarizeLabels(await measureLabels(session), {
-    date: new Date().toISOString().slice(0, 10),
-    commit,
-    mermaid: pinnedMermaidVersion(),
-  })
-}
 
 /** Append this run to the history file and/or rewrite the scorecard from it. */
 export async function writeRecords(

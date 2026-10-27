@@ -57,7 +57,8 @@ import {
   type LabelEntry,
   type LayoutBoxes,
 } from './lib/layout-agreement.ts'
-import { labelEntryFor, writeRecords } from './lib/layout-record.ts'
+import { labelEntryFor } from './lib/label-position.ts'
+import { writeRecords } from './lib/layout-record.ts'
 import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 

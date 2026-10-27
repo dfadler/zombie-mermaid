@@ -1,10 +1,11 @@
-/** Edge-label position measurement shared by label-position-oracle.ts and layout-oracle.ts (#1385, #1686). */
-
+/** Edge-label position measurement for label-position-oracle.ts and layout-oracle.ts (#1385, #1686). */
 import { renderMermaidASCII } from '../../src/index.ts'
 import {
+  pinnedMermaidVersion,
   renderRealMermaidSvg,
   type RealMermaidSession,
 } from './real-mermaid.ts'
+import { summarizeLabels, type LabelEntry } from './layout-agreement.ts'
 
 export interface Case {
   name: string
@@ -133,4 +134,16 @@ export async function measureLabels(session: RealMermaidSession) {
     })
   }
   return out
+}
+
+/** Edge-label placement for the history and scorecard, descriptive only. */
+export async function labelEntryFor(
+  session: RealMermaidSession,
+  commit: string,
+): Promise<LabelEntry> {
+  return summarizeLabels(await measureLabels(session), {
+    date: new Date().toISOString().slice(0, 10),
+    commit,
+    mermaid: pinnedMermaidVersion(),
+  })
 }
