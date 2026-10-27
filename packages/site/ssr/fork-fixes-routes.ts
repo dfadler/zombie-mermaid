@@ -140,7 +140,7 @@ export async function forkFixesRoutes(
     if ('error' in before) pair.beforeError = before.error
     else pair.before = before.output
     try {
-      pair.after = renderWith(current, fix.source, fix.render)
+      pair.after = renderWith(current, fix.source, fix.render, fix.options)
     } catch (err) {
       pair.afterError = err instanceof Error ? err.message : String(err)
     }
