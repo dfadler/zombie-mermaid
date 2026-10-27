@@ -1,5 +1,14 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.11.1
+
+### Patch Changes
+
+- [#2381](https://github.com/dfadler/zombie-mermaid/pull/2381) [`3d5e2a3`](https://github.com/dfadler/zombie-mermaid/commit/3d5e2a3232cef4ad8c51d2c609d538511b45efd4) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: per-edge canvas layers are stored sparsely, so dense labelled-edge diagrams render faster ([#2376](https://github.com/dfadler/zombie-mermaid/issues/2376)); output is unchanged.
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.1
+  - @zombie-mermaid/mermaid-parser@5.11.1
+
 ## 5.11.0
 
 ### Minor Changes
