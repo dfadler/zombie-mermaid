@@ -24,6 +24,7 @@ import {
   scorecardMarkdown,
   wantsSample,
   summarize,
+  summarizeLabels,
   type Box,
   type LayoutBoxes,
 } from '../scripts/lib/layout-agreement.ts'
@@ -552,5 +553,50 @@ describe('thresholds and machine-readable scorecard', () => {
     expect(md).toContain('| 50% | - | 3 | 95% | fail |')
     expect(md).toContain('## Diagram types not scored')
     expect(md).toContain('**sequence**')
+  })
+})
+
+describe('edge-label figures (#1686)', () => {
+  const label = summarizeLabels(
+    [
+      { official: { along: 0.5 }, ascii: { along: 0.5 } },
+      { official: { along: 0.5 }, ascii: { along: 1 } },
+    ],
+    { date: '2026-10-27', commit: 'abcdef123', mermaid: '12.2.0' },
+  )
+  const results = {
+    a: {
+      vertical: 1,
+      horizontal: 1,
+      containment: 1,
+      nodes: 2,
+      subgraphs: false,
+    },
+  }
+  const entry = summarize(results, {
+    date: '2026-10-27',
+    commit: 'abcdef123',
+    tolerance: 20,
+    type: 'flowchart',
+    mermaid: '12.2.0',
+  })
+
+  it('summarizes mean positions and the mean absolute difference', () => {
+    expect(label).toMatchObject({
+      cases: 2,
+      officialAlong: 0.5,
+      asciiAlong: 0.75,
+      meanAbsDelta: 0.25,
+    })
+  })
+
+  it('scorecard shows the label section only when label entries exist', () => {
+    const runs = [{ entry, results }]
+    const md = scorecardMarkdown(runs, [entry], undefined, [label])
+    expect(md).toContain('## Edge labels (ASCII)')
+    expect(md).toContain(
+      '| 2026-10-27 | abcdef1 | 12.2.0 | 2 | 0.50 | 0.75 | 0.25 |',
+    )
+    expect(scorecardMarkdown(runs, [entry])).not.toContain('Edge labels')
   })
 })

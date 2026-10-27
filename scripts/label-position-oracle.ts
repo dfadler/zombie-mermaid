@@ -19,7 +19,7 @@ import {
   type RealMermaidSession,
 } from './lib/real-mermaid.ts'
 
-interface Case {
+export interface Case {
   name: string
   source: string
   from: string
@@ -27,7 +27,7 @@ interface Case {
   label: string
 }
 
-const CASES: Case[] = [
+export const CASES: Case[] = [
   {
     name: 'TD down edge',
     source: 'graph TD\n  A -->|push = build| B',
@@ -58,7 +58,7 @@ const CASES: Case[] = [
   },
 ]
 
-interface Pos {
+export interface Pos {
   along: number
   across: number
 }
@@ -135,21 +135,44 @@ function ascii(c: Case): Pos {
   return { along: (l.y - aBottom) / (bTop - aBottom), across: cx - a.x }
 }
 
-const session = await startRealMermaid()
-await session.page.evaluate('window.__name = (f) => f')
-try {
-  console.log(
-    'case                       official along/across(px)  ascii along/across(cells)',
-  )
+/** Official and ASCII label position for every case. */
+export async function measureLabels(session: RealMermaidSession) {
+  const out: { name: string; official: Pos; ascii: Pos }[] = []
   for (const [i, c] of CASES.entries()) {
-    const o = await official(session, i, c)
-    const a = ascii(c)
-    console.log(
-      `${c.name.padEnd(26)} ${o.along.toFixed(2)} / ${o.across.toFixed(0).padStart(4)}`.padEnd(
-        52,
-      ) + `${a.along.toFixed(2)} / ${a.across.toFixed(1)}`,
-    )
+    out.push({
+      name: c.name,
+      official: await official(session, i, c),
+      ascii: ascii(c),
+    })
   }
-} finally {
-  await session.close()
+  return out
+}
+
+async function main() {
+  const session = await startRealMermaid()
+  await session.page.evaluate('window.__name = (f) => f')
+  try {
+    console.log(
+      'case                       official along/across(px)  ascii along/across(cells)',
+    )
+    for (const { name, official: o, ascii: a } of await measureLabels(
+      session,
+    )) {
+      console.log(
+        `${name.padEnd(26)} ${o.along.toFixed(2)} / ${o.across.toFixed(0).padStart(4)}`.padEnd(
+          52,
+        ) + `${a.along.toFixed(2)} / ${a.across.toFixed(1)}`,
+      )
+    }
+  } finally {
+    await session.close()
+  }
+}
+
+// Only run when executed directly, so layout-oracle.ts can import measureLabels.
+if (
+  process.argv[1] !== undefined &&
+  import.meta.url === new URL(process.argv[1], 'file://').href
+) {
+  await main()
 }

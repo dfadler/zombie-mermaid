@@ -57,8 +57,11 @@ import {
   finishScorecard,
   recordsAllTypes,
   summarize,
+  summarizeLabels,
+  type LabelEntry,
   type LayoutBoxes,
 } from './lib/layout-agreement.ts'
+import { measureLabels } from './label-position-oracle.ts'
 import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
@@ -189,6 +192,7 @@ async function main(): Promise<number> {
   await session.page.evaluate('window.__name = (f) => f')
 
   const runs: ScorecardRun[] = []
+  let labelEntry: LabelEntry | undefined
   const failing: string[] = []
   const commit = recording
     ? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -216,6 +220,14 @@ async function main(): Promise<number> {
         }),
       })
     }
+    if (recording) {
+      // Edge-label placement (#1686); the scorecard and history carry it descriptively.
+      labelEntry = summarizeLabels(await measureLabels(session), {
+        date: new Date().toISOString().slice(0, 10),
+        commit,
+        mermaid: pinnedMermaidVersion(),
+      })
+    }
   } finally {
     await session.close()
   }
@@ -226,16 +238,22 @@ async function main(): Promise<number> {
   }
   if (recording) {
     let history = runs.map((r) => r.entry)
+    let labels = labelEntry ? [labelEntry] : []
     if (args.history) {
-      await appendFile(args.history, historyLines(history))
-      history = (await readFile(args.history, 'utf8'))
+      await appendFile(args.history, historyLines([...history, ...labels]))
+      const all = (await readFile(args.history, 'utf8'))
         .split('\n')
         .filter(Boolean)
-        .map((l) => JSON.parse(l) as HistoryEntry)
+        .map((l) => JSON.parse(l) as HistoryEntry | LabelEntry)
+      history = all.filter((e): e is HistoryEntry => !('kind' in e))
+      labels = all.filter((e): e is LabelEntry => 'kind' in e)
       console.log(`Appended to ${args.history}`)
     }
     if (args.scorecard) {
-      await writeFile(args.scorecard, scorecardMarkdown(runs, history))
+      await writeFile(
+        args.scorecard,
+        scorecardMarkdown(runs, history, undefined, labels),
+      )
       console.log(`Wrote ${args.scorecard}`)
     }
   }
