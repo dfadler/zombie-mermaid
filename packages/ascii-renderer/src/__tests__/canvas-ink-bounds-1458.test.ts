@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  cellAt,
   copyCanvas,
   drawText,
   mkCanvas,
@@ -28,7 +29,11 @@ describe('copyCanvas ink bounds (#1458)', () => {
     drawText(a, { x: 2, y: 3 }, 'hi')
     expect(b.every((col) => col.every((ch) => ch === ' '))).toBe(true)
     expect(copyCanvas(mkCanvas(4, 4))[1]![2]).toBe(' ')
-    expect([a[1]![2], a[2]![3], a[3]![3]]).toEqual(['a', 'h', 'i'])
+    expect([cellAt(a, 1, 2), cellAt(a, 2, 3), cellAt(a, 3, 3)]).toEqual([
+      'a',
+      'h',
+      'i',
+    ])
   })
 
   it('a layer grown by drawText keeps its writes and stays independent', () => {
