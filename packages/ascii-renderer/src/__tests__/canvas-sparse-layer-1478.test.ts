@@ -17,9 +17,9 @@ describe('copyCanvas sparse layers (#1478)', () => {
   it('keeps written cells when drawText grows the layer (#2376)', () => {
     const a = copyCanvas(mkCanvas(4, 4))
     write(a, 1, 2, 'x')
-    expect(a[1]![2]).toBe(' ') // sparse: cells live outside the columns
+    expect(a[1]![2]).toBe(' ') // Sparse: cells live outside the columns
     expect(cellAt(a, 1, 2)).toBe('x')
-    drawText(a, { x: 4, y: 0 }, 'hi') // past maxX: densifies
+    drawText(a, { x: 4, y: 0 }, 'hi') // Past maxX: densifies
     expect(a[1]![2]).toBe('x')
     expect(cellAt(a, 5, 0)).toBe('i')
   })
