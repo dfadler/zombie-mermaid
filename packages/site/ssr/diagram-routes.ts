@@ -37,7 +37,7 @@ import {
 } from '../../../demo/diagram-orientation.ts'
 import { renderMermaidASCII, renderMermaidSVG } from '../../../src/index.ts'
 import type { RenderOptions } from '../../../src/index.ts'
-import type { Sample } from '../samples-data.ts'
+import type { Sample } from '../../../samples/samples-data.ts'
 import { SITE_URL, type Clients, type Routes } from './shared.ts'
 
 /** Every page renders with '' (the "Default" pseudo-theme, see theme-picker.tsx's DEFAULT_SWATCH) first. */

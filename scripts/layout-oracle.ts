@@ -1,7 +1,7 @@
 /**
  * Measures how closely our flowchart layouts agree with official mermaid.js.
  *
- * Every flowchart sample in packages/site/samples-data.ts is rendered twice:
+ * Every flowchart sample in samples/samples-data.ts is rendered twice:
  * through real mermaid (headless Chromium, via scripts/lib/real-mermaid.ts) and
  * through our own layout engine. Node and subgraph positions are read back from
  * both, and scripts/lib/layout-agreement.ts scores how often they put the same
@@ -29,7 +29,7 @@
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 import {
   pinFreshness,
   pinnedMermaidVersion,

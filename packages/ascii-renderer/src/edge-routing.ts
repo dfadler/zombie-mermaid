@@ -135,7 +135,7 @@ export function determineStartAndEndDir(
 
   if (
     graphDirection === 'LR' &&
-    (edge.to.fanInCentered || edge.sideFaces) &&
+    (edge.to.fanInCentered || edge.sideFaces || edge.from.fanOutCentered) &&
     (dirEquals(d, LowerRight) || dirEquals(d, UpperRight))
   ) {
     // A fan-in child centered between its parents (grid.ts `fanInCenter`):
@@ -2349,7 +2349,14 @@ function applyLabelLine(
   // A horizontal stroke's start arrowhead takes the first stroke cell (#1438),
   // beside the end arrowhead's, so the label needs one more cell.
   const horizontal = line[0].y === line[1].y
-  const need = lenLabel + 2 + (horizontal && edge.hasArrowStart ? 2 : 0)
+  // A straight edge out of a right-face decision crosses the branch trunk at
+  // its column's centre; the label sits right of it, between a gap cell and
+  // the arrowhead (#2366).
+  const crossesTrunk =
+    horizontal && edge.from.fanOutCentered === true && edge.path.length === 2
+  const need = crossesTrunk
+    ? 2 * lenLabel + 5
+    : lenLabel + 2 + (horizontal && edge.hasArrowStart ? 2 : 0)
   // A vertical segment's label goes beside the stroke and needs the column's
   // own width, so only a horizontal one is exempt.
   const wideEnough =

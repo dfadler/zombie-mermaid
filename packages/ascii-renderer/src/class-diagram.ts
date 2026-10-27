@@ -345,6 +345,24 @@ export interface ClassAsciiOptions {
   hyperlinks?: boolean
 }
 
+// Arm bitmasks (up 1, down 2, left 4, right 8) of the box-drawing line glyphs.
+const ARMS_OF: Record<string, number> = {
+  '│': 3,
+  '─': 12,
+  '└': 9,
+  '┘': 5,
+  '┌': 10,
+  '┐': 6,
+  '├': 11,
+  '┤': 7,
+  '┬': 14,
+  '┴': 13,
+  '┼': 15,
+}
+const GLYPH_OF: Record<number, string> = Object.fromEntries(
+  Object.entries(ARMS_OF).map(([g, m]) => [m, g]),
+)
+
 /**
  * Render a Mermaid class diagram to ASCII/Unicode text.
  *
@@ -730,6 +748,13 @@ export function renderClassAscii(
   const relFromSpread = new Map<number, number>()
   const relToOffset = new Map<number, number>()
   const relToSpread = new Map<number, number>()
+  /**
+   * Fanned target ends where at most one relationship carries an arrowhead
+   * (`from:<i>` / `to:<i>`): there is nothing to keep apart, so the anchors
+   * converge on the box centre like mermaid's (#2335). Ends with two or more
+   * heads keep their own anchors so no head is lost (#632, #2024).
+   */
+  const mergeAtCentre = new Set<string>()
   {
     const fanBySharedEndpoint = (
       endpointOf: (rel: (typeof diagram.relationships)[number]) => string,
@@ -772,10 +797,23 @@ export function renderClassAscii(
         step = capStepToInterior(step, group, [
           endpointOf(diagram.relationships[group[0]!]!),
         ])
+        const isTo = offsetOut === relToOffset
+        // Labels and cardinalities sit on the fanned lanes; merged lines
+        // would stack them in the same cells.
+        const plain = group.every((i) => {
+          const r = diagram.relationships[i]!
+          return !r.label && !r.fromCardinality && !r.toCardinality
+        })
+        const heads = group.filter((i) => {
+          const at = diagram.relationships[i]!.markerAt
+          return isTo ? at !== 'from' : at !== 'to'
+        }).length
         group.forEach((relIndex, pos) => {
           offsetOut.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
           spreadOut.set(relIndex, (n - 1) * step)
           sizeOut.set(relIndex, n)
+          if (heads <= 1 && plain)
+            mergeAtCentre.add(`${isTo ? 'to' : 'from'}:${relIndex}`)
         })
       }
     }
@@ -1441,10 +1479,16 @@ export function renderClassAscii(
       relColumnOffset.get(relIndex) ?? relFromOffset.get(relIndex) ?? 0
     const toOffset =
       relColumnOffset.get(relIndex) ?? relToOffset.get(relIndex) ?? 0
-    const fromSpread =
-      relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0
-    const toSpread =
-      relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0
+    // A shared endpoint (several parents/children, #2335) converges on the
+    // box centre like mermaid does; only a duplicate-pair group keeps its
+    // anchors spread (#489). The lanes still carry the offset, so labels
+    // stay apart and the jog row brings the lines together at the centre.
+    const fromSpread = mergeAtCentre.has(`from:${relIndex}`)
+      ? 0
+      : (relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0)
+    const toSpread = mergeAtCentre.has(`to:${relIndex}`)
+      ? 0
+      : (relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0)
     // Only an end that carries a marker (arrowhead, triangle, diamond) is
     // pulled off the corner cells; a bare line may leave from a corner.
     const markerAt = diagram.relationships[relIndex]!.markerAt
@@ -1459,13 +1503,42 @@ export function renderClassAscii(
     const fromCenter = fromP.x + Math.floor(fromP.width / 2)
     const toCenter = toP.x + Math.floor(toP.width / 2)
     return {
-      fromCX: fromCenter + fromOffset,
-      toCX: toCenter + toOffset,
+      fromCX: fromCenter + (fromSpread ? fromOffset : 0),
+      toCX: toCenter + (toSpread ? toOffset : 0),
       fromAnchorX:
         fromCenter +
-        anchorOffset(fromOffset, fromSpread, fromP.width, fromSize),
-      toAnchorX: toCenter + anchorOffset(toOffset, toSpread, toP.width, toSize),
+        (fromSpread
+          ? anchorOffset(fromOffset, fromSpread, fromP.width, fromSize)
+          : 0),
+      toAnchorX:
+        toCenter +
+        (toSpread ? anchorOffset(toOffset, toSpread, toP.width, toSize) : 0),
     }
+  }
+
+  /**
+   * Write a line/corner cell, taking the union of the arms of whatever line
+   * glyph is already there: two relationships sharing a merged anchor (#2335)
+   * overlap on a trunk, and a `└` over a `│` has to read `├`, not `└`. An
+   * arrowhead already placed there is left alone.
+   */
+  function setUnionCell(
+    x: number,
+    y: number,
+    ch: string,
+    role: CharRole,
+  ): void {
+    if (boxCells.has(`${x},${y}`)) return
+    if (rc[x]?.[y] === 'arrow') return
+    const existing = canvas[x]?.[y]
+    const had = existing === undefined ? undefined : ARMS_OF[existing]
+    const add = ARMS_OF[ch]
+    if (!useAscii && had !== undefined && add !== undefined) {
+      const glyph = GLYPH_OF[had | add]!
+      setC(x, y, glyph, glyph === ch ? role : 'junction')
+      return
+    }
+    setC(x, y, ch, role)
   }
 
   /**
@@ -1808,8 +1881,11 @@ export function renderClassAscii(
         // 1. Jog from the source anchor out to the lane, then vertical from
         //    the source bottom (or from below the jog) to midY
         drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
-        for (let y = fromBY + (fromJogs ? 2 : 1); y <= midY; y++) {
-          setCGuarded(fromCX, y, lineV, 'line')
+        // The corner at `midY` is written below; a `│` there would union with
+        // it into a `├`/`┤`.
+        const lastY = fromCX !== toCX && !useAscii ? midY - 1 : midY
+        for (let y = fromBY + (fromJogs ? 2 : 1); y <= lastY; y++) {
+          setUnionCell(fromCX, y, lineV, 'line')
         }
 
         // 2. Horizontal from fromCX to toCX at midY (if needed)
@@ -1827,19 +1903,22 @@ export function renderClassAscii(
         if (fromCX !== toCX && midY < (canvas[0]?.length ?? 0)) {
           const lx = Math.min(fromCX, toCX)
           const rx = Math.max(fromCX, toCX)
-          for (let x = lx; x <= rx; x++) {
-            setCGuarded(x, midY, lineH, 'line')
+          // Unicode ends are corners written below; a bare `─` there would
+          // union with them into a `┼`.
+          const e = useAscii ? 0 : 1
+          for (let x = lx + e; x <= rx - e; x++) {
+            setUnionCell(x, midY, lineH, 'line')
           }
           if (!useAscii) {
-            setCGuarded(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
-            setCGuarded(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
+            setUnionCell(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
+            setUnionCell(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
           }
         }
 
         // 3. Vertical from midY to the target top (or to above the jog),
         //    then jog from the lane back in to the target anchor
         for (let y = midY + 1; y < toTY - (toJogs ? 1 : 0); y++) {
-          setCGuarded(toCX, y, lineV, 'line')
+          setUnionCell(toCX, y, lineV, 'line')
         }
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 

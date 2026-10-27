@@ -1,7 +1,7 @@
 name: Render determinism
 
 # Cross-OS / cross-Node byte-identity check for rendered output (#1861).
-# Each matrix cell renders every gallery sample (packages/site/samples-data.ts)
+# Each matrix cell renders every gallery sample (samples/samples-data.ts)
 # to SVG and ASCII and uploads a hash manifest; `compare` diffs every manifest
 # against ubuntu/node-24 and fails on any mismatch.
 #
@@ -19,6 +19,7 @@ on:
     paths:
       - 'packages/**'
       - 'src/**'
+      - 'samples/**'
       - 'scripts/determinism-manifest.ts'
       - 'scripts/lib/determinism-manifest.ts'
       - '.github/workflows/determinism.yml'

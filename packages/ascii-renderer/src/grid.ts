@@ -16,7 +16,7 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { requireGridCoord } from './types.ts'
+import { DEFAULT_PADDING_Y, paddingOffset, requireGridCoord } from './types.ts'
 import { subgraphsTied } from '@zombie-mermaid/core'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
@@ -294,7 +294,12 @@ export function setColumnWidth(
       )
     })
   if (gc.y > 0 && !rowAboveIsNodeBlock && !straddlesParent(graph, node, 'y')) {
-    let basePadding = graph.config.paddingY
+    // #2350: LR sibling gap is 4 at the default paddingY (5), offset from the
+    // default like the other renderers; TD keeps paddingY as-is.
+    let basePadding =
+      graph.config.graphDirection === 'LR'
+        ? paddingOffset(graph.config.paddingY, DEFAULT_PADDING_Y, 4, 1)
+        : graph.config.paddingY
     // Extra vertical padding for nodes with incoming edges from outside their subgraph
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
       const subgraphOverhead = 4
@@ -1215,6 +1220,22 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
 }
 
 /**
+ * LR decision (diamond) split two or more ways: every branch leaves the right
+ * face, as mermaid's ports do (#2351, #2366). Plain boxes keep their top/bottom
+ * faces (the upstream goldens in ascii.test.ts pin that). A straight middle
+ * edge's label gets room beside the shared trunk in `applyLabelLine`.
+ */
+function markDecisionSplit(
+  node: AsciiNode,
+  lr: boolean,
+  childCount: number,
+): void {
+  if (lr && childCount >= 2 && node.shape === 'diamond') {
+    node.fanOutCentered = true
+  }
+}
+
+/**
  * Centre a node over its children, as dagre does, instead of leaving it above
  * the first one (a fan-out like `A --> B & C & D` otherwise hangs A over B and
  * leaves its other edges to leave sideways and come back down).
@@ -1303,6 +1324,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       if (mid + 2 <= crossOf(gc)) continue
       if (fitsStraddled(graph, node)) {
         relocateNode(graph, node, at(rankOf(gc), mid))
+        markDecisionSplit(node, lr, children.length)
         continue
       }
       const own = new Set<AsciiNode>([node])
@@ -1325,6 +1347,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       mid += 2
     }
     if (mid > crossOf(gc)) relocateNode(graph, node, at(rankOf(gc), mid))
+    markDecisionSplit(node, lr, children.length)
   }
   markLabeledFanIn(graph)
 }

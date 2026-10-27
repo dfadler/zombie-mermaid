@@ -14,7 +14,7 @@
  */
 import { expect, test } from '@playwright/test'
 import { renderMermaidASCII } from '../../src/index.ts'
-import { samples } from '../../packages/site/samples-data.ts'
+import { samples } from '../../samples/samples-data.ts'
 import { TERMINAL_ASCII_OPTS } from './helpers/terminal-panel.ts'
 import { mountAndMeasure } from './helpers/ascii-measure.ts'
 

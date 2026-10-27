@@ -35,7 +35,7 @@
 
 import { writeFile } from 'node:fs/promises'
 import { decodeXML } from 'entities'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 import { renderMermaid } from '../src/index.ts'
 import { diagramRegistry } from '../packages/svg-renderer/src/registry.ts'
 import { detectDiagramType, splitStatements } from '@zombie-mermaid/core'
