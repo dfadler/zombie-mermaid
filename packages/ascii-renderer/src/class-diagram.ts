@@ -648,9 +648,38 @@ export function renderClassAscii(
   // Computed before positions are assigned (it depends only on the
   // relationship list) because the column reservation below needs to know
   // how far each group fans out from its boxes' centers.
+  /**
+   * Unlabelled lines fanned across narrow boxes: shrink the lane spacing so
+   * every lane stays inside the box's interior (corner cells excluded). Each
+   * line, arrowhead included, then lands on a border cell of its own rather
+   * than on a corner glyph or at the end of a jog beside the box (#2335).
+   * Labelled groups keep their label spacing, and a cap below 2 would pack
+   * lanes together, so the original step is kept then.
+   */
+  function capStepToInterior(
+    step: number,
+    group: number[],
+    boxIds: string[],
+  ): number {
+    if (
+      group.some((i) => {
+        const r = diagram.relationships[i]!
+        return r.label || r.fromCardinality || r.toCardinality
+      })
+    )
+      return step
+    const widths = boxIds.map((id) => classBoxW.get(id)!)
+    const cap = Math.floor((Math.min(...widths) - 3) / (group.length - 1))
+    return cap >= 2 && cap < step ? cap : step
+  }
+
   const relColumnOffset = new Map<number, number>()
   /** Distance between a group's outermost lanes, keyed by member — see `anchorOffset`. */
   const relGroupSpread = new Map<number, number>()
+  /** Member count of the group a relationship is fanned in, by relationship. */
+  const relGroupSize = new Map<number, number>()
+  const relFromSize = new Map<number, number>()
+  const relToSize = new Map<number, number>()
   {
     const pairGroups = new Map<string, number[]>()
     diagram.relationships.forEach((rel, i) => {
@@ -669,10 +698,15 @@ export function renderClassAscii(
           return labelCellWidth(label)
         }),
       )
-      const step = widestLabel + 1 // +1 for a visual gap between labels
+      let step = widestLabel + 1 // +1 for a visual gap between labels
+      step = capStepToInterior(step, group, [
+        diagram.relationships[group[0]!]!.from,
+        diagram.relationships[group[0]!]!.to,
+      ])
       group.forEach((relIndex, pos) => {
         relColumnOffset.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
         relGroupSpread.set(relIndex, (n - 1) * step)
+        relGroupSize.set(relIndex, n)
       })
     }
   }
@@ -726,6 +760,7 @@ export function renderClassAscii(
       endpointOf: (rel: (typeof diagram.relationships)[number]) => string,
       offsetOut: Map<number, number>,
       spreadOut: Map<number, number>,
+      sizeOut: Map<number, number>,
     ): void => {
       const groups = new Map<string, number[]>()
       diagram.relationships.forEach((rel, i) => {
@@ -741,6 +776,15 @@ export function renderClassAscii(
       })
       for (const group of groups.values()) {
         if (group.length < 2) continue
+        // Order lanes by where the far end sits in its row, so lines that
+        // leave left arrive left instead of crossing just above the shared
+        // box (mermaid keeps them uncrossed too). Ties keep source order.
+        const farX = (i: number): number => {
+          const rel = diagram.relationships[i]!
+          const far = endpointOf(rel) === rel.to ? rel.from : rel.to
+          return levelGroups[level.get(far)!]!.indexOf(far)
+        }
+        group.sort((a, b) => farX(a) - farX(b)) // Stable: ties keep source order
         const n = group.length
         const widestLabel = Math.max(
           ...group.map((i) => {
@@ -749,7 +793,10 @@ export function renderClassAscii(
             return labelCellWidth(label)
           }),
         )
-        const step = widestLabel + 1 // +1 for a visual gap between labels
+        let step = widestLabel + 1 // +1 for a visual gap between labels
+        step = capStepToInterior(step, group, [
+          endpointOf(diagram.relationships[group[0]!]!),
+        ])
         const isTo = offsetOut === relToOffset
         // Labels and cardinalities sit on the fanned lanes; merged lines
         // would stack them in the same cells.
@@ -764,13 +811,19 @@ export function renderClassAscii(
         group.forEach((relIndex, pos) => {
           offsetOut.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
           spreadOut.set(relIndex, (n - 1) * step)
+          sizeOut.set(relIndex, n)
           if (heads <= 1 && plain)
             mergeAtCentre.add(`${isTo ? 'to' : 'from'}:${relIndex}`)
         })
       }
     }
-    fanBySharedEndpoint((rel) => rel.to, relToOffset, relToSpread)
-    fanBySharedEndpoint((rel) => rel.from, relFromOffset, relFromSpread)
+    fanBySharedEndpoint((rel) => rel.to, relToOffset, relToSpread, relToSize)
+    fanBySharedEndpoint(
+      (rel) => rel.from,
+      relFromOffset,
+      relFromSpread,
+      relFromSize,
+    )
   }
 
   // --- Reserve column room for relationship labels and fanned-out groups ---
@@ -1359,11 +1412,18 @@ export function renderClassAscii(
     offset: number,
     spread: number,
     boxWidth: number,
+    groupSize: number,
   ): number {
     // Columns available on each side of the center — the center itself is
     // `floor(boxWidth / 2)` in from the left edge, matching `connectionColumns`.
-    const left = Math.floor(boxWidth / 2)
-    const right = boxWidth - 1 - left
+    // Corner cells hold the border glyphs, so an arrowhead there reads as
+    // sitting beside the box rather than on it (#2335): keep anchors
+    // inside the corners whenever the box has an interior to spare.
+    // A group with more members than the interior has cells (#489) needs
+    // the corner columns to keep its arrowheads distinct, so it keeps them.
+    const trim = boxWidth >= 3 && groupSize <= boxWidth - 2 ? 1 : 0
+    const left = Math.floor(boxWidth / 2) - trim
+    const right = boxWidth - 1 - Math.floor(boxWidth / 2) - trim
     const scale = spread > left + right ? (left + right) / spread : 1
     return Math.max(-left, Math.min(right, Math.round(offset * scale)))
   }
@@ -1429,6 +1489,17 @@ export function renderClassAscii(
     const toSpread = mergeAtCentre.has(`to:${relIndex}`)
       ? 0
       : (relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0)
+    // Only an end that carries a marker (arrowhead, triangle, diamond) is
+    // pulled off the corner cells; a bare line may leave from a corner.
+    const markerAt = diagram.relationships[relIndex]!.markerAt
+    const fromSize =
+      markerAt === 'to'
+        ? Infinity
+        : (relGroupSize.get(relIndex) ?? relFromSize.get(relIndex) ?? 0)
+    const toSize =
+      markerAt === 'from'
+        ? Infinity
+        : (relGroupSize.get(relIndex) ?? relToSize.get(relIndex) ?? 0)
     const fromCenter = fromP.x + Math.floor(fromP.width / 2)
     const toCenter = toP.x + Math.floor(toP.width / 2)
     return {
@@ -1436,9 +1507,12 @@ export function renderClassAscii(
       toCX: toCenter + (toSpread ? toOffset : 0),
       fromAnchorX:
         fromCenter +
-        (fromSpread ? anchorOffset(fromOffset, fromSpread, fromP.width) : 0),
+        (fromSpread
+          ? anchorOffset(fromOffset, fromSpread, fromP.width, fromSize)
+          : 0),
       toAnchorX:
-        toCenter + (toSpread ? anchorOffset(toOffset, toSpread, toP.width) : 0),
+        toCenter +
+        (toSpread ? anchorOffset(toOffset, toSpread, toP.width, toSize) : 0),
     }
   }
 
