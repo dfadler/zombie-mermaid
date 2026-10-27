@@ -92,7 +92,7 @@ test.afterAll(() => server.close())
 
 // Narrow pages scroll panels that fit at 1280 (scrollable-region-focusable,
 // #1792), so scan the hand-written pages again at phone width.
-const MOBILE_PAGES = PAGES.slice(0, 5)
+const MOBILE_PAGES = PAGES.slice(0, 6)
 const SCANS = [
   ...PAGES.map((path) => ({ path, width: 1280 })),
   ...MOBILE_PAGES.map((path) => ({ path, width: 390 })),

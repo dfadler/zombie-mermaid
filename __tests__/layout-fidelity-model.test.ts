@@ -45,6 +45,13 @@ describe('parseScorecard', () => {
     expect(s[1]!.tables).toEqual([{ header: ['a', 'b'], rows: [['1', '2']] }])
   })
 
+  it('keeps escaped pipes inside one cell', () => {
+    const s = parseScorecard(
+      '# T\n\n## A\n\n| name | v |\n| - | - |\n| ER (\\|\\|--\\|\\|) | 1 |\n',
+    )
+    expect(s[1]!.tables[0]!.rows).toEqual([['ER (||--||)', '1']])
+  })
+
   it('finds the committed scorecard sections', () => {
     const titles = parseScorecard(
       readFileSync('docs/layout-fidelity-scorecard.md', 'utf8'),

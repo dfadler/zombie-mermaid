@@ -107,8 +107,8 @@ const cells = (line: string) =>
   line
     .trim()
     .replace(/^\||\|$/g, '')
-    .split('|')
-    .map((c) => c.trim())
+    .split(/(?<!\\)\|/)
+    .map((c) => c.trim().replace(/\\\|/g, '|'))
 
 export function parseScorecard(md: string): Section[] {
   const sections: Section[] = []
