@@ -7,9 +7,10 @@
  * render in ~0.45 s, unchanged since #1490; v8 coverage makes it ~1.5 s and a
  * loaded CI runner several times that. A fixed wall-clock budget flaked at
  * 5 s, so this checks scaling instead: the time ratio between n=40 and n=20
- * measured in the same run (cost is roughly cubic, measured 5.3-6.3x per doubling; an extra
- * per-candidate edge scan injected as a sabotage check gave 8-12x, so the
- * cap of 10 sits between the two; the old cap of 20 let that regression pass).
+ * measured in the same run (#1785: cost is now roughly quadratic, measured
+ * 3.0-3.6x per doubling here, was 5.3-6.3x when the cap was set; the cap of 6
+ * leaves ~1.7x margin for load noise and still sits below the 8-12x an extra
+ * per-candidate edge scan gave as a sabotage check).
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '../index.ts'
@@ -48,17 +49,17 @@ describe('label placement scaling (#1490)', () => {
     // 30 s timeout: ~4 s alone, several-fold slower under full-suite load (#1825).
   }, 30_000)
 
-  it('grows no worse than ~cubic from n=20 to n=40', () => {
+  it('grows no worse than ~quadratic from n=20 to n=40', () => {
     bestPair(10, 10, 1) // Warm up JIT before timing
     // Transient load (a parallel typecheck, a busy CI runner) can inflate one
     // attempt to ~17x; a real regression is slow in every attempt. So take the
     // best ratio of up to 3 attempts, stopping at the first that passes.
     let ratio = Infinity
-    for (let attempt = 0; attempt < 3 && ratio >= 10; attempt++) {
+    for (let attempt = 0; attempt < 3 && ratio >= 6; attempt++) {
       const [t20, t40] = bestPair(20, 40)
       ratio = Math.min(ratio, t40 / t20)
     }
-    expect(ratio).toBeLessThan(10)
+    expect(ratio).toBeLessThan(6)
     // 180 s timeout: up to ~36 renders, ~17 s alone; under `verify --full`
     // worker contention it exceeded 60 s (#1825).
   }, 180_000)
