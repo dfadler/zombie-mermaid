@@ -203,5 +203,10 @@
     "file": "scripts/ascii-layout-table.ts",
     "reason": "measurement CLI: runs on import and prints a table over the gallery, no assertable logic (the rasterizer it measures is unit-tested in packages/ascii-layout)",
     "maxLines": 80
+  },
+  {
+    "file": "scripts/lib/label-position.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid label positions), only reachable from the label-position-oracle and layout-oracle CLIs",
+    "maxLines": 150
   }
 ]
