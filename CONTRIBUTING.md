@@ -12,7 +12,7 @@ pnpm run doctor     # check your toolchain; ASCII/Docker tools are optional
 pnpm run verify     # typecheck + lint/format/tests for what you changed
 ```
 
-`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or `--related <file>`) runs only affected tests. Rough path-to-suite map:
+`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or, for one source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`) runs only affected tests. Rough path-to-suite map:
 
 | Changed path                                   | Run                                                                |
 | ---------------------------------------------- | ------------------------------------------------------------------ |

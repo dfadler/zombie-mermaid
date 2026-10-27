@@ -8,7 +8,7 @@ instead — this file only holds what's specific to _this_ repo's tooling.
 
 After a change, run `pnpm run verify` (typecheck in parallel, lint/format on changed files,
 `vitest run --changed origin/main`) instead of separate full-repo typecheck/oxlint/oxfmt/coverage
-runs. For a single file, `pnpm exec vitest run -c config/vitest.config.ts --related <file>`.
+runs. For a single source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`; for a test file, `pnpm exec vitest run -c config/vitest.config.ts <test-file>`.
 Path-to-suite map: `packages/ascii-renderer/**` -> its `__tests__` plus
 `pnpm exec playwright test -g ascii-samples`. Reserve `pnpm run verify --full` (CI parity) for
 the end. `pnpm run doctor` diagnoses a broken local toolchain.
