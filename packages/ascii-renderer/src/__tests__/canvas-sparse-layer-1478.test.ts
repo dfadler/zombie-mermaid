@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { copyCanvas, drawText, mkCanvas, write } from '../canvas.ts'
+import { cellAt, copyCanvas, drawText, mkCanvas, write } from '../canvas.ts'
 
 describe('copyCanvas sparse layers (#1478)', () => {
   it('shares blank columns until written, and a write never leaks to siblings', () => {
@@ -12,5 +12,15 @@ describe('copyCanvas sparse layers (#1478)', () => {
     expect([a[3]![0], a[4]![0]]).toEqual(['h', 'i'])
     expect(a[2]!.every((c) => c === ' ')).toBe(true)
     expect(b.every((col) => col.every((c) => c === ' '))).toBe(true)
+  })
+
+  it('keeps written cells when drawText grows the layer (#2376)', () => {
+    const a = copyCanvas(mkCanvas(4, 4))
+    write(a, 1, 2, 'x')
+    expect(a[1]![2]).toBe(' ') // Sparse: cells live outside the columns
+    expect(cellAt(a, 1, 2)).toBe('x')
+    drawText(a, { x: 4, y: 0 }, 'hi') // Past maxX: densifies
+    expect(a[1]![2]).toBe('x')
+    expect(cellAt(a, 5, 0)).toBe('i')
   })
 })

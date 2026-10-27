@@ -17,6 +17,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
+import { forEachInk } from '../../packages/ascii-renderer/src/canvas.ts'
 import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import type {
   AsciiConfig,
@@ -48,15 +49,14 @@ function buildGraph(src: string, useAscii = false): AsciiGraph {
   return graph
 }
 
-/** Every non-space character on the canvas, in scan order. */
+/** Every non-space character on the (sparse) layer, in x-major scan order. */
 function nonSpaceChars(canvas: string[][]): string {
-  const found: string[] = []
-  for (const col of canvas) {
-    for (const ch of col) {
-      if (ch !== ' ') found.push(ch)
-    }
-  }
-  return found.join('')
+  const found: [number, number, string][] = []
+  forEachInk(canvas, (x, y, ch) => {
+    if (ch !== ' ') found.push([x, y, ch])
+  })
+  found.sort((p, q) => p[0] - q[0] || p[1] - q[1])
+  return found.map((f) => f[2]).join('')
 }
 
 const FAN_IN = `flowchart TD

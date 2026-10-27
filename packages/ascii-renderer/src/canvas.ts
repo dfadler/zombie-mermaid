@@ -44,33 +44,65 @@ function blankColumn(height: number): string[] {
   return col
 }
 
+/** Cell key stride; canvases are far smaller than this in either axis. */
+const KEY_STRIDE = 2 ** 20
+
 /**
- * Set a cell, giving a `copyCanvas` layer its own copy of the column first
- * if it still points at the shared blank one (sparse overlay, #1478).
+ * Written cells of a `copyCanvas` layer, keyed `x * KEY_STRIDE + y` (#2376).
+ * The layer's own columns stay the shared blank, so a per-edge layer costs
+ * O(cells written), not O(columns touched x height). Read through `cellAt` /
+ * `forEachInk`; `layer[x][y]` sees only blanks. `increaseSize` folds the cells
+ * back into real columns, after which the canvas is an ordinary dense one.
  */
-function setCell(canvas: Canvas, x: number, y: number, ch: string): void {
-  let col = canvas[x]!
-  // A frozen column is the shared all-space blank. Replace it with an empty
-  // array holding only the written cells (holes read as undefined, which
-  // layer readers treat as ' '), so a layer costs O(cells drawn), not
-  // O(columns touched x height) (#2376).
-  if (Object.isFrozen(col)) canvas[x] = col = []
-  col[y] = ch
+const sparseCells = new WeakMap<Canvas, Map<number, string>>()
+
+/** Cell at (x, y), reading a sparse layer's written cells too. */
+export function cellAt(
+  canvas: Canvas,
+  x: number,
+  y: number,
+): string | undefined {
+  return sparseCells.get(canvas)?.get(x * KEY_STRIDE + y) ?? canvas[x]?.[y]
 }
 
 /**
- * Create a blank canvas with the same dimensions as the given canvas. Columns
- * are a shared frozen blank until first written, so a mostly-empty per-edge
- * layer costs O(cells drawn), not O(area) (#1478, #2376). Written columns are
- * sparse: unwritten cells read as `undefined`, so read with `?? ' '` and take
- * the size from `getCanvasSize`, not `canvas[0].length`. Write only through `write`/`drawText`, never `canvas[x][y] = ch`.
+ * Call `fn` for every cell that may be non-space: a sparse layer's written
+ * cells (any order), else everything in `scanBounds` (x-major).
+ */
+export function forEachInk(
+  canvas: Canvas,
+  fn: (x: number, y: number, ch: string) => void,
+): void {
+  const cells = sparseCells.get(canvas)
+  if (cells) {
+    for (const [k, ch] of cells)
+      fn(Math.floor(k / KEY_STRIDE), k % KEY_STRIDE, ch)
+    return
+  }
+  const [x0, y0, x1, y1] = scanBounds(canvas)
+  for (let x = x0; x <= x1; x++)
+    for (let y = y0; y <= y1; y++) fn(x, y, canvas[x]![y]!)
+}
+
+/** Set a cell: into a sparse layer's cell map, else straight into the column. */
+function setCell(canvas: Canvas, x: number, y: number, ch: string): void {
+  const cells = sparseCells.get(canvas)
+  if (cells) cells.set(x * KEY_STRIDE + y, ch)
+  else canvas[x]![y] = ch
+}
+
+/**
+ * Create a blank canvas with the same dimensions as the given canvas. It is a
+ * sparse layer (see `sparseCells`): write only through `write`/`drawText`,
+ * read through `cellAt`/`forEachInk`, never `canvas[x][y]`.
  */
 export function copyCanvas(source: Canvas): Canvas {
   const [maxX, maxY] = getCanvasSize(source)
   const canvas: Canvas = new Array<string[]>(maxX + 1).fill(
     blankColumn(maxY + 1),
   )
-  inkBounds.set(canvas, [Infinity, Infinity, -1, -1, maxY + 1])
+  inkBounds.set(canvas, [Infinity, Infinity, -1, -1])
+  sparseCells.set(canvas, new Map())
   return canvas
 }
 
@@ -95,10 +127,7 @@ export function blankLayer(source: Canvas): Canvas {
  * from costing O(edges x canvas area) (#1458). Only `write` and `drawText`
  * record into it; never write to a `copyCanvas` result any other way.
  */
-const inkBounds = new WeakMap<
-  Canvas,
-  [number, number, number, number, number]
->()
+const inkBounds = new WeakMap<Canvas, [number, number, number, number]>()
 
 /** Box to scan for non-space cells: tracked ink box, else the whole canvas. */
 export function scanBounds(canvas: Canvas): [number, number, number, number] {
@@ -241,8 +270,6 @@ export function mergeRoleCanvases(
 
 /** Returns [maxX, maxY] — the highest valid indices in each dimension. */
 export function getCanvasSize(canvas: Canvas): [number, number] {
-  const layer = inkBounds.get(canvas)
-  if (layer) return [canvas.length - 1, layer[4] - 1]
   return [canvas.length - 1, (canvas[0]?.length ?? 1) - 1]
 }
 
@@ -263,15 +290,19 @@ export function increaseSize(
   for (let x = 0; x < grown.length; x++) {
     for (let y = 0; y < (grown[0]?.length ?? 0); y++) {
       if (x < canvas.length && y < (canvas[0]?.length ?? 0)) {
-        grown[x]![y] = canvas[x]![y] ?? ' '
+        grown[x]![y] = canvas[x]![y]!
       }
     }
   }
-  const layer = inkBounds.get(canvas)
-  if (layer) layer[4] = targetY + 1
   // Mutate in place: splice old contents and replace with grown
   canvas.length = 0
   canvas.push(...grown)
+  const cells = sparseCells.get(canvas)
+  if (cells) {
+    for (const [k, ch] of cells)
+      canvas[Math.floor(k / KEY_STRIDE)]![k % KEY_STRIDE] = ch
+    sparseCells.delete(canvas)
+  }
   return canvas
 }
 
@@ -555,34 +586,28 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
     // must be written explicitly below, not just the ones this function
     // blanks out.
     const out = copyCanvas(canvas)
-    const [bx0, by0, bx1, by1] = scanBounds(canvas)
-    for (let x = bx0; x <= bx1; x++) {
-      const col = canvas[x]
-      if (!col || Object.isFrozen(col)) continue
-      for (let y = by0; y <= by1; y++) {
-        const c = col[y]
-        if (c === undefined || c === ' ') continue
-        const key = `${x},${y}`
-        const existing = claimed.get(key)
-        if (existing !== undefined) {
-          // A repeat of the *same* character (a collinear duplicate, e.g.
-          // two edges both drawing '─' through a shared trunk cell) is
-          // still a first-claim suppression, not a crossing — `mergeJunctions`
-          // has no entry for a character merged with itself and would just
-          // fall back to it, so letting it through would be a harmless but
-          // pointless no-op; treating it as "still claimed" keeps the rule
-          // simple and matches "collinear overlap" from the case that
-          // actually needs a merge (two *different* junction characters).
-          const isCrossing =
-            existing !== c && isJunctionChar(existing) && isJunctionChar(c)
-          if (!isCrossing) continue
-        } else {
-          claimed.set(key, c)
-        }
-        setCell(out, x, y, c)
-        markInk(out, x, y)
+    forEachInk(canvas, (x, y, c) => {
+      if (c === ' ') return
+      const key = `${x},${y}`
+      const existing = claimed.get(key)
+      if (existing !== undefined) {
+        // A repeat of the *same* character (a collinear duplicate, e.g.
+        // two edges both drawing '─' through a shared trunk cell) is
+        // still a first-claim suppression, not a crossing — `mergeJunctions`
+        // has no entry for a character merged with itself and would just
+        // fall back to it, so letting it through would be a harmless but
+        // pointless no-op; treating it as "still claimed" keeps the rule
+        // simple and matches "collinear overlap" from the case that
+        // actually needs a merge (two *different* junction characters).
+        const isCrossing =
+          existing !== c && isJunctionChar(existing) && isJunctionChar(c)
+        if (!isCrossing) return
+      } else {
+        claimed.set(key, c)
       }
-    }
+      setCell(out, x, y, c)
+      markInk(out, x, y)
+    })
     result.push(out)
   }
   return result
@@ -618,30 +643,25 @@ export function mergeCanvases(
   }
 
   // Apply overlays
-  const paint = (x: number, y: number, c: string): void => {
-    if (c === ' ') return
-    const mx = x + offset.x
-    const my = y + offset.y
-    const current = merged[mx]![my]!
-    if (!useAscii && isJunctionChar(c) && isJunctionChar(current)) {
-      merged[mx]![my] = mergeJunctions(current, c)
-    } else if (isAlphanumeric(current) && isAlphanumeric(c)) {
-      // Don't overwrite existing label text with new label text
-      // This prevents label collisions (first label wins)
-    } else if (SILHOUETTE_TIPS.has(current) && /^[─│\-|]$/.test(c)) {
-      // An edge leaving a stadium/hexagon starts beside its `(` `)`
-      // `<` `>` point rather than cutting it off (#2164).
-    } else {
-      merged[mx]![my] = c
-    }
-  }
   for (const overlay of overlays) {
-    const [ox0, oy0, ox1, oy1] = scanBounds(overlay)
-    for (let x = ox0; x <= ox1; x++) {
-      const col = overlay[x]!
-      if (Object.isFrozen(col)) continue // Shared blank column, nothing drawn.
-      for (let y = oy0; y <= oy1; y++) paint(x, y, col[y] ?? ' ')
-    }
+    forEachInk(overlay, (x, y, c) => {
+      if (c !== ' ') {
+        const mx = x + offset.x
+        const my = y + offset.y
+        const current = merged[mx]![my]!
+        if (!useAscii && isJunctionChar(c) && isJunctionChar(current)) {
+          merged[mx]![my] = mergeJunctions(current, c)
+        } else if (isAlphanumeric(current) && isAlphanumeric(c)) {
+          // Don't overwrite existing label text with new label text
+          // This prevents label collisions (first label wins)
+        } else if (SILHOUETTE_TIPS.has(current) && /^[─│\-|]$/.test(c)) {
+          // An edge leaving a stadium/hexagon starts beside its `(` `)`
+          // `<` `>` point rather than cutting it off (#2164).
+        } else {
+          merged[mx]![my] = c
+        }
+      }
+    })
   }
 
   return merged
@@ -1095,7 +1115,7 @@ export function drawText(
   increaseSize(canvas, start.x + cells.length, start.y)
   for (const [i, cell] of cells.entries()) {
     const x = start.x + i
-    const current = canvas[x]![start.y] ?? ' '
+    const current = cellAt(canvas, x, start.y)!
     // Only write if target is empty or we're forcing overwrite
     if (forceOverwrite || current === ' ') {
       setCell(canvas, x, start.y, cell)

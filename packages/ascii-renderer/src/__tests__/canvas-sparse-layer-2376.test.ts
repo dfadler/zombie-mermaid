@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  cellAt,
   copyCanvas,
   drawText,
   getCanvasSize,
@@ -9,17 +10,17 @@ import {
 } from '../canvas.ts'
 
 describe('copyCanvas sparse layers (#2376)', () => {
-  it('keeps the source size and allocates only the cells written', () => {
+  it('keeps the source size and stores written cells off the columns', () => {
     const layer = copyCanvas(mkCanvas(9, 99))
     write(layer, 0, 40, '│')
     write(layer, 3, 5, '─')
     expect(getCanvasSize(layer)).toEqual([9, 99])
-    // Written columns hold up to the last written row, not the full height.
-    expect(layer[0]!.length).toBe(41)
-    expect(layer[3]!.length).toBe(6)
-    // Untouched columns stay the shared blank full-height column.
+    expect(cellAt(layer, 0, 40)).toBe('│')
+    expect(cellAt(layer, 3, 5)).toBe('─')
+    // Columns stay the shared blank full-height column.
+    expect(layer[0]![40]).toBe(' ')
     expect(layer[5]!.length).toBe(100)
-    expect(layer[5]).toBe(layer[6])
+    expect(layer[0]).toBe(layer[6])
   })
 
   it('merges only drawn cells and treats holes as blanks', () => {

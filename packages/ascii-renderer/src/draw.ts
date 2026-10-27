@@ -24,7 +24,14 @@ import type {
   AsciiSubgraph,
   EdgeBundle,
 } from './types.ts'
-import { mergeCanvases, firstClaimWins, scanBounds, write } from './canvas.ts'
+import {
+  cellAt,
+  firstClaimWins,
+  forEachInk,
+  mergeCanvases,
+  scanBounds,
+  write,
+} from './canvas.ts'
 import type { RoleCanvas, CharRole, LabelRect } from './types.ts'
 import { setRole } from './canvas.ts'
 import { drawArrow, labelInteriorSpaces } from './draw-arrows.ts'
@@ -83,22 +90,16 @@ function fillRolesFromCanvas(
   offset: DrawingCoord,
   role: CharRole,
 ): void {
-  const [x0, y0, x1, y1] = scanBounds(canvas)
-  for (let x = x0; x <= x1; x++) {
-    const col = canvas[x]
-    if (!col || Object.isFrozen(col)) continue // Shared blank layer column.
-    for (let y = y0; y <= y1; y++) {
-      const char = col[y]
-      if (char && char !== ' ') {
-        const rx = x + offset.x
-        const ry = y + offset.y
-        // Use setRole which auto-expands the role canvas if needed
-        if (rx >= 0 && ry >= 0) {
-          setRole(roleCanvas, rx, ry, role)
-        }
+  forEachInk(canvas, (x, y, char) => {
+    if (char && char !== ' ') {
+      const rx = x + offset.x
+      const ry = y + offset.y
+      // Use setRole which auto-expands the role canvas if needed
+      if (rx >= 0 && ry >= 0) {
+        setRole(roleCanvas, rx, ry, role)
       }
     }
-  }
+  })
 }
 
 /**
@@ -118,20 +119,17 @@ function fillRolesFromCanvases(
 /** Bounding rectangle of a canvas's non-space cells, or null if it has none. */
 function textBounds(canvas: Canvas): LabelRect | null {
   let rect: LabelRect | null = null
-  const [x0, y0, x1, y1] = scanBounds(canvas)
-  for (let x = x0; x <= x1; x++) {
-    for (let y = y0; y <= y1; y++) {
-      if ((canvas[x]![y] ?? ' ') === ' ') continue
-      rect = rect
-        ? {
-            x0: Math.min(rect.x0, x),
-            x1: Math.max(rect.x1, x),
-            y0: Math.min(rect.y0, y),
-            y1: Math.max(rect.y1, y),
-          }
-        : { x0: x, x1: x, y0: y, y1: y }
-    }
-  }
+  forEachInk(canvas, (x, y, ch) => {
+    if (ch === ' ') return
+    rect = rect
+      ? {
+          x0: Math.min(rect.x0, x),
+          x1: Math.max(rect.x1, x),
+          y0: Math.min(rect.y0, y),
+          y1: Math.max(rect.y1, y),
+        }
+      : { x0: x, x1: x, y0: y, y1: y }
+  })
   return rect
 }
 
@@ -445,7 +443,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
     // (issue #447: rendered as "US West│Region"). Force those specific
     // cells, bypassing mergeCanvases's space-skip.
     for (const { x, y } of footprint) {
-      const ch = labelCanvas[x]?.[y]
+      const ch = cellAt(labelCanvas, x, y)
       if (ch === ' ') {
         write(graph.canvas, x + offset.x, y + offset.y, ch)
         setRole(graph.roleCanvas, x + offset.x, y + offset.y, 'text')
