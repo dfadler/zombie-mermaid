@@ -26,7 +26,7 @@
  * and charts are not scored (EXCLUDED_TYPES in scripts/lib/layout-agreement.ts).
  */
 
-import { appendFile, readFile, writeFile } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 import { samples } from '../samples/samples-data.ts'
@@ -43,7 +43,6 @@ import {
   officialNodeName,
   ORACLE_TYPES,
   hasGroups,
-  historyLines,
   jsonPayload,
   type OracleArgs,
   type OracleType,
@@ -51,17 +50,14 @@ import {
   type ScorecardRun,
   worst,
   type Box,
-  type HistoryEntry,
   type SampleResult,
-  scorecardMarkdown,
   finishScorecard,
   recordsAllTypes,
   summarize,
-  summarizeLabels,
   type LabelEntry,
   type LayoutBoxes,
 } from './lib/layout-agreement.ts'
-import { measureLabels } from './label-position-oracle.ts'
+import { labelEntryFor, writeRecords } from './lib/layout-record.ts'
 import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
@@ -220,14 +216,7 @@ async function main(): Promise<number> {
         }),
       })
     }
-    if (recording) {
-      // Edge-label placement (#1686); the scorecard and history carry it descriptively.
-      labelEntry = summarizeLabels(await measureLabels(session), {
-        date: new Date().toISOString().slice(0, 10),
-        commit,
-        mermaid: pinnedMermaidVersion(),
-      })
-    }
+    if (recording) labelEntry = await labelEntryFor(session, commit)
   } finally {
     await session.close()
   }
@@ -236,27 +225,7 @@ async function main(): Promise<number> {
     await writeFile(args.json, jsonPayload(runs))
     console.log(`\nWrote ${args.json}`)
   }
-  if (recording) {
-    let history = runs.map((r) => r.entry)
-    let labels = labelEntry ? [labelEntry] : []
-    if (args.history) {
-      await appendFile(args.history, historyLines([...history, ...labels]))
-      const all = (await readFile(args.history, 'utf8'))
-        .split('\n')
-        .filter(Boolean)
-        .map((l) => JSON.parse(l) as HistoryEntry | LabelEntry)
-      history = all.filter((e): e is HistoryEntry => !('kind' in e))
-      labels = all.filter((e): e is LabelEntry => 'kind' in e)
-      console.log(`Appended to ${args.history}`)
-    }
-    if (args.scorecard) {
-      await writeFile(
-        args.scorecard,
-        scorecardMarkdown(runs, history, undefined, labels),
-      )
-      console.log(`Wrote ${args.scorecard}`)
-    }
-  }
+  if (recording) await writeRecords(args, runs, labelEntry)
   failing.push(...(await finishScorecard(args, runs)))
   if (failing.length > 0) {
     console.error(`\nBelow threshold: ${[...new Set(failing)].join(', ')}`)
