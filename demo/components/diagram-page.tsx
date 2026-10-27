@@ -176,6 +176,10 @@ const DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
       { label: 'Diagrams', href: NAV_HREFS.diagrams },
       { label: 'Editor', href: NAV_HREFS.editor },
       { label: 'Fork fixes', href: NAV_HREFS.forkFixes },
+      {
+        label: 'Layout fidelity',
+        href: NAV_HREFS.forkFixes.replace('fork-fixes', 'layout-fidelity'),
+      },
     ],
   },
   {
@@ -215,6 +219,13 @@ const SAMPLE_DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
       { label: 'Diagrams', href: DETAIL_NAV_HREFS.diagrams },
       { label: 'Editor', href: DETAIL_NAV_HREFS.editor },
       { label: 'Fork fixes', href: DETAIL_NAV_HREFS.forkFixes },
+      {
+        label: 'Layout fidelity',
+        href: DETAIL_NAV_HREFS.forkFixes.replace(
+          'fork-fixes',
+          'layout-fidelity',
+        ),
+      },
     ],
   },
   {
@@ -251,6 +262,10 @@ const TAG_FOOTER_COLUMNS: readonly FooterColumn[] = [
       { label: 'Diagrams', href: TAG_NAV_HREFS.diagrams },
       { label: 'Editor', href: TAG_NAV_HREFS.editor },
       { label: 'Fork fixes', href: TAG_NAV_HREFS.forkFixes },
+      {
+        label: 'Layout fidelity',
+        href: TAG_NAV_HREFS.forkFixes.replace('fork-fixes', 'layout-fidelity'),
+      },
     ],
   },
   {

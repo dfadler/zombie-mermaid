@@ -29,6 +29,7 @@ const CLIENTS: Record<string, [string, boolean, boolean?]> = {
   'editor-app': ['editor/js/index.ts', false, false],
   'fork-fixes-client': ['demo/fork-fixes-client.tsx', true],
   'dashboard-client': ['demo/dashboard-client.tsx', true],
+  'layout-fidelity-client': ['demo/layout-fidelity-client.ts', true],
   'index-client': ['demo/index-client.tsx', true],
   'index-page-client': ['demo/index-page-client.ts', false],
   'blog-post-client': ['demo/blog-post-client.tsx', true],

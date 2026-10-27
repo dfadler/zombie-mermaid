@@ -1724,6 +1724,7 @@ const HOME_FOOTER_COLUMNS: readonly FooterColumn[] = [
       { label: 'Diagrams', href: 'diagrams/' },
       { label: 'Editor', href: 'editor.html' },
       { label: 'Fork fixes', href: 'fork-fixes.html' },
+      { label: 'Layout fidelity', href: 'layout-fidelity.html' },
     ],
   },
   {

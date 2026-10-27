@@ -37,6 +37,7 @@ const PAGES = [
   'index.html',
   'fork-fixes.html',
   'dashboard.html',
+  'layout-fidelity.html',
   'editor.html',
   'blog/index.html',
   ...htmlIn('blog')
