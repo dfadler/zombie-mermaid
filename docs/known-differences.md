@@ -58,22 +58,24 @@ layers. The 12.1.0 comparison is in
 [#1834](https://github.com/dfadler/zombie-mermaid/issues/1834).
 
 - **Sibling subgraph order and feedback edges.** zombie-mermaid still imitates
-  mermaid 11's dagre layout in two places: sibling subgraphs are placed in reverse
-  declaration order, and depth-first back edges are reversed before ELK runs. Mermaid
-  12 does neither. "Nested Subgraphs" puts the second subgraph on the left in ours and
-  the first on the left in mermaid 12.1.0 and mermaid.live (horizontal 20%), and in
-  "CI/CD Pipeline" mermaid 12.1.0 keeps `Fix & Retry` beside `Build Image` where ours
-  puts it below `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
+  mermaid 11's dagre layout in one place: depth-first back edges are reversed before
+  ELK runs, which mermaid 12 does not do. Sibling subgraphs tied by an edge now keep
+  declaration order ([#1982](https://github.com/dfadler/zombie-mermaid/pull/1982)), so
+  "Nested Subgraphs" is 100% horizontal. The remaining difference is in "CI/CD Pipeline",
+  where mermaid 12.1.0 keeps `Fix & Retry` beside `Build Image` and ours puts it below
+  `QA Approved?` (horizontal 90% before the dead-band below, 100% after). Tracked in
   [#1904](https://github.com/dfadler/zombie-mermaid/issues/1904).
-- **Remaining small differences are tie-breaks.** "System Architecture" and "Flowchart:
-  CJK Labels" scored 50-93% against 12.1.0, but every
+- **Remaining small differences are tie-breaks.** "System Architecture" scores 89%
+  vertical against 12.2.0 (node-size tie-break, #2058) and is the accepted remaining
+  difference; "Flowchart: CJK Labels" is 100% since #2358. Every
   disagreeing node pair is one renderer calling two centres level (within the 20 px
   tolerance) and the other offsetting them. In "LR Fan-In With Bypass Edge" `B` sits
   above `A` and `C` in both renderers, 22 px in mermaid (12.1.0 and 12.2.0) and 15 px
   in ours, whose boxes are 37 px tall to mermaid's 48 px (#2058). "CJK Labels"
   used to differ too (mermaid put `B` about 19 px below `A`, `C` and `D`, ours 29 px above):
   with the feedback edge `C --> A` reversed, its track sat on the wrong side of `B`. Listing
-  subgraph feedback edges first in the ELK edge order fixes it (100% on 12.1.0, #1941).
+  subgraph feedback edges first in the ELK edge order fixes it (100% on 12.1.0, #2358; the
+  issue was #1941).
   "Flowchart: Five Cluster Exit Siblings (TD)"
   agreed only after `elk.spacing.edgeEdge` was raised to 40 px for graphs with three or
   more labelled edges between the same pair (#1943).
