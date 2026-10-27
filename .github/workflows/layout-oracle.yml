@@ -9,9 +9,14 @@ name: Layout oracle
 # Reporting (least noisy): the job goes red on a breach, the run summary carries
 # the table, the JSON is an artifact, and ONE open issue labelled `layout-oracle`
 # is created on the first breach and edited in place afterwards (no comment
-# per week, no second issue). It never pushes to main; refreshing
-# layout-fidelity-history.jsonl and the scorecard doc stays a manual
-# `pnpm run layout:scorecard` PR. The pin is not bumped or bypassed here: the
+# per week, no second issue). It never pushes to main. The same run also
+# appends to layout-fidelity-history.jsonl and regenerates
+# docs/layout-fidelity-scorecard.md (what `pnpm run layout:scorecard` does),
+# and the `open-pr` job ships both as ONE bot PR on the stable branch
+# chore/layout-oracle-refresh (#1686). A human merges it; the PR touches no
+# workflow file. Same two-job shape and DASHBOARD_REFRESH_PAT as
+# dashboard-refresh.yml (see its header for why a PAT, and why the PAT job
+# never runs `pnpm install`). The pin is not bumped or bypassed here: the
 # min-release-age guard applies, and a stale pin shows up in the summary.
 on:
   schedule:
@@ -50,7 +55,17 @@ jobs:
       - name: Run layout oracle
         id: oracle
         continue-on-error: true
-        run: pnpm exec tsx scripts/layout-oracle.ts --thresholds --scorecard-json=layout-scorecard.json
+        run: >-
+          pnpm exec tsx scripts/layout-oracle.ts --thresholds
+          --scorecard-json=layout-scorecard.json
+          --history=layout-fidelity-history.jsonl
+          --scorecard=docs/layout-fidelity-scorecard.md
+
+      # layout:scorecard formats the doc the same way; do it here so the PAT job
+      # below needs no toolchain.
+      - name: Format scorecard doc
+        if: always()
+        run: pnpm exec oxfmt docs/layout-fidelity-scorecard.md
 
       - name: Report
         id: report
@@ -76,6 +91,8 @@ jobs:
           path: |
             layout-scorecard.json
             layout-oracle-report.md
+            layout-fidelity-history.jsonl
+            docs/layout-fidelity-scorecard.md
           retention-days: 90
           if-no-files-found: warn
 
@@ -116,4 +133,65 @@ jobs:
             gh issue edit "$n" --body-file body.md
           else
             gh issue create --title 'Layout oracle: floors breached' --label layout-oracle --body-file body.md
+          fi
+
+  open-pr:
+    needs: oracle
+    # The oracle job goes red on a floor breach but still uploads the refreshed
+    # history, so run on success or failure (not skipped/cancelled).
+    if: >-
+      always() && github.repository == 'dfadler/zombie-mermaid' &&
+      (needs.oracle.result == 'success' || needs.oracle.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Deliberately no `pnpm install` here: the PAT is in this job's
+      # environment (see dashboard-refresh.yml's header).
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: layout-scorecard
+
+      - name: Commit, push, and open or update the PR
+        env:
+          GH_TOKEN: ${{ secrets.DASHBOARD_REFRESH_PAT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::DASHBOARD_REFRESH_PAT secret is not set; see dashboard-refresh.yml's header comment."
+            exit 1
+          fi
+
+          if git diff --quiet -- layout-fidelity-history.jsonl docs/layout-fidelity-scorecard.md; then
+            echo 'No change to the history or scorecard; not opening a PR.'
+            exit 0
+          fi
+
+          # One stable branch, rebuilt from main each run: a still-open PR from a
+          # previous week is replaced by this run's history line, not stacked.
+          BRANCH=chore/layout-oracle-refresh
+          # Data-only PR: CI's "Changeset present" check exempts only demo/,
+          # badges/ and bench-history.jsonl, so carry an empty changeset.
+          printf -- '---\n---\n' > .changeset/layout-oracle-refresh.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$BRANCH"
+          git add layout-fidelity-history.jsonl docs/layout-fidelity-scorecard.md .changeset/layout-oracle-refresh.md
+          git commit -m 'chore: weekly layout-fidelity history and scorecard'
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
+
+          # The force-push re-runs CI on an open PR (PAT-authored); only create when none is open.
+          if [ -z "$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')" ]; then
+            gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base main \
+              --head "$BRANCH" \
+              --title 'chore: weekly layout-fidelity history and scorecard' \
+              --body "Automated weekly refresh of layout-fidelity-history.jsonl and docs/layout-fidelity-scorecard.md (layout-oracle.yml, run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}). Empty changeset. Merge once checks pass."
           fi
