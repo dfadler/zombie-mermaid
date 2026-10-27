@@ -56,7 +56,39 @@ function trace(install: () => void): string[] {
   return out
 }
 
+function setup(install: () => void) {
+  document.body.innerHTML = `<a id="skip" href="#main">skip</a>${renderToString(createElement(Nav))}<main id="main"><a href="#x">x</a></main>`
+  document.documentElement.className = ''
+  window.matchMedia = vi.fn().mockReturnValue({
+    matches: false,
+    addEventListener: vi.fn(),
+  }) as never
+  install()
+  return {
+    toggle: document.querySelector<HTMLElement>('.menu-toggle')!,
+    panel: document.querySelector<HTMLElement>('.mobile-nav-panel')!,
+  }
+}
+
 describe('mobile menu generated script', () => {
+  it.each([
+    ['initMobileMenu', () => initMobileMenu(901)],
+    ['generated literal', () => (0, eval)(NAV_MOBILE_MENU_SCRIPT)],
+  ])('%s: Escape from the toggle closes; content is inert while open', (_, install) => {
+    const { toggle, panel } = setup(install)
+    fireEvent.click(toggle)
+    const main = document.getElementById('main')!
+    expect(main.hasAttribute('inert')).toBe(true)
+    expect(document.getElementById('skip')!.hasAttribute('inert')).toBe(true)
+    expect(panel.hasAttribute('inert')).toBe(false)
+    expect(toggle.closest('[inert]')).toBeNull()
+    toggle.focus()
+    fireEvent.keyDown(toggle, { key: 'Escape' })
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(toggle)
+    expect(document.querySelector('[inert]')).toBeNull()
+  })
+
   afterEach(() => vi.restoreAllMocks())
 
   it('behaves like initMobileMenu', () => {

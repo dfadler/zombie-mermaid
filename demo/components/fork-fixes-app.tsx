@@ -463,11 +463,11 @@ const SCROLL_FADE_WIDTH = 32
  * `dangerouslySetInnerHTML`, which this component has no other way to
  * style.
  */
-const SCROLL_REGION = {
+const scrollRegion = (label: string) => ({
   tabIndex: 0,
   role: 'region',
-  'aria-label': 'ASCII output (scrollable)',
-} as const
+  'aria-label': `${label} (scrollable)`,
+}) as const
 
 const ASCII_WELL_STYLE: CSSProperties = {
   margin: 0,
@@ -551,7 +551,15 @@ function AsciiWellFade({ side }: { side: 'left' | 'right' }) {
  * page, loaded via `<img>`, rasterized) — not to this demo site's own
  * chrome, which the site fully controls and already hydrates.
  */
-function AsciiWell({ text, html }: { text?: string; html?: string }) {
+function AsciiWell({
+  text,
+  html,
+  label,
+}: {
+  text?: string
+  html?: string
+  label: string
+}) {
   // Scrollable region: focusable + named so keyboard users can scroll it (#1811).
   const ref = useRef<HTMLPreElement>(null)
   const { left, right } = useScrollFade(ref)
@@ -562,7 +570,7 @@ function AsciiWell({ text, html }: { text?: string; html?: string }) {
           ref={ref}
           className="fix-ascii mono"
           style={ASCII_WELL_STYLE}
-          {...SCROLL_REGION}
+          {...scrollRegion(label)}
         >
           {text}
         </pre>
@@ -571,7 +579,7 @@ function AsciiWell({ text, html }: { text?: string; html?: string }) {
           ref={ref}
           className="fix-ascii mono"
           style={ASCII_WELL_STYLE}
-          {...SCROLL_REGION}
+          {...scrollRegion(label)}
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- ascii-html.ts output for this repo's own build-time render, never user input
           dangerouslySetInnerHTML={{ __html: html }}
         />
@@ -621,7 +629,7 @@ export function FixPanel({
         </div>
       )
     case 'excerpt':
-      return <AsciiWell text={content.text} />
+      return <AsciiWell text={content.text} label={`ASCII output: ${label}`} />
     case 'screenshot':
       return (
         <img
@@ -637,7 +645,7 @@ export function FixPanel({
         />
       )
     case 'ascii':
-      return <AsciiWell html={content.html} />
+      return <AsciiWell html={content.html} label={`ASCII output: ${label}`} />
     case 'svg':
       return (
         <div
@@ -934,7 +942,7 @@ export interface ForkFixesAppProps {
 export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
   return (
     <>
-      <header className="section-px" style={{ padding: '88px 80px 72px' }}>
+      <div className="section-px" style={{ padding: '88px 80px 72px' }}>
         <div
           style={{
             maxWidth: `${LAYOUT.maxWidth}px`,
@@ -1019,10 +1027,11 @@ export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
             </span>
           </div>
         </div>
-      </header>
+      </div>
 
       <main
         id="main"
+        tabIndex={-1}
         className="section-px"
         // 60px bottom padding is the canvas's own literal (between
         // SECTION_SPACE.snug's 64 and .tight's 48).
