@@ -85,8 +85,10 @@ function fillRolesFromCanvas(
 ): void {
   const [x0, y0, x1, y1] = scanBounds(canvas)
   for (let x = x0; x <= x1; x++) {
+    const col = canvas[x]
+    if (!col || Object.isFrozen(col)) continue // Shared blank layer column.
     for (let y = y0; y <= y1; y++) {
-      const char = canvas[x]?.[y]
+      const char = col[y]
       if (char && char !== ' ') {
         const rx = x + offset.x
         const ry = y + offset.y
@@ -119,7 +121,7 @@ function textBounds(canvas: Canvas): LabelRect | null {
   const [x0, y0, x1, y1] = scanBounds(canvas)
   for (let x = x0; x <= x1; x++) {
     for (let y = y0; y <= y1; y++) {
-      if (canvas[x]![y] === ' ') continue
+      if ((canvas[x]![y] ?? ' ') === ' ') continue
       rect = rect
         ? {
             x0: Math.min(rect.x0, x),
