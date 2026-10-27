@@ -266,7 +266,7 @@ export function BlogPostPage({
           detailed version of this comment (the pattern this mirrors) for
           why renderToString (not renderToStaticMarkup) is needed here.
         */}
-        <main id="main">
+        <main id="main" tabIndex={-1}>
           <div
             id={BLOG_POST_ROOT_ID}
             dangerouslySetInnerHTML={{
@@ -350,7 +350,7 @@ export function BlogIndexPage({
           Plain, inert hydration container -- see BlogPostPage's identical
           comment above.
         */}
-        <main id="main">
+        <main id="main" tabIndex={-1}>
           <div
             id={BLOG_INDEX_ROOT_ID}
             dangerouslySetInnerHTML={{
