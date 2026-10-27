@@ -86,7 +86,7 @@ function fillRolesFromCanvas(
   const [x0, y0, x1, y1] = scanBounds(canvas)
   for (let x = x0; x <= x1; x++) {
     const col = canvas[x]
-    if (!col || Object.isFrozen(col)) continue // shared blank layer column
+    if (!col || Object.isFrozen(col)) continue // Shared blank layer column.
     for (let y = y0; y <= y1; y++) {
       const char = col[y]
       if (char && char !== ' ') {

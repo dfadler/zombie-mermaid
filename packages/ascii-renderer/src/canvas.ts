@@ -639,7 +639,7 @@ export function mergeCanvases(
     const [ox0, oy0, ox1, oy1] = scanBounds(overlay)
     for (let x = ox0; x <= ox1; x++) {
       const col = overlay[x]!
-      if (Object.isFrozen(col)) continue // shared blank column, nothing drawn
+      if (Object.isFrozen(col)) continue // Shared blank column, nothing drawn.
       for (let y = oy0; y <= oy1; y++) paint(x, y, col[y] ?? ' ')
     }
   }
