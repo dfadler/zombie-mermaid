@@ -83,24 +83,10 @@ for (const [name, [entry, minify, treeshake = true]] of Object.entries(
   }
 }
 
-const WORKSPACE = [
-  'core',
-  'mermaid-parser',
-  'svg-renderer',
-  'ascii-renderer',
-  'mcp',
-]
-
 export default defineConfig({
   logLevel: 'warn',
-  resolve: {
-    alias: Object.fromEntries(
-      WORKSPACE.map((n) => [
-        `@zombie-mermaid/${n}`,
-        abs(`packages/${n}/src/index.ts`),
-      ]),
-    ),
-  },
+  // Workspace packages resolve to source via tsconfig.json `paths`.
+  resolve: { tsconfigPaths: true },
   plugins: [
     mobileMenuScript(),
     {

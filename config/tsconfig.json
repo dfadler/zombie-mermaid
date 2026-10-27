@@ -1,0 +1,9 @@
+{
+  // Exists only so Vite's `resolve.tsconfigPaths` (#1836) maps the root
+  // tsconfig's `paths` for files outside its `include`: Vite applies the
+  // tsconfig whose `include` matches the importing file, so without this the
+  // workspace packages fall through to package.json `exports` (dist/). Not part
+  // of `pnpm run typecheck`.
+  "extends": "../tsconfig.json",
+  "include": ["**/*"]
+}
