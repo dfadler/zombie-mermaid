@@ -271,8 +271,10 @@ function indexOfLines(segs: readonly Segment[]) {
     idx = { h: new Map(), v: new Map() }
     for (const seg of segs) {
       const [p, q] = seg
-      if (p.y === q.y) (idx.h.get(p.y) ?? idx.h.set(p.y, []).get(p.y)!).push(seg)
-      if (p.x === q.x) (idx.v.get(p.x) ?? idx.v.set(p.x, []).get(p.x)!).push(seg)
+      if (p.y === q.y)
+        (idx.h.get(p.y) ?? idx.h.set(p.y, []).get(p.y)!).push(seg)
+      if (p.x === q.x)
+        (idx.v.get(p.x) ?? idx.v.set(p.x, []).get(p.x)!).push(seg)
     }
     lineIndex.set(segs, idx)
   }
