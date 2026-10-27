@@ -148,6 +148,8 @@ describe('LR decision node branches leave the right face (#2351)', () => {
     )
   })
 
+  // Current renderer behavior, not mermaid parity: mermaid 12.2.0 leaves the
+  // right side for all three branches (#2366).
   it('keeps a three-way decision on its top and bottom faces', () => {
     const out = render(
       'graph LR\n  A --> B{Ok?}\n  B --> C\n  B --> D\n  B --> E',
