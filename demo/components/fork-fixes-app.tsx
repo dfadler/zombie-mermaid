@@ -295,6 +295,9 @@ function CodePanel({ id, source }: { id: string; source: string }) {
   const lines = tokenizeMermaidSource(source)
   return (
     <div
+      // Scrolls at narrow widths, so it must be keyboard-focusable (axe
+      // scrollable-region-focusable, WCAG 2.1.1) and named like AsciiWell.
+      {...scrollRegion(`Mermaid source ${id}`)}
       style={{
         background: colorVar('--bg'),
         border: `1px solid ${colorVar('--border')}`,
