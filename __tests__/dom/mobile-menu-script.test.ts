@@ -74,20 +74,23 @@ describe('mobile menu generated script', () => {
   it.each([
     ['initMobileMenu', () => initMobileMenu(901)],
     ['generated literal', () => (0, eval)(NAV_MOBILE_MENU_SCRIPT)],
-  ])('%s: Escape from the toggle closes; content is inert while open', (_, install) => {
-    const { toggle, panel } = setup(install)
-    fireEvent.click(toggle)
-    const main = document.getElementById('main')!
-    expect(main.hasAttribute('inert')).toBe(true)
-    expect(document.getElementById('skip')!.hasAttribute('inert')).toBe(true)
-    expect(panel.hasAttribute('inert')).toBe(false)
-    expect(toggle.closest('[inert]')).toBeNull()
-    toggle.focus()
-    fireEvent.keyDown(toggle, { key: 'Escape' })
-    expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    expect(document.activeElement).toBe(toggle)
-    expect(document.querySelector('[inert]')).toBeNull()
-  })
+  ])(
+    '%s: Escape from the toggle closes; content is inert while open',
+    (_, install) => {
+      const { toggle, panel } = setup(install)
+      fireEvent.click(toggle)
+      const main = document.getElementById('main')!
+      expect(main.hasAttribute('inert')).toBe(true)
+      expect(document.getElementById('skip')!.hasAttribute('inert')).toBe(true)
+      expect(panel.hasAttribute('inert')).toBe(false)
+      expect(toggle.closest('[inert]')).toBeNull()
+      toggle.focus()
+      fireEvent.keyDown(toggle, { key: 'Escape' })
+      expect(toggle.getAttribute('aria-expanded')).toBe('false')
+      expect(document.activeElement).toBe(toggle)
+      expect(document.querySelector('[inert]')).toBeNull()
+    },
+  )
 
   afterEach(() => vi.restoreAllMocks())
 

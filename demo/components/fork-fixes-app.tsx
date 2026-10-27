@@ -463,11 +463,12 @@ const SCROLL_FADE_WIDTH = 32
  * `dangerouslySetInnerHTML`, which this component has no other way to
  * style.
  */
-const scrollRegion = (label: string) => ({
-  tabIndex: 0,
-  role: 'region',
-  'aria-label': `${label} (scrollable)`,
-}) as const
+const scrollRegion = (label: string) =>
+  ({
+    tabIndex: 0,
+    role: 'region',
+    'aria-label': `${label} (scrollable)`,
+  }) as const
 
 const ASCII_WELL_STYLE: CSSProperties = {
   margin: 0,
@@ -942,115 +943,116 @@ export interface ForkFixesAppProps {
 export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
   return (
     <>
-      <div className="section-px" style={{ padding: '88px 80px 72px' }}>
-        <div
-          style={{
-            maxWidth: `${LAYOUT.maxWidth}px`,
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: `${SPACE['3xl']}px`,
-          }}
-        >
-          <div
-            className="mono"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: `${SPACE.sm}px`,
-              fontSize: `${FONT_SIZE.bodySm}px`,
-            }}
-          >
-            <a href="index.html" style={{ color: colorVar('--text-faint') }}>
-              Home
-            </a>
-            <ChevronRightIcon size={12} strokeWidth={2.4} />
-            <span style={{ color: colorVar('--text-dim') }}>Fork fixes</span>
-          </div>
-
-          <SectionEyebrow>Real renders, not mockups</SectionEyebrow>
-
-          <h1
-            className="page-h1"
-            style={{
-              // font-size lives in fork-fixes.css instead of here (not
-              // inline) so its mobile breakpoint override can win via
-              // plain cascade order instead of needing !important to beat
-              // this inline style (zombie-mermaid#1080).
-              lineHeight: 1.1,
-              letterSpacing: LETTER_SPACING.display,
-              maxWidth: '820px',
-            }}
-          >
-            What this fork fixes
-          </h1>
-
-          <p
-            style={{
-              fontSize: `${FONT_SIZE.lead}px`,
-              lineHeight: 1.65,
-              color: colorVar('--text-dim'),
-              maxWidth: '820px',
-            }}
-          >
-            Every pair below is rendered by this project's own renderer. The{' '}
-            <strong>before</strong> side runs the code as it existed immediately
-            before the fix landed — the tree at that commit's parent — so
-            nothing here is hand-drawn or reconstructed. The generator fails the
-            build if any pair renders identically, because a before/after that
-            looks the same would claim a fix it does not demonstrate.
-          </p>
-
+      <main id="main" tabIndex={-1}>
+        <div className="section-px" style={{ padding: '88px 80px 72px' }}>
           <div
             style={{
+              maxWidth: `${LAYOUT.maxWidth}px`,
+              margin: '0 auto',
               display: 'flex',
-              alignItems: 'center',
-              gap: `${SPACE.xl}px`,
-              marginTop: `${SPACE.xs}px`,
+              flexDirection: 'column',
+              gap: `${SPACE['3xl']}px`,
             }}
           >
-            <Pill accent="green" variant="outline" mono>
-              <CheckIcon size={14} strokeWidth={2.4} />
-              {fixes.length} fixes shown
-            </Pill>
-            <span
+            <div
+              className="mono"
               style={{
-                fontSize: `${FONT_SIZE.bodyLg}px`,
-                color: colorVar('--text-dim'),
+                display: 'flex',
+                alignItems: 'center',
+                gap: `${SPACE.sm}px`,
+                fontSize: `${FONT_SIZE.bodySm}px`,
               }}
             >
-              Many more ship in the{' '}
-              <a className="inline-link" href={CHANGELOG_URL}>
-                changelog
+              <a href="index.html" style={{ color: colorVar('--text-faint') }}>
+                Home
               </a>
-              .
-            </span>
+              <ChevronRightIcon size={12} strokeWidth={2.4} />
+              <span style={{ color: colorVar('--text-dim') }}>Fork fixes</span>
+            </div>
+
+            <SectionEyebrow>Real renders, not mockups</SectionEyebrow>
+
+            <h1
+              className="page-h1"
+              style={{
+                // font-size lives in fork-fixes.css instead of here (not
+                // inline) so its mobile breakpoint override can win via
+                // plain cascade order instead of needing !important to beat
+                // this inline style (zombie-mermaid#1080).
+                lineHeight: 1.1,
+                letterSpacing: LETTER_SPACING.display,
+                maxWidth: '820px',
+              }}
+            >
+              What this fork fixes
+            </h1>
+
+            <p
+              style={{
+                fontSize: `${FONT_SIZE.lead}px`,
+                lineHeight: 1.65,
+                color: colorVar('--text-dim'),
+                maxWidth: '820px',
+              }}
+            >
+              Every pair below is rendered by this project's own renderer. The{' '}
+              <strong>before</strong> side runs the code as it existed
+              immediately before the fix landed — the tree at that commit's
+              parent — so nothing here is hand-drawn or reconstructed. The
+              generator fails the build if any pair renders identically, because
+              a before/after that looks the same would claim a fix it does not
+              demonstrate.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: `${SPACE.xl}px`,
+                marginTop: `${SPACE.xs}px`,
+              }}
+            >
+              <Pill accent="green" variant="outline" mono>
+                <CheckIcon size={14} strokeWidth={2.4} />
+                {fixes.length} fixes shown
+              </Pill>
+              <span
+                style={{
+                  fontSize: `${FONT_SIZE.bodyLg}px`,
+                  color: colorVar('--text-dim'),
+                }}
+              >
+                Many more ship in the{' '}
+                <a className="inline-link" href={CHANGELOG_URL}>
+                  changelog
+                </a>
+                .
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <main
-        id="main"
-        tabIndex={-1}
-        className="section-px"
-        // 60px bottom padding is the canvas's own literal (between
-        // SECTION_SPACE.snug's 64 and .tight's 48).
-        style={{ padding: `0 ${LAYOUT.gutter.desktop}px 60px` }}
-      >
         <div
-          style={{
-            maxWidth: `${LAYOUT.maxWidth}px`,
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            // 56px, the canvas's own gap between fix cards — off SPACE's
-            // scale (7xl is 48, 8xl is 64).
-            gap: '56px',
-          }}
+          className="section-px"
+          // 60px bottom padding is the canvas's own literal (between
+          // SECTION_SPACE.snug's 64 and .tight's 48).
+          style={{ padding: `0 ${LAYOUT.gutter.desktop}px 60px` }}
         >
-          {fixes.map((fix) => (
-            <FixSection key={fix.id} {...fix} />
-          ))}
+          <div
+            style={{
+              maxWidth: `${LAYOUT.maxWidth}px`,
+              margin: '0 auto',
+              display: 'flex',
+              flexDirection: 'column',
+              // 56px, the canvas's own gap between fix cards — off SPACE's
+              // scale (7xl is 48, 8xl is 64).
+              gap: '56px',
+            }}
+          >
+            {fixes.map((fix) => (
+              <FixSection key={fix.id} {...fix} />
+            ))}
+          </div>
         </div>
       </main>
     </>

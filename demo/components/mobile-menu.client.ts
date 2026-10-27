@@ -74,7 +74,7 @@ export function initMobileMenu(desktopMinWidthPx: number): void {
       el.removeAttribute('inert')
     })
     inerted = []
-    for (let node = bar; node && node !== document.body; ) {
+    for (let node = bar; node && node !== document.body;) {
       const parent: Element | null = node.parentElement
       if (!parent) break
       for (const sib of Array.from(parent.children)) {
