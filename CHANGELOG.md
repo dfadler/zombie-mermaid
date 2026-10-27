@@ -1,5 +1,35 @@
 # Changelog
 
+## 5.11.0
+
+### Minor Changes
+
+- [#2363](https://github.com/dfadler/zombie-mermaid/pull/2363) [`82674ef`](https://github.com/dfadler/zombie-mermaid/commit/82674ef11fa576022f80191dbd1537be229fac4a) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a diamond `{x}` is now drawn as a rhombus (`╱╲` points at the top and bottom, `<` `>` at the sides, `/\` in the ASCII charset) and a circle `((x))` as an ellipse (rounded top and bottom, `╱ ╲` between, `(` `)` on the middle row), instead of boxes with swapped corner glyphs. The node keeps its rows and widens only as far as its label needs; an edge leaving a point or corner starts beside it instead of cutting it off ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+- [#2356](https://github.com/dfadler/zombie-mermaid/pull/2356) [`b7f6aec`](https://github.com/dfadler/zombie-mermaid/commit/b7f6aeca3921e720e1318bdf04abd895fa4e3d82) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a stadium `([x])` is now drawn as a pill (rounded top and bottom, `(` `)` sides) and a hexagon `{{x}}` with points at the left and right middle (`╱ ╲ < >`, or `/ \ < >` in the ASCII charset), instead of boxes with swapped corner glyphs. A hexagon keeps a rectangle's width for a one-line label and grows wider only for a taller one. An edge leaving the point now starts beside it instead of cutting it off ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+### Patch Changes
+
+- [#2372](https://github.com/dfadler/zombie-mermaid/pull/2372) [`bc452e7`](https://github.com/dfadler/zombie-mermaid/commit/bc452e762a64afa970a1762d0bb623eb7e008aa4) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: parallel-lane routing for many labelled edges is about 1.7x faster ([#1785](https://github.com/dfadler/zombie-mermaid/issues/1785)); output is unchanged.
+
+- [#2368](https://github.com/dfadler/zombie-mermaid/pull/2368) [`e7ade77`](https://github.com/dfadler/zombie-mermaid/commit/e7ade7773ed06814a74a2123dc1db69c7864880e) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: in a left-to-right flowchart, a decision node `{x}` with three or more outgoing edges now sends all of them out of its right face, as mermaid does, instead of its outer branches leaving the top and bottom tips ([#2366](https://github.com/dfadler/zombie-mermaid/issues/2366)).
+
+- [#2361](https://github.com/dfadler/zombie-mermaid/pull/2361) [`6b04529`](https://github.com/dfadler/zombie-mermaid/commit/6b04529b795d895a8dc1edd96e33b42b15a42d01) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: in a left-to-right flowchart, a decision node `{x}` split two ways now sends both branch edges out of its right face and into the left face of each child, as mermaid does, instead of out of its top and bottom faces ([#2351](https://github.com/dfadler/zombie-mermaid/issues/2351)).
+
+- [#2364](https://github.com/dfadler/zombie-mermaid/pull/2364) [`8efaecd`](https://github.com/dfadler/zombie-mermaid/commit/8efaecdba49ff756317a11f989e4226e093b9103) Thanks [@dfadler](https://github.com/dfadler)! - ASCII output for LR and RL flowcharts, state and class diagrams now leaves 4 blank rows between sibling nodes instead of 5 (`paddingY - 1`, so `-y 5` no longer gives the old gap; use `-y 6`). `graph LR; A --> B & C & D & E` is two rows shorter; TD is unchanged ([#2350](https://github.com/dfadler/zombie-mermaid/issues/2350)).
+
+- [#2360](https://github.com/dfadler/zombie-mermaid/pull/2360) [`42f3e40`](https://github.com/dfadler/zombie-mermaid/commit/42f3e40eca7cf0253ee86fcb5ae072807cdc070d) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII class diagrams where two lines arriving at a narrow class box put an arrowhead on a corner glyph of its top border; each line now lands on its own interior border cell and the lines no longer cross above the box.
+
+- [#2359](https://github.com/dfadler/zombie-mermaid/pull/2359) [`f52fd42`](https://github.com/dfadler/zombie-mermaid/commit/f52fd42fe5b1a2f964c8983c1119defc161158e2) Thanks [@dfadler](https://github.com/dfadler)! - ASCII class diagrams: two relationships ending on the same class, where only one has an arrowhead there, now merge at the box centre instead of fanning to its corner columns, so the arrowhead no longer lands over a corner glyph ([#2335](https://github.com/dfadler/zombie-mermaid/issues/2335)).
+
+- [#2358](https://github.com/dfadler/zombie-mermaid/pull/2358) [`d142007`](https://github.com/dfadler/zombie-mermaid/commit/d1420072a4a25db04d586b22c8b570fac3b84549) Thanks [@dfadler](https://github.com/dfadler)! - A flowchart whose feedback edge closes a cycle through a subgraph (`C --> A` back into a subgraph holding `A` and `B`) now puts `B` on the same side of `A`, `C` and `D` as mermaid 12.1.0 and 12.2.0 do, below them instead of above. "Flowchart: CJK Labels" scores 100% vertical agreement, up from 50%; no other sample's score moves ([#1941](https://github.com/dfadler/zombie-mermaid/issues/1941)).
+- Updated dependencies [[`82674ef`](https://github.com/dfadler/zombie-mermaid/commit/82674ef11fa576022f80191dbd1537be229fac4a), [`bc452e7`](https://github.com/dfadler/zombie-mermaid/commit/bc452e762a64afa970a1762d0bb623eb7e008aa4), [`e7ade77`](https://github.com/dfadler/zombie-mermaid/commit/e7ade7773ed06814a74a2123dc1db69c7864880e), [`6b04529`](https://github.com/dfadler/zombie-mermaid/commit/6b04529b795d895a8dc1edd96e33b42b15a42d01), [`b7f6aec`](https://github.com/dfadler/zombie-mermaid/commit/b7f6aeca3921e720e1318bdf04abd895fa4e3d82), [`42f3e40`](https://github.com/dfadler/zombie-mermaid/commit/42f3e40eca7cf0253ee86fcb5ae072807cdc070d), [`ed2ad94`](https://github.com/dfadler/zombie-mermaid/commit/ed2ad9468b465565c93367c054f83381b5f44487)]:
+  - @zombie-mermaid/ascii-renderer@5.11.0
+  - @zombie-mermaid/mcp@5.11.0
+  - @zombie-mermaid/core@5.11.0
+  - @zombie-mermaid/mermaid-parser@5.11.0
+  - @zombie-mermaid/svg-renderer@5.11.0
+
 ## 5.10.2
 
 ### Patch Changes
