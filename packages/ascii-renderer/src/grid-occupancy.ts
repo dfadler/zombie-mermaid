@@ -254,6 +254,33 @@ type Segment = readonly [Point, Point]
 export const segmentsOf = (p: readonly Point[]): Segment[] =>
   p.slice(1).map((q, i) => [p[i]!, q] as const)
 
+/**
+ * Segments of one row/column, so `runsAlong` only meets the segments on the
+ * line it probes (#1785). Built once per array: callers probing many
+ * candidate paths reuse the same `segs`, which are never mutated.
+ */
+const lineIndex = new WeakMap<
+  readonly Segment[],
+  { h: Map<number, Segment[]>; v: Map<number, Segment[]> }
+>()
+const INDEX_MIN_SEGMENTS = 16
+
+function indexOfLines(segs: readonly Segment[]) {
+  let idx = lineIndex.get(segs)
+  if (!idx) {
+    idx = { h: new Map(), v: new Map() }
+    for (const seg of segs) {
+      const [p, q] = seg
+      if (p.y === q.y)
+        (idx.h.get(p.y) ?? idx.h.set(p.y, []).get(p.y)!).push(seg)
+      if (p.x === q.x)
+        (idx.v.get(p.x) ?? idx.v.set(p.x, []).get(p.x)!).push(seg)
+    }
+    lineIndex.set(segs, idx)
+  }
+  return idx
+}
+
 /** Whether `a`-`b` runs (for a cell or more) along one of `segs` (#2025). */
 export function runsAlong(
   a: Point,
@@ -261,7 +288,12 @@ export function runsAlong(
   segs: readonly Segment[],
 ): boolean {
   const h = a.y === b.y
-  return segs.some(([p, q]) => {
+  const onLine =
+    segs.length < INDEX_MIN_SEGMENTS
+      ? segs
+      : ((h ? indexOfLines(segs).h.get(a.y) : indexOfLines(segs).v.get(a.x)) ??
+        [])
+  return onLine.some(([p, q]) => {
     if (h ? p.y !== a.y || q.y !== a.y : p.x !== a.x || q.x !== a.x)
       return false
     const [s, t, u, v] = h ? [a.x, b.x, p.x, q.x] : [a.y, b.y, p.y, q.y]

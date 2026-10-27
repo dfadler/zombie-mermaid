@@ -973,8 +973,8 @@ function buildParallelLanePath(
           ]
       const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
       if (
-        interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes) &&
-        clear(sidePath)
+        clear(sidePath) &&
+        interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)
       ) {
         usedOffsets.add(offset)
         return {
@@ -1016,8 +1016,8 @@ function buildParallelLanePath(
     // No exemption for the edge's own nodes: a lane that leaves along a
     // border row/column draws over the node's corner and edge glyphs (#2025).
     if (
-      interiorCellsClearOfNodes(graph, pathCells(wideCandidate)) &&
-      clear(wideCandidate)
+      clear(wideCandidate) &&
+      interiorCellsClearOfNodes(graph, pathCells(wideCandidate))
     ) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
@@ -1092,8 +1092,8 @@ function buildParallelLanePath(
           toAttach,
         ])
     if (
-      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes) &&
-      clear(gutterCandidate)
+      clear(gutterCandidate) &&
+      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes)
     ) {
       usedOffsets.add(offset)
       return { path: gutterCandidate, labelSegment: gutterLabelSegment }
