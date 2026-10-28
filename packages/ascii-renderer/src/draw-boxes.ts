@@ -217,7 +217,7 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   }
 
   // Subroutine: a second vertical bar just inside each side (#2164).
-  if (node.shape === 'subroutine' && to.x >= 6 && to.y >= 2) {
+  if (node.shape === 'subroutine' && to.x >= 4 && to.y >= 2) {
     drawSubroutineBars(box, to.x, to.y, useAscii)
     node.labelInsets = Array<number>(to.y + 1).fill(1)
   }

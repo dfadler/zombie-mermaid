@@ -47,6 +47,15 @@ describe('subroutine shape [[text]]', () => {
     )
   })
 
+  it('keeps both bars at zero border padding', () => {
+    expect(
+      renderMermaidASCII('flowchart TD\n  A[[x]]', {
+        useAscii: false,
+        boxBorderPadding: 0,
+      }),
+    ).toBe(['┌┬─┬┐', '││x││', '└┴─┴┘'].join('\n'))
+  })
+
   it('leaves an LR edge the outer border to start from', () => {
     const out = renderMermaidASCII('flowchart LR\n  A[[Task]] --> B', {
       useAscii: false,
