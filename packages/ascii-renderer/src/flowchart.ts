@@ -178,6 +178,7 @@ function flipRegion(
       (r) => r.x0 >= minX && r.x1 <= maxX && r.y0 >= minY && r.y1 <= maxY,
     )
     .map((r) => ({
+      ...r,
       x0: r.x0 - minX,
       x1: r.x1 - minX,
       y0: r.y0 - minY,
@@ -190,7 +191,7 @@ function flipRegion(
     if (links) flipLinkCanvasHorizontally(links)
   } else {
     mirrorLabelRows(canvas, roles, rects, links)
-    flipCanvasVertically(canvas, roles)
+    flipCanvasVertically(canvas, roles, nodeRects)
     flipRoleCanvasVertically(roles)
     if (links) flipLinkCanvasVertically(links)
   }
@@ -300,7 +301,7 @@ export function renderGraphAscii(
       graph.labelRects ?? [],
       linkCanvas,
     )
-    flipCanvasVertically(graph.canvas, graph.roleCanvas)
+    flipCanvasVertically(graph.canvas, graph.roleCanvas, graph.nodeRects!)
     flipRoleCanvasVertically(graph.roleCanvas)
     if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
   }

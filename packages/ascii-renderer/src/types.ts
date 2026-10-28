@@ -452,6 +452,8 @@ export interface LabelRect {
   y0: number
   x1: number
   y1: number
+  /** A node rect whose left side is notched (asymmetric `>x]`); a horizontal flip keeps the notch on the left (#2164). */
+  leftNotch?: boolean
 }
 
 /** Full ASCII graph state used during layout and rendering. */
