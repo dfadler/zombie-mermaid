@@ -20,6 +20,7 @@ import {
   getBoxAttachmentPoint,
 } from './rectangle.ts'
 import { getCorners } from './corners.ts'
+import { asymmetricDimensions, renderSilhouette } from './silhouettes.ts'
 
 // ============================================================================
 // Subroutine — keeps custom double-border rendering
@@ -246,20 +247,21 @@ export const cylinderRenderer: ShapeRenderer = {
 
 /**
  * Asymmetric (flag/banner) shape renderer.
- * Uses arrow markers (▷) on left corners.
+ * A box with a notch on the left: the middle row of the left side is blank and
+ * the `>` tip sits one cell in (#2164).
  *
  * Renders as:
- *   ▷─────────┐
- *   │  Label  │
- *   ▷─────────┘
+ *   ┌─────────┐
+ *   │         │
+ *    >  Label │
+ *   │         │
+ *   └─────────┘
  */
 export const asymmetricRenderer: ShapeRenderer = {
-  getDimensions: getBoxDimensions,
+  getDimensions: asymmetricDimensions,
 
-  render(label, dimensions, options) {
-    const corners = getCorners('asymmetric', options.useAscii)
-    return renderBox(label, dimensions, corners, options.useAscii)
-  },
+  render: (label, dimensions, options) =>
+    renderSilhouette('asymmetric', label, dimensions, options.useAscii),
 
   getAttachmentPoint: getBoxAttachmentPoint,
 }

@@ -817,7 +817,20 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
 export function flipCanvasVertically(
   canvas: Canvas,
   roleCanvas?: RoleCanvas,
+  nodeRects: LabelRect[] = [],
 ): Canvas {
+  // The flag's lean glyphs beside its tip (`╲` above, `╱` below) are not in
+  // the map below; swap them so the reversal puts each back as it was (#2164).
+  for (const { x0, y0, y1, leftNotch } of nodeRects) {
+    if (!leftNotch) continue
+    const mid = Math.floor((y0 + y1) / 2)
+    const rows = y1 - y0 >= 4 ? [mid - 1, mid + 1] : [y0, y1]
+    const [a, b] = [canvas[x0]![rows[0]!]!, canvas[x0]![rows[1]!]!]
+    if (!/^[╲\\]$/.test(a) || !/^[╱/]$/.test(b)) continue
+    canvas[x0]![rows[0]!] = b
+    canvas[x0]![rows[1]!] = a
+  }
+
   // Remap directional characters that change meaning after vertical flip
   for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
@@ -997,6 +1010,32 @@ export function flipCanvasHorizontally(
   roleCanvas?: RoleCanvas,
   nodeRects: LabelRect[] = [],
 ): Canvas {
+  // A flag's notch stays on the left, as in mermaid's RL: move it to the right
+  // first so the flip (which remaps `>` to `<`) lands it back on the left.
+  for (const { x0, x1, y0, y1, leftNotch } of nodeRects) {
+    const mid = Math.floor((y0 + y1) / 2)
+    if (!leftNotch || canvas[x0 + 1]?.[mid] !== '>') continue
+    const [wall, down, up] =
+      canvas[x0 + 1]![y0] === '-' ? ['|', '\\', '/'] : ['│', '╲', '╱']
+    // An edge's stub on a face is not a wall: leave it where it is.
+    const swap = (x: number, y: number, from: string, to: string) => {
+      if (canvas[x]![y] !== from) return
+      canvas[x]![y] = to
+      if (roleCanvas) roleCanvas[x]![y] = 'border'
+    }
+    swap(x1, mid, wall!, ' ')
+    swap(x0, mid, ' ', wall!)
+    if (y1 - y0 >= 4) {
+      // The lean glyphs beside the tip swap sides too (the flip remaps them).
+      swap(x0, mid - 1, down!, wall!)
+      swap(x0, mid + 1, up!, wall!)
+      swap(x1, mid - 1, wall!, up!)
+      swap(x1, mid + 1, wall!, down!)
+    }
+    canvas[x0 + 1]![mid] = ' '
+    canvas[x1 - 1]![mid] = '<'
+    if (roleCanvas) roleCanvas[x1 - 1]![mid] = 'border'
+  }
   const corners = nodeRects.flatMap(({ x0, x1, y0, y1 }) =>
     x0 === x1
       ? []

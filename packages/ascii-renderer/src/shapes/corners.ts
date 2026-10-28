@@ -103,10 +103,10 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
   },
 
-  // Asymmetric/flag - pointer on left side
+  // Asymmetric/flag - plain box; drawAsymmetric notches the left side (#2164)
   asymmetric: {
-    unicode: { tl: '▷', tr: '┐', bl: '▷', br: '┘' },
-    ascii: { tl: '>', tr: '+', bl: '>', br: '+' },
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
   },
 
   // Trapezoid - wider at bottom (top corners slope inward)

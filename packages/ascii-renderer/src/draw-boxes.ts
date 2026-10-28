@@ -21,6 +21,8 @@ import { decodeSections } from './shapes/class-box.ts'
 import {
   circleInsets,
   diamondInsets,
+  asymmetricInsets,
+  drawAsymmetric,
   drawCircle,
   drawHexagon,
   drawStadium,
@@ -204,6 +206,10 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     const insets = circleInsets(to.x, to.y)
     drawCircle(box, to.x, to.y, insets, useAscii)
     node.labelInsets = insets
+  } else if (node.shape === 'asymmetric' && to.x >= 4 && to.y >= 2) {
+    // Flag: left side notched on the middle row, `>` tip one cell in (#2164).
+    drawAsymmetric(box, to.x, to.y, useAscii)
+    node.labelInsets = asymmetricInsets(to.x, to.y)
   } else {
     // Draw box border with shape-specific corners
     for (let x = from.x + 1; x < to.x; x++) write(box, x, from.y, hChar)
