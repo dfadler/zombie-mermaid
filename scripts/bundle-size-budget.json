@@ -15,13 +15,13 @@
     "packages/svg-renderer/dist/index.js": 56689,
     "packages/svg-renderer/dist/index.cjs": 60421,
     "packages/ascii-renderer/dist/index.js": 70300,
-    "packages/ascii-renderer/dist/index.cjs": 69900,
+    "packages/ascii-renderer/dist/index.cjs": 71738,
     "packages/mcp/dist/index.js": 4571,
     "packages/mcp/dist/index.cjs": 7690
   },
   "consumerBundles": {
     "packages/svg-renderer/dist/index.js": 88728,
-    "dist/index.js": 155066
+    "dist/index.js": 158497
   },
   "unpackedBudgets": {
     "dist": 97389,
