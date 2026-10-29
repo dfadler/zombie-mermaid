@@ -1,6 +1,9 @@
 /** Edge-label position measurement for label-position-oracle.ts and layout-oracle.ts (#1385, #1686). */
 import { renderMermaidASCII } from '../../src/index.ts'
-import { renderRealMermaidSvg, type RealMermaidSession } from './real-mermaid.ts'
+import {
+  renderRealMermaidSvg,
+  type RealMermaidSession,
+} from './real-mermaid.ts'
 import { pinnedMermaidVersion } from './mermaid-pin-freshness.ts'
 import { summarizeLabels, type LabelEntry } from './layout-agreement.ts'
 

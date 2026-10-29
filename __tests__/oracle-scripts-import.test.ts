@@ -13,7 +13,13 @@ describe('oracle scripts load under node', () => {
     (p) => {
       const r = spawnSync(
         process.execPath,
-        ['--import', 'tsx', '--input-type=module', '-e', `await import(${JSON.stringify(resolve(p))})`],
+        [
+          '--import',
+          'tsx',
+          '--input-type=module',
+          '-e',
+          `await import(${JSON.stringify(resolve(p))})`,
+        ],
         { encoding: 'utf8' },
       )
       expect(r.stderr).not.toMatch(/does not provide an export named/)
