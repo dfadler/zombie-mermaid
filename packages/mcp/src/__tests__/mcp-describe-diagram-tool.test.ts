@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { describeDiagramHandler } from '../tools/describe-diagram.ts'
 
+type Described = {
+  direction: string
+  nodes: unknown[]
+  edges: { target: string }[]
+  subgraphs: unknown[]
+}
+
 describe('describe_diagram', () => {
   it('returns nodes, edges and nested subgraphs', () => {
     const r = describeDiagramHandler({
@@ -8,7 +15,7 @@ describe('describe_diagram', () => {
         'flowchart LR\nsubgraph S[Group]\n  A[Start] -->|yes| B{Ok}\nend\nB --> C',
     })
     expect(r.isError).toBeUndefined()
-    const s = r.structuredContent as any
+    const s = r.structuredContent as unknown as Described
     expect(s.direction).toBe('LR')
     expect(s.nodes).toContainEqual({
       id: 'B',
@@ -31,8 +38,8 @@ describe('describe_diagram', () => {
     const r = describeDiagramHandler({
       diagram: 'stateDiagram-v2\n[*] --> Idle\nIdle --> Done',
     })
-    const s = r.structuredContent as any
-    expect(s.edges.map((e: any) => e.target)).toContain('Done')
+    const s = r.structuredContent as unknown as Described
+    expect(s.edges.map((e) => e.target)).toContain('Done')
   })
 
   it('rejects other diagram types', () => {
