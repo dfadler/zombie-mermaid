@@ -30,6 +30,7 @@
   "coverage:diff": "hold new/changed lines in `src/`, `packages/*/src/` and `scripts/**/*.ts` to a 95% coverage bar (run-on-import CLI entry points listed in `scripts/coverage-exempt.json` are skipped; what CI's \"Check coverage on new/changed code\" step runs, after `pnpm run test:coverage` has produced `coverage/lcov.info`; see `scripts/check-diff-coverage.ts`)",
   "dashboard:data": "refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand",
   "dev": "start the Vite dev server (`/` home page, `/editor` live editor) with live reload on port 3456; set `PORT` to change it",
+  "docs:llms": "regenerate `public/llms-full.txt` from the docs linked in `public/llms.txt`; the `llms-full` test fails if it is stale",
   "docs:scripts": "regenerate this file from `package.json` and `scripts/script-descriptions.json`; the `development-scripts-doc` test fails if it is stale",
   "form-diff": "build `form-diff.html`, a human-reviewable report pairing real renders (`scripts/form-diff.ts`; see its header comment)",
   "form-facts": "extract the structural facts the form judge compares (`scripts/form-facts.ts`; see its header comment)",
