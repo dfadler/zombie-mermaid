@@ -48,4 +48,12 @@ describe('cli.ts – check command dispatch', () => {
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('invalid'))
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
+
+  it('stringifies a non-Error rejection', async () => {
+    runCheckMock.mockRejectedValue('nope')
+    process.argv = ['node', 'zombie-mermaid', '--check', 'a.md']
+    await import('../cli.ts')
+    await vi.waitFor(() => expect(exitSpy).toHaveBeenCalled())
+    expect(errorSpy).toHaveBeenCalledWith('Error: nope')
+  })
 })
