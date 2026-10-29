@@ -1,6 +1,6 @@
 {
   "name": "@zombie-mermaid/cli",
-  "version": "5.11.1",
+  "version": "5.11.2",
   "license": "MIT",
   "description": "Command-line interface for zombie-mermaid: render Mermaid diagrams as SVG, ASCII, HTML or PNG from the shell (npx @zombie-mermaid/cli diagram.mmd).",
   "keywords": [

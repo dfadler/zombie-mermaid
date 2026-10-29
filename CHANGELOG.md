@@ -1,5 +1,19 @@
 # Changelog
 
+## 5.11.2
+
+### Patch Changes
+
+- [#2387](https://github.com/dfadler/zombie-mermaid/pull/2387) [`0a0e51c`](https://github.com/dfadler/zombie-mermaid/commit/0a0e51c33cdb4c902b85ec442426638034bda381) Thanks [@dfadler](https://github.com/dfadler)! - Output change: an ASCII asymmetric `>x]` now draws a notch on its left side like mermaid's (a blank left wall on the middle row and a `>` tip one cell in, in every direction including RL) instead of `▷` corners, and is one column wider so the label clears the tip ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+- [#2386](https://github.com/dfadler/zombie-mermaid/pull/2386) [`c5d83df`](https://github.com/dfadler/zombie-mermaid/commit/c5d83dff19a64756398704e28f9d7c449a605faa) Thanks [@dfadler](https://github.com/dfadler)! - Output change: an ASCII subroutine `[[x]]` now draws a second vertical bar inside each side (`┌┬──┬┐` / `││ x ││`, `++--++` / `|| x ||` in the ASCII charset) like mermaid's, instead of `╟ ╢` corners on a plain box, and its label is centred ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+- Updated dependencies [[`0a0e51c`](https://github.com/dfadler/zombie-mermaid/commit/0a0e51c33cdb4c902b85ec442426638034bda381), [`c5d83df`](https://github.com/dfadler/zombie-mermaid/commit/c5d83dff19a64756398704e28f9d7c449a605faa)]:
+  - @zombie-mermaid/ascii-renderer@5.11.2
+  - @zombie-mermaid/mcp@5.11.2
+  - @zombie-mermaid/core@5.11.2
+  - @zombie-mermaid/mermaid-parser@5.11.2
+  - @zombie-mermaid/svg-renderer@5.11.2
+
 ## 5.11.1
 
 ### Patch Changes

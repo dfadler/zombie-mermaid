@@ -1,5 +1,12 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.11.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.2
+
 ## 5.11.1
 
 ### Patch Changes
