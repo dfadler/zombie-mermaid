@@ -13,10 +13,8 @@ import {
   doublecircleRenderer,
   cylinderRenderer,
   asymmetricRenderer,
-  trapezoidRenderer,
   parallelogramRenderer,
   parallelogramAltRenderer,
-  trapezoidAltRenderer,
 } from '../shapes/special.ts'
 import type { ShapeRenderOptions } from '../shapes/types.ts'
 
@@ -392,43 +390,80 @@ describe('asymmetric (flag) shape >text]', () => {
   })
 })
 
-describe('trapezoid shape [/text\\]', () => {
-  it('renders slope markers on the top corners in a flowchart', () => {
-    const src = `flowchart TD
-  A[/Wide Bottom\\]`
-    const out = renderMermaidASCII(src, { useAscii: false })
-    expect(out).toContain('Wide Bottom')
+describe('trapezoid shapes (#2164)', () => {
+  // Mermaid 12.2.0 slants both sides of [/x\] (wide bottom) and [\x/] (wide top).
+  it('trapezoid slants both sides, wide edge at the bottom', () => {
+    const src = 'flowchart TD\n  A[/Trap\\]'
+    expect(renderMermaidASCII(src, { useAscii: false })).toBe(
+      [
+        '    ╱──╲    ',
+        '   ╱    ╲   ',
+        '  ╱ Trap ╲  ',
+        ' ╱        ╲ ',
+        '╱──────────╲',
+      ].join('\n'),
+    )
+    expect(renderMermaidASCII(src, { useAscii: true })).toBe(
+      [
+        '    /--\\    ',
+        '   /    \\   ',
+        '  / Trap \\  ',
+        ' /        \\ ',
+        '/----------\\',
+      ].join('\n'),
+    )
   })
 
-  it('delegates to the shared box renderer with trapezoid corners', () => {
-    const dims = trapezoidRenderer.getDimensions('X', unicodeOpts)
-    const canvas = trapezoidRenderer.render('X', dims, unicodeOpts)
-    const str = canvasToString(canvas)
-    const lines = str.split('\n')
-    expect(lines[0]!.startsWith('/')).toBe(true)
-    expect(lines[0]!.endsWith('\\')).toBe(true)
-    expect(lines[lines.length - 1]!.startsWith('└')).toBe(true)
-    expect(lines[lines.length - 1]!.endsWith('┘')).toBe(true)
-  })
-})
-
-describe('trapezoid-alt shape [\\text/]', () => {
-  it('renders slope markers on the bottom corners in a flowchart', () => {
-    const src = `flowchart TD
-  A[\\Wide Top/]`
-    const out = renderMermaidASCII(src, { useAscii: false })
-    expect(out).toContain('Wide Top')
+  it('trapezoid-alt is wide at the top', () => {
+    expect(
+      renderMermaidASCII('flowchart TD\n  A[\\TrapAlt/]', { useAscii: false }),
+    ).toBe(
+      [
+        '╲─────────────╱',
+        ' ╲           ╱ ',
+        '  ╲ TrapAlt ╱  ',
+        '   ╲       ╱   ',
+        '    ╲─────╱    ',
+      ].join('\n'),
+    )
   })
 
-  it('delegates to the shared box renderer with trapezoid-alt corners', () => {
-    const dims = trapezoidAltRenderer.getDimensions('X', unicodeOpts)
-    const canvas = trapezoidAltRenderer.render('X', dims, unicodeOpts)
-    const str = canvasToString(canvas)
-    const lines = str.split('\n')
-    expect(lines[0]!.startsWith('┌')).toBe(true)
-    expect(lines[0]!.endsWith('┐')).toBe(true)
-    expect(lines[lines.length - 1]!.startsWith('\\')).toBe(true)
-    expect(lines[lines.length - 1]!.endsWith('/')).toBe(true)
+  it('keeps the shape in BT (mermaid does not flip it)', () => {
+    const out = renderMermaidASCII('flowchart BT\n  A[/Trap\\]', {
+      useAscii: false,
+    })
+    expect(out).toBe(
+      [
+        '    ╱──╲    ',
+        '   ╱    ╲   ',
+        '  ╱ Trap ╲  ',
+        ' ╱        ╲ ',
+        '╱──────────╲',
+      ].join('\n'),
+    )
+  })
+
+  it('keeps edge junctions on the faces in BT', () => {
+    const out = renderMermaidASCII('flowchart BT\n  A[/Trap\\] --> B[Box]', {
+      useAscii: false,
+    })
+    expect(out).toContain('╱─┴╲')
+    expect(out.endsWith('╱──────────╲')).toBe(true)
+    expect(out.indexOf('▲')).toBeLessThan(out.indexOf('╱─┴╲'))
+  })
+
+  it('keeps the label clear of both slanted sides in LR', () => {
+    const out = renderMermaidASCII('flowchart LR\n  A[/Trap\\] --> B', {
+      useAscii: false,
+    })
+    expect(out).toContain('╱ Trap ╲')
+  })
+
+  it('extends side edges to the slanted wall (LR, arrowhead and tail)', () => {
+    const out = renderMermaidASCII('flowchart LR\n  A[/Trap\\] --> B[\\Alt/]', {
+      useAscii: false,
+    })
+    expect(out).toContain('╱ Trap ╲────────►╲ Alt ╱')
   })
 })
 
@@ -488,10 +523,10 @@ describe('parallelogram shapes [/text/] and [\\text\\]', () => {
   })
 
   it('reports the same dimensions as the other box-based shapes', () => {
-    // Parallelograms reuse getBoxDimensions, so their sizing must match
-    // trapezoid's for the same label — a divergence would misalign the grid.
+    // Parallelograms reuse getBoxDimensions, so the two must agree for the
+    // same label — a divergence would misalign the grid.
     expect(parallelogramRenderer.getDimensions('Label', unicodeOpts)).toEqual(
-      trapezoidRenderer.getDimensions('Label', unicodeOpts),
+      parallelogramAltRenderer.getDimensions('Label', unicodeOpts),
     )
   })
 })

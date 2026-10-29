@@ -456,6 +456,8 @@ export interface LabelRect {
   leftNotch?: boolean
   /** A hexagon, circle or diamond: its `╱`/`╲` (`/`/`\`) swap on a vertical flip so BT reads like TD (#2388). */
   diagonals?: boolean
+  /** A trapezoid: its outline rows swap on a vertical flip so the wide edge stays at the bottom (or top, for `trapezoid-alt`) as in mermaid's BT (#2164). */
+  trapezoid?: boolean
 }
 
 /** Full ASCII graph state used during layout and rendering. */
