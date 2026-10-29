@@ -226,7 +226,13 @@ const WORKSPACE_REF_RE: Record<string, RegExp> = {
 async function writeSharedTypes(emitted: Map<string, string>): Promise<void> {
   const files = [...emitted.keys()].filter((file) => file.endsWith('.d.ts'))
   const found = files.map((file) => basename(file)).sort()
-  const expected = ['ascii-layout.d.ts', 'ascii.d.ts', 'index.d.ts', 'mcp.d.ts']
+  const expected = [
+    'ascii-layout.d.ts',
+    'ascii.d.ts',
+    'index.d.ts',
+    'mcp.d.ts',
+    'remark.d.ts',
+  ]
   if (found.join() !== expected.join()) {
     throw new Error(
       `Expected exactly ${expected.join(', ')} from the types build, found: ${found.join(', ') || '(none)'}`,
@@ -341,6 +347,17 @@ export default defineConfig({
         },
       },
     },
+    // Build-time unified plugins (#1875): own entry so `index` stays unchanged.
+    remark: {
+      consumer: 'client',
+      build: {
+        lib: {
+          entry: resolve(ROOT, 'src/remark.ts'),
+          formats: ES_AND_CJS,
+          fileName: (format) => `remark.${format === 'es' ? 'js' : 'cjs'}`,
+        },
+      },
+    },
     // Before #769, `mcp` was split into an ESM and a CJS environment
     // because its entry (`packages/mcp/src/index.ts`, bundled directly)
     // transitively pulled in `src/package-info.ts`'s
@@ -403,6 +420,7 @@ export default defineConfig({
             ascii: resolve(ROOT, 'src/ascii-entry.ts'),
             mcp: resolve(ROOT, 'src/mcp-entry.ts'),
             'ascii-layout': resolve(ROOT, 'src/ascii-layout.ts'),
+            remark: resolve(ROOT, 'src/remark.ts'),
           },
           formats: ES_ONLY,
         },

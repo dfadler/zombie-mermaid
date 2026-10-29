@@ -39,6 +39,16 @@
         "default": "./dist/ascii-layout.cjs"
       }
     },
+    "./remark": {
+      "import": {
+        "types": "./dist/remark.d.ts",
+        "default": "./dist/remark.js"
+      },
+      "require": {
+        "types": "./dist/remark.d.cts",
+        "default": "./dist/remark.cjs"
+      }
+    },
     "./mcp": {
       "import": {
         "types": "./dist/mcp.d.ts",
@@ -60,6 +70,9 @@
       ],
       "mcp": [
         "dist/mcp.d.ts"
+      ],
+      "remark": [
+        "dist/remark.d.ts"
       ]
     }
   },

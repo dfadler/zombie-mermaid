@@ -235,6 +235,29 @@ hyperlinks — off by default, since terminal and pager support varies (see
 
 ---
 
+## Markdown build plugins (remark / rehype)
+
+Render ` ```mermaid ` blocks to inline SVG at build time, with no browser. `remarkMermaid` and `rehypeMermaid` from `zombie-mermaid/remark` need no extra dependencies; use one of them:
+
+```js
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import remarkRehype from 'remark-rehype'
+import rehypeStringify from 'rehype-stringify'
+import { remarkMermaid } from 'zombie-mermaid/remark'
+
+const html = await unified()
+  .use(remarkParse)
+  .use(remarkMermaid, { render: { bg: '#fff' } }) // render: any renderMermaidSVG option
+  .use(remarkRehype, { allowDangerousHtml: true })
+  .use(rehypeStringify, { allowDangerousHtml: true })
+  .process(markdown)
+```
+
+The SVG goes in as raw HTML, so the pipeline must allow it (as above, or `rehype-raw`). Sanitize downstream if the Markdown is untrusted. Diagrams that need ELK require `registerElk()` first. There is no light/dark pair yet; pass one theme via `render`.
+
+---
+
 ## MCP Server
 
 > 🧪 **Experimental — shipped to gauge interest, not a finished or best-effort implementation.** This is a first cut covering the common case; the tool surface may change based on feedback. Try it and [open an issue](https://github.com/dfadler/zombie-mermaid/issues/new) with what you'd want from it.
