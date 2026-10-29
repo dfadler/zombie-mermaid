@@ -5,7 +5,7 @@ import {
   UnsupportedFlowchartError,
   type FlowchartLayout,
 } from '@zombie-mermaid/elk-layout'
-import { samples } from '../../site/samples-data.ts'
+import { samples } from '../../../samples/samples-data.ts'
 import {
   rasterizeLayout,
   type RasterBox,

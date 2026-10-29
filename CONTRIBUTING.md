@@ -12,7 +12,7 @@ pnpm run doctor     # check your toolchain; ASCII/Docker tools are optional
 pnpm run verify     # typecheck + lint/format/tests for what you changed
 ```
 
-`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or `--related <file>`) runs only affected tests. Rough path-to-suite map:
+`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or, for one source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`) runs only affected tests. Rough path-to-suite map:
 
 | Changed path                                   | Run                                                                |
 | ---------------------------------------------- | ------------------------------------------------------------------ |
@@ -185,7 +185,7 @@ run in CI, fails on a new `toMatchSnapshot`/`toMatchFileSnapshot`/
 
 ### Visual regression tests
 
-`__tests__/visual/*.visual.test.ts` render every sample in `packages/site/samples-data.ts` and `packages/site/xychart-samples-data.ts` in a real headless Chromium page and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. They run under Playwright Test (`playwright.config.ts`), not Vitest, and need a Chromium binary installed once:
+`__tests__/visual/*.visual.test.ts` render every sample in `samples/samples-data.ts` and `samples/xychart-samples-data.ts` in a real headless Chromium page and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. They run under Playwright Test (`playwright.config.ts`), not Vitest, and need a Chromium binary installed once:
 
 ```bash
 pnpm exec playwright install --with-deps chromium

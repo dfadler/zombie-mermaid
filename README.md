@@ -30,7 +30,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 `beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. Checkable facts, as of 2026-10-13: the last push to upstream's `main` was 2026-05-06 and its latest release is v1.1.2 (2026-02-26); it has [43 open pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) (19 opened before 2026-04-13) and [50 open issues](https://github.com/lukilabs/beautiful-mermaid/issues) (live counts at those links; the figures above are a dated snapshot). I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
 
-This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (53 fixes): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
+This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (55 fixes): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
 
 It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below. Who maintains it, how releases are published, and what is claimed: [provenance and continuity](docs/provenance.md).
 
@@ -201,7 +201,7 @@ Using this from React? See [React Integration](docs/react-integration.md) for a 
 
 ## CLI
 
-Installing the package also exposes a `zombie-mermaid` binary:
+Installing the package also exposes a `zombie-mermaid` binary. To run just the CLI, without the library's other entry points, use `npx @zombie-mermaid/cli render diagram.mmd --ascii` (same CLI, published as [`@zombie-mermaid/cli`](packages/cli/README.md)):
 
 ```bash
 zombie-mermaid render diagram.mmd --ascii              # Print ASCII/Unicode to terminal
@@ -214,6 +214,7 @@ zombie-mermaid render diagram.mmd --ascii -o out.txt    # Write the ASCII render
 zombie-mermaid render diagram.mmd --html                # Self-contained pan/zoom HTML viewer
 zombie-mermaid render diagram.mmd --png                 # Rasterize to diagram.png
 cat diagram.mmd | zombie-mermaid render --ascii         # Read from stdin
+zombie-mermaid --check README.md docs/*.md              # Validate every mermaid block in Markdown; exit 1 with file:line diagnostics
 zombie-mermaid themes                                   # List built-in theme names
 zombie-mermaid --help                                   # Show all options
 ```

@@ -1,5 +1,25 @@
 # @zombie-mermaid/core
 
+## 5.11.3
+
+### Patch Changes
+
+- [#2400](https://github.com/dfadler/zombie-mermaid/pull/2400) [`5ca6d42`](https://github.com/dfadler/zombie-mermaid/commit/5ca6d42abc5fbeb90bd42d19cdf025798b53f40f) Thanks [@dfadler](https://github.com/dfadler)! - SVG output now honors `prefers-contrast: more` (faint derived strokes and secondary text go to full foreground) and `forced-colors: active` (they use `CanvasText`). In an SVG loaded as `<img>` only `forced-colors` applies; `prefers-contrast` does not match there ([#1878](https://github.com/dfadler/zombie-mermaid/issues/1878)).
+
+## 5.11.2
+
+## 5.11.1
+
+## 5.11.0
+
+## 5.10.2
+
+## 5.10.1
+
+## 5.10.0
+
+## 5.9.1
+
 ## 5.9.0
 
 ### Minor Changes

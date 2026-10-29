@@ -149,18 +149,17 @@ of any single one of them:
   (`editor/css/misc.css`, loaded last, covers buttons, links, inputs,
   selects and `[tabindex]` elements), but its nav/hero/footer chrome has
   none.
-- **A skip-to-content link** — exists only on **Home**:
-  `<a className="skip-link" href="#main">` in
-  `demo/components/index-page.tsx`, jumping to `<main id="main">` on that
-  same page — relevant to
-  [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A)
-  on Home only. No other page family (Diagrams, Editor, Fork fixes, Blog,
-  Dashboard) has one.
-- **Landmarks and hidden-nav focus** — `<main>` exists only on Home and
-  Fork fixes; the Editor, Dashboard, Diagrams and Blog pages have none. The
-  closed mobile nav panel (`.mobile-nav-panel` in `demo/components/nav-css.ts`)
-  is hidden with `opacity:0; pointer-events:none` only, so its links remain
-  Tab-focusable and exposed to assistive tech while it is closed.
+- **A skip-to-content link** — on every page: `<a className="skip-link"
+  href="#main">` in `demo/components/document.tsx`, jumping to the page's one
+  `<main id="main" tabindex="-1">` (the `tabindex` makes the focus move
+  deterministic across browsers) — relevant to
+  [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A).
+- **Landmarks and mobile nav** — every page has one `<main id="main">`, one
+  `banner` and one `contentinfo`; on Editor and Fork fixes `<main>` also wraps
+  the hero. The closed mobile nav panel (`.mobile-nav-panel` in
+  `demo/components/nav-css.ts`) is `visibility: hidden`, so its links are not
+  focusable. While open, Escape closes it from anywhere (including the toggle)
+  and the rest of the page is `inert` (`demo/components/mobile-menu.client.ts`).
 - **Modal dialog semantics** — **no longer applicable.** The "Edit Diagram"
   dialog this bullet used to describe was part of the interactive gallery
   the redesign removed; there is no `role="dialog"`/`aria-modal` element

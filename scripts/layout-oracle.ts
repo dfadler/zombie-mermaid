@@ -1,7 +1,7 @@
 /**
  * Measures how closely our flowchart layouts agree with official mermaid.js.
  *
- * Every flowchart sample in packages/site/samples-data.ts is rendered twice:
+ * Every flowchart sample in samples/samples-data.ts is rendered twice:
  * through real mermaid (headless Chromium, via scripts/lib/real-mermaid.ts) and
  * through our own layout engine. Node and subgraph positions are read back from
  * both, and scripts/lib/layout-agreement.ts scores how often they put the same
@@ -26,10 +26,10 @@
  * and charts are not scored (EXCLUDED_TYPES in scripts/lib/layout-agreement.ts).
  */
 
-import { appendFile, readFile, writeFile } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 import {
   pinFreshness,
   pinnedMermaidVersion,
@@ -43,7 +43,6 @@ import {
   officialNodeName,
   ORACLE_TYPES,
   hasGroups,
-  historyLines,
   jsonPayload,
   type OracleArgs,
   type OracleType,
@@ -51,14 +50,15 @@ import {
   type ScorecardRun,
   worst,
   type Box,
-  type HistoryEntry,
   type SampleResult,
-  scorecardMarkdown,
   finishScorecard,
   recordsAllTypes,
   summarize,
+  type LabelEntry,
   type LayoutBoxes,
 } from './lib/layout-agreement.ts'
+import { labelEntryFor } from './lib/label-position.ts'
+import { writeRecords } from './lib/layout-record.ts'
 import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
@@ -189,6 +189,7 @@ async function main(): Promise<number> {
   await session.page.evaluate('window.__name = (f) => f')
 
   const runs: ScorecardRun[] = []
+  let labelEntry: LabelEntry | undefined
   const failing: string[] = []
   const commit = recording
     ? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -216,6 +217,7 @@ async function main(): Promise<number> {
         }),
       })
     }
+    if (recording) labelEntry = await labelEntryFor(session, commit)
   } finally {
     await session.close()
   }
@@ -224,21 +226,7 @@ async function main(): Promise<number> {
     await writeFile(args.json, jsonPayload(runs))
     console.log(`\nWrote ${args.json}`)
   }
-  if (recording) {
-    let history = runs.map((r) => r.entry)
-    if (args.history) {
-      await appendFile(args.history, historyLines(history))
-      history = (await readFile(args.history, 'utf8'))
-        .split('\n')
-        .filter(Boolean)
-        .map((l) => JSON.parse(l) as HistoryEntry)
-      console.log(`Appended to ${args.history}`)
-    }
-    if (args.scorecard) {
-      await writeFile(args.scorecard, scorecardMarkdown(runs, history))
-      console.log(`Wrote ${args.scorecard}`)
-    }
-  }
+  if (recording) await writeRecords(args, runs, labelEntry)
   failing.push(...(await finishScorecard(args, runs)))
   if (failing.length > 0) {
     console.error(`\nBelow threshold: ${[...new Set(failing)].join(', ')}`)

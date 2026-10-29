@@ -53,11 +53,12 @@ export function renderWith(
   mod: RendererModule,
   source: string,
   mode: 'svg' | 'ascii',
+  options?: Record<string, unknown>,
 ): string {
   if (mode === 'svg') {
     const fn = mod.renderMermaidSVG ?? mod.renderMermaidSync
     if (!fn) throw new Error('no SVG renderer export found')
-    return fn(source, { bg: '#ffffff', fg: '#1a1a1a' })
+    return fn(source, { bg: '#ffffff', fg: '#1a1a1a', ...options })
   }
   const fn = mod.renderMermaidASCII ?? mod.renderMermaidAscii
   if (!fn) throw new Error('no ASCII renderer export found')
@@ -197,7 +198,7 @@ export async function renderBeforeAll(
         pathToFileURL(join(out, `${fix.fixCommit}.mjs`)).href
       )) as RendererModule
       try {
-        results.set(fix.id, { output: renderWith(mod, fix.source, fix.render) })
+        results.set(fix.id, { output: renderWith(mod, fix.source, fix.render, fix.options) })
       } catch (err) {
         // A crash IS the before state for the crash fixes in this list.
         results.set(fix.id, {

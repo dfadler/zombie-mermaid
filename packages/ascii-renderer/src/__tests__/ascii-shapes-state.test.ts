@@ -217,6 +217,6 @@ describe('diamondRenderer (choice pseudo-state)', () => {
     expect(labeled.height).toBeGreaterThan(1)
     expect(
       canvasToString(diamondRenderer.render('x', labeled, unicodeOptions)),
-    ).toContain('◇')
+    ).toContain('<')
   })
 })

@@ -163,11 +163,19 @@ export interface AsciiNode {
    */
   fanInCentered?: boolean
   /**
+   * Set by grid layout when an LR node was centred over exactly two children
+   * (`centerParentsOverChildren`). Edge routing then leaves each branch
+   * through the right face and enters the child's left face (#2351).
+   */
+  fanOutCentered?: boolean
+  /**
    * Rows of `drawing` holding the label's lines (inclusive), set by drawBox.
    * Lets the BT flip restore the label's reading order exactly, rather than
    * inferring which text cells belong to one label.
    */
   labelRows?: { top: number; bottom: number }
+  /** Per drawing row, columns a hexagon's diagonal takes at each end (#2164). */
+  labelInsets?: number[]
   /**
    * `class-name` nodes only: which end of its cell the text hugs, so it
    * sits next to the circle its edge ends in (see class-flow.ts).
@@ -281,6 +289,8 @@ export interface AsciiEdge {
    * departure and arrival runs within their gutter rows.
    */
   faceLanePlan?: { slot: number; dep: number; arr: number }
+  /** determinePath wanted this self-loop on its top face but the first row has no room above (#2100). */
+  loopTopWanted?: boolean
   /**
    * Set by determinePath when the edge was routed as planned. Its ports are
    * placed by port-offsets.ts's allocateFaces, like a lane's.
@@ -386,7 +396,9 @@ export interface AsciiSubgraph {
 // still visibly changes spacing. The flowchart/state grid layout (grid.ts)
 // predates this convention and uses `paddingX`/`paddingY` directly as its
 // column/row gap — don't "fix" that to go through these constants too, its
-// existing default already equals them, so behavior is identical.
+// existing default already equals them, so behavior is identical. The one
+// exception: grid.ts's LR/RL sibling gap is `paddingY - 1` (#2350), so `-y 5` no
+// longer gives the old LR gap (use 6); TD still uses `paddingY` directly.
 // ============================================================================
 
 /** `AsciiConfig.paddingX`'s default — see the block comment above. */
@@ -426,7 +438,7 @@ export interface AsciiConfig {
   useAscii: boolean
   /** Horizontal spacing between nodes. Default: 5 */
   paddingX: number
-  /** Vertical spacing between nodes. Default: 5 */
+  /** Vertical spacing between nodes. Default: 5; in LR and RL the gap between sibling nodes is `paddingY - 1`, minimum 1 (#2350). */
   paddingY: number
   /** Padding inside node boxes. Default: 1 */
   boxBorderPadding: number
@@ -440,6 +452,10 @@ export interface LabelRect {
   y0: number
   x1: number
   y1: number
+  /** A node rect whose left side is notched (asymmetric `>x]`); a horizontal flip keeps the notch on the left (#2164). */
+  leftNotch?: boolean
+  /** A hexagon, circle or diamond: its `╱`/`╲` (`/`/`\`) swap on a vertical flip so BT reads like TD (#2388). */
+  diagonals?: boolean
 }
 
 /** Full ASCII graph state used during layout and rendering. */
@@ -450,6 +466,10 @@ export interface AsciiGraph {
   faceLaneOff?: ReadonlySet<number>
   /** Planned face lanes that were rejected by this layout (#2121). */
   faceLaneRejected?: Set<number>
+  /** Layout keeps a free grid row above the top node row (loops on a top face, #2100). */
+  topMargin?: boolean
+  /** A self-loop wanted a top face but the first row has no room above it. */
+  wantsTopMargin?: boolean
   nodes: AsciiNode[]
   edges: AsciiEdge[]
   canvas: Canvas

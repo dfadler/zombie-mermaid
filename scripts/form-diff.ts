@@ -42,7 +42,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { renderMermaidASCII } from '../src/index.ts'
-import { samples, type Sample } from '../packages/site/samples-data.ts'
+import { samples, type Sample } from '../samples/samples-data.ts'
 import { escapeHtml } from '../demo/format.ts'
 import { asciiToHtml } from '../packages/site/ascii-html.ts'
 import { startRealMermaid, renderRealMermaidSvg } from './lib/real-mermaid.ts'

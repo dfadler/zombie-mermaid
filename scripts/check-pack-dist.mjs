@@ -46,6 +46,19 @@ export function mapProblems(dir) {
   return out
 }
 
+/**
+ * `dist/cli.js` must import the shared `./ascii-layout.js` entry, not carry its own
+ * `./src-*.js` chunks (#2272): a second copy of the ascii-layout code (~25 KB unpacked).
+ */
+export function cliChunkProblems(dir) {
+  const f = join(dir, 'dist/cli.js')
+  if (!existsSync(f)) return []
+  const chunks = [
+    ...readFileSync(f, 'utf8').matchAll(/["'](\.\/src-[^"']+)["']/g),
+  ].map((m) => `dist/cli.js loads its own chunk ${m[1]}`)
+  return chunks
+}
+
 /** Entry files a package.json promises that `npm pack --dry-run` does not list. */
 export function missingEntries(dir) {
   const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
@@ -86,6 +99,11 @@ export function main(root = resolve(import.meta.dirname, '..')) {
     if (maps.length) {
       bad++
       console.error(`FAIL ${d}: source maps (#2195): ${maps.join('; ')}`)
+    }
+    const dup = cliChunkProblems(d)
+    if (dup.length) {
+      bad++
+      console.error(`FAIL ${d}: duplicate chunks (#2272): ${dup.join('; ')}`)
     }
   }
   console.log(`checked ${dirs.length} packages, ${bad} failing`)

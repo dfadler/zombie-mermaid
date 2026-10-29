@@ -99,17 +99,17 @@ const q = (phrase: string) => encodeURIComponent(`"${phrase}"`)
 // Hosts the GitHub, npm and Hacker News collectors already search, so the web
 // collector drops them instead of reporting the same page twice.
 const COVERED_HOST_RE = /(^|\.)(github\.com|npmjs\.com|ycombinator\.com)$/i
-// '' for a missing or malformed URL, so the filter below drops it too.
 // The project name is also a Halloween costume, so web hits must also talk about
 // diagrams or rendering. ponytail: keyword match on Tavily's snippet only, so a real
 // mention whose snippet lacks these words is dropped; widen the list if that bites.
 const WEB_CONTEXT_RE =
-  /\b(diagrams?|flowcharts?|render(?:er|ing|s)?|ascii|svg|npm|typescript|mermaid\.?js)\b/i
+  /\b(diagrams?|flowcharts?|render(?:er|ing|s)?|ascii|svg|npm|typescript|javascript|markdown|cli|library|package|mermaid\.?js)\b/i
 // Tavily dates are RFC 2822 ("Sun, 19 Oct 2025 ..."); the report wants YYYY-MM-DD.
 const isoDate = (raw: unknown) => {
   const t = typeof raw === 'string' ? Date.parse(raw) : NaN
   return Number.isNaN(t) ? undefined : new Date(t).toISOString().slice(0, 10)
 }
+// '' for a missing or malformed URL, so the filter below drops it too.
 const hostOf = (url: unknown) => {
   try {
     return new URL(String(url)).hostname
@@ -256,6 +256,8 @@ export const COLLECTORS: Collector[] = [
     github: false,
     needsTavilyKey: true,
     run: async (ctx, phrase) => {
+      // The spaced phrase is the creature on the open web (#2215); hyphenated spellings only.
+      if (/\s/.test(phrase)) return []
       // https://docs.tavily.com/documentation/api-reference/endpoint/search
       const j = await getJson(ctx, 'https://api.tavily.com/search', {
         method: 'POST',

@@ -1,5 +1,72 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.11.3
+
+### Patch Changes
+
+- Updated dependencies [[`5ca6d42`](https://github.com/dfadler/zombie-mermaid/commit/5ca6d42abc5fbeb90bd42d19cdf025798b53f40f)]:
+  - @zombie-mermaid/core@5.11.3
+  - @zombie-mermaid/mermaid-parser@5.11.3
+
+## 5.11.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.2
+  - @zombie-mermaid/mermaid-parser@5.11.2
+
+## 5.11.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.1
+  - @zombie-mermaid/mermaid-parser@5.11.1
+
+## 5.11.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.0
+  - @zombie-mermaid/mermaid-parser@5.11.0
+
+## 5.10.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.2
+  - @zombie-mermaid/mermaid-parser@5.10.2
+
+## 5.10.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.1
+  - @zombie-mermaid/mermaid-parser@5.10.1
+
+## 5.10.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.0
+  - @zombie-mermaid/mermaid-parser@5.10.0
+
+## 5.9.1
+
+### Patch Changes
+
+- [#2328](https://github.com/dfadler/zombie-mermaid/pull/2328) [`9ed0a46`](https://github.com/dfadler/zombie-mermaid/commit/9ed0a467fd7b127d07c754500305b667c5937e3f) Thanks [@dfadler](https://github.com/dfadler)! - Output change: horizontal XY chart SVGs now reserve room on the right for half the last value-axis label, so a wide label such as 220000 is no longer clipped at the viewBox edge.
+
+- [#2336](https://github.com/dfadler/zombie-mermaid/pull/2336) [`b5f9f06`](https://github.com/dfadler/zombie-mermaid/commit/b5f9f067d28019c3e88cdff67195475b6bbfefc4) Thanks [@dfadler](https://github.com/dfadler)! - Output change: horizontal XY charts now draw line series as straight segments in category order, as mermaid does, instead of a smoothed curve that could double back on a series that is not monotone in value. Vertical charts stay smoothed.
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.9.1
+  - @zombie-mermaid/mermaid-parser@5.9.1
+
 ## 5.9.0
 
 ### Minor Changes

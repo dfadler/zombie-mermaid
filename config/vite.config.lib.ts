@@ -174,6 +174,20 @@ const cliExecutable: Plugin = {
   },
 }
 
+// The cli environment is its own single-entry build, so it would otherwise bundle a second
+// copy of the ascii-layout chunks (~25 KB, #2272) that the `ascii-layout` library entry
+// already ships. Import that entry instead: the cli lands next to it in `dist/`.
+const cliSharesAsciiLayout: Plugin = {
+  name: 'zombie-mermaid:cli-shares-ascii-layout',
+  enforce: 'pre',
+  applyToEnvironment: (env) => env.name === 'cli',
+  resolveId(source) {
+    return source === '../ascii-layout.ts'
+      ? { id: './ascii-layout.js', external: true }
+      : null
+  },
+}
+
 /**
  * `ascii.d.ts`/`mcp.d.ts` MUST reference their `@zombie-mermaid/*` package
  * by bare specifier (`from '@zombie-mermaid/ascii-renderer'` /
@@ -276,6 +290,7 @@ export default defineConfig({
       applyToEnvironment: (env) => env.name === 'types',
     },
     cliExecutable,
+    cliSharesAsciiLayout,
   ],
   build: {
     outDir: DIST,

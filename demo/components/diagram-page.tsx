@@ -176,6 +176,10 @@ const DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
       { label: 'Diagrams', href: NAV_HREFS.diagrams },
       { label: 'Editor', href: NAV_HREFS.editor },
       { label: 'Fork fixes', href: NAV_HREFS.forkFixes },
+      {
+        label: 'Layout fidelity',
+        href: NAV_HREFS.forkFixes.replace('fork-fixes', 'layout-fidelity'),
+      },
     ],
   },
   {
@@ -215,6 +219,13 @@ const SAMPLE_DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
       { label: 'Diagrams', href: DETAIL_NAV_HREFS.diagrams },
       { label: 'Editor', href: DETAIL_NAV_HREFS.editor },
       { label: 'Fork fixes', href: DETAIL_NAV_HREFS.forkFixes },
+      {
+        label: 'Layout fidelity',
+        href: DETAIL_NAV_HREFS.forkFixes.replace(
+          'fork-fixes',
+          'layout-fidelity',
+        ),
+      },
     ],
   },
   {
@@ -251,6 +262,10 @@ const TAG_FOOTER_COLUMNS: readonly FooterColumn[] = [
       { label: 'Diagrams', href: TAG_NAV_HREFS.diagrams },
       { label: 'Editor', href: TAG_NAV_HREFS.editor },
       { label: 'Fork fixes', href: TAG_NAV_HREFS.forkFixes },
+      {
+        label: 'Layout fidelity',
+        href: TAG_NAV_HREFS.forkFixes.replace('fork-fixes', 'layout-fidelity'),
+      },
     ],
   },
   {
@@ -847,7 +862,7 @@ export function DiagramTypePage({
             detailed version of this comment for why renderToString (not
             renderToStaticMarkup) is needed here.
           */}
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_TYPE_ROOT_ID}
               dangerouslySetInnerHTML={{
@@ -1041,7 +1056,7 @@ export function DiagramHubPage({
             Plain, inert hydration container -- see DiagramTypePage's
             identical comment above.
           */}
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_HUB_ROOT_ID}
               dangerouslySetInnerHTML={{
@@ -1141,7 +1156,7 @@ export function DiagramDetailPage({
         <div style={{ overflow: 'hidden' }}>
           {/* Plain, inert hydration container -- see DiagramTypePage's
               identical comment above. */}
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_DETAIL_ROOT_ID}
               dangerouslySetInnerHTML={{
@@ -1236,7 +1251,7 @@ export function DiagramTagPage({
           installSlotKind="empty"
         />
         <div style={{ overflow: 'hidden' }}>
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_TAG_ROOT_ID}
               dangerouslySetInnerHTML={{
@@ -1322,7 +1337,7 @@ export function DiagramAllPage({
           installSlotKind="empty"
         />
         <div style={{ overflow: 'hidden' }}>
-          <main id="main">
+          <main id="main" tabIndex={-1}>
             <div
               id={DIAGRAM_ALL_ROOT_ID}
               dangerouslySetInnerHTML={{

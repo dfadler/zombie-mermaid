@@ -64,11 +64,34 @@ import { BREAKPOINTS } from './tokens.tsx'
  * directly into the script text.
  */
 export function initMobileMenu(desktopMinWidthPx: number): void {
+  /** Content made `inert` while a menu is open, so the page behind the
+   * panel is out of the tab order and the a11y tree: siblings of the bar
+   * and of each of its ancestors, except the bar and the panel. */
+  let inerted: Element[] = []
+
+  function setInert(bar: Element | null, panel: Element): void {
+    inerted.forEach(function (el) {
+      el.removeAttribute('inert')
+    })
+    inerted = []
+    for (let node = bar; node && node !== document.body;) {
+      const parent: Element | null = node.parentElement
+      if (!parent) break
+      for (const sib of Array.from(parent.children)) {
+        if (sib === node || sib === panel || sib.hasAttribute('inert')) continue
+        sib.setAttribute('inert', '')
+        inerted.push(sib)
+      }
+      node = parent
+    }
+  }
+
   function closeMenu(
     toggle: HTMLElement,
     panel: Element,
     returnFocus: boolean,
   ): void {
+    setInert(null, panel)
     panel.classList.remove('is-open')
     toggle.classList.remove('is-open')
     toggle.setAttribute('aria-expanded', 'false')
@@ -77,6 +100,7 @@ export function initMobileMenu(desktopMinWidthPx: number): void {
   }
 
   function openMenu(toggle: HTMLElement, panel: Element): void {
+    setInert(toggle.closest('.nav-bar'), panel)
     panel.classList.add('is-open')
     toggle.classList.add('is-open')
     toggle.setAttribute('aria-expanded', 'true')
@@ -107,13 +131,17 @@ export function initMobileMenu(desktopMinWidthPx: number): void {
       })
     })
 
-    panel.addEventListener('keydown', function (event) {
-      if (!(event instanceof KeyboardEvent)) return
-      if (event.key === 'Escape') {
+    // On `document`, not the panel: the toggle sits outside the panel, so
+    // Escape with focus on it (screen-reader virtual cursor) must close too.
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && panel.classList.contains('is-open')) {
         event.preventDefault()
         closeMenu(toggle, panel, true)
-        return
       }
+    })
+
+    panel.addEventListener('keydown', function (event) {
+      if (!(event instanceof KeyboardEvent)) return
       // Focus trap (#1760): the open panel covers the page, so wrap Tab
       // and Shift+Tab at its first/last focusable instead of leaking
       // behind it.
@@ -167,8 +195,8 @@ export function initMobileMenu(desktopMinWidthPx: number): void {
  * The script every page's `<script>` tag runs (nav.tsx's
  * `NavMobileMenuScript`) and the string `__tests__/demo-nav.test.ts` and
  * `__tests__/dom/nav-hydration.test.ts` `eval` against jsdom: the compact form
- * of {@link initMobileMenu} (mobile-menu-script.ts), called with the desktop
- * breakpoint. A literal rather than `initMobileMenu.toString()` so the output
+ * of {@link initMobileMenu} (mobile-menu-script.ts, generated at build time),
+ * called with the desktop breakpoint. A generated string rather than `initMobileMenu.toString()` so the output
  * is the same whichever transformer built the page (tsx, Vite SSR).
  */
 export const NAV_MOBILE_MENU_SCRIPT = `${MOBILE_MENU_SCRIPT_SOURCE}(${BREAKPOINTS.tablet + 1})`

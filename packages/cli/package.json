@@ -1,0 +1,63 @@
+{
+  "name": "@zombie-mermaid/cli",
+  "version": "5.11.3",
+  "license": "MIT",
+  "description": "Command-line interface for zombie-mermaid: render Mermaid diagrams as SVG, ASCII, HTML or PNG from the shell (npx @zombie-mermaid/cli diagram.mmd).",
+  "keywords": [
+    "mermaid",
+    "zombie-mermaid",
+    "diagram",
+    "cli",
+    "svg",
+    "ascii"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dfadler/zombie-mermaid",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/dfadler/zombie-mermaid#readme",
+  "bugs": {
+    "url": "https://github.com/dfadler/zombie-mermaid/issues"
+  },
+  "type": "module",
+  "bin": {
+    "zombie-mermaid": "dist/cli.js"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "files": [
+    "dist/",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@zombie-mermaid/core": "workspace:*",
+    "@zombie-mermaid/svg-renderer": "workspace:*",
+    "@zombie-mermaid/ascii-renderer": "workspace:*",
+    "@zombie-mermaid/mcp": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "elkjs": "^0.12.0"
+  },
+  "optionalDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  },
+  "devDependencies": {
+    "elkjs-0.9.3": "npm:elkjs@0.9.3"
+  },
+  "peerDependencies": {
+    "elkjs-0.9.3": "0.9.3"
+  },
+  "peerDependenciesMeta": {
+    "elkjs-0.9.3": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "vite build --config vite.config.ts"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

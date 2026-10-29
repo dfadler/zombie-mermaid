@@ -657,7 +657,12 @@ function allocateFaces(
     }
   }
   const faces = new Map<string, FaceEnd[]>()
-  for (const edge of lanes) {
+  // Loops first: a face a loop shares with a straight lane is placed with the
+  // loop in view, so the lane's other end follows it, not the reverse (#2100).
+  const byLoop = [...lanes].sort(
+    (a, b) => Number(b.from === b.to) - Number(a.from === a.to),
+  )
+  for (const edge of byLoop) {
     for (const [run, role] of endsOf(edge)) {
       if (!run) continue
       faces.set(faceOf(run), [

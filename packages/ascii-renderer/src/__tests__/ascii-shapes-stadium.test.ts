@@ -78,6 +78,16 @@ describe('stadium shape (flowchart integration)', () => {
   })
 })
 
+describe('stadium in RL (#2164)', () => {
+  it('keeps ( on the left and ) on the right after the mirror', () => {
+    const rows = renderMermaidASCII('graph RL\n  A([Hi]) --> B([Yo])')
+      .split('\n')
+      .filter((l) => l.includes('Hi'))
+    expect(rows[0]).toMatch(/^.*\( +Hi +\)/)
+    expect(rows[0]).not.toMatch(/\) +Hi +\(/)
+  })
+})
+
 describe('stadiumRenderer.getDimensions', () => {
   it('sizes a single-line label with the given padding', () => {
     const dims = stadiumRenderer.getDimensions('Start', {
@@ -125,78 +135,41 @@ describe('stadiumRenderer.getDimensions', () => {
   })
 })
 
-describe('stadiumRenderer.render', () => {
-  it('renders a single-row pill when height collapses to 3', () => {
-    const dims = stadiumRenderer.getDimensions('Start', {
-      useAscii: false,
-      padding: 0,
-    })
-    const canvas = stadiumRenderer.render('Start', dims, {
-      useAscii: false,
-      padding: 0,
-    })
-    expect(canvasToLines(canvas)).toEqual([
-      '         ',
+describe('stadiumRenderer.render (#2164)', () => {
+  const opts = (useAscii: boolean, padding: number) => ({ useAscii, padding })
+  const draw = (label: string, useAscii: boolean, padding = 1) => {
+    const o = opts(useAscii, padding)
+    return canvasToLines(
+      stadiumRenderer.render(label, stadiumRenderer.getDimensions(label, o), o),
+    )
+  }
+
+  it('renders a 3-row pill when height collapses to 3', () => {
+    expect(draw('Start', false, 0)).toEqual([
+      '╭───────╮',
       '( Start )',
-      '         ',
+      '╰───────╯',
     ])
   })
 
-  it('renders rounded corners for multi-row unicode mode', () => {
-    const dims = stadiumRenderer.getDimensions('Line1\nLine2', {
-      useAscii: false,
-      padding: 1,
-    })
-    const canvas = stadiumRenderer.render('Line1\nLine2', dims, {
-      useAscii: false,
-      padding: 1,
-    })
-    expect(canvasToLines(canvas)).toEqual([
+  it('renders rounded top/bottom and ( ) sides in unicode', () => {
+    expect(draw('Line1\nLine2', false)).toEqual([
       '╭─────────╮',
-      '│         │',
-      '│         │',
-      '│  Line1  │',
-      '│  Line2  │',
-      '╰─────────╯',
-    ])
-  })
-
-  it('renders parentheses on all sides for multi-row ascii mode', () => {
-    const dims = stadiumRenderer.getDimensions('Line1\nLine2', {
-      useAscii: true,
-      padding: 1,
-    })
-    const canvas = stadiumRenderer.render('Line1\nLine2', dims, {
-      useAscii: true,
-      padding: 1,
-    })
-    expect(canvasToLines(canvas)).toEqual([
-      '(---------)',
-      '(         )',
       '(         )',
       '(  Line1  )',
       '(  Line2  )',
-      '(---------)',
+      '(         )',
+      '╰─────────╯',
     ])
   })
 
-  it('centers an odd number of label lines around the vertical middle', () => {
-    const dims = stadiumRenderer.getDimensions('One\nTwo\nThree', {
-      useAscii: false,
-      padding: 1,
-    })
-    const canvas = stadiumRenderer.render('One\nTwo\nThree', dims, {
-      useAscii: false,
-      padding: 1,
-    })
-    expect(canvasToLines(canvas)).toEqual([
-      '╭─────────╮',
-      '│         │',
-      '│   One   │',
-      '│   Two   │',
-      '│  Three  │',
-      '│         │',
-      '╰─────────╯',
+  it("renders . and ' corners with ( ) sides in ASCII", () => {
+    expect(draw('One', true)).toEqual([
+      '.-------.',
+      '(       )',
+      '(  One  )',
+      '(       )',
+      "'-------'",
     ])
   })
 
@@ -208,10 +181,11 @@ describe('stadiumRenderer.render', () => {
       gridColumns: [1, 3, 1] as [number, number, number],
       gridRows: [1, 1, 1] as [number, number, number],
     }
-    const canvas = stadiumRenderer.render('VeryLongLabelText', dims, {
-      useAscii: false,
-      padding: 0,
-    })
-    expect(canvasToLines(canvas)).toEqual(['     ', '(gLa)', '     '])
+    const canvas = stadiumRenderer.render(
+      'VeryLongLabelText',
+      dims,
+      opts(false, 0),
+    )
+    expect(canvasToLines(canvas)).toEqual(['╭───╮', '(gLa)', '╰───╯'])
   })
 })

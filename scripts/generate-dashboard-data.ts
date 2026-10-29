@@ -167,24 +167,61 @@ export async function fetchRescuedIssues(
   if (numbers.length === 0) return []
 
   const fields = numbers
-    .map((n) => `i${n}: issue(number: ${n}) { number state }`)
+    .map(
+      (n) =>
+        `i${n}: issueOrPullRequest(number: ${n}) { ... on Issue { number state } ... on PullRequest { number state } }`,
+    )
     .join('\n    ')
   const query = `query {\n  repository(owner: "${UPSTREAM.owner}", name: "${UPSTREAM.name}") {\n    ${fields}\n  }\n}`
 
-  const result = await ghJson<{
-    data: { repository: Record<string, { number: number; state: string }> }
-  }>(ghFn, ['api', 'graphql', '-f', `query=${query}`, '--jq', 'tostring'])
-
-  return Object.values(result.data.repository).map((issue) => {
-    const meta = byNumber.get(issue.number)!
-    return {
-      number: issue.number,
-      state: issue.state === 'OPEN' ? 'open' : 'closed',
-      fixId: meta.fixId,
-      fixTitle: meta.fixTitle,
-      forkPr: meta.forkPr,
+  type Repo = Record<string, { number: number; state: string } | null>
+  let repository: Repo
+  try {
+    repository = (
+      await ghJson<{ data: { repository: Repo } }>(ghFn, [
+        'api',
+        'graphql',
+        '-f',
+        `query=${query}`,
+        '--jq',
+        'tostring',
+      ])
+    ).data.repository
+  } catch (err) {
+    // `gh api graphql` exits 1 when ANY alias is NOT_FOUND but still prints the
+    // partial `data` on stdout. Keep that; rethrow if there is no usable data
+    // (network/auth/syntax), so a real outage still fails the job.
+    try {
+      // Any parse/shape failure below is caught and rethrows the original.
+      repository = JSON.parse((err as { stdout: string }).stdout).data
+        .repository as Repo
+      if (!repository) throw err
+    } catch {
+      throw err
     }
-  })
+  }
+
+  const missing = Object.entries(repository)
+    .filter(([, v]) => v === null)
+    .map(([k]) => k.slice(1))
+  if (missing.length > 0) {
+    console.warn(
+      `fetchRescuedIssues: upstream issues/PRs not found, omitted: ${missing.join(', ')}`,
+    )
+  }
+
+  return Object.values(repository)
+    .filter((issue) => issue !== null)
+    .map((issue) => {
+      const meta = byNumber.get(issue.number)!
+      return {
+        number: issue.number,
+        state: issue.state === 'OPEN' ? 'open' : 'closed',
+        fixId: meta.fixId,
+        fixTitle: meta.fixTitle,
+        forkPr: meta.forkPr,
+      }
+    })
 }
 
 export interface ResponseTimeStats {

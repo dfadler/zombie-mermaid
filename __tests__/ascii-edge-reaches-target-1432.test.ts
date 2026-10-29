@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 
 type Dir = 'U' | 'D' | 'L' | 'R'
 const ARMS: Record<string, string> = {}

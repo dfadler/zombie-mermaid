@@ -593,7 +593,7 @@ jobs:
         with:
           name: bench-result
           path: bench-current.json
-          retention-days: 30
+          retention-days: 7
 
       # Per-package benchmarks (#875, split from #869): bench.ts above only
       # measures full end-to-end render time, so a regression anywhere in

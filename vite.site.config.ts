@@ -8,6 +8,7 @@
  */
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { defineConfig, type EnvironmentOptions } from 'vite'
+import { mobileMenuScript } from './demo/components/mobile-menu-script-plugin.ts'
 import { forkFixes } from './demo/fork-fixes-data.ts'
 import { renderBeforeAll } from './packages/site/ssr/fork-fixes-before.ts'
 import { prerender } from './packages/site/ssr/prerender.ts'
@@ -28,6 +29,7 @@ const CLIENTS: Record<string, [string, boolean, boolean?]> = {
   'editor-app': ['editor/js/index.ts', false, false],
   'fork-fixes-client': ['demo/fork-fixes-client.tsx', true],
   'dashboard-client': ['demo/dashboard-client.tsx', true],
+  'layout-fidelity-client': ['demo/layout-fidelity-client.ts', true],
   'index-client': ['demo/index-client.tsx', true],
   'index-page-client': ['demo/index-page-client.ts', false],
   'blog-post-client': ['demo/blog-post-client.tsx', true],
@@ -82,25 +84,12 @@ for (const [name, [entry, minify, treeshake = true]] of Object.entries(
   }
 }
 
-const WORKSPACE = [
-  'core',
-  'mermaid-parser',
-  'svg-renderer',
-  'ascii-renderer',
-  'mcp',
-]
-
 export default defineConfig({
   logLevel: 'warn',
-  resolve: {
-    alias: Object.fromEntries(
-      WORKSPACE.map((n) => [
-        `@zombie-mermaid/${n}`,
-        abs(`packages/${n}/src/index.ts`),
-      ]),
-    ),
-  },
+  // Workspace packages resolve to source via tsconfig.json `paths`.
+  resolve: { tsconfigPaths: true },
   plugins: [
+    mobileMenuScript(),
     {
       // Bundled SSR output loses source-relative `import.meta.url` reads
       // (generators' `new URL('../x', import.meta.url)`, primitives-css.tsx's

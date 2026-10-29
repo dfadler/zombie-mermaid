@@ -17,6 +17,12 @@
     --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
     --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
   }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
 </style>
 <style>
   .pie-outer { fill: none; stroke: var(--fg); stroke-width: 2px; }

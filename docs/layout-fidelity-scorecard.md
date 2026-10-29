@@ -11,16 +11,16 @@ floor for its lowest figure (default 85%, lower overrides in
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
 Reference: mermaid 12.2.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-10-22 at
-1aca1b7 with `pnpm run layout:scorecard`, tolerance 20px.
+these diagram types is ELK (it was dagre before). Generated 2026-10-27 at
+a70ae2e with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
 | Type      | Samples | Vertical | Horizontal | Containment |
 | --------- | ------- | -------- | ---------- | ----------- |
-| Flowchart | 53      | 99%      | 98%        | 100%        |
+| Flowchart | 53      | 100%     | 98%        | 100%        |
 | State     | 7       | 100%     | 98%        | 100%        |
-| Class     | 28      | 100%     | 100%       | 100%        |
+| Class     | 29      | 100%     | 100%       | 100%        |
 | ER        | 20      | 100%     | 100%       | -           |
 
 ## Trend (last 20 recorded runs)
@@ -31,10 +31,6 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-14 | af76561 | 12.1.0  | Flowchart | 38      | 98%      | 97%        | 100%        |
-| 2026-10-14 | af76561 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-14 | af76561 | 12.1.0  | Class     | 17      | 100%     | 88%        | 100%        |
-| 2026-10-14 | af76561 | 12.1.0  | ER        | 15      | 100%     | 100%       | -           |
 | 2026-10-15 | 9231164 | 12.1.0  | Flowchart | 53      | 94%      | 98%        | 100%        |
 | 2026-10-15 | 9231164 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-15 | 9231164 | 12.1.0  | Class     | 17      | 100%     | 99%        | 100%        |
@@ -51,6 +47,21 @@ across that change.
 | 2026-10-22 | 1aca1b7 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-22 | 1aca1b7 | 12.2.0  | Class     | 28      | 100%     | 100%       | 100%        |
 | 2026-10-22 | 1aca1b7 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-27 | a70ae2e | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
+| 2026-10-27 | a70ae2e | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-27 | a70ae2e | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-10-27 | a70ae2e | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+
+## Edge labels (ASCII)
+
+Where an edge label sits between its two nodes (0 = source end, 1 = target
+end; official mermaid centres it at about 0.5), averaged over the cases in
+`scripts/label-position-oracle.ts`. `Delta` is the mean absolute difference
+between the two renderers. Descriptive only, no floor.
+
+| Date       | Commit  | Mermaid | Cases | Official | ASCII | Delta |
+| ---------- | ------- | ------- | ----- | -------- | ----- | ----- |
+| 2026-10-27 | a70ae2e | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 
 ## Per sample
 
@@ -59,7 +70,6 @@ across that change.
 | Sample                                                   | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | -------------------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
 | Flowchart: Self-Loop with In and Out Neighbours (TD)     | 100%     | 33%        | -           | 3     | 30%   | pass   |
-| Flowchart: CJK Labels                                    | 50%      | 100%       | 100%        | 4     | 50%   | pass   |
 | Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 67%        | -           | 3     | 65%   | pass   |
 | System Architecture                                      | 89%      | 100%       | 100%        | 10    | 85%   | pass   |
 | Fan-Out Under Half-Column Parent                         | 100%     | 97%        | -           | 9     | 85%   | pass   |
@@ -79,7 +89,7 @@ across that change.
 | Direction: Left-Right (LR)                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Direction: Bottom-Top (BT)                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Subgraphs                                                | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
-| Nested Subgraphs                                         | 100%     | 100%       | 100%        | 5     | 20%   | pass   |
+| Nested Subgraphs                                         | 100%     | 100%       | 100%        | 5     | 95%   | pass   |
 | Subgraph Direction Override                              | 100%     | 100%       | 100%        | 6     | 85%   | pass   |
 | ::: Class Shorthand                                      | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Inline Style Overrides                                   | 100%     | 100%       | -           | 3     | 85%   | pass   |
@@ -94,6 +104,7 @@ across that change.
 | Nested Subgraphs (BT)                                    | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Edges Into and Out of Subgraphs                          | 100%     | 100%       | 100%        | 8     | 85%   | pass   |
 | Vertical Edge Labels                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Flowchart: CJK Labels                                    | 100%     | 100%       | 100%        | 4     | 95%   | pass   |
 | Flowchart: Three Parallel Edges (TD)                     | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Three Parallel Edges Plus Reciprocal (TD)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Four Parallel Edges (TD)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
@@ -117,7 +128,7 @@ across that change.
 | Sample                       | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | ---------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
 | State: Notes                 | 100%     | 83%        | -           | 4     | 80%   | pass   |
-| Basic State Diagram          | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| State: Basic State Diagram   | 100%     | 100%       | -           | 5     | 85%   | pass   |
 | State: Composite States      | 100%     | 100%       | 100%        | 8     | 85%   | pass   |
 | State: Connection Lifecycle  | 100%     | 100%       | -           | 7     | 85%   | pass   |
 | State: CJK State Names       | 100%     | 100%       | -           | 6     | 85%   | pass   |
@@ -153,6 +164,7 @@ Not scored (the oracle errored): zombie-mermaid.
 | Class: Direction LR                             | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Class: Direction BT                             | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Class: Direction RL with Namespaces             | 100%     | 100%       | 100%        | 3     | 85%   | pass   |
+| Class: Two Namespaces with Cross Edges          | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Class: Basic Class                              | -        | -          | -           | 1     | 85%   | n/a    |
 | Class: Visibility Markers                       | -        | -          | -           | 1     | 85%   | n/a    |
 | Class: Interface Annotation                     | -        | -          | -           | 1     | 85%   | n/a    |
@@ -165,9 +177,9 @@ Not scored (the oracle errored): zombie-mermaid.
 | --------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
 | ER: Basic Relationship                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | ER: Exactly One to Exactly One (\|\|--\|\|)   | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| ER: Exactly One to Zero-or-Many (\|\|--o{)    | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| ER: Zero-or-One to One-or-Many (\|o--\|{)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| ER: One-or-More to Zero-or-Many (}\|--o{)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| ER: Exactly One to Zero-or-Many               | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| ER: Zero-or-One to One-or-Many                | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| ER: One-or-More to Zero-or-Many               | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | ER: All Cardinality Types                     | 100%     | 100%       | -           | 8     | 85%   | pass   |
 | ER: Identifying (Solid) Relationship          | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | ER: Non-Identifying (Dashed) Relationship     | 100%     | 100%       | -           | 3     | 85%   | pass   |

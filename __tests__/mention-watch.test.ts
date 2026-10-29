@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import {
   buildReport,
@@ -230,7 +231,7 @@ describe('collectAll', () => {
             },
           },
         })
-      if (url.includes('registry.npmjs.org'))
+      if (new URL(url).hostname === 'registry.npmjs.org')
         return json({
           objects: [
             {
@@ -282,13 +283,45 @@ describe('collectAll', () => {
     )
   })
 
+  it('drops our own npm packages (scoped, payload plugin, our publisher) and keeps third parties (#2218)', async () => {
+    const cfgOwn = JSON.parse(
+      readFileSync('scripts/mention-watch.config.json', 'utf8'),
+    )
+    const pkg = (name: string, user: string) => ({
+      package: {
+        name,
+        description: 'zombie-mermaid thing',
+        publisher: { username: user },
+      },
+    })
+    const fetch: Ctx['fetch'] = (url) =>
+      new URL(url).hostname === 'registry.npmjs.org'
+        ? json({
+            objects: [
+              pkg('@zombie-mermaid/core', 'someone'),
+              pkg('payload-plugin-mermaid', 'someone'),
+              pkg('new-own-pkg', 'dfadler1984'),
+              pkg('third-party-dep', 'other'),
+            ],
+          })
+        : json({})
+    const r = await collectAll(
+      ctx(fetch),
+      cfgOwn,
+      COLLECTORS.filter((c) => c.source === 'npm'),
+    )
+    expect(r.findings.map((x) => x.title.split(' ')[0])).toEqual([
+      'third-party-dep',
+    ])
+  })
+
   describe('Web source (Tavily, #2201)', () => {
     const web = (url: string, init?: RequestInit) => {
       if (url !== 'https://api.tavily.com/search') return json({}, 500)
       expect(init?.method).toBe('POST')
       expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer k')
       expect(JSON.parse(String(init?.body))).toMatchObject({
-        query: '"zombie mermaid" diagram renderer',
+        query: '"zombie-mermaid" diagram renderer',
         max_results: 5,
       })
       return json({
@@ -336,12 +369,13 @@ describe('collectAll', () => {
       })
     }
     const only = COLLECTORS.filter((c) => c.source === 'Web')
+    const webCfg = { ...cfg, phrases: ['zombie-mermaid'] }
     const withKey = { ...ctx(web), tavilyKey: 'k' }
 
     it('reports matching pages, dropping non-matches, covered hosts, excluded and bad URLs', async () => {
       const r = await collectAll(
         withKey,
-        { ...cfg, excludeUrlPrefixes: ['https://dfadler.dev'] },
+        { ...webCfg, excludeUrlPrefixes: ['https://dfadler.dev'] },
         only,
       )
       expect(r.findings.map((x) => [x.url, x.title, x.source, x.date])).toEqual(
@@ -381,6 +415,23 @@ describe('collectAll', () => {
       expect(r.errors).toEqual([])
     })
 
+    it('never queries the spaced phrase, which matches the creature (#2215)', async () => {
+      let calls = 0
+      const r = await collectAll(
+        {
+          ...ctx(() => {
+            calls++
+            return json({})
+          }),
+          tavilyKey: 'k',
+        },
+        cfg,
+        only,
+      )
+      expect(calls).toBe(0)
+      expect(r.errors).toEqual([])
+    })
+
     it('is skipped without a key: no fetch, no attempt, no error', async () => {
       let calls = 0
       const r = await collectAll(
@@ -398,13 +449,13 @@ describe('collectAll', () => {
     it('records an HTTP error and treats an empty result as nothing found', async () => {
       const bad = await collectAll(
         { ...ctx(() => json({}, 429)), tavilyKey: 'k' },
-        cfg,
+        webCfg,
         only,
       )
-      expect(bad.errors).toEqual(['Web ("zombie mermaid"): HTTP 429'])
+      expect(bad.errors).toEqual(['Web ("zombie-mermaid"): HTTP 429'])
       const empty = await collectAll(
         { ...ctx(() => json({})), tavilyKey: 'k' },
-        cfg,
+        webCfg,
         only,
       )
       expect(empty.findings).toEqual([])

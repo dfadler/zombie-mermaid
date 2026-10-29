@@ -13,9 +13,9 @@ describe('xychart ASCII – narrow-range value-axis labels', () => {
     const result = render(`xychart-beta
       x-axis [A, B, C, D]
       bar [100, 102, 99, 101]`)
-    // Mermaid-matching ticks (d3 ticks(…, 10)): 0.2 steps over 99..102
+    // Mermaid-matching ticks (d3 ticks(…, 10)): 0.2 steps over 99..102, thinned to every 2nd tick (#2310)
     expect(result).toContain('99.4')
-    expect(result).toContain('100.4')
+    expect(result).toContain('100.2')
   })
 
   it('renders a single tick label for a zero-width explicit range', () => {
@@ -31,5 +31,16 @@ describe('xychart ASCII – narrow-range value-axis labels', () => {
       x-axis [A, B]
       bar [100, 102]`)
     expect(result).toMatch(/\d\.\d/)
+  })
+
+  it('thins y-axis labels so they sit on evenly spaced rows (#2310)', () => {
+    const lines = render(`xychart-beta
+      x-axis [A, B, C, D, E]
+      bar [280, 260, 200, 180, 40]`).split('\n')
+    const labeled = lines.flatMap((l, i) => (/^\s*\d+[┤┼]/.test(l) ? [i] : []))
+    const gaps = labeled.slice(1).map((r, i) => r - labeled[i]!)
+    expect(labeled.length).toBeGreaterThan(3)
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(2)
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(1)
   })
 })

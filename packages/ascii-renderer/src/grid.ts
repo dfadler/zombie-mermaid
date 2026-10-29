@@ -16,7 +16,7 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { requireGridCoord } from './types.ts'
+import { DEFAULT_PADDING_Y, paddingOffset, requireGridCoord } from './types.ts'
 import { subgraphsTied } from '@zombie-mermaid/core'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
@@ -44,6 +44,7 @@ import {
 } from './frame-avoidance.ts'
 import {
   isBlockFree,
+  createGrid,
   placeBlock,
   cloneGrid,
   pathCells,
@@ -293,7 +294,12 @@ export function setColumnWidth(
       )
     })
   if (gc.y > 0 && !rowAboveIsNodeBlock && !straddlesParent(graph, node, 'y')) {
-    let basePadding = graph.config.paddingY
+    // #2350: LR sibling gap is 4 at the default paddingY (5), offset from the
+    // default like the other renderers; TD keeps paddingY as-is.
+    let basePadding =
+      graph.config.graphDirection === 'LR'
+        ? paddingOffset(graph.config.paddingY, DEFAULT_PADDING_Y, 4, 1)
+        : graph.config.paddingY
     // Extra vertical padding for nodes with incoming edges from outside their subgraph
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
       const subgraphOverhead = 4
@@ -1214,6 +1220,22 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
 }
 
 /**
+ * LR decision (diamond) split two or more ways: every branch leaves the right
+ * face, as mermaid's ports do (#2351, #2366). Plain boxes keep their top/bottom
+ * faces (the upstream goldens in ascii.test.ts pin that). A straight middle
+ * edge's label gets room beside the shared trunk in `applyLabelLine`.
+ */
+function markDecisionSplit(
+  node: AsciiNode,
+  lr: boolean,
+  childCount: number,
+): void {
+  if (lr && childCount >= 2 && node.shape === 'diamond') {
+    node.fanOutCentered = true
+  }
+}
+
+/**
  * Centre a node over its children, as dagre does, instead of leaving it above
  * the first one (a fan-out like `A --> B & C & D` otherwise hangs A over B and
  * leaves its other edges to leave sideways and come back down).
@@ -1241,7 +1263,7 @@ function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
  */
 function centerParentsOverChildren(graph: AsciiGraph): void {
   const lr = graph.config.graphDirection === 'LR'
-  // ponytail: LR graphs with subgraphs keep the old layout; the cluster-exit
+  // Ponytail: LR graphs with subgraphs keep the old layout; the cluster-exit
   // wall/lane routing is tuned to it. Extend once those routes are re-checked.
   if (lr && graph.subgraphs.length > 0) return
   // Rank axis (flow direction) and cross axis (where siblings spread).
@@ -1302,6 +1324,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       if (mid + 2 <= crossOf(gc)) continue
       if (fitsStraddled(graph, node)) {
         relocateNode(graph, node, at(rankOf(gc), mid))
+        markDecisionSplit(node, lr, children.length)
         continue
       }
       const own = new Set<AsciiNode>([node])
@@ -1324,6 +1347,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       mid += 2
     }
     if (mid > crossOf(gc)) relocateNode(graph, node, at(rankOf(gc), mid))
+    markDecisionSplit(node, lr, children.length)
   }
   markLabeledFanIn(graph)
 }
@@ -2070,10 +2094,25 @@ export function createMapping(graph: AsciiGraph): void {
 
   separateNonMembersFromFrames(graph)
 
+  // A loop on a top face (#2100) needs a free grid row above the top nodes:
+  // push every node down one row and rebuild the occupancy map.
+  if (graph.topMargin && graph.subgraphs.length === 0) {
+    graph.grid = createGrid()
+    for (const n of graph.nodes) {
+      const gc = requireGridCoord(n)
+      n.gridCoord = { x: gc.x, y: gc.y + 1 }
+      placeBlock(graph.grid, n.gridCoord)
+    }
+  }
+
   // Compute column widths and row heights
   const spreads = spreadCandidates(graph)
   for (const node of graph.nodes) {
     setColumnWidth(graph, node, spreads.get(node))
+  }
+  // The margin row is only as tall as the loop needs.
+  if (graph.topMargin && graph.subgraphs.length === 0) {
+    graph.rowHeight.set(0, 3)
   }
 
   // Fresh render-wide A* iteration budget for this layout pass. Shared by
@@ -2175,6 +2214,7 @@ export function createMapping(graph: AsciiGraph): void {
   }
 
   noteRejectedFaceLanes(graph)
+  graph.wantsTopMargin = graph.edges.some((e) => e.loopTopWanted)
 
   // A self-loop that runs along another edge's cells gets one more drawn
   // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).

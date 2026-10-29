@@ -43,7 +43,7 @@ jobs:
       # The 13 known-faithful base samples from the #1609 calibration
       # (5 Flowchart, 3 Sequence, 5 State/Class/ER).
       SAMPLE_IDS: >-
-        form-1-flowchart-simple-flow,form-16-flowchart-subgraphs,form-17-flowchart-nested-subgraphs,form-24-flowchart-git-branching-workflow,form-8-flowchart-text-embedded-labels,form-33-sequence-sequence-basic-messages,form-40-sequence-sequence-alt-else-block,form-45-sequence-sequence-oauth-2-0-flow,form-29-state-basic-state-diagram,form-31-state-state-connection-lifecycle,form-54-class-class-inheritance,form-62-class-class-design-pattern-observer,form-76-er-er-e-commerce-schema
+        form-1-flowchart-simple-flow,form-16-flowchart-subgraphs,form-17-flowchart-nested-subgraphs,form-24-flowchart-git-branching-workflow,form-8-flowchart-text-embedded-labels,form-33-sequence-sequence-basic-messages,form-40-sequence-sequence-alt-else-block,form-45-sequence-sequence-oauth-2-0-flow,form-29-state-state-basic-state-diagram,form-31-state-state-connection-lifecycle,form-54-class-class-inheritance,form-62-class-class-design-pattern-observer,form-76-er-er-e-commerce-schema
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

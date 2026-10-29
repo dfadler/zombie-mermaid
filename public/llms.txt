@@ -13,6 +13,19 @@
 - [API reference](https://github.com/dfadler/zombie-mermaid/blob/main/docs/api-reference.md)
 - [Supported diagrams](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md)
 - [Theming](https://github.com/dfadler/zombie-mermaid/blob/main/docs/theming.md)
+- [Known differences from mermaid.js](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md)
+- [React integration](https://github.com/dfadler/zombie-mermaid/blob/main/docs/react-integration.md)
+- [Migrating from beautiful-mermaid](https://github.com/dfadler/zombie-mermaid/blob/main/docs/migrating-from-beautiful-mermaid.md)
+
+## CLI and MCP server
+
+- [CLI](https://github.com/dfadler/zombie-mermaid/blob/main/packages/cli/README.md): `npx @zombie-mermaid/cli render diagram.mmd --ascii` renders SVG, ASCII, PNG or a self-contained HTML viewer from the terminal
+- [MCP server](https://github.com/dfadler/zombie-mermaid/blob/main/packages/mcp/README.md): `zombie-mermaid mcp` serves rendering and validation tools to MCP clients over stdio
+- [MCP tool reference](https://github.com/dfadler/zombie-mermaid/blob/main/docs/mcp-tools.md): arguments and return shapes for each tool, including `list_diagram_types` (the supported diagram types and their keywords)
+
+## Full text
+
+- [llms-full.txt](https://dfadler.github.io/zombie-mermaid/llms-full.txt): every GitHub-hosted doc linked above, concatenated into one file
 
 ## Package
 

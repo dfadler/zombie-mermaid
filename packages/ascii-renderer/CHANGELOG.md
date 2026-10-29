@@ -1,5 +1,99 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.11.3
+
+### Patch Changes
+
+- [#2392](https://github.com/dfadler/zombie-mermaid/pull/2392) [`ca18ea9`](https://github.com/dfadler/zombie-mermaid/commit/ca18ea9bf1f420075443e74221a865aff603beb9) Thanks [@dfadler](https://github.com/dfadler)! - Output change: in `graph BT` an ASCII hexagon, circle and diamond now draw their diagonals (`╱` `╲`, or `/` `\` in ASCII-only mode) leaning as in TD, so the top edge no longer leans the wrong way ([#2388](https://github.com/dfadler/zombie-mermaid/issues/2388)).
+- Updated dependencies [[`5ca6d42`](https://github.com/dfadler/zombie-mermaid/commit/5ca6d42abc5fbeb90bd42d19cdf025798b53f40f)]:
+  - @zombie-mermaid/core@5.11.3
+  - @zombie-mermaid/mermaid-parser@5.11.3
+
+## 5.11.2
+
+### Patch Changes
+
+- [#2387](https://github.com/dfadler/zombie-mermaid/pull/2387) [`0a0e51c`](https://github.com/dfadler/zombie-mermaid/commit/0a0e51c33cdb4c902b85ec442426638034bda381) Thanks [@dfadler](https://github.com/dfadler)! - Output change: an ASCII asymmetric `>x]` now draws a notch on its left side like mermaid's (a blank left wall on the middle row and a `>` tip one cell in, in every direction including RL) instead of `▷` corners, and is one column wider so the label clears the tip ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+- [#2386](https://github.com/dfadler/zombie-mermaid/pull/2386) [`c5d83df`](https://github.com/dfadler/zombie-mermaid/commit/c5d83dff19a64756398704e28f9d7c449a605faa) Thanks [@dfadler](https://github.com/dfadler)! - Output change: an ASCII subroutine `[[x]]` now draws a second vertical bar inside each side (`┌┬──┬┐` / `││ x ││`, `++--++` / `|| x ||` in the ASCII charset) like mermaid's, instead of `╟ ╢` corners on a plain box, and its label is centred ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.2
+  - @zombie-mermaid/mermaid-parser@5.11.2
+
+## 5.11.1
+
+### Patch Changes
+
+- [#2381](https://github.com/dfadler/zombie-mermaid/pull/2381) [`3d5e2a3`](https://github.com/dfadler/zombie-mermaid/commit/3d5e2a3232cef4ad8c51d2c609d538511b45efd4) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: per-edge canvas layers are stored sparsely, so dense labelled-edge diagrams render faster ([#2376](https://github.com/dfadler/zombie-mermaid/issues/2376)); output is unchanged.
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.1
+  - @zombie-mermaid/mermaid-parser@5.11.1
+
+## 5.11.0
+
+### Minor Changes
+
+- [#2363](https://github.com/dfadler/zombie-mermaid/pull/2363) [`82674ef`](https://github.com/dfadler/zombie-mermaid/commit/82674ef11fa576022f80191dbd1537be229fac4a) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a diamond `{x}` is now drawn as a rhombus (`╱╲` points at the top and bottom, `<` `>` at the sides, `/\` in the ASCII charset) and a circle `((x))` as an ellipse (rounded top and bottom, `╱ ╲` between, `(` `)` on the middle row), instead of boxes with swapped corner glyphs. The node keeps its rows and widens only as far as its label needs; an edge leaving a point or corner starts beside it instead of cutting it off ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+- [#2356](https://github.com/dfadler/zombie-mermaid/pull/2356) [`b7f6aec`](https://github.com/dfadler/zombie-mermaid/commit/b7f6aeca3921e720e1318bdf04abd895fa4e3d82) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a stadium `([x])` is now drawn as a pill (rounded top and bottom, `(` `)` sides) and a hexagon `{{x}}` with points at the left and right middle (`╱ ╲ < >`, or `/ \ < >` in the ASCII charset), instead of boxes with swapped corner glyphs. A hexagon keeps a rectangle's width for a one-line label and grows wider only for a taller one. An edge leaving the point now starts beside it instead of cutting it off ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+### Patch Changes
+
+- [#2372](https://github.com/dfadler/zombie-mermaid/pull/2372) [`bc452e7`](https://github.com/dfadler/zombie-mermaid/commit/bc452e762a64afa970a1762d0bb623eb7e008aa4) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: parallel-lane routing for many labelled edges is about 1.7x faster ([#1785](https://github.com/dfadler/zombie-mermaid/issues/1785)); output is unchanged.
+
+- [#2368](https://github.com/dfadler/zombie-mermaid/pull/2368) [`e7ade77`](https://github.com/dfadler/zombie-mermaid/commit/e7ade7773ed06814a74a2123dc1db69c7864880e) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: in a left-to-right flowchart, a decision node `{x}` with three or more outgoing edges now sends all of them out of its right face, as mermaid does, instead of its outer branches leaving the top and bottom tips ([#2366](https://github.com/dfadler/zombie-mermaid/issues/2366)).
+
+- [#2361](https://github.com/dfadler/zombie-mermaid/pull/2361) [`6b04529`](https://github.com/dfadler/zombie-mermaid/commit/6b04529b795d895a8dc1edd96e33b42b15a42d01) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: in a left-to-right flowchart, a decision node `{x}` split two ways now sends both branch edges out of its right face and into the left face of each child, as mermaid does, instead of out of its top and bottom faces ([#2351](https://github.com/dfadler/zombie-mermaid/issues/2351)).
+
+- [#2360](https://github.com/dfadler/zombie-mermaid/pull/2360) [`42f3e40`](https://github.com/dfadler/zombie-mermaid/commit/42f3e40eca7cf0253ee86fcb5ae072807cdc070d) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII class diagrams where two lines arriving at a narrow class box put an arrowhead on a corner glyph of its top border; each line now lands on its own interior border cell and the lines no longer cross above the box.
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.11.0
+  - @zombie-mermaid/mermaid-parser@5.11.0
+
+## 5.10.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.2
+  - @zombie-mermaid/mermaid-parser@5.10.2
+
+## 5.10.1
+
+### Patch Changes
+
+- [#2343](https://github.com/dfadler/zombie-mermaid/pull/2343) [`0932ec7`](https://github.com/dfadler/zombie-mermaid/commit/0932ec76666fc81574607829b819fd35715b9b9e) Thanks [@dfadler](https://github.com/dfadler)! - ASCII, `LR`/`RL`: a skip edge beside a reciprocal pair (`b --> c` over `a`, with `a --> c` and `c --> a`) now runs under the row from its own bottom faces, so it no longer reads as a branch of the edge into `a` or ends inside `a --> c`. The pair is drawn as two strokes between the facing side faces, and a self-loop on `a` sits above it ([#2100](https://github.com/dfadler/zombie-mermaid/issues/2100)).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.1
+  - @zombie-mermaid/mermaid-parser@5.10.1
+
+## 5.10.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.10.0
+  - @zombie-mermaid/mermaid-parser@5.10.0
+
+## 5.9.1
+
+### Patch Changes
+
+- [#2331](https://github.com/dfadler/zombie-mermaid/pull/2331) [`0ca073f`](https://github.com/dfadler/zombie-mermaid/commit/0ca073f153a8127616e385851d994e0e7d8ed9f5) Thanks [@dfadler](https://github.com/dfadler)! - ASCII class diagrams now stack namespace frames whose edges all run one way (the source frame above the target frame, as mermaid draws them) instead of interleaving their classes, which made the frames overlap. An edge entering a class at the top of a frame no longer runs along that frame's border.
+
+- [#2321](https://github.com/dfadler/zombie-mermaid/pull/2321) [`5817019`](https://github.com/dfadler/zombie-mermaid/commit/5817019fbb3e11d9491632abaf97f0811275462f) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII LR/RL flowcharts now centre a fan-out parent over its children, as TD already did and as mermaid draws it, instead of putting the parent on the first child's row with the rest stacked below. LR graphs with subgraphs keep the old layout for now.
+
+- [#2320](https://github.com/dfadler/zombie-mermaid/pull/2320) [`f3023c7`](https://github.com/dfadler/zombie-mermaid/commit/f3023c7ab5ec7275c3e9d49374db3dc7fd425526) Thanks [@dfadler](https://github.com/dfadler)! - Faster ASCII rendering of graphs with many labelled edges that share a target (about 15-20% less CPU on 80-160 labelled edges); output is unchanged.
+
+- [#2337](https://github.com/dfadler/zombie-mermaid/pull/2337) [`c18cd26`](https://github.com/dfadler/zombie-mermaid/commit/c18cd2645b7aab54857df40be6ff4f43f499a168) Thanks [@dfadler](https://github.com/dfadler)! - Add a `maxLineLength` render limit (default 10,000 characters per source line). A single very long line could make the parsers' per-line regexes run quadratically; it now fails fast with `LimitExceededError`. Also escapes backslash in the class-diagram arrow regex builder.
+
+- [#2333](https://github.com/dfadler/zombie-mermaid/pull/2333) [`a1fcbbf`](https://github.com/dfadler/zombie-mermaid/commit/a1fcbbfc1a8e13180384539ff1351e31ead163ba) Thanks [@dfadler](https://github.com/dfadler)! - ASCII pie: every legend row now shows its percentage, including slices that get no bar cell (under 1%, or past the bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%` ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
+
+- [#2330](https://github.com/dfadler/zombie-mermaid/pull/2330) [`d398e27`](https://github.com/dfadler/zombie-mermaid/commit/d398e278f2d1f63eddfb27961d262a4541691929) Thanks [@dfadler](https://github.com/dfadler)! - ASCII XY chart: thin the y-axis tick labels to every Nth tick so they land on evenly spaced rows instead of bunching into adjacent rows ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310)).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.9.1
+  - @zombie-mermaid/mermaid-parser@5.9.1
+
 ## 5.9.0
 
 ### Patch Changes

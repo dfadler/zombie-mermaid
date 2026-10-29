@@ -136,7 +136,7 @@ describe('DiagramTypePage (#821)', () => {
       'href',
       'https://mermaid.ai/open-source/syntax/sequenceDiagram.html',
     )
-    // #1761: one <main id="main"> landmark per page (skip-link target).
+    // #1761: one <main id="main" tabindex="-1"> landmark per page (skip-link target).
     expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 
@@ -310,7 +310,7 @@ describe('DiagramDetailPage (#989)', () => {
       'href',
       '../tag/subgraph.html',
     )
-    // #1761: one <main id="main"> landmark per page (skip-link target).
+    // #1761: one <main id="main" tabindex="-1"> landmark per page (skip-link target).
     expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 
@@ -421,7 +421,7 @@ describe('DiagramHubPage (#821)', () => {
       'flowchart.html',
       'sequence.html',
     ])
-    // #1761: one <main id="main"> landmark per page (skip-link target).
+    // #1761: one <main id="main" tabindex="-1"> landmark per page (skip-link target).
     expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 
@@ -506,7 +506,7 @@ describe('DiagramTagPage (#991)', () => {
       'href',
       'https://mermaid.ai/open-source/syntax/flowchart.html#subgraphs',
     )
-    // #1761: one <main id="main"> landmark per page (skip-link target).
+    // #1761: one <main id="main" tabindex="-1"> landmark per page (skip-link target).
     expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 
@@ -611,7 +611,7 @@ describe('DiagramAllPage (#1001)', () => {
     // A "grouped by type" page shows each section's own count, not a single flat total.
     expect(screen.getByText('2 examples')).toBeInTheDocument()
     expect(screen.getByText('1 example')).toBeInTheDocument()
-    // #1761: one <main id="main"> landmark per page (skip-link target).
+    // #1761: one <main id="main" tabindex="-1"> landmark per page (skip-link target).
     expect(document.querySelectorAll('main#main')).toHaveLength(1)
   })
 })

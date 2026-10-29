@@ -12,7 +12,8 @@
       "@zombie-mermaid/mermaid-parser",
       "@zombie-mermaid/svg-renderer",
       "@zombie-mermaid/ascii-renderer",
-      "@zombie-mermaid/mcp"
+      "@zombie-mermaid/mcp",
+      "@zombie-mermaid/cli"
     ]
   ],
   "linked": [],
