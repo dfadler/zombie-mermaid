@@ -37,6 +37,9 @@ import { setRole } from './canvas.ts'
 import { drawArrow, labelInteriorSpaces } from './draw-arrows.ts'
 import { withPortShifts } from './port-offsets.ts'
 import { isSilhouetteShape } from './shapes/silhouettes.ts'
+
+/** Vertically symmetric shapes whose diagonals must swap in BT (#2388). */
+const DIAGONAL_SHAPES = new Set(['hexagon', 'diamond', 'circle'])
 import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
@@ -247,6 +250,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         y0: node.drawingCoord.y,
         y1: node.drawingCoord.y + node.drawing[0]!.length - 1,
         ...(node.shape === 'asymmetric' && { leftNotch: true }),
+        ...(DIAGONAL_SHAPES.has(node.shape) && { diagonals: true }),
       })
       node.drawn = true
     }
