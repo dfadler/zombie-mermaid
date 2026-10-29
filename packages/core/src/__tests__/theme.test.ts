@@ -49,6 +49,18 @@ describe('getReadableTextColor', () => {
   })
 })
 
+describe('buildStyleBlock – contrast modes (#1878)', () => {
+  it('overrides the faint derived strokes under prefers-contrast and forced-colors', () => {
+    const block = buildStyleBlock('Inter', false)
+    expect(block).toMatch(
+      /@media \(prefers-contrast: more\)\s*\{\s*svg \{[^}]*--_node-stroke: var\(--fg\)/,
+    )
+    expect(block).toMatch(
+      /@media \(forced-colors: active\)\s*\{\s*svg \{[^}]*--_node-stroke: CanvasText/,
+    )
+  })
+})
+
 describe('buildStyleBlock – font handling', () => {
   it('quotes a normal font name and emits a Google Fonts @import (no regression)', () => {
     const block = buildStyleBlock('Inter', false)

@@ -408,6 +408,32 @@ export function styleOpenTag(nonce?: string): string {
 }
 
 /**
+ * Contrast-mode overrides (#1878). Pull the faint derived strokes/text up to
+ * full foreground when the viewer asks for more contrast; under forced colors
+ * use the system `CanvasText`. Verified in Chromium emulation only: both
+ * queries match inline, but `prefers-contrast` does NOT match in an SVG loaded
+ * as `<img>`, so the `<img>` path only gets the forced-colors rule.
+ */
+const CONTRAST_VARS = [
+  '--_node-stroke',
+  '--_inner-stroke',
+  '--_line',
+  '--_arrow',
+  '--_text-sec',
+  '--_text-muted',
+  '--_text-faint',
+]
+const contrastRule = (query: string, color: string): string[] => [
+  `  @media (${query}) {`,
+  `    svg { ${CONTRAST_VARS.map((v) => `${v}: ${color};`).join(' ')} }`,
+  `  }`,
+]
+const CONTRAST_CSS = [
+  ...contrastRule('prefers-contrast: more', 'var(--fg)'),
+  ...contrastRule('forced-colors: active', 'CanvasText'),
+]
+
+/**
  * Build the CSS variable derivation rules for the SVG <style> block.
  *
  * When an optional variable (--line, --accent, etc.) is set on the SVG or
@@ -506,6 +532,7 @@ export function buildStyleBlock(
       : []),
     `  svg {${derivedVars}`,
     `  }`,
+    ...CONTRAST_CSS,
     '</style>',
   ].join('\n')
 }
