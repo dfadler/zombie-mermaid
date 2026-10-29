@@ -1,6 +1,7 @@
 import { parseArgs } from './cli/parse-args.ts'
 import type { CliArgs } from './cli/parse-args.ts'
 import { runRender } from './cli/render.ts'
+import { runCheck } from './cli/check.ts'
 import { runValidate } from './cli/validate.ts'
 import { runWeb } from './cli/web.ts'
 import { runMcp } from './cli/mcp.ts'
@@ -64,6 +65,17 @@ export async function main() {
       }
       break
 
+    case 'check':
+      try {
+        await runCheck(args)
+      } catch (err) {
+        console.error(
+          `Error: ${err instanceof Error ? err.message : String(err)}`,
+        )
+        process.exit(1)
+      }
+      break
+
     case 'web':
       try {
         await runWeb(args)
@@ -104,6 +116,7 @@ Usage:
   zombie-mermaid render <file> --png                Rasterize to <file stem>.png
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid validate [file]                    Parse only; exit 1 with line diagnostics if invalid
+  zombie-mermaid --check <file.md>...               Validate every mermaid fenced block in Markdown; exit 1 with file:line diagnostics
   zombie-mermaid themes                             List available themes
   zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
   zombie-mermaid mcp                                Start an MCP server on stdio (render tools)
