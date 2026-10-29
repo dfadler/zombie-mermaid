@@ -85,6 +85,7 @@ Add a row when you add a doc; update the status when it changes. The issue colum
 | [monorepo-test-layout-627.md](monorepo-test-layout-627.md)                                                       | implemented          | [#627](https://github.com/dfadler/zombie-mermaid/issues/627)   |
 | [no-script-interactivity.md](no-script-interactivity.md)                                                         | implemented          | [#216](https://github.com/dfadler/zombie-mermaid/issues/216)   |
 | [pie-highlight-slice-static-1726.md](pie-highlight-slice-static-1726.md)                                         | implemented          | [#1726](https://github.com/dfadler/zombie-mermaid/issues/1726) |
+| [project-objective-1564.md](project-objective-1564.md)                                                           | proposal             | [#1564](https://github.com/dfadler/zombie-mermaid/issues/1564) |
 | [playwright-docker-image-visual-regression.md](playwright-docker-image-visual-regression.md)                     | partially superseded | [#544](https://github.com/dfadler/zombie-mermaid/issues/544)   |
 | [react-site-migration-plan.md](react-site-migration-plan.md)                                                     | implemented          | [#423](https://github.com/dfadler/zombie-mermaid/issues/423)   |
 | [scoped-svg-ids-1397.md](scoped-svg-ids-1397.md)                                                                 | implemented          | [#1397](https://github.com/dfadler/zombie-mermaid/issues/1397) |
