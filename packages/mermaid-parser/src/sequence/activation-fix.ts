@@ -100,7 +100,7 @@ export function fixActivationBalance(
   const fixedDiagram =
     dangling.length === 0
       ? sourceDiagram
-      : `${sourceDiagram.replace(/\s+$/, '')}\n${appended}`
+      : `${sourceDiagram.trimEnd()}\n${appended}`
 
   const fixesApplied = dangling.map(
     (issue) =>
