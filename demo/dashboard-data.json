@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-10-10T18:19:55.089Z",
+  "generatedAt": "2026-10-29T10:58:50.669Z",
   "fork": {
     "owner": "dfadler",
     "name": "zombie-mermaid",
     "url": "https://github.com/dfadler/zombie-mermaid",
-    "lastPushedAt": "2026-10-10T18:18:51Z",
-    "openIssues": 105,
-    "openPRs": 23,
-    "mergedPRs": 867,
+    "lastPushedAt": "2026-10-29T10:56:31Z",
+    "openIssues": 75,
+    "openPRs": 5,
+    "mergedPRs": 1290,
     "releaseCount": 30,
     "latestRelease": {
-      "tag": "zombie-mermaid@5.0.1",
-      "publishedAt": "2026-10-10T16:38:11Z"
+      "tag": "zombie-mermaid@5.11.2",
+      "publishedAt": "2026-10-29T02:48:07Z"
     }
   },
   "upstream": {
@@ -19,8 +19,8 @@
     "name": "beautiful-mermaid",
     "url": "https://github.com/lukilabs/beautiful-mermaid",
     "lastPushedAt": "2026-05-06T10:53:19Z",
-    "openIssues": 50,
-    "openPRs": 43,
+    "openIssues": 51,
+    "openPRs": 45,
     "mergedPRs": 13,
     "releaseCount": 6,
     "latestRelease": {
@@ -29,10 +29,10 @@
     }
   },
   "rescued": {
-    "totalFixes": 28,
-    "upstreamIssuesReferenced": 23,
-    "upstreamIssuesStillOpen": 17,
-    "upstreamIssuesClosedIndependently": 6,
+    "totalFixes": 54,
+    "upstreamIssuesReferenced": 33,
+    "upstreamIssuesStillOpen": 26,
+    "upstreamIssuesClosedIndependently": 7,
     "issues": [
       {
         "number": 12,
@@ -49,6 +49,13 @@
         "forkPr": 94
       },
       {
+        "number": 18,
+        "state": "open",
+        "fixId": "font-css-variable",
+        "fixTitle": "A CSS `var(...)` font was quoted into a dead font name",
+        "forkPr": 79
+      },
+      {
         "number": 32,
         "state": "closed",
         "fixId": "text-embedded-edge-labels",
@@ -61,6 +68,20 @@
         "fixId": "cjk-state-names",
         "fixTitle": "CJK state names failed to parse in state diagrams",
         "forkPr": 49
+      },
+      {
+        "number": 53,
+        "state": "open",
+        "fixId": "sequence-leading-note",
+        "fixTitle": "Sequence notes before the first message vanished",
+        "forkPr": 72
+      },
+      {
+        "number": 63,
+        "state": "open",
+        "fixId": "ascii-edge-line-style-bleed",
+        "fixTitle": "ASCII fan-out edges bled their line style into each other",
+        "forkPr": 1093
       },
       {
         "number": 64,
@@ -84,6 +105,20 @@
         "forkPr": 89
       },
       {
+        "number": 69,
+        "state": "open",
+        "fixId": "ascii-longest-path-layering",
+        "fixTitle": "ASCII put a node in the row of the parent that placed it first",
+        "forkPr": 1345
+      },
+      {
+        "number": 77,
+        "state": "open",
+        "fixId": "svg-coordinates-two-decimals",
+        "fixTitle": "SVG coordinates carried float noise like 142.38427299999998",
+        "forkPr": 1163
+      },
+      {
         "number": 80,
         "state": "open",
         "fixId": "class-attribute-on-svg",
@@ -91,11 +126,25 @@
         "forkPr": 75
       },
       {
+        "number": 83,
+        "state": "closed",
+        "fixId": "flowchart-cycle-direction",
+        "fixTitle": "A cyclic top-down flowchart could be laid out upside down",
+        "forkPr": 1313
+      },
+      {
         "number": 89,
         "state": "open",
         "fixId": "cjk-subgraph-id",
         "fixTitle": "CJK subgraph ids produced an empty id",
         "forkPr": 71
+      },
+      {
+        "number": 108,
+        "state": "open",
+        "fixId": "ascii-sequence-self-arrow-in-block",
+        "fixTitle": "A self-arrow inside alt/loop was drawn outside its block",
+        "forkPr": 84
       },
       {
         "number": 109,
@@ -117,6 +166,13 @@
         "fixId": "fan-in-grouping",
         "fixTitle": "Fan-in roots were interleaved instead of grouped",
         "forkPr": 89
+      },
+      {
+        "number": 115,
+        "state": "open",
+        "fixId": "node-text-contrast-on-custom-fill",
+        "fixTitle": "Node text was unreadable on a dark classDef/style fill",
+        "forkPr": 76
       },
       {
         "number": 119,
@@ -194,12 +250,26 @@
         "fixId": "invisible-links",
         "fixTitle": "`~~~` invisible-link syntax was not recognized",
         "forkPr": 206
+      },
+      {
+        "number": 154,
+        "state": "open",
+        "fixId": "ascii-vertical-label-beside-stroke",
+        "fixTitle": "ASCII vertical edge labels were printed over the edge line",
+        "forkPr": 1332
+      },
+      {
+        "number": 155,
+        "state": "open",
+        "fixId": "edge-label-space-before-pipe",
+        "fixTitle": "A space before the edge label pipe dropped the target node",
+        "forkPr": 1367
       }
     ]
   },
   "responseTime": {
     "sampleSize": 20,
-    "medianHours": 0.8,
+    "medianHours": 6.3,
     "note": "Median time from issue open to first comment, over the most recently commented issues. zombie-mermaid is a low-traffic, solo-maintained fork — treat this as directional, not an SLA."
   }
 }
