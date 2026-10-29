@@ -786,4 +786,18 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: a grey frame with the colour text in its header tab. After: a purple background behind the two messages, with no frame.',
   },
+  {
+    id: 'ascii-edge-label-spaces',
+    title: 'ASCII edge labels lost the spaces between their words',
+    symptom:
+      'An edge label drawn over a stroke treated its spaces as transparent, so the stroke showed through the gap between words: `long label` printed as `long─label`, altering the user’s text.',
+    source:
+      'graph TD\n  A -->|x| B\n  B -->|long label| A\n  A -->|long label| C\n  C -->|ab| A\n  B -->|mid| D\n  A -->|ab| D\n  D -->|x| A',
+    fixCommit: '3e73862e',
+    pr: 1354,
+    render: 'ascii',
+    lookFor:
+      'Before: the label on A’s right side reads `long─label`, with a stroke through the gap. After: it reads `long label`.',
+    upstreamIssues: [154],
+  },
 ]
