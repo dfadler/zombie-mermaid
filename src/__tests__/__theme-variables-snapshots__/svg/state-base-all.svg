@@ -17,17 +17,23 @@
     --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
     --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
   }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
 </style>
 <defs>
-  <marker id="zmf83uv8-arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+  <marker id="zm152cmcn-arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmf83uv8-arrowhead-start" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm152cmcn-arrowhead-start" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<polyline class="edge" data-from="_start" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="70,68 70,116" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmf83uv8-arrowhead)" />
-<polyline class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="70,152.9 70,200.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmf83uv8-arrowhead)" />
+<polyline class="edge" data-from="_start" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="70,68 70,116" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm152cmcn-arrowhead)" />
+<polyline class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="70,152.9 70,200.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm152cmcn-arrowhead)" />
 <g class="node" data-id="_start" data-label="" data-shape="state-start">
   <circle cx="70" cy="54" r="12" fill="var(--_text)" stroke="none" />
 </g>
