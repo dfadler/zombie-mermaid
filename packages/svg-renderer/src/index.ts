@@ -77,6 +77,7 @@ import type {
 import {
   DEFAULTS,
   themeStyleDeclarations,
+  styleOpenTag,
   isMonospaceFont,
   setMonospaceMetrics,
   detectDiagramType,
@@ -141,6 +142,24 @@ function buildColors(options: RenderOptions): DiagramColors {
  */
 export function themeCssVariables(options: RenderOptions = {}): string {
   return themeStyleDeclarations(buildColors(options), options.transparent)
+}
+
+/**
+ * Append the opt-in `prefers-color-scheme: dark` palette (`RenderOptions.dark`,
+ * #1877) as its own `<style>` after the theme block. `!important` is needed to
+ * beat the root `style=""` attribute; `initial` resets an enrichment var the
+ * light palette set so its `var(--x, color-mix(...))` fallback applies again.
+ */
+function darkSchemeStyle(svg: string, options: RenderOptions): string {
+  const d = options.dark
+  if (!d || options.resolveColors) return svg
+  const decls = (
+    ['bg', 'fg', 'line', 'accent', 'muted', 'surface', 'border'] as const
+  )
+    .map((k) => `--${k}: ${d[k] ?? 'initial'} !important;`)
+    .join(' ')
+  const css = `${styleOpenTag(options.nonce)}\n  @media (prefers-color-scheme: dark) { svg { ${decls} } }\n</style>`
+  return svg.replace('</style>', () => `</style>\n${css}`)
 }
 
 /**
@@ -215,7 +234,7 @@ export function renderMermaidSVG(
   options: RenderOptions = {},
 ): string {
   const { svg, colors } = renderMermaidSVGRaw(text, options)
-  const scoped = scopeSvgIds(svg)
+  const scoped = scopeSvgIds(darkSchemeStyle(svg, options))
   return options.resolveColors ? resolveCssColors(scoped, colors) : scoped
 }
 

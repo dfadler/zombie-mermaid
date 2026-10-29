@@ -416,6 +416,31 @@ export interface RenderOptions {
   resolveColors?: boolean
 
   /**
+   * Opt-in dark palette (GitHub issue #1877). When set, the SVG also carries
+   * a `@media (prefers-color-scheme: dark)` rule that swaps `--bg`/`--fg`
+   * (and any enrichment colour) to these values, so one file adapts to the
+   * viewer's scheme. `bg`/`fg` are the light-mode `bg`/`fg` options as
+   * usual. Unset enrichment keys fall back to the derived `color-mix()`
+   * values. The rule uses `!important` because the root `style=""` attribute
+   * otherwise outranks any stylesheet rule.
+   *
+   * Caveats: the query follows the OS/browser scheme, not the host page's
+   * `color-scheme` (and as an `<img>` it follows the OS); Safari ignores the
+   * page `color-scheme` for SVG images (WebKit bug 316640). Ignored when
+   * `resolveColors` is on, since that bakes in a single palette. Default:
+   * undefined (no dark rule; output unchanged).
+   */
+  dark?: {
+    bg: string
+    fg: string
+    line?: string
+    accent?: string
+    muted?: string
+    surface?: string
+    border?: string
+  }
+
+  /**
    * CSP nonce to stamp on every `<style>` element in the output (see GitHub
    * issue #216).
    *
@@ -675,6 +700,7 @@ export type CommonRenderOptions = Pick<
   | 'transparent'
   | 'embedSource'
   | 'resolveColors'
+  | 'dark'
   | 'nonce'
   | 'styleAttribute'
   | 'title'
