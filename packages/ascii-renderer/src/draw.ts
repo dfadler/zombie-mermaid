@@ -246,6 +246,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         x1: node.drawingCoord.x + node.drawing.length - 1,
         y0: node.drawingCoord.y,
         y1: node.drawingCoord.y + node.drawing[0]!.length - 1,
+        ...(node.shape === 'asymmetric' && { leftNotch: true }),
       })
       node.drawn = true
     }

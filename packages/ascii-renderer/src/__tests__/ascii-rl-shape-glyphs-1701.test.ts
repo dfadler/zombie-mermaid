@@ -46,9 +46,12 @@ describe('RL keeps node shapes unmirrored', () => {
     const lr = renderMermaidASCII(src('LR'), { useAscii: false })
     const [top] = rl.split('\n')
     // Left to right in RL: trapezoid, flag, "\a\", "/p/".
-    expect(top).toMatch(/^\/─+\\ +▷─+┐ +\\─+\\ +\/─+\/$/)
-    expect(top).not.toContain('┌')
-    expect(lr.split('\n')[0]).toMatch(/^\/─+\/ +\\─+\\ +▷─+┐ +\/─+\\$/)
+    expect(top).toMatch(/^\/─+\\ +┌─+┐ +\\─+\\ +\/─+\/$/)
+    // The notch (`>` one cell in from the left wall) stays on the left (#2164).
+    expect(rl).toMatch(/┤> f  │/)
+    expect(rl).not.toContain('<')
+    expect(lr.split('\n')[0]).toMatch(/^\/─+\/ +\\─+\\ +┌─+┐ +\/─+\\$/)
+    expect(lr).toMatch(/► > f  ├/)
   })
 
   it('keeps shapes unmirrored inside an RL subgraph', () => {
@@ -60,10 +63,10 @@ describe('RL keeps node shapes unmirrored', () => {
       `graph RL\n subgraph S\n direction RL\n ${body}\n end`,
     )
     expect(lrInRl).toContain('/')
-    expect(lrInRl).toMatch(/▷─+┐/)
-    expect(trimEnds(rlInRl)).toMatch(/▷─+┐/)
-    expect(rlInRl).not.toMatch(/┌─+▷/)
-    expect(lrInRl).not.toMatch(/┌─+▷/)
+    expect(lrInRl).toMatch(/> f {2}│/)
+    expect(trimEnds(rlInRl)).toMatch(/> f {2}│/)
+    expect(rlInRl).not.toContain('<')
+    expect(lrInRl).not.toContain('<')
   })
 
   it('flipCanvasHorizontally leaves node-rect corners unmirrored', () => {

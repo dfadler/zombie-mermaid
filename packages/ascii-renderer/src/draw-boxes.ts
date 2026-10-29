@@ -21,9 +21,12 @@ import { decodeSections } from './shapes/class-box.ts'
 import {
   circleInsets,
   diamondInsets,
+  asymmetricInsets,
+  drawAsymmetric,
   drawCircle,
   drawHexagon,
   drawStadium,
+  drawSubroutineBars,
   hexagonInsets,
 } from './shapes/silhouettes.ts'
 
@@ -203,6 +206,10 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     const insets = circleInsets(to.x, to.y)
     drawCircle(box, to.x, to.y, insets, useAscii)
     node.labelInsets = insets
+  } else if (node.shape === 'asymmetric' && to.x >= 4 && to.y >= 2) {
+    // Flag: left side notched on the middle row, `>` tip one cell in (#2164).
+    drawAsymmetric(box, to.x, to.y, useAscii)
+    node.labelInsets = asymmetricInsets(to.x, to.y)
   } else {
     // Draw box border with shape-specific corners
     for (let x = from.x + 1; x < to.x; x++) write(box, x, from.y, hChar)
@@ -213,6 +220,12 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     write(box, to.x, from.y, effectiveCorners.tr)
     write(box, from.x, to.y, effectiveCorners.bl)
     write(box, to.x, to.y, effectiveCorners.br)
+  }
+
+  // Subroutine: a second vertical bar just inside each side (#2164).
+  if (node.shape === 'subroutine' && to.x >= 4 && to.y >= 2) {
+    drawSubroutineBars(box, to.x, to.y, useAscii)
+    node.labelInsets = Array<number>(to.y + 1).fill(1)
   }
 
   // Cylinder (database) gets a rim line just inside its top and bottom

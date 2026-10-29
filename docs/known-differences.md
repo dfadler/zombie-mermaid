@@ -232,7 +232,7 @@ only); GitHub's render was not reachable. See the comment on #2101 for the numbe
 ## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
 
 The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
-family per PR. Done: **stadium**, **hexagon**, **diamond** and **circle**. Mermaid 12.2.0 (the pin and npm latest
+family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle** and **subroutine**. Mermaid 12.2.0 (the pin and npm latest
 agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
 left and right middle.
 
@@ -262,8 +262,22 @@ left and right middle.
   5-row minimum shape, not a true circle. Edges attach as for the stadium.
 - **Corner glyphs of the outline.** `╭ ╮ ╰ ╯ . '` and the diagonals are now protected from
   an edge stroke like `( ) < >` are, so a port on a corner column starts beside it.
-- **Still approximated** (later PRs, per the owner's one-family-per-PR call): double circle,
-  subroutine, asymmetric, parallelograms and trapezoids.
+- **Subroutine** (`[[x]]`). Mermaid 12.2.0 draws a rectangle with a second vertical line
+  just inside each side. Ours is the same: `┌┬──┬┐` / `││ x ││` / `└┴──┴┘` (`+` and `|` in
+  ASCII), two columns wider than a plain box. The inner bars are on the node's own columns,
+  so edges still attach at the outer border and the invariants are unchanged.
+- **Asymmetric** (`>x]`, partial match). Mermaid 12.2.0 (also the npm latest) draws a
+  rectangle with an inward point on the left side, in every direction (RL does not mirror
+  it). Ours is a plain box whose left wall is blank on the middle row with a `>` tip one
+  cell in and `╲` / `╱` on the rows beside it (`\` / `/` in ASCII; they replace the left
+  corners in a 3-row box), widened by a column so the label clears the tip.
+  Edges still attach at the outer border, so an edge arriving on the notch stops one cell
+  short of the tip (`►` then a blank, then `>`); an edge leaving from the notch face in RL
+  starts at the tip's neighbour (`┤>`). Mermaid's diagonal sides are not drawn.
+- **Still approximated** (later PRs, per the owner's one-family-per-PR call): double circle
+  (needs a second, concentric ellipse: a width and height decision), parallelograms and
+  trapezoids (slanted sides cost one column per row, so a node widens by its slant, and
+  the RL mirroring from #1701 must keep the lean).
 
 ## ASCII: LR skip edge beside a reciprocal pair (partial match)
 

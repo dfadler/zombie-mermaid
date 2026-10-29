@@ -24,13 +24,43 @@ const unicodeOpts: ShapeRenderOptions = { useAscii: false, padding: 1 }
 const asciiOpts: ShapeRenderOptions = { useAscii: true, padding: 1 }
 
 describe('subroutine shape [[text]]', () => {
-  it('renders with its distinctive corner markers in a flowchart', () => {
+  it('draws a second bar inside each side in a flowchart (#2164)', () => {
     const src = `flowchart TD
-  A[[Subroutine]]`
-    const out = renderMermaidASCII(src, { useAscii: false })
-    expect(out).toContain('Subroutine')
-    expect(out).toContain('╟')
-    expect(out).toContain('╢')
+  A[[Task]]`
+    expect(renderMermaidASCII(src, { useAscii: false })).toBe(
+      [
+        '┌┬──────┬┐',
+        '││      ││',
+        '││ Task ││',
+        '││      ││',
+        '└┴──────┴┘',
+      ].join('\n'),
+    )
+    expect(renderMermaidASCII(src, { useAscii: true })).toBe(
+      [
+        '++------++',
+        '||      ||',
+        '|| Task ||',
+        '||      ||',
+        '++------++',
+      ].join('\n'),
+    )
+  })
+
+  it('keeps both bars at zero border padding', () => {
+    expect(
+      renderMermaidASCII('flowchart TD\n  A[[x]]', {
+        useAscii: false,
+        boxBorderPadding: 0,
+      }),
+    ).toBe(['┌┬─┬┐', '││x││', '└┴─┴┘'].join('\n'))
+  })
+
+  it('leaves an LR edge the outer border to start from', () => {
+    const out = renderMermaidASCII('flowchart LR\n  A[[Task]] --> B', {
+      useAscii: false,
+    })
+    expect(out).toContain('││ Task │├')
   })
 
   it('renders the ASCII fallback in a flowchart', () => {
@@ -42,7 +72,7 @@ describe('subroutine shape [[text]]', () => {
 
   it('computes dimensions with double borders on each side', () => {
     const dims = subroutineRenderer.getDimensions('Hi', unicodeOpts)
-    expect(dims.gridColumns).toEqual([2, 4, 2])
+    expect(dims.gridColumns).toEqual([1, 6, 1])
     expect(dims.gridRows).toEqual([1, 3, 1])
     expect(dims.width).toBe(8)
     expect(dims.height).toBe(5)
@@ -246,31 +276,119 @@ describe('cylinder shape [(text)]', () => {
 })
 
 describe('asymmetric (flag) shape >text]', () => {
-  it('renders arrow markers on the left corners in a flowchart', () => {
-    const src = `flowchart TD
-  A>Flag]`
-    const out = renderMermaidASCII(src, { useAscii: false })
-    expect(out).toContain('Flag')
-    expect(out).toContain('▷')
+  const render = (src: string, useAscii: boolean, extra = {}) =>
+    renderMermaidASCII(src, { useAscii, ...extra }).split('\n')
+  const flag = ['┌───────┐', '╲       │', ' > Flag │', '╱       │', '└───────┘']
+  const flagAscii = [
+    '+-------+',
+    '\\       |',
+    ' > Flag |',
+    '/       |',
+    '+-------+',
+  ]
+
+  it('notches the left side with a `>` tip one cell in (#2164)', () => {
+    expect(render('flowchart TD\n  A>Flag]', false)).toEqual(flag)
+    expect(render('flowchart TD\n  A>Flag]', true)).toEqual(flagAscii)
   })
 
-  it('renders the ASCII fallback marker', () => {
-    const src = `flowchart TD
-  A>Note]`
-    const out = renderMermaidASCII(src, { useAscii: true })
-    expect(out).toContain('Note')
-    expect(out).toContain('>')
+  it('leans the corners into the tip at zero border padding', () => {
+    const opts = { boxBorderPadding: 0 }
+    expect(render('flowchart TD\n  A>Flag]', false, opts)).toEqual([
+      '╲───────┐',
+      ' > Flag │',
+      '╱───────┘',
+    ])
+    expect(render('flowchart TD\n  A>Flag]', true, opts)).toEqual([
+      '\\-------+',
+      ' > Flag |',
+      '/-------+',
+    ])
   })
 
-  it('delegates to the shared box renderer with asymmetric corners', () => {
+  it('stops an LR edge one cell short of the tip', () => {
+    const src = 'flowchart LR\n  B[x] --> A>Flag] --> C[y]'
+    expect(render(src, false)).toEqual([
+      '┌───┐     ┌───────┐     ┌───┐',
+      '│   │     ╲       │     │   │',
+      '│ x ├────► > Flag ├────►│ y │',
+      '│   │     ╱       │     │   │',
+      '└───┘     └───────┘     └───┘',
+    ])
+    expect(render(src, true)).toEqual([
+      '+---+     +-------+     +---+',
+      '|   |     \\       |     |   |',
+      '| x +----> > Flag +---->| y |',
+      '|   |     /       |     |   |',
+      '+---+     +-------+     +---+',
+    ])
+  })
+
+  it('keeps the notch on the left in RL, as mermaid does', () => {
+    const src = 'flowchart RL\n  B[x] --> A>Flag] --> C[y]'
+    expect(render(src, false)).toEqual([
+      '┌───┐     ┌───────┐     ┌───┐',
+      '│   │     ╲       │     │   │',
+      '│ y │◄────┤> Flag │◄────┤ x │',
+      '│   │     ╱       │     │   │',
+      '└───┘     └───────┘     └───┘',
+    ])
+    expect(render(src, true)).toEqual([
+      '+---+     +-------+     +---+',
+      '|   |     \\       |     |   |',
+      '| y |<----+> Flag |<----+ x |',
+      '|   |     /       |     |   |',
+      '+---+     +-------+     +---+',
+    ])
+  })
+
+  it('draws the same notch in BT', () => {
+    const src = 'flowchart BT\n  B[x] --> A>Flag]'
+    expect(render(src, false).slice(0, 5)).toEqual(flag)
+    expect(render(src, true).slice(0, 5)).toEqual(flagAscii)
+    expect(render(src, false, { boxBorderPadding: 0 }).slice(0, 3)).toEqual([
+      '╲───────┐',
+      ' > Flag │',
+      '╱───────┘',
+    ])
+  })
+
+  it('clears a wide (CJK/emoji) label by one column, in LR and RL', () => {
+    const want = [
+      '┌─────────────┐',
+      '╲             │',
+      ' > 日本語 🚀  │',
+      '╱             │',
+      '└─────────────┘',
+    ]
+    expect(render('flowchart LR\n  A>日本語 🚀]', false)).toEqual(want)
+    expect(render('flowchart RL\n  A>日本語 🚀]', false)).toEqual(want)
+  })
+
+  it('puts the tip on the middle row of a multi-line label, in LR and RL', () => {
+    const want = [
+      '+-------+',
+      '|       |',
+      '\\       |',
+      ' > one  |',
+      '/  two  |',
+      '|       |',
+      '+-------+',
+    ]
+    expect(render('flowchart LR\n  A>one<br/>two]', true)).toEqual(want)
+    expect(render('flowchart RL\n  A>one<br/>two]', true)).toEqual(want)
+  })
+
+  it('draws the shape standalone with the same notch', () => {
     const dims = asymmetricRenderer.getDimensions('X', unicodeOpts)
     const canvas = asymmetricRenderer.render('X', dims, unicodeOpts)
-    const str = canvasToString(canvas)
-    const lines = str.split('\n')
-    expect(lines[0]!.startsWith('▷')).toBe(true)
-    expect(lines[0]!.endsWith('┐')).toBe(true)
-    expect(lines[lines.length - 1]!.startsWith('▷')).toBe(true)
-    expect(lines[lines.length - 1]!.endsWith('┘')).toBe(true)
+    expect(canvasToString(canvas).split('\n')).toEqual([
+      '┌─────┐',
+      '╲     │',
+      ' > X  │',
+      '╱     │',
+      '└─────┘',
+    ])
   })
 })
 

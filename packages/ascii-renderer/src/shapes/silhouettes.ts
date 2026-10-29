@@ -84,6 +84,74 @@ export function drawStadium(
   }
 }
 
+/** Add a subroutine's inner bars (columns 1 and w-1) to a drawn box border. */
+export function drawSubroutineBars(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  useAscii: boolean,
+): void {
+  const [top, bottom, bar] = useAscii ? ['+', '+', '|'] : ['┬', '┴', '│']
+  for (const x of [1, w - 1]) {
+    canvas[x]![0] = top!
+    canvas[x]![h] = bottom!
+    for (let y = 1; y < h; y++) canvas[x]![y] = bar!
+  }
+}
+
+/**
+ * Asymmetric flag: a plain box whose left side is notched on the middle row
+ * (mermaid's `>x]` has an inward point there). The notch cell is blank and the
+ * `>` tip sits one cell in, so an edge arriving at the left face stops one
+ * cell short of it (#2164).
+ */
+export function drawAsymmetric(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  useAscii: boolean,
+): void {
+  const [tl, tr, bl, br, hChar, vChar] = useAscii
+    ? ['+', '+', '+', '+', '-', '|']
+    : ['┌', '┐', '└', '┘', '─', '│']
+  for (let x = 1; x < w; x++) canvas[x]![0] = canvas[x]![h] = hChar!
+  for (let y = 1; y < h; y++) canvas[0]![y] = canvas[w]![y] = vChar!
+  canvas[0]![0] = tl!
+  canvas[w]![0] = tr!
+  canvas[0]![h] = bl!
+  canvas[w]![h] = br!
+  const mid = Math.floor(h / 2)
+  canvas[0]![mid] = ' '
+  canvas[1]![mid] = '>'
+  // The wall leans into the tip on the rows beside it; in a 3-row box those
+  // are the corners.
+  const [down, up] = useAscii ? ['\\', '/'] : ['╲', '╱']
+  const lean = h >= 4 ? [mid - 1, mid + 1] : [0, h]
+  canvas[0]![lean[0]!] = down!
+  canvas[0]![lean[1]!] = up!
+}
+
+/** Per-row label insets of an asymmetric node: the tip fills column 1 on the middle row. */
+export function asymmetricInsets(_w: number, h: number): number[] {
+  const insets = Array<number>(h + 1).fill(0)
+  insets[Math.floor(h / 2)] = 1
+  return insets
+}
+
+/** Asymmetric grid cell: the box's, widened until the label clears the tip. */
+export function asymmetricDimensions(
+  label: string,
+  options: ShapeRenderOptions,
+): ShapeDimensions {
+  const widths = splitLines(label).map((l) => displayWidth(l))
+  return growToClearLabel(
+    getBoxDimensions(label, options),
+    widths,
+    asymmetricInsets,
+    false,
+  )
+}
+
 /** Draw a hexagon border; `insets` comes from hexagonInsets. */
 export function drawHexagon(
   canvas: Canvas,
@@ -244,7 +312,8 @@ export const isSilhouetteShape = (shape: string): boolean =>
   shape === 'stadium' ||
   shape === 'hexagon' ||
   shape === 'diamond' ||
-  shape === 'circle'
+  shape === 'circle' ||
+  shape === 'asymmetric'
 
 /** Stadium and hexagon use the box's grid cell; the hexagon may widen it. */
 export function hexagonDimensions(
@@ -274,7 +343,7 @@ export function hexagonDimensions(
 
 /** Standalone render of a stadium or hexagon, label centred (same as drawBox). */
 export function renderSilhouette(
-  kind: 'stadium' | 'hexagon' | 'diamond' | 'circle',
+  kind: 'stadium' | 'hexagon' | 'diamond' | 'circle' | 'asymmetric',
   label: string,
   dimensions: ShapeDimensions,
   useAscii: boolean,
@@ -289,6 +358,7 @@ export function renderSilhouette(
     drawHexagon(canvas, w, h, diamondInsets(w, h), useAscii)
   else if (kind === 'circle')
     drawCircle(canvas, w, h, circleInsets(w, h), useAscii)
+  else if (kind === 'asymmetric') drawAsymmetric(canvas, w, h, useAscii)
   else {
     const widths = lines.map((l) => displayWidth(l))
     drawHexagon(canvas, w, h, hexagonInsets(w, h, widths, startY), useAscii)
