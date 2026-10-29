@@ -1,11 +1,14 @@
 import { readFile } from 'node:fs/promises'
 import { expect, it } from 'vitest'
-import { absolutizeLinks, generateLlmsFull } from '../scripts/lib/llms-full'
+import {
+  absolutizeLinks,
+  generateLlmsFull,
+  toLf,
+} from '../scripts/lib/llms-full'
 
 it('public/llms-full.txt matches scripts/generate-llms-full.ts (run `pnpm run docs:llms` if this fails)', async () => {
-  const committed = await readFile(
-    new URL('../public/llms-full.txt', import.meta.url),
-    'utf8',
+  const committed = toLf(
+    await readFile(new URL('../public/llms-full.txt', import.meta.url), 'utf8'),
   )
   const generated = await generateLlmsFull()
   expect(generated).toContain('/blob/main/docs/theming.md\n')
@@ -22,4 +25,9 @@ it('absolutizes relative links against the source doc, leaving absolute and anch
   ).toBe(
     `[a](${base}docs/development-scripts.md) [b](${base}README.md#x) [c](https://x.dev/y) [d](#top) [e](mailto:a@b.c)`,
   )
+})
+
+it('toLf turns CRLF checkouts into the LF text the generator emits', () => {
+  expect(toLf('a\r\n\r\nb\r\n')).toBe('a\n\nb\n')
+  expect(toLf('a\nb')).toBe('a\nb')
 })
