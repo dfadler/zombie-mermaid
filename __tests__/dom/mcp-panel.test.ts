@@ -23,7 +23,7 @@ describe('McpPanel', () => {
     ).toBeInTheDocument()
 
     expect(screen.getByText('validate_mermaid')).toBeInTheDocument()
-    expect(screen.getByText(/seven tools/)).toBeInTheDocument()
+    expect(screen.getByText(/eight tools/)).toBeInTheDocument()
     expect(screen.queryByText(/may still change/)).not.toBeInTheDocument()
 
     const link = screen.getByRole('link', { name: /read the mcp docs/i })

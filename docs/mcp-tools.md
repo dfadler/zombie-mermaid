@@ -1,6 +1,6 @@
 # MCP tool reference
 
-The seven tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zombie-mermaid/mcp` / `@zombie-mermaid/mcp`). For setup and client config see the [README's MCP Server section](../README.md#mcp-server); for the trust model see [SECURITY.md](../SECURITY.md). Tool errors (bad Mermaid syntax, wrong diagram type, unwritable path) come back as a normal result with `isError: true`, not a protocol failure (`validate_mermaid` is the exception: invalid syntax is a normal `{ valid: false, diagnostics }` result). The first content block is the plain `<tool>: <message>` text; when the parse error names a line, a second text block holds JSON `{"diagnostics":[{"line","sourceLine","message"}]}` so a client can point at the offending line.
+The eight tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zombie-mermaid/mcp` / `@zombie-mermaid/mcp`). For setup and client config see the [README's MCP Server section](../README.md#mcp-server); for the trust model see [SECURITY.md](../SECURITY.md). Tool errors (bad Mermaid syntax, wrong diagram type, unwritable path) come back as a normal result with `isError: true`, not a protocol failure (`validate_mermaid` is the exception: invalid syntax is a normal `{ valid: false, diagnostics }` result). The first content block is the plain `<tool>: <message>` text; when the parse error names a line, a second text block holds JSON `{"diagnostics":[{"line","sourceLine","message"}]}` so a client can point at the offending line.
 
 | Tool                                                                        | Read-only                          | Returns                                                    |
 | --------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------- |
@@ -11,6 +11,7 @@ The seven tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `z
 | [`list_themes`](#list_themes)                                               | yes                                | JSON `{ themes }`                                          |
 | [`list_diagram_types`](#list_diagram_types)                                 | yes                                | JSON `{ diagramTypes }`                                    |
 | [`validate_mermaid`](#validate_mermaid)                                     | yes                                | JSON `{ valid, diagnostics }`                              |
+| [`describe_diagram`](#describe_diagram)                                     | yes                                | JSON `{ diagramType, direction, nodes, edges, subgraphs }` |
 
 ## `render_mermaid_svg`
 
@@ -109,3 +110,28 @@ Parse-only check: nothing is laid out or drawn. Input: `diagram`. Always a norma
 ```
 
 `line` and `sourceLine` appear when the parser names a line; otherwise the diagnostic is just `{ "message", "code" }`. `code` is an optional stable string to branch on: `EMPTY_DIAGRAM` (blank input), or `PARSE_ERROR` (generic: the parser reports free-text messages, so every syntax error maps here). A code the thrown error already carries (e.g. `LIMIT_EXCEEDED`) is passed through unchanged, so treat the set as open. Diagnostics hold only the parser message and your own source line, never filesystem paths. The CLI equivalent is `zombie-mermaid validate [file]` (prints `valid`, or the error plus source line and exit code 1).
+
+## `describe_diagram`
+
+Parse-only: nothing is laid out or drawn. Input: `diagram`, a flowchart or state diagram (other types return `isError`, and bad syntax returns the usual error with line diagnostics). Returns the parsed model for linting and diffing:
+
+```json
+{
+  "diagramType": "flowchart",
+  "direction": "TD",
+  "nodes": [{ "id": "A", "label": "Start", "shape": "rectangle" }],
+  "edges": [
+    {
+      "source": "A",
+      "target": "B",
+      "label": "yes",
+      "style": "solid",
+      "hasArrowStart": false,
+      "hasArrowEnd": true
+    }
+  ],
+  "subgraphs": [{ "id": "s", "label": "S", "nodeIds": ["A"], "children": [] }]
+}
+```
+
+`label` on an edge appears only when set. The shape is unversioned and may change between releases.

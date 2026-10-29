@@ -34,6 +34,11 @@ import {
   validateHandler,
 } from './tools/validate.ts'
 import {
+  describeDiagramInputShape,
+  describeDiagramOutputShape,
+  describeDiagramHandler,
+} from './tools/describe-diagram.ts'
+import {
   listThemesHandler,
   listThemesOutputShape,
 } from './tools/list-themes.ts'
@@ -215,6 +220,28 @@ export function createMcpServer(): McpServer {
       },
     },
     validateHandler,
+  )
+
+  server.registerTool(
+    'describe_diagram',
+    {
+      title: 'Describe a Mermaid diagram as a graph',
+      description:
+        'Parse a Mermaid flowchart or state diagram without laying it out ' +
+        'and return its model as JSON { diagramType, direction, nodes, ' +
+        'edges, subgraphs }, for linting and diffing. Unversioned: the ' +
+        'shape may change. Other diagram types are not supported.',
+      inputSchema: describeDiagramInputShape,
+      outputSchema: describeDiagramOutputShape,
+      annotations: {
+        title: 'Describe a Mermaid diagram as a graph',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    describeDiagramHandler,
   )
 
   return server

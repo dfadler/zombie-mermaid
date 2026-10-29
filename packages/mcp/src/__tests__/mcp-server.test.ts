@@ -59,6 +59,7 @@ describe('createMcpServer', () => {
     const names = tools.map((t) => t.name).sort()
     expect(names).toEqual([
       'check_mermaid_sequence_activations',
+      'describe_diagram',
       'fix_mermaid_sequence_activations',
       'list_diagram_types',
       'list_themes',
