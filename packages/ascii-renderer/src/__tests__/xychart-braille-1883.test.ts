@@ -43,4 +43,19 @@ describe('xychart braille line series (#1883)', () => {
       )
     }
   })
+
+  it.each([
+    ['a flat series', 'x-axis [A, B, C]\n  line [3, 3, 3]'],
+    ['a single point', 'x-axis [A]\n  line [3]'],
+    [
+      'a series beside bars',
+      'x-axis [A, B, C]\n  bar [1, 4, 2]\n  line [2, 2, 9]',
+    ],
+  ])('renders %s without throwing and still draws dots', (_n, body) => {
+    const out = renderMermaidASCII(`xychart-beta\n  ${body}`, {
+      ...opts,
+      braille: true,
+    })
+    expect(out).toMatch(BRAILLE)
+  })
 })

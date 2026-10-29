@@ -105,6 +105,12 @@ ALLOWLIST=(
   # the files under src/__tests__/__theme-variables-snapshots__/ are reviewed
   # via `git diff` (`vitest -u`).
   "src/__tests__/theme-variables-2108.test.ts"
+  # Exact ASCII golden for the opt-in braille XY-chart line series (#1883), per
+  # the repo rule of an ASCII snapshot per case (the option is ASCII-only, so
+  # there is no SVG pair). Not a component test; the file under
+  # packages/ascii-renderer/src/__tests__/__snapshots__/ is reviewed via
+  # `git diff` (`vitest -u`).
+  "packages/ascii-renderer/src/__tests__/xychart-braille-1883.test.ts"
 )
 
 is_allowlisted() {
