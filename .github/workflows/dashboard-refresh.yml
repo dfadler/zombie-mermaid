@@ -200,9 +200,11 @@ jobs:
             problem="was rejected by the GitHub API (HTTP ${code}); it is probably expired or revoked."
           else
             exp=$(grep -i '^github-authentication-token-expiration:' /tmp/pat-headers | cut -d: -f2- | tr -d '\r' | xargs || true)
+            echo "PAT health: HTTP ${code}, expiration header: ${exp:-<absent>}"
             [ -n "$exp" ] || exit 0 # no header: non-expiring token
-            exp_s=$(date -u -d "$exp" +%s) || exit 0
+            exp_s=$(date -u -d "$exp" +%s) || { echo "PAT health: could not parse expiration header"; exit 0; }
             days=$(( (exp_s - $(date -u +%s)) / 86400 ))
+            echo "PAT health: ${days} day(s) until expiry"
             [ "$days" -lt 14 ] && problem="expires in ${days} day(s) (${exp})."
           fi
           [ -n "$problem" ] || exit 0
