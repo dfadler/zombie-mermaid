@@ -42,14 +42,17 @@ Mermaid.js is the behavioural reference. What is measured today:
   GitHub (12.1.0, inferred) and mermaid.live (12.2.0) in
   [known-differences.md](../known-differences.md).
 - **Known deviations** are recorded in [known-differences.md](../known-differences.md).
-  A difference not listed there, found against what users actually see, is a gap.
+  A syntax, behaviour or layout difference not listed there, found against what
+  users actually see, is a gap, unless another project doc records it as an
+  intentional limitation (for example [no-script-interactivity.md](no-script-interactivity.md)).
 - **Visuals** are the project's own themeable style
   ([theming.md](../theming.md)), not a copy of mermaid.js's. The layout oracle
   compares relative placement only, so pixel parity is not something the repo
   measures or claims.
 
 **Fidelity order (decided).** Syntax coverage first, then layout, then visuals.
-A construct mermaid accepts that this project fails to parse is a bug. A node
+A construct mermaid accepts that this project fails to parse is a bug, unless a
+project doc records the limitation as intentional. A node
 placed on the wrong side of another, or in the wrong container, is a bug. A
 different corner radius, font or colour is a theming choice, not a gap.
 **Pixel parity is an explicit non-goal.** The layout floors are regression
@@ -66,9 +69,11 @@ issues, one per uncovered type, not closed by this doc.
 
 ### Scope
 
-Supported today: flowchart (including state), sequence, class, ER, xychart,
-architecture, C4 and pie ([README](../../README.md), "Features";
-[diagrams.md](../diagrams.md)). Inputs: Mermaid source text. Outputs: SVG,
+Renderer support today: flowchart (including state), sequence, class, ER,
+xychart, architecture, C4 and pie ([README](../../README.md), "Features";
+[diagrams.md](../diagrams.md)). This lists what renders; full support also
+requires an oracle (see "Oracle coverage"), which sequence, C4, architecture, pie
+and xychart do not have yet. Inputs: Mermaid source text. Outputs: SVG,
 ASCII/Unicode, and rasterized targets through the CLI.
 
 **New diagram types (decided).** Any diagram type that ships in mermaid.js is in
@@ -186,7 +191,9 @@ Nothing to decide here: the repo already answers "latest only, no backports".
 - Follow-up issues cover the gaps this doc names: an oracle for each type that has
   none, ASCII feature gaps, and supporting the mermaid.js types not yet handled.
 - "Gap" in the Mermaid-coverage review means: valid mermaid syntax, or a diagram
-  type mermaid.js ships, that this project does not yet handle, or a difference
-  from the reference not listed in [known-differences.md](../known-differences.md).
+  type mermaid.js ships, that this project does not yet handle, or a syntax,
+  behaviour or layout difference from the reference not listed in
+  [known-differences.md](../known-differences.md). Visual differences (font,
+  colour, corner radius, pixels) are never gaps.
   Constructs outside mermaid.js (for example ArchiMate) are not gaps.
 - This doc does not change any code or CI floor.
