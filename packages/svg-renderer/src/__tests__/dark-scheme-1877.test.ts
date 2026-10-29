@@ -18,7 +18,7 @@ describe('RenderOptions.dark (#1877)', () => {
     expect(svg).toMatch(
       /@media \(prefers-color-scheme: dark\) \{ svg \{ --bg: #111 !important; --fg: #eee !important;/,
     )
-    // unset enrichment vars reset so the color-mix fallbacks apply again
+    // Unset enrichment vars reset so the color-mix fallbacks apply again
     expect(svg).toContain('--muted: initial !important;')
     expect(svg).toMatch(/style="--bg:#[0-9a-f]+;/i)
   })
