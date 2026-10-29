@@ -12,7 +12,7 @@ The issue asks for a concrete hook — "PR-rescue numbers, or a specific hard bu
 see `docs/promotion/258-pr-rescue-candidates.md` — nothing has actually been merged).
 
 So this draft leads with the **fork-fixes evidence page** instead: `demo/fork-fixes-data.ts`
-already documents 53 real upstream bugs fixed, each rendered before/after by the actual
+already documents 55 real upstream bugs fixed, each rendered before/after by the actual
 code at the actual commit (not described from memory — see that file's header comment
 and `fork-fixes.ts`'s generator, which fails outright if a before/after pair renders
 identically). That's a stronger, already-true hook today than PR-rescue numbers that
@@ -21,7 +21,7 @@ don't exist yet.
 **Alternative considered:** lead with a single standout bug (e.g. the A* pathfinder OOM
 class of issue, or the CJK/fullwidth-character rendering fixes, which show up across
 several upstream PRs as a recurring pain point — see the #258 candidate list). Rejected
-for the initial post because a single bug is a weaker claim than "53 fixes, each with
+for the initial post because a single bug is a weaker claim than "55 fixes, each with
 visual proof" — but it's a reasonable fallback angle if the repo owner wants a punchier,
 narrower headline, or if HN comments push back wanting one concrete example up front
 (in which case, pick the CJK-alignment cluster — it's the most-reported category across
@@ -33,13 +33,13 @@ should be revised to lead with those instead, per the issue's own stated depende
 
 ## Post title
 
-> Show HN: I forked a stalled 11k-star Mermaid renderer and fixed 53 of its open bugs
+> Show HN: I forked a stalled 11k-star Mermaid renderer and fixed 55 of its open bugs
 
 Alternate title considered (more neutral, less "zombie" branding, in case the repo owner
 wants restraint here — issue #264 covers leaning into the branding separately and isn't
 this issue's call to make):
 
-> Show HN: zombie-mermaid – a maintained fork of beautiful-mermaid, with before/after proof of 53 fixes
+> Show HN: zombie-mermaid – a maintained fork of beautiful-mermaid, with before/after proof of 55 fixes
 
 ## Post body
 
@@ -47,7 +47,7 @@ this issue's call to make):
 beautiful-mermaid (https://github.com/lukilabs/beautiful-mermaid) is a genuinely
 good Mermaid diagram renderer — fast, nice-looking SVG and ASCII output, zero DOM
 dependency, no headless browser required. It hit the HN front page when it launched
-(https://news.ycombinator.com/item?id=47169523) and has ~11k stars and ~1.9M npm
+(https://news.ycombinator.com/item?id=46804828) and has ~11k stars and ~2.4M npm
 downloads a month.
 
 It also hasn't had a commit merged since May. 45 pull requests are sitting open,
@@ -57,7 +57,7 @@ I depend on this library, so I forked it: zombie-mermaid
 (https://github.com/dfadler/zombie-mermaid). The pitch isn't "we're better," it's
 "still getting fixed." Every claim on that is backed by evidence, not a changelog
 you have to trust: https://dfadler.github.io/zombie-mermaid/fork-fixes.html renders
-53 real bugs both before and after the fix, using the actual renderer code from the
+55 real bugs both before and after the fix, using the actual renderer code from the
 actual commit in each case — not a description of what changed. A few examples:
 
 - CJK/fullwidth labels (Japanese, Korean, Chinese) blew out ASCII box borders
@@ -83,8 +83,8 @@ Repo: https://github.com/dfadler/zombie-mermaid
 
 ## Notes for the repo owner before posting
 
-- **Verify the fork-fixes count at post time.** The draft above says "53" based on
-  `demo/fork-fixes-data.ts` as of 2026-10-23 (`grep -c "id: '" demo/fork-fixes-data.ts`).
+- **Verify the fork-fixes count at post time.** The draft above says "55" based on
+  `demo/fork-fixes-data.ts` as of 2026-10-29 (`grep -c "id: '" demo/fork-fixes-data.ts`).
   Re-check that count before posting if any time has passed — it's exactly the kind of
   concrete, falsifiable number an HN audience will click through and verify.
 - **The PR #142 link is a real, already-open upstream PR** (`lukilabs/beautiful-mermaid#142`,
@@ -99,3 +99,20 @@ Repo: https://github.com/dfadler/zombie-mermaid
   candidate list (`docs/promotion/258-pr-rescue-candidates.md`) is research only, not
   completed work, as of this writing. Do not post a version of this draft that implies
   otherwise until PRs have actually been merged.
+
+## Number sources and re-check commands (last refreshed 2026-10-29, #1789)
+
+Re-run these right before posting; every figure in the draft comes from one of them.
+
+| Claim in draft                         | Value on 2026-10-29                  | Re-check command                                                                                      |
+| -------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| Fork fixes                             | 55                                   | `grep -c "id: '" demo/fork-fixes-data.ts`                                                             |
+| Upstream stars ("~11k")                | 11,248                               | `gh api repos/lukilabs/beautiful-mermaid --jq .stargazers_count`                                      |
+| Upstream npm downloads/month ("~2.4M") | 2,354,273 (2026-09-29 to 2026-10-28) | `curl -s https://api.npmjs.org/downloads/point/last-month/beautiful-mermaid`                          |
+| Open upstream PRs                      | 45 (oldest opened 2026-01-29)        | `gh search prs --repo lukilabs/beautiful-mermaid --state open --json number --limit 300 \| jq length` |
+| "No commit merged since May"           | last merge 2026-05-06 (PR #106)      | `gh pr list --repo lukilabs/beautiful-mermaid --state merged --limit 1 --json number,mergedAt`        |
+| Upstream PR #142                       | open, unmerged                       | `gh pr view 142 --repo lukilabs/beautiful-mermaid --json state,mergedAt`                              |
+| Upstream HN launch thread              | 46804828, 418 points (2026-01-29)    | `curl -s https://hacker-news.firebaseio.com/v0/item/46804828.json \| jq '{title,score}'`              |
+
+The draft previously linked HN item 47169523, which is an unrelated 2-point submission, not the
+418-point launch thread; the link now points at 46804828.
