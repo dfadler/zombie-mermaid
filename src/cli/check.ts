@@ -47,7 +47,11 @@ export async function runCheck(args: CheckArgs): Promise<void> {
         failures++
         const d = extractParseDiagnostic(e, block.source)
         const line = block.startLine + (d ? d.line - 1 : 0)
-        const message = d ? d.message : e instanceof Error ? e.message : String(e)
+        const message = d
+          ? d.message
+          : e instanceof Error
+            ? e.message
+            : String(e)
         console.error(`${file}:${line}: ${message}`)
         if (d) console.error(`  ${line} | ${d.sourceLine}`)
       }
