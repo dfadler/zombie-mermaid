@@ -31,6 +31,17 @@ describe('extractMermaidBlocks', () => {
   })
 })
 
+describe('extractMermaidBlocks closing fence', () => {
+  it('ignores a shorter or different-char fence inside the block', () => {
+    const blocks = extractMermaidBlocks(
+      md('````mermaid', 'graph TD', '```', '~~~~', 'A-->B', '````'),
+    )
+    expect(blocks).toEqual([
+      { startLine: 2, source: 'graph TD\n```\n~~~~\nA-->B' },
+    ])
+  })
+})
+
 describe('parseArgs --check', () => {
   it('collects files and rejects empty / flags', () => {
     expect(parseArgs(['--check', 'a.md', 'b.md'])).toEqual({

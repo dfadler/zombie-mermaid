@@ -15,6 +15,13 @@ export interface MermaidBlock {
 }
 
 const OPEN = /^ {0,3}(`{3,}|~{3,})\s*mermaid\b[^`]*$/i
+const FENCE_RUN = /^ {0,3}(`+|~+)\s*$/
+
+/** A closing fence: same char as the opener, at least as long, nothing else. */
+function closes(line: string, fence: string): boolean {
+  const run = FENCE_RUN.exec(line)?.[1]
+  return !!run && run[0] === fence[0] && run.length >= fence.length
+}
 
 /** Extract ```mermaid / ~~~mermaid fenced blocks (CommonMark fence rules, no nesting). */
 export function extractMermaidBlocks(markdown: string): MermaidBlock[] {
@@ -24,10 +31,9 @@ export function extractMermaidBlocks(markdown: string): MermaidBlock[] {
     const m = OPEN.exec(lines[i]!)
     if (!m) continue
     const fence = m[1]!
-    const close = new RegExp(`^ {0,3}${fence[0]}{${fence.length},}\\s*$`)
     const body: string[] = []
     let j = i + 1
-    while (j < lines.length && !close.test(lines[j]!)) body.push(lines[j++]!)
+    while (j < lines.length && !closes(lines[j]!, fence)) body.push(lines[j++]!)
     blocks.push({ startLine: i + 2, source: body.join('\n') })
     i = j
   }
