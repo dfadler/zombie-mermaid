@@ -111,6 +111,7 @@ export function renderXYChartAscii(
   config: AsciiConfig,
   colorMode: ColorMode,
   theme: AsciiTheme,
+  braille = false,
 ): string {
   const lines = splitStatements(text)
   const chart = parseXYChart(lines)
@@ -119,7 +120,7 @@ export function renderXYChartAscii(
   if (chart.horizontal) {
     return renderHorizontal(chart, ch, colorMode, theme)
   }
-  return renderVertical(chart, ch, colorMode, theme)
+  return renderVertical(chart, ch, colorMode, theme, braille)
 }
 
 // ============================================================================
@@ -131,6 +132,7 @@ function renderVertical(
   ch: typeof UNI | typeof ASC,
   colorMode: ColorMode,
   theme: AsciiTheme,
+  braille = false,
 ): string {
   const dataCount = getDataCount(chart)
   if (dataCount === 0) return ''
@@ -378,6 +380,22 @@ function renderVertical(
   for (const entry of lineEntries) {
     if (entry.data.length === 0) continue
     const hexColor = seriesColors[entry.globalIdx]!
+    if (braille) {
+      drawBrailleLine(
+        canvas,
+        roles,
+        entry.data,
+        (v) => (v - yRange.min) / (yRange.max - yRange.min || 1),
+        bandCenter,
+        plotTop,
+        plotH,
+        plotLeft,
+        bandW * dataCount,
+        hexColors,
+        hexColor,
+      )
+      continue
+    }
     drawStaircaseLine(
       canvas,
       roles,
@@ -720,6 +738,73 @@ function drawStaircaseLine(
         drawAt(c, p2.row, ch.hLine)
       }
     }
+  }
+}
+
+// ============================================================================
+// Braille line drawing — vertical charts, opt-in (#1883)
+//
+// Each cell holds 2x4 dots (U+2800 + bit mask), so a line gets 2x the columns
+// and 4x the rows of the staircase. Points sit at the dot nearest their band
+// centre and value; consecutive points are joined by a Bresenham line.
+// ============================================================================
+
+/** Dot bit within a braille cell, indexed [dotRowInCell][dotColInCell]. */
+const BRAILLE_BIT = [
+  [0x01, 0x08],
+  [0x02, 0x10],
+  [0x04, 0x20],
+  [0x40, 0x80],
+]
+
+function drawBrailleLine(
+  canvas: Canvas,
+  roles: RoleCanvas,
+  data: number[],
+  fraction: (v: number) => number,
+  bandCenter: (i: number) => number,
+  plotTop: number,
+  plotH: number,
+  plotLeft: number,
+  plotTotalW: number,
+  hexCanvas: HexCanvas,
+  hexColor: string,
+): void {
+  const dotsW = plotTotalW * 2
+  const dotsH = plotH * 4
+  // Dot grid: x grows right, y grows down (y = 0 is the top of the plot).
+  const pts = data.map((v, i) => ({
+    x: (bandCenter(i) - plotLeft) * 2,
+    y: dotsH - 1 - Math.round(fraction(v) * (dotsH - 1)),
+  }))
+  const masks = new Map<number, number>()
+  const plot = (x: number, y: number) => {
+    if (x < 0 || x >= dotsW || y < 0 || y >= dotsH) return
+    const key = (y >> 2) * plotTotalW + (x >> 1)
+    masks.set(key, (masks.get(key) ?? 0) | BRAILLE_BIT[y & 3]![x & 1]!)
+  }
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i]!
+    const b = pts[i + 1] ?? a
+    const n = Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y))
+    for (let s = 0; s <= n; s++) {
+      const t = n === 0 ? 0 : s / n
+      plot(Math.round(a.x + (b.x - a.x) * t), Math.round(a.y + (b.y - a.y) * t))
+    }
+  }
+  for (const [key, mask] of masks) {
+    const col = plotLeft + (key % plotTotalW)
+    const row = plotTop + Math.floor(key / plotTotalW)
+    set(
+      canvas,
+      roles,
+      row,
+      col,
+      String.fromCodePoint(0x2800 + mask),
+      'arrow',
+      hexCanvas,
+      hexColor,
+    )
   }
 }
 

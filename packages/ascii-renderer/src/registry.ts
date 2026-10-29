@@ -57,6 +57,8 @@ export interface AsciiRenderExtras {
   limits?: RenderLimits
   /** Read by `pie` only (`pie1..pie12`); the rest ride on the theme. */
   honorThemeVariables?: boolean
+  /** Read by `xychart` only: draw vertical line series as braille dots (#1883). */
+  braille?: boolean
 }
 
 /**
@@ -82,8 +84,8 @@ export type AsciiRenderer = (
  * docs/decisions/diagram-type-registry-partial.md) is registered here too.
  */
 export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
-  xychart: (text, config, colorMode, theme) =>
-    renderXYChartAscii(text, config, colorMode, theme),
+  xychart: (text, config, colorMode, theme, extras) =>
+    renderXYChartAscii(text, config, colorMode, theme, extras?.braille),
   er: (text, config, colorMode, theme) =>
     renderErAscii(text, config, colorMode, theme),
   sequence: (text, config, colorMode, theme) =>

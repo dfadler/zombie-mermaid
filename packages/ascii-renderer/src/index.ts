@@ -123,6 +123,16 @@ export interface AsciiRenderOptions {
    * `RenderOptions.honorThemeVariables` for SVG.
    */
   honorThemeVariables?: boolean
+  /**
+   * Opt in to braille dots (U+2800 block, 2x4 dots per cell) for the line
+   * series of a vertical XY chart, for a smooth line instead of the cell
+   * staircase (#1883). Off by default: output is unchanged. Bars, axes and
+   * labels keep their normal glyphs; horizontal XY charts, pie charts (a 1D
+   * bar, nothing to densify) and every other diagram ignore it, as does
+   * `useAscii` / `profile: 'markdown'` (braille is not ASCII, and its width
+   * and font support vary).
+   */
+  braille?: boolean
 }
 
 /** The theme keys a diagram's `themeVariables` set (hex only), for the opt-in. */
@@ -221,6 +231,7 @@ export function renderMermaidASCII(
     direction: options.direction,
     limits: options.limits,
     honorThemeVariables: options.honorThemeVariables ?? false,
+    braille: (options.braille ?? false) && !config.useAscii,
   })
 
   return options.showCoords ? addCoordsOverlay(result) : result
