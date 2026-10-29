@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { expect, it } from 'vitest'
-import { generateLlmsFull } from '../scripts/generate-llms-full'
+import { generateLlmsFull } from '../scripts/lib/llms-full'
 
 it('public/llms-full.txt matches scripts/generate-llms-full.ts (run `pnpm run docs:llms` if this fails)', async () => {
   const committed = await readFile(
