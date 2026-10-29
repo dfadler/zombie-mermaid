@@ -42,7 +42,7 @@ function walk(node: Node, replace: (n: Node) => Node | undefined): void {
   }
 }
 
-/** remark: mdast `code` nodes with `lang: mermaid` become `html` nodes. */
+/** Remark: mdast `code` nodes with `lang: mermaid` become `html` nodes. */
 export function remarkMermaid(options: RemarkMermaidOptions = {}) {
   return (tree: Node): void =>
     walk(tree, (n) =>
@@ -73,7 +73,7 @@ function textOf(node: Node): string {
   return node.value ?? (node.children ?? []).map(textOf).join('')
 }
 
-/** rehype: `<pre><code class="language-mermaid">` becomes a `raw` SVG node. */
+/** Rehype: `<pre><code class="language-mermaid">` becomes a `raw` SVG node. */
 export function rehypeMermaid(options: RemarkMermaidOptions = {}) {
   return (tree: Node): void =>
     walk(tree, (n) => {
