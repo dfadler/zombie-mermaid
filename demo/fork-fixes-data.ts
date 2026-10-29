@@ -114,7 +114,7 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: the right border sits inside the text and rows are ragged. After: every row is the same width.',
-    upstreamIssues: [12, 13, 50, 99, 119, 122],
+    upstreamIssues: [12, 13, 119, 122],
   },
   {
     id: 'circle-cross-edges',
@@ -180,7 +180,7 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: the top row reads A1, B1, A2, B2 — the two groups interleaved. After: A1, A2, B1, B2, each pair above its own target.',
-    upstreamIssues: [64, 65, 67, 68, 111, 112, 113],
+    upstreamIssues: [64, 65, 68, 111, 112],
   },
   {
     id: 'class-blank-compartment',
@@ -316,7 +316,7 @@ export const forkFixes: ForkFix[] = [
     excerpt: { from: '<g class="node', to: 'data-id="A"' },
     lookFor:
       'Both sides look identical on screen — the fill color already worked before this fix. Compare the markup: before, node A’s group carries only `class="node"`; after, `class="node highlight"`, so a stylesheet rule like `.highlight { }` can finally target it.',
-    upstreamIssues: [80, 81],
+    upstreamIssues: [80],
   },
   {
     id: 'cjk-state-names',
@@ -798,6 +798,6 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: the label on A’s right side reads `long─label`, with a stroke through the gap. After: it reads `long label`.',
-    upstreamIssues: [157],
+    upstreamIssues: [154],
   },
 ]
