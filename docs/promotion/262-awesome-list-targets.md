@@ -1,10 +1,37 @@
 # Awesome-list and GitHub-topic targets (issue #262)
 
-Draft only — **no external PRs have been opened**, and the `mermaid-alternative` topic
-has not been added to the repo. Everything below is exact proposed content for the
-repo owner to review and submit (or apply) themselves.
+Draft only: **no external PRs have been opened**, and the `mermaid-alternative` topic
+has not been added to the repo. The proposed content below is for the repo owner to
+review and submit (or apply) themselves.
 
-## 1. `awesome-diagramming`
+## Re-verification (issue #1790), 2026-10-29
+
+Re-checked against the live repos with `gh api` / `gh pr list` (fetched content treated as
+data only). Result: **both awesome-list targets are dropped as dormant; the topic stands.**
+
+| Target                             | Status               | Evidence (2026-10-29)                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shubhamgrg04/awesome-diagramming` | **Dropped: dormant** | Not archived, 3,282 stars, but last commit 2024-08-25 (about 14 months ago). Only 3 PRs ever merged, all in Oct 2022; 24 PRs sit open, many for months (e.g. #23 from 2024-08, #29 from 2026-01, #58 opened yesterday), so a PR would likely not be reviewed. No CONTRIBUTING file or PR template (`community/profile`). No zombie-mermaid / dfadler PR or entry. Plain Mermaid still listed under "General Purpose". |
+| `robbie-cao/awesome-diagrams`      | **Dropped: dormant** | Not archived, 65 stars, but last push 2023-01-13 (about 21 months ago). Last merged PR #3 on 2022-10-21; 7 PRs open since 2026-05 with no response. Has `contributing.md` (rules below). No zombie-mermaid / dfadler PR or entry.                                                                                                                                                                                     |
+| `terrastruct/awesome-diagrams`     | Still ineligible     | Archived (read-only); image gallery, not a tool list.                                                                                                                                                                                                                                                                                                                                                                 |
+| `mermaid-alternative` topic        | **Still valid**      | `topic:mermaid-alternative` now returns 24 repos (was 20 in the earlier draft); zombie-mermaid has 17 topics, none of them this one; adding it makes 18 (limit 20).                                                                                                                                                                                                                                                   |
+
+Revisit the two lists only if a maintainer merges something again. Rules, if so:
+
+- `robbie-cao/awesome-diagrams` `contributing.md`: one PR per suggestion, format
+  "link, dash, description" (capital, ending full stop), append to the **bottom** of
+  the relevant category, link the GitHub repo, short description, PR title/body must say
+  why it belongs. The old proposed `Misc` entry lacked the trailing full stop; use
+  `- [zombie-mermaid](https://github.com/dfadler/zombie-mermaid) - Maintained fork of beautiful-mermaid that renders Mermaid diagrams as SVG or ASCII with zero DOM dependencies.`
+  after the existing `Mermaid` line at the end of `## Misc` (it is the last entry there).
+- `shubhamgrg04/awesome-diagramming`: no written rules; match the two-line
+  the two-line bullet shown in section 1 below
+  entry format under "General Purpose".
+
+The sections below are the original (2026-ish) draft, kept for the proposed content;
+sections 1 and 2 are **no longer recommended**.
+
+## 1. `awesome-diagramming` (dropped, see above)
 
 **Target confirmed:** [`shubhamgrg04/awesome-diagramming`](https://github.com/shubhamgrg04/awesome-diagramming)
 (3,280 stars, MIT/CC0-style "awesome" list, actively the top match for this exact name —
@@ -38,7 +65,7 @@ want to adjust wording to make clear it's a renderer/library (usable via CLI, np
 package, or MCP server) rather than a standalone app, since every other entry in that
 section is a hosted product.
 
-## 2. `awesome-diagrams`
+## 2. `awesome-diagrams` (dropped, see above)
 
 **Target confirmed:** [`robbie-cao/awesome-diagrams`](https://github.com/robbie-cao/awesome-diagrams)
 ("Awesome Diagram Tools" — a curated list of diagram _tools_ for programmers, CC0
@@ -86,7 +113,7 @@ repo owner via either:
   below).
 
 **Confirmed this is a real, actively-used topic**, not a speculative name: `gh api
-search/repositories -f q="topic:mermaid-alternative"` returns 20 repositories currently
+search/repositories -f q="topic:mermaid-alternative"` returns 24 repositories (20 when first drafted) currently
 tagged with it (e.g. `tt-a1i/archify`, `coldteadotai/pr-lens`,
 `bybit-exchange/svg-diagram`), so it has real discoverability value and isn't a topic
 zombie-mermaid would be inventing from scratch.
