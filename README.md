@@ -214,6 +214,7 @@ zombie-mermaid render diagram.mmd --ascii -o out.txt    # Write the ASCII render
 zombie-mermaid render diagram.mmd --html                # Self-contained pan/zoom HTML viewer
 zombie-mermaid render diagram.mmd --png                 # Rasterize to diagram.png
 cat diagram.mmd | zombie-mermaid render --ascii         # Read from stdin
+zombie-mermaid --check README.md docs/*.md              # Validate every mermaid block in Markdown; exit 1 with file:line diagnostics
 zombie-mermaid themes                                   # List built-in theme names
 zombie-mermaid --help                                   # Show all options
 ```
