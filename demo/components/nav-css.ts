@@ -287,6 +287,9 @@ html.mobile-nav-open {
   padding: ${SPACE.md}px ${SPACE.xl}px;
   background: var(--panel);
   color: var(--text);
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
 }
 
 .skip-link:focus {

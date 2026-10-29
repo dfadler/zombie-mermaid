@@ -86,16 +86,11 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
-import {
-  COPY_ICON_SIZE,
-  COPY_ICON_STROKE,
-  NavInstall,
-} from './nav-install-popover.tsx'
+import { NavInstall } from './nav-install-popover.tsx'
 import { navCss } from './nav-css.ts'
 import { MOBILE_WATERMARK_SIZE, NAV_Z_INDEX } from './nav-constants.ts'
 import { NAV_MOBILE_MENU_SCRIPT } from './mobile-menu.client.ts'
 import {
-  CopyIcon,
   ICON_LINE_CAP,
   ICON_STROKE_WIDTH,
   ICON_VIEW_BOX,
@@ -570,8 +565,9 @@ function MobileNavPanel({
             overflowX: 'auto',
           }}
         >
+          {/* Plain text on purpose: a copy icon here promised an action this
+              span never had (#1792). A real copy button is the alternative. */}
           {installCommand}
-          <CopyIcon size={COPY_ICON_SIZE} strokeWidth={COPY_ICON_STROKE} />
         </Pill>
       </span>
     </nav>
