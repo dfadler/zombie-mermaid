@@ -130,6 +130,12 @@ distinct modules, not a fixed 20).
   (`changeset-release/main`) consumes it. A version diff in a PR is fine only when
   inherited through a merge of `main` that already carries it. See CONTRIBUTING.md
   "Changesets".
+- **Read-only research briefs:** a brief that says "READ-ONLY" must spell out what that
+  forbids: no edits, commits, pushes, issue/PR comments, git refs or stashes, fetching
+  into the repo, background processes, or lint/typecheck runs that write caches; scratch
+  only in the named scratchpad dir. Compare branches with `gh api` (`repos/{o}/{r}/compare/A...B`),
+  not a local fetch. Ask the agent to report any side effect it did make, and confirm
+  `git status` is clean afterward (#1610).
 - **Snapshots cover both renderers:** every snapshot/golden case, edge cases and option
   variants included, gets both an SVG and an ASCII snapshot. If a case has no analogue
   in one renderer, say so in the PR rather than skipping silently. Hand-written
