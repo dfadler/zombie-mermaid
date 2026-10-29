@@ -54,6 +54,10 @@ once in `extractAccessibility()` (`packages/core/src/accessibility.ts`) before
 any parser runs, and emitted by the one `svgOpenTag()`
 ([#1865](https://github.com/dfadler/zombie-mermaid/issues/1865)). An optional `description` option adds a `<desc id>` child after the title and
 an `aria-describedby` on the root, independent of the table above.
+Opt-in `describe: 'auto'` ([#1879](https://github.com/dfadler/zombie-mermaid/issues/1879))
+fills that `<desc>` for flowcharts and state diagrams from the parsed nodes and
+edges (source words only, 500-character cap); it never supplies the title, and
+`accDescr` wins. The default stays no generated text.
 
 This maps to two WCAG success criteria:
 

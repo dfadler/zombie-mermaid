@@ -91,6 +91,7 @@ import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
 import { loadEmbeddedFont, resolveBodyFont } from './embedded-font.ts'
 import { diagramRegistry } from './registry.ts'
+import { describeGraph } from './describe-graph.ts'
 import type { SvgRenderContext } from './registry.ts'
 
 /**
@@ -289,8 +290,6 @@ function renderMermaidSVGRaw(
   const embedSource = options.embedSource ? text : undefined
   const title = options.title ?? acc.accTitle
   const decorative = options.decorative
-  const emit = { ...resolveSvgEmit(options), description: acc.accDescr }
-
   const lines = splitStatements(decoded)
 
   // Registry dispatch (see ./registry.ts): every diagram type, including
@@ -304,6 +303,12 @@ function renderMermaidSVGRaw(
   const g = diagram as { nodes?: unknown; edges?: unknown }
   if (g.nodes instanceof Map && Array.isArray(g.edges)) {
     checkGraphSize(g.nodes.size, g.edges.length, options.limits)
+  }
+  const emit = {
+    ...resolveSvgEmit(options),
+    description:
+      acc.accDescr ??
+      (options.describe === 'auto' ? describeGraph(diagram) : undefined),
   }
   const positioned = registered.layoutForSvg(diagram, options)
   // Opt-in: the diagram's own `themeVariables` fill colours the caller left

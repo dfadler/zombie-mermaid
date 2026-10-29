@@ -518,6 +518,16 @@ export interface RenderOptions {
   decorative?: boolean
 
   /**
+   * Opt-in (#1879): `'auto'` builds a deterministic `<desc>` from the parsed
+   * graph ("Diagram with 2 nodes and 1 connection: A to B"), using only words
+   * from the source and capped at 500 characters. Flowcharts and state
+   * diagrams only; other types are unchanged. Never supplies the accessible
+   * name (`title`), and an `accDescr` statement wins. Default: undefined
+   * (no generated description).
+   */
+  describe?: 'auto'
+
+  /**
    * Edge path interpolation for flowcharts and state diagrams.
    * Default: 'linear'. A diagram's own
    * `%%{init: {"flowchart": {"curve": ...}}}%%` supplies this when the caller
