@@ -122,6 +122,44 @@ describe('fetchRescuedIssues', () => {
     expect(ghFn).not.toHaveBeenCalled()
   })
 
+  it('omits a not-found alias (gh exits 1 with partial stdout) and warns with its number', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ghFn: GhFn = vi.fn(async () => {
+      throw Object.assign(new Error('gh: Could not resolve'), {
+        stdout: JSON.stringify({
+          data: {
+            repository: { i10: { number: 10, state: 'OPEN' }, i20: null },
+          },
+          errors: [{ type: 'NOT_FOUND', path: ['repository', 'i20'] }],
+        }),
+      })
+    })
+
+    const result = await fetchRescuedIssues([fixB], ghFn)
+
+    expect(result).toEqual([
+      {
+        number: 10,
+        state: 'open',
+        fixId: 'fix-b',
+        fixTitle: 'Fix B',
+        forkPr: 101,
+      },
+    ])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('omitted: 20'))
+    warn.mockRestore()
+  })
+
+  it('rethrows when the whole query fails (no usable stdout)', async () => {
+    const ghFn: GhFn = vi.fn(async () => {
+      throw Object.assign(new Error('gh: HTTP 401'), { stdout: '' })
+    })
+
+    await expect(fetchRescuedIssues([fixA], ghFn)).rejects.toThrow(
+      'gh: HTTP 401',
+    )
+  })
+
   it('dedupes an upstream issue shared by two fixes, keeping the first', async () => {
     const ghFn = ghSequence([
       {
