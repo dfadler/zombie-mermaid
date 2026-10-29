@@ -1,6 +1,6 @@
 # Project objective
 
-Status: proposal (maintainer decided the direction on 2026-10-15; the open questions below are not yet answered)
+Status: proposal (maintainer decided the direction on 2026-10-15 and answered the seven open questions on 2026-10-29; awaiting sign-off to move to `accepted`)
 
 ## Context
 
@@ -8,8 +8,9 @@ Status: proposal (maintainer decided the direction on 2026-10-15; the open quest
 project's objective to be written down, so that "is this a gap?" has a definition
 and the Mermaid-coverage review has something to measure against. Everything
 below is checked against the repo as of 2026-10-29; each claim names its source.
-Anything that only the maintainer can decide is marked **Open question** and
-carries no position.
+Points that only the maintainer could decide are marked **(decided)** with the
+decision, or **Direction, not a decision** where an idea is recorded but not
+committed to.
 
 ## Decision
 
@@ -20,11 +21,13 @@ renderer for terminals and agents.** zombie-mermaid renders Mermaid source to
 static SVG and to ASCII/Unicode text, with no DOM dependency
 ([README](../../README.md), "Features"), and ships a library, a CLI and an MCP
 server ([`package.json`](../../package.json) `bin`; [mcp-tools.md](../mcp-tools.md)).
-The slim, width-limited ASCII work follows from this choice: profile and width
+The terminal-specific work follows from this choice: opt-in profile and width
 options ([#2011](https://github.com/dfadler/zombie-mermaid/issues/2011),
 [#2057](https://github.com/dfadler/zombie-mermaid/issues/2057), both closed) and
 the open umbrella
-[#2086](https://github.com/dfadler/zombie-mermaid/issues/2086).
+[#2086](https://github.com/dfadler/zombie-mermaid/issues/2086), which is about
+smaller bundles through per-type entry points. The default ASCII output is not
+width-limited; see "ASCII and SVG parity".
 
 ### What "reasonably reproduce Mermaid" means
 
@@ -45,15 +48,21 @@ Mermaid.js is the behavioural reference. What is measured today:
   compares relative placement only, so pixel parity is not something the repo
   measures or claims.
 
-**Open question 1.** What is the fidelity order and the bar? The 2026-10 draft in
-the issue proposed syntax coverage, then layout, then visuals, with pixel parity
-a non-goal. That is a maintainer call, as are the numeric oracle floors (the
-issue comment of 2026-10-15 lists them as still open).
+**Fidelity order (decided).** Syntax coverage first, then layout, then visuals.
+A construct mermaid accepts that this project fails to parse is a bug. A node
+placed on the wrong side of another, or in the wrong container, is a bug. A
+different corner radius, font or colour is a theming choice, not a gap.
+**Pixel parity is an explicit non-goal.** The layout floors are regression
+guards, not parity claims, and this doc changes none of them; changing the
+numeric floors is a separate change.
 
-**Open question 2.** The oracle covers four diagram types; sequence, C4,
-architecture, pie and xychart have no layout oracle in `scripts/`. Does
-"reasonably reproduce" require one for every supported type, or only where
-mermaid's layout is the thing users compare?
+**Oracle coverage (decided).** The goal is to support every diagram type
+mermaid.js supports, so an oracle that accounts for the fidelity details of every
+supported type is eventually required, not optional. Today the layout oracle covers
+four types (flowchart, state, class, ER); sequence, C4, architecture, pie and
+xychart have none in `scripts/`, and chart types need measures other than relative
+node placement (slice angles, axis scales). That gap is tracked as follow-up
+issues, one per uncovered type, not closed by this doc.
 
 ### Scope
 
@@ -62,33 +71,52 @@ architecture, C4 and pie ([README](../../README.md), "Features";
 [diagrams.md](../diagrams.md)). Inputs: Mermaid source text. Outputs: SVG,
 ASCII/Unicode, and rasterized targets through the CLI.
 
-**Open question 3.** What qualifies a new diagram type? The issue draft proposed
-"an official Mermaid type with a stable syntax; `-beta` types need an explicit
-decision". Note that `xychart-beta` and `architecture-beta` are already
-supported, so a literal reading of that rule is not how the repo behaves today.
+**New diagram types (decided).** Any diagram type that ships in mermaid.js is in
+scope, including `-beta` types (`xychart-beta` and `architecture-beta` are already
+supported). Order is decided case by case by demand and effort, and this doc sets
+no sequence or date. A type counts as supported only when it parses what mermaid
+parses, has an SVG renderer, an ASCII path (see "ASCII fidelity") and an oracle
+(see "Oracle coverage"); partial support is labelled as partial. A mermaid.js type
+not yet supported here is a known gap, not out of scope.
 
-**Open question 4.** ArchiMate. The CHANGELOG entry for C4 says ArchiMate "remains
-open under #1167", but #1167 is now closed and
-[architecture-lowered-to-flowchart-1167.md](architecture-lowered-to-flowchart-1167.md)
-is the record of what shipped. Is ArchiMate in scope, out of scope, or undecided?
-Mermaid.js has no ArchiMate type; it came from upstream beautiful-mermaid PRs
+Direction, not a decision: types may eventually ship as separate sub-packages so
+users import only what they need. This doc does not commit to it, and it would
+interact with the lockstep versioning of the existing packages
+([lockstep-versioning.md](lockstep-versioning.md)).
+
+**Nothing beyond Mermaid (decided).** The project supports what mermaid.js
+supports and nothing more. ArchiMate is out of scope: it was declined on
+[#1167](https://github.com/dfadler/zombie-mermaid/issues/1167) (scope update of
+2026-09-30, closed 2026-10-01) because mermaid.js has no ArchiMate type
+([mermaid-js/mermaid#4007](https://github.com/mermaid-js/mermaid/issues/4007) is
+an open request there), so supporting it would mean owning a custom DSL taken from
+upstream beautiful-mermaid PRs
 ([#34](https://github.com/lukilabs/beautiful-mermaid/pull/34),
-[#71](https://github.com/lukilabs/beautiful-mermaid/pull/71)).
+[#71](https://github.com/lukilabs/beautiful-mermaid/pull/71)). Mermaid's native
+`architecture-beta` is the supported answer to that use case
+([architecture-lowered-to-flowchart-1167.md](architecture-lowered-to-flowchart-1167.md)).
+The C4 CHANGELOG line saying ArchiMate "remains open under #1167" is stale; release
+notes change only through the Version Packages PR, so it is left as is. A new issue
+with real demand can reopen the question.
 
 ### Non-goals recorded elsewhere
 
 - **No script or JavaScript interactivity in the output**, so it is safe to inline
   and meaningful as a file or a terminal frame:
   [no-script-interactivity.md](no-script-interactivity.md).
-- **The CLI and demo are apps, not libraries** to be consumed as packages:
-  [cli-and-demo-stay-apps.md](cli-and-demo-stay-apps.md).
-- **Pixel parity** is not measured (see above); whether it is an explicit non-goal
-  is open question 1.
+- **The demo site is not a package** and never ships to npm
+  ([cli-and-demo-stay-apps.md](cli-and-demo-stay-apps.md)). The CLI, by contrast, is
+  published: `@zombie-mermaid/cli` is a public package with the `zombie-mermaid`
+  bin (`packages/cli/package.json`), as is the umbrella `zombie-mermaid` package.
+  That decision doc dates from before the packages split and is out of date on the
+  CLI.
+- **Pixel parity** is an explicit non-goal (see "Fidelity order" above).
 
-**Open question 5.** Is an authoring or editing UI a product goal? The repo has
-`editor/` and a demo site ([editor-in-repo-module.md](editor-in-repo-module.md)),
-but no document says whether that is a product surface or tooling around the
-renderer.
+**Editor and site (decided).** An authoring or editing UI is not a product goal.
+The live editor has improved since the fork but is not a primary focus at the
+moment ([editor-in-repo-module.md](editor-in-repo-module.md)). The site is a
+surface that explains the project: demos, documentation, the editor and a blog. It
+is not a product with its own roadmap or support commitments.
 
 ### ASCII and SVG parity
 
@@ -102,10 +130,26 @@ per corner ([diagrams.md](../diagrams.md), "ASCII rendering of these shapes",
 "ASCII output is unaffected by styling"), and it does not draw sequence
 activation bars. Differences of this kind are documented per type in `diagrams.md`.
 
-**Open question 6.** Is ASCII required for every supported type (the issue
-comment lists this as open), or best-effort per type with SVG as the reference?
-Under the "terminals and agents" decision ASCII is a first-class output, but
-whether a type without an ASCII renderer may ship is undecided.
+**ASCII fidelity (decided).** ASCII output is as true to what Mermaid renders as
+the target can support. It cannot offer everything SVG does, and finding better
+ways to represent Mermaid's output in text is continuing work, not a finished
+feature. The renderer inherited from upstream tried to confine output to the
+conventional 80 terminal columns; the current approach instead brings ASCII output
+as close to the SVG as it can, and width-limiting is an opt-in (`profile:
+'markdown'`, the CLI's `-w/--max-width` compact retry) rather than the default.
+
+Direction, not a decision: a separate terminal-oriented package (working name
+`zombie-mermaid-ascii-terminal`) built on a core syntax parser shared by composable
+renderers, with a terminal renderer that supplies width and other bounds. How the
+terminal renderer composes with the ASCII renderer is undecided. This doc commits
+to none of it, and it relates to the sub-package direction under "New diagram
+types".
+
+Every supported type aims to have an ASCII path, and where ASCII cannot express
+something SVG does, that limit is documented per type in
+[diagrams.md](../diagrams.md). Missing but expressible features (for example
+sequence activation bars) are gaps to track, not accepted differences. All eight
+supported types have an ASCII path today.
 
 ### Relationship to beautiful-mermaid and mermaid.js
 
@@ -118,8 +162,9 @@ whether a type without an ASCII renderer may ship is undecided.
 - **mermaid.js**: behavioural reference and test oracle (a devDependency,
   `mermaid` 12.2.0), not a runtime dependency.
 
-**Open question 7.** Is there any obligation to track upstream beyond case-by-case
-rescue? The issue draft proposed none. Not stated in any repo doc.
+**Upstream tracking (decided).** There is no obligation to track upstream beyond
+case-by-case rescue. The `upstream-tracking` advisory label is an input, and a fix
+is ported when it is worth it, with credit.
 
 ### Support policy
 
@@ -127,18 +172,21 @@ Verified: only the latest major is supported, and fixes land there only
 ([versioning-and-deprecation-policy-1568.md](versioning-and-deprecation-policy-1568.md),
 section 4; [SECURITY.md](../../SECURITY.md), "Supported versions", which also says
 fixes are not backported). Node 24 or newer (`engines` in `package.json`;
-[consumer-node-floor-1567.md](consumer-node-floor-1567.md)). The six packages
-version in lockstep ([lockstep-versioning.md](lockstep-versioning.md)). One
+[consumer-node-floor-1567.md](consumer-node-floor-1567.md)). The seven published
+packages (`zombie-mermaid` and six `@zombie-mermaid/*`, the `fixed` group in
+`.changeset/config.json`) version in lockstep ([lockstep-versioning.md](lockstep-versioning.md)). One
 maintainer, no formal SLA ([provenance.md](../provenance.md), `SECURITY.md`).
 
-No open question here: the repo already answers "latest only, no backports".
+Nothing to decide here: the repo already answers "latest only, no backports".
 
 ## Consequences
 
-- Once the open questions are answered, the status moves to `accepted` and the
-  README intro and `docs/README.md` can link here. Neither was changed in this PR.
-- "Gap" in the Mermaid-coverage review means: supported type, valid mermaid
-  syntax, and a difference from the reference not listed in
-  [known-differences.md](../known-differences.md). Types and syntax outside the
-  scope above are not gaps.
+- Once the maintainer signs off, the status moves to `accepted` and the README
+  intro and `docs/README.md` can link here. Neither was changed in this PR.
+- Follow-up issues cover the gaps this doc names: an oracle for each type that has
+  none, ASCII feature gaps, and supporting the mermaid.js types not yet handled.
+- "Gap" in the Mermaid-coverage review means: valid mermaid syntax, or a diagram
+  type mermaid.js ships, that this project does not yet handle, or a difference
+  from the reference not listed in [known-differences.md](../known-differences.md).
+  Constructs outside mermaid.js (for example ArchiMate) are not gaps.
 - This doc does not change any code or CI floor.
