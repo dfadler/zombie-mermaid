@@ -38,30 +38,30 @@
 
 # Docs
 
-Reference material that doesn't fit in the main [README](../README.md).
+Reference material that doesn't fit in the main [README](https://github.com/dfadler/zombie-mermaid/blob/main/README.md).
 Single-topic files, plus three grouped directories: task-oriented walkthroughs in
-[guides/](guides/), settled-decision records in [decisions/](decisions/), and
-an index of removed investigation write-ups in [research/](research/) (findings live on their issues).
+[guides/](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/), settled-decision records in [decisions/](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/), and
+an index of removed investigation write-ups in [research/](https://github.com/dfadler/zombie-mermaid/blob/main/docs/research/) (findings live on their issues).
 
-- [guides/](guides/) — task-oriented walkthroughs: choosing a package, browsing the samples, choosing a theme, upgrading from 2.x to 5.x
-- [development-scripts.md](development-scripts.md) — the less common `package.json` scripts: site generators, benchmarks, bundle-size and coverage checks
-- [visual-regression.md](visual-regression.md) — the Playwright screenshot suite: ASCII mockup fidelity probes, the containerized Linux baselines, and darwin font pitfalls
-- [RELEASING.md](RELEASING.md) — the changesets-based release flow and npm trusted-publishing setup
-- [brand.md](brand.md) — the two wordmark forms (`ZombieMermaid` in a logo lockup, `Zombie Mermaid` everywhere else) and what stays `zombie-mermaid`
-- [accessibility.md](accessibility.md) — the accessibility conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
-- [theming.md](theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
-- [diagrams.md](diagrams.md) — syntax for each supported diagram type, XY chart styling, and ASCII rendering
-- [known-differences.md](known-differences.md) — verified differences from mermaid.js that are intentional or not yet fixed: subgraph inner direction, layout tie-breaks, ER parser leniency
-- [mcp-tools.md](mcp-tools.md) — per-tool reference for the MCP server: arguments, `bg`/`fg`, `outputPath` rules, return shapes
-- [react-integration.md](react-integration.md) — using `renderMermaidSVG` with `useMemo()` for zero-flash rendering
-- [api-reference.md](api-reference.md) — full function and options reference
-- [testing-conventions.md](testing-conventions.md) — the RTL pattern for demo/editor component tests, and when a literal-value or snapshot assertion is still the right call
-- [migrating-from-beautiful-mermaid.md](migrating-from-beautiful-mermaid.md) — what's drop-in, which fixes change rendered output, and how to audit your own diagrams before upgrading
-- [xychart-design.md](xychart-design.md) — original design proposal for `xychart-beta` support (historical; see [diagrams.md](diagrams.md) for current behavior)
-- [provenance.md](provenance.md) — how this fork relates to beautiful-mermaid, who maintains it, how releases are published, AI-assisted authorship, and what is and is not claimed
-- [promotion/outreach-rules.md](promotion/outreach-rules.md) — rules for any comment on an upstream thread: bug-specific, disclosed, rate-limited, never posted without the maintainer's go-ahead
-- [decisions/](decisions/) — short records of settled decisions that closed off an alternative worth remembering
-- [research/](research/) — index to former investigation write-ups, now on their issues; findings go in the issue, and a doc here only when something else links to it
+- [guides/](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/) — task-oriented walkthroughs: choosing a package, browsing the samples, choosing a theme, upgrading from 2.x to 5.x
+- [development-scripts.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/development-scripts.md) — the less common `package.json` scripts: site generators, benchmarks, bundle-size and coverage checks
+- [visual-regression.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/visual-regression.md) — the Playwright screenshot suite: ASCII mockup fidelity probes, the containerized Linux baselines, and darwin font pitfalls
+- [RELEASING.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/RELEASING.md) — the changesets-based release flow and npm trusted-publishing setup
+- [brand.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/brand.md) — the two wordmark forms (`ZombieMermaid` in a logo lockup, `Zombie Mermaid` everywhere else) and what stays `zombie-mermaid`
+- [accessibility.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/accessibility.md) — the accessibility conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
+- [theming.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
+- [diagrams.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md) — syntax for each supported diagram type, XY chart styling, and ASCII rendering
+- [known-differences.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md) — verified differences from mermaid.js that are intentional or not yet fixed: subgraph inner direction, layout tie-breaks, ER parser leniency
+- [mcp-tools.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/mcp-tools.md) — per-tool reference for the MCP server: arguments, `bg`/`fg`, `outputPath` rules, return shapes
+- [react-integration.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/react-integration.md) — using `renderMermaidSVG` with `useMemo()` for zero-flash rendering
+- [api-reference.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/api-reference.md) — full function and options reference
+- [testing-conventions.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/testing-conventions.md) — the RTL pattern for demo/editor component tests, and when a literal-value or snapshot assertion is still the right call
+- [migrating-from-beautiful-mermaid.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/migrating-from-beautiful-mermaid.md) — what's drop-in, which fixes change rendered output, and how to audit your own diagrams before upgrading
+- [xychart-design.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/xychart-design.md) — original design proposal for `xychart-beta` support (historical; see [diagrams.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md) for current behavior)
+- [provenance.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/provenance.md) — how this fork relates to beautiful-mermaid, who maintains it, how releases are published, AI-assisted authorship, and what is and is not claimed
+- [promotion/outreach-rules.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/promotion/outreach-rules.md) — rules for any comment on an upstream thread: bug-specific, disclosed, rate-limited, never posted without the maintainer's go-ahead
+- [decisions/](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/) — short records of settled decisions that closed off an alternative worth remembering
+- [research/](https://github.com/dfadler/zombie-mermaid/blob/main/docs/research/) — index to former investigation write-ups, now on their issues; findings go in the issue, and a doc here only when something else links to it
 
 ---
 
@@ -69,7 +69,7 @@ an index of removed investigation write-ups in [research/](research/) (findings 
 
 # API Reference
 
-This page, together with `package.json` `exports`/`bin` and the MCP schemas, defines the published surface that semver covers; see the [versioning and deprecation policy](decisions/versioning-and-deprecation-policy-1568.md).
+This page, together with `package.json` `exports`/`bin` and the MCP schemas, defines the published surface that semver covers; see the [versioning and deprecation policy](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/versioning-and-deprecation-policy-1568.md).
 
 ## `renderMermaidSVG(text, options?): string`
 
@@ -103,14 +103,14 @@ Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 | `interactivity`       | `'none' \| 'static' \| 'full'`         | `'static'` | Render-target-scoped interactivity level — see below                                                                                                                                                                                                                                                                                                                                                    |
 | `interactive`         | `boolean`                              | `false`    | **Deprecated**, use `interactivity`. Enable hover tooltips on XY chart bars and data points                                                                                                                                                                                                                                                                                                             |
 | `embedSource`         | `boolean`                              | `false`    | Stamp the original diagram source onto the root `<svg>` as `data-src` (HTML-escaped)                                                                                                                                                                                                                                                                                                                    |
-| `honorThemeVariables` | `boolean`                              | `false`    | Opt in to the diagram's own `%%{init: {"themeVariables": ...}}%%` colours (`primaryColor`, `primaryBorderColor`, `primaryTextColor`, `lineColor`, `pie1`..`pie12`); your own colours win. See [themeVariables](diagrams.md#themevariables-opt-in)                                                                                                                                                       |
+| `honorThemeVariables` | `boolean`                              | `false`    | Opt in to the diagram's own `%%{init: {"themeVariables": ...}}%%` colours (`primaryColor`, `primaryBorderColor`, `primaryTextColor`, `lineColor`, `pie1`..`pie12`); your own colours win. See [themeVariables](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables-opt-in)                                                                                                                                                       |
 | `resolveColors`       | `boolean`                              | `false`    | Replace every CSS `var(--…)`/`color-mix(…)` in the output with its computed sRGB value, for rasterizers and other non-browser SVG consumers — see below                                                                                                                                                                                                                                                 |
 | `title`               | `string?`                              | —          | Accessible name for the SVG: adds `role="img"` + `aria-labelledby` pointing at a `<title>` child. Without it the SVG still gets `role="img"` but no name — supply your own description; this library won't fabricate one. Ignored when `decorative` is true                                                                                                                                             |
 | `decorative`          | `boolean`                              | `false`    | Mark the diagram as decorative (already described in surrounding prose) — emits `aria-hidden="true"` instead of a name                                                                                                                                                                                                                                                                                  |
 | `nonce`               | `string?`                              | —          | CSP nonce stamped on every emitted `<style>` element (attribute-escaped). Lets a host with a `style-src 'nonce-…'` policy allow the diagram's styles — see "Strict Content-Security-Policy" below                                                                                                                                                                                                       |
 | `styleAttribute`      | `boolean`                              | `true`     | Emit the root `<svg style="--bg: …">` attribute. Set `false` under a strict CSP (a nonce can't authorise a `style=` attribute) and supply the same declarations from your own stylesheet via `themeCssVariables()` — see below                                                                                                                                                                          |
 
-**`layout: 'simple'`** lays a flowchart (`graph` / `flowchart`) out without ELK, so `renderMermaidSVG` works with no `elkjs` registered or installed. It is opt-in and never a fallback: unset, or `'elk'`, keeps the existing output exactly. It supports every direction, subgraphs (nested, inside-out), edge labels, self-loops, multi-edges, cycles and disconnected components. It ignores `mergeEdges`, `layoutCache` and a subgraph's own `direction`, and draws edges as plain orthogonal polylines. State, class, ER and architecture diagrams ignore it and still need `elkjs`; a state diagram with no `[*]` marker is parsed as a flowchart and gets the simple layout. An unknown value throws. Measured placement quality against mermaid 12.1.0: [docs/decisions/simple-layout-1685.md](decisions/simple-layout-1685.md).
+**`layout: 'simple'`** lays a flowchart (`graph` / `flowchart`) out without ELK, so `renderMermaidSVG` works with no `elkjs` registered or installed. It is opt-in and never a fallback: unset, or `'elk'`, keeps the existing output exactly. It supports every direction, subgraphs (nested, inside-out), edge labels, self-loops, multi-edges, cycles and disconnected components. It ignores `mergeEdges`, `layoutCache` and a subgraph's own `direction`, and draws edges as plain orthogonal polylines. State, class, ER and architecture diagrams ignore it and still need `elkjs`; a state diagram with no `[*]` marker is parsed as a flowchart and gets the simple layout. An unknown value throws. Measured placement quality against mermaid 12.1.0: [docs/decisions/simple-layout-1685.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/simple-layout-1685.md).
 
 **Which diagram types honor the layout options.** `padding`, `nodeSpacing`, `layerSpacing`, and `mergeEdges` apply to flowchart, state and architecture diagrams (architecture is lowered to the flowchart layout). Class, ER, sequence and xychart use their own fixed internal spacing and ignore them. C4 (`c4/layout.ts`) and pie lay themselves out to Mermaid's geometry and ignore every layout option, including `direction`.
 
@@ -123,9 +123,9 @@ const svg = renderMermaidSVG('graph LR\n  A --> B --> C', { direction: 'TB' })
 
 **`title`/`decorative` and `click`-based links:** if the diagram has any `click A "url"` link, `role="img"` is never applied and `decorative` is silently overridden (no `aria-hidden`) — both would hide a real, focusable `<a href>` from assistive tech while leaving it reachable by Tab, which is unsafe regardless of what was requested. `title`/`aria-labelledby` still apply in that case. See [issue #239](https://github.com/dfadler/zombie-mermaid/issues/239).
 
-**`resolveColors`:** the default output is a live function of its CSS custom properties — the `<style>` block derives `--_line`, `--_node-stroke`, etc. from `--bg`/`--fg` with `color-mix()`, which browsers evaluate natively (see [`docs/theming.md`](theming.md)). Rasterizers and other non-browser SVG consumers (resvg, librsvg, Inkscape, ImageMagick) implement neither `var()` nor `color-mix()` and render the whole theme as black. `resolveColors: true` runs a post-pass that evaluates each expression against the same declarations the renderer just wrote — the `MIX` percentages in `packages/core/src/theme.ts` remain the single source of truth — and substitutes `#rrggbb` (or `rgba()` when translucent). Trade-off: the result is a fixed palette; overriding `--bg`/`--fg` on the embedded SVG no longer restyles it. A `var(...)` reference this library did not declare itself — a color passed as `var(--brand)`, a host-page font variable — has nothing to resolve against and is left as-is. The CLI exposes this as `--resolve-colors`. See [issue #456](https://github.com/dfadler/zombie-mermaid/issues/456).
+**`resolveColors`:** the default output is a live function of its CSS custom properties — the `<style>` block derives `--_line`, `--_node-stroke`, etc. from `--bg`/`--fg` with `color-mix()`, which browsers evaluate natively (see [`docs/theming.md`](https://github.com/dfadler/zombie-mermaid/blob/main/docs/theming.md)). Rasterizers and other non-browser SVG consumers (resvg, librsvg, Inkscape, ImageMagick) implement neither `var()` nor `color-mix()` and render the whole theme as black. `resolveColors: true` runs a post-pass that evaluates each expression against the same declarations the renderer just wrote — the `MIX` percentages in `packages/core/src/theme.ts` remain the single source of truth — and substitutes `#rrggbb` (or `rgba()` when translucent). Trade-off: the result is a fixed palette; overriding `--bg`/`--fg` on the embedded SVG no longer restyles it. A `var(...)` reference this library did not declare itself — a color passed as `var(--brand)`, a host-page font variable — has nothing to resolve against and is left as-is. The CLI exposes this as `--resolve-colors`. See [issue #456](https://github.com/dfadler/zombie-mermaid/issues/456).
 
-**`interactivity`:** declarative-only interactivity level, scoped by output target — see [`docs/decisions/no-script-interactivity.md`](decisions/no-script-interactivity.md) for the full tier model this maps to.
+**`interactivity`:** declarative-only interactivity level, scoped by output target — see [`docs/decisions/no-script-interactivity.md`](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/no-script-interactivity.md) for the full tier model this maps to.
 
 - `'none'` — flowchart/state-diagram edge animation (`e1@{ animate: true }`) never renders, and `click`-based links (`<a href>`) and `<title>` tooltips are stripped. Intended for print/rasterized output, where both are meaningless.
 - `'static'` (default) — `click`-based links and `<title>` tooltips still render; flowchart/state-diagram edge animation does not (motion is gated to `'full'` only). xychart hover tooltips stay off unless requested via `'full'` or the deprecated `interactive: true`.
@@ -144,11 +144,11 @@ const css = `.diagram svg { ${themeCssVariables(opts)} }` // "--bg:#1a1b26;--fg:
 
 `themeCssVariables(options)` returns the exact declaration list the root attribute would have carried (built by the same function), so pass the same options object to both calls. The two options are independent: a host using hashes instead of nonces can set `styleAttribute: false` alone. Neither changes the output when unset.
 
-Two more advanced options exist — `fontSizes` (per-element font size overrides) and `sequence` (sequence-diagram row/gap tuning) — see the `RenderOptions` JSDoc in [`packages/core/src/types.ts`](../packages/core/src/types.ts) for their fields and defaults.
+Two more advanced options exist — `fontSizes` (per-element font size overrides) and `sequence` (sequence-diagram row/gap tuning) — see the `RenderOptions` JSDoc in [`packages/core/src/types.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/core/src/types.ts) for their fields and defaults.
 
 **XY Charts:** Diagrams starting with `xychart-beta` are auto-detected — no separate function needed. The `accent` color option drives the chart series color palette.
 
-**Pie charts:** `accent` sets the first slice colour (the remaining slices are derived from it and `bg`). See [Accessibility](diagrams.md#accessibility).
+**Pie charts:** `accent` sets the first slice colour (the remaining slices are derived from it and `bg`). See [Accessibility](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#accessibility).
 
 **`accTitle` / `accDescr`:** every diagram type reads Mermaid's `accTitle:` and `accDescr:` statements. The `title` option names the SVG for assistive tech and wins over the source's `accTitle:`; `accDescr:` becomes the `<desc>`. ASCII output ignores them.
 
@@ -217,7 +217,7 @@ first use. Calling it again swaps the constructor. Without a registered or
 auto-loadable `elkjs`, rendering a graph diagram throws `ElkNotRegisteredError`;
 sequence, pie, xychart, C4 and ASCII rendering are unaffected. Also exported by
 `@zombie-mermaid/svg-renderer`. See the
-[migration guide](guides/elkjs-optional-peer.md).
+[migration guide](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/elkjs-optional-peer.md).
 
 ## `renderMermaidSVGAsync(text, options?): Promise<string>`
 
@@ -238,9 +238,9 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 | `colorMode`           | `string`                               | `'auto'` | `'none'`, `'auto'`, `'ansi16'`, `'ansi256'`, `'truecolor'`, or `'html'`                                                                                                                                                                                                                                                                                                                    |
 | `theme`               | `Partial<AsciiTheme>`                  | —        | Override default colors for ASCII output. The default theme gives text (labels) no colour of its own, so it shows in the terminal's own foreground (`color:inherit` for `html`) and reads on dark and light backgrounds; pass `fg` to force one                                                                                                                                            |
 | `direction`           | `'TD' \| 'TB' \| 'BT' \| 'LR' \| 'RL'` | —        | Override the diagram's top-level layout direction at render time, same semantics as `RenderOptions.direction` above. Flowchart and state diagrams only in ASCII output — the ASCII ER layout has no direction concept and ignores it, as do sequence/class/xychart                                                                                                                         |
-| `honorThemeVariables` | `boolean`                              | `false`  | Opt in to the diagram's `themeVariables` for `line`, `border`, `fg` and pie slices (hex only); a key in `theme` wins. See [themeVariables](diagrams.md#themevariables-opt-in)                                                                                                                                                                                                              |
+| `honorThemeVariables` | `boolean`                              | `false`  | Opt in to the diagram's `themeVariables` for `line`, `border`, `fg` and pie slices (hex only); a key in `theme` wins. See [themeVariables](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables-opt-in)                                                                                                                                                                                                              |
 | `showCoords`          | `boolean`                              | `false`  | Internal debugging aid: overlays row/column indices on the output. Not a stable API                                                                                                                                                                                                                                                                                                        |
-| `hyperlinks`          | `boolean`                              | `false`  | Wrap `click` hrefs in OSC 8 terminal hyperlinks (see [ASCII terminal hyperlinks](diagrams.md#ascii-terminal-hyperlinks))                                                                                                                                                                                                                                                                   |
+| `hyperlinks`          | `boolean`                              | `false`  | Wrap `click` hrefs in OSC 8 terminal hyperlinks (see [ASCII terminal hyperlinks](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#ascii-terminal-hyperlinks))                                                                                                                                                                                                                                                                   |
 | `profile`             | `'markdown'`                           | —        | Preset for plain, paste-safe output (issues, commits, fenced blocks): defaults `useAscii: true`, `colorMode: 'none'`, `hyperlinks: false`, `showCoords: false`; explicit options still win. Labels are not transliterated, and CJK/emoji column width stays font-dependent ([UAX #11](https://www.unicode.org/reports/tr11/)), so such labels can misalign on proportional fallback fonts. |
 
 ASCII-only consumers can import from `zombie-mermaid/ascii` instead of the
@@ -259,7 +259,7 @@ Handles flowchart and state diagram sources. The returned
 id) carries every `click` statement's href, tooltip, and `call`/`callback`
 expression — and is the only place a callback surfaces, since the rendered
 SVG never carries it. See the flowchart
-[Interactions](diagrams.md#interactions) section for how a host binds it.
+[Interactions](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#interactions) section for how a host binds it.
 
 ## `themeCssVariables(options?): string`
 
@@ -267,17 +267,17 @@ The CSS declaration list the root `<svg style="…">` attribute carries for the 
 
 ## `fromShikiTheme(theme): DiagramColors`
 
-Extract diagram colors from a Shiki theme object. See [theming.md](theming.md) for how it maps editor colors to diagram roles.
+Extract diagram colors from a Shiki theme object. See [theming.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/theming.md) for how it maps editor colors to diagram roles.
 
 ## `THEMES: Record<string, DiagramColors>`
 
-Object containing all 15 built-in themes. See [theming.md](theming.md) for the full list.
+Object containing all 15 built-in themes. See [theming.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/theming.md) for the full list.
 
 ## `DEFAULTS: { bg: string, fg: string }`
 
 ## `createMcpServer(): McpServer`
 
-Build an [MCP](https://modelcontextprotocol.io/) server (also exported as `createMcpServer` from `@zombie-mermaid/mcp`) exposing `render_mermaid_svg`, `render_mermaid_ascii`, `check_mermaid_sequence_activations`, `fix_mermaid_sequence_activations`, `list_themes`, and `list_diagram_types` tools, from `zombie-mermaid/mcp`. Not connected to a transport — see the [MCP tool reference](mcp-tools.md) for every tool's arguments and the [README's MCP Server section](../README.md#mcp-server) for the `zombie-mermaid mcp` CLI subcommand (the common case) or how to connect it yourself.
+Build an [MCP](https://modelcontextprotocol.io/) server (also exported as `createMcpServer` from `@zombie-mermaid/mcp`) exposing `render_mermaid_svg`, `render_mermaid_ascii`, `check_mermaid_sequence_activations`, `fix_mermaid_sequence_activations`, `list_themes`, and `list_diagram_types` tools, from `zombie-mermaid/mcp`. Not connected to a transport — see the [MCP tool reference](https://github.com/dfadler/zombie-mermaid/blob/main/docs/mcp-tools.md) for every tool's arguments and the [README's MCP Server section](https://github.com/dfadler/zombie-mermaid/blob/main/README.md#mcp-server) for the `zombie-mermaid mcp` CLI subcommand (the common case) or how to connect it yourself.
 
 Default colors (`#FFFFFF` / `#27272A`).
 
@@ -524,7 +524,7 @@ renderMermaidSVG(source, { honorThemeVariables: true })
 
 Checked against mermaid 12.1.0 and 12.2.0 (`scripts/lib/real-mermaid.ts`;
 12.1.0 via jsDelivr), headless Chromium, computed paint; both gave the same results.
-See [known differences](known-differences.md#themevariables-are-opt-in-and-only-a-subset).
+See [known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#themevariables-are-opt-in-and-only-a-subset).
 
 Keys parsed but deliberately not acted on, and why:
 
@@ -629,7 +629,7 @@ the system for less movement gets a still edge. The keyframes are emitted only
 when a diagram actually animates an edge.
 
 Animation only renders under `interactivity: 'full'` (see
-[api-reference.md](api-reference.md)) — the default (`'static'`) and `'none'`
+[api-reference.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/api-reference.md)) — the default (`'static'`) and `'none'`
 both render an animated edge as a still line, since CSS animation is tier-2
 _motion_. This is useful for print/rasterized output, where a CSS animation
 would otherwise silently render as one static frame with no indication that
@@ -1021,7 +1021,7 @@ classDiagram-v2
   the circle above or below its host and no box, in SVG and ASCII, as Mermaid does; a
   class that has members, an annotation, another relationship, a note or a namespace
   keeps its box. `()--()` is an ordinary line with a circle at both ends. See
-  [known differences](known-differences.md#class-lollipop-interfaces).
+  [known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#class-lollipop-interfaces).
 - A backtick-quoted class name may hold spaces and punctuation
   (`` class `Animal Class!` ``, `` `Animal Class!` <|-- Duck ``,
   `` `Animal Class!` : +int age ``); the backticks are not drawn.
@@ -1061,7 +1061,7 @@ classDiagram
   and namespace frames follow the axis, in the unicode and `--ascii` charsets. Because the
   grid is shared with flowcharts, boxes in one column share a width and boxes on one row
   share a height, and a parent with several children branches off one trunk; see
-  [known differences](known-differences.md#class-lr-and-rl-in-ascii).
+  [known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#class-lr-and-rl-in-ascii).
 
 ### Known limitations
 
@@ -1163,7 +1163,7 @@ xychart-beta horizontal
 
 **Multi-series:** Add multiple `bar` and/or `line` declarations. Each series gets a distinct color from a monochromatic palette derived from the theme's accent color.
 
-For the original design proposal behind this feature, see [xychart-design.md](xychart-design.md) (historical).
+For the original design proposal behind this feature, see [xychart-design.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/xychart-design.md) (historical).
 
 ### XY Chart Styling
 
@@ -1296,7 +1296,7 @@ Known differences from Mermaid:
   slice about the pie centre; it does not pull it out). `"hover"` only
   applies under a pointer, so a static image ignores it, and so does the ASCII
   output. See
-  [the decision](decisions/pie-highlight-slice-static-1726.md).
+  [the decision](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/pie-highlight-slice-static-1726.md).
 - A legend taller than the 450px frame (more than about 20 slices), or a
   `top`/`bottom`/`center` legend wider than it, makes the SVG larger instead of
   being cut off, and an empty chart keeps its full
@@ -1481,7 +1481,7 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 - **Multi-series** — Each series gets a distinct ANSI color from the theme's accent palette
 - **Legends** — Automatically shown when multiple series are present
 - **Horizontal charts** — Fully supported with categories on the y-axis
-- **Y-axis ticks** — The same ticks as the SVG, and as Mermaid.js: about 10 intervals at a step of 1, 2 or 5 times a power of ten. Without a `y-axis` range the axis spans the data's own minimum and maximum, so bars start at the data minimum; see [xychart-design.md](xychart-design.md#shipped-behavior-y-axis-ticks-and-the-y-axis-title)
+- **Y-axis ticks** — The same ticks as the SVG, and as Mermaid.js: about 10 intervals at a step of 1, 2 or 5 times a power of ten. Without a `y-axis` range the axis spans the data's own minimum and maximum, so bars start at the data minimum; see [xychart-design.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/xychart-design.md#shipped-behavior-y-axis-ticks-and-the-y-axis-title)
 - **Y-axis title** — Written one letter per row down the left edge in vertical charts (no rotation in a terminal), and as a centered line under the axis in horizontal charts
 
 ### ASCII Pie Charts
@@ -1628,7 +1628,7 @@ zombie-mermaid render diagram.mmd --svg -o out.svg --theme tokyo-night --resolve
 
 The substitution uses the same mix percentages the `<style>` block declares (the `MIX` table in `packages/core/src/theme.ts`), so it can't drift from what a browser would compute. The trade-off is that the output is now a fixed palette — setting `--bg`/`--fg` on it later does nothing — and a color you passed as a `var(--…)` reference can't be resolved (there's no host page to ask), so it's left untouched.
 
-The CLI's `render --png` (see [README](../README.md#cli)) does this resolution automatically — there's no separate `--resolve-colors --png` step to remember, since a rasterizer needs it unconditionally.
+The CLI's `render --png` (see [README](https://github.com/dfadler/zombie-mermaid/blob/main/README.md#cli)) does this resolution automatically — there's no separate `--resolve-colors --png` step to remember, since a rasterizer needs it unconditionally.
 
 ## Built-in Themes
 
@@ -2086,7 +2086,7 @@ Mermaid derives many colours from `primaryColor` (secondary/tertiary, subgraph
 fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
 `base` diagram with only `primaryColor` set does not look the same in both. Only
 flowchart, state and pie read the directive. Details and the opt-in table:
-[Configuration directives](diagrams.md#themevariables-opt-in).
+[Configuration directives](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables-opt-in).
 
 ## Invalid colours are ignored, not refused
 
@@ -2202,14 +2202,14 @@ function MermaidDiagram({ code }: { code: string }) {
 }
 ```
 
-**Setup:** in a browser, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you call `registerElk()`, so run `npm install elkjs` and register it as above. Sequence, pie, xychart and C4 diagrams need nothing. To keep `elkjs` out of your initial bundle, register it lazily instead: `const { default: ELK } = await import('elkjs/lib/elk.bundled.js'); registerElk(ELK)`, and render only after that resolves. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
+**Setup:** in a browser, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you call `registerElk()`, so run `npm install elkjs` and register it as above. Sequence, pie, xychart and C4 diagrams need nothing. To keep `elkjs` out of your initial bundle, register it lazily instead: `const { default: ELK } = await import('elkjs/lib/elk.bundled.js'); registerElk(ELK)`, and render only after that resolves. See [guides/elkjs-optional-peer.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/elkjs-optional-peer.md).
 
 **Why this works well:**
 
 - **No flash** — SVG is computed synchronously during render, not in a useEffect (once `elkjs` is registered)
 - **CSS variables** — Pass `var(--background)` etc. instead of hex colors. The SVG inherits from your app's CSS, so theme switches apply instantly without re-rendering
 - **Memoized** — Only recomputed when `code` changes
-- **Links and hover stay interactive** — `dangerouslySetInnerHTML` inlines the SVG into your page's DOM. An `<img src="data:image/svg+xml,...">` approach would render the SVG in the browser's secure static mode instead, where `click`-generated links and CSS `:hover` tooltips go inert — see [`docs/decisions/no-script-interactivity.md`](decisions/no-script-interactivity.md) for why
+- **Links and hover stay interactive** — `dangerouslySetInnerHTML` inlines the SVG into your page's DOM. An `<img src="data:image/svg+xml,...">` approach would render the SVG in the browser's secure static mode instead, where `click`-generated links and CSS `:hover` tooltips go inert — see [`docs/decisions/no-script-interactivity.md`](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/no-script-interactivity.md) for why
 
 **With the React Compiler:** the manual `useMemo()` above is the pattern for codebases without the compiler enabled. If your project has the [React Compiler](https://react.dev/learn/react-compiler) turned on, it memoizes this call automatically — you can call `renderMermaidSVG()` directly in the component body and drop the `useMemo()` wrapper. The synchronous, no-`useEffect` part still matters either way; only the manual memoization becomes redundant.
 
@@ -2247,7 +2247,7 @@ function MermaidDiagram({ code, nonce }: { code: string; nonce: string }) {
 
 # Migrating from `beautiful-mermaid`
 
-`zombie-mermaid` is a maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) — see the [README](../README.md#why-this-fork-exists) for why the fork exists. The core render functions keep the same signatures, but since 3.0 this is not a pure package-name swap: see [Breaking changes since the fork](#breaking-changes-since-the-fork).
+`zombie-mermaid` is a maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) — see the [README](https://github.com/dfadler/zombie-mermaid/blob/main/README.md#why-this-fork-exists) for why the fork exists. The core render functions keep the same signatures, but since 3.0 this is not a pure package-name swap: see [Breaking changes since the fork](#breaking-changes-since-the-fork).
 
 But "drop-in" is about the API, not the pixels. Part of what this fork does is fix Mermaid syntax that `beautiful-mermaid` parsed incorrectly or silently mishandled. If you already have diagrams in production — stored source rendered on the fly, or SVGs generated once and cached — some of them may render differently the moment you upgrade. Nothing here is a bug in the new behavior; each fix below makes the output match what Mermaid itself, and the diagram author, actually intended. But a silent visual change is still worth knowing about before it shows up in a support ticket.
 
@@ -2256,7 +2256,7 @@ This page covers what's safe to assume unchanged, itemizes the fixes most likely
 ## Breaking changes since the fork
 
 - **Node `>=24`** is required (`engines.node` in `package.json`).
-- **`registerElk()`**: in browsers and bundlers, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
+- **`registerElk()`**: in browsers and bundlers, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/elkjs-optional-peer.md).
 - **Packages**: the parser and renderers live under `packages/*` (there is no `src/` library layout to deep-import from).
 
 A full 2.x to 5.x upgrade guide is tracked in [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538).
@@ -2265,7 +2265,7 @@ A full 2.x to 5.x upgrade guide is tracked in [#1538](https://github.com/dfadler
 
 - `renderMermaidSVG`, `renderMermaidSVGAsync`, `renderMermaidASCII`, and `parseMermaid` all have the same signatures as in `beautiful-mermaid`.
 - `registerElk` is new: required in browsers, see above. `renderMermaidSVG` (synchronous) is this fork's primary SVG entry point, and C4, architecture, pie and xychart diagrams and the MCP server are new here, with no `beautiful-mermaid` behavior to match.
-- `RenderOptions` and `AsciiRenderOptions` — colors, fonts, spacing, theming — work the same way. See [api-reference.md](api-reference.md).
+- `RenderOptions` and `AsciiRenderOptions` — colors, fonts, spacing, theming — work the same way. See [api-reference.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/api-reference.md).
 - `mergeEdges` is new to this fork's `RenderOptions` — `beautiful-mermaid` has no equivalent option, so there's no prior behavior it needs to match.
 - Built-in themes, Shiki compatibility, and CSS-variable-driven live theme switching are unchanged.
 - The CLI (`zombie-mermaid` binary) is new to this fork — `beautiful-mermaid` never had one — so there's no prior behavior it needs to preserve.
@@ -2348,7 +2348,7 @@ A `direction` override on a nested subgraph was silently ignored, and an edge cr
 
 ### ASCII/Unicode: `RL` direction
 
-`beautiful-mermaid` drew `graph RL` (and a state diagram's `direction RL`) exactly like `LR`, source on the left and arrowheads pointing right. `renderMermaidASCII` now mirrors the finished layout, so the source sits on the right and arrowheads point left ([#1231](https://github.com/dfadler/zombie-mermaid/issues/1231)). `BT` was already flipped upstream and still is. A `direction RL` or `BT` written inside a nested subgraph is still drawn as `LR`/`TD` in ASCII, same as upstream ([#1372](https://github.com/dfadler/zombie-mermaid/issues/1372)); the decision record is [here](decisions/ascii-orientation-audit-vs-beautiful-mermaid-1372.md).
+`beautiful-mermaid` drew `graph RL` (and a state diagram's `direction RL`) exactly like `LR`, source on the left and arrowheads pointing right. `renderMermaidASCII` now mirrors the finished layout, so the source sits on the right and arrowheads point left ([#1231](https://github.com/dfadler/zombie-mermaid/issues/1231)). `BT` was already flipped upstream and still is. A `direction RL` or `BT` written inside a nested subgraph is still drawn as `LR`/`TD` in ASCII, same as upstream ([#1372](https://github.com/dfadler/zombie-mermaid/issues/1372)); the decision record is [here](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/ascii-orientation-audit-vs-beautiful-mermaid-1372.md).
 
 **Triggered by:** an ASCII/Unicode-rendered flowchart declared `graph RL` / `flowchart RL`, or a state diagram with `direction RL`.
 
@@ -2517,11 +2517,11 @@ npx @zombie-mermaid/cli render diagram.mmd --ascii
 npx @zombie-mermaid/cli --help
 ```
 
-It is the same CLI that ships as the `zombie-mermaid` bin in the umbrella package (one source, `src/cli.ts`), version-locked with the rest. Usage, flags and the `mcp` subcommand: see the [README](../../README.md#cli).
+It is the same CLI that ships as the `zombie-mermaid` bin in the umbrella package (one source, `src/cli.ts`), version-locked with the rest. Usage, flags and the `mcp` subcommand: see the [README](https://github.com/dfadler/zombie-mermaid/blob/main/README.md#cli).
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/dfadler/zombie-mermaid/blob/main/packages/cli/LICENSE).
 
 ---
 
@@ -2529,7 +2529,7 @@ MIT, see [LICENSE](LICENSE).
 
 # @zombie-mermaid/mcp
 
-[Model Context Protocol](https://modelcontextprotocol.io/) server exposing [`zombie-mermaid`](https://www.npmjs.com/package/zombie-mermaid)'s SVG and ASCII rendering as seven tools. Most people run it through the umbrella package (`npx zombie-mermaid mcp`); see the [README's MCP Server section](../../README.md#mcp-server) for client config.
+[Model Context Protocol](https://modelcontextprotocol.io/) server exposing [`zombie-mermaid`](https://www.npmjs.com/package/zombie-mermaid)'s SVG and ASCII rendering as seven tools. Most people run it through the umbrella package (`npx zombie-mermaid mcp`); see the [README's MCP Server section](https://github.com/dfadler/zombie-mermaid/blob/main/README.md#mcp-server) for client config.
 
 ```ts
 import { createMcpServer } from '@zombie-mermaid/mcp'
@@ -2537,14 +2537,14 @@ import { createMcpServer } from '@zombie-mermaid/mcp'
 const server = createMcpServer() // not connected; pass it any MCP Transport
 ```
 
-- Tool arguments, return shapes and `outputPath` rules: [docs/mcp-tools.md](../../docs/mcp-tools.md).
-- Trust model (the caller and the diagram text are untrusted; file writes are confined to the working directory): [SECURITY.md](../../SECURITY.md).
+- Tool arguments, return shapes and `outputPath` rules: [docs/mcp-tools.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/mcp-tools.md).
+- Trust model (the caller and the diagram text are untrusted; file writes are confined to the working directory): [SECURITY.md](https://github.com/dfadler/zombie-mermaid/blob/main/SECURITY.md).
 
 **Internal package.** Published and version-locked with the rest, but the supported entry point is `zombie-mermaid mcp` / `zombie-mermaid/mcp`.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/dfadler/zombie-mermaid/blob/main/packages/mcp/LICENSE).
 
 ---
 
@@ -2552,7 +2552,7 @@ MIT, see [LICENSE](LICENSE).
 
 # MCP tool reference
 
-The seven tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zombie-mermaid/mcp` / `@zombie-mermaid/mcp`). For setup and client config see the [README's MCP Server section](../README.md#mcp-server); for the trust model see [SECURITY.md](../SECURITY.md). Tool errors (bad Mermaid syntax, wrong diagram type, unwritable path) come back as a normal result with `isError: true`, not a protocol failure (`validate_mermaid` is the exception: invalid syntax is a normal `{ valid: false, diagnostics }` result). The first content block is the plain `<tool>: <message>` text; when the parse error names a line, a second text block holds JSON `{"diagnostics":[{"line","sourceLine","message"}]}` so a client can point at the offending line.
+The seven tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zombie-mermaid/mcp` / `@zombie-mermaid/mcp`). For setup and client config see the [README's MCP Server section](https://github.com/dfadler/zombie-mermaid/blob/main/README.md#mcp-server); for the trust model see [SECURITY.md](https://github.com/dfadler/zombie-mermaid/blob/main/SECURITY.md). Tool errors (bad Mermaid syntax, wrong diagram type, unwritable path) come back as a normal result with `isError: true`, not a protocol failure (`validate_mermaid` is the exception: invalid syntax is a normal `{ valid: false, diagnostics }` result). The first content block is the plain `<tool>: <message>` text; when the parse error names a line, a second text block holds JSON `{"diagnostics":[{"line","sourceLine","message"}]}` so a client can point at the offending line.
 
 | Tool                                                                        | Read-only                          | Returns                                                    |
 | --------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------- |
@@ -2636,7 +2636,7 @@ Same input and checks as above, plus a corrected diagram where that is mechanica
 
 ## `list_themes`
 
-No arguments. Returns `{"themes": [...]}`, the built-in names accepted by `render_mermaid_svg`'s `theme`. See [theming.md](theming.md) for what each looks like.
+No arguments. Returns `{"themes": [...]}`, the built-in names accepted by `render_mermaid_svg`'s `theme`. See [theming.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/theming.md) for what each looks like.
 
 ## `list_diagram_types`
 
