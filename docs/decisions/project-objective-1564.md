@@ -1,6 +1,6 @@
 # Project objective
 
-Status: proposal (maintainer decided the direction on 2026-10-15 and answered the seven open questions on 2026-10-29; awaiting sign-off to move to `accepted`)
+Status: accepted (maintainer decided the direction on 2026-10-15, answered the seven open questions and accepted this doc on 2026-10-29)
 
 ## Context
 
@@ -181,8 +181,8 @@ Nothing to decide here: the repo already answers "latest only, no backports".
 
 ## Consequences
 
-- Once the maintainer signs off, the status moves to `accepted` and the README
-  intro and `docs/README.md` can link here. Neither was changed in this PR.
+- The README intro and `docs/README.md` can now link here. Neither was changed in
+  this PR.
 - Follow-up issues cover the gaps this doc names: an oracle for each type that has
   none, ASCII feature gaps, and supporting the mermaid.js types not yet handled.
 - "Gap" in the Mermaid-coverage review means: valid mermaid syntax, or a diagram
