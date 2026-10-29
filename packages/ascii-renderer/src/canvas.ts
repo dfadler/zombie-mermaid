@@ -799,6 +799,12 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
   // Box-start junctions (exit points from node boxes)
   '╵': '╷',
   '╷': '╵',
+  // Diagonal silhouette strokes (hexagon, circle, diamond, flag): a row
+  // reversal alone leaves them leaning the wrong way (#2388).
+  '╱': '╲',
+  '╲': '╱',
+  '/': '\\',
+  '\\': '/',
 }
 
 /**
@@ -817,20 +823,7 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
 export function flipCanvasVertically(
   canvas: Canvas,
   roleCanvas?: RoleCanvas,
-  nodeRects: LabelRect[] = [],
 ): Canvas {
-  // The flag's lean glyphs beside its tip (`╲` above, `╱` below) are not in
-  // the map below; swap them so the reversal puts each back as it was (#2164).
-  for (const { x0, y0, y1, leftNotch } of nodeRects) {
-    if (!leftNotch) continue
-    const mid = Math.floor((y0 + y1) / 2)
-    const rows = y1 - y0 >= 4 ? [mid - 1, mid + 1] : [y0, y1]
-    const [a, b] = [canvas[x0]![rows[0]!]!, canvas[x0]![rows[1]!]!]
-    if (!/^[╲\\]$/.test(a) || !/^[╱/]$/.test(b)) continue
-    canvas[x0]![rows[0]!] = b
-    canvas[x0]![rows[1]!] = a
-  }
-
   // Remap directional characters that change meaning after vertical flip
   for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {

@@ -95,3 +95,48 @@ describe('BT direction keeps label text intact', () => {
     expect(rowOf(tall, 'E-mail')).toBeLessThan(rowOf(tall, 'up-down'))
   })
 })
+
+describe('BT keeps diagonal silhouettes leaning as in TD (#2388)', () => {
+  const ascii = (src: string) =>
+    renderMermaidASCII(src, { colorMode: 'none', useAscii: true })
+
+  it('hexagon', () => {
+    const out = bt('graph BT\n  A{{hex}} --> B').split('\n')
+    expect(out.slice(-5)).toEqual([
+      '  ╱┴╲  ',
+      ' ╱   ╲ ',
+      '< hex >',
+      ' ╲   ╱ ',
+      '  ╲─╱  ',
+    ])
+  })
+
+  it('circle', () => {
+    const out = bt('graph BT\n  A((circ)) --> B').split('\n')
+    expect(out.slice(-5)).toEqual([
+      ' ╭──┴─╮ ',
+      ' ╱    ╲ ',
+      '( circ )',
+      ' ╲    ╱ ',
+      ' ╰────╯ ',
+    ])
+  })
+
+  it('diamond', () => {
+    const out = bt('graph BT\n  A{dia} --> B').split('\n')
+    expect(out.slice(-5)).toEqual([
+      '   ╱╲   ',
+      '  ╱  ╲  ',
+      '< dia  >',
+      '  ╲  ╱  ',
+      '   ╲╱   ',
+    ])
+  })
+
+  it('hexagon in the ASCII charset', () => {
+    const lines = ascii('graph BT\n  A{{hex}} --> B').split('\n')
+    const td = ascii('graph TD\n  A{{hex}} --> B').split('\n')
+    // The diagonals match TD's (the flag-free rows 2-4 of the shape).
+    expect(lines.slice(-4, -1)).toEqual(td.slice(1, 4))
+  })
+})

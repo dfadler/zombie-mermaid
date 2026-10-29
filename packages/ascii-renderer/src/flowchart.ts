@@ -191,7 +191,7 @@ function flipRegion(
     if (links) flipLinkCanvasHorizontally(links)
   } else {
     mirrorLabelRows(canvas, roles, rects, links)
-    flipCanvasVertically(canvas, roles, nodeRects)
+    flipCanvasVertically(canvas, roles)
     flipRoleCanvasVertically(roles)
     if (links) flipLinkCanvasVertically(links)
   }
@@ -301,7 +301,7 @@ export function renderGraphAscii(
       graph.labelRects ?? [],
       linkCanvas,
     )
-    flipCanvasVertically(graph.canvas, graph.roleCanvas, graph.nodeRects!)
+    flipCanvasVertically(graph.canvas, graph.roleCanvas)
     flipRoleCanvasVertically(graph.roleCanvas)
     if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
   }
