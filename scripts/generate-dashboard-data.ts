@@ -192,9 +192,10 @@ export async function fetchRescuedIssues(
     // partial `data` on stdout. Keep that; rethrow if there is no usable data
     // (network/auth/syntax), so a real outage still fails the job.
     try {
-      const partial = JSON.parse((err as { stdout?: string }).stdout ?? '')
-      if (!partial?.data?.repository) throw err
-      repository = partial.data.repository as Repo
+      // Any parse/shape failure below is caught and rethrows the original.
+      repository = JSON.parse((err as { stdout: string }).stdout).data
+        .repository as Repo
+      if (!repository) throw err
     } catch {
       throw err
     }

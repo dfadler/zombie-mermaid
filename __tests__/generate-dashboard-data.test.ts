@@ -160,6 +160,19 @@ describe('fetchRescuedIssues', () => {
     )
   })
 
+  it.each([
+    ['no stdout property', undefined],
+    ['JSON null', 'null'],
+    ['JSON without data', '{"errors":[]}'],
+    ['data without repository', '{"data":{"repository":null}}'],
+  ])('rethrows the original error when stdout has %s', async (_n, stdout) => {
+    const ghFn: GhFn = vi.fn(async () => {
+      throw Object.assign(new Error('gh: boom'), { stdout })
+    })
+
+    await expect(fetchRescuedIssues([fixA], ghFn)).rejects.toThrow('gh: boom')
+  })
+
   it('dedupes an upstream issue shared by two fixes, keeping the first', async () => {
     const ghFn = ghSequence([
       {
