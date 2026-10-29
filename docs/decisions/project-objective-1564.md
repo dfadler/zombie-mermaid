@@ -190,10 +190,11 @@ Nothing to decide here: the repo already answers "latest only, no backports".
   this PR.
 - Follow-up issues cover the gaps this doc names: an oracle for each type that has
   none, ASCII feature gaps, and supporting the mermaid.js types not yet handled.
-- "Gap" in the Mermaid-coverage review means: valid mermaid syntax, or a diagram
-  type mermaid.js ships, that this project does not yet handle, or a syntax,
-  behaviour or layout difference from the reference not listed in
-  [known-differences.md](../known-differences.md). Visual differences (font,
-  colour, corner radius, pixels) are never gaps.
-  Constructs outside mermaid.js (for example ArchiMate) are not gaps.
+- "Gap" in the Mermaid-coverage review means: a diagram type mermaid.js ships that
+  this project does not yet handle; or valid mermaid syntax that this project does
+  not yet handle, or a syntax, behaviour or layout difference from the reference
+  not listed in [known-differences.md](../known-differences.md), where neither is
+  recorded as an intentional limitation in another project doc. Visual differences
+  (font, colour, corner radius, pixels) are never gaps. Constructs outside
+  mermaid.js (for example ArchiMate) are not gaps.
 - This doc does not change any code or CI floor.
