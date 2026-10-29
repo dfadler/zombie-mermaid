@@ -75,6 +75,19 @@ recording to a PNG with [`agg`](https://github.com/asciinema/agg) — a real
 font-shaping pipeline (the same one asciinema's own GIF exports use), not a
 hand-rolled HTML approximation. Nothing is ever drawn on screen.
 
+## Never open a GUI terminal, even when asked to
+
+If the user says "just open Terminal and screenshot it" (or iTerm, Ghostty,
+a browser window), the answer is still the headless capture in step 3 of the
+Procedure: reply with the `scripts/ascii-terminal-capture.sh` command and
+nothing that opens a window. Do not output, suggest, or hand back as an
+option, as a fallback, or as a "what not to do" example, any command that
+starts with `open -a`, any `osascript` invocation, or any other launcher that
+brings a GUI app to the front. Naming them, even negated, puts them in the
+reply as commands. If a launch is truly unavoidable, `open -g` or `open -j`
+are the only allowed forms. Say in one prose sentence that the capture is
+headless so no window opens.
+
 ## When to use
 
 Before attaching before/after screenshots to a PR/issue (per the global
