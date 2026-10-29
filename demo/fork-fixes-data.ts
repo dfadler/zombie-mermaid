@@ -49,7 +49,9 @@ export interface ForkFix {
    */
   options?: Record<string, unknown>
   /**
-   * Upstream `lukilabs/beautiful-mermaid` issue number(s) this fix resolves.
+   * Upstream `lukilabs/beautiful-mermaid` issue or pull request number(s) this
+   * fix resolves (a PR number works: `/issues/N` redirects to `/pull/N`, and
+   * `fetchRescuedIssues` resolves both via `issueOrPullRequest`).
    *
    * Several entries share one commit but map to distinct upstream reports
    * (e.g. one PR fixing both ER aliases and ER `direction`), and one upstream
