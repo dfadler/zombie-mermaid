@@ -454,6 +454,8 @@ export interface LabelRect {
   y1: number
   /** A node rect whose left side is notched (asymmetric `>x]`); a horizontal flip keeps the notch on the left (#2164). */
   leftNotch?: boolean
+  /** A hexagon, circle or diamond: its `╱`/`╲` (`/`/`\`) swap on a vertical flip so BT reads like TD (#2388). */
+  diagonals?: boolean
 }
 
 /** Full ASCII graph state used during layout and rendering. */

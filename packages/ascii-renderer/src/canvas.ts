@@ -831,6 +831,24 @@ export function flipCanvasVertically(
     canvas[x0]![rows[1]!] = a
   }
 
+  // A symmetric diagonal shape must look as it does in TD, so its lean glyphs
+  // swap with the rows (the map below leaves them alone: trapezoids, flags and
+  // triangles keep their glyphs). Label text is skipped (#2388).
+  const SWAP: Record<string, string> = {
+    '╱': '╲',
+    '╲': '╱',
+    '/': '\\',
+    '\\': '/',
+  }
+  for (const { x0, x1, y0, y1, diagonals } of nodeRects) {
+    if (!diagonals) continue
+    for (let x = x0; x <= x1; x++)
+      for (let y = y0; y <= y1; y++) {
+        const swapped = SWAP[canvas[x]![y]!]
+        if (swapped && roleCanvas?.[x]?.[y] !== 'text') canvas[x]![y] = swapped
+      }
+  }
+
   // Remap directional characters that change meaning after vertical flip
   for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
