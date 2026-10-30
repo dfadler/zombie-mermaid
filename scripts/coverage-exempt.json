@@ -158,7 +158,7 @@
   {
     "file": "scripts/layout-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
-    "maxLines": 265,
+    "maxLines": 270,
     "legacy": true
   },
   {
@@ -237,6 +237,16 @@
   {
     "file": "scripts/lib/pie-measure.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the pie-oracle and layout-oracle CLIs",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/c4-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/c4-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/c4-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the c4-oracle and layout-oracle CLIs",
     "maxLines": 60
   },
   {
