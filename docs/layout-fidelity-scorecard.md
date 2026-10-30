@@ -79,6 +79,19 @@ says nothing about pixel positions or spacing.
 | 2026-10-30 | 507a226 | 12.2.0  | 21      | 100%         | 100%     | 100%      |
 | 2026-10-30 | 79a0125 | 12.2.0  | 21      | 100%         | 100%     | 100%      |
 
+## Pie charts (angles)
+
+A pie has no nodes, so the share of drawn slices whose start and sweep angle
+agree (within `ANGLE_TOLERANCE`), of slices printing the same percentage and
+of legend rows with the same text is taken (`scripts/pie-oracle.ts`). Slices
+are matched by position, so a different slice order counts as an angle
+disagreement. Every sample must score 100% (`PIE_FLOOR`; `--thresholds`
+exits 1 otherwise). It says nothing about radius, centre or fonts.
+
+| Date       | Commit  | Mermaid | Samples | Angles | Labels | Legend |
+| ---------- | ------- | ------- | ------- | ------ | ------ | ------ |
+| 2026-10-30 | 79a0125 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+
 ## XY charts (axes and data)
 
 An xychart has no nodes, so the share of axis labels with the same text, of
@@ -230,5 +243,6 @@ Not scored (the oracle errored): zombie-mermaid.
 
 - **sequence**: mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, so node placement says nothing. Order and direction are scored separately, in the Sequence section.
 - **architecture-beta**: we have no architecture layout to measure, and mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port directions in the source.
+- **pie**: no nodes: positions come from data values. Slice angles, percentages and legend rows are scored separately, in the Pie section.
 - **pie, xychart-beta**: no nodes: positions come from data values, so there is no arrangement to compare. xychart axis labels, ticks and data positions are scored separately, in the XY charts section.
 - **c4**: mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges.

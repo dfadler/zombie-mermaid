@@ -82,6 +82,38 @@ describe('writeRecords', () => {
     expect(await readFile(scorecard, 'utf8')).toContain('Sequence diagrams')
   })
 
+  it('records a pie line and section, with and without a history file', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'layout-record-'))
+    const history = join(dir, 'h.jsonl')
+    const scorecard = join(dir, 's.md')
+    const results = {
+      a: {
+        vertical: 1,
+        horizontal: 1,
+        containment: 1,
+        nodes: 3,
+        subgraphs: false,
+      },
+    }
+    const runs: ScorecardRun[] = [{ entry: summarize(results, meta), results }]
+    const pie = {
+      kind: 'pie' as const,
+      date: '2026-10-30',
+      commit: 'abc',
+      mermaid: '12.2.0',
+      samples: 19,
+      angles: 1,
+      labels: 1,
+      legend: 1,
+    }
+    await writeFile(history, '')
+    await writeRecords({ history, scorecard }, runs, undefined, undefined, pie)
+    expect(await readFile(history, 'utf8')).toContain('"kind":"pie"')
+    expect(await readFile(scorecard, 'utf8')).toContain('Pie charts')
+    await writeRecords({ scorecard }, runs, undefined, undefined, pie)
+    expect(await readFile(scorecard, 'utf8')).toContain('Pie charts')
+  })
+
   it('records an xychart line and section from the history file', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'layout-record-'))
     const history = join(dir, 'h.jsonl')
@@ -107,10 +139,17 @@ describe('writeRecords', () => {
       data: 0.9,
     }
     await writeFile(history, '')
-    await writeRecords({ history, scorecard }, runs, undefined, undefined, xy)
+    await writeRecords(
+      { history, scorecard },
+      runs,
+      undefined,
+      undefined,
+      undefined,
+      xy,
+    )
     expect(await readFile(history, 'utf8')).toContain('"kind":"xychart"')
     expect(await readFile(scorecard, 'utf8')).toContain('XY charts (axes')
-    await writeRecords({ scorecard }, runs, undefined, undefined, xy)
+    await writeRecords({ scorecard }, runs, undefined, undefined, undefined, xy)
     expect(await readFile(scorecard, 'utf8')).toContain('XY charts (axes')
   })
 

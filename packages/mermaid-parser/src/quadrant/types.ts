@@ -7,6 +7,8 @@
 // works from the parsed `QuadrantChart` directly, like pie and xychart do.
 // ============================================================================
 
+import type { QuadrantConfig, ThemeVariables } from '@zombie-mermaid/core'
+
 /** The point styles Mermaid accepts: `radius`, `color`, `stroke-color`, `stroke-width`. */
 export interface QuadrantPointStyle {
   /** `radius: 10`; whole pixels. */
@@ -52,6 +54,13 @@ export interface QuadrantChart {
   points: QuadrantPoint[]
   /** `classDef` styles by class name. */
   classes: Record<string, QuadrantPointStyle>
+  /** The `%%{init}%%` `quadrantChart` block (see `QuadrantConfig` in core). */
+  config?: QuadrantConfig
+  /**
+   * `quadrant*` theme variables from `%%{init}%%`, by Mermaid's name. Parsed
+   * always, drawn only when the caller opts in with `honorThemeVariables`.
+   */
+  themeColors?: ThemeVariables['quadrant']
 }
 
 /** Text anchored at a position, in SVG terms. */
@@ -99,6 +108,8 @@ export interface PositionedQuadrantPoint {
 }
 
 export interface PositionedQuadrantChart {
+  /** See `QuadrantChart.themeColors`; set only when honoured. */
+  themeColors?: ThemeVariables['quadrant']
   width: number
   height: number
   title?: PositionedQuadrantText

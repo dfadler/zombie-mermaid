@@ -1,6 +1,7 @@
 /** History and scorecard recording for scripts/layout-oracle.ts (#1572, #1686). */
 
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
+import type { PieEntry } from './pie-agreement.ts'
 import type { SequenceEntry } from './sequence-agreement.ts'
 import type { XyEntry } from './xychart-agreement.ts'
 import {
@@ -17,11 +18,13 @@ export async function writeRecords(
   runs: ScorecardRun[],
   labelEntry: LabelEntry | undefined,
   sequenceEntry?: SequenceEntry,
+  pieEntry?: PieEntry,
   xyEntry?: XyEntry,
 ): Promise<void> {
   let history = runs.map((r) => r.entry)
   let labels = labelEntry ? [labelEntry] : []
   let sequences = sequenceEntry ? [sequenceEntry] : []
+  let pies = pieEntry ? [pieEntry] : []
   let xycharts = xyEntry ? [xyEntry] : []
   if (args.history) {
     await appendFile(
@@ -30,6 +33,7 @@ export async function writeRecords(
         ...history,
         ...labels,
         ...(sequenceEntry ? [sequenceEntry] : []),
+        ...(pieEntry ? [pieEntry] : []),
         ...(xyEntry ? [xyEntry] : []),
       ]),
     )
@@ -38,7 +42,12 @@ export async function writeRecords(
       .filter(Boolean)
       .map(
         (l) =>
-          JSON.parse(l) as HistoryEntry | LabelEntry | SequenceEntry | XyEntry,
+          JSON.parse(l) as
+            | HistoryEntry
+            | LabelEntry
+            | SequenceEntry
+            | PieEntry
+            | XyEntry,
       )
     history = all.filter((e): e is HistoryEntry => !('kind' in e))
     labels = all.filter(
@@ -47,6 +56,7 @@ export async function writeRecords(
     sequences = all.filter(
       (e): e is SequenceEntry => 'kind' in e && e.kind === 'sequence',
     )
+    pies = all.filter((e): e is PieEntry => 'kind' in e && e.kind === 'pie')
     xycharts = all.filter(
       (e): e is XyEntry => 'kind' in e && e.kind === 'xychart',
     )
@@ -55,7 +65,15 @@ export async function writeRecords(
   if (args.scorecard) {
     await writeFile(
       args.scorecard,
-      scorecardMarkdown(runs, history, undefined, labels, sequences, xycharts),
+      scorecardMarkdown(
+        runs,
+        history,
+        undefined,
+        labels,
+        sequences,
+        pies,
+        xycharts,
+      ),
     )
     console.log(`Wrote ${args.scorecard}`)
   }
