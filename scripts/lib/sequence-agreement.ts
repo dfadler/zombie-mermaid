@@ -28,8 +28,12 @@ export interface SeqAgreement {
   msgs: number
 }
 
-const attr = (tag: string, name: string): string | undefined =>
-  new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1]
+const attr = (tag: string, name: string): string | undefined => {
+  const start = tag.indexOf(` ${name}="`)
+  if (start < 0) return undefined
+  const from = start + name.length + 3
+  return tag.slice(from, tag.indexOf('"', from))
+}
 
 const nums = (s: string | undefined): number[] =>
   (s?.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)

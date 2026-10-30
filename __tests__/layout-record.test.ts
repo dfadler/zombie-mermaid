@@ -51,6 +51,37 @@ describe('writeRecords', () => {
     expect(await readFile(scorecard, 'utf8')).toContain('Edge labels')
   })
 
+  it('records a sequence line and section, and works without a history file', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'layout-record-'))
+    const history = join(dir, 'h.jsonl')
+    const scorecard = join(dir, 's.md')
+    const results = {
+      a: {
+        vertical: 1,
+        horizontal: 1,
+        containment: 1,
+        nodes: 3,
+        subgraphs: false,
+      },
+    }
+    const runs: ScorecardRun[] = [{ entry: summarize(results, meta), results }]
+    const seq = {
+      kind: 'sequence' as const,
+      date: '2026-10-30',
+      commit: 'abc',
+      mermaid: '12.2.0',
+      samples: 21,
+      participants: 1,
+      messages: 1,
+      direction: 1,
+    }
+    await writeFile(history, '')
+    await writeRecords({ history, scorecard }, runs, undefined, seq)
+    expect(await readFile(scorecard, 'utf8')).toContain('Sequence diagrams')
+    await writeRecords({ scorecard }, runs, undefined, seq)
+    expect(await readFile(scorecard, 'utf8')).toContain('Sequence diagrams')
+  })
+
   it('writes nothing when neither file is requested', async () => {
     await expect(writeRecords({}, [], undefined)).resolves.toBeUndefined()
   })

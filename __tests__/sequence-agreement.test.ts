@@ -135,4 +135,50 @@ describe('sequence agreement (#1686)', () => {
       'Sequence diagrams',
     )
   })
+
+  it('skips elements it cannot place and tolerates missing attributes', () => {
+    const official = `<line data-et="life-line" x1="5"></line>
+<line data-et="life-line" data-id="Z"></line>
+<line data-et="message" y1="3"></line>
+<path data-et="message" d="M 1,4" data-from="A" data-to="B"></path>
+<line data-et="message"></line>`
+    expect(parseOfficialSequence(official)).toEqual({
+      actors: {},
+      messages: [
+        { from: '', to: '', y: 3 },
+        { from: 'A', to: 'B', y: 4 },
+      ],
+    })
+    const ours = `<line class="lifeline" x1="5"></line>
+<line class="lifeline" data-actor="Z"></line>
+<g class="message"><text>no geometry</text></g>
+<g class="message"><polyline points="1,2 3,4"></polyline></g>
+<g class="message" data-from="A" data-to="B"><path d="M 1,9 L 2,3"></path></g>`
+    expect(parseOurSequence(ours)).toEqual({
+      actors: {},
+      messages: [
+        { from: '', to: '', y: 2 },
+        { from: 'A', to: 'B', y: 9 },
+      ],
+    })
+  })
+
+  it('averages only the samples that have a figure', () => {
+    const lone = sequenceAgreement(
+      { actors: { A: 1 }, messages: [] },
+      { actors: { A: 1 }, messages: [] },
+    )
+    const ok = sequenceAgreement(same, same)
+    const e = summarizeSequence(
+      { lone, ok },
+      { date: 'd', commit: 'c', mermaid: 'm' },
+    )
+    expect(e).toMatchObject({ samples: 2, participants: 1, messages: 1 })
+    const none = summarizeSequence(
+      { lone },
+      { date: 'd', commit: 'c', mermaid: 'm' },
+    )
+    expect(none.participants).toBeNull()
+    expect(sequenceBreaches({ lone })).toEqual([])
+  })
 })
