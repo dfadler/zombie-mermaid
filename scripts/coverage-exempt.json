@@ -158,7 +158,7 @@
   {
     "file": "scripts/layout-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
-    "maxLines": 267,
+    "maxLines": 272,
     "legacy": true
   },
   {
@@ -213,6 +213,16 @@
     "file": "scripts/sequence-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/sequence-agreement.ts",
     "maxLines": 60
+  },
+  {
+    "file": "scripts/quadrant-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/quadrant-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/quadrant-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the quadrant-oracle and layout-oracle CLIs",
+    "maxLines": 50
   },
   {
     "file": "scripts/lib/sequence-measure.ts",

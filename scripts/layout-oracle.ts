@@ -60,6 +60,7 @@ import {
 import { labelEntryFor } from './lib/label-position.ts'
 import { writeRecords } from './lib/layout-record.ts'
 import { scoreSequence } from './lib/sequence-measure.ts'
+import { scoreQuadrant } from './lib/quadrant-measure.ts'
 import { scoreXyChart } from './lib/xychart-measure.ts'
 import type { XyEntry } from './lib/xychart-agreement.ts'
 import type { SequenceEntry } from './lib/sequence-agreement.ts'
@@ -231,6 +232,8 @@ async function main(): Promise<number> {
       const seq = await scoreSequence(session, commit)
       sequenceEntry = seq.entry
       if (args.thresholds) failing.push(...seq.breaches)
+      const quad = await scoreQuadrant(session)
+      if (args.thresholds) failing.push(...quad.breaches)
       const pie = await scorePie(session, commit)
       pieEntry = pie.entry
       if (args.thresholds) failing.push(...pie.breaches)
