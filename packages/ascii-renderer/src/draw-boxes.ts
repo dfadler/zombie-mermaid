@@ -27,7 +27,9 @@ import {
   drawHexagon,
   drawStadium,
   drawSubroutineBars,
+  drawParallelogram,
   drawTrapezoid,
+  parallelogramInsets,
   hexagonInsets,
   trapezoidInsetsFor,
 } from './shapes/silhouettes.ts'
@@ -224,6 +226,23 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     )
     drawTrapezoid(box, to.x, to.y, alt, insets, useAscii)
     node.labelInsets = insets
+  } else if (
+    (node.shape === 'parallelogram' || node.shape === 'parallelogram-alt') &&
+    to.y >= 2 &&
+    to.x >= 2 * to.y + 2
+  ) {
+    // Both walls lean one column per row (#2164).
+    const alt = node.shape === 'parallelogram-alt'
+    const insets = parallelogramInsets(
+      to.x,
+      to.y,
+      alt,
+      lines.map((l) => displayWidth(l)),
+      startY,
+    )
+    drawParallelogram(box, to.x, to.y, alt, insets, useAscii)
+    node.labelInsets = insets.left
+    node.labelInsetsRight = insets.right
   } else if (node.shape === 'asymmetric' && to.x >= 4 && to.y >= 2) {
     // Flag: left side notched on the middle row, `>` tip one cell in (#2164).
     drawAsymmetric(box, to.x, to.y, useAscii)

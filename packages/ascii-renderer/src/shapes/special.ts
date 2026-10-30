@@ -22,6 +22,7 @@ import {
 import { getCorners } from './corners.ts'
 import {
   asymmetricDimensions,
+  parallelogramDimensions,
   renderSilhouette,
   trapezoidDimensions,
 } from './silhouettes.ts'
@@ -327,39 +328,37 @@ export const trapezoidAltRenderer: ShapeRenderer = {
 // ============================================================================
 
 /**
- * Parallelogram shape renderer — leans right.
+ * Parallelogram shape renderer — leans right (#2164).
  *
  * Renders as:
- *   /─────────/
- *   │  Label  │
- *   /─────────/
+ *     ╱────────╱
+ *    ╱ Label  ╱
+ *   ╱────────╱
  */
 export const parallelogramRenderer: ShapeRenderer = {
-  getDimensions: getBoxDimensions,
+  getDimensions: (label, options) =>
+    parallelogramDimensions(label, options, false),
 
-  render(label, dimensions, options) {
-    const corners = getCorners('parallelogram', options.useAscii)
-    return renderBox(label, dimensions, corners, options.useAscii)
-  },
+  render: (label, dimensions, options) =>
+    renderSilhouette('parallelogram', label, dimensions, options.useAscii),
 
   getAttachmentPoint: getBoxAttachmentPoint,
 }
 
 /**
- * Parallelogram-alt shape renderer — leans left.
+ * Parallelogram-alt shape renderer — leans left (#2164).
  *
  * Renders as:
- *   \─────────\
- *   │  Label  │
- *   \─────────\
+ *   ╲────────╲
+ *    ╲ Label  ╲
+ *     ╲────────╲
  */
 export const parallelogramAltRenderer: ShapeRenderer = {
-  getDimensions: getBoxDimensions,
+  getDimensions: (label, options) =>
+    parallelogramDimensions(label, options, true),
 
-  render(label, dimensions, options) {
-    const corners = getCorners('parallelogram-alt', options.useAscii)
-    return renderBox(label, dimensions, corners, options.useAscii)
-  },
+  render: (label, dimensions, options) =>
+    renderSilhouette('parallelogram-alt', label, dimensions, options.useAscii),
 
   getAttachmentPoint: getBoxAttachmentPoint,
 }
