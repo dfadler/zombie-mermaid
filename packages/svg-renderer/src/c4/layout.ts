@@ -623,10 +623,10 @@ function boundaryObstacles(boundaries: LaidOutBoundary[]): Obstacle[] {
       children: [],
     })
     return [
-      frame(b.x, b.x + b.width, b.y, b.y, FRAME_PAD), // top
-      frame(b.x, b.x + b.width, b.y + b.height, b.y + b.height, FRAME_PAD), // bottom
-      frame(b.x, b.x, b.y, b.y + b.height, FRAME_PAD), // left
-      frame(b.x + b.width, b.x + b.width, b.y, b.y + b.height, FRAME_PAD), // right
+      frame(b.x, b.x + b.width, b.y, b.y, FRAME_PAD), // Top
+      frame(b.x, b.x + b.width, b.y + b.height, b.y + b.height, FRAME_PAD), // Bottom
+      frame(b.x, b.x, b.y, b.y + b.height, FRAME_PAD), // Left
+      frame(b.x + b.width, b.x + b.width, b.y, b.y + b.height, FRAME_PAD), // Right
       text(b.label, b.labelY, C4.boundarySize + 2, 700),
       ...(typeLine ? [text(typeLine, b.typeY!, C4.boundarySize, 400)] : []),
       ...(b.description
@@ -754,7 +754,8 @@ function clearLabel(
     y1: Math.max(...pts.map((p) => p.y)),
   }))
   let best:
-    { v: LabelVariant; at: Point; penalty: number; cost: number } | undefined
+    | { v: LabelVariant; at: Point; penalty: number; cost: number }
+    | undefined
   // Once a trial touches nothing, only a cheaper one can beat it.
   const settled = (cost: number): boolean =>
     best?.penalty === 0 && cost >= best.cost
@@ -845,7 +846,18 @@ export function layoutC4DiagramSync(
       boundaries: [],
       relationships: [],
     }
-    if (diagram.title) empty.title = diagram.title
+    if (diagram.title) {
+      // Mermaid emits viewBox "0 -70 200 187" with the title at x=-150, off
+      // the canvas, so it is invisible there; here the canvas is sized to the
+      // title and the title is drawn inside it (docs/known-differences.md).
+      const height = 2 * C4.diagramMarginY + C4.titleExtra
+      empty.title = diagram.title
+      empty.width = Math.ceil(
+        2 * C4.diagramMarginX + c4TextWidth(diagram.title, 16, 400),
+      )
+      empty.height = height
+      empty.titlePosition = { x: C4.diagramMarginX, y: height / 2 }
+    }
     return empty
   }
 

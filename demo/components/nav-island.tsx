@@ -106,7 +106,7 @@ export function NavIsland({ installSlotKind, ...navProps }: NavIslandProps) {
         // which spans the page's real scrollable height).
         style={{ display: 'contents' }}
         dangerouslySetInnerHTML={{
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own Nav component tree rendered via renderToString (see the module doc comment); never user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own Nav component tree rendered via renderToString (see the module doc comment); never user input
           __html: renderToString(
             <Nav {...navProps} installSlot={resolvedInstallSlot} />,
           ),
@@ -116,7 +116,7 @@ export function NavIsland({ installSlotKind, ...navProps }: NavIslandProps) {
         type="application/json"
         id={NAV_PROPS_ELEMENT_ID}
         dangerouslySetInnerHTML={{
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own NavHydrationProps, escaped with escapeJsonForScriptTag; never user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own NavHydrationProps, escaped with escapeJsonForScriptTag; never user input
           __html: escapeJsonForScriptTag(JSON.stringify(hydrationPayload)),
         }}
       />

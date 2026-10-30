@@ -335,7 +335,7 @@ describe('<EditorApp> zoom/pan/resize interaction (#807)', () => {
     act(() => {
       window.__editorViewportState.applyZoom()
     })
-    expect(svg.isConnected).toBe(false) // replaced by seedRenderedSvg() above
+    expect(svg.isConnected).toBe(false) // Replaced by seedRenderedSvg() above
     const freshSvg = document.querySelector(
       '#preview-inner svg',
     ) as unknown as SVGSVGElement & { style: CSSStyleDeclaration }

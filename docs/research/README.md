@@ -3,7 +3,10 @@
 Findings from investigations, spikes and measurements go in the issue they answer, not here
 ([#1642](https://github.com/dfadler/zombie-mermaid/issues/1642)). A doc lives in this directory only when something other than its own
 issue links to it (a guide, a code comment, a script) and it is worth keeping current; `pnpm run
-check:docs` fails on a doc here that nothing else references.
+check:docs` fails on a doc here that nothing else references. Each kept doc also carries an `As of:
+YYYY-MM-DD` line (also enforced, [#1936](https://github.com/dfadler/zombie-mermaid/issues/1936)):
+whoever edits a citing guide or script re-checks the doc and bumps the date, or folds the cited
+conclusion into the guide and removes the doc.
 
 ## Kept
 

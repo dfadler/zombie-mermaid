@@ -16,7 +16,8 @@ import { createMapping } from '../grid.ts'
 import { buildClusterEntryRoute } from '../cluster-boundary.ts'
 import { determinePath } from '../edge-routing.ts'
 import { drawArrow } from '../draw-arrows.ts'
-import type { AsciiGraph } from '../types.ts'
+import { forEachInk } from '../canvas.ts'
+import type { AsciiGraph, Canvas } from '../types.ts'
 
 const frame = `
 subgraph Sub
@@ -37,6 +38,13 @@ function topWall(rows: string[]): number {
   )
   if (i < 0) throw new Error(`no intact top wall in:\n${rows.join('\n')}`)
   return i
+}
+
+/** Non-space characters of a sparse layer. */
+const inkChars = (layer: Canvas): string[] => {
+  const out: string[] = []
+  forEachInk(layer, (_x, _y, ch) => void (ch !== ' ' && out.push(ch)))
+  return out
 }
 
 describe('ASCII: edges addressed to a subgraph end at its wall (#1283)', () => {
@@ -203,7 +211,7 @@ describe('ASCII: edge cases of the cluster-entry shape (#1283)', () => {
   it('TD: draws up to the wall, but not past a wall the last leg cannot reach', () => {
     const graph = layout(simple)
     const edge = entry(graph)
-    const heads = (): string[] => drawArrow(graph, edge)[2].flat()
+    const heads = (): string[] => inkChars(drawArrow(graph, edge)[2])
     expect(heads()).toContain('▼')
     // With the wall moved above the leg's start the path ends where it is.
     edge.clusterTarget!.minY = 0

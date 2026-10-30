@@ -116,7 +116,8 @@ function autoLoadElk(): ElkConstructor | null {
     return null
   }
   const mod = proc.getBuiltinModule('node:module') as
-    { createRequire(from: string): (id: string) => unknown } | undefined
+    | { createRequire(from: string): (id: string) => unknown }
+    | undefined
   if (!mod) return null
   const specifier = ['elkjs', 'lib', 'elk.bundled.js'].join('/')
   // CJS build: rolldown rewrites `import.meta` to `{}`, so prefer `__filename`.
@@ -129,11 +130,12 @@ function autoLoadElk(): ElkConstructor | null {
   for (const base of bases) {
     try {
       const loaded = mod.createRequire(base)(specifier) as
-        ElkConstructor | { default?: ElkConstructor }
+        | ElkConstructor
+        | { default?: ElkConstructor }
       const ctor = typeof loaded === 'function' ? loaded : loaded.default
       if (typeof ctor === 'function') return ctor
     } catch {
-      // not resolvable from this base; try the next
+      // Not resolvable from this base; try the next
     }
   }
   return null
@@ -278,18 +280,30 @@ function ensureElk(): RawFakeWorker {
   // Worker `self` is a getter-only accessor on WorkerGlobalScope's prototype,
   // so `delete` is a no-op (elk still sees it) and the old `g.self = origSelf`
   // restore threw "Cannot set property self ... which has only a getter".
-  const g = globalThis as { self?: unknown; document?: unknown }
+  //
+  // elk-worker.min.js then looks for `window`, then `global`, then `self` to
+  // find its global object. Node/Bun have `global`; a browser Worker has
+  // none of the three once `self` is hidden, so `$wnd` stays undefined and
+  // construction throws (#2219). Alias `global` to `globalThis` for the same
+  // window and remove it again afterwards.
+  const g = globalThis as {
+    self?: unknown
+    document?: unknown
+    global?: unknown
+  }
   const ownSelf = Object.getOwnPropertyDescriptor(g, 'self')
   const hideSelf =
     'self' in g &&
     typeof g.document === 'undefined' &&
     ownSelf?.configurable !== false
+  const aliasGlobal = hideSelf && typeof g.global === 'undefined'
   if (hideSelf) {
     Object.defineProperty(g, 'self', {
       value: undefined,
       configurable: true,
       writable: true,
     })
+    if (aliasGlobal) g.global = globalThis
   }
 
   let instance: unknown
@@ -301,6 +315,7 @@ function ensureElk(): RawFakeWorker {
     if (hideSelf) {
       if (ownSelf) Object.defineProperty(g, 'self', ownSelf)
       else delete g.self
+      if (aliasGlobal) delete g.global
     }
     globalThis.setTimeout = origSetTimeout
   }

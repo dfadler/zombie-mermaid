@@ -7,8 +7,8 @@ instead — this file only holds what's specific to _this_ repo's tooling.
 ## Default check loop: `pnpm run verify`
 
 After a change, run `pnpm run verify` (typecheck in parallel, lint/format on changed files,
-`vitest run --changed origin/main`) instead of separate full-repo typecheck/eslint/prettier/coverage
-runs. For a single file, `pnpm exec vitest run -c config/vitest.config.ts --related <file>`.
+`vitest run --changed origin/main`) instead of separate full-repo typecheck/oxlint/oxfmt/coverage
+runs. For a single source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`; for a test file, `pnpm exec vitest run -c config/vitest.config.ts <test-file>`.
 Path-to-suite map: `packages/ascii-renderer/**` -> its `__tests__` plus
 `pnpm exec playwright test -g ascii-samples`. Reserve `pnpm run verify --full` (CI parity) for
 the end. `pnpm run doctor` diagnoses a broken local toolchain.
@@ -29,7 +29,7 @@ properties that make worktree cleanup easy to get wrong:
   (`/@vite/client`) for as long as a tab is connected, so that tab never goes
   network-idle. A headless capture (`chrome --headless --screenshot`) against a
   _live_ dev-server page hangs waiting for network idle — build a static snapshot
-  instead (`pnpm run samples`, serve the resulting `index.html` with a plain static
+  instead (`pnpm run build:site`, serve the resulting `site/` with a plain static
   server) for any headless screenshot, before/after comparison, or CI-style capture.
 - **`preview_start` won't follow you into a worktree.** It resolves
   `.claude/launch.json` against the _original_ repo root regardless of where
@@ -47,7 +47,7 @@ properties that make worktree cleanup easy to get wrong:
 
 Before attaching before/after screenshots to a PR/issue for any change touching
 ASCII output (`packages/ascii-renderer/**`, `packages/site/ascii-html.ts`, `src/cli.ts`'s ASCII path,
-`__tests__/visual/helpers/terminal-panel.ts`'s `TERMINAL_ASCII_OPTS`/`applyWideCharWidths`, `packages/site/index.ts`'s `.ascii-panel`,
+`__tests__/visual/helpers/terminal-panel.ts`'s `TERMINAL_ASCII_OPTS`/`applyWideCharWidths`, `packages/site/ssr/home-routes.ts`'s `.ascii-panel`,
 `scripts/visual-diff.ts`, `__tests__/visual/helpers/terminal-panel.ts`, or
 `__tests__/visual/ascii-samples.visual.test.ts`), invoke the
 `verify-ascii-terminal` skill first. This is a hard requirement on the
@@ -97,7 +97,8 @@ comment (long ones in a collapsed `<details>`), with a permalink to any script o
 artifact in the repo. Do not add a `docs/research/*.md` doc: write one only when something
 else (a guide, a code comment, a script) links to it and it is worth keeping current.
 `pnpm run check:docs` fails on a doc under `docs/research/` that nothing outside it
-references, and `scripts/pre-pr-check.sh` (the warn-only `gh pr create` hook) warns when a PR adds one. Former research docs and where their findings now live are indexed in
+references, and `scripts/pre-pr-check.sh` (the warn-only `gh pr create` hook) warns when a PR adds one, and
+`scripts/research-nudge.sh` (a warn-only `Write` hook) nudges when you create one. Former research docs and where their findings now live are indexed in
 [`docs/research/README.md`](docs/research/README.md). See
 [#1479](https://github.com/dfadler/zombie-mermaid/issues/1479) and
 [#1642](https://github.com/dfadler/zombie-mermaid/issues/1642).
@@ -117,6 +118,32 @@ version it was checked against. See
 flipped uncrossed subgraphs, current mermaid and GitHub do not, and
 [#1820](https://github.com/dfadler/zombie-mermaid/pull/1820) built on the stale
 behavior.
+
+## Rules that used to live only in per-machine memory
+
+Subagents do not see auto-memory, so these repo rules live here (#1612). Batching
+issues across subagents: see the `issue-batch` skill (default cap 8 in flight across
+distinct modules, not a fixed 20).
+
+- **Releases:** never bump `package.json` versions or edit `CHANGELOG.md` in a feature
+  PR. Add a `.changeset/*.md` instead; only the bot's "Version Packages" PR
+  (`changeset-release/main`) consumes it. A version diff in a PR is fine only when
+  inherited through a merge of `main` that already carries it. See CONTRIBUTING.md
+  "Changesets".
+- **Read-only research briefs:** a brief that says "READ-ONLY" must spell out what that
+  forbids: no edits, commits, pushes, issue/PR comments, git refs or stashes, fetching
+  into the repo, background processes, or lint/typecheck runs that write caches; scratch
+  only in the named scratchpad dir. Compare branches with `gh api` (`repos/{o}/{r}/compare/A...B`),
+  not a local fetch. Ask the agent to report any side effect it did make, and confirm
+  `git status` is clean afterward (#1610).
+- **Snapshots cover both renderers:** every snapshot/golden case, edge cases and option
+  variants included, gets both an SVG and an ASCII snapshot. If a case has no analogue
+  in one renderer, say so in the PR rather than skipping silently. Hand-written
+  expected strings are not a substitute.
+- **`demo/` refactors need screenshots:** a PR touching anything under `demo/` gets a
+  "Visual verification" section with real before/after screenshots (default state plus
+  any interactive state the diff touches), taken from a static build, even when a
+  byte-diff already shows zero change. Pure non-rendering changes are exempt.
 
 ## Decision docs: run the self-review checklist before opening the PR
 
@@ -154,8 +181,21 @@ default port or process name:
    changes that path but not the flag. Filter to processes you actually started;
    don't broadly `pkill` a generic "Chrome Helper" pattern, which can also match the
    user's real browser.
-4. Generated build artifacts (`index.html`, `editor.html`, `fork-fixes.html`,
-   `blog/`) are gitignored — safe to leave, no cleanup needed. `public/hero.svg` is **not** gitignored
+4. Generated build artifacts (`site/`, `.site-ssr/`, `.site-dev/`) are gitignored — safe to leave, no cleanup needed. `public/hero.svg` is **not** gitignored
    (it's the committed README asset, regenerated by `scripts/generate-hero.ts`) — if
    you regenerated it inside a worktree for comparison purposes only, don't let a
    throwaway copy leak back into the main checkout or another branch.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues on `dfadler/zombie-mermaid` (via `gh`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` at the repo root, decision docs in `docs/decisions/` (not `docs/adr/`). See `docs/agents/domain.md`.

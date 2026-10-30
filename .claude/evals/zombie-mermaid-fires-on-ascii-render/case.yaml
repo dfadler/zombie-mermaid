@@ -1,0 +1,33 @@
+# Should-fire: plain request to draw a Mermaid flowchart as terminal art. Free graders only.
+# Sabotage map: deleting the skill's description trigger list drops the Skill call (skill_fired);
+# deleting the CLI section drops the --ascii command (names_ascii_command).
+schema_version: '1.1'
+name: zombie-mermaid-fires-on-ascii-render
+description: >
+  Asked to show a Mermaid flowchart as ASCII, the zombie-mermaid skill fires and the reply gives
+  the CLI command with --ascii. expected_outcome: PASS when the Skill call is made and the reply
+  contains "zombie-mermaid render" and "--ascii"; FAIL otherwise.
+tags: [zombie-mermaid, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Render this Mermaid flowchart as ASCII so I can paste it in a commit message:
+
+    graph LR
+      A[Client] --> B[API]
+      B --> C[(Postgres)]
+
+    Don't run anything; reply with the exact shell command(s) you would use.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+  - name: names_ascii_command
+    type: regex
+    pattern: 'zombie-mermaid\s+render\b[^\n]*--ascii'

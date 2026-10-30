@@ -24,6 +24,7 @@ import {
   scorecardMarkdown,
   wantsSample,
   summarize,
+  summarizeLabels,
   type Box,
   type LayoutBoxes,
 } from '../scripts/lib/layout-agreement.ts'
@@ -86,6 +87,17 @@ describe('agreement: node pairs', () => {
     })
     expect(agreement(o, within).vertical).toBe(1)
     expect(agreement(o, past).vertical).toBe(0)
+  })
+
+  it('forgives offsets on either side of the tolerance, but not a sign flip or a real gap', () => {
+    const o = layout({ A: at(100, 100), B: at(300, 122) })
+    const ours = (dy: number) =>
+      layout({ A: at(100, 100), B: at(300, 100 + dy) })
+    // 22px against 15px: the line falls between them.
+    expect(agreement(o, ours(15)).vertical).toBe(1)
+    // Opposite direction, or level with the other side outside the band.
+    expect(agreement(o, ours(-18)).vertical).toBe(0)
+    expect(agreement(o, ours(0)).vertical).toBe(0)
   })
 
   it('takes the tolerance as an argument', () => {
@@ -456,10 +468,18 @@ describe('thresholds and machine-readable scorecard', () => {
 
   it('applies the default floor, per-sample overrides, and the boundary', () => {
     expect(floorFor('Anything new')).toBe(DEFAULT_FLOOR)
-    expect(floorFor('Class: MVC Architecture')).toBe(0.65)
+    expect(floorFor('Class: MVC Architecture')).toBe(0.95)
+    // Every flowchart sample the oracle reports under the default floor has its own.
+    for (const t of [
+      'Flowchart: Dense Duplicate Edges (TD)',
+      'Flowchart: Self-Loop with In and Out Neighbours (TD)',
+    ]) {
+      expect(floorFor(t), t).toBeLessThan(DEFAULT_FLOOR)
+    }
     expect(sampleStatus('x', ag(1, DEFAULT_FLOOR))).toBe('pass')
     expect(sampleStatus('x', ag(1, DEFAULT_FLOOR - 0.01))).toBe('fail')
-    expect(sampleStatus('Class: MVC Architecture', ag(1, 0.67))).toBe('pass')
+    expect(sampleStatus('Class: MVC Architecture', ag(1, 0.95))).toBe('pass')
+    expect(sampleStatus('Class: MVC Architecture', ag(1, 0.67))).toBe('fail')
     expect(sampleStatus('x', ag(null, null))).toBe('n/a')
     // 0.9 as a float sum must still meet a floor of 0.9.
     expect(sampleStatus('x', ag(1, 0.1 + 0.8), 0.9)).toBe('pass')
@@ -530,8 +550,53 @@ describe('thresholds and machine-readable scorecard', () => {
       [run({ 'Class: MVC Architecture': { ...ag(1, 0.5), subgraphs: false } })],
       [],
     )
-    expect(md).toContain('| 50% | - | 3 | 65% | fail |')
+    expect(md).toContain('| 50% | - | 3 | 95% | fail |')
     expect(md).toContain('## Diagram types not scored')
     expect(md).toContain('**sequence**')
+  })
+})
+
+describe('edge-label figures (#1686)', () => {
+  const label = summarizeLabels(
+    [
+      { official: { along: 0.5 }, ascii: { along: 0.5 } },
+      { official: { along: 0.5 }, ascii: { along: 1 } },
+    ],
+    { date: '2026-10-27', commit: 'abcdef123', mermaid: '12.2.0' },
+  )
+  const results = {
+    a: {
+      vertical: 1,
+      horizontal: 1,
+      containment: 1,
+      nodes: 2,
+      subgraphs: false,
+    },
+  }
+  const entry = summarize(results, {
+    date: '2026-10-27',
+    commit: 'abcdef123',
+    tolerance: 20,
+    type: 'flowchart',
+    mermaid: '12.2.0',
+  })
+
+  it('summarizes mean positions and the mean absolute difference', () => {
+    expect(label).toMatchObject({
+      cases: 2,
+      officialAlong: 0.5,
+      asciiAlong: 0.75,
+      meanAbsDelta: 0.25,
+    })
+  })
+
+  it('scorecard shows the label section only when label entries exist', () => {
+    const runs = [{ entry, results }]
+    const md = scorecardMarkdown(runs, [entry], undefined, [label])
+    expect(md).toContain('## Edge labels (ASCII)')
+    expect(md).toContain(
+      '| 2026-10-27 | abcdef1 | 12.2.0 | 2 | 0.50 | 0.75 | 0.25 |',
+    )
+    expect(scorecardMarkdown(runs, [entry])).not.toContain('Edge labels')
   })
 })

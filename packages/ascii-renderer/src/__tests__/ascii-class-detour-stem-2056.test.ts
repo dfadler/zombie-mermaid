@@ -41,7 +41,7 @@ describe('ASCII class diagram detours (issue #2056)', () => {
     const y = r.findIndex((row) => /├─+┐/.test(row.join('')))
     expect(y).toBeGreaterThan(0)
     const x = r[y]!.indexOf('├')
-    expect(r[y - 1]![x]).toBe('│') // the stem is not replaced by a corner
+    expect(r[y - 1]![x]).toBe('│') // The stem is not replaced by a corner
     expect(r[y + 1]![x]).not.toBe('└')
   })
 })

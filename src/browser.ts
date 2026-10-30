@@ -20,7 +20,7 @@ import {
   CHART_ACCENT_FALLBACK,
 } from '@zombie-mermaid/mermaid-parser'
 
-// elkjs is an optional peer of the library (#1370); this bundle is a browser
+// Elkjs is an optional peer of the library (#1370); this bundle is a browser
 // consumer that renders flowcharts, so it registers elk itself.
 registerElk(ELK)
 

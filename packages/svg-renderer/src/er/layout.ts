@@ -15,7 +15,7 @@ import type {
   PositionedErRelationship,
 } from '@zombie-mermaid/mermaid-parser'
 import type { ErRenderOptions } from '@zombie-mermaid/core'
-import { resolveNodeStyle } from '@zombie-mermaid/core'
+import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
@@ -43,7 +43,57 @@ const ER = {
   attrFontWeight: 400,
   nodeSpacing: 70,
   layerSpacing: 90,
+  // Self-relationship loop (#2284), measured from mermaid 12.1.0 and 12.2.0:
+  // the first loop leaves the box 20px to the left, its markers 10px either
+  // side of the middle, with the label beside it.
+  loopOut: 20,
+  loopHalf: 10,
+  loopLabelGap: 4,
+  loopNestGap: 16,
+  /** Smallest left margin left clear for a loop's label. */
+  loopMargin: 12,
 } as const
+
+interface SelfLoop {
+  /** Index into `diagram.relationships`. */
+  index: number
+  /** 0 for the innermost loop. */
+  nest: number
+  /** How far left of the box the loop's vertical leg sits. */
+  out: number
+  /** Width of the label box (0 without a label). */
+  labelW: number
+}
+
+/**
+ * The self-relationships of one entity, nested outwards: each further loop
+ * sits beyond the previous loop's label, as mermaid draws them.
+ */
+function selfLoops(
+  diagram: ErDiagram,
+  id: string,
+  options: ErRenderOptions,
+): SelfLoop[] {
+  const fontSize = resolveFontSizes(options.fontSizes).edgeLabel
+  const loops: SelfLoop[] = []
+  for (const [index, rel] of diagram.relationships.entries()) {
+    if (rel.entity1 !== id || rel.entity2 !== id) continue
+    const prev = loops[loops.length - 1]
+    const labelW = rel.label
+      ? measureMultilineText(rel.label, fontSize, FONT_WEIGHTS.edgeLabel)
+          .width + 8
+      : 0
+    loops.push({
+      index,
+      nest: loops.length,
+      out: prev
+        ? prev.out + ER.loopLabelGap + prev.labelW + ER.loopNestGap
+        : ER.loopOut,
+      labelW,
+    })
+  }
+  return loops
+}
 
 type EntitySizeMap = Map<string, { width: number; height: number }>
 
@@ -104,6 +154,8 @@ function buildErElkGraph(
 
   const edges: ElkExtendedEdge[] = []
   for (const [i, rel] of diagram.relationships.entries()) {
+    // A self-relationship is a loop beside its entity, laid out afterwards.
+    if (rel.entity1 === rel.entity2) continue
     edges.push(
       buildElkEdge({
         id: `e${i}`,
@@ -115,6 +167,14 @@ function buildErElkGraph(
     )
   }
 
+  // Room a neighbour must leave left of a box for its self loops and labels.
+  let loopReserve = 0
+  for (const entity of diagram.entities) {
+    const loops = selfLoops(diagram, entity.id, options)
+    const last = loops[loops.length - 1]
+    if (last) loopReserve = Math.max(loopReserve, last.out + last.labelW)
+  }
+
   const elkGraph: ElkNode = {
     id: 'root',
     layoutOptions: {
@@ -122,8 +182,8 @@ function buildErElkGraph(
         // A source with no `direction` statement lays out top-to-bottom,
         // as official Mermaid does (#1250). See ELK_DIRECTION_FALLBACK.
         direction: directionToElk(diagram.direction, ELK_DIRECTION_FALLBACK.er),
-        nodeSpacing: ER.nodeSpacing,
-        layerSpacing: ER.layerSpacing,
+        nodeSpacing: Math.max(ER.nodeSpacing, loopReserve + 20),
+        layerSpacing: Math.max(ER.layerSpacing, loopReserve + 20),
         padding: ER.padding,
       }),
       'elk.edgeLabels.placement': 'CENTER',
@@ -147,6 +207,7 @@ function extractErLayout(
   result: ElkNode,
   diagram: ErDiagram,
   entitySizes: EntitySizeMap,
+  options: ErRenderOptions,
 ): PositionedErDiagram {
   const entityLookup = new Map<string, ErEntity>()
   for (const entity of diagram.entities) entityLookup.set(entity.id, entity)
@@ -180,27 +241,58 @@ function extractErLayout(
     }
   }
 
+  const elkEdges = new Map((result.edges ?? []).map((e) => [e.id, e]))
   const relationships: PositionedErRelationship[] = []
-  for (const [i, elkEdge] of (result.edges ?? []).entries()) {
-    // diagram.relationships[i] is guaranteed by construction: buildErElkGraph
-    // creates exactly one ELK edge per relationship, in the same order.
-    const rel = diagram.relationships[i]!
-
-    const points = extractEdgePoints(elkEdge)
-
-    relationships.push({
+  let minX = Infinity
+  for (const [i, rel] of diagram.relationships.entries()) {
+    const base = {
       entity1: rel.entity1,
       entity2: rel.entity2,
       cardinality1: rel.cardinality1,
       cardinality2: rel.cardinality2,
       label: rel.label,
       identifying: rel.identifying,
-      points,
+    }
+    if (rel.entity1 !== rel.entity2) {
+      // buildErElkGraph creates one ELK edge `e<i>` per non-self relationship.
+      relationships.push({
+        ...base,
+        points: extractEdgePoints(elkEdges.get(`e${i}`)!),
+      })
+      continue
+    }
+    const box = positionedEntities.find((e) => e.id === rel.entity1)!
+    const loop = selfLoops(diagram, rel.entity1, options).find(
+      (l) => l.index === i,
+    )!
+    const cy = box.y + box.height / 2
+    const half = Math.max(ER.loopHalf, box.height / 8) + 10 * loop.nest
+    const lx = box.x - loop.out
+    relationships.push({
+      ...base,
+      points: [
+        { x: box.x, y: cy - half },
+        { x: lx, y: cy - half },
+        { x: lx, y: cy + half },
+        { x: box.x, y: cy + half },
+      ],
+      labelPoint: { x: lx - ER.loopLabelGap - loop.labelW / 2, y: cy },
     })
+    minX = Math.min(minX, lx - ER.loopLabelGap - loop.labelW)
+  }
+
+  // Keep a loop's label inside the canvas.
+  const dx = Math.max(0, ER.loopMargin - minX)
+  if (dx > 0) {
+    for (const e of positionedEntities) e.x += dx
+    for (const r of relationships) {
+      for (const p of r.points) p.x += dx
+      if (r.labelPoint) r.labelPoint.x += dx
+    }
   }
 
   return {
-    width: result.width ?? 600,
+    width: (result.width ?? 600) + dx,
     height: result.height ?? 400,
     entities: positionedEntities,
     relationships,
@@ -220,5 +312,5 @@ export function layoutErDiagramSync(
 
   const { elkGraph, entitySizes } = buildErElkGraph(diagram, options)
   const result = elkLayoutSync(elkGraph, options.layoutCache)
-  return extractErLayout(result, diagram, entitySizes)
+  return extractErLayout(result, diagram, entitySizes, options)
 }

@@ -34,7 +34,7 @@ describe('isCssColor', () => {
   })
 
   it('does not treat "transparent" as a CSS colour on its own', () => {
-    // transparent is handled separately by parseBoxHeader, not as a colour
+    // Transparent is handled separately by parseBoxHeader, not as a colour
     expect(isCssColor('transparent')).toBe(false)
   })
 })

@@ -43,7 +43,15 @@ export interface ForkFix {
    */
   excerpt?: { from: string; to: string }
   /**
-   * Upstream `lukilabs/beautiful-mermaid` issue number(s) this fix resolves.
+   * Extra `renderMermaidSVG` options merged over the page's fixed colors, for a
+   * fix that only shows up with a specific option set (e.g. `font`). SVG
+   * entries only; the ASCII path ignores it.
+   */
+  options?: Record<string, unknown>
+  /**
+   * Upstream `lukilabs/beautiful-mermaid` issue or pull request number(s) this
+   * fix resolves (a PR number works: `/issues/N` redirects to `/pull/N`, and
+   * `fetchRescuedIssues` resolves both via `issueOrPullRequest`).
    *
    * Several entries share one commit but map to distinct upstream reports
    * (e.g. one PR fixing both ER aliases and ER `direction`), and one upstream
@@ -210,6 +218,21 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: a spurious "class" node appears. After: B is simply styled.',
+  },
+  {
+    id: 'font-css-variable',
+    title: 'A CSS `var(...)` font was quoted into a dead font name',
+    symptom:
+      "`{ font: 'var(--font-family-body)' }` is the natural way to inherit a host page's font, but the value was wrapped in quotes (an inert font name, not a `var()` call) and also URL-encoded into a Google Fonts `@import` that can never resolve.",
+    source: 'flowchart LR\n  A --> B',
+    fixCommit: '6b5da99',
+    pr: 79,
+    render: 'svg',
+    options: { font: 'var(--font-family-body)' },
+    excerpt: { from: 'text { font-family:', to: 'sans-serif;' },
+    lookFor:
+      "The browser renders both the same until a host page defines the variable, so this pair shows the `font-family` rule. Before: the reference is quoted, an inert font name (the build also emitted a failing Google Fonts `@import` for it). After: it is unquoted, so the host page's variable resolves, and the `@import` is gone.",
+    upstreamIssues: [18],
   },
   {
     id: 'sequence-leading-note',
@@ -525,6 +548,19 @@ export const forkFixes: ForkFix[] = [
       'Before: the ╟ marker collides with ORDER’s └ corner. After: the line meets ORDER at a ├ junction inside the box.',
   },
   {
+    id: 'ascii-er-stacked-center',
+    title: 'A narrower stacked ER entity sat off-center, so its edge jogged',
+    symptom:
+      'Each stacked ER row started at the left edge, so a narrower entity was left-aligned under its neighbor while the relationship attaches at each box’s center, and the edge jogged sideways between two off-center stems.',
+    source:
+      'erDiagram\n  INSTALL }o--|| PROJECT : scopes\n  INSTALL {\n    string scope\n    string installPath\n  }',
+    fixCommit: '436c50ed',
+    pr: 2245,
+    render: 'ascii',
+    lookFor:
+      'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL and one straight vertical edge joins them.',
+  },
+  {
     id: 'c4-empty-boundary-frame-width',
     title: 'A C4 empty boundary frame ran past the right edge of the SVG',
     symptom:
@@ -659,6 +695,32 @@ export const forkFixes: ForkFix[] = [
       'Before: two arrowheads merge on a shared face. After: each of the six edges ends in its own head.',
   },
   {
+    id: 'ascii-back-edges-flow-faces',
+    title: 'ASCII back-edges looped round the side faces, unlike mermaid',
+    symptom:
+      'A TD back-edge left and re-entered a node’s right face (LR: the bottom face). mermaid 12.1.0 draws it on the flow-axis faces: out of the source’s top, up a lane beside the column, into the target’s bottom, with its own port and arrowhead.',
+    source: 'flowchart TD\n  a --> b\n  b --> c\n  c --> a',
+    fixCommit: '3dea4e87',
+    pr: 2137,
+    render: 'ascii',
+    lookFor:
+      'Before: the back-edge hooks round the right side into `a`’s right face. After: it leaves `c`’s top and enters `a`’s bottom.',
+  },
+  {
+    id: 'ascii-feedback-edge-sibling-order',
+    title:
+      'ASCII subgraph order and feedback edges followed mermaid 11, not 12',
+    symptom:
+      'In the CI/CD pipeline the ASCII layout put `Fix & Retry` at the very bottom, below `QA Approved?`; mermaid 12.1.0 and 12.2.0 draw it beside `Build Image`. Sibling subgraphs tied by a shared parent came out in reversed order (West left of East); mermaid 12 keeps declaration order.',
+    source:
+      'graph TD\n  subgraph ci [CI Pipeline]\n    A[Push Code] --> B{Tests Pass?}\n    B -->|Yes| C[Build Image]\n    B -->|No| D[Fix & Retry]\n    D -.-> A\n  end\n  C --> E([Deploy Staging])\n  E --> F{QA Approved?}\n  F -->|Yes| G((Production))\n  F -->|No| D',
+    fixCommit: 'b55b7fae',
+    pr: 2148,
+    render: 'ascii',
+    lookFor:
+      'Before: `Fix & Retry` hangs below `QA Approved?`. After: it sits beside `Build Image`, and the QA `No` edge rises into it.',
+  },
+  {
     id: 'er-multi-key-attributes',
     title: 'An ER attribute with two keys lost one of them',
     symptom:
@@ -683,5 +745,59 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: both entities use the theme colours. After: `CUSTOMER` is blue and `ORDER` is red.',
+  },
+  {
+    id: 'er-ascii-crossings-labels',
+    title:
+      'ER ASCII edges crossed without a junction and labels were ambiguous',
+    symptom:
+      'In ASCII, crossing ER edges drew no junction, a label could sit between two verticals or against another edge’s corner, and an edge could run along its box’s border.',
+    source:
+      'erDiagram\n  ORDER ||--|{ LINE_ITEM : contains\n  ORDER ||..o{ SHIPMENT : ships-via\n  PRODUCT ||--o{ LINE_ITEM : includes\n  PRODUCT ||..o{ REVIEW : receives',
+    fixCommit: '2615a669',
+    pr: 2142,
+    render: 'ascii',
+    lookFor:
+      'Before: a plain `│` where two edges cross and labels beside two lines. After: a `┼` at the crossing and each label on or beside its own edge.',
+  },
+  {
+    id: 'ascii-face-capacity-loops',
+    title: 'ASCII dense duplicate edges and self-loops shared one cell',
+    symptom:
+      'A node’s side face was sized for reciprocal and duplicate edges only. Self-loop ends and back-edges also take a cell, so the face came out short and two edge ends shared a cell: merged arrowheads and `├`/`┤` tick marks.',
+    source:
+      'flowchart RL\n  n0["n0"]\n  n1["n1"]\n  n1 --> n0\n  n0 --> n1\n  n1 --> n0\n  n1 --> n0\n  n1 --> n1\n  n0 --> n0\n  n0 --> n1\n  n1 --> n0\n  n0 --> n1\n  n0 --> n1',
+    fixCommit: '12c90faa',
+    pr: 2186,
+    render: 'ascii',
+    lookFor:
+      'Before: arrowheads merge and tick marks are lost where edges share a cell. After: each edge end has its own cell.',
+  },
+  {
+    id: 'sequence-rect-color',
+    title: 'Sequence `rect <color>` highlights were drawn as labelled frames',
+    symptom:
+      'The colour after `rect` was parsed as a block label, so it was never applied and its text was printed in a frame header (`rect [rgb(255,0,0)]`) instead of painting the background.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  rect rgba(200,150,255,0.5)\n    A->>B: hi\n    B-->>A: ok\n  end\n  A->>B: after',
+    fixCommit: 'eae88b98',
+    pr: 2241,
+    render: 'svg',
+    lookFor:
+      'Before: a grey frame with the colour text in its header tab. After: a purple background behind the two messages, with no frame.',
+  },
+  {
+    id: 'ascii-edge-label-spaces',
+    title: 'ASCII edge labels lost the spaces between their words',
+    symptom:
+      'An edge label drawn over a stroke treated its spaces as transparent, so the stroke showed through the gap between words: `long label` printed as `long─label`, altering the user’s text.',
+    source:
+      'graph TD\n  A -->|x| B\n  B -->|long label| A\n  A -->|long label| C\n  C -->|ab| A\n  B -->|mid| D\n  A -->|ab| D\n  D -->|x| A',
+    fixCommit: '3e73862e',
+    pr: 1354,
+    render: 'ascii',
+    lookFor:
+      'Before: the label on A’s right side reads `long─label`, with a stroke through the gap. After: it reads `long label`.',
+    upstreamIssues: [154],
   },
 ]

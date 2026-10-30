@@ -17,7 +17,7 @@ import type { CharRole } from '../types.ts'
 
 describe('canvas.ts write()', () => {
   it('writes within bounds, including exactly on the inclusive max edge', () => {
-    const canvas = mkCanvas(2, 2) // valid indices 0..2 in both axes
+    const canvas = mkCanvas(2, 2) // Valid indices 0..2 in both axes
     const [maxX, maxY] = getCanvasSize(canvas)
     expect([maxX, maxY]).toEqual([2, 2])
 

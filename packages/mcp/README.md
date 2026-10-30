@@ -1,6 +1,6 @@
 # @zombie-mermaid/mcp
 
-[Model Context Protocol](https://modelcontextprotocol.io/) server exposing [`zombie-mermaid`](https://www.npmjs.com/package/zombie-mermaid)'s SVG and ASCII rendering as six tools. Most people run it through the umbrella package (`npx zombie-mermaid mcp`); see the [README's MCP Server section](../../README.md#mcp-server) for client config.
+[Model Context Protocol](https://modelcontextprotocol.io/) server exposing [`zombie-mermaid`](https://www.npmjs.com/package/zombie-mermaid)'s SVG and ASCII rendering as seven tools. Most people run it through the umbrella package (`npx zombie-mermaid mcp`); see the [README's MCP Server section](../../README.md#mcp-server) for client config.
 
 ```ts
 import { createMcpServer } from '@zombie-mermaid/mcp'

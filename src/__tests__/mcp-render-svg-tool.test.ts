@@ -63,7 +63,7 @@ describe('renderSvgHandler', () => {
     ) {
       throw new Error('Expected text content')
     }
-    // transparent:true omits the `background:var(--bg)` style declaration
+    // Transparent:true omits the `background:var(--bg)` style declaration
     // (the --bg custom property itself is still declared either way).
     expect(opaque.content[0].text).toContain('background:var(--bg)')
     expect(transparent.content[0].text).not.toContain('background:var(--bg)')

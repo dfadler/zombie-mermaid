@@ -1,5 +1,7 @@
 # Research: font-corrected Playwright Docker image, ASCII/terminal baseline parity
 
+As of: 2026-10-22, reviewed against `main` @ `bd0a701c`. Cited files exist; the measured numbers were not re-run. Re-measure before quoting one as current.
+
 Status: **answered, with a correction to the recommended fix.** Written for
 [#614](https://github.com/dfadler/zombie-mermaid/issues/614), part of the
 [#544](https://github.com/dfadler/zombie-mermaid/issues/544) Docker tracking cluster.
@@ -26,7 +28,7 @@ identified as blocking a real go/no-go in
   generic `monospace` — confirmed live via `getComputedStyle`. Only fontconfig's generic
   alias matters; the named faces are irrelevant to the grid.
 - **#545's diagnosis was right about the symptom, wrong about the lever.** `fc-match
-monospace` → `WenQuanYi Zen Hei Mono` is indeed the cause, but the fix is to make the
+  monospace` → `WenQuanYi Zen Hei Mono` is indeed the cause, but the fix is to make the
   _generic alias_ resolve the way `ubuntu-latest` does, not to supply the named faces the
   CSS asks for.
 - **The 88 ASCII failures were essentially all font-fallback.** Nothing structural or

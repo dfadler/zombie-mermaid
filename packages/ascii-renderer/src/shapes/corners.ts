@@ -48,6 +48,20 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
     ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
   },
+  // Class diagram nodes (class-flow.ts) draw their own borders; these are the
+  // plain-box fallback getCorners would return.
+  'class-box': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'class-note': {
+    unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
+    ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
+  },
+  'class-name': {
+    unicode: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },
+    ascii: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },
+  },
 
   // Circular shapes - use circle markers at corners
   circle: {
@@ -77,10 +91,10 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     ascii: { tl: '(', tr: ')', bl: '(', br: ')' },
   },
 
-  // Subroutine - double vertical bars
+  // Subroutine - plain box; drawNode adds the inner vertical bars (#2164)
   subroutine: {
-    unicode: { tl: '╟', tr: '╢', bl: '╟', br: '╢' },
-    ascii: { tl: '|', tr: '|', bl: '|', br: '|' },
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
   },
 
   // Cylinder/database
@@ -89,10 +103,10 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
   },
 
-  // Asymmetric/flag - pointer on left side
+  // Asymmetric/flag - plain box; drawAsymmetric notches the left side (#2164)
   asymmetric: {
-    unicode: { tl: '▷', tr: '┐', bl: '▷', br: '┘' },
-    ascii: { tl: '>', tr: '+', bl: '>', br: '+' },
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
   },
 
   // Trapezoid - wider at bottom (top corners slope inward)

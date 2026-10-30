@@ -24,11 +24,22 @@ import type {
   AsciiSubgraph,
   EdgeBundle,
 } from './types.ts'
-import { mergeCanvases, firstClaimWins, scanBounds, write } from './canvas.ts'
+import {
+  cellAt,
+  firstClaimWins,
+  forEachInk,
+  mergeCanvases,
+  scanBounds,
+  write,
+} from './canvas.ts'
 import type { RoleCanvas, CharRole, LabelRect } from './types.ts'
 import { setRole } from './canvas.ts'
 import { drawArrow, labelInteriorSpaces } from './draw-arrows.ts'
 import { withPortShifts } from './port-offsets.ts'
+import { isSilhouetteShape } from './shapes/silhouettes.ts'
+
+/** Vertically symmetric shapes whose diagonals must swap in BT (#2388). */
+const DIAGONAL_SHAPES = new Set(['hexagon', 'diamond', 'circle'])
 import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
@@ -82,20 +93,16 @@ function fillRolesFromCanvas(
   offset: DrawingCoord,
   role: CharRole,
 ): void {
-  const [x0, y0, x1, y1] = scanBounds(canvas)
-  for (let x = x0; x <= x1; x++) {
-    for (let y = y0; y <= y1; y++) {
-      const char = canvas[x]?.[y]
-      if (char && char !== ' ') {
-        const rx = x + offset.x
-        const ry = y + offset.y
-        // Use setRole which auto-expands the role canvas if needed
-        if (rx >= 0 && ry >= 0) {
-          setRole(roleCanvas, rx, ry, role)
-        }
+  forEachInk(canvas, (x, y, char) => {
+    if (char && char !== ' ') {
+      const rx = x + offset.x
+      const ry = y + offset.y
+      // Use setRole which auto-expands the role canvas if needed
+      if (rx >= 0 && ry >= 0) {
+        setRole(roleCanvas, rx, ry, role)
       }
     }
-  }
+  })
 }
 
 /**
@@ -115,20 +122,17 @@ function fillRolesFromCanvases(
 /** Bounding rectangle of a canvas's non-space cells, or null if it has none. */
 function textBounds(canvas: Canvas): LabelRect | null {
   let rect: LabelRect | null = null
-  const [x0, y0, x1, y1] = scanBounds(canvas)
-  for (let x = x0; x <= x1; x++) {
-    for (let y = y0; y <= y1; y++) {
-      if (canvas[x]![y] === ' ') continue
-      rect = rect
-        ? {
-            x0: Math.min(rect.x0, x),
-            x1: Math.max(rect.x1, x),
-            y0: Math.min(rect.y0, y),
-            y1: Math.max(rect.y1, y),
-          }
-        : { x0: x, x1: x, y0: y, y1: y }
-    }
-  }
+  forEachInk(canvas, (x, y, ch) => {
+    if (ch === ' ') return
+    rect = rect
+      ? {
+          x0: Math.min(rect.x0, x),
+          x1: Math.max(rect.x1, x),
+          y0: Math.min(rect.y0, y),
+          y1: Math.max(rect.y1, y),
+        }
+      : { x0: x, x1: x, y0: y, y1: y }
+  })
   return rect
 }
 
@@ -140,8 +144,13 @@ function fillRolesForNodeBox(
   roleCanvas: RoleCanvas,
   canvas: Canvas,
   offset: DrawingCoord,
+  silhouette = false,
 ): void {
-  const isBorderChar = (c: string) => /^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|.':]$/.test(c)
+  // Stadium/hexagon silhouette glyphs are border too (the label rows are
+  // re-marked as text by the caller).
+  const isBorderChar = (c: string) =>
+    (silhouette ? /^[()<>/\\╱╲]$/ : /^$/).test(c) ||
+    /^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|.':]$/.test(c)
 
   const [x0, y0, x1, y1] = scanBounds(canvas)
   for (let x = x0; x <= x1; x++) {
@@ -205,20 +214,31 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         node.drawing,
       )
       // Node boxes: detect border vs text characters
-      fillRolesForNodeBox(graph.roleCanvas, node.drawing, node.drawingCoord)
+      fillRolesForNodeBox(
+        graph.roleCanvas,
+        node.drawing,
+        node.drawingCoord,
+        isSilhouetteShape(node.shape),
+      )
       if (node.labelRows) {
         // Every non-space cell on a label row between the side borders is
         // label text, even a `-` or `|` that isBorderChar would call a border.
         const { x: ox, y: oy } = node.drawingCoord
+        // A box-less interface name has no border cells to leave out.
+        const bare = node.shape === 'class-name' ? 1 : 0
         const rect: LabelRect = {
-          x0: ox + 1,
-          x1: ox + node.drawing.length - 2,
+          x0: ox + 1 - bare,
+          x1: ox + node.drawing.length - 2 + bare,
           y0: oy + node.labelRows.top,
           y1: oy + node.labelRows.bottom,
         }
         labelRects.push(rect)
-        for (let x = rect.x0; x <= rect.x1; x++) {
-          for (let y = rect.y0; y <= rect.y1; y++) {
+        for (let y = rect.y0; y <= rect.y1; y++) {
+          // A hexagon's diagonal sits inside the rect on its label rows.
+          const inset = node.labelInsets?.[y - oy] ?? 0
+          const xa = Math.max(rect.x0, ox + inset + 1)
+          const xb = Math.min(rect.x1, ox + node.drawing.length - 2 - inset)
+          for (let x = xa; x <= xb; x++) {
             const ch = graph.canvas[x]?.[y]
             if (ch && ch !== ' ') setRole(graph.roleCanvas, x, y, 'text')
           }
@@ -229,6 +249,8 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         x1: node.drawingCoord.x + node.drawing.length - 1,
         y0: node.drawingCoord.y,
         y1: node.drawingCoord.y + node.drawing[0]!.length - 1,
+        ...(node.shape === 'asymmetric' && { leftNotch: true }),
+        ...(DIAGONAL_SHAPES.has(node.shape) && { diagonals: true }),
       })
       node.drawn = true
     }
@@ -404,7 +426,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
       graph,
       (x, y) =>
         isVerticalStroke(graph.canvas[x + sg.minX]?.[y + sg.minY]) &&
-        // continues below, so it is an edge passing through, not a stray glyph
+        // Continues below, so it is an edge passing through, not a stray glyph
         (graph.canvas[x + sg.minX]?.[y + sg.minY + 1] ?? ' ') !== ' ',
     )
     graph.canvas = mergeCanvases(graph.canvas, offset, useAscii, labelCanvas)
@@ -426,7 +448,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
     // (issue #447: rendered as "US West│Region"). Force those specific
     // cells, bypassing mergeCanvases's space-skip.
     for (const { x, y } of footprint) {
-      const ch = labelCanvas[x]?.[y]
+      const ch = cellAt(labelCanvas, x, y)
       if (ch === ' ') {
         write(graph.canvas, x + offset.x, y + offset.y, ch)
         setRole(graph.roleCanvas, x + offset.x, y + offset.y, 'text')

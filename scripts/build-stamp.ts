@@ -48,7 +48,7 @@ export function stampHtml(html: string, { sha, version }: BuildStamp): string {
   return html.replace('<head>', () => `<head>${tags}`)
 }
 
-/** generatePage's hook: stamps `.html` outputs, leaves other files untouched. */
+/** The prerender step's hook: stamps `.html` outputs, leaves other files untouched. */
 export function stampFile(outPath: URL, content: string): string {
   return outPath.pathname.endsWith('.html')
     ? stampHtml(content, buildStamp())

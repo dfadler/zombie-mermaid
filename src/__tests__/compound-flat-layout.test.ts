@@ -1038,8 +1038,8 @@ describe('clearBorders (#1749)', () => {
 
     it('leaves a run beside a side it does not overlap', () => {
       for (const [y1, y2] of [
-        [150, 180], // past the box
-        [-80, -50], // before the box
+        [150, 180], // Past the box
+        [-80, -50], // Before the box
       ] as const) {
         const e = edge(dir, [
           [50, y1],
@@ -1072,10 +1072,10 @@ describe('clearBorders (#1749)', () => {
 
     it('moves a run past a node that is clear of its span', () => {
       for (const n of [
-        node(dir, 100, 200, 40, 20), // straddles the target, beyond the run
-        node(dir, 100, -60, 40, 20), // straddles the target, before the run
-        node(dir, 0, 40, 100, 40), // ends before the target
-        node(dir, 108, 40, 40, 40), // starts at the target
+        node(dir, 100, 200, 40, 20), // Straddles the target, beyond the run
+        node(dir, 100, -60, 40, 20), // Straddles the target, before the run
+        node(dir, 0, 40, 100, 40), // Ends before the target
+        node(dir, 108, 40, 40, 40), // Starts at the target
       ]) {
         const e = run(102)
         apply([e], [n])
@@ -1111,7 +1111,7 @@ describe('clearBorders (#1749)', () => {
       clearBorders(
         [e],
         [],
-        [group(dir, 0, 0, 300, 100), group(dir, 20, 20, 82, 60)], // inner right side at 102
+        [group(dir, 0, 0, 300, 100), group(dir, 20, 20, 82, 60)], // Inner right side at 102
         dir,
       )
       expect(flow(dir, e)).toEqual([110, 110])

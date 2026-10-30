@@ -377,7 +377,7 @@ describe('renderMermaidSVG({ resolveColors: true })', () => {
     })
     const declared = (name: string): string | undefined => {
       const pattern = `${escapeRegExp(name)}:\\s*(#[0-9a-f]{6})`
-      return new RegExp(pattern, 'i').exec(svg)?.[1] // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+      return new RegExp(pattern, 'i').exec(svg)?.[1] // Nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
     }
 
     expect(declared('--_line')).toBe(

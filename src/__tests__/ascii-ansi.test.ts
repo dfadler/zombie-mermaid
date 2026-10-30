@@ -71,7 +71,7 @@ describe('diagramColorsToAsciiTheme', () => {
 describe('DEFAULT_ASCII_THEME', () => {
   it('matches the documented zinc palette', () => {
     expect(DEFAULT_ASCII_THEME).toEqual({
-      fg: '#27272a',
+      fg: 'inherit', // Text keeps the terminal's own foreground (#2165)
       border: '#a1a1aa',
       line: '#71717a',
       arrow: '#52525b',
@@ -297,22 +297,22 @@ describe('getAnsiColor', () => {
 
   it('maps saturated colors to the matching 16-color ANSI code', () => {
     expect(getAnsiColor('text', { ...theme, fg: '#ff0000' }, 'ansi16')).toBe(
-      '\x1b[91m', // red, bright (luma < 100)
+      '\x1b[91m', // Red, bright (luma < 100)
     )
     expect(getAnsiColor('text', { ...theme, fg: '#00ff00' }, 'ansi16')).toBe(
-      '\x1b[32m', // green, not bright (luma > 100)
+      '\x1b[32m', // Green, not bright (luma > 100)
     )
     expect(getAnsiColor('text', { ...theme, fg: '#ffff00' }, 'ansi16')).toBe(
-      '\x1b[33m', // yellow
+      '\x1b[33m', // Yellow
     )
     expect(getAnsiColor('text', { ...theme, fg: '#0000ff' }, 'ansi16')).toBe(
-      '\x1b[94m', // blue, bright
+      '\x1b[94m', // Blue, bright
     )
     expect(getAnsiColor('text', { ...theme, fg: '#ff00ff' }, 'ansi16')).toBe(
-      '\x1b[35m', // magenta
+      '\x1b[35m', // Magenta
     )
     expect(getAnsiColor('text', { ...theme, fg: '#00ffff' }, 'ansi16')).toBe(
-      '\x1b[36m', // cyan
+      '\x1b[36m', // Cyan
     )
   })
 

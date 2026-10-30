@@ -53,6 +53,7 @@ export {
   registerElk,
   validateMermaid,
   ElkNotRegisteredError,
+  loadEmbeddedFont,
 } from '@zombie-mermaid/svg-renderer'
 export type { LayoutCache } from '@zombie-mermaid/svg-renderer'
 export type { ElkConstructor } from '@zombie-mermaid/core'

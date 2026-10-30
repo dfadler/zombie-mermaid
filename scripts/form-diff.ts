@@ -42,7 +42,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { renderMermaidASCII } from '../src/index.ts'
-import { samples, type Sample } from '../packages/site/samples-data.ts'
+import { samples, type Sample } from '../samples/samples-data.ts'
 import { escapeHtml } from '../demo/format.ts'
 import { asciiToHtml } from '../packages/site/ascii-html.ts'
 import { startRealMermaid, renderRealMermaidSvg } from './lib/real-mermaid.ts'
@@ -96,7 +96,7 @@ async function generate(): Promise<string> {
   const indexed = samples
     .map((sample, i) => ({ sample, i }))
     .filter(({ sample }) => {
-      if (sample.category === 'Hero') return false // no ASCII panel for Hero samples
+      if (sample.category === 'Hero') return false // No ASCII panel for Hero samples
       if (CATEGORY_FILTER && sample.category !== CATEGORY_FILTER) return false
       return true
     })

@@ -1,11 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { mobileMenuScript } from '../demo/components/mobile-menu-script-plugin.ts'
 
 // This file lives in config/, one level below the repo root (#997) —
-// REPO_ROOT points at the actual root so the aliases below still resolve
-// `packages/*/src/index.ts` the same way they did when this file lived at
-// the repo root itself. `setupFiles` below is a separate case: Vitest
+// REPO_ROOT points at the actual root. `setupFiles` below is a separate case: Vitest
 // resolves that path against the *run's* root (repo root, since scripts
 // invoke `vitest -c config/vitest.config.ts` from there), not against this
 // config file's own directory — so it's spelled `./config/vitest.setup.ts`
@@ -13,34 +12,18 @@ import { defineConfig } from 'vitest/config'
 const REPO_ROOT = resolve(import.meta.dirname, '..')
 
 export default defineConfig({
+  plugins: [mobileMenuScript()],
   // As of #769, the five `@zombie-mermaid/*` packages' package.json
   // `exports`/`types` point at their own *built* `dist/index.js`/
   // `.d.ts` — correct for a real published consumer, but Vite's default
   // resolver would then need every package built before a single test file
   // could even load (unlike `tsc`, which honors tsconfig.json's `paths`
   // override for the same specifiers regardless of package.json — see that
-  // file's comment). These aliases keep the test suite doing what it always
-  // did: running straight against live source, no build step required —
-  // mirroring tsconfig.json's `paths` so both stay in sync by construction
-  // rather than by two people remembering to update two files.
-  resolve: {
-    alias: {
-      '@zombie-mermaid/core': resolve(REPO_ROOT, 'packages/core/src/index.ts'),
-      '@zombie-mermaid/mermaid-parser': resolve(
-        REPO_ROOT,
-        'packages/mermaid-parser/src/index.ts',
-      ),
-      '@zombie-mermaid/svg-renderer': resolve(
-        REPO_ROOT,
-        'packages/svg-renderer/src/index.ts',
-      ),
-      '@zombie-mermaid/ascii-renderer': resolve(
-        REPO_ROOT,
-        'packages/ascii-renderer/src/index.ts',
-      ),
-      '@zombie-mermaid/mcp': resolve(REPO_ROOT, 'packages/mcp/src/index.ts'),
-    },
-  },
+  // file's comment). `resolve.tsconfigPaths` keeps the test suite running straight
+  // against live source, no build step required, reading tsconfig.json's
+  // `paths` directly (one source of truth). Files outside the root tsconfig's
+  // `include` get the mapping from the nested tsconfig.json files (#1836).
+  resolve: { tsconfigPaths: true },
   test: {
     include: [
       'src/__tests__/**/*.test.ts',
@@ -94,6 +77,12 @@ export default defineConfig({
     // omitting it fails loudly (`document is not defined`) rather than
     // silently passing under the wrong environment.
     setupFiles: ['./config/vitest.setup.ts'],
+    // 20 s instead of the 5 s default (#1825). Under a full run (~12 workers,
+    // `pnpm run verify --full`) sub-second tests such as ascii-html-mockup-parity
+    // and ascii-label-attribution stretch past 5 s, and a different 2-4 tests
+    // time out each run. Per-test timeouts would be whack-a-mole; a test that
+    // genuinely hangs still fails, just 15 s later. Slow tests keep their own.
+    testTimeout: 20_000,
     // CI-only (#1838); local runs keep the default reporter and no retry.
     // - `github-actions`: annotations plus the job summary written to
     //   $GITHUB_STEP_SUMMARY, which lists every test that passed only after

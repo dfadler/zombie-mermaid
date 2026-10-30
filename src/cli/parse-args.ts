@@ -70,6 +70,8 @@ export interface RenderArgs {
   maxWidth: number | 'auto' | undefined
   /** `--profile markdown`: ASCII output preset (see `AsciiRenderOptions.profile`). */
   profile?: 'markdown' | undefined
+  /** `--layout mermaid`: draw flowcharts from mermaid's ELK layout (opt-in; falls back with a stderr note). */
+  layout?: 'mermaid' | 'mermaid-wide' | undefined
   /**
    * Layout direction override (`--direction`), already upper-cased and
    * validated. Passed straight through as `RenderOptions.direction` /
@@ -94,7 +96,18 @@ export interface ValidateArgs {
   input: string | undefined
 }
 
-export type CliArgs = RenderArgs | SimpleCommand | WebArgs | ValidateArgs
+export interface CheckArgs {
+  command: 'check'
+  /** Markdown files whose ```mermaid blocks are validated. */
+  files: string[]
+}
+
+export type CliArgs =
+  | RenderArgs
+  | SimpleCommand
+  | WebArgs
+  | ValidateArgs
+  | CheckArgs
 
 /** Default port for `zombie-mermaid web` when `--port` isn't given. */
 export const DEFAULT_WEB_PORT = 3000
@@ -198,6 +211,15 @@ export function parseArgs(argv: string[]): CliArgs {
   }
   if (first === '--version' || first === '-v') {
     return { command: 'version' }
+  }
+
+  // --check <file.md>...: validate ```mermaid blocks in Markdown (#1876)
+  if (first === '--check') {
+    if (rest.length === 0)
+      throw new Error('--check requires at least one Markdown file')
+    const flag = rest.find((a) => a.startsWith('-'))
+    if (flag !== undefined) throw new Error(`Unknown flag: ${flag}`)
+    return { command: 'check', files: rest }
   }
 
   // Simple commands
@@ -314,6 +336,7 @@ function parseRender(args: string[]): RenderArgs {
   let hyperlinks = false
   let maxWidth: number | 'auto' | undefined
   let profile: 'markdown' | undefined
+  let layout: 'mermaid' | 'mermaid-wide' | undefined
   let direction: Direction | undefined
 
   let i = 0
@@ -383,6 +406,16 @@ function parseRender(args: string[]): RenderArgs {
       }
       profile = v
       i += 2
+    } else if (arg === '--layout' || arg.startsWith('--layout=')) {
+      const eq = arg.indexOf('=')
+      const v = eq === -1 ? args[i + 1] : arg.slice(eq + 1)
+      if (v !== 'mermaid' && v !== 'mermaid-wide') {
+        throw new Error(
+          `--layout requires one of: mermaid, mermaid-wide, got: "${v ?? ''}"`,
+        )
+      }
+      layout = v
+      i += eq === -1 ? 2 : 1
     } else if (arg === '--direction') {
       direction = parseDirectionFlag(args, i, arg)
       i += 2
@@ -503,6 +536,10 @@ function parseRender(args: string[]): RenderArgs {
     throw new Error('--profile requires --ascii')
   }
 
+  if (layout !== undefined && !ascii) {
+    throw new Error('--layout requires --ascii')
+  }
+
   if (hyperlinks && !ascii) {
     throw new Error('--hyperlinks requires --ascii')
   }
@@ -529,6 +566,7 @@ function parseRender(args: string[]): RenderArgs {
     hyperlinks,
     maxWidth,
     profile,
+    layout,
     direction,
   }
 }

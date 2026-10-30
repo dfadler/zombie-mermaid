@@ -104,7 +104,7 @@ export function renderXYChartSvg(
     embedSource,
   )
   parts.push(svgTag)
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
 
   // Sparse lines (≤12 points) show dots by default
   const maxLinePoints = Math.max(...chart.lines.map((l) => l.points.length), 0)
@@ -186,7 +186,9 @@ export function renderXYChartSvg(
   // 3. Lines — shadow first (wider, low opacity), then crisp line on top
   for (const line of chart.lines) {
     if (line.points.length === 0) continue
-    const d = smoothCurvePath(line.points)
+    const d = chart.horizontal
+      ? straightLinePath(line.points)
+      : smoothCurvePath(line.points)
     parts.push(
       `<path d="${d}" class="xychart-line-shadow xychart-color-${line.colorIndex}" transform="translate(0,2)"/>`,
     )
@@ -294,7 +296,7 @@ export function renderXYChartSvg(
 
   // 5. Axis labels (no axis lines, no tick marks — just floating labels)
   for (const tick of chart.xAxis.ticks) {
-    if (tick.label === '') continue // dropped by the layout's overlap step
+    if (tick.label === '') continue // Dropped by the layout's overlap step
     parts.push(
       `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
         `font-size="${CHART_FONT.labelSize}" font-weight="${CHART_FONT.labelWeight}" ` +
@@ -466,13 +468,13 @@ function roundedTopBarPath(
     return `M${r(x)},${r(y)} h${r(w)} v${r(h)} h${r(-w)} Z`
   }
   return [
-    `M${r(x)},${r(y + rr)}`, // start below top-left
+    `M${r(x)},${r(y + rr)}`, // Start below top-left
     `Q${r(x)},${r(y)} ${r(x + rr)},${r(y)}`, // top-left
-    `L${r(x + w - rr)},${r(y)}`, // top edge
+    `L${r(x + w - rr)},${r(y)}`, // Top edge
     `Q${r(x + w)},${r(y)} ${r(x + w)},${r(y + rr)}`, // top-right
-    `L${r(x + w)},${r(y + h - rr)}`, // right edge
+    `L${r(x + w)},${r(y + h - rr)}`, // Right edge
     `Q${r(x + w)},${r(y + h)} ${r(x + w - rr)},${r(y + h)}`, // bottom-right
-    `L${r(x + rr)},${r(y + h)}`, // bottom edge
+    `L${r(x + rr)},${r(y + h)}`, // Bottom edge
     `Q${r(x)},${r(y + h)} ${r(x)},${r(y + h - rr)}`, // bottom-left
     'Z',
   ].join(' ')
@@ -494,17 +496,27 @@ function roundedRightBarPath(
     return `M${r(x)},${r(y)} h${r(w)} v${r(h)} h${r(-w)} Z`
   }
   return [
-    `M${r(x + rr)},${r(y)}`, // start after top-left
-    `L${r(x + w - rr)},${r(y)}`, // top edge
+    `M${r(x + rr)},${r(y)}`, // Start after top-left
+    `L${r(x + w - rr)},${r(y)}`, // Top edge
     `Q${r(x + w)},${r(y)} ${r(x + w)},${r(y + rr)}`, // top-right
-    `L${r(x + w)},${r(y + h - rr)}`, // right edge
+    `L${r(x + w)},${r(y + h - rr)}`, // Right edge
     `Q${r(x + w)},${r(y + h)} ${r(x + w - rr)},${r(y + h)}`, // bottom-right
-    `L${r(x + rr)},${r(y + h)}`, // bottom edge
+    `L${r(x + rr)},${r(y + h)}`, // Bottom edge
     `Q${r(x)},${r(y + h)} ${r(x)},${r(y + h - rr)}`, // bottom-left
-    `L${r(x)},${r(y + rr)}`, // left edge
+    `L${r(x)},${r(y + rr)}`, // Left edge
     `Q${r(x)},${r(y)} ${r(x + rr)},${r(y)}`, // top-left
     'Z',
   ].join(' ')
+}
+
+// Horizontal charts plot (value, category) and mermaid draws straight segments
+// in category order there, so no smoothing (smoothCurvePath needs y = f(x)).
+export function straightLinePath(
+  points: Array<{ x: number; y: number }>,
+): string {
+  return points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${r(p.x)},${r(p.y)}`)
+    .join(' ')
 }
 
 // ============================================================================

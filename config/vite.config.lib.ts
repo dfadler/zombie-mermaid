@@ -72,12 +72,13 @@
  * collide on `dist/index.d.ts`. The `types` environment is therefore the
  * one multi-entry build here — its JS output is discarded
  * (`declarationOnly`), only the three bundled `.d.ts` files are kept, and
- * `afterBuild` writes each one's `.d.cts` twin (see `writeDctsTwins`).
+ * `afterBuild` moves each to `shared/` and stubs `.d.ts`/`.d.cts` (see
+ * `writeSharedTypes`).
  *
  * Usage: `pnpm run build` (`vite build --app --config vite.config.lib.ts`).
  */
 
-import { chmod, writeFile } from 'node:fs/promises'
+import { chmod } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import { defineConfig, type LibraryFormats, type Plugin } from 'vite'
 import dts from 'unplugin-dts/vite'
@@ -85,6 +86,7 @@ import {
   RELATIVE_IMPORT_RE,
   sharedBuild,
   sharedDtsOptions,
+  writeSharedDts,
 } from '../vite.config.package.ts'
 
 // This file lives in config/, one level below the repo root (#997) — ROOT
@@ -102,6 +104,9 @@ const DIST = resolve(ROOT, 'dist')
 // elkjs's entire (huge) UMD bundle into `dist/index.js`/`dist/index.cjs`.
 // A prefix-matching function closes that gap for any current or future
 // subpath import.
+//
+// `elkjs-0.9.3` is the npm alias for elkjs 0.9.3, the pin the opt-in layout-faithful ASCII mode
+// (src/ascii-layout.ts, #2182) needs; an OPTIONAL peer, only imported from a lazy chunk.
 //
 // `@modelcontextprotocol/sdk` and `zod` are only needed by the `mcp` entry
 // (and, transitively, the CLI's `mcp` subcommand, src/cli/mcp.ts) — kept
@@ -131,6 +136,8 @@ function isExternal(id: string): boolean {
   return (
     id === 'elkjs' ||
     id.startsWith('elkjs/') ||
+    id === 'elkjs-0.9.3' ||
+    id.startsWith('elkjs-0.9.3/') ||
     id === 'entities' ||
     id.startsWith('entities/') ||
     id === '@modelcontextprotocol/sdk' ||
@@ -167,6 +174,20 @@ const cliExecutable: Plugin = {
   },
 }
 
+// The cli environment is its own single-entry build, so it would otherwise bundle a second
+// copy of the ascii-layout chunks (~25 KB, #2272) that the `ascii-layout` library entry
+// already ships. Import that entry instead: the cli lands next to it in `dist/`.
+const cliSharesAsciiLayout: Plugin = {
+  name: 'zombie-mermaid:cli-shares-ascii-layout',
+  enforce: 'pre',
+  applyToEnvironment: (env) => env.name === 'cli',
+  resolveId(source) {
+    return source === '../ascii-layout.ts'
+      ? { id: './ascii-layout.js', external: true }
+      : null
+  },
+}
+
 /**
  * `ascii.d.ts`/`mcp.d.ts` MUST reference their `@zombie-mermaid/*` package
  * by bare specifier (`from '@zombie-mermaid/ascii-renderer'` /
@@ -189,25 +210,23 @@ const WORKSPACE_REF_RE: Record<string, RegExp> = {
 }
 
 /**
- * Writes `index.d.cts`, `ascii.d.cts`, and `mcp.d.cts` as byte-for-byte
- * copies of the bundled `.d.ts` files unplugin-dts just emitted (its own
- * per-format `.d.cts` output only kicks in when each format gets its own
- * `outDir`, which they don't here — `dist/` is flat).
+ * Moves each bundled `.d.ts` unplugin-dts just emitted (`index`, `ascii`,
+ * `ascii-layout`, `mcp`) to `shared/<name>.d.ts` and writes `<name>.d.ts` and
+ * `<name>.d.cts` as one-line re-exports of it — see `writeSharedDts` (#2196).
+ * unplugin-dts's own per-format `.d.cts` output only kicks in when each format
+ * gets its own `outDir`, which they don't here — `dist/` is flat.
  *
- * Copying verbatim is safe because `bundleTypes` rolls each entry into one
- * fully self-contained file with no *relative* imports to other declaration
- * files whose extension would need to differ between the ESM and CJS
- * variant. A bare
- * package-specifier import (e.g. `import { ElkNode } from 'elkjs'`, or —
- * as of #769 — `from '@zombie-mermaid/core'`) is fine to duplicate too —
- * Node resolves a bare specifier the same way regardless of the importing
- * file's own module format — so only a relative import (`./`, `../`) trips
- * the guard below.
+ * Moving a file down a directory is safe because `bundleTypes` rolls each
+ * entry into one fully self-contained file with no *relative* imports to other
+ * declaration files. A bare package-specifier import (e.g.
+ * `import { ElkNode } from 'elkjs'`, or — as of #769 —
+ * `from '@zombie-mermaid/core'`) resolves the same from `shared/` — so only a
+ * relative import (`./`, `../`) trips the guard below.
  */
-async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
+async function writeSharedTypes(emitted: Map<string, string>): Promise<void> {
   const files = [...emitted.keys()].filter((file) => file.endsWith('.d.ts'))
   const found = files.map((file) => basename(file)).sort()
-  const expected = ['ascii.d.ts', 'index.d.ts', 'mcp.d.ts']
+  const expected = ['ascii-layout.d.ts', 'ascii.d.ts', 'index.d.ts', 'mcp.d.ts']
   if (found.join() !== expected.join()) {
     throw new Error(
       `Expected exactly ${expected.join(', ')} from the types build, found: ${found.join(', ') || '(none)'}`,
@@ -220,7 +239,7 @@ async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
       if (RELATIVE_IMPORT_RE.test(content)) {
         throw new Error(
           `${name} has a relative import/re-export — no longer safe to duplicate verbatim ` +
-            `as its .d.cts twin. Update writeDctsTwins() to handle that.`,
+            `into shared/. Update writeSharedTypes() to handle that.`,
         )
       }
       const workspaceRef = WORKSPACE_REF_RE[name]
@@ -230,7 +249,7 @@ async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
             `it may have been inlined again instead of left external. See WORKSPACE_REF_RE above.`,
         )
       }
-      return writeFile(file.replace(/\.d\.ts$/, '.d.cts'), content)
+      return writeSharedDts(file, content)
     }),
   )
 }
@@ -266,11 +285,12 @@ export default defineConfig({
         // (`declarationOnly` drops the `types` environment's JS: it is a
         // multi-entry build with shared chunks, never the real output, and
         // would land on the same `dist/index.js` etc. the real entries wrote.)
-        afterBuild: writeDctsTwins,
+        afterBuild: writeSharedTypes,
       }),
       applyToEnvironment: (env) => env.name === 'types',
     },
     cliExecutable,
+    cliSharesAsciiLayout,
   ],
   build: {
     outDir: DIST,
@@ -303,6 +323,21 @@ export default defineConfig({
           entry: resolve(ROOT, 'src/ascii-entry.ts'),
           formats: ES_AND_CJS,
           fileName: (format) => `ascii.${format === 'es' ? 'js' : 'cjs'}`,
+        },
+      },
+    },
+    // Opt-in layout-faithful ASCII (#2182): its own entry so the private layout packages and
+    // the optional elkjs-0.9.3 peer never enter `index`/`ascii` (a bundler resolving the
+    // browser-oriented entries would otherwise have to resolve them). They load through a
+    // dynamic import inside `src/ascii-layout.ts`, so even this entry stays small until called.
+    asciiLayout: {
+      consumer: 'client',
+      build: {
+        lib: {
+          entry: resolve(ROOT, 'src/ascii-layout.ts'),
+          formats: ES_AND_CJS,
+          fileName: (format) =>
+            `ascii-layout.${format === 'es' ? 'js' : 'cjs'}`,
         },
       },
     },
@@ -367,6 +402,7 @@ export default defineConfig({
             index: resolve(ROOT, 'src/index.ts'),
             ascii: resolve(ROOT, 'src/ascii-entry.ts'),
             mcp: resolve(ROOT, 'src/mcp-entry.ts'),
+            'ascii-layout': resolve(ROOT, 'src/ascii-layout.ts'),
           },
           formats: ES_ONLY,
         },

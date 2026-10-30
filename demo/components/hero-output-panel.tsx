@@ -463,7 +463,7 @@ export function HeroOutputPanel({ asciiHtml }: HeroOutputPanelProps) {
           <pre
             className="mono"
             style={HERO_ASCII_STYLE}
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII() + asciiToHtml() output from index-page.tsx's own HERO_MERMAID_SOURCE; never user input
+            // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII() + asciiToHtml() output from index-page.tsx's own HERO_MERMAID_SOURCE; never user input
             dangerouslySetInnerHTML={{ __html: asciiHtml }}
           />
         )}

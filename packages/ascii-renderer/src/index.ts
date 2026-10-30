@@ -19,8 +19,11 @@
 
 import {
   checkLimit,
+  checkLineLength,
   detectDiagramType,
   extractAccessibility,
+  extractInitConfig,
+  parseHexColor,
 } from '@zombie-mermaid/core'
 import type { Direction, DiagramType, RenderLimits } from '@zombie-mermaid/core'
 import { asciiRegistry } from './registry.ts'
@@ -55,7 +58,7 @@ export interface AsciiRenderOptions {
   profile?: 'markdown'
   /** Size limits checked before layout; exceeding one throws `LimitExceededError`. See `RenderLimits`. */
   limits?: RenderLimits
-  /** true = ASCII chars (+,-,|,>), false = Unicode box-drawing (┌,─,│,►). Default: false */
+  /** True = ASCII chars (+,-,|,>), false = Unicode box-drawing (┌,─,│,►). Default: false */
   useAscii?: boolean
   /** Horizontal spacing between nodes. Default: 5 */
   paddingX?: number
@@ -122,6 +125,41 @@ export interface AsciiRenderOptions {
    * positive integer.
    */
   maxWidth?: number
+  /**
+   * Opt in to a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours
+   * (default false: output is unchanged). Maps `lineColor` → `line`/`corner`,
+   * `primaryBorderColor` → `border`/`junction`, `primaryTextColor` → `fg`
+   * (the last two only with `theme: "base"`, as in Mermaid) and, for pie
+   * charts, `pie1`..`pie12` → the slice colours. Hex values only (ANSI and
+   * HTML output need a hex literal); `primaryColor` has no ASCII meaning (a
+   * node has no fill). A key you set in `theme` always wins. Same option as
+   * `RenderOptions.honorThemeVariables` for SVG.
+   */
+  honorThemeVariables?: boolean
+}
+
+/** The theme keys a diagram's `themeVariables` set (hex only), for the opt-in. */
+function directiveTheme(
+  text: string,
+  caller: Partial<AsciiTheme> = {},
+): Partial<AsciiTheme> {
+  const tv = extractInitConfig(text.split(/\r\n?|\n/)).themeVariables
+  const hex = (v?: string) => (v && parseHexColor(v) ? v : undefined)
+  const line = hex(tv?.lineColor)
+  const border = hex(tv?.primaryBorderColor)
+  const out: Partial<AsciiTheme> = {}
+  if (line) {
+    out.line = line
+    // corner/junction follow line/border, as in diagramColorsToAsciiTheme().
+    if (caller.line === undefined) out.corner = line
+  }
+  if (border) {
+    out.border = border
+    if (caller.border === undefined) out.junction = border
+  }
+  const fg = hex(tv?.primaryTextColor)
+  if (fg) out.fg = fg
+  return out
 }
 
 /**
@@ -207,7 +245,7 @@ function renderOnce(source: string, options: AsciiRenderOptions): string {
     paddingX: options.paddingX ?? DEFAULT_PADDING_X,
     paddingY: options.paddingY ?? DEFAULT_PADDING_Y,
     boxBorderPadding: options.boxBorderPadding ?? DEFAULT_BOX_BORDER_PADDING,
-    graphDirection: 'TD', // default; renderFlowchartAscii overrides this for flowcharts/state diagrams
+    graphDirection: 'TD', // Default; renderFlowchartAscii overrides this for flowcharts/state diagrams
   }
 
   // Resolve color mode ('auto' or unset → detect environment, otherwise use specified mode)
@@ -219,11 +257,15 @@ function renderOnce(source: string, options: AsciiRenderOptions): string {
         : options.colorMode
 
   // Merge user theme with defaults
-  const theme: AsciiTheme = { ...DEFAULT_ASCII_THEME, ...options.theme }
-
   checkLimit('maxInputLength', source.length, options.limits)
+  checkLineLength(source, options.limits)
   // accTitle/accDescr have no place in text output: drop them, never print.
   const text = extractAccessibility(source).text
+  const theme: AsciiTheme = {
+    ...DEFAULT_ASCII_THEME,
+    ...(options.honorThemeVariables && directiveTheme(text, options.theme)),
+    ...options.theme,
+  }
   const diagramType: DiagramType = detectDiagramType(text)
 
   // Registry dispatch (see src/ascii/registry.ts — issue #533 / #745):
@@ -237,6 +279,7 @@ function renderOnce(source: string, options: AsciiRenderOptions): string {
     hyperlinks: options.hyperlinks ?? false,
     direction: options.direction,
     limits: options.limits,
+    honorThemeVariables: options.honorThemeVariables ?? false,
   })
 
   return options.showCoords ? addCoordsOverlay(result) : result

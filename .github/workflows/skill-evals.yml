@@ -1,0 +1,91 @@
+name: Skill evals
+
+# #1607: lint the project-skill eval cases (.claude/evals, .claude/skills/*/evals) with the
+# eval-authoring linter from dfadler/agent-config. The lint makes no model calls and needs
+# no secret, so it runs on PRs touching .claude/** and on manual dispatch.
+#
+# Running the cases is NOT free even for the `quick` tier (free graders): each case still
+# runs the agent. That tier needs CLAUDE_CODE_OAUTH_TOKEN, so it is manual only, off by
+# default, and runs in the protected `plugin-evals` environment.
+on:
+  pull_request:
+    paths:
+      - '.claude/**'
+      - '.github/workflows/skill-evals.yml'
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: 'lint = free, no secret. quick = also run the free-grader cases (PAID agent runs, cap USD 1-2, needs CLAUDE_CODE_OAUTH_TOKEN)'
+        type: choice
+        options: [lint, quick]
+        default: lint
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-evals-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned commit of dfadler/agent-config (public). Bump deliberately.
+  EVAL_AUTHORING_REF: 158bf2819e20d97c84aea56c144a532c91d9a505
+
+jobs:
+  lint:
+    name: Lint eval cases
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.repository == 'dfadler/zombie-mermaid'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: dfadler/agent-config
+          ref: ${{ env.EVAL_AUTHORING_REF }}
+          path: .agent-config
+          persist-credentials: false
+
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
+
+      # Exit 1 on any error finding; warnings and info are reported only.
+      - name: Lint eval cases
+        run: node .agent-config/plugins/eval-authoring/scripts/ts/lint/cli.ts .claude
+
+  run-quick:
+    name: Run free-grader cases (paid)
+    needs: lint
+    if: github.event_name == 'workflow_dispatch' && inputs.tier == 'quick'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: plugin-evals
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: dfadler/agent-config
+          ref: ${{ env.EVAL_AUTHORING_REF }}
+          path: .agent-config
+          persist-credentials: false
+
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
+
+      - name: Run quick tier
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          set -uo pipefail
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN is not set in the plugin-evals environment"
+            exit 1
+          fi
+          npm install -g @anthropic-ai/claude-code@2.1.287
+          node .agent-config/plugins/eval-authoring/scripts/ts/run-evals/run-evals.ts --tier quick .claude

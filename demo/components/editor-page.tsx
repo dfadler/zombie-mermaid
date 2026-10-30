@@ -444,30 +444,34 @@ export function EditorPage({
           installSlotKind="empty"
         />
       </div>
-      <div className={ZM_SHELL}>
-        <EditorHero homeHref={homeHref} />
-      </div>
+      <main id="main" tabIndex={-1}>
+        <div className={ZM_SHELL}>
+          <EditorHero homeHref={homeHref} />
+        </div>
 
-      <main
-        id="main"
-        className="section-px"
-        style={{
-          padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px`,
-          // Literal hex (tokens.tsx's COLORS), not var(--bg): this div sits
-          // between the two .zm-shell blocks, outside their scope, and
-          // would otherwise show the *tool's* --bg (near-white) through as
-          // a jarring pale band between two dark sections. See the module
-          // doc comment on why var(--bg) itself is off-limits here.
-          background: COLORS['--bg'],
-        }}
-      >
-        <div className="editor-tool-shell">
-          <EditorAppIsland themes={themes} />
+        <div
+          className="section-px"
+          style={{
+            padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px`,
+            // Literal hex (tokens.tsx's COLORS), not var(--bg): this div sits
+            // between the two .zm-shell blocks, outside their scope, and
+            // would otherwise show the *tool's* --bg (near-white) through as
+            // a jarring pale band between two dark sections. See the module
+            // doc comment on why var(--bg) itself is off-limits here.
+            background: COLORS['--bg'],
+          }}
+        >
+          <div className="editor-tool-shell">
+            <EditorAppIsland themes={themes} />
+          </div>
+        </div>
+
+        <div className={ZM_SHELL}>
+          <EditorFeatureStrip />
         </div>
       </main>
 
       <div className={ZM_SHELL}>
-        <EditorFeatureStrip />
         <Footer />
       </div>
 

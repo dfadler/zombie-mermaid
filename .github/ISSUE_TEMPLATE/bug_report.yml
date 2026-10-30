@@ -49,6 +49,10 @@ body:
       description: >
         What actually happened? Paste any error message/stack trace here, or
         describe (and/or attach a screenshot of) the incorrect rendering.
+        A stack trace pointing into minified `dist/` code (e.g. `dist/index.js:1:48213`)
+        is fine as-is: the published builds ship no source maps, but rendering is
+        deterministic, so the Mermaid source plus the version below is enough for
+        a maintainer to reproduce and map it back.
     validations:
       required: true
 

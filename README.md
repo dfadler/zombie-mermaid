@@ -30,9 +30,9 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 `beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. Checkable facts, as of 2026-10-13: the last push to upstream's `main` was 2026-05-06 and its latest release is v1.1.2 (2026-02-26); it has [43 open pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) (19 opened before 2026-04-13) and [50 open issues](https://github.com/lukilabs/beautiful-mermaid/issues) (live counts at those links; the figures above are a dated snapshot). I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
 
-This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (47 fixes): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
+This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (55 fixes): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
 
-It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below.
+It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below. Who maintains it, how releases are published, and what is claimed: [provenance and continuity](docs/provenance.md).
 
 ### Migrating from `beautiful-mermaid`
 
@@ -201,7 +201,7 @@ Using this from React? See [React Integration](docs/react-integration.md) for a 
 
 ## CLI
 
-Installing the package also exposes a `zombie-mermaid` binary:
+Installing the package also exposes a `zombie-mermaid` binary. To run just the CLI, without the library's other entry points, use `npx @zombie-mermaid/cli render diagram.mmd --ascii` (same CLI, published as [`@zombie-mermaid/cli`](packages/cli/README.md)):
 
 ```bash
 zombie-mermaid render diagram.mmd --ascii              # Print ASCII/Unicode to terminal
@@ -214,6 +214,7 @@ zombie-mermaid render diagram.mmd --ascii -o out.txt    # Write the ASCII render
 zombie-mermaid render diagram.mmd --html                # Self-contained pan/zoom HTML viewer
 zombie-mermaid render diagram.mmd --png                 # Rasterize to diagram.png
 cat diagram.mmd | zombie-mermaid render --ascii         # Read from stdin
+zombie-mermaid --check README.md docs/*.md              # Validate every mermaid block in Markdown; exit 1 with file:line diagnostics
 zombie-mermaid themes                                   # List built-in theme names
 zombie-mermaid --help                                   # Show all options
 ```
@@ -225,6 +226,7 @@ hyperlinks — off by default, since terminal and pager support varies (see
 [ASCII terminal hyperlinks](docs/diagrams.md#ascii-terminal-hyperlinks)).
 `--profile markdown` (with `--ascii`) emits plain ASCII characters with no color, for pasting into issues, commits and fenced blocks (the `profile` option in the library and the MCP `render_mermaid_ascii` tool).
 `--max-width <n|auto>` (with `--ascii`) is a hard limit: compact spacing is tried first, and if the output is still wider the command prints an error and exits 1 with no output (the `maxWidth` option in the library and the MCP tool; no default, even with `--profile markdown`).
+`--layout mermaid` (with `--ascii`, opt-in) draws a flowchart from mermaid's own ELK layout instead of the grid renderer; the library equivalent is `renderMermaidASCIIWithLayout` from `zombie-mermaid/ascii-layout`. It needs the optional peer `elkjs-0.9.3` (`pnpm add elkjs-0.9.3@npm:elkjs@0.9.3`), which is loaded only when the flag is used. Diagrams with subgraphs or unmodelled shapes, non-flowchart diagrams, layout failures, and drawings that cannot fit 120 columns (`--layout mermaid-wide` / `maxCols: Infinity` keeps the wide text) fall back to the default renderer, and stderr (or the result's `fallbackReason`) says which one ran. Merged parallel edges hide edge multiplicity; results depend on mermaid 12.1.0 and elkjs 0.9.3. Not available in the MCP tool. See [known differences](docs/known-differences.md#ascii-opt-in-layout-faithful-mode---layout-mermaid).
 
 **Output rules.** `-o` is the destination for the run's _file_ output — SVG, HTML, or PNG when `--svg`/`--html`/`--png` is given, otherwise the ASCII rendering — and `-o -` sends it to stdout instead. A recognised extension (`.svg`, `.html`/`.htm`, `.txt`, `.png`) picks the format on its own, so the flag can be dropped; an extension that contradicts an explicit flag (`--svg -o out.txt`) is an error, while unrecognised ones are simply used as given. `--svg`/`--html`/`--png` with no `-o` writes `<input stem>.svg`/`.html`/`.png` beside the input (stdin input has no name to derive from, so it must pass `-o`). Only one of `--svg`/`--html`/`--png` can be set at a time — run the command twice for more than one. ASCII always prints to the terminal when one of them is also requested (`--ascii --svg -o out.svg`), and never carries ANSI colour codes when written to a file. **An existing output file is never overwritten unless you pass `--force`/`-f`.**
 

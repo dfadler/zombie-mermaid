@@ -29,8 +29,7 @@ describe('ASCII sequence diagrams – create/destroy', () => {
         '   │   one    │               ',
         '   │──────────▶               ',
         '   │          │               ',
-        '   │   two    │               ',
-        '   │          │       ┌───┐   ',
+        '   │   two    │       ┌───┐   ',
         '   │─────────────────▶│ C │   ',
         '   │          │       └─┬─┘   ',
         '   │          │         │     ',
@@ -56,8 +55,7 @@ describe('ASCII sequence diagrams – create/destroy', () => {
         '   |   one    |               ',
         '   |---------->               ',
         '   |          |               ',
-        '   |   two    |               ',
-        '   |          |       +---+   ',
+        '   |   two    |       +---+   ',
         '   |----------------->| C |   ',
         '   |          |       +---+   ',
         '   |          |         |     ',
@@ -81,18 +79,17 @@ describe('ASCII sequence diagrams – create/destroy', () => {
     )
     expect(result).toBe(
       [
-        '           ┌───┐   ',
-        '           │ D │   ',
-        '           └─┬─┘   ',
-        '             │     ',
-        '       hi    │     ',
-        ' ┌───┐       │     ',
-        ' │ C │◀──────│     ',
-        ' └─┬─┘       │     ',
-        '   │         │     ',
-        ' ┌─┴─┐     ┌─┴─┐   ',
-        ' │ C │     │ D │   ',
-        ' └───┘     └───┘   ',
+        '               ┌───┐   ',
+        '               │ D │   ',
+        '               └─┬─┘   ',
+        '                 │     ',
+        ' ┌───┐   hi      │     ',
+        ' │ C │◀──────────│     ',
+        ' └─┬─┘           │     ',
+        '   │             │     ',
+        ' ┌─┴─┐         ┌─┴─┐   ',
+        ' │ C │         │ D │   ',
+        ' └───┘         └───┘   ',
       ].join('\n'),
     )
   })
@@ -110,5 +107,43 @@ describe('ASCII sequence diagrams – create/destroy', () => {
     expect(result).not.toContain('create')
     // Donald's box is not in the header row: the first line holds only A and B
     expect(result.split('\n')[1]).not.toContain('Donald')
+  })
+})
+
+describe('ASCII sequence diagrams – creating message label (#2281)', () => {
+  const lines = (src: string) =>
+    renderMermaidASCII(src, { useAscii: false }).split('\n')
+
+  it.each(['participant', 'actor'])(
+    'puts the label of a message creating a %s on the row above its arrow',
+    (kind) => {
+      const out = lines(`sequenceDiagram
+        A->>B: x
+        create ${kind} C
+        A->>C: Hi there
+        B->>C: bye`)
+      const label = out.findIndex((l) => l.includes('Hi there'))
+      expect(out[label + 1]).toMatch(/▶/)
+    },
+  )
+
+  it('does not pad the other headers to a created actor figure height', () => {
+    const out = lines(`sequenceDiagram
+      A->>B: x
+      create actor D as Donald
+      A->>D: Hi!`)
+    // Header: top border, label, bottom border
+    expect(out[2]).toContain('└')
+    expect(out[1]).not.toContain('Donald')
+  })
+
+  it('keeps the full header box of an actor whose creating message is a self-message', () => {
+    const out = lines(`sequenceDiagram
+      participant A
+      create actor C as Donald
+      C->>C: self`)
+    // Self-messages can't create their recipient, so Donald stays in the header.
+    // so the label shows in the header as well as the footer.
+    expect(out.filter((l) => l.includes('Donald'))).toHaveLength(2)
   })
 })

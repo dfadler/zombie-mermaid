@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 
 type Dir = 'U' | 'D' | 'L' | 'R'
 const ARMS: Record<string, string> = {}
@@ -133,7 +133,7 @@ function edgeReaches(
   for (let y = b.y0 - 1; y <= b.y1 + 1; y++) {
     for (let x = b.x0 - 1; x <= b.x1 + 1; x++) {
       if (boxIndexAt(boxes, x, y) === src && HEADS[at(x, y)]) {
-        queue.push([x, y]) // a head drawn on the source's own wall (`<-->`)
+        queue.push([x, y]) // A head drawn on the source's own wall (`<-->`)
         continue
       }
       if (boxIndexAt(boxes, x, y) !== -1) continue
@@ -163,7 +163,7 @@ function edgeReaches(
       const nx = x + dx
       const ny = y + dy
       const nb = boxIndexAt(boxes, nx, ny)
-      if (nb === dst && HEADS[at(nx, ny)] === d) return true // head on dst wall
+      if (nb === dst && HEADS[at(nx, ny)] === d) return true // Head on dst wall
       if (nb !== -1) continue
       let tx = nx
       let ty = ny

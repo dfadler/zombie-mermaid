@@ -163,6 +163,62 @@ option.** The caller is closer to the user's intent than text embedded in a
 diagram, and a diagram from an untrusted source should not be able to
 override a host application's rendering choices.
 
+### `themeVariables` (opt-in)
+
+Mermaid applies `%%{init: {"themeVariables": {...}}}%%` colours; by default
+zombie-mermaid does not, so a diagram cannot recolour itself against the
+host page's `bg`/`fg` (or CSS-variable) theme. Set `honorThemeVariables: true`
+(`renderMermaidSVG` and `renderMermaidASCII`) to map a small subset onto the
+theme tokens:
+
+| Variable             | Needs                     | Becomes                      | Diagrams         |
+| -------------------- | ------------------------- | ---------------------------- | ---------------- |
+| `primaryColor`       | `theme: "base"`           | `surface` (node fill)        | flowchart, state |
+| `primaryBorderColor` | `theme: "base"`           | `border` (node/group stroke) | flowchart, state |
+| `primaryTextColor`   | `theme: "base"`           | `fg`                         | flowchart, state |
+| `lineColor`          | any theme (state: `base`) | `line` (edges)               | flowchart, state |
+| `pie1`..`pie12`      | any theme                 | slice and legend colour      | pie              |
+
+```
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ffd9d9", "lineColor": "#c00"}}}%%
+flowchart LR
+  A --> B
+```
+
+```ts
+renderMermaidSVG(source, { honorThemeVariables: true })
+```
+
+- **The caller wins.** A `bg`, `fg`, `line`, `surface` or `border` you pass is
+  never replaced (for ASCII, a key in `theme`).
+- **Invalid values are ignored, never thrown**: the same colour check as
+  `style`/`classDef` colours, plus no `url()`/`var()`/`env()`/`calc()`,
+  since the value comes from diagram text. Mermaid itself throws on an
+  invalid `primaryColor` and paints a bad `pie1` `#333`.
+- **Not derived.** Mermaid computes secondary/tertiary colours, a gradient
+  node border and the other pie slices from `primaryColor`; zombie-mermaid
+  does not. Under `theme: "base"` a lone `primaryColor` fills the nodes and
+  nothing else changes. `primaryBorderColor` is a solid stroke here, where
+  Mermaid 12.1.0/12.2.0 start a border gradient with it.
+- **`primaryTextColor` becomes `fg`**, so it also moves the colours derived
+  from `fg` when `line`/`border` are not given.
+- **ASCII** maps `lineColor`, `primaryBorderColor`, `primaryTextColor` and
+  `pie1`..`pie12`, hex values only (the ANSI and HTML colour modes need a hex
+  literal). `primaryColor` has no ASCII meaning: a node has no fill.
+- **Every other variable is not supported** (`secondaryColor`,
+  `tertiaryColor`, `background`, `fontFamily`, `fontSize`, `nodeBorder`,
+  `clusterBkg`, `pie*TextColor`, `pieStrokeColor`, `pieOpacity`, the
+  sequence/class/state/journey variables, ...). `extractInitConfig()`
+  lists them in `ignored` as `themeVariables.<name>`, and `describeIgnored()`
+  explains why. Only flowchart, state and pie diagrams read the directive, so
+  the other types ignore `themeVariables` even when opted in.
+- `themeCssVariables(options)` sees only your options, not the diagram, so
+  with `styleAttribute: false` the directive colours are not in that string.
+
+Checked against mermaid 12.1.0 and 12.2.0 (`scripts/lib/real-mermaid.ts`;
+12.1.0 via jsDelivr), headless Chromium, computed paint; both gave the same results.
+See [known differences](known-differences.md#themevariables-are-opt-in-and-only-a-subset).
+
 Keys parsed but deliberately not acted on, and why:
 
 | Key               | Why                                                                          |
@@ -441,7 +497,11 @@ sequenceDiagram
 a plain declaration, so the alias and the participant/actor kind are kept.
 The created participant's box is drawn centred on the row of the message
 that creates it, instead of in the header, and its lifeline starts there;
-the creating arrow stops at the box's edge. `destroy X` ends `X`'s lifeline
+the creating arrow stops at the box's edge, and the message label sits on the
+row directly above that arrow (as in Mermaid 12.1.0 and 12.2.0). A created
+actor figure's height does not pad the other participants' header boxes (the
+footer row, which holds every surviving participant, is still uniform).
+`destroy X` ends `X`'s lifeline
 at the next message with a cross, and no footer box is drawn for it.
 
 Mermaid's binding rules apply, with Mermaid's own error text: the message
@@ -502,6 +562,13 @@ box is included in the box's span, but its header or footer bracket segment
 reflects only the members actually present in that row (a created
 participant has no header box to bracket; a destroyed one has no footer
 box).
+
+`rect <color> … end` is a background highlight (named colour, hex, `rgb()`/`rgba()`,
+`hsl()`/`hsla()`). SVG paints the region behind the lifelines with the colour as
+written and draws no frame or header tab, as Mermaid 12.1.0 and 12.2.0 do. Text
+that isn't a recognised colour is ignored (Mermaid paints a dark default
+there). `rect` takes no label. ASCII has no fill, so it keeps a plain `rect`
+frame (#2239).
 
 ### Known limitations
 
@@ -629,10 +696,74 @@ connector; a free note goes on the top row after the classes.
            ╰─────────────╯
 ```
 
+### Header alias, both-ends arrows, lollipops, backtick names
+
+```mermaid
+classDiagram-v2
+  `Base Shape` <|--|> Circle
+  Circle <--> Canvas : draws
+  Canvas ()-- Renderer
+  Plugin --() Renderer
+```
+
+- `classDiagram-v2` is the same diagram type as `classDiagram`, as in Mermaid.
+- `<|--|>`, `<|..|>`, `<-->`, `<..>`, `*--*` and `o--o` draw the relationship's
+  marker at both ends of the line (a mixed pair such as `<|--*` is still an error).
+- `()--`, `--()` and `()--()` end the line in a hollow circle (lollipop interface):
+  `○`, or `O` in the `--ascii` charset. A one-ended lollipop draws the interface name with
+  the circle above or below its host and no box, in SVG and ASCII, as Mermaid does; a
+  class that has members, an annotation, another relationship, a note or a namespace
+  keeps its box. `()--()` is an ordinary line with a circle at both ends. See
+  [known differences](known-differences.md#class-lollipop-interfaces).
+- A backtick-quoted class name may hold spaces and punctuation
+  (`` class `Animal Class!` ``, `` `Animal Class!` <|-- Duck ``,
+  `` `Animal Class!` : +int age ``); the backticks are not drawn.
+
+- A cardinality (`A "1" --> "*" B`) is drawn beside its own end of the line, on the
+  row next to its box, to the right of the line when there is room and to the left
+  otherwise. The gap between two levels grows to at least three rows (five for a
+  two-line label) so each end keeps its own row; a cardinality is never drawn over a
+  marker, label, border or another line, and in an extremely crowded fan one that fits
+  nowhere is left out. The unicode and `--ascii` charsets place them identically.
+
+Checked against mermaid 12.1.0 and 12.2.0 (repo pin).
+
+### Direction
+
+`direction TB|TD|LR|RL|BT` on its own line sets the layout direction
+([#2116](https://github.com/dfadler/zombie-mermaid/issues/2116)); the last one wins.
+`RenderOptions.direction` does not apply to class diagrams. Checked against
+mermaid 12.1.0 and 12.2.0 (repo pin), which agree.
+
+```mermaid
+classDiagram
+  direction LR
+  Animal <|-- Dog
+  Animal <|-- Cat
+```
+
+- **SVG:** all four directions. `LR` puts each level in a column, `RL` mirrors it, `BT`
+  flips the stack; markers, cardinalities, namespace frames, notes (beside their class on
+  the flow axis, as in mermaid) and lollipop names follow the new axis.
+- **ASCII:** all four directions
+  ([#2158](https://github.com/dfadler/zombie-mermaid/issues/2158)). `BT` is the top-down
+  drawing flipped, with every class box kept upright and a namespace title on the top
+  border. `LR` is drawn on the flowchart grid (each level a column, siblings stacked) and
+  `RL` is its mirror, with the boxes' text still reading left to right. End markers,
+  labels, cardinalities, notes (left of their class in `LR`, right in `RL`), lollipop names
+  and namespace frames follow the axis, in the unicode and `--ascii` charsets. Because the
+  grid is shared with flowcharts, boxes in one column share a width and boxes on one row
+  share a height, and a parent with several children branches off one trunk; see
+  [known differences](known-differences.md#class-lr-and-rl-in-ascii).
+
 ### Known limitations
 
-None currently — `note`/`note for` and `classDef`/`style`/`class`/`:::`
-styling are all recognized (see above).
+- `class A["Label"]` aliases are not honoured yet.
+- The `$` / `*` classifier after a method's `)` is styled but also left in the
+  member text.
+- A dotted lollipop (`()..`, `..()`) is a parse error.
+- `note`/`note for` and `classDef`/`style`/`class`/`:::` styling are
+  recognized (see above).
 
 ## ER Diagrams
 
@@ -831,8 +962,9 @@ total are left out of the pie but stay in the legend, so the drawn slices
 fill the circle and the labels may not add up to 100%. A `pie` with no
 slices draws an empty circle.
 
-Colours follow the theme instead of Mermaid's `pie1`..`pie12`: the first
-slice uses the accent colour, the next eleven use the XY chart series
+Colours follow the theme instead of Mermaid's `pie1`..`pie12` (unless you opt
+in with `honorThemeVariables`, see [`themeVariables`](#themevariables-opt-in)):
+the first slice uses the accent colour, the next eleven use the XY chart series
 shades, and the twelve repeat after that. Slices are drawn at Mermaid's 0.7
 opacity with a 2px outline in the theme's foreground colour.
 
@@ -866,6 +998,27 @@ Known differences from Mermaid:
 
 Mermaid has no text output for pie charts; see
 [ASCII Pie Charts](#ascii-pie-charts) for this library's.
+
+## Unsupported upstream diagram types
+
+These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
+
+| Type                                                                  | Header                                                                                                          |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Use case                                                              | `usecase-beta`                                                                                                  |
+| Mindmap                                                               | `mindmap`                                                                                                       |
+| Packet                                                                | `packet` / `packet-beta`                                                                                        |
+| Gantt                                                                 | `gantt`                                                                                                         |
+| Timeline                                                              | `timeline`                                                                                                      |
+| User journey                                                          | `journey`                                                                                                       |
+| Quadrant chart                                                        | `quadrantChart`                                                                                                 |
+| Requirement                                                           | `requirementDiagram`                                                                                            |
+| Git graph                                                             | `gitGraph`                                                                                                      |
+| Kanban                                                                | `kanban`                                                                                                        |
+| Radar                                                                 | `radar-beta`                                                                                                    |
+| Treemap                                                               | `treemap-beta`                                                                                                  |
+| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
+| Sankey, Block                                                         | `sankey-beta`, `block-beta` (12.2.0 rejects them with an empty body; header names per upstream docs)            |
 
 ## Accessibility
 
@@ -971,7 +1124,7 @@ import { renderMermaidASCII } from 'zombie-mermaid/ascii'
 renderMermaidASCII(diagram, {
   useAscii: false,      // true = ASCII, false = Unicode (default)
   paddingX: 5,          // Horizontal spacing between nodes
-  paddingY: 5,          // Vertical spacing between nodes
+  paddingY: 5,          // Vertical spacing (default 5; in LR and RL the gap between sibling nodes is paddingY - 1, minimum 1)
   boxBorderPadding: 1,  // Padding inside node boxes
   colorMode: 'auto',    // 'none' | 'auto' | 'ansi16' | 'ansi256' | 'truecolor' | 'html'
   theme: { ... },       // Partial<AsciiTheme> — override default colors

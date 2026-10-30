@@ -24,9 +24,9 @@ describe('fetchRepoStats', () => {
   it('combines repo info, search counts, and releases into one RepoStats', async () => {
     const ghFn = ghSequence([
       { pushed_at: '2026-08-01T00:00:00Z', open_issues_count: 99 },
-      { total_count: 3 }, // open issues (search)
-      { total_count: 2 }, // open PRs
-      { total_count: 41 }, // merged PRs
+      { total_count: 3 }, // Open issues (search)
+      { total_count: 2 }, // Open PRs
+      { total_count: 41 }, // Merged PRs
       [
         { tag_name: 'v1.2.0', published_at: '2026-07-15T00:00:00Z' },
         { tag_name: 'v1.1.0', published_at: '2026-06-01T00:00:00Z' },
@@ -120,6 +120,57 @@ describe('fetchRescuedIssues', () => {
 
     expect(result).toEqual([])
     expect(ghFn).not.toHaveBeenCalled()
+  })
+
+  it('omits a not-found alias (gh exits 1 with partial stdout) and warns with its number', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ghFn: GhFn = vi.fn(async () => {
+      throw Object.assign(new Error('gh: Could not resolve'), {
+        stdout: JSON.stringify({
+          data: {
+            repository: { i10: { number: 10, state: 'OPEN' }, i20: null },
+          },
+          errors: [{ type: 'NOT_FOUND', path: ['repository', 'i20'] }],
+        }),
+      })
+    })
+
+    const result = await fetchRescuedIssues([fixB], ghFn)
+
+    expect(result).toEqual([
+      {
+        number: 10,
+        state: 'open',
+        fixId: 'fix-b',
+        fixTitle: 'Fix B',
+        forkPr: 101,
+      },
+    ])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('omitted: 20'))
+    warn.mockRestore()
+  })
+
+  it('rethrows when the whole query fails (no usable stdout)', async () => {
+    const ghFn: GhFn = vi.fn(async () => {
+      throw Object.assign(new Error('gh: HTTP 401'), { stdout: '' })
+    })
+
+    await expect(fetchRescuedIssues([fixA], ghFn)).rejects.toThrow(
+      'gh: HTTP 401',
+    )
+  })
+
+  it.each([
+    ['no stdout property', undefined],
+    ['JSON null', 'null'],
+    ['JSON without data', '{"errors":[]}'],
+    ['data without repository', '{"data":{"repository":null}}'],
+  ])('rethrows the original error when stdout has %s', async (_n, stdout) => {
+    const ghFn: GhFn = vi.fn(async () => {
+      throw Object.assign(new Error('gh: boom'), { stdout })
+    })
+
+    await expect(fetchRescuedIssues([fixA], ghFn)).rejects.toThrow('gh: boom')
   })
 
   it('dedupes an upstream issue shared by two fixes, keeping the first', async () => {
@@ -256,7 +307,7 @@ describe('fetchResponseTimeStats', () => {
 
     const result = await fetchResponseTimeStats(20, ghFn)
 
-    // sorted: [1, 4, 10] -> median is the middle value, 4
+    // Sorted: [1, 4, 10] -> median is the middle value, 4
     expect(result!.medianHours).toBe(4)
     expect(result!.sampleSize).toBe(3)
   })
@@ -285,7 +336,7 @@ describe('fetchResponseTimeStats', () => {
 
     const result = await fetchResponseTimeStats(20, ghFn)
 
-    // sorted: [2, 6] -> average of both middle values, 4
+    // Sorted: [2, 6] -> average of both middle values, 4
     expect(result!.medianHours).toBe(4)
     expect(result!.sampleSize).toBe(2)
   })

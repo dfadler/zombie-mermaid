@@ -186,6 +186,7 @@ export function isPortFixedEdge(edge: AsciiEdge): boolean {
     edge.path.length < 2 ||
     edge.bundle !== undefined ||
     edge.parallelLane !== undefined ||
+    edge.faceLane === true ||
     edge.style === 'invisible' ||
     edge.clusterSource !== undefined ||
     edge.clusterTarget !== undefined

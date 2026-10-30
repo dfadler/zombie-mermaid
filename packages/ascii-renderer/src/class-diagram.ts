@@ -10,20 +10,20 @@
 // Relationship lines use simple Manhattan routing (vertical + horizontal).
 // ============================================================================
 
-import {
-  parseClassDiagram,
-  formatClassMember,
-} from '@zombie-mermaid/mermaid-parser'
+import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
   ClassDiagram,
   ClassNode,
   ClassNote,
+  ClassRelationship,
   RelationshipType,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   AsciiConfig,
+  LabelRect,
   Canvas,
   CharRole,
+  RoleCanvas,
   AsciiTheme,
   ColorMode,
 } from './types.ts'
@@ -36,41 +36,27 @@ import {
   write,
   isJunctionChar,
   mergeJunctions,
+  flipCanvasVertically,
+  flipRoleCanvasVertically,
+  mirrorLabelRows,
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { allocateTerritory } from './territory.ts'
 import type { Territory } from './territory.ts'
-import { markBoxLabelLinks, mkLinkCanvas } from './hyperlinks.ts'
+import {
+  flipLinkCanvasVertically,
+  markBoxLabelLinks,
+  mkLinkCanvas,
+} from './hyperlinks.ts'
 import type { LinkCanvas } from './hyperlinks.ts'
 import { safeHref, splitStatements } from '@zombie-mermaid/core'
 import { getCorners } from './shapes/corners.ts'
 import { splitLines } from './multiline-utils.ts'
+import { buildClassSections } from './class-sections.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { findFreeLane } from './lane-search.ts'
+import { isSideways, renderClassFlowAscii } from './class-flow.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
-
-/** Build the text sections for a class box: [header], [attributes], [methods] */
-function buildClassSections(cls: ClassNode): string[][] {
-  // Header section: optional annotation + class name (may be multi-line)
-  const header: string[] = []
-  if (cls.annotation) header.push(`<<${cls.annotation}>>`)
-  // Support multi-line class names
-  const nameLines = splitLines(cls.label)
-  header.push(...nameLines)
-
-  // Attributes section
-  const attrs = cls.attributes.map(formatClassMember)
-
-  // Methods section
-  const methods = cls.methods.map(formatClassMember)
-
-  // Build sections from only the non-empty parts. Only attrs (2-section),
-  // only methods (2-section), both (3-section), or neither (1-section, header only).
-  const sections: string[][] = [header]
-  if (attrs.length > 0) sections.push(attrs)
-  if (methods.length > 0) sections.push(methods)
-  return sections
-}
 
 // ============================================================================
 // Relationship marker characters
@@ -80,7 +66,7 @@ interface RelMarker {
   /** Relationship type (determines marker shape) */
   type: RelationshipType
   /** Which end the marker is placed at */
-  markerAt: 'from' | 'to'
+  markerAt: 'from' | 'to' | 'both'
   /** Whether the line is dashed */
   dashed: boolean
 }
@@ -91,7 +77,7 @@ interface RelMarker {
  */
 function getRelMarker(
   type: RelationshipType,
-  markerAt: 'from' | 'to',
+  markerAt: 'from' | 'to' | 'both',
 ): RelMarker {
   const dashed = type === 'dependency' || type === 'realization'
   return { type, markerAt, dashed }
@@ -131,6 +117,9 @@ function getMarkerShape(
     case 'aggregation':
       // Hollow diamond - omnidirectional shape
       return useAscii ? 'o' : '◇'
+    case 'lollipop':
+      // Hollow circle (interface) - omnidirectional shape
+      return useAscii ? 'O' : '○'
     case 'association':
     case 'dependency':
       // Directional arrow - rotate based on line direction
@@ -145,6 +134,26 @@ function getMarkerShape(
         return useAscii ? '>' : '▶'
       }
   }
+}
+
+/**
+ * Marker for the `from` end, drawn with the line's travel direction at that
+ * end. Hierarchical triangles already point back into the box for that
+ * direction; directional arrows must point the opposite way (into the box),
+ * so flip them. Omnidirectional markers ignore the direction.
+ */
+function getFromMarkerShape(
+  type: RelationshipType,
+  useAscii: boolean,
+  direction: 'up' | 'down' | 'left' | 'right',
+): string {
+  const hierarchical = type === 'inheritance' || type === 'realization'
+  const flip = { up: 'down', down: 'up', left: 'right', right: 'left' } as const
+  return getMarkerShape(
+    type,
+    useAscii,
+    hierarchical ? direction : flip[direction],
+  )
 }
 
 /**
@@ -203,8 +212,8 @@ function fitLabelToAvailableWidth(
     textCells.length <= innerWidth
       ? textCells
       : clippedLeft && !clippedRight
-        ? textCells.slice(textCells.length - innerWidth) // keep the tail
-        : textCells.slice(0, innerWidth) // keep the head
+        ? textCells.slice(textCells.length - innerWidth) // Keep the tail
+        : textCells.slice(0, innerWidth) // Keep the head
 
   const cells = [
     ...(clippedLeft ? ['…'] : []),
@@ -259,9 +268,21 @@ const LABEL_EXTRA_VGAP = 2
 // an intermediate box: the detour's entry run needs its own row above the
 // arrowhead row so the head has a stem (issue #2056), clear of the labels.
 const DETOUR_EXTRA_VGAP = 2
+// Blank columns between a cardinality and the line it labels (the marker
+// takes the cell on the line itself).
+const CARDINALITY_GAP = 1
+
+// Rows needed between two levels joined by a relationship that carries a
+// cardinality (issue #2114): one row hugging each box, so each cardinality
+// sits beside the line next to its own end, around the `labelLines` rows the
+// label takes (a multi-line label is centred on the middle row, so an even
+// count needs one more row to stay clear of both).
+function cardinalityGapRows(labelLines: number): number {
+  return Math.max(labelLines, 1) + 2 + (labelLines % 2 === 0 ? 1 : 0)
+}
 
 /** A `namespace` block with at least one member class in the diagram. */
-interface AsciiNamespaceFrame {
+export interface AsciiNamespaceFrame {
   name: string
   /** Member class ids, including the notes attached to those classes. */
   ids: string[]
@@ -275,6 +296,7 @@ interface AsciiNamespaceFrame {
 function resolveFrames(
   diagram: ClassDiagram,
   notesById: Map<string, ClassNote>,
+  lollipops: Map<string, AsciiLollipop>,
 ): AsciiNamespaceFrame[] {
   const known = new Set(diagram.classes.map((c) => c.id))
   const claimed = new Set<string>()
@@ -287,6 +309,9 @@ function resolveFrames(
       ids.push(id)
       for (const [noteId, note] of notesById) {
         if (note.forClass === id) ids.push(noteId)
+      }
+      for (const [lolliId, lolli] of lollipops) {
+        if (lolli.host === id) ids.push(lolliId)
       }
     }
     if (ids.length > 0) frames.push({ name: ns.name, ids })
@@ -320,6 +345,24 @@ export interface ClassAsciiOptions {
   hyperlinks?: boolean
 }
 
+// Arm bitmasks (up 1, down 2, left 4, right 8) of the box-drawing line glyphs.
+const ARMS_OF: Record<string, number> = {
+  '│': 3,
+  '─': 12,
+  '└': 9,
+  '┘': 5,
+  '┌': 10,
+  '┐': 6,
+  '├': 11,
+  '┤': 7,
+  '┬': 14,
+  '┴': 13,
+  '┼': 15,
+}
+const GLYPH_OF: Record<number, string> = Object.fromEntries(
+  Object.entries(ARMS_OF).map(([g, m]) => [m, g]),
+)
+
 /**
  * Render a Mermaid class diagram to ASCII/Unicode text.
  *
@@ -334,14 +377,33 @@ export function renderClassAscii(
   // Levels whose gap below needs DETOUR_EXTRA_VGAP rows; set by the second
   // layout pass (see `detourEntryLevels`).
   detourRoomLevels?: ReadonlySet<number>,
+  // Columns the whole diagram shifts right, set by the second layout pass
+  // when a cardinality had no room left of the line (see the cardinality pass).
+  cardinalityLeftPad = 0,
 ): string {
   const lines = splitStatements(text)
   // Notes ride through the layout as pseudo-classes — see withNotePseudoClasses.
-  const { diagram, notesById } = withNotePseudoClasses(parseClassDiagram(lines))
+  const { diagram: lollipopDiagram, lollipops } = withLollipopPseudoClasses(
+    parseClassDiagram(lines),
+  )
+  const { diagram, notesById } = withNotePseudoClasses(lollipopDiagram)
+  // Only BT is honoured here: it is the top-down layout flipped at the end
+  // (boxes kept upright). LR and RL need a column layout this level-row
+  // renderer does not have, so they stay top-down. See docs/diagrams.md.
+  const bottomUp = diagram.direction === 'BT'
 
   if (diagram.classes.length === 0) return ''
-
-  const frames = resolveFrames(diagram, notesById)
+  const frames = resolveFrames(diagram, notesById, lollipops)
+  // LR and RL are laid out on the flowchart grid, not by the level rows below.
+  if (isSideways(diagram.direction)) {
+    return renderClassFlowAscii(
+      { diagram, lollipops, notesById, frames },
+      config,
+      colorMode,
+      theme,
+      options,
+    )
+  }
   const frameOf = new Map<string, number>()
   for (const [i, fr] of frames.entries()) {
     for (const id of fr.ids) frameOf.set(id, i)
@@ -352,10 +414,10 @@ export function renderClassAscii(
   // from the padding defaults rather than the raw config values.
   const hGap =
     paddingOffset(config.paddingX, DEFAULT_PADDING_X, 4, 1) +
-    (frames.length > 0 ? FRAME_EXTRA_HGAP : 0) // horizontal gap between class boxes
+    (frames.length > 0 ? FRAME_EXTRA_HGAP : 0) // Horizontal gap between class boxes
   const vGap =
     paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 3, 1) +
-    (frames.length > 0 ? FRAME_EXTRA_VGAP : 0) // vertical gap between levels (enough for relationship lines)
+    (frames.length > 0 ? FRAME_EXTRA_VGAP : 0) // Vertical gap between levels (enough for relationship lines)
 
   // --- Build box dimensions for each class ---
   const classSections = new Map<string, string[][]>()
@@ -365,6 +427,14 @@ export function renderClassAscii(
   for (const cls of diagram.classes) {
     const sections = buildClassSections(cls)
     classSections.set(cls.id, sections)
+
+    // An interface name has no box: one text row, with the circle drawn by
+    // the lollipop edge just above or below it.
+    if (lollipops.has(cls.id)) {
+      classBoxW.set(cls.id, displayWidth(cls.label))
+      classBoxH.set(cls.id, 1)
+      continue
+    }
 
     // Reserve exactly what drawMultiBox will draw — measuring it here rather
     // than re-deriving the arithmetic keeps layout and drawing in lockstep for
@@ -390,8 +460,8 @@ export function renderClassAscii(
   const classById = new Map<string, ClassNode>()
   for (const cls of diagram.classes) classById.set(cls.id, cls)
 
-  const parents = new Map<string, Set<string>>() // child → set of parent IDs
-  const children = new Map<string, Set<string>>() // parent → set of child IDs
+  const parents = new Map<string, Set<string>>() // Child → set of parent IDs
+  const children = new Map<string, Set<string>>() // Parent → set of child IDs
 
   for (const rel of diagram.relationships) {
     // Level assignment always places "from" above "to", for every relationship
@@ -434,7 +504,7 @@ export function renderClassAscii(
     if (!childSet) continue
     for (const childId of childSet) {
       const newLevel = (level.get(id) ?? 0) + 1
-      if (newLevel > levelCap) continue // cycle detected — skip to prevent infinite loop
+      if (newLevel > levelCap) continue // Cycle detected — skip to prevent infinite loop
       if (!level.has(childId) || level.get(childId)! < newLevel) {
         level.set(childId, newLevel)
         queue.push(childId)
@@ -447,10 +517,53 @@ export function renderClassAscii(
     if (!level.has(cls.id)) level.set(cls.id, 0)
   }
 
+  // A frame is the bounding box of its members, so a class that sits between
+  // two namespaces' rows interleaves them and the boxes overlap. When all
+  // edges between two frames run one way, put the target frame wholly below
+  // the source frame, as mermaid does, then restore parent-above-child for
+  // everything pushed down. Frames in a cycle keep their levels.
+  if (frames.length > 1) {
+    const before = new Map(level)
+    const frameEdges = new Set<string>()
+    for (const rel of diagram.relationships) {
+      const a = frameOf.get(rel.from)
+      const b = frameOf.get(rel.to)
+      if (a !== undefined && b !== undefined && a !== b) {
+        frameEdges.add(`${a}>${b}`)
+      }
+    }
+    let stable = false
+    for (let pass = 0; pass <= frames.length && !stable; pass++) {
+      stable = true
+      for (const key of frameEdges) {
+        const [a, b] = key.split('>').map(Number) as [number, number]
+        if (frameEdges.has(`${b}>${a}`)) continue
+        const maxA = Math.max(...frames[a]!.ids.map((id) => level.get(id)!))
+        const minB = Math.min(...frames[b]!.ids.map((id) => level.get(id)!))
+        const delta = maxA + 1 - minB
+        if (delta <= 0) continue
+        for (const id of frames[b]!.ids) level.set(id, level.get(id)! + delta)
+        stable = false
+      }
+      for (let i = 0; i < diagram.classes.length; i++) {
+        for (const rel of diagram.relationships) {
+          const need = level.get(rel.from)! + 1
+          if (rel.from !== rel.to && level.get(rel.to)! < need) {
+            level.set(rel.to, need)
+            stable = false
+          }
+        }
+      }
+    }
+    if (!stable) for (const [id, lv] of before) level.set(id, lv)
+  }
+
   // A `note for X` note has no relationships, so it landed on level 0 above;
   // move it onto its class's row so the row placement below puts it right
   // beside that class.
-  pinNoteLevels(notesById, level)
+  // Namespace frames keep the note beside its class: a note moved a level up
+  // could land inside another frame, with its link crossing the border.
+  pinNoteLevels(notesById, level, bottomUp && frames.length === 0)
 
   // --- Position classes by level ---
   // Group classes by level
@@ -487,9 +600,36 @@ export function renderClassAscii(
       from !== undefined &&
       to !== undefined &&
       from < to &&
-      (outDeg.get(rel.from)! > 1 || inDeg.get(rel.to)! > 1)
+      // A marker at both ends leaves no stem between the two heads and the
+      // label, so a labelled two-ended line always needs the extra room.
+      (rel.markerAt === 'both' ||
+        outDeg.get(rel.from)! > 1 ||
+        inDeg.get(rel.to)! > 1)
     ) {
       labelRoomLevels.add(from)
+    }
+  }
+
+  // Levels whose gap holds a relationship's cardinality (either end): that
+  // gap is never narrower than `cardinalityGapRows` (issue #2114).
+  const cardinalityGapByLevel = new Map<number, number>()
+  for (const rel of diagram.relationships) {
+    const from = level.get(rel.from)
+    const to = level.get(rel.to)
+    if (
+      (rel.fromCardinality || rel.toCardinality) &&
+      from !== undefined &&
+      to !== undefined &&
+      from !== to
+    ) {
+      const lv = Math.min(from, to)
+      cardinalityGapByLevel.set(
+        lv,
+        Math.max(
+          cardinalityGapByLevel.get(lv) ?? 0,
+          cardinalityGapRows(rel.label ? splitLines(rel.label).length : 0),
+        ),
+      )
     }
   }
 
@@ -508,9 +648,38 @@ export function renderClassAscii(
   // Computed before positions are assigned (it depends only on the
   // relationship list) because the column reservation below needs to know
   // how far each group fans out from its boxes' centers.
+  /**
+   * Unlabelled lines fanned across narrow boxes: shrink the lane spacing so
+   * every lane stays inside the box's interior (corner cells excluded). Each
+   * line, arrowhead included, then lands on a border cell of its own rather
+   * than on a corner glyph or at the end of a jog beside the box (#2335).
+   * Labelled groups keep their label spacing, and a cap below 2 would pack
+   * lanes together, so the original step is kept then.
+   */
+  function capStepToInterior(
+    step: number,
+    group: number[],
+    boxIds: string[],
+  ): number {
+    if (
+      group.some((i) => {
+        const r = diagram.relationships[i]!
+        return r.label || r.fromCardinality || r.toCardinality
+      })
+    )
+      return step
+    const widths = boxIds.map((id) => classBoxW.get(id)!)
+    const cap = Math.floor((Math.min(...widths) - 3) / (group.length - 1))
+    return cap >= 2 && cap < step ? cap : step
+  }
+
   const relColumnOffset = new Map<number, number>()
   /** Distance between a group's outermost lanes, keyed by member — see `anchorOffset`. */
   const relGroupSpread = new Map<number, number>()
+  /** Member count of the group a relationship is fanned in, by relationship. */
+  const relGroupSize = new Map<number, number>()
+  const relFromSize = new Map<number, number>()
+  const relToSize = new Map<number, number>()
   {
     const pairGroups = new Map<string, number[]>()
     diagram.relationships.forEach((rel, i) => {
@@ -525,14 +694,19 @@ export function renderClassAscii(
       const widestLabel = Math.max(
         ...group.map((i) => {
           const label = diagram.relationships[i]!.label
-          if (!label) return 3 // room for just a line/arrow
+          if (!label) return 3 // Room for just a line/arrow
           return labelCellWidth(label)
         }),
       )
-      const step = widestLabel + 1 // +1 for a visual gap between labels
+      let step = widestLabel + 1 // +1 for a visual gap between labels
+      step = capStepToInterior(step, group, [
+        diagram.relationships[group[0]!]!.from,
+        diagram.relationships[group[0]!]!.to,
+      ])
       group.forEach((relIndex, pos) => {
         relColumnOffset.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
         relGroupSpread.set(relIndex, (n - 1) * step)
+        relGroupSize.set(relIndex, n)
       })
     }
   }
@@ -574,15 +748,23 @@ export function renderClassAscii(
   const relFromSpread = new Map<number, number>()
   const relToOffset = new Map<number, number>()
   const relToSpread = new Map<number, number>()
+  /**
+   * Fanned target ends where at most one relationship carries an arrowhead
+   * (`from:<i>` / `to:<i>`): there is nothing to keep apart, so the anchors
+   * converge on the box centre like mermaid's (#2335). Ends with two or more
+   * heads keep their own anchors so no head is lost (#632, #2024).
+   */
+  const mergeAtCentre = new Set<string>()
   {
     const fanBySharedEndpoint = (
       endpointOf: (rel: (typeof diagram.relationships)[number]) => string,
       offsetOut: Map<number, number>,
       spreadOut: Map<number, number>,
+      sizeOut: Map<number, number>,
     ): void => {
       const groups = new Map<string, number[]>()
       diagram.relationships.forEach((rel, i) => {
-        if (relColumnOffset.has(i)) return // already fanned as a duplicate pair
+        if (relColumnOffset.has(i)) return // Already fanned as a duplicate pair
         if (!classById.has(rel.from) || !classById.has(rel.to)) return
         const fromLevel = level.get(rel.from) ?? 0
         const toLevel = level.get(rel.to) ?? 0
@@ -594,23 +776,54 @@ export function renderClassAscii(
       })
       for (const group of groups.values()) {
         if (group.length < 2) continue
+        // Order lanes by where the far end sits in its row, so lines that
+        // leave left arrive left instead of crossing just above the shared
+        // box (mermaid keeps them uncrossed too). Ties keep source order.
+        const farX = (i: number): number => {
+          const rel = diagram.relationships[i]!
+          const far = endpointOf(rel) === rel.to ? rel.from : rel.to
+          return levelGroups[level.get(far)!]!.indexOf(far)
+        }
+        group.sort((a, b) => farX(a) - farX(b)) // Stable: ties keep source order
         const n = group.length
         const widestLabel = Math.max(
           ...group.map((i) => {
             const label = diagram.relationships[i]!.label
-            if (!label) return 3 // room for just a line/arrow
+            if (!label) return 3 // Room for just a line/arrow
             return labelCellWidth(label)
           }),
         )
-        const step = widestLabel + 1 // +1 for a visual gap between labels
+        let step = widestLabel + 1 // +1 for a visual gap between labels
+        step = capStepToInterior(step, group, [
+          endpointOf(diagram.relationships[group[0]!]!),
+        ])
+        const isTo = offsetOut === relToOffset
+        // Labels and cardinalities sit on the fanned lanes; merged lines
+        // would stack them in the same cells.
+        const plain = group.every((i) => {
+          const r = diagram.relationships[i]!
+          return !r.label && !r.fromCardinality && !r.toCardinality
+        })
+        const heads = group.filter((i) => {
+          const at = diagram.relationships[i]!.markerAt
+          return isTo ? at !== 'from' : at !== 'to'
+        }).length
         group.forEach((relIndex, pos) => {
           offsetOut.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
           spreadOut.set(relIndex, (n - 1) * step)
+          sizeOut.set(relIndex, n)
+          if (heads <= 1 && plain)
+            mergeAtCentre.add(`${isTo ? 'to' : 'from'}:${relIndex}`)
         })
       }
     }
-    fanBySharedEndpoint((rel) => rel.to, relToOffset, relToSpread)
-    fanBySharedEndpoint((rel) => rel.from, relFromOffset, relFromSpread)
+    fanBySharedEndpoint((rel) => rel.to, relToOffset, relToSpread, relToSize)
+    fanBySharedEndpoint(
+      (rel) => rel.from,
+      relFromOffset,
+      relFromSpread,
+      relFromSize,
+    )
   }
 
   // --- Reserve column room for relationship labels and fanned-out groups ---
@@ -889,11 +1102,31 @@ export function renderClassAscii(
       }
     }
 
-    currentY +=
-      maxH +
+    const gapRows =
       vGap +
       (labelRoomLevels.has(lv) ? LABEL_EXTRA_VGAP : 0) +
       (detourRoomLevels?.has(lv) ? DETOUR_EXTRA_VGAP : 0)
+    currentY += maxH + Math.max(gapRows, cardinalityGapByLevel.get(lv) ?? 0)
+  }
+
+  // Centre each interface name on its host so the stem runs straight, unless
+  // a neighbour on the name's row is in the way.
+  for (const [id, lolli] of lollipops) {
+    const p = placed.get(id)
+    const host = placed.get(lolli.host)
+    if (!p || !host) continue
+    // Match the floor(width / 2) centre column edges attach to, so an odd/even
+    // width pair still gets a straight stem instead of a one-column jog.
+    const x = host.x + Math.floor(host.width / 2) - Math.floor(p.width / 2)
+    const clear = [...placed.values()].every(
+      (o) =>
+        o === p ||
+        o.y + o.height <= p.y ||
+        o.y >= p.y + p.height ||
+        o.x + o.width + 1 <= x ||
+        o.x >= x + p.width + 1,
+    )
+    if (x >= 0 && clear) p.x = x
   }
 
   // --- Frame rectangles ---
@@ -907,13 +1140,19 @@ export function renderClassAscii(
     y1: number
   }
   const frameRects: FrameRect[] = []
+  if (cardinalityLeftPad > 0) {
+    for (const p of placed.values()) p.x += cardinalityLeftPad
+    maxSlotEnd += cardinalityLeftPad
+  }
   if (frames.length > 0) {
     for (const p of placed.values()) {
       p.x += FRAME_SIDE_PAD
       p.y += FRAME_TOP_PAD
     }
     maxSlotEnd += FRAME_SIDE_PAD
-    for (const fr of frames) {
+    const extent = (
+      fr: AsciiNamespaceFrame,
+    ): { minX: number; minY: number; maxX: number; maxY: number } => {
       let minX = Infinity
       let minY = Infinity
       let maxX = -Infinity
@@ -926,6 +1165,38 @@ export function renderClassAscii(
         maxX = Math.max(maxX, p.x + p.width - 1)
         maxY = Math.max(maxY, p.y + p.height - 1)
       }
+      return { minX, minY, maxX, maxY }
+    }
+    // A frame is the bounding box of its members, so members of two frames
+    // can interleave (a child placed between parents from another frame) and
+    // the boxes overlap. Push the right-hand frame, and everything right of
+    // it that is not in the left-hand frame, clear of the left-hand one.
+    const nsIds = (fr: AsciiNamespaceFrame): Set<string> => new Set(fr.ids)
+    for (let pass = 0; pass <= frames.length * frames.length; pass++) {
+      let moved = false
+      for (const a of frames) {
+        for (const b of frames) {
+          if (a === b) continue
+          const ea = extent(a)
+          const eb = extent(b)
+          const yOverlap =
+            ea.minY - FRAME_TOP_PAD <= eb.maxY + FRAME_BOTTOM_PAD &&
+            eb.minY - FRAME_TOP_PAD <= ea.maxY + FRAME_BOTTOM_PAD
+          const delta = ea.maxX + 2 * FRAME_SIDE_PAD + 2 - eb.minX
+          // `b` is the frame starting right of `a`'s start.
+          if (!yOverlap || eb.minX < ea.minX || delta <= 0) continue
+          const inA = nsIds(a)
+          for (const p of placed.values()) {
+            if (!inA.has(p.cls.id) && p.x >= eb.minX) p.x += delta
+          }
+          maxSlotEnd += delta
+          moved = true
+        }
+      }
+      if (!moved) break
+    }
+    for (const fr of frames) {
+      const { minX, minY, maxX, maxY } = extent(fr)
       if (minX === Infinity) continue
       const x0 = minX - FRAME_SIDE_PAD
       // Wide enough for ` Title ` between the corners, plus a dash each side.
@@ -976,6 +1247,11 @@ export function renderClassAscii(
 
   // --- Draw class boxes ---
   for (const p of placed.values()) {
+    if (lollipops.has(p.cls.id)) {
+      const cells = toDisplayCells(p.cls.label)
+      for (const [i, cell] of cells.entries()) setC(p.x + i, p.y, cell, 'text')
+      continue
+    }
     const boxCanvas = drawMultiBox(
       p.sections,
       useAscii,
@@ -1072,6 +1348,10 @@ export function renderClassAscii(
     return false
   }
 
+  // Vertical runs of detours already routed, so a later detour takes its own
+  // column instead of drawing over theirs.
+  const detourLanes: { x: number; y1: number; y2: number }[] = []
+
   /** Find a clear vertical column for routing that doesn't pass through any boxes */
   function findClearColumn(
     startX: number,
@@ -1083,7 +1363,15 @@ export function renderClassAscii(
       for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
         if (isInsideBox(x, y, excludeIds)) return false
       }
-      return true
+      // A detour column other than the straight one must not run along
+      // another detour's column or a frame's side border.
+      return (
+        x === startX ||
+        (!detourLanes.some((l) => l.x === x && l.y1 <= y2 && y1 <= l.y2) &&
+          !frameRects.some(
+            (r) => (x === r.x0 || x === r.x1) && r.y0 <= y2 && y1 <= r.y1,
+          ))
+      )
     }
 
     // Scan outward from `startX`, right before left at each distance, never
@@ -1124,11 +1412,18 @@ export function renderClassAscii(
     offset: number,
     spread: number,
     boxWidth: number,
+    groupSize: number,
   ): number {
     // Columns available on each side of the center — the center itself is
     // `floor(boxWidth / 2)` in from the left edge, matching `connectionColumns`.
-    const left = Math.floor(boxWidth / 2)
-    const right = boxWidth - 1 - left
+    // Corner cells hold the border glyphs, so an arrowhead there reads as
+    // sitting beside the box rather than on it (#2335): keep anchors
+    // inside the corners whenever the box has an interior to spare.
+    // A group with more members than the interior has cells (#489) needs
+    // the corner columns to keep its arrowheads distinct, so it keeps them.
+    const trim = boxWidth >= 3 && groupSize <= boxWidth - 2 ? 1 : 0
+    const left = Math.floor(boxWidth / 2) - trim
+    const right = boxWidth - 1 - Math.floor(boxWidth / 2) - trim
     const scale = spread > left + right ? (left + right) / spread : 1
     return Math.max(-left, Math.min(right, Math.round(offset * scale)))
   }
@@ -1184,19 +1479,66 @@ export function renderClassAscii(
       relColumnOffset.get(relIndex) ?? relFromOffset.get(relIndex) ?? 0
     const toOffset =
       relColumnOffset.get(relIndex) ?? relToOffset.get(relIndex) ?? 0
-    const fromSpread =
-      relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0
-    const toSpread =
-      relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0
+    // A shared endpoint (several parents/children, #2335) converges on the
+    // box centre like mermaid does; only a duplicate-pair group keeps its
+    // anchors spread (#489). The lanes still carry the offset, so labels
+    // stay apart and the jog row brings the lines together at the centre.
+    const fromSpread = mergeAtCentre.has(`from:${relIndex}`)
+      ? 0
+      : (relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0)
+    const toSpread = mergeAtCentre.has(`to:${relIndex}`)
+      ? 0
+      : (relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0)
+    // Only an end that carries a marker (arrowhead, triangle, diamond) is
+    // pulled off the corner cells; a bare line may leave from a corner.
+    const markerAt = diagram.relationships[relIndex]!.markerAt
+    const fromSize =
+      markerAt === 'to'
+        ? Infinity
+        : (relGroupSize.get(relIndex) ?? relFromSize.get(relIndex) ?? 0)
+    const toSize =
+      markerAt === 'from'
+        ? Infinity
+        : (relGroupSize.get(relIndex) ?? relToSize.get(relIndex) ?? 0)
     const fromCenter = fromP.x + Math.floor(fromP.width / 2)
     const toCenter = toP.x + Math.floor(toP.width / 2)
     return {
-      fromCX: fromCenter + fromOffset,
-      toCX: toCenter + toOffset,
+      fromCX: fromCenter + (fromSpread ? fromOffset : 0),
+      toCX: toCenter + (toSpread ? toOffset : 0),
       fromAnchorX:
-        fromCenter + anchorOffset(fromOffset, fromSpread, fromP.width),
-      toAnchorX: toCenter + anchorOffset(toOffset, toSpread, toP.width),
+        fromCenter +
+        (fromSpread
+          ? anchorOffset(fromOffset, fromSpread, fromP.width, fromSize)
+          : 0),
+      toAnchorX:
+        toCenter +
+        (toSpread ? anchorOffset(toOffset, toSpread, toP.width, toSize) : 0),
     }
+  }
+
+  /**
+   * Write a line/corner cell, taking the union of the arms of whatever line
+   * glyph is already there: two relationships sharing a merged anchor (#2335)
+   * overlap on a trunk, and a `└` over a `│` has to read `├`, not `└`. An
+   * arrowhead already placed there is left alone.
+   */
+  function setUnionCell(
+    x: number,
+    y: number,
+    ch: string,
+    role: CharRole,
+  ): void {
+    if (boxCells.has(`${x},${y}`)) return
+    if (rc[x]?.[y] === 'arrow') return
+    const existing = canvas[x]?.[y]
+    const had = existing === undefined ? undefined : ARMS_OF[existing]
+    const add = ARMS_OF[ch]
+    if (!useAscii && had !== undefined && add !== undefined) {
+      const glyph = GLYPH_OF[had | add]!
+      setC(x, y, glyph, glyph === ch ? role : 'junction')
+      return
+    }
+    setC(x, y, ch, role)
   }
 
   /**
@@ -1348,6 +1690,16 @@ export function renderClassAscii(
   // straight stems already on the canvas at the anchor it shares.
   const lateDetours: (() => void)[] = []
 
+  // Where each relationship's two ends touch their boxes — the marker cell
+  // (or the stem cell when that end has no marker) and which way the line
+  // runs away from the box (+1 down, -1 up). The cardinality pass reads it.
+  interface RelEnd {
+    x: number
+    y: number
+    dy: 1 | -1
+  }
+  const relEnds = new Map<number, { from: RelEnd; to: RelEnd }>()
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -1363,11 +1715,9 @@ export function renderClassAscii(
     // Connection points: the lanes the line runs along (`fromCX`/`toCX`)
     // and the anchors where it touches each box border — see
     // `connectionColumns` for why those can differ.
-    const { fromCX, toCX, fromAnchorX, toAnchorX } = connectionColumns(
-      relIndex,
-      fromP,
-      toP,
-    )
+    const cols = connectionColumns(relIndex, fromP, toP)
+    const { fromCX, toCX, fromAnchorX } = cols
+    let toAnchorX = cols.toAnchorX
     const fromBY = fromP.y + fromP.height - 1
     const toTY = toP.y
 
@@ -1392,8 +1742,26 @@ export function renderClassAscii(
         // so a fanned-out lane needs no separate jog here — the detour's
         // own horizontal already runs along the jog row.
 
+        // Skip-level edges aren't in the fan-out group, so step the anchor
+        // off any column another edge into this box already uses.
+        const taken = new Set<number>()
+        diagram.relationships.forEach((other, i) => {
+          const otherFrom = placed.get(other.from)
+          if (i !== relIndex && other.to === rel.to && otherFrom) {
+            taken.add(connectionColumns(i, otherFrom, toP).toAnchorX)
+          }
+        })
+        const step = routeX > toAnchorX ? 1 : -1
+        for (
+          let x = toAnchorX + step;
+          taken.has(toAnchorX) && x > toP.x && x < toP.x + toP.width - 1;
+          x += step
+        ) {
+          if (!taken.has(x)) toAnchorX = x
+        }
         const exitY = fromBY + 1
         const entryY = toTY - 1
+        detourLanes.push({ x: routeX, y1: exitY, y2: entryY })
         detourRoutes.set(relIndex, {
           routeX,
           exitY,
@@ -1410,12 +1778,23 @@ export function renderClassAscii(
           clearSide: routeX > fromCX ? 'right' : 'left',
         })
 
+        relEnds.set(relIndex, {
+          from: { x: fromAnchorX, y: fromBY + 1, dy: 1 },
+          to: { x: toAnchorX, y: entryY, dy: -1 },
+        })
+
         // Drawn after every other relationship (see `lateDetours`).
         lateDetours.push(() => {
           // The entry run sits one row above the arrowhead row, so the head
           // has a stem above it. The first layout pass may lack the room
           // (its result is discarded below); the second pass always has it.
-          const runY = entryY - 1
+          // A frame's top border sits on that row for a box at the frame's
+          // top, so the run goes one row higher instead of along the border.
+          const onBorder = frameRects.some(
+            (r) =>
+              r.y0 === entryY - 1 && toAnchorX >= r.x0 && toAnchorX <= r.x1,
+          )
+          const runY = entryY - (onBorder ? 2 : 1)
           if (routeX !== toAnchorX) {
             detourEntryLevels.add(level.get(rel.to)! - 1)
           }
@@ -1452,10 +1831,13 @@ export function renderClassAscii(
               routeX < toAnchorX ? '┐' : '┌',
               lineH,
             )
+            for (let y = runY + 1; y < entryY; y++) {
+              setCGuarded(toAnchorX, y, lineV, 'line')
+            }
           }
 
           // Markers for detour case
-          if (marker.markerAt === 'to') {
+          if (marker.markerAt !== 'from') {
             // Target sits below this point — the arrowhead must point down
             // into it. Hierarchical markers (inheritance/realization) rotate
             // opposite to directional ones (association/dependency): passing
@@ -1472,8 +1854,8 @@ export function renderClassAscii(
             )
             setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
           }
-          if (marker.markerAt === 'from') {
-            const markerChar = getMarkerShape(marker.type, useAscii, 'down')
+          if (marker.markerAt !== 'to') {
+            const markerChar = getFromMarkerShape(marker.type, useAscii, 'down')
             setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
           }
         })
@@ -1491,12 +1873,19 @@ export function renderClassAscii(
         const midY = fromBY + Math.floor((toTY - fromBY) / 2)
         const fromJogs = fromCX !== fromAnchorX
         const toJogs = toCX !== toAnchorX
+        relEnds.set(relIndex, {
+          from: { x: fromAnchorX, y: fromBY + 1, dy: 1 },
+          to: { x: toAnchorX, y: toTY - 1, dy: -1 },
+        })
 
         // 1. Jog from the source anchor out to the lane, then vertical from
         //    the source bottom (or from below the jog) to midY
         drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
-        for (let y = fromBY + (fromJogs ? 2 : 1); y <= midY; y++) {
-          setCGuarded(fromCX, y, lineV, 'line')
+        // The corner at `midY` is written below; a `│` there would union with
+        // it into a `├`/`┤`.
+        const lastY = fromCX !== toCX && !useAscii ? midY - 1 : midY
+        for (let y = fromBY + (fromJogs ? 2 : 1); y <= lastY; y++) {
+          setUnionCell(fromCX, y, lineV, 'line')
         }
 
         // 2. Horizontal from fromCX to toCX at midY (if needed)
@@ -1514,24 +1903,27 @@ export function renderClassAscii(
         if (fromCX !== toCX && midY < (canvas[0]?.length ?? 0)) {
           const lx = Math.min(fromCX, toCX)
           const rx = Math.max(fromCX, toCX)
-          for (let x = lx; x <= rx; x++) {
-            setCGuarded(x, midY, lineH, 'line')
+          // Unicode ends are corners written below; a bare `─` there would
+          // union with them into a `┼`.
+          const e = useAscii ? 0 : 1
+          for (let x = lx + e; x <= rx - e; x++) {
+            setUnionCell(x, midY, lineH, 'line')
           }
           if (!useAscii) {
-            setCGuarded(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
-            setCGuarded(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
+            setUnionCell(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
+            setUnionCell(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
           }
         }
 
         // 3. Vertical from midY to the target top (or to above the jog),
         //    then jog from the lane back in to the target anchor
         for (let y = midY + 1; y < toTY - (toJogs ? 1 : 0); y++) {
-          setCGuarded(toCX, y, lineV, 'line')
+          setUnionCell(toCX, y, lineV, 'line')
         }
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 
         // Markers for no-collision case
-        if (marker.markerAt === 'to') {
+        if (marker.markerAt !== 'from') {
           // Same rotation compensation as the detour case above — target is
           // below this point, so hierarchical markers need 'up' to point
           // down into it.
@@ -1548,11 +1940,11 @@ export function renderClassAscii(
             'arrow',
           )
         }
-        if (marker.markerAt === 'from') {
+        if (marker.markerAt !== 'to') {
           setCGuarded(
             fromAnchorX,
             fromBY + 1,
-            getMarkerShape(marker.type, useAscii, 'down'),
+            getFromMarkerShape(marker.type, useAscii, 'down'),
             'arrow',
           )
         }
@@ -1564,6 +1956,10 @@ export function renderClassAscii(
       const midY = toBY + Math.floor((fromTY - toBY) / 2)
       const fromJogs = fromCX !== fromAnchorX
       const toJogs = toCX !== toAnchorX
+      relEnds.set(relIndex, {
+        from: { x: fromAnchorX, y: fromTY - 1, dy: -1 },
+        to: { x: toAnchorX, y: toBY + 1, dy: 1 },
+      })
 
       // Jog along the row above the source from its anchor out to the lane
       // (mirror of the downward case), then vertical up to midY
@@ -1598,8 +1994,8 @@ export function renderClassAscii(
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - arrows point in the direction of the vertical segment (upward)
-      if (marker.markerAt === 'from') {
-        const markerChar = getMarkerShape(marker.type, useAscii, 'up')
+      if (marker.markerAt !== 'to') {
+        const markerChar = getFromMarkerShape(marker.type, useAscii, 'up')
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
           setCGuarded(
@@ -1610,7 +2006,7 @@ export function renderClassAscii(
           )
         }
       }
-      if (marker.markerAt === 'to') {
+      if (marker.markerAt !== 'from') {
         const isHierarchical =
           marker.type === 'inheritance' || marker.type === 'realization'
         const markerDir = isHierarchical ? 'down' : 'up'
@@ -1662,6 +2058,10 @@ export function renderClassAscii(
       increaseRoleCanvasSize(rc, totalW, detourY + 1)
       const fromJogs = fromCX !== fromAnchorX
       const toJogs = toCX !== toAnchorX
+      relEnds.set(relIndex, {
+        from: { x: fromAnchorX, y: fromBY + 1, dy: 1 },
+        to: { x: toAnchorX, y: toBY + 1, dy: 1 },
+      })
 
       // Jog out to the lane under the source, then vertical down from it
       drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
@@ -1679,8 +2079,8 @@ export function renderClassAscii(
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - same-level routing uses vertical segments at both ends
-      if (marker.markerAt === 'from') {
-        const markerChar = getMarkerShape(marker.type, useAscii, 'down')
+      if (marker.markerAt !== 'to') {
+        const markerChar = getFromMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
           setCGuarded(
@@ -1691,7 +2091,7 @@ export function renderClassAscii(
           )
         }
       }
-      if (marker.markerAt === 'to') {
+      if (marker.markerAt !== 'from') {
         // Target sits above this point (line detours below both boxes then
         // comes back up) — mirrors the "target is above source" branch's
         // compensation above.
@@ -1727,6 +2127,7 @@ export function renderClassAscii(
       theme,
       options,
       detourEntryLevels,
+      cardinalityLeftPad,
     )
   }
 
@@ -2073,6 +2474,7 @@ export function renderClassAscii(
   // the same midpoint row (issue #447, "teaches" truncated to "tea" and
   // merged into a box-drawing corner). Running all lines first means no
   // line write can ever land on top of label text again.
+  const labelRects: LabelRect[] = []
   for (const [relIndex, rel] of diagram.relationships.entries()) {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -2108,6 +2510,7 @@ export function renderClassAscii(
       const startY = labelY - halfHeight
 
       const territory = territoryByRel.get(rel)!
+      const rect: LabelRect = { x0: Infinity, y0: startY, x1: -1, y1: startY }
 
       for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
         const y = startY + lineIdx
@@ -2116,7 +2519,7 @@ export function renderClassAscii(
         // Grid cells, not code units: a wide glyph occupies two columns, so
         // measuring/writing by code unit would centre the label wrong and
         // overrun the space cleared for it.
-        const naturalCells = toDisplayCells(` ${text} `) // space padding on both sides
+        const naturalCells = toDisplayCells(` ${text} `) // Space padding on both sides
         // Clamped to never go negative — matches the clamp the territory
         // precomputation above already applied when deciding whether this
         // label and its neighbors' natural spans overlap, so the two stay
@@ -2148,10 +2551,92 @@ export function renderClassAscii(
           const lx = labelStart + i
           if (lx >= 0 && y >= 0) {
             setC(lx, y, cells[i]!, 'text')
+            rect.x0 = Math.min(rect.x0, lx)
+            rect.x1 = Math.max(rect.x1, lx)
+            rect.y1 = Math.max(rect.y1, y)
           }
         }
       }
+      if (lines.length > 1 && rect.x1 >= 0) labelRects.push(rect)
     }
+  }
+
+  // --- Draw relationship cardinalities (issue #2114) ---
+  // Each cardinality sits beside the line next to its own end: on the row
+  // hugging the box (where the marker is), to the right of the line like
+  // mermaid, otherwise to the left, otherwise one row further along the line.
+  // Drawn after the lines and labels and only into blank cells, so it can
+  // never overwrite a marker, a border, a label or another line. The rows
+  // are nearest-first and stop short of the line's middle, so a cardinality
+  // never reads as belonging to the other end. If nothing is free (a very
+  // crowded fan), the cardinality is left out rather than drawn over
+  // something else.
+  const CARDINALITY_ROWS = 2
+  // Columns the diagram would need to move right for a cardinality that fits
+  // nowhere else but off the left edge.
+  let cardinalityNeedsLeft = 0
+  const isFree = (x: number, y: number): boolean =>
+    x < 0 ||
+    y < 0 ||
+    (!boxCells.has(`${x},${y}`) && (canvas[x]?.[y] ?? ' ') === ' ')
+  for (const [relIndex, rel] of diagram.relationships.entries()) {
+    const ends = relEnds.get(relIndex)
+    if (!ends) continue
+    for (const [raw, end] of [
+      [rel.fromCardinality, ends.from],
+      [rel.toCardinality, ends.to],
+    ] as const) {
+      if (!raw) continue
+      const cells = toDisplayCells(raw.replace(/\s*\n\s*/g, ' '))
+      const w = cells.length
+      let spot: { x: number; y: number } | undefined
+      for (let k = 0; k < CARDINALITY_ROWS && !spot; k++) {
+        const y = end.y + end.dy * k
+        // Right of the line, then left; one blank column kept around the text.
+        for (const x0 of [
+          end.x + 1 + CARDINALITY_GAP,
+          end.x - CARDINALITY_GAP - w,
+        ]) {
+          if (x0 < 0) continue
+          let free = true
+          for (let x = x0 - 1; x <= x0 + w && free; x++) {
+            free = isFree(x, y)
+          }
+          if (free) {
+            spot = { x: x0, y }
+            break
+          }
+        }
+      }
+      if (!spot) {
+        // Right of the line was blocked: the left side is the way out, if the
+        // canvas edge allows it.
+        cardinalityNeedsLeft = Math.max(
+          cardinalityNeedsLeft,
+          CARDINALITY_GAP + w - end.x,
+        )
+        continue
+      }
+      increaseSize(canvas, spot.x + w + 1, spot.y + 1)
+      increaseRoleCanvasSize(rc, spot.x + w + 1, spot.y + 1)
+      for (const [i, cell] of cells.entries()) {
+        setC(spot.x + i, spot.y, cell, 'text')
+      }
+    }
+  }
+
+  // A cardinality had room nowhere but off the left edge: lay out again with
+  // the diagram moved right by that much (at most once).
+  if (cardinalityNeedsLeft > 0 && cardinalityLeftPad === 0) {
+    return renderClassAscii(
+      text,
+      config,
+      colorMode,
+      theme,
+      options,
+      detourRoomLevels,
+      cardinalityNeedsLeft,
+    )
   }
 
   // --- Draw namespace frames ---
@@ -2165,7 +2650,10 @@ export function renderClassAscii(
       ? { tl: '+', tr: '+', bl: '+', br: '+' }
       : { tl: '┌', tr: '┐', bl: '└', br: '┘' }
     const cells = toDisplayCells(` ${r.name} `)
-    const blank = (x: number): boolean => (canvas[x]?.[r.y0] ?? ' ') === ' '
+    const titleY = bottomUp ? r.y1 : r.y0
+    // Columns past the current canvas edge count as blank.
+    const blank = (x: number): boolean =>
+      !canvas[x] || canvas[x][titleY] === ' '
     // Leftmost start, one dash in from the corner, whose cells plus a dash
     // each side hold no stroke.
     let start = r.x0 + 2
@@ -2195,8 +2683,9 @@ export function renderClassAscii(
     put(r.x1, r.y0, c.tr, 'border')
     put(r.x0, r.y1, c.bl, 'border')
     put(r.x1, r.y1, c.br, 'border')
+    // The loop above left these cells blank, so the border pass wrote dashes there.
     for (const [i, cell] of cells.entries()) {
-      if (canvas[start + i]?.[r.y0] === h) setC(start + i, r.y0, cell, 'text')
+      setC(start + i, titleY, cell, 'text')
     }
   }
 
@@ -2204,6 +2693,16 @@ export function renderClassAscii(
   // each attached note to its class. Last, so a connector never lands on
   // top of a relationship line or label.
   decorateAsciiNotes(notesById, placed, canvas, useAscii, setC)
+
+  if (bottomUp) {
+    flipClassCanvas(
+      canvas,
+      rc,
+      linkCanvas,
+      [...placed.values()].filter((p) => !lollipops.has(p.cls.id)),
+      labelRects,
+    )
+  }
 
   return canvasToString(canvas, {
     roleCanvas: rc,
@@ -2265,15 +2764,21 @@ function withNotePseudoClasses(parsed: ClassDiagram): {
   return { diagram: { ...parsed, classes }, notesById }
 }
 
-/** Put each attached note on the same level as its class. */
+/**
+ * Put each attached note on the same level as its class. In BT mermaid puts
+ * it one rank toward the roots instead (below the class once flipped), so a
+ * non-root class's note moves up one level here.
+ */
 function pinNoteLevels(
   notesById: Map<string, ClassNote>,
   level: Map<string, number>,
+  bottomUp: boolean,
 ): void {
   for (const [id, note] of notesById) {
     if (note.forClass === undefined) continue
     const classLevel = level.get(note.forClass)
-    if (classLevel !== undefined) level.set(id, classLevel)
+    if (classLevel === undefined) continue
+    level.set(id, bottomUp && classLevel > 0 ? classLevel - 1 : classLevel)
   }
 }
 
@@ -2309,10 +2814,164 @@ function decorateAsciiNotes(
     // By construction the note sits directly right of its class on the same
     // row; anything else means the layout changed under us — skip the line
     // rather than draw one through the middle of the diagram.
-    if (!cls || cls.x + cls.width > p.x || cls.y !== p.y) continue
+    if (!cls) continue
+    if (cls.y >= p.y + p.height && cls.x + cls.width <= p.x) {
+      // BT: the note sits on an earlier level, up and to the right of its
+      // class. Run the link out of the class's right side, then along the
+      // note's centre column up to the note; leave it out if another box is
+      // in that path.
+      const x0 = cls.x + cls.width
+      const x = p.x + (p.width >> 1)
+      const y = cls.y + 1
+      const up = useAscii ? ':' : '┊'
+      const top = p.y + p.height
+      // The link is the row segment x0..x at y plus the column segment top..y
+      // at x; only a box on one of those segments is in the way.
+      const hits = (
+        o: PlacedClass,
+        xa: number,
+        xb: number,
+        ya: number,
+        yb: number,
+      ) => o.x <= xb && o.x + o.width > xa && o.y <= yb && o.y + o.height > ya
+      if (
+        [...placed.values()].some(
+          (o) =>
+            o !== p &&
+            o !== cls &&
+            (hits(o, x0, x, y, y) || hits(o, x, x, top, y)),
+        )
+      )
+        continue
+      for (let cx = x0; cx < x; cx++) {
+        if (canvas[cx]?.[y] === ' ') setC(cx, y, dash, 'line')
+      }
+      for (let cy = top; cy < y; cy++) {
+        if (canvas[x]?.[cy] === ' ') setC(x, cy, up, 'line')
+      }
+      // Drawn top-down, the corner flips to ╮ with the rest of the canvas.
+      setC(x, y, useAscii ? up : '╯', 'line')
+      continue
+    }
+    if (cls.x + cls.width > p.x || cls.y !== p.y) continue
     const y = cls.y + 1
     for (let x = cls.x + cls.width; x < p.x; x++) {
       if (canvas[x]?.[y] === ' ') setC(x, y, dash, 'line')
+    }
+  }
+}
+
+// ============================================================================
+// Lollipop interfaces
+//
+// Mermaid draws `A ()-- B` as the name `A` above a small circle, joined to
+// `B` by a stem, with no edge to a class `A` (and no `A` box at all when `A`
+// is used only this way). Same here: each lollipop's interface end becomes a
+// one-row, box-less pseudo-class (id has a space, so it can't collide with a
+// class id) that the normal layout and edge routing treat like any class, so
+// `from` lands above `to`. The edge's circle marker is the lollipop. `()--()`
+// has no single host and stays an ordinary relationship.
+// ============================================================================
+
+export interface AsciiLollipop {
+  host: string
+}
+
+function withLollipopPseudoClasses(parsed: ClassDiagram): {
+  diagram: ClassDiagram
+  lollipops: Map<string, AsciiLollipop>
+} {
+  const lollipops = new Map<string, AsciiLollipop>()
+  const relationships: ClassRelationship[] = []
+  const interfaceIds = new Set<string>()
+  const pseudo: ClassNode[] = []
+  for (const rel of parsed.relationships) {
+    if (rel.type !== 'lollipop' || rel.markerAt === 'both') {
+      relationships.push(rel)
+      continue
+    }
+    const left = rel.markerAt === 'from'
+    const host = left ? rel.to : rel.from
+    const name = left ? rel.from : rel.to
+    const id = `lollipop ${lollipops.size}`
+    lollipops.set(id, { host })
+    interfaceIds.add(name)
+    pseudo.push({ id, label: name, attributes: [], methods: [] })
+    relationships.push(left ? { ...rel, from: id } : { ...rel, to: id })
+  }
+  if (lollipops.size === 0) return { diagram: parsed, lollipops }
+
+  // An interface keeps its box only when something else gives it one.
+  const kept = new Set(
+    relationships
+      .filter((r) => r.type !== 'lollipop' || r.markerAt === 'both')
+      .flatMap((r) => [r.from, r.to]),
+  )
+  for (const { host } of lollipops.values()) kept.add(host)
+  for (const note of parsed.notes) if (note.forClass) kept.add(note.forClass)
+  for (const ns of parsed.namespaces) for (const id of ns.classIds) kept.add(id)
+  const drop = (c: ClassNode): boolean =>
+    interfaceIds.has(c.id) &&
+    !kept.has(c.id) &&
+    !c.annotation &&
+    c.attributes.length === 0 &&
+    c.methods.length === 0
+
+  // Pseudo-classes go last, in source order: mermaid lays real classes out
+  // first and hangs each interface name off its host afterwards.
+  const classes = [...parsed.classes.filter((c) => !drop(c)), ...pseudo]
+  return { diagram: { ...parsed, classes, relationships }, lollipops }
+}
+
+// ============================================================================
+// BT: the top-down drawing, flipped
+//
+// Flipping the whole canvas turns each box's border rows into valid borders
+// of the mirrored box (`└──┬──┘` becomes `┌──┴──┐`), but would also put its
+// compartments upside down, so the interior rows are put back as drawn. (A
+// namespace frame's title is drawn on the bottom border for BT, so the flip
+// lands it on the top one.)
+// ============================================================================
+
+function flipClassCanvas(
+  canvas: Canvas,
+  rc: RoleCanvas,
+  linkCanvas: LinkCanvas | undefined,
+  boxes: PlacedClass[],
+  labelRects: LabelRect[],
+): void {
+  const H = canvas[0]!.length
+  // Interior rows of every box (between the two border rows), as drawn.
+  const saved = boxes.map((b) => {
+    const cols: { ch: string; role: CharRole | null; link: string | null }[][] =
+      []
+    for (let x = b.x; x < b.x + b.width; x++) {
+      const col = []
+      for (let y = b.y + 1; y < b.y + b.height - 1; y++) {
+        col.push({
+          ch: canvas[x]![y]!,
+          role: rc[x]![y] ?? null,
+          link: linkCanvas?.[x]?.[y] ?? null,
+        })
+      }
+      cols.push(col)
+    }
+    return cols
+  })
+
+  mirrorLabelRows(canvas, rc, labelRects, linkCanvas)
+  flipCanvasVertically(canvas, rc)
+  flipRoleCanvasVertically(rc)
+  if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
+
+  for (const [i, b] of boxes.entries()) {
+    const top = H - 1 - (b.y + b.height - 1)
+    for (const [cx, col] of saved[i]!.entries()) {
+      for (const [j, cell] of col.entries()) {
+        canvas[b.x + cx]![top + 1 + j] = cell.ch
+        rc[b.x + cx]![top + 1 + j] = cell.role as CharRole
+        if (linkCanvas) linkCanvas[b.x + cx]![top + 1 + j] = cell.link
+      }
     }
   }
 }

@@ -156,8 +156,8 @@ describe('cross-style edge overlap', () => {
    */
   it('a temporary reroute reservation on the live grid must not hide a conflict from the frozen node-only snapshot', () => {
     const grid = createGrid()
-    placeBlock(grid, { x: 4, y: 8 }) // node D's reserved 3x3 block
-    const nodeOnlyGrid = cloneGrid(grid) // taken before any temporary reservation
+    placeBlock(grid, { x: 4, y: 8 }) // Node D's reserved 3x3 block
+    const nodeOnlyGrid = cloneGrid(grid) // Taken before any temporary reservation
 
     const cellStyles = createEdgeCellStyles()
     const solidPath = [

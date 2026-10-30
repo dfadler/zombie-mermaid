@@ -43,14 +43,14 @@ With `outputPath` the tool writes the file and returns `{"saved": "<absolute pat
 
 Render to plain ASCII or Unicode box-drawing text, suited to a terminal or chat context. Flowchart, state, sequence, class and ER diagrams. Output never contains ANSI color codes.
 
-| Argument           | Type             | Notes                                                                |
-| ------------------ | ---------------- | -------------------------------------------------------------------- |
-| `diagram`          | string, required | Mermaid source, non-empty.                                           |
-| `useAscii`         | boolean          | `true` = plain `+ - \| >`; default Unicode box-drawing.              |
-| `profile`          | `'markdown'`     | Plain ASCII for issues/commits/fenced blocks; `useAscii` still wins. |
-| `paddingX`         | integer >= 0     | Horizontal node spacing, default 5. Flowchart/state only.            |
-| `paddingY`         | integer >= 0     | Vertical node spacing, default 5. Flowchart/state only.              |
-| `boxBorderPadding` | integer >= 0     | Padding inside node boxes, default 1. Flowchart/state only.          |
+| Argument           | Type             | Notes                                                                                                      |
+| ------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| `diagram`          | string, required | Mermaid source, non-empty.                                                                                 |
+| `useAscii`         | boolean          | `true` = plain `+ - \| >`; default Unicode box-drawing.                                                    |
+| `profile`          | `'markdown'`     | Plain ASCII for issues/commits/fenced blocks; `useAscii` still wins.                                       |
+| `paddingX`         | integer >= 0     | Horizontal node spacing, default 5. Flowchart/state only.                                                  |
+| `paddingY`         | integer >= 0     | Vertical node spacing, default 5 (LR and RL sibling gap is paddingY - 1, minimum 1). Flowchart/state only. |
+| `boxBorderPadding` | integer >= 0     | Padding inside node boxes, default 1. Flowchart/state only.                                                |
 
 ## `check_mermaid_sequence_activations`
 
@@ -98,9 +98,14 @@ Parse-only check: nothing is laid out or drawn. Input: `diagram`. Always a norma
 {
   "valid": false,
   "diagnostics": [
-    { "line": 4, "sourceLine": "  loop forever", "message": "..." }
+    {
+      "line": 4,
+      "sourceLine": "  loop forever",
+      "message": "...",
+      "code": "PARSE_ERROR"
+    }
   ]
 }
 ```
 
-`line` and `sourceLine` appear when the parser names a line; otherwise the diagnostic is just `{ "message" }`. Diagnostics hold only the parser message and your own source line, never filesystem paths. The CLI equivalent is `zombie-mermaid validate [file]` (prints `valid`, or the error plus source line and exit code 1).
+`line` and `sourceLine` appear when the parser names a line; otherwise the diagnostic is just `{ "message", "code" }`. `code` is an optional stable string to branch on: `EMPTY_DIAGRAM` (blank input), or `PARSE_ERROR` (generic: the parser reports free-text messages, so every syntax error maps here). A code the thrown error already carries (e.g. `LIMIT_EXCEEDED`) is passed through unchanged, so treat the set as open. Diagnostics hold only the parser message and your own source line, never filesystem paths. The CLI equivalent is `zombie-mermaid validate [file]` (prints `valid`, or the error plus source line and exit code 1).

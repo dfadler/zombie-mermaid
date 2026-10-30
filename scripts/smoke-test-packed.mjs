@@ -20,6 +20,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { mapProblems } from './check-pack-dist.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const rootPkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
@@ -76,6 +77,11 @@ const overrides = Object.fromEntries(
     .map(([n, t]) => [n, `file:${t}`]),
 )
 
+await check('tarballs ship no .map and no dangling sourceMappingURL', () => {
+  const bad = pkgDirs.flatMap((d) => mapProblems(d).map((p) => `${d}: ${p}`))
+  if (bad.length) throw new Error(bad.join('\n'))
+})
+
 function project(name, deps) {
   const dir = join(tmp, name)
   mkdirSync(dir)
@@ -120,7 +126,10 @@ const app = project('app', {
 })
 
 const entries = ['zombie-mermaid', 'zombie-mermaid/ascii', 'zombie-mermaid/mcp']
-const scoped = Object.keys(tarballs).filter((n) => n.startsWith('@'))
+// @zombie-mermaid/cli is bin-only (no exports; importing it would run the CLI).
+const scoped = Object.keys(tarballs).filter(
+  (n) => n.startsWith('@') && n !== '@zombie-mermaid/cli',
+)
 
 await check('ESM + CJS import of every entry point', () => {
   const specs = JSON.stringify([...entries, ...scoped])
@@ -224,7 +233,27 @@ void [s, a, registerElk, createMcpServer]
       files: ['types.mts', 'types.cts'],
     }),
   )
-  run(join(app, 'node_modules/.bin/tsc'), ['-p', '.'], app)
+  const tsc = join(app, 'node_modules/.bin/tsc')
+  run(tsc, ['-p', '.'], app)
+  // node16 is the one that rejects a .d.cts re-exporting an ESM .d.ts
+  // (TS1479) — nodenext allows it, so it can't catch a missing
+  // dist/shared/package.json (#2196). No `zombie-mermaid/mcp` import here: the
+  // MCP SDK's own declarations don't pass node16 with skipLibCheck off.
+  writeFileSync(
+    join(app, 'types-node16.cts'),
+    src
+      .replace(/^import \{ createMcpServer.*\n/m, '')
+      .replace(', createMcpServer', ''),
+  )
+  writeFileSync(
+    join(app, 'tsconfig.node16.json'),
+    JSON.stringify({
+      extends: './tsconfig.json',
+      compilerOptions: { module: 'node16', moduleResolution: 'node16' },
+      files: ['types-node16.cts'],
+    }),
+  )
+  run(tsc, ['-p', 'tsconfig.node16.json'], app)
 })
 
 await check('CLI: --version and render (svg + ascii)', () => {
@@ -237,6 +266,22 @@ await check('CLI: --version and render (svg + ascii)', () => {
     throw new Error('no svg')
   if (!run(bin, ['render', 'in.mmd', '--ascii'], app).trim())
     throw new Error('no ascii')
+})
+
+// #1946: `npx @zombie-mermaid/cli` must work from its own tarball, without
+// the umbrella installed.
+await check('@zombie-mermaid/cli: standalone bin --version and render', () => {
+  const dir = project('cli-only', {
+    '@zombie-mermaid/cli': `file:${tarballs['@zombie-mermaid/cli']}`,
+  })
+  const bin = join(dir, 'node_modules/.bin/zombie-mermaid')
+  if (!run(bin, ['--version'], dir).includes(rootPkg.version))
+    throw new Error('version mismatch')
+  writeFileSync(join(dir, 'in.mmd'), SVG_ELK.flowchart)
+  if (!run(bin, ['render', 'in.mmd', '--ascii'], dir).trim())
+    throw new Error('no ascii')
+  if (existsSync(join(dir, 'node_modules/zombie-mermaid')))
+    throw new Error('umbrella was installed')
 })
 
 await check('MCP server starts, answers initialize and renders', async () => {

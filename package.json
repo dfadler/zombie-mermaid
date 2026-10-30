@@ -1,7 +1,8 @@
 {
   "name": "zombie-mermaid",
-  "version": "5.6.1",
+  "version": "5.12.0",
   "license": "MIT",
+  "mcpName": "io.github.dfadler/zombie-mermaid",
   "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies. Maintained fork of beautiful-mermaid.",
   "type": "module",
   "sideEffects": false,
@@ -28,6 +29,16 @@
         "default": "./dist/ascii.cjs"
       }
     },
+    "./ascii-layout": {
+      "import": {
+        "types": "./dist/ascii-layout.d.ts",
+        "default": "./dist/ascii-layout.js"
+      },
+      "require": {
+        "types": "./dist/ascii-layout.d.cts",
+        "default": "./dist/ascii-layout.cjs"
+      }
+    },
     "./mcp": {
       "import": {
         "types": "./dist/mcp.d.ts",
@@ -37,6 +48,19 @@
         "types": "./dist/mcp.d.cts",
         "default": "./dist/mcp.cjs"
       }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "ascii": [
+        "dist/ascii.d.ts"
+      ],
+      "ascii-layout": [
+        "dist/ascii-layout.d.ts"
+      ],
+      "mcp": [
+        "dist/mcp.d.ts"
+      ]
     }
   },
   "repository": {
@@ -79,6 +103,7 @@
   },
   "files": [
     "dist/",
+    "!dist/**/*.map",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "README.md"
@@ -98,10 +123,6 @@
     "test:ascii-text:update": "vitest run -c config/vitest.config.ts __tests__/ascii-text-snapshots.test.ts -u",
     "test:visual:update": "playwright test --update-snapshots",
     "coverage:diff": "tsx scripts/check-diff-coverage.ts",
-    "samples": "scripts/tsx-css.sh packages/site/index.ts",
-    "editor": "scripts/tsx-css.sh packages/site/editor.ts",
-    "pages": "scripts/tsx-css.sh packages/site/pages.ts",
-    "blog": "scripts/tsx-css.sh packages/site/blog.ts",
     "dev": "vite",
     "bench": "tsx scripts/bench.ts",
     "bench:compare": "tsx scripts/bench-compare.ts",
@@ -122,13 +143,16 @@
     "check:pack-dist": "node scripts/check-pack-dist.mjs",
     "check:package-types": "scripts/check-package-types.sh",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
+    "size:report": "tsx scripts/size-report.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
-    "build:mono-font": "tsx scripts/build-mono-font-subset.ts && prettier --write demo/components/generated/mono-font-subset.ts demo/styles.css packages/svg-renderer/src/generated/mono-font-subset.ts",
-    "generate:primitives-classes": "tsx scripts/generate-primitives-classes.ts && prettier --write demo/components/generated/primitives-classes.ts",
+    "build:inter-font": "tsx scripts/build-inter-font-subset.ts && oxfmt packages/svg-renderer/src/generated/inter-font-subset.ts",
+    "build:mono-font": "tsx scripts/build-mono-font-subset.ts && oxfmt demo/components/generated/mono-font-subset.ts demo/styles.css packages/svg-renderer/src/generated/mono-font-subset.ts",
+    "generate:primitives-classes": "tsx scripts/generate-primitives-classes.ts && oxfmt demo/components/generated/primitives-classes.ts",
     "generate:logo-lockup": "tsx scripts/generate-logo-lockup.ts",
     "api:report": "tsx scripts/api-report.ts",
     "mutation": "stryker run",
-    "docs:scripts": "tsx scripts/generate-development-scripts-doc.ts && prettier --write docs/development-scripts.md",
+    "docs:llms": "tsx scripts/generate-llms-full.ts",
+    "docs:scripts": "tsx scripts/generate-development-scripts-doc.ts && oxfmt docs/development-scripts.md",
     "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
     "form-diff": "tsx scripts/form-diff.ts",
@@ -136,27 +160,28 @@
     "form-judge-prepare": "tsx scripts/form-judge-prepare.ts",
     "form-judge-finalize-cache": "tsx scripts/form-judge-finalize-cache.ts",
     "form-judge-calibrate": "tsx scripts/form-judge-calibrate.ts",
+    "mention-watch": "tsx scripts/mention-watch.ts",
     "build": "pnpm run build:packages && vite build --app --config config/vite.config.lib.ts",
-    "build:packages": "vite build --app --config packages/core/vite.config.ts && vite build --app --config packages/mermaid-parser/vite.config.ts && vite build --app --config packages/svg-renderer/vite.config.ts && vite build --app --config packages/ascii-renderer/vite.config.ts && vite build --app --config packages/mcp/vite.config.ts && vite build --config packages/mcp/vite.worker.config.ts",
-    "build:site": "rm -rf site && mkdir -p site && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/index.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/editor.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/fork-fixes.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/pages.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/blog.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/dashboard.ts && cp -r public/* site/",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "build:packages": "pnpm -r --filter './packages/*' build",
+    "build:site": "rm -rf site && vite build --app -c vite.site.config.ts",
+    "lint": "oxlint --report-unused-disable-directives-severity=error .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "prepublishOnly": "pnpm run build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p demo/tsconfig.json && tsc --noEmit -p editor/tsconfig.json",
-    "fork-fixes": "scripts/tsx-css.sh packages/site/fork-fixes.ts",
-    "dashboard": "scripts/tsx-css.sh packages/site/dashboard.ts",
     "dashboard:data": "tsx scripts/generate-dashboard-data.ts",
     "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts",
     "audit:responsive": "tsx scripts/audit-responsive.ts",
     "layout:oracle": "tsx scripts/layout-oracle.ts",
-    "layout:scorecard": "tsx scripts/layout-oracle.ts --history=layout-fidelity-history.jsonl --scorecard=docs/layout-fidelity-scorecard.md && prettier --write docs/layout-fidelity-scorecard.md",
+    "elk-layout:oracle": "tsx scripts/elk-layout-oracle.ts --gallery",
+    "elk-layout:font": "tsx scripts/elk-layout-font.ts",
+    "layout:scorecard": "tsx scripts/layout-oracle.ts --history=layout-fidelity-history.jsonl --scorecard=docs/layout-fidelity-scorecard.md && oxfmt docs/layout-fidelity-scorecard.md",
     "label:oracle": "tsx scripts/label-position-oracle.ts",
     "verify": "scripts/verify.sh",
     "doctor": "scripts/doctor.sh"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@zombie-mermaid/ascii-renderer": "workspace:*",
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mcp": "workspace:*",
@@ -182,17 +207,19 @@
     "@types/node": "^24.13.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "@xterm/headless": "^6.0.0",
-    "eslint": "^10.9.1",
-    "eslint-config-prettier": "^10.1.8",
+    "@zombie-mermaid/ascii-layout": "workspace:*",
+    "@zombie-mermaid/elk-layout": "workspace:*",
+    "elkjs-0.9.3": "npm:elkjs@0.9.3",
     "fast-check": "4.10.2",
     "fontkit": "^2.0.4",
     "jsdom": "^30.0.1",
     "lightningcss": "^1.33.0",
     "marked": "^18.0.11",
-    "mermaid": "12.1.0",
-    "prettier": "^3.9.6",
+    "mermaid": "12.2.0",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.87.0",
     "publint": "0.3.25",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -200,13 +227,20 @@
     "subset-font": "^2.7.0",
     "tsx": "^4.23.12",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.68.0",
     "unplugin-dts": "^1.0.3",
-    "vite": "^8.2.2",
-    "vitest": "^4.1.11",
+    "vite": "^8.2.4",
+    "vitest": "^4.1.12",
     "zod": "^4.5.4"
   },
   "optionalDependencies": {
     "@resvg/resvg-js": "^2.6.2"
+  },
+  "peerDependencies": {
+    "elkjs-0.9.3": "0.9.3"
+  },
+  "peerDependenciesMeta": {
+    "elkjs-0.9.3": {
+      "optional": true
+    }
   }
 }

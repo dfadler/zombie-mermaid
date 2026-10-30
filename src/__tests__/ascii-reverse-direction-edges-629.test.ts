@@ -153,7 +153,7 @@ describe('opposite-direction edges between one node pair (#629)', () => {
   B -- b2 --> C
   C -- c1 --> B`)
 
-    // b1 and c1 vanished entirely before the fix — each was drawn onto the
+    // B1 and c1 vanished entirely before the fix — each was drawn onto the
     // cells its forward partner had already claimed.
     for (const label of ['a1', 'b1', 'b2', 'c1']) {
       expect(out).toContain(label)

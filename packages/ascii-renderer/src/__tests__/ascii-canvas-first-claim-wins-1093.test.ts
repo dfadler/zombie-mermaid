@@ -20,7 +20,7 @@
  * `JUNCTION_CHARS`).
  */
 import { describe, it, expect } from 'vitest'
-import { mkCanvas, firstClaimWins, mergeCanvases } from '../canvas.ts'
+import { cellAt, mkCanvas, firstClaimWins, mergeCanvases } from '../canvas.ts'
 import type { Canvas } from '../types.ts'
 
 function canvasWithChar(
@@ -47,8 +47,8 @@ describe('firstClaimWins', () => {
     // Both canvases must still carry their own character at the shared
     // cell — dropping either one would make it impossible for
     // mergeCanvases's junction-merge logic below to ever see both.
-    expect(resolved[0]![2]![2]).toBe('─')
-    expect(resolved[1]![2]![2]).toBe('│')
+    expect(cellAt(resolved[0]!, 2, 2)).toBe('─')
+    expect(cellAt(resolved[1]!, 2, 2)).toBe('│')
 
     const merged = mergeCanvases(
       mkCanvas(4, 4),
@@ -63,8 +63,8 @@ describe('firstClaimWins', () => {
     const first = canvasWithChar(4, 4, 1, 1, '─')
     const second = canvasWithChar(4, 4, 1, 1, '─')
     const resolved = firstClaimWins([first, second])
-    expect(resolved[0]![1]![1]).toBe('─')
-    expect(resolved[1]![1]![1]).toBe(' ')
+    expect(cellAt(resolved[0]!, 1, 1)).toBe('─')
+    expect(cellAt(resolved[1]!, 1, 1)).toBe(' ')
   })
 
   it('still suppresses a later non-junction character at an already-claimed cell (#1067)', () => {
@@ -75,15 +75,15 @@ describe('firstClaimWins', () => {
     const dashed = canvasWithChar(4, 4, 1, 1, '┄')
     const heavy = canvasWithChar(4, 4, 1, 1, '━')
     const resolved = firstClaimWins([dashed, heavy])
-    expect(resolved[0]![1]![1]).toBe('┄')
-    expect(resolved[1]![1]![1]).toBe(' ')
+    expect(cellAt(resolved[0]!, 1, 1)).toBe('┄')
+    expect(cellAt(resolved[1]!, 1, 1)).toBe(' ')
   })
 
   it('suppresses a later cell when only one side is a junction character', () => {
     const junction = canvasWithChar(4, 4, 1, 1, '│')
     const heavy = canvasWithChar(4, 4, 1, 1, '━')
     const resolved = firstClaimWins([junction, heavy])
-    expect(resolved[0]![1]![1]).toBe('│')
-    expect(resolved[1]![1]![1]).toBe(' ')
+    expect(cellAt(resolved[0]!, 1, 1)).toBe('│')
+    expect(cellAt(resolved[1]!, 1, 1)).toBe(' ')
   })
 })

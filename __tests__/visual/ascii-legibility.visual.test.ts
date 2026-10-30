@@ -26,7 +26,7 @@
  */
 import { expect, test } from '@playwright/test'
 import { renderMermaidASCII } from '../../src/index.ts'
-import { samples } from '../../packages/site/samples-data.ts'
+import { samples } from '../../samples/samples-data.ts'
 import { TERMINAL_ASCII_OPTS } from './helpers/terminal-panel.ts'
 import { mountAndMeasure } from './helpers/ascii-measure.ts'
 
@@ -257,7 +257,7 @@ test.describe('ASCII mockup text legibility', () => {
             const yLine0 = ly(g.yLine0)
             const yText0 = ly(g.yText0)
 
-            // stroke column: highest median line ink down the line cell
+            // Stroke column: highest median line ink down the line cell
             const rows: number[] = []
             for (let y = Math.ceil(yLine0 + dpr); y < yLine0 + lineH - dpr; y++)
               rows.push(y)
@@ -277,7 +277,7 @@ test.describe('ASCII mockup text legibility', () => {
               continue
             }
 
-            // last line-ink row toward the text, from the middle of the cell
+            // Last line-ink row toward the text, from the middle of the cell
             const step = p.kind === 'down' ? 1 : -1
             let end = Math.round(yLine0 + lineH / 2)
             for (
@@ -287,7 +287,7 @@ test.describe('ASCII mockup text legibility', () => {
             )
               end = y
 
-            // nearest text-ink row: scan the text row (plus slack either side)
+            // Nearest text-ink row: scan the text row (plus slack either side)
             // across the text cell's columns, from the line side outward
             let textEdge: number | null = null
             const x1 = Math.floor(x0)

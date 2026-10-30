@@ -58,7 +58,7 @@ export function detectDiagramType(text: string): DiagramType {
   )
     return 'c4'
   if (/^sequencediagram\s*$/.test(firstLine)) return 'sequence'
-  if (/^classdiagram\s*$/.test(firstLine)) return 'class'
+  if (/^classdiagram(?:-v2)?\s*$/.test(firstLine)) return 'class'
   if (/^erdiagram\s*$/.test(firstLine)) return 'er'
 
   // Default: flowchart/state (handled by parseMermaid internally)

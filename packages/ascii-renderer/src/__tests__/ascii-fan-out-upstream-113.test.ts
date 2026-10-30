@@ -29,15 +29,6 @@ const TD_FANOUT = `flowchart TB
     Src -->|center*| Center
     Src -->|right*| Right`
 
-const LR_FANOUT = `flowchart LR
-  Src["Source"]
-  Top["Top Target"]
-  Mid["Middle Target"]
-  Bot["Bottom Target"]
-  Src -->|top*| Top
-  Src -->|mid*| Mid
-  Src -->|bot*| Bot`
-
 describe('upstream #111: TB fan-out siblings leave the source on one row', () => {
   it('renders the source centred with labels on their own vertical branches (unicode)', () => {
     const out = renderMermaidASCII(TD_FANOUT, { colorMode: 'none' })
@@ -79,24 +70,47 @@ describe('upstream #111: TB fan-out siblings leave the source on one row', () =>
   })
 })
 
+// Wrapped in a subgraph: an unwrapped LR fan-out is centred over its children
+// since #2163, so its edges leave the top and bottom borders and nothing sits
+// on the right border. The frame keeps the original one-sided layout.
+const LR_FANOUT_FRAMED = `flowchart LR
+  subgraph s
+  Src["Source"]
+  Top["Top Target"]
+  Mid["Middle Target"]
+  Bot["Bottom Target"]
+  Src -->|top*| Top
+  Src -->|mid*| Mid
+  Src -->|bot*| Bot
+  end`
+
 describe('upstream #112: LR fan-out box-start connector stays on the border', () => {
   it('places ├ directly under the source box right border column (unicode)', () => {
-    const out = lines(renderMermaidASCII(LR_FANOUT, { colorMode: 'none' }))
+    const out = lines(
+      renderMermaidASCII(LR_FANOUT_FRAMED, { colorMode: 'none' }),
+    )
+    const top = out.findIndex((l) => l.includes('┌────────┐'))
     const sourceRow = out.find((l) => l.includes('Source'))!
     const borderCol = sourceRow.indexOf('├')
-    expect(borderCol).toBe(out[0]!.indexOf('┐'))
+    expect(borderCol).toBe(out[top]!.indexOf('┐'))
     // Every row of the source box (top border down to bottom border) agrees
     // on the border column.
-    expect(out[0]![borderCol]).toBe('┐')
-    expect(out[4]![borderCol]).toBe('┘')
+    expect(out[top]![borderCol]).toBe('┐')
+    expect(out[top + 4]![borderCol]).toBe('┘')
     // The connector is the border glyph itself, not preceded by a gap.
     expect(sourceRow[borderCol - 1]).toBe(' ')
-    expect(sourceRow.slice(0, borderCol)).toBe('│ Source ')
+    expect(sourceRow.slice(sourceRow.indexOf('│ Source'), borderCol)).toBe(
+      '│ Source ',
+    )
   })
 
   it('renders the full fan-out with ├ flush on the border (unicode)', () => {
-    const out = renderMermaidASCII(LR_FANOUT, { colorMode: 'none' })
-    expect(lines(out).slice(0, 6)).toEqual([
+    const out = renderMermaidASCII(LR_FANOUT_FRAMED, { colorMode: 'none' })
+    const rows = lines(out)
+    const top = rows.findIndex((l) => l.includes('┌────────┐'))
+    expect(
+      rows.slice(top, top + 6).map((l) => l.replace(/^│ | │$/g, '').trimEnd()),
+    ).toEqual([
       '┌────────┐      ┌───────────────┐',
       '│        │      │               │',
       '│ Source ├top*─►│   Top Target  │',

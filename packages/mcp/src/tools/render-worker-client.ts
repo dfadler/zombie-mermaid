@@ -57,7 +57,7 @@ export function createWorkerRenderer(opts: WorkerRendererOptions = {}) {
         w.off('exit', onExit)
         if (healthy) w.unref()
         else {
-          worker = undefined // calls are serialised, so w is the current worker
+          worker = undefined // Calls are serialised, so w is the current worker
           void w.terminate()
         }
         if (err) reject(err)

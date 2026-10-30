@@ -5,7 +5,11 @@
 // Class diagrams show UML class relationships, inheritance, composition, etc.
 // ============================================================================
 
-import type { NodeInteraction, StyleDirectives } from '@zombie-mermaid/core'
+import type {
+  Direction,
+  NodeInteraction,
+  StyleDirectives,
+} from '@zombie-mermaid/core'
 
 /**
  * Parsed class diagram — logical structure from mermaid text.
@@ -25,6 +29,11 @@ export interface ClassDiagram extends StyleDirectives {
   interactions: Map<string, NodeInteraction>
   /** Notes, in source order — `note "text"` and `note for X "text"` */
   notes: ClassNote[]
+  /**
+   * Layout direction from a top-level `direction TB|LR|BT|RL` statement;
+   * `undefined` when the source has none (laid out top-down).
+   */
+  direction?: Direction
 }
 
 /**
@@ -65,6 +74,8 @@ export interface ClassMember {
   isMethod?: boolean
   /** Method parameters (e.g., "data", "key, val") — only for methods */
   params?: string
+  /** Source had whitespace after the visibility marker (`+ name`); mermaid measures and draws it (#2128) */
+  visibilitySpace?: boolean
 }
 
 /** Relationship types following UML conventions */
@@ -75,6 +86,7 @@ export type RelationshipType =
   | 'association' // A --> B    (solid line, open arrow)
   | 'dependency' // A ..> B    (dashed line, open arrow)
   | 'realization' // A ..|> B   (dashed line, hollow triangle)
+  | 'lollipop' // A ()-- B   (solid line, circle: interface)
 
 export interface ClassRelationship {
   from: string
@@ -85,8 +97,9 @@ export interface ClassRelationship {
    * Determined by the arrow syntax direction:
    *   - Prefix markers like `<|--`, `*--`, `o--` → 'from' (marker on left/from side)
    *   - Suffix markers like `..|>`, `-->`, `..>`, `--*`, `--o` → 'to' (marker on right/to side)
+   *   - Both ends like `<|--|>`, `<-->`, `()--()` → 'both' (same marker at each end)
    */
-  markerAt: 'from' | 'to'
+  markerAt: 'from' | 'to' | 'both'
   /** Label on the relationship line */
   label?: string
   /** Cardinality at the "from" end (e.g., "1", "*", "0..1") */
@@ -168,7 +181,7 @@ export interface PositionedClassRelationship {
   to: string
   type: RelationshipType
   /** Which end of the line has the UML marker — propagated from ClassRelationship */
-  markerAt: 'from' | 'to'
+  markerAt: 'from' | 'to' | 'both'
   label?: string
   fromCardinality?: string
   toCardinality?: string
@@ -176,4 +189,17 @@ export interface PositionedClassRelationship {
   points: Array<{ x: number; y: number }>
   /** ELK-computed label center position (avoids overlaps between nearby edges) */
   labelPosition?: { x: number; y: number }
+  /**
+   * The interface end of a one-ended lollipop (`A ()-- B`, `B --() A`): a
+   * label-only node (no class box) the line starts or ends at, as mermaid.js
+   * draws it. `from`/`to` still name the interface and its host class.
+   */
+  interfaceLabel?: {
+    text: string
+    /** Top-left corner and size of the label's box; the circle marker sits on its inner edge */
+    x: number
+    y: number
+    width: number
+    height: number
+  }
 }

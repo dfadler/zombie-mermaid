@@ -1,5 +1,187 @@
 # @zombie-mermaid/mcp
 
+## 5.12.0
+
+### Patch Changes
+
+- Updated dependencies [[`e400a43`](https://github.com/dfadler/zombie-mermaid/commit/e400a436831e2ce3362b6513d21228a3e7949b8d)]:
+  - @zombie-mermaid/mermaid-parser@5.12.0
+  - @zombie-mermaid/ascii-renderer@5.12.0
+  - @zombie-mermaid/svg-renderer@5.12.0
+  - @zombie-mermaid/core@5.12.0
+
+## 5.11.3
+
+### Patch Changes
+
+- Updated dependencies [[`ca18ea9`](https://github.com/dfadler/zombie-mermaid/commit/ca18ea9bf1f420075443e74221a865aff603beb9), [`5ca6d42`](https://github.com/dfadler/zombie-mermaid/commit/5ca6d42abc5fbeb90bd42d19cdf025798b53f40f)]:
+  - @zombie-mermaid/ascii-renderer@5.11.3
+  - @zombie-mermaid/core@5.11.3
+  - @zombie-mermaid/mermaid-parser@5.11.3
+  - @zombie-mermaid/svg-renderer@5.11.3
+
+## 5.11.2
+
+### Patch Changes
+
+- Updated dependencies [[`0a0e51c`](https://github.com/dfadler/zombie-mermaid/commit/0a0e51c33cdb4c902b85ec442426638034bda381), [`c5d83df`](https://github.com/dfadler/zombie-mermaid/commit/c5d83dff19a64756398704e28f9d7c449a605faa)]:
+  - @zombie-mermaid/ascii-renderer@5.11.2
+  - @zombie-mermaid/core@5.11.2
+  - @zombie-mermaid/mermaid-parser@5.11.2
+  - @zombie-mermaid/svg-renderer@5.11.2
+
+## 5.11.1
+
+### Patch Changes
+
+- Updated dependencies [[`3d5e2a3`](https://github.com/dfadler/zombie-mermaid/commit/3d5e2a3232cef4ad8c51d2c609d538511b45efd4)]:
+  - @zombie-mermaid/ascii-renderer@5.11.1
+  - @zombie-mermaid/core@5.11.1
+  - @zombie-mermaid/mermaid-parser@5.11.1
+  - @zombie-mermaid/svg-renderer@5.11.1
+
+## 5.11.0
+
+### Patch Changes
+
+- [#2355](https://github.com/dfadler/zombie-mermaid/pull/2355) [`ed2ad94`](https://github.com/dfadler/zombie-mermaid/commit/ed2ad9468b465565c93367c054f83381b5f44487) Thanks [@dfadler](https://github.com/dfadler)! - `validate_mermaid` diagnostics now carry an optional stable `code` (`EMPTY_DIAGRAM`, the generic `PARSE_ERROR`, or a code the error carries such as `LIMIT_EXCEEDED`) so agents can branch on it.
+- Updated dependencies [[`82674ef`](https://github.com/dfadler/zombie-mermaid/commit/82674ef11fa576022f80191dbd1537be229fac4a), [`bc452e7`](https://github.com/dfadler/zombie-mermaid/commit/bc452e762a64afa970a1762d0bb623eb7e008aa4), [`e7ade77`](https://github.com/dfadler/zombie-mermaid/commit/e7ade7773ed06814a74a2123dc1db69c7864880e), [`6b04529`](https://github.com/dfadler/zombie-mermaid/commit/6b04529b795d895a8dc1edd96e33b42b15a42d01), [`b7f6aec`](https://github.com/dfadler/zombie-mermaid/commit/b7f6aeca3921e720e1318bdf04abd895fa4e3d82), [`42f3e40`](https://github.com/dfadler/zombie-mermaid/commit/42f3e40eca7cf0253ee86fcb5ae072807cdc070d)]:
+  - @zombie-mermaid/ascii-renderer@5.11.0
+  - @zombie-mermaid/core@5.11.0
+  - @zombie-mermaid/mermaid-parser@5.11.0
+  - @zombie-mermaid/svg-renderer@5.11.0
+
+## 5.10.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.10.2
+  - @zombie-mermaid/core@5.10.2
+  - @zombie-mermaid/mermaid-parser@5.10.2
+  - @zombie-mermaid/svg-renderer@5.10.2
+
+## 5.10.1
+
+### Patch Changes
+
+- Updated dependencies [[`0932ec7`](https://github.com/dfadler/zombie-mermaid/commit/0932ec76666fc81574607829b819fd35715b9b9e)]:
+  - @zombie-mermaid/ascii-renderer@5.10.1
+  - @zombie-mermaid/core@5.10.1
+  - @zombie-mermaid/mermaid-parser@5.10.1
+  - @zombie-mermaid/svg-renderer@5.10.1
+
+## 5.10.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.10.0
+  - @zombie-mermaid/core@5.10.0
+  - @zombie-mermaid/mermaid-parser@5.10.0
+  - @zombie-mermaid/svg-renderer@5.10.0
+
+## 5.9.1
+
+### Patch Changes
+
+- Updated dependencies [[`0ca073f`](https://github.com/dfadler/zombie-mermaid/commit/0ca073f153a8127616e385851d994e0e7d8ed9f5), [`5817019`](https://github.com/dfadler/zombie-mermaid/commit/5817019fbb3e11d9491632abaf97f0811275462f), [`f3023c7`](https://github.com/dfadler/zombie-mermaid/commit/f3023c7ab5ec7275c3e9d49374db3dc7fd425526), [`c18cd26`](https://github.com/dfadler/zombie-mermaid/commit/c18cd2645b7aab54857df40be6ff4f43f499a168), [`a1fcbbf`](https://github.com/dfadler/zombie-mermaid/commit/a1fcbbfc1a8e13180384539ff1351e31ead163ba), [`9ed0a46`](https://github.com/dfadler/zombie-mermaid/commit/9ed0a467fd7b127d07c754500305b667c5937e3f), [`b5f9f06`](https://github.com/dfadler/zombie-mermaid/commit/b5f9f067d28019c3e88cdff67195475b6bbfefc4), [`d398e27`](https://github.com/dfadler/zombie-mermaid/commit/d398e278f2d1f63eddfb27961d262a4541691929)]:
+  - @zombie-mermaid/ascii-renderer@5.9.1
+  - @zombie-mermaid/svg-renderer@5.9.1
+  - @zombie-mermaid/core@5.9.1
+  - @zombie-mermaid/mermaid-parser@5.9.1
+
+## 5.9.0
+
+### Patch Changes
+
+- Updated dependencies [[`38a4718`](https://github.com/dfadler/zombie-mermaid/commit/38a47185c0f1fc2595f9783be4ad1ee752a6882e), [`8442116`](https://github.com/dfadler/zombie-mermaid/commit/8442116a8edda4dbbe7034920d0e98a2e0720189), [`0625bdd`](https://github.com/dfadler/zombie-mermaid/commit/0625bdd73684445d741663c9888a22002399c04f), [`d4a608d`](https://github.com/dfadler/zombie-mermaid/commit/d4a608d0587d9336e4de1efe70173821ca193e23), [`959fb6f`](https://github.com/dfadler/zombie-mermaid/commit/959fb6f430546ec2f497373347c316772924a942), [`382449d`](https://github.com/dfadler/zombie-mermaid/commit/382449d62597fbfcf99640d0d066d6833f2897f3), [`0bcc115`](https://github.com/dfadler/zombie-mermaid/commit/0bcc115dd5a943627f795a111442ae08d3c62af1)]:
+  - @zombie-mermaid/ascii-renderer@5.9.0
+  - @zombie-mermaid/svg-renderer@5.9.0
+  - @zombie-mermaid/mermaid-parser@5.9.0
+  - @zombie-mermaid/core@5.9.0
+
+## 5.8.4
+
+### Patch Changes
+
+- [#2277](https://github.com/dfadler/zombie-mermaid/pull/2277) [`55925f7`](https://github.com/dfadler/zombie-mermaid/commit/55925f7ba6ac635ab42607256ff9734565c1009d) Thanks [@dfadler](https://github.com/dfadler)! - Add `mcpName` to package.json so the package can be published to the official MCP Registry, and fix the tool count in the MCP package README.
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.8.4
+  - @zombie-mermaid/core@5.8.4
+  - @zombie-mermaid/mermaid-parser@5.8.4
+  - @zombie-mermaid/svg-renderer@5.8.4
+
+## 5.8.3
+
+### Patch Changes
+
+- Updated dependencies [[`e217ee9`](https://github.com/dfadler/zombie-mermaid/commit/e217ee9fe9d68878402cbaa69a453e83e24733f8)]:
+  - @zombie-mermaid/ascii-renderer@5.8.3
+  - @zombie-mermaid/core@5.8.3
+  - @zombie-mermaid/mermaid-parser@5.8.3
+  - @zombie-mermaid/svg-renderer@5.8.3
+
+## 5.8.2
+
+### Patch Changes
+
+- [#2244](https://github.com/dfadler/zombie-mermaid/pull/2244) [`629429c`](https://github.com/dfadler/zombie-mermaid/commit/629429ccf35213bf58df4826a9da7b8aa26414ec) Thanks [@dfadler](https://github.com/dfadler)! - Ship each package's type declarations once instead of twice. The rolled-up declaration now lives in `dist/shared/`, and `dist/*.d.ts` and `dist/*.d.cts` are one-line re-exports of it, so install size drops by about 62 KB packed. The `exports` map and the types your editor sees are unchanged, and `node16`, `nodenext` and `bundler` consumers still resolve them with `skipLibCheck` off. ([#2196](https://github.com/dfadler/zombie-mermaid/issues/2196))
+- Updated dependencies [[`436c50e`](https://github.com/dfadler/zombie-mermaid/commit/436c50ede0ee847381e2eefbe2a32b9fe35e764b), [`eae88b9`](https://github.com/dfadler/zombie-mermaid/commit/eae88b98a22dd9c710540970d1447d51602b2cc9), [`629429c`](https://github.com/dfadler/zombie-mermaid/commit/629429ccf35213bf58df4826a9da7b8aa26414ec), [`35adab7`](https://github.com/dfadler/zombie-mermaid/commit/35adab7b60034b639db9f207a1f7139b026a1b7c)]:
+  - @zombie-mermaid/ascii-renderer@5.8.2
+  - @zombie-mermaid/mermaid-parser@5.8.2
+  - @zombie-mermaid/svg-renderer@5.8.2
+  - @zombie-mermaid/core@5.8.2
+
+## 5.8.1
+
+### Patch Changes
+
+- [#2222](https://github.com/dfadler/zombie-mermaid/pull/2222) [`0d4348f`](https://github.com/dfadler/zombie-mermaid/commit/0d4348fe48d22f6b4983b6093deadd2a9424737d) Thanks [@dfadler](https://github.com/dfadler)! - Raise the `@modelcontextprotocol/sdk` floor to `^1.32.1` so installs pick up the patched `hono`, `proxy-addr`, `ip-address` and `fast-uri` transitive dependencies.
+
+- [#2227](https://github.com/dfadler/zombie-mermaid/pull/2227) [`611736e`](https://github.com/dfadler/zombie-mermaid/commit/611736e43dc3371525f7d0a6573e74495f5b30d2) Thanks [@dfadler](https://github.com/dfadler)! - Add npm keywords and a "maintained continuation of beautiful-mermaid" line to each published sub-package's description so they are findable on npm.
+- Updated dependencies [[`69f5734`](https://github.com/dfadler/zombie-mermaid/commit/69f5734c8190c1327d0c695e67437442c6e75b84), [`611736e`](https://github.com/dfadler/zombie-mermaid/commit/611736e43dc3371525f7d0a6573e74495f5b30d2)]:
+  - @zombie-mermaid/svg-renderer@5.8.1
+  - @zombie-mermaid/core@5.8.1
+  - @zombie-mermaid/ascii-renderer@5.8.1
+  - @zombie-mermaid/mermaid-parser@5.8.1
+
+## 5.8.0
+
+### Patch Changes
+
+- [#2205](https://github.com/dfadler/zombie-mermaid/pull/2205) [`9d4c816`](https://github.com/dfadler/zombie-mermaid/commit/9d4c8165af383219b4ff76493f3b47193b986e53) Thanks [@dfadler](https://github.com/dfadler)! - Package ESM output (`dist/index.js`) is now minified: tabs, newlines and comments are removed, and `@zombie-mermaid/mcp` gets identifier mangling too. About 20.7 KB less gzip across the five packages. Behavior and exports are unchanged; stack traces from the ESM build are harder to read, and the `/* @__PURE__ */` annotations are no longer in the shipped ESM (a one-export consumer bundle was the same size). Refs [#2198](https://github.com/dfadler/zombie-mermaid/issues/2198).
+
+- [#2200](https://github.com/dfadler/zombie-mermaid/pull/2200) [`2ef78c5`](https://github.com/dfadler/zombie-mermaid/commit/2ef78c5d4fd07e3aa486929a5037a1bbf77b0cfb) Thanks [@dfadler](https://github.com/dfadler)! - The published tarballs no longer contain `*.map` files, and the built `.js`/`.cjs` no longer end with a `//# sourceMappingURL=` comment (so a bundler does not warn about a missing map). The maps had no `sourcesContent` and pointed at `../src/*.ts` files that are not in the tarball, so no debugger could use them; they were 46% of the unpacked bytes (1,261,680 of 2,761,290 B across the six packages), and the packed size across the six drops from 751,731 B to 464,791 B. Runtime JS (apart from that comment), types, SVG and ASCII output are unchanged. Refs [#2195](https://github.com/dfadler/zombie-mermaid/issues/2195).
+
+  Level: patch. Per [the versioning policy](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/versioning-and-deprecation-policy-1568.md) section 1, source maps are tarball contents nobody can import through `exports`, so removing them is not breaking; no API, option or output changes.
+
+- Updated dependencies [[`4839c72`](https://github.com/dfadler/zombie-mermaid/commit/4839c726bc5e0a7438948e1046022eb3dc4fb267), [`e5d95aa`](https://github.com/dfadler/zombie-mermaid/commit/e5d95aa6f0cd01acc2fb2ba7f59cbfea685ecd03), [`7c23dec`](https://github.com/dfadler/zombie-mermaid/commit/7c23dec0f3d87499eaff0452a0dea520a160b4de), [`20367fc`](https://github.com/dfadler/zombie-mermaid/commit/20367fc79c05a5275487c7dc7ecbe463d19deb5b), [`2ec3f0b`](https://github.com/dfadler/zombie-mermaid/commit/2ec3f0b91990ca6fb4d8fcf6565889bd5683f9ce), [`12c90fa`](https://github.com/dfadler/zombie-mermaid/commit/12c90faaccfbb3d97359c4488212cc5cd4edb4cf), [`9d4c816`](https://github.com/dfadler/zombie-mermaid/commit/9d4c8165af383219b4ff76493f3b47193b986e53), [`a6ab920`](https://github.com/dfadler/zombie-mermaid/commit/a6ab92064dc024f80c31aa532a409c9b5ff547b5), [`2ef78c5`](https://github.com/dfadler/zombie-mermaid/commit/2ef78c5d4fd07e3aa486929a5037a1bbf77b0cfb), [`d6c1297`](https://github.com/dfadler/zombie-mermaid/commit/d6c1297b43e6acfb74c945518015dc0615e74074), [`423ce40`](https://github.com/dfadler/zombie-mermaid/commit/423ce401a2f9ffaad3ecfdb3241e0615d2c9bc1c)]:
+  - @zombie-mermaid/ascii-renderer@5.8.0
+  - @zombie-mermaid/svg-renderer@5.8.0
+  - @zombie-mermaid/mermaid-parser@5.8.0
+  - @zombie-mermaid/core@5.8.0
+
+## 5.7.1
+
+### Patch Changes
+
+- Updated dependencies [[`8a8c482`](https://github.com/dfadler/zombie-mermaid/commit/8a8c482cd45570fb76c7757986236d1170b0d301), [`b55b7fa`](https://github.com/dfadler/zombie-mermaid/commit/b55b7fae2b576173e6b438094d21238119947ace), [`f5e5454`](https://github.com/dfadler/zombie-mermaid/commit/f5e5454136070993bb1552dec3616c2750a6f15f), [`d88b061`](https://github.com/dfadler/zombie-mermaid/commit/d88b0619fd0d5cd5f7e8c59abb0ad1dc2029eec1)]:
+  - @zombie-mermaid/ascii-renderer@5.7.1
+  - @zombie-mermaid/core@5.7.1
+  - @zombie-mermaid/svg-renderer@5.7.1
+  - @zombie-mermaid/mermaid-parser@5.7.1
+
+## 5.7.0
+
+### Patch Changes
+
+- Updated dependencies [[`3dea4e8`](https://github.com/dfadler/zombie-mermaid/commit/3dea4e87ad6f4f3d285368ca3d460396e51e6fba), [`1629a93`](https://github.com/dfadler/zombie-mermaid/commit/1629a93b59f74df129350aa69985039f2cc70cda), [`b33cbc4`](https://github.com/dfadler/zombie-mermaid/commit/b33cbc41334219850ffea7d5a9b04702426c8903), [`90e2fdc`](https://github.com/dfadler/zombie-mermaid/commit/90e2fdc0527bab025bda9126ea525c6edca06259)]:
+  - @zombie-mermaid/ascii-renderer@5.7.0
+  - @zombie-mermaid/core@5.7.0
+  - @zombie-mermaid/mermaid-parser@5.7.0
+  - @zombie-mermaid/svg-renderer@5.7.0
+
 ## 5.6.1
 
 ### Patch Changes

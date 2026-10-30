@@ -1,0 +1,1 @@
+../../../skills/zombie-mermaid/SKILL.md

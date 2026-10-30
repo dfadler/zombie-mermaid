@@ -26,8 +26,10 @@
 //     in source order. The row text is the label, or `label [value]` with
 //     `showData` (`String(value)`, no number formatting). The percentage is
 //     the SVG's slice label: `toFixed(0)` of the share of the *whole* total.
-//     A slice with no bar segment (under 1%, or left without a cell) has no
-//     percentage, the way a slice left out of the SVG pie has no label.
+//     A slice with no bar segment (under 1%, or left without a cell) keeps
+//     its percentage, which the legend can always afford, so the table never
+//     drops data the bar cannot show; a nonzero share that rounds to 0% reads
+//     `<1%`. The swatch is a dot. Only a zero total leaves the column empty.
 //   - Colours are the SVG's: palette slot `index % 12` in source order, slot
 //     0 the theme accent and the rest getSeriesColor() shades of it.
 //   - Each bar segment gets a fill pattern, cycled by its position in the
@@ -48,6 +50,7 @@ import {
   getSeriesColor,
   CHART_ACCENT_FALLBACK,
 } from '@zombie-mermaid/mermaid-parser'
+import { parseHexColor } from '@zombie-mermaid/core'
 import type { PieChart } from '@zombie-mermaid/mermaid-parser'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { colorizeText } from './ansi.ts'
@@ -81,7 +84,7 @@ const ASC = {
 export interface PieAsciiRow {
   /** Label, or `label [value]` with showData. */
   text: string
-  /** Percentage text, or '' when the slice has no bar segment. */
+  /** Percentage text; empty only when the total is zero. */
   percentText: string
   /** Palette slot: source index modulo 12. */
   colorIndex: number
@@ -177,12 +180,20 @@ export function layoutPieAscii(
     const sliceCells = cellsBySlice.get(index) ?? 0
     // A drawn slice can still end up with no cell when there are more drawn
     // slices than cells; it is shown like an omitted one, not as a segment.
+    const share = (slice.value / total) * 100
+    // Unlike the SVG, whose labels sit on pie wedges, the table shows every
+    // slice's share (#2313); a zero total gives NaN and stays blank.
+    const percentText = !(share >= 0)
+      ? ''
+      : share > 0 && share < 0.5
+        ? '<1%'
+        : `${share.toFixed(0)}%`
     if (sliceCells === 0) {
-      return { text, percentText: '', colorIndex, cells: 0, drawnIndex: -1 }
+      return { text, percentText, colorIndex, cells: 0, drawnIndex: -1 }
     }
     return {
       text,
-      percentText: `${((slice.value / total) * 100).toFixed(0)}%`,
+      percentText,
       colorIndex,
       cells: sliceCells,
       drawnIndex: segment++,
@@ -197,7 +208,12 @@ export function layoutPieAscii(
 }
 
 /** Palette colour for slot `index`, as the SVG's pieColorValue() picks it. */
-function sliceColor(index: number, theme: AsciiTheme): string {
+function sliceColor(
+  index: number,
+  theme: AsciiTheme,
+  override?: string,
+): string {
+  if (override && parseHexColor(override)) return override
   return getSeriesColor(index, theme.accent ?? CHART_ACCENT_FALLBACK, theme.bg)
 }
 
@@ -206,8 +222,17 @@ export function renderPieAscii(
   config: AsciiConfig,
   colorMode: ColorMode,
   theme: AsciiTheme,
+  honorThemeVariables = false,
 ): string {
-  const layout = layoutPieAscii(parsePieChart(text))
+  const chart = parsePieChart(text)
+  const layout = layoutPieAscii(chart)
+  // `pie1..pie12` from the directive, only when the caller opted in.
+  const slot = (i: number) =>
+    sliceColor(
+      i,
+      theme,
+      honorThemeVariables ? chart.sliceColors?.[i] : undefined,
+    )
   const ch = config.useAscii ? ASC : UNI
   // colorizeText leaves an empty string (e.g. a `"" : 1` label) uncoloured.
   const paint = (s: string, hex: string): string =>
@@ -235,7 +260,7 @@ export function renderPieAscii(
   let used = 0
   for (const row of layout.rows) {
     if (row.cells <= 0) continue
-    bar += paint(fill(row).repeat(row.cells), sliceColor(row.colorIndex, theme))
+    bar += paint(fill(row).repeat(row.cells), slot(row.colorIndex))
     used += row.cells
   }
   bar += ' '.repeat(Math.max(0, layout.barWidth - used))
@@ -245,7 +270,7 @@ export function renderPieAscii(
     lines.push('')
     const labelWidth = Math.max(...layout.rows.map((r) => displayWidth(r.text)))
     for (const row of layout.rows) {
-      const swatch = paint(fill(row), sliceColor(row.colorIndex, theme))
+      const swatch = paint(fill(row), slot(row.colorIndex))
       const label =
         paint(row.text, theme.fg) +
         ' '.repeat(labelWidth - displayWidth(row.text))

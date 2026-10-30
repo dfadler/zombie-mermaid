@@ -89,7 +89,7 @@ export function parseHash(hash: string): ParsedHash | null {
         : { source: obj.source }
     }
   } catch {
-    // fall through to the raw-hash fallback below
+    // Fall through to the raw-hash fallback below
   }
   const raw = decodeSource(hash)
   return raw ? { source: raw } : null

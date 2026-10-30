@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 80,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "dist/",
+    "site/",
+    "node_modules/",
+    "*.html",
+    "pnpm-lock.yaml",
+    "coverage/",
+    "*.png",
+    "*.ico",
+    "packages/svg-renderer/THIRD_PARTY_NOTICES.md",
+    "packages/ascii-renderer/THIRD_PARTY_NOTICES.md",
+    "etc/api/",
+    "samples/"
+  ]
+}

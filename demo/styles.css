@@ -44,11 +44,7 @@ body {
   --shadow-blur-opacity: 0.06;
   --theme-bar-bg: #f9f9fa; /* Mixed bg for theme bar and top gradient — updated by JS on theme change */
 
-  font-family:
-    'Geist',
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
   background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
   color: var(--t-fg);
   line-height: 1.6;
@@ -142,25 +138,8 @@ body::after {
 }
 
 /* -- Skip-to-content link --
- * The very first focusable element in the document (see index.ts), so a
- * keyboard-only visitor can jump straight past the theme bar and sidebar
- * to the sample list instead of tabbing through the full nav on every
- * page load. Hidden off-screen until it receives focus. */
-.skip-link {
-  position: absolute;
-  top: -100%;
-  left: 0.5rem;
-  z-index: 2100;
-  padding: 0.6rem 1rem;
-  background: var(--t-accent);
-  color: #fff;
-  font-weight: 600;
-  border-radius: 8px;
-  text-decoration: none;
-}
-.skip-link:focus {
-  top: 0.5rem;
-}
+ * Styled once, in demo/components/nav-css.ts (.skip-link), which every page
+ * composes; do not redeclare it here (#1792). */
 
 /* -- Scroll progress bar (fixed to the viewport bottom) --
  * Fills as the reader scrolls the whole page. With the samples heading now

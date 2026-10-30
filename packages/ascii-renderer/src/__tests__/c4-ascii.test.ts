@@ -3,7 +3,7 @@ import { splitStatements } from '@zombie-mermaid/core'
 import { parseC4Diagram } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidASCII } from '../../../../src/index.ts'
 import { rankElements } from '../c4-diagram.ts'
-import { samples } from '../../../site/samples-data.ts'
+import { samples } from '../../../../samples/samples-data.ts'
 
 function ranks(src: string): Record<string, number> {
   const d = parseC4Diagram(splitStatements(src))

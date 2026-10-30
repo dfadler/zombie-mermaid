@@ -9,8 +9,9 @@
  *
  * Each package's own `packages/<name>/vite.config.ts` is a few lines that
  * just calls `definePackageBuild()` below with that package's entry —
- * everything else (dual ESM/CJS JS, one rolled-up `.d.ts`/`.d.cts` pair,
- * what counts as "external") is shared here so the five don't drift.
+ * everything else (dual ESM/CJS JS, one rolled-up `.d.ts` under `shared/`
+ * re-exported by `.d.ts`/`.d.cts` stubs — see `writeSharedDts` — and what
+ * counts as "external") is shared here so the five don't drift.
  *
  * Modeled directly on `config/vite.config.lib.ts` (the umbrella's own build) and
  * reusing its hard-won gotchas rather than rediscovering them:
@@ -46,8 +47,8 @@
  * Usage: `vite build --app --config packages/<name>/vite.config.ts`.
  */
 
-import { writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { basename, dirname, join, resolve } from 'node:path'
 import { defineConfig, type LibraryFormats } from 'vite'
 import dts from 'unplugin-dts/vite'
 
@@ -82,6 +83,51 @@ export interface PackageBuildOptions {
 // invariant matters more once these packages are actually published.
 export const RELATIVE_IMPORT_RE =
   /^(?:import|export)\s[^;]*\bfrom\s*['"]\.\.?\//m
+
+// A default export (or `export =`) does not survive the re-export stubs that
+// `writeSharedDts` writes: an ESM consumer would see the whole namespace as
+// `default` (TS2339, attw "Incorrect default export").
+const DEFAULT_EXPORT_RE = /^export\s+(?:default\b|=)|\bas\s+default\b/m
+
+/**
+ * Publishes one bundled `<name>.d.ts` once, as `shared/<name>.d.ts`, and makes
+ * `<name>.d.ts` and `<name>.d.cts` the same one-line re-export of it (#2196).
+ * That drops the byte-identical `.d.cts` twin (~50 KB packed across the six
+ * packages) without the two failures a single shared `.d.ts` or a plain
+ * `export * from './<name>.js'` stub hit:
+ *
+ * - `shared/package.json` is `{"type":"commonjs"}`, so TypeScript reads
+ *   `shared/<name>.d.ts` as CJS-format. The `.d.cts` stub can then re-export
+ *   it with no TS1479 ("CJS file importing ESM") for `node16` consumers with
+ *   `skipLibCheck: false`, and the ESM `.d.ts` stub can always import a CJS
+ *   file. attw stays green on node16 CJS, node16 ESM and bundler.
+ * - Deleting that `package.json` brings TS1479 back; `smoke-test-packed.mjs`
+ *   type-checks a strict CJS consumer to catch it.
+ *
+ * `bundleTypes` rolls each entry into one self-contained file, so `content`
+ * has no relative imports and moving it a directory down is safe.
+ */
+export async function writeSharedDts(
+  file: string,
+  content: string,
+): Promise<void> {
+  if (DEFAULT_EXPORT_RE.test(content)) {
+    throw new Error(
+      `${basename(file)} has a default export or \`export =\` — the shared ` +
+        `re-export stubs would hide it from ESM consumers. See writeSharedDts().`,
+    )
+  }
+  const name = basename(file, '.d.ts')
+  const shared = join(dirname(file), 'shared')
+  const stub = `export * from "./shared/${name}.js";\n`
+  await mkdir(shared, { recursive: true })
+  await Promise.all([
+    writeFile(join(shared, 'package.json'), '{"type":"commonjs"}\n'),
+    writeFile(join(shared, `${name}.d.ts`), content),
+    writeFile(file, stub),
+    writeFile(file.replace(/\.d\.ts$/, '.d.cts'), stub),
+  ])
+}
 
 /**
  * External predicate shared by every package build: bundle only local
@@ -130,7 +176,10 @@ export const sharedDtsOptions = {
 export const sharedBuild = {
   emptyOutDir: false,
   target: 'es2022',
-  sourcemap: true,
+  // 'hidden': emit the .map files (repo tooling reads them) but no
+  // `//# sourceMappingURL=` comment; each package's `files` keeps them out of
+  // the tarball (#2195), so a comment would dangle for consumers' bundlers.
+  sourcemap: 'hidden',
   rolldownOptions: { output: { sourcemapExcludeSources: true } },
 } as const
 
@@ -190,11 +239,10 @@ export function definePackageBuild(options: PackageBuildOptions) {
               throw new Error(
                 `${file} has a relative import/re-export — a single-entry ` +
                   `bundleTypes output should never have one (see this ` +
-                  `file's header). Investigate before duplicating it as its ` +
-                  `.d.cts twin.`,
+                  `file's header). Investigate before moving it to shared/.`,
               )
             }
-            await writeFile(file.replace(/\.d\.ts$/, '.d.cts'), content)
+            await writeSharedDts(file, content)
           },
         }),
         applyToEnvironment: (env: { name: string }) => env.name === 'dts',
@@ -232,9 +280,19 @@ export function definePackageBuild(options: PackageBuildOptions) {
         build: {
           emptyOutDir: true,
           lib: { entry, formats: ES_ONLY, fileName: () => 'index.js' },
-          ...(serverConsumer
-            ? { rolldownOptions: { output: { entryFileNames: 'index.js' } } }
-            : {}),
+          rolldownOptions: {
+            output: {
+              // Vite's lib-ES default is `{ compress, mangle, codegen: false }`,
+              // which keeps tabs, newlines and comments (and `minify: true` is
+              // a no-op: the default is already "oxc"). `codegen: true` strips
+              // them: ~-20.7 KB gzip across the five packages (#2198). It also
+              // drops `/* @__PURE__ */`; a one-export consumer bundle was
+              // unchanged. `serverConsumer` packages default to `minify: false`
+              // so this also mangles them.
+              minify: { compress: true, mangle: true, codegen: true },
+              ...(serverConsumer ? { entryFileNames: 'index.js' } : {}),
+            },
+          },
         },
       },
       cjs: {

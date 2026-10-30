@@ -44,6 +44,7 @@
 // header for why it's a separate module from the ASCII side's table.
 // ============================================================================
 
+export { loadEmbeddedFont } from './embedded-font.ts'
 export * from './edge-curves.ts'
 export * from './elk-instance.ts'
 export * from './layout-engine.ts'
@@ -71,6 +72,7 @@ import type {
   DiagramColors,
   SvgEmitOptions,
   DiagramType,
+  InitConfig,
 } from '@zombie-mermaid/core'
 import {
   DEFAULTS,
@@ -81,10 +83,13 @@ import {
   splitStatements,
   extractAccessibility,
   checkLimit,
+  checkLineLength,
   checkGraphSize,
+  applyThemeVariables,
 } from '@zombie-mermaid/core'
 import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
+import { loadEmbeddedFont, resolveBodyFont } from './embedded-font.ts'
 import { diagramRegistry } from './registry.ts'
 import type { SvgRenderContext } from './registry.ts'
 
@@ -147,6 +152,7 @@ function resolveSvgEmit(options: RenderOptions): SvgEmitOptions {
   return {
     nonce: options.nonce,
     styleAttribute: options.styleAttribute,
+    bodyFont: resolveBodyFont(options),
   }
 }
 
@@ -208,10 +214,9 @@ export function renderMermaidSVG(
   text: string,
   options: RenderOptions = {},
 ): string {
-  const svg = scopeSvgIds(renderMermaidSVGRaw(text, options))
-  return options.resolveColors
-    ? resolveCssColors(svg, buildColors(options))
-    : svg
+  const { svg, colors } = renderMermaidSVGRaw(text, options)
+  const scoped = scopeSvgIds(svg)
+  return options.resolveColors ? resolveCssColors(scoped, colors) : scoped
 }
 
 /**
@@ -232,7 +237,7 @@ function scopeSvgIds(svg: string): string {
     h = Math.imul(h ^ svg.charCodeAt(i), 0x01000193)
   }
   const prefix = `zm${(h >>> 0).toString(36)}-`
-  // ids already carrying the zm- prefix (aria title/desc, title-gap mask) are unique already
+  // Ids already carrying the zm- prefix (aria title/desc, title-gap mask) are unique already
   const scoped = (id: string) =>
     ids.has(id) && !id.startsWith('zm-') ? prefix + id : id
   return svg
@@ -261,17 +266,20 @@ export function validateMermaid(text: string): void {
 }
 
 /** The renderer proper — `renderMermaidSVG` minus the optional `resolveColors` post-pass. */
-function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
+function renderMermaidSVGRaw(
+  text: string,
+  options: RenderOptions,
+): { svg: string; colors: DiagramColors } {
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
   // Without this, escapeXml() double-encodes them: &lt; → &amp;lt; → literal "&lt;" in SVG.
   // `text` itself is left untouched so `embedSource` below stamps the exact
   // string the caller passed in, not this entity-decoded copy used
   // internally for parsing.
   checkLimit('maxInputLength', text.length, options.limits)
+  checkLineLength(text, options.limits)
   const acc = extractAccessibility(decodeXML(text))
   const decoded = acc.text
 
-  const colors = buildColors(options)
   const font = options.font ?? 'Inter'
   // Box sizing depends on the metrics model, so pick it before any layout runs.
   setMonospaceMetrics(isMonospaceFont(font))
@@ -298,6 +306,16 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
     checkGraphSize(g.nodes.size, g.edges.length, options.limits)
   }
   const positioned = registered.layoutForSvg(diagram, options)
+  // Opt-in: the diagram's own `themeVariables` fill colours the caller left
+  // unset (only flowchart/state carry an `initConfig`; pie reads its own).
+  const colors = buildColors(
+    options.honorThemeVariables
+      ? applyThemeVariables(
+          options,
+          (diagram as { initConfig?: InitConfig }).initConfig,
+        )
+      : options,
+  )
   const ctx: SvgRenderContext = {
     colors,
     font,
@@ -308,7 +326,7 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
     decorative,
     emit,
   }
-  return registered.renderSvg(positioned, ctx, options)
+  return { svg: registered.renderSvg(positioned, ctx, options), colors }
 }
 
 /**
@@ -321,6 +339,7 @@ export async function renderMermaidSVGAsync(
   text: string,
   options: RenderOptions = {},
 ): Promise<string> {
+  if (options.embedFont === 'subset') await loadEmbeddedFont()
   return renderMermaidSVG(text, options)
 }
 

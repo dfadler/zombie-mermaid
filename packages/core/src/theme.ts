@@ -35,6 +35,11 @@ export interface SvgEmitOptions {
   styleAttribute?: boolean
   /** Root `<desc>` text (Mermaid's `accDescr`); see `svgOpenTag`. */
   description?: string
+  /**
+   * Self-hosted body-text font from `RenderOptions.embedFont` (#1867);
+   * resolved by svg-renderer, which owns the data. See `buildStyleBlock`.
+   */
+  bodyFont?: MonoFontEmbed
 }
 
 /**
@@ -98,7 +103,7 @@ export const DEFAULTS: Readonly<{ bg: string; fg: string; muted: string }> = {
 
 export const MIX = {
   /** Primary text: near-full fg */
-  text: 100, // just use --fg directly
+  text: 100, // Just use --fg directly
   /** Secondary text (group headers): fg mixed at 60% */
   textSec: 60,
   /** Muted text (edge labels, notes): fg mixed at 40% */
@@ -132,12 +137,12 @@ export const THEMES: Record<string, DiagramColors> = {
   'zinc-light': {
     bg: '#FFFFFF',
     fg: '#27272A',
-    muted: '#71717A', // zinc-500, 4.83:1 (the 40/60% mixes were 2.35/4.08:1, #2000)
+    muted: '#71717A', // Zinc-500, 4.83:1 (the 40/60% mixes were 2.35/4.08:1, #2000)
   },
   'zinc-dark': {
     bg: '#18181B',
     fg: '#FAFAFA',
-    muted: '#A1A1AA', // zinc-400, 7.3:1 (the 40% mix was 3.71:1, #2000)
+    muted: '#A1A1AA', // Zinc-400, 7.3:1 (the 40% mix was 3.71:1, #2000)
   },
   'tokyo-night': {
     bg: '#1a1b26',
@@ -403,6 +408,32 @@ export function styleOpenTag(nonce?: string): string {
 }
 
 /**
+ * Contrast-mode overrides (#1878). Pull the faint derived strokes/text up to
+ * full foreground when the viewer asks for more contrast; under forced colors
+ * use the system `CanvasText`. Verified in Chromium emulation only: both
+ * queries match inline, but `prefers-contrast` does NOT match in an SVG loaded
+ * as `<img>`, so the `<img>` path only gets the forced-colors rule.
+ */
+const CONTRAST_VARS = [
+  '--_node-stroke',
+  '--_inner-stroke',
+  '--_line',
+  '--_arrow',
+  '--_text-sec',
+  '--_text-muted',
+  '--_text-faint',
+]
+const contrastRule = (query: string, color: string): string[] => [
+  `  @media (${query}) {`,
+  `    svg { ${CONTRAST_VARS.map((v) => `${v}: ${color};`).join(' ')} }`,
+  `  }`,
+]
+const CONTRAST_CSS = [
+  ...contrastRule('prefers-contrast: more', 'var(--fg)'),
+  ...contrastRule('forced-colors: active', 'CanvasText'),
+]
+
+/**
  * Build the CSS variable derivation rules for the SVG <style> block.
  *
  * When an optional variable (--line, --accent, etc.) is set on the SVG or
@@ -438,11 +469,18 @@ export function styleOpenTag(nonce?: string): string {
  * block (#1061). The font data itself lives in `@zombie-mermaid/svg-renderer`
  * (see its `buildSvgStyleBlock`), not here, so ASCII-only consumers of
  * `core` never carry it (#1319). Pass `false` to omit the `.mono` rule.
+ *
+ * `body` (`RenderOptions.embedFont`, #1867) is the same idea for the main
+ * `text` font: when its `family` is the (literal, non-`var()`) `font`, its
+ * `@font-face` is inlined and the Google Fonts `@import` is dropped. For any
+ * other `font` it is ignored, since embedding Inter would not change what
+ * renders.
  */
 export function buildStyleBlock(
   font: string,
   mono: MonoFontEmbed | false,
   nonce?: string,
+  body?: MonoFontEmbed,
 ): string {
   const isVarReference = isSafeCssVarReference(font)
   // Literal font names are sanitized before quoting (strip characters that
@@ -450,7 +488,10 @@ export function buildStyleBlock(
   // var() reference is passed through as-is so `var(--x, 'Fallback')` keeps
   // its own internal quotes intact.
   const safeFont = isVarReference ? font.trim() : font.replace(/[<>{};'"]/g, '')
-  const skipImport = isVarReference || isFontStackOrGenericFamily(font)
+  const embedBody =
+    body !== undefined && !isVarReference && safeFont === body.family
+  const skipImport =
+    embedBody || isVarReference || isFontStackOrGenericFamily(font)
 
   const fontImports = skipImport
     ? []
@@ -481,6 +522,7 @@ export function buildStyleBlock(
     // Self-hosted, embedded @font-face for `.mono` text — see the doc
     // comment above for why this never goes through the CDN-import/skip
     // logic `font` above does.
+    ...(embedBody ? [`  ${body.faceCss}`] : []),
     ...(mono ? [`  ${mono.faceCss}`] : []),
     `  text { font-family: ${isVarReference ? safeFont : `'${safeFont}'`}, system-ui, sans-serif; }`,
     ...(mono
@@ -490,6 +532,7 @@ export function buildStyleBlock(
       : []),
     `  svg {${derivedVars}`,
     `  }`,
+    ...CONTRAST_CSS,
     '</style>',
   ].join('\n')
 }
@@ -575,14 +618,19 @@ function nextDescId(): string {
 }
 
 /**
- * Test-only: reset the title-id counter so id assertions in tests don't
- * depend on how many titled diagrams earlier tests in the same file rendered.
- * Not part of the public API (not re-exported from src/index.ts).
+ * Restart the root `<title>`/`<desc>` id counters at 1. Ids are process-wide so several
+ * diagrams inlined into one page never collide; a host that renders many pages in one
+ * process (the static-site pipeline) calls this at each point where a separate process
+ * would have started, so `zm-title-N` doesn't depend on what rendered earlier.
+ * Not re-exported from the root `src/index.ts`, so not part of the published API.
  */
-export function __resetSvgTitleIdCounterForTests(): void {
+export function resetSvgIdCounters(): void {
   titleIdCounter = 0
   descIdCounter = 0
 }
+
+/** Test-only alias of {@link resetSvgIdCounters}. */
+export const __resetSvgTitleIdCounterForTests = resetSvgIdCounters
 
 /**
  * The exact CSS declaration list the root `<svg style="…">` attribute

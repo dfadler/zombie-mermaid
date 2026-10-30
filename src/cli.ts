@@ -1,6 +1,7 @@
 import { parseArgs } from './cli/parse-args.ts'
 import type { CliArgs } from './cli/parse-args.ts'
 import { runRender } from './cli/render.ts'
+import { runCheck } from './cli/check.ts'
 import { runValidate } from './cli/validate.ts'
 import { runWeb } from './cli/web.ts'
 import { runMcp } from './cli/mcp.ts'
@@ -64,6 +65,17 @@ export async function main() {
       }
       break
 
+    case 'check':
+      try {
+        await runCheck(args)
+      } catch (err) {
+        console.error(
+          `Error: ${err instanceof Error ? err.message : String(err)}`,
+        )
+        process.exit(1)
+      }
+      break
+
     case 'web':
       try {
         await runWeb(args)
@@ -104,6 +116,7 @@ Usage:
   zombie-mermaid render <file> --png                Rasterize to <file stem>.png
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid validate [file]                    Parse only; exit 1 with line diagnostics if invalid
+  zombie-mermaid --check <file.md>...               Validate every mermaid fenced block in Markdown; exit 1 with file:line diagnostics
   zombie-mermaid themes                             List available themes
   zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
   zombie-mermaid mcp                                Start an MCP server on stdio (render tools)
@@ -145,7 +158,7 @@ Options:
                        (flowchart, state, and ER diagrams; nested subgraph
                        directions still apply on top of it)
   -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5)
-  -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5)
+  -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5; LR/RL sibling gap is n-1, min 1)
   -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)
   --coords             Overlay row/column index rulers (ASCII, debug layout)
   --hyperlinks         Emit OSC 8 terminal hyperlinks for \`click\` hrefs
@@ -163,6 +176,17 @@ Options:
                        spacing automatically when needed, and fails with
                        exit 1 and no output if it still doesn't fit (no
                        label wrapping or direction-flip — see issue #335).
+  --layout mermaid     Opt in (flowcharts, --ascii): draw mermaid's own ELK layout
+                       instead of the grid renderer. Subgraphs, some shapes,
+                       other diagram types, layout failures and drawings that
+                       cannot fit 120 columns (or -w <n>, used as the cap)
+                       fall back to the default renderer; stderr says which
+                       one ran. --layout mermaid-wide drops the cap and always
+                       draws the (possibly wide) layout-faithful text. Merged
+                       parallel edges hide edge multiplicity. Depends on
+                       mermaid 12.1.0 + elkjs 0.9.3: install the optional peer
+                       with \`pnpm add elkjs-0.9.3@npm:elkjs@0.9.3\`. -x/-y/-p
+                       and --coords do not apply to the layout-faithful drawing.
   --port <n>           Port for the 'web' command (default: 3000)
   -h, --help           Show help
   -v, --version        Show version

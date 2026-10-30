@@ -5,13 +5,13 @@ erDiagram
 | CUSTOMER |    
 +----------+    
       +         
-    +-+         
-    | places    
-    |           
-    o           
-    ^           
-+-------+       
-| ORDER |       
-+-------+       
+      |         
+    places      
+      |         
+      o         
+      ^         
+  +-------+     
+  | ORDER |     
+  +-------+     
                 
                 

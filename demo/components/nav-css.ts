@@ -287,11 +287,19 @@ html.mobile-nav-open {
   padding: ${SPACE.md}px ${SPACE.xl}px;
   background: var(--panel);
   color: var(--text);
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
 }
 
 .skip-link:focus {
   left: ${SPACE.xl}px;
   top: ${SPACE.xl}px;
+}
+
+/* The skip link focuses <main tabindex="-1">; a ring round the whole page body is noise. */
+main:focus {
+  outline: none;
 }
 
 .mobile-nav-panel {

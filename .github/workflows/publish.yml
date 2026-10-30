@@ -10,8 +10,8 @@ name: Release
 #
 # See docs/RELEASING.md for the full flow and the one-time npmjs.com trusted
 # publisher setup this depends on. As of #622, `pnpm changeset publish`
-# below publishes six packages (the `zombie-mermaid` umbrella plus five
-# @zombie-mermaid/* internal packages, kept on one version by
+# below publishes seven packages (the `zombie-mermaid` umbrella plus six
+# @zombie-mermaid/* packages incl. `cli` (#1946), kept on one version by
 # .changeset/config.json's `fixed` group) instead of one — each needs its
 # own trusted-publisher link configured on npmjs.com (same GitHub Actions
 # values, repeated per package name; see docs/RELEASING.md's "One-time
@@ -83,38 +83,32 @@ jobs:
           version=$(node -p "require('./package.json').version")
           pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | head -n1)
           if [ -n "$pending" ]; then
+            # Version-PR mode: changesets/action only opens/updates the PR and
+            # never publishes, so the pre-publish gates below are skipped (#2250).
             echo "Pending changeset: $pending"
             echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
           elif ! git rev-parse -q --verify "refs/tags/zombie-mermaid@${version}" >/dev/null; then
             echo "No tag for zombie-mermaid@${version}; publish may be needed."
             echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "No pending changesets and zombie-mermaid@${version} is tagged; nothing to do."
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup pnpm
-        if: steps.gate.outputs.run == 'true'
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        if: steps.gate.outputs.run == 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup pnpm, Node.js and install
+        if: steps.gate.outputs.publish == 'true'
+        uses: ./.github/actions/setup
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install dependencies
-        if: steps.gate.outputs.run == 'true'
-        run: pnpm install --frozen-lockfile
-
       - name: Run tests
-        if: steps.gate.outputs.run == 'true'
+        if: steps.gate.outputs.publish == 'true'
         run: pnpm test
 
       - name: Type check
-        if: steps.gate.outputs.run == 'true'
+        if: steps.gate.outputs.publish == 'true'
         # Runs both the library config and demo/tsconfig.json — the demo's
         # client-side code needs DOM types the root config deliberately omits,
         # so it is checked under its own config rather than weakening the
@@ -125,7 +119,7 @@ jobs:
       # a consumer would, so missing files or broken exports fail here
       # instead of after npm publish. The publish step rebuilds as needed.
       - name: Build and smoke-test packed tarballs
-        if: steps.gate.outputs.run == 'true'
+        if: steps.gate.outputs.publish == 'true'
         run: pnpm run build && pnpm run smoke:packed
 
   release:
@@ -149,18 +143,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       # #1991: the packages under packages/ have no prepublishOnly, so
       # `changeset publish` ships whatever is on disk. #1596's split moved the
@@ -187,8 +173,15 @@ jobs:
           commit-message: 'chore: version packages'
           pr-title: 'chore: version packages'
           create-github-releases: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # #1579: a Version PR pushed with the job's GITHUB_TOKEN never
+          # triggers CI (events from GITHUB_TOKEN don't start workflows), so
+          # each one sat in action_required until approved by hand. A PAT's
+          # pushes do trigger it. changesets/action v2 reads this input, not
+          # a GITHUB_TOKEN env var (it errors if the two disagree), so the
+          # env var is deliberately unset. Fine-grained PAT, this repo only:
+          # Contents + Pull requests read/write. Record its expiry next to
+          # DASHBOARD_REFRESH_PAT's.
+          github-token: ${{ secrets.RELEASE_PR_PAT }}
           # No NPM_TOKEN / NODE_AUTH_TOKEN: publishing uses npm trusted
           # publishing (OIDC), authenticated via the id-token permission
           # above plus the trusted-publisher link configured on npmjs.com.

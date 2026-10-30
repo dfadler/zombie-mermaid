@@ -93,7 +93,7 @@ export function renderSequenceSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce))
+  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   parts.push('<defs>')
 
   // Arrow marker definitions
@@ -203,10 +203,10 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
     // and centered both horizontally and vertically within the box.
     // Stroke width is inverse-scaled so the visual thickness matches STROKE_WIDTHS.outerBox.
     const s = (height / 24) * 0.9
-    const tx = x - 12 * s // center icon horizontally on actor.x
-    const ty = y + (height - 24 * s) / 2 // center icon vertically in actor box
-    const sw = STROKE_WIDTHS.outerBox / s // compensate for scale transform
-    const iconStroke = 'var(--_line)' // use line color for actor icon strokes
+    const tx = x - 12 * s // Center icon horizontally on actor.x
+    const ty = y + (height - 24 * s) / 2 // Center icon vertically in actor box
+    const sw = STROKE_WIDTHS.outerBox / s // Compensate for scale transform
+    const iconStroke = 'var(--_line)' // Use line color for actor icon strokes
 
     parts.push(
       f`  <g transform="translate(${tx},${ty}) scale(${s})">` +
@@ -368,6 +368,7 @@ function collectLabelBoxes(
   }
 
   for (const block of diagram.blocks) {
+    if (isHighlightRect(block)) continue
     const tab = `${block.type}${block.label ? ` [${block.label}]` : ''}`
     const tabWidth =
       estimateTextWidth(
@@ -629,12 +630,31 @@ function renderParticipantBox(
   return parts.join('\n')
 }
 
+/** A `rect <color>` highlight: drawn as a filled region, with no frame or header tab. */
+function isHighlightRect(
+  block: PositionedBlock,
+): block is PositionedBlock & { color: string } {
+  return block.type === 'rect' && block.color !== undefined
+}
+
 /**
  * Render a block background (loop/alt/opt).
  * Wrapped in <g class="block"> with semantic data attributes.
  */
 function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   const parts: string[] = []
+
+  // `rect <color>`: a bare filled region, no frame or tab (as in Mermaid).
+  // `block.color` is emitted verbatim — safe for the same reason as
+  // `box.color`: the parser only records a value that passed `isCssColor`.
+  if (isHighlightRect(block)) {
+    return [
+      f`<g class="block" data-type="rect" data-color="${escapeAttr(block.color)}">`,
+      f`  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
+        f`fill="${escapeAttr(block.color)}" />`,
+      '</g>',
+    ].join('\n')
+  }
 
   // Semantic wrapper with block metadata
   const labelAttr = block.label

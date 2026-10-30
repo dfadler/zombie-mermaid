@@ -6,7 +6,8 @@ description: |
   `zombie-mermaid` npm CLI (`npx -y zombie-mermaid render ...`) or its MCP
   server. Use this whenever a Mermaid flowchart, sequence, class, state, ER,
   architecture, C4, pie, or XY chart needs to become an actual image or terminal drawing —
-  "render this diagram", "turn this Mermaid into an SVG/PNG", "show me this
+  "render this diagram", "turn this Mermaid into an SVG/PNG", "make an image of
+  this diagram for a GitHub issue/PR where SVG is rejected (use --png)", "show me this
   flowchart as ASCII", "apply a theme to this diagram", "does this diagram
   look right" — and also to check a `sequenceDiagram` for unbalanced
   `activate`/`deactivate` pairs. This is a thin wrapper: it shells out to the
@@ -122,6 +123,8 @@ Tools (all but the `list_*` ones take a `diagram` string):
 - `render_mermaid_ascii` — plus `useAscii` (plain `+-|>` instead of Unicode
   box-drawing), `paddingX`, `paddingY`, `boxBorderPadding`. Never emits ANSI
   color, so the result pastes cleanly into a chat context.
+- `validate_mermaid` — parse-only syntax check; returns
+  `{ valid, diagnostics }` (invalid syntax is a normal result, not an error).
 - `check_mermaid_sequence_activations` — returns `{ ok, issues }` for a
   `sequenceDiagram`, flagging every `activate X` (or `+` arrow shorthand) with
   no matching `deactivate X`. Mechanical and deterministic, no LLM judgment.

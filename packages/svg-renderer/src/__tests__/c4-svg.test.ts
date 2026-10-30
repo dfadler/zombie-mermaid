@@ -251,7 +251,7 @@ describe('C4 SVG rendering', () => {
 
   it('draws cylinders for databases and pipes for queues', () => {
     const svg = renderMermaidSVG(SRC)
-    expect(svg.match(/<ellipse/g)).toHaveLength(2) // one cap each: db, queue
+    expect(svg.match(/<ellipse/g)).toHaveLength(2) // One cap each: db, queue
     expect(svg).toContain('data-shape="db"')
     expect(svg).toContain('data-shape="queue"')
   })
@@ -271,10 +271,10 @@ describe('C4 SVG rendering', () => {
 
   it('uses Mermaid’s palette by kind, lighter for external elements', () => {
     const svg = renderMermaidSVG(SRC)
-    expect(svg).toContain('#08427b') // person
-    expect(svg).toContain('#686868') // external person
-    expect(svg).toContain('#438dd5') // container
-    expect(svg).toContain('#85bbf0') // component
+    expect(svg).toContain('#08427b') // Person
+    expect(svg).toContain('#686868') // External person
+    expect(svg).toContain('#438dd5') // Container
+    expect(svg).toContain('#85bbf0') // Component
   })
 
   it('draws the diagram title, boundary title and technology text', () => {

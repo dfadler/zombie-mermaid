@@ -123,9 +123,9 @@ describe('ASCII edge styles', () => {
           C ==> D
       `)
       // Should have all three line types
-      expect(result).toContain('─') // solid
-      expect(result).toContain('┄') // dotted
-      expect(result).toContain('━') // thick
+      expect(result).toContain('─') // Solid
+      expect(result).toContain('┄') // Dotted
+      expect(result).toContain('━') // Thick
     })
 
     it('renders mixed styles in ascii mode', () => {

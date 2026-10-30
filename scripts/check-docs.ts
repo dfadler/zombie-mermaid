@@ -14,7 +14,6 @@ const FROZEN =
 // ponytail: whole-file skip, per-line baseline if this list grows.
 const KNOWN_STALE = new Set([
   'CLAUDE.md', // demo/client.ts (renamed; needs owner decision)
-  'docs/parser-error-audit-541.md', // pre-monorepo src/ paths
   'docs/xychart-design.md', // pre-monorepo src/ paths
   'docs/promotion/258-pr-rescue-candidates.md', // pre-monorepo src/ paths
 ])
@@ -159,7 +158,8 @@ const realFs: Fs = {
 export function nodeConsistency(want: string, fs: Fs = realFs): string[] {
   const errs: string[] = []
   const eng = JSON.parse(fs.read('package.json')).engines?.node as
-    string | undefined
+    | string
+    | undefined
   if (eng && !engineMatches(eng, want))
     errs.push(`package.json engines.node "${eng}" vs .nvmrc ${want}`)
   for (const f of fs.ls('.github/workflows'))
@@ -197,6 +197,16 @@ export function orphanResearch(fs: Fs = realFs): string[] {
       (k) =>
         `docs/research/${k}: nothing links to it; post the findings on the issue instead (#1642)`,
     )
+}
+
+// #1936: a kept research doc carries an `As of: YYYY-MM-DD` line, so a reader
+// can tell how stale its numbers are; re-measure or drop the doc when it ages out.
+export function researchAsOf(fs: Fs = realFs): string[] {
+  return fs
+    .ls('docs/research')
+    .filter((f) => f.endsWith('.md') && f !== 'docs/research/README.md')
+    .filter((f) => !/^As of: \d{4}-\d{2}-\d{2}/m.test(fs.read(f)))
+    .map((f) => `${f}: missing an "As of: YYYY-MM-DD" line (#1936)`)
 }
 
 // #1549: every decision doc carries a `Status:` line and a row in the README index.
@@ -243,6 +253,7 @@ export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
     errs: [
       ...nodeConsistency(want, fs),
       ...orphanResearch(fs),
+      ...researchAsOf(fs),
       ...decisionStatus(fs),
       ...forkFixesCount(fs),
       ...files.flatMap((f) => checkDoc(f, fs.read(f), want)),

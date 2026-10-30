@@ -1,9 +1,9 @@
 # Accessibility conformance statement
 
-Last reviewed: 2026-10-10, against `zombie-mermaid` on `main`.
+Last reviewed: 2026-10-29, against `zombie-mermaid` on `main`.
 
 This is a scoped, honest statement of what `zombie-mermaid` guarantees today
-— not a claim of full [WCAG 2.1](https://www.w3.org/TR/WCAG21/) conformance
+— not a claim of full [WCAG 2.2](https://www.w3.org/TR/WCAG22/) conformance
 at any level. Every guarantee below is either enforced by an automated CI
 check (so a regression fails the build) or backed by a manual test-once
 observation the "Verified how" column names — never asserted on assumption.
@@ -57,7 +57,7 @@ an `aria-describedby` on the root, independent of the table above.
 
 This maps to two WCAG success criteria:
 
-- **[1.1.1 Non-text Content](https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html) (Level A):**
+- **[1.1.1 Non-text Content](https://www.w3.org/WAI/WCAG22/Understanding/non-text-content.html) (Level A):**
   when a consumer supplies `title`, the rendered SVG carries a real
   programmatically-associated text alternative. `zombie-mermaid` cannot
   satisfy 1.1.1 on its own when no `title` is given — a library has no way
@@ -65,7 +65,7 @@ This maps to two WCAG success criteria:
   so the honest claim is: _the mechanism is always present and correctly
   wired when a consumer uses it_, not that every rendered SVG is compliant
   regardless of caller input.
-- **[4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A):**
+- **[4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html) (Level A):**
   the root always has a determinable role (`img`, or none when a focusable
   child needs to remain reachable) rather than an ambiguous default, and a
   `click`-based link keeps its native `<a>` name/role/state instead of being
@@ -118,8 +118,7 @@ fixes.
 ## Demo/editor site: keyboard and focus behavior
 
 The site this repo builds and deploys itself (`demo/`, `editor/`, and the
-per-page generators in `packages/site/` — `index.ts`, `pages.ts`, `blog.ts`, `fork-fixes.ts`,
-`dashboard.ts`, `editor.ts` — what
+Vite SSR prerender pipeline in `packages/site/ssr/` (`pnpm run build:site`) — what
 [dfadler.github.io/zombie-mermaid](https://dfadler.github.io/zombie-mermaid/)
 serves) is no longer one gallery-plus-editor page: the #590 "Diagram-Native
 Showcase" redesign (see
@@ -130,38 +129,33 @@ its own subset of these properties. The bullets below are scoped per family
 rather than asserted for the site as a whole, since that's no longer true
 of any single one of them:
 
-- **Visible focus indication** — a consistent accent-colored
-  `:focus-visible` ring (`a:focus-visible, button:focus-visible { … }`)
-  is present on the **Diagrams hub and per-type pages**
-  (`diagrams/*.html`, via `demo/styles.css` + `demo/diagram-page.css`,
-  concatenated into `diagrams/assets/diagram-page.css` by `packages/site/pages.ts`) and
-  on **Fork fixes** (`fork-fixes.html`, via `demo/fork-fixes.css`) —
-  relevant to
-  [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
-  on those pages. **Blog** (`blog/*.html`) and **Dashboard**
-  (`dashboard.html`) — built on the redesign's shared component library
-  (`demo/components/tokens.tsx`, `primitives.tsx`, `nav.tsx`, `footer.tsx`) —
-  declare no `:focus-visible` rule of their own and fall back to each
-  browser's default outline. **Home** (`index.html`) has widget-level rules
-  only (theme showcase zoom/fullscreen, the picker trigger and the output
-  segment control in `demo/components/index-page.tsx`), not a general
-  `a`/`button` ring. **Editor**
-  (`editor.html`) has the same kind of ring on its tool controls
-  (`editor/css/misc.css`, loaded last, covers buttons, links, inputs,
-  selects and `[tabindex]` elements), but its nav/hero/footer chrome has
-  none.
-- **A skip-to-content link** — exists only on **Home**:
-  `<a className="skip-link" href="#main">` in
-  `demo/components/index-page.tsx`, jumping to `<main id="main">` on that
-  same page — relevant to
-  [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A)
-  on Home only. No other page family (Diagrams, Editor, Fork fixes, Blog,
-  Dashboard) has one.
-- **Landmarks and hidden-nav focus** — `<main>` exists only on Home and
-  Fork fixes; the Editor, Dashboard, Diagrams and Blog pages have none. The
-  closed mobile nav panel (`.mobile-nav-panel` in `demo/components/nav-css.ts`)
-  is hidden with `opacity:0; pointer-events:none` only, so its links remain
-  Tab-focusable and exposed to assistive tech while it is closed.
+- **Visible focus indication** — one shared `:focus-visible` ring
+  (`a`, `button`, `input`, `select`, `textarea`, `summary`, `[tabindex]`:
+  2px `--cyan` outline) is declared in `designBaseCss()` (`demo/components/tokens.tsx`,
+  #1762), which **Home, Diagrams hub and per-type pages, Blog, Dashboard and
+  Fork fixes** all compose; `__tests__/demo-design-tokens.test.ts` pins the
+  declaration, so dropping it fails the build. That test checks the CSS text
+  only: it does not check that the ring is visible against every theme or
+  every container (the hero code panel and sidebar need their own offsets, see
+  `__tests__/visual/sidebar-focus.visual.test.ts`). The older `demo/styles.css`
+  ring still loads on the Diagrams pages. Several widgets add their own rings
+  (theme showcase, output segment control). **Editor** (`editor.html`) does not
+  compose `designBaseCss()`: its tool controls get a ring from
+  `editor/css/misc.css` (buttons, links, inputs, selects and `[tabindex]`
+  elements), but its nav/hero/footer chrome has none. Relevant to
+  [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html) (Level AA).
+- **A skip-to-content link** — on every page: `<a className="skip-link"
+  href="#main">` in `demo/components/document.tsx` (styled once, by `navCss()` in
+  `demo/components/nav-css.ts`; hidden until focused), jumping to the page's one
+  `<main id="main" tabindex="-1">` (the `tabindex` makes the focus move
+  deterministic across browsers) — relevant to
+  [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG22/Understanding/bypass-blocks.html) (Level A).
+- **Landmarks and mobile nav** — every page has one `<main id="main">`, one
+  `banner` and one `contentinfo`; on Editor and Fork fixes `<main>` also wraps
+  the hero. The closed mobile nav panel (`.mobile-nav-panel` in
+  `demo/components/nav-css.ts`) is `visibility: hidden`, so its links are not
+  focusable. While open, Escape closes it from anywhere (including the toggle)
+  and the rest of the page is `inert` (`demo/components/mobile-menu.client.ts`).
 - **Modal dialog semantics** — **no longer applicable.** The "Edit Diagram"
   dialog this bullet used to describe was part of the interactive gallery
   the redesign removed; there is no `role="dialog"`/`aria-modal` element
@@ -190,7 +184,7 @@ the #590 redesign each landed as their own targeted PR (see
 `.changeset/theme-picker-aria-expanded.md` for the change each one made) —
 those changesets describe the pre-redesign gallery this section used to
 cover, not the current per-family scoping above.
-**Partly covered:** `pnpm run test:a11y` (CI: `.github/workflows/a11y.yml`)
+**Partly covered:** `pnpm run test:a11y` (CI: the `axe` job in `.github/workflows/ci.yml`)
 runs axe-core (wcag2a, wcag2aa, wcag22aa; serious/critical) over a sample of
 the built pages of every family. Violations that exist today are listed in
 `KNOWN` in `__tests__/a11y/site.a11y.test.ts` with their tracking issue; the

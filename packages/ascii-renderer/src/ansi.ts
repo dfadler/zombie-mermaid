@@ -22,16 +22,25 @@ declare const document: unknown
 // ============================================================================
 
 /**
+ * `AsciiTheme.fg` value meaning "no explicit colour": ANSI modes emit no escape
+ * (the terminal's own foreground shows), HTML emits `color:inherit`.
+ */
+export const INHERIT_COLOR = 'inherit'
+
+/**
  * Default ASCII theme derived from the SVG renderer's color palette.
  * Uses the same mixing ratios to maintain visual consistency.
  */
 export const DEFAULT_ASCII_THEME: AsciiTheme = {
-  fg: '#27272a', // zinc-800 — primary text
-  border: '#a1a1aa', // zinc-400 — node borders (12% mix)
-  line: '#71717a', // zinc-500 — edge lines (35% mix)
-  arrow: '#52525b', // zinc-600 — arrowheads (60% mix)
-  corner: '#71717a', // same as line
-  junction: '#a1a1aa', // same as border
+  // Text keeps the terminal's own foreground (#2165): no single colour reads
+  // on both dark and light backgrounds at 4.5:1, and the old near-black
+  // zinc-800 (#27272a) was 1.05-1.41:1 on common dark terminals.
+  fg: INHERIT_COLOR,
+  border: '#a1a1aa', // Zinc-400 — node borders (12% mix)
+  line: '#71717a', // Zinc-500 — edge lines (35% mix)
+  arrow: '#52525b', // Zinc-600 — arrowheads (60% mix)
+  corner: '#71717a', // Same as line
+  junction: '#a1a1aa', // Same as border
 }
 
 // ============================================================================
@@ -237,23 +246,15 @@ function ansi16Fg(hex: string): string {
 
   // Determine base color based on dominant channel
   let code: number
-  if (r > 180 && g < 100 && b < 100)
-    code = 31 // red
-  else if (g > 180 && r < 100 && b < 100)
-    code = 32 // green
-  else if (r > 150 && g > 150 && b < 100)
-    code = 33 // yellow
-  else if (b > 180 && r < 100 && g < 100)
-    code = 34 // blue
-  else if (r > 150 && b > 150 && g < 100)
-    code = 35 // magenta
-  else if (g > 150 && b > 150 && r < 100)
-    code = 36 // cyan
-  else if (luma > 200)
-    code = 37 // white
-  else if (luma < 50)
-    code = 30 // black
-  else code = 37 // default to white for grays
+  if (r > 180 && g < 100 && b < 100) code = 31 // Red
+  else if (g > 180 && r < 100 && b < 100) code = 32 // Green
+  else if (r > 150 && g > 150 && b < 100) code = 33 // Yellow
+  else if (b > 180 && r < 100 && g < 100) code = 34 // Blue
+  else if (r > 150 && b > 150 && g < 100) code = 35 // Magenta
+  else if (g > 150 && b > 150 && r < 100) code = 36 // Cyan
+  else if (luma > 200) code = 37 // White
+  else if (luma < 50) code = 30 // Black
+  else code = 37 // Default to white for grays
 
   return `${ESC}${code + bright}m`
 }
@@ -323,6 +324,7 @@ export function getAnsiColor(
   if (mode === 'none') return ''
 
   const hex = getRoleColor(role, theme)
+  if (hex === INHERIT_COLOR) return ''
 
   switch (mode) {
     case 'truecolor':
@@ -357,7 +359,18 @@ export function colorizeChar(
   }
 
   const colorCode = getAnsiColor(role, theme, mode)
-  return `${colorCode}${char}${RESET}`
+  return colorCode ? `${colorCode}${char}${RESET}` : char
+}
+
+/** One same-role run: coloured, or bare when the role has no colour (null role, or INHERIT_COLOR). */
+function paintRun(
+  role: CharRole | null,
+  text: string,
+  theme: AsciiTheme,
+  mode: ColorMode,
+): string {
+  const code = role === null ? '' : getAnsiColor(role, theme, mode)
+  return code ? code + text + RESET : text
 }
 
 /**
@@ -400,11 +413,7 @@ export function colorizeLine(
     if (char === ' ') {
       // Flush any buffered characters (with or without color)
       if (buffer.length > 0) {
-        if (currentRole !== null) {
-          result += getAnsiColor(currentRole, theme, mode) + buffer + RESET
-        } else {
-          result += buffer
-        }
+        result += paintRun(currentRole, buffer, theme, mode)
         buffer = ''
         currentRole = null
       }
@@ -420,21 +429,15 @@ export function colorizeLine(
 
     // Role changed — flush buffer (with or without color) and start new
     if (buffer.length > 0) {
-      if (currentRole !== null) {
-        result += getAnsiColor(currentRole, theme, mode) + buffer + RESET
-      } else {
-        result += buffer
-      }
+      result += paintRun(currentRole, buffer, theme, mode)
     }
     buffer = linkMarker + char
     currentRole = role
   }
 
   // Flush remaining buffer
-  if (buffer.length > 0 && currentRole !== null) {
-    result += getAnsiColor(currentRole, theme, mode) + buffer + RESET
-  } else if (buffer.length > 0) {
-    result += buffer
+  if (buffer.length > 0) {
+    result += paintRun(currentRole, buffer, theme, mode)
   }
 
   return result + linkRuns.finish()
@@ -499,6 +502,7 @@ export function colorizeText(
   mode: ColorMode,
 ): string {
   if (mode === 'none' || text.length === 0) return text
+  if (mode !== 'html' && hex === INHERIT_COLOR) return text
   if (mode === 'html') return htmlSpan(hex, text)
   let code: string
   switch (mode) {

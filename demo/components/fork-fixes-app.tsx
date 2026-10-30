@@ -295,6 +295,9 @@ function CodePanel({ id, source }: { id: string; source: string }) {
   const lines = tokenizeMermaidSource(source)
   return (
     <div
+      // Scrolls at narrow widths, so it must be keyboard-focusable (axe
+      // scrollable-region-focusable, WCAG 2.1.1) and named like AsciiWell.
+      {...scrollRegion(`Mermaid source ${id}`)}
       style={{
         background: colorVar('--bg'),
         border: `1px solid ${colorVar('--border')}`,
@@ -463,11 +466,12 @@ const SCROLL_FADE_WIDTH = 32
  * `dangerouslySetInnerHTML`, which this component has no other way to
  * style.
  */
-const SCROLL_REGION = {
-  tabIndex: 0,
-  role: 'region',
-  'aria-label': 'ASCII output (scrollable)',
-} as const
+const scrollRegion = (label: string) =>
+  ({
+    tabIndex: 0,
+    role: 'region',
+    'aria-label': `${label} (scrollable)`,
+  }) as const
 
 const ASCII_WELL_STYLE: CSSProperties = {
   margin: 0,
@@ -551,7 +555,15 @@ function AsciiWellFade({ side }: { side: 'left' | 'right' }) {
  * page, loaded via `<img>`, rasterized) — not to this demo site's own
  * chrome, which the site fully controls and already hydrates.
  */
-function AsciiWell({ text, html }: { text?: string; html?: string }) {
+function AsciiWell({
+  text,
+  html,
+  label,
+}: {
+  text?: string
+  html?: string
+  label: string
+}) {
   // Scrollable region: focusable + named so keyboard users can scroll it (#1811).
   const ref = useRef<HTMLPreElement>(null)
   const { left, right } = useScrollFade(ref)
@@ -562,7 +574,7 @@ function AsciiWell({ text, html }: { text?: string; html?: string }) {
           ref={ref}
           className="fix-ascii mono"
           style={ASCII_WELL_STYLE}
-          {...SCROLL_REGION}
+          {...scrollRegion(label)}
         >
           {text}
         </pre>
@@ -571,7 +583,7 @@ function AsciiWell({ text, html }: { text?: string; html?: string }) {
           ref={ref}
           className="fix-ascii mono"
           style={ASCII_WELL_STYLE}
-          {...SCROLL_REGION}
+          {...scrollRegion(label)}
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- ascii-html.ts output for this repo's own build-time render, never user input
           dangerouslySetInnerHTML={{ __html: html }}
         />
@@ -621,7 +633,7 @@ export function FixPanel({
         </div>
       )
     case 'excerpt':
-      return <AsciiWell text={content.text} />
+      return <AsciiWell text={content.text} label={`ASCII output: ${label}`} />
     case 'screenshot':
       return (
         <img
@@ -637,7 +649,7 @@ export function FixPanel({
         />
       )
     case 'ascii':
-      return <AsciiWell html={content.html} />
+      return <AsciiWell html={content.html} label={`ASCII output: ${label}`} />
     case 'svg':
       return (
         <div
@@ -784,7 +796,7 @@ export function FixSection({
   return (
     <section id={id}>
       <Card
-        // padding lives in fork-fixes.css instead of via this prop (which
+        // Padding lives in fork-fixes.css instead of via this prop (which
         // would render as an inline style) so the breakpoint overrides
         // below can win via plain cascade order instead of needing
         // !important to beat an inline style (zombie-mermaid#1080).
@@ -934,114 +946,116 @@ export interface ForkFixesAppProps {
 export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
   return (
     <>
-      <header className="section-px" style={{ padding: '88px 80px 72px' }}>
-        <div
-          style={{
-            maxWidth: `${LAYOUT.maxWidth}px`,
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: `${SPACE['3xl']}px`,
-          }}
-        >
-          <div
-            className="mono"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: `${SPACE.sm}px`,
-              fontSize: `${FONT_SIZE.bodySm}px`,
-            }}
-          >
-            <a href="index.html" style={{ color: colorVar('--text-faint') }}>
-              Home
-            </a>
-            <ChevronRightIcon size={12} strokeWidth={2.4} />
-            <span style={{ color: colorVar('--text-dim') }}>Fork fixes</span>
-          </div>
-
-          <SectionEyebrow>Real renders, not mockups</SectionEyebrow>
-
-          <h1
-            className="page-h1"
-            style={{
-              // font-size lives in fork-fixes.css instead of here (not
-              // inline) so its mobile breakpoint override can win via
-              // plain cascade order instead of needing !important to beat
-              // this inline style (zombie-mermaid#1080).
-              lineHeight: 1.1,
-              letterSpacing: LETTER_SPACING.display,
-              maxWidth: '820px',
-            }}
-          >
-            What this fork fixes
-          </h1>
-
-          <p
-            style={{
-              fontSize: `${FONT_SIZE.lead}px`,
-              lineHeight: 1.65,
-              color: colorVar('--text-dim'),
-              maxWidth: '820px',
-            }}
-          >
-            Every pair below is rendered by this project's own renderer. The{' '}
-            <strong>before</strong> side runs the code as it existed immediately
-            before the fix landed — the tree at that commit's parent — so
-            nothing here is hand-drawn or reconstructed. The generator fails the
-            build if any pair renders identically, because a before/after that
-            looks the same would claim a fix it does not demonstrate.
-          </p>
-
+      <main id="main" tabIndex={-1}>
+        <div className="section-px" style={{ padding: '88px 80px 72px' }}>
           <div
             style={{
+              maxWidth: `${LAYOUT.maxWidth}px`,
+              margin: '0 auto',
               display: 'flex',
-              alignItems: 'center',
-              gap: `${SPACE.xl}px`,
-              marginTop: `${SPACE.xs}px`,
+              flexDirection: 'column',
+              gap: `${SPACE['3xl']}px`,
             }}
           >
-            <Pill accent="green" variant="outline" mono>
-              <CheckIcon size={14} strokeWidth={2.4} />
-              {fixes.length} fixes shown
-            </Pill>
-            <span
+            <div
+              className="mono"
               style={{
-                fontSize: `${FONT_SIZE.bodyLg}px`,
-                color: colorVar('--text-dim'),
+                display: 'flex',
+                alignItems: 'center',
+                gap: `${SPACE.sm}px`,
+                fontSize: `${FONT_SIZE.bodySm}px`,
               }}
             >
-              Many more ship in the{' '}
-              <a className="inline-link" href={CHANGELOG_URL}>
-                changelog
+              <a href="index.html" style={{ color: colorVar('--text-faint') }}>
+                Home
               </a>
-              .
-            </span>
+              <ChevronRightIcon size={12} strokeWidth={2.4} />
+              <span style={{ color: colorVar('--text-dim') }}>Fork fixes</span>
+            </div>
+
+            <SectionEyebrow>Real renders, not mockups</SectionEyebrow>
+
+            <h1
+              className="page-h1"
+              style={{
+                // font-size lives in fork-fixes.css instead of here (not
+                // inline) so its mobile breakpoint override can win via
+                // plain cascade order instead of needing !important to beat
+                // this inline style (zombie-mermaid#1080).
+                lineHeight: 1.1,
+                letterSpacing: LETTER_SPACING.display,
+                maxWidth: '820px',
+              }}
+            >
+              What this fork fixes
+            </h1>
+
+            <p
+              style={{
+                fontSize: `${FONT_SIZE.lead}px`,
+                lineHeight: 1.65,
+                color: colorVar('--text-dim'),
+                maxWidth: '820px',
+              }}
+            >
+              Every pair below is rendered by this project's own renderer. The{' '}
+              <strong>before</strong> side runs the code as it existed
+              immediately before the fix landed — the tree at that commit's
+              parent — so nothing here is hand-drawn or reconstructed. The
+              generator fails the build if any pair renders identically, because
+              a before/after that looks the same would claim a fix it does not
+              demonstrate.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: `${SPACE.xl}px`,
+                marginTop: `${SPACE.xs}px`,
+              }}
+            >
+              <Pill accent="green" variant="outline" mono>
+                <CheckIcon size={14} strokeWidth={2.4} />
+                {fixes.length} fixes shown
+              </Pill>
+              <span
+                style={{
+                  fontSize: `${FONT_SIZE.bodyLg}px`,
+                  color: colorVar('--text-dim'),
+                }}
+              >
+                Many more ship in the{' '}
+                <a className="inline-link" href={CHANGELOG_URL}>
+                  changelog
+                </a>
+                .
+              </span>
+            </div>
           </div>
         </div>
-      </header>
 
-      <main
-        id="main"
-        className="section-px"
-        // 60px bottom padding is the canvas's own literal (between
-        // SECTION_SPACE.snug's 64 and .tight's 48).
-        style={{ padding: `0 ${LAYOUT.gutter.desktop}px 60px` }}
-      >
         <div
-          style={{
-            maxWidth: `${LAYOUT.maxWidth}px`,
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            // 56px, the canvas's own gap between fix cards — off SPACE's
-            // scale (7xl is 48, 8xl is 64).
-            gap: '56px',
-          }}
+          className="section-px"
+          // 60px bottom padding is the canvas's own literal (between
+          // SECTION_SPACE.snug's 64 and .tight's 48).
+          style={{ padding: `0 ${LAYOUT.gutter.desktop}px 60px` }}
         >
-          {fixes.map((fix) => (
-            <FixSection key={fix.id} {...fix} />
-          ))}
+          <div
+            style={{
+              maxWidth: `${LAYOUT.maxWidth}px`,
+              margin: '0 auto',
+              display: 'flex',
+              flexDirection: 'column',
+              // 56px, the canvas's own gap between fix cards — off SPACE's
+              // scale (7xl is 48, 8xl is 64).
+              gap: '56px',
+            }}
+          >
+            {fixes.map((fix) => (
+              <FixSection key={fix.id} {...fix} />
+            ))}
+          </div>
         </div>
       </main>
     </>

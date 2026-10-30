@@ -1,0 +1,17 @@
+{
+  "phrases": [
+    "zombie mermaid",
+    "zombie-mermaid",
+    "ZombieMermaid",
+    "zombie_mermaid"
+  ],
+  "excludeUrlPrefixes": [
+    "https://github.com/dfadler",
+    "https://www.npmjs.com/package/zombie-mermaid",
+    "https://www.npmjs.com/package/@zombie-mermaid",
+    "https://www.npmjs.com/package/payload-plugin-mermaid"
+  ],
+  "excludeAuthors": ["dfadler", "dfadler1984"],
+  "maxPerQuery": 30,
+  "maxReported": 150
+}

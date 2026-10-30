@@ -17,6 +17,18 @@ import { mkCanvas, write } from './canvas.ts'
 import { splitLines } from './multiline-utils.ts'
 import { getCorners } from './shapes/corners.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
+import { decodeSections } from './shapes/class-box.ts'
+import {
+  circleInsets,
+  diamondInsets,
+  asymmetricInsets,
+  drawAsymmetric,
+  drawCircle,
+  drawHexagon,
+  drawStadium,
+  drawSubroutineBars,
+  hexagonInsets,
+} from './shapes/silhouettes.ts'
 
 // ============================================================================
 // Node drawing — renders a node using shape-aware rendering
@@ -118,6 +130,38 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     return box
   }
 
+  // Class diagram nodes (LR/RL lowering, class-flow.ts): a compartment box at
+  // the size the grid gave it, or the bare interface name.
+  if (node.shape === 'class-name') {
+    // On the row edges land on, like a pseudo-state glyph (see below).
+    const row = (i: number) => graph.rowHeight.get(gc.y + i) ?? 0
+    const cy = row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
+    const cells = toDisplayCells(node.displayLabel)
+    const x0 = node.textAlign === 'end' ? to.x + 1 - cells.length : from.x
+    for (const [i, cell] of cells.entries()) write(box, x0 + i, cy, cell)
+    node.labelRows = { top: cy, bottom: cy }
+    return box
+  }
+  if (node.shape === 'class-box' || node.shape === 'class-note') {
+    const drawn = drawMultiBox(
+      decodeSections(node.displayLabel),
+      useAscii,
+      graph.config.boxBorderPadding,
+      { width: w + 1, height: h + 1 },
+    )
+    if (node.shape === 'class-note') {
+      const r = getCorners('rounded', useAscii)
+      write(drawn, 0, 0, r.tl)
+      write(drawn, w, 0, r.tr)
+      write(drawn, 0, h, r.bl)
+      write(drawn, w, h, r.br)
+    }
+    // Every interior row is one label rectangle, so the RL flip keeps the
+    // member text reading left to right (see mirrorLabelColumns).
+    node.labelRows = { top: 1, bottom: Math.max(h - 1, 1) }
+    return drawn
+  }
+
   // Get corner characters for this shape type
   const corners = getCorners(node.shape, useAscii)
 
@@ -132,15 +176,57 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     : { tl: '╔', tr: '╗', bl: '╚', br: '╝' }
   const effectiveCorners = isDoubleBox ? doubleCorners : corners
 
-  // Draw box border with shape-specific corners
-  for (let x = from.x + 1; x < to.x; x++) write(box, x, from.y, hChar)
-  for (let x = from.x + 1; x < to.x; x++) write(box, x, to.y, hChar)
-  for (let y = from.y + 1; y < to.y; y++) write(box, from.x, y, vChar)
-  for (let y = from.y + 1; y < to.y; y++) write(box, to.x, y, vChar)
-  write(box, from.x, from.y, effectiveCorners.tl)
-  write(box, to.x, from.y, effectiveCorners.tr)
-  write(box, from.x, to.y, effectiveCorners.bl)
-  write(box, to.x, to.y, effectiveCorners.br)
+  // Label placement, shared by the border code below (the hexagon keeps its
+  // diagonals clear of the label rows).
+  const label = node.displayLabel
+  const lines = splitLines(label)
+  const textCenterY = from.y + Math.floor(h / 2)
+  const startY = textCenterY - Math.floor((lines.length - 1) / 2)
+
+  if (node.shape === 'stadium' && to.x >= 2 && to.y >= 2) {
+    // Pill: rounded top/bottom, `(` `)` sides (#2164).
+    drawStadium(box, to.x, to.y, useAscii)
+  } else if (node.shape === 'hexagon' && to.x >= 4 && to.y >= 2) {
+    // Points at the left and right middle (#2164).
+    const insets = hexagonInsets(
+      to.x,
+      to.y,
+      lines.map((l) => displayWidth(l)),
+      startY,
+    )
+    drawHexagon(box, to.x, to.y, insets, useAscii)
+    node.labelInsets = insets
+  } else if (node.shape === 'diamond' && to.x >= 3 && to.y >= 2) {
+    // Rhombus with points at the top, bottom, left and right (#2164).
+    const insets = diamondInsets(to.x, to.y)
+    drawHexagon(box, to.x, to.y, insets, useAscii)
+    node.labelInsets = insets
+  } else if (node.shape === 'circle' && to.x >= 3 && to.y >= 2) {
+    // Ellipse: rounded top/bottom, `(` `)` at the middle (#2164).
+    const insets = circleInsets(to.x, to.y)
+    drawCircle(box, to.x, to.y, insets, useAscii)
+    node.labelInsets = insets
+  } else if (node.shape === 'asymmetric' && to.x >= 4 && to.y >= 2) {
+    // Flag: left side notched on the middle row, `>` tip one cell in (#2164).
+    drawAsymmetric(box, to.x, to.y, useAscii)
+    node.labelInsets = asymmetricInsets(to.x, to.y)
+  } else {
+    // Draw box border with shape-specific corners
+    for (let x = from.x + 1; x < to.x; x++) write(box, x, from.y, hChar)
+    for (let x = from.x + 1; x < to.x; x++) write(box, x, to.y, hChar)
+    for (let y = from.y + 1; y < to.y; y++) write(box, from.x, y, vChar)
+    for (let y = from.y + 1; y < to.y; y++) write(box, to.x, y, vChar)
+    write(box, from.x, from.y, effectiveCorners.tl)
+    write(box, to.x, from.y, effectiveCorners.tr)
+    write(box, from.x, to.y, effectiveCorners.bl)
+    write(box, to.x, to.y, effectiveCorners.br)
+  }
+
+  // Subroutine: a second vertical bar just inside each side (#2164).
+  if (node.shape === 'subroutine' && to.x >= 4 && to.y >= 2) {
+    drawSubroutineBars(box, to.x, to.y, useAscii)
+    node.labelInsets = Array<number>(to.y + 1).fill(1)
+  }
 
   // Cylinder (database) gets a rim line just inside its top and bottom
   // border — the ellipse-pinch that makes it read as a cylinder rather than
@@ -157,10 +243,6 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   }
 
   // Center the multi-line display label inside the box
-  const label = node.displayLabel
-  const lines = splitLines(label)
-  const textCenterY = from.y + Math.floor(h / 2)
-  const startY = textCenterY - Math.floor((lines.length - 1) / 2)
   node.labelRows = { top: startY, bottom: startY + lines.length - 1 }
 
   for (let i = 0; i < lines.length; i++) {
@@ -233,7 +315,7 @@ export function measureMultiBox(
   // Height: sum of all section line counts + dividers + 2 border rows
   let totalLines = 0
   for (const section of sections) {
-    totalLines += Math.max(section.length, 1) // at least 1 row per section
+    totalLines += Math.max(section.length, 1) // At least 1 row per section
   }
 
   return {
@@ -256,15 +338,20 @@ export function drawMultiBox(
   sections: string[][],
   useAscii: boolean,
   padding: number = 1,
+  fit?: { width: number; height: number },
 ): Canvas {
   // Clamp here too (not just inside measureMultiBox) since `padding` is also
   // used directly below for each line's startX — see the comment in
   // measureMultiBox for why a negative value can reach this function.
   const clampedPadding = Math.max(0, padding)
-  const { width: boxWidth, height: boxHeight } = measureMultiBox(
-    sections,
-    clampedPadding,
-  )
+  const natural = measureMultiBox(sections, clampedPadding)
+  // `fit` stretches the box to a cell the layout allotted (flowchart grid):
+  // wider is plain space on the right, taller leaves the extra rows empty at
+  // the bottom — or around a single compartment, which is centred instead.
+  const boxWidth = Math.max(natural.width, fit?.width ?? 0)
+  const boxHeight = Math.max(natural.height, fit?.height ?? 0)
+  const topSlack =
+    sections.length === 1 ? Math.floor((boxHeight - natural.height) / 2) : 0
 
   // Box-drawing characters
   const hLine = useAscii ? '-' : '─'
@@ -295,7 +382,7 @@ export function drawMultiBox(
   }
 
   // Render sections with dividers
-  let row = 1 // current y position (starts after top border)
+  let row = 1 + topSlack // Current y position (starts after top border)
   for (let s = 0; s < sections.length; s++) {
     const section = sections[s]!
     const lines = section.length > 0 ? section : ['']

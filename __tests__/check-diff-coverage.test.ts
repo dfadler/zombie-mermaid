@@ -95,7 +95,6 @@ const LEGACY_EXEMPT = new Set([
   'scripts/generate-bundle-badge.ts',
   'scripts/generate-hero.ts',
   'scripts/generate-logo-lockup.ts',
-  'scripts/generate-page.ts',
   'scripts/generate-primitives-classes.ts',
   'scripts/label-position-oracle.ts',
   'scripts/layout-oracle.ts',
@@ -347,7 +346,7 @@ describe('computeDiffCoverage', () => {
 
     const result = computeDiffCoverage(changedLines, lcov)
 
-    expect(result.totalCovered).toBe(2) // lines 1 and 3 of src/a.ts
+    expect(result.totalCovered).toBe(2) // Lines 1 and 3 of src/a.ts
     expect(result.totalInstrumented).toBe(4)
     expect(result.fileReports).toEqual(
       expect.arrayContaining([
@@ -359,7 +358,7 @@ describe('computeDiffCoverage', () => {
 
   it('skips a changed file that has no coverage entry at all (type-only file)', () => {
     const changedLines = new Map([['src/types.ts', new Set([1, 2])]])
-    const lcov = new Map<string, Map<number, number>>() // no entry for src/types.ts
+    const lcov = new Map<string, Map<number, number>>() // No entry for src/types.ts
 
     const result = computeDiffCoverage(changedLines, lcov)
 
@@ -406,7 +405,7 @@ describe('resolveBaseRef', () => {
   it('prefers origin/<GITHUB_BASE_REF> when it resolves', async () => {
     process.env.GITHUB_BASE_REF = 'main'
     vi.doMock('node:child_process', () => ({
-      execFileSync: vi.fn(() => ''), // every rev-parse succeeds
+      execFileSync: vi.fn(() => ''), // Every rev-parse succeeds
     }))
     const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBe('origin/main')

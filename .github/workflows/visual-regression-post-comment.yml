@@ -115,6 +115,10 @@ jobs:
     name: Validate run and post/update diff comment
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Advisory comment only (#1606): a failure here (gh/API hiccup, upload
+    # error) must not show as a red run on the PR. The run's log and
+    # annotations still show what broke.
+    continue-on-error: true
     # See header comment: (1) same-repo guard — this workflow only acts on
     # runs that belong to THIS repo, not a downstream fork's own copy of
     # ci.yml; (2) only react to pull_request-triggered CI runs, which are

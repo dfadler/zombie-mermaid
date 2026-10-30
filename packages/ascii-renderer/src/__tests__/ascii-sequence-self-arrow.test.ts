@@ -51,7 +51,7 @@ sequenceDiagram
     // The footer actor boxes must render correctly and stay aligned with
     // the header boxes (proves later rows weren't shifted by the newline).
     const bottomBorders = (result.match(/└───┘/g) || []).length
-    expect(bottomBorders).toBe(2) // one footer box per actor (A, B)
+    expect(bottomBorders).toBe(2) // One footer box per actor (A, B)
   })
 
   it('handles 3+ line self-arrow labels', () => {

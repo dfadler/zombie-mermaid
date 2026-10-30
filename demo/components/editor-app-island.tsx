@@ -45,7 +45,7 @@ export function EditorAppIsland({ themes }: EditorAppProps) {
     <>
       <div
         id={EDITOR_ROOT_ID}
-        // display: contents -- this hydration container is real DOM (a
+        // Display: contents -- this hydration container is real DOM (a
         // hydrateRoot() target needs a real node), but .editor-tool-shell
         // is display:flex;flex-direction:column and expects .topbar/.main/
         // .toast as its direct flex items (see editor-app.tsx's
@@ -64,7 +64,7 @@ export function EditorAppIsland({ themes }: EditorAppProps) {
         // editor-page.tsx already uses for .zm-shell's sticky-nav wrapper.
         style={{ display: 'contents' }}
         dangerouslySetInnerHTML={{
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own EditorApp component tree rendered via renderToString (see the module doc comment); never user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own EditorApp component tree rendered via renderToString (see the module doc comment); never user input
           __html: renderToString(<EditorApp themes={themes} />),
         }}
       />
@@ -72,7 +72,7 @@ export function EditorAppIsland({ themes }: EditorAppProps) {
         type="application/json"
         id={EDITOR_PROPS_ELEMENT_ID}
         dangerouslySetInnerHTML={{
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own EditorAppProps, escaped with escapeJsonForScriptTag; never user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own EditorAppProps, escaped with escapeJsonForScriptTag; never user input
           __html: escapeJsonForScriptTag(
             JSON.stringify({ themes } satisfies EditorAppProps),
           ),

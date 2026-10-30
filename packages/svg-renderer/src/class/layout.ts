@@ -26,8 +26,9 @@ import {
   FONT_WEIGHTS,
   resolveFontSizes,
 } from '../styles.ts'
-import { findBackEdges } from '../layout-engine/back-edges.ts'
+import { findBackEdges } from '@zombie-mermaid/core'
 import { elkLayoutSync } from '../elk-instance.ts'
+import { mermaidTextWidth } from './mermaid-text-width.ts'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
@@ -51,7 +52,8 @@ export const CLS = {
   memberRowHeight: 20,
   sectionPadY: 8,
   emptySectionHeight: 8,
-  minWidth: 120,
+  /** Padding each side of mermaid's class box (`class.padding`), see {@link mermaidClassBoxWidth} */
+  mermaidPad: 12,
   memberFontSize: 11,
   memberFontWeight: 400,
   nodeSpacing: 40,
@@ -64,6 +66,10 @@ export const CLS = {
   /** Padding between a namespace frame and its classes (other three sides) */
   namespacePad: 16,
   namespaceTitleFontSize: 12,
+  /** Height of a lollipop interface's name box; the circle hangs off its inner side */
+  lollipopLabelHeight: 32,
+  /** Horizontal padding around a lollipop interface's name */
+  lollipopLabelPadX: 8,
 } as const
 
 /**
@@ -127,6 +133,83 @@ function resolveNamespaces(diagram: ClassDiagram): LayoutNamespace[] {
 }
 
 /**
+ * A one-ended lollipop (`A ()-- B`, `B --() A`) is not a box and an edge in
+ * mermaid.js: the interface end is a small circle with its name beside it,
+ * hung off the host (`B`) by a stem, and a class used only that way gets no
+ * box (12.1.0 and 12.2.0 agree). Each interface end becomes a label-only
+ * pseudo-class here, laid out and routed like any other node, so the shared
+ * relationship code needs no lollipop special case. Its id has a space, so it
+ * can't collide with a class id. `()--()` has no single host and stays an
+ * ordinary relationship with a circle at both ends.
+ */
+interface LollipopLayout {
+  /** The diagram to lay out: unused interface classes dropped, interface ends swapped for pseudo-classes */
+  diagram: ClassDiagram
+  /** Pseudo-class id -> interface name shown, in source order */
+  labels: Map<string, string>
+  /** Relationship index -> its pseudo-class id */
+  byRelationship: Map<number, string>
+}
+
+function withLollipopNodes(parsed: ClassDiagram): LollipopLayout {
+  const byRelationship = new Map<number, string>()
+  const interfaceIds = new Set<string>()
+  const pseudo: ClassNode[] = []
+  const hostOf = new Map<string, string>()
+  const relationships = parsed.relationships.map((rel, i) => {
+    if (rel.type !== 'lollipop' || rel.markerAt === 'both') return rel
+    const left = rel.markerAt === 'from'
+    const name = left ? rel.from : rel.to
+    const id = `lollipop ${pseudo.length}`
+    byRelationship.set(i, id)
+    hostOf.set(id, left ? rel.to : rel.from)
+    interfaceIds.add(name)
+    pseudo.push({
+      id,
+      /* v8 ignore next -- the parser creates a class for every relationship end */
+      label: parsed.classes.find((c) => c.id === name)?.label ?? name,
+      attributes: [],
+      methods: [],
+    })
+    return left ? { ...rel, from: id } : { ...rel, to: id }
+  })
+  const labels = new Map(pseudo.map((c) => [c.id, c.label]))
+  if (pseudo.length === 0) return { diagram: parsed, labels, byRelationship }
+
+  // An interface keeps its box only when something else gives it one: another
+  // relationship, a note, a namespace, an annotation or members.
+  const kept = new Set(relationships.flatMap((r) => [r.from, r.to]))
+  for (const note of parsed.notes) if (note.forClass) kept.add(note.forClass)
+  for (const ns of parsed.namespaces) for (const id of ns.classIds) kept.add(id)
+  const drop = (c: ClassNode): boolean =>
+    interfaceIds.has(c.id) &&
+    !kept.has(c.id) &&
+    !c.annotation &&
+    c.attributes.length === 0 &&
+    c.methods.length === 0
+
+  // Pseudo-classes go last, in source order: mermaid lays real classes out
+  // first and hangs each interface name off its host afterwards.
+  const classes = [...parsed.classes.filter((c) => !drop(c)), ...pseudo]
+  // An interface name sits inside its host's namespace frame.
+  const namespaces = parsed.namespaces.map((ns) => ({
+    ...ns,
+    classIds: [
+      ...ns.classIds,
+      ...pseudo
+        /* v8 ignore next -- every pseudo-class has a host */
+        .filter((c) => ns.classIds.includes(hostOf.get(c.id) ?? ''))
+        .map((c) => c.id),
+    ],
+  }))
+  return {
+    diagram: { ...parsed, classes, relationships, namespaces },
+    labels,
+    byRelationship,
+  }
+}
+
+/**
  * Indices into `diagram.relationships` of the edges dagre's depth-first walk
  * reverses to break cycles; see `findBackEdges`.
  */
@@ -144,6 +227,7 @@ type NoteSizeMap = Map<string, { width: number; height: number }>
 function buildClassElkGraph(
   diagram: ClassDiagram,
   options: ClassRenderOptions,
+  lollipopIds: ReadonlyMap<string, string>,
 ): {
   elkGraph: ElkNode
   classSizes: ClassSizeMap
@@ -155,6 +239,23 @@ function buildClassElkGraph(
   const fontSizes = resolveFontSizes(options.fontSizes)
 
   for (const cls of diagram.classes) {
+    if (lollipopIds.has(cls.id)) {
+      // Label only: the circle and stem are drawn by the edge's marker.
+      classSizes.set(cls.id, {
+        width:
+          estimateTextWidth(
+            cls.label,
+            fontSizes.nodeLabel,
+            FONT_WEIGHTS.edgeLabel,
+          ) +
+          CLS.lollipopLabelPadX * 2,
+        height: CLS.lollipopLabelHeight,
+        headerHeight: CLS.lollipopLabelHeight,
+        attrHeight: 0,
+        methodHeight: 0,
+      })
+      continue
+    }
     const headerHeight = cls.annotation
       ? CLS.headerBaseHeight + CLS.annotationHeight
       : CLS.headerBaseHeight
@@ -177,7 +278,8 @@ function buildClassElkGraph(
     const maxAttrW = maxMemberWidth(cls.attributes)
     const maxMethodW = maxMemberWidth(cls.methods)
     const width = Math.max(
-      CLS.minWidth,
+      mermaidClassBoxWidth(cls),
+      // Never narrower than our own text needs
       headerTextW + CLS.boxPadX * 2,
       maxAttrW + CLS.boxPadX * 2,
       maxMethodW + CLS.boxPadX * 2,
@@ -294,10 +396,12 @@ function buildClassElkGraph(
     id: 'root',
     layoutOptions: {
       ...baseElkLayoutOptions({
-        // Class diagrams have no `direction` concept — they always lay out
-        // top-down. See ELK_DIRECTION_FALLBACK for why that default is
-        // per-diagram-type rather than shared with ER's.
-        direction: directionToElk(undefined, ELK_DIRECTION_FALLBACK.class),
+        // `direction` statement, else top-down. See ELK_DIRECTION_FALLBACK
+        // for why that default is per-diagram-type rather than shared.
+        direction: directionToElk(
+          diagram.direction,
+          ELK_DIRECTION_FALLBACK.class,
+        ),
         nodeSpacing: CLS.nodeSpacing,
         layerSpacing: CLS.layerSpacing,
         padding: CLS.padding,
@@ -329,6 +433,7 @@ function extractClassLayout(
   classSizes: ClassSizeMap,
   noteSizes: NoteSizeMap,
   namespaces: LayoutNamespace[],
+  lollipops: LollipopLayout,
 ): PositionedClassDiagram {
   const classLookup = new Map<string, ClassNode>()
   for (const cls of diagram.classes) classLookup.set(cls.id, cls)
@@ -368,7 +473,7 @@ function extractClassLayout(
     if (!node) continue
     positionedNamespaces.push({
       name: ns.name,
-      classIds: ns.classIds,
+      classIds: ns.classIds.filter((id) => !lollipops.labels.has(id)),
       x: node.x ?? 0,
       y: node.y ?? 0,
       width: node.width ?? 0,
@@ -412,7 +517,26 @@ function extractClassLayout(
   }
 
   const relationships: PositionedClassRelationship[] = []
-  const backEdges = classBackEdges(diagram)
+  const backEdges = classBackEdges(lollipops.diagram)
+  const childById = new Map<string, ElkNode>()
+  for (const child of flatChildren) childById.set(child.id, child)
+  // Lollipop interface names, by pseudo-class id.
+  const interfaceBoxes = new Map<
+    string,
+    NonNullable<PositionedClassRelationship['interfaceLabel']>
+  >()
+  for (const [id, text] of lollipops.labels) {
+    const child = childById.get(id)
+    /* v8 ignore start -- ELK positions every node it was given */
+    interfaceBoxes.set(id, {
+      text,
+      x: child?.x ?? 0,
+      y: child?.y ?? 0,
+      width: child?.width ?? 0,
+      height: child?.height ?? 0,
+    })
+    /* v8 ignore stop */
+  }
   const elkEdges = result.edges ?? []
   // The first diagram.relationships.length edges are the relationships, in
   // order — buildClassElkGraph creates exactly one ELK edge per relationship
@@ -431,6 +555,10 @@ function extractClassLayout(
     const points = backEdges.has(i) ? laidOut.reverse() : laidOut
     const labelPosition = extractEdgeLabelPosition(elkEdge, off.x, off.y)
 
+    const interfaceLabel = interfaceBoxes.get(
+      lollipops.byRelationship.get(i) ?? '',
+    )
+
     relationships.push({
       from: rel.from,
       to: rel.to,
@@ -441,6 +569,7 @@ function extractClassLayout(
       toCardinality: rel.toCardinality,
       points,
       labelPosition,
+      ...(interfaceLabel ? { interfaceLabel } : {}),
     })
   }
 
@@ -450,8 +579,6 @@ function extractClassLayout(
   for (const elkEdge of elkEdges.slice(diagram.relationships.length)) {
     linkEdges.set(elkEdge.id, elkEdge)
   }
-  const childById = new Map<string, ElkNode>()
-  for (const child of flatChildren) childById.set(child.id, child)
 
   const notes: PositionedClassNote[] = []
   for (const [i, note] of diagram.notes.entries()) {
@@ -514,12 +641,21 @@ export function layoutClassDiagramSync(
     }
   }
 
+  const lollipops = withLollipopNodes(diagram)
   const { elkGraph, classSizes, noteSizes, namespaces } = buildClassElkGraph(
-    diagram,
+    lollipops.diagram,
     options,
+    lollipops.labels,
   )
   const result = elkLayoutSync(elkGraph, options.layoutCache)
-  return extractClassLayout(result, diagram, classSizes, noteSizes, namespaces)
+  return extractClassLayout(
+    result,
+    diagram,
+    classSizes,
+    noteSizes,
+    namespaces,
+    lollipops,
+  )
 }
 
 /**
@@ -534,6 +670,43 @@ export function layoutClassDiagramSync(
  */
 function memberTextWidth(text: string): number {
   return text.length * Math.ceil(estimateMonoTextWidth('M', CLS.memberFontSize))
+}
+
+/** A member as mermaid prints it: `+name`, `+name(params) : type`, no space after the marker. */
+function mermaidMemberText(m: ClassMember): string {
+  const call = m.isMethod ? `${m.name}(${m.params || ''})` : m.name
+  return `${m.visibility || ''}${m.visibilitySpace ? ' ' : ''}${call}${m.isMethod && m.type ? ` : ${m.type}` : ''}`
+}
+
+/**
+ * Width of a class box as mermaid sizes it (#2128), so boxes (and so the
+ * layout) come out the same size. Mermaid has no minimum width: it takes the
+ * bounding box of the annotation and class name (both centred on x = 0) and the
+ * member and method lists (left-aligned starting at x = 0), then adds 12px
+ * (`class.padding`) on each side. A box is therefore the wider half of the
+ * centred text, plus the widest member, plus 24, which is why a long member
+ * leaves the right edge `name / 2 + 12` clear. Text is measured as mermaid does
+ * (16px Trebuchet MS), not in the fonts we draw with. Checked on mermaid 12.1.0
+ * and 12.2.0, which agree.
+ */
+function mermaidClassBoxWidth(cls: {
+  label: string
+  annotation?: string
+  attributes: ClassMember[]
+  methods: ClassMember[]
+}): number {
+  const name = mermaidTextWidth(cls.label, true)
+  const annotation = cls.annotation
+    ? mermaidTextWidth(`\u00ab${cls.annotation}\u00bb`, false)
+    : 0
+  const members = Math.max(
+    0,
+    ...[...cls.attributes, ...cls.methods].map((m) =>
+      mermaidTextWidth(mermaidMemberText(m), false),
+    ),
+  )
+  const centred = Math.max(name, annotation)
+  return centred / 2 + Math.max(centred / 2, members) + CLS.mermaidPad * 2
 }
 
 /** Calculate the max width of a list of class members (uses mono metrics) */

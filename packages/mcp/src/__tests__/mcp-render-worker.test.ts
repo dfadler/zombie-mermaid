@@ -46,7 +46,7 @@ describe('worker timeout and OOM', () => {
     expect(Date.now() - t0).toBeLessThan(1300)
     const after = await r.render(req('ok'))
     expect(after).toMatch(/^thread \d+$/)
-    expect(after).not.toBe(first) // a fresh worker thread
+    expect(after).not.toBe(first) // A fresh worker thread
   })
 
   it('turns a heap blowup into an error, then respawns', async () => {
@@ -63,7 +63,7 @@ describe('worker timeout and OOM', () => {
     const err = await r.render(req('throw')).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(MermaidParseError)
     expect((err as MermaidParseError).line).toBe(2)
-    expect(await r.render(req('ok'))).toBe(a) // same thread: not respawned
+    expect(await r.render(req('ok'))).toBe(a) // Same thread: not respawned
   })
 
   it('rebuilds other render errors by name and message', async () => {
@@ -121,8 +121,18 @@ describe('worker timeout and OOM', () => {
 })
 
 const BUILT = new URL('../../dist/render-worker.js', import.meta.url)
+// The built worker imports these packages by name, which resolves to their
+// own dist/ (the vitest aliases don't apply inside a worker thread). A partial
+// or mid-rebuild dist (vite empties each outDir first) otherwise fails with
+// "Cannot find module .../dist/index.js" instead of skipping (#1825).
+const WORKER_DEPS = ['svg-renderer', 'ascii-renderer', 'core', 'mermaid-parser']
+const BUILT_COMPLETE =
+  existsSync(BUILT) &&
+  WORKER_DEPS.every((p) =>
+    existsSync(new URL(`../../../${p}/dist/index.js`, import.meta.url)),
+  )
 
-describe.skipIf(!existsSync(BUILT))('built worker output', () => {
+describe.skipIf(!BUILT_COMPLETE)('built worker output', () => {
   it('is byte-identical to in-thread output (ELK registered in the worker)', async () => {
     registerElk(ELK)
     const r = make({ workerUrl: pathToFileURL(BUILT.pathname) as URL })
@@ -173,7 +183,7 @@ describe.skipIf(!existsSync(BUILT))('built worker output', () => {
         (e: unknown) =>
           renderErrorResult('Failed to render diagram to SVG', e, bad.diagram),
       )
-    expect(viaWorker?.content).toHaveLength(2) // message + diagnostics block
+    expect(viaWorker?.content).toHaveLength(2) // Message + diagnostics block
     expect(viaWorker).toEqual(renderSvgHandler(bad))
   })
 })

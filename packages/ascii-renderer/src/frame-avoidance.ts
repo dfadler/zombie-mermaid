@@ -234,7 +234,12 @@ function hasTitleCollision(graph: AsciiGraph, sg: AsciiSubgraph): boolean {
         const ax = gridToDrawingCoord(graph, a)
         const bx = gridToDrawingCoord(graph, b)
         if (rowY < Math.min(ax.y, bx.y) || rowY > Math.max(ax.y, bx.y)) continue
-        if (ax.x > sg.minX && ax.x < sg.maxX) strokes.add(ax.x - sg.minX)
+        // A flow-face back-edge's end runs sit a stroke spacing right of the
+        // port centre (port-offsets.ts, allocateFaces; the node is grown for it).
+        const x =
+          ax.x +
+          (edge.faceLane && (k === 1 || k === edge.path.length - 1) ? 2 : 0)
+        if (x > sg.minX && x < sg.maxX) strokes.add(x - sg.minX)
       }
     }
     if (strokes.size === 0) continue

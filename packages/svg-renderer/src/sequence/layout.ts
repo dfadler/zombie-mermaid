@@ -330,7 +330,7 @@ export function layoutSequenceDiagram(
           actorWidths[firstActorIdx]! / 2 +
           seq.noteGap
       } else {
-        // over — center between first and last actor
+        // Over — center between first and last actor
         if (note.actorIds.length > 1) {
           const lastActorIdx =
             actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
@@ -521,7 +521,7 @@ export function layoutSequenceDiagram(
             actorWidths[firstActorIdx]! / 2 +
             seq.noteGap
         } else {
-          // over — center between first and last actor
+          // Over — center between first and last actor
           if (note.actorIds.length > 1) {
             const lastActorIdx =
               actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
@@ -655,6 +655,7 @@ export function layoutSequenceDiagram(
     return {
       type: block.type,
       label: block.label,
+      ...(block.color !== undefined ? { color: block.color } : {}),
       x: blockLeft,
       y: blockTop,
       width: blockRight - blockLeft,
@@ -676,7 +677,7 @@ export function layoutSequenceDiagram(
   const diagramBottom = messageY + seq.padding
 
   // Find global X extents across actors, blocks, notes, and message labels
-  let globalMinX: number = seq.padding // actors already start at seq.padding
+  let globalMinX: number = seq.padding // Actors already start at seq.padding
   let globalMaxX = 0
   for (const a of actors) {
     globalMinX = Math.min(globalMinX, a.x - a.width / 2)
@@ -698,7 +699,7 @@ export function layoutSequenceDiagram(
   // and could be clipped if not accounted for in the SVG width
   for (const m of messages) {
     if (m.isSelf && m.label) {
-      const loopW = 30 // matches renderer loopW
+      const loopW = 30 // Matches renderer loopW
       const labelPadding = 8
       const labelLeft = m.x1 + loopW + labelPadding
       const labelWidth = estimateTextWidth(

@@ -1,5 +1,15 @@
 [
   {
+    "file": "scripts/build-inter-font-subset.ts",
+    "reason": "thin CLI: runs on import and writes a file; all logic is in scripts/lib/inter-font-subset.ts (tested by __tests__/generated-inter-font.test.ts)",
+    "maxLines": 25
+  },
+  {
+    "file": "scripts/mention-watch.ts",
+    "reason": "thin CLI: runs on import and hits the network; all logic is in scripts/lib/mention-watch.ts (tested with an injected fetch)",
+    "maxLines": 60
+  },
+  {
     "file": "scripts/determinism-manifest.ts",
     "reason": "thin CLI: runs on import and prints; all logic is in scripts/lib/determinism-manifest.ts (tested)",
     "maxLines": 20
@@ -77,7 +87,7 @@
   {
     "file": "scripts/capture-fork-fixes-terminal.ts",
     "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
-    "maxLines": 342,
+    "maxLines": 343,
     "legacy": true
   },
   {
@@ -134,15 +144,9 @@
     "legacy": true
   },
   {
-    "file": "scripts/generate-page.ts",
-    "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
-    "maxLines": 118,
-    "legacy": true
-  },
-  {
     "file": "scripts/generate-primitives-classes.ts",
     "reason": "build/asset generator CLI: runs on import and writes files; exercised by the build, not unit tests",
-    "maxLines": 74,
+    "maxLines": 80,
     "legacy": true
   },
   {
@@ -170,9 +174,44 @@
     "legacy": true
   },
   {
+    "file": "scripts/size-report.ts",
+    "reason": "report CLI: runs on import, reads dist/ and shells out to npm pack; all logic is in scripts/lib/size-report.ts (tested)",
+    "maxLines": 143
+  },
+  {
     "file": "scripts/visual-diff.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
     "maxLines": 338,
     "legacy": true
+  },
+  {
+    "file": "scripts/elk-layout-font.ts",
+    "reason": "dev tooling CLI: runs on import and needs a real Chromium to measure the label font (regenerates font-advances.json)",
+    "maxLines": 28
+  },
+  {
+    "file": "scripts/elk-layout-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the layout itself is unit-tested in packages/elk-layout",
+    "maxLines": 99
+  },
+  {
+    "file": "scripts/lib/oracle-layout.ts",
+    "reason": "Playwright-driven helper: reads layout out of a real Chromium render, only reachable from scripts/elk-layout-oracle.ts",
+    "maxLines": 111
+  },
+  {
+    "file": "scripts/ascii-layout-table.ts",
+    "reason": "measurement CLI: runs on import and prints a table over the gallery, no assertable logic (the rasterizer it measures is unit-tested in packages/ascii-layout)",
+    "maxLines": 80
+  },
+  {
+    "file": "scripts/lib/label-position.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid label positions), only reachable from the label-position-oracle and layout-oracle CLIs",
+    "maxLines": 150
+  },
+  {
+    "file": "scripts/generate-llms-full.ts",
+    "reason": "thin CLI: runs on import and writes public/llms-full.txt; all logic is in scripts/lib/llms-full.ts (tested by __tests__/llms-full.test.ts)",
+    "maxLines": 15
   }
 ]

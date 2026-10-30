@@ -30,7 +30,14 @@ import {
   forkJoinRenderer,
   GLYPH_DIMENSIONS,
 } from './state.ts'
+import {
+  circleDimensions,
+  diamondDimensions,
+  hexagonDimensions,
+  renderSilhouette,
+} from './silhouettes.ts'
 import { stadiumRenderer } from './stadium.ts'
+import { classBoxRenderer, classNameRenderer } from './class-box.ts'
 import {
   subroutineRenderer,
   doublecircleRenderer,
@@ -51,28 +58,24 @@ export type {
 }
 
 /**
- * Corner-decorated shape renderers — circle, diamond, rounded, hexagon.
- * Each one renders a rectangle (`getBoxDimensions`/`renderBox`/
- * `getBoxAttachmentPoint`) with a different corner-marker set pulled from
- * corners.ts's `SHAPE_CORNERS`, instead of drawing curves or diagonals:
+ * Corner-decorated shape renderers — circle, diamond, rounded. Each one
+ * renders a rectangle (`getBoxDimensions`/`renderBox`/`getBoxAttachmentPoint`)
+ * with a different corner-marker set pulled from corners.ts's
+ * `SHAPE_CORNERS`, instead of drawing curves or diagonals:
  *
  *   circle  (◯)       — circle markers indicate circular shape semantics
  *   diamond (◇)       — diamond markers indicate decision node semantics
  *   rounded (╭╮╰╯)    — rounded markers indicate soft edges
- *   hexagon (⌜⌝⌞⌟)    — crop-corner markers indicate process node semantics;
- *     not the hexagon glyph ⬡ (U+2B21) earlier docs here used to claim —
- *     JetBrains Mono NL has no glyph for ⬡ at all, and the renderer hasn't
- *     actually emitted it since corners.ts moved to the monospace-safe
- *     crop-corner style. See issue #1062.
+ *
+ * Stadium and hexagon are not here: they draw real silhouettes (#2164,
+ * silhouettes.ts). Diamond and circle are still approximated.
  *
  * Each renders as (TL/TR/BL/BR = that shape's four corner markers above):
  *   TL─────────TR
  *   │  Label  │
  *   BL─────────BR
  */
-function createCornerShapeRenderer(
-  shape: 'circle' | 'diamond' | 'rounded' | 'hexagon',
-): ShapeRenderer {
+function createCornerShapeRenderer(shape: 'rounded'): ShapeRenderer {
   return {
     getDimensions: getBoxDimensions,
 
@@ -85,27 +88,36 @@ function createCornerShapeRenderer(
   }
 }
 
-export const circleRenderer = createCornerShapeRenderer('circle')
-const cornerDiamondRenderer = createCornerShapeRenderer('diamond')
+export const circleRenderer: ShapeRenderer = {
+  getDimensions: circleDimensions,
+  render: (label, dimensions, options) =>
+    renderSilhouette('circle', label, dimensions, options.useAscii),
+  getAttachmentPoint: getBoxAttachmentPoint,
+}
 
 /**
  * Unlabeled diamond (a state diagram's `<<choice>>`): a single `◇` glyph, not
  * an empty box, like mermaid's small diamond.
  */
 export const diamondRenderer: ShapeRenderer = {
-  ...cornerDiamondRenderer,
   getDimensions: (label, options) =>
-    label === '' ? GLYPH_DIMENSIONS : getBoxDimensions(label, options),
+    label === '' ? GLYPH_DIMENSIONS : diamondDimensions(label, options),
+  getAttachmentPoint: getBoxAttachmentPoint,
   render(label, dimensions, options) {
     if (label !== '')
-      return cornerDiamondRenderer.render(label, dimensions, options)
+      return renderSilhouette('diamond', label, dimensions, options.useAscii)
     const canvas = mkCanvas(0, 0)
     canvas[0]![0] = options.useAscii ? 'o' : '◇'
     return canvas
   },
 }
 export const roundedRenderer = createCornerShapeRenderer('rounded')
-export const hexagonRenderer = createCornerShapeRenderer('hexagon')
+export const hexagonRenderer: ShapeRenderer = {
+  getDimensions: hexagonDimensions,
+  render: (label, dimensions, options) =>
+    renderSilhouette('hexagon', label, dimensions, options.useAscii),
+  getAttachmentPoint: getBoxAttachmentPoint,
+}
 
 /**
  * Global shape registry — maps shape types to their renderers.
@@ -139,6 +151,11 @@ export const shapeRegistry: ShapeRegistry = new Map<
   ['state-start', stateStartRenderer],
   ['state-end', stateEndRenderer],
   ['fork-join', forkJoinRenderer],
+
+  // Class diagram LR/RL lowering (class-flow.ts)
+  ['class-box', classBoxRenderer],
+  ['class-note', classBoxRenderer],
+  ['class-name', classNameRenderer],
 ])
 
 /**

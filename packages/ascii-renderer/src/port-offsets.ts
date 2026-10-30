@@ -421,6 +421,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   const startGroups = new Map<string, FanOutMember[]>()
   for (const edge of graph.edges) {
     if (edge.from === edge.to || edge.path.length < 2) continue
+    // A flow-face back-edge takes the free cell beside the stems in allocateFaces
+    // below; it must not push those stems off their ports.
+    if (edge.faceLane) continue
     if (isFixed(edge)) {
       // A bundled, lane or cluster edge stays where it was routed, at both
       // ends; without a run of its own it still occupies its ports.
@@ -483,7 +486,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     }
   }
 
-  const offsets = new Map<string, number>() // component root -> offset
+  const offsets = new Map<string, number>() // Component root -> offset
   for (const [root, keys] of components) {
     if (pairOnly.has(root)) continue
     const members = keys.map((k) => slots.get(k)!)
@@ -541,6 +544,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     slotEdges,
     rolesAt,
     portOf,
+    slotOffset,
   )
 
   for (const [edge, { r, s, e }] of runs) {
@@ -561,7 +565,37 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     result.set(edge, shift)
   }
   allocateFaces(graph, result, shiftedRun)
+  spreadFaceLaneRuns(graph, result)
   return result
+}
+
+/**
+ * Draw the departure and arrival runs of flow-axis face lanes on the rows the
+ * plan gave them (#2121), so lanes sharing a gutter row do not run along one
+ * another. Path points 1-2 are the departure run, 3-4 the arrival run.
+ */
+function spreadFaceLaneRuns(
+  graph: AsciiGraph,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  const vertical = graph.config.graphDirection !== 'LR'
+  for (const e of graph.edges) {
+    const plan = e.faceLanePlan
+    if (!plan || !e.faceLane || e.path.length !== 6) continue
+    const shift = result.get(e) ?? { start: 0, end: 0 }
+    const at = (by: number): DrawingCoord =>
+      vertical ? { x: 0, y: by } : { x: by, y: 0 }
+    const zero = at(0)
+    shift.points = [
+      zero,
+      at(plan.dep),
+      at(plan.dep),
+      at(plan.arr),
+      at(plan.arr),
+      zero,
+    ]
+    result.set(e, shift)
+  }
 }
 
 /** One end of a lane edge or self-loop on a node face, for `allocateFaces`. */
@@ -598,6 +632,7 @@ function allocateFaces(
       e.path.length >= 2 &&
       !result.has(e) &&
       (e.from === e.to ||
+        e.faceLane === true ||
         (e.parallelLane !== undefined &&
           !e.bundle &&
           !e.clusterSource &&
@@ -622,7 +657,12 @@ function allocateFaces(
     }
   }
   const faces = new Map<string, FaceEnd[]>()
-  for (const edge of lanes) {
+  // Loops first: a face a loop shares with a straight lane is placed with the
+  // loop in view, so the lane's other end follows it, not the reverse (#2100).
+  const byLoop = [...lanes].sort(
+    (a, b) => Number(b.from === b.to) - Number(a.from === a.to),
+  )
+  for (const edge of byLoop) {
     for (const [run, role] of endsOf(edge)) {
       if (!run) continue
       faces.set(faceOf(run), [
@@ -668,7 +708,10 @@ function shapeOf(f: FaceEnd) {
     role: f.role,
     heading: f.role === 'S' ? f.run.turn : -f.run.turn,
     // A loop hugs its node: inside any lane it shares the face with.
-    depth: runExtent(f.edge, f.run) - (f.edge.from === f.edge.to ? 0.5 : 0),
+    // Flow-axis face lanes: the outer lane's port sits farther out.
+    depth: f.edge.faceLanePlan
+      ? -f.edge.faceLanePlan.slot
+      : runExtent(f.edge, f.run) - (f.edge.from === f.edge.to ? 0.5 : 0),
   }
 }
 
@@ -706,6 +749,8 @@ function placeFace(
       key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}`,
       // A straight lane: the #1284 pair side (down-travelling right).
       push: pushOf(f.run, f.role),
+      // A flow-axis face lane stays on its outer side of every stem.
+      lane: f.edge.faceLanePlan !== undefined,
       at: fixed.get(f.edge),
     }
   })
@@ -742,7 +787,10 @@ function placeFace(
         if (h.at === p && (gap > 0 || h.role !== r.role)) return Infinity
         if (Math.abs(h.at - p) < gap) return Infinity
         if (h.at === p) c += 4
-        else if (Math.sign(h.at - p) === r.heading) c += 3
+        else if (Math.sign(h.at - p) === r.heading) {
+          if (r.lane) return Infinity
+          c += 3
+        }
       }
       return c
     }
@@ -855,6 +903,7 @@ function separateFanIns(
   slotEdges: ReadonlyMap<string, number>,
   rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
   portOf: (key: string) => string,
+  slotOffset: (key: string) => number,
 ): Map<AsciiEdge, Landing> {
   const groups = new Map<string, AsciiEdge[]>()
   for (const [edge, { r, e }] of runs) {
@@ -866,10 +915,17 @@ function separateFanIns(
   const out = new Map<AsciiEdge, Landing>()
   for (const [key, group] of groups) {
     const port = portOf(key)
-    if (group.length < 2 || rolesAt.get(port)!.size > 1) continue
+    if (group.length < 2) continue
     if ([...slots].some(([k, m]) => m.fixed && portOf(k) === port)) continue
     if (new Set(group.map((g) => g.from)).size < 2) continue
-    landFanIn(graph, runs, slotEdges, rolesAt, portOf, group, out)
+    // A port that also sends an edge up (#2100): the cells those ends hold
+    // stay where `offsets` put them, and the fan-in lands beyond them.
+    const held =
+      rolesAt.get(port)!.size > 1
+        ? [...slots.keys()].filter((k) => portOf(k) === port).map(slotOffset)
+        : undefined
+    const crowded = held && { held, own: slotOffset(key) }
+    landFanIn(graph, runs, slotEdges, rolesAt, portOf, group, out, crowded)
   }
   return out
 }
@@ -882,6 +938,7 @@ function landFanIn(
   portOf: (key: string) => string,
   group: AsciiEdge[],
   out: Map<AsciiEdge, Landing>,
+  crowded?: { held: number[]; own: number },
 ): void {
   // Which side each edge comes from, and how far its lane is from the port.
   const info = group.map((edge) => {
@@ -935,6 +992,23 @@ function landFanIn(
   ]
   const at = order.findIndex((m) => !m.bent)
   if (at >= 0) spacings.push(order.map((_, i) => STROKE_SPACING * (i - at)))
+  if (crowded) {
+    // The port's other ends keep their cells (and a straight edge its tied
+    // one); each bent edge takes the next cell beyond them on its own side.
+    const { held, own } = crowded
+    spacings.length = 0
+    spacings.push(
+      order.map((m) => {
+        if (!m.bent) return own
+        const rank = order.filter(
+          (o) => o.bent && o.from === m.from && o.dist <= m.dist,
+        ).length
+        return m.from > 0
+          ? Math.max(...held) + STROKE_SPACING * rank
+          : Math.min(...held) - STROKE_SPACING * rank
+      }),
+    )
+  }
   const offs =
     geo &&
     spacings.find((os) =>
@@ -942,7 +1016,7 @@ function landFanIn(
         (m, i) =>
           Number.isInteger(os[i]) &&
           attachesAt(m.end, geo.centre + os[i]!, geo) &&
-          (m.bent || os[i] === 0 || startOk(m, os[i]!)),
+          (m.bent || os[i] === 0 || crowded || startOk(m, os[i]!)),
       ),
     )
   if (!offs) return

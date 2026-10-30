@@ -196,7 +196,11 @@ export function renderC4Ascii(
     parseC4Diagram(splitStatements(text)),
     extras.direction,
   )
-  if (diagram.elements.length === 0 && diagram.boundaries.length === 0) {
+  if (
+    diagram.elements.length === 0 &&
+    diagram.boundaries.length === 0 &&
+    !diagram.title
+  ) {
     return ''
   }
   const useAscii = config.useAscii
@@ -324,6 +328,7 @@ export function renderC4Ascii(
     }
   }
   const rootW = Math.max(
+    0,
     ...rootRows.map(
       (r) =>
         r.reduce((s, i) => s + i.box.w, 0) + sum(rowGaps(r, diagram, hGap)),
@@ -341,7 +346,11 @@ export function renderC4Ascii(
     maxX = Math.max(maxX, b.x + b.w)
     maxY = Math.max(maxY, b.y + b.h)
   }
-  const width = maxX + MARGIN + 1
+  const width = Math.max(
+    maxX + MARGIN + 1,
+    // A title-only diagram has no boxes to size the canvas.
+    diagram.title ? displayWidth(diagram.title) + 2 * MARGIN : 0,
+  )
   const height = maxY + MARGIN + 1
   const canvas = mkCanvas(width, height)
   const roles = mkRoleCanvas(width, height)

@@ -86,16 +86,11 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
-import {
-  COPY_ICON_SIZE,
-  COPY_ICON_STROKE,
-  NavInstall,
-} from './nav-install-popover.tsx'
+import { NavInstall } from './nav-install-popover.tsx'
 import { navCss } from './nav-css.ts'
 import { MOBILE_WATERMARK_SIZE, NAV_Z_INDEX } from './nav-constants.ts'
 import { NAV_MOBILE_MENU_SCRIPT } from './mobile-menu.client.ts'
 import {
-  CopyIcon,
   ICON_LINE_CAP,
   ICON_STROKE_WIDTH,
   ICON_VIEW_BOX,
@@ -340,7 +335,7 @@ function MenuToggle() {
       aria-expanded="false"
       aria-controls={MOBILE_NAV_PANEL_ID}
       style={{
-        // display lives in nav-css.ts's navCss() instead of here (not
+        // Display lives in nav-css.ts's navCss() instead of here (not
         // inline) so the tablet-and-below rule that shows this button can
         // win via plain cascade order instead of needing !important to
         // beat this inline style (zombie-mermaid#1080).
@@ -570,8 +565,9 @@ function MobileNavPanel({
             overflowX: 'auto',
           }}
         >
+          {/* Plain text on purpose: a copy icon here promised an action this
+              span never had (#1792). A real copy button is the alternative. */}
           {installCommand}
-          <CopyIcon size={COPY_ICON_SIZE} strokeWidth={COPY_ICON_STROKE} />
         </Pill>
       </span>
     </nav>
@@ -619,7 +615,7 @@ export { NAV_MOBILE_MENU_SCRIPT }
 export function NavMobileMenuScript() {
   return (
     <script
-      // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- NAV_MOBILE_MENU_SCRIPT is a hardcoded literal with no user input
+      // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- NAV_MOBILE_MENU_SCRIPT is a hardcoded literal with no user input
       dangerouslySetInnerHTML={{ __html: NAV_MOBILE_MENU_SCRIPT }}
     />
   )
@@ -658,7 +654,7 @@ export function Nav({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // padding lives in nav-css.ts's navCss() instead of here (not inline)
+    // Padding lives in nav-css.ts's navCss() instead of here (not inline)
     // so the breakpoint/wide-viewport overrides there can win via plain
     // cascade order instead of needing !important to beat this inline
     // style (zombie-mermaid#1080) — no caller passes its own `style.padding`

@@ -47,6 +47,7 @@ import {
 import type {
   AsciiConfig,
   AsciiGraph,
+  AsciiNode,
   AsciiSubgraph,
   AsciiTheme,
   ColorMode,
@@ -177,6 +178,7 @@ function flipRegion(
       (r) => r.x0 >= minX && r.x1 <= maxX && r.y0 >= minY && r.y1 <= maxY,
     )
     .map((r) => ({
+      ...r,
       x0: r.x0 - minX,
       x1: r.x1 - minX,
       y0: r.y0 - minY,
@@ -189,7 +191,7 @@ function flipRegion(
     if (links) flipLinkCanvasHorizontally(links)
   } else {
     mirrorLabelRows(canvas, roles, rects, links)
-    flipCanvasVertically(canvas, roles)
+    flipCanvasVertically(canvas, roles, nodeRects)
     flipRoleCanvasVertically(roles)
     if (links) flipLinkCanvasVertically(links)
   }
@@ -212,6 +214,19 @@ function flipRegion(
 }
 
 /**
+ * Steps a diagram type that lowers onto the flowchart model can add around the
+ * shared pipeline (the class diagram's LR/RL drawing, class-flow.ts).
+ * `afterConvert` runs on every freshly converted graph, before layout;
+ * `afterDraw` once the canvas is drawn, before any direction flip.
+ */
+export interface GraphHooks {
+  afterConvert?: (graph: AsciiGraph) => void
+  afterDraw?: (graph: AsciiGraph) => void
+  /** Rows of a node to hyperlink instead of every interior row. */
+  linkRows?: (node: AsciiNode) => { from: number; to: number } | undefined
+}
+
+/**
  * Render an already-parsed graph to ASCII text art. Shared by the diagram
  * types that lower to the flowchart model (see `renderArchitectureAscii`).
  */
@@ -221,6 +236,7 @@ export function renderGraphAscii(
   colorMode: ColorMode,
   theme: AsciiTheme,
   extras: FlowchartAsciiExtras,
+  hooks: GraphHooks = {},
 ): string {
   // Normalize direction for grid layout.
   // BT is laid out as TD then flipped vertically after drawing.
@@ -232,8 +248,29 @@ export function renderGraphAscii(
   }
 
   checkGraphSize(parsed.nodes.size, parsed.edges.length, extras.limits)
-  const graph = convertToAsciiGraph(parsed, config)
+  let graph = convertToAsciiGraph(parsed, config)
+  hooks.afterConvert?.(graph)
   createMapping(graph)
+  // Flow-axis face lanes (#2121) that did not come out as planned are dropped
+  // and the layout redone, so the room planned for them is not left behind.
+  const off = new Set<number>()
+  // A self-loop that wants a top face on the first row gets a free row above
+  // the nodes, and the layout is redone (#2100).
+  const margin = graph.wantsTopMargin === true
+  if (margin) {
+    graph = convertToAsciiGraph(parsed, config)
+    hooks.afterConvert?.(graph)
+    graph.topMargin = true
+    createMapping(graph)
+  }
+  for (let pass = 0; pass < 4 && graph.faceLaneRejected?.size; pass++) {
+    for (const i of graph.faceLaneRejected) off.add(i)
+    graph = convertToAsciiGraph(parsed, config)
+    hooks.afterConvert?.(graph)
+    graph.faceLaneOff = new Set(off)
+    graph.topMargin = margin
+    createMapping(graph)
+  }
   // The canvas is allocated from the finished grid; check its size before
   // drawing fills it (memory is what runs out, not time).
   const sum = (m: Map<number, number>) =>
@@ -245,11 +282,12 @@ export function renderGraphAscii(
     extras.limits,
   )
   drawGraph(graph)
+  hooks.afterDraw?.(graph)
 
   // Opt-in OSC 8 hyperlinks: mark each `click`-linked node's label cells
   // now, from the drawn node positions, before any flip below moves them.
   const linkCanvas = extras.hyperlinks
-    ? buildNodeLinkCanvas(graph, parsed.interactions)
+    ? buildNodeLinkCanvas(graph, parsed.interactions, hooks.linkRows)
     : undefined
 
   flipSubgraphRegions(graph, linkCanvas, parsed.direction)
@@ -263,7 +301,7 @@ export function renderGraphAscii(
       graph.labelRects ?? [],
       linkCanvas,
     )
-    flipCanvasVertically(graph.canvas, graph.roleCanvas)
+    flipCanvasVertically(graph.canvas, graph.roleCanvas, graph.nodeRects!)
     flipRoleCanvasVertically(graph.roleCanvas)
     if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
   }

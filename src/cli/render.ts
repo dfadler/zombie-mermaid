@@ -6,6 +6,7 @@ import {
 } from '@zombie-mermaid/ascii-renderer'
 import type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '../index.ts'
+import { renderMermaidASCIIWithLayout } from '../ascii-layout.ts'
 import type { RenderOptions, DiagramColors } from '@zombie-mermaid/core'
 import { THEMES } from '@zombie-mermaid/core'
 import { withSourceLine } from './diagnostics.ts'
@@ -48,13 +49,17 @@ function resolveMaxWidth(maxWidth: number | 'auto'): number {
  * @param stdout - Writable stream for ASCII output (defaults to process.stdout)
  * @param stdinContent - Pre-read stdin content for testing; if undefined and
  *   no file input, reads from process.stdin at runtime
+ * @param stderr - Writable stream for the `--layout` renderer note
+ *   (defaults to process.stderr)
  */
 export async function runRender(
   args: RenderArgs,
   stdout?: Writable,
   stdinContent?: string,
+  stderr?: Writable,
 ): Promise<void> {
   const out = stdout ?? process.stdout
+  const err = stderr ?? process.stderr
 
   let text: string
 
@@ -76,7 +81,7 @@ export async function runRender(
   }
 
   try {
-    await renderText(args, text, out)
+    await renderText(args, text, out, err)
   } catch (e) {
     throw withSourceLine(e, text)
   }
@@ -86,6 +91,7 @@ async function renderText(
   args: RenderArgs,
   text: string,
   out: Writable,
+  err: Writable,
 ): Promise<void> {
   let themeColors: DiagramColors | undefined
 
@@ -149,7 +155,32 @@ async function renderText(
       asciiOpts.maxWidth = resolveMaxWidth(args.maxWidth)
     let ascii: string
     try {
-      ascii = renderMermaidASCII(text, asciiOpts)
+      if (args.layout !== undefined) {
+        // mermaid-wide: no cap, so wide diagrams are drawn layout-faithfully instead of falling
+        // back. Otherwise --max-width (if given) is the cap, else the 120-column default. The
+        // standard-renderer fallback still honours maxWidth as a hard limit via asciiOpts.
+        const maxCols =
+          args.layout === 'mermaid-wide'
+            ? Infinity
+            : args.maxWidth === undefined
+              ? undefined
+              : resolveMaxWidth(args.maxWidth)
+        const r = await renderMermaidASCIIWithLayout(text, {
+          ...asciiOpts,
+          layout: 'mermaid',
+          maxCols,
+        })
+        ascii = r.text
+        // Never differ silently: one stderr line says which renderer ran.
+        err.write(
+          r.path === 'layout-faithful'
+            ? `layout-faithful: used mermaid's ELK layout (mermaid 12.1.0 + elkjs 0.9.3). ${r.note ?? ''}`.trimEnd() +
+                '\n'
+            : `layout-faithful: ${r.fallbackReason ?? 'unavailable'}; used standard renderer\n`,
+        )
+      } else {
+        ascii = renderMermaidASCII(text, asciiOpts)
+      }
     } catch (e) {
       if (!(e instanceof AsciiWidthError)) throw e
       const source =
@@ -217,7 +248,9 @@ async function renderText(
  * being re-derived per format.
  */
 type OutputTarget =
-  { kind: 'stdout' } | { kind: 'file'; path: string } | { kind: 'skip' }
+  | { kind: 'stdout' }
+  | { kind: 'file'; path: string }
+  | { kind: 'skip' }
 
 /**
  * Decide a format's output target: stdout when `toStdout`, else the given

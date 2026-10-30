@@ -19,12 +19,12 @@ pnpm changeset
 
 This asks which package(s) to bump and which kind of bump the change needs
 (patch/minor/major), then for a short summary. As of #622, the workspace has
-six packages — `zombie-mermaid` and the five internal `@zombie-mermaid/*`
-packages it depends on (`core`, `mermaid-parser`, `svg-renderer`,
-`ascii-renderer`, `mcp`) — but `.changeset/config.json`'s `fixed` group
-locks all six to the same version, so picking any one of them (`zombie-mermaid`
+seven packages — `zombie-mermaid` and the six `@zombie-mermaid/*`
+packages (`core`, `mermaid-parser`, `svg-renderer`,
+`ascii-renderer`, `mcp`, `cli`) — but `.changeset/config.json`'s `fixed` group
+locks all seven to the same version, so picking any one of them (`zombie-mermaid`
 is simplest) bumps them all together at release time; you don't need to
-select all six by hand. It writes a markdown file under `.changeset/` —
+select all seven by hand. It writes a markdown file under `.changeset/` —
 commit that file alongside your change. A PR can contain more than one
 changeset, and a changeset can be empty (`pnpm changeset add --empty`) for
 changes that don't need a release (docs, CI, tests).
@@ -45,7 +45,7 @@ lints the first rule. Majors are batched: see "Batching majors" below.
 a PR merges) and does one of two things:
 
 1. **Pending changesets exist** — it opens (or updates) a `chore: version
-packages` pull request. That PR contains the version bump in
+   packages` pull request. That PR contains the version bump in
    `package.json` and the generated `CHANGELOG.md` entries, computed from
    all pending `.changeset/*.md` files, which it deletes.
 2. **No pending changesets, and the previous push was that Version PR being
@@ -56,13 +56,13 @@ packages` pull request. That PR contains the version bump in
      publishing, with [provenance](https://docs.npmjs.com/generating-provenance-statements)
      attached — see `publishConfig.provenance` in `package.json`)
    - creates a git tag for that package's release, named `<package
-name>@<version>` (e.g. `zombie-mermaid@2.2.5`,
+     name>@<version>` (e.g. `zombie-mermaid@2.2.5`,
      `@zombie-mermaid/core@2.2.5`) — not a single shared `vX.Y.Z` tag
    - creates a GitHub Release from that package's changelog entry
      (`create-github-releases: true` in the workflow)
 
-With `.changeset/config.json`'s `fixed` group locking all six packages to
-one version, a single release cuts six tags and six GitHub Releases in the
+With `.changeset/config.json`'s `fixed` group locking all seven packages to
+one version, a single release cuts seven tags and seven GitHub Releases in the
 same run — one per package, all sharing the same version number.
 
 In short: **merging the Version PR is what triggers the actual npm
@@ -111,7 +111,7 @@ applies in the PR body and the changeset.
 Trusted publishing has to be linked on the npm side before any of this can
 publish successfully. **This can only be done by whoever owns/administers
 each package on npmjs.com** (currently the fork maintainer), and only needs
-to be done once **per package name** — as of #622 that means **six separate
+to be done once **per package name** — as of #1946 that means **seven separate
 packages**, not just `zombie-mermaid`:
 
 - `zombie-mermaid`
@@ -120,10 +120,14 @@ packages**, not just `zombie-mermaid`:
 - `@zombie-mermaid/svg-renderer`
 - `@zombie-mermaid/ascii-renderer`
 - `@zombie-mermaid/mcp`
+- `@zombie-mermaid/cli` (#1946; not yet bootstrapped or linked, see below)
 
 npm trusted publishing is configured per package name individually — there
 is no "cover the whole `@zombie-mermaid` scope at once" option — so this
-setup has to be repeated six times. All six are configured as of #622. For
+setup has to be repeated seven times. The first six are configured as of #622;
+`@zombie-mermaid/cli` is not (it needs the manual bootstrap publish in step 1
+below first, so the first release that includes it will fail to publish that
+one package until a maintainer does it). For
 a package that ever needs reconfiguring, or a new package added later:
 
 1. Sign in to [npmjs.com](https://www.npmjs.com/) and go to that package's
@@ -137,7 +141,7 @@ a package that ever needs reconfiguring, or a new package added later:
    exists.
 2. Find the **Trusted Publisher** section and add a GitHub Actions publisher
    with these exact values (all fields are case-sensitive, and identical
-   across all six packages — only the package being configured changes):
+   across all seven packages — only the package being configured changes):
    - **Organization or user:** `dfadler`
    - **Repository:** `zombie-mermaid`
    - **Workflow filename:** `publish.yml`
@@ -182,13 +186,14 @@ Per [section 4 of the versioning and deprecation policy](decisions/versioning-an
 only the latest major is supported. Ship at most one major per batching gap
 (section 3). Once a new major `N` has published (the
 Version PR is merged and the publish run is green), deprecate the previous
-major's range on npm for **all six packages**. Publish uses OIDC with no token
+major's range on npm for **all seven packages**. Publish uses OIDC with no token
 in CI, so a maintainer runs this locally while logged in to npm with publish
 rights; CI cannot.
 
 ```bash
 for pkg in zombie-mermaid @zombie-mermaid/core @zombie-mermaid/mermaid-parser \
-  @zombie-mermaid/svg-renderer @zombie-mermaid/ascii-renderer @zombie-mermaid/mcp; do
+  @zombie-mermaid/svg-renderer @zombie-mermaid/ascii-renderer @zombie-mermaid/mcp \
+  @zombie-mermaid/cli; do
   npm deprecate "$pkg@<N" "Upgrade to N.x: <URL of the upgrade guide for N>"
 done
 ```
@@ -218,6 +223,25 @@ umbrella. `core`, `mermaid-parser`, and `mcp` stay internal-only: published
 under the scope (so the names can't be squatted) and version-locked with the
 rest, but with no standalone support commitment beyond backing the umbrella
 and the two public renderer packages.
+
+## `@zombie-mermaid/cli`
+
+`@zombie-mermaid/cli` (#1946) is the CLI on its own, so `npx @zombie-mermaid/cli render diagram.mmd --ascii`
+doesn't install the library's other entry points. It adds no second implementation:
+`packages/cli/vite.config.ts` bundles the same `src/cli.ts` the umbrella's `cli`
+build environment does, and the umbrella keeps its `zombie-mermaid` bin, so the two
+cannot diverge (this is the "revisit" case in
+[cli-and-demo-stay-apps.md](decisions/cli-and-demo-stay-apps.md): sources stay put,
+only the published artifact is new). `smoke:packed` installs the `cli` tarball alone
+and runs its bin.
+
+First release checklist (maintainer, one time; CI cannot do it):
+
+1. `npm view @zombie-mermaid/cli` still 404s (name free).
+2. Bootstrap: from a built checkout at the released version, `cd packages/cli && npm publish --access public`
+   while logged in to npm (trusted publishing cannot create a package that does not exist yet).
+3. Add the trusted-publisher link for `publish.yml` as in the setup steps above.
+4. After the next release, from a clean directory: `npx @zombie-mermaid/cli --help`.
 
 ## `elkjs` is an optional peer dependency
 

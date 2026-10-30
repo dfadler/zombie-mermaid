@@ -53,7 +53,7 @@ function run(
   try {
     calls = readFileSync(sb.log, 'utf8').trim().split('\n').filter(Boolean)
   } catch {
-    // no stub was called
+    // No stub was called
   }
   return { code: r.status, out: r.stdout, err: r.stderr, calls }
 }
@@ -105,19 +105,21 @@ describe('scripts/verify.sh', () => {
       expect(
         r.calls.some((c) => c.startsWith(`exec tsc --noEmit -p ${p} `)),
       ).toBe(true)
-    expect(r.calls).toContain('exec eslint a.ts')
-    expect(r.calls).toContain('exec prettier --check --ignore-unknown a.ts')
+    expect(r.calls).toContain(
+      'exec oxlint --report-unused-disable-directives-severity=error a.ts',
+    )
+    expect(r.calls).toContain('exec oxfmt --check a.ts')
     expect(r.calls).toContain(
       'exec vitest run -c config/vitest.config.ts --changed HEAD',
     )
   })
 
-  it('skips eslint and prettier when nothing changed', () => {
+  it('skips oxlint and oxfmt when nothing changed', () => {
     const sb = verifySandbox()
     const r = run('verify.sh', [], sb, { BASE: 'HEAD' })
     expect(r.code).toBe(0)
     expect(
-      r.calls.some((c) => c.includes('eslint') || c.includes('prettier')),
+      r.calls.some((c) => c.includes('oxlint') || c.includes('oxfmt')),
     ).toBe(false)
     expect(r.calls.at(-1)).toContain('vitest run')
   })

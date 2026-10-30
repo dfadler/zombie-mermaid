@@ -1,0 +1,90 @@
+/* layout-fidelity.html (#1686), layered on the shared sharedPageCss(). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.lf-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 56px 32px 72px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.lf-h1 {
+  font-size: 44px;
+  line-height: 1.15;
+  margin: 0 0 20px;
+  color: var(--text);
+}
+
+.lf-section h2,
+.lf-section h3 {
+  color: var(--text);
+  margin: 44px 0 12px;
+}
+
+.lf-main code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.9em;
+  color: var(--text);
+}
+
+.lf-scroll {
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.lf-scroll:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.lf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lf-table th,
+.lf-table td {
+  padding: 8px 14px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.lf-table thead th {
+  color: var(--text-faint);
+  font-weight: 600;
+  background: var(--panel-2);
+}
+
+.lf-table tbody th {
+  color: var(--text);
+  font-weight: 500;
+  white-space: normal;
+}
+
+.lf-table .lf-num {
+  text-align: right;
+}
+
+.lf-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+@media (max-width: 600px) /* LEGACY_BREAKPOINTS.mobile */ {
+  .lf-main {
+    padding: 36px 16px 48px;
+  }
+  .lf-h1 {
+    font-size: 32px;
+  }
+}

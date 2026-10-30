@@ -89,17 +89,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
 
       - name: Refresh dashboard data
         env:
@@ -209,9 +200,11 @@ jobs:
             problem="was rejected by the GitHub API (HTTP ${code}); it is probably expired or revoked."
           else
             exp=$(grep -i '^github-authentication-token-expiration:' /tmp/pat-headers | cut -d: -f2- | tr -d '\r' | xargs || true)
+            echo "PAT health: HTTP ${code}, expiration header: ${exp:-<absent>}"
             [ -n "$exp" ] || exit 0 # no header: non-expiring token
-            exp_s=$(date -u -d "$exp" +%s) || exit 0
+            exp_s=$(date -u -d "$exp" +%s) || { echo "PAT health: could not parse expiration header"; exit 0; }
             days=$(( (exp_s - $(date -u +%s)) / 86400 ))
+            echo "PAT health: ${days} day(s) until expiry"
             [ "$days" -lt 14 ] && problem="expires in ${days} day(s) (${exp})."
           fi
           [ -n "$problem" ] || exit 0

@@ -7,11 +7,26 @@ import {
   shaError,
   siteStamp,
   siteVersion,
+  stuckRuns,
 } from '../scripts/check-site-drift.mjs'
 
 const html = (v: string) =>
   `<script type="application/ld+json">{"softwareVersion":"${v}"}</script>`
 const now = Date.parse('2026-10-10T12:00:00Z')
+
+describe('stuckRuns', () => {
+  const runs = [
+    { databaseId: 1, status: 'waiting', createdAt: '2026-10-10T11:00:00Z' },
+    { databaseId: 2, status: 'in_progress', createdAt: '2026-10-10T11:50:00Z' },
+    { databaseId: 3, status: 'completed', createdAt: '2026-10-01T00:00:00Z' },
+    { databaseId: 4, status: 'pending', createdAt: '2026-10-10T11:20:00Z' },
+  ]
+  it('selects unfinished runs older than the threshold', () => {
+    expect(stuckRuns(runs, now)).toEqual([1, 4])
+    expect(stuckRuns(runs, now, 5)).toEqual([1, 2, 4])
+    expect(stuckRuns([], now)).toEqual([])
+  })
+})
 
 describe('check-site-drift', () => {
   it('parses softwareVersion from JSON-LD', () => {
@@ -87,7 +102,7 @@ describe('check-site-drift', () => {
     it('main emits a ::error:: annotation and exits 1 when stale', async () => {
       const log = vi.spyOn(console, 'log').mockImplementation(() => {})
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      // registry time far in the past vs real Date.now()
+      // Registry time far in the past vs real Date.now()
       const f = mkFetch(reg('2020-01-01T00:00:00Z'), html('4.2.0'))
       expect(await main(env, f)).toBe(1)
       expect(errSpy).toHaveBeenCalledWith(

@@ -33,6 +33,14 @@ export interface LayoutBoxes {
  */
 export const DEFAULT_TOLERANCE = 20
 
+/**
+ * Half-width of the dead-band around the tolerance. A pair whose offsets in
+ * both layouts are within this of the tolerance, on the same side, counts as
+ * agreeing: 19px against 22px is not a disagreement just because the line
+ * falls between them (#2155).
+ */
+export const TOLERANCE_BAND = 10
+
 /** Each figure is 0..1, or null when the layouts share too little to compare. */
 export interface Agreement {
   /** Pairs of nodes in the same above / below / level relation. */
@@ -52,6 +60,18 @@ const centreY = (b: Box): number => b.y + b.h / 2
 function relation(a: number, b: number, tolerance: number): -1 | 0 | 1 {
   if (Math.abs(a - b) <= tolerance) return 0
   return a < b ? -1 : 1
+}
+
+/** Whether two offsets (a - b in each layout) put the pair in the same relation, allowing the dead-band. */
+function agrees(official: number, ours: number, tolerance: number): boolean {
+  if (relation(official, 0, tolerance) === relation(ours, 0, tolerance)) {
+    return true
+  }
+  const inBand = (d: number): boolean =>
+    Math.abs(Math.abs(d) - tolerance) <= TOLERANCE_BAND
+  return (
+    inBand(official) && inBand(ours) && Math.sign(official) === Math.sign(ours)
+  )
 }
 
 function inside(node: Box, group: Box): boolean {
@@ -81,23 +101,15 @@ export function agreement(
       const a = ids[i]!
       const b = ids[j]!
       pairs++
+      const [oa, ob] = [official.nodes[a]!, official.nodes[b]!]
+      const [ua, ub] = [ours.nodes[a]!, ours.nodes[b]!]
       if (
-        relation(
-          centreY(official.nodes[a]!),
-          centreY(official.nodes[b]!),
-          tolerance,
-        ) ===
-        relation(centreY(ours.nodes[a]!), centreY(ours.nodes[b]!), tolerance)
+        agrees(centreY(oa) - centreY(ob), centreY(ua) - centreY(ub), tolerance)
       ) {
         vertical++
       }
       if (
-        relation(
-          centreX(official.nodes[a]!),
-          centreX(official.nodes[b]!),
-          tolerance,
-        ) ===
-        relation(centreX(ours.nodes[a]!), centreX(ours.nodes[b]!), tolerance)
+        agrees(centreX(oa) - centreX(ob), centreX(ua) - centreX(ub), tolerance)
       ) {
         horizontal++
       }
@@ -260,7 +272,7 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
       args.thresholds = true
       continue
     }
-    // pnpm forwards the `--` in `pnpm run layout:oracle -- --filter=x` to the
+    // Pnpm forwards the `--` in `pnpm run layout:oracle -- --filter=x` to the
     // script. (The `--` is needed: pnpm claims `--filter` for itself without it.)
     if (arg === '--') continue
     const match = /^--([a-z-]+)=(.*)$/.exec(arg)
@@ -344,7 +356,7 @@ export interface HistoryEntry {
   tolerance: number
   /** Diagram type scored; entries recorded before #1905 omit it and are flowcharts. */
   type?: OracleType
-  /** mermaid version of the reference; entries recorded before #1905 omit it (11.17.2). */
+  /** Mermaid version of the reference; entries recorded before #1905 omit it (11.17.2). */
   mermaid?: string
   /** Samples scored. */
   samples: number
@@ -352,6 +364,41 @@ export interface HistoryEntry {
   vertical: number | null
   horizontal: number | null
   containment: number | null
+}
+
+/**
+ * One tracked edge-label data point (#1686, from scripts/label-position-oracle.ts).
+ * `along` is the label's position between the two nodes, 0 = source, 1 = target;
+ * official mermaid centres it (~0.5). Descriptive only, no floor.
+ */
+export interface LabelEntry {
+  kind: 'label'
+  date: string
+  commit: string
+  mermaid: string
+  cases: number
+  /** Mean `along` per renderer, and the mean absolute difference between them. */
+  officialAlong: number
+  asciiAlong: number
+  meanAbsDelta: number
+}
+
+/** Collapse label measurements into one history entry. */
+export function summarizeLabels(
+  rows: { official: { along: number }; ascii: { along: number } }[],
+  meta: { date: string; commit: string; mermaid: string },
+): LabelEntry {
+  const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+  return {
+    kind: 'label',
+    ...meta,
+    cases: rows.length,
+    officialAlong: m(rows.map((r) => r.official.along)),
+    asciiAlong: m(rows.map((r) => r.ascii.along)),
+    meanAbsDelta: m(
+      rows.map((r) => Math.abs(r.official.along - r.ascii.along)),
+    ),
+  }
 }
 
 const mean = (xs: (number | null)[]): number | null => {
@@ -400,7 +447,7 @@ export function jsonPayload(runs: ScorecardRun[]): string {
 }
 
 /** History entries as JSON Lines, ready to append. */
-export function historyLines(entries: HistoryEntry[]): string {
+export function historyLines(entries: (HistoryEntry | LabelEntry)[]): string {
   return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
 }
 
@@ -419,27 +466,32 @@ export const DEFAULT_FLOOR = 0.85
 
 /**
  * Samples that sit below `DEFAULT_FLOOR` today (mermaid 12.1.0, tolerance
- * 20px), each pinned just under its measured figure. Class 67%: parent not
- * centred over its children (#2020). The flowchart ones are cross-axis
+ * 20px), each pinned just under its measured figure. The class
+ * ones are ratcheted (#2129). The flowchart ones are cross-axis
  * differences (#1834).
  */
 export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
-  'Nested Subgraphs': 0.2,
-  'Flowchart: CJK Labels': 0.5,
-  // Same shape as mermaid (B above A and C, both A->C and A->B->C drawn), but
-  // B sits 15px above A in ours and 21-22px in mermaid 12.1.0 and 12.2.0 (nodes
-  // are 37px tall here, 48px there), so the 20px tolerance splits the pair (#2058).
-  'LR Fan-In With Bypass Edge': 0.3,
+  // Ratcheted (#1834): 100/100 on mermaid 12.2.0 (CJK Labels since #2358). The RL and BT
+  // Nested Subgraphs variants have no entry; they are 100/100 and sit under DEFAULT_FLOOR.
+  'Nested Subgraphs': 0.95,
+  'Flowchart: CJK Labels': 0.95,
   'State: Notes': 0.8,
-  'Class: Inheritance (<|--)': 0.65,
-  'Class: Relationship Labels': 0.65,
-  'Class: MVC Architecture': 0.65,
-  'Class: Namespaces': 0.65,
-  // 14 of 15 pairs agree. The one that does not is Animal/Cat: Cat's centre is
-  // 26px left of Animal's in mermaid 12.1.0 and 12.2.0 and 19px in ours, so the
-  // 20px tolerance splits it. Same layers, same order; mermaid's boxes are wider
-  // (text metrics), see docs/known-differences.md (#2103).
-  'Class: Full Hierarchy': 0.9,
+  // Measured 2026-10-21 on mermaid 12.1.0 with the dead-band (#2155); each floor sits
+  // just under the measured figure. See docs/known-differences.md.
+  // Dense (TD): c is 18.5px right of a in ours and 30.1px in mermaid, 0.1px outside the band.
+  'Flowchart: Dense Duplicate Edges (TD)': 0.65,
+  // Placement, not the loop (#2100, #2101). Mermaid staggers the three nodes 48px
+  // and 37px apart where ours stacks all three in one column (1 of 3 pairs agree).
+  'Flowchart: Self-Loop with In and Out Neighbours (TD)': 0.3,
+  // Ratcheted 2026-10-15 (#2129): 100/100 on mermaid 12.1.0 and 12.2.0 since #2023.
+  // A 3-node sample moves in steps of 1/3, so 0.95 means any split pair fails.
+  'Class: Inheritance (<|--)': 0.95,
+  'Class: Relationship Labels': 0.95,
+  'Class: MVC Architecture': 0.95,
+  'Class: Namespaces': 0.95,
+  // Ratcheted (#2128): 100/100 since class boxes are sized the way mermaid sizes
+  // them. 15 pairs, so 0.95 means any split pair fails.
+  'Class: Full Hierarchy': 0.95,
 }
 
 /** Samples real mermaid itself rejects, so an oracle error is expected, not a regression. */
@@ -601,6 +653,7 @@ export function scorecardMarkdown(
   runs: ScorecardRun[],
   history: HistoryEntry[],
   command = 'pnpm run layout:scorecard',
+  labels: LabelEntry[] = [],
 ): string {
   const first = runs[0]!.entry
   const means = runs.map(
@@ -630,6 +683,26 @@ export function scorecardMarkdown(
 | --- | --- | --- | --- | --- | --- | --- |
 ${rows.join('\n')}${note}`
   })
+  const labelRows = labels
+    .slice(-20)
+    .map(
+      (l) =>
+        `| ${l.date} | ${l.commit.slice(0, 7)} | ${l.mermaid} | ${l.cases} | ${l.officialAlong.toFixed(2)} | ${l.asciiAlong.toFixed(2)} | ${l.meanAbsDelta.toFixed(2)} |`,
+    )
+  const labelSection = labelRows.length
+    ? `## Edge labels (ASCII)
+
+Where an edge label sits between its two nodes (0 = source end, 1 = target
+end; official mermaid centres it at about 0.5), averaged over the cases in
+\`scripts/label-position-oracle.ts\`. \`Delta\` is the mean absolute difference
+between the two renderers. Descriptive only, no floor.
+
+| Date | Commit | Mermaid | Cases | Official | ASCII | Delta |
+| --- | --- | --- | --- | --- | --- | --- |
+${labelRows.join('\n')}
+
+`
+    : ''
   return `<!-- Generated by \`${command}\`. Do not edit by hand. -->
 
 # Layout-fidelity scorecard
@@ -662,7 +735,7 @@ across that change.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 ${trend.join('\n')}
 
-## Per sample
+${labelSection}## Per sample
 
 ${sections.join('\n\n')}
 

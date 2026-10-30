@@ -1,0 +1,28 @@
+# Output-format choice: a destination that rejects SVG means --png, not --svg.
+# Sabotage map: deleting the "Choosing an output" PNG bullet and the CLI --png line drops the flag.
+schema_version: '1.1'
+name: zombie-mermaid-png-uses-png-flag
+description: >
+  A Mermaid diagram destined for a GitHub issue body (which rejects SVG) is rendered with --png.
+  expected_outcome: PASS when the Skill call is made and the reply has a "zombie-mermaid render"
+  command containing --png; FAIL otherwise.
+tags: [zombie-mermaid, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I have docs/flow.mmd (a sequenceDiagram). Turn it into an image I can attach to a GitHub
+    issue; SVG uploads get rejected there. Reply with the exact shell command and nothing else.
+    Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+  - name: uses_png_flag
+    type: regex
+    pattern: 'zombie-mermaid\s+render\b[^\n]*--png'

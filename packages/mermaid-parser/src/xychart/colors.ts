@@ -12,7 +12,7 @@
 // ============================================================================
 
 /** Default accent for charts when the theme doesn't provide one. */
-export const CHART_ACCENT_FALLBACK = '#3b82f6' // blue-500
+export const CHART_ACCENT_FALLBACK = '#3b82f6' // Blue-500
 
 // ---------------------------------------------------------------------------
 // HSL ↔ Hex conversion

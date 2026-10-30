@@ -5,17 +5,12 @@ import {
   type FunctionComponent,
 } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import {
-  daysSince,
-  formatDate,
-  formatDateTime,
-  pluralDays,
-  generate,
-  renderDashboardHtml,
-  type RepoStats,
-} from '../packages/site/dashboard.ts'
+import { readFile } from 'node:fs/promises'
+import { sharedPageCss } from '../demo/components/shared-page-css.tsx'
+import { renderHtmlDocument } from '../demo/render-html.ts'
 import {
   DashboardApp,
+  DashboardPage,
   DASHBOARD_PROPS_ELEMENT_ID,
   DASHBOARD_ROOT_ID,
   MetricsSection,
@@ -25,7 +20,13 @@ import {
 } from '../demo/components/dashboard-page.tsx'
 import {
   buildDashboardViewModel,
+  daysSince,
+  formatDate,
+  formatDateTime,
   parseDashboardData,
+  pluralDays,
+  type DashboardData,
+  type RepoStats,
 } from '../demo/dashboard-model.ts'
 import dashboardData from '../demo/dashboard-data.json' with { type: 'json' }
 
@@ -118,11 +119,11 @@ describe('RepoMetricsCard', () => {
       ],
     })
     expect(html).toContain('2 days ago') // Aug 1 -> Aug 3
-    expect(html).toContain('>3<') // open issues
-    expect(html).toContain('>2<') // open PRs, and releases published (same digit)
-    expect(html).toContain('>41<') // merged PRs
+    expect(html).toContain('>3<') // Open issues
+    expect(html).toContain('>2<') // Open PRs, and releases published (same digit)
+    expect(html).toContain('>41<') // Merged PRs
     expect(html).toContain('releases published')
-    expect(html).toContain('v1.2.0 (Jul 15, 2026)') // latest release
+    expect(html).toContain('v1.2.0 (Jul 15, 2026)') // Latest release
   })
 
   it('renders an em-dash for a repo with no releases', () => {
@@ -247,9 +248,11 @@ describe('DashboardApp / hydration ids (#799)', () => {
     const html = renderDashboardHtml(data, '')
     expect(html).toContain(`<div id="${DASHBOARD_ROOT_ID}">`)
     expect(html).toContain(`id="${DASHBOARD_PROPS_ELEMENT_ID}"`)
-    // #1761: root sits inside the page's single <main id="main">.
-    expect(html.match(/<main id="main">/g)).toHaveLength(1)
-    expect(html).toContain(`<main id="main"><div id="${DASHBOARD_ROOT_ID}">`)
+    // #1761: root sits inside the page's single <main id="main" tabindex="-1">.
+    expect(html.match(/<main id="main" tabindex="-1">/g)).toHaveLength(1)
+    expect(html).toContain(
+      `<main id="main" tabindex="-1"><div id="${DASHBOARD_ROOT_ID}">`,
+    )
     expect(DASHBOARD_ROOT_ID).toBe('dashboard-root')
     expect(DASHBOARD_PROPS_ELEMENT_ID).toBe('dashboard-props')
   })
@@ -327,6 +330,28 @@ describe('parseDashboardData', () => {
     expect(() => parseDashboardData(broken)).toThrow(/state/)
   })
 })
+
+/** Mirrors packages/site/ssr/dashboard-routes.ts (the page the site build writes). */
+function renderDashboardHtml(
+  data: DashboardData,
+  css: string,
+  clientScript = '',
+): string {
+  return renderHtmlDocument(
+    createElement(DashboardPage, { data, css, clientScript }),
+  )
+}
+
+async function generate(): Promise<string> {
+  const pageCss = await readFile(
+    new URL('../demo/dashboard.css', import.meta.url),
+    'utf8',
+  )
+  return renderDashboardHtml(
+    parseDashboardData(dashboardData),
+    sharedPageCss(pageCss),
+  )
+}
 
 describe('renderDashboardHtml', () => {
   const data = parseDashboardData(dashboardData)

@@ -167,7 +167,9 @@ describe('validate_mermaid', () => {
     const r = parse('')
     expect(r).toEqual({
       valid: false,
-      diagnostics: [{ message: 'diagram must not be empty' }],
+      diagnostics: [
+        { message: 'diagram must not be empty', code: 'EMPTY_DIAGRAM' },
+      ],
     })
   })
 

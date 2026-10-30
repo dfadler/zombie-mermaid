@@ -2,64 +2,65 @@
 name: zombie-mermaid-editor
 description: >-
   Architecture, patterns, and change guide for the zombie-mermaid live editor.
-  Use when modifying packages/site/editor.ts, adding Config options, changing the UI, adding
-  export formats, wiring new diagram options, or debugging the editor page.
+  Use when modifying packages/site/ssr/editor-routes.ts, adding Config options, changing the UI, adding
+  export formats, wiring new diagram options, restyling the editor page or its buttons, debugging the
+  editor page, or deciding which source file to edit instead of the generated site/editor.html.
 ---
 
 # zombie-mermaid — Live Editor
 
 ## Key files
 
-The editor's CSS/JS source lives under `editor/` as modular partials that `packages/site/editor.ts` concatenates in a fixed order; its markup lives in React components under `demo/components/`. `packages/site/editor.ts` bundles the lot into one self-contained HTML file. Edit the partials/components, not `packages/site/editor.ts`, for UI/CSS/JS changes.
+The editor's CSS/JS source lives under `editor/` as modular partials that `packages/site/ssr/editor-routes.ts` concatenates in a fixed order; its markup lives in React components under `demo/components/`. The site build (`vite.site.config.ts`) bundles the lot into one self-contained HTML file. Edit the partials/components, not `editor-routes.ts`, for UI/CSS/JS changes.
 
 | File                                                                      | Role                                                                                                                                                                                                                    |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/site/editor.ts`                                                 | Build script — reads the `editor/` partials below, bundles `src/browser.ts`, writes `editor.html`                                                                                                                       |
-| `editor/css/*.css`                                                        | Modular stylesheets, concatenated in the order listed in `readCssFiles()` (packages/site/editor.ts)                                                                                                                     |
-| `editor/js/*.js`                                                          | Modular client-side JS, concatenated in the order listed in `readJsFiles()` (packages/site/editor.ts)                                                                                                                   |
+| `packages/site/ssr/editor-routes.ts`                                      | Route — reads the `editor/` partials below, receives the `src/browser.ts` bundle, renders `editor.html`                                                                                                                 |
+| `editor/css/*.css`                                                        | Modular stylesheets, concatenated in the order listed in `CSS_ORDER` (packages/site/ssr/editor-routes.ts)                                                                                                               |
+| `editor/js/*.js`                                                          | Modular client-side JS, bundled from `editor/js/index.ts` (`editor-app` client environment in vite.site.config.ts)                                                                                                      |
 | `demo/components/editor-topbar.tsx` / `demo/components/editor-panels.tsx` | The page's markup, as React components: the topbar, the left panel (source editor + Config panel), and the right panel (preview). Composed by `demo/components/editor-page.tsx`. Replaced `editor/html/*.html` in #589. |
 | `__tests__/dom/`                                                          | Vitest tests for the editor modules (jsdom environment) — see `editor-config.test.ts`, `editor-helpers.test.ts`, etc.                                                                                                   |
-| `editor.html`                                                             | Generated output — never edit directly                                                                                                                                                                                  |
-| `vite.config.ts`                                                          | Dev server (Vite); rebuilds both `editor.html` and `index.html` on change, serves `/` → showcase, `/editor` → editor                                                                                                    |
+| `site/editor.html`                                                        | Generated output — never edit directly                                                                                                                                                                                  |
+| `vite.config.ts`                                                          | Dev server (Vite); rebuilds the whole site into `.site-dev/` on change and serves it (`/` → showcase, `/editor` → editor)                                                                                               |
 | `src/browser.ts`                                                          | Bundles the renderer for the browser as `window.__mermaid`                                                                                                                                                              |
 | `packages/core/src/types.ts`                                              | `RenderOptions` — all supported render options                                                                                                                                                                          |
 | `packages/core/src/theme.ts`                                              | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                                                                                                                         |
 | `packages/svg-renderer/src/styles.ts`                                     | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                                                                                                                     |
 
-Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `packages/site/samples-data.ts` only feeds the separate showcase page (`packages/site/index.ts` → `index.html`, served at `/` by `vite.config.ts`).
+Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `samples/samples-data.ts` only feeds the separate showcase page (`packages/site/ssr/home-routes.ts` → `index.html`, served at `/` by `vite.config.ts`).
 
 ## Build cycle
 
 ```
-packages/site/editor.ts
-  ──esbuild.build──►         src/browser.ts bundle (inline JS)
-  ──readCssFiles──►          editor/css/*.css concatenated
-  ──readJsFiles──►           editor/js/*.js concatenated
+vite.site.config.ts + packages/site/ssr/editor-routes.ts
+  ──client env build──►      src/browser.ts bundle (inline JS)
+  ──CSS_ORDER──►             editor/css/*.css concatenated
+  ──client env build──►      editor/js/index.ts bundled
   ──renderToStaticMarkup──►  demo/components/editor-page.tsx (JSX markup)
-  ──►                        editor.html  (self-contained, ~1.7 MB)
+  ──►                        site/editor.html  (self-contained, ~1.7 MB)
 ```
 
 Run manually:
 
 ```bash
-pnpm run editor   # generates editor.html once
-pnpm run dev      # watches src/ + editor/ + packages/site/editor.ts, live-reloads browser
+pnpm run build:site   # builds the whole site into site/
+pnpm run dev          # watches src/ + editor/ + demo/ + packages/site/, rebuilds and live-reloads
 ```
 
-**Always rebuild after editing anything under `editor/` or `packages/site/editor.ts`.** The HTML file is the deployed artifact.
+**Always rebuild after editing anything under `editor/` or `packages/site/ssr/`.** The HTML file is the deployed artifact.
 
 ---
 
 ## Architecture overview
 
-`packages/site/editor.ts` is a TypeScript generator that:
+`packages/site/ssr/editor-routes.ts` is one route of the site's SSR prerender:
 
-1. Calls `esbuild.build()` to bundle `src/browser.ts` → inline JS string
-2. Reads and concatenates the CSS/JS/HTML partials under `editor/`
-3. Constructs the full HTML page as a template literal
-4. Writes `editor.html`
+1. The site build bundles `src/browser.ts` and `editor/js/index.ts` → inline JS strings
+2. The route reads and concatenates the CSS partials under `editor/`
+3. It renders `EditorPage` (React) to a full HTML document
+4. The prerender step writes `editor.html`
 
-The generated page has **no runtime build step** — everything (renderer, UI logic, CSS) is inlined into one file — but the _source_ is modular; don't edit `packages/site/editor.ts`'s template literal to change UI/logic, edit the relevant file under `editor/`.
+The generated page has **no runtime build step** — everything (renderer, UI logic, CSS) is inlined into one file — but the _source_ is modular; don't edit `editor-routes.ts` to change UI/logic, edit the relevant file under `editor/`.
 
 ### State model (in the client JS)
 
@@ -102,7 +103,7 @@ editor input
 2. Add a JS state variable in `editor/js/config-panel.js` (e.g. `var cfgFoo = defaultVal`)
 3. Update `readConfig()` (also in `config-panel.js`) to include it in `state.config`
 4. Wire input events in `config-panel.js`
-5. Rebuild with `pnpm run editor`
+5. Rebuild with `pnpm run build:site`
 
 ### Case B: Post-process SVG (stroke widths, opacity, etc.)
 
@@ -179,7 +180,7 @@ mySlider.addEventListener('input', function () {
 
 ## Sample presets
 
-The live editor currently has **no** built-in sample-preset picker (no `SAMPLES` array to edit). Presets by diagram category only exist on the separate showcase page — add/edit entries in `packages/site/samples-data.ts`, which feeds `packages/site/index.ts` → `index.html` (served at `/` by `vite.config.ts`), not the editor.
+The live editor currently has **no** built-in sample-preset picker (no `SAMPLES` array to edit). Presets by diagram category only exist on the separate showcase page — add/edit entries in `samples/samples-data.ts`, which feeds `packages/site/index.ts` → `index.html` (served at `/` by `vite.config.ts`), not the editor.
 
 ---
 

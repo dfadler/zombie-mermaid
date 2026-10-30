@@ -14,16 +14,16 @@ erDiagram
 | string name PK |    
 +----------------+    
          +            
-        ++            
-        | lives_at    
-        |             
-        o             
-        ^             
-+---------------+     
-| ADDRESS       |     
-+---------------+     
-| string street |     
-| string city   |     
-+---------------+     
+         |            
+      lives_at        
+         |            
+         o            
+         ^            
+ +---------------+    
+ | ADDRESS       |    
+ +---------------+    
+ | string street |    
+ | string city   |    
+ +---------------+    
                       
                       

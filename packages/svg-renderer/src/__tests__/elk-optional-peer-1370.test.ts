@@ -192,6 +192,35 @@ describe('elkjs optional peer (#1370)', () => {
       }
     })
 
+    it('defines `global` while ELK loads in a Worker-like scope and removes it (#2219)', async () => {
+      // A browser Worker has self but no window/global/document; elk-worker
+      // finds its global object via window, then global, then self.
+      const g = globalThis as { self?: unknown; global?: unknown }
+      const hadSelf = 'self' in g
+      const before = g.self
+      const realGlobal = g.global
+      g.self = globalThis
+      delete g.global
+      try {
+        const api = await freshWithoutElk()
+        let seen: unknown
+        class Probe extends ELK {
+          constructor() {
+            seen = (globalThis as { global?: unknown }).global
+            super()
+          }
+        }
+        api.registerElk(Probe as unknown as typeof ELK)
+        expect(api.renderMermaidSVG(src)).toContain('<svg')
+        expect(seen).toBe(globalThis)
+        expect('global' in g).toBe(false)
+      } finally {
+        g.global = realGlobal
+        if (hadSelf) g.self = before
+        else delete g.self
+      }
+    })
+
     it('survives a Web Worker-style getter-only `self` on the prototype (#1524)', async () => {
       // WorkerGlobalScope exposes `self` as a getter-only accessor on its
       // prototype; the old delete/assign dance threw TypeError on restore.

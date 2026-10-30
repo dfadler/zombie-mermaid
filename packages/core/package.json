@@ -1,8 +1,16 @@
 {
   "name": "@zombie-mermaid/core",
-  "version": "5.6.1",
+  "version": "5.12.0",
   "license": "MIT",
-  "description": "Shared types, theme, and text/statement utilities used by every zombie-mermaid renderer.",
+  "description": "Shared types, theme, and text/statement utilities used by every zombie-mermaid renderer (maintained continuation of beautiful-mermaid).",
+  "keywords": [
+    "mermaid",
+    "zombie-mermaid",
+    "beautiful-mermaid",
+    "diagram",
+    "theme",
+    "types"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/dfadler/zombie-mermaid",
@@ -35,8 +43,12 @@
   },
   "files": [
     "dist/",
+    "!dist/**/*.map",
     "LICENSE"
   ],
+  "scripts": {
+    "build": "vite build --app --config vite.config.ts"
+  },
   "engines": {
     "node": ">=24"
   }

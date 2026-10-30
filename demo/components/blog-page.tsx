@@ -99,6 +99,7 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
       { label: 'Diagrams', href: '../diagrams/' },
       { label: 'Editor', href: '../editor' },
       { label: 'Fork fixes', href: '../fork-fixes.html' },
+      { label: 'Layout fidelity', href: '../layout-fidelity.html' },
     ],
   },
   {
@@ -266,11 +267,11 @@ export function BlogPostPage({
           detailed version of this comment (the pattern this mirrors) for
           why renderToString (not renderToStaticMarkup) is needed here.
         */}
-        <main id="main">
+        <main id="main" tabIndex={-1}>
           <div
             id={BLOG_POST_ROOT_ID}
             dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own BlogPostApp component tree rendered via renderToString (see the comment above); never user input
+              // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own BlogPostApp component tree rendered via renderToString (see the comment above); never user input
               __html: renderToString(<BlogPostApp {...appProps} />),
             }}
           />
@@ -278,7 +279,7 @@ export function BlogPostPage({
             type="application/json"
             id={BLOG_POST_PROPS_ELEMENT_ID}
             dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own BlogPostAppProps, escaped with escapeJsonForScriptTag; never user input
+              // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own BlogPostAppProps, escaped with escapeJsonForScriptTag; never user input
               __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
             }}
           />
@@ -287,7 +288,7 @@ export function BlogPostPage({
         <Footer columns={FOOTER_COLUMNS} />
         <script
           type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/blog-post-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/blog-post-client.tsx bundle, under version control and produced at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: clientScript }}
         />
         <NavMobileMenuScript />
@@ -350,11 +351,11 @@ export function BlogIndexPage({
           Plain, inert hydration container -- see BlogPostPage's identical
           comment above.
         */}
-        <main id="main">
+        <main id="main" tabIndex={-1}>
           <div
             id={BLOG_INDEX_ROOT_ID}
             dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own BlogIndexApp component tree rendered via renderToString (see the comment above); never user input
+              // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own BlogIndexApp component tree rendered via renderToString (see the comment above); never user input
               __html: renderToString(<BlogIndexApp {...appProps} />),
             }}
           />
@@ -362,7 +363,7 @@ export function BlogIndexPage({
             type="application/json"
             id={BLOG_INDEX_PROPS_ELEMENT_ID}
             dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own BlogIndexAppProps, escaped with escapeJsonForScriptTag; never user input
+              // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own BlogIndexAppProps, escaped with escapeJsonForScriptTag; never user input
               __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
             }}
           />
@@ -371,7 +372,7 @@ export function BlogIndexPage({
         <Footer columns={FOOTER_COLUMNS} />
         <script
           type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/blog-index-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          // Nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/blog-index-client.tsx bundle, under version control and produced at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: clientScript }}
         />
         <NavMobileMenuScript />

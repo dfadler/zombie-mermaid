@@ -14,6 +14,7 @@ export interface AsciiRenderOptions {
     boxBorderPadding?: number;
     colorMode?: ColorMode | 'auto';
     direction?: Direction;
+    honorThemeVariables?: boolean;
     hyperlinks?: boolean;
     limits?: RenderLimits;
     maxWidth?: number;

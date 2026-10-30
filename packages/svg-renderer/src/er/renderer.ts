@@ -102,7 +102,7 @@ export function renderErSvg(
       embedSource,
     ),
   )
-  parts.push(buildSvgStyleBlock(font, true, emit.nonce))
+  parts.push(buildSvgStyleBlock(font, true, emit.nonce, emit.bodyFont))
   parts.push('<defs>')
   parts.push('</defs>') // No marker defs — we draw crow's foot inline
 
@@ -338,7 +338,7 @@ function renderRelationshipLabel(
 ): string {
   if (!rel.label || rel.points.length < 2) return ''
 
-  const mid = midpoint(rel.points)
+  const mid = rel.labelPoint ?? midpoint(rel.points)
   const metrics = measureMultilineText(
     rel.label,
     fontSizes.edgeLabel,

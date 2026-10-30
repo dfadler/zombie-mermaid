@@ -20,6 +20,7 @@ an index of removed investigation write-ups in [research/](research/) (findings 
 - [testing-conventions.md](testing-conventions.md) — the RTL pattern for demo/editor component tests, and when a literal-value or snapshot assertion is still the right call
 - [migrating-from-beautiful-mermaid.md](migrating-from-beautiful-mermaid.md) — what's drop-in, which fixes change rendered output, and how to audit your own diagrams before upgrading
 - [xychart-design.md](xychart-design.md) — original design proposal for `xychart-beta` support (historical; see [diagrams.md](diagrams.md) for current behavior)
+- [provenance.md](provenance.md) — how this fork relates to beautiful-mermaid, who maintains it, how releases are published, AI-assisted authorship, and what is and is not claimed
+- [promotion/outreach-rules.md](promotion/outreach-rules.md) — rules for any comment on an upstream thread: bug-specific, disclosed, rate-limited, never posted without the maintainer's go-ahead
 - [decisions/](decisions/) — short records of settled decisions that closed off an alternative worth remembering
 - [research/](research/) — index to former investigation write-ups, now on their issues; findings go in the issue, and a doc here only when something else links to it
-- [parser-error-audit-541.md](parser-error-audit-541.md) — historical audit of parser error messages (superseded by [the #541 follow-up audit](https://github.com/dfadler/zombie-mermaid/issues/541#issuecomment-5600101240))

@@ -18,7 +18,7 @@
  * longer matches anything actually exercised elsewhere.
  */
 
-import { samples, type Sample } from '../packages/site/samples-data.ts'
+import { samples, type Sample } from '../samples/samples-data.ts'
 import type { Accent } from './components/primitives.tsx'
 
 /**
@@ -114,7 +114,7 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     slug: 'flowchart',
     label: 'Flowchart',
     keyword: 'graph / flowchart',
-    source: sampleSource('Simple Flow'),
+    source: sampleSource('CI/CD Pipeline'),
     intro:
       'Flowcharts map a process as boxes and arrows and are the most commonly used Mermaid diagram — CI pipelines, decision trees, onboarding steps. zombie-mermaid supports the full shape set (rounded, diamond, stadium, subroutine, cylinder, hexagon, and more), subgraphs, and both straight and curved edges.',
     accent: 'blue',
@@ -129,7 +129,7 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     slug: 'state',
     label: 'State diagram',
     keyword: 'stateDiagram-v2',
-    source: sampleSource('Basic State Diagram'),
+    source: sampleSource('State: Basic State Diagram'),
     intro:
       'State diagrams show every state a system can be in and the events that move it between them — useful for anything with a lifecycle: a connection, an order, a UI component. zombie-mermaid supports nested composite states, start/end pseudostates, and animated edge transitions.',
     accent: 'violet',

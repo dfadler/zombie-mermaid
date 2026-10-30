@@ -44,24 +44,57 @@ function blankColumn(height: number): string[] {
   return col
 }
 
+/** Cell key stride; canvases are far smaller than this in either axis. */
+const KEY_STRIDE = 2 ** 20
+
 /**
- * Set a cell, giving a `copyCanvas` layer its own copy of the column first
- * if it still points at the shared blank one (sparse overlay, #1478).
+ * Written cells of a `copyCanvas` layer, keyed `x * KEY_STRIDE + y` (#2376).
+ * The layer's own columns stay the shared blank, so a per-edge layer costs
+ * O(cells written), not O(columns touched x height). Read through `cellAt` /
+ * `forEachInk`; `layer[x][y]` sees only blanks. `increaseSize` folds the cells
+ * back into real columns, after which the canvas is an ordinary dense one.
  */
-function setCell(canvas: Canvas, x: number, y: number, ch: string): void {
-  let col = canvas[x]!
-  // A frozen column is always the all-space blank; V8's slice() of a frozen
-  // array is ~30x slower than a fresh fill and made per-edge layers cubic.
-  if (Object.isFrozen(col))
-    canvas[x] = col = new Array<string>(col.length).fill(' ')
-  col[y] = ch
+const sparseCells = new WeakMap<Canvas, Map<number, string>>()
+
+/** Cell at (x, y), reading a sparse layer's written cells too. */
+export function cellAt(
+  canvas: Canvas,
+  x: number,
+  y: number,
+): string | undefined {
+  return sparseCells.get(canvas)?.get(x * KEY_STRIDE + y) ?? canvas[x]?.[y]
 }
 
 /**
- * Create a blank canvas with the same dimensions as the given canvas. Columns
- * are a shared frozen blank until first written, so a mostly-empty per-edge
- * layer costs O(columns touched x height), not O(area) (#1478). Reads work as
- * usual; write only through `write`/`drawText`, never `canvas[x][y] = ch`.
+ * Call `fn` for every cell that may be non-space: a sparse layer's written
+ * cells (any order), else everything in `scanBounds` (x-major).
+ */
+export function forEachInk(
+  canvas: Canvas,
+  fn: (x: number, y: number, ch: string) => void,
+): void {
+  const cells = sparseCells.get(canvas)
+  if (cells) {
+    for (const [k, ch] of cells)
+      fn(Math.floor(k / KEY_STRIDE), k % KEY_STRIDE, ch)
+    return
+  }
+  const [x0, y0, x1, y1] = scanBounds(canvas)
+  for (let x = x0; x <= x1; x++)
+    for (let y = y0; y <= y1; y++) fn(x, y, canvas[x]![y]!)
+}
+
+/** Set a cell: into a sparse layer's cell map, else straight into the column. */
+function setCell(canvas: Canvas, x: number, y: number, ch: string): void {
+  const cells = sparseCells.get(canvas)
+  if (cells) cells.set(x * KEY_STRIDE + y, ch)
+  else canvas[x]![y] = ch
+}
+
+/**
+ * Create a blank canvas with the same dimensions as the given canvas. It is a
+ * sparse layer (see `sparseCells`): write only through `write`/`drawText`,
+ * read through `cellAt`/`forEachInk`, never `canvas[x][y]`.
  */
 export function copyCanvas(source: Canvas): Canvas {
   const [maxX, maxY] = getCanvasSize(source)
@@ -69,6 +102,7 @@ export function copyCanvas(source: Canvas): Canvas {
     blankColumn(maxY + 1),
   )
   inkBounds.set(canvas, [Infinity, Infinity, -1, -1])
+  sparseCells.set(canvas, new Map())
   return canvas
 }
 
@@ -263,6 +297,12 @@ export function increaseSize(
   // Mutate in place: splice old contents and replace with grown
   canvas.length = 0
   canvas.push(...grown)
+  const cells = sparseCells.get(canvas)
+  if (cells) {
+    for (const [k, ch] of cells)
+      canvas[Math.floor(k / KEY_STRIDE)]![k % KEY_STRIDE] = ch
+    sparseCells.delete(canvas)
+  }
   return canvas
 }
 
@@ -342,6 +382,24 @@ const JUNCTION_CHARS = new Set([
 export function isJunctionChar(c: string): boolean {
   return JUNCTION_CHARS.has(c)
 }
+
+/** Silhouette side, point and diagonal glyphs an edge line must not overwrite. */
+const SILHOUETTE_TIPS = new Set([
+  '(',
+  ')',
+  '<',
+  '>',
+  '╱',
+  '╲',
+  '/',
+  '\\',
+  '╭',
+  '╮',
+  '╰',
+  '╯',
+  '.',
+  "'",
+])
 
 /** Check if a character is alphanumeric (part of a label). */
 function isAlphanumeric(c: string): boolean {
@@ -528,32 +586,28 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
     // must be written explicitly below, not just the ones this function
     // blanks out.
     const out = copyCanvas(canvas)
-    const [bx0, by0, bx1, by1] = scanBounds(canvas)
-    for (let x = bx0; x <= bx1; x++) {
-      for (let y = by0; y <= by1; y++) {
-        const c = canvas[x]?.[y]
-        if (c === undefined || c === ' ') continue
-        const key = `${x},${y}`
-        const existing = claimed.get(key)
-        if (existing !== undefined) {
-          // A repeat of the *same* character (a collinear duplicate, e.g.
-          // two edges both drawing '─' through a shared trunk cell) is
-          // still a first-claim suppression, not a crossing — `mergeJunctions`
-          // has no entry for a character merged with itself and would just
-          // fall back to it, so letting it through would be a harmless but
-          // pointless no-op; treating it as "still claimed" keeps the rule
-          // simple and matches "collinear overlap" from the case that
-          // actually needs a merge (two *different* junction characters).
-          const isCrossing =
-            existing !== c && isJunctionChar(existing) && isJunctionChar(c)
-          if (!isCrossing) continue
-        } else {
-          claimed.set(key, c)
-        }
-        setCell(out, x, y, c)
-        markInk(out, x, y)
+    forEachInk(canvas, (x, y, c) => {
+      if (c === ' ') return
+      const key = `${x},${y}`
+      const existing = claimed.get(key)
+      if (existing !== undefined) {
+        // A repeat of the *same* character (a collinear duplicate, e.g.
+        // two edges both drawing '─' through a shared trunk cell) is
+        // still a first-claim suppression, not a crossing — `mergeJunctions`
+        // has no entry for a character merged with itself and would just
+        // fall back to it, so letting it through would be a harmless but
+        // pointless no-op; treating it as "still claimed" keeps the rule
+        // simple and matches "collinear overlap" from the case that
+        // actually needs a merge (two *different* junction characters).
+        const isCrossing =
+          existing !== c && isJunctionChar(existing) && isJunctionChar(c)
+        if (!isCrossing) return
+      } else {
+        claimed.set(key, c)
       }
-    }
+      setCell(out, x, y, c)
+      markInk(out, x, y)
+    })
     result.push(out)
   }
   return result
@@ -590,25 +644,24 @@ export function mergeCanvases(
 
   // Apply overlays
   for (const overlay of overlays) {
-    const [ox0, oy0, ox1, oy1] = scanBounds(overlay)
-    for (let x = ox0; x <= ox1; x++) {
-      for (let y = oy0; y <= oy1; y++) {
-        const c = overlay[x]![y]!
-        if (c !== ' ') {
-          const mx = x + offset.x
-          const my = y + offset.y
-          const current = merged[mx]![my]!
-          if (!useAscii && isJunctionChar(c) && isJunctionChar(current)) {
-            merged[mx]![my] = mergeJunctions(current, c)
-          } else if (isAlphanumeric(current) && isAlphanumeric(c)) {
-            // Don't overwrite existing label text with new label text
-            // This prevents label collisions (first label wins)
-          } else {
-            merged[mx]![my] = c
-          }
+    forEachInk(overlay, (x, y, c) => {
+      if (c !== ' ') {
+        const mx = x + offset.x
+        const my = y + offset.y
+        const current = merged[mx]![my]!
+        if (!useAscii && isJunctionChar(c) && isJunctionChar(current)) {
+          merged[mx]![my] = mergeJunctions(current, c)
+        } else if (isAlphanumeric(current) && isAlphanumeric(c)) {
+          // Don't overwrite existing label text with new label text
+          // This prevents label collisions (first label wins)
+        } else if (SILHOUETTE_TIPS.has(current) && /^[─│\-|]$/.test(c)) {
+          // An edge leaving a stadium/hexagon starts beside its `(` `)`
+          // `<` `>` point rather than cutting it off (#2164).
+        } else {
+          merged[mx]![my] = c
         }
       }
-    }
+    })
   }
 
   return merged
@@ -712,6 +765,9 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
   // Unicode arrows
   '▲': '▼',
   '▼': '▲',
+  // Hollow triangles (class inheritance / realization markers)
+  '△': '▽',
+  '▽': '△',
   // Diagonal arrowheads — U+2196–U+2199, not the filled triangles (◢◣◤◥),
   // since JetBrains Mono NL has no glyph for those at all. See
   // draw-arrows.ts's drawArrowHead and issue #1062.
@@ -761,7 +817,38 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
 export function flipCanvasVertically(
   canvas: Canvas,
   roleCanvas?: RoleCanvas,
+  nodeRects: LabelRect[] = [],
 ): Canvas {
+  // The flag's lean glyphs beside its tip (`╲` above, `╱` below) are not in
+  // the map below; swap them so the reversal puts each back as it was (#2164).
+  for (const { x0, y0, y1, leftNotch } of nodeRects) {
+    if (!leftNotch) continue
+    const mid = Math.floor((y0 + y1) / 2)
+    const rows = y1 - y0 >= 4 ? [mid - 1, mid + 1] : [y0, y1]
+    const [a, b] = [canvas[x0]![rows[0]!]!, canvas[x0]![rows[1]!]!]
+    if (!/^[╲\\]$/.test(a) || !/^[╱/]$/.test(b)) continue
+    canvas[x0]![rows[0]!] = b
+    canvas[x0]![rows[1]!] = a
+  }
+
+  // A symmetric diagonal shape must look as it does in TD, so its lean glyphs
+  // swap with the rows (the map below leaves them alone: trapezoids, flags and
+  // triangles keep their glyphs). Label text is skipped (#2388).
+  const SWAP: Record<string, string> = {
+    '╱': '╲',
+    '╲': '╱',
+    '/': '\\',
+    '\\': '/',
+  }
+  for (const { x0, x1, y0, y1, diagonals } of nodeRects) {
+    if (!diagonals) continue
+    for (let x = x0; x <= x1; x++)
+      for (let y = y0; y <= y1; y++) {
+        const swapped = SWAP[canvas[x]![y]!]
+        if (swapped && roleCanvas?.[x]?.[y] !== 'text') canvas[x]![y] = swapped
+      }
+  }
+
   // Remap directional characters that change meaning after vertical flip
   for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
@@ -864,6 +951,14 @@ const HORIZONTAL_FLIP_MAP: Record<string, string> = {
   '◄': '►',
   '>': '<',
   '<': '>',
+  // Stadium sides (#2164)
+  '(': ')',
+  ')': '(',
+  // Class diagram end markers (class-flow.ts): hollow triangle, open arrow
+  '▷': '◁',
+  '◁': '▷',
+  '▶': '◀',
+  '◀': '▶',
   // Diagonal arrowheads (U+2196-U+2199)
   '↖': '↗',
   '↗': '↖',
@@ -933,6 +1028,32 @@ export function flipCanvasHorizontally(
   roleCanvas?: RoleCanvas,
   nodeRects: LabelRect[] = [],
 ): Canvas {
+  // A flag's notch stays on the left, as in mermaid's RL: move it to the right
+  // first so the flip (which remaps `>` to `<`) lands it back on the left.
+  for (const { x0, x1, y0, y1, leftNotch } of nodeRects) {
+    const mid = Math.floor((y0 + y1) / 2)
+    if (!leftNotch || canvas[x0 + 1]?.[mid] !== '>') continue
+    const [wall, down, up] =
+      canvas[x0 + 1]![y0] === '-' ? ['|', '\\', '/'] : ['│', '╲', '╱']
+    // An edge's stub on a face is not a wall: leave it where it is.
+    const swap = (x: number, y: number, from: string, to: string) => {
+      if (canvas[x]![y] !== from) return
+      canvas[x]![y] = to
+      if (roleCanvas) roleCanvas[x]![y] = 'border'
+    }
+    swap(x1, mid, wall!, ' ')
+    swap(x0, mid, ' ', wall!)
+    if (y1 - y0 >= 4) {
+      // The lean glyphs beside the tip swap sides too (the flip remaps them).
+      swap(x0, mid - 1, down!, wall!)
+      swap(x0, mid + 1, up!, wall!)
+      swap(x1, mid - 1, wall!, up!)
+      swap(x1, mid + 1, wall!, down!)
+    }
+    canvas[x0 + 1]![mid] = ' '
+    canvas[x1 - 1]![mid] = '<'
+    if (roleCanvas) roleCanvas[x1 - 1]![mid] = 'border'
+  }
   const corners = nodeRects.flatMap(({ x0, x1, y0, y1 }) =>
     x0 === x1
       ? []
@@ -1051,7 +1172,7 @@ export function drawText(
   increaseSize(canvas, start.x + cells.length, start.y)
   for (const [i, cell] of cells.entries()) {
     const x = start.x + i
-    const current = canvas[x]![start.y]!
+    const current = cellAt(canvas, x, start.y)!
     // Only write if target is empty or we're forcing overwrite
     if (forceOverwrite || current === ' ') {
       setCell(canvas, x, start.y, cell)

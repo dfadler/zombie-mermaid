@@ -65,7 +65,7 @@ const SCRATCH_DIR = new URL(
 const OUT_DIR = new URL('../public/fork-fixes-screenshots/', import.meta.url)
   .pathname
 const TSX_BIN = `${REPO_ROOT}node_modules/.bin/tsx`
-/** Reused from fork-fixes.ts's own before/after split (see header comment). */
+/** Reused from packages/site/ssr/fork-fixes-before.ts's own before/after split (see header comment). */
 const RENDER_BEFORE_SCRIPT = new URL(
   '../packages/site/fork-fixes-render-before.ts',
   import.meta.url,
@@ -165,7 +165,8 @@ async function renderPlain(indexPath: string, source: string): Promise<string> {
     maxBuffer: 64 * 1024 * 1024,
   })
   const result = JSON.parse(stdout) as
-    { ok: true; output: string } | { ok: false; error: string }
+    | { ok: true; output: string }
+    | { ok: false; error: string }
   if (!result.ok) {
     throw new Error(result.error)
   }

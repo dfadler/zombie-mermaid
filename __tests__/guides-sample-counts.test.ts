@@ -7,7 +7,7 @@
  * even though vitest runs it happily.
  */
 import { describe, it, expect } from 'vitest'
-import { samples } from '../packages/site/samples-data.ts'
+import { samples } from '../samples/samples-data.ts'
 
 describe('docs/guides/samples.md sample counts', () => {
   /**
@@ -25,17 +25,17 @@ describe('docs/guides/samples.md sample counts', () => {
       byCategory.set(category, (byCategory.get(category) ?? 0) + 1)
     }
 
-    expect(samples.length, 'total including the hero banner').toBe(161)
+    expect(samples.length, 'total including the hero banner').toBe(175)
     expect(
       samples.filter((s) => s.category !== 'Hero').length,
       'browsable gallery count quoted in the guide',
-    ).toBe(160)
+    ).toBe(174)
 
     // The category table in samples.md.
     expect(byCategory.get('Flowchart')).toBe(51)
     expect(byCategory.get('Sequence')).toBe(21)
-    expect(byCategory.get('Class')).toBe(17)
-    expect(byCategory.get('ER')).toBe(18)
+    expect(byCategory.get('Class')).toBe(29)
+    expect(byCategory.get('ER')).toBe(20)
     expect(byCategory.get('XY Chart')).toBe(10)
     expect(byCategory.get('Interactivity')).toBe(4)
     expect(byCategory.get('State')).toBe(7)

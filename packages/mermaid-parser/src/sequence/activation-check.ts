@@ -21,7 +21,8 @@
 import type { SequenceDiagram, Message } from './types.ts'
 
 export type ActivationIssueCode =
-  'DANGLING_ACTIVATION' | 'UNMATCHED_DEACTIVATION'
+  | 'DANGLING_ACTIVATION'
+  | 'UNMATCHED_DEACTIVATION'
 
 export interface ActivationIssue {
   code: ActivationIssueCode
@@ -32,7 +33,7 @@ export interface ActivationIssue {
 }
 
 export interface ActivationCheckResult {
-  /** true when every activation is balanced (no issues found). */
+  /** True when every activation is balanced (no issues found). */
   ok: boolean
   issues: ActivationIssue[]
 }

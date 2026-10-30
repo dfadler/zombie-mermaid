@@ -1,7 +1,8 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: /
+    # The composite action's pins are not under /.github/workflows, so list it.
+    directories: [/, /.github/actions/setup]
     schedule:
       interval: weekly
     cooldown:

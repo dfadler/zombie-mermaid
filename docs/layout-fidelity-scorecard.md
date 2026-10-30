@@ -10,18 +10,18 @@ floor for its lowest figure (default 85%, lower overrides in
 `SAMPLE_FLOORS`); `--thresholds` exits 1 on a breach. Floors guard against
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
-Reference: mermaid 12.1.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-10-14 at
-af76561 with `pnpm run layout:scorecard`, tolerance 20px.
+Reference: mermaid 12.2.0. Since mermaid 12.0.0 its default layout engine for
+these diagram types is ELK (it was dagre before). Generated 2026-10-27 at
+a70ae2e with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
 | Type      | Samples | Vertical | Horizontal | Containment |
 | --------- | ------- | -------- | ---------- | ----------- |
-| Flowchart | 38      | 98%      | 97%        | 100%        |
+| Flowchart | 53      | 100%     | 98%        | 100%        |
 | State     | 7       | 100%     | 98%        | 100%        |
-| Class     | 17      | 100%     | 88%        | 100%        |
-| ER        | 15      | 100%     | 100%       | -           |
+| Class     | 29      | 100%     | 100%       | 100%        |
+| ER        | 20      | 100%     | 100%       | -           |
 
 ## Trend (last 20 recorded runs)
 
@@ -31,67 +31,104 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-10 | b05ce34 | 11.17.2 | Flowchart | 27      | 96%      | 98%        | 100%        |
-| 2026-10-12 | 86a7d2f | 12.1.0  | Flowchart | 37      | 98%      | 95%        | 100%        |
-| 2026-10-12 | 86a7d2f | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-12 | 86a7d2f | 12.1.0  | Class     | 17      | 100%     | 88%        | 100%        |
-| 2026-10-12 | 86a7d2f | 12.1.0  | ER        | 15      | 100%     | 100%       | -           |
-| 2026-10-14 | af76561 | 12.1.0  | Flowchart | 38      | 98%      | 97%        | 100%        |
-| 2026-10-14 | af76561 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-14 | af76561 | 12.1.0  | Class     | 17      | 100%     | 88%        | 100%        |
-| 2026-10-14 | af76561 | 12.1.0  | ER        | 15      | 100%     | 100%       | -           |
+| 2026-10-15 | 9231164 | 12.1.0  | Flowchart | 53      | 94%      | 98%        | 100%        |
+| 2026-10-15 | 9231164 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-15 | 9231164 | 12.1.0  | Class     | 17      | 100%     | 99%        | 100%        |
+| 2026-10-15 | 9231164 | 12.1.0  | ER        | 18      | 100%     | 100%       | -           |
+| 2026-10-16 | 89d7175 | 12.1.0  | Flowchart | 53      | 95%      | 98%        | 100%        |
+| 2026-10-16 | 89d7175 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-16 | 89d7175 | 12.1.0  | Class     | 25      | 100%     | 100%       | 100%        |
+| 2026-10-16 | 89d7175 | 12.1.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-16 | 65741f1 | 12.1.0  | Flowchart | 53      | 95%      | 98%        | 100%        |
+| 2026-10-16 | 65741f1 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-16 | 65741f1 | 12.1.0  | Class     | 28      | 100%     | 100%       | 100%        |
+| 2026-10-16 | 65741f1 | 12.1.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-22 | 1aca1b7 | 12.2.0  | Flowchart | 53      | 99%      | 98%        | 100%        |
+| 2026-10-22 | 1aca1b7 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-22 | 1aca1b7 | 12.2.0  | Class     | 28      | 100%     | 100%       | 100%        |
+| 2026-10-22 | 1aca1b7 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-27 | a70ae2e | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
+| 2026-10-27 | a70ae2e | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-27 | a70ae2e | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-10-27 | a70ae2e | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+
+## Edge labels (ASCII)
+
+Where an edge label sits between its two nodes (0 = source end, 1 = target
+end; official mermaid centres it at about 0.5), averaged over the cases in
+`scripts/label-position-oracle.ts`. `Delta` is the mean absolute difference
+between the two renderers. Descriptive only, no floor.
+
+| Date       | Commit  | Mermaid | Cases | Official | ASCII | Delta |
+| ---------- | ------- | ------- | ----- | -------- | ----- | ----- |
+| 2026-10-27 | a70ae2e | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 
 ## Per sample
 
 ### Flowchart (lowest first)
 
-| Sample                                               | Vertical | Horizontal | Containment | Nodes | Floor | Status |
-| ---------------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
-| CI/CD Pipeline                                       | 86%      | 48%        | 100%        | 7     | 45%   | pass   |
-| Flowchart: CJK Labels                                | 50%      | 100%       | 100%        | 4     | 50%   | pass   |
-| Flowchart: Five Cluster Exit Siblings (TD)           | 100%     | 67%        | 100%        | 4     | 65%   | pass   |
-| System Architecture                                  | 89%      | 93%        | 100%        | 10    | 85%   | pass   |
-| Decision Tree                                        | 90%      | 100%       | -           | 7     | 85%   | pass   |
-| Git Branching Workflow                               | 100%     | 90%        | -           | 7     | 85%   | pass   |
-| Fan-Out Under Half-Column Parent                     | 94%      | 97%        | -           | 9     | 85%   | pass   |
-| Simple Flow                                          | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Original Node Shapes                                 | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| Batch 1 Shapes                                       | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Batch 2 Shapes                                       | 100%     | 100%       | -           | 4     | 85%   | pass   |
-| All 12 Flowchart Shapes                              | 100%     | 100%       | -           | 12    | 85%   | pass   |
-| All Edge Styles                                      | 100%     | 100%       | -           | 4     | 85%   | pass   |
-| No-Arrow Edges                                       | 100%     | 100%       | -           | 4     | 85%   | pass   |
-| Text-Embedded Labels                                 | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| Bidirectional Arrows                                 | 100%     | 100%       | -           | 4     | 85%   | pass   |
-| Parallel Links (&)                                   | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| Chained Edges                                        | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| linkStyle: Color-Coded Edges                         | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| linkStyle: Default + Override                        | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| Direction: Left-Right (LR)                           | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Direction: Bottom-Top (BT)                           | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Subgraphs                                            | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
-| Nested Subgraphs                                     | 100%     | 100%       | 100%        | 5     | 20%   | pass   |
-| Subgraph Direction Override                          | 100%     | 100%       | 100%        | 6     | 85%   | pass   |
-| ::: Class Shorthand                                  | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Inline Style Overrides                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Interactivity: Links and Tooltips                    | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Interactivity: Animated Edge                         | 100%     | 100%       | -           | 3     | 85%   | pass   |
-| Labeled Fan-In (LR)                                  | 100%     | 100%       | -           | 4     | 85%   | pass   |
-| Direction: Right-Left (RL)                           | 100%     | 100%       | -           | 4     | 85%   | pass   |
-| Nested Subgraphs (RL)                                | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
-| Nested Subgraphs (BT)                                | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
-| Edges Into and Out of Subgraphs                      | 100%     | 100%       | 100%        | 8     | 85%   | pass   |
-| Vertical Edge Labels                                 | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| Flowchart: Three Parallel Edges (TD)                 | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Flowchart: Three Parallel Edges Plus Reciprocal (TD) | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Flowchart: Four Parallel Edges (TD)                  | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Sample                                                   | Vertical | Horizontal | Containment | Nodes | Floor | Status |
+| -------------------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
+| Flowchart: Self-Loop with In and Out Neighbours (TD)     | 100%     | 33%        | -           | 3     | 30%   | pass   |
+| Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 67%        | -           | 3     | 65%   | pass   |
+| System Architecture                                      | 89%      | 100%       | 100%        | 10    | 85%   | pass   |
+| Fan-Out Under Half-Column Parent                         | 100%     | 97%        | -           | 9     | 85%   | pass   |
+| Simple Flow                                              | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Original Node Shapes                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Subroutine and Hexagon Shapes                            | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Cylinder and Trapezoid Shapes                            | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Twelve Core Flowchart Shapes                             | 100%     | 100%       | -           | 12    | 85%   | pass   |
+| All Edge Styles                                          | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| No-Arrow Edges                                           | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Text-Embedded Labels                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Bidirectional Arrows                                     | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Parallel Links (&)                                       | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Chained Edges                                            | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| linkStyle: Color-Coded Edges                             | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| linkStyle: Default + Override                            | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Direction: Left-Right (LR)                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Direction: Bottom-Top (BT)                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Subgraphs                                                | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Nested Subgraphs                                         | 100%     | 100%       | 100%        | 5     | 95%   | pass   |
+| Subgraph Direction Override                              | 100%     | 100%       | 100%        | 6     | 85%   | pass   |
+| ::: Class Shorthand                                      | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Inline Style Overrides                                   | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| CI/CD Pipeline                                           | 100%     | 100%       | 100%        | 7     | 85%   | pass   |
+| Decision Tree                                            | 100%     | 100%       | -           | 7     | 85%   | pass   |
+| Git Branching Workflow                                   | 100%     | 100%       | -           | 7     | 85%   | pass   |
+| Interactivity: Links and Tooltips                        | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Interactivity: Animated Edge                             | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Labeled Fan-In (LR)                                      | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Direction: Right-Left (RL)                               | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Nested Subgraphs (RL)                                    | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Nested Subgraphs (BT)                                    | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Edges Into and Out of Subgraphs                          | 100%     | 100%       | 100%        | 8     | 85%   | pass   |
+| Vertical Edge Labels                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Flowchart: CJK Labels                                    | 100%     | 100%       | 100%        | 4     | 95%   | pass   |
+| Flowchart: Three Parallel Edges (TD)                     | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Flowchart: Three Parallel Edges Plus Reciprocal (TD)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Flowchart: Four Parallel Edges (TD)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Flowchart: Five Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| LR Fan-In With Bypass Edge                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Reciprocal and Duplicate Edges RL                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Decision Self-Loop with Duplicate Edges                  | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| LR Bypass Edge In A Chain                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Flowchart: Five Parallel Edges (TD)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Flowchart: Five Parallel Edges with Reciprocals (LR)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Flowchart: Six Cluster Exit Siblings (TD)                | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Flowchart: Parallel Edges with Back Edges (TD)           | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Flowchart: Cluster Exit Siblings with No Other Exit (TD) | 100%     | 100%       | 100%        | 3     | 85%   | pass   |
+| Flowchart: Nine Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Flowchart: Self-Loop with In and Out Neighbours (LR)     | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Flowchart: Dense Duplicate Edges (LR)                    | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Duplicate Self-Loops                                     | -        | -          | -           | 1     | 85%   | n/a    |
 
 ### State (lowest first)
 
 | Sample                       | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | ---------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
 | State: Notes                 | 100%     | 83%        | -           | 4     | 80%   | pass   |
-| Basic State Diagram          | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| State: Basic State Diagram   | 100%     | 100%       | -           | 5     | 85%   | pass   |
 | State: Composite States      | 100%     | 100%       | 100%        | 8     | 85%   | pass   |
 | State: Connection Lifecycle  | 100%     | 100%       | -           | 7     | 85%   | pass   |
 | State: CJK State Names       | 100%     | 100%       | -           | 6     | 85%   | pass   |
@@ -102,25 +139,37 @@ Not scored (the oracle errored): zombie-mermaid.
 
 ### Class (lowest first)
 
-| Sample                           | Vertical | Horizontal | Containment | Nodes | Floor | Status |
-| -------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
-| Class: Inheritance (<\|--)       | 100%     | 67%        | -           | 3     | 65%   | pass   |
-| Class: Relationship Labels       | 100%     | 67%        | -           | 3     | 65%   | pass   |
-| Class: MVC Architecture          | 100%     | 67%        | -           | 3     | 65%   | pass   |
-| Class: Namespaces                | 100%     | 67%        | 100%        | 3     | 65%   | pass   |
-| Class: Full Hierarchy            | 100%     | 93%        | -           | 6     | 85%   | pass   |
-| Class: Composition (*--)         | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Aggregation (o--)         | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Association (-->)         | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Dependency (..>)          | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: Realization (..\|>)       | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| Class: All 6 Relationship Types  | 100%     | 100%       | -           | 12    | 85%   | pass   |
-| Class: Design Pattern — Observer | 100%     | 100%       | -           | 5     | 85%   | pass   |
-| Class: Basic Class               | -        | -          | -           | 1     | 85%   | n/a    |
-| Class: Visibility Markers        | -        | -          | -           | 1     | 85%   | n/a    |
-| Class: Interface Annotation      | -        | -          | -           | 1     | 85%   | n/a    |
-| Class: Abstract Annotation       | -        | -          | -           | 1     | 85%   | n/a    |
-| Class: Enum Annotation           | -        | -          | -           | 1     | 85%   | n/a    |
+| Sample                                          | Vertical | Horizontal | Containment | Nodes | Floor | Status |
+| ----------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
+| Class: Inheritance (<\|--)                      | 100%     | 100%       | -           | 3     | 95%   | pass   |
+| Class: Composition (*--)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Aggregation                              | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Association (-->)                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Dependency (..>)                         | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Realization (..\|>)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: All 6 Relationship Types                 | 100%     | 100%       | -           | 12    | 85%   | pass   |
+| Class: Relationship Labels                      | 100%     | 100%       | -           | 3     | 95%   | pass   |
+| Class: Design Pattern — Observer                | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Class: MVC Architecture                         | 100%     | 100%       | -           | 3     | 95%   | pass   |
+| Class: Full Hierarchy                           | 100%     | 100%       | -           | 6     | 95%   | pass   |
+| Class: Namespaces                               | 100%     | 100%       | 100%        | 3     | 95%   | pass   |
+| Class: classDiagram-v2 Header                   | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Bidirectional Relationships              | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Lollipop Interface                       | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Backtick Class Names                     | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| Class: Mixed Newly Accepted Syntax              | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| Class: Relationship Cardinalities               | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Cardinalities on Every Relationship Kind | 100%     | 100%       | -           | 12    | 85%   | pass   |
+| Class: Cardinalities with Shared Ends           | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Direction LR                             | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Direction BT                             | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Class: Direction RL with Namespaces             | 100%     | 100%       | 100%        | 3     | 85%   | pass   |
+| Class: Two Namespaces with Cross Edges          | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Class: Basic Class                              | -        | -          | -           | 1     | 85%   | n/a    |
+| Class: Visibility Markers                       | -        | -          | -           | 1     | 85%   | n/a    |
+| Class: Interface Annotation                     | -        | -          | -           | 1     | 85%   | n/a    |
+| Class: Abstract Annotation                      | -        | -          | -           | 1     | 85%   | n/a    |
+| Class: Enum Annotation                          | -        | -          | -           | 1     | 85%   | n/a    |
 
 ### ER (lowest first)
 
@@ -128,9 +177,9 @@ Not scored (the oracle errored): zombie-mermaid.
 | --------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
 | ER: Basic Relationship                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | ER: Exactly One to Exactly One (\|\|--\|\|)   | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| ER: Exactly One to Zero-or-Many (\|\|--o{)    | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| ER: Zero-or-One to One-or-Many (\|o--\|{)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
-| ER: One-or-More to Zero-or-Many (}\|--o{)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| ER: Exactly One to Zero-or-Many               | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| ER: Zero-or-One to One-or-Many                | 100%     | 100%       | -           | 2     | 85%   | pass   |
+| ER: One-or-More to Zero-or-Many               | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | ER: All Cardinality Types                     | 100%     | 100%       | -           | 8     | 85%   | pass   |
 | ER: Identifying (Solid) Relationship          | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | ER: Non-Identifying (Dashed) Relationship     | 100%     | 100%       | -           | 3     | 85%   | pass   |
@@ -139,8 +188,13 @@ Not scored (the oracle errored): zombie-mermaid.
 | ER: Blog Platform Schema                      | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | ER: School Management Schema                  | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | ER: Word-Form Cardinalities and .- / -. Lines | 100%     | 100%       | -           | 8     | 85%   | pass   |
+| ER: Remaining Cardinality Spellings           | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| ER: Style, classDef and Class                 | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| ER: Crossing Edges and Edge Labels            | 100%     | 100%       | -           | 5     | 85%   | pass   |
+| ER: Attribute Comments                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | ER: Entity with Attributes                    | -        | -          | -           | 1     | 85%   | n/a    |
 | ER: Attribute Keys (PK, FK, UK)               | -        | -          | -           | 1     | 85%   | n/a    |
+| ER: Multiple Keys per Attribute               | -        | -          | -           | 1     | 85%   | n/a    |
 
 ## Diagram types not scored
 

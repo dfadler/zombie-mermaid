@@ -290,14 +290,14 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
 
   it('scans downward when the midpoint is occupied', () => {
     const canvas = mkCanvas(20, 20)
-    occupyRow(canvas, 3, 0, 10) // midpoint occupied
+    occupyRow(canvas, 3, 0, 10) // Midpoint occupied
     expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(4)
   })
 
   it('scans upward when the midpoint and every row below it are occupied', () => {
     const canvas = mkCanvas(20, 20)
-    occupyRow(canvas, 3, 0, 10) // midpoint
-    occupyRow(canvas, 4, 0, 10) // one below
+    occupyRow(canvas, 3, 0, 10) // Midpoint
+    occupyRow(canvas, 4, 0, 10) // One below
     // row 2 (one above the midpoint) stays free
     expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(2)
   })
@@ -310,7 +310,7 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
 
   it('ignores the skipped column when checking occupancy', () => {
     const canvas = mkCanvas(20, 20)
-    write(canvas, 5, 3, '#') // only the skipped column is occupied
+    write(canvas, 5, 3, '#') // Only the skipped column is occupied
     expect(isRowFree(canvas, 3, 0, 10, 5)).toBe(true)
     expect(isRowFree(canvas, 3, 0, 10, -1)).toBe(false)
   })
@@ -321,9 +321,9 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
   // grows the canvas on write (see increaseSize at the label call sites),
   // so a not-yet-allocated column is "not drawn", not "occupied".
   it('treats a column past the canvas width as free, not occupied', () => {
-    const canvas = mkCanvas(5, 5) // columns 0..5 only
+    const canvas = mkCanvas(5, 5) // Columns 0..5 only
     expect(isRowFree(canvas, 2, 0, 10, -1)).toBe(true)
-    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(3) // still the midpoint
+    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(3) // Still the midpoint
   })
 
   // CodeRabbit review on PR #390: renderErAscii's jog-row selection checked
@@ -334,8 +334,8 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
   // label span falls entirely outside that checked range.
   it('rejects a midpoint row whose label span (right of the jog range) is occupied', () => {
     const canvas = mkCanvas(30, 20)
-    const lineX = 10 // upper entity's center column
-    const lowerCX = 4 // lower entity's center column — left of lineX: a leftward jog
+    const lineX = 10 // Upper entity's center column
+    const lowerCX = 4 // Lower entity's center column — left of lineX: a leftward jog
     const lx = Math.min(lineX, lowerCX)
     const rx = Math.max(lineX, lowerCX) // === lineX; the label starts past this
     const labelEndX = lineX + 1 + 'some label'.length

@@ -137,10 +137,10 @@ export function renderSequenceAscii(
   const TR = useAscii ? '+' : '┐'
   const BL = useAscii ? '+' : '└'
   const BR = useAscii ? '+' : '┘'
-  const JT = useAscii ? '+' : '┬' // top junction on lifeline
-  const JB = useAscii ? '+' : '┴' // bottom junction on lifeline
-  const JL = useAscii ? '+' : '├' // left junction
-  const JR = useAscii ? '+' : '┤' // right junction
+  const JT = useAscii ? '+' : '┬' // Top junction on lifeline
+  const JB = useAscii ? '+' : '┴' // Bottom junction on lifeline
+  const JL = useAscii ? '+' : '├' // Left junction
+  const JR = useAscii ? '+' : '┤' // Right junction
   // Activation bar: the double-line glyph a lifeline gets while a
   // participant is actively processing a call (issue #1133), overlaid in
   // place of the plain lifeline `V`. Same Unicode/ASCII pairing draw-boxes.ts
@@ -211,8 +211,22 @@ export function renderSequenceAscii(
   )
   const halfBox = actorBoxWidths.map((w) => Math.ceil(w / 2))
   // Calculate actor box heights based on number of lines in label
-  const actorBoxHeights = diagram.actors.map((a) => actorContentHeight(a) + 2) // content lines + top/bottom border
+  const actorBoxHeights = diagram.actors.map((a) => actorContentHeight(a) + 2) // Content lines + top/bottom border
   const actorBoxH = Math.max(...actorBoxHeights, 3) // Use max height for consistent lifeline positioning
+  // Header boxes only need to match each other: a `create`d participant's box
+  // is drawn mid-diagram at its own height, so a tall created actor figure
+  // must not pad the other participants' headers (#2281). The footer row
+  // still holds every surviving participant, so it keeps `actorBoxH`.
+  // A self-message can't create its own recipient (see "DRAW: messages"), so
+  // that actor keeps its header box and counts here.
+  const headerBoxH = Math.max(
+    ...diagram.actors.flatMap((a, i) => {
+      const m =
+        a.createdAt === undefined ? undefined : diagram.messages[a.createdAt]
+      return m === undefined || m.from === m.to ? [actorBoxHeights[i]!] : []
+    }),
+    3,
+  )
   // Left border column of each actor's box — drawActorBox derives the same
   // `left` from the lifeline centre, so a creating arrow can stop just short
   // of it (see "DRAW: messages" below).
@@ -230,10 +244,11 @@ export function renderSequenceAscii(
   // — a cross *on* the arrow row would replace the arrowhead and read as a
   // lost message (`-x`) instead.
   //
-  // Rows above the arrow taken by the created box, and rows below it. For
-  // the default 3-row box that's one row each side of the arrow row.
-  const createdBoxAbove = Math.floor((actorBoxH - 1) / 2)
-  const createdBoxBelow = actorBoxH - 1 - createdBoxAbove
+  // Rows above the arrow taken by actor `i`'s created box, and rows below it.
+  // For the default 3-row box that's one row each side of the arrow row.
+  const createdBoxH = (i: number) => Math.max(actorBoxHeights[i]!, 3)
+  const createdBoxAbove = (i: number) => Math.floor((createdBoxH(i) - 1) / 2)
+  const createdBoxBelow = (i: number) => createdBoxH(i) - 1 - createdBoxAbove(i)
   // Message index → index of the actor it creates (recipient) / destroys.
   const createdByMsg = new Map<number, number>()
   const destroyedByMsg = new Map<number, number>()
@@ -294,7 +309,7 @@ export function renderSequenceAscii(
     Math.max(diagram.actors.length - 1, 0),
   ).fill(0)
 
-  for (const msg of diagram.messages) {
+  for (const [mi, msg] of diagram.messages.entries()) {
     const fi = actorIndexOf(msg.from)
     const ti = actorIndexOf(msg.to)
     if (fi === ti) {
@@ -312,7 +327,11 @@ export function renderSequenceAscii(
     const lo = Math.min(fi, ti)
     const hi = Math.max(fi, ti)
     // Required gap per span = (max line width + arrow decorations) / number of gaps
-    const needed = maxLineWidth(msg.label) + 4
+    // A creating message's label sits on the arrow row beside the created
+    // box (#2281), so the span must also clear the box's near half.
+    const createsRecipient = diagram.actors[ti]!.createdAt === mi
+    const needed =
+      maxLineWidth(msg.label) + 4 + (createsRecipient ? 2 * halfBox[ti]! : 0)
     const numGaps = hi - lo
     const perGap = Math.ceil(needed / numGaps)
     for (let g = lo; g < hi; g++) {
@@ -553,7 +572,7 @@ export function renderSequenceAscii(
   // Start right below the header boxes — and below the group bracket's
   // bottom border when there is one (its top border row sits above them).
   const headerBoxTop = bracketRows
-  const headerBottom = headerBoxTop + actorBoxH // first row after the boxes
+  const headerBottom = headerBoxTop + headerBoxH // First row after the boxes
   let curY = headerBottom + bracketRows
 
   // rowGap: the blank rows around messages, notes, and blocks. See
@@ -579,7 +598,7 @@ export function renderSequenceAscii(
   // Pre-message notes: afterIndex === -1 — position before message loop
   for (const note of diagram.notes) {
     if (note.afterIndex !== -1) continue
-    curY += rowGap // gap before note
+    curY += rowGap // Gap before note
     const nLines = splitLines(note.text)
     const nWidth = noteBoxWidth(note)
     const nHeight = nLines.length + 2
@@ -615,7 +634,7 @@ export function renderSequenceAscii(
     // Block openings at this message
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.startIndex === m) {
-        curY += rowGap + 1 // blank rows + 1 fixed header row
+        curY += rowGap + 1 // Blank rows + 1 fixed header row
         blockStartY.set(b, curY - 1)
       }
     }
@@ -631,7 +650,7 @@ export function renderSequenceAscii(
       }
     }
 
-    curY += rowGap // blank row before message
+    curY += rowGap // Blank row before message
 
     const msg = diagram.messages[m]!
     const isSelf = msg.from === msg.to
@@ -656,11 +675,16 @@ export function renderSequenceAscii(
       // Normal message: label row(s), then — for a creating message — the
       // rows of the created box above the arrow, then the arrow row, then
       // the created box's rows below it.
-      const boxAbove = createdIdx === undefined ? 0 : createdBoxAbove
-      const boxBelow = createdIdx === undefined ? 0 : createdBoxBelow
-      msgLabelY[m] = curY
-      msgArrowY[m] = curY + msgLineCount + boxAbove
-      curY += msgLineCount + boxAbove + 1 + boxBelow
+      // The label stays on the rows directly above the arrow; a tall created
+      // box just adds blank rows above the label (#2281).
+      const boxAbove =
+        createdIdx === undefined ? 0 : createdBoxAbove(createdIdx)
+      const boxBelow =
+        createdIdx === undefined ? 0 : createdBoxBelow(createdIdx)
+      const above = Math.max(msgLineCount, boxAbove)
+      msgArrowY[m] = curY + above
+      msgLabelY[m] = msgArrowY[m]! - msgLineCount
+      curY += above + 1 + boxBelow
       if (createdIdx !== undefined) {
         createdBoxTop.set(createdIdx, msgArrowY[m]! - boxAbove)
       }
@@ -724,7 +748,7 @@ export function renderSequenceAscii(
     }
   }
 
-  curY += minSeparatorGap // gap before footer (mandatory — see minSeparatorGap)
+  curY += minSeparatorGap // Gap before footer (mandatory — see minSeparatorGap)
   // With brackets, footerY is the footer bracket's top border row and the
   // footer boxes start one row under it; otherwise it is the boxes' own top.
   const footerY = curY
@@ -845,8 +869,8 @@ export function renderSequenceAscii(
    * `actorContentHeight`) already reserves room for it so this stays a
    * pure drawing step with no additional sizing math.
    *
-   * `boxH` is always the diagram-wide `actorBoxH` (the tallest box among
-   * *all* actors), not this actor's own content height — every box must
+   * `boxH` is the row-wide height (`headerBoxH` for the header row,
+   * `actorBoxH`, the tallest box among *all* actors, for the footer row), not this actor's own content height — every box must
    * bottom out at the same row so the lifeline/junction drawn below it
    * (which unconditionally starts at row `actorBoxH`, see the "DRAW:
    * lifelines" section below) connects directly to the box's bottom
@@ -909,7 +933,7 @@ export function renderSequenceAscii(
   // the cross wins over the `│` painted here).
   const lifelineTop = (i: number) => {
     const boxTop = createdBoxTop.get(i)
-    return boxTop === undefined ? headerBottom : boxTop + actorBoxH
+    return boxTop === undefined ? headerBottom : boxTop + createdBoxH(i)
   }
   const lifelineBottom = (i: number) => destroyRow.get(i) ?? footerY
 
@@ -1013,10 +1037,11 @@ export function renderSequenceAscii(
     span: { label: string; lo: number; hi: number },
     topRow: number,
     label: string,
+    boxH: number,
   ): void {
     const left = bracketLeft(span)
     const right = bracketRight(span)
-    const bottomRow = topRow + actorBoxH + 1
+    const bottomRow = topRow + boxH + 1
     setC(left, topRow, TL, 'border')
     setC(right, topRow, TR, 'border')
     setC(left, bottomRow, BL, 'border')
@@ -1046,8 +1071,8 @@ export function renderSequenceAscii(
     }
   }
   for (const span of boxSpans) {
-    drawBracket(span, 0, span.label)
-    drawBracket(span, footerY, '')
+    drawBracket(span, 0, span.label, headerBoxH)
+    drawBracket(span, footerY, '', actorBoxH)
   }
 
   // ---- DRAW: actor header + footer boxes (drawn over lifelines) ----
@@ -1058,12 +1083,13 @@ export function renderSequenceAscii(
     // header. Destroyed: no footer box — the lifeline already ended.
     const headerTop = createdBoxTop.get(i) ?? headerBoxTop
     const destroyed = destroyRow.has(i)
+    const headerH = createdBoxTop.has(i) ? createdBoxH(i) : headerBoxH
     drawActorBox(
       llX[i]!,
       headerTop,
       actor.label,
       actorGlyphLines(actor),
-      actorBoxH,
+      headerH,
     )
     if (!destroyed) {
       drawActorBox(
@@ -1077,7 +1103,7 @@ export function renderSequenceAscii(
 
     // Lifeline junctions on box borders (Unicode only)
     if (!useAscii) {
-      setC(llX[i]!, headerTop + actorBoxH - 1, JT, 'junction')
+      setC(llX[i]!, headerTop + headerH - 1, JT, 'junction')
       if (!destroyed) setC(llX[i]!, footerBoxTop, JB, 'junction')
     }
   }
@@ -1267,7 +1293,7 @@ export function renderSequenceAscii(
         }
       }
 
-      // autonumber badge: overwrite the start of the arrow line with the
+      // Autonumber badge: overwrite the start of the arrow line with the
       // sequence number, mirroring the small circled number the SVG
       // renderer draws over the start of the arrow (see renderer.ts's
       // renderSeqNumberBadge). Skipped if it wouldn't fit before the

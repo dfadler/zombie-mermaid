@@ -6,7 +6,11 @@
 // and graph structures used by the ASCII/Unicode renderer.
 // ============================================================================
 
-import type { NodeShape } from '@zombie-mermaid/core'
+import type {
+  MermaidGraph,
+  MermaidSubgraph,
+  NodeShape,
+} from '@zombie-mermaid/core'
 import type { Grid } from './grid-occupancy.ts'
 
 // Re-export NodeShape for convenience
@@ -16,7 +20,14 @@ export type { NodeShape }
  * Shape type for ASCII rendering — maps parser shapes to ASCII renderers.
  * Most shapes from the parser are supported, with fallback to 'rectangle'.
  */
-export type AsciiNodeShape = NodeShape
+export type AsciiNodeShape = NodeShape | ClassNodeShape
+
+/**
+ * Shapes only the class diagram's LR/RL lowering (class-flow.ts) produces: a
+ * multi-compartment class box, a rounded note box, and a box-less interface
+ * name. They are set on the converted `AsciiNode`, never by a parser.
+ */
+export type ClassNodeShape = 'class-box' | 'class-note' | 'class-name'
 
 /** Logical grid coordinate — nodes occupy 3x3 blocks on this grid. */
 export interface GridCoord {
@@ -152,11 +163,24 @@ export interface AsciiNode {
    */
   fanInCentered?: boolean
   /**
+   * Set by grid layout when an LR node was centred over exactly two children
+   * (`centerParentsOverChildren`). Edge routing then leaves each branch
+   * through the right face and enters the child's left face (#2351).
+   */
+  fanOutCentered?: boolean
+  /**
    * Rows of `drawing` holding the label's lines (inclusive), set by drawBox.
    * Lets the BT flip restore the label's reading order exactly, rather than
    * inferring which text cells belong to one label.
    */
   labelRows?: { top: number; bottom: number }
+  /** Per drawing row, columns a hexagon's diagonal takes at each end (#2164). */
+  labelInsets?: number[]
+  /**
+   * `class-name` nodes only: which end of its cell the text hugs, so it
+   * sits next to the circle its edge ends in (see class-flow.ts).
+   */
+  textAlign?: 'start' | 'end'
   styleClassName: string
   styleClass: AsciiStyleClass
 }
@@ -170,11 +194,31 @@ export interface AsciiStyleClass {
 /** Edge line style for ASCII rendering. */
 export type AsciiEdgeStyle = 'solid' | 'dotted' | 'thick' | 'invisible'
 
+/**
+ * Terminator drawn at an edge end instead of the plain arrowhead. `circle` and
+ * `cross` come from flowchart `o--`/`x--`; the `class-*` ones from the class
+ * diagram's LR/RL lowering, where the glyph also follows the way the line
+ * arrives (see `markerArrowChar`).
+ */
+export type AsciiEdgeMarker =
+  | 'circle'
+  | 'cross'
+  | 'class-triangle'
+  | 'class-arrow'
+  | 'class-diamond'
+  | 'class-diamond-filled'
+  | 'class-circle'
+
 /** An edge in the ASCII graph, with a routed path. */
 export interface AsciiEdge {
   from: AsciiNode
   to: AsciiNode
   text: string
+  /**
+   * Closes a cycle through a subgraph boundary (mermaid 12's
+   * `orientFeedbackEdges`): layered as if it ran target -> source (#2111).
+   */
+  feedback?: boolean
   path: GridCoord[]
   labelLine: GridCoord[]
   startDir: Direction
@@ -190,9 +234,20 @@ export interface AsciiEdge {
    * (`o--`/`x--`) rather than a plain arrowhead. Undefined draws the
    * regular arrowhead glyph (per `hasArrowStart`). See issue #330.
    */
-  startMarker?: 'circle' | 'cross'
+  startMarker?: AsciiEdgeMarker
   /** Terminator shape at the target end (`--o`/`--x`). See `startMarker`. */
-  endMarker?: 'circle' | 'cross'
+  endMarker?: AsciiEdgeMarker
+  /**
+   * The first and last stroke cell as drawn (the cells the end markers
+   * occupy) and the way the line travels through each. Set by `drawArrow`;
+   * read by the class diagram's LR/RL cardinality pass.
+   */
+  /** Leave the source's right face and enter the target's left face (LR), even on a diagonal. */
+  sideFaces?: boolean
+  ends?: {
+    start: DrawingCoord & { dir: Direction }
+    end: DrawingCoord & { dir: Direction }
+  }
   /** Bundle this edge belongs to (if any). Set during bundling analysis. */
   bundle?: EdgeBundle
   /**
@@ -228,6 +283,19 @@ export interface AsciiEdge {
    * keeping every lane in the group on a genuinely distinct path.
    */
   parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
+  /**
+   * Flow-axis face lane plan (#2121, `assignFaceLanes`): the gutter lane slot
+   * beside the column and the drawn offsets, along the flow, of the edge's
+   * departure and arrival runs within their gutter rows.
+   */
+  faceLanePlan?: { slot: number; dep: number; arr: number }
+  /** determinePath wanted this self-loop on its top face but the first row has no room above (#2100). */
+  loopTopWanted?: boolean
+  /**
+   * Set by determinePath when the edge was routed as planned. Its ports are
+   * placed by port-offsets.ts's allocateFaces, like a lane's.
+   */
+  faceLane?: boolean
   /**
    * The subgraph this edge was originally addressed *from* (`Processing -->
    * Done` where `Processing` is a subgraph id), before the converter
@@ -312,6 +380,8 @@ export interface AsciiSubgraph {
    * clear a vertical edge entering the frame (#1222). Set by layout only.
    */
   titleRoom?: number
+  /** The parsed subgraph this was built from (sibling-order ties, #2111). */
+  source?: MermaidSubgraph
 }
 
 // ============================================================================
@@ -326,7 +396,9 @@ export interface AsciiSubgraph {
 // still visibly changes spacing. The flowchart/state grid layout (grid.ts)
 // predates this convention and uses `paddingX`/`paddingY` directly as its
 // column/row gap — don't "fix" that to go through these constants too, its
-// existing default already equals them, so behavior is identical.
+// existing default already equals them, so behavior is identical. The one
+// exception: grid.ts's LR/RL sibling gap is `paddingY - 1` (#2350), so `-y 5` no
+// longer gives the old LR gap (use 6); TD still uses `paddingY` directly.
 // ============================================================================
 
 /** `AsciiConfig.paddingX`'s default — see the block comment above. */
@@ -362,11 +434,11 @@ export function paddingOffset(
 
 /** Configuration for ASCII rendering. */
 export interface AsciiConfig {
-  /** true = ASCII chars (+,-,|), false = Unicode box-drawing (┌,─,│). Default: false */
+  /** True = ASCII chars (+,-,|), false = Unicode box-drawing (┌,─,│). Default: false */
   useAscii: boolean
   /** Horizontal spacing between nodes. Default: 5 */
   paddingX: number
-  /** Vertical spacing between nodes. Default: 5 */
+  /** Vertical spacing between nodes. Default: 5; in LR and RL the gap between sibling nodes is `paddingY - 1`, minimum 1 (#2350). */
   paddingY: number
   /** Padding inside node boxes. Default: 1 */
   boxBorderPadding: number
@@ -380,10 +452,24 @@ export interface LabelRect {
   y0: number
   x1: number
   y1: number
+  /** A node rect whose left side is notched (asymmetric `>x]`); a horizontal flip keeps the notch on the left (#2164). */
+  leftNotch?: boolean
+  /** A hexagon, circle or diamond: its `╱`/`╲` (`/`/`\`) swap on a vertical flip so BT reads like TD (#2388). */
+  diagonals?: boolean
 }
 
 /** Full ASCII graph state used during layout and rendering. */
 export interface AsciiGraph {
+  /** The parsed graph, for the sibling-order rules shared with SVG (#2111). */
+  parsed?: MermaidGraph
+  /** Edges (by index) that must not take flow-axis face lanes (#2121). */
+  faceLaneOff?: ReadonlySet<number>
+  /** Planned face lanes that were rejected by this layout (#2121). */
+  faceLaneRejected?: Set<number>
+  /** Layout keeps a free grid row above the top node row (loops on a top face, #2100). */
+  topMargin?: boolean
+  /** A self-loop wanted a top face but the first row has no room above it. */
+  wantsTopMargin?: boolean
   nodes: AsciiNode[]
   edges: AsciiEdge[]
   canvas: Canvas
@@ -508,7 +594,7 @@ export type RoleCanvas = (CharRole | null)[][]
  * Derived from the SVG theme system for visual consistency.
  */
 export interface AsciiTheme {
-  /** Text color (node labels, edge labels) */
+  /** Text color (labels); default `'inherit'` = the terminal's own foreground */
   fg: string
   /** Box border color (node borders, subgraph borders) */
   border: string

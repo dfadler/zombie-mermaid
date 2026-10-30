@@ -91,7 +91,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
       continue
     }
 
-    // bar [...]
+    // Bar [...]
     const barMatch = line.match(/^bar\s+\[([^\]]+)\]/)
     if (barMatch) {
       series.push({
@@ -101,7 +101,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
       continue
     }
 
-    // line [...]
+    // Line [...]
     const lineMatch = line.match(/^line\s+\[([^\]]+)\]/)
     if (lineMatch) {
       series.push({
