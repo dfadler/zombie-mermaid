@@ -105,6 +105,17 @@ describe('lifelines stay out of message labels (#1242)', () => {
     expect(b!.x - a!.x).toBe(140)
   })
 
+  it('ignores a message with no label when fitting gaps', () => {
+    const d = parseSequenceDiagram([
+      { text: 'participant A', line: 0 },
+      { text: 'participant B', line: 1 },
+      { text: 'A->>B: placeholder', line: 2 },
+    ])
+    d.messages[0]!.label = ''
+    const [a, b] = layoutSequenceDiagram(d).actors
+    expect(b!.x - a!.x).toBe(140)
+  })
+
   it('cuts lifelines around a bare divider label', () => {
     const divSvg = renderMermaidSVG(`sequenceDiagram
   participant A
