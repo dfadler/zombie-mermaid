@@ -145,13 +145,11 @@ function resolveSeqOptions(overrides?: RenderOptions['sequence']): SeqConfig {
 
 /** Space kept between a message label and the next lifeline. */
 const LABEL_CLEARANCE = 16
-/** A self-message label starts this far right of its lifeline (loop 30 + gap 8, as drawn by the renderer). */
-const SELF_LABEL_X = 38
 
 /**
  * Widen `gaps` (`gaps[i]` = distance from actor i - 1 to actor i) in place so a
  * message label never crosses a lifeline: a label between two actors is centred
- * on the span, a self-message label sits to the right of its loop. A shortfall
+ * on the span, a self-message label is centred on its lifeline. A shortfall
  * on a span of several gaps is spread evenly over them.
  */
 function fitMessageLabels(
@@ -169,16 +167,24 @@ function fitMessageLabels(
       fontSize,
       FONT_WEIGHTS.edgeLabel,
     ).width
-    const lo = Math.min(from, to)
-    const hi = from === to ? lo + 1 : Math.max(from, to)
-    if (hi >= gaps.length) continue // self-message on the last actor: no neighbour to push
-    const need =
-      from === to ? SELF_LABEL_X + w + LABEL_CLEARANCE : w + 2 * LABEL_CLEARANCE
-    let have = 0
-    for (let g = lo + 1; g <= hi; g++) have += gaps[g]!
-    if (have >= need) continue
-    const add = (need - have) / (hi - lo)
-    for (let g = lo + 1; g <= hi; g++) gaps[g]! += add
+    // A self-message label spills w / 2 to each side of its lifeline, so it
+    // widens the gap on either side (an end actor has no neighbour to push).
+    const spans =
+      from === to
+        ? [
+            [from - 1, from],
+            [from, from + 1],
+          ]
+        : [[Math.min(from, to), Math.max(from, to)]]
+    const need = from === to ? w / 2 + LABEL_CLEARANCE : w + 2 * LABEL_CLEARANCE
+    for (const [lo, hi] of spans as [number, number][]) {
+      if (lo < 0 || hi >= gaps.length) continue
+      let have = 0
+      for (let g = lo + 1; g <= hi; g++) have += gaps[g]!
+      if (have >= need) continue
+      const add = (need - have) / (hi - lo)
+      for (let g = lo + 1; g <= hi; g++) gaps[g]! += add
+    }
   }
 }
 
@@ -675,11 +681,9 @@ export function layoutSequenceDiagram(
           fontSizes.edgeLabel,
           FONT_WEIGHTS.edgeLabel,
         )
-        // Self-messages render labels at x1 + 36 (left-aligned); normal
-        // messages center the label between the two actor lifelines.
-        const msgLabelLeft = msg.isSelf
-          ? msg.x1 + 36
-          : (msg.x1 + msg.x2) / 2 - msgLabelW / 2
+        // Every message label is centred between its two lifelines (a
+        // self-message's both being the same one).
+        const msgLabelLeft = (msg.x1 + msg.x2) / 2 - msgLabelW / 2
         const msgLabelRight = msgLabelLeft + msgLabelW
 
         if (divLabelRight > msgLabelLeft && divLabelLeft < msgLabelRight) {
@@ -733,19 +737,23 @@ export function layoutSequenceDiagram(
     globalMinX = Math.min(globalMinX, b.x)
     globalMaxX = Math.max(globalMaxX, b.x + b.width)
   }
-  // Include self-message labels in bounding box — they extend to the right of the actor
-  // and could be clipped if not accounted for in the SVG width
+  // Include self-message loops and labels in bounding box — the loop hangs
+  // right of the lifeline and the label is centred on it, so either could be
+  // clipped by the SVG width (or the left edge) otherwise.
   for (const m of messages) {
-    if (m.isSelf && m.label) {
-      const loopW = 30 // Matches renderer loopW
-      const labelPadding = 8
-      const labelLeft = m.x1 + loopW + labelPadding
-      const labelWidth = estimateTextWidth(
-        m.label,
-        fontSizes.edgeLabel,
-        FONT_WEIGHTS.edgeLabel,
-      )
-      globalMaxX = Math.max(globalMaxX, labelLeft + labelWidth + 8) // +8 for safety margin
+    if (!m.isSelf) continue
+    globalMaxX = Math.max(globalMaxX, m.x1 + 30 + 8) // The loop width (renderer) plus a margin
+    if (m.label) {
+      const half =
+        estimateTextWidth(
+          m.label,
+          fontSizes.edgeLabel,
+          FONT_WEIGHTS.edgeLabel,
+        ) /
+          2 +
+        8 // +8 for safety margin
+      globalMaxX = Math.max(globalMaxX, m.x1 + half)
+      globalMinX = Math.min(globalMinX, m.x1 - half)
     }
   }
 

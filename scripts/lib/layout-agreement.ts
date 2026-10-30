@@ -13,6 +13,7 @@
 
 import { writeFile } from 'node:fs/promises'
 import type { PieEntry } from './pie-agreement.ts'
+import type { C4Entry } from './c4-agreement.ts'
 import type { SequenceEntry } from './sequence-agreement.ts'
 import type { XyEntry } from './xychart-agreement.ts'
 
@@ -451,7 +452,14 @@ export function jsonPayload(runs: ScorecardRun[]): string {
 
 /** History entries as JSON Lines, ready to append. */
 export function historyLines(
-  entries: (HistoryEntry | LabelEntry | SequenceEntry | PieEntry | XyEntry)[],
+  entries: (
+    | HistoryEntry
+    | LabelEntry
+    | SequenceEntry
+    | PieEntry
+    | C4Entry
+    | XyEntry
+  )[],
 ): string {
   return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
 }
@@ -513,7 +521,7 @@ export const EXCLUDED_TYPES: Readonly<Record<string, string>> = {
   'architecture-beta':
     'we have no architecture layout to measure, and mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port directions in the source.',
   pie: 'no nodes: positions come from data values. Slice angles, percentages and legend rows are scored separately, in the Pie section.',
-  c4: 'mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges.',
+  c4: 'mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges. Box placement, boundary containment and relationships are scored separately, in the C4 section.',
 }
 
 const EPS = 1e-9
@@ -660,6 +668,7 @@ export function scorecardMarkdown(
   labels: LabelEntry[] = [],
   sequences: SequenceEntry[] = [],
   pies: PieEntry[] = [],
+  c4s: C4Entry[] = [],
   xycharts: XyEntry[] = [],
 ): string {
   const first = runs[0]!.entry
@@ -754,6 +763,29 @@ ${pieRows.join('\n')}
 
 `
     : ''
+  const c4Rows = c4s
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.horizontal)} | ${cell(q.vertical)} | ${cell(q.containment)} | ${cell(q.relationships)} | ${cell(q.direction)} |`,
+    )
+  const c4Section = c4Rows.length
+    ? `## C4 diagrams (placement)
+
+C4 has no layout engine to compare, so the share of box pairs on the same side
+of each other (columns and rows, within \`PLACE_TOLERANCE\`), of boxes inside the
+same boundaries, of relationships with the same label and technology text and
+of relationships running the same way is taken (\`scripts/c4-oracle.ts\`).
+Every sample must score 100% (\`C4_FLOOR\`; \`--thresholds\` exits 1
+otherwise) except those held lower in \`C4_SAMPLE_FLOORS\`, where our placement
+really differs. It says nothing about box sizes or fonts.
+
+| Date | Commit | Mermaid | Samples | Horizontal | Vertical | Containment | Relationships | Direction |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+${c4Rows.join('\n')}
+
+`
+    : ''
   const xyRows = xycharts
     .slice(-20)
     .map(
@@ -809,7 +841,7 @@ across that change.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 ${trend.join('\n')}
 
-${labelSection}${seqSection}${pieSection}${xySection}## Per sample
+${labelSection}${seqSection}${pieSection}${c4Section}${xySection}## Per sample
 
 ${sections.join('\n\n')}
 

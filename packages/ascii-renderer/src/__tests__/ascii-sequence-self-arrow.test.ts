@@ -37,10 +37,10 @@ sequenceDiagram
     expect(line2Idx).toBe(line1Idx + 1)
 
     // A corrupted canvas dumps the raw "line one\nline two" string onto one
-    // cell: the terminal newline forces "line two" to print flush against
-    // column 0 (no box-drawing indentation) instead of as a properly
-    // positioned canvas row.
-    expect(lines[line2Idx]!.startsWith(' ')).toBe(true)
+    // cell, so "line two" would not sit centred on A's lifeline (the label
+    // is centred there, #2456) but flush against the wrong column.
+    const aCol = lines.find((l) => l.includes('│ A │'))!.indexOf('A')
+    expect(lines[line2Idx]!.indexOf('line two') + 4).toBe(aCol)
 
     // B's lifeline must still be intact on both label rows — a corrupted
     // canvas shifts every column right of the embedded newline down one
@@ -264,8 +264,9 @@ describe('ASCII sequence diagrams – self-message label clears the next lifelin
       )
     const long = 'a rather long self-message label here'
     expect(colFor(long)).toBeGreaterThan(colFor('hi'))
-    // Exactly: 2 columns of offset + label + 1 blank column past A (col 3).
-    expect(colFor(long)).toBe(3 + 2 + long.length + 1)
+    // Exactly: the label is centred on A (half its width each side of A's
+    // lifeline) + 1 blank column past it, so B sits `long.length + 1` out.
+    expect(colFor(long)).toBe(long.length + 1)
   })
 
   it('draws the label above the loop, with the loop intact below it', () => {
@@ -280,9 +281,27 @@ describe('ASCII sequence diagrams – self-message label clears the next lifelin
     expect(lines[two + 1]).toContain('├───┐')
     expect(lines[two + 2]).toMatch(/│ {3}│/)
     expect(lines[two + 3]).toContain('◀───┘')
-    // The lifeline stays unbroken through the label rows.
-    expect(lines[one]![3]).toBe('│')
-    expect(lines[two]![3]).toBe('│')
+    // Each label row is centred on the lifeline (#2456).
+    const aCol = lines.find((l) => l.includes('│ A │'))!.indexOf('A')
+    expect(lines[one]!.indexOf('line one') + 4).toBe(aCol)
+    expect(lines[two]!.indexOf('line two') + 4).toBe(aCol)
+  })
+
+  it('centres a wide label on a later actor and keeps the previous lifeline clear (#2456)', () => {
+    const lines = renderMermaidASCII(
+      `sequenceDiagram
+  participant A
+  participant B
+  B->>B: a long self message label here`,
+    ).split('\n')
+    const label = 'a long self message label here'
+    const row = lines.find((l) => l.includes(label))!
+    const bCol = lines.find((l) => l.includes('│ B │'))!.indexOf('B')
+    expect(row.indexOf(label) + Math.floor(label.length / 2)).toBe(bCol)
+    // A's lifeline survives the label's left half, one blank column clear.
+    const aCol = lines.find((l) => l.includes('│ A │'))!.indexOf('A')
+    expect(row[aCol]).toBe('│')
+    expect(row.indexOf(label)).toBeGreaterThan(aCol + 1)
   })
 
   it('accounts for the autonumber badge widening the loop', () => {

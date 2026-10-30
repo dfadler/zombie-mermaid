@@ -296,10 +296,9 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
   return parts.join('\n')
 }
 
-/** Self-message loop width, height, and the gap before its label, in px. */
+/** Self-message loop width and height, in px. */
 const SELF_LOOP_WIDTH = 30
 const SELF_LOOP_HEIGHT = 20
-const SELF_LABEL_PADDING = 8
 
 /** How far above its arrow a message label's centre sits, in px. */
 const MESSAGE_LABEL_RISE = 10
@@ -356,15 +355,8 @@ function collectLabelBoxes(
 
   for (const msg of diagram.messages) {
     if (!msg.label) continue
-    if (msg.isSelf) {
-      startAnchored(
-        msg.label,
-        msg.x1 + SELF_LOOP_WIDTH + SELF_LABEL_PADDING,
-        msg.y + SELF_LOOP_HEIGHT / 2,
-      )
-    } else {
-      centred(msg.label, (msg.x1 + msg.x2) / 2, msg.y - MESSAGE_LABEL_RISE)
-    }
+    // A self-message's label is centred on its lifeline (x1 === x2), like mermaid's.
+    centred(msg.label, (msg.x1 + msg.x2) / 2, msg.y - MESSAGE_LABEL_RISE)
   }
 
   for (const block of diagram.blocks) {
@@ -500,21 +492,9 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
     // Loop dimensions - loopH is fixed, loopW provides minimum clearance
     const loopW = SELF_LOOP_WIDTH
     const loopH = SELF_LOOP_HEIGHT
-    const labelPadding = SELF_LABEL_PADDING // Space between loop and label
     parts.push(
       f`  <polyline points="${msg.x1},${msg.y} ${msg.x1 + loopW},${msg.y} ${msg.x1 + loopW},${msg.y + loopH} ${msg.x2},${msg.y + loopH}" ` +
         f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
-    )
-    // Label to the right of the loop (supports multi-line)
-    parts.push(
-      '  ' +
-        renderMultilineText(
-          msg.label,
-          msg.x1 + loopW + labelPadding,
-          msg.y + loopH / 2,
-          fontSizes.edgeLabel,
-          f`font-size="${fontSizes.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
-        ),
     )
   } else {
     // Normal message: horizontal arrow
@@ -522,19 +502,18 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
       f`  <line x1="${msg.x1}" y1="${msg.y}" x2="${msg.x2}" y2="${msg.y}" ` +
         f`stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
     )
-    // Label above the arrow, centered (supports multi-line)
-    const midX = (msg.x1 + msg.x2) / 2
-    parts.push(
-      '  ' +
-        renderMultilineText(
-          msg.label,
-          midX,
-          msg.y - MESSAGE_LABEL_RISE,
-          fontSizes.edgeLabel,
-          f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
-        ),
-    )
   }
+  // Label above the arrow (or above a self-message loop), centred (supports multi-line)
+  parts.push(
+    '  ' +
+      renderMultilineText(
+        msg.label,
+        (msg.x1 + msg.x2) / 2,
+        msg.y - MESSAGE_LABEL_RISE,
+        fontSizes.edgeLabel,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      ),
+  )
 
   if (msg.seqNumber !== undefined) {
     parts.push('  ' + renderSeqNumberBadge(msg, fontSizes))

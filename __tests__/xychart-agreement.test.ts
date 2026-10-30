@@ -267,6 +267,7 @@ describe('xychart agreement (#2451)', () => {
       [],
       [],
       [],
+      [],
       [entry],
     )
     expect(md).toContain('## XY charts (axes and data)')
