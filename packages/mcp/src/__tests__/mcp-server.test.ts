@@ -194,7 +194,7 @@ describe('createMcpServer', () => {
         ),
       },
     ])
-    expect((await call(0)).isError).toBe(true) // schema: positive integer
+    expect((await call(0)).isError).toBe(true) // Schema: positive integer
   })
 
   it('rejects an out-of-range theme via input schema validation', async () => {

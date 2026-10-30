@@ -38,14 +38,25 @@ export class AsciiWidthError extends Error {
 
 // SGR color escapes (ansi.ts) and, for colorMode 'html', <span> tags.
 const SGR = /\x1b\[[0-9;]*m/g
-const TAGS = /<[^>]*>/g
+
+/** Drop `<...>` runs by scanning (a measuring aid, not a sanitizer). */
+function dropTags(s: string): string {
+  let out = ''
+  let depth = false
+  for (const ch of s) {
+    if (ch === '<') depth = true
+    else if (ch === '>' && depth) depth = false
+    else if (!depth) out += ch
+  }
+  return out
+}
 
 /** Widest line in terminal columns, ignoring color codes, OSC 8 links and html tags. */
 export function maxLineWidth(rendered: string, html = false): number {
   let w = 0
   for (const line of rendered.split('\n')) {
     const plain = stripOsc8(line.replace(SGR, ''))
-    w = Math.max(w, displayWidth(html ? plain.replace(TAGS, '') : plain))
+    w = Math.max(w, displayWidth(html ? dropTags(plain) : plain))
   }
   return w
 }
