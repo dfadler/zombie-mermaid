@@ -1,14 +1,25 @@
-# Slim ASCII entry points: per-type subpaths on the ascii-renderer
+# Slim ASCII entry points: where does per-type splitting live?
 
-Status: proposal
+Status: proposal (reframed 2026-10-30; no code until question 1 is decided)
 
 Tracks [#2086](https://github.com/dfadler/zombie-mermaid/issues/2086), under
 [#1502](https://github.com/dfadler/zombie-mermaid/issues/1502) and the
 objective in [project-objective-1564.md](project-objective-1564.md). This doc
-proposes; it changes no code, export map, budget or policy. Everything under
-"Maintainer questions" is the maintainer's call. No code ships with this doc:
-the first useful code step edits `packages/ascii-renderer/src/index.ts`, which
-other open work also touches (see "Order of PRs").
+records the measurements and the cheapest way to get the size win; it changes
+no code, export map, budget or policy. Everything under "Maintainer questions"
+is the maintainer's call. No code ships with this doc: the first useful code
+step edits `packages/ascii-renderer/src/index.ts`, which other open work also
+touches (see "Order of PRs").
+
+**Reframe.** The objective's Option B ("the best Mermaid renderer for terminals
+and agents") records a direction toward a separate terminal-oriented package
+(working name `zombie-mermaid-ascii-terminal`) on a shared core parser with
+composable renderers. #2086's "no second package" goal predates that. The open
+question is no longer only "subpaths or nothing" but whether per-type
+splitting belongs in `ascii-renderer` at all or should be designed together
+with the terminal package. Designing the split twice is the cost to avoid. The
+measurements below hold either way; the subpath design is the fallback if the
+terminal package is not near.
 
 ## Context
 
@@ -19,7 +30,8 @@ A consumer that needs one diagram type still ships all eight, because
 `packages/ascii-renderer/src/index.ts`). Tree-shaking, barrels and
 `"sideEffects": false` already work; the registry is the only remaining lever
 ([#2271 findings](https://github.com/dfadler/zombie-mermaid/issues/2271#issuecomment-6346544372),
-cited here, not repeated). The issue body fixes the goal: no second package, no
+cited here, not repeated). The issue body sets the goal (written before the
+terminal-package direction, see the reframe above): no second package, no
 fork, and `renderMermaidASCII` stays synchronous, because a lazy registry
 would make it async, which is a major (versioning policy, section 1, "Changes
 error behaviour" and "Removes ... an export" rows; #2271 breaking-change note).
@@ -79,7 +91,29 @@ flowchart + sequence, saves only 34%, because flowchart is the 54 KB part.
 Flowchart + sequence is therefore not a case worth a dedicated entry: it is the
 two subpaths used together (see "Duplication").
 
-## Decision (proposed)
+## Where this fits the terminal-package direction
+
+The objective leaves open how a terminal renderer would compose with the ASCII
+renderer, and whether types ship as sub-packages. Three ways #2086 can relate:
+
+- **Subpaths first (this doc's design).** Cheapest, additive, and the numbers
+  are measured. Risk: the subpath API (names, factory shape, budgets) becomes
+  public surface the terminal package must then either re-export or deprecate.
+  Subpaths could later become re-exports of the new package, but that is only
+  true if its per-type layout matches.
+- **Fold into the terminal package.** Design the shared parser and per-type
+  renderers once; slim entries fall out of the composable-renderer shape. No
+  throwaway API, but no size win until that package exists, and its timing is
+  undecided.
+- **Do nothing yet.** Keep the measurements here, wait for a consumer to ask.
+
+Proposed: hold the code (PRs 2 onward) until the terminal-package direction has
+a decision, and merge this doc now as the measurement record. If the terminal
+package is more than a release or two out, proceed with subpaths, shaped so the
+factory (`createRenderMermaidASCII(table)`) is the unit the terminal package
+would reuse.
+
+## Subpath design (fallback, if proceeding before the terminal package)
 
 **Additive subpath exports on `@zombie-mermaid/ascii-renderer`, each its own
 self-contained build; the default entry is unchanged.** Rejected: a lazy
@@ -158,7 +192,7 @@ measurement. Question 3.
 
 ## Order of PRs
 
-1. **This doc.** No code.
+1. **This doc.** No code. Everything below is held until question 1 is answered.
 2. **Factory extraction, no behaviour change.** Move the body of
    `renderMermaidASCII` into `createRenderMermaidASCII(table)`; `index.ts` calls
    it with `asciiRegistry`. Touches `index.ts` (which carries the limits,
@@ -222,8 +256,9 @@ budgets absorb (they are set from measurement plus 2%, per CONTRIBUTING.md).
   new entries unchanged. The issue's open question, whether a flowchart-only
   entry conflicts with ASCII/SVG parity per type, is answered: no, because
   parity is a property of the renderers, which are not duplicated or forked.
-  Slim entries also do not change the ASCII-first versus terminal-package
-  "Direction, not a decision" in the objective.
+  Slim entries do not decide the terminal-package "Direction, not a decision"
+  in the objective, but they do add public surface that direction would have to
+  absorb; hence question 1.
 
 ## Self-review checklist
 
@@ -265,7 +300,11 @@ Run against this draft ([decision-doc-self-review-checklist-977.md](decision-doc
 
 ## Maintainer questions
 
-1. **Go ahead with PR 2 and 3 (`./sequence` first)?** Proposed: yes, after
+1. **Order against the terminal package.** Build per-type subpaths on
+   `ascii-renderer` now (PR 2 and 3, `./sequence` first), or hold until the
+   terminal-package direction is decided and design the split there?
+   Proposed: hold, and keep this doc as the measurement record; if the terminal
+   package is not near, proceed after
    [#2119](https://github.com/dfadler/zombie-mermaid/pull/2119) or merging
    `main` into the branch.
 2. **Is `./flowchart` worth its 54 KB, or only the five small types?** The
