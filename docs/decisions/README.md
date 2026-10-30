@@ -93,6 +93,7 @@ Add a row when you add a doc; update the status when it changes. The issue colum
 | [self-hosted-runner-docker-cache.md](self-hosted-runner-docker-cache.md)                                         | not adopted          | [#738](https://github.com/dfadler/zombie-mermaid/issues/738)   |
 | [simple-layout-1685.md](simple-layout-1685.md)                                                                   | implemented          | [#1685](https://github.com/dfadler/zombie-mermaid/issues/1685) |
 | [site-generators-react-migration.md](site-generators-react-migration.md)                                         | superseded           | [#423](https://github.com/dfadler/zombie-mermaid/issues/423)   |
+| [slim-ascii-entry-points-2086.md](slim-ascii-entry-points-2086.md)                                               | proposal             | [#2086](https://github.com/dfadler/zombie-mermaid/issues/2086) |
 | [tarballs-ship-dist-only-1426.md](tarballs-ship-dist-only-1426.md)                                               | implemented          | [#1426](https://github.com/dfadler/zombie-mermaid/issues/1426) |
 | [theme-selector-shared-state.md](theme-selector-shared-state.md)                                                 | implemented          | [#685](https://github.com/dfadler/zombie-mermaid/issues/685)   |
 | [versioning-and-deprecation-policy-1568.md](versioning-and-deprecation-policy-1568.md)                           | accepted             | [#1568](https://github.com/dfadler/zombie-mermaid/issues/1568) |
