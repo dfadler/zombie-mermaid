@@ -92,8 +92,10 @@ two subpaths used together (see "Duplication").
 ## Where this fits the terminal-package direction
 
 Decided: the size work goes to the terminal package (#2457), not to
-`ascii-renderer`. #2086 is held with no code until that package starts, and no
-consumer is blocked in the meantime (the default entry is unchanged). The
+`ascii-renderer`. #2086 is held with no code until that package starts, and
+consumers of the current default entry are not affected (it is unchanged).
+Consumers who need slim, per-type or width-limited output have no such option
+until the terminal package ships. The
 design below is retained as a record of what was costed, and as a starting point
 for the terminal package's per-type layout, not as a plan for `ascii-renderer`.
 
@@ -132,9 +134,12 @@ a slim entry that imports only its renderers needs no registry change at all.
 The issue's child "split `registry.ts` so importing one renderer does not pull
 the rest" is therefore not a prerequisite, and skipping it avoids the file other
 agents edit. The price is that the list of types is stated in two places (the
-default table and each slim entry). The parity test below, plus a
-`Record<DiagramType, ...>`-typed default table, catches a new type added to one
-and not the other.
+default table and each slim entry). The `Record<DiagramType, ...>` type
+constrains only the default table, and each slim table is intentionally partial,
+so neither the type nor a parity test (which covers only the types it lists)
+detects a new type omitted from an intended slim entry. Catching that would need
+a typed subpath manifest checked against `asciiRegistry`; that is part of the
+design if this is ever built.
 
 ### Build and export map
 
@@ -272,9 +277,9 @@ Run against this draft ([decision-doc-self-review-checklist-977.md](decision-doc
   `unpackedBudgets` is unpacked bytes).
 - **Sub-issue scope claims.** "Split `registry.ts`" is not required here, see
   above; the claim rests on slim entries owning their own tables, and PR 2 is
-  the check. "Parity test per subpath" is also where a type added to the default
-  table but not a slim one would surface, which the doc relies on and has not
-  yet been written.
+  the check. A parity test per subpath checks only the types it lists, so it does
+  not by itself detect a type omitted from a slim entry (see the typed manifest
+  note above); it has not been written.
 - **Cited precedent.** Opened and confirmed: the one-environment-per-entry and
   no-shared-chunk design and the `shared/` `.d.ts` stubbing in
   `config/vite.config.lib.ts`; the single-entry assumptions in
