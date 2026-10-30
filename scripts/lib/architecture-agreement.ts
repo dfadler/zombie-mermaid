@@ -32,8 +32,12 @@ export const ARCH_TOLERANCE = 40
 /** Official mermaid draws a service or junction as an 80px square at its `translate`. */
 const ICON = 80
 
-const num = (tag: string, name: string): number =>
-  Number(new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1])
+const num = (tag: string, name: 'x' | 'y' | 'width' | 'height'): number => {
+  const at = tag.indexOf(` ${name}="`)
+  return Number(
+    tag.slice(at + name.length + 3, tag.indexOf('"', at + name.length + 3)),
+  )
+}
 
 const translate = (tag: string): { x: number; y: number } | undefined => {
   const m = /translate\(\s*(-?[\d.]+)[ ,]+\s*(-?[\d.]+)\s*\)/.exec(tag)
@@ -51,23 +55,28 @@ export function parseOfficialArchitecture(
 ): LayoutBoxes {
   const nodes: Record<string, Box> = {}
   const groups: Record<string, Box> = {}
-  const add = (re: RegExp): void => {
-    for (const m of svg.matchAll(re)) {
-      const t = translate(m[0])
-      if (t) nodes[m[1]!] = { x: t.x, y: t.y, w: ICON, h: ICON }
-    }
+  // Ids look like `<render>-service-<id>`; only those of this render count.
+  const idOf = (tag: string, kind: string): string | undefined => {
+    const id = /\sid="([^"]*)"/.exec(tag)?.[1]
+    const prefix = `${renderId}-${kind}-`
+    return id?.startsWith(prefix) ? id.slice(prefix.length) : undefined
   }
-  add(new RegExp(`<g\\b[^>]*id="${renderId}-service-([^"]+)"[^>]*>`, 'g'))
-  add(
-    new RegExp(
-      `<g\\b[^>]*class="architecture-junction"[^>]*>\\s*<g>\\s*<rect\\b[^>]*id="${renderId}-node-([^"]+)"`,
-      'g',
-    ),
-  )
+  const put = (tag: string, id: string | undefined): void => {
+    const t = translate(tag)
+    if (id !== undefined && t) nodes[id] = { x: t.x, y: t.y, w: ICON, h: ICON }
+  }
+  for (const m of svg.matchAll(/<g\b[^>]*>/g)) {
+    put(m[0], idOf(m[0], 'service'))
+  }
   for (const m of svg.matchAll(
-    new RegExp(`<rect\\b[^>]*id="${renderId}-group-([^"]+)"[^>]*>`, 'g'),
+    /<g\b[^>]*class="architecture-junction"[^>]*>\s*<g>\s*<rect\b[^>]*>/g,
   )) {
-    groups[m[1]!] = {
+    put(m[0], idOf(m[0].slice(m[0].lastIndexOf('<rect')), 'node'))
+  }
+  for (const m of svg.matchAll(/<rect\b[^>]*>/g)) {
+    const id = idOf(m[0], 'group')
+    if (id === undefined) continue
+    groups[id] = {
       x: num(m[0], 'x'),
       y: num(m[0], 'y'),
       w: num(m[0], 'width'),
