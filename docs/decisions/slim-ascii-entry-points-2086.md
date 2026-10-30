@@ -57,8 +57,8 @@ Cross-checks:
   `zombie-mermaid/ascii` is 273,422 B minified, 92,248 B gzip
   (`bundleSource` from `scripts/vite-bundle.ts`). The overlay model is therefore
   within 0.2% of what ships.
-- Flowchart-only 53.9 KB agrees with #2271's 54.2 KB (esbuild) and the -43%
-  with its -42.8%. The issue's 5.3.0 baseline (80 KB full, 44.7 KB flowchart)
+- Flowchart-only 53.9 KB agrees with #2271's 54.2 KB (esbuild); the current -41.4% is
+  consistent with that comment's historical -42.8%. The issue's 5.3.0 baseline (80 KB full, 44.7 KB flowchart)
   has grown to 92 KB and 54 KB with the code.
 - SVG has the same shape (#2271: 86.7 KB to 42.7 KB gzip, -51%, flowchart-only).
   Not re-measured here; `svg-renderer/src/registry.ts` is out of #2086's
@@ -91,13 +91,13 @@ speculative).
 
 ### Layout
 
-| subpath on `@zombie-mermaid/ascii-renderer` | registers                                          |      measured gzip (consumer bundle) |
-| ------------------------------------------- | -------------------------------------------------- | -----------------------------------: |
-| `.` (unchanged)                             | all eight                                          |                               92,096 |
-| `./flowchart`                               | `flowchart` and `architecture` (lowered)           | about 54,000 (53,929 flowchart only) |
-| `./sequence`                                | `sequence`                                         |                               14,346 |
-| later: `./er`, `./c4`, `./xychart`, `./pie` | one type each                                      |                      9,663 to 14,792 |
-| `./class`                                   | not proposed: saves 34%, pulls the flowchart stack |                               60,533 |
+| subpath on `@zombie-mermaid/ascii-renderer` | registers                                          |                           measured gzip (consumer bundle) |
+| ------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------: |
+| `.` (unchanged)                             | all eight                                          |                                                    92,096 |
+| `./flowchart`                               | `flowchart` and `architecture` (lowered)           | 55,137 (flowchart + architecture; flowchart alone 53,929) |
+| `./sequence`                                | `sequence`                                         |                                                    14,346 |
+| later: `./er`, `./c4`, `./xychart`, `./pie` | one type each                                      |                                           9,663 to 14,792 |
+| `./class`                                   | not proposed: saves 34%, pulls the flowchart stack |                                                    60,533 |
 
 Each subpath exports the same `renderMermaidASCII` name and options type as the
 default entry, built from one shared factory (`createRenderMermaidASCII(table)`
@@ -151,9 +151,10 @@ entries).
 
 Unpacked size: `dist/` ships ESM and CJS of every entry. The default entry is
 about 205 KB per format today, so two slim entries add roughly 135 to 165 KB
-per format by proportion (flowchart about 59% of full, sequence about 16% of
-full, by gzip share). This is an estimate, not a measurement; it means the
-unpacked budget (427,100 B) rises by roughly 60 to 70%. Question 3.
+per format by proportion (flowchart about 60% of full, sequence about 16% of
+full, by gzip share). Across ESM and CJS that is roughly 270 to 330 KB, about
+63 to 77% of the 427,100 B unpacked budget. This is a rough estimate, not a
+measurement. Question 3.
 
 ## Order of PRs
 
@@ -228,10 +229,13 @@ budgets absorb (they are set from measurement plus 2%, per CONTRIBUTING.md).
 
 Run against this draft ([decision-doc-self-review-checklist-977.md](decision-doc-self-review-checklist-977.md)).
 
-- **Degenerate inputs.** Empty or non-diagram text: `detectDiagramType` runs
-  before the table, so the slim entry reports the unregistered or unknown type
-  through the same path as the default entry; PR 2's tests assert this for
-  empty input. A single-type table (`./sequence`) is the base case measured
+- **Degenerate inputs.** Empty or non-diagram text: `detectDiagramType` never
+  returns an unknown type: unrecognized or empty text falls back to
+  `flowchart` (`packages/core/src/diagram-type.ts`). So the default entry sends
+  it to the flowchart renderer, and `./sequence` receives an unregistered
+  `flowchart` input and raises the slim entry's new dispatch error (named type
+  plus the entry that handles it). Detection is shared; that error is new
+  surface. PR 2's tests assert both for empty input. A single-type table (`./sequence`) is the base case measured
   above. Mixed content (a sequence diagram sent to `./flowchart`) throws with
   the entry hint; a state diagram sent to `./flowchart` is `flowchart` type and
   renders. `architecture` is lowered to a flowchart, so `./flowchart` must
@@ -267,7 +271,7 @@ Run against this draft ([decision-doc-self-review-checklist-977.md](decision-doc
 2. **Is `./flowchart` worth its 54 KB, or only the five small types?** The
    small types save 84 to 90%; flowchart saves 41%. Proposed: both, small types
    first as the cheapest proof of the build.
-3. **Unpacked-size cost.** Subpaths add an estimated 60 to 70% to the
+3. **Unpacked-size cost.** Subpaths add an estimated 63 to 77% (rough) to the
    ascii-renderer tarball. Accept it and raise `unpackedBudgets`, or ship
    subpaths ESM-only (a policy change; the package ships CJS today)? Proposed:
    accept it and measure in PR 3.
