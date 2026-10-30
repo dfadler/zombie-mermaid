@@ -12,6 +12,7 @@
  */
 
 import { writeFile } from 'node:fs/promises'
+import type { PieEntry } from './pie-agreement.ts'
 import type { C4Entry } from './c4-agreement.ts'
 import type { SequenceEntry } from './sequence-agreement.ts'
 
@@ -450,7 +451,7 @@ export function jsonPayload(runs: ScorecardRun[]): string {
 
 /** History entries as JSON Lines, ready to append. */
 export function historyLines(
-  entries: (HistoryEntry | LabelEntry | SequenceEntry | C4Entry)[],
+  entries: (HistoryEntry | LabelEntry | SequenceEntry | PieEntry | C4Entry)[],
 ): string {
   return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
 }
@@ -511,7 +512,8 @@ export const EXCLUDED_TYPES: Readonly<Record<string, string>> = {
     'mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, so node placement says nothing. Order and direction are scored separately, in the Sequence section.',
   'architecture-beta':
     'we have no architecture layout to measure, and mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port directions in the source.',
-  'pie, xychart-beta':
+  pie: 'no nodes: positions come from data values. Slice angles, percentages and legend rows are scored separately, in the Pie section.',
+  'xychart-beta':
     'no nodes: positions come from data values, so there is no arrangement to compare.',
   c4: 'mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges. Box placement, boundary containment and relationships are scored separately, in the C4 section.',
 }
@@ -659,6 +661,7 @@ export function scorecardMarkdown(
   command = 'pnpm run layout:scorecard',
   labels: LabelEntry[] = [],
   sequences: SequenceEntry[] = [],
+  pies: PieEntry[] = [],
   c4s: C4Entry[] = [],
 ): string {
   const first = runs[0]!.entry
@@ -731,6 +734,28 @@ ${seqRows.join('\n')}
 
 `
     : ''
+  const pieRows = pies
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.angles)} | ${cell(q.labels)} | ${cell(q.legend)} |`,
+    )
+  const pieSection = pieRows.length
+    ? `## Pie charts (angles)
+
+A pie has no nodes, so the share of drawn slices whose start and sweep angle
+agree (within \`ANGLE_TOLERANCE\`), of slices printing the same percentage and
+of legend rows with the same text is taken (\`scripts/pie-oracle.ts\`). Slices
+are matched by position, so a different slice order counts as an angle
+disagreement. Every sample must score 100% (\`PIE_FLOOR\`; \`--thresholds\`
+exits 1 otherwise). It says nothing about radius, centre or fonts.
+
+| Date | Commit | Mermaid | Samples | Angles | Labels | Legend |
+| --- | --- | --- | --- | --- | --- | --- |
+${pieRows.join('\n')}
+
+`
+    : ''
   const c4Rows = c4s
     .slice(-20)
     .map(
@@ -786,7 +811,7 @@ across that change.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 ${trend.join('\n')}
 
-${labelSection}${seqSection}${c4Section}## Per sample
+${labelSection}${seqSection}${pieSection}${c4Section}## Per sample
 
 ${sections.join('\n\n')}
 

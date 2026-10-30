@@ -9,8 +9,10 @@ import { MermaidGraph } from '@zombie-mermaid/core';
 import { NodeInteraction } from '@zombie-mermaid/core';
 import { NodeShape } from '@zombie-mermaid/core';
 import { Point } from '@zombie-mermaid/core';
+import { QuadrantConfig } from '@zombie-mermaid/core';
 import { Statement } from '@zombie-mermaid/core';
 import { StyleDirectives } from '@zombie-mermaid/core';
+import { ThemeVariables } from '@zombie-mermaid/core';
 import { toDirection } from '@zombie-mermaid/core';
 
 // @public
@@ -1002,6 +1004,7 @@ export interface PositionedQuadrantChart {
     points: PositionedQuadrantPoint[];
     // (undocumented)
     quadrants: PositionedQuadrantCell[];
+    themeColors?: ThemeVariables['quadrant'];
     // (undocumented)
     title?: PositionedQuadrantText;
     // (undocumented)
@@ -1107,8 +1110,10 @@ export interface PositionedXYChart {
 // @public
 export interface QuadrantChart {
     classes: Record<string, QuadrantPointStyle>;
+    config?: QuadrantConfig;
     points: QuadrantPoint[];
     quadrants: [string, string, string, string];
+    themeColors?: ThemeVariables['quadrant'];
     // (undocumented)
     title?: string;
     xAxisLeft?: string;

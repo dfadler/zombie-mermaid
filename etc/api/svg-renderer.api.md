@@ -288,20 +288,22 @@ export function pointsToPath(points: Point[], curve?: CurveStyle): string;
 
 // @public
 export const QUADRANT: {
-    readonly width: 500;
-    readonly height: 500;
     readonly titlePadding: 10;
     readonly titleFontSize: 20;
     readonly quadrantPadding: 5;
-    readonly axisLabelPadding: 5;
-    readonly axisLabelFontSize: 16;
+    readonly xAxisLabelPadding: 5;
+    readonly yAxisLabelPadding: 5;
+    readonly xAxisLabelFontSize: 16;
+    readonly yAxisLabelFontSize: 16;
     readonly quadrantLabelFontSize: 16;
     readonly quadrantTextTopPadding: 5;
     readonly pointTextPadding: 5;
     readonly pointLabelFontSize: 12;
     readonly pointRadius: 5;
-    readonly internalBorderWidth: 1;
-    readonly externalBorderWidth: 2;
+    readonly quadrantInternalBorderStrokeWidth: 1;
+    readonly quadrantExternalBorderStrokeWidth: 2;
+    readonly xAxisPosition: "top";
+    readonly yAxisPosition: "left";
 };
 
 // @public

@@ -148,9 +148,14 @@ sample by hand (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` pins 
   strengths; mermaid uses lavender steps from its `primaryColor`.
 - **Text widths.** Neither renderer measures text; this library's font is not mermaid's
   `trebuchet ms`, so a long label overflows at a slightly different point.
-- **Not read yet.** `quadrantChart` config in `%%{init}%%` (`chartWidth`, `pointRadius`,
-  `xAxisPosition`, ...) and the `quadrant*Fill` / `quadrantPoint*` theme variables are
-  ignored; the chart is always 500 x 500.
+- **Init config and theme variables.** The `quadrantChart` block of `%%{init}%%`
+  (`chartWidth`, `chartHeight`, the paddings and font sizes, `pointRadius`,
+  `xAxisPosition`, `yAxisPosition`, the border stroke widths) is applied as mermaid
+  does, checked against 12.2.0; a non-number, negative number or unknown position is
+  dropped. The `quadrant*Fill`, `quadrant*TextFill`, `quadrantPoint*`, axis text, title
+  and border `*StrokeFill` variables are read under any theme, like mermaid, but only
+  with `honorThemeVariables` ([themeVariables](diagrams.md#themevariables-opt-in)).
+  ASCII ignores both. Mermaid's other theme-derived colours are not computed.
 - **Empty labels.** Mermaid draws an empty `<text>` for a quadrant with no label; this
   library draws nothing.
 - **ASCII.** Mermaid has no ASCII output. The x axis is always below the grid (mermaid's
