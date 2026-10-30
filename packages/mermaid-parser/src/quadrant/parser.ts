@@ -1,4 +1,8 @@
-import { MermaidParseError, decodeMermaidEntities } from '@zombie-mermaid/core'
+import {
+  MermaidParseError,
+  decodeMermaidEntities,
+  extractInitConfig,
+} from '@zombie-mermaid/core'
 import type {
   QuadrantChart,
   QuadrantPoint,
@@ -263,5 +267,8 @@ export function parseQuadrantChart(source: string): QuadrantChart {
     const cls = point.className ? chart.classes[point.className] : undefined
     chart.points.push({ ...point, ...cls, ...own })
   }
+  const { quadrant, themeVariables } = extractInitConfig(source.split(/\r?\n/))
+  if (quadrant) chart.config = quadrant
+  if (themeVariables?.quadrant) chart.themeColors = themeVariables.quadrant
   return chart
 }

@@ -123,7 +123,15 @@ describe('architecture agreement (#2451)', () => {
         mermaid: '12.2.0',
       }),
     }
-    const md = scorecardMarkdown([run], [run.entry], undefined, [], [], [entry])
+    const md = scorecardMarkdown(
+      [run],
+      [run.entry],
+      undefined,
+      [],
+      [],
+      [],
+      [entry],
+    )
     expect(md).toContain('## Architecture diagrams (placement)')
     expect(md).toContain(
       '| 2026-10-30 | abcdef0 | 12.2.0 | 1 | 50% | 100% | - |',

@@ -1,6 +1,7 @@
 /** History and scorecard recording for scripts/layout-oracle.ts (#1572, #1686). */
 
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
+import type { PieEntry } from './pie-agreement.ts'
 import type { ArchitectureEntry } from './architecture-agreement.ts'
 import type { SequenceEntry } from './sequence-agreement.ts'
 import {
@@ -17,11 +18,13 @@ export async function writeRecords(
   runs: ScorecardRun[],
   labelEntry: LabelEntry | undefined,
   sequenceEntry?: SequenceEntry,
+  pieEntry?: PieEntry,
   architectureEntry?: ArchitectureEntry,
 ): Promise<void> {
   let history = runs.map((r) => r.entry)
   let labels = labelEntry ? [labelEntry] : []
   let sequences = sequenceEntry ? [sequenceEntry] : []
+  let pies = pieEntry ? [pieEntry] : []
   let architectures = architectureEntry ? [architectureEntry] : []
   if (args.history) {
     await appendFile(
@@ -30,6 +33,7 @@ export async function writeRecords(
         ...history,
         ...labels,
         ...(sequenceEntry ? [sequenceEntry] : []),
+        ...(pieEntry ? [pieEntry] : []),
         ...(architectureEntry ? [architectureEntry] : []),
       ]),
     )
@@ -42,6 +46,7 @@ export async function writeRecords(
             | HistoryEntry
             | LabelEntry
             | SequenceEntry
+            | PieEntry
             | ArchitectureEntry,
       )
     history = all.filter((e): e is HistoryEntry => !('kind' in e))
@@ -51,6 +56,7 @@ export async function writeRecords(
     sequences = all.filter(
       (e): e is SequenceEntry => 'kind' in e && e.kind === 'sequence',
     )
+    pies = all.filter((e): e is PieEntry => 'kind' in e && e.kind === 'pie')
     architectures = all.filter(
       (e): e is ArchitectureEntry => 'kind' in e && e.kind === 'architecture',
     )
@@ -65,6 +71,7 @@ export async function writeRecords(
         undefined,
         labels,
         sequences,
+        pies,
         architectures,
       ),
     )
