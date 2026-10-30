@@ -59,6 +59,7 @@ marks a candidate, not an unused symbol.
   `mcp_cjs` environment with an `import.meta.url` shim, and a
   `dist/shared/package.json` `{"type":"commonjs"}` marker that exists only to
   make `.d.cts` stubs resolve.
+- **Prior judgment.** The package-size research for [#1373](https://github.com/dfadler/zombie-mermaid/issues/1373) (doc since removed; [last version](https://github.com/dfadler/zombie-mermaid/blob/fefa926492c970aa68be907a0ace11d83ab91478/docs/research/1373-package-size.md), finding 6) called CJS duplication "not actionable" because dropping CJS is breaking. That is the case here too: it is actionable only inside a major.
 - **A real cost of dropping it:** CJS was added on purpose
   ([#82](https://github.com/dfadler/zombie-mermaid/pull/82), to stop
   `ERR_PACKAGE_PATH_NOT_EXPORTED`), so some consumers `require()` today. npm
