@@ -1,5 +1,7 @@
 # @zombie-mermaid/core
 
+## 5.12.0
+
 ## 5.11.3
 
 ### Patch Changes
