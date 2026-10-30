@@ -60,6 +60,7 @@ import {
 import { labelEntryFor } from './lib/label-position.ts'
 import { writeRecords } from './lib/layout-record.ts'
 import { scoreSequence } from './lib/sequence-measure.ts'
+import { scoreQuadrant } from './lib/quadrant-measure.ts'
 import type { SequenceEntry } from './lib/sequence-agreement.ts'
 import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
@@ -225,6 +226,8 @@ async function main(): Promise<number> {
       const seq = await scoreSequence(session, commit)
       sequenceEntry = seq.entry
       if (args.thresholds) failing.push(...seq.breaches)
+      const quad = await scoreQuadrant(session)
+      if (args.thresholds) failing.push(...quad.breaches)
     }
   } finally {
     await session.close()

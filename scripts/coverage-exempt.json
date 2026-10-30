@@ -215,6 +215,16 @@
     "maxLines": 60
   },
   {
+    "file": "scripts/quadrant-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/quadrant-agreement.ts",
+    "maxLines": 45
+  },
+  {
+    "file": "scripts/lib/quadrant-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the quadrant-oracle and layout-oracle CLIs",
+    "maxLines": 45
+  },
+  {
     "file": "scripts/lib/sequence-measure.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the sequence-oracle and layout-oracle CLIs",
     "maxLines": 62
