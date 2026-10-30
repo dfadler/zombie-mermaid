@@ -1,15 +1,13 @@
-# Slim ASCII entry points: where does per-type splitting live?
+# Slim ASCII entry points: measurements, and why the work moves to the terminal package
 
-Status: proposal (reframed 2026-10-30; size work moves to the terminal package, #2457)
+Status: not adopted (maintainer, 2026-10-30: no slim subpaths on `ascii-renderer`; size work moves to the terminal package, #2457)
 
 Tracks [#2086](https://github.com/dfadler/zombie-mermaid/issues/2086), under
 [#1502](https://github.com/dfadler/zombie-mermaid/issues/1502) and the
 objective in [project-objective-1564.md](project-objective-1564.md). This doc
-records the measurements and the cheapest way to get the size win; it changes
-no code, export map, budget or policy. Everything under "Maintainer questions"
-is the maintainer's call. No code ships with this doc: the first useful code
-step edits `packages/ascii-renderer/src/index.ts`, which other open work also
-touches (see "Order of PRs").
+records the per-type bundle measurements and the costed subpath design, and the
+decision to build slim output in the terminal package instead. It changes no
+code, export map, budget or policy.
 
 **Reframe (maintainer, 2026-10-30).** The ascii package's trajectory does not
 change: `@zombie-mermaid/ascii-renderer` stays the best reproduction of Mermaid
@@ -34,7 +32,8 @@ terminal-package direction, see the reframe above): no second package, no
 fork, and `renderMermaidASCII` stays synchronous, because a lazy registry
 would make it async, which is a major (versioning policy, section 1, "Changes
 error behaviour" and "Removes ... an export" rows; #2271 breaking-change note).
-So the choice is additive subpaths, opt-in registration, or nothing.
+So the options on `ascii-renderer` were additive subpaths, opt-in registration,
+or nothing; the decision (below) is to do none of them there.
 
 ## Measurements (main at 507a2263, v5.12.0)
 
@@ -100,13 +99,14 @@ for the terminal package's per-type layout, not as a plan for `ascii-renderer`.
 
 ## Subpath design (costed, not planned for ascii-renderer)
 
-**Additive subpath exports on `@zombie-mermaid/ascii-renderer`, each its own
-self-contained build; the default entry is unchanged.** Rejected: a lazy
+**The costed option: additive subpath exports on `@zombie-mermaid/ascii-renderer`,
+each its own self-contained build; the default entry unchanged.** Not pursued
+there (see above). Also considered and rejected: a lazy
 registry (async, major), an opt-in `registerDiagram()` on the default entry
 (the default entry would still carry all eight renderers unless registration
 moved out of it, which is a different, breaking default), and "do nothing"
-(maintainer chose to proceed on #2086; the saving is measured, not
-speculative).
+(the saving is measured, not speculative, so this was not the reason
+to decline).
 
 ### Layout
 
@@ -175,7 +175,7 @@ full, by gzip share). Across ESM and CJS that is roughly 270 to 330 KB, about
 63 to 77% of the 427,100 B unpacked budget. This is a rough estimate, not a
 measurement. Question 3.
 
-## Order of PRs
+## Order of PRs (held; not scheduled)
 
 1. **This doc.** No code. Everything below is held until the terminal package (#2457) starts; it is the costed sequence, not a schedule.
 2. **Factory extraction, no behaviour change.** Move the body of
