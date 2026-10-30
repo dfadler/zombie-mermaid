@@ -133,6 +133,30 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
   ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
 
+## Quadrant charts
+
+Checked on mermaid 12.2.0 (the pin, also npm `latest`); there is no layout oracle for
+this type yet, so the geometry is matched to a real mermaid render of the campaigns
+sample by hand (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` pins its numbers).
+
+- **Point colour.** Mermaid 12.2.0's default theme emits `fill="hsl(240, 100%, NaN%)"`
+  for every point without a `color`, which browsers drop, so mermaid.live and GitHub show
+  near-black dots. zombie-mermaid draws them in `var(--fg)`: the same dot on a light
+  theme, still visible on a dark one. A point's own `color`, `stroke-color` and
+  `stroke-width` (or its class's) are drawn as written.
+- **Palette.** Cell fills are the theme accent mixed into the background at four falling
+  strengths; mermaid uses lavender steps from its `primaryColor`.
+- **Text widths.** Neither renderer measures text; this library's font is not mermaid's
+  `trebuchet ms`, so a long label overflows at a slightly different point.
+- **Not read yet.** `quadrantChart` config in `%%{init}%%` (`chartWidth`, `pointRadius`,
+  `xAxisPosition`, ...) and the `quadrant*Fill` / `quadrantPoint*` theme variables are
+  ignored; the chart is always 500 x 500.
+- **Empty labels.** Mermaid draws an empty `<text>` for a quadrant with no label; this
+  library draws nothing.
+- **ASCII.** Mermaid has no ASCII output. The x axis is always below the grid (mermaid's
+  SVG puts it on top of a chart with no points), and point labels are in a legend, not
+  next to the markers.
+
 ## XY charts
 
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit

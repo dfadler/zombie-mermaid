@@ -19,6 +19,7 @@ import { FlowchartRenderOptions } from '@zombie-mermaid/core';
 import { fromShikiTheme } from '@zombie-mermaid/core';
 import { LayoutCache } from '@zombie-mermaid/svg-renderer';
 import { LimitExceededError } from '@zombie-mermaid/core';
+import { loadEmbeddedFont } from '@zombie-mermaid/svg-renderer';
 import { MermaidGraph } from '@zombie-mermaid/core';
 import { NodeInteraction } from '@zombie-mermaid/core';
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser';
@@ -68,6 +69,8 @@ export { fromShikiTheme }
 export { LayoutCache }
 
 export { LimitExceededError }
+
+export { loadEmbeddedFont }
 
 export { MermaidGraph }
 

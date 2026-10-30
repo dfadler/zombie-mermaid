@@ -800,4 +800,16 @@ export const forkFixes: ForkFix[] = [
       'Before: the label on A’s right side reads `long─label`, with a stroke through the gap. After: it reads `long label`.',
     upstreamIssues: [154],
   },
+  {
+    id: 'entity-codes',
+    title: 'Mermaid entity codes in labels printed literally',
+    symptom:
+      'Labels written with Mermaid entity codes (`#quot;`, `#lt;`, `#gt;`, `#35;`) showed the raw code instead of the character, so a label meant to read “Say” <hi> came out as `#quot;Say#quot; #lt;hi#gt;`. Ported from upstream beautiful-mermaid #158 (thiccyoda).',
+    source: 'flowchart LR\n  A["#quot;Say#quot; #lt;hi#gt;"] --> B["x #35;1"]',
+    fixCommit: '1d80500b',
+    pr: 1368,
+    render: 'svg',
+    lookFor:
+      'Before: the literal text `#quot;Say#quot; #lt;hi#gt;` and `x #35;1`. After: `"Say" <hi>` and `x #1`.',
+  },
 ]

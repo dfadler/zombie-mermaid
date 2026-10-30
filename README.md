@@ -30,7 +30,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 `beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. Checkable facts, as of 2026-10-13: the last push to upstream's `main` was 2026-05-06 and its latest release is v1.1.2 (2026-02-26); it has [43 open pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) (19 opened before 2026-04-13) and [50 open issues](https://github.com/lukilabs/beautiful-mermaid/issues) (live counts at those links; the figures above are a dated snapshot). I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
 
-This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (55 fixes): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
+This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase (56 fixes): every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
 
 It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below. Who maintains it, how releases are published, and what is claimed: [provenance and continuity](docs/provenance.md).
 
@@ -86,7 +86,7 @@ the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Features
 
-- **8 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, and Pie
+- **9 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, Pie, and Quadrant charts
 - **Dual output** — SVG for rich UIs, ASCII/Unicode for terminals
 - **Synchronous rendering** — No async, no flash. Works with React `useMemo()`
 - **15 built-in themes** — And dead simple to add your own
@@ -152,7 +152,7 @@ registerElk(ELK)
 ```
 
 Architecture diagrams (`architecture-beta`, see [Supported Diagrams](docs/diagrams.md#architecture-diagrams)) are laid out by `elkjs` too.
-Sequence, pie, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
+Sequence, pie, quadrant, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
 and no registration. Rendering a graph diagram with no `elkjs` available throws an
 `ElkNotRegisteredError` that says how to fix it.
 

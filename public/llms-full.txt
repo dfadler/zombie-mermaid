@@ -1306,6 +1306,89 @@ Known differences from Mermaid:
 Mermaid has no text output for pie charts; see
 [ASCII Pie Charts](#ascii-pie-charts) for this library's.
 
+## Quadrant Charts
+
+`quadrantChart` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/quadrantChart.html)
+and its renderer's layout, checked against `mermaid@12.2.0` (the pin, which is
+also npm `latest`):
+
+```mermaid
+quadrantChart
+    title Reach and engagement of campaigns
+    x-axis Low Reach --> High Reach
+    y-axis Low Engagement --> High Engagement
+    quadrant-1 We should expand
+    quadrant-2 Need to promote
+    quadrant-3 Re-evaluate
+    quadrant-4 May be improved
+    Campaign A: [0.3, 0.6]
+    Campaign B: [0.45, 0.23]
+```
+
+Supported: `title`, `x-axis` and `y-axis` (one label or `left --> right`),
+`quadrant-1` to `quadrant-4` (1 is top right, then counter-clockwise), points as
+`label: [x, y]` with `x` and `y` between 0 and 1, `classDef` with
+`:::class` on a point, the four point styles (`radius`, `color`,
+`stroke-color`, `stroke-width`, validated with Mermaid's messages), `accTitle`
+and `accDescr`. As in Mermaid, coordinates must be `0`, `1` or `0.<digits>`
+(`1.5`, `-0.2` and `.5` are errors), a trailing `-->` keeps its arrow in the
+label (`Effort ⟶`), and a bare `quadrantChart` is valid.
+
+The SVG uses Mermaid's geometry: a 500 x 500 frame, four equal cells, the x
+axis above the plot until the chart has a point and below it after, quadrant
+labels centred while there are no points and on the cells' top row once there
+are, and the last point in the source drawn first. Colours come from the theme
+(the accent mixed into `--bg` at four falling strengths for the cells), so
+every theme and live theme switching apply. Text is not measured; a label wider
+than its cell overflows, as in Mermaid. Not read yet: `quadrantChart` config in
+`%%{init}%%` (`chartWidth`, `pointRadius`, ...), the quadrant `themeVariables`,
+and `%%{init}%%` / front matter themes for this type. See
+[Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#quadrant-charts).
+
+### ASCII Quadrant Charts
+
+Mermaid has no text mode for quadrant charts, so the ASCII output is this
+library's own design: the same four cells on a character grid.
+
+```text
+                 Reach and engagement of campaigns
+
+                ┌────────────────────────┬────────────────────────┐
+                │    Need to promote     │    We should expand    │
+                │                        │                        │
+                │                        │                        │
+High Engagement │                 6      │                        │
+                │                        │  3                     │
+                │                        │                        │
+                │              1         │                        │
+                ├────────────────────────┼────────────────────────┤
+                │      Re-evaluate       │    May be improved     │
+                │                   5    │            4           │
+                │                        │                        │
+ Low Engagement │                      2 │                        │
+                │                        │                        │
+                │                        │                        │
+                │                        │                        │
+                └────────────────────────┴────────────────────────┘
+                        Low Reach                High Reach
+
+  1 Campaign A  (0.3, 0.6)
+  2 Campaign B  (0.45, 0.23)
+```
+
+- **Cells** are at least 24 columns wide (wider for a longer quadrant label,
+  measured in terminal columns) and 7 rows tall.
+- **Points** are one marker character (`1`-`9`, `A`-`Z`, `a`-`z`, then `*`)
+  at the cell their coordinates fall on; labels would collide, so a legend
+  below lists marker, label and the coordinates as written. A marker that
+  would land on a quadrant label or another marker moves to the nearest free
+  cell, preferring downwards. A point's own `color` paints its marker; the
+  others use the theme accent.
+- **Axes:** a trailing arrow (`Effort ⟶` in the SVG) is `→`, or `->` in ASCII mode; the y labels sit in a left gutter on the middle row of each half
+  (the bottom row for a one-sided axis); the x labels sit under the halves,
+  always below the grid, unlike the SVG's x axis on top of a point-free chart.
+- `accTitle` and `accDescr` are not printed.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1318,7 +1401,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Gantt                                                                 | `gantt`                                                                                                         |
 | Timeline                                                              | `timeline`                                                                                                      |
 | User journey                                                          | `journey`                                                                                                       |
-| Quadrant chart                                                        | `quadrantChart`                                                                                                 |
 | Requirement                                                           | `requirementDiagram`                                                                                            |
 | Git graph                                                             | `gitGraph`                                                                                                      |
 | Kanban                                                                | `kanban`                                                                                                        |
@@ -1851,6 +1933,30 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   share of the whole total, including slices that get no bar cell (under 1%, or past the
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
   ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
+
+## Quadrant charts
+
+Checked on mermaid 12.2.0 (the pin, also npm `latest`); there is no layout oracle for
+this type yet, so the geometry is matched to a real mermaid render of the campaigns
+sample by hand (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` pins its numbers).
+
+- **Point colour.** Mermaid 12.2.0's default theme emits `fill="hsl(240, 100%, NaN%)"`
+  for every point without a `color`, which browsers drop, so mermaid.live and GitHub show
+  near-black dots. zombie-mermaid draws them in `var(--fg)`: the same dot on a light
+  theme, still visible on a dark one. A point's own `color`, `stroke-color` and
+  `stroke-width` (or its class's) are drawn as written.
+- **Palette.** Cell fills are the theme accent mixed into the background at four falling
+  strengths; mermaid uses lavender steps from its `primaryColor`.
+- **Text widths.** Neither renderer measures text; this library's font is not mermaid's
+  `trebuchet ms`, so a long label overflows at a slightly different point.
+- **Not read yet.** `quadrantChart` config in `%%{init}%%` (`chartWidth`, `pointRadius`,
+  `xAxisPosition`, ...) and the `quadrant*Fill` / `quadrantPoint*` theme variables are
+  ignored; the chart is always 500 x 500.
+- **Empty labels.** Mermaid draws an empty `<text>` for a quadrant with no label; this
+  library draws nothing.
+- **ASCII.** Mermaid has no ASCII output. The x axis is always below the grid (mermaid's
+  SVG puts it on top of a chart with no points), and point labels are in a legend, not
+  next to the markers.
 
 ## XY charts
 
