@@ -27,7 +27,9 @@ import {
   drawHexagon,
   drawStadium,
   drawSubroutineBars,
+  drawTrapezoid,
   hexagonInsets,
+  trapezoidInsetsFor,
 } from './shapes/silhouettes.ts'
 
 // ============================================================================
@@ -205,6 +207,22 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     // Ellipse: rounded top/bottom, `(` `)` at the middle (#2164).
     const insets = circleInsets(to.x, to.y)
     drawCircle(box, to.x, to.y, insets, useAscii)
+    node.labelInsets = insets
+  } else if (
+    (node.shape === 'trapezoid' || node.shape === 'trapezoid-alt') &&
+    to.y >= 2 &&
+    to.x >= 2 * to.y + 2
+  ) {
+    // Both sides slant, one column per row (#2164).
+    const alt = node.shape === 'trapezoid-alt'
+    const insets = trapezoidInsetsFor(
+      to.x,
+      to.y,
+      alt,
+      lines.map((l) => displayWidth(l)),
+      startY,
+    )
+    drawTrapezoid(box, to.x, to.y, alt, insets, useAscii)
     node.labelInsets = insets
   } else if (node.shape === 'asymmetric' && to.x >= 4 && to.y >= 2) {
     // Flag: left side notched on the middle row, `>` tip one cell in (#2164).

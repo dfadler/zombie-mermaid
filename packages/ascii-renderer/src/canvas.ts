@@ -831,6 +831,30 @@ export function flipCanvasVertically(
     canvas[x0]![rows[1]!] = a
   }
 
+  // A trapezoid keeps its wide edge at the bottom, as in mermaid's BT: swap its
+  // outline rows so the reversal below restores them, and leave edge junctions
+  // and label text where they are (#2164).
+  const OUTLINE = /^[ ╱╲/\\─\-┌┐└┘+]$/
+  for (const { x0, x1, y0, y1, trapezoid } of nodeRects) {
+    if (!trapezoid) continue
+    for (let y = y0; y < y0 + (y1 - y0 + 1) / 2 - 0.5; y++) {
+      const ym = y0 + y1 - y
+      for (let x = x0; x <= x1; x++) {
+        const [a, b] = [canvas[x]![y]!, canvas[x]![ym]!]
+        if (!OUTLINE.test(a) || !OUTLINE.test(b)) continue
+        if (roleCanvas?.[x]?.[y] === 'text' || roleCanvas?.[x]?.[ym] === 'text')
+          continue
+        canvas[x]![y] = VERTICAL_FLIP_MAP[b] ?? b
+        canvas[x]![ym] = VERTICAL_FLIP_MAP[a] ?? a
+        if (roleCanvas) {
+          const r = roleCanvas[x]![y]!
+          roleCanvas[x]![y] = roleCanvas[x]![ym]!
+          roleCanvas[x]![ym] = r
+        }
+      }
+    }
+  }
+
   // A symmetric diagonal shape must look as it does in TD, so its lean glyphs
   // swap with the rows (the map below leaves them alone: trapezoids, flags and
   // triangles keep their glyphs). Label text is skipped (#2388).

@@ -256,7 +256,7 @@ only); GitHub's render was not reachable. See the comment on #2101 for the numbe
 ## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
 
 The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
-family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle** and **subroutine**. Mermaid 12.2.0 (the pin and npm latest
+family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle**, **subroutine**, **asymmetric** and **trapezoid**. Mermaid 12.2.0 (the pin and npm latest
 agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
 left and right middle.
 
@@ -298,10 +298,18 @@ left and right middle.
   Edges still attach at the outer border, so an edge arriving on the notch stops one cell
   short of the tip (`►` then a blank, then `>`); an edge leaving from the notch face in RL
   starts at the tip's neighbour (`┤>`). Mermaid's diagonal sides are not drawn.
+- **Trapezoid** (`[/x\]`, `[\x/]`). Mermaid 12.2.0 (also the npm latest) slants both sides
+  by half the node's height over its height, wide edge at the bottom for `[/x\]` and at
+  the top for `[\x/]`, in every direction (BT does not flip it). Ours slants one column
+  per row (`╱ ╲` / `/ \`; a cell is about half as wide as tall, so the slope matches),
+  and the base row is `╱──╲` like the narrow one, so a node is wider by its slant (at
+  least `2 × rows + 1` columns). A label row that would touch the slant flattens it
+  there. Side edges attach at the node's outer face, then a post-pass extends the stroke
+  (and moves an arrowhead) across the blank cells to the slanted wall.
 - **Still approximated** (later PRs, per the owner's one-family-per-PR call): double circle
-  (needs a second, concentric ellipse: a width and height decision), parallelograms and
-  trapezoids (slanted sides cost one column per row, so a node widens by its slant, and
-  the RL mirroring from #1701 must keep the lean).
+  (needs a second, concentric ellipse: a width and height decision) and parallelograms
+  (slanted sides cost one column per row, so a node widens by its slant, and the RL
+  mirroring from #1701 must keep the lean).
 
 ## ASCII: LR skip edge beside a reciprocal pair (partial match)
 
