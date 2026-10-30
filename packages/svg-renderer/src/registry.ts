@@ -58,6 +58,7 @@ import {
   architectureToGraph,
   parseC4Diagram,
   parsePieChart,
+  parseQuadrantChart,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -73,6 +74,8 @@ import type {
   PositionedC4Diagram,
   PieChart,
   PositionedPieChart,
+  QuadrantChart,
+  PositionedQuadrantChart,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -86,6 +89,8 @@ import { layoutC4DiagramSync } from './c4/layout.ts'
 import { renderC4Svg } from './c4/renderer.ts'
 import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
+import { layoutQuadrantChart } from './quadrant/layout.ts'
+import { renderQuadrantSvg } from './quadrant/renderer.ts'
 import { layoutFlowchartSync, layoutGraphSync } from './layout-engine.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
@@ -417,6 +422,30 @@ const pieModule: DiagramModule<PieChart, PositionedPieChart> = {
 }
 
 /**
+ * Quadrant charts parse from the raw `text` (Mermaid's grammar has no `;`
+ * statement separator and a label may contain one), then lay out to
+ * Mermaid's fixed 500 x 500 geometry. No direction, theme variables or
+ * interactivity apply.
+ */
+const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
+  type: 'quadrant',
+  parse: (_lines, text) => parseQuadrantChart(text),
+  layoutForSvg: (chart) => layoutQuadrantChart(chart),
+  renderSvg(positioned, ctx) {
+    return renderQuadrantSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -445,4 +474,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
 
   c4: c4Module,
   pie: pieModule,
+  quadrant: quadrantModule,
 }
