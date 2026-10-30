@@ -27,8 +27,11 @@ export interface QuadFigure {
   texts: QuadText[]
 }
 
-const attr = (tag: string, name: string): string | undefined =>
-  new RegExp(`(?:^|\\s)${name}="([^"]*)"`).exec(tag)?.[1]
+/** Value of ` name="..."` in a tag ('' when absent); indexOf, not a built RegExp. */
+const attr = (tag: string, name: string): string => {
+  const from = tag.indexOf(` ${name}="`) + name.length + 3
+  return from < name.length + 3 ? '' : tag.slice(from, tag.indexOf('"', from))
+}
 
 const num = (tag: string, name: string): number => Number(attr(tag, name))
 
@@ -44,7 +47,7 @@ export function parseOfficialQuadrant(svg: string): QuadFigure {
         num(tag, 'height'),
       ])
     } else if (tag.startsWith('<line')) {
-      const sw = /stroke-width:\s*([\d.]+)/.exec(attr(tag, 'style') ?? '')?.[1]
+      const sw = /stroke-width:\s*([\d.]+)/.exec(attr(tag, 'style'))![1]
       fig.lines.push([
         num(tag, 'x1'),
         num(tag, 'y1'),
@@ -58,16 +61,16 @@ export function parseOfficialQuadrant(svg: string): QuadFigure {
   }
   for (const m of svg.matchAll(/<text\b([^>]*)>([^<]*)<\/text>/g)) {
     const t = /translate\(([-\d.]+),\s*([-\d.]+)\)\s*rotate\(([-\d.]+)\)/.exec(
-      attr(m[1]!, 'transform') ?? '',
-    )
+      attr(m[1]!, 'transform'),
+    )!
     fig.texts.push({
       text: m[2]!,
-      x: Number(t?.[1]),
-      y: Number(t?.[2]),
+      x: Number(t[1]),
+      y: Number(t[2]),
       fontSize: num(m[1]!, 'font-size'),
-      anchor: attr(m[1]!, 'text-anchor') ?? '',
-      baseline: attr(m[1]!, 'dominant-baseline') ?? '',
-      rotation: Number(t?.[3]),
+      anchor: attr(m[1]!, 'text-anchor'),
+      baseline: attr(m[1]!, 'dominant-baseline'),
+      rotation: Number(t[3]),
     })
   }
   return fig

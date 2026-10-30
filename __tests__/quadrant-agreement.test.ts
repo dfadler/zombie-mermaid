@@ -46,6 +46,18 @@ describe('quadrant figure agreement', () => {
     expect(ours.texts.map((t) => t.text)).toContain('T')
   })
 
+  it('flattens a chart with no title or axes', () => {
+    const ours = ourQuadrant('quadrantChart\n    quadrant-1 One')
+    expect(ours.texts.map((t) => t.text)).toEqual(['One', '', '', ''])
+    expect(ours.circles).toEqual([])
+  })
+
+  it('reads a missing attribute as empty', () => {
+    expect(
+      parseOfficialQuadrant('<circle cx="1" cy="2"></circle>').circles,
+    ).toEqual([[1, 2, 0]])
+  })
+
   it('reports no mismatch for identical figures, ignoring empty texts and float noise', () => {
     const ours = ourQuadrant(SRC)
     expect(quadrantMismatches(ours, ours)).toEqual([])
