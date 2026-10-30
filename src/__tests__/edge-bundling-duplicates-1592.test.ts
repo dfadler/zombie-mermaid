@@ -10,11 +10,13 @@ import { renderMermaidSVG } from '../index.ts'
 
 /** The `points` of every edge from `from` to `to`, in document order. */
 function pointsOf(svg: string, from: string, to: string): string[] {
-  const re = new RegExp(
-    `data-from="${from}" data-to="${to}"[^>]*points="([^"]+)"`,
-    'g',
-  )
-  return [...svg.matchAll(re)].map((m) => m[1]!)
+  return [
+    ...svg.matchAll(
+      /data-from="([^"]+)" data-to="([^"]+)"[^>]*points="([^"]+)"/g,
+    ),
+  ]
+    .filter((m) => m[1] === from && m[2] === to)
+    .map((m) => m[3]!)
 }
 
 describe('repeated edges between one pair of nodes', () => {
