@@ -451,8 +451,13 @@ export function jsonPayload(runs: ScorecardRun[]): string {
 
 /** History entries as JSON Lines, ready to append. */
 export function historyLines(
-  entries: (HistoryEntry | LabelEntry | SequenceEntry | PieEntry)[],
-  entries: (HistoryEntry | LabelEntry | SequenceEntry | ArchitectureEntry)[],
+  entries: (
+    | HistoryEntry
+    | LabelEntry
+    | SequenceEntry
+    | PieEntry
+    | ArchitectureEntry
+  )[],
 ): string {
   return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
 }
