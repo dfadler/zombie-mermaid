@@ -65,8 +65,12 @@ export function strip(html: string): string {
 export const isHorizontal = (source: string): boolean =>
   /^\s*xychart(?:-beta)?\s+horizontal\b/.test(source)
 
-const attr = (tag: string, name: string): string | undefined =>
-  new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1]
+const attr = (tag: string, name: string): string | undefined => {
+  const start = tag.indexOf(` ${name}="`)
+  if (start < 0) return undefined
+  const from = start + name.length + 3
+  return tag.slice(from, tag.indexOf('"', from))
+}
 
 const pairs = (nums: number[]): [number, number][] => {
   const out: [number, number][] = []
@@ -107,8 +111,8 @@ export function barBox(d: string): {
   }
   for (const m of d.matchAll(/([MLQhvZ])([^MLQhvZ]*)/g)) {
     const n = numbers(m[2]!)
-    if (m[1] === 'h') at(x + (n[0] ?? 0), y)
-    else if (m[1] === 'v') at(x, y + (n[0] ?? 0))
+    if (m[1] === 'h') at(x + n[0]!, y)
+    else if (m[1] === 'v') at(x, y + n[0]!)
     else for (const [px, py] of pairs(n)) at(px, py)
   }
   return {
@@ -164,9 +168,7 @@ export function parseOfficialXy(svg: string, horizontal: boolean): XyLayout {
       continue
     }
     if (axis === null || sub !== 'label') continue
-    const t = /translate\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)/.exec(
-      attr(`<text${m[2]}>`, 'transform') ?? '',
-    )
+    const t = /translate\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)/.exec(m[2]!)
     if (!t) continue
     const label = {
       text: strip(m[3]!),

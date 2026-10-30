@@ -139,6 +139,38 @@ describe('xychart agreement (#2451)', () => {
     expect(strip(' a<tspan>b</tspan> &amp; c ')).toBe('ab & c')
   })
 
+  it('skips what is not a drawn item', () => {
+    // Right axis, label without a position, path without d, text without class.
+    const o = parseOfficialXy(
+      `<g class="right-axis"><g class="label"><text transform="translate(1, 2) rotate(0)">r</text></g></g>
+<g class="left-axis"><g class="label"><text>no position</text></g></g>
+<g class="line-plot-0"><path fill="none"></path></g>`,
+      false,
+    )
+    expect(o).toEqual({ xLabels: [], yLabels: [], points: [] })
+    const ours = parseOurXy(
+      `<text x="1" y="2">plain</text>
+<text x="1" y="2" text-anchor="start" class="xychart-label">legend</text>
+<path d="M1,2"></path><path class="xychart-line"></path>`,
+      false,
+    )
+    expect(ours).toEqual({ xLabels: [], yLabels: [], points: [] })
+    expect(pathPoints('M')).toEqual([])
+  })
+
+  it('handles one-label axes, shorter label lists and empty summaries', () => {
+    const one: XyLayout = {
+      xLabels: [{ text: 'A', pos: 5 }],
+      yLabels: [{ text: '1', pos: 5 }],
+      points: [{ cat: 5, val: 5 }],
+    }
+    expect(xyAgreement(one, one)).toMatchObject({ ticks: 1, data: 1 })
+    expect(xyAgreement(one, { ...one, xLabels: [] }).labels).toBe(0.5)
+    expect(
+      summarizeXy({}, { date: 'd', commit: 'c', mermaid: 'm' }),
+    ).toMatchObject({ samples: 0, labels: null, ticks: null, data: null })
+  })
+
   it('measures bar paths and line paths', () => {
     expect(barBox('M112.5,350 h0 v40 h0 Z')).toEqual({
       x0: 112.5,
