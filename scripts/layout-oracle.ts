@@ -22,7 +22,8 @@
  * font and padding differences between the renderers don't count against us.
  * Flowcharts by default; `--type=state|class|er` scores the others (official
  * node ids `state-<id>-<n>`, `classId-<id>-<n>`, `entity-<id>-<n>`; state
- * composites and class namespaces are clusters). Sequence is scored separately (scripts/sequence-oracle.ts, recorded in
+ * composites and class namespaces are clusters). Sequence and xychart are scored separately (scripts/sequence-oracle.ts,
+ * scripts/xychart-oracle.ts, recorded in
  * the scorecard); architecture, C4 and charts are not scored (EXCLUDED_TYPES in scripts/lib/layout-agreement.ts).
  */
 
@@ -60,6 +61,8 @@ import {
 import { labelEntryFor } from './lib/label-position.ts'
 import { writeRecords } from './lib/layout-record.ts'
 import { scoreSequence } from './lib/sequence-measure.ts'
+import { scoreXyChart } from './lib/xychart-measure.ts'
+import type { XyEntry } from './lib/xychart-agreement.ts'
 import type { SequenceEntry } from './lib/sequence-agreement.ts'
 import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
@@ -193,6 +196,7 @@ async function main(): Promise<number> {
   const runs: ScorecardRun[] = []
   let labelEntry: LabelEntry | undefined
   let sequenceEntry: SequenceEntry | undefined
+  let xyEntry: XyEntry | undefined
   const failing: string[] = []
   const commit = recording
     ? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -225,6 +229,9 @@ async function main(): Promise<number> {
       const seq = await scoreSequence(session, commit)
       sequenceEntry = seq.entry
       if (args.thresholds) failing.push(...seq.breaches)
+      const xy = await scoreXyChart(session, commit)
+      xyEntry = xy.entry
+      if (args.thresholds) failing.push(...xy.breaches)
     }
   } finally {
     await session.close()
@@ -234,7 +241,8 @@ async function main(): Promise<number> {
     await writeFile(args.json, jsonPayload(runs))
     console.log(`\nWrote ${args.json}`)
   }
-  if (recording) await writeRecords(args, runs, labelEntry, sequenceEntry)
+  if (recording)
+    await writeRecords(args, runs, labelEntry, sequenceEntry, xyEntry)
   failing.push(...(await finishScorecard(args, runs)))
   if (failing.length > 0) {
     console.error(`\nBelow threshold: ${[...new Set(failing)].join(', ')}`)
