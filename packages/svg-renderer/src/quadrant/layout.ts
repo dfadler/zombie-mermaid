@@ -5,7 +5,8 @@
 // own quadrantBuilder.ts (default config, mermaid@12.2.0). All lengths are
 // Mermaid's and none depends on measured text, so this is pure arithmetic:
 //
-//   - a 500 x 500 frame; the plot is inset by 5px (quadrantPadding)
+//   - a 500 x 500 frame (`chartWidth`/`chartHeight`); the plot is inset by 5px
+//     (quadrantPadding). Each default here can be set by `%%{init}%%` config
 //   - the title takes 20 + 2 * 10px at the top, when there is one
 //   - an axis takes 2 * 5 + 16px on its side, when it has any text: the x axis
 //     sits on top while the chart has no points and moves below the plot as
@@ -37,21 +38,26 @@ import type {
 
 /** Mermaid's default `quadrantChart` config. */
 export const QUADRANT = {
-  width: 500,
-  height: 500,
   titlePadding: 10,
   titleFontSize: 20,
   quadrantPadding: 5,
-  axisLabelPadding: 5,
-  axisLabelFontSize: 16,
+  xAxisLabelPadding: 5,
+  yAxisLabelPadding: 5,
+  xAxisLabelFontSize: 16,
+  yAxisLabelFontSize: 16,
   quadrantLabelFontSize: 16,
   quadrantTextTopPadding: 5,
   pointTextPadding: 5,
   pointLabelFontSize: 12,
   pointRadius: 5,
-  internalBorderWidth: 1,
-  externalBorderWidth: 2,
+  quadrantInternalBorderStrokeWidth: 1,
+  quadrantExternalBorderStrokeWidth: 2,
+  xAxisPosition: 'top',
+  yAxisPosition: 'left',
 } as const
+
+/** `chartWidth`/`chartHeight` are the config's names for the frame size. */
+const DEFAULTS = { chartWidth: 500, chartHeight: 500 }
 
 function text(
   t: Pick<PositionedQuadrantText, 'text' | 'x' | 'y' | 'fontSize'> &
@@ -63,21 +69,25 @@ function text(
 export function layoutQuadrantChart(
   chart: QuadrantChart,
 ): PositionedQuadrantChart {
-  const Q = QUADRANT
+  const Q = { ...QUADRANT, ...DEFAULTS, ...chart.config }
   const hasPoints = chart.points.length > 0
   const showX = !!(chart.xAxisLeft || chart.xAxisRight)
   const showY = !!(chart.yAxisBottom || chart.yAxisTop)
   const showTitle = !!chart.title
-  const axisSpace = Q.axisLabelPadding * 2 + Q.axisLabelFontSize
+  const xSpace = Q.xAxisLabelPadding * 2 + Q.xAxisLabelFontSize
+  const ySpace = Q.yAxisLabelPadding * 2 + Q.yAxisLabelFontSize
   const titleSpace = showTitle ? Q.titleFontSize + Q.titlePadding * 2 : 0
-  const xTop = !hasPoints && showX ? axisSpace : 0
-  const xBottom = hasPoints && showX ? axisSpace : 0
-  const yLeft = showY ? axisSpace : 0
+  // Points push the x axis below the plot whatever `xAxisPosition` says.
+  const xOnTop = !hasPoints && Q.xAxisPosition === 'top'
+  const xTop = xOnTop && showX ? xSpace : 0
+  const xBottom = !xOnTop && showX ? xSpace : 0
+  const yLeft = Q.yAxisPosition === 'left' && showY ? ySpace : 0
+  const yRight = Q.yAxisPosition === 'right' && showY ? ySpace : 0
 
   const left = Q.quadrantPadding + yLeft
   const top = Q.quadrantPadding + xTop + titleSpace
-  const w = Q.width - Q.quadrantPadding * 2 - yLeft
-  const h = Q.height - Q.quadrantPadding * 2 - xTop - xBottom - titleSpace
+  const w = Q.chartWidth - Q.quadrantPadding * 2 - yLeft - yRight
+  const h = Q.chartHeight - Q.quadrantPadding * 2 - xTop - xBottom - titleSpace
   const hw = w / 2
   const hh = h / 2
 
@@ -103,14 +113,14 @@ export function layoutQuadrantChart(
     }),
   }))
 
-  const half = Q.externalBorderWidth / 2
+  const half = Q.quadrantExternalBorderStrokeWidth / 2
   const ext = (x1: number, y1: number, x2: number, y2: number) =>
     ({
       x1,
       y1,
       x2,
       y2,
-      strokeWidth: Q.externalBorderWidth,
+      strokeWidth: Q.quadrantExternalBorderStrokeWidth,
       kind: 'external',
     }) as const
   const int = (x1: number, y1: number, x2: number, y2: number) =>
@@ -119,7 +129,7 @@ export function layoutQuadrantChart(
       y1,
       x2,
       y2,
-      strokeWidth: Q.internalBorderWidth,
+      strokeWidth: Q.quadrantInternalBorderStrokeWidth,
       kind: 'internal',
     }) as const
   const lines: PositionedQuadrantLine[] = [
@@ -132,9 +142,9 @@ export function layoutQuadrantChart(
   ]
 
   const axisLabels: PositionedQuadrantText[] = []
-  const xY = hasPoints
-    ? Q.axisLabelPadding + top + h + Q.quadrantPadding
-    : Q.axisLabelPadding + titleSpace
+  const xY = xOnTop
+    ? Q.xAxisLabelPadding + titleSpace
+    : Q.xAxisLabelPadding + top + h + Q.quadrantPadding
   const xTwo = !!chart.xAxisRight
   const xLabel = (t: string, x: number) =>
     axisLabels.push(
@@ -142,7 +152,7 @@ export function layoutQuadrantChart(
         text: t,
         x,
         y: xY,
-        fontSize: Q.axisLabelFontSize,
+        fontSize: Q.xAxisLabelFontSize,
         anchor: xTwo ? 'middle' : 'start',
       }),
     )
@@ -150,14 +160,18 @@ export function layoutQuadrantChart(
     xLabel(chart.xAxisLeft, left + (xTwo ? hw / 2 : 0))
   }
   if (showX && chart.xAxisRight) xLabel(chart.xAxisRight, left + hw + hw / 2)
+  const yX =
+    Q.yAxisPosition === 'left'
+      ? Q.yAxisLabelPadding
+      : Q.yAxisLabelPadding + left + w + Q.quadrantPadding
   const yTwo = !!chart.yAxisTop
   const yLabel = (t: string, y: number) =>
     axisLabels.push(
       text({
         text: t,
-        x: Q.axisLabelPadding,
+        x: yX,
         y,
-        fontSize: Q.axisLabelFontSize,
+        fontSize: Q.yAxisLabelFontSize,
         anchor: yTwo ? 'middle' : 'start',
         rotation: -90,
       }),
@@ -190,12 +204,13 @@ export function layoutQuadrantChart(
     })
 
   return {
-    width: Q.width,
-    height: Q.height,
+    width: Q.chartWidth,
+    height: Q.chartHeight,
+    themeColors: chart.themeColors,
     title: showTitle
       ? text({
           text: chart.title!,
-          x: Q.width / 2,
+          x: Q.chartWidth / 2,
           y: Q.titlePadding,
           fontSize: Q.titleFontSize,
         })
