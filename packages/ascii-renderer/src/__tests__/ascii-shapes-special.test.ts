@@ -15,6 +15,8 @@ import {
   asymmetricRenderer,
   parallelogramRenderer,
   parallelogramAltRenderer,
+  trapezoidRenderer,
+  trapezoidAltRenderer,
 } from '../shapes/special.ts'
 import type { ShapeRenderOptions } from '../shapes/types.ts'
 
@@ -528,5 +530,22 @@ describe('parallelogram shapes [/text/] and [\\text\\]', () => {
     expect(parallelogramRenderer.getDimensions('Label', unicodeOpts)).toEqual(
       parallelogramAltRenderer.getDimensions('Label', unicodeOpts),
     )
+  })
+})
+
+describe('trapezoid renderers standalone (#2164)', () => {
+  it.each([
+    ['trapezoid', trapezoidRenderer],
+    ['trapezoid-alt', trapezoidAltRenderer],
+  ] as const)('%s slants both walls', (_n, r) => {
+    const dims = r.getDimensions('Hi', unicodeOpts)
+    const out = canvasToString(r.render('Hi', dims, unicodeOpts))
+    expect(out.split('\n').length).toBe(dims.height)
+    expect(out).toContain('Hi')
+    expect(out).toContain('╱')
+    expect(out).toContain('╲')
+    const ascii = canvasToString(r.render('Hi', dims, asciiOpts))
+    expect(ascii).toContain('/')
+    expect(ascii).toContain('\\')
   })
 })
