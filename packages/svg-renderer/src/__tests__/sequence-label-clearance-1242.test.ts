@@ -114,6 +114,23 @@ describe('lifelines stay out of message labels (#1242)', () => {
     ).toBeGreaterThan(Number(t![1]))
   })
 
+  it('keeps a last-actor self label inside the viewBox and widens the gap to its left (#2456)', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  B->>B: a very long self message label on the last actor to widen things
+  B->>B`)
+    const [a] = lifelineSegments(svg, 'A')
+    const [b] = lifelineSegments(svg, 'B')
+    expect(b!.x - a!.x).toBeGreaterThan(140)
+    const t = svg.match(
+      /<text x="([\d.]+)"[^>]*text-anchor="middle"[^>]*>[^<]*last actor/,
+    )
+    expect(
+      Number(svg.match(/viewBox="[\d.-]+ [\d.-]+ ([\d.]+)/)![1]),
+    ).toBeGreaterThan(Number(t![1]))
+  })
+
   it('widens the gap for a label between adjacent actors', () => {
     const svg = renderMermaidSVG(`sequenceDiagram
   A->>B: a message label far wider than the default gap between two actors
