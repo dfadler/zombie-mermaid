@@ -86,7 +86,7 @@ the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Features
 
-- **8 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, and Pie
+- **9 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, Pie, and Quadrant charts
 - **Dual output** — SVG for rich UIs, ASCII/Unicode for terminals
 - **Synchronous rendering** — No async, no flash. Works with React `useMemo()`
 - **15 built-in themes** — And dead simple to add your own
@@ -152,7 +152,7 @@ registerElk(ELK)
 ```
 
 Architecture diagrams (`architecture-beta`, see [Supported Diagrams](docs/diagrams.md#architecture-diagrams)) are laid out by `elkjs` too.
-Sequence, pie, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
+Sequence, pie, quadrant, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
 and no registration. Rendering a graph diagram with no `elkjs` available throws an
 `ElkNotRegisteredError` that says how to fix it.
 

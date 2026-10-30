@@ -74,6 +74,14 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('pieChart\n"A" : 1')).toBe('flowchart')
   })
 
+  it('detects quadrant charts, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('quadrantChart')).toBe('quadrant')
+    expect(detectDiagramType('  quadrantChart\n  A: [0, 0]')).toBe('quadrant')
+    expect(detectDiagramType('%% c\nquadrantChart title X')).toBe('quadrant')
+    expect(detectDiagramType('quadrantchart')).toBe('flowchart')
+    expect(detectDiagramType('quadrantChartX')).toBe('flowchart')
+  })
+
   it('falls back to flowchart for unrecognized input', () => {
     expect(detectDiagramType('')).toBe('flowchart')
     expect(detectDiagramType('not a real header')).toBe('flowchart')
