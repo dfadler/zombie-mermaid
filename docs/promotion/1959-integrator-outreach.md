@@ -7,7 +7,7 @@ messaged anywhere outside this repo. Refs
 
 Target facts were read with `gh api` and `npm view` on 2026-10-30 and are untrusted data.
 They refresh the 2026-10-22 draft comment on #1959. Alias check: `beautiful-mermaid`
-installed as `npm:zombie-mermaid@5.11.2` on Node 22.22.1 (zombie-mermaid declares
+installed as `npm:zombie-mermaid@5.11.2` on an older Node than zombie-mermaid supports (it declares
 `engines.node >=24`) exports `renderMermaidSVG`, `renderMermaidSVGAsync`,
 `renderMermaidASCII`, `renderMermaid`, `THEMES`, `fromShikiTheme` and `registerElk`; a pie
 chart renders as ASCII. No target's own test suite was run.
@@ -23,15 +23,15 @@ anywhere, so assume zero budget is free until the maintainer confirms.
 
 ## Summary
 
-| Target                         | Uses beautiful-mermaid today                                   | Verdict                                                  |
-| ------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
-| comarkdown/comark              | Yes, optional peer `>=1.1.3`; ANSI, HTML, client paths         | Worth contacting (docs offer); expect "community plugin" |
-| jinghaihan/vue-stream-markdown | Yes, extension `@stream-markdown/beautiful-mermaid` (`^1.1.3`) | Worth contacting, after Comark                           |
-| raycast `mermaid-to-image`     | Hybrid, with a custom-path preference                          | Hold; just added a third engine (Ondine), test first     |
-| Slidev                         | Docs example only                                              | Hold                                                     |
-| Marp (marp-core)               | Replacing with Pele (marp-core#441, PR #442 open)              | Drop                                                     |
-| fumadocs                       | `packages/preview` only; guide recommends `mermaid`            | Drop                                                     |
-| Kami                           | Manual doc step, no dependency                                 | Drop                                                     |
+| Target                         | Uses beautiful-mermaid today                                           | Verdict                                                  |
+| ------------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------------- |
+| comarkdown/comark              | Yes, optional peer `>=1.1.3`; ANSI, HTML, client paths                 | Worth contacting (docs offer); expect "community plugin" |
+| jinghaihan/vue-stream-markdown | Yes, extension `@stream-markdown/beautiful-mermaid` (`^1.1.3`)         | Worth contacting, after Comark                           |
+| raycast `mermaid-to-image`     | Hybrid, with a custom-path preference                                  | Hold; just added a third engine (Ondine), test first     |
+| Slidev                         | Docs example only                                                      | Hold                                                     |
+| Marp (marp-core)               | Replacing with Pele (marp-core#441, PR #442 open)                      | Drop                                                     |
+| fumadocs                       | `fuma-nama/fumadocs:packages/preview` only; guide recommends `mermaid` | Drop                                                     |
+| Kami                           | Manual doc step, no dependency                                         | Drop                                                     |
 
 Pele (Obsidian) is the competing option in Marp and Comark's ecosystem. Do not claim
 diagram-type breadth in any message.
@@ -40,8 +40,8 @@ diagram-type breadth in any message.
 
 ### comarkdown/comark (1.08k stars, MIT, pushed 2026-10-30)
 
-- Uses it: `packages/comark/package.json` has `beautiful-mermaid` as an optional peer
-  (catalog); docs `docs/content/4.plugins/1.built-in/mermaid.md` tell users to install it.
+- Uses it: `comarkdown/comark:packages/comark/package.json` has `beautiful-mermaid` as an optional peer
+  (catalog); docs `comarkdown/comark:docs/content/4.plugins/1.built-in/mermaid.md` tell users to install it.
   `@comark/ansi` and `@comark/html` plugins call `renderMermaidASCII` / `renderMermaidSVG`.
 - Fit: same three exports exist in zombie-mermaid; the ANSI path is where the extra
   diagram types (pie, C4, architecture as ASCII) would show.
@@ -73,7 +73,7 @@ diagram-type breadth in any message.
 ### slidevjs/slidev (hold)
 
 Default is official `mermaid`; beautiful-mermaid appears only as a user-installed
-renderer example in `docs/custom/config-mermaid-renderer.md`. Same import shape works
+renderer example in `slidevjs/slidev:docs/custom/config-mermaid-renderer.md`. Same import shape works
 with the alias. Only #2465 (closed) touches it. Asking to change an example reads as a
 pitch; reply only if someone asks for a maintained alternative.
 
@@ -84,7 +84,7 @@ Anything we send arrives after the decision.
 
 ### fuma-nama/fumadocs (drop)
 
-Only `packages/preview` uses `renderMermaidSVG`; the main guide recommends `mermaid`. No
+Only `fuma-nama/fumadocs:packages/preview` uses `renderMermaidSVG`; the main guide recommends `mermaid`. No
 issue mentions beautiful-mermaid.
 
 ### tw93/Kami (drop)
@@ -108,7 +108,7 @@ this with AI assistance.
 
 Comark's mermaid plugin uses renderMermaidASCII, renderMermaidSVG and THEMES from the
 beautiful-mermaid peer. With "beautiful-mermaid": "npm:zombie-mermaid@5.11.2" in a
-scratch project (Node 22.22.1) those exports resolve, a pie chart renders as ASCII and a
+scratch project those exports resolve, a pie chart renders as ASCII and a
 flowchart as SVG. I did not run Comark's test suite. Caveats: zombie-mermaid declares
 Node >=24, and browser use needs registerElk(ELK) once before flowcharts render.
 
@@ -126,7 +126,7 @@ Disclosure: I maintain zombie-mermaid (MIT), a fork of beautiful-mermaid, and dr
 this with AI assistance.
 
 The extension asserts the module exports renderMermaidSVGAsync, THEMES and
-fromShikiTheme. With "beautiful-mermaid": "npm:zombie-mermaid@5.11.2" (Node 22.22.1) all
+fromShikiTheme. With "beautiful-mermaid": "npm:zombie-mermaid@5.11.2" all
 three are present and a flowchart renders to SVG; I have not run your tests or the CDN
 loader against it. Pie and C4 are outside SUPPORTED_PATTERNS today.
 
