@@ -147,6 +147,40 @@ describe('c4 agreement (#2451)', () => {
     ])
   })
 
+  it('skips what cannot be read instead of failing', () => {
+    const odd = parseOfficialC4(
+      `<svg><g><rect stroke-dasharray="1"></rect></g>` +
+        `<g transform="translate(1, 2)"><g class="node c4-shape" id="-nolabel"></g></g>` +
+        `<g><path d="M1,1" marker-end="x"></path><text style="font-size: 12px;">early</text>` +
+        `<line x1="0" y1="0" x2="1" y2="1" marker-end="x"></line><text style="font-size: 12px;">a</text>` +
+        `<text style="font-size: 12px;">b</text></g></svg>`,
+    )
+    expect(odd.boxes).toEqual({})
+    expect(odd.boundaries).toHaveLength(1)
+    expect(odd.boundaries[0]).toMatchObject({ label: '', w: NaN })
+    expect(odd.rels).toEqual([{ text: 'a | b', x1: 0, y1: 0, x2: 1, y2: 1 }])
+    expect(
+      parseOfficialC4('<svg><text style="font-size: 12px;">x</text></svg>')
+        .rels,
+    ).toEqual([])
+
+    const ours = parseOurC4(
+      `<svg><g class="c4-element"><text x="1" y="2">n</text></g>` +
+        `<g class="c4-element" data-id="t"></g>` +
+        `<g class="c4-boundary"></g>` +
+        `<path class="c4-relationship" d="M 1,1"/>` +
+        `<path class="c4-relationship" d="M 1,1 L 2,2"/></svg>`,
+    )
+    expect(ours.boxes).toEqual({})
+    expect(ours.boundaries).toEqual([
+      { label: '', x: NaN, y: NaN, w: NaN, h: NaN },
+    ])
+    expect(ours.rels).toEqual([{ text: '', x1: 1, y1: 1, x2: 2, y2: 2 }])
+    expect(
+      summarizeC4({}, { date: 'd', commit: 'c', mermaid: 'm' }),
+    ).toMatchObject({ samples: 0, horizontal: null })
+  })
+
   it('shows the C4 section in the scorecard only with entries', () => {
     const entry = summarizeC4(
       { a: c4Agreement(o, o) },
