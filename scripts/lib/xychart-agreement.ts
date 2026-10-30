@@ -44,15 +44,22 @@ export interface XyAgreement {
 /** Fraction of an axis; a tick or point further off than this disagrees. */
 export const FRACTION_TOLERANCE = 0.01
 
-const strip = (s: string): string =>
-  s
-    .replace(/<[^>]*>/g, '')
+/** Text content of `html`: tags removed until none are left (so `<scr<b>ipt>` cannot reassemble), then entities decoded. */
+export function strip(html: string): string {
+  let prev: string
+  let out = html
+  do {
+    prev = out
+    out = out.replace(/<[^>]*>/g, '')
+  } while (out !== prev)
+  return out
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, '&')
     .trim()
+}
 
 /** Whether the source asks for `xychart-beta horizontal`. */
 export const isHorizontal = (source: string): boolean =>

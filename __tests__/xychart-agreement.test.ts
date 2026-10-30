@@ -7,6 +7,7 @@ import {
   parseOfficialXy,
   parseOurXy,
   pathPoints,
+  strip,
   summarizeXy,
   xyAgreement,
   xyBreaches,
@@ -131,6 +132,11 @@ describe('xychart agreement (#2451)', () => {
     )
     expect(ours.points).toHaveLength(3)
     expect(ours.points[1]!.val).toBeLessThan(ours.points[0]!.val)
+  })
+
+  it('strips nested or partial tags from text without reassembling them', () => {
+    expect(strip('<scr<script>ipt>x</scr</script>ipt>')).not.toContain('<')
+    expect(strip(' a<tspan>b</tspan> &amp; c ')).toBe('ab & c')
   })
 
   it('measures bar paths and line paths', () => {
