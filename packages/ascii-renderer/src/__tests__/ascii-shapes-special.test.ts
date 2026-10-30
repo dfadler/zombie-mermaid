@@ -533,6 +533,13 @@ describe('parallelogram shapes [/text/] and [\\text\\]', () => {
   })
 })
 
+describe('BT trapezoid flip keeps label text (#2164)', () => {
+  it('does not swap outline-looking label characters', () => {
+    const out = renderMermaidASCII('graph BT\n  A --> B[/"-<br/>-"\\]')
+    expect(out.split('\n').filter((l) => /\s-\s/.test(l)).length).toBe(2)
+  })
+})
+
 describe('trapezoid renderers standalone (#2164)', () => {
   it.each([
     ['trapezoid', trapezoidRenderer],
