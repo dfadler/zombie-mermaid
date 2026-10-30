@@ -177,6 +177,7 @@
     "elk-layout:font": "tsx scripts/elk-layout-font.ts",
     "layout:scorecard": "tsx scripts/layout-oracle.ts --history=layout-fidelity-history.jsonl --scorecard=docs/layout-fidelity-scorecard.md && oxfmt docs/layout-fidelity-scorecard.md",
     "label:oracle": "tsx scripts/label-position-oracle.ts",
+    "sequence:oracle": "tsx scripts/sequence-oracle.ts",
     "verify": "scripts/verify.sh",
     "doctor": "scripts/doctor.sh"
   },

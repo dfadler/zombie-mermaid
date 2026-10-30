@@ -26,9 +26,11 @@ describe('parseHistory', () => {
 
   it('reads the committed history without dropping a line', () => {
     const text = readFileSync('layout-fidelity-history.jsonl', 'utf8')
-    const lines = text.split('\n').filter(Boolean).length
+    const lines = text.split('\n').filter(Boolean)
+    // Sequence figures (#1686) reach the page through the scorecard's Markdown section.
+    const sequence = lines.filter((l) => l.includes('"kind":"sequence"')).length
     const { runs, labels } = parseHistory(text)
-    expect(runs.length + labels.length).toBe(lines)
+    expect(runs.length + labels.length + sequence).toBe(lines.length)
     expect(latestPerType(runs).map((r) => r.type)).toContain('flowchart')
   })
 })

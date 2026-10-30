@@ -210,6 +210,16 @@
     "maxLines": 150
   },
   {
+    "file": "scripts/sequence-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/sequence-agreement.ts",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/lib/sequence-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the sequence-oracle and layout-oracle CLIs",
+    "maxLines": 62
+  },
+  {
     "file": "scripts/generate-llms-full.ts",
     "reason": "thin CLI: runs on import and writes public/llms-full.txt; all logic is in scripts/lib/llms-full.ts (tested by __tests__/llms-full.test.ts)",
     "maxLines": 15
