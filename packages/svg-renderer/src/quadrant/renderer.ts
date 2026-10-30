@@ -65,11 +65,37 @@ function quadrantStyles(
       ? [`  .quadrant-point-${i} { ${decl.join(' ')} }`]
       : []
   })
+  // `quadrant*` theme variables (honoured only when the caller opted in; the
+  // layout drops them otherwise). Colours were validated in core. Axis labels
+  // are told apart by rotation, so the markup stays as it was without them.
+  const t = chart.themeColors ?? {}
+  const themed = [
+    ...[1, 2, 3, 4].flatMap((n) => [
+      t[`quadrant${n}Fill` as 'quadrant1Fill'] &&
+        `  .quadrant-cell-${n - 1} { fill: ${t[`quadrant${n}Fill` as 'quadrant1Fill']}; }`,
+      t[`quadrant${n}TextFill` as 'quadrant1TextFill'] &&
+        `  .quadrant:nth-child(${n}) .quadrant-label { fill: ${t[`quadrant${n}TextFill` as 'quadrant1TextFill']}; }`,
+    ]),
+    t.quadrantPointFill &&
+      `  .quadrant-point { fill: ${t.quadrantPointFill}; stroke: ${t.quadrantPointFill}; }`,
+    t.quadrantPointTextFill &&
+      `  .quadrant-point-label { fill: ${t.quadrantPointTextFill}; }`,
+    t.quadrantXAxisTextFill &&
+      `  .quadrant-axis-label[transform$="rotate(0)"] { fill: ${t.quadrantXAxisTextFill}; }`,
+    t.quadrantYAxisTextFill &&
+      `  .quadrant-axis-label[transform$="rotate(-90)"] { fill: ${t.quadrantYAxisTextFill}; }`,
+    t.quadrantTitleFill &&
+      `  .quadrant-title { fill: ${t.quadrantTitleFill}; }`,
+    t.quadrantInternalBorderStrokeFill &&
+      `  .quadrant-line-internal { stroke: ${t.quadrantInternalBorderStrokeFill}; }`,
+    t.quadrantExternalBorderStrokeFill &&
+      `  .quadrant-line-external { stroke: ${t.quadrantExternalBorderStrokeFill}; }`,
+  ].filter(Boolean)
   return `${styleOpenTag(nonce)}
 ${fills.join('\n')}
   .quadrant-line { stroke: ${border}; }
   .quadrant-text { fill: var(--_text); }
-  .quadrant-point { fill: var(--fg); stroke: var(--fg); stroke-width: 0px; }${custom.length > 0 ? '\n' + custom.join('\n') : ''}
+  .quadrant-point { fill: var(--fg); stroke: var(--fg); stroke-width: 0px; }${[...themed, ...custom].map((r) => '\n' + r).join('')}
 </style>`
 }
 

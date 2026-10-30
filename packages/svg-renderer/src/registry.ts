@@ -424,13 +424,20 @@ const pieModule: DiagramModule<PieChart, PositionedPieChart> = {
 /**
  * Quadrant charts parse from the raw `text` (Mermaid's grammar has no `;`
  * statement separator and a label may contain one), then lay out to
- * Mermaid's fixed 500 x 500 geometry. No direction, theme variables or
- * interactivity apply.
+ * Mermaid's geometry (500 x 500 unless the `quadrantChart` init config says
+ * otherwise). No direction or interactivity applies.
  */
 const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
   type: 'quadrant',
   parse: (_lines, text) => parseQuadrantChart(text),
-  layoutForSvg: (chart) => layoutQuadrantChart(chart),
+  // `quadrant*` colours from the directive only when the caller opted in;
+  // the `quadrantChart` sizes always apply, as Mermaid's config does.
+  layoutForSvg: (chart, options) =>
+    layoutQuadrantChart(
+      options.honorThemeVariables
+        ? chart
+        : { ...chart, themeColors: undefined },
+    ),
   renderSvg(positioned, ctx) {
     return renderQuadrantSvg(
       positioned,

@@ -171,13 +171,14 @@ host page's `bg`/`fg` (or CSS-variable) theme. Set `honorThemeVariables: true`
 (`renderMermaidSVG` and `renderMermaidASCII`) to map a small subset onto the
 theme tokens:
 
-| Variable             | Needs                     | Becomes                      | Diagrams         |
-| -------------------- | ------------------------- | ---------------------------- | ---------------- |
-| `primaryColor`       | `theme: "base"`           | `surface` (node fill)        | flowchart, state |
-| `primaryBorderColor` | `theme: "base"`           | `border` (node/group stroke) | flowchart, state |
-| `primaryTextColor`   | `theme: "base"`           | `fg`                         | flowchart, state |
-| `lineColor`          | any theme (state: `base`) | `line` (edges)               | flowchart, state |
-| `pie1`..`pie12`      | any theme                 | slice and legend colour      | pie              |
+| Variable                                                                                                                                                                                                 | Needs                     | Becomes                              | Diagrams            |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------ | ------------------- |
+| `primaryColor`                                                                                                                                                                                           | `theme: "base"`           | `surface` (node fill)                | flowchart, state    |
+| `primaryBorderColor`                                                                                                                                                                                     | `theme: "base"`           | `border` (node/group stroke)         | flowchart, state    |
+| `primaryTextColor`                                                                                                                                                                                       | `theme: "base"`           | `fg`                                 | flowchart, state    |
+| `lineColor`                                                                                                                                                                                              | any theme (state: `base`) | `line` (edges)                       | flowchart, state    |
+| `pie1`..`pie12`                                                                                                                                                                                          | any theme                 | slice and legend colour              | pie                 |
+| `quadrant*Fill`, `quadrant*TextFill`, `quadrantPointFill`, `quadrantPointTextFill`, `quadrantXAxisTextFill`, `quadrantYAxisTextFill`, `quadrantTitleFill`, `quadrant{Internal,External}BorderStrokeFill` | any theme                 | cell, text, point and border colours | quadrant (SVG only) |
 
 ```
 %%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ffd9d9", "lineColor": "#c00"}}}%%
