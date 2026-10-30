@@ -35,8 +35,8 @@ if [ "$full" -eq 1 ]; then
   exit 0
 fi
 
-# Changed, still-existing files (committed vs base, plus uncommitted).
-changed=$( { git diff --name-only --diff-filter=d "$base"...HEAD; git diff --name-only --diff-filter=d HEAD; } | sort -u)
+# Changed, still-existing files (committed vs base, plus uncommitted and untracked).
+changed=$( { git diff --name-only --diff-filter=d "$base"...HEAD; git diff --name-only --diff-filter=d HEAD; git ls-files --others --exclude-standard; } | sort -u)
 lintable=$(printf '%s\n' "$changed" | grep -E '\.(ts|tsx|js|mjs|cjs)$' || true)
 if [ -n "$lintable" ]; then
   printf '%s\n' "$lintable" | xargs pnpm exec oxlint --report-unused-disable-directives-severity=error

@@ -1,6 +1,6 @@
 {
   "name": "@zombie-mermaid/mermaid-parser",
-  "version": "5.11.3",
+  "version": "5.12.0",
   "license": "MIT",
   "description": "Parsers for flowchart, class, ER, sequence, XY chart, pie, C4, and architecture diagrams — the per-type parse functions both svg-renderer and ascii-renderer import directly (maintained continuation of beautiful-mermaid).",
   "keywords": [
