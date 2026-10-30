@@ -3,7 +3,7 @@
 // Frozen historical docs (research, decisions, blog posts, changelog) are
 // excluded by path; ponytail: swap for status-header detection once #1549 lands.
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { forkFixes } from '../demo/fork-fixes-data.ts'
 import { DIAGRAM_TYPES } from '../packages/core/src/diagram-type.ts'
@@ -152,7 +152,8 @@ const realFs: Fs = {
   ls: (g) =>
     execFileSync('git', ['ls-files', g], { encoding: 'utf8' })
       .split('\n')
-      .filter(Boolean),
+      // A tracked symlink to a directory (evals/project-skills/skills/*, #1607) is not a file.
+      .filter((f) => f && statSync(f, { throwIfNoEntry: false })?.isFile()),
 }
 
 export function nodeConsistency(want: string, fs: Fs = realFs): string[] {
