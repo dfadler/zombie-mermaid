@@ -164,11 +164,16 @@ function fitMessageLabels(
     if (!m.label) continue
     const from = index.get(m.from)!
     const to = index.get(m.to)!
-    const w = measureMultilineText(m.label, fontSize, FONT_WEIGHTS.edgeLabel).width
+    const w = measureMultilineText(
+      m.label,
+      fontSize,
+      FONT_WEIGHTS.edgeLabel,
+    ).width
     const lo = Math.min(from, to)
     const hi = from === to ? lo + 1 : Math.max(from, to)
     if (hi >= gaps.length) continue // self-message on the last actor: no neighbour to push
-    const need = from === to ? SELF_LABEL_X + w + LABEL_CLEARANCE : w + 2 * LABEL_CLEARANCE
+    const need =
+      from === to ? SELF_LABEL_X + w + LABEL_CLEARANCE : w + 2 * LABEL_CLEARANCE
     let have = 0
     for (let g = lo + 1; g <= hi; g++) have += gaps[g]!
     if (have >= need) continue
