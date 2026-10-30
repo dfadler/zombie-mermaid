@@ -256,6 +256,7 @@ function growToClearLabel(
   widths: readonly number[],
   insetsOf: (w: number, h: number) => number[],
   evenWidth: boolean,
+  bothSides = false,
 ): ShapeDimensions {
   const rows = base.height
   const startY =
@@ -265,11 +266,13 @@ function growToClearLabel(
   const step = evenWidth ? 2 : 1
   for (let grow = 0; grow < 64; grow++) {
     const ins = insetsOf(width - 1, rows - 1)
-    const clear = widths.every(
-      (lw, i) =>
-        ins[startY + i]! <= labelStartX(width - 1, lw) - 1 - HEX_GAP ||
-        ins[startY + i] === 0,
-    )
+    const clear = widths.every((lw, i) => {
+      const d = ins[startY + i]!
+      const x0 = labelStartX(width - 1, lw)
+      // A two-sided slant also needs the right edge of the text clear.
+      const right = !bothSides || width - 1 - d >= x0 + lw + HEX_GAP
+      return d === 0 || (d <= x0 - 1 - HEX_GAP && right)
+    })
     if (clear) break
     width += step
   }
@@ -307,8 +310,84 @@ export function circleDimensions(
   )
 }
 
+/**
+ * Trapezoid indent for rows 0..h: one column per row (a cell is about half as
+ * wide as tall, so this is mermaid's slope), narrow row at the top for
+ * `trapezoid` and at the bottom for `trapezoid-alt` (#2164).
+ */
+export function trapezoidInsets(h: number, alt: boolean): number[] {
+  return Array.from({ length: h + 1 }, (_, y) => (alt ? y : h - y))
+}
+
+/**
+ * The trapezoid's insets for a drawn `w` x `h` cell: the slope, flattened where
+ * it would touch a label row (a neighbour can make the node taller than its
+ * own dimensions assumed) and where the narrow row would run out of width.
+ */
+export function trapezoidInsetsFor(
+  w: number,
+  h: number,
+  alt: boolean,
+  lineWidths: readonly number[],
+  startY: number,
+): number[] {
+  return trapezoidInsets(h, alt).map((slope, y) => {
+    let d = Math.min(slope, Math.max(Math.floor((w - 2) / 2), 0))
+    const lw = lineWidths[y - startY]
+    if (lw !== undefined) {
+      const x0 = labelStartX(w, lw)
+      d = Math.min(d, x0 - 1 - HEX_GAP, w - x0 - lw - HEX_GAP)
+    }
+    return Math.max(d, 0)
+  })
+}
+
+/** Draw a trapezoid: slanted sides, and a `╱──╲` row at the top and bottom. */
+export function drawTrapezoid(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  alt: boolean,
+  insets: readonly number[],
+  useAscii: boolean,
+): void {
+  const hChar = useAscii ? '-' : '─'
+  const [up, down] = useAscii ? ['/', '\\'] : ['╱', '╲']
+  for (let y = 0; y <= h; y++) {
+    const d = insets[y]!
+    // Wider at the bottom: the left side leans up-right (`╱`), down to the
+    // base row, so each slant glyph sits diagonally beside the next.
+    canvas[d]![y] = alt ? down! : up!
+    canvas[w - d]![y] = alt ? up! : down!
+    if (y === 0 || y === h) {
+      for (let x = d + 1; x < w - d; x++) canvas[x]![y] = hChar
+    }
+  }
+}
+
+/** Trapezoid grid cell: the box's rows, wide enough for the slant and the label. */
+export function trapezoidDimensions(
+  label: string,
+  options: ShapeRenderOptions,
+  alt: boolean,
+): ShapeDimensions {
+  const widths = splitLines(label).map((l) => displayWidth(l))
+  const base = getBoxDimensions(label, options)
+  // The narrow row keeps two cells between its slants.
+  const width = Math.max(base.width, 2 * (base.height - 1) + 3)
+  return growToClearLabel(
+    { ...base, width },
+    widths,
+    (_w, h) => trapezoidInsets(h, alt),
+    false,
+    true,
+  )
+}
+
 /** True for the shapes drawn as a silhouette rather than a corner-glyph box. */
 export const isSilhouetteShape = (shape: string): boolean =>
+  shape === 'trapezoid' ||
+  shape === 'trapezoid-alt' ||
   shape === 'stadium' ||
   shape === 'hexagon' ||
   shape === 'diamond' ||
@@ -343,7 +422,14 @@ export function hexagonDimensions(
 
 /** Standalone render of a stadium or hexagon, label centred (same as drawBox). */
 export function renderSilhouette(
-  kind: 'stadium' | 'hexagon' | 'diamond' | 'circle' | 'asymmetric',
+  kind:
+    | 'stadium'
+    | 'hexagon'
+    | 'diamond'
+    | 'circle'
+    | 'asymmetric'
+    | 'trapezoid'
+    | 'trapezoid-alt',
   label: string,
   dimensions: ShapeDimensions,
   useAscii: boolean,
@@ -359,6 +445,21 @@ export function renderSilhouette(
   else if (kind === 'circle')
     drawCircle(canvas, w, h, circleInsets(w, h), useAscii)
   else if (kind === 'asymmetric') drawAsymmetric(canvas, w, h, useAscii)
+  else if (kind === 'trapezoid' || kind === 'trapezoid-alt')
+    drawTrapezoid(
+      canvas,
+      w,
+      h,
+      kind === 'trapezoid-alt',
+      trapezoidInsetsFor(
+        w,
+        h,
+        kind === 'trapezoid-alt',
+        lines.map((l) => displayWidth(l)),
+        startY,
+      ),
+      useAscii,
+    )
   else {
     const widths = lines.map((l) => displayWidth(l))
     drawHexagon(canvas, w, h, hexagonInsets(w, h, widths, startY), useAscii)

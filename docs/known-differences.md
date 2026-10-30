@@ -133,6 +133,35 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
   ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
 
+## Quadrant charts
+
+Checked on mermaid 12.2.0 (the pin, also npm `latest`); there is no layout oracle for
+this type yet, so the geometry is matched to a real mermaid render of the campaigns
+sample by hand (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` pins its numbers).
+
+- **Point colour.** Mermaid 12.2.0's default theme emits `fill="hsl(240, 100%, NaN%)"`
+  for every point without a `color`, which browsers drop, so mermaid.live and GitHub show
+  near-black dots. zombie-mermaid draws them in `var(--fg)`: the same dot on a light
+  theme, still visible on a dark one. A point's own `color`, `stroke-color` and
+  `stroke-width` (or its class's) are drawn as written.
+- **Palette.** Cell fills are the theme accent mixed into the background at four falling
+  strengths; mermaid uses lavender steps from its `primaryColor`.
+- **Text widths.** Neither renderer measures text; this library's font is not mermaid's
+  `trebuchet ms`, so a long label overflows at a slightly different point.
+- **Init config and theme variables.** The `quadrantChart` block of `%%{init}%%`
+  (`chartWidth`, `chartHeight`, the paddings and font sizes, `pointRadius`,
+  `xAxisPosition`, `yAxisPosition`, the border stroke widths) is applied as mermaid
+  does, checked against 12.2.0; a non-number, negative number or unknown position is
+  dropped. The `quadrant*Fill`, `quadrant*TextFill`, `quadrantPoint*`, axis text, title
+  and border `*StrokeFill` variables are read under any theme, like mermaid, but only
+  with `honorThemeVariables` ([themeVariables](diagrams.md#themevariables-opt-in)).
+  ASCII ignores both. Mermaid's other theme-derived colours are not computed.
+- **Empty labels.** Mermaid draws an empty `<text>` for a quadrant with no label; this
+  library draws nothing.
+- **ASCII.** Mermaid has no ASCII output. The x axis is always below the grid (mermaid's
+  SVG puts it on top of a chart with no points), and point labels are in a legend, not
+  next to the markers.
+
 ## XY charts
 
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
@@ -232,7 +261,7 @@ only); GitHub's render was not reachable. See the comment on #2101 for the numbe
 ## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
 
 The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
-family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle** and **subroutine**. Mermaid 12.2.0 (the pin and npm latest
+family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle**, **subroutine**, **asymmetric** and **trapezoid**. Mermaid 12.2.0 (the pin and npm latest
 agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
 left and right middle.
 
@@ -274,10 +303,18 @@ left and right middle.
   Edges still attach at the outer border, so an edge arriving on the notch stops one cell
   short of the tip (`►` then a blank, then `>`); an edge leaving from the notch face in RL
   starts at the tip's neighbour (`┤>`). Mermaid's diagonal sides are not drawn.
+- **Trapezoid** (`[/x\]`, `[\x/]`). Mermaid 12.2.0 (also the npm latest) slants both sides
+  by half the node's height over its height, wide edge at the bottom for `[/x\]` and at
+  the top for `[\x/]`, in every direction (BT does not flip it). Ours slants one column
+  per row (`╱ ╲` / `/ \`; a cell is about half as wide as tall, so the slope matches),
+  and the base row is `╱──╲` like the narrow one, so a node is wider by its slant (at
+  least `2 × rows + 1` columns). A label row that would touch the slant flattens it
+  there. Side edges attach at the node's outer face, then a post-pass extends the stroke
+  (and moves an arrowhead) across the blank cells to the slanted wall.
 - **Still approximated** (later PRs, per the owner's one-family-per-PR call): double circle
-  (needs a second, concentric ellipse: a width and height decision), parallelograms and
-  trapezoids (slanted sides cost one column per row, so a node widens by its slant, and
-  the RL mirroring from #1701 must keep the lean).
+  (needs a second, concentric ellipse: a width and height decision) and parallelograms
+  (slanted sides cost one column per row, so a node widens by its slant, and the RL
+  mirroring from #1701 must keep the lean).
 
 ## ASCII: LR skip edge beside a reciprocal pair (partial match)
 

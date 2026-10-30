@@ -1,0 +1,48 @@
+# Weekly expiry alert for the repo PATs that have no health step of their own
+# (#2448): RELEASE_PR_PAT (publish.yml), BASELINES_PUSH_TOKEN
+# (update-linux-baselines.yml) and VISUAL_REGRESSION_ATTACH_PAT
+# (visual-regression-post-comment.yml). DASHBOARD_REFRESH_PAT keeps its own
+# step in dashboard-refresh.yml (#1736). Logic lives in
+# scripts/check-pat-health.sh: one issue per secret, opened within 14 days of
+# expiry or when the PAT is rejected. Rotation is tracked in #2450.
+# Secrets are passed through env only; no repo code beyond the script runs.
+name: PAT expiry check
+
+on:
+  schedule:
+    - cron: '0 13 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.repository == 'dfadler/zombie-mermaid'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/check-pat-health.sh
+      - name: RELEASE_PR_PAT
+        continue-on-error: true
+        env:
+          PAT: ${{ secrets.RELEASE_PR_PAT }}
+        run: scripts/check-pat-health.sh RELEASE_PR_PAT
+      - name: BASELINES_PUSH_TOKEN
+        continue-on-error: true
+        env:
+          PAT: ${{ secrets.BASELINES_PUSH_TOKEN }}
+        run: scripts/check-pat-health.sh BASELINES_PUSH_TOKEN
+      - name: VISUAL_REGRESSION_ATTACH_PAT
+        continue-on-error: true
+        env:
+          PAT: ${{ secrets.VISUAL_REGRESSION_ATTACH_PAT }}
+        run: scripts/check-pat-health.sh VISUAL_REGRESSION_ATTACH_PAT

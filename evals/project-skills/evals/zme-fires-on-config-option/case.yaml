@@ -1,0 +1,39 @@
+# Should-fire: editor change; skill says edit editor/ + demo/components/, not packages/site/ssr/editor-routes.ts or site/editor.html.
+# Can fail: with no workspace a baseline cannot know the `editor/` + `demo/components` split.
+# good-reply: Add the control in demo/components/editor-panels.tsx, the JS in editor/js/, and RenderOptions in packages/core/src/types.ts.
+# bad-reply: Edit site/editor.html and add an input.
+schema_version: '1.1'
+name: zme-fires-on-config-option
+description: >
+  Adding a Config option to the live editor should fire zombie-mermaid-editor and point at
+  demo/components and editor/, not the generated site/editor.html. expected_outcome: PASS when
+  the skill is invoked, the reply names demo/components and editor/, and does not tell the user
+  to edit site/editor.html; FAIL otherwise.
+tags: [zombie-mermaid-editor, trigger, quick]
+
+execution:
+  prompt: |
+    Add a new "corner radius" Config option to the live editor page. Don't run anything; list
+    which files I should change.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid-editor"'
+    min: 1
+
+  - name: names_component_dir
+    type: regex
+    target: last_message
+    pattern: 'demo/components'
+    match: contains
+
+  - name: names_editor_dir
+    type: regex
+    target: last_message
+    pattern: 'editor/(?:js|css)'
+    match: contains

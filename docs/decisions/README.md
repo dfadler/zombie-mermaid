@@ -63,6 +63,7 @@ Add a row when you add a doc; update the status when it changes. The issue colum
 | [ascii-pty-snapshot-suite-1151.md](ascii-pty-snapshot-suite-1151.md)                                             | not adopted          | [#1151](https://github.com/dfadler/zombie-mermaid/issues/1151) |
 | [ascii-seven-pixel-cell-1199.md](ascii-seven-pixel-cell-1199.md)                                                 | implemented          | [#1199](https://github.com/dfadler/zombie-mermaid/pull/1199)   |
 | [ascii-vertical-edge-label-placement-1385.md](ascii-vertical-edge-label-placement-1385.md)                       | implemented          | [#1385](https://github.com/dfadler/zombie-mermaid/issues/1385) |
+| [claude-code-plugin-mcp-launch-2206.md](claude-code-plugin-mcp-launch-2206.md)                                   | proposal             | [#2206](https://github.com/dfadler/zombie-mermaid/issues/2206) |
 | [cli-and-demo-stay-apps.md](cli-and-demo-stay-apps.md)                                                           | implemented          | [#416](https://github.com/dfadler/zombie-mermaid/issues/416)   |
 | [cluster-exit-anchoring-1148-prerequisites-1164-1165.md](cluster-exit-anchoring-1148-prerequisites-1164-1165.md) | implemented          | [#1165](https://github.com/dfadler/zombie-mermaid/issues/1165) |
 | [cluster-exit-anchoring-recommendation-1135.md](cluster-exit-anchoring-recommendation-1135.md)                   | implemented          | [#1135](https://github.com/dfadler/zombie-mermaid/issues/1135) |
@@ -94,6 +95,7 @@ Add a row when you add a doc; update the status when it changes. The issue colum
 | [self-hosted-runner-docker-cache.md](self-hosted-runner-docker-cache.md)                                         | not adopted          | [#738](https://github.com/dfadler/zombie-mermaid/issues/738)   |
 | [simple-layout-1685.md](simple-layout-1685.md)                                                                   | implemented          | [#1685](https://github.com/dfadler/zombie-mermaid/issues/1685) |
 | [site-generators-react-migration.md](site-generators-react-migration.md)                                         | superseded           | [#423](https://github.com/dfadler/zombie-mermaid/issues/423)   |
+| [slim-ascii-entry-points-2086.md](slim-ascii-entry-points-2086.md)                                               | not adopted          | [#2086](https://github.com/dfadler/zombie-mermaid/issues/2086) |
 | [tarballs-ship-dist-only-1426.md](tarballs-ship-dist-only-1426.md)                                               | implemented          | [#1426](https://github.com/dfadler/zombie-mermaid/issues/1426) |
 | [theme-selector-shared-state.md](theme-selector-shared-state.md)                                                 | implemented          | [#685](https://github.com/dfadler/zombie-mermaid/issues/685)   |
 | [versioning-and-deprecation-policy-1568.md](versioning-and-deprecation-policy-1568.md)                           | accepted             | [#1568](https://github.com/dfadler/zombie-mermaid/issues/1568) |

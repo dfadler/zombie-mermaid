@@ -71,6 +71,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   architecture: 'Architecture',
   c4: 'C4',
   pie: 'Pie',
+  quadrant: 'Quadrant',
 }
 
 describe('EditorPage meta description', () => {

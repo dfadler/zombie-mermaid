@@ -1,0 +1,36 @@
+# Should-fire: ASCII render request without naming the skill or CLI.
+# Can fail: a baseline suggests mermaid-cli/mmdc, not `zombie-mermaid render --ascii`.
+# good-reply: Save it as diagram.mmd and run npx -y zombie-mermaid render diagram.mmd --ascii
+# bad-reply: Use mmdc -i diagram.mmd -o out.svg
+schema_version: '1.1'
+name: zm-fires-on-ascii-render
+description: >
+  Asked to show a flowchart as ASCII in the terminal, the reply uses the zombie-mermaid CLI with
+  --ascii. expected_outcome: PASS when the skill is invoked and the reply has
+  `zombie-mermaid render ... --ascii`; FAIL otherwise.
+tags: [zombie-mermaid, trigger, quick]
+
+execution:
+  prompt: |
+    Show me this flowchart as ASCII art in my terminal. Don't run anything; give the exact command.
+
+    flowchart LR
+      A[Start] --> B{Ok?}
+      B -->|yes| C[Done]
+      B -->|no| A
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+    min: 1
+
+  - name: uses_cli_ascii
+    type: regex
+    target: last_message
+    pattern: 'zombie-mermaid\s+render\b[^\n]*--ascii'
+    match: contains

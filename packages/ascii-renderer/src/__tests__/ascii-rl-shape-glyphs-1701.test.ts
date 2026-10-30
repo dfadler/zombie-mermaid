@@ -46,11 +46,11 @@ describe('RL keeps node shapes unmirrored', () => {
     const lr = renderMermaidASCII(src('LR'), { useAscii: false })
     const [top] = rl.split('\n')
     // Left to right in RL: trapezoid, flag, "\a\", "/p/".
-    expect(top).toMatch(/^\/─+\\ +┌─+┐ +\\─+\\ +\/─+\/$/)
+    expect(top).toMatch(/^ *╱─+╲ +┌─+┐ +\\─+\\ +\/─+\/$/)
     // The notch (`>` one cell in from the left wall) stays on the left (#2164).
     expect(rl).toMatch(/┤> f  │/)
     expect(rl).not.toContain('<')
-    expect(lr.split('\n')[0]).toMatch(/^\/─+\/ +\\─+\\ +┌─+┐ +\/─+\\$/)
+    expect(lr.split('\n')[0]).toMatch(/^\/─+\/ +\\─+\\ +┌─+┐ +╱─+╲ *$/)
     expect(lr).toMatch(/► > f  ├/)
   })
 

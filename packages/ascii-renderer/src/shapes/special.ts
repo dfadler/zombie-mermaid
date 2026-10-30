@@ -20,7 +20,11 @@ import {
   getBoxAttachmentPoint,
 } from './rectangle.ts'
 import { getCorners } from './corners.ts'
-import { asymmetricDimensions, renderSilhouette } from './silhouettes.ts'
+import {
+  asymmetricDimensions,
+  renderSilhouette,
+  trapezoidDimensions,
+} from './silhouettes.ts'
 
 // ============================================================================
 // Subroutine — keeps custom double-border rendering
@@ -284,12 +288,10 @@ export const asymmetricRenderer: ShapeRenderer = {
  *   └─────────┘
  */
 export const trapezoidRenderer: ShapeRenderer = {
-  getDimensions: getBoxDimensions,
+  getDimensions: (label, options) => trapezoidDimensions(label, options, false),
 
-  render(label, dimensions, options) {
-    const corners = getCorners('trapezoid', options.useAscii)
-    return renderBox(label, dimensions, corners, options.useAscii)
-  },
+  render: (label, dimensions, options) =>
+    renderSilhouette('trapezoid', label, dimensions, options.useAscii),
 
   getAttachmentPoint: getBoxAttachmentPoint,
 }
@@ -312,12 +314,10 @@ export const trapezoidRenderer: ShapeRenderer = {
  *   \─────────/
  */
 export const trapezoidAltRenderer: ShapeRenderer = {
-  getDimensions: getBoxDimensions,
+  getDimensions: (label, options) => trapezoidDimensions(label, options, true),
 
-  render(label, dimensions, options) {
-    const corners = getCorners('trapezoid-alt', options.useAscii)
-    return renderBox(label, dimensions, corners, options.useAscii)
-  },
+  render: (label, dimensions, options) =>
+    renderSilhouette('trapezoid-alt', label, dimensions, options.useAscii),
 
   getAttachmentPoint: getBoxAttachmentPoint,
 }
