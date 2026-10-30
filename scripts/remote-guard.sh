@@ -42,7 +42,7 @@ emit() { # emit <deny|ctx> <message>
 }
 
 # --- deny rules (moved from the inline hook; first line only, as before in .claude/settings.json) ---
-first="${c%%$'\n'*}" # the old hook only looked at line 1; keep that for the deny set
+IFS=$' \t\n' read -r first <<<"$c" # the old hook's `read -r`: line 1 only, leading blanks stripped
 if printf '%s' "$first" | grep -qi 'lukilabs' && printf '%s' "$first" | grep -qi 'beautiful-mermaid'; then
   if printf '%s' "$first" | grep -Eiq '(gh[[:space:]]+pr[[:space:]]+(create|ready|merge)|/pulls([^a-zA-Z]|$)|api[[:space:]].*pulls)'; then
     emit deny "Blocked: this command submits or modifies a PR on the upstream fork-parent repo (lukilabs/beautiful-mermaid). PRs must target the fork (origin, dfadler/zombie-mermaid) only."
@@ -70,18 +70,53 @@ check() { # check <what> <target-slug-or-url>
   esac
 }
 
+push_target() { # remote git push uses when none is named: branch pushRemote, pushDefault, branch remote, origin
+  local b r
+  b="$(git symbolic-ref -q --short HEAD 2>/dev/null || true)"
+  r="$(git config --get "branch.$b.pushRemote" 2>/dev/null || git config --get remote.pushDefault 2>/dev/null || git config --get "branch.$b.remote" 2>/dev/null || true)"
+  printf '%s' "${r:-origin}"
+}
+gh_default() { # gh's default repo without --repo: GH_REPO, then remote.<n>.gh-resolved, then origin
+  local line n v
+  if [ -n "${1:-}" ]; then
+    printf '%s' "$1"
+    return
+  fi
+  line="$(git config --get-regexp '^remote\..*\.gh-resolved$' 2>/dev/null | head -n1)"
+  if [ -n "$line" ]; then
+    n="${line%% *}"
+    v="${line#* }"
+    n="${n#remote.}"
+    n="${n%.gh-resolved}"
+    if [ "$v" = base ]; then
+      git remote get-url "$n" 2>/dev/null && return
+    else
+      printf '%s' "$v"
+      return
+    fi
+  fi
+  printf '%s' "$origin_url"
+}
+
 while IFS= read -r seg; do
   read -ra t <<<"$seg"
-  [ "${#t[@]}" -ge 3 ] || continue
+  envrepo="${GH_REPO:-}"
+  # Leading NAME=value assignments don't change which command runs; GH_REPO changes its target.
+  while [ "${#t[@]}" -gt 0 ] && [[ "${t[0]}" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; do
+    case "${t[0]}" in GH_REPO=*) envrepo="${t[0]#GH_REPO=}" ;; esac
+    t=("${t[@]:1}")
+  done
+  [ "${#t[@]}" -ge 2 ] || continue
   kind=""
-  if [ "${t[0]}" = gh ] && [ "${t[1]}" = pr ] && [ "${t[2]}" = create ]; then kind="gh pr create"; fi
-  if [ "${t[0]}" = gh ] && [ "${t[1]}" = issue ] && [ "${t[2]}" = create ]; then kind="gh issue create"; fi
+  if [ "${t[0]}" = gh ] && [ "${t[1]}" = pr ] && [ "${t[2]:-}" = create ]; then kind="gh pr create"; fi
+  if [ "${t[0]}" = gh ] && [ "${t[1]}" = issue ] && [ "${t[2]:-}" = create ]; then kind="gh issue create"; fi
   if [ "${t[0]}" = git ] && [ "${t[1]}" = push ]; then kind="git push"; fi
   [ -n "$kind" ] || continue
   repo="" remote=""
   for ((i = 2; i < ${#t[@]}; i++)); do
     a="${t[i]//[\"\']/}"
     case "$a" in
+    -o | --push-option | --receive-pack | --exec) [ "$kind" = "git push" ] && i=$((i + 1)) ;; # skip the option's value
     --repo | -R) repo="${t[i + 1]//[\"\']/}" ;;
     --repo=*) repo="${a#--repo=}" ;;
     -*) ;;
@@ -89,16 +124,17 @@ while IFS= read -r seg; do
     esac
   done
   if [ "$kind" = "git push" ]; then
-    r="${remote:-origin}"
+    r="${remote:-$(push_target)}"
     case "$r" in
     *://* | *@*:* | */*) url="$r" ;;
-    *) url="$(git remote get-url "$r" 2>/dev/null || true)" ;;
+    *) url="$(git remote get-url --push "$r" 2>/dev/null || true)" ;;
     esac
     [ -n "$url" ] && check "$kind (remote '$r')" "$url"
   elif [ -n "$repo" ]; then
     check "$kind" "$repo"
-  elif [ -n "$origin_url" ]; then
-    check "$kind (default repo)" "$origin_url"
+  else
+    target="$(gh_default "$envrepo")"
+    [ -n "$target" ] && check "$kind (default repo)" "$target"
   fi
 done < <(printf '%s\n' "$c" | tr ';&|' '\n' | sed -E 's/^[[:space:]]+//')
 

@@ -42,6 +42,8 @@ if (hasJq) {
     'upstream',
     'https://github.com/lukilabs/beautiful-mermaid.git',
   )
+  git('remote', 'add', 'pushy', 'https://github.com/dfadler/zombie-mermaid.git')
+  git('config', 'remote.pushy.pushurl', 'https://github.com/someone/else.git')
   git('remote', 'add', 'other', 'git@github.com:someone/else.git')
 }
 
@@ -116,6 +118,57 @@ describe.skipIf(!hasJq)('remote-guard PreToolUse hook', () => {
     'git push nosuchremote main',
   ])('stays silent: %s', (cmd) => {
     expect(warning(cmd)).toBe('')
+  })
+
+  it('denies upstream pushes with leading blanks, as the old read -r did', () => {
+    expect(decide('   git push upstream main')).toBe('deny')
+  })
+
+  it.each([
+    'GH_REPO=someone/else gh issue create --title x',
+    'FOO=1 GH_REPO=someone/else gh pr create --fill',
+    'FOO=1 git push other main',
+    'git push -o ci.skip other main',
+    'git push --push-option=x --push-option y other main',
+    'git push pushy main', // Fetch URL is owned, pushurl is not
+  ])('warns on env prefixes, option values and push URLs: %s', (cmd) => {
+    expect(warning(cmd)).toMatch(/remote-guard warning.*someone/s)
+  })
+
+  it('stays silent for an env prefix on an owned target', () => {
+    expect(warning('FOO=1 git push origin main')).toBe('')
+    expect(warning('GH_REPO=dfadler/zombie-mermaid gh pr create --fill')).toBe(
+      '',
+    )
+  })
+
+  it('warns on a bare git push when remote.pushDefault is not owned', () => {
+    expect(warning('git push')).toBe('')
+    git('config', 'remote.pushDefault', 'other')
+    try {
+      expect(warning('git push')).toMatch(/someone/)
+      expect(warning('git push origin main')).toBe('')
+    } finally {
+      git('config', '--unset', 'remote.pushDefault')
+    }
+  })
+
+  it('uses the gh default repo (GH_REPO, then gh-resolved) when --repo is absent', () => {
+    expect(warning('gh pr create --fill', { GH_REPO: 'someone/else' })).toMatch(
+      /someone/,
+    )
+    git('config', 'remote.other.gh-resolved', 'base')
+    try {
+      expect(warning('gh pr create --fill')).toMatch(/someone/)
+    } finally {
+      git('config', '--unset', 'remote.other.gh-resolved')
+    }
+    git('config', 'remote.origin.gh-resolved', 'someone/else')
+    try {
+      expect(warning('gh issue create --title x')).toMatch(/someone/)
+    } finally {
+      git('config', '--unset', 'remote.origin.gh-resolved')
+    }
   })
 
   it('honours REMOTE_GUARD_OWNED', () => {
