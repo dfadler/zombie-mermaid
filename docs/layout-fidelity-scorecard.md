@@ -11,8 +11,8 @@ floor for its lowest figure (default 85%, lower overrides in
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
 Reference: mermaid 12.2.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-10-27 at
-a70ae2e with `pnpm run layout:scorecard`, tolerance 20px.
+these diagram types is ELK (it was dagre before). Generated 2026-10-30 at
+507a226 with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
@@ -31,10 +31,6 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-15 | 9231164 | 12.1.0  | Flowchart | 53      | 94%      | 98%        | 100%        |
-| 2026-10-15 | 9231164 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-15 | 9231164 | 12.1.0  | Class     | 17      | 100%     | 99%        | 100%        |
-| 2026-10-15 | 9231164 | 12.1.0  | ER        | 18      | 100%     | 100%       | -           |
 | 2026-10-16 | 89d7175 | 12.1.0  | Flowchart | 53      | 95%      | 98%        | 100%        |
 | 2026-10-16 | 89d7175 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-16 | 89d7175 | 12.1.0  | Class     | 25      | 100%     | 100%       | 100%        |
@@ -51,6 +47,10 @@ across that change.
 | 2026-10-27 | a70ae2e | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-27 | a70ae2e | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
 | 2026-10-27 | a70ae2e | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-30 | 507a226 | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
+| 2026-10-30 | 507a226 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-30 | 507a226 | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-10-30 | 507a226 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Edge labels (ASCII)
 
@@ -62,6 +62,20 @@ between the two renderers. Descriptive only, no floor.
 | Date       | Commit  | Mermaid | Cases | Official | ASCII | Delta |
 | ---------- | ------- | ------- | ----- | -------- | ----- | ----- |
 | 2026-10-27 | a70ae2e | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-10-30 | 507a226 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+
+## Sequence diagrams (order)
+
+Sequence has no layout engine to compare, so the share of agreeing pairs is
+taken for participant left-to-right order and message top-to-bottom order, and
+the share of messages pointing the same way (`scripts/sequence-oracle.ts`).
+Every sample must score 100% (`SEQUENCE_FLOOR`; `--thresholds` exits 1
+otherwise), so this guards against regressions in a grid that agrees today. It
+says nothing about pixel positions or spacing.
+
+| Date       | Commit  | Mermaid | Samples | Participants | Messages | Direction |
+| ---------- | ------- | ------- | ------- | ------------ | -------- | --------- |
+| 2026-10-30 | 507a226 | 12.2.0  | 21      | 100%         | 100%     | 100%      |
 
 ## Per sample
 
@@ -198,7 +212,7 @@ Not scored (the oracle errored): zombie-mermaid.
 
 ## Diagram types not scored
 
-- **sequence**: mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, and emits no g.node elements. Agreement would be 100% by construction.
+- **sequence**: mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, so node placement says nothing. Order and direction are scored separately, in the Sequence section.
 - **architecture-beta**: we have no architecture layout to measure, and mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port directions in the source.
 - **pie, xychart-beta**: no nodes: positions come from data values, so there is no arrangement to compare.
 - **c4**: mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges.
