@@ -130,6 +130,7 @@ describe('architecture agreement (#2451)', () => {
       [],
       [],
       [],
+      [],
       [entry],
     )
     expect(md).toContain('## Architecture diagrams (placement)')

@@ -2,6 +2,7 @@
 
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import type { PieEntry } from './pie-agreement.ts'
+import type { C4Entry } from './c4-agreement.ts'
 import type { ArchitectureEntry } from './architecture-agreement.ts'
 import type { SequenceEntry } from './sequence-agreement.ts'
 import {
@@ -19,12 +20,14 @@ export async function writeRecords(
   labelEntry: LabelEntry | undefined,
   sequenceEntry?: SequenceEntry,
   pieEntry?: PieEntry,
+  c4Entry?: C4Entry,
   architectureEntry?: ArchitectureEntry,
 ): Promise<void> {
   let history = runs.map((r) => r.entry)
   let labels = labelEntry ? [labelEntry] : []
   let sequences = sequenceEntry ? [sequenceEntry] : []
   let pies = pieEntry ? [pieEntry] : []
+  let c4s = c4Entry ? [c4Entry] : []
   let architectures = architectureEntry ? [architectureEntry] : []
   if (args.history) {
     await appendFile(
@@ -34,6 +37,7 @@ export async function writeRecords(
         ...labels,
         ...(sequenceEntry ? [sequenceEntry] : []),
         ...(pieEntry ? [pieEntry] : []),
+        ...(c4Entry ? [c4Entry] : []),
         ...(architectureEntry ? [architectureEntry] : []),
       ]),
     )
@@ -47,6 +51,7 @@ export async function writeRecords(
             | LabelEntry
             | SequenceEntry
             | PieEntry
+            | C4Entry
             | ArchitectureEntry,
       )
     history = all.filter((e): e is HistoryEntry => !('kind' in e))
@@ -57,6 +62,7 @@ export async function writeRecords(
       (e): e is SequenceEntry => 'kind' in e && e.kind === 'sequence',
     )
     pies = all.filter((e): e is PieEntry => 'kind' in e && e.kind === 'pie')
+    c4s = all.filter((e): e is C4Entry => 'kind' in e && e.kind === 'c4')
     architectures = all.filter(
       (e): e is ArchitectureEntry => 'kind' in e && e.kind === 'architecture',
     )
@@ -72,6 +78,7 @@ export async function writeRecords(
         labels,
         sequences,
         pies,
+        c4s,
         architectures,
       ),
     )
