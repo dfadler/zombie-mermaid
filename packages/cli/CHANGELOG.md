@@ -1,5 +1,19 @@
 # @zombie-mermaid/cli
 
+## 5.12.0
+
+### Minor Changes
+
+- [#2399](https://github.com/dfadler/zombie-mermaid/pull/2399) [`6024647`](https://github.com/dfadler/zombie-mermaid/commit/6024647f1d7992459a00aebee5b9ce1d25eb7fe0) Thanks [@dfadler](https://github.com/dfadler)! - CLI: `zombie-mermaid --check <file.md>...` validates every `mermaid` fenced block in Markdown files, printing `file:line: message` for each invalid block and exiting 1 ([#1876](https://github.com/dfadler/zombie-mermaid/issues/1876)).
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.12.0
+  - @zombie-mermaid/mcp@5.12.0
+  - @zombie-mermaid/svg-renderer@5.12.0
+  - @zombie-mermaid/core@5.12.0
+
 ## 5.11.3
 
 ### Patch Changes
