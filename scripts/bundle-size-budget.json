@@ -20,7 +20,7 @@
     "packages/mcp/dist/index.cjs": 7690
   },
   "consumerBundles": {
-    "packages/svg-renderer/dist/index.js": 88728,
+    "packages/svg-renderer/dist/index.js": 90512,
     "dist/index.js": 162566
   },
   "unpackedBudgets": {

@@ -143,6 +143,45 @@ function resolveSeqOptions(overrides?: RenderOptions['sequence']): SeqConfig {
   }
 }
 
+/** Space kept between a message label and the next lifeline. */
+const LABEL_CLEARANCE = 16
+/** A self-message label starts this far right of its lifeline (loop 30 + gap 8, as drawn by the renderer). */
+const SELF_LABEL_X = 38
+
+/**
+ * Widen `gaps` (`gaps[i]` = distance from actor i - 1 to actor i) in place so a
+ * message label never crosses a lifeline: a label between two actors is centred
+ * on the span, a self-message label sits to the right of its loop. A shortfall
+ * on a span of several gaps is spread evenly over them.
+ */
+function fitMessageLabels(
+  diagram: SequenceDiagram,
+  gaps: number[],
+  fontSize: number,
+): void {
+  const index = new Map(diagram.actors.map((a, i) => [a.id, i]))
+  for (const m of diagram.messages) {
+    if (!m.label) continue
+    const from = index.get(m.from)!
+    const to = index.get(m.to)!
+    const w = measureMultilineText(
+      m.label,
+      fontSize,
+      FONT_WEIGHTS.edgeLabel,
+    ).width
+    const lo = Math.min(from, to)
+    const hi = from === to ? lo + 1 : Math.max(from, to)
+    if (hi >= gaps.length) continue // self-message on the last actor: no neighbour to push
+    const need =
+      from === to ? SELF_LABEL_X + w + LABEL_CLEARANCE : w + 2 * LABEL_CLEARANCE
+    let have = 0
+    for (let g = lo + 1; g <= hi; g++) have += gaps[g]!
+    if (have >= need) continue
+    const add = (need - have) / (hi - lo)
+    for (let g = lo + 1; g <= hi; g++) gaps[g]! += add
+  }
+}
+
 /**
  * Lay out a parsed sequence diagram.
  * Returns a fully positioned diagram ready for SVG rendering.
@@ -178,17 +217,16 @@ export function layoutSequenceDiagram(
     return Math.max(textW + seq.actorPadX * 2, 80)
   })
 
-  // Build actor center X positions with minimum gap
+  // Build actor center X positions with minimum gap, widened so message
+  // labels fit between their lifelines (ported from lukilabs/beautiful-mermaid#167).
+  const gaps = actorWidths.map((w, i) =>
+    i === 0 ? 0 : Math.max(seq.actorGap, (actorWidths[i - 1]! + w) / 2 + 40),
+  )
+  fitMessageLabels(diagram, gaps, fontSizes.edgeLabel)
   const actorCenterX: number[] = []
   let currentX = seq.padding + actorWidths[0]! / 2
   for (let i = 0; i < diagram.actors.length; i++) {
-    if (i > 0) {
-      const minGap = Math.max(
-        seq.actorGap,
-        (actorWidths[i - 1]! + actorWidths[i]!) / 2 + 40,
-      )
-      currentX += minGap
-    }
+    currentX += gaps[i]!
     actorCenterX.push(currentX)
   }
 
