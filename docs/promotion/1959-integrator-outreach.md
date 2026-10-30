@@ -17,7 +17,8 @@ chart renders as ASCII. No target's own test suite was run.
 These are not bug-thread comments, so rule 2 of the outreach rules ("bug-specific only")
 does not cover them. Each message below is therefore an integrator offer, not an upstream
 thread comment, and each needs an explicit maintainer go-ahead on the exact text plus a
-decision that the rules allow this category (rules say nothing on it; treat as "no" until
+decision that the rules allow this category (rules say nothing on it; tracked in
+[#2454](https://github.com/dfadler/zombie-mermaid/issues/2454); treat as "no" until
 the maintainer says otherwise). Rate limit (rule 7) applies: no post dates are recorded
 anywhere, so assume zero budget is free until the maintainer confirms.
 
@@ -68,7 +69,8 @@ diagram-type breadth in any message.
   Path" preference. PR #32866 (merged 2026-10-28) added a bundled Ondine WASM engine, so
   the author is actively choosing engines.
 - Fit: unverified. I have not tested the path preference with zombie-mermaid, nor
-  Raycast's runtime Node version. Do not send until tested.
+  Raycast's runtime Node version. Do not send until tested; the smoke test is
+  [#2455](https://github.com/dfadler/zombie-mermaid/issues/2455).
 
 ### slidevjs/slidev (hold)
 
@@ -135,7 +137,7 @@ list, I can write it with tests. If you'd rather keep the extension on beautiful
 only, that is fine; feel free to close.
 ```
 
-### 3. Raycast mermaid-to-image (hold; do not send until tested)
+### 3. Raycast mermaid-to-image (hold; do not send until tested, see [#2455](https://github.com/dfadler/zombie-mermaid/issues/2455))
 
 ```text
 Disclosure: I maintain zombie-mermaid, a fork of beautiful-mermaid, and drafted this
