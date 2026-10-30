@@ -2736,4 +2736,114 @@ pie title Pets adopted by volunteers
   A --> C
   B --> D`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  QUADRANT CHARTS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/quadrant_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Quadrant: Basic',
+    category: 'Quadrant',
+    description:
+      'Four labelled quadrants, two-sided axes and points placed by [x, y] between 0 and 1; the x axis sits below the plot once there are points.',
+    source: `quadrantChart
+    title Reach and engagement of campaigns
+    x-axis Low Reach --> High Reach
+    y-axis Low Engagement --> High Engagement
+    quadrant-1 We should expand
+    quadrant-2 Need to promote
+    quadrant-3 Re-evaluate
+    quadrant-4 May be improved
+    Campaign A: [0.3, 0.6]
+    Campaign B: [0.45, 0.23]
+    Campaign C: [0.57, 0.69]
+    Campaign D: [0.78, 0.34]
+    Campaign E: [0.40, 0.34]
+    Campaign F: [0.35, 0.78]`,
+  },
+  {
+    title: 'Quadrant: Empty',
+    category: 'Quadrant',
+    description:
+      'A bare `quadrantChart` is valid: four empty quadrants, no axes and no title.',
+    source: `quadrantChart`,
+  },
+  {
+    title: 'Quadrant: Labels Without Points',
+    category: 'Quadrant',
+    description:
+      'With no points the quadrant labels are centred in their cells and the x axis stays on top of the plot, as in Mermaid.',
+    source: `quadrantChart
+    title Eisenhower matrix
+    x-axis Urgent --> Not urgent
+    y-axis Not important --> Important
+    quadrant-1 Do first
+    quadrant-2 Schedule
+    quadrant-3 Delegate
+    quadrant-4 Eliminate`,
+  },
+  {
+    title: 'Quadrant: One-Sided Axes',
+    category: 'Quadrant',
+    description:
+      'An axis with one label is drawn from the plot corner; a trailing `-->` keeps its arrow in the label.',
+    source: `quadrantChart
+    x-axis Effort -->
+    y-axis Impact
+    quadrant-1 Big bets
+    quadrant-3 Fill-ins
+    Refactor: [0.8, 0.4]
+    Docs: [0.2, 0.3]`,
+  },
+  {
+    title: 'Quadrant: Point Styles',
+    category: 'Quadrant',
+    description:
+      '`classDef` and inline styles set a point\'s `color`, `radius`, `stroke-color` and `stroke-width`; inline styles win over the class.',
+    source: `quadrantChart
+    x-axis Left
+    y-axis Bottom --> Top
+    quadrant-1 Q1
+    classDef c1 color: #ff3300, radius: 10, stroke-color: #00aa33, stroke-width: 5px
+    A:::c1: [0.9, 0.0]
+    B: [0.1, 1] radius: 20, color: #00aa00
+    C: [0.5, 0.5] stroke-color: #0000ff, stroke-width: 3px`,
+  },
+  {
+    title: 'Quadrant: Crowded Points',
+    category: 'Quadrant',
+    description:
+      'Points on the corners, on the cross and on top of one another. SVG draws the last point underneath; the text output moves a marker off an occupied cell.',
+    source: `quadrantChart
+    title Corners and overlaps
+    x-axis Low --> High
+    y-axis Low --> High
+    quadrant-1 High High
+    One: [0, 0]
+    Two: [1, 1]
+    Three: [0.5, 0.5]
+    Four: [0, 1]
+    Five: [1, 0]
+    Six: [0.5, 0.5]
+    Seven: [0.5, 0.5]
+    Eight: [0.51, 0.5]`,
+  },
+  {
+    title: 'Quadrant: Wide Characters',
+    category: 'Quadrant',
+    description:
+      'Chinese, Japanese, Korean and fullwidth characters in the title, axes, quadrants and points; text widths are display widths.',
+    source: `quadrantChart
+    title 優先度マトリクス 우선순위
+    x-axis 低い緊急度 --> 高い緊急度
+    y-axis 低 --> 高い重要度
+    quadrant-1 今すぐ
+    quadrant-2 計画する
+    quadrant-3 やめる
+    quadrant-4 任せる
+    "狗 Dogs": [0.2, 0.8]
+    "ＢＩＲＤ": [0.7, 0.3]`,
+  },
 ]

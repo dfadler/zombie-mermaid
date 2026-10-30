@@ -157,6 +157,7 @@ export interface AxisTick {
 
 // @public (undocumented)
 export interface Block {
+    color?: string;
     dividers: Array<{
         index: number;
         label: string;
@@ -274,6 +275,7 @@ export function checkActivationBalance(diagram: SequenceDiagram): ActivationChec
 // @public
 export interface ClassDiagram extends StyleDirectives {
     classes: ClassNode[];
+    direction?: Direction;
     interactions: Map<string, NodeInteraction>;
     namespaces: ClassNamespace[];
     notes: ClassNote[];
@@ -289,6 +291,7 @@ export interface ClassMember {
     params?: string;
     type?: string;
     visibility: '+' | '-' | '#' | '~' | '';
+    visibilitySpace?: boolean;
 }
 
 // @public (undocumented)
@@ -322,7 +325,7 @@ export interface ClassRelationship {
     from: string;
     fromCardinality?: string;
     label?: string;
-    markerAt: 'from' | 'to';
+    markerAt: 'from' | 'to' | 'both';
     // (undocumented)
     to: string;
     toCardinality?: string;
@@ -339,7 +342,7 @@ export interface ErAttribute {
 }
 
 // @public
-export interface ErDiagram {
+export interface ErDiagram extends StyleDirectives {
     direction?: Direction;
     entities: ErEntity[];
     relationships: ErRelationship[];
@@ -505,6 +508,9 @@ export function parseMermaid(text: string): MermaidGraph;
 export function parsePieChart(text: string): PieChart;
 
 // @public
+export function parseQuadrantChart(source: string): QuadrantChart;
+
+// @public
 export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram;
 
 // @public
@@ -560,6 +566,7 @@ export interface PositionedActor {
     id: string;
     // (undocumented)
     label: string;
+    participantType?: string;
     // (undocumented)
     type: 'participant' | 'actor';
     // (undocumented)
@@ -602,6 +609,7 @@ export interface PositionedBar {
 
 // @public (undocumented)
 export interface PositionedBlock {
+    color?: string;
     dividers: Array<{
         y: number;
         label: string;
@@ -769,13 +777,20 @@ export interface PositionedClassRelationship {
     from: string;
     // (undocumented)
     fromCardinality?: string;
+    interfaceLabel?: {
+        text: string;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
     // (undocumented)
     label?: string;
     labelPosition?: {
         x: number;
         y: number;
     };
-    markerAt: 'from' | 'to';
+    markerAt: 'from' | 'to' | 'both';
     points: Array<{
         x: number;
         y: number;
@@ -804,11 +819,13 @@ export interface PositionedErDiagram {
 export interface PositionedErEntity {
     // (undocumented)
     attributes: ErAttribute[];
+    className?: string;
     headerHeight: number;
     // (undocumented)
     height: number;
     // (undocumented)
     id: string;
+    inlineStyle?: Record<string, string>;
     // (undocumented)
     label: string;
     rowHeight: number;
@@ -834,6 +851,10 @@ export interface PositionedErRelationship {
     identifying: boolean;
     // (undocumented)
     label: string;
+    labelPoint?: {
+        x: number;
+        y: number;
+    };
     points: Array<{
         x: number;
         y: number;
@@ -956,6 +977,86 @@ export interface PositionedPieSlice {
 }
 
 // @public (undocumented)
+export interface PositionedQuadrantCell {
+    // (undocumented)
+    height: number;
+    index: number;
+    // (undocumented)
+    text: PositionedQuadrantText;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface PositionedQuadrantChart {
+    // (undocumented)
+    axisLabels: PositionedQuadrantText[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    lines: PositionedQuadrantLine[];
+    points: PositionedQuadrantPoint[];
+    // (undocumented)
+    quadrants: PositionedQuadrantCell[];
+    // (undocumented)
+    title?: PositionedQuadrantText;
+    // (undocumented)
+    width: number;
+}
+
+// @public (undocumented)
+export interface PositionedQuadrantLine {
+    kind: 'external' | 'internal';
+    // (undocumented)
+    strokeWidth: number;
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    x2: number;
+    // (undocumented)
+    y1: number;
+    // (undocumented)
+    y2: number;
+}
+
+// @public (undocumented)
+export interface PositionedQuadrantPoint {
+    // (undocumented)
+    color?: string;
+    // (undocumented)
+    radius: number;
+    // (undocumented)
+    strokeColor?: string;
+    // (undocumented)
+    strokeWidth: string;
+    // (undocumented)
+    text: PositionedQuadrantText;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedQuadrantText {
+    anchor: 'start' | 'middle';
+    baseline: 'hanging' | 'middle';
+    // (undocumented)
+    fontSize: number;
+    rotation: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
 export interface PositionedSequenceDiagram {
     // (undocumented)
     activations: Activation[];
@@ -1004,7 +1105,39 @@ export interface PositionedXYChart {
 }
 
 // @public
-export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization';
+export interface QuadrantChart {
+    classes: Record<string, QuadrantPointStyle>;
+    points: QuadrantPoint[];
+    quadrants: [string, string, string, string];
+    // (undocumented)
+    title?: string;
+    xAxisLeft?: string;
+    xAxisRight?: string;
+    yAxisBottom?: string;
+    yAxisTop?: string;
+}
+
+// @public
+export interface QuadrantPoint extends QuadrantPointStyle {
+    className?: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface QuadrantPointStyle {
+    color?: string;
+    radius?: number;
+    strokeColor?: string;
+    strokeWidth?: string;
+}
+
+// @public
+export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization' | 'lollipop';
 
 // @public
 export function resolveShapeName(name: string): NodeShape | undefined;

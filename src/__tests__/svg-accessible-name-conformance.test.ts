@@ -74,6 +74,8 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
 
   c4: 'C4Context\n  Person(u, "User")\n  System(s, "System")\n  Rel(u, s, "Uses")',
   pie: 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85',
+  quadrant:
+    'quadrantChart\n  title Reach\n  x-axis Low --> High\n  A: [0.3, 0.6]',
 }
 
 /**
