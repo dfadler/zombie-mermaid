@@ -173,9 +173,9 @@ Options:
                        --ascii.
   -w, --max-width <n|auto>  Fit ASCII output within this many columns
                        ('auto' detects the terminal width): applies compact
-                       spacing automatically when needed, and warns on
-                       stderr if it still doesn't fit (no label wrapping or
-                       direction-flip — see issue #335).
+                       spacing automatically when needed, and fails with
+                       exit 1 and no output if it still doesn't fit (no
+                       label wrapping or direction-flip — see issue #335).
   --layout mermaid     Opt in (flowcharts, --ascii): draw mermaid's own ELK layout
                        instead of the grid renderer. Subgraphs, some shapes,
                        other diagram types, layout failures and drawings that

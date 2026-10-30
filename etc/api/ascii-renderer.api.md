@@ -17,6 +17,7 @@ export interface AsciiRenderOptions {
     honorThemeVariables?: boolean;
     hyperlinks?: boolean;
     limits?: RenderLimits;
+    maxWidth?: number;
     paddingX?: number;
     paddingY?: number;
     profile?: 'markdown';
@@ -35,6 +36,19 @@ export interface AsciiTheme {
     fg: string;
     junction?: string;
     line: string;
+}
+
+// @public
+export class AsciiWidthError extends Error {
+    constructor(
+    actualWidth: number, maxWidth: number,
+    compactApplied: boolean);
+    readonly actualWidth: number;
+    // (undocumented)
+    readonly code: "WIDTH_EXCEEDED";
+    readonly compactApplied: boolean;
+    // (undocumented)
+    readonly maxWidth: number;
 }
 
 // @public
