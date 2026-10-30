@@ -800,4 +800,18 @@ export const forkFixes: ForkFix[] = [
       'Before: the label on A’s right side reads `long─label`, with a stroke through the gap. After: it reads `long label`.',
     upstreamIssues: [154],
   },
+  {
+    id: 'sequence-label-gaps',
+    title: 'Sequence message labels ran across lifelines',
+    symptom:
+      'Actors sat a fixed distance apart, so a long message or self-message label was drawn across the next lifeline and could run past the edge of the SVG.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  A->>B: a message label far wider than the default gap between two actors\n  B->>B: a long self message label here',
+    fixCommit: '96cd7e63',
+    pr: 2434,
+    render: 'svg',
+    lookFor:
+      'Before: the label crosses past B’s lifeline. After: the gap between A and B widens so the label sits between them.',
+    upstreamIssues: [167],
+  },
 ]
