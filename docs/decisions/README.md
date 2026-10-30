@@ -88,6 +88,7 @@ Add a row when you add a doc; update the status when it changes. The issue colum
 | [playwright-docker-image-visual-regression.md](playwright-docker-image-visual-regression.md)                     | partially superseded | [#544](https://github.com/dfadler/zombie-mermaid/issues/544)   |
 | [project-objective-1564.md](project-objective-1564.md)                                                           | accepted             | [#1564](https://github.com/dfadler/zombie-mermaid/issues/1564) |
 | [promotion-strategy-1576.md](promotion-strategy-1576.md)                                                         | proposal             | [#1576](https://github.com/dfadler/zombie-mermaid/issues/1576) |
+| [queued-major-prs-1940.md](queued-major-prs-1940.md)                                                             | proposal             | [#1940](https://github.com/dfadler/zombie-mermaid/issues/1940) |
 | [react-site-migration-plan.md](react-site-migration-plan.md)                                                     | implemented          | [#423](https://github.com/dfadler/zombie-mermaid/issues/423)   |
 | [scoped-svg-ids-1397.md](scoped-svg-ids-1397.md)                                                                 | implemented          | [#1397](https://github.com/dfadler/zombie-mermaid/issues/1397) |
 | [self-hosted-runner-docker-cache.md](self-hosted-runner-docker-cache.md)                                         | not adopted          | [#738](https://github.com/dfadler/zombie-mermaid/issues/738)   |
