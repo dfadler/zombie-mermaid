@@ -54,6 +54,25 @@ describe('pie agreement (#2451)', () => {
     expect(strip('a<tspan>b</tspan> &amp; c')).toBe('ab & c')
   })
 
+  it('skips paths it cannot read and tolerates a path with no numbers', () => {
+    const p = parseOfficialPie(
+      '<path d="M0,0L1,1" class="other"/><path class="pieCircle"/><path d="M0,0" class="pieCircle"/>',
+    )
+    expect(p.slices).toEqual([])
+    expect(sliceFromPath('')).toBeUndefined()
+    // One arc that ends where it starts is a full turn, not an empty slice.
+    expect(sliceFromPath('M0,-185A185,185,0,1,1,0,-185L0,0Z')?.sweep).toBe(360)
+  })
+
+  it('averages nothing to null in the history entry', () => {
+    const empty: PieLayout = { slices: [], labels: [], legend: [] }
+    const entry = summarizePie(
+      { a: pieAgreement(empty, empty) },
+      { date: 'd', commit: 'c', mermaid: 'm' },
+    )
+    expect(entry).toMatchObject({ angles: null, labels: null, legend: null })
+  })
+
   it('measures a whole circle as a 360 degree sweep', () => {
     expect(
       sliceFromPath('M0,-185A185,185,0,1,1,0,185A185,185,0,1,1,0,-185Z'),
