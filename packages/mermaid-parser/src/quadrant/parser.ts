@@ -45,8 +45,73 @@ const SYNTAX_HELP =
 const HEX = /^#?(?:[\dA-Fa-f]{6}|[\dA-Fa-f]{3})$/
 const COORD = /^(?:1|0(?:\.\d+)?)$/
 
-const POINT =
-  /^(?<label>"[^"]*"|.+?)(?::::(?<cls>\w+))?\s*:\s*\[\s*(?<x>[^,\]]*?)\s*,\s*(?<y>[^\]]*?)\s*\]\s*(?<rest>.*)$/
+interface PointMatch {
+  label: string
+  cls?: string
+  x: string
+  y: string
+  rest: string
+}
+
+const isSpace = (c: string | undefined) => c === ' ' || c === '\t'
+const isWord = (c: string | undefined) => c !== undefined && /\w/.test(c)
+
+/**
+ * `<label>[:::<class>]: [x, y] <rest>` without a backtracking regex (user text
+ * of any length must stay linear, #2436): try each `:` as the end of the label,
+ * moving left to right as the lazy `.+?` it replaces did. `,` and `]` lookups
+ * are cached so a line of `:[:[:[...` costs one scan, not one per candidate.
+ */
+function matchPoint(line: string): PointMatch | undefined {
+  let comma = -2
+  let close = -2
+  const next = (cur: number, ch: string, from: number) =>
+    cur >= from || cur === -1 ? cur : line.indexOf(ch, from)
+  for (let e = line.indexOf(':', 1); e !== -1; e = line.indexOf(':', e + 1)) {
+    let p = e
+    let cls: string | undefined
+    if (line.startsWith(':::', e)) {
+      let q = e + 3
+      while (isWord(line[q])) q++
+      let r = q
+      while (isSpace(line[r])) r++
+      if (q > e + 3 && line[r] === ':') {
+        cls = line.slice(e + 3, q)
+        p = r
+      }
+    }
+    let b = p + 1
+    while (isSpace(line[b])) b++
+    if (line[b] !== '[') continue
+    b++
+    comma = next(comma, ',', b)
+    close = next(close, ']', b)
+    if (comma === -1 || (close !== -1 && close < comma)) continue
+    close = next(close, ']', comma + 1)
+    if (close === -1) continue
+    return {
+      label: line.slice(0, e),
+      cls,
+      x: line.slice(b, comma).trim(),
+      y: line.slice(comma + 1, close).trim(),
+      rest: line.slice(close + 1).trim(),
+    }
+  }
+  return undefined
+}
+
+/** Split `a --> b` on the first `--+>`; linear (no regex backtracking). */
+function splitArrow(body: string): [string, string] | undefined {
+  for (let i = body.indexOf('--'); i !== -1;) {
+    let j = i
+    while (body[j] === '-') j++
+    if (body[j] === '>') {
+      return [body.slice(0, i), body.slice(j + 1)]
+    }
+    i = body.indexOf('--', j)
+  }
+  return undefined
+}
 
 function fail(line: number, message: string, source: string): never {
   throw new MermaidParseError(
@@ -76,7 +141,7 @@ function parseStyles(
   const style: QuadrantPointStyle = {}
   for (const part of raw.split(',')) {
     if (!part.trim()) continue
-    const [key = '', value = ''] = part.trim().split(/\s*:\s*/)
+    const [key = '', value = ''] = part.split(':').map((t) => t.trim())
     const invalid = (type: string): never =>
       fail(
         line,
@@ -113,7 +178,8 @@ export function parseQuadrantChart(source: string): QuadrantChart {
   source.split(/\r?\n/).forEach((full, i) => {
     const lineNo = i + 1
     // `%%{init}%%` directives and `%%` comments (to end of line).
-    const line = full.replace(/%%.*$/, '').trim()
+    const hash = full.indexOf('%%')
+    const line = (hash === -1 ? full : full.slice(0, hash)).trim()
     if (multiline) {
       if (line.includes('}')) multiline = false
       return
@@ -140,9 +206,9 @@ export function parseQuadrantChart(source: string): QuadrantChart {
     }
     if ((m = /^(x|y)-axis\b(.*)$/i.exec(line))) {
       const [, axis, body] = m
-      const arrow = /^(.*?)\s*--+>\s*(.*)$/.exec(body!)
-      const first = text(arrow ? arrow[1]! : body!)
-      const second = arrow ? text(arrow[2]!) : ''
+      const arrow = splitArrow(body!)
+      const first = text(arrow ? arrow[0] : body!)
+      const second = arrow ? text(arrow[1]) : ''
       if (!first) fail(lineNo, `Missing ${axis}-axis label`, full)
       // `Left -->` with nothing after the arrow keeps the arrow, as Mermaid.
       const a = arrow && !second ? `${first} ⟶` : first
@@ -159,23 +225,23 @@ export function parseQuadrantChart(source: string): QuadrantChart {
       chart.quadrants[Number(m[1]) - 1] = text(m[2]!)
       return
     }
-    if ((m = /^classDef\s+(\w+)\s*(.*)$/.exec(line))) {
-      chart.classes[m[1]!] = parseStyles(m[2]!, lineNo, full)
+    if ((m = /^classDef\s+(\w+)/.exec(line))) {
+      chart.classes[m[1]!] = parseStyles(line.slice(m[0].length), lineNo, full)
       return
     }
-    if ((m = POINT.exec(line))) {
-      const g = m.groups!
-      if (!COORD.test(g.x!) || !COORD.test(g.y!)) {
+    const g = matchPoint(line)
+    if (g) {
+      if (!COORD.test(g.x) || !COORD.test(g.y)) {
         fail(
           lineNo,
           'Point coordinates must be 0, 1 or 0.<digits> (between 0 and 1)',
           full,
         )
       }
-      const own = parseStyles(g.rest!, lineNo, full)
+      const own = parseStyles(g.rest, lineNo, full)
       raw.push({
         point: {
-          label: text(g.label!),
+          label: text(g.label),
           x: Number(g.x),
           y: Number(g.y),
           ...(g.cls ? { className: g.cls } : {}),

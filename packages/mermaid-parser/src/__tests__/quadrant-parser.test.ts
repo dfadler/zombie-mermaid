@@ -211,3 +211,48 @@ describe('parseQuadrantChart – errors', () => {
     expect(() => parse('QuadrantChart')).toThrow(/Line 1/)
   })
 })
+
+describe('parseQuadrantChart – adversarial input stays linear', () => {
+  const N = 50_000
+  const timed = (body: string) => {
+    const t = Date.now()
+    try {
+      parse(`quadrantChart\n${body}`)
+    } catch {
+      // Errors are fine; only the running time matters here.
+    }
+    return Date.now() - t
+  }
+
+  it.each([
+    ['spaces', ' '.repeat(N) + 'x'],
+    ['comment markers', '%%'.repeat(N)],
+    ['dashes after an axis', 'x-axis a' + '-'.repeat(N)],
+    ['dash runs', 'x-axis ' + '--'.repeat(N) + 'b'],
+    ['classDef spaces', 'classDef a' + ' '.repeat(N) + ':'],
+    ['style colons', 'classDef a ' + ': '.repeat(N)],
+    ['point colons', 'A' + ':['.repeat(N)],
+    ['point colons and commas', 'A' + ':[,'.repeat(N)],
+    ['point class colons', 'A' + ':::a '.repeat(N)],
+    ['point spaces', 'A:' + ' '.repeat(N) + '[0,'],
+  ])('%s', (_name, body) => {
+    expect(timed(body)).toBeLessThan(1000)
+  })
+
+  it('still reads the first valid `: [x, y]` after earlier false starts', () => {
+    const c = parse('quadrantChart\n  a:[b:[c]: [0.5, 1] radius: 3')
+    expect(c.points[0]).toMatchObject({
+      label: 'a:[b:[c]',
+      x: 0.5,
+      y: 1,
+      radius: 3,
+    })
+  })
+
+  it('reads a point whose label is followed by a class and spaces', () => {
+    expect(parse('quadrantChart\n  A:::k  : [1, 0]').points[0]).toMatchObject({
+      label: 'A',
+      className: 'k',
+    })
+  })
+})
