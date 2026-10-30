@@ -116,6 +116,23 @@ describe('xychart agreement (#2451)', () => {
     expect(ours.points[1]!.val).toBe(ours.yLabels[0]!.pos)
   })
 
+  it('reads line points, upright and horizontal', () => {
+    const svg = `<g class="line-plot-0"><path d="M80,354L224,202" fill="none"></path></g>`
+    expect(parseOfficialXy(svg, false).points).toEqual([
+      { cat: 80, val: 354 },
+      { cat: 224, val: 202 },
+    ])
+    expect(parseOfficialXy(svg, true).points[0]).toEqual({ cat: 354, val: 80 })
+    const ours = parseOurXy(
+      renderMermaidSVG(
+        'xychart-beta\n    x-axis [A, B, C]\n    line [1, 3, 2]',
+      ),
+      false,
+    )
+    expect(ours.points).toHaveLength(3)
+    expect(ours.points[1]!.val).toBeLessThan(ours.points[0]!.val)
+  })
+
   it('measures bar paths and line paths', () => {
     expect(barBox('M112.5,350 h0 v40 h0 Z')).toEqual({
       x0: 112.5,
