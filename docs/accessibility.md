@@ -1,9 +1,9 @@
 # Accessibility conformance statement
 
-Last reviewed: 2026-10-10, against `zombie-mermaid` on `main`.
+Last reviewed: 2026-10-29, against `zombie-mermaid` on `main`.
 
 This is a scoped, honest statement of what `zombie-mermaid` guarantees today
-— not a claim of full [WCAG 2.1](https://www.w3.org/TR/WCAG21/) conformance
+— not a claim of full [WCAG 2.2](https://www.w3.org/TR/WCAG22/) conformance
 at any level. Every guarantee below is either enforced by an automated CI
 check (so a regression fails the build) or backed by a manual test-once
 observation the "Verified how" column names — never asserted on assumption.
@@ -57,7 +57,7 @@ an `aria-describedby` on the root, independent of the table above.
 
 This maps to two WCAG success criteria:
 
-- **[1.1.1 Non-text Content](https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html) (Level A):**
+- **[1.1.1 Non-text Content](https://www.w3.org/WAI/WCAG22/Understanding/non-text-content.html) (Level A):**
   when a consumer supplies `title`, the rendered SVG carries a real
   programmatically-associated text alternative. `zombie-mermaid` cannot
   satisfy 1.1.1 on its own when no `title` is given — a library has no way
@@ -65,7 +65,7 @@ This maps to two WCAG success criteria:
   so the honest claim is: _the mechanism is always present and correctly
   wired when a consumer uses it_, not that every rendered SVG is compliant
   regardless of caller input.
-- **[4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A):**
+- **[4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html) (Level A):**
   the root always has a determinable role (`img`, or none when a focusable
   child needs to remain reachable) rather than an ambiguous default, and a
   `click`-based link keeps its native `<a>` name/role/state instead of being
@@ -129,31 +129,27 @@ its own subset of these properties. The bullets below are scoped per family
 rather than asserted for the site as a whole, since that's no longer true
 of any single one of them:
 
-- **Visible focus indication** — a consistent accent-colored
-  `:focus-visible` ring (`a:focus-visible, button:focus-visible { … }`)
-  is present on the **Diagrams hub and per-type pages**
-  (`diagrams/*.html`, via `demo/styles.css` + `demo/diagram-page.css`,
-  concatenated into `diagrams/assets/diagram-page.css` by `packages/site/ssr/diagram-routes.ts`) and
-  on **Fork fixes** (`fork-fixes.html`, via `demo/fork-fixes.css`) —
-  relevant to
-  [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
-  on those pages. **Blog** (`blog/*.html`) and **Dashboard**
-  (`dashboard.html`) — built on the redesign's shared component library
-  (`demo/components/tokens.tsx`, `primitives.tsx`, `nav.tsx`, `footer.tsx`) —
-  declare no `:focus-visible` rule of their own and fall back to each
-  browser's default outline. **Home** (`index.html`) has widget-level rules
-  only (theme showcase zoom/fullscreen, the picker trigger and the output
-  segment control in `demo/components/index-page.tsx`), not a general
-  `a`/`button` ring. **Editor**
-  (`editor.html`) has the same kind of ring on its tool controls
-  (`editor/css/misc.css`, loaded last, covers buttons, links, inputs,
-  selects and `[tabindex]` elements), but its nav/hero/footer chrome has
-  none.
+- **Visible focus indication** — one shared `:focus-visible` ring
+  (`a`, `button`, `input`, `select`, `textarea`, `summary`, `[tabindex]`:
+  2px `--cyan` outline) is declared in `designBaseCss()` (`demo/components/tokens.tsx`,
+  #1762), which **Home, Diagrams hub and per-type pages, Blog, Dashboard and
+  Fork fixes** all compose; `__tests__/demo-design-tokens.test.ts` pins the
+  declaration, so dropping it fails the build. That test checks the CSS text
+  only: it does not check that the ring is visible against every theme or
+  every container (the hero code panel and sidebar need their own offsets, see
+  `__tests__/visual/sidebar-focus.visual.test.ts`). The older `demo/styles.css`
+  ring still loads on the Diagrams pages. Several widgets add their own rings
+  (theme showcase, output segment control). **Editor** (`editor.html`) does not
+  compose `designBaseCss()`: its tool controls get a ring from
+  `editor/css/misc.css` (buttons, links, inputs, selects and `[tabindex]`
+  elements), but its nav/hero/footer chrome has none. Relevant to
+  [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html) (Level AA).
 - **A skip-to-content link** — on every page: `<a className="skip-link"
-  href="#main">` in `demo/components/document.tsx`, jumping to the page's one
+  href="#main">` in `demo/components/document.tsx` (styled once, by `navCss()` in
+  `demo/components/nav-css.ts`; hidden until focused), jumping to the page's one
   `<main id="main" tabindex="-1">` (the `tabindex` makes the focus move
   deterministic across browsers) — relevant to
-  [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A).
+  [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG22/Understanding/bypass-blocks.html) (Level A).
 - **Landmarks and mobile nav** — every page has one `<main id="main">`, one
   `banner` and one `contentinfo`; on Editor and Fork fixes `<main>` also wraps
   the hero. The closed mobile nav panel (`.mobile-nav-panel` in

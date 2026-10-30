@@ -15,6 +15,7 @@
  * sources apart from which link carries `color:var(--text)`, so every
  * literal here is backed by eight independent copies rather than one.
  */
+import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -352,6 +353,19 @@ describe('the install pill', () => {
     const html = render()
     expect(html).toContain('width="15"')
     expect(html).toContain('stroke-width="2"')
+  })
+
+  it('has no copy glyph on the mobile panel pill, which copies nothing (#1792)', () => {
+    const panel = render().split('class="mobile-nav-panel"')[1] ?? ''
+    const pill = panel.split('class="mobile-install"')[1] ?? ''
+    expect(pill).toContain(NAV_INSTALL_COMMAND)
+    expect(pill).not.toContain('<svg')
+  })
+
+  it('declares .skip-link once, in navCss (#1792)', () => {
+    expect(navCss().match(/^\.skip-link \{/gm)).toHaveLength(1)
+    expect(navCss()).toContain('border-radius: 8px')
+    expect(readFileSync('demo/styles.css', 'utf8')).not.toMatch(/^\.skip-link/m)
   })
 
   it('lets a page override the command', () => {
