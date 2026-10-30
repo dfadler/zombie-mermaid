@@ -384,10 +384,91 @@ export function trapezoidDimensions(
   )
 }
 
+/**
+ * Parallelogram wall columns for rows 0..h: both walls lean one column per
+ * row (mermaid's slope, as for the trapezoid), so the top row is shifted right
+ * for `parallelogram` (`[/x/]`) and left for `parallelogram-alt`. A wall that
+ * would touch a label row stops short of it, and the two never close up.
+ */
+export function parallelogramInsets(
+  w: number,
+  h: number,
+  alt: boolean,
+  lineWidths: readonly number[] = [],
+  startY = 0,
+): { left: number[]; right: number[] } {
+  const left: number[] = []
+  const right: number[] = []
+  for (let y = 0; y <= h; y++) {
+    let l = alt ? y : h - y
+    let r = alt ? h - y : y
+    const lw = lineWidths[y - startY]
+    if (lw !== undefined) {
+      const x0 = labelStartX(w, lw)
+      l = Math.min(l, x0 - 1 - HEX_GAP)
+      r = Math.min(r, w - x0 - lw - HEX_GAP)
+    }
+    l = Math.max(l, 0)
+    r = Math.min(Math.max(r, 0), Math.max(w - 2 - l, 0))
+    left.push(l)
+    right.push(r)
+  }
+  return { left, right }
+}
+
+/** Draw a parallelogram: a slant glyph at each wall, dashes on the top and bottom rows. */
+export function drawParallelogram(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  alt: boolean,
+  insets: { left: readonly number[]; right: readonly number[] },
+  useAscii: boolean,
+): void {
+  const hChar = useAscii ? '-' : '─'
+  const slant = alt ? (useAscii ? '\\' : '╲') : useAscii ? '/' : '╱'
+  for (let y = 0; y <= h; y++) {
+    const l = insets.left[y]!
+    const r = w - insets.right[y]!
+    canvas[l]![y] = slant
+    canvas[r]![y] = slant
+    if (y === 0 || y === h)
+      for (let x = l + 1; x < r; x++) canvas[x]![y] = hChar
+  }
+}
+
+/** Parallelogram grid cell: the box's rows, wide enough for the slant and the label. */
+export function parallelogramDimensions(
+  label: string,
+  options: ShapeRenderOptions,
+  alt: boolean,
+): ShapeDimensions {
+  const widths = splitLines(label).map((l) => displayWidth(l))
+  const base = getBoxDimensions(label, options)
+  const h = base.height - 1
+  const startY = Math.floor(h / 2) - Math.floor((widths.length - 1) / 2)
+  // The top and bottom rows keep two cells between their slants.
+  let width = Math.max(base.width, 2 * h + 3)
+  for (let grow = 0; grow < 64; grow++) {
+    const ideal = parallelogramInsets(width - 1, h, alt)
+    const fit = parallelogramInsets(width - 1, h, alt, widths, startY)
+    const clear = widths.every(
+      (_, i) =>
+        fit.left[startY + i] === ideal.left[startY + i] &&
+        fit.right[startY + i] === ideal.right[startY + i],
+    )
+    if (clear) break
+    width++
+  }
+  return { ...base, width, gridColumns: [1, width - 2, 1] }
+}
+
 /** True for the shapes drawn as a silhouette rather than a corner-glyph box. */
 export const isSilhouetteShape = (shape: string): boolean =>
   shape === 'trapezoid' ||
   shape === 'trapezoid-alt' ||
+  shape === 'parallelogram' ||
+  shape === 'parallelogram-alt' ||
   shape === 'stadium' ||
   shape === 'hexagon' ||
   shape === 'diamond' ||
@@ -429,7 +510,9 @@ export function renderSilhouette(
     | 'circle'
     | 'asymmetric'
     | 'trapezoid'
-    | 'trapezoid-alt',
+    | 'trapezoid-alt'
+    | 'parallelogram'
+    | 'parallelogram-alt',
   label: string,
   dimensions: ShapeDimensions,
   useAscii: boolean,
@@ -445,6 +528,21 @@ export function renderSilhouette(
   else if (kind === 'circle')
     drawCircle(canvas, w, h, circleInsets(w, h), useAscii)
   else if (kind === 'asymmetric') drawAsymmetric(canvas, w, h, useAscii)
+  else if (kind === 'parallelogram' || kind === 'parallelogram-alt')
+    drawParallelogram(
+      canvas,
+      w,
+      h,
+      kind === 'parallelogram-alt',
+      parallelogramInsets(
+        w,
+        h,
+        kind === 'parallelogram-alt',
+        lines.map((l) => displayWidth(l)),
+        startY,
+      ),
+      useAscii,
+    )
   else if (kind === 'trapezoid' || kind === 'trapezoid-alt')
     drawTrapezoid(
       canvas,

@@ -487,46 +487,101 @@ describe('special shapes connected in a diagram', () => {
   })
 })
 
-describe('parallelogram shapes [/text/] and [\\text\\]', () => {
-  it('renders a lean-right parallelogram in a flowchart', () => {
-    const out = renderMermaidASCII('flowchart TD\n  A[/Lean Right/]', {
-      useAscii: false,
-    })
-    expect(out).toContain('Lean Right')
+describe('parallelogram shapes [/text/] and [\\text\\] (#2164)', () => {
+  // Mermaid 12.2.0 leans both sides of [/x/] right and [\x\] left, in every direction.
+  it('parallelogram leans right, in both charsets', () => {
+    const src = 'flowchart TD\n  A[/Para/]'
+    expect(renderMermaidASCII(src, { useAscii: false })).toBe(
+      [
+        '    ╱──────╱',
+        '   ╱      ╱ ',
+        '  ╱ Para ╱  ',
+        ' ╱      ╱   ',
+        '╱──────╱    ',
+      ].join('\n'),
+    )
+    expect(renderMermaidASCII(src, { useAscii: true })).toBe(
+      [
+        '    /------/',
+        '   /      / ',
+        '  / Para /  ',
+        ' /      /   ',
+        '/------/    ',
+      ].join('\n'),
+    )
   })
 
-  it('renders a lean-left parallelogram in a flowchart', () => {
-    const out = renderMermaidASCII('flowchart TD\n  A[\\Lean Left\\]', {
-      useAscii: false,
-    })
-    expect(out).toContain('Lean Left')
+  it('parallelogram-alt leans left, in both charsets', () => {
+    const src = 'flowchart TD\n  A[\\Alt\\]'
+    expect(renderMermaidASCII(src, { useAscii: false })).toBe(
+      [
+        '╲─────╲    ',
+        ' ╲     ╲   ',
+        '  ╲ Alt ╲  ',
+        '   ╲     ╲ ',
+        '    ╲─────╲',
+      ].join('\n'),
+    )
+    expect(renderMermaidASCII(src, { useAscii: true })).toBe(
+      [
+        '\\-----\\    ',
+        ' \\     \\   ',
+        '  \\ Alt \\  ',
+        '   \\     \\ ',
+        '    \\-----\\',
+      ].join('\n'),
+    )
   })
 
-  it('delegates to the shared box renderer with parallelogram corners', () => {
-    const dims = parallelogramRenderer.getDimensions('X', unicodeOpts)
-    const canvas = parallelogramRenderer.render('X', dims, unicodeOpts)
-    const lines = canvasToString(canvas).split('\n')
-    // Both sides slope the same way — that is what separates a parallelogram
-    // from a trapezoid, whose corners oppose.
-    expect(lines[0]!.startsWith('/')).toBe(true)
-    expect(lines[0]!.endsWith('/')).toBe(true)
-    expect(lines[lines.length - 1]!.startsWith('/')).toBe(true)
-    expect(lines[lines.length - 1]!.endsWith('/')).toBe(true)
+  it('keeps the lean in BT (mermaid does not flip it)', () => {
+    const td = renderMermaidASCII('flowchart TD\n  A[/Para/]')
+    expect(renderMermaidASCII('flowchart BT\n  A[/Para/]')).toBe(td)
   })
 
-  it('delegates to the shared box renderer with parallelogram-alt corners', () => {
-    const dims = parallelogramAltRenderer.getDimensions('X', unicodeOpts)
-    const canvas = parallelogramAltRenderer.render('X', dims, unicodeOpts)
-    const lines = canvasToString(canvas).split('\n')
-    expect(lines[0]!.startsWith('\\')).toBe(true)
-    expect(lines[0]!.endsWith('\\')).toBe(true)
-    expect(lines[lines.length - 1]!.startsWith('\\')).toBe(true)
-    expect(lines[lines.length - 1]!.endsWith('\\')).toBe(true)
+  it('keeps the lean in RL, and edges reach the slanted walls', () => {
+    const rl = renderMermaidASCII(
+      'flowchart RL\n  A[/Right/] --> B[\\Left\\]',
+    ).split('\n')
+    expect(rl[2]).toMatch(/╲ +Left +╲◄─+╱ +Right +╱/)
+    const lr = renderMermaidASCII('flowchart LR\n  A[/Right/] --> B[\\Left\\]')
+    expect(lr.split('\n')[2]).toMatch(/╱ +Right +╱─+►╲ +Left +╲/)
   })
 
-  it('reports the same dimensions as the other box-based shapes', () => {
-    // Parallelograms reuse getBoxDimensions, so the two must agree for the
-    // same label — a divergence would misalign the grid.
+  it('widens to keep the slant clear of a wide or tall label', () => {
+    const out = renderMermaidASCII(
+      'flowchart TD\n  A[/a<br/>b<br/>c<br/>wide label here/]',
+      { useAscii: true },
+    ).split('\n')
+    expect(out).toHaveLength(9)
+    expect(out[6]).toMatch(/\/ +wide label here \/ *$/)
+    // Each row's left wall is one column left of the row above.
+    expect(out.map((l) => l.indexOf('/'))).toEqual([8, 7, 6, 5, 4, 3, 2, 1, 0])
+  })
+
+  it('standalone renderers draw the slanted outline', () => {
+    for (const [r, glyph] of [
+      [parallelogramRenderer, '╱'],
+      [parallelogramAltRenderer, '╲'],
+    ] as const) {
+      const dims = r.getDimensions('X', unicodeOpts)
+      const lines = canvasToString(r.render('X', dims, unicodeOpts)).split('\n')
+      expect(lines).toHaveLength(dims.height)
+      for (const line of lines) {
+        expect(line.split(glyph).length - 1).toBe(2)
+      }
+      expect(lines[0]).toContain('─')
+    }
+    const ascii = canvasToString(
+      parallelogramRenderer.render(
+        'X',
+        parallelogramRenderer.getDimensions('X', asciiOpts),
+        asciiOpts,
+      ),
+    )
+    expect(ascii).toContain('/')
+  })
+
+  it('both leans have the same dimensions', () => {
     expect(parallelogramRenderer.getDimensions('Label', unicodeOpts)).toEqual(
       parallelogramAltRenderer.getDimensions('Label', unicodeOpts),
     )
