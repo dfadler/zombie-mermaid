@@ -73,7 +73,7 @@ Everyday commands are `pnpm test`, `pnpm run lint`, `pnpm run typecheck`, `pnpm 
 
 ## Reporting issues
 
-Use the issue templates (bug report, feature request) and include the smallest Mermaid source that reproduces the problem. The [label list](https://github.com/dfadler/zombie-mermaid/labels) is the source of truth for which labels exist.
+Use the issue templates (bug report, feature request) and include the smallest Mermaid source that reproduces the problem. The [label list](https://github.com/dfadler/zombie-mermaid/labels) is the source of truth for which labels exist. The proposed `area:*`, `source:*` and per-release milestone scheme is in [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
 
 Security problems (for example crashes or hangs on adversarial diagram input, or output that injects markup into the SVG) should not go in a public issue. Follow [SECURITY.md](SECURITY.md).
 

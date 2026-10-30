@@ -1,14 +1,16 @@
 /**
  * Behavior test for the PreToolUse Bash hook in `.claude/settings.json` that
  * blocks PRs and pushes aimed at the upstream fork-parent repo
- * (lukilabs/beautiful-mermaid) (#1608). The hook is inline jq/grep, so the
- * only way to test it is to run the very command string from the settings
- * file with a sample tool call on stdin - not a copy of it, which would rot.
- * Also pins the three static deny rules that sit beside it.
+ * (lukilabs/beautiful-mermaid) (#1608) and warns on non-owned remotes (#1611).
+ * Runs the very command string from the settings file (which calls
+ * scripts/remote-guard.sh) with a sample tool call on stdin, from a hermetic
+ * temp git repo whose remotes are fake URLs (no network). Also pins the three
+ * static deny rules that sit beside it.
  */
-import { describe, it, expect } from 'vitest'
+import { afterAll, describe, it, expect } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -23,16 +25,47 @@ const hook = settings.hooks.PreToolUse.find(
 
 const hasJq = spawnSync('jq', ['--version']).status === 0
 
-/** Runs the real hook command; returns the permissionDecision ('allow' when it printed nothing). */
-function decide(command: string): string {
+const repo = mkdtempSync(join(tmpdir(), 'remote-guard-'))
+afterAll(() => rmSync(repo, { recursive: true, force: true }))
+const git = (...a: string[]) => execFileSync('git', ['-C', repo, ...a])
+if (hasJq) {
+  git('init', '-q')
+  git(
+    'remote',
+    'add',
+    'origin',
+    'https://github.com/dfadler/zombie-mermaid.git',
+  )
+  git(
+    'remote',
+    'add',
+    'upstream',
+    'https://github.com/lukilabs/beautiful-mermaid.git',
+  )
+  git('remote', 'add', 'pushy', 'https://github.com/dfadler/zombie-mermaid.git')
+  git('config', 'remote.pushy.pushurl', 'https://github.com/someone/else.git')
+  git('remote', 'add', 'other', 'git@github.com:someone/else.git')
+}
+
+function run(command: string, env: Record<string, string> = {}) {
   const out = execFileSync('sh', ['-c', hook], {
     input: JSON.stringify({ tool_input: { command } }),
     encoding: 'utf8',
+    cwd: repo,
+    env: { ...process.env, CLAUDE_PROJECT_DIR: REPO_ROOT, ...env },
   })
-  return out ? JSON.parse(out).hookSpecificOutput.permissionDecision : 'allow'
+  return out ? JSON.parse(out).hookSpecificOutput : {}
 }
 
-describe.skipIf(!hasJq)('upstream-guard PreToolUse hook', () => {
+/** The permissionDecision ('allow' when the hook printed no deny). */
+function decide(command: string): string {
+  return run(command).permissionDecision ?? 'allow'
+}
+
+const warning = (command: string, env?: Record<string, string>): string =>
+  run(command, env).additionalContext ?? ''
+
+describe.skipIf(!hasJq)('remote-guard PreToolUse hook', () => {
   it.each([
     'gh pr create --repo lukilabs/beautiful-mermaid --title x',
     'gh pr create --repo=lukilabs/beautiful-mermaid',
@@ -58,6 +91,101 @@ describe.skipIf(!hasJq)('upstream-guard PreToolUse hook', () => {
     'ls',
   ])('allows: %s', (cmd) => {
     expect(decide(cmd)).toBe('allow')
+  })
+
+  it.each([
+    'gh pr create --repo someone/else --title x', // Planted case: open a PR against a non-owned repo
+    'gh pr create -R someone/else',
+    'gh issue create --repo=someone/else --title x',
+    'git push other main',
+    'cd x && git push -u other main',
+    'git push https://github.com/someone/else.git main',
+    'git push git@github.com:someone/else.git main',
+  ])('warns without denying: %s', (cmd) => {
+    expect(decide(cmd)).toBe('allow')
+    expect(warning(cmd)).toMatch(/remote-guard warning.*someone/s)
+  })
+
+  it.each([
+    'gh pr create --fill',
+    'gh pr create --repo dfadler/zombie-mermaid',
+    'gh issue create --title x',
+    'git push',
+    'git push origin main',
+    'git push --force-with-lease -u origin main',
+    "gh pr create --repo 'DFadler/zombie-mermaid'",
+    'gh pr list --repo someone/else',
+    'git push nosuchremote main',
+  ])('stays silent: %s', (cmd) => {
+    expect(warning(cmd)).toBe('')
+  })
+
+  it('denies upstream pushes with leading blanks, as the old read -r did', () => {
+    expect(decide('   git push upstream main')).toBe('deny')
+  })
+
+  it.each([
+    'GH_REPO=someone/else gh issue create --title x',
+    'FOO=1 GH_REPO=someone/else gh pr create --fill',
+    'FOO=1 git push other main',
+    'git push -o ci.skip other main',
+    'git push --push-option=x --push-option y other main',
+    'git push pushy main', // Fetch URL is owned, pushurl is not
+  ])('warns on env prefixes, option values and push URLs: %s', (cmd) => {
+    expect(warning(cmd)).toMatch(/remote-guard warning.*someone/s)
+  })
+
+  it('stays silent for an env prefix on an owned target', () => {
+    expect(warning('FOO=1 git push origin main')).toBe('')
+    expect(warning('GH_REPO=dfadler/zombie-mermaid gh pr create --fill')).toBe(
+      '',
+    )
+  })
+
+  it('warns on a bare git push when remote.pushDefault is not owned', () => {
+    expect(warning('git push')).toBe('')
+    git('config', 'remote.pushDefault', 'other')
+    try {
+      expect(warning('git push')).toMatch(/someone/)
+      expect(warning('git push origin main')).toBe('')
+    } finally {
+      git('config', '--unset', 'remote.pushDefault')
+    }
+  })
+
+  it('uses the gh default repo (GH_REPO, then gh-resolved) when --repo is absent', () => {
+    expect(warning('gh pr create --fill', { GH_REPO: 'someone/else' })).toMatch(
+      /someone/,
+    )
+    git('config', 'remote.other.gh-resolved', 'base')
+    try {
+      expect(warning('gh pr create --fill')).toMatch(/someone/)
+    } finally {
+      git('config', '--unset', 'remote.other.gh-resolved')
+    }
+    git('config', 'remote.origin.gh-resolved', 'someone/else')
+    try {
+      expect(warning('gh issue create --title x')).toMatch(/someone/)
+    } finally {
+      git('config', '--unset', 'remote.origin.gh-resolved')
+    }
+  })
+
+  it('honours REMOTE_GUARD_OWNED', () => {
+    expect(
+      warning('git push other main', { REMOTE_GUARD_OWNED: 'Someone' }),
+    ).toBe('')
+  })
+
+  it('prints usage for --help', () => {
+    const out = execFileSync(
+      join(REPO_ROOT, 'scripts/remote-guard.sh'),
+      ['--help'],
+      {
+        encoding: 'utf8',
+      },
+    )
+    expect(out).toContain('REMOTE_GUARD_OWNED')
   })
 
   it('allows an empty/missing command', () => {

@@ -88,4 +88,11 @@ describe('fixActivationBalance', () => {
       /only supports sequence diagrams/,
     )
   })
+
+  it('drops trailing whitespace before appending, without a blank line', () => {
+    const body = 'sequenceDiagram\n  A->>+B: hello'
+    const result = fixActivationBalance(`${body}  \n\t\n   `)
+    expect(result.ok).toBe(true)
+    expect(result.fixedDiagram).toBe(`${body}\n  deactivate B`)
+  })
 })
