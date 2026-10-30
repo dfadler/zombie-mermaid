@@ -77,13 +77,41 @@ describe('lifelines stay out of message labels (#1242)', () => {
     const selfSvg = renderMermaidSVG(`sequenceDiagram
   participant A
   participant B
-  A->>A: a long self message label crossing B
+  A->>A: a much longer self message label that would cross B if it were not centred
   A->>B: after`)
     const [a] = lifelineSegments(selfSvg, 'A')
     const [b] = lifelineSegments(selfSvg, 'B')
     // Nothing needed cutting: the label fits before B.
     expect(lifelineSegments(selfSvg, 'B')).toHaveLength(1)
     expect(b!.x - a!.x).toBeGreaterThan(140)
+  })
+
+  it('centres a self-message label on its lifeline, above the loop (#2456)', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  A->>B: hi
+  B->>B: a long self message label here
+  A->>B: short
+  C->>C: left edge label that is quite long indeed`)
+    const g = svg.match(
+      /<g class="message"[^>]*data-from="B" data-to="B"[\s\S]*?<\/g>/,
+    )![0]
+    const lifeX = lifelineSegments(svg, 'B')[0]!.x
+    const loopY = Number(g.match(/<polyline points="[\d.]+,([\d.]+)/)![1])
+    expect(g).toContain('text-anchor="middle"')
+    expect(Number(g.match(/<text x="([\d.]+)"/)![1])).toBeCloseTo(lifeX, 0)
+    expect(Number(g.match(/<text[^>]* y="([\d.]+)"/)![1])).toBeLessThan(loopY)
+    // A first-actor self label spills left of the lifeline without being clipped.
+    const first = renderMermaidSVG(`sequenceDiagram
+  A->>A: a very long self message label on the first actor`)
+    const t = first.match(
+      /<text x="([\d.]+)"[^>]*text-anchor="middle"[^>]*>[^<]*self message/,
+    )
+    expect(t).not.toBeNull()
+    expect(
+      Number(first.match(/viewBox="[\d.-]+ [\d.-]+ ([\d.]+)/)![1]),
+    ).toBeGreaterThan(Number(t![1]))
   })
 
   it('widens the gap for a label between adjacent actors', () => {
