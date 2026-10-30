@@ -220,6 +220,16 @@
     "maxLines": 62
   },
   {
+    "file": "scripts/c4-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/c4-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/c4-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the c4-oracle and layout-oracle CLIs",
+    "maxLines": 60
+  },
+  {
     "file": "scripts/generate-llms-full.ts",
     "reason": "thin CLI: runs on import and writes public/llms-full.txt; all logic is in scripts/lib/llms-full.ts (tested by __tests__/llms-full.test.ts)",
     "maxLines": 15
