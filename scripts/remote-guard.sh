@@ -41,13 +41,14 @@ emit() { # emit <deny|ctx> <message>
   exit 0
 }
 
-# --- deny rules (moved verbatim from the inline hook in .claude/settings.json) ---
-if printf '%s' "$c" | grep -qi 'lukilabs' && printf '%s' "$c" | grep -qi 'beautiful-mermaid'; then
-  if printf '%s' "$c" | grep -Eiq '(gh[[:space:]]+pr[[:space:]]+(create|ready|merge)|/pulls([^a-zA-Z]|$)|api[[:space:]].*pulls)'; then
+# --- deny rules (moved from the inline hook; first line only, as before in .claude/settings.json) ---
+first="${c%%$'\n'*}" # the old hook only looked at line 1; keep that for the deny set
+if printf '%s' "$first" | grep -qi 'lukilabs' && printf '%s' "$first" | grep -qi 'beautiful-mermaid'; then
+  if printf '%s' "$first" | grep -Eiq '(gh[[:space:]]+pr[[:space:]]+(create|ready|merge)|/pulls([^a-zA-Z]|$)|api[[:space:]].*pulls)'; then
     emit deny "Blocked: this command submits or modifies a PR on the upstream fork-parent repo (lukilabs/beautiful-mermaid). PRs must target the fork (origin, dfadler/zombie-mermaid) only."
   fi
 fi
-if printf '%s' "$c" | grep -Eiq '^git[[:space:]]+push([[:space:]]+--[a-zA-Z-]+)*[[:space:]]+upstream\b'; then
+if printf '%s' "$first" | grep -Eiq '^git[[:space:]]+push([[:space:]]+--[a-zA-Z-]+)*[[:space:]]+upstream\b'; then
   emit deny "Blocked: pushing to the upstream remote (lukilabs/beautiful-mermaid) is not allowed. Push to origin (your fork) instead."
 fi
 

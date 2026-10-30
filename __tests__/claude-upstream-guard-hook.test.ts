@@ -7,9 +7,9 @@
  * temp git repo whose remotes are fake URLs (no network). Also pins the three
  * static deny rules that sit beside it.
  */
-import { describe, it, expect } from 'vitest'
+import { afterAll, describe, it, expect } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -26,6 +26,7 @@ const hook = settings.hooks.PreToolUse.find(
 const hasJq = spawnSync('jq', ['--version']).status === 0
 
 const repo = mkdtempSync(join(tmpdir(), 'remote-guard-'))
+afterAll(() => rmSync(repo, { recursive: true, force: true }))
 const git = (...a: string[]) => execFileSync('git', ['-C', repo, ...a])
 if (hasJq) {
   git('init', '-q')
@@ -91,7 +92,7 @@ describe.skipIf(!hasJq)('remote-guard PreToolUse hook', () => {
   })
 
   it.each([
-    'gh pr create --repo someone/else --title x', // planted: open a PR against a non-owned repo
+    'gh pr create --repo someone/else --title x', // Planted case: open a PR against a non-owned repo
     'gh pr create -R someone/else',
     'gh issue create --repo=someone/else --title x',
     'git push other main',
