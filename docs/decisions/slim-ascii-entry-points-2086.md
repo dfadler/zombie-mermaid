@@ -243,7 +243,7 @@ budgets absorb (they are set from measurement plus 2%, per CONTRIBUTING.md).
   parity is a property of the renderers, which are not duplicated or forked.
   Slim entries do not decide the terminal-package "Direction, not a decision"
   in the objective, but they do add public surface that direction would have to
-  absorb; hence question 1.
+  absorb; hence the decision to build them in the terminal package instead.
 
 ## Self-review checklist
 
