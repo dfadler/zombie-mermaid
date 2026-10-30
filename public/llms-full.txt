@@ -1936,9 +1936,11 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
 
 ## Quadrant charts
 
-Checked on mermaid 12.2.0 (the pin, also npm `latest`); there is no layout oracle for
-this type yet, so the geometry is matched to a real mermaid render of the campaigns
-sample by hand (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` pins its numbers).
+Checked on mermaid 12.2.0 (the pin, also npm `latest`). `pnpm run quadrant:oracle`
+renders every `Quadrant:` sample through real mermaid and compares rect, line, circle and
+text positions with `layoutQuadrantChart`; they match exactly, and the weekly layout-oracle
+workflow fails on a drift (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` also
+pins the campaigns numbers). Colours and empty labels (below) are not compared.
 
 - **Point colour.** Mermaid 12.2.0's default theme emits `fill="hsl(240, 100%, NaN%)"`
   for every point without a `color`, which browsers drop, so mermaid.live and GitHub show
