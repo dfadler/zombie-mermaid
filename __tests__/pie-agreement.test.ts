@@ -6,6 +6,7 @@ import {
   pieAgreement,
   pieBreaches,
   sliceFromPath,
+  strip,
   summarizePie,
   worstPie,
   type PieLayout,
@@ -46,6 +47,11 @@ describe('pie agreement (#2451)', () => {
     const ours = parseOurPie(renderMermaidSVG(SRC))
     const a = pieAgreement(parseOfficialPie(OFFICIAL), ours)
     expect(a).toMatchObject({ angles: 1, labels: 1, legend: 1, slices: 2 })
+  })
+
+  it('strips nested or partial tags from text without reassembling them', () => {
+    expect(strip('<scr<script>ipt>x</scr</script>ipt>')).not.toContain('<')
+    expect(strip('a<tspan>b</tspan> &amp; c')).toBe('ab & c')
   })
 
   it('measures a whole circle as a 360 degree sweep', () => {

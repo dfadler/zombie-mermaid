@@ -48,7 +48,16 @@ const unescape = (s: string): string =>
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, '&')
 
-const strip = (html: string): string => unescape(html.replace(/<[^>]*>/g, ''))
+/** Text content of `html`: tags removed until none are left (so `<scr<b>ipt>` cannot reassemble), then entities decoded. */
+export function strip(html: string): string {
+  let prev: string
+  let out = html
+  do {
+    prev = out
+    out = out.replace(/<[^>]*>/g, '')
+  } while (out !== prev)
+  return unescape(out)
+}
 
 /**
  * Start and sweep of a slice path `M x1,y1 A r,r,0,large,1,x2,y2 L cx,cy Z`.
