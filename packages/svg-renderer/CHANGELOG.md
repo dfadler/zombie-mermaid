@@ -1,5 +1,13 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.12.0
+
+### Patch Changes
+
+- Updated dependencies [[`e400a43`](https://github.com/dfadler/zombie-mermaid/commit/e400a436831e2ce3362b6513d21228a3e7949b8d)]:
+  - @zombie-mermaid/mermaid-parser@5.12.0
+  - @zombie-mermaid/core@5.12.0
+
 ## 5.11.3
 
 ### Patch Changes

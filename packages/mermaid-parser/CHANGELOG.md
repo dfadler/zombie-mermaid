@@ -1,5 +1,13 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.12.0
+
+### Patch Changes
+
+- [#2420](https://github.com/dfadler/zombie-mermaid/pull/2420) [`e400a43`](https://github.com/dfadler/zombie-mermaid/commit/e400a436831e2ce3362b6513d21228a3e7949b8d) Thanks [@dfadler](https://github.com/dfadler)! - Trim trailing whitespace with `trimEnd()` instead of a `/\s+$/` regex when `fixSequenceActivations` appends `deactivate` lines, so a diagram ending in a very long run of whitespace no longer takes quadratic time (closes the last open CodeQL polynomial-ReDoS alert).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.12.0
+
 ## 5.11.3
 
 ### Patch Changes

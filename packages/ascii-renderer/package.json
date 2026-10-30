@@ -1,6 +1,6 @@
 {
   "name": "@zombie-mermaid/ascii-renderer",
-  "version": "5.11.3",
+  "version": "5.12.0",
   "license": "MIT",
   "description": "ASCII and Unicode box-drawing renderer for zombie-mermaid diagrams (maintained continuation of beautiful-mermaid).",
   "keywords": [
