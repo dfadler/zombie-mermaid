@@ -65,6 +65,8 @@ export * from './xychart/layout.ts'
 export * from './xychart/renderer.ts'
 export * from './pie/layout.ts'
 export * from './pie/renderer.ts'
+export * from './quadrant/layout.ts'
+export * from './quadrant/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

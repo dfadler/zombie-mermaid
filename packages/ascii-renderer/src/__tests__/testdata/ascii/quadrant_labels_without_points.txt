@@ -1,0 +1,29 @@
+quadrantChart
+    title Eisenhower matrix
+    x-axis Urgent --> Not urgent
+    y-axis Not important --> Important
+    quadrant-1 Do first
+    quadrant-2 Schedule
+    quadrant-3 Delegate
+    quadrant-4 Eliminate
+---
+                        Eisenhower matrix
+
+              +------------------------+------------------------+
+              |                        |                        |
+              |                        |                        |
+              |                        |                        |
+    Important |        Schedule        |        Do first        |
+              |                        |                        |
+              |                        |                        |
+              |                        |                        |
+              +------------------------+------------------------+
+              |                        |                        |
+              |                        |                        |
+              |                        |                        |
+Not important |        Delegate        |       Eliminate        |
+              |                        |                        |
+              |                        |                        |
+              |                        |                        |
+              +------------------------+------------------------+
+                        Urgent                 Not urgent

@@ -53,6 +53,12 @@ const diagrams: Record<string, string> = {
   "Dogs" : 386
   "Cats" : 85
   "Rats" : 15`,
+
+  quadrant: `quadrantChart
+  title Campaigns
+  x-axis Low --> High
+  y-axis Cold --> Hot
+  Campaign A: [0.3, 0.6]`,
 }
 
 // ============================================================================

@@ -73,15 +73,47 @@ describe('lifelines stay out of message labels (#1242)', () => {
     expect(lifelineClearAt(blockSvg, 'A', blockY + 9)).toBe(true)
   })
 
-  it('cuts a lifeline beside a self-message label', () => {
+  it('widens the gap so a self-message label clears the next lifeline', () => {
     const selfSvg = renderMermaidSVG(`sequenceDiagram
   participant A
   participant B
   A->>A: a long self message label crossing B
   A->>B: after`)
-    const y = textY(selfSvg, 'a long self message label crossing B')
-    expect(lifelineSegments(selfSvg, 'B').length).toBeGreaterThan(1)
-    expect(lifelineClearAt(selfSvg, 'B', y)).toBe(true)
+    const [a] = lifelineSegments(selfSvg, 'A')
+    const [b] = lifelineSegments(selfSvg, 'B')
+    // Nothing needed cutting: the label fits before B.
+    expect(lifelineSegments(selfSvg, 'B')).toHaveLength(1)
+    expect(b!.x - a!.x).toBeGreaterThan(140)
+  })
+
+  it('widens the gap for a label between adjacent actors', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+  A->>B: a message label far wider than the default gap between two actors
+  B->>B: ok`)
+    const [a] = lifelineSegments(svg, 'A')
+    const [b] = lifelineSegments(svg, 'B')
+    expect(b!.x - a!.x).toBeGreaterThan(300)
+  })
+
+  it('leaves the gap alone for a self-message on the last actor', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  B->>B: only the last actor has a neighbour to its left`)
+    const [a] = lifelineSegments(svg, 'A')
+    const [b] = lifelineSegments(svg, 'B')
+    expect(b!.x - a!.x).toBe(140)
+  })
+
+  it('ignores a message with no label when fitting gaps', () => {
+    const d = parseSequenceDiagram([
+      { text: 'participant A', line: 0 },
+      { text: 'participant B', line: 1 },
+      { text: 'A->>B: placeholder', line: 2 },
+    ])
+    d.messages[0]!.label = ''
+    const [a, b] = layoutSequenceDiagram(d).actors
+    expect(b!.x - a!.x).toBe(140)
   })
 
   it('cuts lifelines around a bare divider label', () => {
