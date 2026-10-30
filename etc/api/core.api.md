@@ -247,6 +247,7 @@ export interface InitConfig {
     pieHighlightSlice?: string;
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
     pieTextPosition?: number;
+    quadrant?: QuadrantConfig;
     // (undocumented)
     theme?: string;
     themeVariables?: ThemeVariables;
@@ -548,6 +549,15 @@ export interface PositionedNode {
 }
 
 // @public (undocumented)
+export type QuadrantColorVariable = (typeof QUADRANT_COLOR_VARIABLES)[number];
+
+// @public
+export type QuadrantConfig = Partial<Record<(typeof QUADRANT_NUMBER_KEYS)[number], number>> & {
+    xAxisPosition?: 'top' | 'bottom';
+    yAxisPosition?: 'left' | 'right';
+};
+
+// @public (undocumented)
 export interface RenderLimits {
     maxCanvasCells?: number;
     maxEdges?: number;
@@ -709,6 +719,7 @@ export interface ThemeVariables {
     primaryBorderColor?: string;
     primaryColor?: string;
     primaryTextColor?: string;
+    quadrant?: Partial<Record<QuadrantColorVariable, string>>;
 }
 
 // @public

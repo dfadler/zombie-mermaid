@@ -440,3 +440,25 @@ jobs:
             gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --body-file "$BODY_FILE"
             echo "Updated tracking issue #${ISSUE_NUMBER}"
           fi
+
+      # A failed matrix leg is otherwise visible only in the Actions tab (#2446).
+      # Same open-or-comment pattern as dashboard-refresh.yml's PAT health step.
+      # Runs even if the report step above failed.
+      - name: Open or update an issue when the judge job failed
+        if: always() && needs.judge.result == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          title='form-judge-weekly failed'
+          body="$(mktemp)"
+          printf 'A form-judge-weekly judge job failed or timed out (run: %s). Failed legs are listed in the run summary; the report issue may cover only part of the categories.\n' \
+            "$RUN_URL" > "$body"
+          num=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number,title \
+            --jq "map(select(.title==\"$title\"))[0].number // empty")
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$body"
+          fi
