@@ -2773,6 +2773,7 @@ pie title Pets adopted by volunteers
   {
     title: 'Quadrant: Labels Without Points',
     category: 'Quadrant',
+    gallery: true,
     description:
       'With no points the quadrant labels are centred in their cells and the x axis stays on top of the plot, as in Mermaid.',
     source: `quadrantChart
@@ -2787,6 +2788,7 @@ pie title Pets adopted by volunteers
   {
     title: 'Quadrant: One-Sided Axes',
     category: 'Quadrant',
+    gallery: true,
     description:
       'An axis with one label is drawn from the plot corner; a trailing `-->` keeps its arrow in the label.',
     source: `quadrantChart
@@ -2800,6 +2802,7 @@ pie title Pets adopted by volunteers
   {
     title: 'Quadrant: Point Styles',
     category: 'Quadrant',
+    gallery: true,
     description:
       '`classDef` and inline styles set a point\'s `color`, `radius`, `stroke-color` and `stroke-width`; inline styles win over the class.',
     source: `quadrantChart
