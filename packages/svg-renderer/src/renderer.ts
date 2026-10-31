@@ -28,7 +28,6 @@ import {
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
-  ARROW_HEAD,
 } from './styles.ts'
 import { pointsToPath } from './edge-curves.ts'
 import { edgeCrossesTitle, titleGapMask, titleTextBoxes } from './title-gaps.ts'
@@ -255,10 +254,11 @@ const THICK_EDGE_WIDTH = 3.5
  * librsvg/Inkscape/browsers.
  */
 function arrowMarkerPair(color: string, idSuffix: string): string {
-  const w = ARROW_HEAD.width
-  // Mermaid 12.2.0 draws an 8x8 head (userSpaceOnUse, viewBox 10x10), so the
-  // flowchart head is 8 tall rather than ARROW_HEAD.height (#2475).
-  const h = w
+  // Mermaid 12.2.0 edges use the `pointEnd-margin` marker: viewBox 11.5x14 in a
+  // 10.5x14 userSpaceOnUse box, i.e. a head 10.5 long and 14 * 10.5 / 11.5 =
+  // 12.8 wide at any stroke width (#2475). The 8x8 `pointEnd` marker is unused.
+  const w = 10.5
+  const h = 12.8
   // Pull arrowhead back slightly (refX = w - 1) to prevent clipping at node boundaries.
   const refX = w - 1
   // Both fill and a thin stroke for better definition at small sizes.
