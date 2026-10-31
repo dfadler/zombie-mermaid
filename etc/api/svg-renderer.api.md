@@ -354,6 +354,15 @@ export function resolveCssColors(svg: string, colors: DiagramColors): string;
 // @public
 export function resolveFontSizes(overrides?: FontSizeOptions): FontSizes;
 
+// @public
+export const SELF_LOOP_CONTROL = 60;
+
+// @public (undocumented)
+export const SELF_LOOP_EXTENT: number;
+
+// @public (undocumented)
+export const SELF_LOOP_HEIGHT = 20;
+
 // @public (undocumented)
 export function smoothCurvePath(points: Array<{
     x: number;

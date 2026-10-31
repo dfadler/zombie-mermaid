@@ -155,9 +155,6 @@ function resolveSeqOptions(overrides?: RenderOptions['sequence']): SeqConfig {
 /** Space kept between a message label and the next lifeline. */
 const LABEL_CLEARANCE = 16
 
-/** Height of a self-message loop below its row, in px (the renderer's loop). */
-const SELF_LOOP_DROP = 20
-
 /** Width of the widest line of a (possibly multi-line) label. */
 function labelWidth(
   text: string,
@@ -649,7 +646,7 @@ export function layoutSequenceDiagram(
     const closeBlock = (bi: number) => {
       let bottom =
         messages[msgIdx]!.y +
-        (isSelf ? SELF_LOOP_DROP : 0) +
+        (isSelf ? SELF_LOOP_HEIGHT : 0) +
         seq.blockPadBottom +
         12
       for (const note of blockNotes(diagram.blocks[bi]!)) {
