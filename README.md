@@ -22,6 +22,13 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 [![Socket Security](https://badge.socket.dev/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+<a href="https://star-history.com/#dfadler/zombie-mermaid&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=dfadler/zombie-mermaid&type=Date&theme=dark">
+    <img src="https://api.star-history.com/svg?repos=dfadler/zombie-mermaid&type=Date" alt="Star history chart for zombie-mermaid" width="480">
+  </picture>
+</a>
+
 </div>
 
 ---
