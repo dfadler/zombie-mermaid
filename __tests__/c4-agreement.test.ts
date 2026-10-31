@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { renderMermaidSVG } from '../src/index.ts'
 import {
-  C4_SAMPLE_FLOORS,
   c4Agreement,
   c4Breaches,
   parseOfficialC4,
@@ -133,17 +132,10 @@ describe('c4 agreement (#2451)', () => {
   it('gates samples on their floor and on errors', () => {
     const ok = c4Agreement(o, o)
     const bad = c4Agreement(o, { boxes: {}, boundaries: [], rels: [] })
-    const held = Object.keys(C4_SAMPLE_FLOORS)[0]!
     expect(c4Breaches({ ok })).toEqual([])
     expect(c4Breaches({ ok, bad }, ['boom'])).toEqual([
       'boom (error)',
       'bad (0% < 100%)',
-    ])
-    // A held sample passes at its floor and fails below it.
-    const part = { ...ok, horizontal: 0.75 }
-    expect(c4Breaches({ [held]: part })).toEqual([])
-    expect(c4Breaches({ [held]: { ...part, vertical: 0.5 } })).toEqual([
-      `${held} (50% < 70%)`,
     ])
   })
 

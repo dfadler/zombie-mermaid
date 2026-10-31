@@ -261,20 +261,10 @@ export function worstC4(a: C4Agreement): number | null {
 
 /**
  * Floor for every sample's lowest figure. Everything agrees today, so any
- * disagreement is a regression: no per-sample overrides, and a sample that
- * needs one should say why next to it.
+ * disagreement is a regression. A sample that must be held lower needs its own
+ * override, with the reason next to it.
  */
 export const C4_FLOOR = 1
-
-/**
- * Samples held below `C4_FLOOR` because we really differ (mermaid 12.2.0): the
- * queue in a boundary of five boxes lands in a fourth column far to the right,
- * where mermaid wraps the boundary to three columns. Floors sit just under the
- * measured figure so the gap cannot widen; raise them as it closes.
- */
-export const C4_SAMPLE_FLOORS: Readonly<Record<string, number>> = {
-  'C4: Container With Boundary And BiRel': 0.7,
-}
 
 /** One tracked C4 data point (#2451, scripts/c4-oracle.ts): mean of each figure over the C4 samples. */
 export interface C4Entry {
@@ -321,7 +311,7 @@ export function c4Breaches(
   const out = errored.map((t) => `${t} (error)`)
   for (const [title, r] of Object.entries(results)) {
     const low = worstC4(r)
-    const floor = C4_SAMPLE_FLOORS[title] ?? C4_FLOOR
+    const floor = C4_FLOOR
     if (low !== null && low + 1e-9 < floor) {
       out.push(`${title} (${Math.round(low * 100)}% < ${floor * 100}%)`)
     }
