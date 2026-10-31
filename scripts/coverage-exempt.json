@@ -158,7 +158,7 @@
   {
     "file": "scripts/layout-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
-    "maxLines": 259,
+    "maxLines": 255,
     "legacy": true
   },
   {
@@ -267,7 +267,7 @@
   {
     "file": "scripts/lib/separate-scores.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid renders), only reachable from the layout-oracle CLI; each figure is unit-tested in its own *-agreement.ts",
-    "maxLines": 33
+    "maxLines": 34
   },
   {
     "file": "scripts/lib/xychart-measure.ts",
