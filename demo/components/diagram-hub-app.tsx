@@ -20,6 +20,7 @@ import {
   ErIcon,
   FlowchartIcon,
   PieIcon,
+  QuadrantIcon,
   SequenceIcon,
   StateIcon,
   XyChartIcon,
@@ -50,6 +51,7 @@ const HUB_TYPE_ICONS: Record<
   c4: C4Icon,
   'architecture-beta': ArchitectureIcon,
   pie: PieIcon,
+  quadrant: QuadrantIcon,
 }
 const HUB_ICON_SIZE = 200
 
