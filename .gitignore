@@ -85,3 +85,4 @@ reports/mutation/
 # deep-research skill output (untracked scratch; findings go in issues)
 research_notes/
 reports/
+/server.json
