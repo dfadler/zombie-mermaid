@@ -480,6 +480,7 @@ export interface PositionedEdge {
     hasArrowEnd: boolean;
     // (undocumented)
     hasArrowStart: boolean;
+    headColor?: string;
     id?: string;
     inlineStyle?: Record<string, string>;
     // (undocumented)

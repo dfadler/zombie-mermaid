@@ -166,6 +166,8 @@ export interface Block {
     }>;
     endIndex: number;
     label: string;
+    noteEndIndex: number;
+    noteStartIndex: number;
     startIndex: number;
     type: 'loop' | 'alt' | 'opt' | 'par' | 'critical' | 'break' | 'rect';
 }

@@ -2879,4 +2879,52 @@ pie title Pets adopted by volunteers
   B -->|yes| C[\\Write Output\\]
   B -->|no| D[/Ask Again/]`,
   },
+  {
+    title: 'Sequence: Nested Blocks With Notes',
+    category: 'Sequence',
+    description:
+      'A loop nested in an alt branch, with notes inside the blocks: each block grows to hold its notes and the blocks nested in it, and nested header tabs stack instead of overlapping.',
+    source: `sequenceDiagram
+  participant A
+  participant B
+  alt cache hit
+    loop every retry
+      A->>B: fetch
+      Note right of B: waits for the upstream response
+    end
+  else cache miss
+    opt warm up
+      B->>B: rebuild
+    end
+    Note over A,B: done
+  end`,
+  },
+  {
+    title: 'Sequence: Long Block Tab And Divider Labels',
+    category: 'Sequence',
+    description:
+      'Long block and divider labels over adjacent participants: the gap between the participants widens so the label ends before the next lifeline.',
+    source: `sequenceDiagram
+  participant A
+  participant B
+  par a branch with a long descriptive title
+    A->>B: x
+  and another branch with an equally long title
+    B->>A: y
+  end`,
+  },
+  {
+    title: 'Sequence: Multi-line Note In Block',
+    category: 'Sequence',
+    description:
+      'A multi-line note inside a block: the note is as tall as its text and the block closes below it.',
+    source: `sequenceDiagram
+  participant A
+  participant B
+  loop poll
+    A->>B: ping
+    Note left of A: first line<br/>second line<br/>third line
+  end
+  B->>A: pong`,
+  },
 ]
