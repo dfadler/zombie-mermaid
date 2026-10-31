@@ -64,6 +64,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 
 - `pnpm run bench` — render benchmarks (full end-to-end SVG + ASCII render time)
 - `pnpm run metrics:history:append` — append a snapshot of GitHub stars, npm weekly downloads, latest package versions and unpacked package sizes to `metrics-history.jsonl`; wired into `.github/workflows/dashboard-refresh.yml`'s weekly schedule — you shouldn't normally need to run this by hand
+- `pnpm run mcp:server-json` — print the MCP Registry `server.json` for the current `package.json` version (npm package, `mcpName`, `packageArguments` `mcp`), validated against the registry schema; `-- --out <file>` writes it (logic in `scripts/lib/mcp-server-json.ts`; see "MCP Registry" in [RELEASING.md](RELEASING.md))
 - `pnpm run smoke:packed` — pack every public package, install the tarballs into clean temp projects and smoke-test them as a consumer would (run `pnpm run build` first; what CI's "Packed tarball smoke test" job and publish.yml run)
 - `pnpm run size:report` — print where the bytes are: per-file raw/gzip/brotli, per-module breakdown from sourcemaps, ESM duplicates and `npm pack` composition for every package (run `pnpm run build` first)
 - `pnpm run api:report` — regenerates the committed public-API reports (`etc/api/*.api.md`) with @microsoft/api-extractor from each built rolled `.d.ts` (run `pnpm run build` first); the report-only `api-report` CI job diffs them (#1870).
