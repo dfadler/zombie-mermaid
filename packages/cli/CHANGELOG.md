@@ -1,5 +1,15 @@
 # @zombie-mermaid/cli
 
+## 5.14.0
+
+### Patch Changes
+
+- Updated dependencies [[`b918077`](https://github.com/dfadler/zombie-mermaid/commit/b9180775816e55e81fcea6d6823fa5ec2dcfa856), [`96abf55`](https://github.com/dfadler/zombie-mermaid/commit/96abf5540701843be4397ab34cc3049a4fe82459), [`91bc6cf`](https://github.com/dfadler/zombie-mermaid/commit/91bc6cf917e65fd9b38e89c0ad3a01ceccbd4d51), [`8a8463d`](https://github.com/dfadler/zombie-mermaid/commit/8a8463da1b5de205525258c203b4dc5aadae568a)]:
+  - @zombie-mermaid/ascii-renderer@5.14.0
+  - @zombie-mermaid/svg-renderer@5.14.0
+  - @zombie-mermaid/core@5.14.0
+  - @zombie-mermaid/mcp@5.14.0
+
 ## 5.13.0
 
 ### Patch Changes

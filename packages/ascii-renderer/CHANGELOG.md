@@ -1,5 +1,16 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.14.0
+
+### Patch Changes
+
+- [#2470](https://github.com/dfadler/zombie-mermaid/pull/2470) [`b918077`](https://github.com/dfadler/zombie-mermaid/commit/b9180775816e55e81fcea6d6823fa5ec2dcfa856) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII parallelograms `[/x/]` and `[\x\]` now lean both sides like mermaid's (`╱` / `╲`, `/` / `\`, one column per row) instead of vertical walls with slash corners, keep their lean in BT and RL as mermaid does, and are wider by the slant ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+- [#2462](https://github.com/dfadler/zombie-mermaid/pull/2462) [`8a8463d`](https://github.com/dfadler/zombie-mermaid/commit/8a8463da1b5de205525258c203b4dc5aadae568a) Thanks [@dfadler](https://github.com/dfadler)! - Sequence diagrams: a self-message label is now centred on its lifeline, above the loop, as mermaid draws it, instead of sitting beside the loop (SVG and ASCII).
+- Updated dependencies [[`91bc6cf`](https://github.com/dfadler/zombie-mermaid/commit/91bc6cf917e65fd9b38e89c0ad3a01ceccbd4d51)]:
+  - @zombie-mermaid/core@5.14.0
+  - @zombie-mermaid/mermaid-parser@5.14.0
+
 ## 5.13.0
 
 ### Minor Changes
