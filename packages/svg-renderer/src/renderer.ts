@@ -28,7 +28,6 @@ import {
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
-  ARROW_HEAD,
 } from './styles.ts'
 import { pointsToPath } from './edge-curves.ts'
 import { edgeCrossesTitle, titleGapMask, titleTextBoxes } from './title-gaps.ts'
@@ -242,6 +241,9 @@ function arrowMarkerDefsForColor(color: string): string {
   return arrowMarkerPair(escapeAttr(color), f`-${markerSuffix(color)}`)
 }
 
+/** Mermaid 12.2.0 `.edge-thickness-thick` (normal is 1px, same as ours). */
+const THICK_EDGE_WIDTH = 3.5
+
 /**
  * Build the forward (marker-end) + reverse (marker-start) arrow-head marker pair.
  *
@@ -252,15 +254,18 @@ function arrowMarkerDefsForColor(color: string): string {
  * librsvg/Inkscape/browsers.
  */
 function arrowMarkerPair(color: string, idSuffix: string): string {
-  const w = ARROW_HEAD.width
-  const h = ARROW_HEAD.height
+  // Mermaid 12.2.0 edges use the `pointEnd-margin` marker: viewBox 11.5x14 in a
+  // 10.5x14 userSpaceOnUse box, i.e. a head 10.5 long and 14 * 10.5 / 11.5 =
+  // 12.8 wide at any stroke width (#2475). The 8x8 `pointEnd` marker is unused.
+  const w = 10.5
+  const h = 12.8
   // Pull arrowhead back slightly (refX = w - 1) to prevent clipping at node boundaries.
   const refX = w - 1
   // Both fill and a thin stroke for better definition at small sizes.
   const style = f`fill="${color}" stroke="${color}" stroke-width="0.75" stroke-linejoin="round"`
   const polygon = f`<polygon points="0 0, ${w} ${h / 2}, 0 ${h}" ${style} />`
   const marker = (id: string, orient: string) =>
-    f`  <marker id="${id}" markerWidth="${w}" markerHeight="${h}" refX="${refX}" refY="${h / 2}" orient="${orient}">` +
+    f`  <marker id="${id}" markerWidth="${w}" markerHeight="${h}" refX="${refX}" refY="${h / 2}" markerUnits="userSpaceOnUse" orient="${orient}">` +
     f`\n    ${polygon}` +
     `\n  </marker>`
   return (
@@ -382,9 +387,7 @@ function renderEdge(
 
   const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="4 4"' : ''
   const baseStrokeWidth =
-    edge.style === 'thick'
-      ? STROKE_WIDTHS.connector * 2
-      : STROKE_WIDTHS.connector
+    edge.style === 'thick' ? THICK_EDGE_WIDTH : STROKE_WIDTHS.connector
   const strokeColor = invisible
     ? 'none'
     : escapeAttr(edge.inlineStyle?.stroke ?? 'var(--_line)')
