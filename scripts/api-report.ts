@@ -1,7 +1,7 @@
 /**
  * Regenerates the committed API reports (`etc/api/*.api.md`, #1870) from each
- * entry's built, rolled `.d.ts`. Run `pnpm run build` first. Report-only:
- * always writes; CI (`api-report` job) diffs the result against the commit.
+ * entry's built, rolled `.d.ts`. Run `pnpm run build` first. Always writes;
+ * CI (`packed-smoke` job) fails if the result differs from the commit (#2480).
  *
  * Usage: pnpm run build && pnpm run api:report
  */
