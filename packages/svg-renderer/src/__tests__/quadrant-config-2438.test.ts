@@ -10,7 +10,7 @@ import {
 } from '@zombie-mermaid/core'
 import { parseQuadrantChart } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG, renderMermaidASCII } from '../../../../src/index.ts'
-import { layoutQuadrantChart } from '../quadrant/layout.ts'
+import { QUADRANT, layoutQuadrantChart } from '../quadrant/layout.ts'
 
 beforeEach(() => {
   __resetSvgTitleIdCounterForTests()
@@ -173,5 +173,29 @@ describe('quadrantChart init config: ASCII', () => {
   it('does not change the grid', () => {
     const opts = { colorMode: 'none' } as const
     expect(renderMermaidASCII(CFG, opts)).toBe(renderMermaidASCII(BODY, opts))
+  })
+})
+
+describe('QUADRANT constant: 5.13.0 names (#2463)', () => {
+  it('keeps the deprecated fields next to their replacements', () => {
+    expect(QUADRANT.width).toBe(500)
+    expect(QUADRANT.height).toBe(500)
+    expect(QUADRANT.axisLabelPadding).toBe(QUADRANT.xAxisLabelPadding)
+    expect(QUADRANT.axisLabelPadding).toBe(QUADRANT.yAxisLabelPadding)
+    expect(QUADRANT.axisLabelFontSize).toBe(QUADRANT.xAxisLabelFontSize)
+    expect(QUADRANT.axisLabelFontSize).toBe(QUADRANT.yAxisLabelFontSize)
+    expect(QUADRANT.internalBorderWidth).toBe(
+      QUADRANT.quadrantInternalBorderStrokeWidth,
+    )
+    expect(QUADRANT.externalBorderWidth).toBe(
+      QUADRANT.quadrantExternalBorderStrokeWidth,
+    )
+  })
+
+  it('does not override a user config', () => {
+    const l = layoutQuadrantChart(
+      parseQuadrantChart(withInit('{"quadrantChart": {"chartWidth": 300}}')),
+    )
+    expect(l.width).toBe(300)
   })
 })

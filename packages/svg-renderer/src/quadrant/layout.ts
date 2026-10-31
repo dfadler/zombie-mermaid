@@ -54,9 +54,21 @@ export const QUADRANT = {
   quadrantExternalBorderStrokeWidth: 2,
   xAxisPosition: 'top',
   yAxisPosition: 'left',
+  /** @deprecated Use `chartWidth`; removed in the next major. */
+  width: 500,
+  /** @deprecated Use `chartHeight`; removed in the next major. */
+  height: 500,
+  /** @deprecated Use `xAxisLabelPadding` / `yAxisLabelPadding`; removed in the next major. */
+  axisLabelPadding: 5,
+  /** @deprecated Use `xAxisLabelFontSize` / `yAxisLabelFontSize`; removed in the next major. */
+  axisLabelFontSize: 16,
+  /** @deprecated Use `quadrantInternalBorderStrokeWidth`; removed in the next major. */
+  internalBorderWidth: 1,
+  /** @deprecated Use `quadrantExternalBorderStrokeWidth`; removed in the next major. */
+  externalBorderWidth: 2,
 } as const
 
-/** `chartWidth`/`chartHeight` are the config's names for the frame size. */
+/** Frame size under the config's names; the layout never reads the deprecated `QUADRANT.width`/`height`. */
 const DEFAULTS = { chartWidth: 500, chartHeight: 500 }
 
 function text(

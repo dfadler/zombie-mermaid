@@ -304,6 +304,12 @@ export const QUADRANT: {
     readonly quadrantExternalBorderStrokeWidth: 2;
     readonly xAxisPosition: "top";
     readonly yAxisPosition: "left";
+    readonly width: 500;
+    readonly height: 500;
+    readonly axisLabelPadding: 5;
+    readonly axisLabelFontSize: 16;
+    readonly internalBorderWidth: 1;
+    readonly externalBorderWidth: 2;
 };
 
 // @public
