@@ -114,8 +114,7 @@ of each other (columns and rows, within `PLACE_TOLERANCE`), of boxes inside the
 same boundaries, of relationships with the same label and technology text and
 of relationships running the same way is taken (`scripts/c4-oracle.ts`).
 Every sample must score 100% (`C4_FLOOR`; `--thresholds` exits 1
-otherwise) except those held lower in `C4_SAMPLE_FLOORS`, where our placement
-really differs. It says nothing about box sizes or fonts.
+otherwise). It says nothing about box sizes or fonts.
 
 | Date       | Commit  | Mermaid | Samples | Horizontal | Vertical | Containment | Relationships | Direction |
 | ---------- | ------- | ------- | ------- | ---------- | -------- | ----------- | ------------- | --------- |
