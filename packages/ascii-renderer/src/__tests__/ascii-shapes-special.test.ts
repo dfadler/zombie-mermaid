@@ -134,30 +134,32 @@ describe('subroutine shape [[text]]', () => {
 })
 
 describe('doublecircle shape (((text)))', () => {
-  it('renders concentric-circle corner markers in a flowchart', () => {
-    const src = `flowchart TD
-  A(((Final)))`
-    const out = renderMermaidASCII(src, { useAscii: false })
-    expect(out).toContain('Final')
-    expect(out).toContain('◎')
+  it('draws two concentric rings in a flowchart (#2164)', () => {
+    const out = renderMermaidASCII('flowchart TD\n  A(((Final)))', {
+      useAscii: false,
+    })
+    expect(out).toContain('( ( Final ) )')
+    expect(out).toContain('╭')
+    expect(out).not.toContain('◎')
   })
 
-  it('renders the ASCII fallback marker', () => {
-    const src = `flowchart TD
-  A(((Done)))`
-    const out = renderMermaidASCII(src, { useAscii: true })
-    expect(out).toContain('Done')
-    expect(out).toContain('@')
+  it('draws the rings with ASCII glyphs', () => {
+    const out = renderMermaidASCII('flowchart TD\n  A(((Done)))', {
+      useAscii: true,
+    })
+    expect(out).toContain('( ( Done ) )')
+    expect(out).not.toContain('@')
   })
 
-  it('delegates to the shared box renderer with doublecircle corners', () => {
+  it('renders standalone as an outer and an inner outline', () => {
     const dims = doublecircleRenderer.getDimensions('X', unicodeOpts)
-    const canvas = doublecircleRenderer.render('X', dims, unicodeOpts)
-    const str = canvasToString(canvas)
-    const lines = str.split('\n')
-    expect(lines[0]!.startsWith('◎')).toBe(true)
-    expect(lines[0]!.endsWith('◎')).toBe(true)
-    expect(lines[lines.length - 1]!.startsWith('◎')).toBe(true)
+    const lines = canvasToString(
+      doublecircleRenderer.render('X', dims, unicodeOpts),
+    ).split('\n')
+    expect(lines).toHaveLength(dims.height)
+    expect(lines[0]).toMatch(/^ *╭─+╮ *$/)
+    expect(lines[1]).toMatch(/╭─+╮/)
+    expect(lines[Math.floor(lines.length / 2)]).toMatch(/^\( \( +X +\) \)$/)
   })
 })
 
