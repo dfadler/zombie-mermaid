@@ -107,6 +107,23 @@ agreement; the floor in `scripts/lib/layout-agreement.ts` stays at 0.8
 ([#1942](https://github.com/dfadler/zombie-mermaid/issues/1942)). Not checked: mermaid.live
 or GitHub for this sample.
 
+## Sequence SVG: self-message and lifeline spacing ([#2477](https://github.com/dfadler/zombie-mermaid/issues/2477))
+
+Measured against mermaid 12.2.0 (the latest on npm, 2026-10-31) via `scripts/lib/real-mermaid.ts`.
+Matched: the self-message loop is mermaid's cubic path (`M x,y C x+60,y-10 x+60,y+30 x,y+20`),
+the label is centred on the lifeline, the extra drop after a self-message is 30 px, and the
+lifeline is not cut around a self-message label.
+
+Not matched:
+
+- **Scale.** mermaid lays out at 16 px text with 74 px actor boxes: rows are 46 px apart and
+  the label centre sits 15 px above its arrow. Here the text is 11 px, actors 40 px, rows 40 px
+  and the rise 10 px. The loop and the 30 px drop are mermaid's absolute sizes, so a self-message
+  looks slightly larger against the text than in mermaid.
+- **Lifelines cut around other labels.** A lifeline crossed by a message label (#1242, #2280), a
+  block tab or an `else`/`and` label is cut around it; mermaid draws the line through the text.
+  Kept for legibility.
+
 ## Escaped characters in pie titles
 
 mermaid.js double-escapes `<`, `&` and `>` in a pie title: `pie title Labels <&> "quotes"`
