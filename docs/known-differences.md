@@ -107,6 +107,23 @@ agreement; the floor in `scripts/lib/layout-agreement.ts` stays at 0.8
 ([#1942](https://github.com/dfadler/zombie-mermaid/issues/1942)). Not checked: mermaid.live
 or GitHub for this sample.
 
+## Sequence SVG: self-message and lifeline spacing ([#2477](https://github.com/dfadler/zombie-mermaid/issues/2477))
+
+Measured against mermaid 12.2.0 (the latest on npm, 2026-10-31) via `scripts/lib/real-mermaid.ts`.
+Matched: the self-message loop is mermaid's cubic path (`M x,y C x+60,y-10 x+60,y+30 x,y+20`),
+the label is centred on the lifeline, the extra drop after a self-message is 30 px, and the
+lifeline is not cut around a self-message label.
+
+Not matched:
+
+- **Scale.** mermaid lays out at 16 px text with 74 px actor boxes: rows are 46 px apart and
+  the label centre sits 15 px above its arrow. Here the text is 11 px, actors 40 px, rows 40 px
+  and the rise 10 px. The loop and the 30 px drop are mermaid's absolute sizes, so a self-message
+  looks slightly larger against the text than in mermaid.
+- **Lifelines cut around other labels.** A lifeline crossed by a message label (#1242, #2280), a
+  block tab or an `else`/`and` label is cut around it; mermaid draws the line through the text.
+  Kept for legibility.
+
 ## Escaped characters in pie titles
 
 mermaid.js double-escapes `<`, `&` and `>` in a pie title: `pie title Labels <&> "quotes"`
@@ -263,7 +280,7 @@ only); GitHub's render was not reachable. See the comment on #2101 for the numbe
 ## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
 
 The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
-family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle**, **subroutine**, **asymmetric**, **trapezoid** and **parallelogram**. Mermaid 12.2.0 (the pin and npm latest
+family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle**, **subroutine**, **asymmetric**, **trapezoid**, **parallelogram** and **double circle**. Mermaid 12.2.0 (the pin and npm latest
 agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
 left and right middle.
 
@@ -321,8 +338,17 @@ left and right middle.
   Edges attach as for the trapezoid: at the outer face, with a post-pass that extends the
   stroke (and moves an arrowhead) across the blank cells to the slanted wall. Under RL the
   outline is mirrored back within its own rect so the lean matches LR (#1701).
-- **Still approximated** (a later PR, per the owner's one-family-per-PR call): double circle
-  (needs a second, concentric ellipse: a width and height decision).
+- **Double circle** (`(((x)))`). Mermaid 12.2.0 (also the npm latest) draws two
+  concentric circles with a small gap, in every direction. Ours is the circle outline
+  twice: the outer ring over the whole node, the inner one two columns and one row in
+  (`╭╮ ╱╲ ( )` and `.'` `/\` in ASCII), so `( ( x ) )` on the middle row. The node is two
+  rows taller and four columns wider than a circle, so a one-line label is 7 rows with a
+  5-row inner circle (5 rows with a 3-row inner pill at `boxBorderPadding: 0`), the rows
+  of every node on the same layout row grow with it, and the label rows keep the inner ring a cell clear of the text. Edges
+  attach at the outer ring as for the circle. The ring gap is one cell, not mermaid's
+  proportional gap.
+- Every shape in the issue is now drawn as a silhouette; the remaining differences are the
+  ones listed per shape above (diagonals and curves quantised to cells).
 
 ## ASCII: LR skip edge beside a reciprocal pair (partial match)
 
@@ -468,6 +494,21 @@ viewBox, so the title is clipped and invisible (checked headless in Chromium, #2
 zombie-mermaid deliberately draws it: the SVG canvas is `2 * 50 + title width` by 80,
 with the title inside, and the ASCII output prints the title (mermaid has no ASCII
 output). A diagram with no title, elements, or boundaries still renders nothing.
+
+## Flowchart SVG presentation (#2476)
+
+Measured against mermaid 12.2.0 (headless, `scripts/lib/real-mermaid.ts`). Arrowhead
+size, thick width, dotted pattern and head colour now match; these do not:
+
+- **Edges into one node share a bus and a single head.** Mermaid draws a separate
+  head per edge. This comes from the layout's edge routing (the SVG twin of the
+  ASCII entry below), not from the marker.
+- **A `classDef`/`style` fill with no `color:` gets black or white text picked from
+  the fill's luminance** (#55). Mermaid leaves its default dark text, so a dark fill
+  such as red shows white text here and dark text there. Kept because the ambient
+  text colour is a CSS variable that can be light in dark themes, which made labels
+  unreadable on custom fills.
+- **The hexagon is slightly flatter than mermaid's.** Cosmetic.
 
 ## Known limitations (not intentional, not yet fixed)
 

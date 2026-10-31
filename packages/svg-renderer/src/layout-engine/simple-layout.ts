@@ -29,7 +29,11 @@ import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
 import { straightenTinyJogs } from './jog-straightening.ts'
 import { layered, type Waypoint } from './layered.ts'
-import { synthesizeSelfLoopEdges, resolveEdgeStyle } from './from-elk.ts'
+import {
+  synthesizeSelfLoopEdges,
+  resolveEdgeStyle,
+  resolveHeadColor,
+} from './from-elk.ts'
 import { SUBGRAPH_PADDING, estimateNodeSize } from './to-elk.ts'
 
 /** A box in the abstract frame: top-left corner and extents. */
@@ -427,6 +431,7 @@ export function layoutSimple(
       points,
       labelPosition: route.label && toPoint(route.label),
       inlineStyle: resolveEdgeStyle(i, graph),
+      headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
     })

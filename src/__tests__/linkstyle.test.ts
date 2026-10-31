@@ -103,15 +103,23 @@ describe('linkStyle – SVG integration', () => {
     expect(svg).toContain('stroke="#888"')
   })
 
-  it('arrowhead color matches custom stroke color', () => {
+  it('arrowhead takes the linkStyle default stroke, like mermaid (#2476)', () => {
     const svg = renderMermaidSVG(
-      'graph TD\n  A --> B\n  linkStyle 0 stroke:#ff0000',
+      'graph TD\n  A --> B\n  linkStyle default stroke:#ff0000',
     )
     // Should have a color-specific marker def (# is hex-encoded to "23")
     expect(svg).toMatch(/id="zm[0-9a-z]+-arrowhead-23ff0000"/)
     expect(svg).toContain('fill="#ff0000"')
-    // Edge should reference the colored marker
     expect(svg).toMatch(/marker-end="url\(#zm[0-9a-z]+-arrowhead-23ff0000\)"/)
+  })
+
+  it('an edge-specific stroke does not tint its arrowhead (#2476)', () => {
+    const svg = renderMermaidSVG(
+      'graph TD\n  A --> B\n  linkStyle 0 stroke:#ff0000',
+    )
+    expect(svg).toContain('stroke="#ff0000"')
+    expect(svg).not.toContain('arrowhead-23ff0000')
+    expect(svg).toMatch(/marker-end="url\(#zm[0-9a-z]+-arrowhead\)"/)
   })
 
   it('escapes XSS injection in stroke value', () => {

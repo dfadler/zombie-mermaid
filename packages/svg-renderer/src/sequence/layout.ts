@@ -70,6 +70,15 @@ const SEQ = {
 } as const
 
 /**
+ * Mermaid's self-message loop (`M x,y C x+60,y-10 x+60,y+30 x,y+20`): the
+ * control points sit 60px out, so the curve itself reaches 3/4 of that.
+ * Shared with the renderer, and with the bounding box and gap fitting here.
+ */
+export const SELF_LOOP_CONTROL = 60
+export const SELF_LOOP_EXTENT = SELF_LOOP_CONTROL * 0.75
+export const SELF_LOOP_HEIGHT = 20
+
+/**
  * Height of the label band at the top of a `box … end` group, in px — the
  * label's font size plus vertical breathing room. Shared with the renderer
  * so the label lands centred in the band the layout reserved for it.
@@ -885,7 +894,7 @@ export function layoutSequenceDiagram(
   // clipped by the SVG width (or the left edge) otherwise.
   for (const m of messages) {
     if (!m.isSelf) continue
-    globalMaxX = Math.max(globalMaxX, m.x1 + 30 + 8) // The loop width (renderer) plus a margin
+    globalMaxX = Math.max(globalMaxX, m.x1 + SELF_LOOP_EXTENT + 8) // The loop width plus a margin
     if (m.label) {
       const half =
         estimateTextWidth(
