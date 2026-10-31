@@ -387,9 +387,7 @@ function renderEdge(
 
   const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="4 4"' : ''
   const baseStrokeWidth =
-    edge.style === 'thick'
-      ? THICK_EDGE_WIDTH
-      : STROKE_WIDTHS.connector
+    edge.style === 'thick' ? THICK_EDGE_WIDTH : STROKE_WIDTHS.connector
   const strokeColor = invisible
     ? 'none'
     : escapeAttr(edge.inlineStyle?.stroke ?? 'var(--_line)')
