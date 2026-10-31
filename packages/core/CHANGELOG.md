@@ -1,5 +1,7 @@
 # @zombie-mermaid/core
 
+## 5.14.1
+
 ## 5.14.0
 
 ### Minor Changes

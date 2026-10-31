@@ -1,5 +1,15 @@
 # @zombie-mermaid/mcp
 
+## 5.14.1
+
+### Patch Changes
+
+- Updated dependencies [[`13617eb`](https://github.com/dfadler/zombie-mermaid/commit/13617eb067df154e257a7fba42039523b47fb7b8), [`bad44f4`](https://github.com/dfadler/zombie-mermaid/commit/bad44f4e106be390a78a91080c540f289b960d15)]:
+  - @zombie-mermaid/ascii-renderer@5.14.1
+  - @zombie-mermaid/mermaid-parser@5.14.1
+  - @zombie-mermaid/svg-renderer@5.14.1
+  - @zombie-mermaid/core@5.14.1
+
 ## 5.14.0
 
 ### Patch Changes
