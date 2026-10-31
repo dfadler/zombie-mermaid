@@ -158,7 +158,7 @@
   {
     "file": "scripts/layout-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
-    "maxLines": 270,
+    "maxLines": 284,
     "legacy": true
   },
   {
@@ -208,6 +208,16 @@
     "file": "scripts/lib/label-position.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid label positions), only reachable from the label-position-oracle and layout-oracle CLIs",
     "maxLines": 150
+  },
+  {
+    "file": "scripts/architecture-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/architecture-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/architecture-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the architecture-oracle and layout-oracle CLIs",
+    "maxLines": 62
   },
   {
     "file": "scripts/sequence-oracle.ts",

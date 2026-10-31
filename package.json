@@ -181,6 +181,7 @@
     "quadrant:oracle": "tsx scripts/quadrant-oracle.ts",
     "pie:oracle": "tsx scripts/pie-oracle.ts",
     "c4:oracle": "tsx scripts/c4-oracle.ts",
+    "architecture:oracle": "tsx scripts/architecture-oracle.ts",
     "verify": "scripts/verify.sh",
     "doctor": "scripts/doctor.sh"
   },

@@ -3,6 +3,7 @@
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import type { PieEntry } from './pie-agreement.ts'
 import type { C4Entry } from './c4-agreement.ts'
+import type { ArchitectureEntry } from './architecture-agreement.ts'
 import type { SequenceEntry } from './sequence-agreement.ts'
 import {
   historyLines,
@@ -20,12 +21,14 @@ export async function writeRecords(
   sequenceEntry?: SequenceEntry,
   pieEntry?: PieEntry,
   c4Entry?: C4Entry,
+  architectureEntry?: ArchitectureEntry,
 ): Promise<void> {
   let history = runs.map((r) => r.entry)
   let labels = labelEntry ? [labelEntry] : []
   let sequences = sequenceEntry ? [sequenceEntry] : []
   let pies = pieEntry ? [pieEntry] : []
   let c4s = c4Entry ? [c4Entry] : []
+  let architectures = architectureEntry ? [architectureEntry] : []
   if (args.history) {
     await appendFile(
       args.history,
@@ -35,6 +38,7 @@ export async function writeRecords(
         ...(sequenceEntry ? [sequenceEntry] : []),
         ...(pieEntry ? [pieEntry] : []),
         ...(c4Entry ? [c4Entry] : []),
+        ...(architectureEntry ? [architectureEntry] : []),
       ]),
     )
     const all = (await readFile(args.history, 'utf8'))
@@ -47,7 +51,8 @@ export async function writeRecords(
             | LabelEntry
             | SequenceEntry
             | PieEntry
-            | C4Entry,
+            | C4Entry
+            | ArchitectureEntry,
       )
     history = all.filter((e): e is HistoryEntry => !('kind' in e))
     labels = all.filter(
@@ -58,12 +63,24 @@ export async function writeRecords(
     )
     pies = all.filter((e): e is PieEntry => 'kind' in e && e.kind === 'pie')
     c4s = all.filter((e): e is C4Entry => 'kind' in e && e.kind === 'c4')
+    architectures = all.filter(
+      (e): e is ArchitectureEntry => 'kind' in e && e.kind === 'architecture',
+    )
     console.log(`Appended to ${args.history}`)
   }
   if (args.scorecard) {
     await writeFile(
       args.scorecard,
-      scorecardMarkdown(runs, history, undefined, labels, sequences, pies, c4s),
+      scorecardMarkdown(
+        runs,
+        history,
+        undefined,
+        labels,
+        sequences,
+        pies,
+        c4s,
+        architectures,
+      ),
     )
     console.log(`Wrote ${args.scorecard}`)
   }
