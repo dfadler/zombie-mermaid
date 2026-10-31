@@ -61,17 +61,7 @@ import {
 } from './lib/layout-agreement.ts'
 import { labelEntryFor } from './lib/label-position.ts'
 import { writeRecords } from './lib/layout-record.ts'
-import { scoreArchitecture } from './lib/architecture-measure.ts'
-import type { ArchitectureEntry } from './lib/architecture-agreement.ts'
-import { scoreSequence } from './lib/sequence-measure.ts'
-import { scoreQuadrant } from './lib/quadrant-measure.ts'
-import { scoreXyChart } from './lib/xychart-measure.ts'
-import type { XyEntry } from './lib/xychart-agreement.ts'
-import type { SequenceEntry } from './lib/sequence-agreement.ts'
-import { scorePie } from './lib/pie-measure.ts'
-import type { PieEntry } from './lib/pie-agreement.ts'
-import { scoreC4 } from './lib/c4-measure.ts'
-import type { C4Entry } from './lib/c4-agreement.ts'
+import { scoreSeparately } from './lib/separate-scores.ts'
 import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
@@ -203,11 +193,7 @@ async function main(): Promise<number> {
 
   const runs: ScorecardRun[] = []
   let labelEntry: LabelEntry | undefined
-  let sequenceEntry: SequenceEntry | undefined
-  let pieEntry: PieEntry | undefined
-  let c4Entry: C4Entry | undefined
-  let xyEntry: XyEntry | undefined
-  let architectureEntry: ArchitectureEntry | undefined
+  let separate: Awaited<ReturnType<typeof scoreSeparately>> | undefined
   const failing: string[] = []
   const commit = recording
     ? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -237,23 +223,8 @@ async function main(): Promise<number> {
     }
     if (recording) {
       labelEntry = await labelEntryFor(session, commit)
-      const seq = await scoreSequence(session, commit)
-      sequenceEntry = seq.entry
-      if (args.thresholds) failing.push(...seq.breaches)
-      const quad = await scoreQuadrant(session)
-      if (args.thresholds) failing.push(...quad.breaches)
-      const pie = await scorePie(session, commit)
-      pieEntry = pie.entry
-      if (args.thresholds) failing.push(...pie.breaches)
-      const c4 = await scoreC4(session, commit)
-      c4Entry = c4.entry
-      if (args.thresholds) failing.push(...c4.breaches)
-      const xy = await scoreXyChart(session, commit)
-      xyEntry = xy.entry
-      if (args.thresholds) failing.push(...xy.breaches)
-      const arch = await scoreArchitecture(session, commit)
-      architectureEntry = arch.entry
-      if (args.thresholds) failing.push(...arch.breaches)
+      separate = await scoreSeparately(session, commit, args.thresholds)
+      failing.push(...separate.breaches)
     }
   } finally {
     await session.close()
@@ -264,16 +235,7 @@ async function main(): Promise<number> {
     console.log(`\nWrote ${args.json}`)
   }
   if (recording)
-    await writeRecords(
-      args,
-      runs,
-      labelEntry,
-      sequenceEntry,
-      pieEntry,
-      c4Entry,
-      xyEntry,
-      architectureEntry,
-    )
+    await writeRecords(args, runs, labelEntry, ...(separate?.entries ?? []))
   failing.push(...(await finishScorecard(args, runs)))
   if (failing.length > 0) {
     console.error(`\nBelow threshold: ${[...new Set(failing)].join(', ')}`)
