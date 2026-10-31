@@ -355,7 +355,13 @@ export function doubleCircleDimensions(
   const minWidth =
     2 * Math.max(...circleInsets(1e3, height - 2 * RING_Y - 1)) + 3 + 2 * RING_X
   return growToClearLabel(
-    { ...base, height, width: Math.max(base.width + 2 * RING_X, minWidth) },
+    {
+      ...base,
+      height,
+      // The layout allocates rows from gridRows, not height.
+      gridRows: [1, base.gridRows[1]! + 2 * RING_Y, 1],
+      width: Math.max(base.width + 2 * RING_X, minWidth),
+    },
     widths,
     doubleCircleInsets,
     false,

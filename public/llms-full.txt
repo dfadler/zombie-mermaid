@@ -2127,10 +2127,11 @@ left and right middle.
   concentric circles with a small gap, in every direction. Ours is the circle outline
   twice: the outer ring over the whole node, the inner one two columns and one row in
   (`╭╮ ╱╲ ( )` and `.'` `/\` in ASCII), so `( ( x ) )` on the middle row. The node is two
-  rows taller and four columns wider than a circle, so a one-line label is 5 rows with a
-  3-row inner pill, and the label rows keep the inner ring a cell clear of the text. Edges
+  rows taller and four columns wider than a circle, so a one-line label is 7 rows with a
+  5-row inner circle (5 rows with a 3-row inner pill at `boxBorderPadding: 0`), the rows
+  of every node on the same layout row grow with it, and the label rows keep the inner ring a cell clear of the text. Edges
   attach at the outer ring as for the circle. The ring gap is one cell, not mermaid's
-  proportional gap, and in the 5-row case the inner ring is a pill rather than a circle.
+  proportional gap.
 - Every shape in the issue is now drawn as a silhouette; the remaining differences are the
   ones listed per shape above (diagonals and curves quantised to cells).
 
