@@ -2846,4 +2846,34 @@ pie title Pets adopted by volunteers
     "狗 Dogs": [0.2, 0.8]
     "ＢＩＲＤ": [0.7, 0.3]`,
   },
+  {
+    title: 'Parallelogram Shapes (LR)',
+    category: 'Flowchart',
+    description:
+      'Parallelogram `[/x/]` and reverse parallelogram `[\\x\\]` for input and output steps, drawn left to right.',
+    source: `graph LR
+  A[/Read Input/] --> B{Valid?}
+  B -->|yes| C[\\Write Output\\]
+  B -->|no| D[/Ask Again/]`,
+  },
+  {
+    title: 'Parallelogram Shapes (RL)',
+    category: 'Flowchart',
+    description:
+      'Parallelogram `[/x/]` and reverse parallelogram `[\\x\\]` for input and output steps, drawn right to left.',
+    source: `graph RL
+  A[/Read Input/] --> B{Valid?}
+  B -->|yes| C[\\Write Output\\]
+  B -->|no| D[/Ask Again/]`,
+  },
+  {
+    title: 'Parallelogram Shapes (BT)',
+    category: 'Flowchart',
+    description:
+      'Parallelogram `[/x/]` and reverse parallelogram `[\\x\\]` for input and output steps, drawn bottom to top.',
+    source: `graph BT
+  A[/Read Input/] --> B{Valid?}
+  B -->|yes| C[\\Write Output\\]
+  B -->|no| D[/Ask Again/]`,
+  },
 ]
