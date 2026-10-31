@@ -24,6 +24,7 @@ const TYPES = [
   'er',
   'flowchart',
   'pie',
+  'quadrant',
   'sequence',
   'state',
   'xy-chart',
