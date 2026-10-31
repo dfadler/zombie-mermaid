@@ -278,5 +278,10 @@
     "file": "scripts/generate-llms-full.ts",
     "reason": "thin CLI: runs on import and writes public/llms-full.txt; all logic is in scripts/lib/llms-full.ts (tested by __tests__/llms-full.test.ts)",
     "maxLines": 15
+  },
+  {
+    "file": "scripts/generate-server-json.ts",
+    "reason": "thin CLI: runs on import, prints/writes and calls process.exit; all logic is in scripts/lib/mcp-server-json.ts (tested by __tests__/mcp-server-json.test.ts)",
+    "maxLines": 20
   }
 ]

@@ -21,6 +21,7 @@
   "build:packages": "build only the internal `@zombie-mermaid/*` packages (part of `build`)",
   "build:site": "build every site page into `site/` with the Vite SSR prerender pipeline (`vite.site.config.ts`; what CI's \"Build site generator check\" job and the Pages deploy run)",
   "check:changesets": "lint `.changeset/*.md`: a `major` bump needs a summary starting with `**BREAKING:**` (errors fail the run); warns when a major summary lacks an upgrade-guide link or says \"Output change\", or a minor mentions `engines`/`peerDependencies` (logic in `scripts/lib/changeset-lint.ts`; part of `pnpm run verify`; see \"Changesets\" in [CONTRIBUTING.md](../CONTRIBUTING.md))",
+  "mcp:server-json": "print the MCP Registry `server.json` for the current `package.json` version (npm package, `mcpName`, `packageArguments` `mcp`), validated against the registry schema; `-- --out <file>` writes it (logic in `scripts/lib/mcp-server-json.ts`; see \"MCP Registry\" in [RELEASING.md](RELEASING.md))",
   "check:docs": "check docs for drift: broken links and anchors, script and path references, and the Node version claim against `.nvmrc` and `engines.node` (see `scripts/check-docs.ts`)",
   "size:report": "print where the bytes are: per-file raw/gzip/brotli, per-module breakdown from sourcemaps, ESM duplicates and `npm pack` composition for every package (run `pnpm run build` first)",
   "check:bundle-size": "check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)",
