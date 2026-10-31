@@ -333,12 +333,19 @@ describe('renderSvg – edges', () => {
     expect(svg).toContain('stroke-dasharray="4 4"')
   })
 
-  it('renders thick edges with doubled stroke width', () => {
+  it('renders thick edges at mermaid 3.5px width', () => {
     const edge = makeEdge({ style: 'thick' })
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
-    // Base connector stroke is 1px, thick is doubled to 2px
-    expect(svg).toContain('stroke-width="2"')
+    expect(svg).toContain('stroke-width="3.5"')
+  })
+
+  it('keeps arrowheads a fixed 8x8 regardless of stroke width (#2475)', () => {
+    const edge = makeEdge({ style: 'thick' })
+    const svg = renderSvg(makeGraph({ edges: [edge] }), lightColors)
+    expect(svg).toMatch(
+      /<marker id="[^"]*arrowhead" markerWidth="8" markerHeight="8"[^>]*markerUnits="userSpaceOnUse"/,
+    )
   })
 
   it('does not add dasharray to solid edges', () => {
