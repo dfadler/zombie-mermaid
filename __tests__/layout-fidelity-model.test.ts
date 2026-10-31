@@ -29,7 +29,7 @@ describe('parseHistory', () => {
     const lines = text.split('\n').filter(Boolean)
     // Sequence figures (#1686) reach the page through the scorecard's Markdown section.
     const sequence = lines.filter((l) =>
-      /"kind":"(sequence|pie|c4|xychart)"/.test(l),
+      /"kind":"(sequence|pie|c4|xychart|architecture)"/.test(l),
     ).length
     const { runs, labels } = parseHistory(text)
     expect(runs.length + labels.length + sequence).toBe(lines.length)

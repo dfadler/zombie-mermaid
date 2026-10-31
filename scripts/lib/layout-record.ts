@@ -3,6 +3,7 @@
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import type { PieEntry } from './pie-agreement.ts'
 import type { C4Entry } from './c4-agreement.ts'
+import type { ArchitectureEntry } from './architecture-agreement.ts'
 import type { SequenceEntry } from './sequence-agreement.ts'
 import type { XyEntry } from './xychart-agreement.ts'
 import {
@@ -22,6 +23,7 @@ export async function writeRecords(
   pieEntry?: PieEntry,
   c4Entry?: C4Entry,
   xyEntry?: XyEntry,
+  architectureEntry?: ArchitectureEntry,
 ): Promise<void> {
   let history = runs.map((r) => r.entry)
   let labels = labelEntry ? [labelEntry] : []
@@ -29,6 +31,7 @@ export async function writeRecords(
   let pies = pieEntry ? [pieEntry] : []
   let c4s = c4Entry ? [c4Entry] : []
   let xycharts = xyEntry ? [xyEntry] : []
+  let architectures = architectureEntry ? [architectureEntry] : []
   if (args.history) {
     await appendFile(
       args.history,
@@ -39,6 +42,7 @@ export async function writeRecords(
         ...(pieEntry ? [pieEntry] : []),
         ...(c4Entry ? [c4Entry] : []),
         ...(xyEntry ? [xyEntry] : []),
+        ...(architectureEntry ? [architectureEntry] : []),
       ]),
     )
     const all = (await readFile(args.history, 'utf8'))
@@ -52,7 +56,8 @@ export async function writeRecords(
             | SequenceEntry
             | PieEntry
             | C4Entry
-            | XyEntry,
+            | XyEntry
+            | ArchitectureEntry,
       )
     history = all.filter((e): e is HistoryEntry => !('kind' in e))
     labels = all.filter(
@@ -65,6 +70,9 @@ export async function writeRecords(
     c4s = all.filter((e): e is C4Entry => 'kind' in e && e.kind === 'c4')
     xycharts = all.filter(
       (e): e is XyEntry => 'kind' in e && e.kind === 'xychart',
+    )
+    architectures = all.filter(
+      (e): e is ArchitectureEntry => 'kind' in e && e.kind === 'architecture',
     )
     console.log(`Appended to ${args.history}`)
   }
@@ -80,6 +88,7 @@ export async function writeRecords(
         pies,
         c4s,
         xycharts,
+        architectures,
       ),
     )
     console.log(`Wrote ${args.scorecard}`)

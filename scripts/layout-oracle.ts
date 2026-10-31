@@ -22,8 +22,10 @@
  * font and padding differences between the renderers don't count against us.
  * Flowcharts by default; `--type=state|class|er` scores the others (official
  * node ids `state-<id>-<n>`, `classId-<id>-<n>`, `entity-<id>-<n>`; state
- * composites and class namespaces are clusters). Sequence, pie, C4 and xychart are scored separately (scripts/sequence-oracle.ts,
- * scripts/pie-oracle.ts, scripts/c4-oracle.ts, scripts/xychart-oracle.ts, recorded in the scorecard); architecture is not scored (EXCLUDED_TYPES in scripts/lib/layout-agreement.ts).
+ * composites and class namespaces are clusters). Sequence, pie, C4, xychart and
+ * architecture are scored separately (scripts/sequence-oracle.ts,
+ * scripts/pie-oracle.ts, scripts/c4-oracle.ts, scripts/xychart-oracle.ts,
+ * scripts/architecture-oracle.ts, recorded in the scorecard).
  */
 
 import { writeFile } from 'node:fs/promises'
@@ -59,6 +61,8 @@ import {
 } from './lib/layout-agreement.ts'
 import { labelEntryFor } from './lib/label-position.ts'
 import { writeRecords } from './lib/layout-record.ts'
+import { scoreArchitecture } from './lib/architecture-measure.ts'
+import type { ArchitectureEntry } from './lib/architecture-agreement.ts'
 import { scoreSequence } from './lib/sequence-measure.ts'
 import { scoreQuadrant } from './lib/quadrant-measure.ts'
 import { scoreXyChart } from './lib/xychart-measure.ts'
@@ -203,6 +207,7 @@ async function main(): Promise<number> {
   let pieEntry: PieEntry | undefined
   let c4Entry: C4Entry | undefined
   let xyEntry: XyEntry | undefined
+  let architectureEntry: ArchitectureEntry | undefined
   const failing: string[] = []
   const commit = recording
     ? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -246,6 +251,9 @@ async function main(): Promise<number> {
       const xy = await scoreXyChart(session, commit)
       xyEntry = xy.entry
       if (args.thresholds) failing.push(...xy.breaches)
+      const arch = await scoreArchitecture(session, commit)
+      architectureEntry = arch.entry
+      if (args.thresholds) failing.push(...arch.breaches)
     }
   } finally {
     await session.close()
@@ -264,6 +272,7 @@ async function main(): Promise<number> {
       pieEntry,
       c4Entry,
       xyEntry,
+      architectureEntry,
     )
   failing.push(...(await finishScorecard(args, runs)))
   if (failing.length > 0) {
