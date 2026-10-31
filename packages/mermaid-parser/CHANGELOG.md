@@ -1,5 +1,13 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.14.1
+
+### Patch Changes
+
+- [#2495](https://github.com/dfadler/zombie-mermaid/pull/2495) [`bad44f4`](https://github.com/dfadler/zombie-mermaid/commit/bad44f4e106be390a78a91080c540f289b960d15) Thanks [@dfadler](https://github.com/dfadler)! - Sequence SVG: blocks, notes, dividers and nested blocks are fitted to their labels. Gaps between actors widen for notes, block header tabs and divider labels; blocks grow to hold their notes and nested blocks; nested headers stack; multi-line notes are as tall as their text ([#2452](https://github.com/dfadler/zombie-mermaid/issues/2452)).
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.14.1
+
 ## 5.14.0
 
 ### Minor Changes

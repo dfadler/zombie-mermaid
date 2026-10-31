@@ -1,5 +1,14 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.14.1
+
+### Patch Changes
+
+- [#2490](https://github.com/dfadler/zombie-mermaid/pull/2490) [`13617eb`](https://github.com/dfadler/zombie-mermaid/commit/13617eb067df154e257a7fba42039523b47fb7b8) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII double circles `(((x)))` now draw two concentric rings like mermaid's (`( ( x ) )`) instead of a box with `◎` / `@` corners, and are two rows taller and four columns wider ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+- Updated dependencies [[`bad44f4`](https://github.com/dfadler/zombie-mermaid/commit/bad44f4e106be390a78a91080c540f289b960d15)]:
+  - @zombie-mermaid/mermaid-parser@5.14.1
+  - @zombie-mermaid/core@5.14.1
+
 ## 5.14.0
 
 ### Patch Changes

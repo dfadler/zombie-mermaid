@@ -1,5 +1,25 @@
 # Changelog
 
+## 5.14.1
+
+### Patch Changes
+
+- [#2490](https://github.com/dfadler/zombie-mermaid/pull/2490) [`13617eb`](https://github.com/dfadler/zombie-mermaid/commit/13617eb067df154e257a7fba42039523b47fb7b8) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII double circles `(((x)))` now draw two concentric rings like mermaid's (`( ( x ) )`) instead of a box with `◎` / `@` corners, and are two rows taller and four columns wider ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+- [#2495](https://github.com/dfadler/zombie-mermaid/pull/2495) [`bad44f4`](https://github.com/dfadler/zombie-mermaid/commit/bad44f4e106be390a78a91080c540f289b960d15) Thanks [@dfadler](https://github.com/dfadler)! - Sequence SVG: blocks, notes, dividers and nested blocks are fitted to their labels. Gaps between actors widen for notes, block header tabs and divider labels; blocks grow to hold their notes and nested blocks; nested headers stack; multi-line notes are as tall as their text ([#2452](https://github.com/dfadler/zombie-mermaid/issues/2452)).
+
+- [#2494](https://github.com/dfadler/zombie-mermaid/pull/2494) [`2250b4a`](https://github.com/dfadler/zombie-mermaid/commit/2250b4afc897456bb21025483971e36ed7cd5c1d) Thanks [@dfadler](https://github.com/dfadler)! - Sequence SVG: a self-message is drawn as mermaid's cubic loop (control points 60px out, 20px high) instead of a 30px polyline, and its lifeline is no longer cut around the label ([#2477](https://github.com/dfadler/zombie-mermaid/issues/2477)).
+
+- [#2496](https://github.com/dfadler/zombie-mermaid/pull/2496) [`ad4b0a5`](https://github.com/dfadler/zombie-mermaid/commit/ad4b0a5154c75786b52be65e8b78a7a15ef6ab14) Thanks [@dfadler](https://github.com/dfadler)! - SVG flowchart arrowheads are now a fixed 10.5x12.8 (`markerUnits="userSpaceOnUse"`) like mermaid 12.2.0, instead of growing with the edge's stroke width, and thick (`==>`) edges are 3.5px like mermaid.
+
+- [#2496](https://github.com/dfadler/zombie-mermaid/pull/2496) [`3c0feb4`](https://github.com/dfadler/zombie-mermaid/commit/3c0feb42d293746fecafcdba0b2701480c65c1ca) Thanks [@dfadler](https://github.com/dfadler)! - SVG flowchart dotted edges are drawn as true dots (`2 2`) and arrowheads take the `linkStyle default` colour instead of each edge's own stroke, matching mermaid 12.2.0.
+- Updated dependencies [[`13617eb`](https://github.com/dfadler/zombie-mermaid/commit/13617eb067df154e257a7fba42039523b47fb7b8), [`bad44f4`](https://github.com/dfadler/zombie-mermaid/commit/bad44f4e106be390a78a91080c540f289b960d15)]:
+  - @zombie-mermaid/ascii-renderer@5.14.1
+  - @zombie-mermaid/mermaid-parser@5.14.1
+  - @zombie-mermaid/svg-renderer@5.14.1
+  - @zombie-mermaid/mcp@5.14.1
+  - @zombie-mermaid/core@5.14.1
+
 ## 5.14.0
 
 ### Minor Changes
