@@ -14,14 +14,10 @@ import type {
   ShapeDimensions,
   ShapeRenderOptions,
 } from './types.ts'
-import {
-  getBoxDimensions,
-  renderBox,
-  getBoxAttachmentPoint,
-} from './rectangle.ts'
-import { getCorners } from './corners.ts'
+import { getBoxAttachmentPoint } from './rectangle.ts'
 import {
   asymmetricDimensions,
+  doubleCircleDimensions,
   parallelogramDimensions,
   renderSilhouette,
   trapezoidDimensions,
@@ -124,26 +120,22 @@ export const subroutineRenderer: ShapeRenderer = {
 }
 
 // ============================================================================
-// Double circle — uses corner decorators
+// Double circle — two concentric ellipses (#2164)
 // ============================================================================
 
 /**
- * Double circle shape renderer.
- * Uses double circle markers (◎) at corners.
+ * Double circle shape renderer: an outer and an inner circle outline.
  *
- * Renders as:
- *   ◎─────────◎
- *   │  Label  │
- *   ◎─────────◎
+ *    ╭───────╮
+ *    ╱╭─────╮╲
+ *   ( ( dbl ) )
+ *    ╲╰─────╯╱
+ *    ╰───────╯
  */
 export const doublecircleRenderer: ShapeRenderer = {
-  getDimensions: getBoxDimensions,
-
-  render(label, dimensions, options) {
-    const corners = getCorners('doublecircle', options.useAscii)
-    return renderBox(label, dimensions, corners, options.useAscii)
-  },
-
+  getDimensions: doubleCircleDimensions,
+  render: (label, dimensions, options) =>
+    renderSilhouette('doublecircle', label, dimensions, options.useAscii),
   getAttachmentPoint: getBoxAttachmentPoint,
 }
 

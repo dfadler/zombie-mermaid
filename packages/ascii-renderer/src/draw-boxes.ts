@@ -24,6 +24,8 @@ import {
   asymmetricInsets,
   drawAsymmetric,
   drawCircle,
+  drawDoubleCircle,
+  doubleCircleInsets,
   drawHexagon,
   drawStadium,
   drawSubroutineBars,
@@ -210,6 +212,10 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     const insets = circleInsets(to.x, to.y)
     drawCircle(box, to.x, to.y, insets, useAscii)
     node.labelInsets = insets
+  } else if (node.shape === 'doublecircle') {
+    // Two concentric ellipses (#2164).
+    drawDoubleCircle(box, to.x, to.y, useAscii)
+    node.labelInsets = doubleCircleInsets(to.x, to.y)
   } else if (
     (node.shape === 'trapezoid' || node.shape === 'trapezoid-alt') &&
     to.y >= 2 &&
