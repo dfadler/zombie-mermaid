@@ -330,7 +330,7 @@ describe('renderSvg – edges', () => {
     const edge = makeEdge({ style: 'dotted' })
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
-    expect(svg).toContain('stroke-dasharray="4 4"')
+    expect(svg).toContain('stroke-dasharray="2 2"')
   })
 
   it('renders thick edges at mermaid 3.5px width', () => {

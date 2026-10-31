@@ -138,9 +138,7 @@ export function renderSvg(
   // Per-color arrow markers for edges with custom stroke via linkStyle
   const customStrokeColors = new Set<string>()
   for (const edge of graph.edges) {
-    if (edge.inlineStyle?.stroke) {
-      customStrokeColors.add(edge.inlineStyle.stroke)
-    }
+    if (edge.headColor) customStrokeColors.add(edge.headColor)
   }
   for (const color of customStrokeColors) {
     parts.push(arrowMarkerDefsForColor(color))
@@ -385,7 +383,7 @@ function renderEdge(
    */
   const invisible = edge.style === 'invisible'
 
-  const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="4 4"' : ''
+  const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="2 2"' : ''
   const baseStrokeWidth =
     edge.style === 'thick' ? THICK_EDGE_WIDTH : STROKE_WIDTHS.connector
   const strokeColor = invisible
@@ -397,9 +395,7 @@ function renderEdge(
 
   // Build marker attributes based on arrow direction flags
   // Use color-specific markers when edge has a custom stroke from linkStyle
-  const suffix = edge.inlineStyle?.stroke
-    ? f`-${markerSuffix(edge.inlineStyle.stroke)}`
-    : ''
+  const suffix = edge.headColor ? f`-${markerSuffix(edge.headColor)}` : ''
   let markers = ''
   if (!invisible) {
     if (edge.hasArrowEnd) markers += f` marker-end="url(#arrowhead${suffix})"`
