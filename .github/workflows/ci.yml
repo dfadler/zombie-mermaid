@@ -689,18 +689,16 @@ jobs:
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # Report-only (#1870): regenerates etc/api/*.api.md from the build above
+      # Blocking (#2480): regenerates etc/api/*.api.md from the build above
       # (folded in here from a separate job so the build runs once, #1839) and
-      # shows any drift in the job summary. continue-on-error keeps it from
-      # ever failing the PR; drop it to gate on public-API changes.
-      - name: Regenerate API reports (report-only)
-        continue-on-error: true
+      # fails if the result differs from the committed reports, so a change that
+      # leaks or drops public exports cannot merge unnoticed (#1870).
+      - name: Regenerate API reports
         run: pnpm run api:report
 
-      - name: Diff API reports against committed (report-only)
-        continue-on-error: true
+      - name: Check API reports match committed
         run: |
-          if git diff --exit-code --quiet -- etc/api; then
+          if [ -z "$(git status --porcelain -- etc/api)" ]; then
             echo "Public API surface unchanged." >> "$GITHUB_STEP_SUMMARY"
           else
             {
@@ -710,7 +708,7 @@ jobs:
               git diff -- etc/api
               echo "\`\`\`"
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "::warning::Public API surface changed (report-only)"
+            echo "::error::Public API surface changed: run 'pnpm run build && pnpm run api:report' and commit the etc/api/ diff"
             exit 1
           fi
 
