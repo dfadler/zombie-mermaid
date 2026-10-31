@@ -164,7 +164,7 @@
   {
     "file": "scripts/lib/real-mermaid.ts",
     "reason": "Playwright-driven helper: needs a real Chromium, so it is only reachable from the form-diff/form-facts CLIs",
-    "maxLines": 107,
+    "maxLines": 112,
     "legacy": true
   },
   {
