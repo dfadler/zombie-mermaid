@@ -203,6 +203,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     label: string
     color?: string
     startIndex: number
+    noteStartIndex: number
     dividers: Block['dividers']
     line: number
   }> = []
@@ -385,6 +386,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
         label,
         ...(color !== undefined ? { color } : {}),
         startIndex: diagram.messages.length,
+        noteStartIndex: diagram.notes.length,
         dividers: [],
         line: stmt.line,
       })
@@ -426,6 +428,8 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
         startIndex: completed.startIndex,
         endIndex: Math.max(diagram.messages.length - 1, completed.startIndex),
         dividers: completed.dividers,
+        noteStartIndex: completed.noteStartIndex,
+        noteEndIndex: diagram.notes.length,
       })
       continue
     }
