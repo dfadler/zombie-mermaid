@@ -310,6 +310,64 @@ export function circleDimensions(
   )
 }
 
+/** Columns and rows between a double circle's outer ring and its inner one. */
+const RING_X = 2
+const RING_Y = 1
+
+/**
+ * Double circle: mermaid's two concentric circles. The outer ring is the
+ * circle outline over the whole node; the inner one is a circle outline of the
+ * node minus {@link RING_X} columns and {@link RING_Y} rows on every side, so a
+ * blank cell lies between the rings on the middle row (#2164).
+ */
+export function drawDoubleCircle(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  useAscii: boolean,
+): void {
+  drawCircle(canvas, w, h, circleInsets(w, h), useAscii)
+  const iw = w - 2 * RING_X
+  const ih = h - 2 * RING_Y
+  const inner = mkCanvas(iw, ih)
+  drawCircle(inner, iw, ih, circleInsets(iw, ih), useAscii)
+  for (let x = 0; x <= iw; x++)
+    for (let y = 0; y <= ih; y++)
+      if (inner[x]![y] !== ' ') canvas[x + RING_X]![y + RING_Y] = inner[x]![y]!
+}
+
+/** Indent of the inner ring on every row (the label's boundary); 0 on the outer rows. */
+export function doubleCircleInsets(w: number, h: number): number[] {
+  const inner = circleInsets(w - 2 * RING_X, h - 2 * RING_Y)
+  return Array.from({ length: h + 1 }, (_, y) =>
+    y < RING_Y || y > h - RING_Y ? 0 : RING_X + inner[y - RING_Y]!,
+  )
+}
+
+/** Double circle grid cell: the circle's, two rows taller and four columns wider. */
+export function doubleCircleDimensions(
+  label: string,
+  options: ShapeRenderOptions,
+): ShapeDimensions {
+  const widths = splitLines(label).map((l) => displayWidth(l))
+  const base = getBoxDimensions(label, options)
+  const height = base.height + 2 * RING_Y
+  const minWidth =
+    2 * Math.max(...circleInsets(1e3, height - 2 * RING_Y - 1)) + 3 + 2 * RING_X
+  return growToClearLabel(
+    {
+      ...base,
+      height,
+      // The layout allocates rows from gridRows, not height.
+      gridRows: [1, base.gridRows[1]! + 2 * RING_Y, 1],
+      width: Math.max(base.width + 2 * RING_X, minWidth),
+    },
+    widths,
+    doubleCircleInsets,
+    false,
+  )
+}
+
 /**
  * Trapezoid indent for rows 0..h: one column per row (a cell is about half as
  * wide as tall, so this is mermaid's slope), narrow row at the top for
@@ -473,6 +531,7 @@ export const isSilhouetteShape = (shape: string): boolean =>
   shape === 'hexagon' ||
   shape === 'diamond' ||
   shape === 'circle' ||
+  shape === 'doublecircle' ||
   shape === 'asymmetric'
 
 /** Stadium and hexagon use the box's grid cell; the hexagon may widen it. */
@@ -508,6 +567,7 @@ export function renderSilhouette(
     | 'hexagon'
     | 'diamond'
     | 'circle'
+    | 'doublecircle'
     | 'asymmetric'
     | 'trapezoid'
     | 'trapezoid-alt'
@@ -527,6 +587,7 @@ export function renderSilhouette(
     drawHexagon(canvas, w, h, diamondInsets(w, h), useAscii)
   else if (kind === 'circle')
     drawCircle(canvas, w, h, circleInsets(w, h), useAscii)
+  else if (kind === 'doublecircle') drawDoubleCircle(canvas, w, h, useAscii)
   else if (kind === 'asymmetric') drawAsymmetric(canvas, w, h, useAscii)
   else if (kind === 'parallelogram' || kind === 'parallelogram-alt')
     drawParallelogram(

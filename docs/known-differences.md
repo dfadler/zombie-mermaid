@@ -280,7 +280,7 @@ only); GitHub's render was not reachable. See the comment on #2101 for the numbe
 ## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
 
 The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
-family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle**, **subroutine**, **asymmetric**, **trapezoid** and **parallelogram**. Mermaid 12.2.0 (the pin and npm latest
+family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle**, **subroutine**, **asymmetric**, **trapezoid**, **parallelogram** and **double circle**. Mermaid 12.2.0 (the pin and npm latest
 agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
 left and right middle.
 
@@ -338,8 +338,17 @@ left and right middle.
   Edges attach as for the trapezoid: at the outer face, with a post-pass that extends the
   stroke (and moves an arrowhead) across the blank cells to the slanted wall. Under RL the
   outline is mirrored back within its own rect so the lean matches LR (#1701).
-- **Still approximated** (a later PR, per the owner's one-family-per-PR call): double circle
-  (needs a second, concentric ellipse: a width and height decision).
+- **Double circle** (`(((x)))`). Mermaid 12.2.0 (also the npm latest) draws two
+  concentric circles with a small gap, in every direction. Ours is the circle outline
+  twice: the outer ring over the whole node, the inner one two columns and one row in
+  (`╭╮ ╱╲ ( )` and `.'` `/\` in ASCII), so `( ( x ) )` on the middle row. The node is two
+  rows taller and four columns wider than a circle, so a one-line label is 7 rows with a
+  5-row inner circle (5 rows with a 3-row inner pill at `boxBorderPadding: 0`), the rows
+  of every node on the same layout row grow with it, and the label rows keep the inner ring a cell clear of the text. Edges
+  attach at the outer ring as for the circle. The ring gap is one cell, not mermaid's
+  proportional gap.
+- Every shape in the issue is now drawn as a silhouette; the remaining differences are the
+  ones listed per shape above (diagonals and curves quantised to cells).
 
 ## ASCII: LR skip edge beside a reciprocal pair (partial match)
 

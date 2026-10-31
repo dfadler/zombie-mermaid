@@ -39,7 +39,12 @@ import { withPortShifts } from './port-offsets.ts'
 import { isSilhouetteShape } from './shapes/silhouettes.ts'
 
 /** Vertically symmetric shapes whose diagonals must swap in BT (#2388). */
-const DIAGONAL_SHAPES = new Set(['hexagon', 'diamond', 'circle'])
+const DIAGONAL_SHAPES = new Set([
+  'hexagon',
+  'diamond',
+  'circle',
+  'doublecircle',
+])
 const PARALLELOGRAMS = new Set(['parallelogram', 'parallelogram-alt'])
 /** Shapes whose walls stand a column or more in from the node's outer face. */
 const SLANTED_SHAPES = new Set([

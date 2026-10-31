@@ -98,7 +98,11 @@ test.describe('ASCII mockup geometry vs xterm oracle', () => {
             `r${e.row} c${e.col} '${e.ch}': wide glyph spans ${m.w.toFixed(2)} cells`,
           )
         if (
-          Math.abs(m.dx) > 0.2 * measured.cellW ||
+          // The browser's cell width differs from the CSS `ch` by a hair, so
+          // the offset grows with the column (Linux fonts: ~0.0065 px per
+          // column, which reached the bare 0.2-cell limit at column ~215 on
+          // the 217-column "Twelve Core Flowchart Shapes" row).
+          Math.abs(m.dx) > 0.2 * measured.cellW + 0.01 * e.col ||
           Math.abs(m.dy) > 0.15 * measured.lineH
         )
           problems.push(
