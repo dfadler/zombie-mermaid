@@ -1,5 +1,20 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.14.0
+
+### Minor Changes
+
+- [#2463](https://github.com/dfadler/zombie-mermaid/pull/2463) [`91bc6cf`](https://github.com/dfadler/zombie-mermaid/commit/91bc6cf917e65fd9b38e89c0ad3a01ceccbd4d51) Thanks [@dfadler](https://github.com/dfadler)! - `quadrantChart` now reads its `%%{init}%%` config and theme variables ([#2438](https://github.com/dfadler/zombie-mermaid/issues/2438)). The `quadrantChart` block (`chartWidth`, `chartHeight`, `titleFontSize`, the paddings and label font sizes, `pointRadius`, `xAxisPosition`, `yAxisPosition`, the border stroke widths) sizes and lays out the SVG as in Mermaid 12.2.0; a bad or negative number or an unknown position is ignored. The `quadrant*Fill`, `quadrant*TextFill`, `quadrantPoint*`, axis-text, title and border stroke variables colour the SVG under any theme when `honorThemeVariables` is set. ASCII output is unchanged. `InitConfig` gains `quadrant`, `ThemeVariables` gains `quadrant`, and `QuadrantChart` gains `config` and `themeColors`. The demo pages for the type are not part of this change.
+
+### Patch Changes
+
+- [#2483](https://github.com/dfadler/zombie-mermaid/pull/2483) [`96abf55`](https://github.com/dfadler/zombie-mermaid/commit/96abf5540701843be4397ab34cc3049a4fe82459) Thanks [@dfadler](https://github.com/dfadler)! - Restore the `QUADRANT` fields that [#2463](https://github.com/dfadler/zombie-mermaid/pull/2463) removed: `width`, `height`, `axisLabelPadding`, `axisLabelFontSize`, `internalBorderWidth` and `externalBorderWidth`, with their 5.13.0 values. They are marked `@deprecated` in favour of `chartWidth`/`chartHeight`, `x/yAxisLabelPadding`, `x/yAxisLabelFontSize` and `quadrant{Internal,External}BorderStrokeWidth`, and will be removed in the next major.
+
+- [#2462](https://github.com/dfadler/zombie-mermaid/pull/2462) [`8a8463d`](https://github.com/dfadler/zombie-mermaid/commit/8a8463da1b5de205525258c203b4dc5aadae568a) Thanks [@dfadler](https://github.com/dfadler)! - Sequence diagrams: a self-message label is now centred on its lifeline, above the loop, as mermaid draws it, instead of sitting beside the loop (SVG and ASCII).
+- Updated dependencies [[`91bc6cf`](https://github.com/dfadler/zombie-mermaid/commit/91bc6cf917e65fd9b38e89c0ad3a01ceccbd4d51)]:
+  - @zombie-mermaid/core@5.14.0
+  - @zombie-mermaid/mermaid-parser@5.14.0
+
 ## 5.13.0
 
 ### Minor Changes

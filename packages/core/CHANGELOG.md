@@ -1,5 +1,11 @@
 # @zombie-mermaid/core
 
+## 5.14.0
+
+### Minor Changes
+
+- [#2463](https://github.com/dfadler/zombie-mermaid/pull/2463) [`91bc6cf`](https://github.com/dfadler/zombie-mermaid/commit/91bc6cf917e65fd9b38e89c0ad3a01ceccbd4d51) Thanks [@dfadler](https://github.com/dfadler)! - `quadrantChart` now reads its `%%{init}%%` config and theme variables ([#2438](https://github.com/dfadler/zombie-mermaid/issues/2438)). The `quadrantChart` block (`chartWidth`, `chartHeight`, `titleFontSize`, the paddings and label font sizes, `pointRadius`, `xAxisPosition`, `yAxisPosition`, the border stroke widths) sizes and lays out the SVG as in Mermaid 12.2.0; a bad or negative number or an unknown position is ignored. The `quadrant*Fill`, `quadrant*TextFill`, `quadrantPoint*`, axis-text, title and border stroke variables colour the SVG under any theme when `honorThemeVariables` is set. ASCII output is unchanged. `InitConfig` gains `quadrant`, `ThemeVariables` gains `quadrant`, and `QuadrantChart` gains `config` and `themeColors`. The demo pages for the type are not part of this change.
+
 ## 5.13.0
 
 ### Minor Changes
