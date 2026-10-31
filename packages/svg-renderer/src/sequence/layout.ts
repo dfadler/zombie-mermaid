@@ -10,7 +10,7 @@ import type {
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
 import type { RenderOptions, SequenceRenderOptions } from '@zombie-mermaid/core'
-import { measureMultilineText } from '@zombie-mermaid/core'
+import { LINE_HEIGHT_RATIO, measureMultilineText } from '@zombie-mermaid/core'
 import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 
 // ============================================================================
@@ -146,44 +146,127 @@ function resolveSeqOptions(overrides?: RenderOptions['sequence']): SeqConfig {
 /** Space kept between a message label and the next lifeline. */
 const LABEL_CLEARANCE = 16
 
+/** Height of a self-message loop below its row, in px (the renderer's loop). */
+const SELF_LOOP_DROP = 20
+
+/** Width of the widest line of a (possibly multi-line) label. */
+function labelWidth(
+  text: string,
+  fontSize: number,
+  weight: number = FONT_WEIGHTS.edgeLabel,
+): number {
+  return measureMultilineText(text, fontSize, weight).width
+}
+
 /**
- * Widen `gaps` (`gaps[i]` = distance from actor i - 1 to actor i) in place so a
- * message label never crosses a lifeline: a label between two actors is centred
- * on the span, a self-message label is centred on its lifeline. A shortfall
- * on a span of several gaps is spread evenly over them.
+ * Width of a block's header tab, as the renderer draws it. A `rect <color>`
+ * highlight has no tab.
  */
-function fitMessageLabels(
+function blockTabWidth(
+  block: SequenceDiagram['blocks'][number],
+  fontSize: number,
+): number {
+  if (block.type === 'rect' && block.color !== undefined) return 0
+  const tab = `${block.type}${block.label ? ` [${block.label}]` : ''}`
+  return (
+    labelWidth(tab.split('\n')[0]!, fontSize, FONT_WEIGHTS.groupHeader) + 16
+  )
+}
+
+/**
+ * For each block, the indices of the blocks nested inside it. The parser emits
+ * a block when it closes, so nested blocks always come before their parent.
+ */
+function nestedBlocks(blocks: SequenceDiagram['blocks']): number[][] {
+  return blocks.map((outer, bi) =>
+    blocks
+      .slice(0, bi)
+      .flatMap((b, j) =>
+        b.startIndex >= outer.startIndex && b.endIndex <= outer.endIndex
+          ? [j]
+          : [],
+      ),
+  )
+}
+
+/**
+ * Widen `gaps` (`gaps[i]` = distance from actor i - 1 to actor i) in place so
+ * no label crosses a lifeline: a message label between two actors is centred
+ * on the span, a self-message label on its lifeline, a note sits beside or
+ * over its actor, and a block's header tab and divider labels start at its
+ * left edge. A shortfall on a span of several gaps is spread evenly over them
+ * (ported from lukilabs/beautiful-mermaid#167).
+ */
+function fitLabelsBetweenLifelines(
   diagram: SequenceDiagram,
+  actorWidths: number[],
   gaps: number[],
+  seq: ReturnType<typeof resolveSeqOptions>,
   fontSize: number,
 ): void {
   const index = new Map(diagram.actors.map((a, i) => [a.id, i]))
+  // Spread any shortfall evenly over the gaps between actors `lo` and `hi`.
+  const widen = (lo: number, hi: number, need: number) => {
+    if (lo < 0 || hi >= gaps.length) return
+    let have = 0
+    for (let g = lo + 1; g <= hi; g++) have += gaps[g]!
+    if (have >= need) return
+    const add = (need - have) / (hi - lo)
+    for (let g = lo + 1; g <= hi; g++) gaps[g]! += add
+  }
+
   for (const m of diagram.messages) {
     if (!m.label) continue
     const from = index.get(m.from)!
     const to = index.get(m.to)!
-    const w = measureMultilineText(
-      m.label,
-      fontSize,
-      FONT_WEIGHTS.edgeLabel,
-    ).width
-    // A self-message label spills w / 2 to each side of its lifeline, so it
-    // widens the gap on either side (an end actor has no neighbour to push).
-    const spans =
-      from === to
-        ? [
-            [from - 1, from],
-            [from, from + 1],
-          ]
-        : [[Math.min(from, to), Math.max(from, to)]]
-    const need = from === to ? w / 2 + LABEL_CLEARANCE : w + 2 * LABEL_CLEARANCE
-    for (const [lo, hi] of spans as [number, number][]) {
-      if (lo < 0 || hi >= gaps.length) continue
-      let have = 0
-      for (let g = lo + 1; g <= hi; g++) have += gaps[g]!
-      if (have >= need) continue
-      const add = (need - have) / (hi - lo)
-      for (let g = lo + 1; g <= hi; g++) gaps[g]! += add
+    const w = labelWidth(m.label, fontSize)
+    if (from === to) {
+      // A self-message label spills w / 2 to each side of its lifeline, so it
+      // widens the gap on either side (an end actor has no neighbour to push).
+      widen(from - 1, from, w / 2 + LABEL_CLEARANCE)
+      widen(from, from + 1, w / 2 + LABEL_CLEARANCE)
+    } else {
+      widen(Math.min(from, to), Math.max(from, to), w + 2 * LABEL_CLEARANCE)
+    }
+  }
+
+  for (const n of diagram.notes) {
+    const i = index.get(n.actorIds[0] ?? '')!
+    const w = Math.max(
+      seq.noteWidth,
+      labelWidth(n.text, fontSize) + seq.notePadX * 2,
+    )
+    const reach = actorWidths[i]! / 2 + seq.noteGap + w + LABEL_CLEARANCE
+    if (n.position === 'right') widen(i, i + 1, reach)
+    else if (n.position === 'left') widen(i - 1, i, reach)
+    else if (n.actorIds.length === 1) {
+      widen(i, i + 1, w / 2 + LABEL_CLEARANCE)
+      widen(i - 1, i, w / 2 + LABEL_CLEARANCE)
+    }
+  }
+
+  for (const block of diagram.blocks) {
+    // The tab starts at the block's left edge and divider labels 8px inside
+    // it, both left of the block's first lifeline.
+    let first = diagram.actors.length
+    for (let mi = block.startIndex; mi <= block.endIndex; mi++) {
+      const m = diagram.messages[mi]
+      if (m) first = Math.min(first, index.get(m.from)!, index.get(m.to)!)
+    }
+    if (first === diagram.actors.length) continue
+    const edge = -actorWidths[first]! / 2 - seq.blockPadX
+    widen(
+      first,
+      first + 1,
+      edge + blockTabWidth(block, fontSize) + LABEL_CLEARANCE,
+    )
+    for (const d of block.dividers) {
+      if (!d.label) continue
+      widen(
+        first,
+        first + 1,
+        edge + 8 + labelWidth(`[${d.label}]`, fontSize) + LABEL_CLEARANCE,
+      )
     }
   }
 }
@@ -228,7 +311,13 @@ export function layoutSequenceDiagram(
   const gaps = actorWidths.map((w, i) =>
     i === 0 ? 0 : Math.max(seq.actorGap, (actorWidths[i - 1]! + w) / 2 + 40),
   )
-  fitMessageLabels(diagram, gaps, fontSizes.edgeLabel)
+  fitLabelsBetweenLifelines(
+    diagram,
+    actorWidths,
+    gaps,
+    seq,
+    fontSizes.edgeLabel,
+  )
   const actorCenterX: number[] = []
   let currentX = seq.padding + actorWidths[0]! / 2
   for (let i = 0; i < diagram.actors.length; i++) {
@@ -320,18 +409,33 @@ export function layoutSequenceDiagram(
   // space for block headers (e.g. "alt [Valid credentials]") or divider
   // labels (e.g. "[else Invalid]"). Without this, messages inside blocks
   // overlap with the header/divider text that sits above them.
-  const extraSpaceBefore = new Map<number, number>()
+  const headerSpaceBefore = new Map<number, number>()
+  const dividerSpaceBefore = new Map<number, number>()
   for (const block of diagram.blocks) {
-    // First message in the block needs room for the block header label
-    const prev = extraSpaceBefore.get(block.startIndex) ?? 0
-    extraSpaceBefore.set(block.startIndex, Math.max(prev, seq.blockHeaderExtra))
+    // First message in the block needs room for the block header label;
+    // nested blocks opening at the same message stack their headers above it
+    headerSpaceBefore.set(
+      block.startIndex,
+      (headerSpaceBefore.get(block.startIndex) ?? 0) + seq.blockHeaderExtra,
+    )
 
     // Each divider (else/and) needs room for the divider label
     for (const div of block.dividers) {
-      const prevDiv = extraSpaceBefore.get(div.index) ?? 0
-      extraSpaceBefore.set(div.index, Math.max(prevDiv, seq.dividerExtra))
+      dividerSpaceBefore.set(div.index, seq.dividerExtra)
     }
   }
+
+  // Blocks closing after each message, and their bottom edges once placed
+  const nested = nestedBlocks(diagram.blocks)
+  const blocksEndingAt = new Map<number, number[]>()
+  diagram.blocks.forEach((block, bi) => {
+    const list = blocksEndingAt.get(block.endIndex) ?? []
+    list.push(bi)
+    blocksEndingAt.set(block.endIndex, list)
+  })
+  const blockBottoms: number[] = []
+  const blockNotes = (block: (typeof diagram.blocks)[number]) =>
+    diagram.notes.slice(block.noteStartIndex, block.noteEndIndex)
 
   // Pre-group notes by the message index they follow, so we can position
   // them inline during the message stacking loop (avoids overlap bugs).
@@ -343,63 +447,67 @@ export function layoutSequenceDiagram(
   }
   const positionedNotes: PositionedNote[] = []
 
+  // Place one note at `noteY` (its top edge) and return the y below it, where
+  // the next stacked note starts.
+  const notePositions = new Map<
+    (typeof diagram.notes)[number],
+    PositionedNote
+  >()
+  const placeNote = (note: (typeof diagram.notes)[number], noteY: number) => {
+    const noteW = Math.max(
+      seq.noteWidth,
+      labelWidth(note.text, fontSizes.edgeLabel) + seq.notePadX * 2,
+    )
+    const noteLines = note.text.split('\n').length
+    const noteH =
+      fontSizes.edgeLabel * (1 + (noteLines - 1) * LINE_HEIGHT_RATIO) +
+      seq.notePadY * 2
+
+    // X positioning based on actor position and note type
+    const firstActorIdx = actorIndex.get(note.actorIds[0] ?? '') ?? 0
+    let noteX: number
+    if (note.position === 'left') {
+      noteX =
+        actorCenterX[firstActorIdx]! -
+        actorWidths[firstActorIdx]! / 2 -
+        noteW -
+        seq.noteGap
+    } else if (note.position === 'right') {
+      noteX =
+        actorCenterX[firstActorIdx]! +
+        actorWidths[firstActorIdx]! / 2 +
+        seq.noteGap
+    } else if (note.actorIds.length > 1) {
+      // Over — center between first and last actor
+      const lastActorIdx =
+        actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
+        firstActorIdx
+      noteX =
+        (actorCenterX[firstActorIdx]! + actorCenterX[lastActorIdx]!) / 2 -
+        noteW / 2
+    } else {
+      noteX = actorCenterX[firstActorIdx]! - noteW / 2
+    }
+
+    const positioned: PositionedNote = {
+      text: note.text,
+      x: noteX,
+      y: noteY,
+      width: noteW,
+      height: noteH,
+      position: note.position,
+      actors: note.actorIds,
+    }
+    positionedNotes.push(positioned)
+    notePositions.set(note, positioned)
+    return noteY + noteH + seq.noteStackGap
+  }
+
   // Handle notes that appear before the first message (afterIndex === -1)
   const notesBeforeFirstMsg = notesByAfterIndex.get(-1)
   if (notesBeforeFirstMsg && notesBeforeFirstMsg.length > 0) {
     let noteY = messageY
-    for (const note of notesBeforeFirstMsg) {
-      const noteW = Math.max(
-        seq.noteWidth,
-        estimateTextWidth(
-          note.text,
-          fontSizes.edgeLabel,
-          FONT_WEIGHTS.edgeLabel,
-        ) +
-          seq.notePadX * 2,
-      )
-      const noteH = fontSizes.edgeLabel + seq.notePadY * 2
-
-      // X positioning based on actor position and note type
-      const firstActorIdx = actorIndex.get(note.actorIds[0] ?? '') ?? 0
-      let noteX: number
-      if (note.position === 'left') {
-        noteX =
-          actorCenterX[firstActorIdx]! -
-          actorWidths[firstActorIdx]! / 2 -
-          noteW -
-          seq.noteGap
-      } else if (note.position === 'right') {
-        noteX =
-          actorCenterX[firstActorIdx]! +
-          actorWidths[firstActorIdx]! / 2 +
-          seq.noteGap
-      } else {
-        // Over — center between first and last actor
-        if (note.actorIds.length > 1) {
-          const lastActorIdx =
-            actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
-            firstActorIdx
-          noteX =
-            (actorCenterX[firstActorIdx]! + actorCenterX[lastActorIdx]!) / 2 -
-            noteW / 2
-        } else {
-          noteX = actorCenterX[firstActorIdx]! - noteW / 2
-        }
-      }
-
-      positionedNotes.push({
-        text: note.text,
-        x: noteX,
-        y: noteY,
-        width: noteW,
-        height: noteH,
-        position: note.position,
-        actors: note.actorIds,
-      })
-
-      noteY += noteH + seq.noteStackGap
-    }
-
+    for (const note of notesBeforeFirstMsg) noteY = placeNote(note, noteY)
     messageY = Math.max(messageY, noteY + seq.messageRowHeight / 2)
   }
 
@@ -476,8 +584,9 @@ export function layoutSequenceDiagram(
     const isSelf = msg.from === msg.to
 
     // Add extra vertical space if this message sits below a block header or divider
-    const extra = extraSpaceBefore.get(msgIdx) ?? 0
-    if (extra > 0) messageY += extra
+    messageY +=
+      (headerSpaceBefore.get(msgIdx) ?? 0) +
+      (dividerSpaceBefore.get(msgIdx) ?? 0)
 
     const x1 = actorCenterX[fromIdx]!
     let x2 = actorCenterX[toIdx]!
@@ -525,11 +634,33 @@ export function layoutSequenceDiagram(
     // by the same half-height after a creating message).
     if (createsRecipient) messageY += seq.actorHeight / 2
 
+    // Close a block ending at this message so it holds its last message (and
+    // a self-message loop), its notes and its nested blocks, then keep the
+    // next message clear of its bottom edge (#2452).
+    const closeBlock = (bi: number) => {
+      let bottom =
+        messages[msgIdx]!.y +
+        (isSelf ? SELF_LOOP_DROP : 0) +
+        seq.blockPadBottom +
+        12
+      for (const note of blockNotes(diagram.blocks[bi]!)) {
+        const n = notePositions.get(note)!
+        bottom = Math.max(bottom, n.y + n.height + seq.blockPadBottom)
+      }
+      for (const ci of nested[bi]!) {
+        bottom = Math.max(bottom, blockBottoms[ci]! + seq.blockPadBottom)
+      }
+      blockBottoms[bi] = bottom
+      messageY = Math.max(messageY, bottom + seq.messageRowHeight / 2)
+    }
+    const closing = blocksEndingAt.get(msgIdx) ?? []
+
     // Position notes that appear after this message.
     // Notes start below the self-message loop (if self) or below the arrow,
-    // and consecutive notes stack vertically. If notes extend beyond the
-    // normal message advance, push messageY further so subsequent messages
-    // don't overlap.
+    // and consecutive notes stack vertically. A note written after a block's
+    // `end` sits below that block rather than on top of it. If notes extend
+    // beyond the normal message advance, push messageY further so subsequent
+    // messages don't overlap.
     const notesForMsg = notesByAfterIndex.get(msgIdx)
     if (notesForMsg && notesForMsg.length > 0) {
       // Self-message loops extend selfMessageHeight below msg.y;
@@ -539,62 +670,30 @@ export function layoutSequenceDiagram(
         messages[msgIdx]!.y + selfLoopExtra + seq.noteOffsetAfterMessage
 
       for (const note of notesForMsg) {
-        const noteW = Math.max(
-          seq.noteWidth,
-          estimateTextWidth(
-            note.text,
-            fontSizes.edgeLabel,
-            FONT_WEIGHTS.edgeLabel,
-          ) +
-            seq.notePadX * 2,
-        )
-        const noteH = fontSizes.edgeLabel + seq.notePadY * 2
-
-        // X positioning based on actor position and note type
-        const firstActorIdx = actorIndex.get(note.actorIds[0] ?? '') ?? 0
-        let noteX: number
-        if (note.position === 'left') {
-          noteX =
-            actorCenterX[firstActorIdx]! -
-            actorWidths[firstActorIdx]! / 2 -
-            noteW -
-            seq.noteGap
-        } else if (note.position === 'right') {
-          noteX =
-            actorCenterX[firstActorIdx]! +
-            actorWidths[firstActorIdx]! / 2 +
-            seq.noteGap
-        } else {
-          // Over — center between first and last actor
-          if (note.actorIds.length > 1) {
-            const lastActorIdx =
-              actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
-              firstActorIdx
-            noteX =
-              (actorCenterX[firstActorIdx]! + actorCenterX[lastActorIdx]!) / 2 -
-              noteW / 2
-          } else {
-            noteX = actorCenterX[firstActorIdx]! - noteW / 2
+        const at = diagram.notes.indexOf(note)
+        for (const bi of closing) {
+          if (
+            blockBottoms[bi] === undefined &&
+            diagram.blocks[bi]!.noteEndIndex <= at
+          ) {
+            closeBlock(bi)
+            noteY = Math.max(
+              noteY,
+              blockBottoms[bi]! + seq.noteOffsetAfterMessage,
+            )
           }
         }
-
-        positionedNotes.push({
-          text: note.text,
-          x: noteX,
-          y: noteY,
-          width: noteW,
-          height: noteH,
-          position: note.position,
-          actors: note.actorIds,
-        })
-
-        noteY += noteH + seq.noteStackGap // Stack next note below with gap
+        noteY = placeNote(note, noteY)
       }
 
       // Push messageY forward if notes extended beyond the normal advance.
       // Add half a row height so the next message's label (rendered at msg.y - 6)
       // has clearance from the last note's bottom edge.
       messageY = Math.max(messageY, noteY + seq.messageRowHeight / 2)
+    }
+
+    for (const bi of closing) {
+      if (blockBottoms[bi] === undefined) closeBlock(bi)
     }
   }
 
@@ -620,13 +719,20 @@ export function layoutSequenceDiagram(
   // their order.
   activations.sort((a, b) => a.depth - b.depth)
 
-  // 4. Position blocks (loop/alt/opt)
-  const blocks: PositionedBlock[] = diagram.blocks.map((block) => {
-    // Block spans from the Y of startIndex to endIndex messages
+  // 4. Position blocks (loop/alt/opt), innermost first so a block can enclose
+  //    the blocks nested inside it
+  const blocks: PositionedBlock[] = []
+  diagram.blocks.forEach((block, bi) => {
+    const inner = nested[bi]!.map((ci) => blocks[ci]!)
+
+    // Block spans from the Y of startIndex to endIndex messages, above the
+    // header tabs of nested blocks that open at the same message
     const startMsg = messages[block.startIndex]
-    const endMsg = messages[block.endIndex]
-    const blockTop = (startMsg?.y ?? messageY) - seq.blockPadTop
-    const blockBottom = (endMsg?.y ?? messageY) + seq.blockPadBottom + 12
+    let blockTop = (startMsg?.y ?? messageY) - seq.blockPadTop
+    for (const c of inner)
+      blockTop = Math.min(blockTop, c.y - seq.blockHeaderExtra)
+    // An empty block (no message closes it) ends below the last row
+    const blockBottom = blockBottoms[bi] ?? messageY + seq.blockPadBottom + 12
 
     // Block width spans all actors involved in its messages
     const involvedActors = new Set<number>()
@@ -643,10 +749,36 @@ export function layoutSequenceDiagram(
     }
     const minIdx = Math.min(...involvedActors)
     const maxIdx = Math.max(...involvedActors)
-    const blockLeft =
+    let blockLeft =
       actorCenterX[minIdx]! - actorWidths[minIdx]! / 2 - seq.blockPadX
-    const blockRight =
+    let blockRight =
       actorCenterX[maxIdx]! + actorWidths[maxIdx]! / 2 + seq.blockPadX
+
+    // Widen to hold the notes and nested blocks inside it...
+    for (const note of blockNotes(block)) {
+      const n = notePositions.get(note)!
+      blockLeft = Math.min(blockLeft, n.x - seq.blockPadX)
+      blockRight = Math.max(blockRight, n.x + n.width + seq.blockPadX)
+    }
+    for (const c of inner) {
+      blockLeft = Math.min(blockLeft, c.x - seq.blockPadX)
+      blockRight = Math.max(blockRight, c.x + c.width + seq.blockPadX)
+    }
+    // ...and the header tab and divider labels, which start at the left edge
+    blockRight = Math.max(
+      blockRight,
+      blockLeft + blockTabWidth(block, fontSizes.edgeLabel) + seq.blockPadX,
+    )
+    for (const d of block.dividers) {
+      if (!d.label) continue
+      blockRight = Math.max(
+        blockRight,
+        blockLeft +
+          8 +
+          labelWidth(`[${d.label}]`, fontSizes.edgeLabel) +
+          LABEL_CLEARANCE,
+      )
+    }
 
     // Position dividers — offset from message Y so the divider label text
     // (rendered at divider.y + 14 in the renderer) clears the message label
@@ -657,8 +789,19 @@ export function layoutSequenceDiagram(
     // (centered between actors) don't share horizontal space. When they DO
     // overlap horizontally (e.g. long divider labels like "[Account locked]"
     // next to centered message labels like "403 Forbidden"), we increase the
-    // offset to 36 so text bounding boxes have ~5px visual clearance.
+    // offset to 40 so text bounding boxes have ~5px visual clearance.
     const dividers = block.dividers.map((d) => {
+      // A nested block opening right after the divider: sit above its header tab
+      const opening = inner.filter(
+        (_, k) => diagram.blocks[nested[bi]![k]!]!.startIndex === d.index,
+      )
+      if (opening.length > 0) {
+        return {
+          y: Math.min(...opening.map((c) => c.y)) - seq.dividerExtra,
+          label: d.label,
+        }
+      }
+
       const msg = messages[d.index]
       const msgY = msg?.y ?? messageY
       let offset = 28
@@ -687,14 +830,14 @@ export function layoutSequenceDiagram(
         const msgLabelRight = msgLabelLeft + msgLabelW
 
         if (divLabelRight > msgLabelLeft && divLabelLeft < msgLabelRight) {
-          offset = 36
+          offset = 40
         }
       }
 
       return { y: msgY - offset, label: d.label }
     })
 
-    return {
+    blocks.push({
       type: block.type,
       label: block.label,
       ...(block.color !== undefined ? { color: block.color } : {}),
@@ -703,7 +846,7 @@ export function layoutSequenceDiagram(
       width: blockRight - blockLeft,
       height: blockBottom - blockTop,
       dividers,
-    }
+    })
   })
 
   // 5. Notes — already positioned inline during the message stacking loop
