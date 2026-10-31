@@ -98,7 +98,7 @@ describe('lifelines stay out of message labels (#1242)', () => {
       /<g class="message"[^>]*data-from="B" data-to="B"[\s\S]*?<\/g>/,
     )![0]
     const lifeX = lifelineSegments(svg, 'B')[0]!.x
-    const loopY = Number(g.match(/<polyline points="[\d.]+,([\d.]+)/)![1])
+    const loopY = Number(g.match(/<path d="M [\d.]+,([\d.]+)/)![1])
     expect(g).toContain('text-anchor="middle"')
     expect(Number(g.match(/<text x="([\d.]+)"/)![1])).toBeCloseTo(lifeX, 0)
     expect(Number(g.match(/<text[^>]* y="([\d.]+)"/)![1])).toBeLessThan(loopY)
@@ -112,6 +112,36 @@ describe('lifelines stay out of message labels (#1242)', () => {
     expect(
       Number(first.match(/viewBox="[\d.-]+ [\d.-]+ ([\d.]+)/)![1]),
     ).toBeGreaterThan(Number(t![1]))
+  })
+
+  it("draws the self-message as mermaid 12.2.0's cubic loop and lets the lifeline run through its label (#2477)", () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  A->>A: think
+  A->>B: hi`)
+    // Mermaid: M x,y C x+60,y-10 x+60,y+30 x,y+20 (60 control offset, 20 high)
+    const m = svg
+      .match(
+        /<path d="M ([\d.]+),([\d.]+) C ([\d.]+),([\d.]+) ([\d.]+),([\d.]+) ([\d.]+),([\d.]+)"/,
+      )!
+      .slice(1)
+      .map(Number) as number[]
+    const [x, y, c1x, c1y, c2x, c2y, ex, ey] = m as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ]
+    expect([c1x - x, c1y - y, c2x - x, c2y - y, ex - x, ey - y]).toEqual([
+      60, -10, 60, 30, 0, 20,
+    ])
+    // The lifeline is whole: nothing is cut around "think"
+    expect(lifelineSegments(svg, 'A')).toHaveLength(1)
   })
 
   it('keeps a last-actor self label inside the viewBox and widens the gap to its left (#2456)', () => {
