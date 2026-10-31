@@ -469,6 +469,21 @@ zombie-mermaid deliberately draws it: the SVG canvas is `2 * 50 + title width` b
 with the title inside, and the ASCII output prints the title (mermaid has no ASCII
 output). A diagram with no title, elements, or boundaries still renders nothing.
 
+## Flowchart SVG presentation (#2476)
+
+Measured against mermaid 12.2.0 (headless, `scripts/lib/real-mermaid.ts`). Arrowhead
+size, thick width, dotted pattern and head colour now match; these do not:
+
+- **Edges into one node share a bus and a single head.** Mermaid draws a separate
+  head per edge. This comes from the layout's edge routing (the SVG twin of the
+  ASCII entry below), not from the marker.
+- **A `classDef`/`style` fill with no `color:` gets black or white text picked from
+  the fill's luminance** (#55). Mermaid leaves its default dark text, so a dark fill
+  such as red shows white text here and dark text there. Kept because the ambient
+  text colour is a CSS variable that can be light in dark themes, which made labels
+  unreadable on custom fills.
+- **The hexagon is slightly flatter than mermaid's.** Cosmetic.
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams
