@@ -33,7 +33,8 @@ graders:
     input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
   - name: names_plugin_cli
     type: regex
-    pattern: 'CLAUDE_PLUGIN_ROOT\}?/node_modules/zombie-mermaid/dist/cli\.js"?\s+render\b[^\n]*--ascii'
+    # the model may expand ${CLAUDE_PLUGIN_ROOT} to an absolute path, so match the install layout only
+    pattern: 'node_modules/zombie-mermaid/dist/cli\.js"?\s+render\b[^\n]*--ascii'
   - name: no_npx
     type: regex
     pattern: '\bnpx\b'
