@@ -1126,6 +1126,9 @@ export function flipCanvasHorizontally(
   // below then lands each glyph back on its own side of the mirrored box.
   for (const { y, x0, x1, g0, g1, r0, r1 } of corners) {
     if (g0 === undefined || g1 === undefined) continue
+    // Only a box's own corners swap: an edge stroke on the rect's edge (a diamond's
+    // bottom-right port) is not a corner and must stay in its column.
+    if (roleCanvas && (r0 !== 'border' || r1 !== 'border')) continue
     canvas[x0]![y] = g1
     canvas[x1]![y] = g0
     if (roleCanvas && r0 !== undefined && r1 !== undefined) {

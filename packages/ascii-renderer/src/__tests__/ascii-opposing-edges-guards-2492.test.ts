@@ -10,6 +10,7 @@ import { createMapping } from '../grid.ts'
 import {
   farPush,
   nestedPush,
+  nestedRow,
   portShifts,
   type PortRun,
   type Slot,
@@ -73,13 +74,21 @@ describe('opposing-edge guards (#2492)', () => {
     cell: { x: 0, y: 0 },
     turn,
   })
-  const slot = (role: 'S' | 'E', turn: -1 | 1, far: number): Slot => ({
+  const slot = (
+    role: 'S' | 'E',
+    turn: -1 | 1,
+    far: number,
+    lane?: number,
+    down = 1,
+  ): Slot => ({
     run: run(turn),
     role,
     fixed: false,
     elbow: true,
     extent: 2,
     far,
+    lane,
+    down,
   })
   const same = (): string => 'port'
 
@@ -98,5 +107,42 @@ describe('opposing-edge guards (#2492)', () => {
     ])
     expect(nestedPush(slots, 'a', same)).toBe(1)
     expect(nestedPush(slots, 'b', same)).toBe(-1)
+  })
+
+  it('gives nestedRow no row for an edge without a lane or a partner', () => {
+    const lone = new Map([['a', slot('S', 1, 0)]])
+    expect(nestedRow(lone, 'a', same)).toBeUndefined()
+    const noLane = new Map([
+      ['a', slot('S', 1, 0, 3)],
+      ['b', slot('E', -1, 0)],
+    ])
+    expect(nestedRow(noLane, 'a', same)).toBeUndefined()
+    const tie = new Map([
+      ['a', slot('S', 1, 0, 3)],
+      ['b', slot('E', -1, 0, 3)],
+    ])
+    expect(nestedRow(tie, 'a', same)).toBeUndefined()
+    const sameRole = new Map([
+      ['a', slot('S', 1, 0, 3)],
+      ['b', slot('S', -1, 0, 5)],
+    ])
+    expect(nestedRow(sameRole, 'a', same)).toBeUndefined()
+    const apart = new Map([
+      ['a', slot('S', 1, 0, 3)],
+      ['b', slot('E', -1, 0, 5)],
+    ])
+    expect(nestedRow(apart, 'a', (k) => k)).toBeUndefined()
+  })
+
+  it('gives the farther-left lane the lower row going down, the upper going up', () => {
+    const slots = (down: number) =>
+      new Map([
+        ['a', slot('S', 1, 0, 3, down)],
+        ['b', slot('E', -1, 0, 5, down)],
+      ])
+    expect(nestedRow(slots(1), 'a', same)).toBe(1)
+    expect(nestedRow(slots(1), 'b', same)).toBe(-1)
+    expect(nestedRow(slots(-1), 'a', same)).toBe(-1)
+    expect(nestedRow(slots(-1), 'b', same)).toBe(1)
   })
 })

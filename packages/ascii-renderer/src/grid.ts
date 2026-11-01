@@ -1279,7 +1279,25 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     const t = e.to.gridCoord
     return f !== null && t !== null && rankOf(f) < rankOf(t)
   })
-  if (!flowsDown) return
+  if (!flowsDown) {
+    // Nothing centres here, but a decision with a reciprocal pair (`B --> D`
+    // and `D --> B`) still sends every branch out of its right face, so the
+    // back edge can re-enter beside them (#2492). A self-loop already takes
+    // the right face, and the extra lane only crowds it (`┼` on the trunk).
+    for (const node of graph.nodes) {
+      const reciprocal =
+        !graph.edges.some((e) => e.from === node && e.to === node) &&
+        graph.edges.some(
+          (e) =>
+            e.from === node &&
+            e.to !== node &&
+            graph.edges.some((r) => r.from === e.to && r.to === node),
+        )
+      if (reciprocal)
+        markDecisionSplit(node, lr, getChildren(graph, node).length)
+    }
+    return
+  }
   // Deepest first so a moved child doesn't invalidate its parent's span.
   const order = graph.nodes
     .filter((n) => n.gridCoord !== null)

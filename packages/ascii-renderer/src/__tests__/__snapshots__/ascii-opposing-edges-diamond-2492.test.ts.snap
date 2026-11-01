@@ -1,20 +1,20 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII and SVG for the issue source > ascii 1`] = `
-"┌───┐         ╱╲         ┌───────────────┐
-│   │       ╱    ╲       │               │
-│ A ├────►< Valid? >─yes►│       C       │
-│   │       ╲    ╱       │               │
-└───┘         ╲╱         └───────────────┘
-              │▲                          
-              ││                          
-              ││                          
-              ││                          
-              ││             ╱───────────╱
-              │└────────────╱           ╱ 
-              │            ╱ Ask Again ╱  
-              └───no─────►╱           ╱   
-                         ╱───────────╱    "
+"┌───┐         ╱╲               ┌───────────────┐
+│   │       ╱    ╲             │               │
+│ A ├────►< Valid? >─────┬─yes►│       C       │
+│   │       ╲    ╱ ▲     │     │               │
+└───┘         ╲╱   │     │     └───────────────┘
+                   │     │                      
+                   │     │                      
+                   │     │                      
+                   │    no                      
+                   │     │         ╱───────────╱
+                   │     └───────►╱           ╱ 
+                   │             ╱ Ask Again ╱  
+                   └────────────╱           ╱   
+                               ╱───────────╱    "
 `;
 
 exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII and SVG for the issue source > svg 1`] = `
