@@ -342,7 +342,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const bars: PositionedBar[] = []
   if (barCount > 0) {
     const usable = bandHeight * (1 - XY.barPadRatio)
-    // mermaid 12.2.0 draws every bar series centred on the same category
+    // Mermaid 12.2.0 draws every bar series centred on the same category
     // (the series overlap, later ones on top) rather than side by side.
     const singleBarH = Math.min(usable, XY.maxBarWidth)
     const groupH = singleBarH
@@ -558,7 +558,7 @@ function layoutBars(
   if (barCount === 0) return []
 
   const usable = bandWidth * (1 - XY.barPadRatio)
-  // mermaid 12.2.0 draws every bar series centred on the same category
+  // Mermaid 12.2.0 draws every bar series centred on the same category
   // (the series overlap, later ones on top) rather than side by side.
   const singleBarW = Math.min(usable, XY.maxBarWidth)
   const groupW = singleBarW
