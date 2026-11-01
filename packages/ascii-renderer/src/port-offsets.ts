@@ -233,10 +233,18 @@ function attachesAt(run: PortRun, pos: number, geo: Geometry): boolean {
   const drawing = run.node.drawing!
   if (run.axis === 'v') {
     const ch = drawing[pos - dc.x]?.[geo.border]
-    return ch === '─' || ch === '-'
+    return ch === '─' || ch === '-' || ch === '╲' || ch === '╱'
   }
-  const ch = drawing[geo.border]?.[pos - dc.y]
-  return ch === '│' || ch === '|'
+  // A slanted side (parallelogram, #2492) leaves blanks between the border
+  // column and its glyph: take the first glyph met walking inward.
+  const step = run.side === 'left' ? 1 : -1
+  for (let x = geo.border; drawing[x]; x += step) {
+    const ch = drawing[x]![pos - dc.y]
+    if (ch === ' ') continue
+    const slant = run.node.shape.startsWith('parallelogram')
+    return ch === '│' || ch === '|' || (slant && (ch === '╱' || ch === '╲'))
+  }
+  return false
 }
 
 /**
