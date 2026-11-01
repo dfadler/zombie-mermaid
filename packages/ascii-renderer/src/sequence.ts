@@ -16,7 +16,6 @@ import {
   mkCanvas,
   mkRoleCanvas,
   canvasToString,
-  getCanvasSize,
   increaseSize,
   increaseRoleCanvasSize,
   write,
@@ -653,7 +652,7 @@ export function renderSequenceAscii(
     // divider of a block opening right here follows its header.
     const placeDividers = (opened: boolean): void => {
       for (let b = 0; b < diagram.blocks.length; b++) {
-        if ((diagram.blocks[b]!.startIndex < m) !== opened) continue
+        if (diagram.blocks[b]!.startIndex < m !== opened) continue
         for (let d = 0; d < diagram.blocks[b]!.dividers.length; d++) {
           if (diagram.blocks[b]!.dividers[d]!.index === m) {
             curY += rowGap
@@ -1459,9 +1458,11 @@ export function renderSequenceAscii(
     c.startIndex >= p.startIndex && c.endIndex <= p.endIndex
   for (let p = diagram.blocks.length - 1; p >= 0; p--) {
     for (let c = 0; c < p; c++) {
-      if (!blockExt[p] || !blockExt[c]) continue
+      const pe = blockExt[p]
+      const ce = blockExt[c]
+      if (!pe || !ce) continue
       if (isInside(diagram.blocks[c]!, diagram.blocks[p]!))
-        blockExt[c].l = Math.max(blockExt[c].l, blockExt[p].l + 1)
+        ce.l = Math.max(ce.l, pe.l + 1)
     }
   }
   // Label-driven minimum width (#352), measured from the final left wall.
@@ -1476,9 +1477,11 @@ export function renderSequenceAscii(
   }
   for (let p = 0; p < diagram.blocks.length; p++) {
     for (let c = 0; c < p; c++) {
-      if (!blockExt[p] || !blockExt[c]) continue
+      const pe = blockExt[p]
+      const ce = blockExt[c]
+      if (!pe || !ce) continue
       if (isInside(diagram.blocks[c]!, diagram.blocks[p]!))
-        blockExt[p].r = Math.max(blockExt[p].r, blockExt[c].r + 1)
+        pe.r = Math.max(pe.r, ce.r + 1)
     }
   }
 
