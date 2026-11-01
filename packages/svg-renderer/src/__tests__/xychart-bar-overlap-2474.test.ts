@@ -27,6 +27,20 @@ describe('multiple bar series overlap like mermaid 12.2.0 (#2474)', () => {
     )
   })
 
+  it('stacks shorter interactive hit areas after taller ones', () => {
+    const svg = renderMermaidSVG(
+      body('xychart-beta').replace('[3, 4]', '[9, 8]'),
+      { interactive: true },
+    )
+    const heights = [
+      ...svg.matchAll(
+        /<g class="xychart-bar-group"><rect [^>]*height="([\d.]+)"/g,
+      ),
+    ].map((m) => Number(m[1]))
+    expect(heights).toHaveLength(4)
+    expect(heights).toEqual([...heights].sort((a, b) => b - a))
+  })
+
   it('centres every horizontal series on the same y', () => {
     const b = bars(body('xychart-beta horizontal'))
     expect(b['0']!.map((d) => start(d, 1))).toEqual(
