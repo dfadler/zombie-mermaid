@@ -10,6 +10,7 @@
     "node_modules/",
     "*.html",
     "pnpm-lock.yaml",
+    "npm-shrinkwrap.json",
     "coverage/",
     "*.png",
     "*.ico",

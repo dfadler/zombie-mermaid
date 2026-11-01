@@ -1,0 +1,11 @@
+{
+  "name": "zombie-mermaid",
+  "owner": { "name": "Dustin Fadler" },
+  "plugins": [
+    {
+      "name": "zombie-mermaid",
+      "source": "./plugins/claude",
+      "description": "Render and validate Mermaid diagrams (SVG, PNG, ASCII) with zombie-mermaid: a skill plus its MCP server."
+    }
+  ]
+}
