@@ -1413,7 +1413,7 @@ flowchart LR
     title: 'XY: Multiple Bar Series',
     category: 'XY Chart',
     gallery: true,
-    description: 'Two bar series comparing years side by side.',
+    description: 'Two bar series comparing years, drawn overlapping as mermaid does.',
     source: `xychart-beta
     title "2023 vs 2024 Sales"
     x-axis [Q1, Q2, Q3, Q4]

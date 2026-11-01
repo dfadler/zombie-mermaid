@@ -825,4 +825,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the inner `loop` and `opt` headers collide with the `alt` frame. After: each sits inside the `alt`, one column clear of its walls.',
   },
+  {
+    id: 'xychart-bar-series-overlap',
+    title: 'XY chart bar series were drawn side by side, not overlapping',
+    symptom:
+      'Two `bar` series on the same categories were split into narrow adjacent bars, while mermaid 12.2.0 draws each series centred on the category with later series on top.',
+    source:
+      'xychart-beta\n  title "2023 vs 2024 Sales"\n  x-axis [Q1, Q2, Q3, Q4]\n  bar [50, 60, 70, 80]\n  bar [60, 70, 80, 90]',
+    fixCommit: '1941517f',
+    pr: 2508,
+    render: 'svg',
+    lookFor:
+      'Before: each quarter shows two thin bars next to each other. After: the two bars share one centred, full-width slot and overlap.',
+  },
 ]
