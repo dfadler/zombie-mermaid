@@ -139,6 +139,7 @@ export function synthesizeSelfLoopEdges(
       points,
       labelPosition: edge.label ? labelPosition : undefined,
       inlineStyle: resolveEdgeStyle(index, graph),
+      headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
     })
@@ -538,6 +539,7 @@ function extractEdgesRecursively(
         : orthogonalPoints,
       labelPosition,
       inlineStyle: resolveEdgeStyle(edgeIndex, graph),
+      headColor: resolveHeadColor(graph),
       id: originalEdge.id,
       animate: originalEdge.animate,
     })
@@ -749,6 +751,11 @@ function collectAllSubgraphIds(sg: MermaidSubgraph, out: Set<string>): void {
  * Default link style is applied first, then index-specific overrides.
  * Invalid colours are dropped, as for nodes (#1918).
  */
+/** Stroke of `linkStyle default`, the only colour mermaid gives arrowheads. */
+export function resolveHeadColor(graph: MermaidGraph): string | undefined {
+  return resolveEdgeStyle(-1, graph)?.stroke
+}
+
 export function resolveEdgeStyle(
   edgeIndex: number,
   graph: MermaidGraph,

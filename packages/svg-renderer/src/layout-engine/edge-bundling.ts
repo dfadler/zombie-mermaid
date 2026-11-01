@@ -173,7 +173,10 @@ function hasOutsideEdgeOnSide(
  * before entering a group, not inside it.
  *
  * Constraints: edges in a bundle must share the same style and have no labels.
- * Self-loops and backward edges (against the graph direction) are excluded.
+ * Self-loops and backward edges (against the graph direction) are excluded, and
+ * so are edges repeated between the same two nodes: a bundle would draw them on
+ * one path, while mermaid.js draws a lane per edge (#1592), so they keep the
+ * lanes the layout engine gave them.
  */
 export function bundleEdgePaths(
   edges: PositionedEdge[],
@@ -184,6 +187,12 @@ export function bundleEdgePaths(
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   const processed = new Set<PositionedEdge>()
 
+  const pairCount = new Map<string, number>()
+  const pairKey = (e: PositionedEdge) => `${e.source}\0${e.target}`
+  for (const e of edges)
+    pairCount.set(pairKey(e), (pairCount.get(pairKey(e)) ?? 0) + 1)
+  const isRepeated = (e: PositionedEdge) => pairCount.get(pairKey(e))! > 1
+
   const isLR = direction === 'LR'
   const isRL = direction === 'RL'
   const isBT = direction === 'BT'
@@ -192,7 +201,7 @@ export function bundleEdgePaths(
   // --- Fan-out: group edges by shared source ---
   const fanOutGroups = new Map<string, PositionedEdge[]>()
   for (const edge of edges) {
-    if (edge.source === edge.target) continue
+    if (edge.source === edge.target || isRepeated(edge)) continue
     const group = fanOutGroups.get(edge.source) ?? []
     fanOutGroups.set(edge.source, group)
     group.push(edge)
@@ -327,7 +336,8 @@ export function bundleEdgePaths(
   // --- Fan-in: group edges by shared target (skip already-bundled edges) ---
   const fanInGroups = new Map<string, PositionedEdge[]>()
   for (const edge of edges) {
-    if (processed.has(edge) || edge.source === edge.target) continue
+    if (processed.has(edge) || edge.source === edge.target || isRepeated(edge))
+      continue
     const group = fanInGroups.get(edge.target) ?? []
     fanInGroups.set(edge.target, group)
     group.push(edge)

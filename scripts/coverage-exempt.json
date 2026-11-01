@@ -158,13 +158,13 @@
   {
     "file": "scripts/layout-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import (browser/oracle/report driver); no in-process entry point",
-    "maxLines": 258,
+    "maxLines": 255,
     "legacy": true
   },
   {
     "file": "scripts/lib/real-mermaid.ts",
     "reason": "Playwright-driven helper: needs a real Chromium, so it is only reachable from the form-diff/form-facts CLIs",
-    "maxLines": 107,
+    "maxLines": 112,
     "legacy": true
   },
   {
@@ -210,8 +210,78 @@
     "maxLines": 150
   },
   {
+    "file": "scripts/architecture-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/architecture-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/architecture-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the architecture-oracle and layout-oracle CLIs",
+    "maxLines": 62
+  },
+  {
+    "file": "scripts/sequence-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/sequence-agreement.ts",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/quadrant-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/quadrant-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/quadrant-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the quadrant-oracle and layout-oracle CLIs",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/sequence-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the sequence-oracle and layout-oracle CLIs",
+    "maxLines": 62
+  },
+  {
+    "file": "scripts/pie-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/pie-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/pie-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the pie-oracle and layout-oracle CLIs",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/c4-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/c4-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/c4-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the c4-oracle and layout-oracle CLIs",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/xychart-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/xychart-agreement.ts",
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/separate-scores.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid renders), only reachable from the layout-oracle CLI; each figure is unit-tested in its own *-agreement.ts",
+    "maxLines": 34
+  },
+  {
+    "file": "scripts/lib/xychart-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the xychart-oracle and layout-oracle CLIs",
+    "maxLines": 60
+  },
+  {
     "file": "scripts/generate-llms-full.ts",
     "reason": "thin CLI: runs on import and writes public/llms-full.txt; all logic is in scripts/lib/llms-full.ts (tested by __tests__/llms-full.test.ts)",
     "maxLines": 15
+  },
+  {
+    "file": "scripts/generate-server-json.ts",
+    "reason": "thin CLI: runs on import, prints/writes and calls process.exit; all logic is in scripts/lib/mcp-server-json.ts (tested by __tests__/mcp-server-json.test.ts)",
+    "maxLines": 20
   }
 ]

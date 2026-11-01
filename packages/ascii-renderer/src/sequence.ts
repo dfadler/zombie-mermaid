@@ -95,21 +95,20 @@ function selfLoopWidth(msg: Message): number {
     : SELF_LOOP_WIDTH + String(msg.seqNumber).length
 }
 
-// A self-message's label is drawn on rows ABOVE its loop (mermaid.js's own
-// placement), starting this many columns right of the lifeline so it never
-// touches it. Sitting above the loop rather than beside it means the label
-// only needs `SELF_LABEL_OFFSET + width` columns, not loop + clearance +
-// width, so the next lifeline can stay closer (issue #1387).
-const SELF_LABEL_OFFSET = 2
+// A self-message's label is drawn on rows ABOVE its loop, centred on the
+// lifeline like a normal message's label (mermaid.js's own placement, issues
+// #1387 and #2456). So it reaches `selfLeft` columns left of the lifeline
+// and `ceil(width / 2)` right, rather than needing loop + clearance + width
+// on the right.
+function selfLeft(msg: Message): number {
+  return Math.floor(maxLineWidth(msg.label) / 2)
+}
 
 // Columns right of the lifeline a self-message occupies: the wider of its
-// loop and its label. Shared by the gap-sizing, canvas-width and block-wall
-// passes so all three agree.
+// loop and its (centred) label. Shared by the gap-sizing, canvas-width and
+// block-wall passes so all three agree.
 function selfExtent(msg: Message): number {
-  return Math.max(
-    selfLoopWidth(msg),
-    SELF_LABEL_OFFSET + maxLineWidth(msg.label),
-  )
+  return Math.max(selfLoopWidth(msg), Math.ceil(maxLineWidth(msg.label) / 2))
 }
 
 /**
@@ -322,6 +321,12 @@ export function renderSequenceAscii(
         const needed = selfExtent(msg) + 1 - 2
         adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, needed)
       }
+      // The centred label also reaches left, into the previous gap.
+      if (fi > 0) {
+        // (`+ 2` clearance for the previous lifeline, `- 2` for the margin
+        // added below, which cancel.)
+        adjMaxWidth[fi - 1] = Math.max(adjMaxWidth[fi - 1]!, selfLeft(msg))
+      }
       continue
     }
     const lo = Math.min(fi, ti)
@@ -419,6 +424,17 @@ export function renderSequenceAscii(
       // above, but for the note's own left half (`nx = llX[0] -
       // overNoteHalfLeft[0]` must stay >= 0; issue #992).
       overNoteHalfLeft[0]!,
+      // A centred self-message label on the leftmost actor reaches left of
+      // its lifeline too (#2456); inside a block it must also clear the
+      // block's left wall (column 0) by one blank column.
+      ...diagram.messages.map((m, mi) =>
+        m.from === m.to && actorIndexOf(m.from) === 0
+          ? selfLeft(m) +
+            (diagram.blocks.some((b) => mi >= b.startIndex && mi <= b.endIndex)
+              ? 2
+              : 0)
+          : 0,
+      ),
     ),
   ]
   for (let i = 1; i < diagram.actors.length; i++) {
@@ -526,6 +542,7 @@ export function renderSequenceAscii(
       if (f === t) {
         const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
+        minLX = Math.min(minLX, llX[f]! - selfLeft(msg))
       }
     }
     // An empty block, or one whose rightmost participant is already the
@@ -1129,8 +1146,8 @@ export function renderSequenceAscii(
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
 
     if (isSelf) {
-      // Self-message: the label above a 3-row loop to the right of the
-      // lifeline, as mermaid.js draws it (issue #1387)
+      // Self-message: the label centred above a 3-row loop to the right of
+      // the lifeline, as mermaid.js draws it (issues #1387, #2456)
       //   │ Label        (label rows, one per line)
       //   ├──┐           (row 0 = msgArrowY)
       //   │  │           (row 1)
@@ -1165,13 +1182,14 @@ export function renderSequenceAscii(
         setC(x, y0, lineChar, 'line')
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
-      // Label rows sit above the loop, clear of the lifeline.
+      // Label rows sit above the loop, centred on the lifeline.
       const labelRows = msgLines.length
       for (let lineIdx = 0; lineIdx < labelRows; lineIdx++) {
+        const line = msgLines[lineIdx]!
         writeTextCells(
-          fromX + SELF_LABEL_OFFSET,
+          fromX - Math.floor(displayWidth(line) / 2),
           y0 - labelRows + lineIdx,
-          msgLines[lineIdx]!,
+          line,
           'text',
           totalW,
         )
@@ -1357,6 +1375,7 @@ export function renderSequenceAscii(
       if (f === t) {
         const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
+        minLX = Math.min(minLX, llX[f]! - selfLeft(msg))
       }
     }
 

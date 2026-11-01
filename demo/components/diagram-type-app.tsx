@@ -459,6 +459,30 @@ function PieGlyph() {
   )
 }
 
+function QuadrantGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="26"
+        y="6"
+        width="48"
+        height="58"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M50 6 V64 M26 35 H74"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+      <circle cx="62" cy="20" r="4" fill="currentColor" />
+    </svg>
+  )
+}
+
 /**
  * Every diagram type's crosslink glyph, keyed by `DiagramTypeProfile.slug`
  * (demo/diagram-pages-data.ts) — the same six slugs `DIAGRAM_TYPE_PROFILES`
@@ -475,6 +499,7 @@ const DIAGRAM_TYPE_GLYPHS: Record<string, () => ReactNode> = {
   c4: C4Glyph,
   'architecture-beta': ArchitectureGlyph,
   pie: PieGlyph,
+  quadrant: QuadrantGlyph,
 }
 
 /** One crosslink target: the other type's own display data. */

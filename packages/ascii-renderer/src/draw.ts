@@ -39,7 +39,19 @@ import { withPortShifts } from './port-offsets.ts'
 import { isSilhouetteShape } from './shapes/silhouettes.ts'
 
 /** Vertically symmetric shapes whose diagonals must swap in BT (#2388). */
-const DIAGONAL_SHAPES = new Set(['hexagon', 'diamond', 'circle'])
+const DIAGONAL_SHAPES = new Set([
+  'hexagon',
+  'diamond',
+  'circle',
+  'doublecircle',
+])
+const PARALLELOGRAMS = new Set(['parallelogram', 'parallelogram-alt'])
+/** Shapes whose walls stand a column or more in from the node's outer face. */
+const SLANTED_SHAPES = new Set([
+  'trapezoid',
+  'trapezoid-alt',
+  ...PARALLELOGRAMS,
+])
 import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
@@ -182,6 +194,48 @@ function fillRolesForNodeBox(
  *
  * Also fills the roleCanvas with character roles for colored output.
  */
+/**
+ * A trapezoid's side face is a column of blank cells left of its slanted wall
+ * (the wall is `labelInsets` in). Extend an edge that ends at the face across
+ * them so it touches the wall; an arrowhead moves to the wall's neighbour
+ * (#2164).
+ */
+function bridgeSlantedFaces(graph: AsciiGraph, useAscii: boolean): void {
+  const hChar = useAscii ? '-' : '─'
+  const put = (x: number, y: number, ch: string, role: 'line' | 'arrow') => {
+    write(graph.canvas, x, y, ch)
+    setRole(graph.roleCanvas, x, y, role)
+  }
+  for (const node of graph.nodes) {
+    if (!SLANTED_SHAPES.has(node.shape)) continue
+    const { drawingCoord: at, drawing, labelInsets } = node
+    if (!at || !drawing || !labelInsets) continue
+    const last = drawing.length - 1
+    for (const [r, dl] of labelInsets.entries()) {
+      const y = at.y + r
+      for (const side of [-1, 1]) {
+        const d = side < 0 ? dl : (node.labelInsetsRight?.[r] ?? dl)
+        if (d <= 0) continue
+        // Walk from the wall toward the face over blanks; `p` is what the edge left there.
+        const wall = side < 0 ? at.x + d : at.x + last - d
+        const face = side < 0 ? at.x : at.x + last
+        let x = wall + side
+        while (x !== face + side && graph.canvas[x]?.[y] === ' ') x += side
+        // Not blank all the way to the face (or the edge sits right at the wall): leave it.
+        if (x === wall + side) continue
+        const ch = graph.canvas[x]?.[y]
+        const head = side < 0 ? /^[►>]$/ : /^[◄<]$/
+        if (ch === hChar || ch === '─') {
+          for (let k = x - side; k !== wall; k -= side) put(k, y, hChar, 'line')
+        } else if (ch && head.test(ch)) {
+          for (let k = x; k !== wall + side; k -= side) put(k, y, hChar, 'line')
+          put(wall + side, y, ch, 'arrow')
+        }
+      }
+    }
+  }
+}
+
 export function drawGraph(graph: AsciiGraph): Canvas {
   return withPortShifts(graph, () => drawGraphScoped(graph))
 }
@@ -237,7 +291,8 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
           // A hexagon's diagonal sits inside the rect on its label rows.
           const inset = node.labelInsets?.[y - oy] ?? 0
           const xa = Math.max(rect.x0, ox + inset + 1)
-          const xb = Math.min(rect.x1, ox + node.drawing.length - 2 - inset)
+          const insetR = node.labelInsetsRight?.[y - oy] ?? inset
+          const xb = Math.min(rect.x1, ox + node.drawing.length - 2 - insetR)
           for (let x = xa; x <= xb; x++) {
             const ch = graph.canvas[x]?.[y]
             if (ch && ch !== ' ') setRole(graph.roleCanvas, x, y, 'text')
@@ -251,6 +306,10 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         y1: node.drawingCoord.y + node.drawing[0]!.length - 1,
         ...(node.shape === 'asymmetric' && { leftNotch: true }),
         ...(DIAGONAL_SHAPES.has(node.shape) && { diagonals: true }),
+        ...((node.shape === 'trapezoid' ||
+          node.shape === 'trapezoid-alt' ||
+          PARALLELOGRAMS.has(node.shape)) && { trapezoid: true }),
+        ...(PARALLELOGRAMS.has(node.shape) && { parallelogram: true }),
       })
       node.drawn = true
     }
@@ -401,6 +460,8 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
     ...arrowHeadStartCanvases,
   )
   fillRolesFromCanvases(graph.roleCanvas, arrowHeadStartCanvases, zero, 'arrow')
+
+  bridgeSlantedFaces(graph, useAscii)
 
   graph.canvas = mergeCanvases(graph.canvas, zero, useAscii, ...labelCanvases)
   fillRolesFromCanvases(graph.roleCanvas, labelCanvases, zero, 'text')

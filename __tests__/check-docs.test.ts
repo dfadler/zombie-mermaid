@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { DIAGRAM_TYPES } from '../packages/core/src/diagram-type.ts'
 import {
   anchors,
   checkAll,
@@ -26,7 +27,9 @@ describe('check-docs', () => {
   it('accepts good input and ignores code fences', () => {
     expect(
       run(
-        '[y](./b.md#real-heading) `src/ok.ts` 8 diagram types Node 24\n```\n`src/x.ts`\n```',
+        '[y](./b.md#real-heading) `src/ok.ts` ' +
+          DIAGRAM_TYPES.length +
+          ' diagram types Node 24\n```\n`src/x.ts`\n```',
         ['b.md', 'src/ok.ts'],
       ),
     ).toEqual([])

@@ -256,6 +256,7 @@ function growToClearLabel(
   widths: readonly number[],
   insetsOf: (w: number, h: number) => number[],
   evenWidth: boolean,
+  bothSides = false,
 ): ShapeDimensions {
   const rows = base.height
   const startY =
@@ -265,11 +266,13 @@ function growToClearLabel(
   const step = evenWidth ? 2 : 1
   for (let grow = 0; grow < 64; grow++) {
     const ins = insetsOf(width - 1, rows - 1)
-    const clear = widths.every(
-      (lw, i) =>
-        ins[startY + i]! <= labelStartX(width - 1, lw) - 1 - HEX_GAP ||
-        ins[startY + i] === 0,
-    )
+    const clear = widths.every((lw, i) => {
+      const d = ins[startY + i]!
+      const x0 = labelStartX(width - 1, lw)
+      // A two-sided slant also needs the right edge of the text clear.
+      const right = !bothSides || width - 1 - d >= x0 + lw + HEX_GAP
+      return d === 0 || (d <= x0 - 1 - HEX_GAP && right)
+    })
     if (clear) break
     width += step
   }
@@ -307,12 +310,228 @@ export function circleDimensions(
   )
 }
 
+/** Columns and rows between a double circle's outer ring and its inner one. */
+const RING_X = 2
+const RING_Y = 1
+
+/**
+ * Double circle: mermaid's two concentric circles. The outer ring is the
+ * circle outline over the whole node; the inner one is a circle outline of the
+ * node minus {@link RING_X} columns and {@link RING_Y} rows on every side, so a
+ * blank cell lies between the rings on the middle row (#2164).
+ */
+export function drawDoubleCircle(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  useAscii: boolean,
+): void {
+  drawCircle(canvas, w, h, circleInsets(w, h), useAscii)
+  const iw = w - 2 * RING_X
+  const ih = h - 2 * RING_Y
+  const inner = mkCanvas(iw, ih)
+  drawCircle(inner, iw, ih, circleInsets(iw, ih), useAscii)
+  for (let x = 0; x <= iw; x++)
+    for (let y = 0; y <= ih; y++)
+      if (inner[x]![y] !== ' ') canvas[x + RING_X]![y + RING_Y] = inner[x]![y]!
+}
+
+/** Indent of the inner ring on every row (the label's boundary); 0 on the outer rows. */
+export function doubleCircleInsets(w: number, h: number): number[] {
+  const inner = circleInsets(w - 2 * RING_X, h - 2 * RING_Y)
+  return Array.from({ length: h + 1 }, (_, y) =>
+    y < RING_Y || y > h - RING_Y ? 0 : RING_X + inner[y - RING_Y]!,
+  )
+}
+
+/** Double circle grid cell: the circle's, two rows taller and four columns wider. */
+export function doubleCircleDimensions(
+  label: string,
+  options: ShapeRenderOptions,
+): ShapeDimensions {
+  const widths = splitLines(label).map((l) => displayWidth(l))
+  const base = getBoxDimensions(label, options)
+  const height = base.height + 2 * RING_Y
+  const minWidth =
+    2 * Math.max(...circleInsets(1e3, height - 2 * RING_Y - 1)) + 3 + 2 * RING_X
+  return growToClearLabel(
+    {
+      ...base,
+      height,
+      // The layout allocates rows from gridRows, not height.
+      gridRows: [1, base.gridRows[1]! + 2 * RING_Y, 1],
+      width: Math.max(base.width + 2 * RING_X, minWidth),
+    },
+    widths,
+    doubleCircleInsets,
+    false,
+  )
+}
+
+/**
+ * Trapezoid indent for rows 0..h: one column per row (a cell is about half as
+ * wide as tall, so this is mermaid's slope), narrow row at the top for
+ * `trapezoid` and at the bottom for `trapezoid-alt` (#2164).
+ */
+export function trapezoidInsets(h: number, alt: boolean): number[] {
+  return Array.from({ length: h + 1 }, (_, y) => (alt ? y : h - y))
+}
+
+/**
+ * The trapezoid's insets for a drawn `w` x `h` cell: the slope, flattened where
+ * it would touch a label row (a neighbour can make the node taller than its
+ * own dimensions assumed) and where the narrow row would run out of width.
+ */
+export function trapezoidInsetsFor(
+  w: number,
+  h: number,
+  alt: boolean,
+  lineWidths: readonly number[],
+  startY: number,
+): number[] {
+  return trapezoidInsets(h, alt).map((slope, y) => {
+    let d = Math.min(slope, Math.max(Math.floor((w - 2) / 2), 0))
+    const lw = lineWidths[y - startY]
+    if (lw !== undefined) {
+      const x0 = labelStartX(w, lw)
+      d = Math.min(d, x0 - 1 - HEX_GAP, w - x0 - lw - HEX_GAP)
+    }
+    return Math.max(d, 0)
+  })
+}
+
+/** Draw a trapezoid: slanted sides, and a `╱──╲` row at the top and bottom. */
+export function drawTrapezoid(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  alt: boolean,
+  insets: readonly number[],
+  useAscii: boolean,
+): void {
+  const hChar = useAscii ? '-' : '─'
+  const [up, down] = useAscii ? ['/', '\\'] : ['╱', '╲']
+  for (let y = 0; y <= h; y++) {
+    const d = insets[y]!
+    // Wider at the bottom: the left side leans up-right (`╱`), down to the
+    // base row, so each slant glyph sits diagonally beside the next.
+    canvas[d]![y] = alt ? down! : up!
+    canvas[w - d]![y] = alt ? up! : down!
+    if (y === 0 || y === h) {
+      for (let x = d + 1; x < w - d; x++) canvas[x]![y] = hChar
+    }
+  }
+}
+
+/** Trapezoid grid cell: the box's rows, wide enough for the slant and the label. */
+export function trapezoidDimensions(
+  label: string,
+  options: ShapeRenderOptions,
+  alt: boolean,
+): ShapeDimensions {
+  const widths = splitLines(label).map((l) => displayWidth(l))
+  const base = getBoxDimensions(label, options)
+  // The narrow row keeps two cells between its slants.
+  const width = Math.max(base.width, 2 * (base.height - 1) + 3)
+  return growToClearLabel(
+    { ...base, width },
+    widths,
+    (_w, h) => trapezoidInsets(h, alt),
+    false,
+    true,
+  )
+}
+
+/**
+ * Parallelogram wall columns for rows 0..h: both walls lean one column per
+ * row (mermaid's slope, as for the trapezoid), so the top row is shifted right
+ * for `parallelogram` (`[/x/]`) and left for `parallelogram-alt`. A wall that
+ * would touch a label row stops short of it, and the two never close up.
+ */
+export function parallelogramInsets(
+  w: number,
+  h: number,
+  alt: boolean,
+  lineWidths: readonly number[] = [],
+  startY = 0,
+): { left: number[]; right: number[] } {
+  const left: number[] = []
+  const right: number[] = []
+  for (let y = 0; y <= h; y++) {
+    let l = alt ? y : h - y
+    let r = alt ? h - y : y
+    const lw = lineWidths[y - startY]
+    if (lw !== undefined) {
+      const x0 = labelStartX(w, lw)
+      l = Math.min(l, x0 - 1 - HEX_GAP)
+      r = Math.min(r, w - x0 - lw - HEX_GAP)
+    }
+    l = Math.max(l, 0)
+    r = Math.min(Math.max(r, 0), Math.max(w - 2 - l, 0))
+    left.push(l)
+    right.push(r)
+  }
+  return { left, right }
+}
+
+/** Draw a parallelogram: a slant glyph at each wall, dashes on the top and bottom rows. */
+export function drawParallelogram(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  alt: boolean,
+  insets: { left: readonly number[]; right: readonly number[] },
+  useAscii: boolean,
+): void {
+  const hChar = useAscii ? '-' : '─'
+  const slant = alt ? (useAscii ? '\\' : '╲') : useAscii ? '/' : '╱'
+  for (let y = 0; y <= h; y++) {
+    const l = insets.left[y]!
+    const r = w - insets.right[y]!
+    canvas[l]![y] = slant
+    canvas[r]![y] = slant
+    if (y === 0 || y === h)
+      for (let x = l + 1; x < r; x++) canvas[x]![y] = hChar
+  }
+}
+
+/** Parallelogram grid cell: the box's rows, wide enough for the slant and the label. */
+export function parallelogramDimensions(
+  label: string,
+  options: ShapeRenderOptions,
+  alt: boolean,
+): ShapeDimensions {
+  const widths = splitLines(label).map((l) => displayWidth(l))
+  const base = getBoxDimensions(label, options)
+  const h = base.height - 1
+  const startY = Math.floor(h / 2) - Math.floor((widths.length - 1) / 2)
+  // The top and bottom rows keep two cells between their slants.
+  let width = Math.max(base.width, 2 * h + 3)
+  for (let grow = 0; grow < 64; grow++) {
+    const ideal = parallelogramInsets(width - 1, h, alt)
+    const fit = parallelogramInsets(width - 1, h, alt, widths, startY)
+    const clear = widths.every(
+      (_, i) =>
+        fit.left[startY + i] === ideal.left[startY + i] &&
+        fit.right[startY + i] === ideal.right[startY + i],
+    )
+    if (clear) break
+    width++
+  }
+  return { ...base, width, gridColumns: [1, width - 2, 1] }
+}
+
 /** True for the shapes drawn as a silhouette rather than a corner-glyph box. */
 export const isSilhouetteShape = (shape: string): boolean =>
+  shape === 'trapezoid' ||
+  shape === 'trapezoid-alt' ||
+  shape === 'parallelogram' ||
+  shape === 'parallelogram-alt' ||
   shape === 'stadium' ||
   shape === 'hexagon' ||
   shape === 'diamond' ||
   shape === 'circle' ||
+  shape === 'doublecircle' ||
   shape === 'asymmetric'
 
 /** Stadium and hexagon use the box's grid cell; the hexagon may widen it. */
@@ -343,7 +562,17 @@ export function hexagonDimensions(
 
 /** Standalone render of a stadium or hexagon, label centred (same as drawBox). */
 export function renderSilhouette(
-  kind: 'stadium' | 'hexagon' | 'diamond' | 'circle' | 'asymmetric',
+  kind:
+    | 'stadium'
+    | 'hexagon'
+    | 'diamond'
+    | 'circle'
+    | 'doublecircle'
+    | 'asymmetric'
+    | 'trapezoid'
+    | 'trapezoid-alt'
+    | 'parallelogram'
+    | 'parallelogram-alt',
   label: string,
   dimensions: ShapeDimensions,
   useAscii: boolean,
@@ -358,7 +587,38 @@ export function renderSilhouette(
     drawHexagon(canvas, w, h, diamondInsets(w, h), useAscii)
   else if (kind === 'circle')
     drawCircle(canvas, w, h, circleInsets(w, h), useAscii)
+  else if (kind === 'doublecircle') drawDoubleCircle(canvas, w, h, useAscii)
   else if (kind === 'asymmetric') drawAsymmetric(canvas, w, h, useAscii)
+  else if (kind === 'parallelogram' || kind === 'parallelogram-alt')
+    drawParallelogram(
+      canvas,
+      w,
+      h,
+      kind === 'parallelogram-alt',
+      parallelogramInsets(
+        w,
+        h,
+        kind === 'parallelogram-alt',
+        lines.map((l) => displayWidth(l)),
+        startY,
+      ),
+      useAscii,
+    )
+  else if (kind === 'trapezoid' || kind === 'trapezoid-alt')
+    drawTrapezoid(
+      canvas,
+      w,
+      h,
+      kind === 'trapezoid-alt',
+      trapezoidInsetsFor(
+        w,
+        h,
+        kind === 'trapezoid-alt',
+        lines.map((l) => displayWidth(l)),
+        startY,
+      ),
+      useAscii,
+    )
   else {
     const widths = lines.map((l) => displayWidth(l))
     drawHexagon(canvas, w, h, hexagonInsets(w, h, widths, startY), useAscii)

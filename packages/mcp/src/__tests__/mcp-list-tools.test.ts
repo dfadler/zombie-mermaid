@@ -42,6 +42,7 @@ describe('list_diagram_types', () => {
 
       c4: 'C4Context\nPerson(a, "A")',
       pie: 'pie\n"A" : 1',
+      quadrant: 'quadrantChart\nA: [0.5, 0.5]',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

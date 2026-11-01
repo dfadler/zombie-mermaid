@@ -11,8 +11,8 @@ floor for its lowest figure (default 85%, lower overrides in
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
 Reference: mermaid 12.2.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-10-27 at
-a70ae2e with `pnpm run layout:scorecard`, tolerance 20px.
+these diagram types is ELK (it was dagre before). Generated 2026-10-31 at
+67dd7ff with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
@@ -31,26 +31,26 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-15 | 9231164 | 12.1.0  | Flowchart | 53      | 94%      | 98%        | 100%        |
-| 2026-10-15 | 9231164 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-15 | 9231164 | 12.1.0  | Class     | 17      | 100%     | 99%        | 100%        |
-| 2026-10-15 | 9231164 | 12.1.0  | ER        | 18      | 100%     | 100%       | -           |
-| 2026-10-16 | 89d7175 | 12.1.0  | Flowchart | 53      | 95%      | 98%        | 100%        |
-| 2026-10-16 | 89d7175 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-16 | 89d7175 | 12.1.0  | Class     | 25      | 100%     | 100%       | 100%        |
-| 2026-10-16 | 89d7175 | 12.1.0  | ER        | 20      | 100%     | 100%       | -           |
-| 2026-10-16 | 65741f1 | 12.1.0  | Flowchart | 53      | 95%      | 98%        | 100%        |
-| 2026-10-16 | 65741f1 | 12.1.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-16 | 65741f1 | 12.1.0  | Class     | 28      | 100%     | 100%       | 100%        |
-| 2026-10-16 | 65741f1 | 12.1.0  | ER        | 20      | 100%     | 100%       | -           |
-| 2026-10-22 | 1aca1b7 | 12.2.0  | Flowchart | 53      | 99%      | 98%        | 100%        |
-| 2026-10-22 | 1aca1b7 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-22 | 1aca1b7 | 12.2.0  | Class     | 28      | 100%     | 100%       | 100%        |
-| 2026-10-22 | 1aca1b7 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
-| 2026-10-27 | a70ae2e | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
-| 2026-10-27 | a70ae2e | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-27 | a70ae2e | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
-| 2026-10-27 | a70ae2e | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-30 | 961cbfa | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
+| 2026-10-30 | 961cbfa | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-30 | 961cbfa | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-10-30 | 961cbfa | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-30 | 036684d | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
+| 2026-10-30 | 036684d | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-30 | 036684d | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-10-30 | 036684d | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-30 | 151f853 | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
+| 2026-10-30 | 151f853 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-30 | 151f853 | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-10-30 | 151f853 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-31 | ac52e8a | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
+| 2026-10-31 | ac52e8a | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-31 | ac52e8a | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-10-31 | ac52e8a | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-10-31 | 67dd7ff | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
+| 2026-10-31 | 67dd7ff | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-10-31 | 67dd7ff | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-10-31 | 67dd7ff | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Edge labels (ASCII)
 
@@ -62,6 +62,100 @@ between the two renderers. Descriptive only, no floor.
 | Date       | Commit  | Mermaid | Cases | Official | ASCII | Delta |
 | ---------- | ------- | ------- | ----- | -------- | ----- | ----- |
 | 2026-10-27 | a70ae2e | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-10-30 | 507a226 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-10-30 | 79a0125 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-10-30 | 961cbfa | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-10-30 | 036684d | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-10-30 | 151f853 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-10-31 | ac52e8a | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-10-31 | 67dd7ff | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+
+## Sequence diagrams (order)
+
+Sequence has no layout engine to compare, so the share of agreeing pairs is
+taken for participant left-to-right order and message top-to-bottom order, and
+the share of messages pointing the same way (`scripts/sequence-oracle.ts`).
+Every sample must score 100% (`SEQUENCE_FLOOR`; `--thresholds` exits 1
+otherwise), so this guards against regressions in a grid that agrees today. It
+says nothing about pixel positions or spacing.
+
+| Date       | Commit  | Mermaid | Samples | Participants | Messages | Direction |
+| ---------- | ------- | ------- | ------- | ------------ | -------- | --------- |
+| 2026-10-30 | 507a226 | 12.2.0  | 21      | 100%         | 100%     | 100%      |
+| 2026-10-30 | 79a0125 | 12.2.0  | 21      | 100%         | 100%     | 100%      |
+| 2026-10-30 | 961cbfa | 12.2.0  | 21      | 100%         | 100%     | 100%      |
+| 2026-10-30 | 036684d | 12.2.0  | 21      | 100%         | 100%     | 100%      |
+| 2026-10-30 | 151f853 | 12.2.0  | 21      | 100%         | 100%     | 100%      |
+| 2026-10-31 | ac52e8a | 12.2.0  | 21      | 100%         | 100%     | 100%      |
+| 2026-10-31 | 67dd7ff | 12.2.0  | 21      | 100%         | 100%     | 100%      |
+
+## Pie charts (angles)
+
+A pie has no nodes, so the share of drawn slices whose start and sweep angle
+agree (within `ANGLE_TOLERANCE`), of slices printing the same percentage and
+of legend rows with the same text is taken (`scripts/pie-oracle.ts`). Slices
+are matched by position, so a different slice order counts as an angle
+disagreement. Every sample must score 100% (`PIE_FLOOR`; `--thresholds`
+exits 1 otherwise). It says nothing about radius, centre or fonts.
+
+| Date       | Commit  | Mermaid | Samples | Angles | Labels | Legend |
+| ---------- | ------- | ------- | ------- | ------ | ------ | ------ |
+| 2026-10-30 | 79a0125 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-10-30 | 961cbfa | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-10-30 | 036684d | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-10-30 | 151f853 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-10-31 | ac52e8a | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-10-31 | 67dd7ff | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+
+## C4 diagrams (placement)
+
+C4 has no layout engine to compare, so the share of box pairs on the same side
+of each other (columns and rows, within `PLACE_TOLERANCE`), of boxes inside the
+same boundaries, of relationships with the same label and technology text and
+of relationships running the same way is taken (`scripts/c4-oracle.ts`).
+Every sample must score 100% (`C4_FLOOR`; `--thresholds` exits 1
+otherwise). It says nothing about box sizes or fonts.
+
+| Date       | Commit  | Mermaid | Samples | Horizontal | Vertical | Containment | Relationships | Direction |
+| ---------- | ------- | ------- | ------- | ---------- | -------- | ----------- | ------------- | --------- |
+| 2026-10-30 | 961cbfa | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
+| 2026-10-30 | 036684d | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
+| 2026-10-30 | 151f853 | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
+| 2026-10-31 | ac52e8a | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
+| 2026-10-31 | 67dd7ff | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
+
+## XY charts (axes and data)
+
+An xychart has no nodes, so the share of axis labels with the same text, of
+axis labels at the same fraction of their axis and of bars and line points at
+the same category and value fraction is taken (`scripts/xychart-oracle.ts`).
+Positions are fractions of the axis, so canvas size does not count. Every
+sample must score 100% (`XYCHART_FLOOR`; `--thresholds` exits 1
+otherwise), except the data figure of samples listed in `DATA_FLOOR`. It
+says nothing about colors, fonts or bar widths.
+
+| Date       | Commit  | Mermaid | Samples | Labels | Ticks | Data |
+| ---------- | ------- | ------- | ------- | ------ | ----- | ---- |
+| 2026-10-30 | 036684d | 12.2.0  | 10      | 100%   | 100%  | 90%  |
+| 2026-10-31 | ac52e8a | 12.2.0  | 10      | 100%   | 100%  | 90%  |
+| 2026-10-31 | 67dd7ff | 12.2.0  | 10      | 100%   | 100%  | 90%  |
+
+## Architecture diagrams (placement)
+
+Mermaid places architecture services with cytoscape fcose, constrained by the
+L/R/T/B sides in the source. A force layout moves with its seed and font
+metrics, so only relative placement is scored: the share of service pairs
+above / below / beside each other and of (service, group) pairs agreeing on
+containment, with services within `ARCH_TOLERANCE` (half an icon) counted as
+level (`scripts/architecture-oracle.ts`). Every sample must stay at or above
+`ARCH_FLOOR` (`--thresholds` exits 1 otherwise), a regression guard, not a
+parity claim. It says nothing about distances or edge routes.
+
+| Date       | Commit  | Mermaid | Samples | Vertical | Horizontal | Containment |
+| ---------- | ------- | ------- | ------- | -------- | ---------- | ----------- |
+| 2026-10-30 | 151f853 | 12.2.0  | 3       | 68%      | 84%        | 97%         |
+| 2026-10-31 | ac52e8a | 12.2.0  | 3       | 68%      | 84%        | 97%         |
+| 2026-10-31 | 67dd7ff | 12.2.0  | 3       | 68%      | 84%        | 97%         |
 
 ## Per sample
 
@@ -198,7 +292,8 @@ Not scored (the oracle errored): zombie-mermaid.
 
 ## Diagram types not scored
 
-- **sequence**: mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, and emits no g.node elements. Agreement would be 100% by construction.
-- **architecture-beta**: we have no architecture layout to measure, and mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port directions in the source.
-- **pie, xychart-beta**: no nodes: positions come from data values, so there is no arrangement to compare.
-- **c4**: mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges.
+- **sequence**: mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, so node placement says nothing. Order and direction are scored separately, in the Sequence section.
+- **architecture-beta**: mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port sides in the source, a force layout whose distances are not comparable. Relative placement and group containment are scored separately, in the Architecture section.
+- **xychart-beta**: no nodes: positions come from axis labels and data values. Label text, tick positions and bar/line data positions are scored separately, in the XY charts section.
+- **pie**: no nodes: positions come from data values. Slice angles, percentages and legend rows are scored separately, in the Pie section.
+- **c4**: mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges. Box placement, boundary containment and relationships are scored separately, in the C4 section.

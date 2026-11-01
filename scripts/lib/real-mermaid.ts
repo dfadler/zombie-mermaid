@@ -43,7 +43,12 @@ export async function startRealMermaid(): Promise<RealMermaidSession> {
 
   const browser = await chromium.launch()
   try {
-    const page = await browser.newPage()
+    // C4 wraps its rows at `screen.availWidth` (#2472). The headless default
+    // (1280) is narrower than a desktop and than the 1440 our C4 layout and its
+    // fixtures use (`C4.screenWidth`), so give mermaid a 1440 screen.
+    const page = await browser.newPage({
+      screen: { width: 1440, height: 900 },
+    })
     await page.setContent('<!DOCTYPE html><html><body></body></html>')
     await page.addScriptTag({ content: mermaidJs })
     await page.evaluate(() => {

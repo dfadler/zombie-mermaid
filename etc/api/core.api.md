@@ -5,7 +5,7 @@
 ```ts
 
 // @public
-export function __resetSvgTitleIdCounterForTests(): void;
+export const __resetSvgTitleIdCounterForTests: typeof resetSvgIdCounters;
 
 // @public (undocumented)
 export interface AccessibleText {
@@ -26,7 +26,7 @@ export function applyInitConfig(options: RenderOptions, config: InitConfig): Ren
 export function applyThemeVariables(options: RenderOptions, config: InitConfig | undefined): RenderOptions;
 
 // @public
-export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string): string;
+export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string, body?: MonoFontEmbed): string;
 
 // @public
 export function checkGraphSize(nodes: number, edges: number, limits: RenderLimits | undefined): void;
@@ -35,10 +35,13 @@ export function checkGraphSize(nodes: number, edges: number, limits: RenderLimit
 export function checkLimit(limit: keyof RenderLimits, value: number, limits: RenderLimits | undefined): void;
 
 // @public
+export function checkLineLength(text: string, limits: RenderLimits | undefined): void;
+
+// @public
 export type ClassRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'fontSizes' | 'interactivity' | 'layoutCache'>;
 
 // @public
-export type CommonRenderOptions = Pick<RenderOptions, 'bg' | 'fg' | 'line' | 'accent' | 'muted' | 'surface' | 'border' | 'font' | 'transparent' | 'embedSource' | 'resolveColors' | 'nonce' | 'styleAttribute' | 'title' | 'decorative'>;
+export type CommonRenderOptions = Pick<RenderOptions, 'bg' | 'fg' | 'line' | 'accent' | 'muted' | 'surface' | 'border' | 'font' | 'embedFont' | 'transparent' | 'embedSource' | 'resolveColors' | 'nonce' | 'styleAttribute' | 'title' | 'decorative'>;
 
 // @public
 export type CurveStyle = 'linear' | 'basis' | 'natural' | 'step' | 'stepBefore' | 'stepAfter';
@@ -66,7 +69,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant"];
 
 // @public
 export interface DiagramColors {
@@ -210,6 +213,15 @@ export function extractInitConfig(lines: string[]): InitConfig;
 export function f(strings: TemplateStringsArray, ...values: unknown[]): string;
 
 // @public
+export function findBackEdgeIndexes(graph: MermaidGraph, walkOrder?: Iterable<string>, feedback?: ReadonlySet<number>): Set<number>;
+
+// @public
+export function findBackEdges(edges: ReadonlyArray<{
+    source: string;
+    target: string;
+}>, walkOrder: Iterable<string>): Set<number>;
+
+// @public
 export type FlowchartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'padding' | 'nodeSpacing' | 'layerSpacing' | 'mergeEdges' | 'direction' | 'curve' | 'honorThemeVariables' | 'fontSizes' | 'interactivity' | 'layoutCache' | 'layout'>;
 
 // @public
@@ -235,6 +247,7 @@ export interface InitConfig {
     pieHighlightSlice?: string;
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
     pieTextPosition?: number;
+    quadrant?: QuadrantConfig;
     // (undocumented)
     theme?: string;
     themeVariables?: ThemeVariables;
@@ -467,6 +480,7 @@ export interface PositionedEdge {
     hasArrowEnd: boolean;
     // (undocumented)
     hasArrowStart: boolean;
+    headColor?: string;
     id?: string;
     inlineStyle?: Record<string, string>;
     // (undocumented)
@@ -536,10 +550,20 @@ export interface PositionedNode {
 }
 
 // @public (undocumented)
+export type QuadrantColorVariable = (typeof QUADRANT_COLOR_VARIABLES)[number];
+
+// @public
+export type QuadrantConfig = Partial<Record<(typeof QUADRANT_NUMBER_KEYS)[number], number>> & {
+    xAxisPosition?: 'top' | 'bottom';
+    yAxisPosition?: 'left' | 'right';
+};
+
+// @public (undocumented)
 export interface RenderLimits {
     maxCanvasCells?: number;
     maxEdges?: number;
     maxInputLength?: number;
+    maxLineLength?: number;
     maxNodes?: number;
 }
 
@@ -557,6 +581,7 @@ export interface RenderOptions {
     curve?: CurveStyle;
     decorative?: boolean;
     direction?: Direction;
+    embedFont?: false | 'subset';
     embedSource?: boolean;
     fg?: string;
     font?: string;
@@ -592,6 +617,9 @@ export interface RenderOptions {
     title?: string;
     transparent?: boolean;
 }
+
+// @public
+export function resetSvgIdCounters(): void;
 
 // @public
 export function resolveNodeStyle(nodeId: string, directives: StyleDirectives): Record<string, string> | undefined;
@@ -657,7 +685,17 @@ export function styleOpenTag(nonce?: string): string;
 export function subgraphDirectionIsHonored(sg: MermaidSubgraph, graph: MermaidGraph): boolean;
 
 // @public
+export function subgraphFeedbackEdges(graph: MermaidGraph): Set<number>;
+
+// @public
+export function subgraphMembers(sg: MermaidSubgraph): Set<string>;
+
+// @public
+export function subgraphsTied(graph: MermaidGraph, a: MermaidSubgraph, b: MermaidSubgraph): boolean;
+
+// @public
 export interface SvgEmitOptions {
+    bodyFont?: MonoFontEmbed;
     description?: string;
     nonce?: string;
     styleAttribute?: boolean;
@@ -682,6 +720,7 @@ export interface ThemeVariables {
     primaryBorderColor?: string;
     primaryColor?: string;
     primaryTextColor?: string;
+    quadrant?: Partial<Record<QuadrantColorVariable, string>>;
 }
 
 // @public

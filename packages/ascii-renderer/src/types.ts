@@ -176,6 +176,8 @@ export interface AsciiNode {
   labelRows?: { top: number; bottom: number }
   /** Per drawing row, columns a hexagon's diagonal takes at each end (#2164). */
   labelInsets?: number[]
+  /** Right-hand columns per row when they differ from `labelInsets` (a parallelogram leans). */
+  labelInsetsRight?: number[]
   /**
    * `class-name` nodes only: which end of its cell the text hugs, so it
    * sits next to the circle its edge ends in (see class-flow.ts).
@@ -456,6 +458,10 @@ export interface LabelRect {
   leftNotch?: boolean
   /** A hexagon, circle or diamond: its `╱`/`╲` (`/`/`\`) swap on a vertical flip so BT reads like TD (#2388). */
   diagonals?: boolean
+  /** A trapezoid: its outline rows swap on a vertical flip so the wide edge stays at the bottom (or top, for `trapezoid-alt`) as in mermaid's BT (#2164). */
+  trapezoid?: boolean
+  /** A parallelogram: it leans the same way in every direction, so an RL flip mirrors its outline within the rect (#2164). */
+  parallelogram?: boolean
 }
 
 /** Full ASCII graph state used during layout and rendering. */

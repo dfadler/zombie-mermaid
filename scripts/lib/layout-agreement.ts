@@ -12,6 +12,11 @@
  */
 
 import { writeFile } from 'node:fs/promises'
+import type { PieEntry } from './pie-agreement.ts'
+import type { C4Entry } from './c4-agreement.ts'
+import type { ArchitectureEntry } from './architecture-agreement.ts'
+import type { SequenceEntry } from './sequence-agreement.ts'
+import type { XyEntry } from './xychart-agreement.ts'
 
 export interface Box {
   x: number
@@ -447,7 +452,17 @@ export function jsonPayload(runs: ScorecardRun[]): string {
 }
 
 /** History entries as JSON Lines, ready to append. */
-export function historyLines(entries: (HistoryEntry | LabelEntry)[]): string {
+export function historyLines(
+  entries: (
+    | HistoryEntry
+    | LabelEntry
+    | SequenceEntry
+    | PieEntry
+    | C4Entry
+    | XyEntry
+    | ArchitectureEntry
+  )[],
+): string {
   return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
 }
 
@@ -504,12 +519,13 @@ export const EXPECTED_ERRORS: readonly string[] = ['zombie-mermaid']
  */
 export const EXCLUDED_TYPES: Readonly<Record<string, string>> = {
   sequence:
-    'mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, and emits no g.node elements. Agreement would be 100% by construction.',
+    'mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, so node placement says nothing. Order and direction are scored separately, in the Sequence section.',
   'architecture-beta':
-    'we have no architecture layout to measure, and mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port directions in the source.',
-  'pie, xychart-beta':
-    'no nodes: positions come from data values, so there is no arrangement to compare.',
-  c4: 'mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges.',
+    'mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port sides in the source, a force layout whose distances are not comparable. Relative placement and group containment are scored separately, in the Architecture section.',
+  'xychart-beta':
+    'no nodes: positions come from axis labels and data values. Label text, tick positions and bar/line data positions are scored separately, in the XY charts section.',
+  pie: 'no nodes: positions come from data values. Slice angles, percentages and legend rows are scored separately, in the Pie section.',
+  c4: 'mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges. Box placement, boundary containment and relationships are scored separately, in the C4 section.',
 }
 
 const EPS = 1e-9
@@ -654,6 +670,11 @@ export function scorecardMarkdown(
   history: HistoryEntry[],
   command = 'pnpm run layout:scorecard',
   labels: LabelEntry[] = [],
+  sequences: SequenceEntry[] = [],
+  pies: PieEntry[] = [],
+  c4s: C4Entry[] = [],
+  xycharts: XyEntry[] = [],
+  architectures: ArchitectureEntry[] = [],
 ): string {
   const first = runs[0]!.entry
   const means = runs.map(
@@ -703,6 +724,120 @@ ${labelRows.join('\n')}
 
 `
     : ''
+  const seqRows = sequences
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.participants)} | ${cell(q.messages)} | ${cell(q.direction)} |`,
+    )
+  const seqSection = seqRows.length
+    ? `## Sequence diagrams (order)
+
+Sequence has no layout engine to compare, so the share of agreeing pairs is
+taken for participant left-to-right order and message top-to-bottom order, and
+the share of messages pointing the same way (\`scripts/sequence-oracle.ts\`).
+Every sample must score 100% (\`SEQUENCE_FLOOR\`; \`--thresholds\` exits 1
+otherwise), so this guards against regressions in a grid that agrees today. It
+says nothing about pixel positions or spacing.
+
+| Date | Commit | Mermaid | Samples | Participants | Messages | Direction |
+| --- | --- | --- | --- | --- | --- | --- |
+${seqRows.join('\n')}
+
+`
+    : ''
+  const pieRows = pies
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.angles)} | ${cell(q.labels)} | ${cell(q.legend)} |`,
+    )
+  const pieSection = pieRows.length
+    ? `## Pie charts (angles)
+
+A pie has no nodes, so the share of drawn slices whose start and sweep angle
+agree (within \`ANGLE_TOLERANCE\`), of slices printing the same percentage and
+of legend rows with the same text is taken (\`scripts/pie-oracle.ts\`). Slices
+are matched by position, so a different slice order counts as an angle
+disagreement. Every sample must score 100% (\`PIE_FLOOR\`; \`--thresholds\`
+exits 1 otherwise). It says nothing about radius, centre or fonts.
+
+| Date | Commit | Mermaid | Samples | Angles | Labels | Legend |
+| --- | --- | --- | --- | --- | --- | --- |
+${pieRows.join('\n')}
+
+`
+    : ''
+  const c4Rows = c4s
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.horizontal)} | ${cell(q.vertical)} | ${cell(q.containment)} | ${cell(q.relationships)} | ${cell(q.direction)} |`,
+    )
+  const c4Section = c4Rows.length
+    ? `## C4 diagrams (placement)
+
+C4 has no layout engine to compare, so the share of box pairs on the same side
+of each other (columns and rows, within \`PLACE_TOLERANCE\`), of boxes inside the
+same boundaries, of relationships with the same label and technology text and
+of relationships running the same way is taken (\`scripts/c4-oracle.ts\`).
+Every sample must score 100% (\`C4_FLOOR\`; \`--thresholds\` exits 1
+otherwise) except those held lower in \`C4_SAMPLE_FLOORS\`, where our placement
+really differs. It says nothing about box sizes or fonts.
+
+| Date | Commit | Mermaid | Samples | Horizontal | Vertical | Containment | Relationships | Direction |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+${c4Rows.join('\n')}
+
+`
+    : ''
+  const xyRows = xycharts
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.labels)} | ${cell(q.ticks)} | ${cell(q.data)} |`,
+    )
+  const xySection = xyRows.length
+    ? `## XY charts (axes and data)
+
+An xychart has no nodes, so the share of axis labels with the same text, of
+axis labels at the same fraction of their axis and of bars and line points at
+the same category and value fraction is taken (\`scripts/xychart-oracle.ts\`).
+Positions are fractions of the axis, so canvas size does not count. Every
+sample must score 100% (\`XYCHART_FLOOR\`; \`--thresholds\` exits 1
+otherwise), except the data figure of samples listed in \`DATA_FLOOR\`. It
+says nothing about colors, fonts or bar widths.
+
+| Date | Commit | Mermaid | Samples | Labels | Ticks | Data |
+| --- | --- | --- | --- | --- | --- | --- |
+${xyRows.join('\n')}
+
+`
+    : ''
+  const archRows = architectures
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.vertical)} | ${cell(q.horizontal)} | ${cell(q.containment)} |`,
+    )
+  const archSection = archRows.length
+    ? `## Architecture diagrams (placement)
+
+Mermaid places architecture services with cytoscape fcose, constrained by the
+L/R/T/B sides in the source. A force layout moves with its seed and font
+metrics, so only relative placement is scored: the share of service pairs
+above / below / beside each other and of (service, group) pairs agreeing on
+containment, with services within \`ARCH_TOLERANCE\` (half an icon) counted as
+level (\`scripts/architecture-oracle.ts\`). Every sample must stay at or above
+\`ARCH_FLOOR\` (\`--thresholds\` exits 1 otherwise), a regression guard, not a
+parity claim. It says nothing about distances or edge routes.
+
+| Date | Commit | Mermaid | Samples | Vertical | Horizontal | Containment |
+| --- | --- | --- | --- | --- | --- | --- |
+${archRows.join('\n')}
+
+`
+    : ''
   return `<!-- Generated by \`${command}\`. Do not edit by hand. -->
 
 # Layout-fidelity scorecard
@@ -735,7 +870,7 @@ across that change.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 ${trend.join('\n')}
 
-${labelSection}## Per sample
+${labelSection}${seqSection}${pieSection}${c4Section}${xySection}${archSection}## Per sample
 
 ${sections.join('\n\n')}
 

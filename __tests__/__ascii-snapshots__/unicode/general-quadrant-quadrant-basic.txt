@@ -1,0 +1,27 @@
+                 Reach and engagement of campaigns
+
+                ┌────────────────────────┬────────────────────────┐
+                │    Need to promote     │    We should expand    │
+                │                        │                        │
+                │                        │                        │
+High Engagement │                 6      │                        │
+                │                        │  3                     │
+                │                        │                        │
+                │              1         │                        │
+                ├────────────────────────┼────────────────────────┤
+                │      Re-evaluate       │    May be improved     │
+                │                   5    │            4           │
+                │                        │                        │
+ Low Engagement │                      2 │                        │
+                │                        │                        │
+                │                        │                        │
+                │                        │                        │
+                └────────────────────────┴────────────────────────┘
+                        Low Reach                High Reach
+
+  1 Campaign A  (0.3, 0.6)
+  2 Campaign B  (0.45, 0.23)
+  3 Campaign C  (0.57, 0.69)
+  4 Campaign D  (0.78, 0.34)
+  5 Campaign E  (0.4, 0.34)
+  6 Campaign F  (0.35, 0.78)
