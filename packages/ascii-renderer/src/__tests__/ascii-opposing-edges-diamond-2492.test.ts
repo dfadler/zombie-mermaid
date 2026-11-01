@@ -32,8 +32,11 @@ describe('opposing edges at a diamond / slanted node (#2492)', () => {
     expect(out).toContain('│▲')
   })
 
-  it('SVG draws both opposing edges', () => {
-    const svg = renderMermaidSVG(SRC('LR', '[/Ask Again/]'))
-    expect(svg.match(/class="edge"/g)).toHaveLength(4)
+  // Paired snapshots (repo rule: SVG + ASCII). The fix is ASCII-only, so the
+  // SVG snapshot pins that SVG output stays unchanged.
+  it('snapshots ASCII and SVG for the issue source', () => {
+    const src = SRC('LR', '[/Ask Again/]')
+    expect(renderMermaidASCII(src)).toMatchSnapshot('ascii')
+    expect(renderMermaidSVG(src)).toMatchSnapshot('svg')
   })
 })
