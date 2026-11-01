@@ -1,3 +1,4 @@
+import './cli/node-guard.ts'
 import { parseArgs } from './cli/parse-args.ts'
 import type { CliArgs } from './cli/parse-args.ts'
 import { runRender } from './cli/render.ts'
