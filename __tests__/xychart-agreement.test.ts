@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { renderMermaidSVG } from '../src/index.ts'
 import {
   barBox,
-  DATA_FLOOR,
   isHorizontal,
   parseOfficialXy,
   parseOurXy,
@@ -226,7 +225,7 @@ describe('xychart agreement (#2451)', () => {
     })
   })
 
-  it('gates samples on the floor, on errors and on the data exception', () => {
+  it('gates samples on the floor, and on errors', () => {
     const o = parseOfficialXy(OFFICIAL, false)
     const ok = xyAgreement(o, o)
     const bad = xyAgreement(o, { ...o, points: [] })
@@ -235,10 +234,9 @@ describe('xychart agreement (#2451)', () => {
       'boom (error)',
       'bad data (0% < 100%)',
     ])
-    const known = Object.keys(DATA_FLOOR)[0]!
-    expect(xyBreaches({ [known]: bad })).toEqual([])
-    expect(xyBreaches({ [known]: { ...bad, labels: 0.5 } })).toEqual([
-      `${known} labels (50% < 100%)`,
+    expect(xyBreaches({ s: { ...bad, labels: 0.5 } })).toEqual([
+      's labels (50% < 100%)',
+      's data (0% < 100%)',
     ])
   })
 

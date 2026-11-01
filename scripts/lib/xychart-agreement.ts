@@ -298,17 +298,6 @@ export function xyAgreement(official: XyLayout, ours: XyLayout): XyAgreement {
  */
 export const XYCHART_FLOOR = 1
 
-/**
- * Lower floor for a sample's `data` figure. Mermaid 12.2.0 draws every bar
- * series centred on the same x (the series overlap); we offset them side by
- * side, so no bar of a second series lines up. A known gap, recorded here so
- * the other figures of that sample stay guarded rather than the sample being
- * dropped; remove the entry when the renderer matches.
- */
-export const DATA_FLOOR: Readonly<Record<string, number>> = {
-  'XY: Multiple Bar Series': 0,
-}
-
 /** One tracked xychart data point: mean of each figure over the xychart samples. */
 export interface XyEntry {
   kind: 'xychart'
@@ -351,8 +340,7 @@ export function xyBreaches(
   for (const [title, r] of Object.entries(results)) {
     for (const k of ['labels', 'ticks', 'data'] as const) {
       const v = r[k]
-      const floor =
-        k === 'data' ? (DATA_FLOOR[title] ?? XYCHART_FLOOR) : XYCHART_FLOOR
+      const floor = XYCHART_FLOOR
       if (v !== null && v + 1e-9 < floor) {
         out.push(`${title} ${k} (${Math.round(v * 100)}% < ${floor * 100}%)`)
       }

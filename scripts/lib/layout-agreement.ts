@@ -805,7 +805,7 @@ axis labels at the same fraction of their axis and of bars and line points at
 the same category and value fraction is taken (\`scripts/xychart-oracle.ts\`).
 Positions are fractions of the axis, so canvas size does not count. Every
 sample must score 100% (\`XYCHART_FLOOR\`; \`--thresholds\` exits 1
-otherwise), except the data figure of samples listed in \`DATA_FLOOR\`. It
+otherwise). It
 says nothing about colors, fonts or bar widths.
 
 | Date | Commit | Mermaid | Samples | Labels | Ticks | Data |

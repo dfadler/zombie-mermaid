@@ -813,6 +813,19 @@ export const forkFixes: ForkFix[] = [
       'Before: the literal text `#quot;Say#quot; #lt;hi#gt;` and `x #35;1`. After: `"Say" <hi>` and `x #1`.',
   },
   {
+    id: 'xychart-bar-series-overlap',
+    title: 'XY chart bar series were drawn side by side, not overlapping',
+    symptom:
+      'Two `bar` series on the same categories were split into narrow adjacent bars, while mermaid 12.2.0 draws each series centred on the category with later series on top.',
+    source:
+      'xychart-beta\n  title "2023 vs 2024 Sales"\n  x-axis [Q1, Q2, Q3, Q4]\n  bar [50, 60, 70, 80]\n  bar [60, 70, 80, 90]',
+    fixCommit: '1941517f',
+    pr: 2508,
+    render: 'svg',
+    lookFor:
+      'Before: each quarter shows two thin bars next to each other. After: the two bars share one centred, full-width slot and overlap.',
+  },
+  {
     id: 'ascii-opposing-edges-diamond',
     title: 'ASCII opposing edges merged into one route at a diamond',
     symptom:
