@@ -26,6 +26,7 @@
   "size:report": "print where the bytes are: per-file raw/gzip/brotli, per-module breakdown from sourcemaps, ESM duplicates and `npm pack` composition for every package (run `pnpm run build` first)",
   "check:bundle-size": "check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)",
   "smoke:packed": "pack every public package, install the tarballs into clean temp projects and smoke-test them as a consumer would (run `pnpm run build` first; what CI's \"Packed tarball smoke test\" job and publish.yml run)",
+  "check:plugin-lock": "fail if the `zombie-mermaid` pin in `plugins/claude/package.json` disagrees with its `npm-shrinkwrap.json`, or `npm ci --dry-run --ignore-scripts` fails there (#2503)",
   "sync:plugin-skill": "regenerate `plugins/claude/skills/zombie-mermaid/SKILL.md` from `skills/zombie-mermaid/SKILL.md` for the Claude Code plugin (#2206)",
   "check:pack-dist": "release guard (#1991): fails if any public package's `npm pack --dry-run` tarball lacks its main/module/types/bin/exports files (run `pnpm run build` first; publish.yml's release job runs it before `changeset publish`)",
   "check:package-types": "report-only publint + arethetypeswrong over packed tarballs (optional dir argument, else packs via `smoke:packed`; run `pnpm run build` first; CI's \"Packed tarball smoke test\" job runs it with continue-on-error)",
