@@ -37,3 +37,24 @@ describe('ASCII sequence nested blocks (#2497)', () => {
     expect(lines.some((l) => l.startsWith('└'))).toBe(true)
   })
 })
+
+describe('ASCII sequence nested blocks over the same lifelines (#2497)', () => {
+  const lines = renderMermaidASCII(
+    `sequenceDiagram
+  A->>B: go
+  alt outer
+    loop inner
+      A->>B: fetch
+    end
+  end`,
+    { useAscii: false },
+  ).split('\n')
+  const row = (s: string) => lines.findIndex((l) => l.includes(s))
+
+  it('insets the inner block one column on each side', () => {
+    const outer = lines[row('alt [outer]')]!
+    const inner = lines[row('loop [inner]')]!
+    expect(inner.indexOf('┌')).toBe(outer.indexOf('┌') + 1)
+    expect(inner.lastIndexOf('┐')).toBe(outer.lastIndexOf('┐') - 1)
+  })
+})

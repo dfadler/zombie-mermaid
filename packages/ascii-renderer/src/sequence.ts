@@ -1456,33 +1456,24 @@ export function renderSequenceAscii(
   // left outer-first (reverse order); the label width is re-measured between.
   const isInside = (c: Block, p: Block): boolean =>
     c.startIndex >= p.startIndex && c.endIndex <= p.endIndex
-  for (let p = diagram.blocks.length - 1; p >= 0; p--) {
-    for (let c = 0; c < p; c++) {
-      const pe = blockExt[p]
-      const ce = blockExt[c]
-      if (!pe || !ce) continue
-      if (isInside(diagram.blocks[c]!, diagram.blocks[p]!))
-        ce.l = Math.max(ce.l, pe.l + 1)
-    }
+  // Blocks without a measured extent (never laid out) take no part.
+  const live = Object.keys(blockExt).map(Number)
+  const nestedIn = (p: number): number[] =>
+    live.filter(
+      (c) => c < p && isInside(diagram.blocks[c]!, diagram.blocks[p]!),
+    )
+  for (const p of [...live].reverse()) {
+    for (const c of nestedIn(p))
+      blockExt[c]!.l = Math.max(blockExt[c]!.l, blockExt[p]!.l + 1)
   }
   // Label-driven minimum width (#352), measured from the final left wall.
-  for (let b = 0; b < diagram.blocks.length; b++) {
-    const ext = blockExt[b]
-    if (ext) {
-      ext.r = Math.max(
-        ext.r,
-        ext.l + 1 + maxBlockLabelWidth(diagram.blocks[b]!),
-      )
-    }
+  for (const b of live) {
+    const ext = blockExt[b]!
+    ext.r = Math.max(ext.r, ext.l + 1 + maxBlockLabelWidth(diagram.blocks[b]!))
   }
-  for (let p = 0; p < diagram.blocks.length; p++) {
-    for (let c = 0; c < p; c++) {
-      const pe = blockExt[p]
-      const ce = blockExt[c]
-      if (!pe || !ce) continue
-      if (isInside(diagram.blocks[c]!, diagram.blocks[p]!))
-        pe.r = Math.max(pe.r, ce.r + 1)
-    }
+  for (const p of live) {
+    for (const c of nestedIn(p))
+      blockExt[p]!.r = Math.max(blockExt[p]!.r, blockExt[c]!.r + 1)
   }
 
   // Pass 2: grow the canvas to fit, then draw.
@@ -1490,8 +1481,8 @@ export function renderSequenceAscii(
     const block = diagram.blocks[b]!
     const topY = blockStartY.get(b)
     const botY = blockEndY.get(b)
-    const ext = blockExt[b]
-    if (topY === undefined || botY === undefined || !ext) continue
+    if (topY === undefined || botY === undefined) continue
+    const ext = blockExt[b]!
     const bLeft = ext.l
     const bRight = ext.r
     const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type

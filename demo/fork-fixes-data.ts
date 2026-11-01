@@ -812,4 +812,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the literal text `#quot;Say#quot; #lt;hi#gt;` and `x #35;1`. After: `"Say" <hi>` and `x #1`.',
   },
+  {
+    id: 'sequence-nested-blocks',
+    title: 'Nested sequence blocks were drawn stacked, not nested, in ASCII',
+    symptom:
+      'A block inside another block (`alt` containing `loop`, `opt`) was laid out as if it were a sibling: its header and walls landed on the container’s walls, so the nesting was unreadable.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  alt cache hit\n    loop every retry\n      A->>B: fetch\n    end\n  else cache miss\n    opt warm up\n      B->>B: rebuild\n    end\n  end',
+    fixCommit: 'ee1a26d',
+    pr: 2510,
+    render: 'ascii',
+    lookFor:
+      'Before: the inner `loop` and `opt` headers collide with the `alt` frame. After: each sits inside the `alt`, one column clear of its walls.',
+  },
 ]
