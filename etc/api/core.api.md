@@ -313,6 +313,7 @@ export function measureTextWidth(text: string, fontSize: number, fontWeight: num
 
 // @public (undocumented)
 export interface MermaidEdge {
+    acrossFlow?: boolean;
     animate?: boolean;
     endMarker?: 'circle' | 'cross';
     hasArrowEnd: boolean;
@@ -350,6 +351,8 @@ export interface MermaidGraph {
 
 // @public (undocumented)
 export interface MermaidNode {
+    gridLayer?: number;
+    gridOrder?: number;
     // (undocumented)
     id: string;
     // (undocumented)
