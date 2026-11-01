@@ -6,14 +6,14 @@ exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII an
 │ A ├────►< Valid? >─yes►│       C       │
 │   │       ╲    ╱       │               │
 └───┘         ╲╱         └───────────────┘
-              ▲│                          
+              │▲                          
               ││                          
               ││                          
               ││                          
               ││             ╱───────────╱
-              └┼────────────╱           ╱ 
-               │           ╱ Ask Again ╱  
-               └───no────►╱           ╱   
+              │└────────────╱           ╱ 
+              │            ╱ Ask Again ╱  
+              └───no─────►╱           ╱   
                          ╱───────────╱    "
 `;
 
