@@ -335,7 +335,7 @@ export function staggerFanOuts(
   }
 }
 
-interface Slot {
+export interface Slot {
   run: PortRun
   role: 'S' | 'E'
   fixed: boolean
@@ -348,7 +348,7 @@ interface Slot {
 }
 
 /** The row the far end of an L edge takes, from its own `pushOf`. */
-function farPush(edge: AsciiEdge, role: 'S' | 'E'): number {
+export function farPush(edge: AsciiEdge, role: 'S' | 'E'): number {
   const far = role === 'S' ? endRun(edge) : startRun(edge)
   return far ? pushOf(far, role === 'S' ? 'E' : 'S') : 0
 }
@@ -361,7 +361,7 @@ function farPush(edge: AsciiEdge, role: 'S' | 'E'): number {
  * `pushOf` alone puts the down-travelling edge on the right whichever
  * way it bends, so a return bending right cut across it.
  */
-function nestedPush(
+export function nestedPush(
   slots: ReadonlyMap<string, Slot>,
   key: string,
   portOf: (key: string) => string,
