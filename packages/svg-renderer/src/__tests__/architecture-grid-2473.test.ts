@@ -5,6 +5,7 @@ import {
   parseArchitecture,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutGraphSync } from '../index.ts'
+import { convertToElkFormat } from '../layout-engine.ts'
 
 const lay = (body: string) =>
   layoutGraphSync(
@@ -73,5 +74,32 @@ describe('architecture port grid in the SVG layout', () => {
   it('lays out ports that form a cycle without failing', () => {
     const g = lay(svc('a b c') + 'a:R -- L:b\nb:R -- L:c\nc:R -- L:a')
     expect(g.nodes).toHaveLength(3)
+  })
+
+  it('falls back to column 0 and no partition when grid fields are missing', () => {
+    const graph = architectureToGraph(
+      parseArchitecture(
+        splitStatements(
+          'architecture-beta\ngroup g\n' +
+            svc('a b', '') +
+            svc('c d', ' in g') +
+            'a:R -- L:b\nc:R -- L:d',
+        ),
+      ),
+    )
+    // Hand-built graphs may carry a layer without an order, or no grid at all.
+    for (const id of ['b', 'c', 'd']) {
+      const n = graph.nodes.get(id)!
+      if (id === 'b') delete n.gridOrder
+      else {
+        delete n.gridLayer
+        delete n.gridOrder
+      }
+    }
+    const json = JSON.stringify(convertToElkFormat(graph))
+    expect(json).not.toMatch(/NaN|Infinity|undefined/)
+    const g = layoutGraphSync(graph)
+    expect(g.nodes).toHaveLength(4)
+    expect(at(g, 'b').x).toBeGreaterThan(at(g, 'a').x)
   })
 })
