@@ -1,0 +1,7 @@
+{
+  "name": "zombie-mermaid-claude-plugin",
+  "private": true,
+  "dependencies": {
+    "zombie-mermaid": "5.14.1"
+  }
+}

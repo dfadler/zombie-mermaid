@@ -1,0 +1,41 @@
+# Plugin-only behavior (#2206): the plugin copy of the skill runs the pinned CLI via
+# ${CLAUDE_PLUGIN_ROOT}, never `npx -y zombie-mermaid` (which bypasses the shrinkwrap).
+# Sabotage map: reverting scripts/lib/plugin-skill.ts's npx rewrite drops names_plugin_cli and trips no_npx.
+# good-reply: node "${CLAUDE_PLUGIN_ROOT}/node_modules/zombie-mermaid/dist/cli.js" render diagram.mmd --ascii
+# bad-reply: npx -y zombie-mermaid render diagram.mmd --ascii
+schema_version: '1.1'
+name: plugin-cli-uses-plugin-root
+description: >
+  Asked to show a Mermaid flowchart as ASCII, the plugin's skill fires and the reply runs the
+  CLI from the plugin's own install with no npx. expected_outcome: PASS when the Skill call is
+  made, the reply has a render --ascii command through ${CLAUDE_PLUGIN_ROOT}/node_modules, and
+  no command uses npx; FAIL otherwise.
+tags: [zombie-mermaid, plugin, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Show this Mermaid flowchart as ASCII so I can paste it in a commit message:
+
+    graph LR
+      A[Client] --> B[API]
+      B --> C[(Postgres)]
+
+    Don't run anything; reply with the exact shell command(s) you would use.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+  - name: names_plugin_cli
+    type: regex
+    # the model may expand ${CLAUDE_PLUGIN_ROOT} to an absolute path, so match the install layout only
+    pattern: 'node_modules/zombie-mermaid/dist/cli\.js"?\s+render\b[^\n]*--ascii'
+  - name: no_npx
+    type: regex
+    pattern: '\bnpx\b'
+    match: not_contains

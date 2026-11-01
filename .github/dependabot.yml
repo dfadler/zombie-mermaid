@@ -19,3 +19,15 @@ updates:
     groups:
       npm:
         patterns: ['*']
+  # plugins/claude has its own npm-shrinkwrap.json (#2503); pnpm's
+  # minimumReleaseAge/trustPolicy do not cover it, so this cooldown does.
+  # It also bumps the zombie-mermaid pin itself (#2504).
+  - package-ecosystem: npm
+    directory: /plugins/claude
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm:
+        patterns: ['*']

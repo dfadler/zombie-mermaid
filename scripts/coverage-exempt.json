@@ -1,5 +1,15 @@
 [
   {
+    "file": "scripts/check-plugin-lock.ts",
+    "reason": "thin CLI: runs on import and shells out to npm; all logic is in scripts/lib/plugin-lock.ts (tested by __tests__/plugin-lock.test.ts)",
+    "maxLines": 20
+  },
+  {
+    "file": "scripts/sync-plugin-skill.ts",
+    "reason": "thin CLI: runs on import and writes a file; all logic is in scripts/lib/plugin-skill.ts (tested by __tests__/plugin-skill.test.ts)",
+    "maxLines": 15
+  },
+  {
     "file": "scripts/build-inter-font-subset.ts",
     "reason": "thin CLI: runs on import and writes a file; all logic is in scripts/lib/inter-font-subset.ts (tested by __tests__/generated-inter-font.test.ts)",
     "maxLines": 25
