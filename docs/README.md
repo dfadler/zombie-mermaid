@@ -22,5 +22,6 @@ an index of removed investigation write-ups in [research/](research/) (findings 
 - [xychart-design.md](xychart-design.md) — original design proposal for `xychart-beta` support (historical; see [diagrams.md](diagrams.md) for current behavior)
 - [provenance.md](provenance.md) — how this fork relates to beautiful-mermaid, who maintains it, how releases are published, AI-assisted authorship, and what is and is not claimed
 - [promotion/outreach-rules.md](promotion/outreach-rules.md) — rules for any comment on an upstream thread: bug-specific, disclosed, rate-limited, never posted without the maintainer's go-ahead
+- [promotion/1958-mcp-directory-listings.md](promotion/1958-mcp-directory-listings.md) — verified submission routes and paste-ready text for the MCP directories (draft, nothing submitted)
 - [decisions/](decisions/) — short records of settled decisions that closed off an alternative worth remembering
 - [research/](research/) — index to former investigation write-ups, now on their issues; findings go in the issue, and a doc here only when something else links to it
