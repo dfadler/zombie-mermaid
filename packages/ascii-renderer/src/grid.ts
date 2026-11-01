@@ -1277,7 +1277,16 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
   const flowsDown = graph.edges.every((e) => {
     const f = e.from.gridCoord
     const t = e.to.gridCoord
-    return f !== null && t !== null && rankOf(f) < rankOf(t)
+    if (f === null || t === null) return false
+    if (rankOf(f) < rankOf(t)) return true
+    // The reverse of a forward edge one rank down (`B --> D`, `D --> B`) into
+    // a decision is the other half of a reciprocal pair, not a back edge that
+    // skips nodes; mermaid centres the decision between its branches (#2492).
+    return (
+      e.to.shape === 'diamond' &&
+      rankOf(f) === rankOf(t) + 4 &&
+      graph.edges.some((o) => o.from === e.to && o.to === e.from && o !== e)
+    )
   })
   if (!flowsDown) {
     // Nothing centres here, but a decision with a reciprocal pair (`B --> D`
@@ -1321,7 +1330,17 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
         rankOf(cgc) !== rankOf(gc) + 4 ||
         (isNodeInAnySubgraph(graph, c) &&
           !(children.length === 1 && onlyInLoneClusters(graph, c))) ||
-        graph.edges.some((e) => e.to === c && e.from !== node)
+        // Another parent, not a reciprocal partner returning from below.
+        graph.edges.some(
+          (e) =>
+            e.to === c &&
+            e.from !== node &&
+            !(
+              c.shape === 'diamond' &&
+              e.from.gridCoord &&
+              rankOf(e.from.gridCoord) > rankOf(cgc)
+            ),
+        )
       ) {
         ok = false
         break

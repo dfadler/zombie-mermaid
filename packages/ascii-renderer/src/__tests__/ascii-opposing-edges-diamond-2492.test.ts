@@ -51,6 +51,29 @@ describe('opposing edges at a diamond / slanted node (#2492)', () => {
     },
   )
 
+  // Mermaid centres the decision between its branches and keeps its parent on
+  // its row: C above, D below, A and B level. The back edge `D --> B` used to
+  // switch the whole graph's centring off, leaving C on B's row.
+  it.each(['LR', 'RL'])(
+    '%s: the decision sits level with its parent, between its branches',
+    (d) => {
+      const lines = renderMermaidASCII(
+        `graph ${d}
+  A[Read Input] --> B{Valid?}
+  B -->|yes| C[Write Output]
+  B -->|no| D[Ask Again]
+  D --> B`,
+      ).split('\n')
+      const at = (s: string) => lines.findIndex((l) => l.includes(s))
+      expect(at('Read Input')).toBe(at('Valid?'))
+      expect(at('Write Output')).toBeLessThan(at('Valid?'))
+      expect(at('Ask Again')).toBeGreaterThan(at('Valid?'))
+      expect(at('Valid?') - at('Write Output')).toBe(
+        at('Ask Again') - at('Valid?'),
+      )
+    },
+  )
+
   // Paired snapshots (repo rule: SVG + ASCII). The fix is ASCII-only, so the
   // SVG snapshot pins that SVG output stays unchanged.
   it('snapshots ASCII and SVG for the issue source', () => {
