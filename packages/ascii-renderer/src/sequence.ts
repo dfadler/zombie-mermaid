@@ -16,7 +16,6 @@ import {
   mkCanvas,
   mkRoleCanvas,
   canvasToString,
-  getCanvasSize,
   increaseSize,
   increaseRoleCanvasSize,
   write,
@@ -648,24 +647,32 @@ export function renderSequenceAscii(
   }
 
   for (let m = 0; m < diagram.messages.length; m++) {
-    // Block openings at this message
-    for (let b = 0; b < diagram.blocks.length; b++) {
+    // Dividers of blocks that opened earlier come first: a divider at this
+    // index precedes any block nested at the same message (#2497), while a
+    // divider of a block opening right here follows its header.
+    const placeDividers = (opened: boolean): void => {
+      for (let b = 0; b < diagram.blocks.length; b++) {
+        if (diagram.blocks[b]!.startIndex < m !== opened) continue
+        for (let d = 0; d < diagram.blocks[b]!.dividers.length; d++) {
+          if (diagram.blocks[b]!.dividers[d]!.index === m) {
+            curY += rowGap
+            divYMap.set(`${b}:${d}`, curY)
+            curY += minSeparatorGap
+          }
+        }
+      }
+    }
+    placeDividers(true)
+
+    // Block openings at this message, outermost first (blocks are stored in
+    // closing order, so a nested block precedes the block that contains it).
+    for (let b = diagram.blocks.length - 1; b >= 0; b--) {
       if (diagram.blocks[b]!.startIndex === m) {
         curY += rowGap + 1 // Blank rows + 1 fixed header row
         blockStartY.set(b, curY - 1)
       }
     }
-
-    // Dividers at this message index
-    for (let b = 0; b < diagram.blocks.length; b++) {
-      for (let d = 0; d < diagram.blocks[b]!.dividers.length; d++) {
-        if (diagram.blocks[b]!.dividers[d]!.index === m) {
-          curY += rowGap
-          divYMap.set(`${b}:${d}`, curY)
-          curY += minSeparatorGap
-        }
-      }
-    }
+    placeDividers(false)
 
     curY += rowGap // Blank row before message
 
@@ -1353,12 +1360,14 @@ export function renderSequenceAscii(
   // increaseRoleCanvasSize below whenever a wall needs to grow past it.
   let blockCanvasMaxX = totalW - 1
 
+  // Pass 1: every block's wall extent. Blocks are stored in closing order, so
+  // a nested block precedes the block containing it (#2497).
+  const blockExt: Array<{ l: number; r: number }> = []
   for (let b = 0; b < diagram.blocks.length; b++) {
     const block = diagram.blocks[b]!
     const topY = blockStartY.get(b)
     const botY = blockEndY.get(b)
     if (topY === undefined || botY === undefined) continue
-
     // Find the leftmost/rightmost lifelines involved in this block's messages
     let minLX = totalW
     let maxLX = 0
@@ -1418,11 +1427,6 @@ export function renderSequenceAscii(
       bLeft = Math.min(minLX, nextLeftLL + BLOCK_WALL_MARGIN)
 
     bLeft = Math.max(0, bLeft)
-    if (bRight > blockCanvasMaxX) {
-      increaseSize(canvas, bRight + 1, totalH - 1)
-      increaseRoleCanvasSize(rc, bRight + 1, totalH - 1)
-      blockCanvasMaxX = bRight
-    }
 
     // Header ("alt [label]") and divider ("[else label]") text is drawn
     // starting at bLeft + 1 (see below), clipped to whatever bRight the
@@ -1444,18 +1448,50 @@ export function renderSequenceAscii(
     // lifeline-shifting layout pass earlier in this function, so growing
     // bRight here doesn't re-collide with whatever the pull-back above
     // just cleared.
+    blockExt[b] = { l: bLeft, r: bRight }
+  }
+
+  // Nested blocks nest: a container wall encloses every block inside it, one
+  // column clear on each side. Widen right inner-first (array order), inset
+  // left outer-first (reverse order); the label width is re-measured between.
+  const isInside = (c: Block, p: Block): boolean =>
+    c.startIndex >= p.startIndex && c.endIndex <= p.endIndex
+  // Blocks without a measured extent (never laid out) take no part.
+  const live = Object.keys(blockExt).map(Number)
+  const nestedIn = (p: number): number[] =>
+    live.filter(
+      (c) => c < p && isInside(diagram.blocks[c]!, diagram.blocks[p]!),
+    )
+  for (const p of [...live].reverse()) {
+    for (const c of nestedIn(p))
+      blockExt[c]!.l = Math.max(blockExt[c]!.l, blockExt[p]!.l + 1)
+  }
+  // Label-driven minimum width (#352), measured from the final left wall.
+  for (const b of live) {
+    const ext = blockExt[b]!
+    ext.r = Math.max(ext.r, ext.l + 1 + maxBlockLabelWidth(diagram.blocks[b]!))
+  }
+  for (const p of live) {
+    for (const c of nestedIn(p))
+      blockExt[p]!.r = Math.max(blockExt[p]!.r, blockExt[c]!.r + 1)
+  }
+
+  // Pass 2: grow the canvas to fit, then draw.
+  for (let b = 0; b < diagram.blocks.length; b++) {
+    const block = diagram.blocks[b]!
+    const topY = blockStartY.get(b)
+    const botY = blockEndY.get(b)
+    if (topY === undefined || botY === undefined) continue
+    const ext = blockExt[b]!
+    const bLeft = ext.l
+    const bRight = ext.r
     const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
-    const neededRight = bLeft + 1 + maxBlockLabelWidth(block)
-    if (neededRight > bRight) {
-      bRight = neededRight
-      const [canvasMaxX] = getCanvasSize(canvas)
-      if (bRight > canvasMaxX) {
-        increaseSize(canvas, bRight, totalH - 1)
-        increaseRoleCanvasSize(rc, bRight, totalH - 1)
-      }
-      totalW = Math.max(totalW, bRight + 1)
-      blockCanvasMaxX = Math.max(blockCanvasMaxX, bRight)
+    if (bRight > blockCanvasMaxX) {
+      increaseSize(canvas, bRight, totalH - 1)
+      increaseRoleCanvasSize(rc, bRight, totalH - 1)
+      blockCanvasMaxX = bRight
     }
+    totalW = Math.max(totalW, bRight + 1)
 
     // Top border with block type label
     setC(bLeft, topY, TL, 'border')
