@@ -38,7 +38,6 @@ const XY = {
   axisTitlePad: 30,
   tickLength: 4,
   barPadRatio: 0.2,
-  barGroupGap: 0,
   maxBarWidth: 40,
   legendFontSize: 14,
   legendFontWeight: 400,
@@ -343,15 +342,10 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const bars: PositionedBar[] = []
   if (barCount > 0) {
     const usable = bandHeight * (1 - XY.barPadRatio)
-    const rawBarH =
-      barCount > 1
-        ? (usable - (barCount - 1) * XY.barGroupGap) / barCount
-        : usable
-    const singleBarH = Math.min(rawBarH, XY.maxBarWidth)
-    const groupH =
-      barCount > 1
-        ? singleBarH * barCount + XY.barGroupGap * (barCount - 1)
-        : singleBarH
+    // Mermaid 12.2.0 draws every bar series centred on the same category
+    // (the series overlap, later ones on top) rather than side by side.
+    const singleBarH = Math.min(usable, XY.maxBarWidth)
+    const groupH = singleBarH
     let bIdx = 0
     let seriesArrayIdx = 0
     for (const s of chart.series) {
@@ -362,7 +356,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
       for (let i = 0; i < s.data.length; i++) {
         const cy = catScale(i)
         const groupTop = cy - groupH / 2
-        const by = groupTop + bIdx * (singleBarH + XY.barGroupGap)
+        const by = groupTop
         const valX = valueScale(Math.max(s.data[i]!, yRange.min))
         const baseX = valueScale(Math.max(0, yRange.min))
         bars.push({
@@ -564,15 +558,10 @@ function layoutBars(
   if (barCount === 0) return []
 
   const usable = bandWidth * (1 - XY.barPadRatio)
-  const rawBarW =
-    barCount > 1
-      ? (usable - (barCount - 1) * XY.barGroupGap) / barCount
-      : usable
-  const singleBarW = Math.min(rawBarW, XY.maxBarWidth)
-  const groupW =
-    barCount > 1
-      ? singleBarW * barCount + XY.barGroupGap * (barCount - 1)
-      : singleBarW
+  // Mermaid 12.2.0 draws every bar series centred on the same category
+  // (the series overlap, later ones on top) rather than side by side.
+  const singleBarW = Math.min(usable, XY.maxBarWidth)
+  const groupW = singleBarW
   const bars: PositionedBar[] = []
 
   let bIdx = 0
@@ -585,7 +574,7 @@ function layoutBars(
     for (let i = 0; i < s.data.length; i++) {
       const cx = xScale(i)
       const groupLeft = cx - groupW / 2
-      const bx = groupLeft + bIdx * (singleBarW + XY.barGroupGap)
+      const bx = groupLeft
       const valY = yScale(s.data[i]!)
       const baseY = yScale(Math.max(0, yMin))
       bars.push({
