@@ -12,7 +12,7 @@ The issue asks for a concrete hook — "PR-rescue numbers, or a specific hard bu
 see `docs/promotion/258-pr-rescue-candidates.md` — nothing has actually been merged).
 
 So this draft leads with the **fork-fixes evidence page** instead: `demo/fork-fixes-data.ts`
-already documents 56 real upstream bugs fixed, each rendered before/after by the actual
+already documents 56 rendering bugs fixed (27 of them linked to upstream issues or PRs), each rendered before/after by the actual
 code at the actual commit (not described from memory — see that file's header comment
 and `fork-fixes.ts`'s generator, which fails outright if a before/after pair renders
 identically). That's a stronger, already-true hook today than PR-rescue numbers that
@@ -33,13 +33,13 @@ should be revised to lead with those instead, per the issue's own stated depende
 
 ## Post title
 
-> Show HN: I forked a stalled 11k-star Mermaid renderer and fixed 56 of its open bugs
+> Show HN: I forked a stalled 11k-star Mermaid renderer and fixed 56 rendering bugs
 
 Alternate title considered (more neutral, less "zombie" branding, in case the repo owner
 wants restraint here — issue #264 covers leaning into the branding separately and isn't
 this issue's call to make):
 
-> Show HN: zombie-mermaid – a maintained fork of beautiful-mermaid, with before/after proof of 56 fixes
+> Show HN: zombie-mermaid – a maintained fork of beautiful-mermaid, with before/after proof of 56 fixes, 27 reported upstream
 
 ## Post body
 
@@ -57,7 +57,7 @@ I depend on this library, so I forked it: zombie-mermaid
 (https://github.com/dfadler/zombie-mermaid). The pitch isn't "we're better," it's
 "still getting fixed." Every claim on that is backed by evidence, not a changelog
 you have to trust: https://dfadler.github.io/zombie-mermaid/fork-fixes.html renders
-56 real bugs both before and after the fix, using the actual renderer code from the
+56 rendering bugs (27 of them reported upstream) both before and after the fix, using the actual renderer code from the
 actual commit in each case — not a description of what changed. A few examples:
 
 - CJK/fullwidth labels (Japanese, Korean, Chinese) blew out ASCII box borders
@@ -84,7 +84,7 @@ Repo: https://github.com/dfadler/zombie-mermaid
 ## Notes for the repo owner before posting
 
 - **Verify the fork-fixes count at post time.** The draft above says "56" based on
-  `demo/fork-fixes-data.ts` as of 2026-10-31 (`grep -c "id: '" demo/fork-fixes-data.ts`).
+  `demo/fork-fixes-data.ts` as of 2026-10-31 (`grep -cE "^\s*id: '" demo/fork-fixes-data.ts`; 27 carry `upstreamIssues`).
   Re-check that count before posting if any time has passed — it's exactly the kind of
   concrete, falsifiable number an HN audience will click through and verify.
 - **The PR #142 link is a real, already-open upstream PR** (`lukilabs/beautiful-mermaid#142`,
@@ -106,7 +106,8 @@ Re-run these right before posting; every figure in the draft comes from one of t
 
 | Claim in draft                         | Value on 2026-10-31                  | Re-check command                                                                                      |
 | -------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| Fork fixes                             | 56                                   | `grep -c "id: '" demo/fork-fixes-data.ts`                                                             |
+| Fixes on the page                      | 56                                   | `grep -cE "^\s*id: '" demo/fork-fixes-data.ts`                                                        |
+| Fixes linked to upstream issues/PRs    | 27                                   | `grep -c "upstreamIssues:" demo/fork-fixes-data.ts`                                                   |
 | Upstream stars ("~11k")                | 11,251                               | `gh api repos/lukilabs/beautiful-mermaid --jq .stargazers_count`                                      |
 | Upstream npm downloads/month ("~2.4M") | 2,388,618 (2026-09-30 to 2026-10-29) | `curl -s https://api.npmjs.org/downloads/point/last-month/beautiful-mermaid`                          |
 | Open upstream PRs                      | 45 (oldest opened 2026-01-29)        | `gh search prs --repo lukilabs/beautiful-mermaid --state open --json number --limit 300 \| jq length` |
