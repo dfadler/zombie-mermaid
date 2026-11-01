@@ -65,6 +65,14 @@ export interface MermaidNode {
   id: string
   label: string
   shape: NodeShape
+  /**
+   * Architecture only: the node's column along the flow axis in the grid the
+   * L/R/T/B ports spell out (#2473). The SVG layout keeps equal values in one
+   * layer; the ASCII renderer ignores it.
+   */
+  gridLayer?: number
+  /** Architecture only: the node's position across the flow in that grid. */
+  gridOrder?: number
 }
 
 export type NodeShape =
@@ -145,6 +153,12 @@ export interface MermaidEdge {
   id?: string
   /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */
   animate?: boolean
+  /**
+   * Architecture only: the ports put the ends side by side across the flow
+   * (`a:B -- T:b` in a left-to-right graph), so the SVG layout keeps the edge
+   * out of the layering and draws it straight between the two (#2473).
+   */
+  acrossFlow?: boolean
 }
 
 /**
