@@ -1,0 +1,93 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII and SVG for the issue source > ascii 1`] = `
+"                         ┌───────────────┐
+                         │               │
+                      ┌─►│       C       │
+                      │  │               │
+                      │  └───────────────┘
+                      │                   
+                     yes                  
+                      │                   
+                      │                   
+┌───┐         ╱╲      │                   
+│   │       ╱    ╲    │                   
+│ A ├────►< Valid? >──┤                   
+│   │       ╲    ╱ ▲  │                   
+└───┘         ╲╱   │  │                   
+                   │  │                   
+                   │  │                   
+                   │  │                   
+                   │ no                   
+                   │  │      ╱───────────╱
+                   │  └────►╱           ╱ 
+                   │       ╱ Ask Again ╱  
+                   └──────╱           ╱   
+                         ╱───────────╱    "
+`;
+
+exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII and SVG for the issue source > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 544.31 192.72" width="544.31" height="192.72" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmsti0le-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmsti0le-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="100,100.13 148,100.13" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmsti0le-arrowhead)" />
+<polyline class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="yes" points="226.89,73.83 265.19,73.83 265.19,58.45 377.24,58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmsti0le-arrowhead)" />
+<polyline class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="no" points="253.19,100.13 265.19,100.13 265.19,110.2 341.24,110.2 341.24,117.2 377.24,117.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmsti0le-arrowhead)" />
+<polyline class="edge" data-from="D" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="377.24,129.5 341.24,129.5 341.24,133.5 265.19,133.5 265.19,126.43 226.89,126.43" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmsti0le-arrowhead)" />
+<g class="edge-label" data-from="B" data-to="C" data-label="yes">
+  <rect x="297.19" y="42.45" width="36.05" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="315.21" y="57.6" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">yes</text>
+</g>
+<g class="edge-label" data-from="B" data-to="D" data-label="no">
+  <rect x="299.84" y="94.2" width="30.74" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="315.21" y="109.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">no</text>
+</g>
+<g class="node" data-id="A" data-label="A" data-shape="rectangle">
+  <rect x="40" y="81.68" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="70" y="100.13" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+</g>
+<g class="node" data-id="B" data-label="Valid?" data-shape="diamond">
+  <polygon points="200.59,47.54 253.19,100.13 200.59,152.72 148,100.13" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="200.59" y="100.13" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Valid?</text>
+</g>
+<g class="node" data-id="C" data-label="C" data-shape="rectangle">
+  <rect x="377.24" y="40" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="407.24" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">C</text>
+</g>
+<g class="node" data-id="D" data-label="Ask Again" data-shape="parallelogram">
+  <polygon points="396.3,104.9 504.31,104.9 485.25,141.8 377.24,141.8" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="440.77" y="123.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Ask Again</text>
+</g>
+</svg>"
+`;

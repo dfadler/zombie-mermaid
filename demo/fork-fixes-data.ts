@@ -838,4 +838,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: each quarter shows two thin bars next to each other. After: the two bars share one centred, full-width slot and overlap.',
   },
+  {
+    id: 'ascii-opposing-edges-diamond',
+    title: 'ASCII opposing edges merged into one route at a diamond',
+    symptom:
+      'Two edges between the same pair (`B -->|no| D` and `D --> B`) in a left-to-right chart drew a single merged route when B was a diamond or D a parallelogram, so the loop-back looked like one two-way line.',
+    source:
+      'graph LR\n  A[/Read Input/] --> B{Valid?}\n  B -->|yes| C[\\Write Output\\]\n  B -->|no| D[/Ask Again/]\n  D --> B',
+    fixCommit: 'd725006c',
+    pr: 2509,
+    render: 'ascii',
+    lookFor:
+      'Before: one stroke leaves the diamond’s bottom vertex. After: no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
+  },
 ]
