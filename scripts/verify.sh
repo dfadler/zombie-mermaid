@@ -28,6 +28,7 @@ for pid in "${pids[@]}"; do wait "$pid" || tsc_fail=1; done
 
 pnpm run --silent check:changesets
 pnpm run --silent check:plugin-skill
+pnpm run --silent check:plugin-lock
 
 if [ "$full" -eq 1 ]; then
   pnpm run lint
