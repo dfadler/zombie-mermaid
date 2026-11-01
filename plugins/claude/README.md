@@ -9,6 +9,11 @@ Install: `/plugin install zombie-mermaid --marketplace dfadler/zombie-mermaid`
 Node version itself, so on an older Node the server or CLI fails with a raw
 syntax or API error rather than a clear message. Check with `node --version`.
 
+**Local testing:** a marketplace added from a local checkout loads the plugin in
+place and does not install its dependencies. Run `cd plugins/claude && npm ci`
+first, or the skill's CLI path and the MCP server command point at a missing file
+([docs](https://code.claude.com/docs/en/plugins/loading)).
+
 `skills/zombie-mermaid/SKILL.md` is generated from the repo's
 `skills/zombie-mermaid/SKILL.md` (it points at the pinned install instead of
 `npx`). Edit the original, then run `pnpm run sync:plugin-skill`.

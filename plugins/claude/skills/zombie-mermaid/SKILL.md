@@ -31,7 +31,7 @@ renderer to drift out of sync — bugs and feature requests go to
 
 ## Prerequisites
 
-Node.js 24 or newer on PATH. No install step: the plugin installs the pinned `zombie-mermaid` package itself.
+Node.js 24 or newer on PATH. No install step when installed from the marketplace: Claude Code installs the pinned `zombie-mermaid` package itself. A plugin loaded from a local checkout is not installed for you; run `npm ci` in `plugins/claude` first.
 
 ## Rendering from the CLI
 
