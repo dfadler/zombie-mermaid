@@ -70,6 +70,49 @@ function runsBackwards(e: ArchitectureEdge, direction: Direction): boolean {
   return e.sourcePort === back || e.targetPort === forward
 }
 
+const STEP: Record<ArchitecturePort, [number, number]> = {
+  L: [-1, 0],
+  R: [1, 0],
+  T: [0, -1],
+  B: [0, 1],
+}
+
+/**
+ * Grid cell of every service and junction, as Mermaid works it out before
+ * placing them: walk the edges from each unplaced node, one cell per port
+ * (`a:R -- L:b` puts `b` one cell right of `a`). The first cell a node gets
+ * wins when a cycle disagrees.
+ */
+function gridCells(
+  diagram: ArchitectureDiagram,
+): Map<string, [number, number]> {
+  const cells = new Map<string, [number, number]>()
+  const links = new Map<string, Array<[string, [number, number]]>>()
+  const link = (from: string, to: string, [dx, dy]: [number, number]): void => {
+    links.set(from, [...(links.get(from) ?? []), [to, [dx, dy]]])
+  }
+  for (const e of diagram.edges) {
+    link(e.source, e.target, STEP[e.sourcePort])
+    const [dx, dy] = STEP[e.targetPort]
+    link(e.target, e.source, [dx, dy])
+  }
+  const ids = [...diagram.services, ...diagram.junctions].map((n) => n.id)
+  for (const seed of ids) {
+    if (cells.has(seed)) continue
+    cells.set(seed, [0, 0])
+    const queue = [seed]
+    for (const id of queue) {
+      const [x, y] = cells.get(id)!
+      for (const [to, [dx, dy]] of links.get(id) ?? []) {
+        if (cells.has(to)) continue
+        cells.set(to, [x + dx, y + dy])
+        queue.push(to)
+      }
+    }
+  }
+  return cells
+}
+
 export function architectureToGraph(
   diagram: ArchitectureDiagram,
 ): MermaidGraph {
@@ -111,6 +154,14 @@ export function architectureToGraph(
   }
 
   const direction = pickDirection(diagram.edges)
+  const cells = gridCells(diagram)
+  const axis = direction === 'TB' ? 1 : 0
+  for (const [id, cell] of cells) {
+    Object.assign(nodes.get(id)!, {
+      gridLayer: cell[axis],
+      gridOrder: cell[1 - axis],
+    })
+  }
   const edges: MermaidEdge[] = diagram.edges.map((e) => {
     const end = (id: string, viaGroup: boolean): string =>
       (viaGroup ? parentOf.get(id) : undefined) ?? id
@@ -118,9 +169,20 @@ export function architectureToGraph(
     const [source, target] = forward
       ? [end(e.source, e.sourceGroup), end(e.target, e.targetGroup)]
       : [end(e.target, e.targetGroup), end(e.source, e.sourceGroup)]
+    const across =
+      !HORIZONTAL.has(e.sourcePort) === (axis === 0) &&
+      cells.get(e.source)![axis] === cells.get(e.target)![axis]
     return {
       source,
       target,
+      ...(across &&
+      parentOf.get(e.source) === undefined &&
+      parentOf.get(e.target) === undefined &&
+      e.source !== e.target &&
+      !e.sourceGroup &&
+      !e.targetGroup
+        ? { acrossFlow: true }
+        : {}),
       style: 'solid',
       hasArrowStart: forward ? e.arrowStart : e.arrowEnd,
       hasArrowEnd: forward ? e.arrowEnd : e.arrowStart,

@@ -15,6 +15,7 @@ import type {
   MermaidGraph,
   MermaidSubgraph,
   MermaidEdge,
+  MermaidNode,
   RenderOptions,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from '../styles.ts'
@@ -399,6 +400,8 @@ export function mermaidToElk(
 
   for (let i = 0; i < graph.edges.length; i++) {
     const edge = graph.edges[i]!
+    // Drawn straight between its two ends afterwards (`stackedEdges`).
+    if (edge.acrossFlow) continue
     const sourceSubgraph = nodeToSubgraph.get(edge.source)
     const targetSubgraph = nodeToSubgraph.get(edge.target)
 
@@ -463,11 +466,17 @@ export function mermaidToElk(
     ...(hasLabelledParallelRun(graph) ? { 'elk.spacing.edgeEdge': '40' } : {}),
     // Every layer keeps the nodes in the order the graph lists them: the
     // compound layout relies on it to keep a subgraph's nodes together.
-    ...(hints?.forceNodeOrder
+    ...(hints?.forceNodeOrder || hasGridLayers(graph)
       ? { 'elk.layered.crossingMinimization.forceNodeModelOrder': 'true' }
       : {}),
     ...(isStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
     'elk.layered.wrapping.strategy': 'OFF',
+    ...(hasGridLayers(graph)
+      ? {
+          'elk.partitioning.activate': 'true',
+          'elk.layered.crossingMinimization.semiInteractive': 'true',
+        }
+      : {}),
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
     // Use INCLUDE_CHILDREN otherwise (simpler cross-hierarchy edge routing)
     'elk.hierarchyHandling': hasDirectionOverride
@@ -565,7 +574,12 @@ export function mermaidToElk(
   }
 
   // Add top-level nodes (those not in any subgraph).
-  for (const [id, node] of graph.nodes) {
+  const rootNodes = hasGridLayers(graph)
+    ? [...graph.nodes].sort(
+        (a, b) => (a[1].gridOrder ?? 0) - (b[1].gridOrder ?? 0),
+      )
+    : graph.nodes
+  for (const [id, node] of rootNodes) {
     if (!subgraphNodeIds.has(id) && !subgraphIds.has(id)) {
       const size = estimateNodeSize(
         id,
@@ -584,6 +598,12 @@ export function mermaidToElk(
         : undefined
       if (pin !== undefined) {
         leaf.layoutOptions = { 'elk.layered.layering.layerConstraint': pin }
+      }
+      if (node.gridLayer !== undefined) {
+        leaf.layoutOptions = {
+          ...leaf.layoutOptions,
+          ...gridOptions(node, graph.direction),
+        }
       }
       rootChildren.push(leaf)
     }
@@ -780,7 +800,11 @@ function subgraphToElk(
 
   // Add direct child (leaf) nodes, in forward declaration order.
   const children: ElkGraphNode[] = []
-  for (const nodeId of sg.nodeIds) {
+  const byGridOrder = (id: string): number =>
+    graph.nodes.get(id)?.gridOrder ?? 0
+  for (const nodeId of [...sg.nodeIds].sort(
+    (a, b) => byGridOrder(a) - byGridOrder(b),
+  )) {
     const node = graph.nodes.get(nodeId)
     if (node) {
       const size = estimateNodeSize(
@@ -789,7 +813,11 @@ function subgraphToElk(
         node.shape,
         opts.fontSizes.nodeLabel,
       )
-      children.push(buildElkLeafNode(nodeId, size, node.label))
+      const leaf = buildElkLeafNode(nodeId, size, node.label)
+      if (node.gridLayer !== undefined) {
+        leaf.layoutOptions = gridOptions(node, graph.direction)
+      }
+      children.push(leaf)
     }
   }
 
@@ -844,6 +872,14 @@ function subgraphToElk(
     edges.push(elkEdge)
   }
 
+  if (hasGridLayers(graph)) {
+    layoutOptions['elk.partitioning.activate'] = 'true'
+    const layer = firstGridLayer(sg, graph)
+    if (layer !== undefined) {
+      layoutOptions['elk.partitioning.partition'] = String(layer)
+    }
+  }
+
   return {
     id: sg.id,
     layoutOptions,
@@ -852,6 +888,39 @@ function subgraphToElk(
     children,
     edges,
   }
+}
+
+/** ELK options that hold a node to its grid layer and to its place across the flow. */
+function gridOptions(
+  node: MermaidNode,
+  direction: MermaidGraph['direction'],
+): LayoutOptions {
+  const across = String((node.gridOrder ?? 0) * 100)
+  const horizontal = direction === 'LR' || direction === 'RL'
+  return {
+    'elk.partitioning.partition': String(node.gridLayer),
+    'elk.position': horizontal ? `(0, ${across})` : `(${across}, 0)`,
+  }
+}
+
+/** Whether the graph carries architecture grid columns (`MermaidNode.gridLayer`). */
+function hasGridLayers(graph: MermaidGraph): boolean {
+  for (const node of graph.nodes.values()) {
+    if (node.gridLayer !== undefined) return true
+  }
+  return false
+}
+
+/** The lowest grid layer among a subgraph's nodes, nested ones included. */
+function firstGridLayer(
+  sg: MermaidSubgraph,
+  graph: MermaidGraph,
+): number | undefined {
+  const layers = [
+    ...sg.nodeIds.map((id) => graph.nodes.get(id)?.gridLayer),
+    ...sg.children.map((c) => firstGridLayer(c, graph)),
+  ].filter((n): n is number => n !== undefined)
+  return layers.length > 0 ? Math.min(...layers) : undefined
 }
 
 /** Recursively collect all node IDs that belong to any subgraph */

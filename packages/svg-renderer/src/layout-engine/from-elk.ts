@@ -146,6 +146,50 @@ export function synthesizeSelfLoopEdges(
   }
 }
 
+/**
+ * Draw the architecture edges kept out of the layout (`MermaidEdge.acrossFlow`):
+ * a straight run between the facing sides of the two nodes, which the layout
+ * has put in one layer, so `a:B -- T:b` reads as `b` directly below `a`.
+ */
+export function synthesizeAcrossFlowEdges(
+  graph: MermaidGraph,
+  nodeMap: Map<string, PositionedNode>,
+  edges: PositionedEdge[],
+): void {
+  const horizontal = graph.direction === 'LR' || graph.direction === 'RL'
+  graph.edges.forEach((edge, index) => {
+    const a = nodeMap.get(edge.source)
+    const b = nodeMap.get(edge.target)
+    if (!edge.acrossFlow || !a || !b) return
+    // x/y are the top-left of the box; `side` is the cross-flow axis.
+    const [pos, size, flow, flowSize] = horizontal
+      ? (['y', 'height', 'x', 'width'] as const)
+      : (['x', 'width', 'y', 'height'] as const)
+    const first = a[pos] <= b[pos] ? a : b
+    const second = first === a ? b : a
+    const mid = (n: PositionedNode): number => n[flow] + n[flowSize] / 2
+    const run = (mid(a) + mid(b)) / 2
+    const from = first[pos] + first[size]
+    const to = second[pos]
+    const at = (cross: number): Point =>
+      horizontal ? { x: run, y: cross } : { x: cross, y: run }
+    const points = first === a ? [at(from), at(to)] : [at(to), at(from)]
+    edges.push({
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      style: edge.style,
+      hasArrowStart: edge.hasArrowStart,
+      hasArrowEnd: edge.hasArrowEnd,
+      points,
+      inlineStyle: resolveEdgeStyle(index, graph),
+      headColor: resolveHeadColor(graph),
+      id: edge.id,
+      animate: edge.animate,
+    })
+  })
+}
+
 /** Recursively flatten all group bounding boxes (including nested children) */
 function flattenGroupBounds(
   groups: PositionedGroup[],
@@ -214,6 +258,7 @@ export function elkToPositioned(
   // position.
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   synthesizeSelfLoopEdges(graph, nodeMap, edges)
+  synthesizeAcrossFlowEdges(graph, nodeMap, edges)
 
   // Bundle fan-out/fan-in edge paths into shared trunks when mergeEdges is enabled
   if (mergeEdges) {
