@@ -17,11 +17,19 @@ const SRC = (d: string, shape: string): string => `graph ${d}
   B -->|no| D${shape}
   D --> B`
 
-/** The arrow into D and the corner of the return, as row numbers. */
+/**
+ * The row of the arrow into D and of the return's own corner. D's box has
+ * corners too, so the return's is found by following its stroke down from the
+ * `▲`: the first row where that column stops being `│`.
+ */
 function rows(out: string): { into: number; back: number } {
   const lines = out.split('\n')
-  const last = (re: RegExp) => lines.map((l) => re.test(l)).lastIndexOf(true)
-  return { into: last(/[►◄]/), back: last(/[└┘]/) }
+  const head = lines.findIndex((l) => l.includes('▲'))
+  const col = lines[head]!.indexOf('▲')
+  let back = head + 1
+  while (lines[back]?.[col] === '│') back++
+  const into = lines.map((l) => /[►◄]/.test(l)).lastIndexOf(true)
+  return { into, back }
 }
 
 const CASES: [string, string, string][] = [
@@ -50,6 +58,20 @@ describe('opposing edges at a diamond / slanted node (#2492)', () => {
       expect(back).toBeGreaterThan(into)
     },
   )
+
+  // A second return edge takes a lane of its own; the direct route is only
+  // for the first, so neither edge nor its label is lost.
+  it('draws every return edge of a parallel pair with its label', () => {
+    const out = renderMermaidASCII(`graph LR
+  A --> B{Valid?}
+  B -->|yes| C
+  B -->|no| D[Ask Again]
+  D -->|one| B
+  D -->|two| B`)
+    for (const label of ['yes', 'no', 'one', 'two']) {
+      expect(out).toContain(label)
+    }
+  })
 
   // Paired snapshots (repo rule: SVG + ASCII). The fix is ASCII-only, so the
   // SVG snapshot pins that SVG output stays unchanged.

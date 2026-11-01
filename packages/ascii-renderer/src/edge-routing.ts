@@ -1689,6 +1689,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (
     effectiveDir === 'LR' &&
     edge.to.fanOutCentered &&
+    // A later parallel edge takes its own lane below, not the first one's path.
+    !(edge.parallelLane && edge.parallelLane.index > 0) &&
     dirEquals(preferredDir, Left) &&
     dirEquals(preferredOppositeDir, Right)
   ) {
