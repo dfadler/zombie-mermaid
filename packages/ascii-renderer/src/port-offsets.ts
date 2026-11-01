@@ -339,6 +339,55 @@ interface Slot {
   run: PortRun
   role: 'S' | 'E'
   fixed: boolean
+  /** The edge is one L: a run out of the port, then one run into the far side. */
+  elbow: boolean
+  /** How far the run travels from the port, in grid cells. */
+  extent: number
+  /** Which row the far end of an elbow takes at its own node (`pushOf`). */
+  far: number
+}
+
+/** The row the far end of an L edge takes, from its own `pushOf`. */
+function farPush(edge: AsciiEdge, role: 'S' | 'E'): number {
+  const far = role === 'S' ? endRun(edge) : startRun(edge)
+  return far ? pushOf(far, role === 'S' ? 'E' : 'S') : 0
+}
+
+/**
+ * Two bent edges that leave and enter one port face and bend the same way (a
+ * reciprocal pair round a diamond vertex) cross unless they nest. The one that
+ * bends nearer the node takes the column on the side they bend toward. Bends at
+ * the same distance are ordered by the rows the far node gives them (`far`).
+ * `pushOf` alone puts the down-travelling edge on the right whichever
+ * way it bends, so a return bending right cut across it.
+ */
+function nestedPush(
+  slots: ReadonlyMap<string, Slot>,
+  key: string,
+  portOf: (key: string) => string,
+): 1 | -1 | undefined {
+  const me = slots.get(key)!
+  if (!me.elbow || me.run.axis !== 'v' || me.run.turn === 0) return undefined
+  const heading = (s: Slot): 1 | -1 =>
+    (s.role === 'S' ? s.run.turn : -s.run.turn) as 1 | -1
+  const other = [...slots].find(
+    ([k, o]) =>
+      k !== key &&
+      portOf(k) === portOf(key) &&
+      o.role !== me.role &&
+      o.elbow &&
+      o.run.axis === 'v' &&
+      o.run.side === me.run.side &&
+      o.run.turn !== 0 &&
+      heading(o) === heading(me),
+  )?.[1]
+  if (!other) return undefined
+  let nearer: boolean
+  if (other.extent !== me.extent) nearer = me.extent < other.extent
+  else if (other.far === me.far) return undefined
+  else
+    nearer = me.run.side === 'bottom' ? me.far < other.far : me.far > other.far
+  return nearer ? heading(me) : (-heading(me) as 1 | -1)
 }
 
 /**
@@ -408,6 +457,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     role: 'S' | 'E',
     run: PortRun,
     fixed: boolean,
+    edge: AsciiEdge,
   ): string => {
     const port = portKey(node, cell)
     const key = `${port}|${role}`
@@ -415,7 +465,14 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     slotEdges.set(key, (slotEdges.get(key) ?? 0) + 1)
     const existing = slots.get(key)
     if (!existing || (fixed && !existing.fixed)) {
-      slots.set(key, { run, role, fixed })
+      slots.set(key, {
+        run,
+        role,
+        fixed,
+        elbow: edge.path.length === 3,
+        extent: runExtent(edge, run),
+        far: farPush(edge, role),
+      })
     }
     const roles = rolesAt.get(port) ?? new Set<'S' | 'E'>()
     roles.add(role)
@@ -435,8 +492,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
       // ends; without a run of its own it still occupies its ports.
       const s = startRun(edge)
       const e = endRun(edge)
-      if (s) addSlot(edge.from, edge.path[0]!, 'S', s, true)
-      if (e) addSlot(edge.to, edge.path[edge.path.length - 1]!, 'E', e, true)
+      if (s) addSlot(edge.from, edge.path[0]!, 'S', s, true, edge)
+      if (e)
+        addSlot(edge.to, edge.path[edge.path.length - 1]!, 'E', e, true, edge)
       const end = clusterLaneEndShift(graph, edge)
       if (end && e) {
         result.set(edge, { start: 0, end, endRun: shiftedRun(e) })
@@ -447,12 +505,13 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (!r) continue
     const entry: { r: EdgeRuns; s?: string; e?: string } = { r }
     if (r.start) {
-      entry.s = addSlot(r.start.node, r.start.cell, 'S', r.start, false)
+      entry.s = addSlot(r.start.node, r.start.cell, 'S', r.start, false, edge)
       const group = startGroups.get(entry.s) ?? []
       group.push({ edge, run: r.start, straight: r.straight })
       startGroups.set(entry.s, group)
     }
-    if (r.end) entry.e = addSlot(r.end.node, r.end.cell, 'E', r.end, false)
+    if (r.end)
+      entry.e = addSlot(r.end.node, r.end.cell, 'E', r.end, false, edge)
     if (r.straight && entry.s && entry.e) union(entry.s, entry.e)
     runs.set(edge, entry)
   }
@@ -507,7 +566,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     )
     // Prefer a wide split so the two strokes of a reciprocal pair read as two
     // edges (#1400); settle for a narrower one where the port is too short.
-    const push = pushOf(members[0]!.run, members[0]!.role)
+    const push =
+      nestedPush(slots, keys[0]!, portOf) ??
+      pushOf(members[0]!.run, members[0]!.role)
     // A port that also fans out keeps the narrow split: `staggerFanOuts`
     // spaces its stems from this offset (#1308).
     const fansOut = ports.some((port) =>
