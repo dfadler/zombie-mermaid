@@ -1,5 +1,11 @@
 # @zombie-mermaid/core
 
+## 5.14.2
+
+### Patch Changes
+
+- [#2511](https://github.com/dfadler/zombie-mermaid/pull/2511) [`bb958a3`](https://github.com/dfadler/zombie-mermaid/commit/bb958a3ed81de0abefd4e3fcc8b1e64bd9af27d8) Thanks [@dfadler](https://github.com/dfadler)! - SVG architecture diagrams now keep services that are not in a group where their ports put them, as Mermaid does: `a:R -- L:b` neighbours share a row, and `a:B -- T:b` puts `b` straight under `a`. Previously the layered layout staggered side-linked services and laid top/bottom links out along the flow. Against mermaid 12.2.0, the Services And Edge Sides sample goes from 81% to 100% vertical and horizontal placement agreement. Services inside groups are unchanged ([#2473](https://github.com/dfadler/zombie-mermaid/issues/2473)).
+
 ## 5.14.1
 
 ## 5.14.0
