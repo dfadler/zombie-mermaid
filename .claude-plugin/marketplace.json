@@ -5,7 +5,7 @@
     {
       "name": "zombie-mermaid",
       "source": "./plugins/claude",
-      "description": "Render and validate Mermaid diagrams (SVG, PNG, ASCII) with zombie-mermaid: a skill plus its MCP server."
+      "description": "Render and validate Mermaid diagrams (SVG, PNG, ASCII) with zombie-mermaid: a skill plus its MCP server. Requires Node.js 24 or newer on PATH."
     }
   ]
 }

@@ -11,6 +11,7 @@
     "*.html",
     "pnpm-lock.yaml",
     "npm-shrinkwrap.json",
+    "plugins/claude/skills/",
     "coverage/",
     "*.png",
     "*.ico",

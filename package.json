@@ -139,6 +139,8 @@
     "bench:mcp": "tsx scripts/bench-mcp.ts",
     "check:changesets": "tsx scripts/check-changesets.ts",
     "check:docs": "tsx scripts/check-docs.ts",
+    "check:plugin-skill": "tsx scripts/sync-plugin-skill.ts --check",
+    "sync:plugin-skill": "tsx scripts/sync-plugin-skill.ts",
     "mcp:server-json": "tsx scripts/generate-server-json.ts",
     "smoke:packed": "node scripts/smoke-test-packed.mjs",
     "check:pack-dist": "node scripts/check-pack-dist.mjs",
