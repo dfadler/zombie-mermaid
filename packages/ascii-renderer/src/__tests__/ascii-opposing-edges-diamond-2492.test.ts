@@ -27,6 +27,12 @@ describe('opposing edges at a diamond / slanted node (#2492)', () => {
     expect(out).toContain('└┼')
   })
 
+  it('splits the pair with a backslash parallelogram D', () => {
+    const out = renderMermaidASCII(SRC('LR', '[\\Ask Again\\]'))
+    expect(out).toContain('▲│')
+    expect(out).toContain('└┼')
+  })
+
   it('splits the pair in RL too', () => {
     const out = renderMermaidASCII(SRC('RL', '[/Ask Again/]'))
     expect(out).toContain('│▲')
