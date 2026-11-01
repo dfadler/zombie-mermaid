@@ -1,5 +1,16 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.14.2
+
+### Patch Changes
+
+- [#2509](https://github.com/dfadler/zombie-mermaid/pull/2509) [`d725006`](https://github.com/dfadler/zombie-mermaid/commit/d725006c3c46b58078b9ebe12962730961411aa5) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ASCII flowcharts keep two opposing edges between the same pair of nodes as two strokes when one end is a diamond or a slanted (parallelogram) shape, instead of drawing them as one merged route, and draw them without crossing. In LR/RL a decision with such a pair sends its branches out the right face and takes the return into its lower right face, as mermaid does, instead of running both strokes down from the bottom vertex ([#2492](https://github.com/dfadler/zombie-mermaid/issues/2492)).
+
+- [#2510](https://github.com/dfadler/zombie-mermaid/pull/2510) [`ee1a26d`](https://github.com/dfadler/zombie-mermaid/commit/ee1a26db8994f916e41cc11bb6f5cca0f71d8e8c) Thanks [@dfadler](https://github.com/dfadler)! - ASCII sequence: nested blocks now nest. An inner `loop`/`opt` is drawn inside the `alt` that contains it, with its walls inside the outer walls, instead of above it ([#2497](https://github.com/dfadler/zombie-mermaid/issues/2497)).
+- Updated dependencies [[`bb958a3`](https://github.com/dfadler/zombie-mermaid/commit/bb958a3ed81de0abefd4e3fcc8b1e64bd9af27d8)]:
+  - @zombie-mermaid/core@5.14.2
+  - @zombie-mermaid/mermaid-parser@5.14.2
+
 ## 5.14.1
 
 ### Patch Changes
