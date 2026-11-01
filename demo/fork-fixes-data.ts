@@ -849,6 +849,6 @@ export const forkFixes: ForkFix[] = [
     pr: 2509,
     render: 'ascii',
     lookFor:
-      'Before: one stroke leaves the diamond’s bottom vertex. After: two strokes side by side, meeting the parallelogram on separate rows.',
+      'Before: one stroke leaves the diamond’s bottom vertex. After: no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
   },
 ]
