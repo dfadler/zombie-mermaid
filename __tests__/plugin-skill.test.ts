@@ -21,6 +21,11 @@ describe('plugin skill copy (#2206)', () => {
     expect(out).toContain(`${PLUGIN_CLI} render diagram.mmd --ascii`)
     expect(out).not.toContain('npx')
   })
+  it('qualifies "No install step" with the local-checkout npm ci caveat', () => {
+    const out = toPluginSkill(SRC)
+    expect(out).toContain('No install step when installed from the marketplace')
+    expect(out).toContain('run `npm ci` in `plugins/claude`')
+  })
   it('fails loudly when the source drifts from the rewrite rules', () => {
     expect(() => toPluginSkill('npx -y zombie-mermaid render')).toThrow(
       /Prerequisites/,
