@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "zombie-mermaid": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/node_modules/zombie-mermaid/dist/cli.js",
+        "mcp"
+      ]
+    }
+  }
+}
