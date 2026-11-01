@@ -1,3 +1,6 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
+
 // Plugin copy of skills/zombie-mermaid/SKILL.md (#2206): `npx -y zombie-mermaid`
 // would bypass the plugin's pinned dependency + shrinkwrap, so invocations are
 // rewritten to the installed CLI. A real file (not a symlink) so it also works
@@ -31,4 +34,27 @@ export function toPluginSkill(input: string): string {
   if (src.includes('npx'))
     throw new Error('plugin-skill: leftover npx reference')
   return src
+}
+
+/** Sync (or `--check`) the plugin copy of the skill. Returns a process exit code. */
+export function syncPluginSkill(
+  src: string,
+  dest: string,
+  check: boolean,
+): number {
+  const want = toPluginSkill(readFileSync(src, 'utf8'))
+  if (check) {
+    let have = ''
+    try {
+      have = readFileSync(dest, 'utf8')
+    } catch {}
+    if (have === want) return 0
+    console.error(
+      `error: ${dest} is out of date; run: pnpm run sync:plugin-skill`,
+    )
+    return 1
+  }
+  mkdirSync(dirname(dest), { recursive: true })
+  writeFileSync(dest, want)
+  return 0
 }

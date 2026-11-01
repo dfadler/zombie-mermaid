@@ -1,6 +1,12 @@
-import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
-import { PLUGIN_CLI, toPluginSkill } from '../scripts/lib/plugin-skill'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  PLUGIN_CLI,
+  syncPluginSkill,
+  toPluginSkill,
+} from '../scripts/lib/plugin-skill'
 
 const SRC = readFileSync('skills/zombie-mermaid/SKILL.md', 'utf8')
 
@@ -23,5 +29,38 @@ describe('plugin skill copy (#2206)', () => {
       toPluginSkill(SRC.replace('## Rendering over MCP', '## MCP')),
     ).toThrow(/MCP config/)
     expect(() => toPluginSkill(SRC + '\nnpx other-tool\n')).toThrow(/leftover/)
+  })
+})
+
+describe('syncPluginSkill', () => {
+  const SRC_PATH = 'skills/zombie-mermaid/SKILL.md'
+  const withDir = (fn: (dest: string) => void) => {
+    const dir = mkdtempSync(join(tmpdir(), 'plugin-skill-'))
+    try {
+      fn(join(dir, 'nested', 'SKILL.md'))
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+  it('write mode creates the dest; check then passes', () => {
+    withDir((dest) => {
+      expect(syncPluginSkill(SRC_PATH, dest, false)).toBe(0)
+      expect(readFileSync(dest, 'utf8')).toBe(toPluginSkill(SRC))
+      expect(syncPluginSkill(SRC_PATH, dest, true)).toBe(0)
+    })
+  })
+  it('check fails when the dest is stale or missing', () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      withDir((dest) => {
+        expect(syncPluginSkill(SRC_PATH, dest, true)).toBe(1)
+        syncPluginSkill(SRC_PATH, dest, false)
+        writeFileSync(dest, 'stale')
+        expect(syncPluginSkill(SRC_PATH, dest, true)).toBe(1)
+        expect(err).toHaveBeenCalledWith(expect.stringContaining('out of date'))
+      })
+    } finally {
+      err.mockRestore()
+    }
   })
 })
