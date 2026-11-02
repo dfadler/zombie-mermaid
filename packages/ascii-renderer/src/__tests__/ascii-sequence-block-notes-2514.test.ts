@@ -56,8 +56,9 @@ describe('ASCII sequence block walls enclose notes (#2514)', () => {
         const out = renderMermaidASCII(SRC(block, note))
         const w = wall(out)
         // The note text sits strictly between the walls, as does its border.
-        expect(w.noteL).toBeGreaterThan(w.l)
-        expect(w.noteR).toBeLessThan(w.r)
+        // with one blank column between each wall and the note border.
+        expect(w.noteL).toBeGreaterThanOrEqual(w.l + 2)
+        expect(w.noteR).toBeLessThanOrEqual(w.r - 2)
       })
     }
   }

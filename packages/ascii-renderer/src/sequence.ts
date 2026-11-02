@@ -171,7 +171,9 @@ export function renderSequenceAscii(
   /**
    * Widest line among a block's header ("alt [label]") and every divider
    * ("[else label]") — the minimum wall width the block's own text needs,
-   * independent of how far its messages' lifelines happen to span.
+   * independent of how far its messages' lifelines happen to span. Includes
+   * the `─ text ─` framing (as box-group headers have), so a label never
+   * touches the corner/junction or the border line that continues after it.
    */
   function maxBlockLabelWidth(block: Block): number {
     const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
@@ -181,7 +183,7 @@ export function renderSequenceAscii(
         width = Math.max(width, maxLineWidth(`[${divider.label}]`))
       }
     }
-    return width
+    return width + 4
   }
 
   // Clamped: a negative boxBorderPadding would otherwise produce a negative
@@ -431,16 +433,17 @@ export function renderSequenceAscii(
       // overNoteHalfLeft[0]` must stay >= 0; issue #992).
       overNoteHalfLeft[0]!,
       // A note inside a block must also clear the block's left wall at
-      // column 0 (#2514): one extra column for `left`, and for a centred
-      // single-actor `over` note's left half.
+      // column 0 (#2514), leaving one blank column between wall and note:
+      // `left` needs 3 extra columns, a centred single-actor `over` note's
+      // left half needs 2.
       ...diagram.notes.map((n) =>
         actorIndexOf(n.actorIds[0]!) === 0 &&
         n.position !== 'right' &&
         (n.position === 'left' || n.actorIds.length === 1) &&
         noteInBlock(n)
-          ? (n.position === 'left'
-              ? noteBoxWidth(n)
-              : Math.floor(noteBoxWidth(n) / 2)) + 2
+          ? n.position === 'left'
+            ? noteBoxWidth(n) + 3
+            : Math.floor(noteBoxWidth(n) / 2) + 2
           : 0,
       ),
       // A centred self-message label on the leftmost actor reaches left of
@@ -769,7 +772,7 @@ export function renderSequenceAscii(
             nx = llX[aIdx]! - Math.floor(nWidth / 2)
           }
         }
-        nx = Math.max(noteInBlock(note) ? 1 : 0, nx)
+        nx = Math.max(noteInBlock(note) ? 2 : 0, nx)
 
         notePositions.push({
           x: nx,
@@ -1451,8 +1454,8 @@ export function renderSequenceAscii(
     // after the pull-back so a note wins over an untouched lifeline.
     for (const np of notePositions) {
       if (np.y <= topY || np.y >= botY) continue
-      bLeft = Math.min(bLeft, np.x - 1)
-      bRight = Math.max(bRight, np.x + np.width)
+      bLeft = Math.min(bLeft, np.x - 2)
+      bRight = Math.max(bRight, np.x + np.width + 1)
     }
 
     bLeft = Math.max(0, bLeft)
@@ -1535,13 +1538,16 @@ export function renderSequenceAscii(
       lineIdx++
     ) {
       writeTextCells(
-        bLeft + 1,
+        bLeft + 3,
         topY + lineIdx,
         hdrLines[lineIdx]!,
         'text',
         bRight,
       )
     }
+    // Blank column either side of the label on the border row.
+    setC(bLeft + 2, topY, ' ', 'text')
+    setC(bLeft + 3 + maxLineWidth(hdrLines[0]!), topY, ' ', 'text')
 
     // Bottom border
     setC(bLeft, botY, BL, 'border')
@@ -1566,7 +1572,9 @@ export function renderSequenceAscii(
       const dLabel = block.dividers[d]!.label
       if (dLabel) {
         const dStr = `[${dLabel}]`
-        writeTextCells(bLeft + 1, dY, dStr, 'text', bRight)
+        writeTextCells(bLeft + 3, dY, dStr, 'text', bRight)
+        setC(bLeft + 2, dY, ' ', 'text')
+        setC(bLeft + 3 + maxLineWidth(dStr), dY, ' ', 'text')
       }
     }
   }

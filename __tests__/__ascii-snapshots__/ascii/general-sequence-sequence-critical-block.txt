@@ -5,7 +5,7 @@
     |       BEGIN        |        
     |-------------------->        
     |                    |        
-+critical [Transaction]------+    
++- critical [Transaction] ---+    
 |   |                    |   |    
 |   |  UPDATE accounts   |   |    
 |   |-------------------->   |    

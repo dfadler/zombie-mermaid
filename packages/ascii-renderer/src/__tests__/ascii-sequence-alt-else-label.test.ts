@@ -91,9 +91,9 @@ sequenceDiagram
       { useAscii: false },
     )
 
-    // Matches the issue's own "short labels, for reference" expected output.
-    expect(result).toContain('alt [yes]───────┐')
-    expect(result).toContain('[no]╌╌╌╌╌╌╌╌╌╌╌╌┤')
+    // Labels are framed `─ text ─` (blank column each side), like box headers.
+    expect(result).toContain('─ alt [yes] ─')
+    expect(result).toContain('├╌ [no] ╌╌╌╌╌╌╌╌╌┤')
   })
 
   it('widens the wall for a very long single-condition label', () => {
@@ -202,7 +202,7 @@ sequenceDiagram
       { useAscii: false },
     )
 
-    expect(result).toContain('┌par')
+    expect(result).toContain('┌─ par ─')
     expect(result).not.toContain('par [')
   })
 
