@@ -79,6 +79,23 @@ describe('ASCII sequence block walls enclose notes (#2514)', () => {
     expect(div.trimEnd().length).toBe(bottom.trimEnd().length)
   })
 
+  it('keeps every nested left wall clear of a left note on the first actor', () => {
+    const out = renderMermaidASCII(`sequenceDiagram
+  participant A
+  participant B
+  loop one
+    loop two
+      loop three
+        A->>B: x
+        Note left of A: hello there
+      end
+    end
+  end`)
+    const row = out.split('\n').find((l) => l.includes('hello there'))!
+    // Three walls, then a blank column, then the note border.
+    expect(row.startsWith('│││ │ hello there │')).toBe(true)
+  })
+
   it('snapshots ASCII and SVG for the issue source', () => {
     expect(renderMermaidASCII(ISSUE)).toMatchSnapshot('ascii')
     expect(renderMermaidSVG(ISSUE)).toMatchSnapshot('svg')

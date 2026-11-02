@@ -356,11 +356,11 @@ export function renderSequenceAscii(
     return Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
   }
 
-  // Is this note drawn between a block's top and bottom rows (#2514)?
-  function noteInBlock(note: (typeof diagram.notes)[number]): boolean {
-    return diagram.blocks.some(
+  // How many blocks enclose this note (#2514)? Each one has a left wall.
+  function noteDepth(note: (typeof diagram.notes)[number]): number {
+    return diagram.blocks.filter(
       (b) => note.afterIndex >= b.startIndex && note.afterIndex <= b.endIndex,
-    )
+    ).length
   }
 
   // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
@@ -434,16 +434,16 @@ export function renderSequenceAscii(
       overNoteHalfLeft[0]!,
       // A note inside a block must also clear the block's left wall at
       // column 0 (#2514), leaving one blank column between wall and note:
-      // `left` needs 3 extra columns, a centred single-actor `over` note's
-      // left half needs 2.
+      // one column per enclosing wall plus the blank one (`left` also needs
+      // its separating column from the lifeline).
       ...diagram.notes.map((n) =>
         actorIndexOf(n.actorIds[0]!) === 0 &&
         n.position !== 'right' &&
         (n.position === 'left' || n.actorIds.length === 1) &&
-        noteInBlock(n)
+        noteDepth(n)
           ? n.position === 'left'
-            ? noteBoxWidth(n) + 3
-            : Math.floor(noteBoxWidth(n) / 2) + 2
+            ? noteBoxWidth(n) + 2 + noteDepth(n)
+            : Math.floor(noteBoxWidth(n) / 2) + 1 + noteDepth(n)
           : 0,
       ),
       // A centred self-message label on the leftmost actor reaches left of
@@ -606,6 +606,7 @@ export function renderSequenceAscii(
     width: number
     height: number
     lines: string[]
+    depth: number
   }> = []
 
   // Start right below the header boxes — and below the group bracket's
@@ -665,6 +666,7 @@ export function renderSequenceAscii(
       width: nWidth,
       height: nHeight,
       lines: nLines,
+      depth: 0,
     })
     curY += nHeight
   }
@@ -772,7 +774,7 @@ export function renderSequenceAscii(
             nx = llX[aIdx]! - Math.floor(nWidth / 2)
           }
         }
-        nx = Math.max(noteInBlock(note) ? 2 : 0, nx)
+        nx = Math.max(noteDepth(note) && noteDepth(note) + 1, nx)
 
         notePositions.push({
           x: nx,
@@ -780,6 +782,7 @@ export function renderSequenceAscii(
           width: nWidth,
           height: nHeight,
           lines: nLines,
+          depth: noteDepth(note),
         })
         curY += nHeight
       }
@@ -1454,7 +1457,7 @@ export function renderSequenceAscii(
     // after the pull-back so a note wins over an untouched lifeline.
     for (const np of notePositions) {
       if (np.y <= topY || np.y >= botY) continue
-      bLeft = Math.min(bLeft, np.x - 2)
+      bLeft = Math.min(bLeft, np.x - 1 - np.depth)
       bRight = Math.max(bRight, np.x + np.width + 1)
     }
 
