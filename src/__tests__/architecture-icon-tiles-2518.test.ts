@@ -6,6 +6,12 @@
  * snapshots pin the shapes it already drew.
  */
 import { describe, expect, it } from 'vitest'
+import { splitStatements } from '@zombie-mermaid/core'
+import {
+  architectureToGraph,
+  parseArchitecture,
+} from '@zombie-mermaid/mermaid-parser'
+import { layoutFlowchartSync } from '@zombie-mermaid/svg-renderer'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
 const CASES: [string, string][] = [
@@ -43,5 +49,20 @@ describe('architecture service icon tiles (#2518)', () => {
       'architecture-beta\n  service a(database)[A]\n  service b(internet)[B]\n  junction j\n  a:R -- L:j\n  j:R -- L:b',
     )
     expect(svg.match(/fill="#087ebf"/g)).toHaveLength(2)
+  })
+
+  it('sizes an iconed node as a tile in the simple layout too', () => {
+    const g = layoutFlowchartSync(
+      architectureToGraph(
+        parseArchitecture(
+          splitStatements(src('service a(database)[A]\n  service b(disk)[B]')),
+        ),
+      ),
+      { layout: 'simple' },
+    )
+    expect(g.nodes.map((n) => [n.width, n.height, n.shape, n.icon])).toEqual([
+      [80, 80, 'rectangle', 'database'],
+      [80, 80, 'rectangle', 'disk'],
+    ])
   })
 })
