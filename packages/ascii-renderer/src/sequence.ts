@@ -1538,16 +1538,13 @@ export function renderSequenceAscii(
       lineIdx++
     ) {
       writeTextCells(
-        bLeft + 3,
+        bLeft + 2,
         topY + lineIdx,
-        hdrLines[lineIdx]!,
+        ` ${hdrLines[lineIdx]!} `,
         'text',
         bRight,
       )
     }
-    // Blank column either side of the label on the border row.
-    setC(bLeft + 2, topY, ' ', 'text')
-    setC(bLeft + 3 + maxLineWidth(hdrLines[0]!), topY, ' ', 'text')
 
     // Bottom border
     setC(bLeft, botY, BL, 'border')
@@ -1572,9 +1569,7 @@ export function renderSequenceAscii(
       const dLabel = block.dividers[d]!.label
       if (dLabel) {
         const dStr = `[${dLabel}]`
-        writeTextCells(bLeft + 3, dY, dStr, 'text', bRight)
-        setC(bLeft + 2, dY, ' ', 'text')
-        setC(bLeft + 3 + maxLineWidth(dStr), dY, ' ', 'text')
+        writeTextCells(bLeft + 2, dY, ` ${dStr} `, 'text', bRight)
       }
     }
   }
