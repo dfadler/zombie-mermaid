@@ -275,3 +275,49 @@ describe('xychart agreement (#2451)', () => {
     expect(scorecardMarkdown([run], [run.entry])).not.toContain('## XY charts')
   })
 })
+
+describe('bar thickness (#2515)', () => {
+  it('is read from both drawings and scored as a share of label spacing', () => {
+    const o = parseOfficialXy(OFFICIAL, false)
+    expect(o.barWidths?.[0]).toBeCloseTo(78.4789, 3)
+    const ours = parseOurXy(renderMermaidSVG(SRC), false)
+    expect(ours.barWidths).toHaveLength(5)
+    expect(xyAgreement(o, ours).bars).toBe(1)
+    const thin: XyLayout = { ...ours, barWidths: ours.barWidths!.map(() => 40) }
+    expect(xyAgreement(o, thin).bars).toBe(0)
+    expect(xyBreaches({ thin: xyAgreement(o, thin) })).toEqual([
+      'thin bars (0% < 100%)',
+    ])
+  })
+
+  it('scores nothing without bars or with fewer than two labels', () => {
+    const o = parseOfficialXy(OFFICIAL, false)
+    expect(xyAgreement({ ...o, barWidths: undefined }, o).bars).toBe(0)
+    const noBars = parseOurXy(
+      renderMermaidSVG('xychart-beta\n line [1, 2]'),
+      false,
+    )
+    expect(noBars.barWidths).toBeUndefined()
+    const one: XyLayout = { ...o, xLabels: o.xLabels.slice(0, 1) }
+    expect(xyAgreement(one, one).bars).toBeNull()
+  })
+
+  it('follows mermaid 12.2.0 for few and many categories, horizontal too', () => {
+    const share = (n: number, horizontal: boolean): number => {
+      const cats = Array.from({ length: n }, (_, i) => `C${i}`).join(', ')
+      const head = horizontal ? 'xychart-beta horizontal' : 'xychart-beta'
+      const svg = renderMermaidSVG(
+        `${head}\n x-axis [${cats}]\n bar [${Array(n).fill(5).join(', ')}]`,
+      )
+      const l = parseOurXy(svg, horizontal)
+      const w = l.barWidths![0]!
+      return w / ((l.xLabels.at(-1)!.pos - l.xLabels[0]!.pos) / (n - 1))
+    }
+    // Mermaid draws 0.58 (4 categories) and 0.61 (12); the old fixed 40 px gave 0.27 and 0.8.
+    expect(share(4, false)).toBeGreaterThan(0.5)
+    expect(share(4, false)).toBeLessThan(0.65)
+    expect(share(12, false)).toBeGreaterThan(0.55)
+    expect(share(12, false)).toBeLessThan(0.65)
+    expect(share(5, true)).toBeGreaterThan(0.5)
+  })
+})

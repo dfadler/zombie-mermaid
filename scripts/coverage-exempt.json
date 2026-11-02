@@ -293,5 +293,10 @@
     "file": "scripts/generate-server-json.ts",
     "reason": "thin CLI: runs on import, prints/writes and calls process.exit; all logic is in scripts/lib/mcp-server-json.ts (tested by __tests__/mcp-server-json.test.ts)",
     "maxLines": 20
+  },
+  {
+    "file": "scripts/promo-figures.ts",
+    "reason": "thin CLI: runs on import, prints figures read from package.json, README, fork-fixes-data and npm; no logic to unit test",
+    "maxLines": 30
   }
 ]
