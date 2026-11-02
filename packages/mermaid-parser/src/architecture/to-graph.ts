@@ -28,8 +28,9 @@ import type {
 // What is not carried over: Mermaid places services on a grid from the edge
 // ports, so `a:R -- L:b` means "b is right of a". Here ports only choose the
 // flow direction (majority axis) and which way each edge points in the
-// layout; exact placement is the flowchart layout's. Icons are not drawn
-// (only the database/disk shapes differ) and `align` is ignored.
+// layout; exact placement is the flowchart layout's. The SVG renderer draws
+// an icon tile per service (`icon`, #2518); ASCII only has the shape. `align`
+// is ignored.
 // ============================================================================
 
 /** Built-in Mermaid icons that have a distinct flowchart shape. */
@@ -124,6 +125,7 @@ export function architectureToGraph(
       id: s.id,
       label: s.title,
       shape: (s.icon && ICON_SHAPE[s.icon]) || 'rectangle',
+      icon: s.icon ?? '',
     })
     parentOf.set(s.id, s.parent)
   }
