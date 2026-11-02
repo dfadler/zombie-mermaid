@@ -5,7 +5,7 @@ exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and 
  │ A │      │ B │                                    
  └─┬─┘      └─┬─┘                                    
    │          │                                      
-┌─ loop [every retry] ──────────────────────────────┐
+┌─ loop ────────────── [every retry] ───────────────┐
 │  │          │                                     │
 │  │  fetch   │                                     │
 │  │──────────▶                                     │

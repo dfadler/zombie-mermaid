@@ -21,13 +21,13 @@ describe('ASCII sequence nested blocks (#2497)', () => {
   const row = (s: string) => lines.findIndex((l) => l.includes(s))
 
   it('draws nested headers below the enclosing header', () => {
-    expect(row('alt [cache hit]')).toBeLessThan(row('loop [every retry]'))
-    expect(row('[cache miss]')).toBeLessThan(row('opt [warm up]'))
+    expect(row('[cache hit]')).toBeLessThan(row('[every retry]'))
+    expect(row('[cache miss]')).toBeLessThan(row('[warm up]'))
   })
 
   it('keeps the inner walls inside the outer walls', () => {
-    const outer = lines[row('alt [cache hit]')]!
-    const inner = lines[row('loop [every retry]')]!
+    const outer = lines[row('[cache hit]')]!
+    const inner = lines[row('[every retry]')]!
     expect(inner.indexOf('┌')).toBeGreaterThan(outer.indexOf('┌'))
     expect(inner.lastIndexOf('┐')).toBeLessThan(outer.lastIndexOf('┐'))
   })
@@ -52,8 +52,8 @@ describe('ASCII sequence nested blocks over the same lifelines (#2497)', () => {
   const row = (s: string) => lines.findIndex((l) => l.includes(s))
 
   it('insets the inner block one column on each side', () => {
-    const outer = lines[row('alt [outer]')]!
-    const inner = lines[row('loop [inner]')]!
+    const outer = lines[row('[outer]')]!
+    const inner = lines[row('[inner]')]!
     expect(inner.indexOf('┌')).toBe(outer.indexOf('┌') + 1)
     expect(inner.lastIndexOf('┐')).toBe(outer.lastIndexOf('┐') - 1)
   })

@@ -19,6 +19,9 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
+const hdr = (type: string, label: string) =>
+  new RegExp(`${type} ─+ \\[${label}\\] ─+┐`)
+
 describe('ASCII sequence diagrams – alt/else block labels (issue #352)', () => {
   it('does not truncate a long alt/else label mid-word (exact issue repro)', () => {
     const result = renderMermaidASCII(
@@ -37,7 +40,7 @@ sequenceDiagram
     )
 
     // Full, unclipped labels must appear.
-    expect(result).toContain('alt [credentials valid]')
+    expect(result).toMatch(hdr('alt', 'credentials valid'))
     expect(result).toContain('[credentials rejected]')
 
     // The exact mid-word-truncated strings from the issue must be gone —
@@ -92,8 +95,8 @@ sequenceDiagram
     )
 
     // Labels are framed `─ text ─` (blank column each side), like box headers.
-    expect(result).toContain('─ alt [yes] ─')
-    expect(result).toContain('├╌ [no] ╌╌╌╌╌╌╌╌╌┤')
+    expect(result).toMatch(/┌─ alt ─+ \[yes\] ─+┐/)
+    expect(result).toContain('├╌ [no] ╌╌╌╌╌╌╌╌╌╌┤')
   })
 
   it('widens the wall for a very long single-condition label', () => {
@@ -111,13 +114,13 @@ sequenceDiagram
       { useAscii: false },
     )
 
-    expect(result).toContain(`alt [${longLabel}]`)
+    expect(result).toMatch(hdr('alt', longLabel))
 
     // The header line's own right wall must close immediately after the
     // label — proves the wall grew to fit rather than the label being cut.
     const headerLine = result
       .split('\n')
-      .find((l) => l.includes(`alt [${longLabel}]`))
+      .find((l) => l.includes(`[${longLabel}]`))
     expect(headerLine).toBeDefined()
     expect(headerLine!.endsWith('┐')).toBe(true)
   })
@@ -141,7 +144,7 @@ sequenceDiagram
       { useAscii: false },
     )
 
-    expect(result).toContain('alt [short]')
+    expect(result).toMatch(hdr('alt', 'short'))
     expect(result).toContain('[a moderately long condition]')
     expect(result).toContain('[an even longer condition than the previous one]')
     expect(result).toContain('[tiny]')
@@ -165,8 +168,8 @@ sequenceDiagram
 `,
       { useAscii: false },
     )
-    expect(loopResult).toContain(
-      'loop [a fairly long loop condition label here]',
+    expect(loopResult).toMatch(
+      hdr('loop', 'a fairly long loop condition label here'),
     )
 
     const optResult = renderMermaidASCII(
@@ -180,8 +183,8 @@ sequenceDiagram
 `,
       { useAscii: false },
     )
-    expect(optResult).toContain(
-      'opt [a fairly long optional condition label here]',
+    expect(optResult).toMatch(
+      hdr('opt', 'a fairly long optional condition label here'),
     )
   })
 
@@ -223,8 +226,8 @@ sequenceDiagram
       { useAscii: false },
     )
 
-    expect(result).toContain(
-      'alt [some long condition that needs the wall widened]',
+    expect(result).toMatch(
+      hdr('alt', 'some long condition that needs the wall widened'),
     )
     // The bare divider must still render as a plain divider row — checked
     // positively (a dashed line actually exists) as well as negatively (it

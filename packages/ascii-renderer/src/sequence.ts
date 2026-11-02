@@ -176,14 +176,18 @@ export function renderSequenceAscii(
    * touches the corner/junction or the border line that continues after it.
    */
   function maxBlockLabelWidth(block: Block): number {
-    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
-    let width = maxLineWidth(hdrLabel)
+    // `┌─ loop ─ [label] ─┐`: the label is centred in the space after the
+    // type tab (as mermaid does), so it needs a dash each side.
+    let width = maxLineWidth(block.type) + 4
+    if (block.label) {
+      width += maxLineWidth(`[${block.label}]`) + 5
+    }
     for (const divider of block.dividers) {
       if (divider.label) {
-        width = Math.max(width, maxLineWidth(`[${divider.label}]`))
+        width = Math.max(width, maxLineWidth(`[${divider.label}]`) + 4)
       }
     }
-    return width + 4
+    return width
   }
 
   // Clamped: a negative boxBorderPadding would otherwise produce a negative
@@ -1520,7 +1524,6 @@ export function renderSequenceAscii(
     const ext = blockExt[b]!
     const bLeft = ext.l
     const bRight = ext.r
-    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
     if (bRight > blockCanvasMaxX) {
       increaseSize(canvas, bRight, totalH - 1)
       increaseRoleCanvasSize(rc, bRight, totalH - 1)
@@ -1532,21 +1535,21 @@ export function renderSequenceAscii(
     setC(bLeft, topY, TL, 'border')
     for (let x = bLeft + 1; x < bRight; x++) setC(x, topY, H, 'border')
     setC(bRight, topY, TR, 'border')
-    // Write block header label over the top border (supports multi-line)
-    const hdrLines = splitLines(hdrLabel)
-
-    for (
-      let lineIdx = 0;
-      lineIdx < hdrLines.length && topY + lineIdx < botY;
-      lineIdx++
-    ) {
-      writeTextCells(
-        bLeft + 2,
-        topY + lineIdx,
-        ` ${hdrLines[lineIdx]!} `,
-        'text',
-        bRight,
-      )
+    // Type tab at the corner, label centred in the rest of the border.
+    writeTextCells(bLeft + 2, topY, ` ${block.type} `, 'text', bRight)
+    if (block.label) {
+      const tabEnd = bLeft + 4 + block.type.length
+      const lines = splitLines(`[${block.label}]`)
+      for (let i = 0; i < lines.length && topY + i < botY; i++) {
+        const w = displayWidth(lines[i]!) + 2
+        writeTextCells(
+          tabEnd + Math.floor((bRight - tabEnd - w) / 2),
+          topY + i,
+          ` ${lines[i]!} `,
+          'text',
+          bRight,
+        )
+      }
     }
 
     // Bottom border
