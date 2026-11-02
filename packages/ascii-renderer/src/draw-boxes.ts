@@ -219,7 +219,7 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   } else if (
     (node.shape === 'trapezoid' || node.shape === 'trapezoid-alt') &&
     to.y >= 2 &&
-    to.x >= 2 * to.y + 2
+    to.x >= 4
   ) {
     // Both sides slant, one column per row (#2164).
     const alt = node.shape === 'trapezoid-alt'
@@ -235,7 +235,7 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   } else if (
     (node.shape === 'parallelogram' || node.shape === 'parallelogram-alt') &&
     to.y >= 2 &&
-    to.x >= 2 * to.y + 2
+    to.x >= 4
   ) {
     // Both walls lean one column per row (#2164).
     const alt = node.shape === 'parallelogram-alt'
