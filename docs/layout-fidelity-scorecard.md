@@ -11,14 +11,14 @@ floor for its lowest figure (default 85%, lower overrides in
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
 Reference: mermaid 12.2.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-10-31 at
-67dd7ff with `pnpm run layout:scorecard`, tolerance 20px.
+these diagram types is ELK (it was dagre before). Generated 2026-11-02 at
+ae439b3 with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
 | Type      | Samples | Vertical | Horizontal | Containment |
 | --------- | ------- | -------- | ---------- | ----------- |
-| Flowchart | 53      | 100%     | 98%        | 100%        |
+| Flowchart | 56      | 100%     | 98%        | 100%        |
 | State     | 7       | 100%     | 98%        | 100%        |
 | Class     | 29      | 100%     | 100%       | 100%        |
 | ER        | 20      | 100%     | 100%       | -           |
@@ -31,10 +31,6 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-30 | 961cbfa | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
-| 2026-10-30 | 961cbfa | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-30 | 961cbfa | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
-| 2026-10-30 | 961cbfa | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
 | 2026-10-30 | 036684d | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
 | 2026-10-30 | 036684d | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-30 | 036684d | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
@@ -51,6 +47,10 @@ across that change.
 | 2026-10-31 | 67dd7ff | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-31 | 67dd7ff | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
 | 2026-10-31 | 67dd7ff | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-11-02 | ae439b3 | 12.2.0  | Flowchart | 56      | 100%     | 98%        | 100%        |
+| 2026-11-02 | ae439b3 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
+| 2026-11-02 | ae439b3 | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
+| 2026-11-02 | ae439b3 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Edge labels (ASCII)
 
@@ -69,6 +69,7 @@ between the two renderers. Descriptive only, no floor.
 | 2026-10-30 | 151f853 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 | 2026-10-31 | ac52e8a | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-11-02 | ae439b3 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 
 ## Sequence diagrams (order)
 
@@ -88,6 +89,7 @@ says nothing about pixel positions or spacing.
 | 2026-10-30 | 151f853 | 12.2.0  | 21      | 100%         | 100%     | 100%      |
 | 2026-10-31 | ac52e8a | 12.2.0  | 21      | 100%         | 100%     | 100%      |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 21      | 100%         | 100%     | 100%      |
+| 2026-11-02 | ae439b3 | 12.2.0  | 24      | 100%         | 100%     | 100%      |
 
 ## Pie charts (angles)
 
@@ -106,6 +108,7 @@ exits 1 otherwise). It says nothing about radius, centre or fonts.
 | 2026-10-30 | 151f853 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
 | 2026-10-31 | ac52e8a | 12.2.0  | 19      | 100%   | 100%   | 100%   |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-11-02 | ae439b3 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
 
 ## C4 diagrams (placement)
 
@@ -114,7 +117,8 @@ of each other (columns and rows, within `PLACE_TOLERANCE`), of boxes inside the
 same boundaries, of relationships with the same label and technology text and
 of relationships running the same way is taken (`scripts/c4-oracle.ts`).
 Every sample must score 100% (`C4_FLOOR`; `--thresholds` exits 1
-otherwise). It says nothing about box sizes or fonts.
+otherwise) except those held lower in `C4_SAMPLE_FLOORS`, where our placement
+really differs. It says nothing about box sizes or fonts.
 
 | Date       | Commit  | Mermaid | Samples | Horizontal | Vertical | Containment | Relationships | Direction |
 | ---------- | ------- | ------- | ------- | ---------- | -------- | ----------- | ------------- | --------- |
@@ -123,6 +127,7 @@ otherwise). It says nothing about box sizes or fonts.
 | 2026-10-30 | 151f853 | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
 | 2026-10-31 | ac52e8a | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
+| 2026-11-02 | ae439b3 | 12.2.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
 
 ## XY charts (axes and data)
 
@@ -139,6 +144,7 @@ says nothing about colors, fonts or bar widths.
 | 2026-10-30 | 036684d | 12.2.0  | 10      | 100%   | 100%  | 90%  |
 | 2026-10-31 | ac52e8a | 12.2.0  | 10      | 100%   | 100%  | 90%  |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 10      | 100%   | 100%  | 90%  |
+| 2026-11-02 | ae439b3 | 12.2.0  | 10      | 100%   | 100%  | 100% |
 
 ## Architecture diagrams (placement)
 
@@ -156,6 +162,7 @@ parity claim. It says nothing about distances or edge routes.
 | 2026-10-30 | 151f853 | 12.2.0  | 3       | 68%      | 84%        | 97%         |
 | 2026-10-31 | ac52e8a | 12.2.0  | 3       | 68%      | 84%        | 97%         |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 3       | 68%      | 84%        | 97%         |
+| 2026-11-02 | ae439b3 | 12.2.0  | 3       | 74%      | 90%        | 97%         |
 
 ## Per sample
 
@@ -215,6 +222,9 @@ parity claim. It says nothing about distances or edge routes.
 | Flowchart: Nine Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Flowchart: Self-Loop with In and Out Neighbours (LR)     | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Flowchart: Dense Duplicate Edges (LR)                    | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Parallelogram Shapes (LR)                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Parallelogram Shapes (RL)                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Parallelogram Shapes (BT)                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Duplicate Self-Loops                                     | -        | -          | -           | 1     | 85%   | n/a    |
 
 ### State (lowest first)
