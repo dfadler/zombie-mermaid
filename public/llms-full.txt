@@ -2135,13 +2135,15 @@ left and right middle.
   per row (`╱ ╲` / `/ \`; a cell is about half as wide as tall, so the slope matches),
   and the base row is `╱──╲` like the narrow one, so a node is wider by its slant (at
   least `2 × rows + 1` columns). A label row that would touch the slant flattens it
-  there. Side edges attach at the node's outer face, then a post-pass extends the stroke
+  there. A node a neighbour stretches taller than that width allows spreads the same
+  slant over every row (a column may repeat) rather than losing it. Side edges attach at the node's outer face, then a post-pass extends the stroke
   (and moves an arrowhead) across the blank cells to the slanted wall.
 - **Parallelogram** (`[/x/]`, `[\x\]`). Mermaid 12.2.0 (also the npm latest) leans both
   sides the same way, top edge shifted right for `[/x/]` and left for `[\x\]`, in every
   direction (BT and RL do not flip or mirror it). Ours leans one column per row (`╱` / `╲`,
   `/` / `\`) with `╱──╱` on the top and bottom rows, so a node is wider by its slant (at
   least `2 × rows + 1` columns). A wall that would touch a label row stops short of it.
+  A node stretched taller than that width allows spreads the lean over every row.
   Edges attach as for the trapezoid: at the outer face, with a post-pass that extends the
   stroke (and moves an arrowhead) across the blank cells to the slanted wall. Under RL the
   outline is mirrored back within its own rect so the lean matches LR (#1701).
