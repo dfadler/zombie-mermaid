@@ -107,7 +107,7 @@ describe('ASCII sequence block walls enclose notes (#2514)', () => {
   end
   C->>A: z`)
     const row = out.split('\n').find((l) => l.includes('a fairly wide note'))!
-    // note border, blank, wall, blank, then C's lifeline.
+    // Note border, blank, wall, blank, then C's lifeline.
     expect(/│ │ │ *$/.test(row)).toBe(true)
   })
 
