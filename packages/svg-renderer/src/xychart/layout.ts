@@ -56,7 +56,7 @@ const XY = {
  * rescaled to keep the bar the same share of the spacing (#2515).
  * `labelHalf` is half the widest label along the axis.
  */
-export function barThickness(
+function barThickness(
   extent: number,
   n: number,
   labelHalf: number,
