@@ -113,3 +113,19 @@ All must be yes before asking the maintainer for a go-ahead:
 
 After posting, record the thread URL and date in the zombie-mermaid issue that
 authorised it so rule 7 can be checked.
+
+## Refresh figures before using any promotion draft
+
+Drafts under `docs/promotion/` and the strategy doc quote a version, a fix count and an
+"N reported upstream" figure that go stale within days
+([#2512](https://github.com/dfadler/zombie-mermaid/issues/2512)). Before a draft is
+posted or sent, run `pnpm exec tsx scripts/promo-figures.ts` and replace every figure
+with its output; cite the line it came from in the draft's sources table.
+
+| Figure                | Source                                                                                                                              | Re-check                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Latest version        | npm registry (`package.json` is only the unreleased tip)                                                                            | `npm view zombie-mermaid version` |
+| Fix count             | `forkFixes.length` in `demo/fork-fixes-data.ts`, which the README's "(N fixes)" must match                                          | script lines 3-4                  |
+| "N reported upstream" | entries with `upstreamIssues`, a smaller number than the fix count ([#1789](https://github.com/dfadler/zombie-mermaid/issues/1789)) | script line 5                     |
+
+The count moves with every fork-fix PR, so a draft written before a merge is wrong after it.
