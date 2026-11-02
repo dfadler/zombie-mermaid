@@ -390,7 +390,11 @@ export function renderSequenceAscii(
   for (const note of diagram.notes) {
     if (note.position === 'left' || note.position === 'right') {
       const aIdx = actorIndexOf(note.actorIds[0]!)
-      const w = noteBoxWidth(note)
+      // A note inside a block also needs a blank column, the wall and a clear
+      // column before the neighbouring lifeline (#2514).
+      const w =
+        noteBoxWidth(note) +
+        (noteDepth(note) && !(note.position === 'left' && aIdx === 0) ? 3 : 0)
       if (note.position === 'left') {
         leftNoteWidth[aIdx] = Math.max(leftNoteWidth[aIdx]!, w)
       } else {
@@ -697,8 +701,10 @@ export function renderSequenceAscii(
     // closing order, so a nested block precedes the block that contains it).
     for (let b = diagram.blocks.length - 1; b >= 0; b--) {
       if (diagram.blocks[b]!.startIndex === m) {
-        curY += rowGap + 1 // Blank rows + 1 fixed header row
-        blockStartY.set(b, curY - 1)
+        // Blank rows + 1 header row + one more per extra label line.
+        const extra = splitLines(`[${diagram.blocks[b]!.label}]`).length - 1
+        curY += rowGap + 1 + extra
+        blockStartY.set(b, curY - 1 - extra)
       }
     }
     placeDividers(false)

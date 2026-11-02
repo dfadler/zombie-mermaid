@@ -96,6 +96,32 @@ describe('ASCII sequence block walls enclose notes (#2514)', () => {
     expect(row.startsWith('│││ │ hello there │')).toBe(true)
   })
 
+  it('leaves a clear column between a note wall and an uninvolved lifeline', () => {
+    const out = renderMermaidASCII(`sequenceDiagram
+  participant A
+  participant B
+  participant C
+  loop x
+    A->>B: hi
+    Note right of B: a fairly wide note beside B here
+  end
+  C->>A: z`)
+    const row = out.split('\n').find((l) => l.includes('a fairly wide note'))!
+    // note border, blank, wall, blank, then C's lifeline.
+    expect(/│ │ │ *$/.test(row)).toBe(true)
+  })
+
+  it('reserves a row for every line of a multi-line block label', () => {
+    const out = renderMermaidASCII(`sequenceDiagram
+  participant A
+  participant B
+  loop one<br/>two<br/>three
+    A->>B: abcdefghijklmnop
+  end`)
+    const msg = out.split('\n').find((l) => l.includes('abcdefghijklmnop'))!
+    expect(msg).not.toContain('three')
+  })
+
   it('snapshots ASCII and SVG for the issue source', () => {
     expect(renderMermaidASCII(ISSUE)).toMatchSnapshot('ascii')
     expect(renderMermaidSVG(ISSUE)).toMatchSnapshot('svg')
