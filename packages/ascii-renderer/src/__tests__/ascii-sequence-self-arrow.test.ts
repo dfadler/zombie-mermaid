@@ -85,7 +85,7 @@ sequenceDiagram
     )
 
     // The block header label must not be clipped by an undersized wall.
-    expect(result).toContain('alt [some condition]')
+    expect(result).toMatch(/alt ─+ \[some condition\]/)
 
     // The self-arrow's loop corners must stay intact — a wall drawn too
     // far left overwrites them with the wall's vertical-bar character.
@@ -113,7 +113,7 @@ sequenceDiagram
       { useAscii: false },
     )
 
-    expect(result).toContain('loop [every request]')
+    expect(result).toMatch(/loop ─+ \[every request\]/)
     expect(result).toContain('├───┐')
     expect(result).toContain('◀───┘')
 

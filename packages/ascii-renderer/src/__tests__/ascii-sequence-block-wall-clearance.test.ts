@@ -99,9 +99,9 @@ sequenceDiagram
     const rightmostLL = Math.max(...llCols) // Database
     const authServiceLL = llCols[2]! // Touched by alt directly
 
-    const loopRight = blockWallRightColumn(lines, 'loop [token refresh]')
-    const altRight = blockWallRightColumn(lines, 'alt [credentials valid]')
-    const optRight = blockWallRightColumn(lines, 'opt [remember me]')
+    const loopRight = blockWallRightColumn(lines, '[token refresh]')
+    const altRight = blockWallRightColumn(lines, '[credentials valid]')
+    const optRight = blockWallRightColumn(lines, '[remember me]')
 
     // None of the three walls may land on any lifeline column — the
     // original bug manifested as alt's right wall landing exactly on the
@@ -157,7 +157,7 @@ sequenceDiagram
     const lines = result.split('\n')
     const llCols = lifelineColumns(lines)
 
-    const headerRight = blockWallRightColumn(lines, 'alt [first branch]')
+    const headerRight = blockWallRightColumn(lines, '[first branch]')
     const else1Right = blockWallRightColumn(
       lines,
       '[second branch is quite a bit longer than the first]',
@@ -205,7 +205,7 @@ sequenceDiagram
     // The block's own right wall must sit at or after the label's last
     // column, never inside its span.
     const llCols = lifelineColumns(lines)
-    const wallRight = blockWallRightColumn(lines, 'loop [x]')
+    const wallRight = blockWallRightColumn(lines, '[x]')
     const labelEndCol = labelRow!.lastIndexOf('abc') + 'abc'.length - 1
     expect(wallRight).toBeGreaterThanOrEqual(labelEndCol)
     // ...and strictly before B's own column — not just "not exactly on

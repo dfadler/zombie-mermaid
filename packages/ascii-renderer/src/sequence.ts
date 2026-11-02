@@ -171,14 +171,20 @@ export function renderSequenceAscii(
   /**
    * Widest line among a block's header ("alt [label]") and every divider
    * ("[else label]") — the minimum wall width the block's own text needs,
-   * independent of how far its messages' lifelines happen to span.
+   * independent of how far its messages' lifelines happen to span. Includes
+   * the `─ text ─` framing (as box-group headers have), so a label never
+   * touches the corner/junction or the border line that continues after it.
    */
   function maxBlockLabelWidth(block: Block): number {
-    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
-    let width = maxLineWidth(hdrLabel)
+    // `┌─ loop ─ [label] ─┐`: the label is centred in the space after the
+    // type tab (as mermaid does), so it needs a dash each side.
+    let width = maxLineWidth(block.type) + 4
+    if (block.label) {
+      width += maxLineWidth(`[${block.label}]`) + 5
+    }
     for (const divider of block.dividers) {
       if (divider.label) {
-        width = Math.max(width, maxLineWidth(`[${divider.label}]`))
+        width = Math.max(width, maxLineWidth(`[${divider.label}]`) + 4)
       }
     }
     return width
@@ -354,6 +360,13 @@ export function renderSequenceAscii(
     return Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
   }
 
+  // How many blocks enclose this note (#2514)? Each one has a left wall.
+  function noteDepth(note: (typeof diagram.notes)[number]): number {
+    return diagram.blocks.filter(
+      (b) => note.afterIndex >= b.startIndex && note.afterIndex <= b.endIndex,
+    ).length
+  }
+
   // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
   // actor i draws into the gap to its left (between actor i-1 and i, or —
   // for the leftmost actor — the canvas's own left margin); a `right` note
@@ -377,7 +390,11 @@ export function renderSequenceAscii(
   for (const note of diagram.notes) {
     if (note.position === 'left' || note.position === 'right') {
       const aIdx = actorIndexOf(note.actorIds[0]!)
-      const w = noteBoxWidth(note)
+      // A note inside a block also needs a blank column, the wall and a clear
+      // column before the neighbouring lifeline (#2514).
+      const w =
+        noteBoxWidth(note) +
+        (noteDepth(note) && !(note.position === 'left' && aIdx === 0) ? 3 : 0)
       if (note.position === 'left') {
         leftNoteWidth[aIdx] = Math.max(leftNoteWidth[aIdx]!, w)
       } else {
@@ -423,6 +440,20 @@ export function renderSequenceAscii(
       // above, but for the note's own left half (`nx = llX[0] -
       // overNoteHalfLeft[0]` must stay >= 0; issue #992).
       overNoteHalfLeft[0]!,
+      // A note inside a block must also clear the block's left wall at
+      // column 0 (#2514), leaving one blank column between wall and note:
+      // one column per enclosing wall plus the blank one (`left` also needs
+      // its separating column from the lifeline).
+      ...diagram.notes.map((n) =>
+        actorIndexOf(n.actorIds[0]!) === 0 &&
+        n.position !== 'right' &&
+        (n.position === 'left' || n.actorIds.length === 1) &&
+        noteDepth(n)
+          ? n.position === 'left'
+            ? noteBoxWidth(n) + 2 + noteDepth(n)
+            : Math.floor(noteBoxWidth(n) / 2) + 1 + noteDepth(n)
+          : 0,
+      ),
       // A centred self-message label on the leftmost actor reaches left of
       // its lifeline too (#2456); inside a block it must also clear the
       // block's left wall (column 0) by one blank column.
@@ -583,6 +614,7 @@ export function renderSequenceAscii(
     width: number
     height: number
     lines: string[]
+    depth: number
   }> = []
 
   // Start right below the header boxes — and below the group bracket's
@@ -642,6 +674,7 @@ export function renderSequenceAscii(
       width: nWidth,
       height: nHeight,
       lines: nLines,
+      depth: 0,
     })
     curY += nHeight
   }
@@ -668,8 +701,10 @@ export function renderSequenceAscii(
     // closing order, so a nested block precedes the block that contains it).
     for (let b = diagram.blocks.length - 1; b >= 0; b--) {
       if (diagram.blocks[b]!.startIndex === m) {
-        curY += rowGap + 1 // Blank rows + 1 fixed header row
-        blockStartY.set(b, curY - 1)
+        // Blank rows + 1 header row + one more per extra label line.
+        const extra = splitLines(`[${diagram.blocks[b]!.label}]`).length - 1
+        curY += rowGap + 1 + extra
+        blockStartY.set(b, curY - 1 - extra)
       }
     }
     placeDividers(false)
@@ -749,7 +784,7 @@ export function renderSequenceAscii(
             nx = llX[aIdx]! - Math.floor(nWidth / 2)
           }
         }
-        nx = Math.max(0, nx)
+        nx = Math.max(noteDepth(note) && noteDepth(note) + 1, nx)
 
         notePositions.push({
           x: nx,
@@ -757,6 +792,7 @@ export function renderSequenceAscii(
           width: nWidth,
           height: nHeight,
           lines: nLines,
+          depth: noteDepth(note),
         })
         curY += nHeight
       }
@@ -1426,6 +1462,15 @@ export function renderSequenceAscii(
     if (bLeft <= nextLeftLL)
       bLeft = Math.min(minLX, nextLeftLL + BLOCK_WALL_MARGIN)
 
+    // A note drawn inside the block (between its top and bottom rows) must
+    // sit inside the wall too, one clear column each side (#2514). Applied
+    // after the pull-back so a note wins over an untouched lifeline.
+    for (const np of notePositions) {
+      if (np.y <= topY || np.y >= botY) continue
+      bLeft = Math.min(bLeft, np.x - 1 - np.depth)
+      bRight = Math.max(bRight, np.x + np.width + 1)
+    }
+
     bLeft = Math.max(0, bLeft)
 
     // Header ("alt [label]") and divider ("[else label]") text is drawn
@@ -1485,7 +1530,6 @@ export function renderSequenceAscii(
     const ext = blockExt[b]!
     const bLeft = ext.l
     const bRight = ext.r
-    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
     if (bRight > blockCanvasMaxX) {
       increaseSize(canvas, bRight, totalH - 1)
       increaseRoleCanvasSize(rc, bRight, totalH - 1)
@@ -1497,21 +1541,21 @@ export function renderSequenceAscii(
     setC(bLeft, topY, TL, 'border')
     for (let x = bLeft + 1; x < bRight; x++) setC(x, topY, H, 'border')
     setC(bRight, topY, TR, 'border')
-    // Write block header label over the top border (supports multi-line)
-    const hdrLines = splitLines(hdrLabel)
-
-    for (
-      let lineIdx = 0;
-      lineIdx < hdrLines.length && topY + lineIdx < botY;
-      lineIdx++
-    ) {
-      writeTextCells(
-        bLeft + 1,
-        topY + lineIdx,
-        hdrLines[lineIdx]!,
-        'text',
-        bRight,
-      )
+    // Type tab at the corner, label centred in the rest of the border.
+    writeTextCells(bLeft + 2, topY, ` ${block.type} `, 'text', bRight)
+    if (block.label) {
+      const tabEnd = bLeft + 4 + block.type.length
+      const lines = splitLines(`[${block.label}]`)
+      for (let i = 0; i < lines.length && topY + i < botY; i++) {
+        const w = displayWidth(lines[i]!) + 2
+        writeTextCells(
+          tabEnd + Math.floor((bRight - tabEnd - w) / 2),
+          topY + i,
+          ` ${lines[i]!} `,
+          'text',
+          bRight,
+        )
+      }
     }
 
     // Bottom border
@@ -1537,7 +1581,7 @@ export function renderSequenceAscii(
       const dLabel = block.dividers[d]!.label
       if (dLabel) {
         const dStr = `[${dLabel}]`
-        writeTextCells(bLeft + 1, dY, dStr, 'text', bRight)
+        writeTextCells(bLeft + 2, dY, ` ${dStr} `, 'text', bRight)
       }
     }
   }
