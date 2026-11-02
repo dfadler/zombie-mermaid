@@ -56,11 +56,7 @@ const XY = {
  * rescaled to keep the bar the same share of the spacing (#2515).
  * `labelHalf` is half the widest label along the axis.
  */
-function barThickness(
-  extent: number,
-  n: number,
-  labelHalf: number,
-): number {
+function barThickness(extent: number, n: number, labelHalf: number): number {
   const p0 = Math.min(labelHalf, 0.2 * extent)
   const tick0 = (extent - 2 * p0) / n
   const pad = 0.7 * tick0 > 2 * p0 ? Math.floor(0.35 * tick0) : p0
