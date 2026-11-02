@@ -37,8 +37,6 @@ const XY = {
   yLabelGap: 18,
   axisTitlePad: 30,
   tickLength: 4,
-  barPadRatio: 0.2,
-  maxBarWidth: 40,
   legendFontSize: 14,
   legendFontWeight: 400,
   legendHeight: 28,
@@ -47,6 +45,25 @@ const XY = {
   legendGap: 6,
   legendItemGap: 16,
 } as const
+
+/**
+ * Bar thickness following mermaid 12.2.0's band axis (xychartDiagram
+ * `BaseAxis`/`BarPlot`): the axis reserves an outer padding of at least half
+ * the widest label (capped at 20% of the extent), widened to 35% of the tick
+ * distance when bars need the room, and a bar is 95% of the smaller of twice
+ * that padding and the tick distance. Mermaid then spaces bars by the label
+ * pitch `inner / (n - 1)`; ours are `extent / n` apart, so the result is
+ * rescaled to keep the bar the same share of the spacing (#2515).
+ * `labelHalf` is half the widest label along the axis.
+ */
+function barThickness(extent: number, n: number, labelHalf: number): number {
+  const p0 = Math.min(labelHalf, 0.2 * extent)
+  const tick0 = (extent - 2 * p0) / n
+  const pad = 0.7 * tick0 > 2 * p0 ? Math.floor(0.35 * tick0) : p0
+  const inner = extent - 2 * pad
+  const bar = 0.95 * Math.min(2 * pad, inner / n)
+  return n < 2 ? bar : (bar * (extent / n) * (n - 1)) / inner
+}
 
 /**
  * Lay out a parsed XY chart by computing pixel coordinates.
@@ -341,10 +358,9 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const barCount = barSeries.length
   const bars: PositionedBar[] = []
   if (barCount > 0) {
-    const usable = bandHeight * (1 - XY.barPadRatio)
     // Mermaid 12.2.0 draws every bar series centred on the same category
     // (the series overlap, later ones on top) rather than side by side.
-    const singleBarH = Math.min(usable, XY.maxBarWidth)
+    const singleBarH = barThickness(plotH, dataCount, XY.axisLabelFontSize / 2)
     const groupH = singleBarH
     let bIdx = 0
     let seriesArrayIdx = 0
@@ -557,10 +573,18 @@ function layoutBars(
   const barCount = barSeries.length
   if (barCount === 0) return []
 
-  const usable = bandWidth * (1 - XY.barPadRatio)
   // Mermaid 12.2.0 draws every bar series centred on the same category
   // (the series overlap, later ones on top) rather than side by side.
-  const singleBarW = Math.min(usable, XY.maxBarWidth)
+  const widest = Math.max(
+    ...catLabels.map((l) =>
+      estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
+    ),
+  )
+  const singleBarW = barThickness(
+    bandWidth * catLabels.length,
+    catLabels.length,
+    widest / 2,
+  )
   const groupW = singleBarW
   const bars: PositionedBar[] = []
 

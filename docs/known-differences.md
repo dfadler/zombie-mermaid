@@ -192,6 +192,11 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   than one series, and grouped bar series side by side. Mermaid draws square bars, no grid,
   no markers, no legend and straight line segments, and draws the second bar series over
   the first.
+- **Bar thickness.** Bars follow mermaid 12.2.0's band formula ([#2515](https://github.com/dfadler/zombie-mermaid/issues/2515)):
+  95% of the smaller of twice the axis padding and the tick distance. Mermaid pads by
+  half the widest category label as it measures it in the browser, on a plot about 660 px
+  wide; ours estimates the text on a 600 px plot, so with long labels (the Product Sales
+  sample) a bar's share of the spacing can differ by up to about 0.13. The oracle allows 0.15.
 - **Horizontal charts.** The value axis sits at the bottom; mermaid puts it at the top
   (its `top-axis` group).
 - **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
