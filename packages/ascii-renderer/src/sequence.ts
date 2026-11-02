@@ -654,7 +654,7 @@ export function renderSequenceAscii(
         nx = llX[aIdx]! - Math.floor(nWidth / 2)
       }
     }
-    nx = Math.max(noteInBlock(note) ? 1 : 0, nx)
+    nx = Math.max(0, nx)
 
     notePositions.push({
       x: nx,
