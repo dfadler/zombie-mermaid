@@ -373,8 +373,12 @@ export function doubleCircleDimensions(
  * wide as tall, so this is mermaid's slope), narrow row at the top for
  * `trapezoid` and at the bottom for `trapezoid-alt` (#2164).
  */
-export function trapezoidInsets(h: number, alt: boolean): number[] {
-  return Array.from({ length: h + 1 }, (_, y) => (alt ? y : h - y))
+export function trapezoidInsets(h: number, alt: boolean, cap = h): number[] {
+  // A node taller than its width allows (a neighbour stretched it) spreads the
+  // `cap` columns of slant over all rows rather than flattening it (#2164).
+  return Array.from({ length: h + 1 }, (_, y) =>
+    Math.round(((alt ? y : h - y) * Math.min(cap, h)) / h),
+  )
 }
 
 /**
@@ -389,8 +393,9 @@ export function trapezoidInsetsFor(
   lineWidths: readonly number[],
   startY: number,
 ): number[] {
-  return trapezoidInsets(h, alt).map((slope, y) => {
-    let d = Math.min(slope, Math.max(Math.floor((w - 2) / 2), 0))
+  const cap = Math.max(Math.floor((w - 2) / 2), 0)
+  return trapezoidInsets(h, alt, cap).map((slope, y) => {
+    let d = slope
     const lw = lineWidths[y - startY]
     if (lw !== undefined) {
       const x0 = labelStartX(w, lw)
@@ -457,9 +462,10 @@ export function parallelogramInsets(
 ): { left: number[]; right: number[] } {
   const left: number[] = []
   const right: number[] = []
+  const cap = Math.min(h, Math.max(Math.floor((w - 2) / 2), 0))
   for (let y = 0; y <= h; y++) {
-    let l = alt ? y : h - y
-    let r = alt ? h - y : y
+    let l = Math.round(((alt ? y : h - y) * cap) / h)
+    let r = Math.round(((alt ? h - y : y) * cap) / h)
     const lw = lineWidths[y - startY]
     if (lw !== undefined) {
       const x0 = labelStartX(w, lw)
