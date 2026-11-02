@@ -360,7 +360,8 @@ function extractNodesAndGroups(
         nodes.push({
           id: child.id,
           label: mNode.label,
-          shape: mNode.shape,
+          shape: mNode.icon === undefined ? mNode.shape : 'rectangle',
+          icon: mNode.icon,
           x,
           y,
           width,

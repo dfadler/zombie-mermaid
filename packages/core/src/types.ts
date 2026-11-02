@@ -73,6 +73,12 @@ export interface MermaidNode {
   gridLayer?: number
   /** Architecture only: the node's position across the flow in that grid. */
   gridOrder?: number
+  /**
+   * Architecture services only: the icon name from `service id(icon)` (`''`
+   * for none). Set, the SVG renderer draws Mermaid's 80px icon tile instead of
+   * `shape`; the ASCII renderer ignores it (#2518).
+   */
+  icon?: string
 }
 
 export type NodeShape =
@@ -237,6 +243,8 @@ export interface PositionedNode {
   y: number
   width: number
   height: number
+  /** Architecture service icon tile; see `MermaidNode.icon`. `shape` is then `rectangle`. */
+  icon?: string
   /** Inline styles resolved from classDef + explicit `style` statements — override theme defaults */
   inlineStyle?: Record<string, string>
   /** Custom class name assigned via `class A className` or `:::className` shorthand — emitted onto the rendered element's `class` attribute so external CSS can target it */

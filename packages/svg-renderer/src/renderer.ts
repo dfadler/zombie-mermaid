@@ -29,6 +29,12 @@ import {
   FONT_WEIGHTS,
   STROKE_WIDTHS,
 } from './styles.ts'
+import {
+  ICON_GLYPHS,
+  TILE,
+  TILE_FILL,
+  UNKNOWN_GLYPH,
+} from './architecture-icons.ts'
 import { pointsToPath } from './edge-curves.ts'
 import { edgeCrossesTitle, titleGapMask, titleTextBoxes } from './title-gaps.ts'
 
@@ -630,8 +636,25 @@ function renderNode(
   return parts.join('\n')
 }
 
+/** Gap from an icon tile's bottom edge to the centre of its label line. */
+const SERVICE_LABEL_DROP = 13
+
+/**
+ * An architecture service as Mermaid draws it (#2518): an 80px tile with its
+ * icon glyph, or a dashed empty box when the service names no icon.
+ */
+function renderServiceTile(x: number, y: number, icon: string): string {
+  const at = f`transform="translate(${x} ${y})"`
+  if (icon === '') {
+    return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="hsl(240, 60%, 86.3%)" stroke-width="2" stroke-dasharray="8" />`
+  }
+  const glyph = ICON_GLYPHS[icon] ?? UNKNOWN_GLYPH
+  return f`<g ${at}><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`
+}
+
 function renderNodeShape(node: PositionedNode): string {
   const { x, y, width, height, shape, inlineStyle } = node
+  if (node.icon !== undefined) return renderServiceTile(x, y, node.icon)
 
   // Resolve fill and stroke — inline styles (from mermaid `style` directives)
   // override the CSS variable defaults. When no inline style is present, the
@@ -1487,7 +1510,11 @@ function renderNodeLabel(
     node.x +
     node.width / 2 +
     (node.shape === 'asymmetric' ? ASYMMETRIC_NOTCH / 2 : 0)
-  const cy = node.y + node.height / 2
+  // An icon tile's label hangs below it, as Mermaid's does.
+  const cy =
+    node.icon === undefined
+      ? node.y + node.height / 2
+      : node.y + node.height + SERVICE_LABEL_DROP
 
   // Resolve text color — inline styles can override the CSS variable default.
   // When there's no explicit `color` but there IS a concrete, resolvable
