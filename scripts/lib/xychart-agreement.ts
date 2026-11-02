@@ -28,6 +28,8 @@ export interface XyLayout {
   /** Labels of the source's `y-axis` (values). */
   yLabels: XyLabel[]
   points: XyPoint[]
+  /** Thickness of each bar across the category axis, in pixels; absent without bars. */
+  barWidths?: number[]
 }
 
 /** Each figure is the share of agreeing items, 0..1, or null with nothing to compare. */
@@ -38,11 +40,22 @@ export interface XyAgreement {
   ticks: number | null
   /** Bars and line points at the same category and value fraction. */
   data: number | null
+  /** Bars whose thickness is the same share of the category spacing (#2515). */
+  bars: number | null
   points: number
 }
 
 /** Fraction of an axis; a tick or point further off than this disagrees. */
 export const FRACTION_TOLERANCE = 0.01
+
+/**
+ * Bar thickness, as a share of the spacing between category labels, may
+ * differ by this much: mermaid sizes its label padding from text it measures
+ * in a canvas whose plot is wider than ours (about 660 px against 600), so a
+ * wide label takes a bigger share of ours. The old fixed 40 px bar was off by
+ * 0.2 to 0.3, so this still catches it.
+ */
+export const BAR_SHARE_TOLERANCE = 0.15
 
 /** Text content of `html`: tags removed until none are left (so `<scr<b>ipt>` cannot reassemble), then entities decoded. */
 export function strip(html: string): string {
@@ -178,6 +191,7 @@ export function parseOfficialXy(svg: string, horizontal: boolean): XyLayout {
     else if (axis === yName) yLabels.push(label)
   }
   const points: XyPoint[] = []
+  const barWidths: number[] = []
   for (const m of svg.matchAll(
     /<g\b[^>]*class="bar-plot-\d+"[^>]*>([\s\S]*?)<\/g>/g,
   )) {
@@ -186,6 +200,7 @@ export function parseOfficialXy(svg: string, horizontal: boolean): XyLayout {
         Number(attr(r[0], k)),
       ) as [number, number, number, number]
       points.push(barPoint({ x0: x, y0: y, x1: x + w, y1: y + h }, horizontal))
+      barWidths.push(horizontal ? h : w)
     }
   }
   for (const m of svg.matchAll(
@@ -197,7 +212,12 @@ export function parseOfficialXy(svg: string, horizontal: boolean): XyLayout {
       }
     }
   }
-  return { xLabels: bySpot(xLabels), yLabels: bySpot(yLabels), points }
+  return {
+    xLabels: bySpot(xLabels),
+    yLabels: bySpot(yLabels),
+    points,
+    ...(barWidths.length > 0 && { barWidths }),
+  }
 }
 
 /**
@@ -225,11 +245,14 @@ export function parseOurXy(svg: string, horizontal: boolean): XyLayout {
   }
   const points: XyPoint[] = []
   const lines: XyPoint[] = []
+  const barWidths: number[] = []
   for (const m of svg.matchAll(/<path\b[^>]*>/g)) {
     const classes = (attr(m[0], 'class') ?? '').split(/\s+/)
     const d = attr(m[0], 'd') ?? ''
     if (classes.includes('xychart-bar')) {
-      points.push(barPoint(barBox(d), horizontal))
+      const box = barBox(d)
+      points.push(barPoint(box, horizontal))
+      barWidths.push(horizontal ? box.y1 - box.y0 : box.x1 - box.x0)
     } else if (classes.includes('xychart-line')) {
       for (const pt of pathPoints(d)) lines.push(linePoint(pt, horizontal))
     }
@@ -238,6 +261,7 @@ export function parseOurXy(svg: string, horizontal: boolean): XyLayout {
     xLabels: bySpot(xLabels),
     yLabels: bySpot(yLabels),
     points: [...points, ...lines],
+    ...(barWidths.length > 0 && { barWidths }),
   }
 }
 
@@ -247,6 +271,12 @@ function fractions(labels: XyLabel[]): (p: number) => number {
   const span = (labels[labels.length - 1]?.pos ?? 0) - first
   return (p) => (span === 0 ? 0 : (p - first) / span)
 }
+
+/** Mean distance between neighbouring labels; null with fewer than two. */
+const pitch = (labels: XyLabel[]): number | null =>
+  labels.length < 2
+    ? null
+    : (labels[labels.length - 1]!.pos - labels[0]!.pos) / (labels.length - 1)
 
 const share = (agree: number, total: number): number | null =>
   total === 0 ? null : agree / total
@@ -284,10 +314,23 @@ export function xyAgreement(official: XyLayout, ours: XyLayout): XyAgreement {
       Math.abs(val[0](p.val) - val[1](q.val)) <= FRACTION_TOLERANCE
     )
   }).length
+  const ow = official.barWidths ?? []
+  const uw = ours.barWidths ?? []
+  const po = pitch(official.xLabels)
+  const pu = pitch(ours.xLabels)
+  const sameBar =
+    po && pu
+      ? ow.filter(
+          (w, i) =>
+            uw[i] !== undefined &&
+            Math.abs(w / po - uw[i]! / pu) <= BAR_SHARE_TOLERANCE,
+        ).length
+      : 0
   return {
     labels: share(sameText, labelN),
     ticks: share(sameTick, labelN),
     data: share(data, most(official.points, ours.points)),
+    bars: po && pu ? share(sameBar, most(ow, uw)) : null,
     points: official.points.length,
   }
 }
@@ -338,7 +381,7 @@ export function xyBreaches(
 ): string[] {
   const out = errored.map((t) => `${t} (error)`)
   for (const [title, r] of Object.entries(results)) {
-    for (const k of ['labels', 'ticks', 'data'] as const) {
+    for (const k of ['labels', 'ticks', 'data', 'bars'] as const) {
       const v = r[k]
       const floor = XYCHART_FLOOR
       if (v !== null && v + 1e-9 < floor) {
