@@ -18,6 +18,7 @@ import type {
   MermaidNode,
   RenderOptions,
 } from '@zombie-mermaid/core'
+import { TILE } from '../architecture-icons.ts'
 import type { FontSizes } from '../styles.ts'
 import { ASYMMETRIC_NOTCH, FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
 import {
@@ -228,7 +229,10 @@ export function estimateNodeSize(
   label: string,
   shape: string,
   nodeLabelFontSize: number,
+  icon?: string,
 ): { width: number; height: number } {
+  // An architecture icon tile is Mermaid's fixed 80px square; its label hangs below.
+  if (icon !== undefined) return { width: TILE, height: TILE }
   const metrics = measureMultilineText(
     label,
     nodeLabelFontSize,
@@ -586,6 +590,7 @@ export function mermaidToElk(
         node.label,
         node.shape,
         opts.fontSizes.nodeLabel,
+        node.icon,
       )
       const fixedWidth = hints?.fixedWidths?.get(id)
       if (fixedWidth !== undefined) size.width = fixedWidth
@@ -812,6 +817,7 @@ function subgraphToElk(
         node.label,
         node.shape,
         opts.fontSizes.nodeLabel,
+        node.icon,
       )
       const leaf = buildElkLeafNode(nodeId, size, node.label)
       if (node.gridLayer !== undefined) {

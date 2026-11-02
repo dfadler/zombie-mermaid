@@ -197,6 +197,7 @@ export function layoutSimple(
       node.label,
       node.shape,
       opts.fontSizes.nodeLabel,
+      node.icon,
     )
     nodeSize.set(id, abstractSize(s.width, s.height))
   }
@@ -378,7 +379,8 @@ export function layoutSimple(
     return {
       id,
       label: node.label,
-      shape: node.shape,
+      shape: node.icon === undefined ? node.shape : 'rectangle',
+      icon: node.icon,
       ...toRect(boxes.get(id)!),
       inlineStyle: resolveNodeStyle(id, graph),
       className: graph.classAssignments.get(id),
