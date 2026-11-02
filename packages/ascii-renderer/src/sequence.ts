@@ -354,6 +354,13 @@ export function renderSequenceAscii(
     return Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
   }
 
+  // Is this note drawn between a block's top and bottom rows (#2514)?
+  function noteInBlock(note: (typeof diagram.notes)[number]): boolean {
+    return diagram.blocks.some(
+      (b) => note.afterIndex >= b.startIndex && note.afterIndex <= b.endIndex,
+    )
+  }
+
   // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
   // actor i draws into the gap to its left (between actor i-1 and i, or —
   // for the leftmost actor — the canvas's own left margin); a `right` note
@@ -423,6 +430,19 @@ export function renderSequenceAscii(
       // above, but for the note's own left half (`nx = llX[0] -
       // overNoteHalfLeft[0]` must stay >= 0; issue #992).
       overNoteHalfLeft[0]!,
+      // A note inside a block must also clear the block's left wall at
+      // column 0 (#2514): one extra column for `left`, and for a centred
+      // single-actor `over` note's left half.
+      ...diagram.notes.map((n) =>
+        actorIndexOf(n.actorIds[0]!) === 0 &&
+        n.position !== 'right' &&
+        (n.position === 'left' || n.actorIds.length === 1) &&
+        noteInBlock(n)
+          ? (n.position === 'left'
+              ? noteBoxWidth(n)
+              : Math.floor(noteBoxWidth(n) / 2)) + 2
+          : 0,
+      ),
       // A centred self-message label on the leftmost actor reaches left of
       // its lifeline too (#2456); inside a block it must also clear the
       // block's left wall (column 0) by one blank column.
@@ -749,7 +769,7 @@ export function renderSequenceAscii(
             nx = llX[aIdx]! - Math.floor(nWidth / 2)
           }
         }
-        nx = Math.max(0, nx)
+        nx = Math.max(noteInBlock(note) ? 1 : 0, nx)
 
         notePositions.push({
           x: nx,
@@ -1425,6 +1445,15 @@ export function renderSequenceAscii(
       bRight = Math.max(maxLX, nextRightLL - BLOCK_WALL_MARGIN)
     if (bLeft <= nextLeftLL)
       bLeft = Math.min(minLX, nextLeftLL + BLOCK_WALL_MARGIN)
+
+    // A note drawn inside the block (between its top and bottom rows) must
+    // sit inside the wall too, one clear column each side (#2514). Applied
+    // after the pull-back so a note wins over an untouched lifeline.
+    for (const np of notePositions) {
+      if (np.y <= topY || np.y >= botY) continue
+      bLeft = Math.min(bLeft, np.x - 1)
+      bRight = Math.max(bRight, np.x + np.width)
+    }
 
     bLeft = Math.max(0, bLeft)
 
