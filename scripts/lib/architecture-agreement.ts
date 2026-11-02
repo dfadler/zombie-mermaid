@@ -127,12 +127,12 @@ export function worstArch(a: Agreement): number | null {
 }
 
 /**
- * Floor for every sample's lowest figure: the weakest sample on the first run
- * against mermaid 12.2.0 (Group-To-Group Edges, 50% vertical). Our layered
- * layout does not put side-linked services on one row the way fcose does, so
- * this guards against getting worse, not against the known gap.
+ * Floor for every sample's lowest figure. The first run against mermaid 12.2.0
+ * had 50% (Group-To-Group Edges, vertical); the port grid (#2473) lifted the
+ * weakest sample to 67%, and this holds that gain. A regression guard, not a
+ * parity claim: services inside groups still stagger from fcose's rows.
  */
-export const ARCH_FLOOR = 0.5
+export const ARCH_FLOOR = 0.65
 
 /** One tracked data point: mean of each figure over the architecture samples. */
 export interface ArchitectureEntry {
