@@ -29,6 +29,8 @@ export interface SequenceDiagram {
    * neither renderer.
    */
   boxes: ParticipantBox[]
+  /** Text of a `title <text>` line (the last one wins); unset when there is none. */
+  title?: string
 }
 
 /** A `box … end` group of participants (Mermaid's "Grouping / Box"). */
@@ -104,7 +106,7 @@ export interface Message {
    * stays `'filled'` for these (unchanged, to preserve existing SVG output)
    * — this flag lets the ASCII renderer draw a distinct cross glyph instead
    * of the plain filled arrowhead it shares with `->>`/`-->>`. See issue
-   * #330; not yet modeled by the SVG renderer's markers.
+   * #330; the SVG renderer draws a cross marker too (#2544).
    */
   isLost?: boolean
   /** Activate the target lifeline (+) */
@@ -166,6 +168,13 @@ export interface PositionedSequenceDiagram {
   notes: PositionedNote[]
   /** `box … end` group backgrounds, drawn behind everything else. */
   boxes: PositionedParticipantBox[]
+  /** The `title` line, with the baseline y it is drawn at (centred on the width). */
+  title?: { text: string; y: number }
+  /**
+   * Mirrored copies of the header actors along the bottom of the lifelines, as
+   * Mermaid draws them. A destroyed participant has none.
+   */
+  footerActors: PositionedActor[]
 }
 
 /** A positioned `box … end` group: a full-height background behind its participants. */
@@ -223,6 +232,8 @@ export interface PositionedMessage {
   isSelf: boolean
   /** Bidirectional arrow (`<<->>` or `<<-->>`) — draw an arrow head on both ends */
   bidirectional: boolean
+  /** Lost message (`-x` / `--x`): the arrow ends in a cross (see {@link Message.isLost}) */
+  isLost?: boolean
   /** Sequence number to display next to this arrow when `autonumber` is active */
   seqNumber?: number
 }

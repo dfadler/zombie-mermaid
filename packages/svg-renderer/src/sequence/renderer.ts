@@ -14,6 +14,7 @@ import {
   hasLabelBelowIcon,
   SELF_LOOP_CONTROL,
   SELF_LOOP_HEIGHT,
+  TITLE_FONT_SIZE,
 } from './layout.ts'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
@@ -42,12 +43,13 @@ import type { FontSizes } from '../styles.ts'
 //
 // Render order (back to front):
 //   0. Participant-group backgrounds (box … end)
-//   1. Block backgrounds (loop/alt/opt)
+//   1. `rect <color>` highlight fills
 //   2. Lifelines (dashed vertical lines)
 //   3. Activation boxes
+//   3b. Framed blocks (loop/alt/opt), over the bars so tab labels stay legible
 //   4. Messages (arrows with labels)
 //   5. Notes
-//   6. Actor boxes (at top)
+//   6. Actor boxes (at top and mirrored at the bottom), title
 // ============================================================================
 
 /**
@@ -107,9 +109,9 @@ export function renderSequenceSvg(
     parts.push(renderParticipantBox(box, fontSizes))
   }
 
-  // 1. Block backgrounds (loop/alt/opt rectangles)
+  // 1. `rect <color>` highlight fills, behind lifelines and activation bars
   for (const block of diagram.blocks) {
-    parts.push(renderBlock(block, fontSizes))
+    if (isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 
   // 2. Lifelines (dashed vertical lines from actor to bottom), interrupted
@@ -122,6 +124,12 @@ export function renderSequenceSvg(
   // 3. Activation boxes
   for (const activation of diagram.activations) {
     parts.push(renderActivation(activation))
+  }
+
+  // 3b. Framed blocks (loop/alt/opt). Drawn after the activation bars, as
+  //     Mermaid does, so a bar on the block's edge never covers its tab (#2545).
+  for (const block of diagram.blocks) {
+    if (!isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 
   // 4. Messages (horizontal arrows with labels)
@@ -137,6 +145,23 @@ export function renderSequenceSvg(
   // 6. Actor boxes at top (rendered last so they're on top)
   for (const actor of diagram.actors) {
     parts.push(renderActor(actor, fontSizes))
+  }
+  for (const actor of diagram.footerActors) {
+    parts.push(renderActor(actor, fontSizes, 'actor-footer'))
+  }
+
+  if (diagram.title) {
+    parts.push(
+      '<g class="title">' +
+        renderMultilineText(
+          diagram.title.text,
+          diagram.width / 2,
+          diagram.title.y,
+          TITLE_FONT_SIZE,
+          f`font-size="${TITLE_FONT_SIZE}" text-anchor="middle" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text)"`,
+        ) +
+        '</g>',
+    )
   }
 
   parts.push('</svg>')
@@ -157,6 +182,10 @@ function arrowMarkerDefs(): string {
     // Open arrow head (just lines, no fill)
     f`\n  <marker id="seq-arrow-open" markerWidth="${w}" markerHeight="${h}" refX="${w}" refY="${h / 2}" orient="auto-start-reverse">` +
     f`\n    <polyline points="0 0, ${w} ${h / 2}, 0 ${h}" fill="none" stroke="var(--_arrow)" stroke-width="1" />` +
+    `\n  </marker>` +
+    // Lost message (`-x` / `--x`): a cross centred on the line's end, no head
+    f`\n  <marker id="seq-lost" markerWidth="${h * 2}" markerHeight="${h * 2}" refX="${h}" refY="${h}" orient="auto">` +
+    f`\n    <path d="M${h / 2} ${h / 2} L${h * 1.5} ${h * 1.5} M${h * 1.5} ${h / 2} L${h / 2} ${h * 1.5}" fill="none" stroke="var(--_arrow)" stroke-width="1" />` +
     `\n  </marker>`
   )
 }
@@ -189,14 +218,18 @@ const ICON_SHAPES: Record<string, (paint: string, line: string) => string> = {
  * Render an actor box (participant = rectangle, actor = stick figure).
  * Wrapped in <g class="actor"> with semantic data attributes.
  */
-function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
+function renderActor(
+  actor: PositionedActor,
+  fontSizes: FontSizes,
+  className: string = 'actor',
+): string {
   const { id, x, y, width, height, label, type, participantType } = actor
   const parts: string[] = []
   const labelStyle = f`font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`
 
   // Semantic wrapper with actor metadata
   parts.push(
-    f`<g class="actor" data-id="${escapeAttr(id)}" data-label="${escapeAttr(label)}" data-type="${type}">`,
+    f`<g class="${className}" data-id="${escapeAttr(id)}" data-label="${escapeAttr(label)}" data-type="${type}">`,
   )
 
   if (type === 'actor') {
@@ -470,7 +503,11 @@ function renderActivation(activation: Activation): string {
 function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
   const parts: string[] = []
   const dashArray = msg.lineStyle === 'dashed' ? ' stroke-dasharray="6 4"' : ''
-  const markerId = msg.arrowHead === 'filled' ? 'seq-arrow' : 'seq-arrow-open'
+  const markerId = msg.isLost
+    ? 'seq-lost'
+    : msg.arrowHead === 'filled'
+      ? 'seq-arrow'
+      : 'seq-arrow-open'
   // Bidirectional arrows (`<<->>` / `<<-->>`) reuse the same marker on both
   // ends — the marker defs use orient="auto-start-reverse", which SVG
   // automatically flips 180° for marker-start so it points outward at the
@@ -483,7 +520,7 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
   parts.push(
     f`<g class="message" data-from="${escapeAttr(msg.from)}" data-to="${escapeAttr(msg.to)}" ` +
       f`data-label="${escapeAttr(msg.label)}" data-line-style="${msg.lineStyle}" ` +
-      f`data-arrow-head="${msg.arrowHead}" data-self="${msg.isSelf}" data-bidirectional="${msg.bidirectional}">`,
+      f`data-arrow-head="${msg.arrowHead}" data-self="${msg.isSelf}" data-bidirectional="${msg.bidirectional}"${msg.isLost ? ' data-lost="true"' : ''}>`,
   )
 
   if (msg.isSelf) {
