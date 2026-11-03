@@ -58,7 +58,8 @@ describe.each([
       // The label is on the S1 -> S2 run itself, with the head after it.
       const run = out.split('\n').find((r) => r.includes('e1'))!
       expect(run).toContain(' S1 ')
-      expect(run).toMatch(new RegExp(`e1.*${tail.replace(/[|>]/g, '\\$&')}`))
+      expect(run).toContain(tail)
+      expect(run.indexOf('e1')).toBeLessThan(run.indexOf(tail))
       expect(out.split(head).length - 1).toBe(3) // S1, S2, S4 (S3 is entered from above)
     })
   },
