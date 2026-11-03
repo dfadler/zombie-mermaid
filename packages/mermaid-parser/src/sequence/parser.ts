@@ -393,9 +393,14 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       continue
     }
 
-    // --- Block divider: else, and ---
-    const dividerMatch = line.match(/^(else|and)\s*(.*)$/)
-    if (dividerMatch && blockStack.length > 0) {
+    // --- Block divider: else, and, option (inside `critical` only) ---
+    const dividerMatch = line.match(/^(else|and|option)\s*(.*)$/)
+    if (
+      dividerMatch &&
+      blockStack.length > 0 &&
+      (dividerMatch[1] !== 'option' ||
+        blockStack[blockStack.length - 1]!.type === 'critical')
+    ) {
       const rawDividerLabel = dividerMatch[2]?.trim() ?? ''
       const label = normalizeBrTags(rawDividerLabel)
       blockStack[blockStack.length - 1]!.dividers.push({
