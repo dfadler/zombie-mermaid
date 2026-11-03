@@ -1277,9 +1277,36 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
   const flowsDown = graph.edges.every((e) => {
     const f = e.from.gridCoord
     const t = e.to.gridCoord
-    return f !== null && t !== null && rankOf(f) < rankOf(t)
+    if (f === null || t === null) return false
+    if (rankOf(f) < rankOf(t)) return true
+    // The reverse of a forward edge one rank down (`B --> D`, `D --> B`) into
+    // a decision is the other half of a reciprocal pair, not a back edge that
+    // skips nodes; mermaid centres the decision between its branches (#2492).
+    return (
+      e.to.shape === 'diamond' &&
+      rankOf(f) === rankOf(t) + 4 &&
+      graph.edges.some((o) => o.from === e.to && o.to === e.from && o !== e)
+    )
   })
-  if (!flowsDown) return
+  if (!flowsDown) {
+    // Nothing centres here, but a decision with a reciprocal pair (`B --> D`
+    // and `D --> B`) still sends every branch out of its right face, so the
+    // back edge can re-enter beside them (#2492). A self-loop already takes
+    // the right face, and the extra lane only crowds it (`┼` on the trunk).
+    for (const node of graph.nodes) {
+      const reciprocal =
+        !graph.edges.some((e) => e.from === node && e.to === node) &&
+        graph.edges.some(
+          (e) =>
+            e.from === node &&
+            e.to !== node &&
+            graph.edges.some((r) => r.from === e.to && r.to === node),
+        )
+      if (reciprocal)
+        markDecisionSplit(node, lr, getChildren(graph, node).length)
+    }
+    return
+  }
   // Deepest first so a moved child doesn't invalidate its parent's span.
   const order = graph.nodes
     .filter((n) => n.gridCoord !== null)
@@ -1303,7 +1330,17 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
         rankOf(cgc) !== rankOf(gc) + 4 ||
         (isNodeInAnySubgraph(graph, c) &&
           !(children.length === 1 && onlyInLoneClusters(graph, c))) ||
-        graph.edges.some((e) => e.to === c && e.from !== node)
+        // Another parent, not a reciprocal partner returning from below.
+        graph.edges.some(
+          (e) =>
+            e.to === c &&
+            e.from !== node &&
+            !(
+              c.shape === 'diamond' &&
+              e.from.gridCoord &&
+              rankOf(e.from.gridCoord) > rankOf(cgc)
+            ),
+        )
       ) {
         ok = false
         break

@@ -249,6 +249,21 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
       'Pie charts divide a total into proportional slices and are the simplest data chart Mermaid offers. Mermaid’s syntax starts with `pie`, an optional `showData` flag that prints each raw value in the legend, and an optional `title`, followed by one `"Label" : value` line per slice. Slice sizes are computed as a share of the sum of all values.',
     docsUrl: 'https://mermaid.ai/open-source/syntax/pie.html',
   },
+  {
+    slug: 'quadrant',
+    label: 'Quadrant chart',
+    keyword: 'quadrantChart',
+    source: sampleSource('Quadrant: Basic'),
+    intro:
+      'Quadrant charts place labelled points on two axes split into four named quadrants, the classic prioritisation matrix. zombie-mermaid renders the quadrants, axis labels and point styles in SVG and as a character grid in ASCII.',
+    accent: 'amber',
+    exampleHeading: 'Campaigns plotted by reach and engagement.',
+    sourceFilename: 'matrix.mmd',
+    aboutHeading: 'Where quadrant charts come from, and how the syntax works.',
+    about:
+      'Quadrant charts sort items by two criteria at once, such as effort against impact or urgency against importance, and are a staple of prioritisation and strategy docs. Mermaid’s syntax starts with `quadrantChart`, an optional `title`, an `x-axis` and `y-axis` with a low and a high label, and up to four `quadrant-N` names. Each point is a `Label: [x, y]` line with both coordinates between 0 and 1, and `classDef` or inline styles can set its color, radius and stroke.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/quadrantChart.html',
+  },
 ]
 
 /**
@@ -270,6 +285,7 @@ const GALLERY_CATEGORY: Record<string, string> = {
   c4: 'C4',
   'architecture-beta': 'Architecture',
   pie: 'Pie',
+  quadrant: 'Quadrant',
 }
 
 /**

@@ -27,6 +27,8 @@ for pid in "${pids[@]}"; do wait "$pid" || tsc_fail=1; done
 [ "$tsc_fail" -eq 0 ] || { echo "verify: typecheck failed" >&2; exit 1; }
 
 pnpm run --silent check:changesets
+pnpm run --silent check:plugin-skill
+pnpm run --silent check:plugin-lock
 
 if [ "$full" -eq 1 ]; then
   pnpm run lint

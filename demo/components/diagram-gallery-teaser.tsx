@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /**
- * Nine diagram types, one engine — each card links to its `/diagrams/`
+ * Ten diagram types, one engine — each card links to its `/diagrams/`
  * page. Tile illustrations live in `gallery-tiles.tsx`.
  *
  * Split out of `index-app.tsx` into its own file (zombie-mermaid#932).
@@ -15,7 +15,7 @@ import {
   colorVar,
 } from './tokens.tsx'
 
-/** The nine diagram types the gallery teaser links to, and their `/diagrams/` routes. */
+/** The ten diagram types the gallery teaser links to, and their `/diagrams/` routes. */
 const GALLERY_TYPES = [
   { slug: 'flowchart', label: 'Flowchart' },
   { slug: 'state', label: 'State' },
@@ -26,6 +26,7 @@ const GALLERY_TYPES = [
   { slug: 'c4', label: 'C4' },
   { slug: 'architecture-beta', label: 'Architecture' },
   { slug: 'pie', label: 'Pie' },
+  { slug: 'quadrant', label: 'Quadrant' },
 ] as const
 
 export function DiagramGalleryTeaser() {
@@ -49,7 +50,7 @@ export function DiagramGalleryTeaser() {
           gap: `${SPACE.xl}px`,
         }}
       >
-        <SectionEyebrow>Nine diagram types, one engine</SectionEyebrow>
+        <SectionEyebrow>Ten diagram types, one engine</SectionEyebrow>
         <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
           Every shape your system needs to explain itself.
         </h2>

@@ -304,6 +304,12 @@ export const QUADRANT: {
     readonly quadrantExternalBorderStrokeWidth: 2;
     readonly xAxisPosition: "top";
     readonly yAxisPosition: "left";
+    readonly width: 500;
+    readonly height: 500;
+    readonly axisLabelPadding: 5;
+    readonly axisLabelFontSize: 16;
+    readonly internalBorderWidth: 1;
+    readonly externalBorderWidth: 2;
 };
 
 // @public
@@ -347,6 +353,15 @@ export function resolveCssColors(svg: string, colors: DiagramColors): string;
 
 // @public
 export function resolveFontSizes(overrides?: FontSizeOptions): FontSizes;
+
+// @public
+export const SELF_LOOP_CONTROL = 60;
+
+// @public (undocumented)
+export const SELF_LOOP_EXTENT: number;
+
+// @public (undocumented)
+export const SELF_LOOP_HEIGHT = 20;
 
 // @public (undocumented)
 export function smoothCurvePath(points: Array<{

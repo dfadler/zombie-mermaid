@@ -44,13 +44,14 @@ describe('RL keeps node shapes unmirrored', () => {
       `graph ${d}\n A[/p/] --> B[\\a\\] --> C>f] --> D[/t\\]`
     const rl = renderMermaidASCII(src('RL'), { useAscii: false })
     const lr = renderMermaidASCII(src('LR'), { useAscii: false })
-    const [top] = rl.split('\n')
-    // Left to right in RL: trapezoid, flag, "\a\", "/p/".
-    expect(top).toMatch(/^ *╱─+╲ +┌─+┐ +\\─+\\ +\/─+\/$/)
+    const label = rl.split('\n')[2]
+    // Left to right in RL: trapezoid, flag, "\a\", "/p/" (#2164: the
+    // parallelograms keep their lean, `╲` and `╱`).
+    expect(label).toMatch(/╱ +t +╲◄─+┤> f +│◄─+╲ +a +╲◄─+╱ +p +╱ *$/)
     // The notch (`>` one cell in from the left wall) stays on the left (#2164).
     expect(rl).toMatch(/┤> f  │/)
     expect(rl).not.toContain('<')
-    expect(lr.split('\n')[0]).toMatch(/^\/─+\/ +\\─+\\ +┌─+┐ +╱─+╲ *$/)
+    expect(lr.split('\n')[2]).toMatch(/╱ +p +╱─+►╲ +a +╲─+► > f +├─+►╱ +t +╲/)
     expect(lr).toMatch(/► > f  ├/)
   })
 
@@ -62,7 +63,7 @@ describe('RL keeps node shapes unmirrored', () => {
     const rlInRl = renderMermaidASCII(
       `graph RL\n subgraph S\n direction RL\n ${body}\n end`,
     )
-    expect(lrInRl).toContain('/')
+    expect(lrInRl).toContain('╱')
     expect(lrInRl).toMatch(/> f {2}│/)
     expect(trimEnds(rlInRl)).toMatch(/> f {2}│/)
     expect(rlInRl).not.toContain('<')

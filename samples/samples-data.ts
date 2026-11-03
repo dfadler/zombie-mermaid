@@ -1413,7 +1413,7 @@ flowchart LR
     title: 'XY: Multiple Bar Series',
     category: 'XY Chart',
     gallery: true,
-    description: 'Two bar series comparing years side by side.',
+    description: 'Two bar series comparing years, drawn overlapping as mermaid does.',
     source: `xychart-beta
     title "2023 vs 2024 Sales"
     x-axis [Q1, Q2, Q3, Q4]
@@ -2773,6 +2773,7 @@ pie title Pets adopted by volunteers
   {
     title: 'Quadrant: Labels Without Points',
     category: 'Quadrant',
+    gallery: true,
     description:
       'With no points the quadrant labels are centred in their cells and the x axis stays on top of the plot, as in Mermaid.',
     source: `quadrantChart
@@ -2787,6 +2788,7 @@ pie title Pets adopted by volunteers
   {
     title: 'Quadrant: One-Sided Axes',
     category: 'Quadrant',
+    gallery: true,
     description:
       'An axis with one label is drawn from the plot corner; a trailing `-->` keeps its arrow in the label.',
     source: `quadrantChart
@@ -2800,6 +2802,7 @@ pie title Pets adopted by volunteers
   {
     title: 'Quadrant: Point Styles',
     category: 'Quadrant',
+    gallery: true,
     description:
       '`classDef` and inline styles set a point\'s `color`, `radius`, `stroke-color` and `stroke-width`; inline styles win over the class.',
     source: `quadrantChart
@@ -2845,5 +2848,83 @@ pie title Pets adopted by volunteers
     quadrant-4 任せる
     "狗 Dogs": [0.2, 0.8]
     "ＢＩＲＤ": [0.7, 0.3]`,
+  },
+  {
+    title: 'Parallelogram Shapes (LR)',
+    category: 'Flowchart',
+    description:
+      'Parallelogram `[/x/]` and reverse parallelogram `[\\x\\]` for input and output steps, drawn left to right.',
+    source: `graph LR
+  A[/Read Input/] --> B{Valid?}
+  B -->|yes| C[\\Write Output\\]
+  B -->|no| D[/Ask Again/]`,
+  },
+  {
+    title: 'Parallelogram Shapes (RL)',
+    category: 'Flowchart',
+    description:
+      'Parallelogram `[/x/]` and reverse parallelogram `[\\x\\]` for input and output steps, drawn right to left.',
+    source: `graph RL
+  A[/Read Input/] --> B{Valid?}
+  B -->|yes| C[\\Write Output\\]
+  B -->|no| D[/Ask Again/]`,
+  },
+  {
+    title: 'Parallelogram Shapes (BT)',
+    category: 'Flowchart',
+    description:
+      'Parallelogram `[/x/]` and reverse parallelogram `[\\x\\]` for input and output steps, drawn bottom to top.',
+    source: `graph BT
+  A[/Read Input/] --> B{Valid?}
+  B -->|yes| C[\\Write Output\\]
+  B -->|no| D[/Ask Again/]`,
+  },
+  {
+    title: 'Sequence: Nested Blocks With Notes',
+    category: 'Sequence',
+    description:
+      'A loop nested in an alt branch, with notes inside the blocks: each block grows to hold its notes and the blocks nested in it, and nested header tabs stack instead of overlapping.',
+    source: `sequenceDiagram
+  participant A
+  participant B
+  alt cache hit
+    loop every retry
+      A->>B: fetch
+      Note right of B: waits for the upstream response
+    end
+  else cache miss
+    opt warm up
+      B->>B: rebuild
+    end
+    Note over A,B: done
+  end`,
+  },
+  {
+    title: 'Sequence: Long Block Tab And Divider Labels',
+    category: 'Sequence',
+    description:
+      'Long block and divider labels over adjacent participants: the gap between the participants widens so the label ends before the next lifeline.',
+    source: `sequenceDiagram
+  participant A
+  participant B
+  par a branch with a long descriptive title
+    A->>B: x
+  and another branch with an equally long title
+    B->>A: y
+  end`,
+  },
+  {
+    title: 'Sequence: Multi-line Note In Block',
+    category: 'Sequence',
+    description:
+      'A multi-line note inside a block: the note is as tall as its text and the block closes below it.',
+    source: `sequenceDiagram
+  participant A
+  participant B
+  loop poll
+    A->>B: ping
+    Note left of A: first line<br/>second line<br/>third line
+  end
+  B->>A: pong`,
   },
 ]

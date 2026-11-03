@@ -139,10 +139,55 @@ export function synthesizeSelfLoopEdges(
       points,
       labelPosition: edge.label ? labelPosition : undefined,
       inlineStyle: resolveEdgeStyle(index, graph),
+      headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
     })
   }
+}
+
+/**
+ * Draw the architecture edges kept out of the layout (`MermaidEdge.acrossFlow`):
+ * a straight run between the facing sides of the two nodes, which the layout
+ * has put in one layer, so `a:B -- T:b` reads as `b` directly below `a`.
+ */
+export function synthesizeAcrossFlowEdges(
+  graph: MermaidGraph,
+  nodeMap: Map<string, PositionedNode>,
+  edges: PositionedEdge[],
+): void {
+  const horizontal = graph.direction === 'LR' || graph.direction === 'RL'
+  graph.edges.forEach((edge, index) => {
+    const a = nodeMap.get(edge.source)
+    const b = nodeMap.get(edge.target)
+    if (!edge.acrossFlow || !a || !b) return
+    // x/y are the top-left of the box; `side` is the cross-flow axis.
+    const [pos, size, flow, flowSize] = horizontal
+      ? (['y', 'height', 'x', 'width'] as const)
+      : (['x', 'width', 'y', 'height'] as const)
+    const first = a[pos] <= b[pos] ? a : b
+    const second = first === a ? b : a
+    const mid = (n: PositionedNode): number => n[flow] + n[flowSize] / 2
+    const run = (mid(a) + mid(b)) / 2
+    const from = first[pos] + first[size]
+    const to = second[pos]
+    const at = (cross: number): Point =>
+      horizontal ? { x: run, y: cross } : { x: cross, y: run }
+    const points = first === a ? [at(from), at(to)] : [at(to), at(from)]
+    edges.push({
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      style: edge.style,
+      hasArrowStart: edge.hasArrowStart,
+      hasArrowEnd: edge.hasArrowEnd,
+      points,
+      inlineStyle: resolveEdgeStyle(index, graph),
+      headColor: resolveHeadColor(graph),
+      id: edge.id,
+      animate: edge.animate,
+    })
+  })
 }
 
 /** Recursively flatten all group bounding boxes (including nested children) */
@@ -213,6 +258,7 @@ export function elkToPositioned(
   // position.
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   synthesizeSelfLoopEdges(graph, nodeMap, edges)
+  synthesizeAcrossFlowEdges(graph, nodeMap, edges)
 
   // Bundle fan-out/fan-in edge paths into shared trunks when mergeEdges is enabled
   if (mergeEdges) {
@@ -314,7 +360,8 @@ function extractNodesAndGroups(
         nodes.push({
           id: child.id,
           label: mNode.label,
-          shape: mNode.shape,
+          shape: mNode.icon === undefined ? mNode.shape : 'rectangle',
+          icon: mNode.icon,
           x,
           y,
           width,
@@ -538,6 +585,7 @@ function extractEdgesRecursively(
         : orthogonalPoints,
       labelPosition,
       inlineStyle: resolveEdgeStyle(edgeIndex, graph),
+      headColor: resolveHeadColor(graph),
       id: originalEdge.id,
       animate: originalEdge.animate,
     })
@@ -749,6 +797,11 @@ function collectAllSubgraphIds(sg: MermaidSubgraph, out: Set<string>): void {
  * Default link style is applied first, then index-specific overrides.
  * Invalid colours are dropped, as for nodes (#1918).
  */
+/** Stroke of `linkStyle default`, the only colour mermaid gives arrowheads. */
+export function resolveHeadColor(graph: MermaidGraph): string | undefined {
+  return resolveEdgeStyle(-1, graph)?.stroke
+}
+
 export function resolveEdgeStyle(
   edgeIndex: number,
   graph: MermaidGraph,

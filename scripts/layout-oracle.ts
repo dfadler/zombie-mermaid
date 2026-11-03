@@ -22,8 +22,10 @@
  * font and padding differences between the renderers don't count against us.
  * Flowcharts by default; `--type=state|class|er` scores the others (official
  * node ids `state-<id>-<n>`, `classId-<id>-<n>`, `entity-<id>-<n>`; state
- * composites and class namespaces are clusters). Sequence and pie are scored separately (scripts/sequence-oracle.ts,
- * scripts/pie-oracle.ts, recorded in the scorecard); architecture, C4 and xychart are not scored (EXCLUDED_TYPES in scripts/lib/layout-agreement.ts).
+ * composites and class namespaces are clusters). Sequence, pie, C4, xychart and
+ * architecture are scored separately (scripts/sequence-oracle.ts,
+ * scripts/pie-oracle.ts, scripts/c4-oracle.ts, scripts/xychart-oracle.ts,
+ * scripts/architecture-oracle.ts, recorded in the scorecard).
  */
 
 import { writeFile } from 'node:fs/promises'
@@ -59,10 +61,7 @@ import {
 } from './lib/layout-agreement.ts'
 import { labelEntryFor } from './lib/label-position.ts'
 import { writeRecords } from './lib/layout-record.ts'
-import { scoreSequence } from './lib/sequence-measure.ts'
-import type { SequenceEntry } from './lib/sequence-agreement.ts'
-import { scorePie } from './lib/pie-measure.ts'
-import type { PieEntry } from './lib/pie-agreement.ts'
+import { scoreSeparately } from './lib/separate-scores.ts'
 import { measureOurs } from './lib/measure-ours.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
@@ -194,8 +193,7 @@ async function main(): Promise<number> {
 
   const runs: ScorecardRun[] = []
   let labelEntry: LabelEntry | undefined
-  let sequenceEntry: SequenceEntry | undefined
-  let pieEntry: PieEntry | undefined
+  let separate: Awaited<ReturnType<typeof scoreSeparately>> | undefined
   const failing: string[] = []
   const commit = recording
     ? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -225,12 +223,8 @@ async function main(): Promise<number> {
     }
     if (recording) {
       labelEntry = await labelEntryFor(session, commit)
-      const seq = await scoreSequence(session, commit)
-      sequenceEntry = seq.entry
-      if (args.thresholds) failing.push(...seq.breaches)
-      const pie = await scorePie(session, commit)
-      pieEntry = pie.entry
-      if (args.thresholds) failing.push(...pie.breaches)
+      separate = await scoreSeparately(session, commit, args.thresholds)
+      failing.push(...separate.breaches)
     }
   } finally {
     await session.close()
@@ -241,7 +235,7 @@ async function main(): Promise<number> {
     console.log(`\nWrote ${args.json}`)
   }
   if (recording)
-    await writeRecords(args, runs, labelEntry, sequenceEntry, pieEntry)
+    await writeRecords(args, runs, labelEntry, ...(separate?.entries ?? []))
   failing.push(...(await finishScorecard(args, runs)))
   if (failing.length > 0) {
     console.error(`\nBelow threshold: ${[...new Set(failing)].join(', ')}`)
