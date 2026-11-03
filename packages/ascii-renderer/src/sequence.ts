@@ -1601,7 +1601,7 @@ export function renderSequenceAscii(
         const dStr = `[${dLabel}]`
         const w = displayWidth(dStr) + 2
         writeTextCells(
-          bLeft + Math.floor((bRight - bLeft - w) / 2) + 1,
+          Math.max(bLeft + 1, bLeft + Math.floor((bRight - bLeft - w) / 2) + 1),
           dY,
           ` ${dStr} `,
           'text',

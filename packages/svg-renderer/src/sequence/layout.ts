@@ -181,14 +181,6 @@ export function blockTabWidth(
   return labelWidth(block.type, fontSize, FONT_WEIGHTS.groupHeader) + 16
 }
 
-/** The widest line of a block's `[label]`, drawn beside its tab. */
-function blockHeaderLabelWidth(
-  block: SequenceDiagram['blocks'][number],
-  fontSize: number,
-): number {
-  return block.label ? labelWidth(`[${block.label}]`, fontSize) : 0
-}
-
 /** Space between a block's tab and its centred label, and either side of a divider label. */
 const BLOCK_LABEL_GAP = 8
 
@@ -200,16 +192,22 @@ function blockLabelsWidth(
   block: SequenceDiagram['blocks'][number],
   fontSize: number,
 ): number {
-  const headerLabel = blockHeaderLabelWidth(block, fontSize)
-  return (
-    2 * BLOCK_LABEL_GAP +
-    Math.max(
-      headerLabel && headerLabel + blockTabWidth(block, fontSize),
-      ...block.dividers.map((d) =>
-        d.label ? labelWidth(`[${d.label}]`, fontSize) : 0,
-      ),
-    )
+  const bracketed = (label?: string) =>
+    label ? labelWidth(`[${label}]`, fontSize) + 2 * BLOCK_LABEL_GAP : 0
+  return Math.max(
+    blockTabWidth(block, fontSize) + bracketed(block.label),
+    ...block.dividers.map((d) => bracketed(d.label)),
   )
+}
+
+/** Extra height a multi-line divider label takes over a single line. */
+function dividerLabelExtra(
+  label: string | undefined,
+  fontSize: number,
+): number {
+  return label
+    ? (label.split('\n').length - 1) * fontSize * LINE_HEIGHT_RATIO
+    : 0
 }
 
 /**
@@ -449,7 +447,10 @@ export function layoutSequenceDiagram(
 
     // Each divider (else/and) needs room for the divider label
     for (const div of block.dividers) {
-      dividerSpaceBefore.set(div.index, seq.dividerExtra)
+      dividerSpaceBefore.set(
+        div.index,
+        seq.dividerExtra + dividerLabelExtra(div.label, fontSizes.edgeLabel),
+      )
     }
   }
 
@@ -782,15 +783,27 @@ export function layoutSequenceDiagram(
     const framePad = blockFramePad(seq)
     let blockLeft = actorCenterX[minIdx]! - framePad
     let blockRight = actorCenterX[maxIdx]! + framePad
-    // A self-message loop swings out to the right of its lifeline.
-    const selfLoop = diagram.messages
-      .slice(block.startIndex, block.endIndex + 1)
-      .some((m) => m.from === m.to && actorIndex.get(m.from) === maxIdx)
-    if (selfLoop) {
+    // A self-message loop swings out to the right of its lifeline, and its
+    // label is centred on it.
+    for (const m of diagram.messages.slice(
+      block.startIndex,
+      block.endIndex + 1,
+    )) {
+      if (m.from !== m.to) continue
+      const cx = actorCenterX[actorIndex.get(m.from)!]!
+      const half = labelWidth(m.label, fontSizes.edgeLabel) / 2
+      blockLeft = Math.min(blockLeft, cx - half - seq.blockPadX)
       blockRight = Math.max(
         blockRight,
-        actorCenterX[maxIdx]! + SELF_LOOP_EXTENT + seq.blockPadX,
+        cx + Math.max(SELF_LOOP_EXTENT, half) + seq.blockPadX,
       )
+    }
+    // Nested activation bars shift right with depth and can pass the edge.
+    for (const act of activations) {
+      const ai = actorIndex.get(act.actorId)!
+      if (ai < minIdx || ai > maxIdx) continue
+      if (act.topY >= blockBottom || act.bottomY <= blockTop) continue
+      blockRight = Math.max(blockRight, act.x + act.width + seq.blockPadX)
     }
 
     // Widen to hold the notes and nested blocks inside it...
@@ -837,7 +850,9 @@ export function layoutSequenceDiagram(
       const msgY = msg?.y ?? messageY
       // The centred divider label sits on its own row above a message label
       // that is centred too, so a labelled message needs the taller offset.
-      const offset = d.label && msg?.label ? 40 : 28
+      const offset =
+        (d.label && msg?.label ? 40 : 28) +
+        dividerLabelExtra(d.label, fontSizes.edgeLabel)
 
       return { y: msgY - offset, label: d.label }
     })
