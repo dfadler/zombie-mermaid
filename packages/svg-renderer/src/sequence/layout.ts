@@ -173,25 +173,20 @@ function blockFramePad(seq: ReturnType<typeof resolveSeqOptions>): number {
  * Width of a block's header tab, as the renderer draws it. A `rect <color>`
  * highlight has no tab.
  */
-function blockTabWidth(
-  block: SequenceDiagram['blocks'][number],
+export function blockTabWidth(
+  block: Pick<SequenceDiagram['blocks'][number], 'type' | 'color'>,
   fontSize: number,
 ): number {
   if (block.type === 'rect' && block.color !== undefined) return 0
   return labelWidth(block.type, fontSize, FONT_WEIGHTS.groupHeader) + 16
 }
 
-/** The widest line of a block's `[label]`, drawn centred on the block's top edge. */
+/** The widest line of a block's `[label]`, drawn beside its tab. */
 function blockHeaderLabelWidth(
   block: SequenceDiagram['blocks'][number],
   fontSize: number,
 ): number {
-  if (!block.label) return 0
-  return Math.max(
-    ...`[${block.label}]`
-      .split('\n')
-      .map((line) => labelWidth(line, fontSize, FONT_WEIGHTS.groupHeader)),
-  )
+  return block.label ? labelWidth(`[${block.label}]`, fontSize) : 0
 }
 
 /** Space between a block's tab and its centred label, and either side of a divider label. */
@@ -206,18 +201,15 @@ function blockLabelsWidth(
   fontSize: number,
 ): number {
   const headerLabel = blockHeaderLabelWidth(block, fontSize)
-  let need = headerLabel
-    ? headerLabel + blockTabWidth(block, fontSize) + 2 * BLOCK_LABEL_GAP
-    : 0
-  for (const d of block.dividers) {
-    if (d.label) {
-      need = Math.max(
-        need,
-        labelWidth(`[${d.label}]`, fontSize) + 2 * BLOCK_LABEL_GAP,
-      )
-    }
-  }
-  return need
+  return (
+    2 * BLOCK_LABEL_GAP +
+    Math.max(
+      headerLabel && headerLabel + blockTabWidth(block, fontSize),
+      ...block.dividers.map((d) =>
+        d.label ? labelWidth(`[${d.label}]`, fontSize) : 0,
+      ),
+    )
+  )
 }
 
 /**
@@ -296,17 +288,14 @@ function fitLabelsBetweenLifelines(
     // The header label and divider labels are centred across the block, which
     // spans its first to last lifeline plus the frame's side padding, so
     // that span must hold the widest of them.
-    let first = diagram.actors.length
-    let last = -1
-    for (let mi = block.startIndex; mi <= block.endIndex; mi++) {
-      const m = diagram.messages[mi]
-      if (!m) continue
-      first = Math.min(first, index.get(m.from)!, index.get(m.to)!)
-      last = Math.max(last, index.get(m.from)!, index.get(m.to)!)
-    }
-    if (last < 0) continue
-    const need = blockLabelsWidth(block, fontSize)
-    widen(first, last, need - 2 * blockFramePad(seq))
+    const ends = diagram.messages
+      .slice(block.startIndex, block.endIndex + 1)
+      .flatMap((m) => [index.get(m.from)!, index.get(m.to)!])
+    widen(
+      Math.min(...ends),
+      Math.max(...ends),
+      blockLabelsWidth(block, fontSize) - 2 * blockFramePad(seq),
+    )
   }
 }
 
@@ -794,14 +783,14 @@ export function layoutSequenceDiagram(
     let blockLeft = actorCenterX[minIdx]! - framePad
     let blockRight = actorCenterX[maxIdx]! + framePad
     // A self-message loop swings out to the right of its lifeline.
-    for (let mi = block.startIndex; mi <= block.endIndex; mi++) {
-      const m = diagram.messages[mi]
-      if (m && m.from === m.to && actorIndex.get(m.from) === maxIdx) {
-        blockRight = Math.max(
-          blockRight,
-          actorCenterX[maxIdx]! + SELF_LOOP_EXTENT + seq.blockPadX,
-        )
-      }
+    const selfLoop = diagram.messages
+      .slice(block.startIndex, block.endIndex + 1)
+      .some((m) => m.from === m.to && actorIndex.get(m.from) === maxIdx)
+    if (selfLoop) {
+      blockRight = Math.max(
+        blockRight,
+        actorCenterX[maxIdx]! + SELF_LOOP_EXTENT + seq.blockPadX,
+      )
     }
 
     // Widen to hold the notes and nested blocks inside it...

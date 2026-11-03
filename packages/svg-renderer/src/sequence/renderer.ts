@@ -10,6 +10,7 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import {
   ACTOR_LABEL_OFFSET,
+  blockTabWidth,
   boxLabelHeight,
   hasLabelBelowIcon,
   SELF_LOOP_CONTROL,
@@ -30,7 +31,6 @@ import {
   FONT_WEIGHTS,
   STROKE_WIDTHS,
   ARROW_HEAD,
-  estimateTextWidth,
 } from '../styles.ts'
 import type { FontSizes } from '../styles.ts'
 
@@ -351,12 +351,7 @@ function collectLabelBoxes(
 
   for (const block of diagram.blocks) {
     if (isHighlightRect(block)) continue
-    const tabWidth =
-      estimateTextWidth(
-        block.type,
-        fontSizes.edgeLabel,
-        FONT_WEIGHTS.groupHeader,
-      ) + 16
+    const tabWidth = blockTabWidth(block, fontSizes.edgeLabel)
     boxes.push({
       x0: block.x,
       x1: block.x + tabWidth,
@@ -645,12 +640,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   )
 
   // Type label tab (top-left corner); the `[label]` is centred on the top edge
-  const tabWidth =
-    estimateTextWidth(
-      block.type,
-      fontSizes.edgeLabel,
-      FONT_WEIGHTS.groupHeader,
-    ) + 16
+  const tabWidth = blockTabWidth(block, fontSizes.edgeLabel)
   const tabHeight = BLOCK_TAB_HEIGHT
 
   parts.push(
