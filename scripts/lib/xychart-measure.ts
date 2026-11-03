@@ -1,5 +1,6 @@
 /** Scores every xychart sample against real mermaid, for xychart-oracle.ts and layout-oracle.ts (#2451). */
 import { samples } from '../../samples/samples-data.ts'
+import { XYCHART_RANGE_CASES } from './xychart-oracle-cases.ts'
 import { renderMermaidSVG } from '../../src/index.ts'
 import { pinnedMermaidVersion } from './mermaid-pin-freshness.ts'
 import {
@@ -29,7 +30,7 @@ export async function scoreXyChart(
   commit: string,
   filter?: string,
 ): Promise<XyRun> {
-  const wanted = samples.filter(
+  const wanted = [...samples, ...XYCHART_RANGE_CASES].filter(
     (s) =>
       /^\s*xychart\b/.test(s.source) &&
       (!filter || s.title.toLowerCase().includes(filter.toLowerCase())),

@@ -57,12 +57,76 @@ const XY = {
  * `labelHalf` is half the widest label along the axis.
  */
 function barThickness(extent: number, n: number, labelHalf: number): number {
+  const { pad, bar } = barPad(extent, n, labelHalf)
+  return n < 2 ? bar : (bar * (extent / n) * (n - 1)) / (extent - 2 * pad)
+}
+
+/** Outer padding of a mermaid axis drawing bars, and the bar thickness it gives (`n` ticks). */
+function barPad(extent: number, n: number, labelHalf: number) {
   const p0 = Math.min(labelHalf, 0.2 * extent)
   const tick0 = (extent - 2 * p0) / n
   const pad = 0.7 * tick0 > 2 * p0 ? Math.floor(0.35 * tick0) : p0
-  const inner = extent - 2 * pad
-  const bar = 0.95 * Math.min(2 * pad, inner / n)
-  return n < 2 ? bar : (bar * (extent / n) * (n - 1)) / inner
+  return { p0, pad, bar: 0.95 * Math.min(2 * pad, (extent - 2 * pad) / n) }
+}
+
+/**
+ * The category axis: where each data point and tick sits (offsets from the
+ * axis start, in pixels) and how thick a bar is. Categories, and data with no
+ * x-axis, sit on band centres. A numeric range is mermaid's linear axis
+ * (#1592): a tick at every d3 tick value of the range, points spread evenly
+ * over [min, max] and placed by value, inset by the outer padding. Horizontal
+ * charts run the range from the bottom up, as mermaid does.
+ */
+interface CatAxis {
+  /** Offset of point `i` of a series with `n` points. */
+  at(n: number, i: number): number
+  ticks: { label: string; at: number }[]
+  /** Bar thickness. */
+  bar: number
+}
+
+function buildCatAxis(
+  chart: XYChart,
+  extent: number,
+  horizontal: boolean,
+): CatAxis {
+  const range = chart.xAxis.categories ? undefined : chart.xAxis.range
+  const half = (labels: string[]) =>
+    horizontal
+      ? XY.axisLabelFontSize / 2
+      : Math.max(
+          ...labels.map((l) =>
+            estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
+          ),
+        ) / 2
+  if (!range) {
+    const n = getDataCount(chart)
+    const labels = getCategoryLabels(chart, n)
+    const step = horizontal ? 1 : xLabelStep(labels, extent / n)
+    const at = (i: number) => (i + 0.5) * (extent / n)
+    return {
+      at: (_n, i) => at(i),
+      ticks: labels.map((label, i) => ({
+        label: i % step === 0 ? label : '',
+        at: at(i),
+      })),
+      bar: barThickness(extent, n, half(labels)),
+    }
+  }
+  const values = niceTickValues(range.min, range.max)
+  const labels = formatTickLabels(values)
+  const { p0, pad, bar } = barPad(extent, values.length, half(labels))
+  const p = chart.series.some((s) => s.type === 'bar') ? pad : p0
+  const span = range.max - range.min
+  const place = (v: number) => {
+    const t = span > 0 ? (v - range.min) / span : 0.5
+    return p + (horizontal ? 1 - t : t) * (extent - 2 * p)
+  }
+  return {
+    at: (n, i) => place(n < 2 ? range.min : range.min + (i * span) / (n - 1)),
+    ticks: values.map((v, i) => ({ label: labels[i]!, at: place(v) })),
+    bar,
+  }
 }
 
 /**
@@ -130,15 +194,25 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
 
   // Scales
   const dataCount = getDataCount(chart)
-  const xScale = (i: number) => left + (i + 0.5) * (plotW / dataCount)
-  const bandWidth = plotW / dataCount
+  const cat = buildCatAxis(chart, plotW, false)
+  const xScale = (n: number, i: number) => left + cat.at(n, i)
   const yScale = (v: number) => {
     const t = (v - yRange.min) / (yRange.max - yRange.min || 1)
     return top + plotH - t * plotH
   }
 
   // X-axis ticks
-  const xTicks = buildXTicks(chart, xScale, top + plotH, bandWidth)
+  const axisY = top + plotH
+  const xTicks: AxisTick[] = cat.ticks.map((t) => ({
+    label: t.label,
+    x: left + t.at,
+    y: axisY,
+    tx: left + t.at,
+    ty: axisY + XY.tickLength,
+    labelX: left + t.at,
+    labelY: axisY + 18,
+    textAnchor: 'middle' as const,
+  }))
 
   // Y-axis ticks
   const yAxisTicks: AxisTick[] = yTicks.map((v, i) => ({
@@ -171,7 +245,7 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     chart,
     xScale,
     yScale,
-    bandWidth,
+    cat.bar,
     yRange.min,
     catLabels,
     colorMap,
@@ -270,8 +344,9 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   // Compute category label widths for left margin
   const dataCount = getDataCount(chart)
   const catLabels = getCategoryLabels(chart, dataCount)
+  const cat = buildCatAxis(chart, XY.plotHeight, true)
   const maxCatLabelWidth = Math.max(
-    ...catLabels.map((l) =>
+    ...cat.ticks.map(({ label: l }) =>
       estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
     ),
     40,
@@ -315,8 +390,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   }
 
   // Category scale (vertical: top to bottom)
-  const bandHeight = plotH / dataCount
-  const catScale = (i: number) => top + (i + 0.5) * bandHeight
+  const catScale = (n: number, i: number) => top + cat.at(n, i)
 
   // X-axis (bottom): value ticks
   const xTicks: AxisTick[] = valueTicks.map((v, i) => ({
@@ -331,14 +405,14 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   }))
 
   // Y-axis (left): category ticks
-  const yTicks: AxisTick[] = catLabels.map((label, i) => ({
+  const yTicks: AxisTick[] = cat.ticks.map(({ label, at }) => ({
     label,
     x: left,
-    y: catScale(i),
+    y: top + at,
     tx: left - XY.tickLength,
-    ty: catScale(i),
+    ty: top + at,
     labelX: left - XY.yLabelGap,
-    labelY: catScale(i),
+    labelY: top + at,
     textAnchor: 'end' as const,
   }))
 
@@ -360,7 +434,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   if (barCount > 0) {
     // Mermaid 12.2.0 draws every bar series centred on the same category
     // (the series overlap, later ones on top) rather than side by side.
-    const singleBarH = barThickness(plotH, dataCount, XY.axisLabelFontSize / 2)
+    const singleBarH = cat.bar
     const groupH = singleBarH
     let bIdx = 0
     let seriesArrayIdx = 0
@@ -370,7 +444,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
         continue
       }
       for (let i = 0; i < s.data.length; i++) {
-        const cy = catScale(i)
+        const cy = catScale(s.data.length, i)
         const groupTop = cy - groupH / 2
         const by = groupTop
         const valX = valueScale(Math.max(s.data[i]!, yRange.min))
@@ -408,7 +482,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     }
     const points = s.data.map((v, i) => ({
       x: valueScale(v),
-      y: catScale(i),
+      y: catScale(s.data.length, i),
       value: v,
       // See the matching comment in the bars loop above: a line series can
       // outrun catLabels, and the point's `label` is already optional.
@@ -538,33 +612,11 @@ export function xLabelStep(labels: string[], bandWidth: number): number {
   return Math.max(1, labels.length)
 }
 
-function buildXTicks(
-  chart: XYChart,
-  xScale: (i: number) => number,
-  axisY: number,
-  bandWidth: number,
-): AxisTick[] {
-  const count = getDataCount(chart)
-  const labels = getCategoryLabels(chart, count)
-  const step = xLabelStep(labels, bandWidth)
-  // Dropped labels keep their tick mark but render no text.
-  return labels.map((label, i) => ({
-    label: i % step === 0 ? label : '',
-    x: xScale(i),
-    y: axisY,
-    tx: xScale(i),
-    ty: axisY + XY.tickLength,
-    labelX: xScale(i),
-    labelY: axisY + 18,
-    textAnchor: 'middle' as const,
-  }))
-}
-
 function layoutBars(
   chart: XYChart,
-  xScale: (i: number) => number,
+  xScale: (n: number, i: number) => number,
   yScale: (v: number) => number,
-  bandWidth: number,
+  singleBarW: number,
   yMin: number,
   catLabels: string[],
   colorMap: number[],
@@ -573,18 +625,6 @@ function layoutBars(
   const barCount = barSeries.length
   if (barCount === 0) return []
 
-  // Mermaid 12.2.0 draws every bar series centred on the same category
-  // (the series overlap, later ones on top) rather than side by side.
-  const widest = Math.max(
-    ...catLabels.map((l) =>
-      estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
-    ),
-  )
-  const singleBarW = barThickness(
-    bandWidth * catLabels.length,
-    catLabels.length,
-    widest / 2,
-  )
   const groupW = singleBarW
   const bars: PositionedBar[] = []
 
@@ -596,7 +636,7 @@ function layoutBars(
       continue
     }
     for (let i = 0; i < s.data.length; i++) {
-      const cx = xScale(i)
+      const cx = xScale(s.data.length, i)
       const groupLeft = cx - groupW / 2
       const bx = groupLeft
       const valY = yScale(s.data[i]!)
@@ -625,7 +665,7 @@ function layoutBars(
 
 function layoutLines(
   chart: XYChart,
-  xScale: (i: number) => number,
+  xScale: (n: number, i: number) => number,
   yScale: (v: number) => number,
   catLabels: string[],
   colorMap: number[],
@@ -639,7 +679,7 @@ function layoutLines(
       continue
     }
     const points = s.data.map((v, i) => ({
-      x: xScale(i),
+      x: xScale(s.data.length, i),
       y: yScale(v),
       value: v,
       // See layoutBars' matching comment: a line series can outrun
