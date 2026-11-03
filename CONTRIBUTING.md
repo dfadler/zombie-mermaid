@@ -88,6 +88,7 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main`; its jo
 - `test` includes `pnpm run coverage:diff`: new and changed lines in `src/`, `packages/*/src/` and `scripts/**/*.ts` need 95% coverage (see "Testing scripts" below for run-on-import CLIs). It also runs `scripts/check-snapshot-allowlist.sh` (see "Testing conventions for demo/editor components" below).
 - `visual-regression` is the Playwright suite; see "Visual regression tests" below.
 - `semgrep` is a SAST scan against Semgrep's free public rulesets. If it flags something in your PR, either fix the underlying issue or, for a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line explaining why. Don't disable the rule repo-wide.
+- `packed-smoke` fails when the committed public-API reports (`etc/api/*.api.md`) differ from what the build exports (#2480). If your change adds, removes or renames a public export on purpose, run `pnpm run build && pnpm run api:report` and commit the `etc/api/` diff; if the diff is unexpected, you leaked or dropped an export.
 - `changeset` requires a changeset when you change anything that ships (see "Changesets" below).
 
 Every workflow under `.github/workflows/`, one line each:

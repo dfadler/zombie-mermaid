@@ -65,6 +65,20 @@ export interface MermaidNode {
   id: string
   label: string
   shape: NodeShape
+  /**
+   * Architecture only: the node's column along the flow axis in the grid the
+   * L/R/T/B ports spell out (#2473). The SVG layout keeps equal values in one
+   * layer; the ASCII renderer ignores it.
+   */
+  gridLayer?: number
+  /** Architecture only: the node's position across the flow in that grid. */
+  gridOrder?: number
+  /**
+   * Architecture services only: the icon name from `service id(icon)` (`''`
+   * for none). Set, the SVG renderer draws Mermaid's 80px icon tile instead of
+   * `shape`; the ASCII renderer ignores it (#2518).
+   */
+  icon?: string
 }
 
 export type NodeShape =
@@ -145,6 +159,12 @@ export interface MermaidEdge {
   id?: string
   /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */
   animate?: boolean
+  /**
+   * Architecture only: the ports put the ends side by side across the flow
+   * (`a:B -- T:b` in a left-to-right graph), so the SVG layout keeps the edge
+   * out of the layering and draws it straight between the two (#2473).
+   */
+  acrossFlow?: boolean
 }
 
 /**
@@ -223,6 +243,8 @@ export interface PositionedNode {
   y: number
   width: number
   height: number
+  /** Architecture service icon tile; see `MermaidNode.icon`. `shape` is then `rectangle`. */
+  icon?: string
   /** Inline styles resolved from classDef + explicit `style` statements — override theme defaults */
   inlineStyle?: Record<string, string>
   /** Custom class name assigned via `class A className` or `:::className` shorthand — emitted onto the rendered element's `class` attribute so external CSS can target it */
@@ -244,6 +266,8 @@ export interface PositionedEdge {
   labelPosition?: Point
   /** Inline styles resolved from `linkStyle` directives — override theme defaults */
   inlineStyle?: Record<string, string>
+  /** Arrowhead colour: mermaid colours every head with the `linkStyle default` stroke, never an edge's own (#2476) */
+  headColor?: string
   /** Edge id from `A e1@--> B`, emitted as data-id for CSS targeting */
   id?: string
   /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */

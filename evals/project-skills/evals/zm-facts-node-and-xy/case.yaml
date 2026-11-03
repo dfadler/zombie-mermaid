@@ -1,0 +1,47 @@
+# Fact check against repo truth: package.json engines.node is ">=24"; packages/ascii-renderer/src/xychart.ts exists.
+# Can fail: a baseline guesses Node 18/20/22, or denies XY ASCII support.
+# good-reply: Yes, XY charts render to ASCII (--ascii). It needs Node.js 24 or newer.
+# bad-reply: XY charts are SVG only. Node 18 or newer works.
+schema_version: '1.1'
+name: zm-facts-node-and-xy
+description: >
+  The skill states Node.js 24+ and that XY charts render to every output including ASCII, both
+  matching the repo (package.json engines, xychart.ts). expected_outcome: PASS when the reply
+  says Node 24 and that ASCII works for XY charts; FAIL when it gives another Node version or
+  says XY has no ASCII output.
+tags: [zombie-mermaid, facts, quick]
+
+execution:
+  prompt: |
+    Can I render an xychart-beta diagram to ASCII with the zombie-mermaid CLI, and what Node.js
+    version do I need? Answer in two sentences.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+    min: 1
+
+  - name: says_node_24
+    type: regex
+    target: last_message
+    pattern: '\b24\b'
+    match: contains
+
+  - name: no_wrong_node
+    type: regex
+    target: last_message
+    pattern: '\b(?:16|18|20|22)\b'
+    match: not_contains
+
+  # Denial of XY ASCII support; the prompt contains none of these words.
+  - name: no_xy_ascii_denial
+    type: regex
+    target: last_message
+    pattern: "\\b(?:not supported|unsupported|doesn't support|does not support|cannot|can't|isn't supported)\\b"
+    flags: i
+    match: not_contains

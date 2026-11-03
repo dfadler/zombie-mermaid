@@ -5,7 +5,7 @@
 
 SVG layout and rendering primitives for [Mermaid](https://mermaid.js.org/) diagrams — the [ELK.js](https://github.com/kieler/elkjs)-backed layout engine and per-diagram-type SVG emitters behind [`zombie-mermaid`](https://www.npmjs.com/package/zombie-mermaid)'s SVG output.
 
-Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagrams, XY charts, pie charts, C4 diagrams, and architecture diagrams.
+Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagrams, XY charts, pie charts, quadrant charts, C4 diagrams, and architecture diagrams.
 
 ## Install
 
@@ -14,7 +14,7 @@ npm install @zombie-mermaid/svg-renderer elkjs
 ```
 
 `elkjs` is an **optional peer dependency**. Flowchart, state, class, ER and
-architecture diagrams need it; sequence, pie, xychart and C4 do not. Under Node
+architecture diagrams need it; sequence, pie, quadrant, xychart and C4 do not. Under Node
 and Bun it is auto-loaded; in a browser or bundler register it once:
 
 ```ts

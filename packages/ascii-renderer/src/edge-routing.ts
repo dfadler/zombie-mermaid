@@ -148,6 +148,17 @@ export function determineStartAndEndDir(
     preferredOppositeDir = Left
     alternativeDir = Right
     alternativeOppositeDir = Left
+  } else if (
+    graphDirection === 'LR' &&
+    dirEquals(d, UpperLeft) &&
+    edge.to.fanOutCentered
+  ) {
+    // Back edge into a decision that fans out right: it re-enters the right
+    // face, beside the branches, as mermaid draws it, not the bottom vertex.
+    preferredDir = Left
+    preferredOppositeDir = Right
+    alternativeDir = Left
+    alternativeOppositeDir = Right
   } else if (dirEquals(d, LowerRight)) {
     if (graphDirection === 'LR') {
       preferredDir = Down
@@ -1668,6 +1679,38 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       gridCoordDirection(requireGridCoord(edge.to), into),
     ]
     return
+  }
+
+  // #2492: a back edge into a decision's right face, from a node below it,
+  // runs left along its own row and then up the column of the port. The search
+  // cannot draw this: the port cell's lower neighbour belongs to the diamond's
+  // block, so it floods to its cap and the edge falls back to this very L. Draw
+  // it directly when the cells under the diamond are free.
+  if (
+    effectiveDir === 'LR' &&
+    edge.to.fanOutCentered &&
+    // A later parallel edge takes its own lane below, not the first one's path.
+    !(edge.parallelLane && edge.parallelLane.index > 0) &&
+    dirEquals(preferredDir, Left) &&
+    dirEquals(preferredOppositeDir, Right)
+  ) {
+    const start = gridCoordDirection(requireGridCoord(edge.from), Left)
+    const end = gridCoordDirection(requireGridCoord(edge.to), Right)
+    const corner = { x: end.x, y: start.y }
+    const clear = (a: GridCoord, b: GridCoord): boolean =>
+      pathCells([a, b]).every((c) => !isOccupied(graph.grid, c))
+    if (
+      start.x > end.x &&
+      start.y > end.y + 1 &&
+      clear({ x: start.x - 1, y: start.y }, corner) &&
+      clear({ x: corner.x, y: end.y + 2 }, corner)
+    ) {
+      edge.startDir = Left
+      edge.endDir = Right
+      edge.faceLane = false
+      edge.path = [start, corner, end]
+      return
+    }
   }
 
   // A back-edge between nodes in one column (row, in LR) leaves the source's

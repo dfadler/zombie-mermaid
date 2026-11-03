@@ -5,7 +5,7 @@
 
 Render [Mermaid](https://mermaid.js.org/) diagrams to ASCII or Unicode box-drawing art — the standalone renderer behind [`zombie-mermaid`](https://www.npmjs.com/package/zombie-mermaid)'s `zombie-mermaid/ascii` entry point. Pure TypeScript, no DOM, no `elkjs`/SVG layout dependency — pull this in on its own when all you need is terminal output.
 
-Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagrams, XY charts, pie charts, C4 diagrams, and architecture diagrams.
+Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagrams, XY charts, pie charts, quadrant charts, C4 diagrams, and architecture diagrams.
 
 ## Install
 

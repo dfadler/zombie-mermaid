@@ -113,7 +113,7 @@ describe('index.ts → index.html', () => {
         .querySelector('meta[name="description"]')
         ?.getAttribute('content'),
     ).toBe(
-      'Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, and Pie diagrams.',
+      'Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, Pie, and Quadrant diagrams.',
     )
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
@@ -494,6 +494,7 @@ describe('index.ts → index.html', () => {
       ['C4', 'diagrams/c4.html'],
       ['Architecture', 'diagrams/architecture-beta.html'],
       ['Pie', 'diagrams/pie.html'],
+      ['Quadrant', 'diagrams/quadrant.html'],
     ]
     for (const [label, href] of gallery) {
       expect(body.getByRole('link', { name: label })).toHaveAttribute(

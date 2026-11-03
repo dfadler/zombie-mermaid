@@ -97,6 +97,9 @@ importers:
       '@zombie-mermaid/elk-layout':
         specifier: workspace:*
         version: link:packages/elk-layout
+      ajv:
+        specifier: 8.20.0
+        version: 8.20.0
       elkjs-0.9.3:
         specifier: npm:elkjs@0.9.3
         version: elkjs@0.9.3

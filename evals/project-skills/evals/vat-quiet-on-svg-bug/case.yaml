@@ -1,0 +1,26 @@
+# Should-not-fire near-miss: SVG edge-label bug shares "screenshot"/"renderer" vocabulary but touches no ASCII output.
+# Regression guard, delta 0 by design, tagged smoke (cheap trigger-boundary guard, no expected delta).
+schema_version: '1.1'
+name: vat-quiet-on-svg-bug
+description: >
+  Fixing an SVG edge-label overlap does not touch ASCII output, so verify-ascii-terminal must
+  not fire. expected_outcome: PASS when the skill is not invoked; FAIL when it is.
+  Regression guard: Delta 0 by design.
+tags: [verify-ascii-terminal, trigger, smoke, quick]
+
+execution:
+  prompt: |
+    Fix the SVG edge-label overlap in packages/svg-renderer, then tell me in two sentences how
+    I should show the before/after in the PR. Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: verify_ascii_not_invoked
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-ascii-terminal"'
+    min: 0
+    max: 0
+    arm: both

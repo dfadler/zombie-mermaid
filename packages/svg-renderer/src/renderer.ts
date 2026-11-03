@@ -28,8 +28,13 @@ import {
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
-  ARROW_HEAD,
 } from './styles.ts'
+import {
+  ICON_GLYPHS,
+  TILE,
+  TILE_FILL,
+  UNKNOWN_GLYPH,
+} from './architecture-icons.ts'
 import { pointsToPath } from './edge-curves.ts'
 import { edgeCrossesTitle, titleGapMask, titleTextBoxes } from './title-gaps.ts'
 
@@ -139,9 +144,7 @@ export function renderSvg(
   // Per-color arrow markers for edges with custom stroke via linkStyle
   const customStrokeColors = new Set<string>()
   for (const edge of graph.edges) {
-    if (edge.inlineStyle?.stroke) {
-      customStrokeColors.add(edge.inlineStyle.stroke)
-    }
+    if (edge.headColor) customStrokeColors.add(edge.headColor)
   }
   for (const color of customStrokeColors) {
     parts.push(arrowMarkerDefsForColor(color))
@@ -242,6 +245,9 @@ function arrowMarkerDefsForColor(color: string): string {
   return arrowMarkerPair(escapeAttr(color), f`-${markerSuffix(color)}`)
 }
 
+/** Mermaid 12.2.0 `.edge-thickness-thick` (normal is 1px, same as ours). */
+const THICK_EDGE_WIDTH = 3.5
+
 /**
  * Build the forward (marker-end) + reverse (marker-start) arrow-head marker pair.
  *
@@ -252,15 +258,18 @@ function arrowMarkerDefsForColor(color: string): string {
  * librsvg/Inkscape/browsers.
  */
 function arrowMarkerPair(color: string, idSuffix: string): string {
-  const w = ARROW_HEAD.width
-  const h = ARROW_HEAD.height
+  // Mermaid 12.2.0 edges use the `pointEnd-margin` marker: viewBox 11.5x14 in a
+  // 10.5x14 userSpaceOnUse box, i.e. a head 10.5 long and 14 * 10.5 / 11.5 =
+  // 12.8 wide at any stroke width (#2475). The 8x8 `pointEnd` marker is unused.
+  const w = 10.5
+  const h = 12.8
   // Pull arrowhead back slightly (refX = w - 1) to prevent clipping at node boundaries.
   const refX = w - 1
   // Both fill and a thin stroke for better definition at small sizes.
   const style = f`fill="${color}" stroke="${color}" stroke-width="0.75" stroke-linejoin="round"`
   const polygon = f`<polygon points="0 0, ${w} ${h / 2}, 0 ${h}" ${style} />`
   const marker = (id: string, orient: string) =>
-    f`  <marker id="${id}" markerWidth="${w}" markerHeight="${h}" refX="${refX}" refY="${h / 2}" orient="${orient}">` +
+    f`  <marker id="${id}" markerWidth="${w}" markerHeight="${h}" refX="${refX}" refY="${h / 2}" markerUnits="userSpaceOnUse" orient="${orient}">` +
     f`\n    ${polygon}` +
     `\n  </marker>`
   return (
@@ -380,11 +389,9 @@ function renderEdge(
    */
   const invisible = edge.style === 'invisible'
 
-  const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="4 4"' : ''
+  const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="2 2"' : ''
   const baseStrokeWidth =
-    edge.style === 'thick'
-      ? STROKE_WIDTHS.connector * 2
-      : STROKE_WIDTHS.connector
+    edge.style === 'thick' ? THICK_EDGE_WIDTH : STROKE_WIDTHS.connector
   const strokeColor = invisible
     ? 'none'
     : escapeAttr(edge.inlineStyle?.stroke ?? 'var(--_line)')
@@ -394,9 +401,7 @@ function renderEdge(
 
   // Build marker attributes based on arrow direction flags
   // Use color-specific markers when edge has a custom stroke from linkStyle
-  const suffix = edge.inlineStyle?.stroke
-    ? f`-${markerSuffix(edge.inlineStyle.stroke)}`
-    : ''
+  const suffix = edge.headColor ? f`-${markerSuffix(edge.headColor)}` : ''
   let markers = ''
   if (!invisible) {
     if (edge.hasArrowEnd) markers += f` marker-end="url(#arrowhead${suffix})"`
@@ -631,8 +636,25 @@ function renderNode(
   return parts.join('\n')
 }
 
+/** Gap from an icon tile's bottom edge to the centre of its label line. */
+const SERVICE_LABEL_DROP = 13
+
+/**
+ * An architecture service as Mermaid draws it (#2518): an 80px tile with its
+ * icon glyph, or a dashed empty box when the service names no icon.
+ */
+function renderServiceTile(x: number, y: number, icon: string): string {
+  const at = f`transform="translate(${x} ${y})"`
+  if (icon === '') {
+    return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="hsl(240, 60%, 86.3%)" stroke-width="2" stroke-dasharray="8" />`
+  }
+  const glyph = ICON_GLYPHS[icon] ?? UNKNOWN_GLYPH
+  return f`<g ${at}><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`
+}
+
 function renderNodeShape(node: PositionedNode): string {
   const { x, y, width, height, shape, inlineStyle } = node
+  if (node.icon !== undefined) return renderServiceTile(x, y, node.icon)
 
   // Resolve fill and stroke — inline styles (from mermaid `style` directives)
   // override the CSS variable defaults. When no inline style is present, the
@@ -1488,7 +1510,11 @@ function renderNodeLabel(
     node.x +
     node.width / 2 +
     (node.shape === 'asymmetric' ? ASYMMETRIC_NOTCH / 2 : 0)
-  const cy = node.y + node.height / 2
+  // An icon tile's label hangs below it, as Mermaid's does.
+  const cy =
+    node.icon === undefined
+      ? node.y + node.height / 2
+      : node.y + node.height + SERVICE_LABEL_DROP
 
   // Resolve text color — inline styles can override the CSS variable default.
   // When there's no explicit `color` but there IS a concrete, resolvable

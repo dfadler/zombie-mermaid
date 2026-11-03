@@ -19,6 +19,7 @@ import { FlowchartRenderOptions } from '@zombie-mermaid/core';
 import { LayoutCache } from '@zombie-mermaid/core';
 import { LayoutOptions } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
+import { MonoFontEmbed } from '@zombie-mermaid/core';
 import { niceTickValues } from '@zombie-mermaid/core';
 import { PieChart } from '@zombie-mermaid/mermaid-parser';
 import { Point } from '@zombie-mermaid/core';
@@ -27,8 +28,10 @@ import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGraph } from '@zombie-mermaid/core';
 import { PositionedNode } from '@zombie-mermaid/core';
 import { PositionedPieChart } from '@zombie-mermaid/mermaid-parser';
+import { PositionedQuadrantChart } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedXYChart } from '@zombie-mermaid/mermaid-parser';
+import { QuadrantChart } from '@zombie-mermaid/mermaid-parser';
 import { RenderOptions } from '@zombie-mermaid/core';
 import { SequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { SequenceRenderOptions } from '@zombie-mermaid/core';
@@ -44,6 +47,9 @@ export const ARROW_HEAD: {
     readonly width: 8;
     readonly height: 5;
 };
+
+// @public
+export const ASYMMETRIC_NOTCH = 12;
 
 // @public
 export function baseElkLayoutOptions(spec: {
@@ -75,7 +81,7 @@ export function buildElkLeafNode(id: string, size: {
 }, label?: string): ElkNode;
 
 // @public
-export function buildSvgStyleBlock(font: string, hasMonoFont: boolean, nonce?: string): string;
+export function buildSvgStyleBlock(font: string, hasMonoFont: boolean, nonce?: string, bodyFont?: MonoFontEmbed): string;
 
 // @public
 export function classBackEdges(diagram: ClassDiagram): Set<number>;
@@ -95,7 +101,7 @@ export const CLS: {
     readonly memberRowHeight: 20;
     readonly sectionPadY: 8;
     readonly emptySectionHeight: 8;
-    readonly minWidth: 120;
+    readonly mermaidPad: 12;
     readonly memberFontSize: 11;
     readonly memberFontWeight: 400;
     readonly nodeSpacing: 40;
@@ -105,6 +111,8 @@ export const CLS: {
     readonly namespaceTitleHeight: 28;
     readonly namespacePad: 16;
     readonly namespaceTitleFontSize: 12;
+    readonly lollipopLabelHeight: 32;
+    readonly lollipopLabelPadX: 8;
 };
 
 // @public
@@ -203,6 +211,12 @@ export function formatTickLabels(ticks: number[]): string[];
 export const GROUP_HEADER_CONTENT_PAD = 12;
 
 // @public
+export function hasLabelBelowIcon(a: {
+    type: 'participant' | 'actor';
+    participantType?: string | undefined;
+}): boolean;
+
+// @public
 export const INLINE_CENTERED_EDGE_LABEL: LayoutOptions;
 
 export { LayoutCache }
@@ -222,11 +236,17 @@ export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartRenderOp
 // @public
 export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedPieChart;
 
+// @public (undocumented)
+export function layoutQuadrantChart(chart: QuadrantChart): PositionedQuadrantChart;
+
 // @public
 export function layoutSequenceDiagram(diagram: SequenceDiagram, options?: SequenceRenderOptions): PositionedSequenceDiagram;
 
 // @public
 export function layoutXYChart(chart: XYChart, _options?: XyChartRenderOptions): PositionedXYChart;
+
+// @public
+export function loadEmbeddedFont(): Promise<void>;
 
 // @public
 export const MONO_FONT: "'JetBrains Mono'";
@@ -267,6 +287,32 @@ export function pieColorValue(index: number, accent: string | undefined, bg: str
 export function pointsToPath(points: Point[], curve?: CurveStyle): string;
 
 // @public
+export const QUADRANT: {
+    readonly titlePadding: 10;
+    readonly titleFontSize: 20;
+    readonly quadrantPadding: 5;
+    readonly xAxisLabelPadding: 5;
+    readonly yAxisLabelPadding: 5;
+    readonly xAxisLabelFontSize: 16;
+    readonly yAxisLabelFontSize: 16;
+    readonly quadrantLabelFontSize: 16;
+    readonly quadrantTextTopPadding: 5;
+    readonly pointTextPadding: 5;
+    readonly pointLabelFontSize: 12;
+    readonly pointRadius: 5;
+    readonly quadrantInternalBorderStrokeWidth: 1;
+    readonly quadrantExternalBorderStrokeWidth: 2;
+    readonly xAxisPosition: "top";
+    readonly yAxisPosition: "left";
+    readonly width: 500;
+    readonly height: 500;
+    readonly axisLabelPadding: 5;
+    readonly axisLabelFontSize: 16;
+    readonly internalBorderWidth: 1;
+    readonly externalBorderWidth: 2;
+};
+
+// @public
 export function registerElk(ctor: ElkConstructor): void;
 
 // @public
@@ -291,6 +337,9 @@ export const renderMermaidSync: typeof renderMermaidSVG;
 export function renderPieSvg(chart: PositionedPieChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
+export function renderQuadrantSvg(chart: PositionedQuadrantChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderSequenceSvg(diagram: PositionedSequenceDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
@@ -305,8 +354,23 @@ export function resolveCssColors(svg: string, colors: DiagramColors): string;
 // @public
 export function resolveFontSizes(overrides?: FontSizeOptions): FontSizes;
 
+// @public
+export const SELF_LOOP_CONTROL = 60;
+
+// @public (undocumented)
+export const SELF_LOOP_EXTENT: number;
+
+// @public (undocumented)
+export const SELF_LOOP_HEIGHT = 20;
+
 // @public (undocumented)
 export function smoothCurvePath(points: Array<{
+    x: number;
+    y: number;
+}>): string;
+
+// @public (undocumented)
+export function straightLinePath(points: Array<{
     x: number;
     y: number;
 }>): string;

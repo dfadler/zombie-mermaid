@@ -1,5 +1,49 @@
 # @zombie-mermaid/cli
 
+## 5.14.1
+
+### Patch Changes
+
+- Updated dependencies [[`13617eb`](https://github.com/dfadler/zombie-mermaid/commit/13617eb067df154e257a7fba42039523b47fb7b8), [`bad44f4`](https://github.com/dfadler/zombie-mermaid/commit/bad44f4e106be390a78a91080c540f289b960d15)]:
+  - @zombie-mermaid/ascii-renderer@5.14.1
+  - @zombie-mermaid/svg-renderer@5.14.1
+  - @zombie-mermaid/mcp@5.14.1
+  - @zombie-mermaid/core@5.14.1
+
+## 5.14.0
+
+### Patch Changes
+
+- Updated dependencies [[`b918077`](https://github.com/dfadler/zombie-mermaid/commit/b9180775816e55e81fcea6d6823fa5ec2dcfa856), [`96abf55`](https://github.com/dfadler/zombie-mermaid/commit/96abf5540701843be4397ab34cc3049a4fe82459), [`91bc6cf`](https://github.com/dfadler/zombie-mermaid/commit/91bc6cf917e65fd9b38e89c0ad3a01ceccbd4d51), [`8a8463d`](https://github.com/dfadler/zombie-mermaid/commit/8a8463da1b5de205525258c203b4dc5aadae568a)]:
+  - @zombie-mermaid/ascii-renderer@5.14.0
+  - @zombie-mermaid/svg-renderer@5.14.0
+  - @zombie-mermaid/core@5.14.0
+  - @zombie-mermaid/mcp@5.14.0
+
+## 5.13.0
+
+### Patch Changes
+
+- Updated dependencies [[`d3eedd2`](https://github.com/dfadler/zombie-mermaid/commit/d3eedd2feda1347fc82c87a98d5c714e27351fc4), [`817885e`](https://github.com/dfadler/zombie-mermaid/commit/817885ec949b96e5e92835dc7547a4ebc5a22af3), [`5eaccb9`](https://github.com/dfadler/zombie-mermaid/commit/5eaccb94bc869e7ec6715bc50f805b5d0dac6862), [`96cd7e6`](https://github.com/dfadler/zombie-mermaid/commit/96cd7e634fc3543629b032994e2ff347faedb76b)]:
+  - @zombie-mermaid/ascii-renderer@5.13.0
+  - @zombie-mermaid/svg-renderer@5.13.0
+  - @zombie-mermaid/core@5.13.0
+  - @zombie-mermaid/mcp@5.13.0
+
+## 5.12.0
+
+### Minor Changes
+
+- [#2399](https://github.com/dfadler/zombie-mermaid/pull/2399) [`6024647`](https://github.com/dfadler/zombie-mermaid/commit/6024647f1d7992459a00aebee5b9ce1d25eb7fe0) Thanks [@dfadler](https://github.com/dfadler)! - CLI: `zombie-mermaid --check <file.md>...` validates every `mermaid` fenced block in Markdown files, printing `file:line: message` for each invalid block and exiting 1 ([#1876](https://github.com/dfadler/zombie-mermaid/issues/1876)).
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.12.0
+  - @zombie-mermaid/mcp@5.12.0
+  - @zombie-mermaid/svg-renderer@5.12.0
+  - @zombie-mermaid/core@5.12.0
+
 ## 5.11.3
 
 ### Patch Changes

@@ -1,5 +1,52 @@
 # @zombie-mermaid/svg-renderer
 
+## 5.14.1
+
+### Patch Changes
+
+- [#2495](https://github.com/dfadler/zombie-mermaid/pull/2495) [`bad44f4`](https://github.com/dfadler/zombie-mermaid/commit/bad44f4e106be390a78a91080c540f289b960d15) Thanks [@dfadler](https://github.com/dfadler)! - Sequence SVG: blocks, notes, dividers and nested blocks are fitted to their labels. Gaps between actors widen for notes, block header tabs and divider labels; blocks grow to hold their notes and nested blocks; nested headers stack; multi-line notes are as tall as their text ([#2452](https://github.com/dfadler/zombie-mermaid/issues/2452)).
+- Updated dependencies [[`bad44f4`](https://github.com/dfadler/zombie-mermaid/commit/bad44f4e106be390a78a91080c540f289b960d15)]:
+  - @zombie-mermaid/mermaid-parser@5.14.1
+  - @zombie-mermaid/core@5.14.1
+
+## 5.14.0
+
+### Minor Changes
+
+- [#2463](https://github.com/dfadler/zombie-mermaid/pull/2463) [`91bc6cf`](https://github.com/dfadler/zombie-mermaid/commit/91bc6cf917e65fd9b38e89c0ad3a01ceccbd4d51) Thanks [@dfadler](https://github.com/dfadler)! - `quadrantChart` now reads its `%%{init}%%` config and theme variables ([#2438](https://github.com/dfadler/zombie-mermaid/issues/2438)). The `quadrantChart` block (`chartWidth`, `chartHeight`, `titleFontSize`, the paddings and label font sizes, `pointRadius`, `xAxisPosition`, `yAxisPosition`, the border stroke widths) sizes and lays out the SVG as in Mermaid 12.2.0; a bad or negative number or an unknown position is ignored. The `quadrant*Fill`, `quadrant*TextFill`, `quadrantPoint*`, axis-text, title and border stroke variables colour the SVG under any theme when `honorThemeVariables` is set. ASCII output is unchanged. `InitConfig` gains `quadrant`, `ThemeVariables` gains `quadrant`, and `QuadrantChart` gains `config` and `themeColors`. The demo pages for the type are not part of this change.
+
+### Patch Changes
+
+- [#2483](https://github.com/dfadler/zombie-mermaid/pull/2483) [`96abf55`](https://github.com/dfadler/zombie-mermaid/commit/96abf5540701843be4397ab34cc3049a4fe82459) Thanks [@dfadler](https://github.com/dfadler)! - Restore the `QUADRANT` fields that [#2463](https://github.com/dfadler/zombie-mermaid/pull/2463) removed: `width`, `height`, `axisLabelPadding`, `axisLabelFontSize`, `internalBorderWidth` and `externalBorderWidth`, with their 5.13.0 values. They are marked `@deprecated` in favour of `chartWidth`/`chartHeight`, `x/yAxisLabelPadding`, `x/yAxisLabelFontSize` and `quadrant{Internal,External}BorderStrokeWidth`, and will be removed in the next major.
+
+- [#2462](https://github.com/dfadler/zombie-mermaid/pull/2462) [`8a8463d`](https://github.com/dfadler/zombie-mermaid/commit/8a8463da1b5de205525258c203b4dc5aadae568a) Thanks [@dfadler](https://github.com/dfadler)! - Sequence diagrams: a self-message label is now centred on its lifeline, above the loop, as mermaid draws it, instead of sitting beside the loop (SVG and ASCII).
+- Updated dependencies [[`91bc6cf`](https://github.com/dfadler/zombie-mermaid/commit/91bc6cf917e65fd9b38e89c0ad3a01ceccbd4d51)]:
+  - @zombie-mermaid/core@5.14.0
+  - @zombie-mermaid/mermaid-parser@5.14.0
+
+## 5.13.0
+
+### Minor Changes
+
+- [#2436](https://github.com/dfadler/zombie-mermaid/pull/2436) [`5eaccb9`](https://github.com/dfadler/zombie-mermaid/commit/5eaccb94bc869e7ec6715bc50f805b5d0dac6862) Thanks [@dfadler](https://github.com/dfadler)! - Quadrant charts. `quadrantChart` diagrams now parse and render to SVG and ASCII/Unicode text, the first type added under the upstream-types umbrella ([#2085](https://github.com/dfadler/zombie-mermaid/issues/2085)). `DiagramType` gains `'quadrant'` and `detectDiagramType` routes a `quadrantChart` header to it (case-sensitively, as Mermaid's detector does). `@zombie-mermaid/mermaid-parser` adds `parseQuadrantChart` with the `QuadrantChart` and `Positioned*` types: `title`, one- or two-sided `x-axis` / `y-axis`, `quadrant-1` to `quadrant-4`, `label: [x, y]` points (coordinates `0`, `1` or `0.<digits>`, as in Mermaid's grammar), `classDef` and `:::class`, the four point styles with Mermaid's validation messages, and `accTitle` / `accDescr`. The SVG uses Mermaid's 500 x 500 geometry, checked against mermaid 12.2.0, and the theme's colour variables; points without a colour are drawn in the foreground colour because Mermaid 12.2.0's default theme emits an invalid `hsl(240, 100%, NaN%)` fill there. The ASCII output is this library's own design (Mermaid has none): a four-cell grid with numbered point markers and a legend. Not read yet: `quadrantChart` config in `%%{init}%%` and the quadrant theme variables; there is no layout oracle for this type yet, so support is partial in that respect (see `docs/known-differences.md`).
+
+### Patch Changes
+
+- [#2432](https://github.com/dfadler/zombie-mermaid/pull/2432) [`817885e`](https://github.com/dfadler/zombie-mermaid/commit/817885ec949b96e5e92835dc7547a4ebc5a22af3) Thanks [@dfadler](https://github.com/dfadler)! - Flowchart edges repeated between the same two nodes (four `a --> b`, say) now keep a lane each instead of being merged onto one path by `mergeEdges`, matching mermaid.js, which draws one path per edge.
+
+- [#2434](https://github.com/dfadler/zombie-mermaid/pull/2434) [`96cd7e6`](https://github.com/dfadler/zombie-mermaid/commit/96cd7e634fc3543629b032994e2ff347faedb76b) Thanks [@dfadler](https://github.com/dfadler)! - Sequence diagrams: actor gaps widen so a long message or self-message label no longer runs across the next lifeline or past the edge of the SVG. Ports the message-label part of lukilabs/beautiful-mermaid#167 by sebbert.
+- Updated dependencies [[`5eaccb9`](https://github.com/dfadler/zombie-mermaid/commit/5eaccb94bc869e7ec6715bc50f805b5d0dac6862)]:
+  - @zombie-mermaid/core@5.13.0
+  - @zombie-mermaid/mermaid-parser@5.13.0
+
+## 5.12.0
+
+### Patch Changes
+
+- Updated dependencies [[`e400a43`](https://github.com/dfadler/zombie-mermaid/commit/e400a436831e2ce3362b6513d21228a3e7949b8d)]:
+  - @zombie-mermaid/mermaid-parser@5.12.0
+  - @zombie-mermaid/core@5.12.0
+
 ## 5.11.3
 
 ### Patch Changes

@@ -148,7 +148,11 @@ Direction, not a decision: a separate terminal-oriented package (working name
 renderers, with a terminal renderer that supplies width and other bounds. How the
 terminal renderer composes with the ASCII renderer is undecided. This doc commits
 to none of it, and it relates to the sub-package direction under "New diagram
-types".
+types". It is tracked in [#2457](https://github.com/dfadler/zombie-mermaid/issues/2457)
+(unscheduled). The ASCII renderer's own trajectory does not change, and slim
+per-type ASCII entries are not planned on `@zombie-mermaid/ascii-renderer`: that
+work moves to the terminal package (maintainer, 2026-10-30,
+[#2086](https://github.com/dfadler/zombie-mermaid/issues/2086)).
 
 Every supported type aims to have an ASCII path, and where ASCII cannot express
 something SVG does, that limit is documented per type in
