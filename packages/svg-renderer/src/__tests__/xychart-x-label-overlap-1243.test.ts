@@ -34,12 +34,12 @@ const QUARTERS = `xychart-beta
     x-axis [21Q1, 21Q2, 21Q3, 21Q4, 22Q1, 22Q2, 22Q3, 22Q4, 23Q1, 23Q2, 23Q3, 23Q4, 24Q1, 24Q2, 24Q3, 24Q4]
     bar [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]`
 
-describe('xychart x-axis label spacing (#1243)', () => {
-  it('drops labels so adjacent shown labels do not touch', () => {
+describe('xychart x-axis label spacing (#1243, superseded by mermaid parity)', () => {
+  // Mermaid 12.2.0 draws every category label, touching or not, so we do too.
+  it('labels every category even when neighbouring labels touch', () => {
     const ticks = shown(QUARTERS)
-    expect(ticks.length).toBeLessThan(16)
-    expect(ticks.length).toBeGreaterThan(1)
-    expect(minGap(ticks)).toBeGreaterThan(0)
+    expect(ticks).toHaveLength(16)
+    expect(minGap(ticks)).toBeLessThan(0)
   })
 
   it('keeps every label when they all fit', () => {
