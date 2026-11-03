@@ -334,6 +334,7 @@ export function layoutSimple(
           height: 0,
           children,
           ...(sg.region ? { region: true } : {}),
+          ...(sg?.icon ? { icon: sg.icon } : {}),
         })
       }
     }

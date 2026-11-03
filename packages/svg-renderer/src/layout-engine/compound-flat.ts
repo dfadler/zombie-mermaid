@@ -441,6 +441,7 @@ function buildGroups(
       height: y1 - y0,
       children,
       ...(sg.region ? { region: true } : {}),
+      ...(sg?.icon ? { icon: sg.icon } : {}),
     }
   }
   return subgraphs.map(build)

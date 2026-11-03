@@ -119,6 +119,7 @@ export type NodeShape =
   | 'triangle' // Apex up
   | 'flipped-triangle' // Apex down
   | 'filled-circle' // Solid dot — junction
+  | 'junction' // Architecture junction: a join point; SVG draws nothing, ASCII a dot
   | 'crossed-circle' // Circle with an X through it — summary
   | 'fork-join' // Solid bar
   | 'notched-pentagon' // Rectangle with clipped top corners — loop limit
@@ -220,6 +221,8 @@ export interface MermaidSubgraph {
    * titled subgraph, like mermaid.js's `divider` cluster.
    */
   region?: boolean
+  /** Architecture group icon name from `group id(icon)`; SVG draws it in the header. */
+  icon?: string
 }
 
 // ============================================================================
@@ -291,6 +294,8 @@ export interface PositionedGroup {
   children: PositionedGroup[]
   /** Concurrency region: draw dashed and untitled (see `MermaidSubgraph.region`) */
   region?: boolean
+  /** Architecture group icon name; see `MermaidSubgraph.icon`. */
+  icon?: string
 }
 
 // ============================================================================

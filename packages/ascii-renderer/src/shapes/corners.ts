@@ -203,6 +203,10 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     unicode: { tl: '●', tr: '●', bl: '●', br: '●' },
     ascii: { tl: '*', tr: '*', bl: '*', br: '*' },
   },
+  junction: {
+    unicode: { tl: '●', tr: '●', bl: '●', br: '●' },
+    ascii: { tl: '*', tr: '*', bl: '*', br: '*' },
+  },
   'crossed-circle': {
     unicode: { tl: '╳', tr: '╳', bl: '╳', br: '╳' },
     ascii: { tl: 'X', tr: 'X', bl: 'X', br: 'X' },
