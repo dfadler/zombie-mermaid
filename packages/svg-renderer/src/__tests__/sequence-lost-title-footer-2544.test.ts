@@ -27,6 +27,15 @@ describe('lost message cross (#2544)', () => {
     expect(out.match(/data-lost="true"/g)).toHaveLength(2)
   })
 
+  it('keeps the open arrowhead for -) beside a cross', () => {
+    const ends = [
+      ...svg('A-)B: a\nA-xB: b').matchAll(
+        /marker-end="url\(#\w+-(seq-[\w-]+)\)"/g,
+      ),
+    ].map((m) => m[1])
+    expect(ends).toEqual(['seq-arrow-open', 'seq-lost'])
+  })
+
   it('carries isLost onto the positioned message', () => {
     const l = layout('A-xB: a\nA->>B: b')
     expect(l.messages.map((m) => m.isLost)).toEqual([true, undefined])
