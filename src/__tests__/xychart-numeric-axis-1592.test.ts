@@ -2,8 +2,9 @@
  * #1592: a numeric x-axis range is a linear axis, as in mermaid 12.2.0 (the pin
  * and npm latest when written): a label at every d3 tick of the range and each
  * series spread over [min, max] by value, not laid out as categories. The
- * ASCII renderer has its own layout and draws these as it did before, so its
- * snapshots pin that.
+ * ASCII renderer has its own layout: vertical charts label every tick too
+ * (#2553); horizontal ones still draw the data points only. Its snapshots pin
+ * that.
  */
 import { describe, expect, it } from 'vitest'
 import { layoutXYChart } from '@zombie-mermaid/svg-renderer'
@@ -99,5 +100,13 @@ describe('numeric x-axis range (#1592)', () => {
     expect(last.x + last.width / 2).toBeCloseTo(tick[10]!.x)
     expect(first.width).toBeGreaterThan(0)
     expect(first.width).toBeLessThan(tick[1]!.x - tick[0]!.x)
+  })
+
+  it('ASCII labels the single tick of a degenerate range (#2553)', () => {
+    const out = renderMermaidASCII(
+      'xychart-beta\n  x-axis 5 --> 5\n  bar [3, 4]',
+    )
+    const axisRow = out.split('\n').filter((l) => l.trim() === '5')
+    expect(axisRow).toHaveLength(1)
   })
 })
