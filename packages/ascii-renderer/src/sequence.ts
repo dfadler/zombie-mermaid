@@ -349,6 +349,32 @@ export function renderSequenceAscii(
     }
   }
 
+  // A block's wall must be as wide as its header and divider labels. Spread
+  // its lifelines apart to give it that width, so the wall stays centred on
+  // them (as in mermaid.js) instead of growing past the last one.
+  for (const block of diagram.blocks) {
+    let lo = Number.POSITIVE_INFINITY
+    let hi = -1
+    for (const msg of diagram.messages.slice(
+      block.startIndex,
+      block.endIndex + 1,
+    )) {
+      const f = actorIndexOf(msg.from)
+      const t = actorIndexOf(msg.to)
+      lo = Math.min(lo, f, t)
+      hi = Math.max(hi, f, t)
+    }
+    // The wall reaches BLOCK_WALL_MARGIN past each end lifeline; `- 2` is the
+    // margin the gap computation below adds.
+    const perGap =
+      Math.ceil(
+        (maxBlockLabelWidth(block) + 1 - 2 * BLOCK_WALL_MARGIN) / (hi - lo),
+      ) - 2
+    for (let g = lo; g < hi; g++) {
+      adjMaxWidth[g] = Math.max(adjMaxWidth[g]!, perGap)
+    }
+  }
+
   // Width (including border + padding, matching the box drawn in the
   // vertical-layout pass below) of a note anchored to an actor. Computed up
   // front, before lifeline x-positions are finalized, so `left`/`right`
@@ -1583,7 +1609,14 @@ export function renderSequenceAscii(
       const dLabel = block.dividers[d]!.label
       if (dLabel) {
         const dStr = `[${dLabel}]`
-        writeTextCells(bLeft + 2, dY, ` ${dStr} `, 'text', bRight)
+        const w = displayWidth(dStr) + 2
+        writeTextCells(
+          Math.max(bLeft + 1, bLeft + Math.floor((bRight - bLeft - w) / 2) + 1),
+          dY,
+          ` ${dStr} `,
+          'text',
+          bRight,
+        )
       }
     }
   }
