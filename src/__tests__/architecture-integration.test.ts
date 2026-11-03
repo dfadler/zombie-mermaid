@@ -182,6 +182,12 @@ describe('architecture-beta nested groups and junctions', () => {
     expect(group('a')).toContain('fill="#087ebf"')
     expect(group('a')).toContain('<rect x="17.5"')
     expect(group('b')).not.toContain('#087ebf')
+    // A name Mermaid has no icon for gets the `?` glyph, as a service does.
+    expect(
+      renderMermaidSVG(
+        'architecture-beta\n  group g(nope)[G]\n  service s[S] in g',
+      ),
+    ).toContain('>?</text>')
   })
 
   it('ASCII draws the inner group inside the outer one', () => {

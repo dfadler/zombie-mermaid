@@ -353,7 +353,7 @@ function renderGroup(
 
   // Architecture group icon, as in Mermaid's header (the glyph tile, scaled).
   const iconSize = headerHeight - 6
-  if (group.icon !== undefined && group.icon !== '') {
+  if (group.icon) {
     const glyph = ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH
     parts.push(
       f`  <g transform="translate(${group.x + 3} ${group.y + 3}) scale(${iconSize / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
