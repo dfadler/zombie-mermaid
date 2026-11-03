@@ -884,6 +884,7 @@ export interface PositionedMessage {
     bidirectional: boolean;
     // (undocumented)
     from: string;
+    isLost?: boolean;
     isSelf: boolean;
     // (undocumented)
     label: string;
@@ -1070,6 +1071,7 @@ export interface PositionedSequenceDiagram {
     // (undocumented)
     blocks: PositionedBlock[];
     boxes: PositionedParticipantBox[];
+    footerActors: PositionedActor[];
     // (undocumented)
     height: number;
     // (undocumented)
@@ -1078,6 +1080,10 @@ export interface PositionedSequenceDiagram {
     messages: PositionedMessage[];
     // (undocumented)
     notes: PositionedNote[];
+    title?: {
+        text: string;
+        y: number;
+    };
     // (undocumented)
     width: number;
 }
@@ -1157,6 +1163,7 @@ export interface SequenceDiagram {
     boxes: ParticipantBox[];
     messages: Message[];
     notes: Note[];
+    title?: string;
 }
 
 // @public
