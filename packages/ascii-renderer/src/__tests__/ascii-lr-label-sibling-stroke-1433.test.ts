@@ -60,7 +60,7 @@ describe.each([
       expect(run).toContain(' S1 ')
       expect(run).toContain(tail)
       expect(run.indexOf('e1')).toBeLessThan(run.indexOf(tail))
-      expect(out.split(head).length - 1).toBe(3) // S1, S2, S4 (S3 is entered from above)
+      expect(out.split(head).length - 1).toBe(4) // S1, S2, S3, S4 (compact layout, #2561)
     })
   },
 )

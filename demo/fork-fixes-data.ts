@@ -903,4 +903,18 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: `1` and `*` are both left of the line, members read `+ run(): void`. After: `1` is left and `*` right, members read `+run() : void`, as in mermaid 12.2.0.',
   },
+  {
+    id: 'ascii-lr-compact-labeled-fanout',
+    title:
+      'ASCII LR fan-out with a labelled edge drew three times as tall as mermaid',
+    symptom:
+      'A box with a labelled edge to its first child was moved into a slot of its own in a left-to-right chart, so the second-rank nodes sat about ten empty rows apart and one edge detoured around its neighbour.',
+    source:
+      'flowchart LR\n  S0 --> |e0| S1\n  S1 --> |e1| S2\n  S1 --> S3\n  S0 --> S4',
+    fixCommit: '88fda603',
+    pr: 2575,
+    render: 'ascii',
+    lookFor:
+      'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a compact staircase, S1/S4 in the first column and S2/S3 in the second, as mermaid draws it.',
+  },
 ]
