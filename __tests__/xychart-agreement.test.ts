@@ -184,6 +184,12 @@ describe('xychart agreement (#2451)', () => {
       },
     }
     expect(xyAgreement(official, curved).style).toBe(0.5)
+    expect(
+      parseOurXy(
+        '<path d="M1,2 C3,4 5,6 7,8" class="xychart-line xychart-color-0"/>',
+        false,
+      ).style.curved,
+    ).toBe(true)
     const svg = renderMermaidSVG(SRC)
     expect(parseOurXy(svg, false).style).toEqual({
       curved: false,
