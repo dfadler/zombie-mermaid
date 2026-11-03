@@ -38,6 +38,33 @@ describe('LR label clear of a sibling stem (#1433)', () => {
   })
 })
 
+// The label must not cover the run's arrowhead cell (found in the #1592
+// audit): `S1 -->|e1| S2` beside `S1 --> S3` printed `┬e1│ S2 │`, with no head
+// on S2. The gap is widened so the label sits on the run, as mermaid draws it.
+describe.each([
+  ['unicode', false, '►', '─►│ S2 │'],
+  ['ascii', true, '>', '->| S2 |'],
+])(
+  'LR label slid off a sibling stem keeps its arrowhead (%s)',
+  (_, useAscii, head, tail) => {
+    const src = `flowchart LR
+  S0 -->|e0| S1
+  S1 -->|e1| S2
+  S1 --> S3
+  S0 --> S4`
+
+    it('draws the head on S2 and still shows the label', () => {
+      const out = renderMermaidASCII(src, { colorMode: 'none', useAscii })
+      // The label is on the S1 -> S2 run itself, with the head after it.
+      const run = out.split('\n').find((r) => r.includes('e1'))!
+      expect(run).toContain(' S1 ')
+      expect(run).toContain(tail)
+      expect(run.indexOf('e1')).toBeLessThan(run.indexOf(tail))
+      expect(out.split(head).length - 1).toBe(3) // S1, S2, S4 (S3 is entered from above)
+    })
+  },
+)
+
 describe('slideClearOf (#1433)', () => {
   const at = (y: number, text = 'fifth') => [{ x: 30, y, text }]
 

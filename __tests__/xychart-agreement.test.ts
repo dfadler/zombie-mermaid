@@ -12,6 +12,7 @@ import {
   xyBreaches,
   type XyLayout,
 } from '../scripts/lib/xychart-agreement.ts'
+import { MERMAID_CANNOT_PARSE } from '../scripts/lib/xychart-oracle-cases.ts'
 import {
   scorecardMarkdown,
   summarize,
@@ -103,17 +104,17 @@ describe('xychart agreement (#2451)', () => {
     expect(a).toMatchObject({ labels: 1, ticks: 1, data: 1, points: 5 })
   })
 
-  it('reads horizontal bars of ours, including a zero-width bar', () => {
+  it('reads horizontal bars of ours, down to the smallest', () => {
     const ours = parseOurXy(
       renderMermaidSVG(`xychart-beta horizontal
     x-axis [A, B]
-    bar [30, 8]`),
+    bar [30, 10]`),
       true,
     )
     expect(ours.xLabels.map((l) => l.text)).toEqual(['A', 'B'])
     expect(ours.yLabels.length).toBeGreaterThan(1)
     expect(ours.points).toHaveLength(2)
-    expect(ours.points[1]!.val).toBe(ours.yLabels[0]!.pos)
+    expect(ours.points[1]!.val).toBeCloseTo(ours.yLabels[0]!.pos, 1)
   })
 
   it('reads line points, upright and horizontal', () => {
@@ -146,19 +147,20 @@ describe('xychart agreement (#2451)', () => {
 <g class="line-plot-0"><path fill="none"></path></g>`,
       false,
     )
-    expect(o).toEqual({ xLabels: [], yLabels: [], points: [] })
+    expect(o).toMatchObject({ xLabels: [], yLabels: [], points: [] })
     const ours = parseOurXy(
       `<text x="1" y="2">plain</text>
 <text x="1" y="2" text-anchor="start" class="xychart-label">legend</text>
 <path d="M1,2"></path><path class="xychart-line"></path>`,
       false,
     )
-    expect(ours).toEqual({ xLabels: [], yLabels: [], points: [] })
+    expect(ours).toMatchObject({ xLabels: [], yLabels: [], points: [] })
     expect(pathPoints('M')).toEqual([])
   })
 
   it('handles one-label axes, shorter label lists and empty summaries', () => {
     const one: XyLayout = {
+      style: { curved: false, circles: false, axisLine: true, ticks: true },
       xLabels: [{ text: 'A', pos: 5 }],
       yLabels: [{ text: '1', pos: 5 }],
       points: [{ cat: 5, val: 5 }],
@@ -168,6 +170,34 @@ describe('xychart agreement (#2451)', () => {
     expect(
       summarizeXy({}, { date: 'd', commit: 'c', mermaid: 'm' }),
     ).toMatchObject({ samples: 0, labels: null, ticks: null, data: null })
+  })
+
+  it('scores drawing style: curves, circles, axis line and ticks', () => {
+    const official = parseOfficialXy(OFFICIAL, false)
+    const straight: XyLayout = { ...official, style: official.style }
+    expect(xyAgreement(official, straight).style).toBe(1)
+    const curved: XyLayout = {
+      ...official,
+      style: {
+        ...official.style,
+        curved: true,
+        circles: !official.style.circles,
+      },
+    }
+    expect(xyAgreement(official, curved).style).toBe(0.5)
+    expect(
+      parseOurXy(
+        '<path d="M1,2 C3,4 5,6 7,8" class="xychart-line xychart-color-0"/>',
+        false,
+      ).style.curved,
+    ).toBe(true)
+    const svg = renderMermaidSVG(SRC)
+    expect(parseOurXy(svg, false).style).toEqual({
+      curved: false,
+      circles: false,
+      axisLine: true,
+      ticks: true,
+    })
   })
 
   it('measures bar paths and line paths', () => {
@@ -217,7 +247,12 @@ describe('xychart agreement (#2451)', () => {
     expect(xyAgreement({ ...o, points: o.points.slice(0, 2) }, o).data).toBe(
       0.4,
     )
-    const empty: XyLayout = { xLabels: [], yLabels: [], points: [] }
+    const empty: XyLayout = {
+      style: { curved: false, circles: false, axisLine: true, ticks: true },
+      xLabels: [],
+      yLabels: [],
+      points: [],
+    }
     expect(xyAgreement(empty, empty)).toMatchObject({
       labels: null,
       ticks: null,
@@ -319,5 +354,86 @@ describe('bar thickness (#2515)', () => {
     expect(share(12, false)).toBeGreaterThan(0.55)
     expect(share(12, false)).toBeLessThan(0.65)
     expect(share(5, true)).toBeGreaterThan(0.5)
+  })
+})
+
+describe('value-axis extent (#2567)', () => {
+  const axis = (padding: number): XyLayout => {
+    const ours = parseOurXy(renderMermaidSVG(SRC), false)
+    // Pull the axis line out to the ends of the label span, i.e. no padding.
+    const [lo, hi] = [ours.yLabels[0]!.pos, ours.yLabels.at(-1)!.pos]
+    return {
+      ...ours,
+      axes: { cat: ours.axes!.cat, val: [lo - padding, hi + padding] },
+    }
+  }
+
+  it('reads the axis lines of mermaid and of ours', () => {
+    const svg = `<g class="bottom-axis"><g class="axis-line"><path d="M 10,467 L 700,467"></path></g></g>
+<g class="left-axis"><g class="axisl-line"><path d="M 9,0 L 9,466"></path></g></g>`
+    expect(parseOfficialXy(svg, false).axes).toEqual({
+      cat: [10, 700],
+      val: [0, 466],
+    })
+    expect(parseOfficialXy(svg, true).axes).toBeUndefined()
+    const ours = parseOurXy(renderMermaidSVG(SRC), false)
+    expect(ours.axes!.val[1]).toBeGreaterThan(ours.yLabels.at(-1)!.pos)
+  })
+
+  it('scores a value axis padded like the original, and not one without padding', () => {
+    const official = axis(8)
+    const same = xyAgreement(official, axis(8))
+    expect(same.extent).toBe(1)
+    // The lowest and highest label sit on the line: no room for the smallest bar.
+    expect(xyAgreement(official, axis(0)).extent).toBe(0)
+  })
+
+  it('has no extent without axis lines', () => {
+    const noLines = { ...parseOfficialXy(OFFICIAL, false), axes: undefined }
+    expect(
+      xyAgreement(noLines, parseOurXy(renderMermaidSVG(SRC), false)).extent,
+    ).toBeNull()
+  })
+
+  it('compares labels without whitespace, as mermaid drops it', () => {
+    const ours = parseOurXy(
+      renderMermaidSVG('xychart-beta\n x-axis [Week 1, Week 2]\n bar [1, 2]'),
+      false,
+    )
+    const official = {
+      ...ours,
+      xLabels: ours.xLabels.map((l) => ({
+        ...l,
+        text: l.text.replace(' ', ''),
+      })),
+    }
+    expect(xyAgreement(official, ours).labels).toBe(1)
+  })
+})
+
+describe('extent edge cases (#2567)', () => {
+  const ours = () => parseOurXy(renderMermaidSVG(SRC), false)
+
+  it('counts a missing value label as a disagreement', () => {
+    const o = ours()
+    expect(
+      xyAgreement(o, { ...o, yLabels: o.yLabels.slice(0, 1) }).extent,
+    ).toBe(0.5)
+  })
+
+  it('has no extent when a chart has no value labels', () => {
+    const o = ours()
+    expect(
+      xyAgreement({ ...o, yLabels: [] }, { ...o, yLabels: [] }).extent,
+    ).toBeNull()
+  })
+
+  it('reads no axes from an official svg with only one axis line', () => {
+    const svg = `<g class="left-axis"><g class="axisl-line"><path d="M 9,0 L 9,466"></path></g></g>`
+    expect(parseOfficialXy(svg, false).axes).toBeUndefined()
+  })
+
+  it('lists API Response Time as a sample mermaid cannot parse', () => {
+    expect(MERMAID_CANNOT_PARSE.has('API Response Time')).toBe(true)
   })
 })

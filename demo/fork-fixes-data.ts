@@ -851,4 +851,43 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: one stroke leaves the diamond’s bottom vertex. After: no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
   },
+  {
+    id: 'flowchart-subgraph-node-style',
+    title: 'Flowchart subgraph style/class and node dash/radius were ignored',
+    symptom:
+      'A `style` on a subgraph id left the cluster default grey, and a node `style` dropped `stroke-dasharray` and `rx`/`ry`, while mermaid 12.3.0 applies all of them.',
+    source:
+      'flowchart TD\n  subgraph one [First Title]\n    A --> B\n  end\n  style one fill:#fdd,stroke:#f00,stroke-width:3px\n  style A stroke-dasharray:5 5\n  style B rx:10,ry:10',
+    fixCommit: 'c75bab50',
+    pr: 2570,
+    render: 'svg',
+    lookFor:
+      'Before: a grey cluster and two plain solid, square nodes. After: a pink cluster with a thick red border, a dashed A and a rounded B.',
+  },
+  {
+    id: 'ascii-label-canvas-edge',
+    title: 'ASCII edge label cut off at the canvas edge',
+    symptom:
+      'In a right-to-left state diagram, the label `e1` on an edge running down the outermost column printed as `1`, because its first character fell past the edge of the canvas.',
+    source:
+      'stateDiagram-v2\n direction RL\n S0-->S1\n S0-->S2\n S1-->S3\n S1-->S4 : e0\n S1-->S0\n S4-->S0 : e1\n S4-->S0',
+    fixCommit: '1e019fa1',
+    pr: 2572,
+    render: 'ascii',
+    lookFor:
+      'Before: the right edge reads `└1`. After: the canvas is one column wider and the label reads `└e1`.',
+  },
+  {
+    id: 'sequence-block-label-layout',
+    title: 'Sequence block labels were laid out unlike mermaid.js',
+    symptom:
+      'The `[label]` sat inside a wide tab, divider labels were left-aligned on the same row as their message label, and the frame stood about 47px outside the lifelines. In ASCII a long label pushed the wall far past the last lifeline.',
+    source:
+      'sequenceDiagram\n  participant App\n  participant Broker\n  critical Establish connection\n    App->>Broker: connect\n  option Network timeout\n    Broker-->>App: retry\n  option Credentials denied\n    Broker-->>App: abort\n  end',
+    fixCommit: '646631b9',
+    pr: 2568,
+    render: 'svg',
+    lookFor:
+      'Before: the tab swallows the label, `[Network timeout]` shares a row with `retry`, and the frame is far wider than the lifelines. After: the tab holds only `critical`, each divider label is centred on its own row above its message, and the frame hugs the lifelines, as in mermaid 12.2.0.',
+  },
 ]

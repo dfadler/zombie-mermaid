@@ -131,6 +131,13 @@ outlines, some distinct names share one outline here — for example
 `lin-doc` and `tag-doc` both draw a plain document. That is a rendering
 choice, not a parse failure.
 
+Known differences from Mermaid 12.3.0 (#2552): `cloud` has no cloud outline
+and draws a rectangle; `h-cyl` draws a vertical cylinder, not a horizontal
+one; `tag-rect`/`tag-proc` have no dog-ear; `sm-circ` draws a labelled
+rectangle, not a small unlabelled circle; and `fork`/`join` keep their label
+and a horizontal bar, where Mermaid draws an unlabelled bar perpendicular to
+the flow.
+
 #### Icons and images
 
 `icon:` and `img:` are parsed, and `form:` (`square`, `circle`, `rounded`)
@@ -863,14 +870,13 @@ For the original design proposal behind this feature, see [xychart-design.md](xy
 
 The chart renderer follows a clean, minimal design philosophy, originally inspired by Apple's design language and Craft's interface for `beautiful-mermaid`:
 
-- **Dot grid** — A subtle dot pattern fills the plot area instead of traditional solid grid lines
 - **Rounded bars** — All bar corners are rounded for a modern, polished look
-- **Smooth curves** — Line series use natural cubic spline interpolation, producing mathematically smooth curves through all data points (not straight segments or staircase steps)
-- **Floating labels** — No visible axis lines or tick marks; labels float freely for a clutter-free aesthetic
+- **Straight lines** — Line series join their points with straight segments, as mermaid does (mermaid has no option for curved lines). Points carry no markers unless the chart is interactive
+- **Axis lines and ticks** — Each axis has a line and tick marks, as in mermaid; there is no grid
 - **Drop-shadow lines** — Each line series has a subtle shadow beneath it for depth
 - **Monochromatic palette** — Series 0 uses the theme's accent color; additional series get darker/lighter shades of the same hue with subtle hue drift, adapting automatically to light or dark backgrounds
 - **Interactive tooltips** — When rendered with `interactivity: 'full'` (or the deprecated `interactive: true`), hovering over bars or data points shows value tooltips. Multi-line tooltips appear when multiple series share an x-position
-- **Sparse line dots** — Lines with 12 or fewer data points show data point dots by default for readability
+- **Sparse line hover targets** — When interactive, lines with 12 or fewer data points get a larger hover target on each dot; dots are shown only on hover
 - **Full theme support** — All 15 built-in themes (and custom themes) apply to charts. The accent color drives the entire series color palette
 - **Live theme switching** — Chart series colors are CSS custom properties (`--xychart-color-N`), so theme changes apply instantly without re-rendering
 

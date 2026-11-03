@@ -45,11 +45,11 @@ describe('labeled parallel edges side by side (#1455)', () => {
   it('ASCII LR: each label sits on its own stroke', () => {
     expect(ascii(lr)).toBe(
       [
-        '┌───┐     ┌───┐',
-        '│   ├─one►│   │',
-        '│ A │     │ B │',
-        '│   ├─two►│   │',
-        '└───┘     └───┘',
+        '┌───┐      ┌───┐',
+        '│   ├─one─►│   │',
+        '│ A │      │ B │',
+        '│   ├─two─►│   │',
+        '└───┘      └───┘',
       ].join('\n'),
     )
   })

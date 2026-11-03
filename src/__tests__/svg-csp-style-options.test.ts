@@ -227,7 +227,7 @@ describe('renderMermaidSVG – nonce', () => {
   it('reaches the second <style> (chart rules) on an xychart', () => {
     const { src } = FIXTURES['xychart']!
     const svg = renderMermaidSVG(src, { nonce: 'abc123' })
-    expect(svg).toContain('.xychart-grid')
+    expect(svg).toContain('.xychart-axis')
     expect(count(svg, '<style')).toBe(2)
     expect(count(svg, '<style nonce="abc123">')).toBe(2)
   })

@@ -149,6 +149,13 @@ export function renderSvg(
   for (const color of customStrokeColors) {
     parts.push(arrowMarkerDefsForColor(color))
   }
+  // Circle / cross terminators (`--o`, `--x`), emitted only when used.
+  const kinds = new Set<'circle' | 'cross'>()
+  for (const e of graph.edges) {
+    if (e.startMarker) kinds.add(e.startMarker)
+    if (e.endMarker) kinds.add(e.endMarker)
+  }
+  for (const kind of kinds) parts.push(terminatorMarker(kind))
   // An edge that crosses a subgraph's title text is not painted over the text
   // (#1239). The mask is only emitted when some edge does, so a diagram with
   // no such edge is unchanged.
@@ -279,6 +286,19 @@ function arrowMarkerPair(color: string, idSuffix: string): string {
   )
 }
 
+/**
+ * Circle (`--o`) and cross (`--x`) terminators: mermaid 12.2.0's
+ * `circleEnd-margin` / `crossEnd-margin` geometry, one marker for both ends.
+ */
+function terminatorMarker(kind: 'circle' | 'cross'): string {
+  const shape =
+    kind === 'circle'
+      ? '<circle cx="5" cy="5" r="5" fill="var(--_arrow)"/>'
+      : '<path d="M1 1L9 9M1 9L9 1" stroke="var(--_arrow)" stroke-width="1.7"/>'
+  const size = kind === 'circle' ? 14 : 12
+  return f`<marker id="${kind}" viewBox="0 0 10 10" refX="12" refY="5" markerUnits="userSpaceOnUse" markerWidth="${size}" markerHeight="${size}" orient="auto-start-reverse">${shape}</marker>`
+}
+
 /** Sanitize a color value into a collision-free SVG ID suffix.
  *  Non-alphanumeric chars are hex-encoded so distinct inputs never collapse
  *  (e.g. "var(--line-1)" → "var28--line2d129", "var(--line1)" → "var28--line129"). */
@@ -289,6 +309,12 @@ function markerSuffix(color: string): string {
 // ============================================================================
 // Group rendering (subgraph backgrounds)
 // ============================================================================
+
+/** ` stroke-dasharray="…"` from a style's `stroke-dasharray`, or '' when absent or not a number list (#2551). */
+function dashAttr(style: Record<string, string> | undefined): string {
+  const d = style?.['stroke-dasharray']
+  return d && /^[\d.\s,]+$/.test(d) ? f` stroke-dasharray="${d.trim()}"` : ''
+}
 
 function renderGroup(
   group: PositionedGroup,
@@ -319,16 +345,24 @@ function renderGroup(
     f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
   )
 
+  // `style` / `class` on the subgraph (#2550); the header band follows the fill
+  const gs = group.inlineStyle
+  const stroke = escapeAttr(gs?.stroke ?? 'var(--_node-stroke)')
+  const sw = escapeAttr(gs?.['stroke-width'] ?? String(STROKE_WIDTHS.outerBox))
+  const dash = dashAttr(gs)
+  const fill = escapeAttr(gs?.fill ?? 'var(--_group-fill)')
+  const hdrFill = escapeAttr(gs?.fill ?? 'var(--_group-hdr)')
+
   // Outer rectangle
   parts.push(
     f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
-      f`rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
   // Header band
   parts.push(
     f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${headerHeight}" ` +
-      f`rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`rx="0" ry="0" fill="${hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
   // Header label (supports multi-line via <br> tags)
@@ -339,7 +373,7 @@ function renderGroup(
         group.x + 12,
         group.y + headerHeight / 2,
         fontSizes.groupHeader,
-        f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+        f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
       ),
   )
 
@@ -404,9 +438,10 @@ function renderEdge(
   const suffix = edge.headColor ? f`-${markerSuffix(edge.headColor)}` : ''
   let markers = ''
   if (!invisible) {
-    if (edge.hasArrowEnd) markers += f` marker-end="url(#arrowhead${suffix})"`
+    if (edge.hasArrowEnd)
+      markers += f` marker-end="url(#${edge.endMarker ?? f`arrowhead${suffix}`})"`
     if (edge.hasArrowStart)
-      markers += f` marker-start="url(#arrowhead-start${suffix})"`
+      markers += f` marker-start="url(#${edge.startMarker ?? f`arrowhead-start${suffix}`})"`
   }
 
   // Semantic data attributes for edge identification and inspection:
@@ -653,6 +688,13 @@ function renderServiceTile(x: number, y: number, icon: string): string {
 }
 
 function renderNodeShape(node: PositionedNode): string {
+  const svg = renderNodeShapeBase(node)
+  // `style A stroke-dasharray:5 5`: stroke-dasharray inherits to every child shape.
+  const dash = node.icon === undefined ? dashAttr(node.inlineStyle) : ''
+  return dash && svg ? f`<g${dash}>${svg}</g>` : svg
+}
+
+function renderNodeShapeBase(node: PositionedNode): string {
   const { x, y, width, height, shape, inlineStyle } = node
   if (node.icon !== undefined) return renderServiceTile(x, y, node.icon)
 
@@ -664,6 +706,14 @@ function renderNodeShape(node: PositionedNode): string {
   const sw = escapeAttr(
     inlineStyle?.['stroke-width'] ?? String(STROKE_WIDTHS.innerBox),
   )
+  // `style B rx:10,ry:10` rounds a plain rectangle (mermaid applies it to the rect only)
+  const num = (v: string | undefined) =>
+    v && /^\d+(\.\d+)?(px)?$/.test(v) ? parseFloat(v) : 0
+  const rx = num(inlineStyle?.rx)
+  const radius = {
+    rx,
+    ry: inlineStyle?.ry === undefined ? rx : num(inlineStyle.ry),
+  }
 
   switch (shape) {
     case 'diamond':
@@ -757,7 +807,7 @@ function renderNodeShape(node: PositionedNode): string {
 
     case 'rectangle':
     default:
-      return renderRect(x, y, width, height, fill, stroke, sw)
+      return renderRect(x, y, width, height, fill, stroke, sw, radius)
   }
 }
 
@@ -771,10 +821,11 @@ function renderRect(
   fill: string,
   stroke: string,
   sw: string,
+  radius = { rx: 0, ry: 0 },
 ): string {
   return (
     f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
-    f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`rx="${radius.rx}" ry="${radius.ry}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 

@@ -20,6 +20,11 @@ import type {
 import { ARROW_HEAD } from '../styles.ts'
 import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
+import {
+  alignAcrossFlowMembers,
+  alignArchitectureRows,
+  centreArchitectureEnds,
+} from './architecture-rows.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
 import { straightenTinyJogs } from './jog-straightening.ts'
@@ -28,7 +33,11 @@ import {
   extractEdgePoints,
   extractEdgeLabelPosition,
 } from './elk-adapter-utils.ts'
-import { dropInvalidColors, resolveNodeStyle } from '@zombie-mermaid/core'
+import {
+  dropInvalidColors,
+  groupStyle,
+  resolveNodeStyle,
+} from '@zombie-mermaid/core'
 
 /** Margin routing info for cross-hierarchy edges */
 interface MarginInfo {
@@ -142,6 +151,8 @@ export function synthesizeSelfLoopEdges(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
+      startMarker: edge.startMarker,
+      endMarker: edge.endMarker,
     })
   }
 }
@@ -186,6 +197,8 @@ export function synthesizeAcrossFlowEdges(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
+      startMarker: edge.startMarker,
+      endMarker: edge.endMarker,
     })
   })
 }
@@ -250,6 +263,10 @@ export function elkToPositioned(
   // edge bends, but this looks bad. We fix it by aligning layers, then let
   // edge bundling and clipping recalculate edge paths from corrected positions.
   alignLayerNodes(nodes, edges, graph.direction)
+  const rowsAligned = alignArchitectureRows(graph, nodes, edges, groups)
+  const stackMoved = alignAcrossFlowMembers(graph, nodes, groups)
+  const rowsMoved = rowsAligned || stackMoved
+  centreArchitectureEnds(graph, nodes, edges)
 
   // Synthesize self-loop edges now that node positions are final. These
   // were excluded from the graph handed to ELK (see to-elk.ts) since ELK
@@ -258,6 +275,14 @@ export function elkToPositioned(
   // position.
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   synthesizeSelfLoopEdges(graph, nodeMap, edges)
+  // A grouped across-flow edge was laid out by ELK to order its ends; the
+  // straight run below replaces that route.
+  const acrossFlow = graph.edges.filter((e) => e.acrossFlow)
+  for (let i = edges.length - 1; i >= 0; i--) {
+    const e = edges[i]!
+    if (acrossFlow.some((a) => a.source === e.source && a.target === e.target))
+      edges.splice(i, 1)
+  }
   synthesizeAcrossFlowEdges(graph, nodeMap, edges)
 
   // Bundle fan-out/fan-in edge paths into shared trunks when mergeEdges is enabled
@@ -287,6 +312,13 @@ export function elkToPositioned(
   let height = elkResult.height ?? 600
   const arrowMargin = ARROW_HEAD.width
   const padding = DEFAULTS.padding
+  if (rowsMoved) {
+    // A shifted group can poke past the canvas ELK sized.
+    for (const b of flattenGroupBounds(groups)) {
+      width = Math.max(width, b.right + padding)
+      height = Math.max(height, b.bottom + padding)
+    }
+  }
 
   for (const edge of edges) {
     for (const p of edge.points) {
@@ -344,6 +376,7 @@ function extractNodesAndGroups(
         width,
         height,
         children: childGroups,
+        ...groupStyle(child.id, graph),
         ...(mermaidSg?.region ? { region: true } : {}),
       })
     } else {
@@ -588,6 +621,8 @@ function extractEdgesRecursively(
       headColor: resolveHeadColor(graph),
       id: originalEdge.id,
       animate: originalEdge.animate,
+      startMarker: originalEdge.startMarker,
+      endMarker: originalEdge.endMarker,
     })
   }
 }
