@@ -101,4 +101,12 @@ describe('numeric x-axis range (#1592)', () => {
     expect(first.width).toBeGreaterThan(0)
     expect(first.width).toBeLessThan(tick[1]!.x - tick[0]!.x)
   })
+
+  it('ASCII labels the single tick of a degenerate range (#2553)', () => {
+    const out = renderMermaidASCII(
+      'xychart-beta\n  x-axis 5 --> 5\n  bar [3, 4]',
+    )
+    const axisRow = out.split('\n').filter((l) => l.trim() === '5')
+    expect(axisRow).toHaveLength(1)
+  })
 })
