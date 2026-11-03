@@ -27,13 +27,8 @@
     "dist": 97389,
     "packages/core/dist": 212685,
     "packages/mermaid-parser/dist": 200559,
-<<<<<<< HEAD
-    "packages/ascii-renderer/dist": 451350,
-    "packages/svg-renderer/dist": 445650,
-=======
     "packages/svg-renderer/dist": 446680,
-    "packages/ascii-renderer/dist": 450700,
->>>>>>> origin/main
+    "packages/ascii-renderer/dist": 451350,
     "packages/mcp/dist": 41310
   }
 }
