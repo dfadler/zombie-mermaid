@@ -706,7 +706,9 @@ export function renderSequenceAscii(
       for (let b = 0; b < diagram.blocks.length; b++) {
         if (diagram.blocks[b]!.startIndex < m !== opened) continue
         for (let d = 0; d < diagram.blocks[b]!.dividers.length; d++) {
-          if (diagram.blocks[b]!.dividers[d]!.index === m) {
+          const div = diagram.blocks[b]!.dividers[d]!
+          // A trailing (empty) section's divider is placed at the close.
+          if (div.index === m && div.index <= diagram.blocks[b]!.endIndex) {
             curY += rowGap
             divYMap.set(`${b}:${d}`, curY)
             curY += minSeparatorGap
@@ -793,6 +795,14 @@ export function renderSequenceAscii(
     // Block closings after this message
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.endIndex === m) {
+        // Trailing empty else/and/option sections (#2555).
+        diagram.blocks[b]!.dividers.forEach((div, d) => {
+          if (div.index > m) {
+            curY += rowGap
+            divYMap.set(`${b}:${d}`, curY)
+            curY += minSeparatorGap
+          }
+        })
         curY += rowGap
         blockEndY.set(b, curY)
         curY += minSeparatorGap

@@ -268,14 +268,29 @@ function renderVertical(
   for (let c = plotLeft; c < plotLeft + bandW * dataCount; c++) {
     set(canvas, roles, xAxisRow, c, ch.hLine, 'border')
   }
-  const catCenters = catLabels.map((_, i) => bandCenter(i))
-  const catShown = thinLabels(catLabels, catCenters)
-  for (let i = 0; i < dataCount; i++) {
+  // A numeric x range is a linear axis (#2553): a tick at every nice value,
+  // placed by value across the points' span, like mermaid and the SVG.
+  const xr = chart.xAxis.categories ? undefined : chart.xAxis.range
+  const xTicks = xr ? niceTickValues(xr.min, xr.max) : undefined
+  const xLabels = xTicks ? formatTickLabels(xTicks) : catLabels
+  const first = bandCenter(0)
+  const catCenters = xTicks
+    ? xTicks.map(
+        (v) =>
+          first +
+          Math.round(
+            ((v - xr!.min) / (xr!.max - xr!.min || 1)) *
+              (bandCenter(dataCount - 1) - first),
+          ),
+      )
+    : catLabels.map((_, i) => bandCenter(i))
+  const catShown = thinLabels(xLabels, catCenters)
+  for (let i = 0; i < xLabels.length; i++) {
     const cx = catCenters[i]!
     set(canvas, roles, xAxisRow, cx, ch.xTick, 'border')
     if (!catShown[i]) continue
     // Label below
-    const label = catLabels[i]!
+    const label = xLabels[i]!
     const labelStart = cx - Math.floor(label.length / 2)
     writeText(canvas, roles, xLabelRow, Math.max(0, labelStart), label, 'text')
   }
