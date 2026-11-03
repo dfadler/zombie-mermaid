@@ -293,6 +293,14 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       continue
     }
 
+    // --- title ---
+    // `title Text` / `title: Text`; the last one wins, as in Mermaid.
+    const titleMatch = line.match(/^title(?:\s*:\s*|\s+)(\S.*)$/)
+    if (titleMatch) {
+      diagram.title = normalizeBrTags(titleMatch[1]!.trim())
+      continue
+    }
+
     // --- autonumber directive ---
     const autonumberMatch = line.match(
       /^autonumber(?:\s+(off|\d+(?:\.\d{1,2})?)(?:\s+(\d+(?:\.\d{1,2})?))?)?$/,

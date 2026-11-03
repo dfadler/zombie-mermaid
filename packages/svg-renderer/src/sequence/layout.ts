@@ -67,7 +67,12 @@ const SEQ = {
    * band) and below the lifeline bottoms.
    */
   boxPad: 10,
+  /** Room reserved above everything for a `title` line */
+  titleBand: 36,
 } as const
+
+/** Font size of the `title` line, shared with the renderer. */
+export const TITLE_FONT_SIZE = 18
 
 /**
  * Mermaid's self-message loop (`M x,y C x+60,y-10 x+60,y+30 x,y+20`): the
@@ -316,6 +321,7 @@ export function layoutSequenceDiagram(
       blocks: [],
       notes: [],
       boxes: [],
+      footerActors: [],
     }
   }
 
@@ -368,7 +374,10 @@ export function layoutSequenceDiagram(
     renderedBoxes.length === 0
       ? 0
       : seq.boxPad + (anyBoxLabel ? boxLabelHeight(fontSizes.edgeLabel) : 0)
-  const actorY = seq.padding + boxTopInset
+  // A `title` line sits above the boxes and actors (as in Mermaid).
+  const titleInset = diagram.title ? seq.titleBand : 0
+  const top = seq.padding + titleInset
+  const actorY = top + boxTopInset
   const actors: PositionedActor[] = diagram.actors.map((a, i) => ({
     id: a.id,
     label: a.label,
@@ -395,7 +404,7 @@ export function layoutSequenceDiagram(
     const positioned: PositionedParticipantBox = {
       label: box.label,
       x: left,
-      y: seq.padding,
+      y: top,
       width: right - left,
       height: 0,
     }
@@ -643,6 +652,7 @@ export function layoutSequenceDiagram(
       y: messageY,
       isSelf,
       bidirectional: msg.bidirectional ?? false,
+      ...(msg.isLost && { isLost: true }),
       seqNumber: msg.seqNumber,
     })
 
@@ -879,7 +889,19 @@ export function layoutSequenceDiagram(
   // can extend beyond the actor-based viewport. Compute the true bounding box
   // across all positioned elements, then shift everything right if anything
   // extends left of the desired padding margin and expand the width to fit.
-  const diagramBottom = messageY + seq.padding
+  // The lifelines end where the mirrored footer actors begin; a stick figure
+  // or typed icon keeps its label below the box, so the footer row grows by it.
+  const lifelineBottom = messageY
+  const footerLabelRoom = Math.max(
+    0,
+    ...diagram.actors.map((a, i) =>
+      a.destroyedAt === undefined && actorLabelBottoms[i]! > 0
+        ? actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE
+        : 0,
+    ),
+  )
+  const diagramBottom =
+    lifelineBottom + seq.actorHeight + footerLabelRoom + seq.padding
 
   // Find global X extents across actors, blocks, notes, and message labels
   let globalMinX: number = seq.padding // Actors already start at seq.padding
@@ -968,25 +990,39 @@ export function layoutSequenceDiagram(
           : 0),
       bottomY:
         destroyedAt === undefined
-          ? diagramBottom - seq.padding
+          ? lifelineBottom
           : (messages[destroyedAt]?.y ?? messageY),
     }
     if (destroyedAt !== undefined) lifeline.destroyed = true
     return lifeline
   })
 
-  // Box backgrounds run from the top padding to just under the lifeline
-  // bottoms (boxPad < padding, so this stays inside the diagram height).
+  // Mermaid mirrors every participant along the bottom of the lifelines; a
+  // destroyed one ended at its destroying message, so it has no footer.
+  const footerActors = actors
+    .filter((_, i) => diagram.actors[i]!.destroyedAt === undefined)
+    .map((a) => ({ ...a, y: lifelineBottom }))
+
+  // Box backgrounds run from the top padding to just under the footer
+  // actors (boxPad < padding, so this stays inside the diagram height).
   for (const b of boxes) {
     b.height = diagramBottom - seq.padding + seq.boxPad - b.y
   }
 
   // 9. Calculate diagram dimensions from the bounding box
+  const titleWidth = diagram.title
+    ? measureMultilineText(
+        diagram.title,
+        TITLE_FONT_SIZE,
+        FONT_WEIGHTS.groupHeader,
+      ).width +
+      2 * seq.padding
+    : 0
   const diagramWidth = globalMaxX + shiftX + seq.padding
   const diagramHeight = diagramBottom
 
   return {
-    width: Math.max(diagramWidth, 200),
+    width: Math.max(diagramWidth, titleWidth, 200),
     height: Math.max(diagramHeight, 100),
     actors,
     lifelines,
@@ -995,5 +1031,9 @@ export function layoutSequenceDiagram(
     blocks,
     notes,
     boxes,
+    footerActors,
+    ...(diagram.title && {
+      title: { text: diagram.title, y: seq.padding + TITLE_FONT_SIZE / 2 },
+    }),
   }
 }
