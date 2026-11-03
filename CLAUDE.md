@@ -10,7 +10,7 @@ After a change, run `pnpm run verify` (typecheck in parallel, lint/format on cha
 `vitest run --changed origin/main`) instead of separate full-repo typecheck/oxlint/oxfmt/coverage
 runs. For a single source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`; for a test file, `pnpm exec vitest run -c config/vitest.config.ts <test-file>`.
 Path-to-suite map: `packages/ascii-renderer/**` -> its `__tests__` plus
-`pnpm exec playwright test -g ascii-samples`. Reserve `pnpm run verify --full` (CI parity) for
+`pnpm exec playwright test -g ascii-samples`. Before pushing a PR that may change the public API or dist size, run `pnpm run verify --ci-gates` (build + API-report + bundle-size, ~20s). Reserve `pnpm run verify --full` (CI parity) for
 the end. `pnpm run doctor` diagnoses a broken local toolchain.
 
 ## Worktree cleanup

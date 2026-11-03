@@ -14,7 +14,7 @@ req() { echo "MISSING  $1"; bad=1; }
 opt() { echo "optional $1 (not found)"; }
 
 major=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)
-if [ "$major" -ge 24 ]; then ok "node $(node -v)"; else req "node >=24 (found $(node -v 2>/dev/null || echo none))"; fi
+if [ "$major" -ge 24 ]; then ok "node $(node -v)"; else req "node >=24 (found $(node -v 2>/dev/null || echo none)); see .nvmrc. CLI dispatch tests (src/__tests__/cli-*) fail on older Node"; fi
 if command -v pnpm >/dev/null; then ok "pnpm $(pnpm -v)"; else req "pnpm"; fi
 
 if ls "${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright}"/chromium* >/dev/null 2>&1 ||
