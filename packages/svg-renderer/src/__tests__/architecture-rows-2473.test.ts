@@ -117,3 +117,41 @@ describe('architecture row alignment', () => {
     }
   })
 })
+
+// `fan:B --> T:replica` puts `replica` under `fan`, and a service label stays
+// inside its group (#2473).
+describe('architecture sides and labels', () => {
+  const icons =
+    'group cloud(cloud)[Cloud]\ngroup data(database)[Data Tier] in cloud\n' +
+    'service client(internet)[Client]\nservice db(database)[Primary DB] in data\n' +
+    'service replica(disk)[Replica] in data\njunction fan in cloud\n' +
+    'client:R --> L:fan\nfan:R --> L:db\nfan:B --> T:replica'
+
+  it('centres the grouped end under the junction and joins them straight down', () => {
+    const g = lay(icons)
+    expect(mid(g, 'replica', 'x')).toBeCloseTo(mid(g, 'fan', 'x'), 0)
+    expect(at(g, 'replica').y).toBeGreaterThan(at(g, 'fan').y)
+    const edge = g.edges.find((e) => e.target === 'replica')!
+    expect(edge.points).toHaveLength(2)
+    expect(edge.points[0]!.x).toBeCloseTo(edge.points[1]!.x, 0)
+    expect(edge.points[1]!.y).toBeCloseTo(at(g, 'replica').y, 0)
+  })
+
+  it('grows the group to take the moved member and keeps it inside its parent', () => {
+    const g = lay(icons)
+    const data = group(g, 'data')
+    const cloud = group(g, 'cloud')
+    const r = at(g, 'replica')
+    expect(data.x).toBeLessThanOrEqual(r.x - 16)
+    expect(data.x + data.width).toBeGreaterThanOrEqual(r.x + r.width + 16)
+    expect(cloud.x).toBeLessThanOrEqual(data.x)
+    expect(cloud.x + cloud.width).toBeGreaterThanOrEqual(data.x + data.width)
+  })
+
+  it('leaves room under an icon tile for its label inside the group', () => {
+    const g = lay(icons)
+    const data = group(g, 'data')
+    const r = at(g, 'replica')
+    expect(data.y + data.height - (r.y + r.height)).toBeGreaterThanOrEqual(26)
+  })
+})

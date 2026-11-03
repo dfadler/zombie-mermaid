@@ -143,3 +143,149 @@ export function alignArchitectureRows(
   }
   return moved
 }
+
+/** Room the layout leaves between a group's edge and its members along the flow. */
+const FLOW_PAD = 16
+
+/**
+ * `fan:B --> T:replica` stacks `replica` under `fan`, but ELK holds `replica`
+ * to its group's grid layer, beside the group's other members. For an
+ * `acrossFlow` edge whose end sits in a group that does not hold the other
+ * end, slide that end along the flow until it is centred under (or over) the
+ * other, and grow its groups to take it in (Mermaid does the same, so the
+ * group then spans the junction). Skipped when it has other edges or the grown
+ * group would land on a neighbour. Returns whether anything moved.
+ */
+export function alignAcrossFlowMembers(
+  graph: MermaidGraph,
+  nodes: PositionedNode[],
+  groups: PositionedGroup[],
+): boolean {
+  const horizontal = graph.direction === 'LR' || graph.direction === 'RL'
+  const [f, fsize, k, size] = horizontal
+    ? (['x', 'width', 'y', 'height'] as const)
+    : (['y', 'height', 'x', 'width'] as const)
+  const nodeById = new Map(nodes.map((n) => [n.id, n]))
+  const groupById = new Map<string, PositionedGroup>()
+  const indexGroups = (list: PositionedGroup[]): void => {
+    for (const g of list) {
+      groupById.set(g.id, g)
+      indexGroups(g.children)
+    }
+  }
+  indexGroups(groups)
+  // Group ids holding each node and each group, innermost first.
+  const chains = new Map<string, string[]>()
+  const walk = (sg: MermaidSubgraph, above: string[]): void => {
+    const chain = [sg.id, ...above]
+    chains.set(sg.id, above)
+    for (const id of sg.nodeIds) chains.set(id, chain)
+    sg.children.forEach((c) => walk(c, chain))
+  }
+  graph.subgraphs.forEach((sg) => walk(sg, []))
+  const centre = (n: PositionedNode): number => n[f] + n[fsize] / 2
+  const clash = (a: PositionedNode | PositionedGroup, b: typeof a): boolean =>
+    a[f] < b[f] + b[fsize] &&
+    b[f] < a[f] + a[fsize] &&
+    a[k] < b[k] + b[size] &&
+    b[k] < a[k] + a[size]
+
+  let moved = false
+  for (const e of graph.edges) {
+    const a = nodeById.get(e.source)
+    const b = nodeById.get(e.target)
+    if (!e.acrossFlow || !a || !b) continue
+    const ca = chains.get(a.id) ?? []
+    const cb = chains.get(b.id) ?? []
+    // Move the end whose innermost group does not hold the other end.
+    const [m, anchor, own, other] =
+      cb[0] !== undefined && !ca.includes(cb[0])
+        ? ([b, a, cb, ca] as const)
+        : ca[0] !== undefined && !cb.includes(ca[0])
+          ? ([a, b, ca, cb] as const)
+          : []
+    if (!m || !anchor || !own || !other) continue
+    const d = centre(anchor) - centre(m)
+    if (Math.abs(d) <= MIN_SHIFT) continue
+    if (
+      graph.edges.some(
+        (x) => x !== e && (x.source === m.id || x.target === m.id),
+      )
+    )
+      continue
+
+    // The groups that will grow past the anchor; the outermost must stay clear.
+    const grown = own.filter((id) => !other.includes(id))
+    const top = groupById.get(grown[grown.length - 1]!)
+    if (!top) continue
+    const lo = Math.min(top[f], m[f] + d - FLOW_PAD)
+    const hi = Math.max(top[f] + top[fsize], m[f] + d + m[fsize] + FLOW_PAD)
+    const next = { ...top, [f]: lo, [fsize]: hi - lo }
+    const inside = (id: string): boolean =>
+      (chains.get(id) ?? []).includes(top.id)
+    const blocked =
+      nodes.some((n) => n !== anchor && !inside(n.id) && clash(next, n)) ||
+      [...groupById.values()].some(
+        (g) =>
+          g !== top &&
+          !inside(g.id) &&
+          !(chains.get(top.id) ?? []).includes(g.id) &&
+          clash(next, g),
+      )
+    if (blocked) continue
+
+    m[f] += d
+    for (const id of own) {
+      const g = groupById.get(id)
+      if (!g) continue
+      const glo = Math.min(g[f], m[f] - FLOW_PAD)
+      const ghi = Math.max(g[f] + g[fsize], m[f] + m[fsize] + FLOW_PAD)
+      g[f] = glo
+      g[fsize] = ghi - glo
+    }
+    moved = true
+  }
+  return moved
+}
+
+/** Largest port offset, in px, that is spreading rather than a deliberate lane. */
+const MAX_PORT_SPREAD = 8
+
+/**
+ * ELK spreads a node's ports across its side, so an edge leaves a junction a
+ * few px off its centre and jogs back to its level target. Mermaid draws
+ * architecture edges from the middle of each side, so pull the end back to the
+ * node's centre line when the first leg runs along the flow.
+ */
+export function centreArchitectureEnds(
+  graph: MermaidGraph,
+  nodes: PositionedNode[],
+  edges: PositionedEdge[],
+): void {
+  const horizontal = graph.direction === 'LR' || graph.direction === 'RL'
+  const [k, size] = horizontal
+    ? (['y', 'height'] as const)
+    : (['x', 'width'] as const)
+  const nodeById = new Map(nodes.map((n) => [n.id, n]))
+  for (const e of edges) {
+    const pts = e.points
+    for (const [id, end, step] of [
+      [e.source, 0, 1],
+      [e.target, pts.length - 1, -1],
+    ] as const) {
+      const n = nodeById.get(id)
+      const a = pts[end]
+      const b = pts[end + step]
+      if (!n || !a || !b || graph.nodes.get(id)?.gridOrder === undefined)
+        continue
+      const mid = n[k] + n[size] / 2
+      const off = Math.abs(a[k] - mid)
+      if (off < MIN_SHIFT || off > MAX_PORT_SPREAD || b[k] !== a[k]) continue
+      a[k] = b[k] = mid
+    }
+    e.points = pts.filter((p, i) => {
+      const q = pts[i - 1]
+      return !q || q.x !== p.x || q.y !== p.y
+    })
+  }
+}

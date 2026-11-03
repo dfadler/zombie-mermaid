@@ -111,6 +111,12 @@ export const SUBGRAPH_PADDING = { top: 44, left: 16, bottom: 16, right: 16 }
 export const REGION_PADDING = { top: 16, left: 16, bottom: 16, right: 16 }
 
 /**
+ * An architecture service label hangs below its 80px tile (about 20px), so a
+ * group's bottom edge needs more than the usual 16px to keep it inside (#2473).
+ */
+const ARCHITECTURE_GROUP_PADDING = { ...SUBGRAPH_PADDING, bottom: 30 }
+
+/**
  * Whether three or more labelled edges join the same source and target. With
  * the 12px edge spacing the target sat under the source; mermaid 12.1.0 and
  * 12.2.0 offset it by about 25px. Raising `elk.spacing.edgeEdge` to 40px
@@ -404,10 +410,12 @@ export function mermaidToElk(
 
   for (let i = 0; i < graph.edges.length; i++) {
     const edge = graph.edges[i]!
-    // Drawn straight between its two ends afterwards (`stackedEdges`).
-    if (edge.acrossFlow) continue
     const sourceSubgraph = nodeToSubgraph.get(edge.source)
     const targetSubgraph = nodeToSubgraph.get(edge.target)
+    // Drawn straight between its two ends afterwards (`synthesizeAcrossFlowEdges`).
+    // An end inside a group stays in the layout: it keeps that end on the
+    // right side of its neighbours; the route is replaced afterwards.
+    if (edge.acrossFlow && !sourceSubgraph && !targetSubgraph) continue
 
     if (sourceSubgraph && sourceSubgraph === targetSubgraph) {
       // Internal edge: both endpoints in same innermost subgraph
@@ -794,7 +802,11 @@ function subgraphToElk(
     nodeSpacing: opts.nodeSpacing,
     layerSpacing: opts.layerSpacing,
     // A region has no title bar to leave room for.
-    padding: sg.region ? REGION_PADDING : SUBGRAPH_PADDING,
+    padding: sg.region
+      ? REGION_PADDING
+      : hasGridLayers(graph)
+        ? ARCHITECTURE_GROUP_PADDING
+        : SUBGRAPH_PADDING,
   })
 
   // Ports, built before children/edges since they don't depend on them.
