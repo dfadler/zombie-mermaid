@@ -292,6 +292,8 @@ export interface PositionedGroup {
   width: number
   height: number
   children: PositionedGroup[]
+  /** `style` / `class` on the subgraph id: fill, stroke, stroke-width, stroke-dasharray, color */
+  inlineStyle?: Record<string, string>
   /** Concurrency region: draw dashed and untitled (see `MermaidSubgraph.region`) */
   region?: boolean
   /** Architecture group icon name; see `MermaidSubgraph.icon`. */

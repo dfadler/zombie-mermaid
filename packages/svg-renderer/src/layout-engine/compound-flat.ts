@@ -43,7 +43,7 @@ import type {
   PositionedGroup,
   PositionedNode,
 } from '@zombie-mermaid/core'
-import { measureMultilineText } from '@zombie-mermaid/core'
+import { groupStyle, measureMultilineText } from '@zombie-mermaid/core'
 import type { FontSizes } from '../styles.ts'
 import { ARROW_HEAD, FONT_WEIGHTS } from '../styles.ts'
 import { DEFAULTS } from './constants.ts'
@@ -404,6 +404,7 @@ const withinSpan = (layers: readonly number[], l: number): boolean =>
 
 /** The box of every subgraph, nested, drawn around the real nodes in `nodes`. */
 function buildGroups(
+  graph: MermaidGraph,
   subgraphs: MermaidSubgraph[],
   nodes: ReadonlyMap<string, PositionedNode>,
   fontSizes: FontSizes,
@@ -440,6 +441,7 @@ function buildGroups(
       width: Math.max(x1 - x0, titleWidth),
       height: y1 - y0,
       children,
+      ...groupStyle(sg.id, graph),
       ...(sg.region ? { region: true } : {}),
       ...(sg.icon ? { icon: sg.icon } : {}),
     }
@@ -669,7 +671,7 @@ export function layoutCompoundFlat(
       const real = new Map(
         laidOut.nodes.filter((n) => !isSpine(n.id)).map((n) => [n.id, n]),
       )
-      let groups = buildGroups(graph.subgraphs, real, fontSizes)
+      let groups = buildGroups(graph, graph.subgraphs, real, fontSizes)
       let found = overlaps(
         groups,
         graph.subgraphs,
@@ -688,7 +690,7 @@ export function layoutCompoundFlat(
             b.amount > a.amount ? b : a,
           )
           openRoom(request, [...real.values()], laidOut.edges)
-          groups = buildGroups(graph.subgraphs, real, fontSizes)
+          groups = buildGroups(graph, graph.subgraphs, real, fontSizes)
           found = overlaps(
             groups,
             graph.subgraphs,

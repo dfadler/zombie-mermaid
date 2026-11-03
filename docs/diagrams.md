@@ -131,6 +131,13 @@ outlines, some distinct names share one outline here — for example
 `lin-doc` and `tag-doc` both draw a plain document. That is a rendering
 choice, not a parse failure.
 
+Known differences from Mermaid 12.3.0 (#2552): `cloud` has no cloud outline
+and draws a rectangle; `h-cyl` draws a vertical cylinder, not a horizontal
+one; `tag-rect`/`tag-proc` have no dog-ear; `sm-circ` draws a labelled
+rectangle, not a small unlabelled circle; and `fork`/`join` keep their label
+and a horizontal bar, where Mermaid draws an unlabelled bar perpendicular to
+the flow.
+
 #### Icons and images
 
 `icon:` and `img:` are parsed, and `form:` (`square`, `circle`, `rounded`)

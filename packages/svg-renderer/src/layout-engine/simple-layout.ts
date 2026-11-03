@@ -23,7 +23,11 @@ import type {
   PositionedNode,
   Point,
 } from '@zombie-mermaid/core'
-import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
+import {
+  groupStyle,
+  measureMultilineText,
+  resolveNodeStyle,
+} from '@zombie-mermaid/core'
 import { ARROW_HEAD, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
@@ -333,6 +337,7 @@ export function layoutSimple(
           width: 0,
           height: 0,
           children,
+          ...groupStyle(id, graph),
           ...(sg.region ? { region: true } : {}),
           ...(sg.icon ? { icon: sg.icon } : {}),
         })

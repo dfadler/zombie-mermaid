@@ -866,6 +866,19 @@ export const forkFixes: ForkFix[] = [
       'Before: a gray disc on the Gateway edge and a bare "Cloud" title. After: the edges meet in a single join and the cloud icon sits left of the title.',
   },
   {
+    id: 'flowchart-subgraph-node-style',
+    title: 'Flowchart subgraph style/class and node dash/radius were ignored',
+    symptom:
+      'A `style` on a subgraph id left the cluster default grey, and a node `style` dropped `stroke-dasharray` and `rx`/`ry`, while mermaid 12.3.0 applies all of them.',
+    source:
+      'flowchart TD\n  subgraph one [First Title]\n    A --> B\n  end\n  style one fill:#fdd,stroke:#f00,stroke-width:3px\n  style A stroke-dasharray:5 5\n  style B rx:10,ry:10',
+    fixCommit: 'c75bab50',
+    pr: 2570,
+    render: 'svg',
+    lookFor:
+      'Before: a grey cluster and two plain solid, square nodes. After: a pink cluster with a thick red border, a dashed A and a rounded B.',
+  },
+  {
     id: 'ascii-label-canvas-edge',
     title: 'ASCII edge label cut off at the canvas edge',
     symptom:
