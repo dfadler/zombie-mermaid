@@ -207,12 +207,14 @@ function renderEntityBox(
       ),
   )
 
-  // Divider
+  // Divider (header-only box when there are no attributes, like mermaid, #2547)
   const attrTop = y + headerHeight
-  parts.push(
-    f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
-      f`stroke="${stroke}" stroke-width="${innerWidth}" />`,
-  )
+  if (attributes.length > 0) {
+    parts.push(
+      f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
+        f`stroke="${stroke}" stroke-width="${innerWidth}" />`,
+    )
+  }
 
   // Attribute rows
   for (let i = 0; i < attributes.length; i++) {
@@ -221,14 +223,6 @@ function renderEntityBox(
     parts.push(
       '  ' +
         renderAttribute(attr, x, rowY, width, textColor).replace(/\n/g, '\n  '),
-    )
-  }
-
-  // Empty row placeholder when no attributes
-  if (attributes.length === 0) {
-    parts.push(
-      f`  <text x="${x + width / 2}" y="${attrTop + rowHeight / 2}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
-        f`font-size="${ER_FONT.attrSize}" fill="${textColor ?? 'var(--_text-muted)'}" font-style="italic">(no attributes)</text>`,
     )
   }
 

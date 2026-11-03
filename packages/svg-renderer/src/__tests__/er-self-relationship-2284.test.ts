@@ -35,7 +35,7 @@ describe('ER self-relationship (#2284)', () => {
   })
 
   it('draws both markers', () => {
-    expect((svg.match(/<line /g) ?? []).length).toBe(6)
+    expect((svg.match(/<line /g) ?? []).length).toBe(5)
     expect((svg.match(/<circle /g) ?? []).length).toBe(1)
   })
 
