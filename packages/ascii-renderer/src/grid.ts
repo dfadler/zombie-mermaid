@@ -974,12 +974,11 @@ export function offsetDrawingForSubgraphs(graph: AsciiGraph): void {
   // the canvas (`e1` drawn as `1`); shift everything right to make room.
   for (const edge of graph.edges) {
     if (edge.text === '' || edge.path.length < 2) continue
-    for (const { x } of withPortShifts(
-      graph,
-      () => edgeLabelPlacement(graph, edge) ?? [],
-    )) {
-      minX = Math.min(minX, x)
-    }
+    withPortShifts(graph, () => edgeLabelPlacement(graph, edge))?.forEach(
+      ({ x }) => {
+        minX = Math.min(minX, x)
+      },
+    )
   }
 
   const offsetX = -minX
