@@ -673,7 +673,7 @@ function renderRelationshipLabels(
         p.x + offset.x,
         p.y + offset.y,
         fontSizes.edgeLabel,
-        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="${offset.anchor}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }
@@ -689,7 +689,7 @@ function renderRelationshipLabels(
         p.x + offset.x,
         p.y + offset.y,
         fontSizes.edgeLabel,
-        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="${offset.anchor}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }
@@ -747,7 +747,7 @@ function cardinalityOffset(
   from: { x: number; y: number },
   inward: { x: number; y: number },
   side: 'start' | 'end',
-): { x: number; y: number } {
+): { x: number; y: number; anchor: 'start' | 'middle' | 'end' } {
   const dx = inward.x - from.x
   const dy = inward.y - from.y
   const len = Math.max(Math.hypot(dx, dy), 1e-6)
@@ -759,10 +759,23 @@ function cardinalityOffset(
   // Right of travel in screen coordinates (y down) is (-ty, tx); left is the opposite
   const px = (side === 'start' ? -ty : ty) * CARDINALITY_OFFSET
   const py = (side === 'start' ? tx : -tx) * CARDINALITY_OFFSET
-  return { x: px + ux * CARDINALITY_OFFSET, y: py + uy * CARDINALITY_OFFSET }
+  const y = py + uy * CARDINALITY_OFFSET
+  // A label beside a mostly vertical edge is anchored at its near edge, so it
+  // starts (right side) or ends (left side) clear of the line however long it is.
+  if (Math.abs(px) > Math.abs(py)) {
+    const dir = Math.sign(px)
+    return {
+      x: dir * CARDINALITY_GAP + ux * CARDINALITY_OFFSET,
+      y,
+      anchor: dir > 0 ? 'start' : 'end',
+    }
+  }
+  return { x: px + ux * CARDINALITY_OFFSET, y, anchor: 'middle' }
 }
 
 const CARDINALITY_OFFSET = 12
+/** Clear space between the edge and the near side of a cardinality label */
+const CARDINALITY_GAP = 5
 
 // ============================================================================
 // Utilities
