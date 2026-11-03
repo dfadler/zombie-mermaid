@@ -38,7 +38,20 @@ describe('critical block option dividers', () => {
     for (const label of ['Timeout', 'Denied']) {
       expect(svg).toContain(`[${label}]`)
       expect(ascii).toContain(`[${label}]`)
+      expect(ascii).toMatch(new RegExp(`├╌ \\[${label}\\]`))
     }
+    // One dashed horizontal separator per divider (y1 === y2), none for lifelines.
+    const separators = svg.match(
+      /<line x1="[^"]+" y1="([^"]+)" x2="[^"]+" y2="\1" stroke="var\(--_line\)" stroke-width="0.75" stroke-dasharray="6 4"/g,
+    )
+    expect(separators).toHaveLength(2)
+  })
+
+  it('does not treat a participant named like a keyword as a divider', () => {
+    const [block] = parse(
+      'critical C\n  optionService->>andy: q\n  option O\n  andy->>optionService: r\nend',
+    ).blocks
+    expect(block!.dividers).toEqual([{ index: 1, label: 'O' }])
   })
 
   it('leaves `option` outside critical alone', () => {
