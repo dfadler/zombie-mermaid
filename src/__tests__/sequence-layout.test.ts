@@ -8,7 +8,12 @@
 import { describe, it, expect } from 'vitest'
 import { parseSequenceDiagram } from '@zombie-mermaid/mermaid-parser'
 import { layoutSequenceDiagram } from '@zombie-mermaid/svg-renderer'
-import { splitStatements } from '@zombie-mermaid/core'
+import {
+  LINE_HEIGHT_RATIO,
+  measureMultilineText,
+  splitStatements,
+} from '@zombie-mermaid/core'
+import { blockTabWidth } from '../../packages/svg-renderer/src/sequence/layout.ts'
 
 /** Helper: parse and layout a sequence diagram from source lines */
 function layout(source: string) {
@@ -477,9 +482,9 @@ describe('sequence layout – render clearance', () => {
     expect(baselineClearance).toBeGreaterThanOrEqual(14)
   })
 
-  it('short divider labels keep the default offset (no unnecessary extra space)', () => {
-    // "No" is short enough that "[No]" doesn't reach the centered message
-    // label — no overlap, so the default offset (28) is used.
+  it('a divider label above a labelled message gets the taller offset', () => {
+    // Divider labels are centred, so they always share a column with the
+    // centred message label under them and sit on their own row above it.
     const result = layout(`sequenceDiagram
       A->>B: Login
       alt Yes
@@ -492,9 +497,9 @@ describe('sequence layout – render clearance', () => {
     const divider = block.dividers[0]!
     const msgAfter = result.messages[2]!
 
-    // Default offset 28: baseline clearance = (msg.y - 6) - (msg.y - 28 + 14) = 8
+    // Offset 40: baseline clearance = (msg.y - 6) - (msg.y - 40 + 14) = 20
     const baselineClearance = msgAfter.y - 6 - (divider.y + 14)
-    expect(baselineClearance).toBe(8)
+    expect(baselineClearance).toBe(20)
   })
 })
 
@@ -1099,5 +1104,74 @@ describe('sequence layout – box...end', () => {
       end
       A->>A: hi`)
     expect(result.boxes[0]!.color).toBeUndefined()
+  })
+})
+
+describe('sequence layout – block frame bounds', () => {
+  const FONT = 11
+
+  it('an unlabelled block on one lifeline is wide enough for its tab', () => {
+    const [block] = layout(`sequenceDiagram
+      participant A
+      critical
+        A->>A: x
+      end`).blocks
+    expect(block!.width).toBeGreaterThanOrEqual(
+      blockTabWidth({ type: 'critical' }, FONT),
+    )
+  })
+
+  it('a long self-message label stays inside the frame on both sides', () => {
+    const result = layout(`sequenceDiagram
+      participant A
+      participant B
+      opt
+        A->>A: a self-message label much wider than the frame padding
+        A->>B: x
+      end`)
+    const [block] = result.blocks
+    const self = result.messages[0]!
+    const cx = (self.x1 + self.x2) / 2
+    const half = measureMultilineText(self.label, FONT, 400).width / 2
+    expect(block!.x).toBeLessThanOrEqual(cx - half)
+    expect(block!.x + block!.width).toBeGreaterThanOrEqual(cx + half)
+  })
+
+  it('nested activation bars stay inside the frame', () => {
+    const result = layout(`sequenceDiagram
+      participant A
+      participant B
+      opt
+        A->>+B: 1
+        A->>+B: 2
+        A->>+B: 3
+        A->>+B: 4
+        B-->>-A: r
+        B-->>-A: r
+        B-->>-A: r
+        B-->>-A: r
+      end`)
+    const [block] = result.blocks
+    expect(Math.max(...result.activations.map((a) => a.depth))).toBeGreaterThan(
+      2,
+    )
+    for (const a of result.activations) {
+      expect(a.x + a.width).toBeLessThanOrEqual(block!.x + block!.width)
+    }
+  })
+
+  it('a three-line divider label keeps its last line clear of the message label', () => {
+    const result = layout(`sequenceDiagram
+      A->>B: first
+      alt Yes
+        B->>A: second
+      else l1<br/>l2<br/>l3
+        B->>A: third
+      end`)
+    const divider = result.blocks[0]!.dividers[0]!
+    const msg = result.messages[2]!
+    const lastLine = divider.y + 14 + 2 * FONT * LINE_HEIGHT_RATIO
+    // Same 20px baseline clearance a single-line divider label gets.
+    expect(msg.y - 6 - lastLine).toBeGreaterThanOrEqual(20)
   })
 })
