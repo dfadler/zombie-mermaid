@@ -38,7 +38,7 @@ describe('critical block option dividers', () => {
     for (const label of ['Timeout', 'Denied']) {
       expect(svg).toContain(`[${label}]`)
       expect(ascii).toContain(`[${label}]`)
-      expect(ascii).toMatch(new RegExp(`├╌ \\[${label}\\]`))
+      expect(ascii).toMatch(new RegExp(`├╌+ \\[${label}\\] ╌+┤`))
     }
     // One dashed horizontal separator per divider (y1 === y2), none for lifelines.
     const separators = svg.match(

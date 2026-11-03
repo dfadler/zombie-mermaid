@@ -341,15 +341,6 @@ function collectLabelBoxes(
       y1: cy + m.height / 2,
     })
   }
-  const startAnchored = (text: string, x: number, cy: number) => {
-    const m = measure(text)
-    boxes.push({
-      x0: x,
-      x1: x + m.width,
-      y0: cy - m.height / 2,
-      y1: cy + m.height / 2,
-    })
-  }
 
   for (const msg of diagram.messages) {
     // A self-message's label is centred on its own lifeline (x1 === x2), and
@@ -360,10 +351,9 @@ function collectLabelBoxes(
 
   for (const block of diagram.blocks) {
     if (isHighlightRect(block)) continue
-    const tab = `${block.type}${block.label ? ` [${block.label}]` : ''}`
     const tabWidth =
       estimateTextWidth(
-        tab.split('\n')[0] ?? '',
+        block.type,
         fontSizes.edgeLabel,
         FONT_WEIGHTS.groupHeader,
       ) + 16
@@ -373,9 +363,16 @@ function collectLabelBoxes(
       y0: block.y,
       y1: block.y + BLOCK_TAB_HEIGHT,
     })
+    if (block.label) {
+      centred(
+        `[${block.label}]`,
+        block.x + (tabWidth + block.width) / 2,
+        block.y + BLOCK_TAB_HEIGHT / 2,
+      )
+    }
     for (const divider of block.dividers) {
       if (!divider.label) continue
-      startAnchored(`[${divider.label}]`, block.x + 8, divider.y + 14)
+      centred(`[${divider.label}]`, block.x + block.width / 2, divider.y + 14)
     }
   }
   return boxes
@@ -647,18 +644,10 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
       f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
 
-  // Type label tab (top-left corner)
-  // For multi-line block labels, we use the first line for the tab but show full label
-  const labelText = f`${block.type}${block.label ? f` [${block.label}]` : ''}`
-  // Audited for issue #100: `String.prototype.split` always returns an
-  // array with at least one element (even splitting `''` yields `['']`),
-  // so index 0 is guaranteed to exist regardless of whether `labelText`
-  // contains a newline. `noUncheckedIndexedAccess` can't see that
-  // language-level guarantee; left as-is, no behavior change.
-  const firstLine = labelText.split('\n')[0]!
+  // Type label tab (top-left corner); the `[label]` is centred on the top edge
   const tabWidth =
     estimateTextWidth(
-      firstLine,
+      block.type,
       fontSizes.edgeLabel,
       FONT_WEIGHTS.groupHeader,
     ) + 16
@@ -668,17 +657,28 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
     f`  <rect x="${block.x}" y="${block.y}" width="${tabWidth}" height="${tabHeight}" ` +
       f`fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
-  // Block type label (supports multi-line via <br> tags)
   parts.push(
     '  ' +
       renderMultilineText(
-        labelText,
+        block.type,
         block.x + 6,
         block.y + tabHeight / 2,
         fontSizes.edgeLabel,
         f`font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
       ),
   )
+  if (block.label) {
+    parts.push(
+      '  ' +
+        renderMultilineText(
+          f`[${block.label}]`,
+          block.x + (tabWidth + block.width) / 2,
+          block.y + tabHeight / 2,
+          fontSizes.edgeLabel,
+          f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
+        ),
+    )
+  }
 
   // Divider lines (for alt/else, par/and)
   for (const divider of block.dividers) {
@@ -692,10 +692,10 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
         '  ' +
           renderMultilineText(
             f`[${divider.label}]`,
-            block.x + 8,
+            block.x + block.width / 2,
             divider.y + 14,
             fontSizes.edgeLabel,
-            f`font-size="${fontSizes.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+            f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
           ),
       )
     }

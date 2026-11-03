@@ -477,9 +477,9 @@ describe('sequence layout – render clearance', () => {
     expect(baselineClearance).toBeGreaterThanOrEqual(14)
   })
 
-  it('short divider labels keep the default offset (no unnecessary extra space)', () => {
-    // "No" is short enough that "[No]" doesn't reach the centered message
-    // label — no overlap, so the default offset (28) is used.
+  it('a divider label above a labelled message gets the taller offset', () => {
+    // Divider labels are centred, so they always share a column with the
+    // centred message label under them and sit on their own row above it.
     const result = layout(`sequenceDiagram
       A->>B: Login
       alt Yes
@@ -492,9 +492,9 @@ describe('sequence layout – render clearance', () => {
     const divider = block.dividers[0]!
     const msgAfter = result.messages[2]!
 
-    // Default offset 28: baseline clearance = (msg.y - 6) - (msg.y - 28 + 14) = 8
+    // Offset 40: baseline clearance = (msg.y - 6) - (msg.y - 40 + 14) = 20
     const baselineClearance = msgAfter.y - 6 - (divider.y + 14)
-    expect(baselineClearance).toBe(8)
+    expect(baselineClearance).toBe(20)
   })
 })
 
