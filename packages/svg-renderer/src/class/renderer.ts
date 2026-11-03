@@ -418,7 +418,7 @@ function renderMember(
 
   if (member.visibility) {
     spans.push(
-      f`<tspan fill="${secondary}" font-weight="${VISIBILITY_MARKER_WEIGHT}">${escapeXml(member.visibility)}</tspan><tspan fill="${faint}"> </tspan>`,
+      f`<tspan fill="${secondary}" font-weight="${VISIBILITY_MARKER_WEIGHT}">${escapeXml(member.visibility)}</tspan>${member.visibilitySpace ? f`<tspan fill="${faint}"> </tspan>` : ''}`,
     )
   }
 
@@ -431,7 +431,8 @@ function renderMember(
   spans.push(f`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // Nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
 
   if (member.type) {
-    spans.push(f`<tspan fill="${faint}">: </tspan>`)
+    // Mermaid prints a method's return type as ` : type` (#2548)
+    spans.push(f`<tspan fill="${faint}"> : </tspan>`)
     spans.push(f`<tspan fill="${muted}">${escapeXml(member.type)}</tspan>`)
   }
 
@@ -665,14 +666,14 @@ function renderRelationshipLabels(
   if (rel.fromCardinality && rel.points.length >= 2) {
     const p = rel.points[0]!
     const next = rel.points[1]!
-    const offset = cardinalityOffset(p, next)
+    const offset = cardinalityOffset(p, next, 'start')
     parts.push(
       renderMultilineText(
         rel.fromCardinality,
         p.x + offset.x,
         p.y + offset.y,
         fontSizes.edgeLabel,
-        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="${offset.anchor}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }
@@ -681,14 +682,14 @@ function renderRelationshipLabels(
   if (rel.toCardinality && rel.points.length >= 2) {
     const p = rel.points[rel.points.length - 1]!
     const prev = rel.points[rel.points.length - 2]!
-    const offset = cardinalityOffset(p, prev)
+    const offset = cardinalityOffset(p, prev, 'end')
     parts.push(
       renderMultilineText(
         rel.toCardinality,
         p.x + offset.x,
         p.y + offset.y,
         fontSizes.edgeLabel,
-        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="${offset.anchor}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }
@@ -734,21 +735,47 @@ function midpoint(points: Array<{ x: number; y: number }>): {
   return points[mid]!
 }
 
-/** Calculate offset for cardinality label perpendicular to edge direction */
+/**
+ * Offset for a cardinality label, placed the way mermaid does (#2549): a start
+ * label sits on the right-hand side of the edge's direction of travel and an
+ * end label on the left-hand side, so the two never share a side. Both are
+ * nudged inward along the edge, away from the node border.
+ *
+ * `inward` is the next point along the edge, seen from the label's endpoint.
+ */
 function cardinalityOffset(
   from: { x: number; y: number },
-  to: { x: number; y: number },
-): { x: number; y: number } {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  // Place label perpendicular to the edge, 14px away
-  if (Math.abs(dx) > Math.abs(dy)) {
-    // Mostly horizontal — offset vertically
-    return { x: dx > 0 ? 14 : -14, y: -10 }
+  inward: { x: number; y: number },
+  side: 'start' | 'end',
+): { x: number; y: number; anchor: 'start' | 'middle' | 'end' } {
+  const dx = inward.x - from.x
+  const dy = inward.y - from.y
+  const len = Math.max(Math.hypot(dx, dy), 1e-6)
+  const ux = dx / len
+  const uy = dy / len
+  // `travel` is the direction of travel along the edge, start to end
+  const sign = side === 'start' ? 1 : -1
+  const [tx, ty] = [ux * sign, uy * sign]
+  // Right of travel in screen coordinates (y down) is (-ty, tx); left is the opposite
+  const px = (side === 'start' ? -ty : ty) * CARDINALITY_OFFSET
+  const py = (side === 'start' ? tx : -tx) * CARDINALITY_OFFSET
+  const y = py + uy * CARDINALITY_OFFSET
+  // A label beside a mostly vertical edge is anchored at its near edge, so it
+  // starts (right side) or ends (left side) clear of the line however long it is.
+  if (Math.abs(px) > Math.abs(py)) {
+    const dir = Math.sign(px)
+    return {
+      x: dir * CARDINALITY_GAP + ux * CARDINALITY_OFFSET,
+      y,
+      anchor: dir > 0 ? 'start' : 'end',
+    }
   }
-  // Mostly vertical — offset horizontally
-  return { x: -14, y: dy > 0 ? 14 : -14 }
+  return { x: px + ux * CARDINALITY_OFFSET, y, anchor: 'middle' }
 }
+
+const CARDINALITY_OFFSET = 12
+/** Clear space between the edge and the near side of a cardinality label */
+const CARDINALITY_GAP = 5
 
 // ============================================================================
 // Utilities

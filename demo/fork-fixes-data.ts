@@ -891,6 +891,19 @@ export const forkFixes: ForkFix[] = [
       'Before: the tab swallows the label, `[Network timeout]` shares a row with `retry`, and the frame is far wider than the lifelines. After: the tab holds only `critical`, each divider label is centred on its own row above its message, and the frame hugs the lifelines, as in mermaid 12.2.0.',
   },
   {
+    id: 'class-cardinality-sides',
+    title: 'Class cardinality labels shared one side of the edge',
+    symptom:
+      'Both cardinality labels sat on the left of a top-down edge, and class members printed `+ String name` and `+ run(): void` with extra spaces.',
+    source:
+      'classDiagram\n  class Animal {\n    +String name\n    +run() void\n  }\n  Animal "1" --> "*" Owner',
+    fixCommit: 'eee92285',
+    pr: 2574,
+    render: 'svg',
+    lookFor:
+      'Before: `1` and `*` are both left of the line, members read `+ run(): void`. After: `1` is left and `*` right, members read `+run() : void`, as in mermaid 12.2.0.',
+  },
+  {
     id: 'ascii-lr-compact-labeled-fanout',
     title:
       'ASCII LR fan-out with a labelled edge drew three times as tall as mermaid',
