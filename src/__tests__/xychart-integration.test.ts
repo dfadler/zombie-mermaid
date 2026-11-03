@@ -45,12 +45,10 @@ describe('xychart – data attributes', () => {
     expect(svg).toContain('data-label="Mar"')
   })
 
-  it('shows dots on sparse line charts even without interactive', async () => {
-    // Sparse charts (≤12 points) render dots as visual markers
+  it('draws no point markers without interactive, as mermaid does', async () => {
     const svg = await renderMermaid(LINE_CHART)
-    expect(svg).toContain('<circle')
-    expect(svg).toContain('data-value="100"')
-    // But no tooltips without interactive
+    expect(svg).not.toContain('<circle')
+    // And no tooltips
     expect(svg).not.toContain('xychart-tip-bg')
     expect(svg).not.toContain('xychart-dot-group')
   })

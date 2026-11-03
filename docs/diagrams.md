@@ -863,10 +863,9 @@ For the original design proposal behind this feature, see [xychart-design.md](xy
 
 The chart renderer follows a clean, minimal design philosophy, originally inspired by Apple's design language and Craft's interface for `beautiful-mermaid`:
 
-- **Dot grid** — A subtle dot pattern fills the plot area instead of traditional solid grid lines
 - **Rounded bars** — All bar corners are rounded for a modern, polished look
-- **Smooth curves** — Line series use natural cubic spline interpolation, producing mathematically smooth curves through all data points (not straight segments or staircase steps)
-- **Floating labels** — No visible axis lines or tick marks; labels float freely for a clutter-free aesthetic
+- **Straight lines** — Line series join their points with straight segments, as mermaid does (mermaid has no option for curved lines). Points carry no markers unless the chart is interactive
+- **Axis lines and ticks** — Each axis has a line and tick marks, as in mermaid; there is no grid
 - **Drop-shadow lines** — Each line series has a subtle shadow beneath it for depth
 - **Monochromatic palette** — Series 0 uses the theme's accent color; additional series get darker/lighter shades of the same hue with subtle hue drift, adapting automatically to light or dark backgrounds
 - **Interactive tooltips** — When rendered with `interactivity: 'full'` (or the deprecated `interactive: true`), hovering over bars or data points shows value tooltips. Multi-line tooltips appear when multiple series share an x-position

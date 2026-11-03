@@ -22,7 +22,21 @@ export interface XyPoint {
   val: number
 }
 
+/**
+ * How the chart is drawn, which mermaid does not let a diagram change: lines
+ * are straight segments (no curve option exists in 12.2.0 or on develop),
+ * nothing is a circle (no point markers, no dot grid), and each axis has a
+ * line and tick marks. Each flag is one check in `XyAgreement.style`.
+ */
+export interface XyStyle {
+  curved: boolean
+  circles: boolean
+  axisLine: boolean
+  ticks: boolean
+}
+
 export interface XyLayout {
+  style: XyStyle
   /** Labels of the source's `x-axis` (categories or a numeric range). */
   xLabels: XyLabel[]
   /** Labels of the source's `y-axis` (values). */
@@ -42,6 +56,8 @@ export interface XyAgreement {
   data: number | null
   /** Bars whose thickness is the same share of the category spacing (#2515). */
   bars: number | null
+  /** Drawing features (curved lines, circles, axis line, tick marks) that match (#2543). */
+  style: number
   points: number
 }
 
@@ -104,6 +120,8 @@ export function pathPoints(d: string): [number, number][] {
   }
   return out
 }
+
+const isCurved = (d: string): boolean => /[CQSATcqsat]/.test(d)
 
 /** Bounding box of a bar path made of M/L/Q/h/v/Z commands. */
 export function barBox(d: string): {
@@ -212,7 +230,18 @@ export function parseOfficialXy(svg: string, horizontal: boolean): XyLayout {
       }
     }
   }
+  const lineD = [
+    ...svg.matchAll(/<g\b[^>]*class="line-plot-\d+"[^>]*>([\s\S]*?)<\/g>/g),
+  ]
+    .flatMap((m) => [...m[1]!.matchAll(/<path\b[^>]*>/g)])
+    .map((p) => attr(p[0], 'd') ?? '')
   return {
+    style: {
+      curved: lineD.some(isCurved),
+      circles: /<circle\b/.test(svg),
+      axisLine: /class="(?:axis-line|axisl-line)"/.test(svg),
+      ticks: /class="ticks"/.test(svg),
+    },
     xLabels: bySpot(xLabels),
     yLabels: bySpot(yLabels),
     points,
@@ -246,18 +275,30 @@ export function parseOurXy(svg: string, horizontal: boolean): XyLayout {
   const points: XyPoint[] = []
   const lines: XyPoint[] = []
   const barWidths: number[] = []
+  const style: XyStyle = {
+    curved: false,
+    circles: /<circle\b/.test(svg),
+    axisLine: false,
+    ticks: false,
+  }
   for (const m of svg.matchAll(/<path\b[^>]*>/g)) {
     const classes = (attr(m[0], 'class') ?? '').split(/\s+/)
     const d = attr(m[0], 'd') ?? ''
-    if (classes.includes('xychart-bar')) {
+    if (classes.includes('xychart-axis')) {
+      // The frame is one path (V, H); each tick mark is a plain M, L.
+      if (/H/.test(d)) style.axisLine = true
+      else style.ticks = true
+    } else if (classes.includes('xychart-bar')) {
       const box = barBox(d)
       points.push(barPoint(box, horizontal))
       barWidths.push(horizontal ? box.y1 - box.y0 : box.x1 - box.x0)
     } else if (classes.includes('xychart-line')) {
+      if (isCurved(d)) style.curved = true
       for (const pt of pathPoints(d)) lines.push(linePoint(pt, horizontal))
     }
   }
   return {
+    style,
     xLabels: bySpot(xLabels),
     yLabels: bySpot(yLabels),
     points: [...points, ...lines],
@@ -331,6 +372,10 @@ export function xyAgreement(official: XyLayout, ours: XyLayout): XyAgreement {
     ticks: share(sameTick, labelN),
     data: share(data, most(official.points, ours.points)),
     bars: po && pu ? share(sameBar, most(ow, uw)) : null,
+    style:
+      (Object.keys(official.style) as (keyof XyStyle)[]).filter(
+        (k) => official.style[k] === ours.style[k],
+      ).length / 4,
     points: official.points.length,
   }
 }
@@ -351,6 +396,8 @@ export interface XyEntry {
   labels: number | null
   ticks: number | null
   data: number | null
+  /** Absent from entries recorded before #2543. */
+  style?: number | null
 }
 
 const mean = (xs: (number | null)[]): number | null => {
@@ -371,6 +418,7 @@ export function summarizeXy(
     labels: mean(all.map((r) => r.labels)),
     ticks: mean(all.map((r) => r.ticks)),
     data: mean(all.map((r) => r.data)),
+    style: mean(all.map((r) => r.style)),
   }
 }
 
@@ -381,7 +429,7 @@ export function xyBreaches(
 ): string[] {
   const out = errored.map((t) => `${t} (error)`)
   for (const [title, r] of Object.entries(results)) {
-    for (const k of ['labels', 'ticks', 'data', 'bars'] as const) {
+    for (const k of ['labels', 'ticks', 'data', 'bars', 'style'] as const) {
       const v = r[k]
       const floor = XYCHART_FLOOR
       if (v !== null && v + 1e-9 < floor) {

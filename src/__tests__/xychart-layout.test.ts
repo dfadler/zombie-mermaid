@@ -27,13 +27,16 @@ describe('xychart – horizontal layout', () => {
   })
 
   it('lays out a horizontal chart with title, axis titles, multiple bar series, and a line series', async () => {
-    const svg = await renderMermaid(`xychart-beta horizontal
+    const svg = await renderMermaid(
+      `xychart-beta horizontal
   title "Horizontal Combo"
   x-axis "Category" [A, B, C]
   y-axis "Value" 0 --> 100
   bar [10, 50, 90]
   bar [20, 40, 60]
-  line [15, 45, 75]`)
+  line [15, 45, 75]`,
+      { interactive: true },
+    )
     expect(svg).toContain('Horizontal Combo')
     expect(svg).toContain('Category')
     expect(svg).toContain('Value')
@@ -47,10 +50,13 @@ describe('xychart – horizontal layout', () => {
   })
 
   it('lays out a horizontal chart with only a line series (no bars)', async () => {
-    const svg = await renderMermaid(`xychart-beta horizontal
+    const svg = await renderMermaid(
+      `xychart-beta horizontal
   x-axis [X, Y]
   y-axis 0 --> 10
-  line [3, 8]`)
+  line [3, 8]`,
+      { interactive: true },
+    )
     expect(svg).toContain('data-value="3"')
     expect(svg).toContain('data-value="8"')
     expect(svg).toContain('data-label="X"')

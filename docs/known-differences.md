@@ -186,12 +186,12 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
 also covered 12.1.0). Unless noted, these are choices, not bugs.
 
-- **SVG styling.** zombie-mermaid draws rounded bars, a dotted grid, point markers on
-  lines, monotone-smoothed lines on vertical charts (horizontal charts use straight
-  segments in category order, as mermaid does, [#2334](https://github.com/dfadler/zombie-mermaid/issues/2334)), a generated `Bar 1` / `Line 1` legend when there is more
-  than one series, and grouped bar series side by side. Mermaid draws square bars, no grid,
-  no markers, no legend and straight line segments, and draws the second bar series over
-  the first.
+- **SVG styling.** zombie-mermaid draws rounded bars, a generated `Bar 1` / `Line 1` legend
+  when there is more than one series, and grouped bar series side by side. Mermaid draws
+  square bars, no legend, and draws the second bar series over the first. Lines are straight
+  segments with no point markers, there is no grid, and each axis has a line and tick marks,
+  as in mermaid (it has no option for curved lines in 12.2.0 or on `develop`); the oracle
+  scores these as `style`.
 - **Bar thickness.** Bars follow mermaid 12.2.0's band formula ([#2515](https://github.com/dfadler/zombie-mermaid/issues/2515)):
   95% of the smaller of twice the axis padding and the tick distance. Mermaid pads by
   half the widest category label as it measures it in the browser, on a plot about 660 px

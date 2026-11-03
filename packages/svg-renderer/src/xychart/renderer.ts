@@ -15,16 +15,17 @@ import {
 // All colors use CSS custom properties (var(--_xxx)) from the theme system.
 //
 // Visual style: clean, minimal, modern. Inspired by Apple/Craft chart design.
-//   - No axis lines or tick marks — labels float freely
-//   - Ultra-subtle solid grid lines
+//   - Axis lines and tick marks, as mermaid draws them
+//   - No grid
 //   - Bars with rounded tops, flat at baseline
-//   - Smooth curved lines, no visible dots (dots appear on hover)
+//   - Straight line segments and no point markers, as mermaid draws them
+//     (mermaid has no option for curved lines; #2543 follow-up)
 //
 // Render order (back to front):
-//   1. Grid lines
+//   1. Axis lines and ticks
 //   2. Bars (as paths with rounded tops)
-//   3. Lines (smooth curves)
-//   4. Dots (hidden by default, visible on hover when interactive)
+//   3. Lines (straight segments)
+//   4. Dots (interactive only: hover targets)
 //   5. Axis labels
 //   6. Axis titles
 //   7. Chart title
@@ -106,15 +107,10 @@ export function renderXYChartSvg(
   parts.push(svgTag)
   parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
 
-  // Sparse lines (≤12 points) show dots by default
-  const maxLinePoints = Math.max(...chart.lines.map((l) => l.points.length), 0)
-  const sparse = maxLinePoints > 0 && maxLinePoints <= 12
-
   // Chart-specific styles + gradient defs
   const { style: chartCss, defs: chartDefs } = chartStyles(
     chart,
     interactive,
-    sparse,
     colors.accent,
     colors.bg,
     emit.nonce,
@@ -122,28 +118,16 @@ export function renderXYChartSvg(
   parts.push(chartCss)
   if (chartDefs) parts.push(chartDefs)
 
-  // 1. Dot grid (dense dots across plot area, aligned to tick spacing)
+  // 1. Axis lines and tick marks
   const { plotArea } = chart
-  const xTicks = chart.xAxis.ticks.map((t) => t.x)
-  const yVals = chart.horizontal
-    ? chart.yAxis.ticks.map((t) => t.y)
-    : chart.gridLines.map((g) => g.y1)
-  const xBase =
-    xTicks.length > 1 ? Math.abs(xTicks[1]! - xTicks[0]!) : plotArea.width / 6
-  const yBase =
-    yVals.length > 1 ? Math.abs(yVals[1]! - yVals[0]!) : plotArea.height / 6
-  const xGap = xBase / Math.max(1, Math.round(xBase / 20))
-  const yGap = yBase / Math.max(1, Math.round(yBase / 20))
-  const xAnchor = xTicks[0] ?? plotArea.x
-  const yAnchor = yVals[0] ?? plotArea.y
-  const xStart = xAnchor - Math.ceil((xAnchor - plotArea.x) / xGap) * xGap
-  const yStart = yAnchor - Math.ceil((yAnchor - plotArea.y) / yGap) * yGap
-  for (let y = yStart; y <= plotArea.y + plotArea.height + 0.5; y += yGap) {
-    for (let x = xStart; x <= plotArea.x + plotArea.width + 0.5; x += xGap) {
-      parts.push(
-        `<circle cx="${r(x)}" cy="${r(y)}" r="1.5" class="xychart-grid"/>`,
-      )
-    }
+  const axisY = plotArea.y + plotArea.height
+  parts.push(
+    `<path d="M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`,
+  )
+  for (const t of [...chart.xAxis.ticks, ...chart.yAxis.ticks]) {
+    parts.push(
+      `<path d="M${r(t.x)},${r(t.y)} L${r(t.tx)},${r(t.ty)}" class="xychart-axis"/>`,
+    )
   }
 
   // 2. Bars — always render bar paths inline (before lines for correct z-order)
@@ -191,9 +175,7 @@ export function renderXYChartSvg(
   // 3. Lines — shadow first (wider, low opacity), then crisp line on top
   for (const line of chart.lines) {
     if (line.points.length === 0) continue
-    const d = chart.horizontal
-      ? straightLinePath(line.points)
-      : smoothCurvePath(line.points)
+    const d = straightLinePath(line.points)
     parts.push(
       `<path d="${d}" class="xychart-line-shadow xychart-color-${line.colorIndex}" transform="translate(0,2)"/>`,
     )
@@ -202,9 +184,13 @@ export function renderXYChartSvg(
     )
   }
 
+  // Sparse lines (≤12 points) get a larger hover target on each dot
+  const maxLinePoints = Math.max(...chart.lines.map((l) => l.points.length), 0)
+  const sparse = maxLinePoints > 0 && maxLinePoints <= 12
+
   // 4. Dots — grouped by x-position; interactive groups deferred to overlay
   const dotOverlay: string[] = []
-  if (interactive || sparse) {
+  if (interactive) {
     // Build legend label lookup: line seriesIndex → "Line 1", "Line 2", etc.
     const lineLegendLabels = new Map<number, string>()
     for (const item of chart.legend) {
@@ -287,19 +273,11 @@ export function renderXYChartSvg(
             `<circle cx="${r(e.x)}" cy="${r(e.y)}" r="${CHART_FONT.dotRadius}" class="xychart-dot xychart-color-${e.colorIndex}"${dataAttrs}/>` +
             `<title>${escapeXml(tipTitle)}</title>${tip}</g>`,
         )
-      } else {
-        // Sparse, not interactive: static dots render inline
-        for (const e of entries) {
-          const dataAttrs = ` data-value="${e.value}"${e.label ? ` data-label="${escapeXml(e.label)}"` : ''}`
-          parts.push(
-            `<circle cx="${r(e.x)}" cy="${r(e.y)}" r="${CHART_FONT.dotRadius}" class="xychart-dot xychart-color-${e.colorIndex}"${dataAttrs}/>`,
-          )
-        }
       }
     }
   }
 
-  // 5. Axis labels (no axis lines, no tick marks — just floating labels)
+  // 5. Axis labels
   for (const tick of chart.xAxis.ticks) {
     if (tick.label === '') continue // Dropped by the layout's overlap step
     parts.push(
@@ -388,7 +366,6 @@ export function renderXYChartSvg(
 function chartStyles(
   chart: PositionedXYChart,
   interactive: boolean,
-  sparse: boolean,
   themeAccent?: string,
   bgColor?: string,
   nonce?: string,
@@ -431,6 +408,8 @@ function chartStyles(
 
   const tipRules = interactive
     ? `
+  .xychart-dot { opacity: 0; }
+  .xychart-dot-group:hover .xychart-dot { opacity: 1; }
   .xychart-tip { opacity: 0; pointer-events: none; }
   .xychart-tip-bg { fill: var(--_text); filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--fg) 20%, transparent)); }
   .xychart-tip-text { fill: var(--bg); font-size: ${TIP.fontSize}px; font-weight: ${TIP.fontWeight}; }
@@ -443,7 +422,7 @@ function chartStyles(
     colorVarDefs.length > 0 ? `\n  svg {\n${colorVarDefs.join('\n')}\n  }` : ''
 
   const style = `${styleOpenTag(nonce)}
-  .xychart-grid { fill: var(--_inner-stroke); stroke: none; opacity: 0.65; }
+  .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
   .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: ${CHART_FONT.lineWidth}; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }

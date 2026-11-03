@@ -20,10 +20,10 @@ async function main(): Promise<number> {
   const session = await startRealMermaid()
   try {
     const { results, breaches } = await scoreXyChart(session, '', filter)
-    console.log('label tick  data  bars  sample')
+    console.log('label tick  data  bars style sample')
     for (const [title, r] of Object.entries(results)) {
       console.log(
-        `${pct(r.labels)}  ${pct(r.ticks)}  ${pct(r.data)}  ${pct(r.bars)}  ${title}`,
+        `${pct(r.labels)}  ${pct(r.ticks)}  ${pct(r.data)}  ${pct(r.bars)}  ${pct(r.style)}  ${title}`,
       )
     }
     if (args.includes('--thresholds') && breaches.length > 0) {

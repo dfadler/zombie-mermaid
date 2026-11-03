@@ -48,9 +48,9 @@ describe('horizontal XY line paths (#2334)', () => {
     )
   })
 
-  it('still smooths vertical charts with cubic segments', () => {
+  it('draws vertical charts as straight segments too, as mermaid does (no curve option exists)', () => {
     expect(linePath(body('xychart-beta', '10, 90, 20, 80, 30'))).toBe(
-      'M188,328 C228,152.3 268,56 308,56 C348,56 388,294 428,294 C468,294 508,90 548,90 C588,90 628,141 668,260',
+      'M188,328 L308,56 L428,294 L548,90 L668,260',
     )
   })
 })

@@ -146,19 +146,20 @@ describe('xychart agreement (#2451)', () => {
 <g class="line-plot-0"><path fill="none"></path></g>`,
       false,
     )
-    expect(o).toEqual({ xLabels: [], yLabels: [], points: [] })
+    expect(o).toMatchObject({ xLabels: [], yLabels: [], points: [] })
     const ours = parseOurXy(
       `<text x="1" y="2">plain</text>
 <text x="1" y="2" text-anchor="start" class="xychart-label">legend</text>
 <path d="M1,2"></path><path class="xychart-line"></path>`,
       false,
     )
-    expect(ours).toEqual({ xLabels: [], yLabels: [], points: [] })
+    expect(ours).toMatchObject({ xLabels: [], yLabels: [], points: [] })
     expect(pathPoints('M')).toEqual([])
   })
 
   it('handles one-label axes, shorter label lists and empty summaries', () => {
     const one: XyLayout = {
+      style: { curved: false, circles: false, axisLine: true, ticks: true },
       xLabels: [{ text: 'A', pos: 5 }],
       yLabels: [{ text: '1', pos: 5 }],
       points: [{ cat: 5, val: 5 }],
@@ -168,6 +169,28 @@ describe('xychart agreement (#2451)', () => {
     expect(
       summarizeXy({}, { date: 'd', commit: 'c', mermaid: 'm' }),
     ).toMatchObject({ samples: 0, labels: null, ticks: null, data: null })
+  })
+
+  it('scores drawing style: curves, circles, axis line and ticks', () => {
+    const official = parseOfficialXy(OFFICIAL, false)
+    const straight: XyLayout = { ...official, style: official.style }
+    expect(xyAgreement(official, straight).style).toBe(1)
+    const curved: XyLayout = {
+      ...official,
+      style: {
+        ...official.style,
+        curved: true,
+        circles: !official.style.circles,
+      },
+    }
+    expect(xyAgreement(official, curved).style).toBe(0.5)
+    const svg = renderMermaidSVG(SRC)
+    expect(parseOurXy(svg, false).style).toEqual({
+      curved: false,
+      circles: false,
+      axisLine: true,
+      ticks: true,
+    })
   })
 
   it('measures bar paths and line paths', () => {
@@ -217,7 +240,12 @@ describe('xychart agreement (#2451)', () => {
     expect(xyAgreement({ ...o, points: o.points.slice(0, 2) }, o).data).toBe(
       0.4,
     )
-    const empty: XyLayout = { xLabels: [], yLabels: [], points: [] }
+    const empty: XyLayout = {
+      style: { curved: false, circles: false, axisLine: true, ticks: true },
+      xLabels: [],
+      yLabels: [],
+      points: [],
+    }
     expect(xyAgreement(empty, empty)).toMatchObject({
       labels: null,
       ticks: null,
