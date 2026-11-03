@@ -127,6 +127,11 @@ ALLOWLIST=(
   # component test; the files under packages/ascii-renderer/src/__tests__/
   # are reviewed via `git diff` (`vitest -u`).
   "packages/ascii-renderer/src/__tests__/ascii-tall-slanted-shapes-2164.test.ts"
+  # SVG + ASCII goldens for numeric x-axis ranges on an xychart (#1592): the
+  # repo rule is an SVG and an ASCII snapshot per case. Not a component test;
+  # the files under src/__tests__/__snapshots__/ are reviewed via `git diff`
+  # (`vitest -u`).
+  "src/__tests__/xychart-numeric-axis-1592.test.ts"
 )
 
 is_allowlisted() {

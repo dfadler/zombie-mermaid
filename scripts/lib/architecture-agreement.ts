@@ -130,11 +130,13 @@ export function worstArch(a: Agreement): number | null {
  * Floor for every sample's lowest figure. The first run against mermaid 12.2.0
  * had 50% (Group-To-Group Edges, vertical); the port grid (#2473) lifted the
  * weakest sample to 67%, and aligning a node with its upper neighbour lifted
- * Group-To-Group Edges to 83%, leaving Nested Groups And Junction (73%) the
+ * Group-To-Group Edges to 83%, and levelling a group's linked row with the
+ * node it links to (`architecture-rows.ts`) lifted Nested Groups And Junction
+ * from 73% to 100% vertical, leaving Group-To-Group Edges (83% horizontal) the
  * weakest. This holds that gain. A regression guard, not a parity claim:
  * services inside groups still stagger from fcose's rows.
  */
-export const ARCH_FLOOR = 0.7
+export const ARCH_FLOOR = 0.8
 
 /** One tracked data point: mean of each figure over the architecture samples. */
 export interface ArchitectureEntry {
