@@ -865,4 +865,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: a gray disc on the Gateway edge and a bare "Cloud" title. After: the edges meet in a single join and the cloud icon sits left of the title.',
   },
+  {
+    id: 'sequence-block-label-layout',
+    title: 'Sequence block labels were laid out unlike mermaid.js',
+    symptom:
+      'The `[label]` sat inside a wide tab, divider labels were left-aligned on the same row as their message label, and the frame stood about 47px outside the lifelines. In ASCII a long label pushed the wall far past the last lifeline.',
+    source:
+      'sequenceDiagram\n  participant App\n  participant Broker\n  critical Establish connection\n    App->>Broker: connect\n  option Network timeout\n    Broker-->>App: retry\n  option Credentials denied\n    Broker-->>App: abort\n  end',
+    fixCommit: '646631b9',
+    pr: 2568,
+    render: 'svg',
+    lookFor:
+      'Before: the tab swallows the label, `[Network timeout]` shares a row with `retry`, and the frame is far wider than the lifelines. After: the tab holds only `critical`, each divider label is centred on its own row above its message, and the frame hugs the lifelines, as in mermaid 12.2.0.',
+  },
 ]
