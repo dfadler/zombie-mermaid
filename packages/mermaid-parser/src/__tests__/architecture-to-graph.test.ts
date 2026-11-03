@@ -184,7 +184,7 @@ describe('architectureToGraph', () => {
       ])
     })
 
-    it('flags only edges that run across the flow between siblings', () => {
+    it('flags only edges that run across the flow between siblings or into a group', () => {
       const g = lower(
         'group g\nservice a\nservice b\nservice c\nservice d in g\nservice e\nservice f in g\n' +
           'a:R -- L:b\nb:R -- L:c\nb:B -- T:e\nc:B -- T:d\nd{group}:L -- R:c\nd:R -- L:f',
@@ -193,7 +193,7 @@ describe('architectureToGraph', () => {
         false,
         false,
         true,
-        false, // Inside a group
+        true, // Into a group: the layout slides the grouped end under it
         false, // A {group} end
         false, // Both inside a group
       ])

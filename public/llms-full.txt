@@ -1999,6 +1999,14 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   half the widest category label as it measures it in the browser, on a plot about 660 px
   wide; ours estimates the text on a 600 px plot, so with long labels (the Product Sales
   sample) a bar's share of the spacing can differ by up to about 0.13. The oracle allows 0.15.
+- **Numeric x-axis range.** SVG uses mermaid's linear axis: a label at every d3 tick,
+  points placed by value, a horizontal chart's range running bottom-up
+  ([#1592](https://github.com/dfadler/zombie-mermaid/issues/1592)). The ASCII renderer
+  has its own layout and still treats the range as evenly spaced labels at the data
+  points, so `0 --> 100` with 5 bars labels 0, 25, 50, 75, 100 there.
+- **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
+  value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
+  correct reading (a known mermaid quirk).
 - **Horizontal charts.** The value axis sits at the bottom; mermaid puts it at the top
   (its `top-axis` group).
 - **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
