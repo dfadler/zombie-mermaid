@@ -1198,6 +1198,9 @@ function placeDeferredSiblingsNextToRoot(
  * that run (plus a cell either side) or it lands on the box.
  */
 function fitsStraddled(graph: AsciiGraph, node: AsciiNode): boolean {
+  // LR box: its label rides a horizontal run (#2561); a diamond's, a trunk.
+  if (graph.config.graphDirection === 'LR' && node.shape !== 'diamond')
+    return true
   const pad = graph.config.boxBorderPadding
   for (const e of graph.edges) {
     if (e.from !== node || !e.text) continue

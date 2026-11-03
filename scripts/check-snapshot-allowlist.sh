@@ -116,6 +116,9 @@ ALLOWLIST=(
   # packages/ascii-renderer/src/__tests__/ are reviewed via `git diff`
   # (`vitest -u`).
   "packages/ascii-renderer/src/__tests__/ascii-opposing-edges-diamond-2492.test.ts"
+  # ASCII + SVG goldens for a compact LR labelled fan-out (#2561), same rule
+  # and review path as above.
+  "packages/ascii-renderer/src/__tests__/ascii-lr-compact-labeled-fanout-2561.test.ts"
   # ASCII + SVG goldens for a block wall that encloses its notes (#2514),
   # same rule and review path as above.
   "packages/ascii-renderer/src/__tests__/ascii-sequence-block-notes-2514.test.ts"
