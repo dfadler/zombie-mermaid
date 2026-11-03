@@ -904,4 +904,18 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the tab swallows the label, `[Network timeout]` shares a row with `retry`, and the frame is far wider than the lifelines. After: the tab holds only `critical`, each divider label is centred on its own row above its message, and the frame hugs the lifelines, as in mermaid 12.2.0.',
   },
+  {
+    id: 'ascii-lr-compact-labeled-fanout',
+    title:
+      'ASCII LR fan-out with a labelled edge drew three times as tall as mermaid',
+    symptom:
+      'A box with a labelled edge to its first child was moved into a slot of its own in a left-to-right chart, so the second-rank nodes sat about ten empty rows apart and one edge detoured around its neighbour.',
+    source:
+      'flowchart LR\n  S0 --> |e0| S1\n  S1 --> |e1| S2\n  S1 --> S3\n  S0 --> S4',
+    fixCommit: '88fda603',
+    pr: 2575,
+    render: 'ascii',
+    lookFor:
+      'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a compact staircase, S1/S4 in the first column and S2/S3 in the second, as mermaid draws it.',
+  },
 ]
