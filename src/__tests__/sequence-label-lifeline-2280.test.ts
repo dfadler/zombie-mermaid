@@ -23,12 +23,16 @@ describe('alt/else label vs lifeline (#2280)', () => {
     expect(num(msg, 'y') - num(label, 'y')).toBeGreaterThanOrEqual(11)
   })
 
-  it('cuts the uninvolved lifeline around the else label', () => {
-    const y = num(label, 'y')
-    const segs = [
-      ...svg.matchAll(/<line class="lifeline" data-actor="A"[^>]*>/g),
-    ].map((m) => ({ a: num(m[0], 'y1'), b: num(m[0], 'y2') }))
-    expect(segs.length).toBeGreaterThan(1)
-    expect(segs.some(({ a, b }) => a < y && y < b)).toBe(false)
+  it('centres the else label on the block, clear of lifeline A', () => {
+    // The label used to start at the block's left edge and ran across A's
+    // lifeline, which had to be cut. Centred, it sits mid-frame instead.
+    const block =
+      /<g class="block"[^>]*>\s*<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"/.exec(
+        svg,
+      )!
+    const center = Number(block[1]) + Number(block[2]) / 2
+    expect(num(label, 'x')).toBeCloseTo(center, 1)
+    const lineA = /<line class="lifeline" data-actor="A"[^>]*>/.exec(svg)![0]
+    expect(Math.abs(num(lineA, 'x1') - center)).toBeGreaterThan(60)
   })
 })
