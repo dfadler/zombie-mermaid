@@ -310,6 +310,12 @@ function markerSuffix(color: string): string {
 // Group rendering (subgraph backgrounds)
 // ============================================================================
 
+/** ` stroke-dasharray="…"` from a style's `stroke-dasharray`, or '' when absent or not a number list (#2551). */
+function dashAttr(style: Record<string, string> | undefined): string {
+  const d = style?.['stroke-dasharray']
+  return d && /^[\d.\s,]+$/.test(d) ? f` stroke-dasharray="${d.trim()}"` : ''
+}
+
 function renderGroup(
   group: PositionedGroup,
   font: string,
@@ -339,16 +345,24 @@ function renderGroup(
     f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
   )
 
+  // `style` / `class` on the subgraph (#2550); the header band follows the fill
+  const gs = group.inlineStyle
+  const stroke = escapeAttr(gs?.stroke ?? 'var(--_node-stroke)')
+  const sw = escapeAttr(gs?.['stroke-width'] ?? String(STROKE_WIDTHS.outerBox))
+  const dash = dashAttr(gs)
+  const fill = escapeAttr(gs?.fill ?? 'var(--_group-fill)')
+  const hdrFill = escapeAttr(gs?.fill ?? 'var(--_group-hdr)')
+
   // Outer rectangle
   parts.push(
     f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
-      f`rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
   // Header band
   parts.push(
     f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${headerHeight}" ` +
-      f`rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`rx="0" ry="0" fill="${hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
   // Header label (supports multi-line via <br> tags)
@@ -359,7 +373,7 @@ function renderGroup(
         group.x + 12,
         group.y + headerHeight / 2,
         fontSizes.groupHeader,
-        f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+        f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
       ),
   )
 
@@ -674,6 +688,13 @@ function renderServiceTile(x: number, y: number, icon: string): string {
 }
 
 function renderNodeShape(node: PositionedNode): string {
+  const svg = renderNodeShapeBase(node)
+  // `style A stroke-dasharray:5 5`: stroke-dasharray inherits to every child shape.
+  const dash = node.icon === undefined ? dashAttr(node.inlineStyle) : ''
+  return dash && svg ? f`<g${dash}>${svg}</g>` : svg
+}
+
+function renderNodeShapeBase(node: PositionedNode): string {
   const { x, y, width, height, shape, inlineStyle } = node
   if (node.icon !== undefined) return renderServiceTile(x, y, node.icon)
 
@@ -685,6 +706,14 @@ function renderNodeShape(node: PositionedNode): string {
   const sw = escapeAttr(
     inlineStyle?.['stroke-width'] ?? String(STROKE_WIDTHS.innerBox),
   )
+  // `style B rx:10,ry:10` rounds a plain rectangle (mermaid applies it to the rect only)
+  const num = (v: string | undefined) =>
+    v && /^\d+(\.\d+)?(px)?$/.test(v) ? parseFloat(v) : 0
+  const rx = num(inlineStyle?.rx)
+  const radius = {
+    rx,
+    ry: inlineStyle?.ry === undefined ? rx : num(inlineStyle.ry),
+  }
 
   switch (shape) {
     case 'diamond':
@@ -778,7 +807,7 @@ function renderNodeShape(node: PositionedNode): string {
 
     case 'rectangle':
     default:
-      return renderRect(x, y, width, height, fill, stroke, sw)
+      return renderRect(x, y, width, height, fill, stroke, sw, radius)
   }
 }
 
@@ -792,10 +821,11 @@ function renderRect(
   fill: string,
   stroke: string,
   sw: string,
+  radius = { rx: 0, ry: 0 },
 ): string {
   return (
     f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
-    f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`rx="${radius.rx}" ry="${radius.ry}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
