@@ -10,7 +10,6 @@
 import type { ElkNode, ElkExtendedEdge } from '@zombie-mermaid/core'
 import type {
   MermaidGraph,
-  MermaidEdge,
   MermaidSubgraph,
   PositionedGraph,
   PositionedNode,
@@ -143,7 +142,8 @@ export function synthesizeSelfLoopEdges(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
-      ...edgeMarkers(edge),
+      startMarker: edge.startMarker,
+      endMarker: edge.endMarker,
     })
   }
 }
@@ -188,7 +188,8 @@ export function synthesizeAcrossFlowEdges(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
-      ...edgeMarkers(edge),
+      startMarker: edge.startMarker,
+      endMarker: edge.endMarker,
     })
   })
 }
@@ -591,7 +592,8 @@ function extractEdgesRecursively(
       headColor: resolveHeadColor(graph),
       id: originalEdge.id,
       animate: originalEdge.animate,
-      ...edgeMarkers(originalEdge),
+      startMarker: originalEdge.startMarker,
+      endMarker: originalEdge.endMarker,
     })
   }
 }
@@ -804,16 +806,6 @@ function collectAllSubgraphIds(sg: MermaidSubgraph, out: Set<string>): void {
 /** Stroke of `linkStyle default`, the only colour mermaid gives arrowheads. */
 export function resolveHeadColor(graph: MermaidGraph): string | undefined {
   return resolveEdgeStyle(-1, graph)?.stroke
-}
-
-/** Circle/cross terminators (`--o`/`--x`), copied only when set so the fields stay absent otherwise. */
-export function edgeMarkers(
-  edge: MermaidEdge,
-): Pick<PositionedEdge, 'startMarker' | 'endMarker'> {
-  return {
-    ...(edge.startMarker ? { startMarker: edge.startMarker } : {}),
-    ...(edge.endMarker ? { endMarker: edge.endMarker } : {}),
-  }
 }
 
 export function resolveEdgeStyle(

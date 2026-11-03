@@ -35,9 +35,9 @@ describe('flowchart circle and cross terminators (SVG)', () => {
 
   it('defines the circle disc and the cross strokes with the arrow colour', () => {
     const svg = renderMermaidSVG('flowchart LR\n  A --o B\n  A --x C')
-    expect(svg).toMatch(/<marker id="[\w-]*circle-end"[^>]*markerWidth="14"/)
+    expect(svg).toMatch(/<marker id="[\w-]*circle"[^>]*markerWidth="14"/)
     expect(svg).toMatch(/<circle cx="5" cy="5" r="5" fill="var\(--_arrow\)"/)
-    expect(svg).toMatch(/<marker id="[\w-]*cross-end"[^>]*markerWidth="12"/)
+    expect(svg).toMatch(/<marker id="[\w-]*cross"[^>]*markerWidth="12"/)
     expect(svg).toMatch(
       /M 1,1 L 14,14 M 1,14 L 14,1" fill="none" stroke="var\(--_arrow\)"/,
     )
@@ -52,7 +52,7 @@ describe('flowchart circle and cross terminators (SVG)', () => {
 
   it('adds no terminator markup to a diagram without them', () => {
     const svg = renderMermaidSVG('flowchart LR\n  A --> B')
-    expect(svg).not.toMatch(/circle-end|cross-end|circle-start|cross-start/)
+    expect(svg).not.toMatch(/circle|cross/)
   })
 
   it('keeps the ASCII twin on distinct glyphs', () => {

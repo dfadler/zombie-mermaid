@@ -260,8 +260,8 @@ export interface PositionedEdge {
   hasArrowStart: boolean
   hasArrowEnd: boolean
   /** Circle/cross terminator at the source or target end (`o--`, `--x`), drawn by the SVG renderer instead of an arrowhead */
-  startMarker?: 'circle' | 'cross'
-  endMarker?: 'circle' | 'cross'
+  startMarker?: 'circle' | 'cross' | undefined
+  endMarker?: 'circle' | 'cross' | undefined
   /** Full path including bends — array of {x, y} points */
   points: Point[]
   /** Layout-computed label center position (avoids label-label collisions) */
