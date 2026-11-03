@@ -237,6 +237,11 @@ export function getCharWidth(char: string): number;
 export function getReadableTextColor(fill: string | undefined, fallback: string): string;
 
 // @public
+export function groupStyle(id: string, directives: StyleDirectives): {
+    inlineStyle?: Record<string, string>;
+};
+
+// @public
 export function hasMeasuredAdvance(char: string): boolean;
 
 // @public
@@ -524,6 +529,7 @@ export interface PositionedGroup {
     height: number;
     // (undocumented)
     id: string;
+    inlineStyle?: Record<string, string>;
     // (undocumented)
     label: string;
     region?: boolean;
@@ -630,7 +636,8 @@ export interface RenderOptions {
 export function resetSvgIdCounters(): void;
 
 // @public
-export function resolveNodeStyle(nodeId: string, directives: StyleDirectives): Record<string, string> | undefined;
+export function resolveNodeStyle(nodeId: string, directives: StyleDirectives,
+skipDefault?: boolean): Record<string, string> | undefined;
 
 // @public
 export interface RgbaColor {
