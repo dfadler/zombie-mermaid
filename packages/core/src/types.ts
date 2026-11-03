@@ -148,9 +148,8 @@ export interface MermaidEdge {
    * Terminator shape at the source end when it's a circle/cross marker
    * (`o--`/`x--`) rather than a plain arrowhead. Undefined for a regular
    * `<`-style arrowhead or no marker at all — `hasArrowStart` alone still
-   * governs whether anything is drawn there. Currently consumed by the
-   * ASCII renderer only (see issue #330); the SVG renderer still draws a
-   * plain arrowhead for these.
+   * governs whether anything is drawn there. Drawn by the ASCII
+   * renderer (issue #330) and the SVG renderer.
    */
   startMarker?: 'circle' | 'cross'
   /** Terminator shape at the target end (`--o`/`--x`). See `startMarker`. */
@@ -260,6 +259,9 @@ export interface PositionedEdge {
   style: EdgeStyle
   hasArrowStart: boolean
   hasArrowEnd: boolean
+  /** Circle/cross terminator at the source or target end (`o--`, `--x`), drawn by the SVG renderer instead of an arrowhead */
+  startMarker?: 'circle' | 'cross' | undefined
+  endMarker?: 'circle' | 'cross' | undefined
   /** Full path including bends — array of {x, y} points */
   points: Point[]
   /** Layout-computed label center position (avoids label-label collisions) */

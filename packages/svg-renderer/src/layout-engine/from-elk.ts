@@ -147,6 +147,8 @@ export function synthesizeSelfLoopEdges(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
+      startMarker: edge.startMarker,
+      endMarker: edge.endMarker,
     })
   }
 }
@@ -191,6 +193,8 @@ export function synthesizeAcrossFlowEdges(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
+      startMarker: edge.startMarker,
+      endMarker: edge.endMarker,
     })
   })
 }
@@ -612,6 +616,8 @@ function extractEdgesRecursively(
       headColor: resolveHeadColor(graph),
       id: originalEdge.id,
       animate: originalEdge.animate,
+      startMarker: originalEdge.startMarker,
+      endMarker: originalEdge.endMarker,
     })
   }
 }

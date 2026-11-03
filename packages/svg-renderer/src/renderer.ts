@@ -149,6 +149,13 @@ export function renderSvg(
   for (const color of customStrokeColors) {
     parts.push(arrowMarkerDefsForColor(color))
   }
+  // Circle / cross terminators (`--o`, `--x`), emitted only when used.
+  const kinds = new Set<'circle' | 'cross'>()
+  for (const e of graph.edges) {
+    if (e.startMarker) kinds.add(e.startMarker)
+    if (e.endMarker) kinds.add(e.endMarker)
+  }
+  for (const kind of kinds) parts.push(terminatorMarker(kind))
   // An edge that crosses a subgraph's title text is not painted over the text
   // (#1239). The mask is only emitted when some edge does, so a diagram with
   // no such edge is unchanged.
@@ -279,6 +286,19 @@ function arrowMarkerPair(color: string, idSuffix: string): string {
   )
 }
 
+/**
+ * Circle (`--o`) and cross (`--x`) terminators: mermaid 12.2.0's
+ * `circleEnd-margin` / `crossEnd-margin` geometry, one marker for both ends.
+ */
+function terminatorMarker(kind: 'circle' | 'cross'): string {
+  const shape =
+    kind === 'circle'
+      ? '<circle cx="5" cy="5" r="5" fill="var(--_arrow)"/>'
+      : '<path d="M1 1L9 9M1 9L9 1" stroke="var(--_arrow)" stroke-width="1.7"/>'
+  const size = kind === 'circle' ? 14 : 12
+  return f`<marker id="${kind}" viewBox="0 0 10 10" refX="12" refY="5" markerUnits="userSpaceOnUse" markerWidth="${size}" markerHeight="${size}" orient="auto-start-reverse">${shape}</marker>`
+}
+
 /** Sanitize a color value into a collision-free SVG ID suffix.
  *  Non-alphanumeric chars are hex-encoded so distinct inputs never collapse
  *  (e.g. "var(--line-1)" → "var28--line2d129", "var(--line1)" → "var28--line129"). */
@@ -404,9 +424,10 @@ function renderEdge(
   const suffix = edge.headColor ? f`-${markerSuffix(edge.headColor)}` : ''
   let markers = ''
   if (!invisible) {
-    if (edge.hasArrowEnd) markers += f` marker-end="url(#arrowhead${suffix})"`
+    if (edge.hasArrowEnd)
+      markers += f` marker-end="url(#${edge.endMarker ?? f`arrowhead${suffix}`})"`
     if (edge.hasArrowStart)
-      markers += f` marker-start="url(#arrowhead-start${suffix})"`
+      markers += f` marker-start="url(#${edge.startMarker ?? f`arrowhead-start${suffix}`})"`
   }
 
   // Semantic data attributes for edge identification and inspection:
