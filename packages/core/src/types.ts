@@ -271,7 +271,7 @@ export interface PositionedEdge {
   labelPosition?: Point
   /** Inline styles resolved from `linkStyle` directives — override theme defaults */
   inlineStyle?: Record<string, string>
-  /** Arrowhead colour: mermaid colours every head with the `linkStyle default` stroke, never an edge's own (#2476) */
+  /** `linkStyle default` stroke: mermaid colours every head with it, falling back to the edge's own stroke (#2476) */
   headColor?: string
   /** Edge id from `A e1@--> B`, emitted as data-id for CSS targeting */
   id?: string
