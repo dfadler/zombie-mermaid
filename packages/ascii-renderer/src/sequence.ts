@@ -360,11 +360,26 @@ export function renderSequenceAscii(
     return Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
   }
 
+  // Blocks that open at the message right after this note and contain it: the
+  // note was written between the block's header and its first message (#2531).
+  function leadingBlocks(note: (typeof diagram.notes)[number]): number[] {
+    const ni = diagram.notes.indexOf(note)
+    return diagram.blocks.flatMap((b, bi) =>
+      b.startIndex === note.afterIndex + 1 &&
+      ni >= b.noteStartIndex &&
+      ni < b.noteEndIndex
+        ? [bi]
+        : [],
+    )
+  }
+
   // How many blocks enclose this note (#2514)? Each one has a left wall.
   function noteDepth(note: (typeof diagram.notes)[number]): number {
-    return diagram.blocks.filter(
-      (b) => note.afterIndex >= b.startIndex && note.afterIndex <= b.endIndex,
-    ).length
+    return (
+      diagram.blocks.filter(
+        (b) => note.afterIndex >= b.startIndex && note.afterIndex <= b.endIndex,
+      ).length + leadingBlocks(note).length
+    )
   }
 
   // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
@@ -643,14 +658,13 @@ export function renderSequenceAscii(
   // so those keep using rowGap directly. See issue #343's CodeRabbit review.
   const minSeparatorGap = Math.max(rowGap, 1)
 
-  // Pre-message notes: afterIndex === -1 — position before message loop
-  for (const note of diagram.notes) {
-    if (note.afterIndex !== -1) continue
+  function placeNote(note: (typeof diagram.notes)[number]): void {
     curY += rowGap // Gap before note
     const nLines = splitLines(note.text)
     const nWidth = noteBoxWidth(note)
     const nHeight = nLines.length + 2
 
+    // Determine x position based on note.position
     const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
     let nx: number
     if (note.position === 'left') {
@@ -658,7 +672,7 @@ export function renderSequenceAscii(
     } else if (note.position === 'right') {
       nx = llX[aIdx]! + 2
     } else {
-      // 'over'
+      // 'over' — center over actor(s)
       if (note.actorIds.length >= 2) {
         const aIdx2 = actorIdx.get(note.actorIds[1]!) ?? aIdx
         nx = Math.floor((llX[aIdx]! + llX[aIdx2]!) / 2) - Math.floor(nWidth / 2)
@@ -666,7 +680,7 @@ export function renderSequenceAscii(
         nx = llX[aIdx]! - Math.floor(nWidth / 2)
       }
     }
-    nx = Math.max(0, nx)
+    nx = Math.max(noteDepth(note) && noteDepth(note) + 1, nx)
 
     notePositions.push({
       x: nx,
@@ -674,9 +688,14 @@ export function renderSequenceAscii(
       width: nWidth,
       height: nHeight,
       lines: nLines,
-      depth: 0,
+      depth: noteDepth(note),
     })
     curY += nHeight
+  }
+
+  // Notes before the first message, except those a block header must precede.
+  for (const note of diagram.notes) {
+    if (note.afterIndex === -1 && !leadingBlocks(note).length) placeNote(note)
   }
 
   for (let m = 0; m < diagram.messages.length; m++) {
@@ -705,6 +724,15 @@ export function renderSequenceAscii(
         const extra = splitLines(`[${diagram.blocks[b]!.label}]`).length - 1
         curY += rowGap + 1 + extra
         blockStartY.set(b, curY - 1 - extra)
+        // Notes written between this header and the first message (#2531),
+        // under the innermost block that opens here and contains them.
+        for (const note of diagram.notes) {
+          if (
+            note.afterIndex === m - 1 &&
+            Math.min(...leadingBlocks(note)) === b
+          )
+            placeNote(note)
+        }
       }
     }
     placeDividers(false)
@@ -758,44 +786,8 @@ export function renderSequenceAscii(
     }
 
     // Notes after this message
-    for (let n = 0; n < diagram.notes.length; n++) {
-      if (diagram.notes[n]!.afterIndex === m) {
-        curY += rowGap
-        const note = diagram.notes[n]!
-        const nLines = splitLines(note.text)
-        const nWidth = noteBoxWidth(note)
-        const nHeight = nLines.length + 2
-
-        // Determine x position based on note.position
-        const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
-        let nx: number
-        if (note.position === 'left') {
-          nx = llX[aIdx]! - nWidth - 1
-        } else if (note.position === 'right') {
-          nx = llX[aIdx]! + 2
-        } else {
-          // 'over' — center over actor(s)
-          if (note.actorIds.length >= 2) {
-            const aIdx2 = actorIdx.get(note.actorIds[1]!) ?? aIdx
-            nx =
-              Math.floor((llX[aIdx]! + llX[aIdx2]!) / 2) -
-              Math.floor(nWidth / 2)
-          } else {
-            nx = llX[aIdx]! - Math.floor(nWidth / 2)
-          }
-        }
-        nx = Math.max(noteDepth(note) && noteDepth(note) + 1, nx)
-
-        notePositions.push({
-          x: nx,
-          y: curY,
-          width: nWidth,
-          height: nHeight,
-          lines: nLines,
-          depth: noteDepth(note),
-        })
-        curY += nHeight
-      }
+    for (const note of diagram.notes) {
+      if (note.afterIndex === m && !leadingBlocks(note).length) placeNote(note)
     }
 
     // Block closings after this message
