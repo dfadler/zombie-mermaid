@@ -79,7 +79,7 @@ describe('architecture-beta lowering', () => {
     expect(g.nodes.get('db')?.shape).toBe('cylinder')
     expect(g.nodes.get('server')?.shape).toBe('rectangle')
     expect(g.nodes.get('j')).toMatchObject({
-      shape: 'filled-circle',
+      shape: 'junction',
       label: '',
     })
   })
@@ -146,19 +146,48 @@ const NESTED = `architecture-beta
   j:R --> L:b`
 
 describe('architecture-beta nested groups and junctions', () => {
-  it('SVG draws nested groups and a junction dot', () => {
+  it('SVG draws nested groups and a junction join', () => {
     const svg = renderMermaidSVG(NESTED)
     expect(svg).toContain('data-id="api" data-label="API"')
     expect(svg).toContain('data-id="inner" data-label="Inner"')
-    expect(svg).toContain(
-      'data-id="j" data-label="" data-shape="filled-circle"',
-    )
+    expect(svg).toContain('data-id="j" data-label="" data-shape="junction"')
     expect(svg.match(/class="subgraph"/g)).toHaveLength(2)
     expect(svg.match(/class="edge"/g)).toHaveLength(2)
     // The inner group is drawn after (on top of) its parent.
     expect(svg.indexOf('data-id="api"')).toBeLessThan(
       svg.indexOf('data-id="inner"'),
     )
+  })
+
+  it('SVG junction draws no disc and leaves no gap in the edge', () => {
+    const svg = renderMermaidSVG(NESTED)
+    expect(svg).not.toContain('<circle')
+    const [a, b] = [...svg.matchAll(/<polyline[^>]*points="([^"]+)"/g)].map(
+      (m) => m[1]!.split(' ').map((p) => p.split(',').map(Number)),
+    )
+    // The two edges meet at the junction (within its 2px box).
+    const end = a!.at(-1)!
+    const start = b![0]!
+    expect(Math.hypot(end[0]! - start[0]!, end[1]! - start[1]!)).toBeLessThan(4)
+  })
+
+  it('SVG draws a group icon in its header; none keeps the plain header', () => {
+    const svg = renderMermaidSVG(
+      'architecture-beta\n  group a(server)[A]\n  group b[B]\n  service s(cloud)[S] in a\n  service t[T] in b',
+    )
+    const group = (id: string) =>
+      svg
+        .split('<g class="subgraph"')
+        .find((g) => g.includes(`data-id="${id}"`))!
+    expect(group('a')).toContain('fill="#087ebf"')
+    expect(group('a')).toContain('<rect x="17.5"')
+    expect(group('b')).not.toContain('#087ebf')
+    // A name Mermaid has no icon for gets the `?` glyph, as a service does.
+    expect(
+      renderMermaidSVG(
+        'architecture-beta\n  group g(nope)[G]\n  service s[S] in g',
+      ),
+    ).toContain('>?</text>')
   })
 
   it('ASCII draws the inner group inside the outer one', () => {

@@ -378,6 +378,7 @@ function extractNodesAndGroups(
         children: childGroups,
         ...groupStyle(child.id, graph),
         ...(mermaidSg?.region ? { region: true } : {}),
+        ...(mermaidSg?.icon ? { icon: mermaidSg.icon } : {}),
       })
     } else {
       // This is a leaf node

@@ -365,12 +365,22 @@ function renderGroup(
       f`rx="0" ry="0" fill="${hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
+  // Architecture group icon, as in Mermaid's header (the glyph tile, scaled).
+  const iconSize = headerHeight - 6
+  if (group.icon) {
+    const glyph = ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH
+    parts.push(
+      f`  <g transform="translate(${group.x + 3} ${group.y + 3}) scale(${iconSize / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
+    )
+  }
+  const titleX = group.x + 12 + (group.icon ? iconSize + 2 : 0)
+
   // Header label (supports multi-line via <br> tags)
   parts.push(
     '  ' +
       renderMultilineText(
         group.label,
-        group.x + 12,
+        titleX,
         group.y + headerHeight / 2,
         fontSizes.groupHeader,
         f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
@@ -766,6 +776,8 @@ function renderNodeShapeBase(node: PositionedNode): string {
       return renderTriangle(x, y, width, height, fill, stroke, sw, false)
     case 'flipped-triangle':
       return renderTriangle(x, y, width, height, fill, stroke, sw, true)
+    case 'junction':
+      return ''
     case 'filled-circle':
       return renderFilledCircle(x, y, width, height, stroke)
     case 'crossed-circle':

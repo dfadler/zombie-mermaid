@@ -287,6 +287,9 @@ export function estimateNodeSize(
     return { width: 28, height: 28 }
   }
 
+  // Architecture junction: a join point, so edges meet with no gap.
+  if (shape === 'junction') return { width: 2, height: 2 }
+
   // Unlabeled state pseudo-states (`<<choice>>`, `<<fork>>`/`<<join>>`), at
   // mermaid.js's sizes: a 28px diamond and a 70x10 bar.
   if (label === '' && shape === 'diamond') return { width: 28, height: 28 }

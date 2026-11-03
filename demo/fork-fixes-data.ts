@@ -852,6 +852,20 @@ export const forkFixes: ForkFix[] = [
       'Before: one stroke leaves the diamond’s bottom vertex. After: no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
   },
   {
+    id: 'architecture-junction-group-icons',
+    title:
+      'Architecture junctions drew a gray disc and group icons were dropped',
+    symptom:
+      'An `architecture-beta` `junction` was drawn as a filled gray disc with a gap in the edge on both sides, and the icon named by `group id(icon)` was not drawn in the group header. mermaid 12.2.0 and 12.3.0 draw the junction as an invisible join and put the icon beside the title.',
+    source:
+      'architecture-beta\n  group cloud(cloud)[Cloud]\n  service gw(internet)[Gateway] in cloud\n  service db(database)[Primary DB] in cloud\n  service replica(disk)[Replica] in cloud\n  junction fan in cloud\n  gw:R -- L:fan\n  fan:R --> L:db\n  fan:B --> T:replica',
+    fixCommit: '427597e2',
+    pr: 2573,
+    render: 'svg',
+    lookFor:
+      'Before: a gray disc on the Gateway edge and a bare "Cloud" title. After: the edges meet in a single join and the cloud icon sits left of the title.',
+  },
+  {
     id: 'flowchart-subgraph-node-style',
     title: 'Flowchart subgraph style/class and node dash/radius were ignored',
     symptom:
