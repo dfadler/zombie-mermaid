@@ -57,5 +57,8 @@ export * from './xychart/colors.ts'
 export * from './pie/parser.ts'
 export * from './pie/types.ts'
 
+export * from './quadrant/parser.ts'
+export * from './quadrant/types.ts'
+
 export * from './expanded-shapes.ts'
 export * from './flowchart-parser.ts'

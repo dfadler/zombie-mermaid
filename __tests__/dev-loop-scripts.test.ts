@@ -35,6 +35,11 @@ function sandbox(): Sandbox {
   mkdirSync(join(root, 'repo/scripts'), { recursive: true })
   for (const f of ['verify.sh', 'doctor.sh'])
     copyFileSync(join(SCRIPTS, f), join(root, 'repo/scripts', f))
+  stub(
+    join(root, 'repo/scripts'),
+    'check-snapshot-allowlist.sh',
+    `echo allowlist >> "${join(root, 'calls.log')}"`,
+  )
   return { root, bin, log: join(root, 'calls.log'), repo: join(root, 'repo') }
 }
 
@@ -108,7 +113,9 @@ describe('scripts/verify.sh', () => {
     expect(r.calls).toContain(
       'exec oxlint --report-unused-disable-directives-severity=error a.ts',
     )
-    expect(r.calls).toContain('exec oxfmt --check a.ts')
+    expect(r.calls).toContain(
+      'exec oxfmt --check --no-error-on-unmatched-pattern a.ts',
+    )
     expect(r.calls).toContain(
       'exec vitest run -c config/vitest.config.ts --changed HEAD',
     )
@@ -134,6 +141,60 @@ describe('scripts/verify.sh', () => {
       'run test:coverage',
     ])
     expect(r.calls.some((c) => c.includes('vitest'))).toBe(false)
+  })
+
+  it('runs the snapshot allow-list gate in the default path', () => {
+    const r = run('verify.sh', [], verifySandbox(), { BASE: 'HEAD' })
+    expect(r.calls).toContain('allowlist')
+  })
+
+  it('--ci-gates builds, regenerates API reports and checks bundle size, skipping full lint/coverage', () => {
+    const r = run('verify.sh', ['--ci-gates'], verifySandbox(), {
+      BASE: 'HEAD',
+    })
+    expect(r.code).toBe(0)
+    const i = (c: string) => r.calls.indexOf(c)
+    expect(i('run build')).toBeGreaterThan(-1)
+    expect(i('run api:report')).toBeGreaterThan(i('run build'))
+    expect(i('run check:bundle-size')).toBeGreaterThan(i('run api:report'))
+    expect(r.calls).not.toContain('run test:coverage')
+    expect(r.calls.at(-1)).toContain('vitest run')
+  })
+
+  it('--ci-gates fails when api:report leaves etc/api different from committed', () => {
+    const sb = verifySandbox(
+      'case "$*" in "run api:report") mkdir -p etc/api; echo x > etc/api/a.api.md;; esac',
+    )
+    const r = run('verify.sh', ['--ci-gates'], sb, { BASE: 'HEAD' })
+    expect(r.code).toBe(1)
+    expect(r.err).toContain('public API surface changed')
+    expect(r.calls).not.toContain('run check:bundle-size')
+  })
+
+  it('--full includes the CI gates before lint', () => {
+    const r = run('verify.sh', ['--full'], verifySandbox())
+    expect(r.calls.indexOf('run check:bundle-size')).toBeGreaterThan(-1)
+    expect(r.calls.indexOf('run check:bundle-size')).toBeLessThan(
+      r.calls.indexOf('run lint'),
+    )
+  })
+
+  it('warns up front, and again on failure, when Node is below 24', () => {
+    const sb = verifySandbox('case "$*" in *demo/tsconfig*) exit 1;; esac')
+    stub(sb.bin, 'node', 'case "$1" in -v) echo v22.1.0;; *) echo 22;; esac')
+    const r = run('verify.sh', [], sb, { BASE: 'HEAD' })
+    expect(r.code).toBe(1)
+    const msg = 'Node v22.1.0 detected, repo needs >=24 (see .nvmrc)'
+    expect(r.err.split(msg).length - 1).toBe(2)
+    expect(r.err).toContain('CLI dispatch test files will fail')
+  })
+
+  it('stays quiet about Node on 24+', () => {
+    const sb = verifySandbox()
+    stub(sb.bin, 'node', 'echo 24')
+    expect(run('verify.sh', [], sb, { BASE: 'HEAD' }).err).not.toContain(
+      'detected',
+    )
   })
 
   it('stops with exit 1 when any typecheck fails', () => {
@@ -180,6 +241,7 @@ describe('scripts/doctor.sh', () => {
     const r = run('doctor.sh', [], doctorSandbox('22', ['pnpm']))
     expect(r.code).toBe(1)
     expect(r.out).toContain('MISSING  node >=24 (found v22.0.0)')
+    expect(r.out).toContain('see .nvmrc')
   })
 
   it('exits 1 with MISSING when pnpm is absent', () => {

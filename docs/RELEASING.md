@@ -269,6 +269,30 @@ The published package doesn't bundle `elkjs`; consumers supply it with `register
   run locally — it's meant to run in CI, immediately after the Version PR
   merges, using the OIDC credential minted for that run.
 
+## MCP Registry (maintainer, by hand, after the npm release)
+
+`server.json` is version-pinned, so it is generated, not committed (`/server.json` is gitignored).
+The registry's [GitHub Actions guide](https://modelcontextprotocol.io/registry/github-actions)
+shows a tag-triggered workflow that publishes to npm and then the registry; we do not use it,
+because this repo's npm publish is the changesets flow above and the registry publish should
+stay a deliberate, human-run step (the registry is in preview and may reset data). Steps, per
+the [quickstart](https://modelcontextprotocol.io/registry/quickstart):
+
+1. Wait until the release is on npm (`npm view zombie-mermaid version`); `package.json` on
+   `main` carries that version.
+2. `pnpm run mcp:server-json -- --out server.json` generates the file from `package.json`
+   (`name` = `mcpName`, `version` and `packages[0].version` = the release) and validates it
+   against the vendored copy of the registry's schema
+   (`scripts/lib/mcp-registry-server.schema.json`, the `2025-12-11` file the `$schema` URL names).
+3. `mcp-publisher login github` (device flow; the name must start with `io.github.dfadler/`),
+   then `mcp-publisher publish`.
+4. Check: `curl 'https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.dfadler/zombie-mermaid'`.
+
+`packageArguments: [{ "type": "positional", "value": "mcp" }]` is valid per the schema
+(`PositionalArgument` needs `value` or `valueHint`) and matches the CLI: `zombie-mermaid mcp`
+starts the stdio server (`src/cli.ts`). The registry docs pages do not show `packageArguments`
+in their examples; it comes from the schema's `Package` definition.
+
 ## Supply-chain signals (Scorecard, signed assets, SBOM)
 
 `.github/workflows/scorecard.yml` runs OpenSSF Scorecard weekly and on pushes to

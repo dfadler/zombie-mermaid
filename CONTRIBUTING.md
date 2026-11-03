@@ -12,7 +12,7 @@ pnpm run doctor     # check your toolchain; ASCII/Docker tools are optional
 pnpm run verify     # typecheck + lint/format/tests for what you changed
 ```
 
-`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or, for one source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`) runs only affected tests. Rough path-to-suite map:
+`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --ci-gates` adds the build, API-report and bundle-size checks CI runs (~20s); `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or, for one source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`) runs only affected tests. Rough path-to-suite map:
 
 | Changed path                                   | Run                                                                |
 | ---------------------------------------------- | ------------------------------------------------------------------ |
@@ -88,6 +88,7 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main`; its jo
 - `test` includes `pnpm run coverage:diff`: new and changed lines in `src/`, `packages/*/src/` and `scripts/**/*.ts` need 95% coverage (see "Testing scripts" below for run-on-import CLIs). It also runs `scripts/check-snapshot-allowlist.sh` (see "Testing conventions for demo/editor components" below).
 - `visual-regression` is the Playwright suite; see "Visual regression tests" below.
 - `semgrep` is a SAST scan against Semgrep's free public rulesets. If it flags something in your PR, either fix the underlying issue or, for a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line explaining why. Don't disable the rule repo-wide.
+- `packed-smoke` fails when the committed public-API reports (`etc/api/*.api.md`) differ from what the build exports (#2480). If your change adds, removes or renames a public export on purpose, run `pnpm run build && pnpm run api:report` and commit the `etc/api/` diff; if the diff is unexpected, you leaked or dropped an export.
 - `changeset` requires a changeset when you change anything that ships (see "Changesets" below).
 
 Every workflow under `.github/workflows/`, one line each:

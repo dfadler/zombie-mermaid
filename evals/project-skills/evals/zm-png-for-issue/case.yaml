@@ -1,0 +1,32 @@
+# Should-fire: SVG is rejected by the target (GitHub issue), so the skill's answer is --png.
+# Can fail: baseline often says "convert the SVG with a tool" or mmdc, not `zombie-mermaid render --png`.
+# good-reply: npx -y zombie-mermaid render diagram.mmd --png
+# bad-reply: Render an SVG with mmdc and upload it.
+schema_version: '1.1'
+name: zm-png-for-issue
+description: >
+  An image for a GitHub issue body (SVG rejected) should use zombie-mermaid render --png.
+  expected_outcome: PASS when the skill is invoked and the reply has
+  `zombie-mermaid render ... --png`; FAIL otherwise.
+tags: [zombie-mermaid, trigger, quick]
+
+execution:
+  prompt: |
+    I need an image of my sequence diagram for a GitHub issue; SVG uploads get rejected there.
+    The source is in diagram.mmd. Don't run anything; give the exact command.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+    min: 1
+
+  - name: uses_cli_png
+    type: regex
+    target: last_message
+    pattern: 'zombie-mermaid\s+render\b[^\n]*--png'
+    match: contains

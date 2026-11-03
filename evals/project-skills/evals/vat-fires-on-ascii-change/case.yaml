@@ -1,0 +1,43 @@
+# Should-fire: an ASCII renderer change needing PR screenshots; the prompt names no skill and no script.
+# Can fail: names_capture_script fails when the reply does not know scripts/ascii-terminal-capture.sh
+# (a no-plugin baseline cannot guess it). All free, quick.
+# good-reply: Run scripts/ascii-terminal-capture.sh ./src/index.ts 12 /tmp/after for a real-PTY PNG.
+# bad-reply: Take a Playwright screenshot of the demo page and attach it.
+schema_version: '1.1'
+name: vat-fires-on-ascii-change
+description: >
+  A line-wrapping change in packages/ascii-renderer needs before/after PR screenshots, which
+  should fire verify-ascii-terminal and point at the real-PTY capture script.
+  expected_outcome: PASS when the skill is invoked and the reply names the capture script and
+  does not recommend Playwright or visual-diff for the image; FAIL otherwise.
+tags: [verify-ascii-terminal, trigger, quick]
+
+execution:
+  prompt: |
+    I changed the line wrapping in packages/ascii-renderer/src/index.ts. Add before/after
+    screenshots to the PR description. Don't run anything; tell me the exact steps and command.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-ascii-terminal"'
+    min: 1
+
+  - name: names_capture_script
+    type: regex
+    target: last_message
+    pattern: 'ascii-terminal-capture\.sh'
+    match: contains
+
+  # Skill says the HTML mockup tools must not supply the PR image; a reply may name them only
+  # in prose, so match the command form.
+  - name: no_html_mockup_command
+    type: regex
+    target: last_message
+    pattern: 'pnpm (run |exec )?(visual-diff|playwright)|tsx scripts/visual-diff|playwright test'
+    flags: i
+    match: not_contains

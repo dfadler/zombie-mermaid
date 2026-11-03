@@ -157,7 +157,9 @@ jobs:
         # measured run, not preemptively.
         # Raised 15 -> 25 after run 37377612759 (#1604): Flowchart outgrew 15m
         # and timed out. Raise again from a measured run, not preemptively.
-        timeout-minutes: 25
+        # Raised 25 -> 35 with --max-turns 150 -> 300 (#2532): Flowchart hit
+        # error_max_turns (151 turns, ~13m) on runs 40393547477 and 41541272929.
+        timeout-minutes: 35
         # Pinned to main's HEAD as of 2026-09-06, not a tagged release —
         # anthropics/claude-code-base-action has no tag newer than v0.0.63
         # (2025-08-22, the previous pin here), only untagged daily "sync
@@ -200,7 +202,7 @@ jobs:
           claude_args: |
             --allowedTools "Read,Write"
             --disallowedTools "Task,Bash,Glob,Grep,LS,ExitPlanMode,Edit,MultiEdit,NotebookEdit,WebFetch,TodoWrite,WebSearch,BashOutput,KillBash"
-            --max-turns 150
+            --max-turns 300
             --model claude-sonnet-5
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
@@ -439,4 +441,26 @@ jobs:
           else
             gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --body-file "$BODY_FILE"
             echo "Updated tracking issue #${ISSUE_NUMBER}"
+          fi
+
+      # A failed matrix leg is otherwise visible only in the Actions tab (#2446).
+      # Same open-or-comment pattern as dashboard-refresh.yml's PAT health step.
+      # Runs even if the report step above failed.
+      - name: Open or update an issue when the judge job failed
+        if: always() && needs.judge.result == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          title='form-judge-weekly failed'
+          body="$(mktemp)"
+          printf 'A form-judge-weekly judge job failed or timed out (run: %s). Failed legs are listed in the run summary; the report issue may cover only part of the categories.\n' \
+            "$RUN_URL" > "$body"
+          num=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number,title \
+            --jq "map(select(.title==\"$title\"))[0].number // empty")
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$body"
           fi

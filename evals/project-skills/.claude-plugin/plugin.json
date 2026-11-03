@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "zombie-mermaid-project-skills",
+  "version": "0.0.0",
+  "description": "Dev-only wrapper so `claude plugin eval` can target zombie-mermaid's project skills (symlinks under skills/). Not published.",
+  "homepage": "https://github.com/dfadler/zombie-mermaid"
+}

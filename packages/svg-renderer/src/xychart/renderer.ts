@@ -148,7 +148,7 @@ export function renderXYChartSvg(
 
   // 2. Bars — always render bar paths inline (before lines for correct z-order)
   //    Interactive: also build overlay groups with transparent hit-areas + tooltips (deferred to step 9)
-  const barOverlay: string[] = []
+  const barOverlay: { extent: number; html: string }[] = []
   for (const bar of chart.bars) {
     const dataAttrs = ` data-value="${bar.value}"${bar.label ? ` data-label="${escapeXml(bar.label)}"` : ''}`
     const barPath = chart.horizontal
@@ -173,15 +173,20 @@ export function renderXYChartSvg(
       const tipText = formatTipValue(bar.value)
       const tipTitle = bar.label ? `${bar.label}: ${tipText}` : tipText
       const tip = tooltipAbove(bar.x + bar.width / 2, bar.y, tipText)
-      barOverlay.push(
-        `<g class="xychart-bar-group">` +
+      barOverlay.push({
+        extent: chart.horizontal ? bar.width : bar.height,
+        html:
+          `<g class="xychart-bar-group">` +
           `<rect x="${r(bar.x)}" y="${r(bar.y)}" width="${r(bar.width)}" height="${r(bar.height)}" fill="transparent"/>` +
           `<title>${escapeXml(tipTitle)}</title>` +
           tip +
           `</g>`,
-      )
+      })
     }
   }
+  // Overlapping series share a category, so hit areas stack: put the larger
+  // bars underneath so a shorter bar on top stays hoverable (stable sort).
+  barOverlay.sort((a, b) => b.extent - a.extent)
 
   // 3. Lines — shadow first (wider, low opacity), then crisp line on top
   for (const line of chart.lines) {
@@ -369,7 +374,7 @@ export function renderXYChartSvg(
   }
 
   // 9. Interactive overlay — rendered last so tooltips are always on top
-  for (const g of barOverlay) parts.push(g)
+  for (const g of barOverlay) parts.push(g.html)
   for (const g of dotOverlay) parts.push(g)
 
   parts.push('</svg>')

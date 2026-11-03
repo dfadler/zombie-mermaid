@@ -126,7 +126,7 @@ describe('renderMermaidSVG – complex diagrams', () => {
     expect(svg).toContain('>solid</text>')
     expect(svg).toContain('>dotted</text>')
     expect(svg).toContain('>thick</text>')
-    expect(svg).toContain('stroke-dasharray="4 4"')
+    expect(svg).toContain('stroke-dasharray="2 2"')
   })
 
   it('renders subgraphs', () => {

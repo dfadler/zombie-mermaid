@@ -11,6 +11,7 @@
 //   - Class diagrams (classDiagram) — level-based UML layout
 //   - ER diagrams (erDiagram) — grid layout with crow's foot notation
 //   - Pie charts (pie) — one stacked bar plus a table (see pie.ts)
+//   - Quadrant charts (quadrantChart) — a four-cell grid with numbered markers (see quadrant.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'

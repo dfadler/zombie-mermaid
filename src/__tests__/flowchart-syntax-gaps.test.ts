@@ -113,7 +113,7 @@ describe('parallelogram shapes (#198 row 2)', () => {
       colorMode: 'none',
     })
     expect(ascii).toContain('step')
-    expect(ascii).toContain('/')
+    expect(ascii).toContain('╱')
   })
 })
 

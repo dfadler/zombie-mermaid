@@ -46,7 +46,7 @@ describe('architectureToGraph', () => {
   })
 
   it('draws a junction as an unlabelled filled circle', () => {
-    expect(lower('junction j').nodes.get('j')).toEqual({
+    expect(lower('junction j').nodes.get('j')).toMatchObject({
       id: 'j',
       label: '',
       shape: 'filled-circle',
@@ -165,5 +165,64 @@ describe('architectureToGraph', () => {
     expect(g.classDefs.size).toBe(0)
     expect(g.nodeStyles.size).toBe(0)
     expect(g.linkStyles.size).toBe(0)
+  })
+
+  describe('port grid (#2473)', () => {
+    it('numbers the flow axis by the ports and the cross axis by the rest', () => {
+      const g = lower(
+        'service a\nservice b\nservice c\na:R -- L:b\nb:B -- T:c\nservice d\nc:L -- R:d',
+      )
+      const cell = (id: string) => [
+        g.nodes.get(id)!.gridLayer,
+        g.nodes.get(id)!.gridOrder,
+      ]
+      expect([cell('a'), cell('b'), cell('c'), cell('d')]).toEqual([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ])
+    })
+
+    it('flags only edges that run across the flow between siblings', () => {
+      const g = lower(
+        'group g\nservice a\nservice b\nservice c\nservice d in g\nservice e\nservice f in g\n' +
+          'a:R -- L:b\nb:R -- L:c\nb:B -- T:e\nc:B -- T:d\nd{group}:L -- R:c\nd:R -- L:f',
+      )
+      expect(g.edges.map((e) => e.acrossFlow === true)).toEqual([
+        false,
+        false,
+        true,
+        false, // Inside a group
+        false, // A {group} end
+        false, // Both inside a group
+      ])
+    })
+
+    it('uses the rows when the ports mostly run top to bottom', () => {
+      const g = lower(two + 'a:B -- T:b')
+      expect(g.direction).toBe('TB')
+      expect(g.nodes.get('b')).toMatchObject({ gridLayer: 1, gridOrder: 0 })
+      expect(g.edges[0]?.acrossFlow).toBeUndefined()
+    })
+
+    it('flags a left-right edge in a top-to-bottom graph', () => {
+      const g = lower(
+        'service a\nservice b\nservice c\nservice d\na:B -- T:b\nb:B -- T:c\nb:R -- L:d',
+      )
+      expect(g.edges.map((e) => e.acrossFlow === true)).toEqual([
+        false,
+        false,
+        true,
+      ])
+    })
+
+    it('does not place a node twice when the ports form a cycle', () => {
+      const g = lower(
+        'service a\nservice b\nservice c\na:R -- L:b\nb:R -- L:c\nc:R -- L:a',
+      )
+      expect(g.nodes.get('a')?.gridLayer).toBe(0)
+      expect(g.nodes.get('c')?.gridLayer).toBe(-1)
+    })
   })
 })

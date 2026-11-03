@@ -62,6 +62,57 @@ export interface ThemeVariables {
   lineColor?: string
   /** `pie1`..`pie12` by slot (0..11). Mermaid reads them under every theme. */
   pieColors?: Record<number, string>
+  /** The `quadrant*` colour variables by Mermaid's name. Read under every theme. */
+  quadrant?: Partial<Record<QuadrantColorVariable, string>>
+}
+
+/** `quadrantChart` keys that take a number. */
+const QUADRANT_NUMBER_KEYS = [
+  'chartWidth',
+  'chartHeight',
+  'titleFontSize',
+  'titlePadding',
+  'quadrantPadding',
+  'xAxisLabelPadding',
+  'yAxisLabelPadding',
+  'xAxisLabelFontSize',
+  'yAxisLabelFontSize',
+  'quadrantLabelFontSize',
+  'quadrantTextTopPadding',
+  'pointTextPadding',
+  'pointLabelFontSize',
+  'pointRadius',
+  'quadrantInternalBorderStrokeWidth',
+  'quadrantExternalBorderStrokeWidth',
+] as const
+
+/** The `quadrant*` theme variables Mermaid reads. */
+const QUADRANT_COLOR_VARIABLES = [
+  'quadrant1Fill',
+  'quadrant2Fill',
+  'quadrant3Fill',
+  'quadrant4Fill',
+  'quadrant1TextFill',
+  'quadrant2TextFill',
+  'quadrant3TextFill',
+  'quadrant4TextFill',
+  'quadrantPointFill',
+  'quadrantPointTextFill',
+  'quadrantXAxisTextFill',
+  'quadrantYAxisTextFill',
+  'quadrantTitleFill',
+  'quadrantInternalBorderStrokeFill',
+  'quadrantExternalBorderStrokeFill',
+] as const
+
+export type QuadrantColorVariable = (typeof QUADRANT_COLOR_VARIABLES)[number]
+
+/** `quadrantChart` config a diagram can set (Mermaid's names and units). */
+export type QuadrantConfig = Partial<
+  Record<(typeof QUADRANT_NUMBER_KEYS)[number], number>
+> & {
+  xAxisPosition?: 'top' | 'bottom'
+  yAxisPosition?: 'left' | 'right'
 }
 
 const BASE_ONLY_VARIABLES = [
@@ -101,6 +152,8 @@ export interface InitConfig {
   pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center'
   /** `pie.highlightSlice`: label of the slice to emphasise. */
   pieHighlightSlice?: string
+  /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
+  quadrant?: QuadrantConfig
   /**
    * `themeVariables` the renderer can map, applied only when the caller opts
    * in with `RenderOptions.honorThemeVariables`. `primaryColor`,
@@ -130,7 +183,7 @@ const IGNORED_KEYS: Record<string, string> = {
   maxtextsize: 'no text-size limit is enforced',
   startonload: 'not a browser auto-render integration',
   themevariables:
-    "only primaryColor, primaryBorderColor, primaryTextColor, lineColor and pie1..pie12 are mapped, and only when the caller sets `honorThemeVariables`; every other variable (secondary/tertiary colours, fontFamily, background, per-diagram variables) is not read, and Mermaid's colours derived from primaryColor are not computed",
+    "only primaryColor, primaryBorderColor, primaryTextColor, lineColor, pie1..pie12 and the quadrant* colours are mapped, and only when the caller sets `honorThemeVariables`; every other variable (secondary/tertiary colours, fontFamily, background, per-diagram variables) is not read, and Mermaid's colours derived from primaryColor are not computed",
 }
 
 /**
@@ -264,7 +317,9 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const tv: ThemeVariables = {}
       for (const [vk, vv] of Object.entries({ ...value })) {
         const color = directiveColor(vv)
-        if (PIE_VARIABLE.test(vk)) {
+        if ((QUADRANT_COLOR_VARIABLES as readonly string[]).includes(vk)) {
+          if (color) (tv.quadrant ??= {})[vk as QuadrantColorVariable] = color
+        } else if (PIE_VARIABLE.test(vk)) {
           if (color) (tv.pieColors ??= {})[Number(vk.slice(3)) - 1] = color
         } else if (
           (BASE_ONLY_VARIABLES as readonly string[]).includes(vk) ||
@@ -290,6 +345,25 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         }
         if (fk.toLowerCase() in IGNORED_KEYS) config.ignored.push(fk)
       }
+      continue
+    }
+
+    if (
+      lower === 'quadrantchart' &&
+      typeof value === 'object' &&
+      value !== null
+    ) {
+      const q: QuadrantConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of QUADRANT_NUMBER_KEYS) {
+        const v = rec[k]
+        if (typeof v === 'number' && Number.isFinite(v) && v >= 0) q[k] = v
+      }
+      const x = rec.xAxisPosition
+      if (x === 'top' || x === 'bottom') q.xAxisPosition = x
+      const y = rec.yAxisPosition
+      if (y === 'left' || y === 'right') q.yAxisPosition = y
+      config.quadrant = q
       continue
     }
 
@@ -343,10 +417,13 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.pieHighlightSlice !== undefined) {
       merged.pieHighlightSlice = config.pieHighlightSlice
     }
+    if (config.quadrant)
+      merged.quadrant = { ...merged.quadrant, ...config.quadrant }
     if (config.themeVariables) {
-      const { pieColors, ...rest } = config.themeVariables
+      const { pieColors, quadrant, ...rest } = config.themeVariables
       const mergedTv = (merged.themeVariables ??= {})
       Object.assign(mergedTv, rest)
+      if (quadrant) mergedTv.quadrant = { ...mergedTv.quadrant, ...quadrant }
       if (pieColors)
         mergedTv.pieColors = { ...mergedTv.pieColors, ...pieColors }
     }

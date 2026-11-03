@@ -16,7 +16,6 @@ import {
   mkCanvas,
   mkRoleCanvas,
   canvasToString,
-  getCanvasSize,
   increaseSize,
   increaseRoleCanvasSize,
   write,
@@ -95,21 +94,20 @@ function selfLoopWidth(msg: Message): number {
     : SELF_LOOP_WIDTH + String(msg.seqNumber).length
 }
 
-// A self-message's label is drawn on rows ABOVE its loop (mermaid.js's own
-// placement), starting this many columns right of the lifeline so it never
-// touches it. Sitting above the loop rather than beside it means the label
-// only needs `SELF_LABEL_OFFSET + width` columns, not loop + clearance +
-// width, so the next lifeline can stay closer (issue #1387).
-const SELF_LABEL_OFFSET = 2
+// A self-message's label is drawn on rows ABOVE its loop, centred on the
+// lifeline like a normal message's label (mermaid.js's own placement, issues
+// #1387 and #2456). So it reaches `selfLeft` columns left of the lifeline
+// and `ceil(width / 2)` right, rather than needing loop + clearance + width
+// on the right.
+function selfLeft(msg: Message): number {
+  return Math.floor(maxLineWidth(msg.label) / 2)
+}
 
 // Columns right of the lifeline a self-message occupies: the wider of its
-// loop and its label. Shared by the gap-sizing, canvas-width and block-wall
-// passes so all three agree.
+// loop and its (centred) label. Shared by the gap-sizing, canvas-width and
+// block-wall passes so all three agree.
 function selfExtent(msg: Message): number {
-  return Math.max(
-    selfLoopWidth(msg),
-    SELF_LABEL_OFFSET + maxLineWidth(msg.label),
-  )
+  return Math.max(selfLoopWidth(msg), Math.ceil(maxLineWidth(msg.label) / 2))
 }
 
 /**
@@ -173,14 +171,20 @@ export function renderSequenceAscii(
   /**
    * Widest line among a block's header ("alt [label]") and every divider
    * ("[else label]") — the minimum wall width the block's own text needs,
-   * independent of how far its messages' lifelines happen to span.
+   * independent of how far its messages' lifelines happen to span. Includes
+   * the `─ text ─` framing (as box-group headers have), so a label never
+   * touches the corner/junction or the border line that continues after it.
    */
   function maxBlockLabelWidth(block: Block): number {
-    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
-    let width = maxLineWidth(hdrLabel)
+    // `┌─ loop ─ [label] ─┐`: the label is centred in the space after the
+    // type tab (as mermaid does), so it needs a dash each side.
+    let width = maxLineWidth(block.type) + 4
+    if (block.label) {
+      width += maxLineWidth(`[${block.label}]`) + 5
+    }
     for (const divider of block.dividers) {
       if (divider.label) {
-        width = Math.max(width, maxLineWidth(`[${divider.label}]`))
+        width = Math.max(width, maxLineWidth(`[${divider.label}]`) + 4)
       }
     }
     return width
@@ -322,6 +326,12 @@ export function renderSequenceAscii(
         const needed = selfExtent(msg) + 1 - 2
         adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, needed)
       }
+      // The centred label also reaches left, into the previous gap.
+      if (fi > 0) {
+        // (`+ 2` clearance for the previous lifeline, `- 2` for the margin
+        // added below, which cancel.)
+        adjMaxWidth[fi - 1] = Math.max(adjMaxWidth[fi - 1]!, selfLeft(msg))
+      }
       continue
     }
     const lo = Math.min(fi, ti)
@@ -350,6 +360,28 @@ export function renderSequenceAscii(
     return Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
   }
 
+  // Blocks that open at the message right after this note and contain it: the
+  // note was written between the block's header and its first message (#2531).
+  function leadingBlocks(note: (typeof diagram.notes)[number]): number[] {
+    const ni = diagram.notes.indexOf(note)
+    return diagram.blocks.flatMap((b, bi) =>
+      b.startIndex === note.afterIndex + 1 &&
+      ni >= b.noteStartIndex &&
+      ni < b.noteEndIndex
+        ? [bi]
+        : [],
+    )
+  }
+
+  // How many blocks enclose this note (#2514)? Each one has a left wall.
+  function noteDepth(note: (typeof diagram.notes)[number]): number {
+    return (
+      diagram.blocks.filter(
+        (b) => note.afterIndex >= b.startIndex && note.afterIndex <= b.endIndex,
+      ).length + leadingBlocks(note).length
+    )
+  }
+
   // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
   // actor i draws into the gap to its left (between actor i-1 and i, or —
   // for the leftmost actor — the canvas's own left margin); a `right` note
@@ -373,7 +405,11 @@ export function renderSequenceAscii(
   for (const note of diagram.notes) {
     if (note.position === 'left' || note.position === 'right') {
       const aIdx = actorIndexOf(note.actorIds[0]!)
-      const w = noteBoxWidth(note)
+      // A note inside a block also needs a blank column, the wall and a clear
+      // column before the neighbouring lifeline (#2514).
+      const w =
+        noteBoxWidth(note) +
+        (noteDepth(note) && !(note.position === 'left' && aIdx === 0) ? 3 : 0)
       if (note.position === 'left') {
         leftNoteWidth[aIdx] = Math.max(leftNoteWidth[aIdx]!, w)
       } else {
@@ -419,6 +455,31 @@ export function renderSequenceAscii(
       // above, but for the note's own left half (`nx = llX[0] -
       // overNoteHalfLeft[0]` must stay >= 0; issue #992).
       overNoteHalfLeft[0]!,
+      // A note inside a block must also clear the block's left wall at
+      // column 0 (#2514), leaving one blank column between wall and note:
+      // one column per enclosing wall plus the blank one (`left` also needs
+      // its separating column from the lifeline).
+      ...diagram.notes.map((n) =>
+        actorIndexOf(n.actorIds[0]!) === 0 &&
+        n.position !== 'right' &&
+        (n.position === 'left' || n.actorIds.length === 1) &&
+        noteDepth(n)
+          ? n.position === 'left'
+            ? noteBoxWidth(n) + 2 + noteDepth(n)
+            : Math.floor(noteBoxWidth(n) / 2) + 1 + noteDepth(n)
+          : 0,
+      ),
+      // A centred self-message label on the leftmost actor reaches left of
+      // its lifeline too (#2456); inside a block it must also clear the
+      // block's left wall (column 0) by one blank column.
+      ...diagram.messages.map((m, mi) =>
+        m.from === m.to && actorIndexOf(m.from) === 0
+          ? selfLeft(m) +
+            (diagram.blocks.some((b) => mi >= b.startIndex && mi <= b.endIndex)
+              ? 2
+              : 0)
+          : 0,
+      ),
     ),
   ]
   for (let i = 1; i < diagram.actors.length; i++) {
@@ -526,6 +587,7 @@ export function renderSequenceAscii(
       if (f === t) {
         const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
+        minLX = Math.min(minLX, llX[f]! - selfLeft(msg))
       }
     }
     // An empty block, or one whose rightmost participant is already the
@@ -567,6 +629,7 @@ export function renderSequenceAscii(
     width: number
     height: number
     lines: string[]
+    depth: number
   }> = []
 
   // Start right below the header boxes — and below the group bracket's
@@ -595,14 +658,13 @@ export function renderSequenceAscii(
   // so those keep using rowGap directly. See issue #343's CodeRabbit review.
   const minSeparatorGap = Math.max(rowGap, 1)
 
-  // Pre-message notes: afterIndex === -1 — position before message loop
-  for (const note of diagram.notes) {
-    if (note.afterIndex !== -1) continue
+  function placeNote(note: (typeof diagram.notes)[number]): void {
     curY += rowGap // Gap before note
     const nLines = splitLines(note.text)
     const nWidth = noteBoxWidth(note)
     const nHeight = nLines.length + 2
 
+    // Determine x position based on note.position
     const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
     let nx: number
     if (note.position === 'left') {
@@ -610,7 +672,7 @@ export function renderSequenceAscii(
     } else if (note.position === 'right') {
       nx = llX[aIdx]! + 2
     } else {
-      // 'over'
+      // 'over' — center over actor(s)
       if (note.actorIds.length >= 2) {
         const aIdx2 = actorIdx.get(note.actorIds[1]!) ?? aIdx
         nx = Math.floor((llX[aIdx]! + llX[aIdx2]!) / 2) - Math.floor(nWidth / 2)
@@ -618,7 +680,7 @@ export function renderSequenceAscii(
         nx = llX[aIdx]! - Math.floor(nWidth / 2)
       }
     }
-    nx = Math.max(0, nx)
+    nx = Math.max(noteDepth(note) && noteDepth(note) + 1, nx)
 
     notePositions.push({
       x: nx,
@@ -626,29 +688,54 @@ export function renderSequenceAscii(
       width: nWidth,
       height: nHeight,
       lines: nLines,
+      depth: noteDepth(note),
     })
     curY += nHeight
   }
 
-  for (let m = 0; m < diagram.messages.length; m++) {
-    // Block openings at this message
-    for (let b = 0; b < diagram.blocks.length; b++) {
-      if (diagram.blocks[b]!.startIndex === m) {
-        curY += rowGap + 1 // Blank rows + 1 fixed header row
-        blockStartY.set(b, curY - 1)
-      }
-    }
+  // Notes before the first message, except those a block header must precede.
+  for (const note of diagram.notes) {
+    if (note.afterIndex === -1 && !leadingBlocks(note).length) placeNote(note)
+  }
 
-    // Dividers at this message index
-    for (let b = 0; b < diagram.blocks.length; b++) {
-      for (let d = 0; d < diagram.blocks[b]!.dividers.length; d++) {
-        if (diagram.blocks[b]!.dividers[d]!.index === m) {
-          curY += rowGap
-          divYMap.set(`${b}:${d}`, curY)
-          curY += minSeparatorGap
+  for (let m = 0; m < diagram.messages.length; m++) {
+    // Dividers of blocks that opened earlier come first: a divider at this
+    // index precedes any block nested at the same message (#2497), while a
+    // divider of a block opening right here follows its header.
+    const placeDividers = (opened: boolean): void => {
+      for (let b = 0; b < diagram.blocks.length; b++) {
+        if (diagram.blocks[b]!.startIndex < m !== opened) continue
+        for (let d = 0; d < diagram.blocks[b]!.dividers.length; d++) {
+          if (diagram.blocks[b]!.dividers[d]!.index === m) {
+            curY += rowGap
+            divYMap.set(`${b}:${d}`, curY)
+            curY += minSeparatorGap
+          }
         }
       }
     }
+    placeDividers(true)
+
+    // Block openings at this message, outermost first (blocks are stored in
+    // closing order, so a nested block precedes the block that contains it).
+    for (let b = diagram.blocks.length - 1; b >= 0; b--) {
+      if (diagram.blocks[b]!.startIndex === m) {
+        // Blank rows + 1 header row + one more per extra label line.
+        const extra = splitLines(`[${diagram.blocks[b]!.label}]`).length - 1
+        curY += rowGap + 1 + extra
+        blockStartY.set(b, curY - 1 - extra)
+        // Notes written between this header and the first message (#2531),
+        // under the innermost block that opens here and contains them.
+        for (const note of diagram.notes) {
+          if (
+            note.afterIndex === m - 1 &&
+            Math.min(...leadingBlocks(note)) === b
+          )
+            placeNote(note)
+        }
+      }
+    }
+    placeDividers(false)
 
     curY += rowGap // Blank row before message
 
@@ -699,43 +786,8 @@ export function renderSequenceAscii(
     }
 
     // Notes after this message
-    for (let n = 0; n < diagram.notes.length; n++) {
-      if (diagram.notes[n]!.afterIndex === m) {
-        curY += rowGap
-        const note = diagram.notes[n]!
-        const nLines = splitLines(note.text)
-        const nWidth = noteBoxWidth(note)
-        const nHeight = nLines.length + 2
-
-        // Determine x position based on note.position
-        const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
-        let nx: number
-        if (note.position === 'left') {
-          nx = llX[aIdx]! - nWidth - 1
-        } else if (note.position === 'right') {
-          nx = llX[aIdx]! + 2
-        } else {
-          // 'over' — center over actor(s)
-          if (note.actorIds.length >= 2) {
-            const aIdx2 = actorIdx.get(note.actorIds[1]!) ?? aIdx
-            nx =
-              Math.floor((llX[aIdx]! + llX[aIdx2]!) / 2) -
-              Math.floor(nWidth / 2)
-          } else {
-            nx = llX[aIdx]! - Math.floor(nWidth / 2)
-          }
-        }
-        nx = Math.max(0, nx)
-
-        notePositions.push({
-          x: nx,
-          y: curY,
-          width: nWidth,
-          height: nHeight,
-          lines: nLines,
-        })
-        curY += nHeight
-      }
+    for (const note of diagram.notes) {
+      if (note.afterIndex === m && !leadingBlocks(note).length) placeNote(note)
     }
 
     // Block closings after this message
@@ -1129,8 +1181,8 @@ export function renderSequenceAscii(
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
 
     if (isSelf) {
-      // Self-message: the label above a 3-row loop to the right of the
-      // lifeline, as mermaid.js draws it (issue #1387)
+      // Self-message: the label centred above a 3-row loop to the right of
+      // the lifeline, as mermaid.js draws it (issues #1387, #2456)
       //   │ Label        (label rows, one per line)
       //   ├──┐           (row 0 = msgArrowY)
       //   │  │           (row 1)
@@ -1165,13 +1217,14 @@ export function renderSequenceAscii(
         setC(x, y0, lineChar, 'line')
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
-      // Label rows sit above the loop, clear of the lifeline.
+      // Label rows sit above the loop, centred on the lifeline.
       const labelRows = msgLines.length
       for (let lineIdx = 0; lineIdx < labelRows; lineIdx++) {
+        const line = msgLines[lineIdx]!
         writeTextCells(
-          fromX + SELF_LABEL_OFFSET,
+          fromX - Math.floor(displayWidth(line) / 2),
           y0 - labelRows + lineIdx,
-          msgLines[lineIdx]!,
+          line,
           'text',
           totalW,
         )
@@ -1335,12 +1388,14 @@ export function renderSequenceAscii(
   // increaseRoleCanvasSize below whenever a wall needs to grow past it.
   let blockCanvasMaxX = totalW - 1
 
+  // Pass 1: every block's wall extent. Blocks are stored in closing order, so
+  // a nested block precedes the block containing it (#2497).
+  const blockExt: Array<{ l: number; r: number }> = []
   for (let b = 0; b < diagram.blocks.length; b++) {
     const block = diagram.blocks[b]!
     const topY = blockStartY.get(b)
     const botY = blockEndY.get(b)
     if (topY === undefined || botY === undefined) continue
-
     // Find the leftmost/rightmost lifelines involved in this block's messages
     let minLX = totalW
     let maxLX = 0
@@ -1357,6 +1412,7 @@ export function renderSequenceAscii(
       if (f === t) {
         const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
+        minLX = Math.min(minLX, llX[f]! - selfLeft(msg))
       }
     }
 
@@ -1398,12 +1454,16 @@ export function renderSequenceAscii(
     if (bLeft <= nextLeftLL)
       bLeft = Math.min(minLX, nextLeftLL + BLOCK_WALL_MARGIN)
 
-    bLeft = Math.max(0, bLeft)
-    if (bRight > blockCanvasMaxX) {
-      increaseSize(canvas, bRight + 1, totalH - 1)
-      increaseRoleCanvasSize(rc, bRight + 1, totalH - 1)
-      blockCanvasMaxX = bRight
+    // A note drawn inside the block (between its top and bottom rows) must
+    // sit inside the wall too, one clear column each side (#2514). Applied
+    // after the pull-back so a note wins over an untouched lifeline.
+    for (const np of notePositions) {
+      if (np.y <= topY || np.y >= botY) continue
+      bLeft = Math.min(bLeft, np.x - 1 - np.depth)
+      bRight = Math.max(bRight, np.x + np.width + 1)
     }
+
+    bLeft = Math.max(0, bLeft)
 
     // Header ("alt [label]") and divider ("[else label]") text is drawn
     // starting at bLeft + 1 (see below), clipped to whatever bRight the
@@ -1425,38 +1485,69 @@ export function renderSequenceAscii(
     // lifeline-shifting layout pass earlier in this function, so growing
     // bRight here doesn't re-collide with whatever the pull-back above
     // just cleared.
-    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
-    const neededRight = bLeft + 1 + maxBlockLabelWidth(block)
-    if (neededRight > bRight) {
-      bRight = neededRight
-      const [canvasMaxX] = getCanvasSize(canvas)
-      if (bRight > canvasMaxX) {
-        increaseSize(canvas, bRight, totalH - 1)
-        increaseRoleCanvasSize(rc, bRight, totalH - 1)
-      }
-      totalW = Math.max(totalW, bRight + 1)
-      blockCanvasMaxX = Math.max(blockCanvasMaxX, bRight)
+    blockExt[b] = { l: bLeft, r: bRight }
+  }
+
+  // Nested blocks nest: a container wall encloses every block inside it, one
+  // column clear on each side. Widen right inner-first (array order), inset
+  // left outer-first (reverse order); the label width is re-measured between.
+  const isInside = (c: Block, p: Block): boolean =>
+    c.startIndex >= p.startIndex && c.endIndex <= p.endIndex
+  // Blocks without a measured extent (never laid out) take no part.
+  const live = Object.keys(blockExt).map(Number)
+  const nestedIn = (p: number): number[] =>
+    live.filter(
+      (c) => c < p && isInside(diagram.blocks[c]!, diagram.blocks[p]!),
+    )
+  for (const p of [...live].reverse()) {
+    for (const c of nestedIn(p))
+      blockExt[c]!.l = Math.max(blockExt[c]!.l, blockExt[p]!.l + 1)
+  }
+  // Label-driven minimum width (#352), measured from the final left wall.
+  for (const b of live) {
+    const ext = blockExt[b]!
+    ext.r = Math.max(ext.r, ext.l + 1 + maxBlockLabelWidth(diagram.blocks[b]!))
+  }
+  for (const p of live) {
+    for (const c of nestedIn(p))
+      blockExt[p]!.r = Math.max(blockExt[p]!.r, blockExt[c]!.r + 1)
+  }
+
+  // Pass 2: grow the canvas to fit, then draw.
+  for (let b = 0; b < diagram.blocks.length; b++) {
+    const block = diagram.blocks[b]!
+    const topY = blockStartY.get(b)
+    const botY = blockEndY.get(b)
+    if (topY === undefined || botY === undefined) continue
+    const ext = blockExt[b]!
+    const bLeft = ext.l
+    const bRight = ext.r
+    if (bRight > blockCanvasMaxX) {
+      increaseSize(canvas, bRight, totalH - 1)
+      increaseRoleCanvasSize(rc, bRight, totalH - 1)
+      blockCanvasMaxX = bRight
     }
+    totalW = Math.max(totalW, bRight + 1)
 
     // Top border with block type label
     setC(bLeft, topY, TL, 'border')
     for (let x = bLeft + 1; x < bRight; x++) setC(x, topY, H, 'border')
     setC(bRight, topY, TR, 'border')
-    // Write block header label over the top border (supports multi-line)
-    const hdrLines = splitLines(hdrLabel)
-
-    for (
-      let lineIdx = 0;
-      lineIdx < hdrLines.length && topY + lineIdx < botY;
-      lineIdx++
-    ) {
-      writeTextCells(
-        bLeft + 1,
-        topY + lineIdx,
-        hdrLines[lineIdx]!,
-        'text',
-        bRight,
-      )
+    // Type tab at the corner, label centred in the rest of the border.
+    writeTextCells(bLeft + 2, topY, ` ${block.type} `, 'text', bRight)
+    if (block.label) {
+      const tabEnd = bLeft + 4 + block.type.length
+      const lines = splitLines(`[${block.label}]`)
+      for (let i = 0; i < lines.length && topY + i < botY; i++) {
+        const w = displayWidth(lines[i]!) + 2
+        writeTextCells(
+          tabEnd + Math.floor((bRight - tabEnd - w) / 2),
+          topY + i,
+          ` ${lines[i]!} `,
+          'text',
+          bRight,
+        )
+      }
     }
 
     // Bottom border
@@ -1482,7 +1573,7 @@ export function renderSequenceAscii(
       const dLabel = block.dividers[d]!.label
       if (dLabel) {
         const dStr = `[${dLabel}]`
-        writeTextCells(bLeft + 1, dY, dStr, 'text', bRight)
+        writeTextCells(bLeft + 2, dY, ` ${dStr} `, 'text', bRight)
       }
     }
   }
