@@ -20,6 +20,7 @@ import type {
 import { ARROW_HEAD } from '../styles.ts'
 import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
+import { alignArchitectureRows } from './architecture-rows.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
 import { straightenTinyJogs } from './jog-straightening.ts'
@@ -250,6 +251,7 @@ export function elkToPositioned(
   // edge bends, but this looks bad. We fix it by aligning layers, then let
   // edge bundling and clipping recalculate edge paths from corrected positions.
   alignLayerNodes(nodes, edges, graph.direction)
+  const rowsMoved = alignArchitectureRows(graph, nodes, edges, groups)
 
   // Synthesize self-loop edges now that node positions are final. These
   // were excluded from the graph handed to ELK (see to-elk.ts) since ELK
@@ -287,6 +289,13 @@ export function elkToPositioned(
   let height = elkResult.height ?? 600
   const arrowMargin = ARROW_HEAD.width
   const padding = DEFAULTS.padding
+  if (rowsMoved) {
+    // A shifted group can poke past the canvas ELK sized.
+    for (const b of flattenGroupBounds(groups)) {
+      width = Math.max(width, b.right + padding)
+      height = Math.max(height, b.bottom + padding)
+    }
+  }
 
   for (const edge of edges) {
     for (const p of edge.points) {
