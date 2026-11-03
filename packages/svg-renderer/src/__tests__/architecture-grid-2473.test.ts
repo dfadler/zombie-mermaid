@@ -71,6 +71,15 @@ describe('architecture port grid in the SVG layout', () => {
     expect(g.edges).toHaveLength(2)
   })
 
+  it('keeps a service level with the grouped neighbour that links straight into it', () => {
+    const g = lay(
+      'group front\ngroup back\ngroup store\n' +
+        'service ui in front\nservice api in back\nservice jobs in back\nservice db in store\n' +
+        'ui{group}:R --> L:api{group}\napi:B -- T:db{group}\njobs:R --> L:db',
+    )
+    expect(Math.abs(at(g, 'db').y - at(g, 'jobs').y)).toBeLessThan(1)
+  })
+
   it('lays out ports that form a cycle without failing', () => {
     const g = lay(svc('a b c') + 'a:R -- L:b\nb:R -- L:c\nc:R -- L:a')
     expect(g.nodes).toHaveLength(3)

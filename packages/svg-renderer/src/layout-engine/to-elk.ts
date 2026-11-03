@@ -479,6 +479,10 @@ export function mermaidToElk(
       ? {
           'elk.partitioning.activate': 'true',
           'elk.layered.crossingMinimization.semiInteractive': 'true',
+          // A node with several neighbours in the layer before lines up with
+          // the upper one instead of floating between them, as a grid row
+          // does: `jobs -> db` keeps `db` level with `jobs` (#2473).
+          'elk.layered.nodePlacement.bk.fixedAlignment': 'LEFTUP',
         }
       : {}),
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
