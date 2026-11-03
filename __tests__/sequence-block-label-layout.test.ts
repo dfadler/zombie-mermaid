@@ -21,6 +21,11 @@ const num = (tag: string, attr: string): number =>
 
 describe('block label layout', () => {
   const svg = renderMermaidSVG(source)
+  /** The opening `<text ...>` tag of the element whose content is `content`. */
+  const textTag = (content: string): string => {
+    const end = svg.indexOf(`>${content}</text>`)
+    return svg.slice(svg.lastIndexOf('<text', end), end)
+  }
   const frame =
     /<g class="block"[^>]*>\s*<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"/.exec(
       svg,
@@ -43,25 +48,19 @@ describe('block label layout', () => {
     const centre = (left + right) / 2
     const tab =
       /<rect x="[\d.]+" y="[\d.]+" width="([\d.]+)"[^>]*group-hdr/.exec(svg)!
-    const header = new RegExp(
-      '<text[^>]*>\\[Establish connection\\]</text>',
-    ).exec(svg)![0]
+    const header = textTag('[Establish connection]')
     expect(num(header, 'x')).toBeCloseTo((left + Number(tab[1]) + right) / 2, 1)
-    for (const label of ['Network timeout', 'Credentials denied']) {
-      const tag = new RegExp(`<text[^>]*>\\[${label}\\]</text>`).exec(svg)![0]
-      expect(num(tag, 'x')).toBeCloseTo(centre, 1)
+    for (const label of ['[Network timeout]', '[Credentials denied]']) {
+      expect(num(textTag(label), 'x')).toBeCloseTo(centre, 1)
     }
   })
 
   it('SVG: a divider label sits on its own row above the message label', () => {
-    const rows = (text: string) =>
-      num(new RegExp(`<text[^>]*>${text}</text>`).exec(svg)![0], 'y')
-    expect(
-      rows('retry') - rows('\\[Network timeout\\]'),
-    ).toBeGreaterThanOrEqual(11)
-    expect(
-      rows('abort') - rows('\\[Credentials denied\\]'),
-    ).toBeGreaterThanOrEqual(11)
+    const rows = (text: string) => num(textTag(text), 'y')
+    expect(rows('retry') - rows('[Network timeout]')).toBeGreaterThanOrEqual(11)
+    expect(rows('abort') - rows('[Credentials denied]')).toBeGreaterThanOrEqual(
+      11,
+    )
   })
 
   it('ASCII: the wall sits the same distance outside both lifelines', () => {
