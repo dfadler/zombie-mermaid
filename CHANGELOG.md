@@ -1,5 +1,29 @@
 # Changelog
 
+## 5.14.2
+
+### Patch Changes
+
+- [#2534](https://github.com/dfadler/zombie-mermaid/pull/2534) [`fab7886`](https://github.com/dfadler/zombie-mermaid/commit/fab7886ca83e4c4476fd92eecf8360c9868eb750) Thanks [@dfadler](https://github.com/dfadler)! - SVG architecture diagrams line a service up with the upper of its neighbours in the layer before, instead of letting it float between them. In the Group-To-Group Edges sample `db` now sits level with `jobs`, as in Mermaid. Against mermaid 12.2.0 that sample goes from 67% to 100% vertical placement agreement; Nested Groups And Junction is unchanged ([#2473](https://github.com/dfadler/zombie-mermaid/issues/2473)).
+
+- [#2520](https://github.com/dfadler/zombie-mermaid/pull/2520) [`3671791`](https://github.com/dfadler/zombie-mermaid/commit/3671791ca95b26bc509888baa900daf1f94a7309) Thanks [@dfadler](https://github.com/dfadler)! - SVG architecture diagrams now draw each service as Mermaid does: an 80px blue icon tile with a white glyph for the built-in `database`, `disk`, `server`, `cloud`, `internet` and `blank` icons, a `?` tile for an icon name Mermaid does not know, and a dashed empty box for a service with no icon, with the label under the tile. Custom icon packs such as `logos:aws` still show the `?` tile. ASCII output is unchanged ([#2518](https://github.com/dfadler/zombie-mermaid/issues/2518)).
+
+- [#2511](https://github.com/dfadler/zombie-mermaid/pull/2511) [`bb958a3`](https://github.com/dfadler/zombie-mermaid/commit/bb958a3ed81de0abefd4e3fcc8b1e64bd9af27d8) Thanks [@dfadler](https://github.com/dfadler)! - SVG architecture diagrams now keep services that are not in a group where their ports put them, as Mermaid does: `a:R -- L:b` neighbours share a row, and `a:B -- T:b` puts `b` straight under `a`. Previously the layered layout staggered side-linked services and laid top/bottom links out along the flow. Against mermaid 12.2.0, the Services And Edge Sides sample goes from 81% to 100% vertical and horizontal placement agreement. Services inside groups are unchanged ([#2473](https://github.com/dfadler/zombie-mermaid/issues/2473)).
+
+- [#2536](https://github.com/dfadler/zombie-mermaid/pull/2536) [`d8721e5`](https://github.com/dfadler/zombie-mermaid/commit/d8721e54bb32cccf107c62de60a3809601a962cd) Thanks [@dfadler](https://github.com/dfadler)! - An ASCII sequence note written between a `loop`/`alt`/`opt` header and its first message is now drawn inside the block under the header, as mermaid.js does, instead of above it ([#2531](https://github.com/dfadler/zombie-mermaid/issues/2531)).
+
+- [#2529](https://github.com/dfadler/zombie-mermaid/pull/2529) [`410a784`](https://github.com/dfadler/zombie-mermaid/commit/410a7845e2b784f1b4a4dbaa05c9865445cff2ec) Thanks [@dfadler](https://github.com/dfadler)! - ASCII parallelograms and trapezoids stretched taller than 5 rows by a neighbouring node (a double circle, say) keep their slanted sides instead of falling back to `│` walls and a `└──┘` base; the lean is spread over every row ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)).
+
+- [#2521](https://github.com/dfadler/zombie-mermaid/pull/2521) [`b2af3e8`](https://github.com/dfadler/zombie-mermaid/commit/b2af3e80e55470bf8ca7559499a445c0bc38fdcd) Thanks [@dfadler](https://github.com/dfadler)! - The CLI (and `zombie-mermaid mcp`) now exits with a one-line message naming the required and found Node version when run on Node below 24 ([#2513](https://github.com/dfadler/zombie-mermaid/issues/2513)).
+
+- [#2522](https://github.com/dfadler/zombie-mermaid/pull/2522) [`df677f5`](https://github.com/dfadler/zombie-mermaid/commit/df677f5e0a63f4885562ca7dad8b5b743881e2ea) Thanks [@dfadler](https://github.com/dfadler)! - SVG xychart bars now follow mermaid 12.2.0's band formula, so their width and gap match mermaid with few and many categories instead of a fixed 40 px cap; `pnpm run xychart:oracle` scores bar width too.
+- Updated dependencies [[`fab7886`](https://github.com/dfadler/zombie-mermaid/commit/fab7886ca83e4c4476fd92eecf8360c9868eb750), [`3671791`](https://github.com/dfadler/zombie-mermaid/commit/3671791ca95b26bc509888baa900daf1f94a7309), [`bb958a3`](https://github.com/dfadler/zombie-mermaid/commit/bb958a3ed81de0abefd4e3fcc8b1e64bd9af27d8), [`d725006`](https://github.com/dfadler/zombie-mermaid/commit/d725006c3c46b58078b9ebe12962730961411aa5), [`35d1f0a`](https://github.com/dfadler/zombie-mermaid/commit/35d1f0a6be0f4c8be8ecafec49882eb5a7dbe199), [`ee1a26d`](https://github.com/dfadler/zombie-mermaid/commit/ee1a26db8994f916e41cc11bb6f5cca0f71d8e8c), [`1941517`](https://github.com/dfadler/zombie-mermaid/commit/1941517fdc686b8700126b4e33f814764b0c3e91), [`df677f5`](https://github.com/dfadler/zombie-mermaid/commit/df677f5e0a63f4885562ca7dad8b5b743881e2ea)]:
+  - @zombie-mermaid/svg-renderer@5.14.2
+  - @zombie-mermaid/core@5.14.2
+  - @zombie-mermaid/mermaid-parser@5.14.2
+  - @zombie-mermaid/ascii-renderer@5.14.2
+  - @zombie-mermaid/mcp@5.14.2
+
 ## 5.14.1
 
 ### Patch Changes
