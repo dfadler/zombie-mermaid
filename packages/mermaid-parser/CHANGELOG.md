@@ -1,5 +1,17 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.14.2
+
+### Patch Changes
+
+- [#2520](https://github.com/dfadler/zombie-mermaid/pull/2520) [`3671791`](https://github.com/dfadler/zombie-mermaid/commit/3671791ca95b26bc509888baa900daf1f94a7309) Thanks [@dfadler](https://github.com/dfadler)! - SVG architecture diagrams now draw each service as Mermaid does: an 80px blue icon tile with a white glyph for the built-in `database`, `disk`, `server`, `cloud`, `internet` and `blank` icons, a `?` tile for an icon name Mermaid does not know, and a dashed empty box for a service with no icon, with the label under the tile. Custom icon packs such as `logos:aws` still show the `?` tile. ASCII output is unchanged ([#2518](https://github.com/dfadler/zombie-mermaid/issues/2518)).
+
+- [#2511](https://github.com/dfadler/zombie-mermaid/pull/2511) [`bb958a3`](https://github.com/dfadler/zombie-mermaid/commit/bb958a3ed81de0abefd4e3fcc8b1e64bd9af27d8) Thanks [@dfadler](https://github.com/dfadler)! - SVG architecture diagrams now keep services that are not in a group where their ports put them, as Mermaid does: `a:R -- L:b` neighbours share a row, and `a:B -- T:b` puts `b` straight under `a`. Previously the layered layout staggered side-linked services and laid top/bottom links out along the flow. Against mermaid 12.2.0, the Services And Edge Sides sample goes from 81% to 100% vertical and horizontal placement agreement. Services inside groups are unchanged ([#2473](https://github.com/dfadler/zombie-mermaid/issues/2473)).
+
+- [#2522](https://github.com/dfadler/zombie-mermaid/pull/2522) [`df677f5`](https://github.com/dfadler/zombie-mermaid/commit/df677f5e0a63f4885562ca7dad8b5b743881e2ea) Thanks [@dfadler](https://github.com/dfadler)! - SVG xychart bars now follow mermaid 12.2.0's band formula, so their width and gap match mermaid with few and many categories instead of a fixed 40 px cap; `pnpm run xychart:oracle` scores bar width too.
+- Updated dependencies [[`3671791`](https://github.com/dfadler/zombie-mermaid/commit/3671791ca95b26bc509888baa900daf1f94a7309), [`bb958a3`](https://github.com/dfadler/zombie-mermaid/commit/bb958a3ed81de0abefd4e3fcc8b1e64bd9af27d8), [`df677f5`](https://github.com/dfadler/zombie-mermaid/commit/df677f5e0a63f4885562ca7dad8b5b743881e2ea)]:
+  - @zombie-mermaid/core@5.14.2
+
 ## 5.14.1
 
 ### Patch Changes
