@@ -393,6 +393,7 @@ export interface MermaidSubgraph {
     // (undocumented)
     children: MermaidSubgraph[];
     direction?: Direction;
+    icon?: string;
     // (undocumented)
     id: string;
     // (undocumented)
@@ -449,7 +450,7 @@ export interface NodeInteraction {
 }
 
 // @public (undocumented)
-export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circle' | 'subroutine' | 'doublecircle' | 'hexagon' | 'cylinder' | 'asymmetric' | 'trapezoid' | 'trapezoid-alt' | 'parallelogram' | 'parallelogram-alt' | 'state-start' | 'state-end' | 'document' | 'stacked-document' | 'stacked-process' | 'card' | 'lined-process' | 'divided-process' | 'window-pane' | 'triangle' | 'flipped-triangle' | 'filled-circle' | 'crossed-circle' | 'fork-join' | 'notched-pentagon' | 'sloped-rectangle' | 'flag' | 'bow-tie-rectangle' | 'half-rounded-rectangle' | 'brace' | 'brace-right' | 'braces' | 'bolt' | 'text' | 'anchor' | 'note';
+export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circle' | 'subroutine' | 'doublecircle' | 'hexagon' | 'cylinder' | 'asymmetric' | 'trapezoid' | 'trapezoid-alt' | 'parallelogram' | 'parallelogram-alt' | 'state-start' | 'state-end' | 'document' | 'stacked-document' | 'stacked-process' | 'card' | 'lined-process' | 'divided-process' | 'window-pane' | 'triangle' | 'flipped-triangle' | 'filled-circle' | 'junction' | 'crossed-circle' | 'fork-join' | 'notched-pentagon' | 'sloped-rectangle' | 'flag' | 'bow-tie-rectangle' | 'half-rounded-rectangle' | 'brace' | 'brace-right' | 'braces' | 'bolt' | 'text' | 'anchor' | 'note';
 
 // @public
 export function normalizeBrTags(label: string): string;
@@ -522,6 +523,7 @@ export interface PositionedGroup {
     children: PositionedGroup[];
     // (undocumented)
     height: number;
+    icon?: string;
     // (undocumented)
     id: string;
     // (undocumented)
