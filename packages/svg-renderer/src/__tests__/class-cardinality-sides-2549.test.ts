@@ -8,10 +8,12 @@ import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'
 
 const pos = (svg: string, text: string): { x: number; y: number } => {
-  const m = new RegExp(
-    `<text x="([\\d.-]+)" y="([\\d.-]+)"[^>]*>${text}</text>`,
-  ).exec(svg)!
-  return { x: Number(m[1]), y: Number(m[2]) }
+  for (const m of svg.matchAll(
+    /<text x="([\d.-]+)" y="([\d.-]+)"[^>]*>([^<]*)<\/text>/g,
+  )) {
+    if (m[3] === text) return { x: Number(m[1]), y: Number(m[2]) }
+  }
+  throw new Error(`no <text> with content ${text}`)
 }
 
 describe('class cardinality label sides (#2549)', () => {

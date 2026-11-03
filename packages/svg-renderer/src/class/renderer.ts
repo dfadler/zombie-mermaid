@@ -750,7 +750,7 @@ function cardinalityOffset(
 ): { x: number; y: number } {
   const dx = inward.x - from.x
   const dy = inward.y - from.y
-  const len = Math.hypot(dx, dy) || 1
+  const len = Math.max(Math.hypot(dx, dy), 1e-6)
   const ux = dx / len
   const uy = dy / len
   // `travel` is the direction of travel along the edge, start to end
