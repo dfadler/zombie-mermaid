@@ -436,6 +436,8 @@ export function layoutSimple(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
+      startMarker: edge.startMarker,
+      endMarker: edge.endMarker,
     })
   })
   synthesizeSelfLoopEdges(graph, nodeMap, edges)

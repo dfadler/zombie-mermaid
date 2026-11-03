@@ -835,6 +835,8 @@ function routeDetached(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
+      startMarker: edge.startMarker,
+      endMarker: edge.endMarker,
     })
   }
   return out
