@@ -68,7 +68,8 @@ import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
 import { splitLines } from './multiline-utils.ts'
 import { displayWidth } from './display-width.ts'
-import { edgeLabelPlacement } from './draw-arrows.ts'
+import { edgeLabelPlacement, labelFit } from './draw-arrows.ts'
+import { withPortShifts } from './port-offsets.ts'
 
 // `requireGridCoord` is defined in types.ts (a pure predicate over
 // AsciiNode with no grid-state dependency) and re-exported here so the two
@@ -892,6 +893,63 @@ function widenGapsForCrossingLabels(graph: AsciiGraph): boolean {
     if (!widened) break
   }
   return changed
+}
+
+/**
+ * Widen the gap an LR edge's label was moved out of (off its own run, to a row
+ * beside it) one cell at a time until the label fits on the run, as mermaid
+ * draws it. A label that fits but touches a stroke or the arrowhead gets at
+ * most `MAX_TIGHT_WIDENING` more cells. Capped: past the cap the label stays
+ * where it is, which is still legible.
+ */
+const MAX_OFF_RUN_WIDENING = 6
+const MAX_TIGHT_WIDENING = 4
+function widenGapsForOffRunLabels(graph: AsciiGraph): void {
+  const offN = new Map<AsciiEdge, number>()
+  const tightN = new Map<AsciiEdge, number>()
+  // The gap column of an edge's run: the one cell of its label line no node
+  // block (3x3 grid cells) covers. A run over several free cells (a back edge
+  // under the nodes, a run through a frame wall) has no one gap to widen.
+  const runColumn = (edge: AsciiEdge): number | undefined => {
+    const [a, b] = edge.labelLine
+    const free: number[] = []
+    for (let x = Math.min(a!.x, b!.x); x <= Math.max(a!.x, b!.x); x++) {
+      const inNode = graph.nodes.some((n) => {
+        const c = requireGridCoord(n)
+        return x >= c.x && x <= c.x + 2 && a!.y >= c.y && a!.y <= c.y + 2
+      })
+      if (!inNode) free.push(x)
+    }
+    return free.length === 1 ? free[0] : undefined
+  }
+  for (let pass = 0; pass < 64; pass++) {
+    // One scan per pass inside `withPortShifts`, so each label is resolved
+    // once per layout state; widening happens after it, never inside it.
+    const todo = withPortShifts(graph, () =>
+      graph.edges.flatMap((e) => {
+        const fit = labelFit(graph, e)
+        if (fit === 'off' && (offN.get(e) ?? 0) < MAX_OFF_RUN_WIDENING)
+          return [[e, offN] as const]
+        if (fit === 'tight' && (tightN.get(e) ?? 0) < MAX_TIGHT_WIDENING)
+          return [[e, tightN] as const]
+        return []
+      }),
+    )
+    if (todo.length === 0) return
+    const columns = new Set<number>()
+    for (const [e, count] of todo) {
+      const run = runColumn(e)
+      count.set(e, run === undefined ? 99 : (count.get(e) ?? 0) + 1)
+      if (run !== undefined) columns.add(run)
+    }
+    for (const c of columns) {
+      graph.columnWidth.set(c, (graph.columnWidth.get(c) ?? 0) + 1)
+    }
+    for (const node of graph.nodes) {
+      node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+    }
+    calculateSubgraphBoundingBoxes(graph)
+  }
 }
 
 export function calculateSubgraphBoundingBoxes(graph: AsciiGraph): void {
@@ -2304,6 +2362,7 @@ export function createMapping(graph: AsciiGraph): void {
   // them touch (#1254).
   widenGapsForFrameTitles(graph)
   widenGapsForCrossingLabels(graph)
+  widenGapsForOffRunLabels(graph)
   // A cluster-exit gutter narrower than its cluster's drawn wall (padding,
   // nesting, or LR label widening) is widened here, where the wall is first
   // known. Widening only shifts what lies past the gutter, so node drawing
