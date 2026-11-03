@@ -61,7 +61,14 @@ minimumReleaseAgeExclude:
 
 overrides:
   '@types/node>undici-types': 6.28.0
-  qs: ^6.16.0
+  qs: ^6.16.1
+  # Transitive packages Dependabot cannot bump itself (security-updates-only
+  # skips sub-dependencies), so each alert made its job fail (#2502).
+  # Range selectors keep each pin to the vulnerable range only.
+  'undici@>=8.0.0 <8.12.2': ^8.12.2
+  '@hono/node-server@>=2.0.0 <2.1.3': ^2.1.3
+  'fast-uri@>=3.0.0 <3.1.9': ^3.1.9
+  'body-parser@>=2.0.0 <2.4.0': ^2.4.0
 
 blockExoticSubdeps: true
 minimumReleaseAge: 10080

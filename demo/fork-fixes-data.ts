@@ -866,6 +866,19 @@ export const forkFixes: ForkFix[] = [
       'Before: a gray disc on the Gateway edge and a bare "Cloud" title. After: the edges meet in a single join and the cloud icon sits left of the title.',
   },
   {
+    id: 'ascii-label-canvas-edge',
+    title: 'ASCII edge label cut off at the canvas edge',
+    symptom:
+      'In a right-to-left state diagram, the label `e1` on an edge running down the outermost column printed as `1`, because its first character fell past the edge of the canvas.',
+    source:
+      'stateDiagram-v2\n direction RL\n S0-->S1\n S0-->S2\n S1-->S3\n S1-->S4 : e0\n S1-->S0\n S4-->S0 : e1\n S4-->S0',
+    fixCommit: '1e019fa1',
+    pr: 2572,
+    render: 'ascii',
+    lookFor:
+      'Before: the right edge reads `└1`. After: the canvas is one column wider and the label reads `└e1`.',
+  },
+  {
     id: 'sequence-block-label-layout',
     title: 'Sequence block labels were laid out unlike mermaid.js',
     symptom:
