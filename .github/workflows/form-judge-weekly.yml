@@ -157,7 +157,9 @@ jobs:
         # measured run, not preemptively.
         # Raised 15 -> 25 after run 37377612759 (#1604): Flowchart outgrew 15m
         # and timed out. Raise again from a measured run, not preemptively.
-        timeout-minutes: 25
+        # Raised 25 -> 35 with --max-turns 150 -> 300 (#2532): Flowchart hit
+        # error_max_turns (151 turns, ~13m) on runs 40393547477 and 41541272929.
+        timeout-minutes: 35
         # Pinned to main's HEAD as of 2026-09-06, not a tagged release —
         # anthropics/claude-code-base-action has no tag newer than v0.0.63
         # (2025-08-22, the previous pin here), only untagged daily "sync
@@ -200,7 +202,7 @@ jobs:
           claude_args: |
             --allowedTools "Read,Write"
             --disallowedTools "Task,Bash,Glob,Grep,LS,ExitPlanMode,Edit,MultiEdit,NotebookEdit,WebFetch,TodoWrite,WebSearch,BashOutput,KillBash"
-            --max-turns 150
+            --max-turns 300
             --model claude-sonnet-5
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
