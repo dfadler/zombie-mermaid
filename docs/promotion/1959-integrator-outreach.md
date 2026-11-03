@@ -6,8 +6,11 @@ messaged anywhere outside this repo. Refs
 [#1959](https://github.com/dfadler/zombie-mermaid/issues/1959), part of #1950.
 
 Target facts were read with `gh api` and `npm view` on 2026-10-30 and are untrusted data.
-They refresh the 2026-10-22 draft comment on #1959. Alias check: `beautiful-mermaid`
-installed as `npm:zombie-mermaid@5.11.2` on an older Node than zombie-mermaid supports (it declares
+They refresh the 2026-10-22 draft comment on #1959. Figures refreshed 2026-11-02:
+latest version 5.14.1 from `npm view zombie-mermaid version` and `pnpm exec tsx
+scripts/promo-figures.ts` (npm latest line); the alias check below was re-run on 5.14.1
+on that date. Alias check: `beautiful-mermaid`
+installed as `npm:zombie-mermaid@5.14.1` on an older Node than zombie-mermaid supports (it declares
 `engines.node >=24`) exports `renderMermaidSVG`, `renderMermaidSVGAsync`,
 `renderMermaidASCII`, `renderMermaid`, `THEMES`, `fromShikiTheme` and `registerElk`; a pie
 chart renders as ASCII. No target's own test suite was run.
@@ -109,7 +112,7 @@ Disclosure: I maintain zombie-mermaid (MIT), a fork of beautiful-mermaid, and dr
 this with AI assistance.
 
 Comark's mermaid plugin uses renderMermaidASCII, renderMermaidSVG and THEMES from the
-beautiful-mermaid peer. With "beautiful-mermaid": "npm:zombie-mermaid@5.11.2" in a
+beautiful-mermaid peer. With "beautiful-mermaid": "npm:zombie-mermaid@5.14.1" in a
 scratch project those exports resolve, a pie chart renders as ASCII and a
 flowchart as SVG. I did not run Comark's test suite. Caveats: zombie-mermaid declares
 Node >=24, and browser use needs registerElk(ELK) once before flowcharts render.
@@ -128,7 +131,7 @@ Disclosure: I maintain zombie-mermaid (MIT), a fork of beautiful-mermaid, and dr
 this with AI assistance.
 
 The extension asserts the module exports renderMermaidSVGAsync, THEMES and
-fromShikiTheme. With "beautiful-mermaid": "npm:zombie-mermaid@5.11.2" all
+fromShikiTheme. With "beautiful-mermaid": "npm:zombie-mermaid@5.14.1" all
 three are present and a flowchart renders to SVG; I have not run your tests or the CDN
 loader against it. Pie and C4 are outside SUPPORTED_PATTERNS today.
 
@@ -143,8 +146,12 @@ only, that is fine; feel free to close.
 Disclosure: I maintain zombie-mermaid, a fork of beautiful-mermaid, and drafted this
 with AI assistance.
 
-The "Custom beautiful-mermaid Path" preference may let a user point the extension at a
-local zombie-mermaid copy; I have tested <result>. If a one-line README note is useful
+The "Custom beautiful-mermaid Path" preference can point at zombie-mermaid only if it
+names the built file, node_modules/zombie-mermaid/dist/index.js. Pointing it at the
+package root fails: package.json `exports["."].import` is an object ({types, default})
+that Raycast's resolver mishandles. Raycast routes only graph/flowchart, state, sequence,
+class, ER and xychart SVG to that engine, so other diagram types still use the other
+engines. I have tested <result>. If a one-line README note is useful
 I can send it. If the current engines are deliberate, no action needed.
 ```
 
@@ -154,5 +161,5 @@ I can send it. If the current engines are deliberate, no action needed.
 - Whether any maintainer wants a second renderer; contribution rules beyond issue
   templates.
 - Layout-fidelity claims: the scorecard (`docs/layout-fidelity-scorecard.md`) compares
-  against mermaid 12.1.0; npm latest is 12.2.0. Name the version if you cite it.
+  against mermaid 12.2.0, which is the repo pin and npm latest (`npm view mermaid version`, 2026-11-02). Name the version if you cite it.
 - Do not claim robustness over upstream on malformed style input (see #1523).
