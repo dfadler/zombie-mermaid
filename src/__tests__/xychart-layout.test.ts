@@ -211,8 +211,8 @@ describe('xychart – y-axis tick labels stay distinct (#1234)', () => {
     const svg = await renderMermaid(`xychart-beta
   x-axis [A]
   bar [42]`)
-    // 41.9..42.1 gets 0.02 steps; each label keeps its own decimals
-    expect(svg).toContain('>41.92<')
-    expect(svg).toContain('>42.08<')
+    // Mermaid 12.2.0 gives a single value one tick, labelled with the value
+    expect(svg).toContain('>42<')
+    expect(svg).not.toContain('>41.9')
   })
 })

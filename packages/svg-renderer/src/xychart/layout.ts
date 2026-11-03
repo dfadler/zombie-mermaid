@@ -29,6 +29,9 @@ const XY = {
   titleFontWeight: 600,
   titleHeight: 42,
   axisLabelFontSize: 14,
+  // Height mermaid 12.2.0 measures for a 14px axis label; half of it is the
+  // value axis' outer padding.
+  axisLabelHeight: 16,
   axisLabelFontWeight: 400,
   axisTitleFontSize: 15,
   axisTitleFontWeight: 500,
@@ -45,6 +48,12 @@ const XY = {
   legendGap: 6,
   legendItemGap: 16,
 } as const
+
+/**
+ * Mermaid measures axis labels in its own font, about 0.8 of our estimate
+ * (6 digits at 14px: 44px against 55px), and sizes padding and bars from it.
+ */
+const MERMAID_TEXT_SCALE = 0.8
 
 /**
  * Bar thickness following mermaid 12.2.0's band axis (xychartDiagram
@@ -67,6 +76,37 @@ function barPad(extent: number, n: number, labelHalf: number) {
   const tick0 = (extent - 2 * p0) / n
   const pad = 0.7 * tick0 > 2 * p0 ? Math.floor(0.35 * tick0) : p0
   return { p0, pad, bar: 0.95 * Math.min(2 * pad, (extent - 2 * pad) / n) }
+}
+
+/**
+ * The value axis' range and outer padding as mermaid 12.2.0 has them (`LinearAxis`
+ * over the raw data extent, `BaseAxis` padding of half the widest label along
+ * the axis, capped at 20% of the extent): the lowest tick sits `pad` inside the
+ * axis line, so the smallest bar and the lowest line point stay visible. A flat
+ * series, which the parser gives a synthetic +-0.1 span, is a single tick at
+ * the middle of the axis, as in mermaid.
+ */
+function valueAxis(
+  chart: XYChart,
+  extent: number,
+  labelSize: (labels: string[]) => number,
+) {
+  const { min, max } = chart.yAxis.range!
+  const all = chart.series.flatMap((s) => s.data)
+  const v = all[0]
+  const flat =
+    v !== undefined &&
+    all.every((d) => d === v) &&
+    min === v - 0.1 &&
+    max === v + 0.1
+  // Ceiling: an explicit `y-axis v-0.1 --> v+0.1` over flat data collapses too; the parser would need to flag its synthetic range to tell them apart.
+  const range = flat ? { min: v, max: v } : { min, max }
+  const ticks = niceTickValues(range.min, range.max)
+  const labels = formatTickLabels(ticks)
+  const pad = Math.min(labelSize(labels) / 2, 0.2 * extent)
+  const span = range.max - range.min
+  const frac = (x: number) => (span > 0 ? (x - range.min) / span : 0.5)
+  return { range, ticks, labels, pad, frac }
 }
 
 /**
@@ -94,20 +134,25 @@ function buildCatAxis(
   const half = (labels: string[]) =>
     horizontal
       ? XY.axisLabelFontSize / 2
-      : Math.max(
-          ...labels.map((l) =>
-            estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
-          ),
-        ) / 2
+      : (MERMAID_TEXT_SCALE *
+          Math.max(
+            ...labels.map((l) =>
+              estimateTextWidth(
+                l,
+                XY.axisLabelFontSize,
+                XY.axisLabelFontWeight,
+              ),
+            ),
+          )) /
+        2
   if (!range) {
     const n = getDataCount(chart)
     const labels = getCategoryLabels(chart, n)
-    const step = horizontal ? 1 : xLabelStep(labels, extent / n)
     const at = (i: number) => (i + 0.5) * (extent / n)
     return {
       at: (_n, i) => at(i),
       ticks: labels.map((label, i) => ({
-        label: i % step === 0 ? label : '',
+        label,
         at: at(i),
       })),
       bar: barThickness(extent, n, half(labels)),
@@ -162,8 +207,9 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
-  const yTicks = niceTickValues(yRange.min, yRange.max)
-  const yLabels = formatTickLabels(yTicks)
+  const va = valueAxis(chart, XY.plotHeight, () => XY.axisLabelHeight)
+  const yTicks = va.ticks
+  const yLabels = va.labels
   const maxYLabelWidth = Math.max(
     ...yLabels.map((label) =>
       estimateTextWidth(label, XY.axisLabelFontSize, XY.axisLabelFontWeight),
@@ -196,10 +242,8 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   const dataCount = getDataCount(chart)
   const cat = buildCatAxis(chart, plotW, false)
   const xScale = (n: number, i: number) => left + cat.at(n, i)
-  const yScale = (v: number) => {
-    const t = (v - yRange.min) / (yRange.max - yRange.min || 1)
-    return top + plotH - t * plotH
-  }
+  const yScale = (v: number) =>
+    top + plotH - va.pad - va.frac(v) * (plotH - 2 * va.pad)
 
   // X-axis ticks
   const axisY = top + plotH
@@ -246,7 +290,9 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     xScale,
     yScale,
     cat.bar,
-    yRange.min,
+    // Mermaid draws every bar down to the bottom of the plot; only a range
+    // that dips below zero keeps the zero line as the base.
+    va.range.min >= 0 ? top + plotH : yScale(0),
     catLabels,
     colorMap,
   )
@@ -338,8 +384,19 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
-  const valueTicks = niceTickValues(yRange.min, yRange.max)
-  const valueLabels = formatTickLabels(valueTicks)
+  const va = valueAxis(
+    chart,
+    XY.plotWidth,
+    (labels) =>
+      MERMAID_TEXT_SCALE *
+      Math.max(
+        ...labels.map((l) =>
+          estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
+        ),
+      ),
+  )
+  const valueTicks = va.ticks
+  const valueLabels = va.labels
 
   // Compute category label widths for left margin
   const dataCount = getDataCount(chart)
@@ -384,10 +441,8 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const plotArea: PlotArea = { x: left, y: top, width: plotW, height: plotH }
 
   // Value scale (horizontal: left to right)
-  const valueScale = (v: number) => {
-    const t = (v - yRange.min) / (yRange.max - yRange.min || 1)
-    return left + t * plotW
-  }
+  const valueScale = (v: number) =>
+    left + va.pad + va.frac(v) * (plotW - 2 * va.pad)
 
   // Category scale (vertical: top to bottom)
   const catScale = (n: number, i: number) => top + cat.at(n, i)
@@ -447,8 +502,8 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
         const cy = catScale(s.data.length, i)
         const groupTop = cy - groupH / 2
         const by = groupTop
-        const valX = valueScale(Math.max(s.data[i]!, yRange.min))
-        const baseX = valueScale(Math.max(0, yRange.min))
+        const valX = valueScale(Math.max(s.data[i]!, va.range.min))
+        const baseX = va.range.min >= 0 ? left : valueScale(0)
         bars.push({
           x: Math.min(baseX, valX),
           y: by,
@@ -585,14 +640,17 @@ function getCategoryLabels(chart: XYChart, count: number): string[] {
   return Array.from({ length: count }, (_, i) => String(i + 1))
 }
 
-/** Minimum clear space between two neighbouring x-axis labels. */
+/**
+ * Minimum clear space between two neighbouring x-axis labels. */
 const X_LABEL_MIN_GAP = 8
 
 /**
  * Step between shown x-axis labels: 1 when every pair of neighbouring labels
  * keeps `X_LABEL_MIN_GAP` of clear space, otherwise the smallest n for which
  * every pair of shown (every n-th) labels does. Checked pairwise on the real
- * widths so one long label doesn't thin out an otherwise roomy axis.
+ * widths so one long label doesn't thin out an otherwise roomy axis. No longer
+ * used by the SVG layout, which labels every category as mermaid 12.2.0 does;
+ * kept as public API.
  */
 export function xLabelStep(labels: string[], bandWidth: number): number {
   const widths = labels.map((l) =>
@@ -617,7 +675,7 @@ function layoutBars(
   xScale: (n: number, i: number) => number,
   yScale: (v: number) => number,
   singleBarW: number,
-  yMin: number,
+  baseY: number,
   catLabels: string[],
   colorMap: number[],
 ): PositionedBar[] {
@@ -640,7 +698,6 @@ function layoutBars(
       const groupLeft = cx - groupW / 2
       const bx = groupLeft
       const valY = yScale(s.data[i]!)
-      const baseY = yScale(Math.max(0, yMin))
       bars.push({
         x: bx,
         y: Math.min(valY, baseY),

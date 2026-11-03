@@ -19,13 +19,18 @@ async function main(): Promise<number> {
   const filter = args.find((a) => a.startsWith('--filter='))?.slice(9)
   const session = await startRealMermaid()
   try {
-    const { results, breaches } = await scoreXyChart(session, '', filter)
-    console.log('label tick  data  bars style sample')
+    const { results, breaches, skipped } = await scoreXyChart(
+      session,
+      '',
+      filter,
+    )
+    console.log('label tick  data  bars style extent sample')
     for (const [title, r] of Object.entries(results)) {
       console.log(
-        `${pct(r.labels)}  ${pct(r.ticks)}  ${pct(r.data)}  ${pct(r.bars)}  ${pct(r.style)}  ${title}`,
+        `${pct(r.labels)}  ${pct(r.ticks)}  ${pct(r.data)}  ${pct(r.bars)}  ${pct(r.style)}  ${pct(r.extent)}   ${title}`,
       )
     }
+    if (skipped.length) console.log(`\nSkipped (unparsable): ${skipped}`)
     if (args.includes('--thresholds') && breaches.length > 0) {
       console.error(`\nBelow threshold: ${breaches.join(', ')}`)
       return 1

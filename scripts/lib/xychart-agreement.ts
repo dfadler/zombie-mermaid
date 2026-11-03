@@ -35,8 +35,18 @@ export interface XyStyle {
   ticks: boolean
 }
 
+/** Where an axis line starts and ends along its own direction, in pixels. */
+export type XyExtent = [number, number]
+
 export interface XyLayout {
   style: XyStyle
+  /**
+   * The category and value axis lines. Labels are fractions of their own span
+   * everywhere else, which cannot see a plot that reaches past its first and
+   * last label (the padding that keeps the smallest bar visible, #2569);
+   * these can. Absent when the SVG has no axis line to read.
+   */
+  axes?: { cat: XyExtent; val: XyExtent }
   /** Labels of the source's `x-axis` (categories or a numeric range). */
   xLabels: XyLabel[]
   /** Labels of the source's `y-axis` (values). */
@@ -58,6 +68,13 @@ export interface XyAgreement {
   bars: number | null
   /** Drawing features (curved lines, circles, axis line, tick marks) that match (#2543). */
   style: number
+  /**
+   * Value-axis ends (lowest and highest label) that sit at the same fraction
+   * of the axis line, i.e. the same padding. The category axis is not scored:
+   * ours keeps evenly divided bands, mermaid insets by a bar-based padding
+   * (docs/known-differences.md). Null without lines.
+   */
+  extent: number | null
   points: number
 }
 
@@ -166,6 +183,13 @@ const barPoint = (
 const linePoint = (p: [number, number], horizontal: boolean): XyPoint =>
   horizontal ? { cat: p[1], val: p[0] } : { cat: p[0], val: p[1] }
 
+/**
+ * Label text without whitespace: mermaid drops the spaces of an unquoted
+ * category (`Week 1` is drawn `Week1`), which we keep on purpose
+ * (docs/known-differences.md), so the two are compared without them.
+ */
+const squash = (text: string): string => text.replace(/\s+/g, '')
+
 /** Labels in drawing order along the axis (the renderers emit them in different orders). */
 const bySpot = (labels: XyLabel[]): XyLabel[] =>
   [...labels].sort((a, b) => a.pos - b.pos)
@@ -184,15 +208,26 @@ export function parseOfficialXy(svg: string, horizontal: boolean): XyLayout {
   let axis: string | null = null
   let sub: string | null = null
   const token =
-    /<g\b[^>]*class="([^"]*)"[^>]*>|<text\b([^>]*)>([\s\S]*?)<\/text>/g
+    /<g\b[^>]*class="([^"]*)"[^>]*>|<text\b([^>]*)>([\s\S]*?)<\/text>|<path\b([^>]*)>/g
+  const lines: Record<string, XyExtent> = {}
   for (const m of svg.matchAll(token)) {
+    if (m[4] !== undefined) {
+      if (axis !== null && sub === 'axis-line') {
+        const n = numbers(attr(`<path${m[4]}>`, 'd') ?? '')
+        // M x0,y0 L x1,y1: the ends along the axis (y for a vertical one).
+        const at = axis === 'left' || axis === 'right' ? [1, 3] : [0, 2]
+        lines[axis] = [n[at[0]!]!, n[at[1]!]!]
+      }
+      continue
+    }
     if (m[1] !== undefined) {
       const axisName = /^(bottom|left|top|right)-axis$/.exec(m[1])?.[1]
       if (axisName) {
         axis = axisName
         sub = null
       } else if (/^(label|ticks|title|axis-line|axisl-line)$/.test(m[1])) {
-        sub = m[1]
+        // Mermaid spells the left axis' line class `axisl-line`.
+        sub = m[1] === 'axisl-line' ? 'axis-line' : m[1]
       } else {
         axis = null
       }
@@ -242,6 +277,8 @@ export function parseOfficialXy(svg: string, horizontal: boolean): XyLayout {
       axisLine: /class="(?:axis-line|axisl-line)"/.test(svg),
       ticks: /class="ticks"/.test(svg),
     },
+    ...(lines[xName] &&
+      lines[yName] && { axes: { cat: lines[xName], val: lines[yName] } }),
     xLabels: bySpot(xLabels),
     yLabels: bySpot(yLabels),
     points,
@@ -275,6 +312,7 @@ export function parseOurXy(svg: string, horizontal: boolean): XyLayout {
   const points: XyPoint[] = []
   const lines: XyPoint[] = []
   const barWidths: number[] = []
+  let frame: { across: XyExtent; down: XyExtent } | undefined
   const style: XyStyle = {
     curved: false,
     circles: /<circle\b/.test(svg),
@@ -286,8 +324,12 @@ export function parseOurXy(svg: string, horizontal: boolean): XyLayout {
     const d = attr(m[0], 'd') ?? ''
     if (classes.includes('xychart-axis')) {
       // The frame is one path (V, H); each tick mark is a plain M, L.
-      if (/H/.test(d)) style.axisLine = true
-      else style.ticks = true
+      if (/H/.test(d)) {
+        style.axisLine = true
+        // M x,y V y1 H x1: the vertical line runs y..y1, the horizontal x..x1.
+        const [x, y, y1, x1] = numbers(d) as [number, number, number, number]
+        frame = { across: [x, x1], down: [y, y1] }
+      } else style.ticks = true
     } else if (classes.includes('xychart-bar')) {
       const box = barBox(d)
       points.push(barPoint(box, horizontal))
@@ -299,6 +341,11 @@ export function parseOurXy(svg: string, horizontal: boolean): XyLayout {
   }
   return {
     style,
+    ...(frame && {
+      axes: horizontal
+        ? { cat: frame.down, val: frame.across }
+        : { cat: frame.across, val: frame.down },
+    }),
     xLabels: bySpot(xLabels),
     yLabels: bySpot(yLabels),
     points: [...points, ...lines],
@@ -341,7 +388,7 @@ export function xyAgreement(official: XyLayout, ours: XyLayout): XyAgreement {
     o.forEach((l, i) => {
       const other = u[i]
       if (other === undefined) return
-      if (other.text === l.text) sameText++
+      if (squash(other.text) === squash(l.text)) sameText++
       if (Math.abs(fo(l.pos) - fu(other.pos)) <= FRACTION_TOLERANCE) sameTick++
     })
   }
@@ -367,7 +414,26 @@ export function xyAgreement(official: XyLayout, ours: XyLayout): XyAgreement {
             Math.abs(w / po - uw[i]! / pu) <= BAR_SHARE_TOLERANCE,
         ).length
       : 0
+  // Where the first and last label sit along the axis line: a plot that
+  // reaches past them shows up here and nowhere else.
+  const inset = (labels: XyLabel[], line: XyExtent): number[] =>
+    labels.length === 0
+      ? []
+      : [labels[0]!, labels[labels.length - 1]!].map(
+          (l) => (l.pos - line[0]) / (line[1] - line[0]),
+        )
+  const ends =
+    official.axes && ours.axes
+      ? (() => {
+          const o = inset(official.yLabels, official.axes.val)
+          const u = inset(ours.yLabels, ours.axes.val)
+          return o.map(
+            (v, i) => Math.abs(v - (u[i] ?? Infinity)) <= FRACTION_TOLERANCE,
+          )
+        })()
+      : []
   return {
+    extent: share(ends.filter(Boolean).length, ends.length),
     labels: share(sameText, labelN),
     ticks: share(sameTick, labelN),
     data: share(data, most(official.points, ours.points)),
@@ -398,6 +464,8 @@ export interface XyEntry {
   data: number | null
   /** Absent from entries recorded before #2543. */
   style?: number | null
+  /** Absent from entries recorded before #2569. */
+  extent?: number | null
 }
 
 const mean = (xs: (number | null)[]): number | null => {
@@ -419,6 +487,7 @@ export function summarizeXy(
     ticks: mean(all.map((r) => r.ticks)),
     data: mean(all.map((r) => r.data)),
     style: mean(all.map((r) => r.style)),
+    extent: mean(all.map((r) => r.extent)),
   }
 }
 
@@ -429,7 +498,14 @@ export function xyBreaches(
 ): string[] {
   const out = errored.map((t) => `${t} (error)`)
   for (const [title, r] of Object.entries(results)) {
-    for (const k of ['labels', 'ticks', 'data', 'bars', 'style'] as const) {
+    for (const k of [
+      'labels',
+      'ticks',
+      'data',
+      'bars',
+      'style',
+      'extent',
+    ] as const) {
       const v = r[k]
       const floor = XYCHART_FLOOR
       if (v !== null && v + 1e-9 < floor) {

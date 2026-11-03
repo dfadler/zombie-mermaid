@@ -103,17 +103,17 @@ describe('xychart agreement (#2451)', () => {
     expect(a).toMatchObject({ labels: 1, ticks: 1, data: 1, points: 5 })
   })
 
-  it('reads horizontal bars of ours, including a zero-width bar', () => {
+  it('reads horizontal bars of ours, down to the smallest', () => {
     const ours = parseOurXy(
       renderMermaidSVG(`xychart-beta horizontal
     x-axis [A, B]
-    bar [30, 8]`),
+    bar [30, 10]`),
       true,
     )
     expect(ours.xLabels.map((l) => l.text)).toEqual(['A', 'B'])
     expect(ours.yLabels.length).toBeGreaterThan(1)
     expect(ours.points).toHaveLength(2)
-    expect(ours.points[1]!.val).toBe(ours.yLabels[0]!.pos)
+    expect(ours.points[1]!.val).toBeCloseTo(ours.yLabels[0]!.pos, 1)
   })
 
   it('reads line points, upright and horizontal', () => {
@@ -353,5 +353,59 @@ describe('bar thickness (#2515)', () => {
     expect(share(12, false)).toBeGreaterThan(0.55)
     expect(share(12, false)).toBeLessThan(0.65)
     expect(share(5, true)).toBeGreaterThan(0.5)
+  })
+})
+
+describe('value-axis extent (#2569)', () => {
+  const axis = (padding: number): XyLayout => {
+    const ours = parseOurXy(renderMermaidSVG(SRC), false)
+    // Pull the axis line out to the ends of the label span, i.e. no padding.
+    const [lo, hi] = [ours.yLabels[0]!.pos, ours.yLabels.at(-1)!.pos]
+    return {
+      ...ours,
+      axes: { cat: ours.axes!.cat, val: [lo - padding, hi + padding] },
+    }
+  }
+
+  it('reads the axis lines of mermaid and of ours', () => {
+    const svg = `<g class="bottom-axis"><g class="axis-line"><path d="M 10,467 L 700,467"></path></g></g>
+<g class="left-axis"><g class="axisl-line"><path d="M 9,0 L 9,466"></path></g></g>`
+    expect(parseOfficialXy(svg, false).axes).toEqual({
+      cat: [10, 700],
+      val: [0, 466],
+    })
+    expect(parseOfficialXy(svg, true).axes).toBeUndefined()
+    const ours = parseOurXy(renderMermaidSVG(SRC), false)
+    expect(ours.axes!.val[1]).toBeGreaterThan(ours.yLabels.at(-1)!.pos)
+  })
+
+  it('scores a value axis padded like the original, and not one without padding', () => {
+    const official = axis(8)
+    const same = xyAgreement(official, axis(8))
+    expect(same.extent).toBe(1)
+    // The lowest and highest label sit on the line: no room for the smallest bar.
+    expect(xyAgreement(official, axis(0)).extent).toBe(0)
+  })
+
+  it('has no extent without axis lines', () => {
+    const noLines = { ...parseOfficialXy(OFFICIAL, false), axes: undefined }
+    expect(
+      xyAgreement(noLines, parseOurXy(renderMermaidSVG(SRC), false)).extent,
+    ).toBeNull()
+  })
+
+  it('compares labels without whitespace, as mermaid drops it', () => {
+    const ours = parseOurXy(
+      renderMermaidSVG('xychart-beta\n x-axis [Week 1, Week 2]\n bar [1, 2]'),
+      false,
+    )
+    const official = {
+      ...ours,
+      xLabels: ours.xLabels.map((l) => ({
+        ...l,
+        text: l.text.replace(' ', ''),
+      })),
+    }
+    expect(xyAgreement(official, ours).labels).toBe(1)
   })
 })
