@@ -964,13 +964,22 @@ export function calculateSubgraphBoundingBoxes(graph: AsciiGraph): void {
  * If any subgraph has negative min coordinates, shift everything positive.
  */
 export function offsetDrawingForSubgraphs(graph: AsciiGraph): void {
-  if (graph.subgraphs.length === 0) return
-
   let minX = 0
   let minY = 0
   for (const sg of graph.subgraphs) {
     minX = Math.min(minX, sg.minX)
     minY = Math.min(minY, sg.minY)
+  }
+  // #2554: a label centred on a stroke in the leftmost column reaches left of
+  // the canvas (`e1` drawn as `1`); shift everything right to make room.
+  for (const edge of graph.edges) {
+    if (edge.text === '' || edge.path.length < 2) continue
+    for (const { x } of withPortShifts(
+      graph,
+      () => edgeLabelPlacement(graph, edge) ?? [],
+    )) {
+      minX = Math.min(minX, x)
+    }
   }
 
   const offsetX = -minX
