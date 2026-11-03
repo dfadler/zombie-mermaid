@@ -38,6 +38,30 @@ describe('LR label clear of a sibling stem (#1433)', () => {
   })
 })
 
+// The slide must not park the label on the run's arrowhead cell (found in the
+// #1592 audit): `S1 -->|e1| S2` beside `S1 --> S3` printed `┬e1│ S2 │`, with
+// no head on S2.
+describe.each([
+  ['unicode', false, '►', '┬─►│ S2 │'],
+  ['ascii', true, '>', '+->| S2 |'],
+])(
+  'LR label slid off a sibling stem keeps its arrowhead (%s)',
+  (_, useAscii, head, tail) => {
+    const src = `flowchart LR
+  S0 -->|e0| S1
+  S1 -->|e1| S2
+  S1 --> S3
+  S0 --> S4`
+
+    it('draws the head on S2 and still shows the label', () => {
+      const out = renderMermaidASCII(src, { colorMode: 'none', useAscii })
+      expect(out).toContain('e1')
+      expect(out).toContain(tail)
+      expect(out.split(head).length - 1).toBe(3) // S1, S2, S4 (S3 is entered from above)
+    })
+  },
+)
+
 describe('slideClearOf (#1433)', () => {
   const at = (y: number, text = 'fifth') => [{ x: 30, y, text }]
 

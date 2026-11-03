@@ -1444,8 +1444,10 @@ function clearOfSiblingStrokes(
     // along the run, then try the row above and below it, to the nearest spot
     // that sits on no other edge; the first and last run cells stay clear
     // (border / arrowhead).
-    const lo = Math.min(line[0]!.x, line[1]!.x) + 1
-    const hi = Math.max(line[0]!.x, line[1]!.x) - 1
+    // An arrowhead's cell is kept clear too (the label was parked on it).
+    // (Assumes the run is drawn left to right, start at the left.)
+    const lo = Math.min(line[0]!.x, line[1]!.x) + 1 + +edge.hasArrowStart
+    const hi = Math.max(line[0]!.x, line[1]!.x) - 1 - +edge.hasArrowEnd
     for (const dy of [0, -1, 1]) {
       for (const clearance of [1, 0]) {
         for (let d = 0; d <= hi - lo; d++) {
