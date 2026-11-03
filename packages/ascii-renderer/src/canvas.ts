@@ -1078,8 +1078,31 @@ export function flipCanvasHorizontally(
     canvas[x1 - 1]![mid] = '<'
     if (roleCanvas) roleCanvas[x1 - 1]![mid] = 'border'
   }
-  const corners = nodeRects.flatMap(({ x0, x1, y0, y1 }) =>
-    x0 === x1
+  // A parallelogram leans the same way in RL as in LR (mermaid does not mirror
+  // it): mirror its outline within its own rect now, so the flip below (which
+  // mirrors and remaps every glyph) lands it as drawn (#2164).
+  for (const { x0, x1, y0, y1, parallelogram } of nodeRects) {
+    if (!parallelogram) continue
+    const OUTLINE_CELL = /^[╱╲/\\─-]$/
+    const moved: [number, number, string][] = []
+    for (let x = x0; x <= x1; x++)
+      for (let y = y0; y <= y1; y++) {
+        const ch = canvas[x]?.[y]
+        const isOutline = roleCanvas
+          ? roleCanvas[x]?.[y] === 'border'
+          : ch !== undefined
+        if (!isOutline || ch === undefined || !OUTLINE_CELL.test(ch)) continue
+        moved.push([x, y, ch])
+        canvas[x]![y] = ' '
+        if (roleCanvas) roleCanvas[x]![y] = null
+      }
+    for (const [x, y, ch] of moved) {
+      canvas[x0 + x1 - x]![y] = HORIZONTAL_FLIP_MAP[ch] ?? ch
+      if (roleCanvas) roleCanvas[x0 + x1 - x]![y] = 'border'
+    }
+  }
+  const corners = nodeRects.flatMap(({ x0, x1, y0, y1, parallelogram }) =>
+    x0 === x1 || parallelogram
       ? []
       : [y0, y1].map((y) => ({
           y,
@@ -1103,6 +1126,9 @@ export function flipCanvasHorizontally(
   // below then lands each glyph back on its own side of the mirrored box.
   for (const { y, x0, x1, g0, g1, r0, r1 } of corners) {
     if (g0 === undefined || g1 === undefined) continue
+    // Only a box's own corners swap: an edge stroke on the rect's edge (a diamond's
+    // bottom-right port) is not a corner and must stay in its column.
+    if (roleCanvas && (r0 !== 'border' || r1 !== 'border')) continue
     canvas[x0]![y] = g1
     canvas[x1]![y] = g0
     if (roleCanvas && r0 !== undefined && r1 !== undefined) {

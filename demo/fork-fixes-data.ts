@@ -812,4 +812,43 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the literal text `#quot;Say#quot; #lt;hi#gt;` and `x #35;1`. After: `"Say" <hi>` and `x #1`.',
   },
+  {
+    id: 'sequence-nested-blocks',
+    title: 'Nested sequence blocks were drawn stacked, not nested, in ASCII',
+    symptom:
+      'A block inside another block (`alt` containing `loop`, `opt`) was laid out as if it were a sibling: its header and walls landed on the container’s walls, so the nesting was unreadable.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  alt cache hit\n    loop every retry\n      A->>B: fetch\n    end\n  else cache miss\n    opt warm up\n      B->>B: rebuild\n    end\n  end',
+    fixCommit: 'ee1a26d',
+    pr: 2510,
+    render: 'ascii',
+    lookFor:
+      'Before: the inner `loop` and `opt` headers collide with the `alt` frame. After: each sits inside the `alt`, one column clear of its walls.',
+  },
+  {
+    id: 'xychart-bar-series-overlap',
+    title: 'XY chart bar series were drawn side by side, not overlapping',
+    symptom:
+      'Two `bar` series on the same categories were split into narrow adjacent bars, while mermaid 12.2.0 draws each series centred on the category with later series on top.',
+    source:
+      'xychart-beta\n  title "2023 vs 2024 Sales"\n  x-axis [Q1, Q2, Q3, Q4]\n  bar [50, 60, 70, 80]\n  bar [60, 70, 80, 90]',
+    fixCommit: '1941517f',
+    pr: 2508,
+    render: 'svg',
+    lookFor:
+      'Before: each quarter shows two thin bars next to each other. After: the two bars share one centred, full-width slot and overlap.',
+  },
+  {
+    id: 'ascii-opposing-edges-diamond',
+    title: 'ASCII opposing edges merged into one route at a diamond',
+    symptom:
+      'Two edges between the same pair (`B -->|no| D` and `D --> B`) in a left-to-right chart drew a single merged route when B was a diamond or D a parallelogram, so the loop-back looked like one two-way line.',
+    source:
+      'graph LR\n  A[/Read Input/] --> B{Valid?}\n  B -->|yes| C[\\Write Output\\]\n  B -->|no| D[/Ask Again/]\n  D --> B',
+    fixCommit: 'd725006c',
+    pr: 2509,
+    render: 'ascii',
+    lookFor:
+      'Before: one stroke leaves the diamond’s bottom vertex. After: no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
+  },
 ]

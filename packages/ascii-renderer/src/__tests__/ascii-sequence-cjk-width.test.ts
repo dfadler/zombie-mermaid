@@ -191,7 +191,7 @@ describe('ASCII sequence diagrams — CJK/wide-char box alignment (issue #334)',
     const ascii = renderMermaidASCII(mermaid, { colorMode: 'none' })
     assertUniformWidthIgnoringArrowheads(ascii)
     const lines = ascii.split('\n')
-    const headerLine = lines.find((l) => l.includes('alt ['))!
+    const headerLine = lines.find((l) => l.includes('alt ─'))!
     expect(headerLine).toBeDefined()
     // Full label present, not clipped.
     expect(headerLine).toContain(

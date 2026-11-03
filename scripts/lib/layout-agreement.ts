@@ -13,7 +13,10 @@
 
 import { writeFile } from 'node:fs/promises'
 import type { PieEntry } from './pie-agreement.ts'
+import type { C4Entry } from './c4-agreement.ts'
+import type { ArchitectureEntry } from './architecture-agreement.ts'
 import type { SequenceEntry } from './sequence-agreement.ts'
+import type { XyEntry } from './xychart-agreement.ts'
 
 export interface Box {
   x: number
@@ -450,7 +453,15 @@ export function jsonPayload(runs: ScorecardRun[]): string {
 
 /** History entries as JSON Lines, ready to append. */
 export function historyLines(
-  entries: (HistoryEntry | LabelEntry | SequenceEntry | PieEntry)[],
+  entries: (
+    | HistoryEntry
+    | LabelEntry
+    | SequenceEntry
+    | PieEntry
+    | C4Entry
+    | XyEntry
+    | ArchitectureEntry
+  )[],
 ): string {
   return entries.map((e) => `${JSON.stringify(e)}\n`).join('')
 }
@@ -510,11 +521,11 @@ export const EXCLUDED_TYPES: Readonly<Record<string, string>> = {
   sequence:
     'mermaid draws it on a fixed grid (participants left to right in declaration order, messages top to bottom in source order), not with a layout engine, so node placement says nothing. Order and direction are scored separately, in the Sequence section.',
   'architecture-beta':
-    'we have no architecture layout to measure, and mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port directions in the source.',
-  pie: 'no nodes: positions come from data values. Slice angles, percentages and legend rows are scored separately, in the Pie section.',
+    'mermaid places services with cytoscape fcose constrained by the explicit L/R/T/B port sides in the source, a force layout whose distances are not comparable. Relative placement and group containment are scored separately, in the Architecture section.',
   'xychart-beta':
-    'no nodes: positions come from data values, so there is no arrangement to compare.',
-  c4: 'mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges.',
+    'no nodes: positions come from axis labels and data values. Label text, tick positions and bar/line data positions are scored separately, in the XY charts section.',
+  pie: 'no nodes: positions come from data values. Slice angles, percentages and legend rows are scored separately, in the Pie section.',
+  c4: 'mermaid places C4 boxes on a fixed grid in shape order, not with a layout engine over edges. Box placement, boundary containment and relationships are scored separately, in the C4 section.',
 }
 
 const EPS = 1e-9
@@ -661,6 +672,9 @@ export function scorecardMarkdown(
   labels: LabelEntry[] = [],
   sequences: SequenceEntry[] = [],
   pies: PieEntry[] = [],
+  c4s: C4Entry[] = [],
+  xycharts: XyEntry[] = [],
+  architectures: ArchitectureEntry[] = [],
 ): string {
   const first = runs[0]!.entry
   const means = runs.map(
@@ -754,6 +768,75 @@ ${pieRows.join('\n')}
 
 `
     : ''
+  const c4Rows = c4s
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.horizontal)} | ${cell(q.vertical)} | ${cell(q.containment)} | ${cell(q.relationships)} | ${cell(q.direction)} |`,
+    )
+  const c4Section = c4Rows.length
+    ? `## C4 diagrams (placement)
+
+C4 has no layout engine to compare, so the share of box pairs on the same side
+of each other (columns and rows, within \`PLACE_TOLERANCE\`), of boxes inside the
+same boundaries, of relationships with the same label and technology text and
+of relationships running the same way is taken (\`scripts/c4-oracle.ts\`).
+Every sample must score 100% (\`C4_FLOOR\`; \`--thresholds\` exits 1
+otherwise). It says nothing about box sizes or fonts.
+
+| Date | Commit | Mermaid | Samples | Horizontal | Vertical | Containment | Relationships | Direction |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+${c4Rows.join('\n')}
+
+`
+    : ''
+  const xyRows = xycharts
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.labels)} | ${cell(q.ticks)} | ${cell(q.data)} |`,
+    )
+  const xySection = xyRows.length
+    ? `## XY charts (axes and data)
+
+An xychart has no nodes, so the share of axis labels with the same text, of
+axis labels at the same fraction of their axis and of bars and line points at
+the same category and value fraction is taken (\`scripts/xychart-oracle.ts\`).
+Positions are fractions of the axis, so canvas size does not count. Every
+sample must score 100% (\`XYCHART_FLOOR\`; \`--thresholds\` exits 1
+otherwise). It
+says nothing about colors, fonts or bar widths.
+
+| Date | Commit | Mermaid | Samples | Labels | Ticks | Data |
+| --- | --- | --- | --- | --- | --- | --- |
+${xyRows.join('\n')}
+
+`
+    : ''
+  const archRows = architectures
+    .slice(-20)
+    .map(
+      (q) =>
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.vertical)} | ${cell(q.horizontal)} | ${cell(q.containment)} |`,
+    )
+  const archSection = archRows.length
+    ? `## Architecture diagrams (placement)
+
+Mermaid places architecture services with cytoscape fcose, constrained by the
+L/R/T/B sides in the source. A force layout moves with its seed and font
+metrics, so only relative placement is scored: the share of service pairs
+above / below / beside each other and of (service, group) pairs agreeing on
+containment, with services within \`ARCH_TOLERANCE\` (half an icon) counted as
+level (\`scripts/architecture-oracle.ts\`). Every sample must stay at or above
+\`ARCH_FLOOR\` (\`--thresholds\` exits 1 otherwise), a regression guard, not a
+parity claim. It says nothing about distances or edge routes.
+
+| Date | Commit | Mermaid | Samples | Vertical | Horizontal | Containment |
+| --- | --- | --- | --- | --- | --- | --- |
+${archRows.join('\n')}
+
+`
+    : ''
   return `<!-- Generated by \`${command}\`. Do not edit by hand. -->
 
 # Layout-fidelity scorecard
@@ -786,7 +869,7 @@ across that change.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 ${trend.join('\n')}
 
-${labelSection}${seqSection}${pieSection}## Per sample
+${labelSection}${seqSection}${pieSection}${c4Section}${xySection}${archSection}## Per sample
 
 ${sections.join('\n\n')}
 

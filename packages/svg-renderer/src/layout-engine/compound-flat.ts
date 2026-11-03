@@ -47,7 +47,7 @@ import { measureMultilineText } from '@zombie-mermaid/core'
 import type { FontSizes } from '../styles.ts'
 import { ARROW_HEAD, FONT_WEIGHTS } from '../styles.ts'
 import { DEFAULTS } from './constants.ts'
-import { resolveEdgeStyle } from './from-elk.ts'
+import { resolveEdgeStyle, resolveHeadColor } from './from-elk.ts'
 import { labelSpot, routeInnerEdge } from './inner-edges.ts'
 import { subgraphFeedbackEdges, subgraphsTied } from '@zombie-mermaid/core'
 import type { LayoutHints } from './layout-hints.ts'
@@ -832,6 +832,7 @@ function routeDetached(
       points,
       labelPosition: edge.label ? labelSpot(points) : undefined,
       inlineStyle: resolveEdgeStyle(index, graph),
+      headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
     })
