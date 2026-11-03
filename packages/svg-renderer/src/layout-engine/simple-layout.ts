@@ -33,6 +33,7 @@ import {
   synthesizeSelfLoopEdges,
   resolveEdgeStyle,
   resolveHeadColor,
+  edgeMarkers,
 } from './from-elk.ts'
 import { SUBGRAPH_PADDING, estimateNodeSize } from './to-elk.ts'
 
@@ -436,6 +437,7 @@ export function layoutSimple(
       headColor: resolveHeadColor(graph),
       id: edge.id,
       animate: edge.animate,
+      ...edgeMarkers(edge),
     })
   })
   synthesizeSelfLoopEdges(graph, nodeMap, edges)

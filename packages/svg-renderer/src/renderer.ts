@@ -149,6 +149,25 @@ export function renderSvg(
   for (const color of customStrokeColors) {
     parts.push(arrowMarkerDefsForColor(color))
   }
+  // Circle / cross terminators (`--o`, `--x`): one marker per kind, end and
+  // head colour actually used, so a diagram without them gains no markup.
+  const terminators = new Map<string, string>()
+  for (const edge of graph.edges) {
+    const suffix = edge.headColor ? f`-${markerSuffix(edge.headColor)}` : ''
+    const color = edge.headColor ? escapeAttr(edge.headColor) : 'var(--_arrow)'
+    for (const [kind, end] of [
+      [edge.startMarker, 'start'],
+      [edge.endMarker, 'end'],
+    ] as const) {
+      if (kind) {
+        terminators.set(
+          f`${kind}-${end}${suffix}`,
+          terminatorMarker(kind, end, color, suffix),
+        )
+      }
+    }
+  }
+  parts.push(...terminators.values())
   // An edge that crosses a subgraph's title text is not painted over the text
   // (#1239). The mask is only emitted when some edge does, so a diagram with
   // no such edge is unchanged.
@@ -279,6 +298,32 @@ function arrowMarkerPair(color: string, idSuffix: string): string {
   )
 }
 
+/**
+ * Circle (`--o`) and cross (`--x`) terminators, geometry from mermaid 12.2.0's
+ * `circleEnd-margin` / `crossEnd-margin` markers (and their `Start` twins): a
+ * 14 px filled disc and a 12 px X with a 2.5 px stroke, both set back from the
+ * node border.
+ */
+function terminatorMarker(
+  kind: 'circle' | 'cross',
+  end: 'start' | 'end',
+  color: string,
+  idSuffix: string,
+): string {
+  const atEnd = end === 'end'
+  const circle = kind === 'circle'
+  const [box, size, refX, refY] = circle
+    ? [10, 14, atEnd ? 12.25 : -2, 5]
+    : [15, 12, atEnd ? 17.7 : -3.5, 7.5]
+  const shape = circle
+    ? f`<circle cx="5" cy="5" r="5" fill="${color}" />`
+    : f`<path d="M 1,1 L 14,14 M 1,14 L 14,1" fill="none" stroke="${color}" stroke-width="2.5" />`
+  return (
+    f`  <marker id="${kind}-${end}${idSuffix}" viewBox="0 0 ${box} ${box}" refX="${refX}" refY="${refY}" markerUnits="userSpaceOnUse" markerWidth="${size}" markerHeight="${size}" orient="auto">` +
+    f`\n    ${shape}\n  </marker>`
+  )
+}
+
 /** Sanitize a color value into a collision-free SVG ID suffix.
  *  Non-alphanumeric chars are hex-encoded so distinct inputs never collapse
  *  (e.g. "var(--line-1)" → "var28--line2d129", "var(--line1)" → "var28--line129"). */
@@ -404,9 +449,10 @@ function renderEdge(
   const suffix = edge.headColor ? f`-${markerSuffix(edge.headColor)}` : ''
   let markers = ''
   if (!invisible) {
-    if (edge.hasArrowEnd) markers += f` marker-end="url(#arrowhead${suffix})"`
+    if (edge.hasArrowEnd)
+      markers += f` marker-end="url(#${edge.endMarker ? f`${edge.endMarker}-end` : 'arrowhead'}${suffix})"`
     if (edge.hasArrowStart)
-      markers += f` marker-start="url(#arrowhead-start${suffix})"`
+      markers += f` marker-start="url(#${edge.startMarker ? f`${edge.startMarker}-start` : 'arrowhead-start'}${suffix})"`
   }
 
   // Semantic data attributes for edge identification and inspection:
