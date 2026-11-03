@@ -806,7 +806,8 @@ Positions are fractions of the axis, so canvas size does not count. Every
 sample must score 100% (\`XYCHART_FLOOR\`; \`--thresholds\` exits 1
 otherwise). Style is the share of four drawing features that match: straight
 lines (mermaid has no curve option), no circles (markers, dot grid), an axis
-line and tick marks. It says nothing about colors, fonts or bar widths.
+line and tick marks. Bar widths also count toward the floor (\`bars\`). It
+says nothing about colors or fonts.
 
 | Date | Commit | Mermaid | Samples | Labels | Ticks | Data | Style |
 | --- | --- | --- | --- | --- | --- | --- | --- |
