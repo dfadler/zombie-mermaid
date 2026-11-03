@@ -184,6 +184,8 @@ export function splitClassShorthand(identifier: string): {
 export function resolveNodeStyle(
   nodeId: string,
   directives: StyleDirectives,
+  /** Subgraph clusters take `style`/`class` but not the node-only `classDef default` (#2550) */
+  skipDefault = false,
 ): Record<string, string> | undefined {
   let result: Record<string, string> | undefined
   // Drop invalid colours per layer, before merging: a browser drops the bad
@@ -200,7 +202,7 @@ export function resolveNodeStyle(
    * its nodes via `classDef default` rendered unstyled with no error.
    */
   const defaultDef = directives.classDefs.get('default')
-  if (defaultDef) merge(defaultDef)
+  if (defaultDef && !skipDefault) merge(defaultDef)
 
   // Then the node's own class, overriding the default property by property.
   const className = directives.classAssignments.get(nodeId)
@@ -214,6 +216,15 @@ export function resolveNodeStyle(
   if (nodeStyle) merge(nodeStyle)
 
   return result
+}
+
+/** `{ inlineStyle }` for a subgraph cluster, or `{}` when nothing styles it (#2550). */
+export function groupStyle(
+  id: string,
+  directives: StyleDirectives,
+): { inlineStyle?: Record<string, string> } {
+  const inlineStyle = resolveNodeStyle(id, directives, true)
+  return inlineStyle ? { inlineStyle } : {}
 }
 
 /**

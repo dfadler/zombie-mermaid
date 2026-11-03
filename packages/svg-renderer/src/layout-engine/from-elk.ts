@@ -33,7 +33,11 @@ import {
   extractEdgePoints,
   extractEdgeLabelPosition,
 } from './elk-adapter-utils.ts'
-import { dropInvalidColors, resolveNodeStyle } from '@zombie-mermaid/core'
+import {
+  dropInvalidColors,
+  groupStyle,
+  resolveNodeStyle,
+} from '@zombie-mermaid/core'
 
 /** Margin routing info for cross-hierarchy edges */
 interface MarginInfo {
@@ -372,6 +376,7 @@ function extractNodesAndGroups(
         width,
         height,
         children: childGroups,
+        ...groupStyle(child.id, graph),
         ...(mermaidSg?.region ? { region: true } : {}),
       })
     } else {
