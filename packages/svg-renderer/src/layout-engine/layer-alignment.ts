@@ -126,8 +126,15 @@ export function alignLayerNodes(
   }
 
   if (deltas.size === 0) return
+  moveEdgeEnds(edges, deltas, isHorizontal ? 'x' : 'y')
+}
 
-  const k = isHorizontal ? 'x' : 'y'
+/** Move each edge's ends with the nodes that moved by `deltas` (node id to shift) along `k`. */
+export function moveEdgeEnds(
+  edges: PositionedEdge[],
+  deltas: ReadonlyMap<string, number>,
+  k: 'x' | 'y',
+): void {
   /**
    * Move an edge's end point with its node, and the leg after it if that leg is
    * collinear. A node that moved toward the edge's cross-flow run can leave the
