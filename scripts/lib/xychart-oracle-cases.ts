@@ -47,3 +47,12 @@ export const XYCHART_RANGE_CASES: { title: string; source: string }[] = [
     source: 'xychart-beta\n x-axis 0 --> 20\n line [1,2,3,4,5]\n line [5,1,4]',
   },
 ]
+
+/**
+ * Samples real mermaid 12.2.0 cannot render, so there is nothing to compare:
+ * they are skipped and listed rather than counted as errors.
+ */
+export const MERMAID_CANNOT_PARSE = new Set([
+  // Lexical error in mermaid's xychart grammar.
+  'API Response Time',
+])

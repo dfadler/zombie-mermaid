@@ -794,7 +794,7 @@ ${c4Rows.join('\n')}
     .slice(-20)
     .map(
       (q) =>
-        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.labels)} | ${cell(q.ticks)} | ${cell(q.data)} |`,
+        `| ${q.date} | ${q.commit.slice(0, 7)} | ${q.mermaid} | ${q.samples} | ${cell(q.labels)} | ${cell(q.ticks)} | ${cell(q.data)} | ${cell(q.style ?? null)} | ${cell(q.extent ?? null)} |`,
     )
   const xySection = xyRows.length
     ? `## XY charts (axes and data)
@@ -804,11 +804,16 @@ axis labels at the same fraction of their axis and of bars and line points at
 the same category and value fraction is taken (\`scripts/xychart-oracle.ts\`).
 Positions are fractions of the axis, so canvas size does not count. Every
 sample must score 100% (\`XYCHART_FLOOR\`; \`--thresholds\` exits 1
-otherwise). It
-says nothing about colors, fonts or bar widths.
+otherwise). Style is the share of four drawing features that match: straight
+lines (mermaid has no curve option), no circles (markers, dot grid), an axis
+line and tick marks. Extent is the share of value-axis ends (lowest and
+highest label) at the same fraction of the axis line, so the padding that
+keeps the smallest bar visible counts. Every XY sample is scored, bar widths
+too (\`bars\`); a sample real mermaid cannot parse is skipped and listed. It
+says nothing about colors or fonts.
 
-| Date | Commit | Mermaid | Samples | Labels | Ticks | Data |
-| --- | --- | --- | --- | --- | --- | --- |
+| Date | Commit | Mermaid | Samples | Labels | Ticks | Data | Style | Extent |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 ${xyRows.join('\n')}
 
 `

@@ -186,12 +186,12 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
 also covered 12.1.0). Unless noted, these are choices, not bugs.
 
-- **SVG styling.** zombie-mermaid draws rounded bars, a dotted grid, point markers on
-  lines, monotone-smoothed lines on vertical charts (horizontal charts use straight
-  segments in category order, as mermaid does, [#2334](https://github.com/dfadler/zombie-mermaid/issues/2334)), a generated `Bar 1` / `Line 1` legend when there is more
-  than one series, and grouped bar series side by side. Mermaid draws square bars, no grid,
-  no markers, no legend and straight line segments, and draws the second bar series over
-  the first.
+- **SVG styling.** zombie-mermaid draws rounded bars, a generated `Bar 1` / `Line 1` legend
+  when there is more than one series, and grouped bar series side by side. Mermaid draws
+  square bars, no legend, and draws the second bar series over the first. Lines are straight
+  segments with no point markers, there is no grid, and each axis has a line and tick marks,
+  as in mermaid (it has no option for curved lines in 12.2.0 or on `develop`); the oracle
+  scores these as `style`.
 - **Bar thickness.** Bars follow mermaid 12.2.0's band formula ([#2515](https://github.com/dfadler/zombie-mermaid/issues/2515)):
   95% of the smaller of twice the axis padding and the tick distance. Mermaid pads by
   half the widest category label as it measures it in the browser, on a plot about 660 px
@@ -209,9 +209,18 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   (its `top-axis` group).
 - **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
   mermaid 12.2.0 renders `NewUsers`.
-- **Degenerate ranges.** An all-zero series gets a -0.1..0.1 axis and a single value 42
-  gets 41.9..42.1, so the data has a visible scale; mermaid shows one lone `0` or `42`
-  tick and no scale.
+- **Value-axis padding, flat data and x labels match mermaid in SVG only**
+  ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0).
+  The value axis keeps half a label's height (half its width, horizontally) of padding
+  inside its line, so the smallest bar and the lowest line point stay visible. A flat series
+  (`bar [42]`, `[0, 0, 0]`) gets one tick in the middle of the axis, as mermaid does. Every
+  x-axis category is labelled, even when neighbouring labels touch, as mermaid does (the
+  #1243 thinning is gone from SVG). The ASCII renderer has its own layout and is unchanged:
+  it still uses a -0.1..0.1 / 41.9..42.1 range for flat data and thins crowded labels.
+- **Category-axis inset.** Mermaid insets the first and last category by a bar-based padding
+  (about 0.35 of a band with bars); ours centres each category in an equal band (0.5), so
+  the end categories sit a little further in. The oracle's `extent` figure covers the value
+  axis only for this reason.
 - **ASCII y-axis.** Mermaid has no ASCII output. The plot is 20 rows tall, fewer than
   mermaid's ~10 d3 ticks need once they round to rows, so the renderer labels every Nth
   tick (the smallest N that leaves an unlabeled row between labels) rather than putting
