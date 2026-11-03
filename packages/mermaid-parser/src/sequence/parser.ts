@@ -373,7 +373,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     )
     if (blockMatch) {
       const blockType = toBlockType(blockMatch[1]!)
-      const rawBlockLabel = blockMatch[2]?.trim() ?? ''
+      const rawBlockLabel = blockMatch[2]!.trim()
       // `rect <color>` is Mermaid's background highlight: the rest of the line
       // is a colour, never a label. A value that isn't a recognised colour is
       // ignored (#2239), as an invalid style colour is (#1918).
@@ -393,14 +393,13 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       continue
     }
 
-    // --- Block divider: else, and ---
-    const dividerMatch = line.match(/^(else|and)\s*(.*)$/)
-    if (dividerMatch && blockStack.length > 0) {
-      const rawDividerLabel = dividerMatch[2]?.trim() ?? ''
-      const label = normalizeBrTags(rawDividerLabel)
-      blockStack[blockStack.length - 1]!.dividers.push({
+    // --- Block divider: else, and, option (inside `critical` only) ---
+    const m = line.match(/^(else|and|option)\b(.*)/)
+    const open = blockStack[blockStack.length - 1]
+    if (open && m && (m[1] !== 'option' || open.type === 'critical')) {
+      open.dividers.push({
         index: diagram.messages.length,
-        label,
+        label: normalizeBrTags(m[2]!.trim()),
       })
       continue
     }
