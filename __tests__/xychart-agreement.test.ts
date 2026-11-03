@@ -12,6 +12,7 @@ import {
   xyBreaches,
   type XyLayout,
 } from '../scripts/lib/xychart-agreement.ts'
+import { MERMAID_CANNOT_PARSE } from '../scripts/lib/xychart-oracle-cases.ts'
 import {
   scorecardMarkdown,
   summarize,
@@ -407,5 +408,32 @@ describe('value-axis extent (#2567)', () => {
       })),
     }
     expect(xyAgreement(official, ours).labels).toBe(1)
+  })
+})
+
+describe('extent edge cases (#2567)', () => {
+  const ours = () => parseOurXy(renderMermaidSVG(SRC), false)
+
+  it('counts a missing value label as a disagreement', () => {
+    const o = ours()
+    expect(
+      xyAgreement(o, { ...o, yLabels: o.yLabels.slice(0, 1) }).extent,
+    ).toBe(0.5)
+  })
+
+  it('has no extent when a chart has no value labels', () => {
+    const o = ours()
+    expect(
+      xyAgreement({ ...o, yLabels: [] }, { ...o, yLabels: [] }).extent,
+    ).toBeNull()
+  })
+
+  it('reads no axes from an official svg with only one axis line', () => {
+    const svg = `<g class="left-axis"><g class="axisl-line"><path d="M 9,0 L 9,466"></path></g></g>`
+    expect(parseOfficialXy(svg, false).axes).toBeUndefined()
+  })
+
+  it('lists API Response Time as a sample mermaid cannot parse', () => {
+    expect(MERMAID_CANNOT_PARSE.has('API Response Time')).toBe(true)
   })
 })
