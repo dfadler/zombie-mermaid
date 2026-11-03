@@ -1,0 +1,26 @@
+# Should-not-fire near-miss: flowchart layout bug shares "zombie-mermaid"/"diagram" vocabulary, not the editor page.
+# Regression guard, delta 0 by design, tagged smoke.
+schema_version: '1.1'
+name: zme-quiet-on-layout-bug
+description: >
+  A flowchart layout bug in the layout engine is not editor-page work; zombie-mermaid-editor
+  must not fire. expected_outcome: PASS when the skill is not invoked; FAIL when it is.
+  Regression guard: Delta 0 by design.
+tags: [zombie-mermaid-editor, trigger, smoke, quick]
+
+execution:
+  prompt: |
+    Two parallel edges in my flowchart overlap in the rendered SVG. In two sentences, which part
+    of the layout pipeline should I look at? Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: editor_not_invoked
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid-editor"'
+    min: 0
+    max: 0
+    arm: both

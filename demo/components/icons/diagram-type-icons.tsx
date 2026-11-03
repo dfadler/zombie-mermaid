@@ -408,3 +408,38 @@ export function PieIcon({ animated = true, ...props }: DiagramTypeIconProps) {
     </StrokeIcon>
   )
 }
+
+/**
+ * Quadrant — a point drifts across the cross-hairs. Accent `--amber`.
+ */
+export function QuadrantIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--amber">
+      {animated ? (
+        <style>{`
+          .zm-quad-dot { animation: zm-quad-drift 2s ease-in-out infinite; }
+          @keyframes zm-quad-drift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-1.5px, 1.5px); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-quad-dot { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M12 3v18M3 12h18" />
+      <circle
+        className={animated ? 'zm-quad-dot' : undefined}
+        cx="16.5"
+        cy="7.5"
+        r="1.8"
+        fill="currentColor"
+        stroke="none"
+      />
+    </StrokeIcon>
+  )
+}

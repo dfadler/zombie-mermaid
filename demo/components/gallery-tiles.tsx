@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /**
- * The nine small animated SVG illustrations `DiagramGalleryTeaser`
+ * The ten small animated SVG illustrations `DiagramGalleryTeaser`
  * (`diagram-gallery-teaser.tsx`) links to, one per diagram type — kept
  * together in one file since they're trivial variants of the same shape
  * (a `viewBox="0 0 100 70"` SVG, no props, one accent color each) rather
@@ -347,6 +347,32 @@ export function PieTile() {
   )
 }
 
+/** Quadrant: a square split into four cells with one point. */
+export function QuadrantTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="26"
+        y="6"
+        width="48"
+        height="58"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+      />
+      <path
+        d="M50 6 V64 M26 35 H74"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+      <circle cx="62" cy="20" r="4" fill={colorVar('--amber')} />
+    </svg>
+  )
+}
+
 /**
  * One tile component per {@link GALLERY_TYPES} entry (`diagram-gallery-
  * teaser.tsx`), in the same order — index `i` here must line up with that
@@ -362,4 +388,5 @@ export const GALLERY_TILES = [
   C4Tile,
   ArchitectureTile,
   PieTile,
+  QuadrantTile,
 ]

@@ -171,13 +171,14 @@ host page's `bg`/`fg` (or CSS-variable) theme. Set `honorThemeVariables: true`
 (`renderMermaidSVG` and `renderMermaidASCII`) to map a small subset onto the
 theme tokens:
 
-| Variable             | Needs                     | Becomes                      | Diagrams         |
-| -------------------- | ------------------------- | ---------------------------- | ---------------- |
-| `primaryColor`       | `theme: "base"`           | `surface` (node fill)        | flowchart, state |
-| `primaryBorderColor` | `theme: "base"`           | `border` (node/group stroke) | flowchart, state |
-| `primaryTextColor`   | `theme: "base"`           | `fg`                         | flowchart, state |
-| `lineColor`          | any theme (state: `base`) | `line` (edges)               | flowchart, state |
-| `pie1`..`pie12`      | any theme                 | slice and legend colour      | pie              |
+| Variable                                                                                                                                                                                                 | Needs                     | Becomes                              | Diagrams            |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------ | ------------------- |
+| `primaryColor`                                                                                                                                                                                           | `theme: "base"`           | `surface` (node fill)                | flowchart, state    |
+| `primaryBorderColor`                                                                                                                                                                                     | `theme: "base"`           | `border` (node/group stroke)         | flowchart, state    |
+| `primaryTextColor`                                                                                                                                                                                       | `theme: "base"`           | `fg`                                 | flowchart, state    |
+| `lineColor`                                                                                                                                                                                              | any theme (state: `base`) | `line` (edges)                       | flowchart, state    |
+| `pie1`..`pie12`                                                                                                                                                                                          | any theme                 | slice and legend colour              | pie                 |
+| `quadrant*Fill`, `quadrant*TextFill`, `quadrantPointFill`, `quadrantPointTextFill`, `quadrantXAxisTextFill`, `quadrantYAxisTextFill`, `quadrantTitleFill`, `quadrant{Internal,External}BorderStrokeFill` | any theme                 | cell, text, point and border colours | quadrant (SVG only) |
 
 ```
 %%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ffd9d9", "lineColor": "#c00"}}}%%
@@ -999,6 +1000,89 @@ Known differences from Mermaid:
 Mermaid has no text output for pie charts; see
 [ASCII Pie Charts](#ascii-pie-charts) for this library's.
 
+## Quadrant Charts
+
+`quadrantChart` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/quadrantChart.html)
+and its renderer's layout, checked against `mermaid@12.2.0` (the pin, which is
+also npm `latest`):
+
+```mermaid
+quadrantChart
+    title Reach and engagement of campaigns
+    x-axis Low Reach --> High Reach
+    y-axis Low Engagement --> High Engagement
+    quadrant-1 We should expand
+    quadrant-2 Need to promote
+    quadrant-3 Re-evaluate
+    quadrant-4 May be improved
+    Campaign A: [0.3, 0.6]
+    Campaign B: [0.45, 0.23]
+```
+
+Supported: `title`, `x-axis` and `y-axis` (one label or `left --> right`),
+`quadrant-1` to `quadrant-4` (1 is top right, then counter-clockwise), points as
+`label: [x, y]` with `x` and `y` between 0 and 1, `classDef` with
+`:::class` on a point, the four point styles (`radius`, `color`,
+`stroke-color`, `stroke-width`, validated with Mermaid's messages), `accTitle`
+and `accDescr`. As in Mermaid, coordinates must be `0`, `1` or `0.<digits>`
+(`1.5`, `-0.2` and `.5` are errors), a trailing `-->` keeps its arrow in the
+label (`Effort ⟶`), and a bare `quadrantChart` is valid.
+
+The SVG uses Mermaid's geometry: a 500 x 500 frame, four equal cells, the x
+axis above the plot until the chart has a point and below it after, quadrant
+labels centred while there are no points and on the cells' top row once there
+are, and the last point in the source drawn first. Colours come from the theme
+(the accent mixed into `--bg` at four falling strengths for the cells), so
+every theme and live theme switching apply. Text is not measured; a label wider
+than its cell overflows, as in Mermaid. Not read yet: `quadrantChart` config in
+`%%{init}%%` (`chartWidth`, `pointRadius`, ...), the quadrant `themeVariables`,
+and `%%{init}%%` / front matter themes for this type. See
+[Known differences](known-differences.md#quadrant-charts).
+
+### ASCII Quadrant Charts
+
+Mermaid has no text mode for quadrant charts, so the ASCII output is this
+library's own design: the same four cells on a character grid.
+
+```text
+                 Reach and engagement of campaigns
+
+                ┌────────────────────────┬────────────────────────┐
+                │    Need to promote     │    We should expand    │
+                │                        │                        │
+                │                        │                        │
+High Engagement │                 6      │                        │
+                │                        │  3                     │
+                │                        │                        │
+                │              1         │                        │
+                ├────────────────────────┼────────────────────────┤
+                │      Re-evaluate       │    May be improved     │
+                │                   5    │            4           │
+                │                        │                        │
+ Low Engagement │                      2 │                        │
+                │                        │                        │
+                │                        │                        │
+                │                        │                        │
+                └────────────────────────┴────────────────────────┘
+                        Low Reach                High Reach
+
+  1 Campaign A  (0.3, 0.6)
+  2 Campaign B  (0.45, 0.23)
+```
+
+- **Cells** are at least 24 columns wide (wider for a longer quadrant label,
+  measured in terminal columns) and 7 rows tall.
+- **Points** are one marker character (`1`-`9`, `A`-`Z`, `a`-`z`, then `*`)
+  at the cell their coordinates fall on; labels would collide, so a legend
+  below lists marker, label and the coordinates as written. A marker that
+  would land on a quadrant label or another marker moves to the nearest free
+  cell, preferring downwards. A point's own `color` paints its marker; the
+  others use the theme accent.
+- **Axes:** a trailing arrow (`Effort ⟶` in the SVG) is `→`, or `->` in ASCII mode; the y labels sit in a left gutter on the middle row of each half
+  (the bottom row for a one-sided axis); the x labels sit under the halves,
+  always below the grid, unlike the SVG's x axis on top of a point-free chart.
+- `accTitle` and `accDescr` are not printed.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1011,7 +1095,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Gantt                                                                 | `gantt`                                                                                                         |
 | Timeline                                                              | `timeline`                                                                                                      |
 | User journey                                                          | `journey`                                                                                                       |
-| Quadrant chart                                                        | `quadrantChart`                                                                                                 |
 | Requirement                                                           | `requirementDiagram`                                                                                            |
 | Git graph                                                             | `gitGraph`                                                                                                      |
 | Kanban                                                                | `kanban`                                                                                                        |

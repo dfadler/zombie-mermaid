@@ -1,0 +1,37 @@
+# Plugin-only behavior (#2206): the plugin ships .mcp.json, so the skill says the MCP server is
+# already registered. The standalone skill tells users to add a config block; the plugin must not.
+# Sabotage map: reverting the MCP_BLOCK rewrite in scripts/lib/plugin-skill.ts brings back the
+# config JSON and trips no_manual_setup.
+# good-reply: The plugin already registers the server (.mcp.json), so no setup is needed; call render_mermaid_svg.
+# bad-reply: Add this to your config: {"mcpServers": {"zombie-mermaid": {"command": "npx"}}}
+schema_version: '1.1'
+name: plugin-mcp-needs-no-setup
+description: >
+  Asked how to render over MCP with the plugin installed, the reply says no setup is needed and
+  does not hand out an mcpServers config or `claude mcp add`. expected_outcome: PASS when the
+  Skill call is made, the reply names render_mermaid_svg, and it has neither "mcpServers" nor
+  "claude mcp add"; FAIL otherwise.
+tags: [zombie-mermaid, plugin, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I have the zombie-mermaid plugin installed. I'd rather render diagrams through the MCP
+    server than the CLI. What do I have to configure, and which tool do I call for an SVG?
+    Two or three sentences. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+  - name: names_svg_tool
+    type: regex
+    pattern: 'render_mermaid_svg'
+  - name: no_manual_setup
+    type: regex
+    pattern: 'mcpServers|claude mcp add'
+    match: not_contains

@@ -45,26 +45,93 @@
 // ============================================================================
 
 export { loadEmbeddedFont } from './embedded-font.ts'
-export * from './edge-curves.ts'
-export * from './elk-instance.ts'
-export * from './layout-engine.ts'
-export * from './layout-engine/elk-adapter-utils.ts'
-export * from './layout-engine/elk-graph-builder.ts'
-export * from './renderer.ts'
-export * from './resolve-colors.ts'
-export * from './shape-clipping.ts'
-export * from './styles.ts'
+export { pointsToPath } from './edge-curves.ts'
+export {
+  ElkNotRegisteredError,
+  registerElk,
+  createLayoutCache,
+  elkLayoutSync,
+} from './elk-instance.ts'
+export type { LayoutCache } from './elk-instance.ts'
+export {
+  layoutGraphSync,
+  layoutFlowchartSync,
+  convertToElkFormat,
+} from './layout-engine.ts'
+export {
+  extractEdgePoints,
+  extractEdgeLabelPosition,
+} from './layout-engine/elk-adapter-utils.ts'
+export {
+  ELK_DIRECTION_FALLBACK,
+  directionToElk,
+  elkPadding,
+  baseElkLayoutOptions,
+  buildElkLeafNode,
+  INLINE_CENTERED_EDGE_LABEL,
+  buildElkEdgeLabel,
+  buildElkEdge,
+} from './layout-engine/elk-graph-builder.ts'
+export type {
+  ElkDirection,
+  ElkPaddingSides,
+  ElkEdgeLabelStyle,
+} from './layout-engine/elk-graph-builder.ts'
+export { renderSvg, withDataSrc } from './renderer.ts'
+export { evaluateCssColorValue, resolveCssColors } from './resolve-colors.ts'
+export { clipEdgeToShape } from './shape-clipping.ts'
+export {
+  estimateTextWidth,
+  estimateMonoTextWidth,
+  MONO_FONT,
+  MONO_FONT_STACK,
+  FONT_SIZES,
+  resolveFontSizes,
+  FONT_WEIGHTS,
+  GROUP_HEADER_CONTENT_PAD,
+  ASYMMETRIC_NOTCH,
+  NODE_PADDING,
+  STROKE_WIDTHS,
+  TEXT_BASELINE_SHIFT,
+  ARROW_HEAD,
+  buildSvgStyleBlock,
+} from './styles.ts'
+export type { FontSizes, FontSizeOptions } from './styles.ts'
 
-export * from './class/layout.ts'
-export * from './class/renderer.ts'
-export * from './er/layout.ts'
-export * from './er/renderer.ts'
-export * from './sequence/layout.ts'
-export * from './sequence/renderer.ts'
-export * from './xychart/layout.ts'
-export * from './xychart/renderer.ts'
-export * from './pie/layout.ts'
-export * from './pie/renderer.ts'
+export {
+  CLS,
+  classNoteId,
+  classBackEdges,
+  layoutClassDiagramSync,
+} from './class/layout.ts'
+export { renderClassSvg } from './class/renderer.ts'
+export { layoutErDiagramSync } from './er/layout.ts'
+export { renderErSvg } from './er/renderer.ts'
+export {
+  SELF_LOOP_CONTROL,
+  SELF_LOOP_EXTENT,
+  SELF_LOOP_HEIGHT,
+  boxLabelHeight,
+  ACTOR_LABEL_OFFSET,
+  hasLabelBelowIcon,
+  layoutSequenceDiagram,
+} from './sequence/layout.ts'
+export { renderSequenceSvg } from './sequence/renderer.ts'
+export {
+  layoutXYChart,
+  xLabelStep,
+  niceTickValues,
+  formatTickLabels,
+} from './xychart/layout.ts'
+export {
+  renderXYChartSvg,
+  straightLinePath,
+  smoothCurvePath,
+} from './xychart/renderer.ts'
+export { PIE, layoutPieChart } from './pie/layout.ts'
+export { pieColorValue, renderPieSvg } from './pie/renderer.ts'
+export { QUADRANT, layoutQuadrantChart } from './quadrant/layout.ts'
+export { renderQuadrantSvg } from './quadrant/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

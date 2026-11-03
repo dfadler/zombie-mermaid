@@ -19,11 +19,15 @@ const states = (names: string[], labels: string[]): string => {
   ${c} --> [*]`
 }
 
-/** Columns of the `▼` into the last node and of the `┴` where the return leaves. */
+/**
+ * Columns between the `▼` into the last node and the `┴` where the return
+ * leaves. Either may be the left one: the return nests outside the arrival so
+ * the two never cross (#2492).
+ */
 function gap(out: string): number {
   const rows = out.split('\n').map((r) => [...r])
   const join = rows.findIndex((r) => r.includes('┴'))
-  return rows[join - 1]!.lastIndexOf('▼') - rows[join]!.indexOf('┴')
+  return Math.abs(rows[join - 1]!.lastIndexOf('▼') - rows[join]!.indexOf('┴'))
 }
 
 describe('reciprocal pair stroke gap (#1400)', () => {

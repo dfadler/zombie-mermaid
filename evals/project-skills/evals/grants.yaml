@@ -1,0 +1,3 @@
+schema_version: '1'
+# Every case is reply-only (allowed_tools: Skill), so no case needs a Bash/Write grant.
+grants: {}
