@@ -323,14 +323,14 @@ function renderClassBox(
       f`rx="0" ry="0" fill="${headerFill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
   )
 
-  // Annotation (<<interface>>, <<abstract>>, etc.)
+  // Annotation (<<interface>>, <<abstract>>, etc.), drawn as «name» like mermaid.js
   let nameY = y + headerHeight / 2
   if (cls.annotation) {
     const annotY = y + 12
     parts.push(
       f`  <text x="${x + width / 2}" y="${annotY}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
         f`font-size="${CLS_FONT.annotationSize}" font-weight="${CLS_FONT.annotationWeight}" ` +
-        f`font-style="italic" fill="${textColor ?? 'var(--_text-muted)'}">&lt;&lt;${escapeXml(cls.annotation)}&gt;&gt;</text>`,
+        f`font-style="italic" fill="${textColor ?? 'var(--_text-muted)'}">«${escapeXml(cls.annotation)}»</text>`,
     )
     nameY = y + headerHeight / 2 + 6
   }
