@@ -1078,6 +1078,27 @@ export function edgeLabelPlacement(
   return resolveWithClearance(graph, edge)
 }
 
+/**
+ * How an LR edge's single-line label sits on its own horizontal run: `off`
+ * when it was moved to the row above or below (`clearOfSiblingStrokes`),
+ * `tight` when it is on the run but touches a stroke or the arrowhead beside
+ * it, `ok` otherwise (also for multi-line labels, which are not checked).
+ * Layout widens the run's gap on `off` and `tight`, so the label sits on its
+ * edge with a blank cell each side, as in mermaid.
+ */
+export function labelFit(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): 'off' | 'tight' | 'ok' {
+  if (graph.config.graphDirection !== 'LR' || edge.text === '') return 'ok'
+  const line = labelLineToDrawing(graph, edge)
+  if (line.length < 2 || line[0]!.y !== line[1]!.y) return 'ok'
+  const placed = edgeLabelPlacement(graph, edge) ?? []
+  if (placed.length !== 1) return 'ok'
+  if (placed[0]!.y !== line[0]!.y) return 'off'
+  return comfortableOnRun(graph, edge, line, placed, true) ? 'ok' : 'tight'
+}
+
 function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
   const placed = resolveLabelPlacement(graph, edge, true)
   return placed && clearOfEarlierLabels(graph, edge, placed)
@@ -1412,6 +1433,23 @@ function centredLabelPlacement(
   return clearOfSiblingStrokes(graph, edge, drawingLine, centred, labelAware)
 }
 
+/** A one-line label on an LR run with a blank cell each side: clear of the
+ * strokes beside it and of the arrowhead. */
+function comfortableOnRun(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+  placement: { x: number; y: number; text: string }[],
+  labelAware: boolean,
+): boolean {
+  const end = placement[0]!.x + displayWidth(placement[0]!.text) - 1
+  const headRoom = Math.max(line[0]!.x, line[1]!.x) - 2
+  if (edge.hasArrowEnd && end >= headRoom) return false
+  // Sideways only: a stroke on the row above or below can move with the gap,
+  // so no amount of widening would clear it.
+  return besideFree(graph, edge, placement, labelAware, 1, true)
+}
+
 /**
  * A label centred on a vertical stroke can reach across to a sibling stroke
  * that leaves the same node a few cells over (a fan-out's port-shifted stems)
@@ -1426,14 +1464,32 @@ function clearOfSiblingStrokes(
   placement: { x: number; y: number; text: string }[],
   labelAware: boolean,
 ): { x: number; y: number; text: string }[] {
-  if (
-    line.length < 2 ||
-    isClusterExitEdge(graph, edge) ||
-    besideFree(graph, edge, placement, labelAware)
-  ) {
+  if (line.length < 2 || isClusterExitEdge(graph, edge)) return placement
+  const width = Math.max(...placement.map((p) => displayWidth(p.text)))
+  if (besideFree(graph, edge, placement, labelAware)) {
+    // A label that fits but touches another edge's stroke beside it reads as
+    // that stroke's: on an LR run, slide along it to a spot with a blank cell
+    // each side, if the run has one; else it stays.
+    if (
+      graph.config.graphDirection === 'LR' &&
+      line[0]!.y === line[1]!.y &&
+      line[0]!.x !== line[1]!.x &&
+      placement.length === 1 &&
+      !comfortableOnRun(graph, edge, line, placement, labelAware)
+    ) {
+      const lo = Math.min(line[0]!.x, line[1]!.x) + 2
+      const hi = Math.max(line[0]!.x, line[1]!.x) - 1 - 2 * +edge.hasArrowEnd
+      for (let d = 0; d <= hi - lo; d++) {
+        for (const dx of d === 0 ? [0] : [-d, d]) {
+          const moved = [{ ...placement[0]!, x: placement[0]!.x + dx }]
+          if (moved[0]!.x < lo || moved[0]!.x + width - 1 > hi) continue
+          if (comfortableOnRun(graph, edge, line, moved, labelAware))
+            return moved
+        }
+      }
+    }
     return placement
   }
-  const width = Math.max(...placement.map((p) => displayWidth(p.text)))
   if (
     graph.config.graphDirection === 'LR' &&
     line[0]!.y === line[1]!.y &&

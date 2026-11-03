@@ -38,12 +38,12 @@ describe('LR label clear of a sibling stem (#1433)', () => {
   })
 })
 
-// The slide must not park the label on the run's arrowhead cell (found in the
-// #1592 audit): `S1 -->|e1| S2` beside `S1 --> S3` printed `┬e1│ S2 │`, with
-// no head on S2.
+// The label must not cover the run's arrowhead cell (found in the #1592
+// audit): `S1 -->|e1| S2` beside `S1 --> S3` printed `┬e1│ S2 │`, with no head
+// on S2. The gap is widened so the label sits on the run, as mermaid draws it.
 describe.each([
-  ['unicode', false, '►', '┬─►│ S2 │'],
-  ['ascii', true, '>', '+->| S2 |'],
+  ['unicode', false, '►', '─►│ S2 │'],
+  ['ascii', true, '>', '->| S2 |'],
 ])(
   'LR label slid off a sibling stem keeps its arrowhead (%s)',
   (_, useAscii, head, tail) => {
@@ -55,8 +55,10 @@ describe.each([
 
     it('draws the head on S2 and still shows the label', () => {
       const out = renderMermaidASCII(src, { colorMode: 'none', useAscii })
-      expect(out).toContain('e1')
-      expect(out).toContain(tail)
+      // The label is on the S1 -> S2 run itself, with the head after it.
+      const run = out.split('\n').find((r) => r.includes('e1'))!
+      expect(run).toContain(' S1 ')
+      expect(run).toMatch(new RegExp(`e1.*${tail.replace(/[|>]/g, '\\$&')}`))
       expect(out.split(head).length - 1).toBe(3) // S1, S2, S4 (S3 is entered from above)
     })
   },

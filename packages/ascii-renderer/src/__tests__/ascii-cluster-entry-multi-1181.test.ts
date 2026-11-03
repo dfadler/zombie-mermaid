@@ -169,7 +169,7 @@ describe('ASCII: several entries into one cluster, LR (#1181)', () => {
 
   it('the far source runs up its own column and turns into the wall', () => {
     const rows = lines(src)
-    expect(rows.some((r) => /┌─►│/.test(r))).toBe(true)
+    expect(rows.some((r) => /┌─+►│/.test(r))).toBe(true)
   })
 
   it('both labels are kept whole', () => {
