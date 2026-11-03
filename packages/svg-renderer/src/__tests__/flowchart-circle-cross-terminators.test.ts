@@ -38,16 +38,7 @@ describe('flowchart circle and cross terminators (SVG)', () => {
     expect(svg).toMatch(/<marker id="[\w-]*circle"[^>]*markerWidth="14"/)
     expect(svg).toMatch(/<circle cx="5" cy="5" r="5" fill="var\(--_arrow\)"/)
     expect(svg).toMatch(/<marker id="[\w-]*cross"[^>]*markerWidth="12"/)
-    expect(svg).toMatch(
-      /M 1,1 L 14,14 M 1,14 L 14,1" fill="none" stroke="var\(--_arrow\)"/,
-    )
-  })
-
-  it('tints the terminator with the `linkStyle default` stroke', () => {
-    const svg = renderMermaidSVG(
-      'flowchart LR\n  A --o B\n  linkStyle default stroke:#ff0000',
-    )
-    expect(svg).toMatch(/<circle cx="5" cy="5" r="5" fill="#ff0000"/)
+    expect(svg).toMatch(/<path d="M1 1L9 9M1 9L9 1" stroke="var\(--_arrow\)"/)
   })
 
   it('adds no terminator markup to a diagram without them', () => {

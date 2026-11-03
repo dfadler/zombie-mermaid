@@ -481,8 +481,6 @@ export interface Point {
 export interface PositionedEdge {
     animate?: boolean;
     // (undocumented)
-    endMarker?: 'circle' | 'cross';
-    // (undocumented)
     hasArrowEnd: boolean;
     // (undocumented)
     hasArrowStart: boolean;
@@ -495,7 +493,6 @@ export interface PositionedEdge {
     points: Point[];
     // (undocumented)
     source: string;
-    startMarker?: 'circle' | 'cross';
     // (undocumented)
     style: EdgeStyle;
     // (undocumented)
