@@ -394,9 +394,9 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     }
 
     // --- Block divider: else, and, option (inside `critical` only) ---
+    const m = line.match(/^(else|and|option)\b(.*)/)
     const open = blockStack[blockStack.length - 1]
-    const m = open && line.match(/^(else|and|option)\b(.*)/)
-    if (m && (m[1] !== 'option' || open.type === 'critical')) {
+    if (open && m && (m[1] !== 'option' || open.type === 'critical')) {
       open.dividers.push({
         index: diagram.messages.length,
         label: normalizeBrTags(m[2]!.trim()),
