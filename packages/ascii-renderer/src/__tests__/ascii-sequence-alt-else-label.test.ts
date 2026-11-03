@@ -106,7 +106,9 @@ sequenceDiagram
 
     // Labels are framed `─ text ─` (blank column each side), like box headers.
     expect(result).toMatch(/┌─ alt ─+ \[yes\] ─+┐/)
-    expect(result).toContain('├╌ [no] ╌╌╌╌╌╌╌╌╌╌┤')
+    // The divider label is centred in the wall, dashes on both sides.
+    const [, left, right] = /├(╌+) \[no\] (╌+)┤/.exec(result)!
+    expect(Math.abs(left!.length - right!.length)).toBeLessThanOrEqual(1)
   })
 
   it('widens the wall for a very long single-condition label', () => {

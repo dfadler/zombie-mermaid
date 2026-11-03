@@ -24,14 +24,14 @@ function segments(svg: string, actor: string): Array<[number, number]> {
 }
 
 describe('gallery sequence samples cut lifelines around labels (#2280)', () => {
-  it('Alt/Else Long Label: lifeline A is cut around "[credentials rejected]" (label y=156)', () => {
+  it('Alt/Else Long Label: lifeline A is cut only around the "alt" tab, not "[credentials rejected]"', () => {
     const svg = gallerySvg(
       'Sequence: Alt/Else Long Label With Uninvolved Participant',
     )
+    // The else label is centred in the frame, clear of A's lifeline.
     expect(segments(svg, 'A')).toEqual([
       [70, 76],
-      [98, 146.85],
-      [165.15, 222],
+      [98, 222],
     ])
     // The uninvolved participants stay whole.
     expect(segments(svg, 'B')).toEqual([[70, 222]])
