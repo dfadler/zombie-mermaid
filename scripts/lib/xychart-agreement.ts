@@ -43,7 +43,7 @@ export interface XyLayout {
   /**
    * The category and value axis lines. Labels are fractions of their own span
    * everywhere else, which cannot see a plot that reaches past its first and
-   * last label (the padding that keeps the smallest bar visible, #2569);
+   * last label (the padding that keeps the smallest bar visible, #2567);
    * these can. Absent when the SVG has no axis line to read.
    */
   axes?: { cat: XyExtent; val: XyExtent }
@@ -464,7 +464,7 @@ export interface XyEntry {
   data: number | null
   /** Absent from entries recorded before #2543. */
   style?: number | null
-  /** Absent from entries recorded before #2569. */
+  /** Absent from entries recorded before #2567. */
   extent?: number | null
 }
 

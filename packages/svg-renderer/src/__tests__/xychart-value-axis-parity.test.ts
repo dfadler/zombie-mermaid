@@ -1,5 +1,5 @@
 /**
- * Value axis and x labels as mermaid 12.2.0 draws them (#2569): padding below
+ * Value axis and x labels as mermaid 12.2.0 draws them (#2567): padding below
  * the lowest tick, one tick for flat data, every category labelled.
  */
 import { describe, it, expect } from 'vitest'

@@ -356,7 +356,7 @@ describe('bar thickness (#2515)', () => {
   })
 })
 
-describe('value-axis extent (#2569)', () => {
+describe('value-axis extent (#2567)', () => {
   const axis = (padding: number): XyLayout => {
     const ours = parseOurXy(renderMermaidSVG(SRC), false)
     // Pull the axis line out to the ends of the label span, i.e. no padding.

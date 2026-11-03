@@ -2011,7 +2011,7 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
 - **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
   mermaid 12.2.0 renders `NewUsers`.
 - **Value-axis padding, flat data and x labels match mermaid in SVG only**
-  ([#2569](https://github.com/dfadler/zombie-mermaid/pull/2569), checked on mermaid 12.2.0).
+  ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0).
   The value axis keeps half a label's height (half its width, horizontally) of padding
   inside its line, so the smallest bar and the lowest line point stay visible. A flat series
   (`bar [42]`, `[0, 0, 0]`) gets one tick in the middle of the axis, as mermaid does. Every
