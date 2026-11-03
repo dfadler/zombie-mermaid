@@ -852,6 +852,32 @@ export const forkFixes: ForkFix[] = [
       'Before: one stroke leaves the diamond’s bottom vertex. After: no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
   },
   {
+    id: 'flowchart-subgraph-node-style',
+    title: 'Flowchart subgraph style/class and node dash/radius were ignored',
+    symptom:
+      'A `style` on a subgraph id left the cluster default grey, and a node `style` dropped `stroke-dasharray` and `rx`/`ry`, while mermaid 12.3.0 applies all of them.',
+    source:
+      'flowchart TD\n  subgraph one [First Title]\n    A --> B\n  end\n  style one fill:#fdd,stroke:#f00,stroke-width:3px\n  style A stroke-dasharray:5 5\n  style B rx:10,ry:10',
+    fixCommit: 'c75bab50',
+    pr: 2570,
+    render: 'svg',
+    lookFor:
+      'Before: a grey cluster and two plain solid, square nodes. After: a pink cluster with a thick red border, a dashed A and a rounded B.',
+  },
+  {
+    id: 'ascii-label-canvas-edge',
+    title: 'ASCII edge label cut off at the canvas edge',
+    symptom:
+      'In a right-to-left state diagram, the label `e1` on an edge running down the outermost column printed as `1`, because its first character fell past the edge of the canvas.',
+    source:
+      'stateDiagram-v2\n direction RL\n S0-->S1\n S0-->S2\n S1-->S3\n S1-->S4 : e0\n S1-->S0\n S4-->S0 : e1\n S4-->S0',
+    fixCommit: '1e019fa1',
+    pr: 2572,
+    render: 'ascii',
+    lookFor:
+      'Before: the right edge reads `└1`. After: the canvas is one column wider and the label reads `└e1`.',
+  },
+  {
     id: 'sequence-block-label-layout',
     title: 'Sequence block labels were laid out unlike mermaid.js',
     symptom:
