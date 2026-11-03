@@ -178,8 +178,8 @@ export function architectureToGraph(
       source,
       target,
       ...(across &&
-      parentOf.get(e.source) === undefined &&
-      parentOf.get(e.target) === undefined &&
+      (parentOf.get(e.source) !== parentOf.get(e.target) ||
+        parentOf.get(e.source) === undefined) &&
       e.source !== e.target &&
       !e.sourceGroup &&
       !e.targetGroup
