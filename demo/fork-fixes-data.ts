@@ -1022,4 +1022,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: four evenly spaced category slots. After: a linear axis with a label at every tick of the range and the points placed by value, as in mermaid 12.2.0.',
   },
+  {
+    id: 'architecture-group-row-level',
+    title: 'Architecture groups rode off the row of the node they link to',
+    symptom:
+      'A group whose member links to a node outside it was centred on that node as a whole, so `Primary DB` sat 54px above the main row, service labels hung on the group border, and a `T`/`B` edge into a group ran beside the group instead of under its other end.',
+    source:
+      'architecture-beta\n  group cloud(cloud)[Cloud]\n  group api(server)[API Tier] in cloud\n  group data(database)[Data Tier] in cloud\n  service gw(internet)[Gateway] in api\n  service app(server)[App] in api\n  service db(database)[Primary DB] in data\n  service replica(disk)[Replica] in data\n  junction fan in cloud\n  service client(internet)[Client]\n  client:R --> L:gw\n  gw:R -- L:app\n  app:R -- L:fan\n  fan:R --> L:db\n  fan:B --> T:replica',
+    fixCommit: '08ef003d',
+    pr: 2538,
+    render: 'svg',
+    lookFor:
+      'Before: the Data Tier group is shifted up, `Primary DB` sits above the main row and `Replica` beside it, with service labels on the group border. After: `Primary DB` is level with the gateway row, the `fan:B` edge drops straight down into `Replica` beneath the junction, and every label stays inside its group.',
+  },
 ]
