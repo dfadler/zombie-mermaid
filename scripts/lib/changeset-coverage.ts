@@ -31,3 +31,25 @@ export function missingPackages(
   )
   return [...touched].filter((n) => !named.has(n)).sort()
 }
+
+/** Error lines for a PR; `read` returns a file's text, or undefined if absent. */
+export function coverageErrors(
+  changedFiles: string[],
+  pkgDirs: string[],
+  read: (path: string) => string | undefined,
+): string[] {
+  const pkgNames: Record<string, string> = {}
+  for (const dir of pkgDirs) {
+    const raw = read(`packages/${dir}/package.json`)
+    if (raw === undefined) continue // e.g. packages/site is not a package
+    const pkg = JSON.parse(raw) as { name: string; private?: boolean }
+    if (!pkg.private) pkgNames[dir] = pkg.name
+  }
+  const texts = changedFiles
+    .filter((f) => /^\.changeset\/(?!README).*\.md$/.test(f))
+    .map((f) => read(f) ?? '') // a deleted changeset reads as empty
+  return missingPackages(changedFiles, texts, pkgNames).map(
+    (n) =>
+      `${n} source changed but no changeset in this PR names it (its CHANGELOG would omit the change). Add \`'${n}': patch\` to a changeset.`,
+  )
+}
