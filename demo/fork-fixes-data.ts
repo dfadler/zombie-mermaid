@@ -1062,4 +1062,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: a small note floating between the lifelines. After: the note spans from just left of Alice to just right of Bob, as in mermaid 12.3.0.',
   },
+  {
+    id: 'sequence-multiline-label-spacing',
+    title: 'Multi-line sequence labels crowded the frame border and the arrow',
+    symptom:
+      'A `<br/>` message label ran its second line onto the arrow, and a `<br/>` frame label put its second line right above the first message label.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  loop first line<br/>second line\n    A->>B: message line one<br/>message line two\n  end\n  A->>B: after',
+    fixCommit: '485fdd40',
+    pr: 2599,
+    render: 'svg',
+    lookFor:
+      'Before: `message line two` sits on the arrow and `second line` touches the message label. After: the arrow drops below both message lines and the first message clears the frame label, as in mermaid 12.3.0.',
+  },
 ]

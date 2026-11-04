@@ -205,8 +205,8 @@ function blockLabelsWidth(
   )
 }
 
-/** Extra height a multi-line divider label takes over a single line. */
-function dividerLabelExtra(
+/** Extra height a multi-line label takes over a single line. */
+export function dividerLabelExtra(
   label: string | undefined,
   fontSize: number,
 ): number {
@@ -450,12 +450,22 @@ export function layoutSequenceDiagram(
   // overlap with the header/divider text that sits above them.
   const headerSpaceBefore = new Map<number, number>()
   const dividerSpaceBefore = new Map<number, number>()
+  // Room a multi-line header label (or first message label) adds above a
+  // block's first arrow, so the frame top can stay put (#2588).
+  const startLabelExtra = new Map<number, number>()
   for (const block of diagram.blocks) {
+    const extra = dividerLabelExtra(block.label, fontSizes.edgeLabel)
+    startLabelExtra.set(
+      block.startIndex,
+      (startLabelExtra.get(block.startIndex) ?? 0) + extra,
+    )
     // First message in the block needs room for the block header label;
     // nested blocks opening at the same message stack their headers above it
     headerSpaceBefore.set(
       block.startIndex,
-      (headerSpaceBefore.get(block.startIndex) ?? 0) + seq.blockHeaderExtra,
+      (headerSpaceBefore.get(block.startIndex) ?? 0) +
+        seq.blockHeaderExtra +
+        extra,
     )
 
     // Each divider (else/and) needs room for the divider label
@@ -622,6 +632,7 @@ export function layoutSequenceDiagram(
   // Events before the first message open at the top of the message area.
   applyActivationEvents(-1, messageY)
 
+  const msgLabelExtra: number[] = []
   for (let msgIdx = 0; msgIdx < diagram.messages.length; msgIdx++) {
     const msg = diagram.messages[msgIdx]!
     const fromIdx = actorIndex.get(msg.from) ?? 0
@@ -632,6 +643,12 @@ export function layoutSequenceDiagram(
     messageY +=
       (headerSpaceBefore.get(msgIdx) ?? 0) +
       (dividerSpaceBefore.get(msgIdx) ?? 0)
+
+    // A multi-line label grows upward from the arrow, so its first line stays
+    // where a one-line label's would and the arrow moves down (#2588).
+    const labelExtra = dividerLabelExtra(msg.label, fontSizes.edgeLabel)
+    messageY += labelExtra
+    msgLabelExtra[msgIdx] = labelExtra
 
     const x1 = actorCenterX[fromIdx]!
     let x2 = actorCenterX[toIdx]!
@@ -774,7 +791,11 @@ export function layoutSequenceDiagram(
     // Block spans from the Y of startIndex to endIndex messages, above the
     // header tabs of nested blocks that open at the same message
     const startMsg = messages[block.startIndex]
-    let blockTop = (startMsg?.y ?? messageY) - seq.blockPadTop
+    let blockTop =
+      (startMsg?.y ?? messageY) -
+      seq.blockPadTop -
+      startLabelExtra.get(block.startIndex)! -
+      (msgLabelExtra[block.startIndex] ?? 0)
     for (const c of inner)
       blockTop = Math.min(blockTop, c.y - seq.blockHeaderExtra)
     // An empty block (no message closes it) ends below the last row
@@ -869,7 +890,8 @@ export function layoutSequenceDiagram(
       // that is centred too, so a labelled message needs the taller offset.
       const offset =
         (d.label && msg?.label ? 40 : 28) +
-        dividerLabelExtra(d.label, fontSizes.edgeLabel)
+        dividerLabelExtra(d.label, fontSizes.edgeLabel) +
+        (msgLabelExtra[d.index] ?? 0)
 
       return { y: msgY - offset, label: d.label }
     })
