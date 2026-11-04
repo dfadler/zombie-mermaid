@@ -5,7 +5,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { forkFixes } from '../demo/fork-fixes-data.ts'
 import { DIAGRAM_TYPES } from '../packages/core/src/diagram-type.ts'
 
 const FROZEN =
@@ -230,16 +229,14 @@ export function decisionStatus(fs: Fs = realFs): string[] {
     ])
 }
 
-// #1996: README says "(N fixes)"; N is forkFixes.length (the entries array,
-// not a grep of `fixCommit`, which also matches the interface docs).
-export function forkFixesCount(
-  fs: Fs = realFs,
-  n = forkFixes.length,
-): string[] {
-  const m = /\((\d+) fixes\)/.exec(fs.read('README.md'))
-  return m && Number(m[1]) !== n
+// #1996/#2590: the README must not hand-write the fork-fixes count; every
+// PR that added an entry used to conflict on it. The live count is shown on
+// the generated fork-fixes page (forkFixes.length) instead.
+export function forkFixesCount(fs: Fs = realFs): string[] {
+  const m = /\(\d+ fixes\)/.exec(fs.read('README.md'))
+  return m
     ? [
-        `README.md: says ${m[1]} fixes but demo/fork-fixes-data.ts has ${n}; edit the "(${m[1]} fixes)" sentence to "(${n} fixes)"`,
+        `README.md: hard-codes "${m[0]}"; drop the count (the fork-fixes page shows the live number, #2590)`,
       ]
     : []
 }
