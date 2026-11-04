@@ -1049,4 +1049,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the Data Tier group is shifted up, `Primary DB` sits above the main row and `Replica` beside it, with service labels on the group border. After: `Primary DB` is level with the gateway row, the `fan:B` edge drops straight down into `Replica` beneath the junction, and every label stays inside its group.',
   },
+  {
+    id: 'sequence-nested-rect-order',
+    title: 'A sequence rect nested inside another rect was hidden',
+    symptom:
+      'The inner `rect` was painted before the outer one, so the opaque outer fill covered it and its highlight never showed.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  rect rgb(200, 220, 255)\n    A->>B: outer\n    rect rgb(255, 220, 200)\n      B->>A: inner\n    end\n  end',
+    fixCommit: '01982344',
+    pr: 2595,
+    render: 'svg',
+    lookFor:
+      'Before: only the outer blue highlight shows. After: the inner orange highlight sits on top of it around the `inner` message, as in mermaid 12.3.0.',
+  },
 ]
