@@ -1248,6 +1248,18 @@ function fitsStraddled(graph: AsciiGraph, node: AsciiNode): boolean {
   const pad = graph.config.boxBorderPadding
   for (const e of graph.edges) {
     if (e.from !== node || !e.text) continue
+    // A flow-face fan-out edge (leavesFlowFace) carries its label on the drop
+    // into the child, so the child's width does not limit it.
+    if (
+      graph.config.graphDirection === 'TD' &&
+      !e.clusterSource &&
+      !e.clusterTarget &&
+      !getNodeSubgraph(graph, e.from) &&
+      !getNodeSubgraph(graph, e.to) &&
+      !graph.edges.some((o) => o.from === e.to && o.to === e.from)
+    ) {
+      continue
+    }
     const childWidth = displayWidth(e.to.displayLabel) + 2 * pad + 2
     if (Math.floor(childWidth / 2) < displayWidth(e.text) + 2) return false
   }
@@ -1338,6 +1350,38 @@ function markDecisionSplit(
   if (lr && childCount >= 2 && node.shape === 'diamond') {
     node.fanOutCentered = true
   }
+}
+
+/**
+ * Move leaf `children` left so their midpoint `mid` lands on `target`, when
+ * every moved block is free and stays on the grid. All or nothing.
+ */
+function slideChildrenOntoParent(
+  graph: AsciiGraph,
+  children: readonly AsciiNode[],
+  target: number,
+  mid: number,
+  at: (rank: number, cross: number) => GridCoord,
+  rankOf: (g: GridCoord) => number,
+  crossOf: (g: GridCoord) => number,
+): boolean {
+  const by = mid - target
+  if (children.some((c) => getChildren(graph, c).length > 0)) return false
+  if (children.some((c) => crossOf(requireGridCoord(c)) - by < 0)) return false
+  const old = children.map((c) => requireGridCoord(c))
+  for (const g of old) freeNodeBlock(graph, g)
+  const dest = old.map((g) => at(rankOf(g), crossOf(g) - by))
+  const free = dest.every(
+    (g, i) =>
+      isBlockFree(graph.grid, g, NODE_BLOCK_SIZE) &&
+      dest.every((h, j) => i === j || Math.abs(crossOf(g) - crossOf(h)) >= 4),
+  )
+  const final = free ? dest : old
+  children.forEach((c, i) => {
+    c.gridCoord = final[i]!
+    placeBlock(graph.grid, final[i]!, NODE_BLOCK_SIZE)
+  })
+  return free
 }
 
 /**
@@ -1460,6 +1504,24 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     // so two such children can have a half-column midpoint. Grid coordinates
     // are integers (a fractional one hangs the pathfinder), so leave it be.
     if (!Number.isInteger(mid)) continue
+    // Mermaid centres a fan-out's children under the parent; it does not drag
+    // the parent (and its whole chain of ancestors) right to meet them. Slide
+    // leaf children left onto the parent when their slots are free.
+    if (
+      mid > crossOf(gc) &&
+      slideChildrenOntoParent(
+        graph,
+        children,
+        crossOf(gc),
+        mid,
+        at,
+        rankOf,
+        crossOf,
+      )
+    ) {
+      markDecisionSplit(node, lr, children.length)
+      continue
+    }
     if (mid % 4 !== 0) {
       // Defensive: placement puts a parent at or left of its children's midpoint.
       /* v8 ignore next */
