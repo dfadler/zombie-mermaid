@@ -109,6 +109,20 @@ describe('flow-face fan-out (LR)', () => {
     expect(out).not.toMatch(/┄{2,}┴/)
   })
 
+  it("checks mixed styles on the edge's own side only", () => {
+    // Two solid targets above, a dotted and a thick below: the mixed side
+    // keeps its routing, the all-solid side still leaves the right face.
+    const out = render(`graph LR
+  A --> B
+  A --> C
+  A -.-> D
+  A ==> E`).join('\n')
+    expect(out).toMatch(/─+►│ B/)
+    expect(out).toMatch(/─+►│ C/)
+    expect(out).toMatch(/┄+►│ D/)
+    expect(out).toMatch(/━+►│ E/)
+  })
+
   it('leaves a source with a self-loop or a reciprocal edge alone', () => {
     const out = render(`graph LR
   A --> A
