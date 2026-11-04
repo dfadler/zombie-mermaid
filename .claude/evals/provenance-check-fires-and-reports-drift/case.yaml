@@ -2,6 +2,7 @@
 # Can fail: without the skill the model does not know docs/provenance.md claims each carry a
 # "Check:" command, nor the table's NPM_TOKEN / CODEOWNERS / attestation checks.
 # good-reply: Re-runs the claim checks, names the first-commit and trailer-count checks, reports one line per claim as ok or drift, and does not edit the doc.
+# sabotage: delete the skill's Commands table and names_npm_token_check/names_trailer_check fail.
 # bad-reply: Rewrites docs/provenance.md with new numbers straight away.
 schema_version: '1.1'
 name: provenance-check-fires-and-reports-drift
@@ -16,7 +17,7 @@ execution:
     Before the release, can you refresh docs/provenance.md and tell me if anything
     went stale? Don't run anything yet; just give me the plan in a short list.
   max_turns: 6
-  allowed_tools: [Skill, Read, Glob, Grep]
+  allowed_tools: [Skill] # no Read: the plan must come from the skill, not from reading docs/provenance.md
 graders:
   - name: skill_fired
     type: tool_used
@@ -27,11 +28,24 @@ graders:
   - name: names_npm_token_check
     type: regex
     target: last_message
-    pattern: 'NPM_TOKEN'
+    pattern: '(?:check|verif|grep)[^\n]{0,80}NPM_TOKEN|NPM_TOKEN[^\n]{0,80}(?:absent|unset|not (?:set|used)|no live use)'
+    flags: i
+    match: contains
+  - name: names_trailer_check
+    type: regex
+    target: last_message
+    pattern: 'trailer|Co-Authored-By'
+    flags: i
     match: contains
   - name: report_only
     type: regex
     target: last_message
-    pattern: '(?:read-only|report(?:s|ing)? (?:the )?drift|does not edit|not edit|without edit)'
+    pattern: "(?:will not|won't|do(?:es)? not|never|without) (?:edit|modify|rewrite|change)|report[- ]only|reports? (?:the )?drift"
     flags: i
     match: contains
+  - name: does_not_plan_edit
+    type: regex
+    target: last_message
+    pattern: "(?:I'?ll|I will|then) (?:edit|rewrite|update) docs/provenance"
+    flags: i
+    match: not_contains

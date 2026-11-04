@@ -1,0 +1,24 @@
+# Smoke guard: near-miss that edits a nearby doc; no expected delta.
+schema_version: '1.1'
+name: provenance-check-quiet-on-proofread-other-doc
+description: No delta expected. Proofreading docs/RELEASING.md must not fire provenance-check.
+tags: [provenance-check, trigger, quick, smoke]
+runs: 3
+execution:
+  prompt: |
+    Proofread this sentence from docs/RELEASING.md and fix typos: "Publishing use trusted publishing, so ther is no token to rotate." Don't run anything.
+  max_turns: 4
+  allowed_tools: [Skill]
+graders:
+  - name: provenance_check_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?provenance-check"'
+    min: 0
+    max: 0
+    arm: both
+  - name: fixes_typo
+    type: regex
+    target: last_message
+    pattern: '\bthere is no token|uses trusted publishing'
+    flags: i

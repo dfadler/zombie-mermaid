@@ -2,7 +2,7 @@
 # Near-miss: npm "provenance" vocabulary, but a general question, not the repo doc check.
 schema_version: '1.1'
 name: provenance-check-quiet-on-npm-provenance-question
-description: A general npm provenance question must not fire provenance-check.
+description: No delta expected. A general npm provenance question must not fire provenance-check.
 tags: [provenance-check, trigger, quick, smoke]
 runs: 3
 execution:
@@ -20,5 +20,5 @@ graders:
     arm: both
   - name: mentions_attestation
     type: regex
-    pattern: 'attest|sigstore|signed'
+    pattern: '\b(?:attest\w*|sigstore|(?<!un)signed)\b'
     flags: i

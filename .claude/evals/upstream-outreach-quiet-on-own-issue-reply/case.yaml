@@ -2,7 +2,7 @@
 # Near-miss: "reply" / "comment" vocabulary, but on our own repo's issue.
 schema_version: '1.1'
 name: upstream-outreach-quiet-on-own-issue-reply
-description: Drafting a reply on a zombie-mermaid issue must not fire upstream-outreach.
+description: No delta expected. Drafting a reply on a zombie-mermaid issue must not fire upstream-outreach.
 tags: [upstream-outreach, trigger, quick, smoke]
 runs: 3
 execution:
@@ -19,3 +19,9 @@ graders:
     min: 0
     max: 0
     arm: both
+  - name: not_upstream
+    type: regex
+    target: last_message
+    pattern: 'beautiful-mermaid|lukilabs'
+    flags: i
+    match: not_contains
