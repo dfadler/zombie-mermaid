@@ -117,6 +117,8 @@ describe('flow-face fan-out (LR)', () => {
   A --> C
   A -.-> D
   A ==> E`).join('\n')
+    // The solid side leaves A's right face (A's border carries no ┴ tee).
+    expect(out).toMatch(/│ A ├─┘/)
     expect(out).toMatch(/─+►│ B/)
     expect(out).toMatch(/─+►│ C/)
     expect(out).toMatch(/┄+►│ D/)
