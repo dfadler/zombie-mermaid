@@ -110,8 +110,10 @@ export function renderSequenceSvg(
     parts.push(renderParticipantBox(box, fontSizes))
   }
 
-  // 1. `rect <color>` highlight fills, behind lifelines and activation bars
-  for (const block of diagram.blocks) {
+  // 1. `rect <color>` highlight fills, behind lifelines and activation bars.
+  //    Blocks are listed innermost first, so walk backwards: outer rects paint
+  //    first and a nested rect lands on top of its parent (#2586).
+  for (const block of diagram.blocks.toReversed()) {
     if (isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 

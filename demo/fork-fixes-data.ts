@@ -1076,6 +1076,19 @@ export const forkFixes: ForkFix[] = [
       'Before: a footer row of Alice and Bob boxes and unnumbered arrows. After: no footer row and the messages numbered 1 and 2, as in mermaid 12.3.0.',
   },
   {
+    id: 'sequence-nested-rect-order',
+    title: 'A sequence rect nested inside another rect was hidden',
+    symptom:
+      'The inner `rect` was painted before the outer one, so the opaque outer fill covered it and its highlight never showed.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  rect rgb(200, 220, 255)\n    A->>B: outer\n    rect rgb(255, 220, 200)\n      B->>A: inner\n    end\n  end',
+    fixCommit: '01982344',
+    pr: 2595,
+    render: 'svg',
+    lookFor:
+      'Before: only the outer blue highlight shows. After: the inner orange highlight sits on top of it around the `inner` message, as in mermaid 12.3.0.',
+  },
+  {
     id: 'sequence-note-over-span',
     title: 'A sequence note over two participants shrank to its text',
     symptom:
