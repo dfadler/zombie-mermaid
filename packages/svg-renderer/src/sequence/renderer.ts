@@ -12,6 +12,7 @@ import {
   ACTOR_LABEL_OFFSET,
   blockTabWidth,
   boxLabelHeight,
+  dividerLabelExtra,
   hasLabelBelowIcon,
   SELF_LOOP_CONTROL,
   SELF_LOOP_HEIGHT,
@@ -334,6 +335,27 @@ function renderActor(
 /** How far above its arrow a message label's centre sits, in px. */
 const MESSAGE_LABEL_RISE = 10
 
+/** Centre y of a message label: its last line sits where a one-line label would. */
+function messageLabelCy(msg: PositionedMessage, fontSizes: FontSizes): number {
+  return (
+    msg.y -
+    MESSAGE_LABEL_RISE -
+    dividerLabelExtra(msg.label, fontSizes.edgeLabel) / 2
+  )
+}
+
+/** Centre y of a block's header label: its first line sits in the tab band. */
+function blockLabelCy(
+  block: { y: number; label?: string },
+  fontSizes: FontSizes,
+): number {
+  return (
+    block.y +
+    BLOCK_TAB_HEIGHT / 2 +
+    dividerLabelExtra(block.label, fontSizes.edgeLabel) / 2
+  )
+}
+
 /** Height of a block's type-label tab, in px. */
 const BLOCK_TAB_HEIGHT = 18
 
@@ -379,7 +401,7 @@ function collectLabelBoxes(
     // A self-message's label is centred on its own lifeline (x1 === x2), and
     // mermaid lets the lifeline run through it, so it is not cut (#2477).
     if (!msg.label || msg.isSelf) continue
-    centred(msg.label, (msg.x1 + msg.x2) / 2, msg.y - MESSAGE_LABEL_RISE)
+    centred(msg.label, (msg.x1 + msg.x2) / 2, messageLabelCy(msg, fontSizes))
   }
 
   for (const block of diagram.blocks) {
@@ -395,7 +417,7 @@ function collectLabelBoxes(
       centred(
         `[${block.label}]`,
         block.x + (tabWidth + block.width) / 2,
-        block.y + BLOCK_TAB_HEIGHT / 2,
+        blockLabelCy(block, fontSizes),
       )
     }
     for (const divider of block.dividers) {
@@ -536,7 +558,7 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
       renderMultilineText(
         msg.label,
         (msg.x1 + msg.x2) / 2,
-        msg.y - MESSAGE_LABEL_RISE,
+        messageLabelCy(msg, fontSizes),
         fontSizes.edgeLabel,
         f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
@@ -700,7 +722,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
         renderMultilineText(
           f`[${block.label}]`,
           block.x + (tabWidth + block.width) / 2,
-          block.y + tabHeight / 2,
+          blockLabelCy(block, fontSizes),
           fontSizes.edgeLabel,
           f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
         ),
