@@ -44,8 +44,22 @@ describe('front matter (#2585)', () => {
 
   it('unterminated block errors at the opening fence', () => {
     expect(() =>
-      renderMermaidSVG('\n---\ntitle: T\nflowchart TD\nA-->B'),
-    ).toThrow(/Line 2: Unterminated front matter/)
+      renderMermaidSVG('---\ntitle: T\nflowchart TD\nA-->B'),
+    ).toThrow(/Line 1: Unterminated front matter/)
+  })
+
+  it('matches mermaid 12.3.0: block must start at character 0 and be non-empty', () => {
+    for (const src of [
+      '\n---\nt: 1\n---\nflowchart TD',
+      '---\n---\nflowchart TD',
+    ]) {
+      expect(stripFrontMatter(src)).toBe(src)
+      expect(() => renderMermaidSVG(src)).toThrow(/Invalid mermaid header/)
+    }
+  })
+
+  it('a lone fence is unterminated', () => {
+    expect(() => stripFrontMatter('---')).toThrow(/Line 1: Unterminated/)
   })
 
   it('only a leading block counts; yaml oddities and CRLF are tolerated', () => {

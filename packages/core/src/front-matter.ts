@@ -55,9 +55,12 @@ function configOf(body: string[]): Record<string, unknown> | undefined {
  */
 export function stripFrontMatter(text: string): string {
   const lines = text.split('\n')
-  const open = lines.findIndex((l) => l.trim() !== '')
-  if (open === -1 || !FENCE.test(lines[open]!.trimEnd())) return text
-  const close = lines.findIndex((l, i) => i > open && FENCE.test(l.trimEnd()))
+  // Mermaid's regex is anchored at character 0: a blank line, BOM or comment
+  // before the opening `---` is not front matter there either (12.3.0).
+  const open = 0
+  if (!FENCE.test(lines[0]!.trimEnd())) return text
+  const close = lines.findIndex((l, i) => i > 1 && FENCE.test(l.trimEnd()))
+  if (close === -1 && FENCE.test((lines[1] ?? '').trimEnd())) return text
   if (close === -1) {
     throw new MermaidParseError(
       `Line ${open + 1}: Unterminated front matter: missing closing "---".`,
