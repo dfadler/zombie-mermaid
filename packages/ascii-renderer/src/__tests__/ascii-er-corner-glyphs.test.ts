@@ -30,6 +30,9 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
+/** Join attribute cells (`│ string │ id │`) so a row reads as `string id`. */
+const squash = (s: string): string => s.replace(/\s*[│|]\s*/g, ' ')
+
 describe('ASCII ER relationship routing draws a corner glyph at each turn (issue #414)', () => {
   it('draws corner glyphs at a same-row detour around an obstructing entity', () => {
     // FIRST_ENTITY and THIRD_ENTITY are same-row, non-adjacent (MIDDLE_ENTITY
@@ -237,8 +240,8 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
       { colorMode: 'none' },
     )
     expect(ascii).toContain('ag')
-    expect(ascii).toContain('string id')
-    expect(ascii).toContain(
+    expect(squash(ascii)).toContain('string id')
+    expect(squash(ascii)).toContain(
       'string this_is_a_very_long_attribute_name_to_widen_the_box',
     )
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
@@ -282,7 +285,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
       { colorMode: 'none' },
     )
     expect(ascii).toContain('ag')
-    expect(ascii).toContain('string x')
+    expect(squash(ascii)).toContain('string x')
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
 })

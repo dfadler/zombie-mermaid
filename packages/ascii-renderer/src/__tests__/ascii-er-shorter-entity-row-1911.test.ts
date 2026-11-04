@@ -31,8 +31,8 @@ describe('ASCII ER relationship beside a shorter entity (issue #1911)', () => {
     const marker = lines.find((l) => l.includes('╟'))
     expect(marker).toBeDefined()
     // The crow's-foot marker sits flush against the shorter box's left side
-    // (a ├ junction), never against its bottom-left corner.
-    expect(marker).toContain('╟├')
+    // (a │ wall of a text row), never against its bottom-left corner.
+    expect(marker).toContain('╟│')
     expect(marker).not.toContain('╟└')
   })
 
@@ -40,20 +40,20 @@ describe('ASCII ER relationship beside a shorter entity (issue #1911)', () => {
     const lines = renderMermaidASCII(SOURCE).split('\n')
     const label = lines.find((l) => l.includes('places'))
     expect(label).toBeDefined()
-    expect(label!.indexOf('places')).toBeGreaterThan(label!.indexOf('│') + 1)
-    expect(label!.indexOf('places')).toBeLessThan(label!.lastIndexOf('│'))
+    // It sits on a table rule row, so the walls read ┤ ... └ there.
+    expect(label).toMatch(/[│┤]\s+places\s+[│├└]/)
   })
 
   it('uses the same row in ASCII-only mode', () => {
     const lines = renderMermaidASCII(SOURCE, { useAscii: true }).split('\n')
     const marker = lines.find((l) => l.includes('o<'))
     expect(marker).toBeDefined()
-    // 'o<' is the zero-or-many marker; it must end on a '+' junction followed
-    // by a border run, with the shorter box's bottom border on a later row.
-    expect(marker).toMatch(/o<\+-+\+/)
+    // 'o<' is the zero-or-many marker; it must end against a '|' wall (a text
+    // row), with the shorter box's bottom border on a later row.
+    expect(marker).toMatch(/o<\|/)
     const markerRow = lines.indexOf(marker!)
     const bottom = lines.findIndex(
-      (l, i) => i > markerRow && l.includes('+-----------+'),
+      (l, i) => i > markerRow && l.includes('+-----+----+----+'),
     )
     expect(bottom).toBeGreaterThan(markerRow)
   })

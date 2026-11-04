@@ -31,7 +31,13 @@ import {
   increaseRoleCanvasSize,
   write,
 } from './canvas.ts'
-import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
+import { classifyBoxChar } from './draw.ts'
+import {
+  drawEntityTable,
+  measureEntityTable,
+  tableRuleRows,
+} from './er-table.ts'
+import type { EntityTable } from './er-table.ts'
 import { splitLines, maxLineWidth } from './multiline-utils.ts'
 import { splitStatements } from '@zombie-mermaid/core'
 import { toDisplayCells } from './display-width.ts'
@@ -43,36 +49,27 @@ import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 // ============================================================================
 
 /**
- * Format an attribute line as "type name" or "type name PK" etc.
- *
- * Real mermaid's SVG lays attribute columns out left-to-right as
- * type/name/keys (confirmed against `attribute-type`/`attribute-name`/
- * `attribute-keys` x-coordinates in the form-judge report on issue #1119) —
- * so the key column trails here too, rather than leading with a fixed-width
- * prefix like the pre-#1134 "PK type name" order did. Nothing else in this
- * file assumes a fixed-width key column: box width is just the widest
- * rendered line (see measureMultiBox in draw-boxes.ts), so a trailing,
- * unpadded key suffix sizes the box correctly with no extra alignment logic
- * needed.
+ * An entity as Mermaid draws it: the name over a grid with one column per
+ * attribute part (type, name, keys, comment) and a divider between columns and
+ * rows. A keys or comment column exists only when some attribute has one.
+ * A comment shows unquoted, as in Mermaid; a <br> becomes a space so a row
+ * stays one line.
  */
-function formatAttribute(attr: ErAttribute): string {
-  const keySuffix = attr.keys.length > 0 ? ' ' + attr.keys.join(',') : ''
-  // Mermaid shows the comment as a fourth column (#2127). A terminal row has
-  // no column grid, so it trails quoted (the source syntax), which also keeps
-  // a keyless row's comment from reading as part of the name. Never wrapped,
-  // like mermaid; a <br> becomes a space so the row stays one line.
-  const comment = attr.comment?.replace(/\s*\n\s*/g, ' ').trim()
-  const commentSuffix = comment ? ` "${comment}"` : ''
-  return `${attr.type} ${attr.name}${keySuffix}${commentSuffix}`
-}
-
-/** Build sections for an entity box: [header], [attributes] */
-function buildEntitySections(entity: ErEntity): string[][] {
-  // Support multi-line entity names
-  const header = splitLines(entity.label)
-  const attrs = entity.attributes.map(formatAttribute)
-  if (attrs.length === 0) return [header]
-  return [header, attrs]
+function buildEntityTable(entity: ErEntity): EntityTable {
+  const attrs = entity.attributes
+  const comment = (a: ErAttribute): string =>
+    a.comment?.replace(/\s*\n\s*/g, ' ').trim() ?? ''
+  const hasKeys = attrs.some((a) => a.keys.length > 0)
+  const hasComment = attrs.some((a) => comment(a) !== '')
+  return {
+    header: splitLines(entity.label),
+    rows: attrs.map((a) => [
+      a.type,
+      a.name,
+      ...(hasKeys || hasComment ? [a.keys.join(',')] : []),
+      ...(hasComment ? [comment(a)] : []),
+    ]),
+  }
 }
 
 // ============================================================================
@@ -163,7 +160,7 @@ function getVerticalMarkerRows(
 
 interface PlacedEntity {
   entity: ErEntity
-  sections: string[][]
+  table: EntityTable
   x: number
   y: number
   width: number
@@ -267,7 +264,7 @@ function assignLayers(
 /**
  * Look up a per-entity value computed by renderErAscii's box-sizing pass.
  * Every entity in `diagram.entities` gets an entry in `entityBoxW`,
- * `entityBoxH`, and `entitySections` before layout runs, so this always
+ * `entityBoxH`, and `entityTables` before layout runs, so this always
  * succeeds for a real diagram entity — but that guarantee is established by
  * a separate imperative loop the compiler can't connect back to this
  * lookup, so it's checked explicitly rather than trusted via `!`.
@@ -468,29 +465,29 @@ export function renderErAscii(
   }
 
   // --- Build entity box dimensions ---
-  const entitySections = new Map<string, string[][]>()
+  const entityTables = new Map<string, EntityTable>()
   const entityBoxW = new Map<string, number>()
   const entityBoxH = new Map<string, number>()
   const entityById = new Map<string, ErEntity>()
 
   for (const ent of diagram.entities) {
     entityById.set(ent.id, ent)
-    const sections = buildEntitySections(ent)
+    const table = buildEntityTable(ent)
     // Each self-relationship loop takes two rows of the box's left side plus
     // a blank row between loops (#2284): pad a short box with blank rows.
     const loops = selfRels.filter((r) => r.entity1 === ent.id).length
     const interior = (): number =>
-      sections.reduce((n, sec) => n + sec.length, sections.length - 1)
+      measureEntityTable(table, config.boxBorderPadding).height - 2
     while (loops > 0 && interior() < 3 * loops - 1) {
-      sections[sections.length - 1]!.push('')
+      if (table.rows.length === 0) table.header.push('')
+      else table.padLines = (table.padLines ?? 0) + 1
     }
-    entitySections.set(ent.id, sections)
+    entityTables.set(ent.id, table)
 
-    // Reserve exactly what drawMultiBox will draw — measuring it here rather
-    // than re-deriving the arithmetic keeps layout and drawing in lockstep for
-    // wide-character (CJK/fullwidth) content.
-    const { width: boxW, height: boxH } = measureMultiBox(
-      sections,
+    // Reserve exactly what drawEntityTable will draw, so layout and drawing
+    // stay in lockstep for wide-character (CJK/fullwidth) content.
+    const { width: boxW, height: boxH } = measureEntityTable(
+      table,
       config.boxBorderPadding,
     )
 
@@ -600,7 +597,7 @@ export function renderErAscii(
       currentX += Math.max(0, (selfReserve.get(ent.id) ?? 0) - lastGap)
       placed.set(ent.id, {
         entity: ent,
-        sections: mustGetEntityValue(entitySections, ent.id, 'sections'),
+        table: mustGetEntityValue(entityTables, ent.id, 'table'),
         x: currentX,
         y: currentY,
         width: w,
@@ -832,8 +829,8 @@ export function renderErAscii(
 
   // --- Draw entity boxes ---
   for (const p of placed.values()) {
-    const boxCanvas = drawMultiBox(
-      p.sections,
+    const boxCanvas = drawEntityTable(
+      p.table,
       useAscii,
       config.boxBorderPadding,
     )
@@ -1286,6 +1283,15 @@ export function renderErAscii(
         sharedTop <= sharedBottom
       ) {
         lineY = Math.floor((sharedTop + sharedBottom) / 2)
+      }
+      // Keep the line off a table's row rules, where it would merge into the
+      // rule instead of reading as attached to a row.
+      const onRule = (y: number): boolean =>
+        [left, right].some((p) => tableRuleRows(p.table).has(y - p.y))
+      for (const d of [1, -1, 2, -2]) {
+        if (!onRule(lineY)) break
+        const y = lineY + d
+        if (y >= sharedTop && y <= sharedBottom && !onRule(y)) lineY = y
       }
 
       // A straight line at lineY only stays clear of other boxes when left

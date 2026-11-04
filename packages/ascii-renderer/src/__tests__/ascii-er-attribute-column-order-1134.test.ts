@@ -11,6 +11,18 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
+/** The attribute rows of the first entity, one array of trimmed cells per row. */
+const rows = (out: string): string[][] =>
+  out
+    .split('\n')
+    .filter((l) => /^│.*│ *$/.test(l) && l.split('│').length > 3)
+    .map((l) =>
+      l
+        .split('│')
+        .slice(1, -1)
+        .map((c) => c.trim()),
+    )
+
 describe('ASCII ER attribute columns render as type/name/keys (issue #1134)', () => {
   it('renders a single-key attribute as "type name KEY", not "KEY type name"', () => {
     const ascii = renderMermaidASCII(
@@ -20,8 +32,7 @@ describe('ASCII ER attribute columns render as type/name/keys (issue #1134)', ()
         }`,
       { colorMode: 'none' },
     )
-    expect(ascii).toContain('int id PK')
-    expect(ascii).not.toContain('PK int id')
+    expect(rows(ascii)).toEqual([['int', 'id', 'PK']])
   })
 
   it('renders a multi-key attribute\'s keys joined and trailing, e.g. "type name PK,FK"', () => {
@@ -32,8 +43,7 @@ describe('ASCII ER attribute columns render as type/name/keys (issue #1134)', ()
         }`,
       { colorMode: 'none' },
     )
-    expect(ascii).toContain('int product_id PK,FK')
-    expect(ascii).not.toContain('PK,FK int product_id')
+    expect(rows(ascii)).toEqual([['int', 'product_id', 'PK,FK']])
   })
 
   it('renders a keyless attribute with no reserved key-column padding', () => {
@@ -44,12 +54,8 @@ describe('ASCII ER attribute columns render as type/name/keys (issue #1134)', ()
         }`,
       { colorMode: 'none' },
     )
-    // The pre-#1134 format always reserved a fixed-width 3-space key
-    // prefix ('   ') even when an attribute had no key at all — a keyless
-    // attribute now renders with nothing but its own type/name text, so
-    // the entity's box no longer wastes 3 columns it never needed.
-    expect(ascii).toContain('string name')
-    expect(ascii).not.toContain('   string name')
+    // No keys anywhere: only the type and name columns exist, as in mermaid.
+    expect(rows(ascii)).toEqual([['string', 'name']])
   })
 
   it('keeps a mix of keyed and keyless attributes readable in the same entity', () => {
@@ -62,8 +68,10 @@ describe('ASCII ER attribute columns render as type/name/keys (issue #1134)', ()
         }`,
       { colorMode: 'none' },
     )
-    expect(ascii).toContain('string name PK')
-    expect(ascii).toContain('string email UK')
-    expect(ascii).toContain('int age')
+    expect(rows(ascii)).toEqual([
+      ['string', 'name', 'PK'],
+      ['string', 'email', 'UK'],
+      ['int', 'age', ''],
+    ])
   })
 })
