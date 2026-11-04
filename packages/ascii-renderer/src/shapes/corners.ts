@@ -282,6 +282,10 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
     ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
   },
+  'fork-bar': {
+    unicode: { tl: '━', tr: '━', bl: '━', br: '━' },
+    ascii: { tl: '=', tr: '=', bl: '=', br: '=' },
+  },
   'small-circle': {
     unicode: { tl: '●', tr: '●', bl: '●', br: '●' },
     ascii: { tl: '*', tr: '*', bl: '*', br: '*' },

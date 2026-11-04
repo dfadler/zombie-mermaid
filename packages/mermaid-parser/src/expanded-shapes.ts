@@ -169,9 +169,9 @@ const SHAPE_ALIASES: Record<string, NodeShape> = {
   'internal-storage': 'window-pane',
 
   // --- Fork / join ---
-  fork: 'fork-join',
-  join: 'fork-join',
-  'long-rect': 'fork-join',
+  fork: 'fork-bar',
+  join: 'fork-bar',
+  'long-rect': 'fork-bar',
 
   // --- Cloud ---
   cloud: 'cloud',

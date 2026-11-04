@@ -1052,7 +1052,7 @@ function expandedNodeLabel(
   shape: NodeShape,
 ): string {
   // Mermaid draws these two without text, whatever `label:` says.
-  if (shape === 'fork-join' || shape === 'small-circle') return ''
+  if (shape === 'fork-bar' || shape === 'small-circle') return ''
   if (meta.label !== undefined && meta.label.length > 0) return meta.label
   if (meta.icon) return meta.icon
   if (meta.img) return meta.img

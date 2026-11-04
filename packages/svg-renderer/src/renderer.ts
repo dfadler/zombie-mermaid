@@ -818,6 +818,8 @@ function renderNodeShapeBase(node: PositionedNode): string {
       return renderHorizontalCylinder(x, y, width, height, fill, stroke, sw)
     case 'tagged-rectangle':
       return renderTaggedRectangle(x, y, width, height, fill, stroke, sw)
+    case 'fork-bar':
+      return renderRect(x, y, width, height, fill, stroke, sw)
     case 'small-circle':
       return renderSmallCircle(x, y, width, height, fill, stroke, sw)
     case 'text':
@@ -1338,11 +1340,8 @@ function renderForkJoin(
   h: number,
   stroke: string,
 ): string {
-  // Lies across the flow: the short side is the bar's thickness.
-  const thick = Math.min(8, w, h)
-  const barW = w > h ? w : thick
-  const barH = w > h ? thick : h
-  return f`<rect x="${x + (w - barW) / 2}" y="${y + (h - barH) / 2}" width="${barW}" height="${barH}" fill="${stroke}" stroke="${stroke}" />`
+  const barH = Math.min(8, h)
+  return f`<rect x="${x}" y="${y + (h - barH) / 2}" width="${w}" height="${barH}" fill="${stroke}" stroke="${stroke}" />`
 }
 
 /**

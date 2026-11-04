@@ -41,6 +41,7 @@ import {
 const ASCII_SHAPE: Partial<Record<NodeShape, NodeShape>> = {
   'horizontal-cylinder': 'cylinder',
   'small-circle': 'state-start',
+  'fork-bar': 'fork-join',
 }
 
 export function convertToAsciiGraph(

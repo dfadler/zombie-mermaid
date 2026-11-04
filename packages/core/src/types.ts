@@ -134,7 +134,8 @@ export type NodeShape =
   | 'cloud' // Cloud outline
   | 'horizontal-cylinder' // Cylinder lying on its side — direct access storage
   | 'tagged-rectangle' // Rectangle with a dog-ear in the bottom-right corner
-  | 'small-circle' // Small solid dot, no label — start
+  | 'small-circle' // Small circle, no label — start
+  | 'fork-bar' // Flowchart fork/join: an unlabelled bar across the flow, in node colours
   | 'text' // Label with no outline
   | 'anchor' // Invisible point
   // State diagram `note left of X` / `note right of X`

@@ -33,8 +33,8 @@ describe('flowchart expanded shapes (#2552)', () => {
       ['horizontal-cylinder', 'h-cyl'],
       ['tagged-rectangle', 'tag'],
       ['small-circle', ''],
-      ['fork-join', ''],
-      ['fork-join', ''],
+      ['fork-bar', ''],
+      ['fork-bar', ''],
     ])
   })
 
@@ -54,19 +54,29 @@ describe('flowchart expanded shapes (#2552)', () => {
     expect(svg).toMatch(/<path transform="translate\([\d. ]+\)" d="M0 0 a/)
     expect(svg).toMatch(/<polygon points="[^"]+" fill=/) // dog-ear
     expect(svg).toContain('r="7"')
-    expect(svg).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="8" height="70"/)
+    expect(svg).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="10" height="70"/)
   })
 
   it('lays a fork bar across the flow', () => {
-    expect(estimateNodeSize('F', '', 'fork-join', 14, undefined, 'TD')).toEqual(
-      { width: 70, height: 10 },
-    )
-    expect(estimateNodeSize('F', '', 'fork-join', 14, undefined, 'RL')).toEqual(
-      { width: 10, height: 70 },
-    )
+    expect(estimateNodeSize('F', '', 'fork-bar', 14, undefined, 'TD')).toEqual({
+      width: 70,
+      height: 10,
+    })
+    expect(estimateNodeSize('F', '', 'fork-bar', 14, undefined, 'RL')).toEqual({
+      width: 10,
+      height: 70,
+    })
     const tb = renderMermaidSVG(
       'flowchart TD\nA --> F@{ shape: fork }\nF --> B',
     )
-    expect(tb).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="70" height="8"/)
+    expect(tb).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="70" height="10"/)
+  })
+
+  it('fills the bar and the small circle from style and classDef', () => {
+    const svg = renderMermaidSVG(
+      'flowchart LR\nD@{ shape: sm-circ }\nE@{ shape: fork }\nclassDef hot fill:#f00,stroke:#00f\nclass D,E hot\nD --> E',
+    )
+    expect(svg).toMatch(/<circle [^>]*r="7" fill="#f00" stroke="#00f"/)
+    expect(svg).toMatch(/<rect [^>]*width="10" height="70" [^>]*fill="#f00"/)
   })
 })
