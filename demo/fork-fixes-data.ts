@@ -320,7 +320,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'text-embedded-edge-labels',
-    parked: 'svg-singles',
     title: 'Text-embedded edge labels (`-- Yes -->`) were not parsed',
     symptom:
       'Mermaid’s inline label syntax on an arrow body — as opposed to the `-->|Yes|` pipe form — had no parser support. The label vanished, and the mis-tokenization also swallowed the bracketed label off the node the arrow pointed at.',
@@ -796,7 +795,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-subgraph-node-style',
-    parked: 'svg-singles',
     title: 'Flowchart subgraph style/class and node dash/radius were ignored',
     symptom:
       'A `style` on a subgraph id left the cluster default grey, and a node `style` dropped `stroke-dasharray` and `rx`/`ry`, while mermaid 12.3.0 applies all of them.',
@@ -878,7 +876,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-linkstyle-head-colour',
-    parked: 'svg-singles',
     title: 'A coloured flowchart edge kept a grey arrowhead',
     symptom:
       'An edge given its own `linkStyle` stroke was drawn in that colour but its arrowhead stayed the default grey, unlike mermaid.',

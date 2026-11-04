@@ -86,6 +86,33 @@ export function layoutFlowchartSync(
   rawGraph: MermaidGraph,
   options: FlowchartRenderOptions = {},
 ): PositionedGraph {
+  const positioned = layoutFlowchartUnmarked(rawGraph, options)
+  // mermaid@12.3.0 draws a flowchart subgraph with a centred title and no
+  // header band, but a state composite with the band (#2636). Both share this
+  // entry point, so mark the flowchart ones here, in one place, whichever
+  // layout produced the groups.
+  const composites = new Set<string>()
+  const collect = (sgs: MermaidGraph['subgraphs']): void => {
+    for (const sg of sgs) {
+      if (sg.stateComposite) composites.add(sg.id)
+      collect(sg.children)
+    }
+  }
+  collect(rawGraph.subgraphs)
+  const mark = (groups: PositionedGraph['groups']): void => {
+    for (const g of groups) {
+      if (!g.region && !composites.has(g.id)) g.bandless = true
+      mark(g.children)
+    }
+  }
+  mark(positioned.groups)
+  return positioned
+}
+
+function layoutFlowchartUnmarked(
+  rawGraph: MermaidGraph,
+  options: FlowchartRenderOptions,
+): PositionedGraph {
   // Real mermaid.js draws no line for an edge between a node and a subgraph
   // containing it (#1310), so it is not laid out or rendered here either.
   const graph = withoutOwnClusterEdges(rawGraph)

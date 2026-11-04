@@ -66,7 +66,7 @@ describe('Top <--> Bot beside Top <-.- Bot (#1386)', () => {
 
   it('SVG: the solid edge has both markers, the dotted edge has none', () => {
     const svg = renderMermaidSVG(source).replace(/zm[0-9a-z]+-/g, '')
-    const edges = [...svg.matchAll(/<polyline class="edge"[^>]*>/g)].map(
+    const edges = [...svg.matchAll(/<path class="edge"[^>]*>/g)].map(
       (m) => m[0],
     )
     expect(edges).toHaveLength(2)

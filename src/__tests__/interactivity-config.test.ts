@@ -296,10 +296,12 @@ describe('edge curve styles (#198 row 9)', () => {
       '  Paused --> Done',
     ].join('\n')
 
-    it('draws straight polylines by default', () => {
+    it('draws rounded orthogonal paths by default', () => {
       const svg = renderMermaidSVG(branching)
-      expect(svg).toContain('<polyline class="edge"')
-      expect(svg).not.toContain('<path class="edge"')
+      expect(svg).toContain('<path class="edge"')
+      expect(svg).not.toContain('<polyline')
+      expect(svg).toContain(' Q ')
+      expect(svg).not.toContain(' C ')
     })
 
     it('applies an explicit curve option', () => {
@@ -317,20 +319,19 @@ describe('edge curve styles (#198 row 9)', () => {
     })
   })
 
-  it('keeps emitting <polyline> for the default linear curve', () => {
-    // Changing the element for every diagram would break consumers selecting
-    // `polyline.edge`, for no benefit to a diagram that asked for no curve.
+  it('emits a <path> for the default linear curve (#2635)', () => {
+    // mermaid@12.3.0 rounds orthogonal bends, which a <polyline> cannot draw.
     const svg = renderMermaidSVG('flowchart TD\n  A --> B')
-    expect(svg).toContain('<polyline class="edge"')
-    expect(svg).not.toContain('<path class="edge"')
+    expect(svg).toContain('<path class="edge"')
+    expect(svg).not.toContain('<polyline')
   })
 
-  it('switches to <path> only when a curve is requested', () => {
+  it('draws a requested curve through the same <path> element', () => {
     const svg = renderMermaidSVG(
-      '%%{init: {"flowchart": {"curve": "basis"}}}%%\nflowchart TD\n  A --> B --> C',
+      '%%{init: {"flowchart": {"curve": "basis"}}}%%\nflowchart TD\n  A --> B\n  A --> C',
     )
     expect(svg).toContain('<path class="edge"')
-    expect(svg).not.toContain('<polyline class="edge"')
+    expect(svg).toContain(' C ')
   })
 })
 
@@ -710,7 +711,7 @@ describe('state-diagram edge IDs and animation', () => {
 describe('no regression in ordinary diagrams', () => {
   it('renders an unconfigured diagram exactly as before', () => {
     const svg = renderMermaidSVG('flowchart TD\n  A[Start] --> B{Choice}')
-    expect(svg).toContain('<polyline class="edge"')
+    expect(svg).toContain('<path class="edge"')
     expect(svg).not.toContain('zm-edge-dash')
     expect(svg).not.toContain('<a href=')
     expect(svg).toContain('Start')

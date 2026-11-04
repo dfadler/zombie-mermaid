@@ -18,6 +18,9 @@ import type {
 import type { FontSizes } from './styles.ts'
 import { FONT_WEIGHTS } from './styles.ts'
 
+/** Weight of a flowchart subgraph title (mermaid draws it regular). */
+export const BANDLESS_TITLE_WEIGHT = 400
+
 /** Left inset of the title text inside the box, matching `renderGroup`. */
 const TITLE_TEXT_INSET = 12
 
@@ -47,10 +50,13 @@ export function titleTextBoxes(
       const text = measureMultilineText(
         g.label,
         fontSizes.groupHeader,
-        FONT_WEIGHTS.groupHeader,
+        g.bandless ? BANDLESS_TITLE_WEIGHT : FONT_WEIGHTS.groupHeader,
       )
       return {
-        x: g.x + TITLE_TEXT_INSET - GAP_PADDING,
+        // A bandless (flowchart) title is centred; the banded one is inset.
+        x: g.bandless
+          ? g.x + g.width / 2 - text.width / 2 - GAP_PADDING
+          : g.x + TITLE_TEXT_INSET - GAP_PADDING,
         y: g.y + headerHeight / 2 - text.height / 2 - GAP_PADDING,
         width: text.width + 2 * GAP_PADDING,
         height: text.height + 2 * GAP_PADDING,

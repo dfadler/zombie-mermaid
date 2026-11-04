@@ -10,6 +10,7 @@
  * The layout engine already routes those edges around the obstacles, so a
  * bundle whose branch would collide is rejected and the routed path kept.
  */
+import { edgePointsByEnds } from './edge-path-points.ts'
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
 
@@ -20,22 +21,9 @@ interface Box {
   height: number
 }
 
-/** Every `<polyline class="edge">` path in `svg`, keyed as `FROM->TO`. */
+/** Every `<path class="edge">` in `svg`, keyed as `FROM->TO`. */
 function edgePaths(svg: string): Map<string, { x: number; y: number }[]> {
-  const out = new Map<string, { x: number; y: number }[]>()
-  for (const m of svg.matchAll(
-    /data-from="([^"]+)" data-to="([^"]+)"[^>]*points="([^"]+)"/g,
-  )) {
-    const points = m[3]!
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((pair) => {
-        const [x, y] = pair.split(',')
-        return { x: Number(x), y: Number(y) }
-      })
-    out.set(`${m[1]}->${m[2]}`, points)
-  }
-  return out
+  return edgePointsByEnds(svg)
 }
 
 /** Every node's box in `svg`, keyed by node id. */

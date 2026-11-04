@@ -10,13 +10,13 @@ const sub = (extra: string) =>
   renderMermaidSVG(`flowchart TD\nsubgraph one [T]\nA-->B\nend\n${extra}`)
 
 describe('subgraph style (#2550)', () => {
-  it('applies `style` to the cluster and its header band', () => {
+  it('applies `style` to the cluster, which has no header band (#2636)', () => {
     const svg = sub(
       'style one fill:#fdd,stroke:#f00,stroke-width:3px,stroke-dasharray:4 2,color:#00f',
     )
     expect(
       svg.match(/fill="#fdd" stroke="#f00" stroke-width="3px"/g),
-    ).toHaveLength(2)
+    ).toHaveLength(1)
     expect(svg).toContain('stroke-dasharray="4 2"')
     expect(svg).toContain('fill="#00f"')
   })
@@ -24,7 +24,7 @@ describe('subgraph style (#2550)', () => {
     expect(sub('classDef c fill:#dfd\nclass one c')).toContain('fill="#dfd"')
     // The cluster rects come before the first edge; nodes after it do take #abc
     const svg = sub('classDef default fill:#abc')
-    expect(svg.split('<polyline')[0]).not.toContain('#abc')
+    expect(svg.split('<path class="edge"')[0]).not.toContain('#abc')
   })
   it('leaves an unstyled cluster alone', () => {
     expect(sub('')).not.toContain('stroke-dasharray')
