@@ -824,7 +824,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-block-label-layout',
-    parked: 'svg-sequence',
     title: 'Sequence block labels were laid out unlike mermaid.js',
     symptom:
       'The `[label]` sat inside a wide tab, divider labels were left-aligned on the same row as their message label, and the frame stood about 47px outside the lifelines. In ASCII a long label pushed the wall far past the last lifeline.',
@@ -908,7 +907,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-critical-option',
-    parked: 'svg-sequence',
     title: 'An option inside a critical block vanished',
     symptom:
       'Each `option` in a `critical` block was dropped silently, along with its `[label]` and the divider line.',
@@ -980,7 +978,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-nested-rect-order',
-    parked: 'svg-sequence',
     title: 'A sequence rect nested inside another rect was hidden',
     symptom:
       'The inner `rect` was painted before the outer one, so the opaque outer fill covered it and its highlight never showed.',
@@ -994,7 +991,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-note-over-span',
-    parked: 'svg-sequence',
     title: 'A sequence note over two participants shrank to its text',
     symptom:
       '`Note over A,B` was sized to its text and centred between the two lifelines, so a short note touched neither; mermaid spans it across both.',
@@ -1008,7 +1004,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-multiline-label-spacing',
-    parked: 'svg-sequence',
     title: 'Multi-line sequence labels crowded the frame border and the arrow',
     symptom:
       'A `<br/>` message label ran its second line onto the arrow, and a `<br/>` frame label put its second line right above the first message label.',
