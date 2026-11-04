@@ -783,7 +783,6 @@ export const allForkFixes: ForkFix[] = [
   {
     id: 'architecture-junction-group-icons',
     group: 'features',
-    parked: 'svg-architecture',
     title:
       'Architecture junctions drew a gray disc and group icons were dropped',
     symptom:
@@ -950,7 +949,6 @@ export const allForkFixes: ForkFix[] = [
   {
     id: 'architecture-group-row-level',
     group: 'features',
-    parked: 'svg-architecture',
     title: 'Architecture groups rode off the row of the node they link to',
     symptom:
       'A group whose member links to a node outside it was centred on that node as a whole, so `Primary DB` sat 54px above the main row, service labels hung on the group border, and a `T`/`B` edge into a group ran beside the group instead of under its other end. The same source also fixed a service under a junction staying in its group column: `fan:B --> T:replica` left `replica` beside `Primary DB` instead of under the junction.',
@@ -961,6 +959,19 @@ export const allForkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: the Data Tier group is shifted up, `Primary DB` sits above the main row and `Replica` beside it, with service labels on the group border. After: `Primary DB` is level with the gateway row, the `fan:B` edge drops straight down into `Replica` beneath the junction, and every label stays inside its group.',
+  },
+  {
+    id: 'yaml-front-matter',
+    title: 'A leading YAML front matter block made every diagram fail',
+    symptom:
+      '`---\ntitle: T\n---\nflowchart TD\n  A-->B` threw "Invalid mermaid header" for every diagram type, though mermaid.js and GitHub accept it. Its `config:` now applies like `%%{init}%%`, here dropping the mirrored participant row.',
+    source:
+      '---\nconfig:\n  sequence:\n    mirrorActors: false\n---\nsequenceDiagram\n  participant A as Alice\n  participant B as Bob\n  A->>B: Hello\n  B-->>A: Hi',
+    fixCommit: '8757f5d2',
+    pr: 2597,
+    render: 'svg',
+    lookFor:
+      'Before: an error instead of a diagram. After: the diagram renders and the `config:` block drops the footer row of Alice and Bob boxes, as in mermaid 12.3.0.',
   },
   {
     id: 'sequence-init-mirror-actors',
