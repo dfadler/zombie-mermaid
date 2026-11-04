@@ -1,5 +1,17 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.14.3
+
+### Patch Changes
+
+- [#2573](https://github.com/dfadler/zombie-mermaid/pull/2573) [`427597e`](https://github.com/dfadler/zombie-mermaid/commit/427597e23b42b10d8830c7fa52cded72c825ab3a) Thanks [@dfadler](https://github.com/dfadler)! - Architecture SVG: a `junction` is now a join with no gray disc and no gap in the edge, and a group's icon (`group api(server)[API]`) is drawn in its header, as in mermaid 12.2.0 and 12.3.0 ([#2563](https://github.com/dfadler/zombie-mermaid/issues/2563), [#2564](https://github.com/dfadler/zombie-mermaid/issues/2564)). ASCII output is unchanged.
+
+- [#2581](https://github.com/dfadler/zombie-mermaid/pull/2581) [`47ea03c`](https://github.com/dfadler/zombie-mermaid/commit/47ea03c0b092eaac588810931aee417942f74917) Thanks [@dfadler](https://github.com/dfadler)! - Flowchart SVG: `@{ shape: }` now draws `cloud`, `h-cyl`, `tag-rect`, `sm-circ` and `fork`/`join` as Mermaid 12.3.0 does: a cloud outline, a horizontal cylinder, a dog-eared rectangle, a small unlabelled circle, and an unlabelled bar across the flow ([#2552](https://github.com/dfadler/zombie-mermaid/issues/2552)).
+
+- [#2600](https://github.com/dfadler/zombie-mermaid/pull/2600) [`c387226`](https://github.com/dfadler/zombie-mermaid/commit/c38722658c4347f4ea56e8d5694373c6bd0f28ea) Thanks [@dfadler](https://github.com/dfadler)! - Sequence diagrams now honour `%%{init: {"sequence": {"mirrorActors": false}}}%%` (no participant row under the lifelines) and `showSequenceNumbers: true` (numbers messages like `autonumber`), as mermaid does. The other sequence init options and `link`/`links` are still ignored and are listed in docs/known-differences.md ([#2589](https://github.com/dfadler/zombie-mermaid/issues/2589)).
+- Updated dependencies [[`427597e`](https://github.com/dfadler/zombie-mermaid/commit/427597e23b42b10d8830c7fa52cded72c825ab3a), [`47ea03c`](https://github.com/dfadler/zombie-mermaid/commit/47ea03c0b092eaac588810931aee417942f74917), [`c75bab5`](https://github.com/dfadler/zombie-mermaid/commit/c75bab509c1d384cf0ee045e26ad5bcc9137a9df), [`8757f5d`](https://github.com/dfadler/zombie-mermaid/commit/8757f5d24cace494346cb15b40f3047114f1d2d1), [`c387226`](https://github.com/dfadler/zombie-mermaid/commit/c38722658c4347f4ea56e8d5694373c6bd0f28ea)]:
+  - @zombie-mermaid/core@5.14.3
+
 ## 5.14.2
 
 ### Patch Changes

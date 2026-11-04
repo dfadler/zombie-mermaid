@@ -1,5 +1,15 @@
 # @zombie-mermaid/cli
 
+## 5.14.3
+
+### Patch Changes
+
+- Updated dependencies [[`08ef003`](https://github.com/dfadler/zombie-mermaid/commit/08ef003d73adb15144aa4f8806ede0e0c34f530a), [`427597e`](https://github.com/dfadler/zombie-mermaid/commit/427597e23b42b10d8830c7fa52cded72c825ab3a), [`083ce72`](https://github.com/dfadler/zombie-mermaid/commit/083ce722e9e289b1229942808899fcd2a57b8930), [`1e019fa`](https://github.com/dfadler/zombie-mermaid/commit/1e019fa12439aa207b056d049c7959bba96f9617), [`88fda60`](https://github.com/dfadler/zombie-mermaid/commit/88fda60354f16a5a730d03d3ec9260fbf0ee8c0b), [`3e1e9f8`](https://github.com/dfadler/zombie-mermaid/commit/3e1e9f8e3f65768c7176b677d003700fb77a69ff), [`e00ffd6`](https://github.com/dfadler/zombie-mermaid/commit/e00ffd69c481276c051687ecd6d8eb4fc07bb80c), [`c4137f7`](https://github.com/dfadler/zombie-mermaid/commit/c4137f7db30f404bed796d50b5dfb2dbc4ce108e), [`47ea03c`](https://github.com/dfadler/zombie-mermaid/commit/47ea03c0b092eaac588810931aee417942f74917), [`c75bab5`](https://github.com/dfadler/zombie-mermaid/commit/c75bab509c1d384cf0ee045e26ad5bcc9137a9df), [`8757f5d`](https://github.com/dfadler/zombie-mermaid/commit/8757f5d24cace494346cb15b40f3047114f1d2d1), [`c387226`](https://github.com/dfadler/zombie-mermaid/commit/c38722658c4347f4ea56e8d5694373c6bd0f28ea), [`485fdd4`](https://github.com/dfadler/zombie-mermaid/commit/485fdd40bde3ece362d27ef3290912360efa5462), [`0198234`](https://github.com/dfadler/zombie-mermaid/commit/01982344cd2a31a76f1c6b5e08eb573a1e4e6d70), [`9791be1`](https://github.com/dfadler/zombie-mermaid/commit/9791be181bbfb26dee3a08c80af27ef9d6744d3f), [`ed96f8d`](https://github.com/dfadler/zombie-mermaid/commit/ed96f8d00a43fef1d7d4e0654293b66b1866f02b), [`14e73ec`](https://github.com/dfadler/zombie-mermaid/commit/14e73ecb377660a67acfdb46dfb7bab57b55bff7), [`9d60652`](https://github.com/dfadler/zombie-mermaid/commit/9d60652938ec1342bdbf6cfe0f18e302132c901f)]:
+  - @zombie-mermaid/svg-renderer@5.14.3
+  - @zombie-mermaid/core@5.14.3
+  - @zombie-mermaid/ascii-renderer@5.14.3
+  - @zombie-mermaid/mcp@5.14.3
+
 ## 5.14.2
 
 ### Patch Changes
