@@ -932,6 +932,20 @@ export const forkFixes: ForkFix[] = [
       'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a compact staircase, S1/S4 in the first column and S2/S3 in the second, as mermaid draws it.',
   },
   {
+    id: 'flowchart-expanded-shapes-draw',
+    title:
+      'Flowchart cloud, h-cyl, tag-rect, sm-circ and fork drew as rough approximations',
+    symptom:
+      '`@{ shape: cloud }` was a rectangle, `h-cyl` a vertical cylinder, `tag-rect` had no dog-ear, `sm-circ` was a labelled box and `fork` drew its label over a horizontal bar.',
+    source:
+      'flowchart LR\nA@{ shape: cloud, label: "cloud" }\nB@{ shape: h-cyl, label: "h-cyl" }\nC@{ shape: tag-rect, label: "tag" }\nD@{ shape: sm-circ }\nE@{ shape: fork }\nA --> B --> C --> D --> E',
+    fixCommit: '47ea03c0',
+    pr: 2581,
+    render: 'svg',
+    lookFor:
+      'Before: a plain box, a vertical cylinder, an undecorated box, a box labelled D and a labelled bar. After: a cloud, a horizontal cylinder, a dog-eared box, a small circle and an unlabelled upright bar, as in mermaid 12.2.0.',
+  },
+  {
     id: 'architecture-replica-under-junction',
     title: 'Architecture service under a junction stayed in its group column',
     symptom:

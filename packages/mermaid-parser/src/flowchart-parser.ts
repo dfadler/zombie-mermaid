@@ -1040,13 +1040,19 @@ function expandedNodeShape(meta: ExpandedNodeMeta): NodeShape {
 /**
  * Resolve the display label for an `A@{ ... }` node.
  *
- * Falls back to the node id when no `label:` is given, matching how the
+ * A fork/join or small circle has no label. Otherwise falls back to the node id when no `label:` is given, matching how the
  * bracket syntax treats a bare `A`. For an icon or image node with no label,
  * the icon/image reference itself is shown: this renderer draws neither
  * FontAwesome glyphs nor remote images, so showing the reference is more
  * useful than an empty box, and it keeps the node identifiable.
  */
-function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
+function expandedNodeLabel(
+  id: string,
+  meta: ExpandedNodeMeta,
+  shape: NodeShape,
+): string {
+  // Mermaid draws these two without text, whatever `label:` says.
+  if (shape === 'fork-bar' || shape === 'small-circle') return ''
   if (meta.label !== undefined && meta.label.length > 0) return meta.label
   if (meta.icon) return meta.icon
   if (meta.img) return meta.img
@@ -1353,10 +1359,11 @@ function consumeNode(
     const block = matchExpandedBlock(remaining.slice(expandedId.length))
     if (block) {
       const meta = parseExpandedMeta(block.body)
+      const shape = expandedNodeShape(meta)
       registerNode(graph, subgraphStack, {
         id: expandedId,
-        label: normalizeBrTags(expandedNodeLabel(expandedId, meta)),
-        shape: expandedNodeShape(meta),
+        label: normalizeBrTags(expandedNodeLabel(expandedId, meta, shape)),
+        shape,
       })
       id = expandedId
       remaining = remaining.slice(expandedId.length + block.length)

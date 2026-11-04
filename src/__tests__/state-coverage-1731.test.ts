@@ -110,15 +110,15 @@ describe('state pseudo-states: edge cases', () => {
     expect(g.nodes.has('Box')).toBe(false)
   })
 
-  it('draws a labeled flowchart fork bar as a box in both glyph sets', () => {
+  it('draws a flowchart fork bar without its label in both glyph sets (#2552)', () => {
     const src =
       'flowchart TD\n  A --> F@{ shape: fork, label: "split" }\n  F --> B'
     const uni = renderMermaidASCII(src)
     const asc = renderMermaidASCII(src, { useAscii: true })
-    expect(uni).toContain('split')
-    expect(asc).toContain('split')
-    expect(uni).not.toContain('█')
-    expect(asc).not.toContain('#########')
+    expect(uni).not.toContain('split')
+    expect(asc).not.toContain('split')
+    expect(uni).toContain('█')
+    expect(asc).toContain('#########')
   })
 })
 

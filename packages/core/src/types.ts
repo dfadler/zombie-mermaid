@@ -131,6 +131,11 @@ export type NodeShape =
   | 'brace-right' // Right brace only
   | 'braces' // Braces on both sides
   | 'bolt' // Lightning bolt — communication link
+  | 'cloud' // Cloud outline
+  | 'horizontal-cylinder' // Cylinder lying on its side — direct access storage
+  | 'tagged-rectangle' // Rectangle with a dog-ear in the bottom-right corner
+  | 'small-circle' // Small circle, no label — start
+  | 'fork-bar' // Flowchart fork/join: an unlabelled bar across the flow, in node colours
   | 'text' // Label with no outline
   | 'anchor' // Invisible point
   // State diagram `note left of X` / `note right of X`
