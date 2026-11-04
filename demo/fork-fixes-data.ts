@@ -61,9 +61,27 @@ export interface ForkFix {
    * Omitted for fixes that don't trace back to a specific numbered issue.
    */
   upstreamIssues?: number[]
+  /**
+   * Which page section the entry belongs to. Omitted = the main "fixes" group,
+   * whose claim is that the After matches real Mermaid.
+   *   - `features`: Mermaid-matching output for something upstream beautiful-mermaid
+   *     lacks entirely (a new diagram type, an unsupported directive).
+   *   - `markup`: a fix visible only in the SVG markup (an excerpt); it makes no
+   *     Mermaid-parity claim.
+   */
+  group?: 'features' | 'markup'
+  /**
+   * Set while the After still differs from Mermaid: the entry stays in this file
+   * (so its source, commit and wording are kept) but is not on the page, in the
+   * "before" renders, or in the screenshot capture. The value names the renderer
+   * fix cluster that will bring it back (#2619). The PR that fixes the cluster
+   * deletes this line, regenerates the screenshot and the drift-guard snapshot.
+   */
+  parked?: string
 }
 
-export const forkFixes: ForkFix[] = [
+/** Every entry, parked ones included. The page and its tooling read {@link forkFixes}. */
+export const allForkFixes: ForkFix[] = [
   {
     id: 'no-space-arrows',
     title: 'Arrows with no surrounding space dropped the edge',
@@ -119,6 +137,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'circle-cross-edges',
+    parked: 'ascii-layout-details',
     title: 'Circle and cross edge terminators dropped the target node',
     symptom:
       '`A --o B` and `A --x B` were not recognised by the arrow regex, so parsing broke out of the edge loop early — losing the edge *and* the node it pointed at.',
@@ -145,6 +164,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'start-arrow-markers',
+    group: 'markup',
     title: 'Bidirectional arrows rendered invisible in some renderers',
     symptom:
       '`orient="auto-start-reverse"` already rotates the start arrowhead 180°, but its polygon was *also* pre-reversed — a double reversal that pointed the head into the line. librsvg and Inkscape drew it as degenerate or invisible.',
@@ -184,30 +204,6 @@ export const forkFixes: ForkFix[] = [
     upstreamIssues: [64, 65, 68, 111, 112],
   },
   {
-    id: 'class-blank-compartment',
-    title: 'Class diagrams grew a blank compartment',
-    symptom:
-      'A class with methods but no attributes rendered an empty middle compartment where the attribute list would have been.',
-    source:
-      'classDiagram\n  class Service {\n    +start() void\n    +stop() void\n  }',
-    fixCommit: '407355c',
-    pr: 92,
-    render: 'ascii',
-    lookFor:
-      'Before: an empty compartment between the name and the methods. After: none.',
-  },
-  {
-    id: 'class-shorthand-label',
-    title: 'A class shorthand before the brackets discarded the label',
-    symptom:
-      '`A:::external[External User]` — the shape patterns require the id to sit immediately before its brackets, so the `:::` token in between made every pattern miss and the label was thrown away.',
-    source: 'flowchart LR\n  A:::external[External User] --> B[Internal]',
-    fixCommit: 'ffa9a85',
-    pr: 77,
-    render: 'svg',
-    lookFor: 'Before: the node shows its bare id. After: it shows its label.',
-  },
-  {
     id: 'class-trailing-semicolon',
     title: 'A trailing semicolon on `class` produced a stray node',
     symptom:
@@ -222,6 +218,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'font-css-variable',
+    group: 'markup',
     title: 'A CSS `var(...)` font was quoted into a dead font name',
     symptom:
       "`{ font: 'var(--font-family-body)' }` is the natural way to inherit a host page's font, but the value was wrapped in quotes (an inert font name, not a `var()` call) and also URL-encoded into a Google Fonts `@import` that can never resolve.",
@@ -251,6 +248,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'er-entity-alias',
+    parked: 'svg-singles',
     title: 'ER entity aliases discarded the alias and every attribute',
     symptom:
       'The entity-header pattern did not recognize `id[Alias]` bodies at all, so the line fell back to matching only the bare id — losing the alias *and* the entire attribute block that followed it.',
@@ -279,6 +277,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'subgraph-frame-merge',
+    parked: 'ascii-layout-details',
     title: 'An edge-less subgraph member merged two sibling subgraph frames',
     symptom:
       'Root-node placement treated an edge-less node as a shared "root" regardless of which subgraph it belonged to, so one subgraph’s bounding box could balloon out to enclose an unrelated sibling — corrupting both frames and interleaving their titles.',
@@ -306,6 +305,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'class-attribute-on-svg',
+    group: 'markup',
     title: 'A node’s custom class never reached the rendered SVG',
     symptom:
       'The class name from `:::className` or `class A,B className` was resolved for inline fill/stroke, but never written onto the element itself, so external CSS had nothing to select.',
@@ -320,21 +320,8 @@ export const forkFixes: ForkFix[] = [
     upstreamIssues: [80],
   },
   {
-    id: 'cjk-state-names',
-    title: 'CJK state names failed to parse in state diagrams',
-    symptom:
-      'stateDiagram transition and state-name patterns were ASCII-only (`\\w`), so a diagram made entirely of Chinese, Japanese, or Korean state names failed to match a single one of them.',
-    source:
-      'stateDiagram-v2\n  [*] --> 空闲\n  空闲 --> 处理中 : 提交\n  处理中 --> 完成',
-    fixCommit: '9d722cf',
-    pr: 49,
-    render: 'svg',
-    lookFor:
-      'Before: a blank canvas — every state name failed to parse, leaving nothing to draw. After: all three states and both transitions render.',
-    upstreamIssues: [43],
-  },
-  {
     id: 'text-embedded-edge-labels',
+    parked: 'svg-singles',
     title: 'Text-embedded edge labels (`-- Yes -->`) were not parsed',
     symptom:
       'Mermaid’s inline label syntax on an arrow body — as opposed to the `-->|Yes|` pipe form — had no parser support. The label vanished, and the mis-tokenization also swallowed the bracketed label off the node the arrow pointed at.',
@@ -348,21 +335,7 @@ export const forkFixes: ForkFix[] = [
     upstreamIssues: [32],
   },
   {
-    id: 'er-label-truncation',
-    title: 'Long ER relationship labels were truncated in ASCII output',
-    symptom:
-      'Labels longer than a fixed 6-character inter-entity gap were silently cut off — `"ordered in"` rendered as `"ordere"` — and even short labels sat flush against both entity boxes.',
-    source:
-      'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  PRODUCT ||--o{ LINE_ITEM : "ordered in"',
-    fixCommit: 'f0683b0',
-    pr: 88,
-    render: 'ascii',
-    lookFor:
-      'Before: the second relationship label reads "ordere". After: it reads "ordered in" in full, with padding from both boxes.',
-    upstreamIssues: [121],
-  },
-  {
-    id: 'er-stray-tee',
+    id: 'decision-label-stray-tee',
     title: 'A decision node’s edge label could land on a stray tee character',
     symptom:
       'The box-start connector always drew a tee/junction glyph based on the edge’s exit direction alone, with no check that a real perpendicular border line existed at that cell — so a label that shifted the attachment point left a disconnected `├` floating with blank cells on both sides.',
@@ -377,6 +350,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'class-label-column-width',
+    parked: 'ascii-class',
     title: 'Long class relationship labels on narrow classes were truncated',
     symptom:
       'A class’s column was sized from its box alone, never from the relationship label that had to fit beside it — so single-letter classes with labels like `inheritance` had every label squeezed into the box’s own width and cut to `…`.',
@@ -390,6 +364,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'class-fanned-relationships',
+    parked: 'ascii-class',
     title:
       'More than two relationships between narrow classes overwrote each other',
     symptom:
@@ -404,6 +379,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'class-label-detour-routing',
+    parked: 'ascii-class',
     title: 'A detoured relationship’s label ignored its own routed path',
     symptom:
       'A relationship’s label always anchored on the straight-line midpoint between its source and target boxes, even when its line detoured around an intermediate box to avoid it — so the label sat wherever the *unrouted* line would have gone, not the *actual* one, reading as though it terminated at the wrong box.',
@@ -417,6 +393,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'class-generic-types',
+    parked: 'ascii-class',
     title: 'Class member generics kept mermaid’s raw `~T~` tildes',
     symptom:
       'Mermaid converts `List~Observer~` to `List<Observer>` before rendering; the class parser here kept the tildes, so both the SVG and ASCII output showed `List~Observer~` — flagged by the weekly form-judge audit (#418).',
@@ -430,6 +407,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'edge-label-diagonal-fallback',
+    parked: 'ascii-flow-axis-faces',
     title: 'An edge label could float next to a different edge’s line',
     symptom:
       'When an edge’s route fell back to a direct path (every L-shaped route and A* blocked — e.g. the third edge leaving the same side of a node), its label was centered on the never-drawn diagonal between the two legs that actually get drawn, landing in open grid next to an unrelated edge’s connector: `┆thick` two columns away from the thick edge’s own `┃`. Flagged by the weekly form-judge audit (#418).',
@@ -468,19 +446,6 @@ export const forkFixes: ForkFix[] = [
     upstreamIssues: [155],
   },
   {
-    id: 'ascii-vertical-label-beside-stroke',
-    title: 'ASCII vertical edge labels were printed over the edge line',
-    symptom:
-      'A label on a vertical edge was drawn on top of the stroke, so the line ran through the gaps between its words (`long─label`) or vanished under the text.',
-    source: 'graph TD\n  A -->|long label| B\n  B -->|ab| C',
-    fixCommit: '9be4d3692',
-    pr: 1332,
-    render: 'ascii',
-    lookFor:
-      'Before: the label replaces the edge line on its row. After: the line runs unbroken and the label sits one cell beside it.',
-    upstreamIssues: [154],
-  },
-  {
     id: 'flowchart-cycle-direction',
     title: 'A cyclic top-down flowchart could be laid out upside down',
     symptom:
@@ -510,6 +475,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-edge-line-style-bleed',
+    parked: 'ascii-flow-axis-faces',
     title: 'ASCII fan-out edges bled their line style into each other',
     symptom:
       'Edges with different styles leaving one node shared a routing corridor, and the later thick edge overwrote the dotted edge’s glyphs. Separately, two edges routed through a shared node could land on the same column and read as one line.',
@@ -536,20 +502,8 @@ export const forkFixes: ForkFix[] = [
       'Before: the first node is solid black and the second has no border. After: both fall back to the theme paint, and the valid fill and stroke width stay.',
   },
   {
-    id: 'ascii-er-shorter-entity-row',
-    title: 'An ER relationship beside a shorter entity landed on its border',
-    symptom:
-      'The relationship row was the left entity’s midpoint, so beside a shorter entity it fell on that box’s bottom border and the cardinality marker ran into the corner.',
-    source:
-      'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  CUSTOMER {\n    int id PK\n    string name\n    string email\n    string phone\n    string address\n  }\n  ORDER {\n    int id PK\n  }',
-    fixCommit: '87336e06',
-    pr: 1913,
-    render: 'ascii',
-    lookFor:
-      'Before: the ╟ marker collides with ORDER’s └ corner. After: the line meets ORDER at a ├ junction inside the box.',
-  },
-  {
     id: 'ascii-er-stacked-center',
+    parked: 'ascii-er',
     title: 'A narrower stacked ER entity sat off-center, so its edge jogged',
     symptom:
       'Each stacked ER row started at the left edge, so a narrower entity was left-aligned under its neighbor while the relationship attaches at each box’s center, and the edge jogged sideways between two off-center stems.',
@@ -560,19 +514,6 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL and one straight vertical edge joins them.',
-  },
-  {
-    id: 'c4-empty-boundary-frame-width',
-    title: 'A C4 empty boundary frame ran past the right edge of the SVG',
-    symptom:
-      'An empty deployment node got its default 216px width after the diagram width was measured, so its frame was drawn partly outside the SVG and clipped at the edge.',
-    source:
-      'C4Deployment\n  Deployment_Node(dc, \"DC\", \"Ubuntu\") {\n    Container(app, \"App\", \"Java\")\n  }\n  Deployment_Node(empty, \"Empty\", \"x\")',
-    fixCommit: 'fa02ffe3a',
-    pr: 1965,
-    render: 'svg',
-    lookFor:
-      'Before: the `Empty` frame is cut off at the right edge. After: the SVG is wider and the frame is fully drawn. mermaid 12.2.0 rejects this input, so this shows only what our output does.',
   },
   {
     id: 'elk-invalid-hitboxes-wide-labels',
@@ -589,6 +530,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-fanout-arrowhead-column',
+    parked: 'ascii-flow-axis-faces',
     title: 'An ASCII fan-out arrowhead sat one column off its stem',
     symptom:
       'Under an even-width box, the bundled arrowhead took its column from the box’s own centre while the stem was drawn in the middle grid column’s centre, so the head landed one column right of the line feeding it.',
@@ -601,21 +543,8 @@ export const forkFixes: ForkFix[] = [
       'Before: the `▼` under `G` is shifted one column from the vertical line above it. After: head and stem line up.',
   },
   {
-    id: 'node-text-contrast-on-custom-fill',
-    title: 'Node text was unreadable on a dark classDef/style fill',
-    symptom:
-      'A node with a custom `fill` but no explicit `color` always got the theme’s text colour, so dark text could land on a dark fill (and light text on a light one).',
-    source:
-      'flowchart LR\n  A[Dark fill] --> B[Light fill]\n  classDef dark fill:#1e293b\n  classDef light fill:#fde68a\n  class A dark\n  class B light',
-    fixCommit: 'f2e76bb0',
-    pr: 76,
-    render: 'svg',
-    lookFor:
-      'Before: both labels use the same theme text colour, so one of them is hard to read. After: each label is black or white, picked from its own fill. An explicit `color` still wins.',
-    upstreamIssues: [115],
-  },
-  {
     id: 'svg-coordinates-two-decimals',
+    group: 'markup',
     title: 'SVG coordinates carried float noise like 142.38427299999998',
     symptom:
       'Layout and curve maths wrote full floating-point precision into every coordinate, bloating the SVG for no visible benefit. Numbers are now rounded to 2 decimal places and a non-finite value is written as 0, not `NaN`.',
@@ -631,9 +560,10 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-longest-path-layering',
+    parked: 'ascii-flow-axis-faces',
     title: 'ASCII put a node in the row of the parent that placed it first',
     symptom:
-      'A node took the level of whichever parent placed it first and was never revisited, so with `A --> D` and `B --> D` it landed beside `B` and `B --> D` ran sideways. Nodes are now ranked by longest path, with back edges ignored, as mermaid does.',
+      'A node took the level of whichever parent placed it first and was never revisited, so with `A --> D` and `B --> D` it landed beside `B` and `B --> D` ran sideways. Nodes are now ranked by longest path, with back edges ignored, as mermaid does. The same source also fixed edge labels losing the spaces between their words: an edge label drawn over a stroke treated its spaces as transparent, so `long label` printed as `long─label`.',
     source:
       'graph TD\nA -->|x| B\nB -->|long label| A\nA -->|long label| C\nC -->|ab| A\nB -->|mid| D\nA -->|ab| D\nD -->|x| A',
     fixCommit: '7a4925a3',
@@ -671,6 +601,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-lane-faces-five-parallel',
+    parked: 'ascii-flow-axis-faces',
     title: 'Five or more parallel ASCII edges merged their arrowheads',
     symptom:
       'Each parallel edge gets its own cell on a node’s face, but a default box face has three cells, so past that the extra edges shared one arrowhead. The face is now lengthened to one cell per edge, and cluster exits handle six siblings.',
@@ -684,6 +615,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-lane-faces-forward-and-back',
+    parked: 'ascii-flow-axis-faces',
     title: 'ASCII forward and back edge groups shared faces and merged heads',
     symptom:
       'In TD/BT, the forward and back edge groups between one pair use the same side faces but were sized separately, so with more than three edges in all two arrowheads merged. A lone cluster exit group and eight or more cluster siblings had the same problem.',
@@ -709,6 +641,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-feedback-edge-sibling-order',
+    parked: 'ascii-flow-axis-faces',
     title:
       'ASCII subgraph order and feedback edges followed mermaid 11, not 12',
     symptom:
@@ -723,6 +656,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'er-multi-key-attributes',
+    parked: 'svg-singles',
     title: 'An ER attribute with two keys lost one of them',
     symptom:
       'An attribute written `PK, FK` showed only `FK`, and `PK,FK` showed no key at all. Mermaid shows `PK,FK` for both spellings.',
@@ -736,6 +670,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'er-style-classdef',
+    parked: 'svg-singles',
     title: 'ER style, classDef and class were ignored',
     symptom:
       'An ER entity given `style`, `classDef` plus `class`, or the `:::` shorthand rendered unstyled, although mermaid paints it.',
@@ -749,6 +684,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'er-ascii-crossings-labels',
+    parked: 'ascii-er',
     title:
       'ER ASCII edges crossed without a junction and labels were ambiguous',
     symptom:
@@ -763,6 +699,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-face-capacity-loops',
+    parked: 'ascii-flow-axis-faces',
     title: 'ASCII dense duplicate edges and self-loops shared one cell',
     symptom:
       'A node’s side face was sized for reciprocal and duplicate edges only. Self-loop ends and back-edges also take a cell, so the face came out short and two edge ends shared a cell: merged arrowheads and `├`/`┤` tick marks.',
@@ -788,20 +725,6 @@ export const forkFixes: ForkFix[] = [
       'Before: a grey frame with the colour text in its header tab. After: a purple background behind the two messages, with no frame.',
   },
   {
-    id: 'ascii-edge-label-spaces',
-    title: 'ASCII edge labels lost the spaces between their words',
-    symptom:
-      'An edge label drawn over a stroke treated its spaces as transparent, so the stroke showed through the gap between words: `long label` printed as `long─label`, altering the user’s text.',
-    source:
-      'graph TD\n  A -->|x| B\n  B -->|long label| A\n  A -->|long label| C\n  C -->|ab| A\n  B -->|mid| D\n  A -->|ab| D\n  D -->|x| A',
-    fixCommit: '3e73862e',
-    pr: 1354,
-    render: 'ascii',
-    lookFor:
-      'Before: the label on A’s right side reads `long─label`, with a stroke through the gap. After: it reads `long label`.',
-    upstreamIssues: [154],
-  },
-  {
     id: 'entity-codes',
     title: 'Mermaid entity codes in labels printed literally',
     symptom:
@@ -815,6 +738,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-nested-blocks',
+    parked: 'ascii-sequence',
     title: 'Nested sequence blocks were drawn stacked, not nested, in ASCII',
     symptom:
       'A block inside another block (`alt` containing `loop`, `opt`) was laid out as if it were a sibling: its header and walls landed on the container’s walls, so the nesting was unreadable.',
@@ -828,6 +752,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'xychart-bar-series-overlap',
+    parked: 'svg-xychart',
     title: 'XY chart bar series were drawn side by side, not overlapping',
     symptom:
       'Two `bar` series on the same categories were split into narrow adjacent bars, while mermaid 12.2.0 draws each series centred on the category with later series on top.',
@@ -841,6 +766,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-opposing-edges-diamond',
+    parked: 'ascii-flow-axis-faces',
     title: 'ASCII opposing edges merged into one route at a diamond',
     symptom:
       'Two edges between the same pair (`B -->|no| D` and `D --> B`) in a left-to-right chart drew a single merged route when B was a diamond or D a parallelogram, so the loop-back looked like one two-way line.',
@@ -854,6 +780,8 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'architecture-junction-group-icons',
+    group: 'features',
+    parked: 'svg-architecture',
     title:
       'Architecture junctions drew a gray disc and group icons were dropped',
     symptom:
@@ -868,6 +796,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-subgraph-node-style',
+    parked: 'svg-singles',
     title: 'Flowchart subgraph style/class and node dash/radius were ignored',
     symptom:
       'A `style` on a subgraph id left the cluster default grey, and a node `style` dropped `stroke-dasharray` and `rx`/`ry`, while mermaid 12.3.0 applies all of them.',
@@ -881,6 +810,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-label-canvas-edge',
+    parked: 'ascii-layout-details',
     title: 'ASCII edge label cut off at the canvas edge',
     symptom:
       'In a right-to-left state diagram, the label `e1` on an edge running down the outermost column printed as `1`, because its first character fell past the edge of the canvas.',
@@ -894,6 +824,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-block-label-layout',
+    parked: 'svg-sequence',
     title: 'Sequence block labels were laid out unlike mermaid.js',
     symptom:
       'The `[label]` sat inside a wide tab, divider labels were left-aligned on the same row as their message label, and the frame stood about 47px outside the lifelines. In ASCII a long label pushed the wall far past the last lifeline.',
@@ -920,10 +851,11 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-lr-compact-labeled-fanout',
+    parked: 'ascii-flow-axis-faces',
     title:
       'ASCII LR fan-out with a labelled edge drew three times as tall as mermaid',
     symptom:
-      'A box with a labelled edge to its first child was moved into a slot of its own in a left-to-right chart, so the second-rank nodes sat about ten empty rows apart and one edge detoured around its neighbour.',
+      'A box with a labelled edge to its first child was moved into a slot of its own in a left-to-right chart, so the second-rank nodes sat about ten empty rows apart and one edge detoured around its neighbour. The same source also fixed a label overwriting the arrowhead: when a label did not fit on its run next to a sibling edge stem, it slid onto the cell beside the target box and printed `┬e1│ S2 │` with no arrowhead.',
     source:
       'flowchart LR\n  S0 --> |e0| S1\n  S1 --> |e1| S2\n  S1 --> S3\n  S0 --> S4',
     fixCommit: '88fda603',
@@ -934,6 +866,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-expanded-shapes-draw',
+    parked: 'svg-singles',
     title:
       'Flowchart cloud, h-cyl, tag-rect, sm-circ and fork drew as rough approximations',
     symptom:
@@ -947,20 +880,8 @@ export const forkFixes: ForkFix[] = [
       'Before: a plain box, a vertical cylinder, an undecorated box, a box labelled D and a labelled bar. After: a cloud, a horizontal cylinder, a dog-eared box, a small circle and an unlabelled upright bar, as in mermaid 12.2.0.',
   },
   {
-    id: 'architecture-replica-under-junction',
-    title: 'Architecture service under a junction stayed in its group column',
-    symptom:
-      'In a nested-groups architecture diagram, `fan:B --> T:replica` left `replica` beside `Primary DB` instead of under the junction, because the neighbouring group was a pixel short of the usual margin.',
-    source:
-      'architecture-beta\n  group cloud(cloud)[Cloud]\n  group api(server)[API Tier] in cloud\n  group data(database)[Data Tier] in cloud\n  service gw(internet)[Gateway] in api\n  service app(server)[App] in api\n  service db(database)[Primary DB] in data\n  service replica(disk)[Replica] in data\n  junction fan in cloud\n  service client(internet)[Client]\n  client:R --> L:gw\n  gw:R -- L:app\n  app:R -- L:fan\n  fan:R --> L:db\n  fan:B --> T:replica',
-    fixCommit: '083ce722',
-    pr: 2579,
-    render: 'svg',
-    lookFor:
-      'Before: Replica sits below Primary DB. After: Replica sits directly under the junction, left of Primary DB, as in mermaid 12.2.0.',
-  },
-  {
     id: 'flowchart-linkstyle-head-colour',
+    parked: 'svg-singles',
     title: 'A coloured flowchart edge kept a grey arrowhead',
     symptom:
       'An edge given its own `linkStyle` stroke was drawn in that colour but its arrowhead stayed the default grey, unlike mermaid.',
@@ -987,6 +908,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-critical-option',
+    parked: 'svg-sequence',
     title: 'An option inside a critical block vanished',
     symptom:
       'Each `option` in a `critical` block was dropped silently, along with its `[label]` and the divider line.',
@@ -1000,6 +922,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-circle-cross-terminators',
+    parked: 'svg-singles',
     title: 'Flowchart `--o` and `--x` edges ended in a plain arrowhead',
     symptom:
       'SVG flowcharts drew an arrowhead for `A --o B`, `A --x B`, `o--` and `x--` edges; the marker the parser recorded was dropped by the layout.',
@@ -1012,20 +935,8 @@ export const forkFixes: ForkFix[] = [
       'Before: every edge ends in an arrowhead. After: a filled circle for `o`, a cross for `x`, and the arrowhead only on `I --> J`, as in mermaid 12.2.0.',
   },
   {
-    id: 'ascii-lr-label-keeps-arrowhead',
-    title: 'ASCII LR edge label overwrote the arrowhead beside a sibling edge',
-    symptom:
-      'When a label did not fit on its run next to a sibling edge stem, it slid onto the cell beside the target box and printed `┬e1│ S2 │`, with no arrowhead.',
-    source:
-      'flowchart LR\n  S0 --> |e0| S1\n  S1 --> |e1| S2\n  S1 --> S3\n  S0 --> S4',
-    fixCommit: '3e1e9f8e',
-    pr: 2542,
-    render: 'ascii',
-    lookFor:
-      'Before: the label sits against the box and the arrowhead is gone. After: the label sits on its edge and the arrowhead survives.',
-  },
-  {
     id: 'xychart-numeric-x-range',
+    parked: 'svg-xychart',
     title: 'A numeric xychart x-axis range was laid out as categories',
     symptom:
       '`x-axis 0 --> 100` spaced the points evenly like categories, so tick labels and bars landed where mermaid.js does not put them.',
@@ -1038,22 +949,12 @@ export const forkFixes: ForkFix[] = [
       'Before: four evenly spaced category slots. After: a linear axis with a label at every tick of the range and the points placed by value, as in mermaid 12.2.0.',
   },
   {
-    id: 'yaml-front-matter',
-    title: 'A leading YAML front matter block made every diagram fail',
-    symptom:
-      '`---\ntitle: T\n---\nflowchart TD\n  A-->B` threw "Invalid mermaid header" for every diagram type, though mermaid.js and GitHub accept it.',
-    source: '---\nconfig:\n  theme: dark\n---\nflowchart TD\n  A --> B',
-    fixCommit: '8757f5d2',
-    pr: 2597,
-    render: 'svg',
-    lookFor:
-      'Before: an error instead of a diagram. After: the diagram renders and `config:` applies like `%%{init}%%`, as in mermaid 12.3.0.',
-  },
-  {
     id: 'architecture-group-row-level',
+    group: 'features',
+    parked: 'svg-architecture',
     title: 'Architecture groups rode off the row of the node they link to',
     symptom:
-      'A group whose member links to a node outside it was centred on that node as a whole, so `Primary DB` sat 54px above the main row, service labels hung on the group border, and a `T`/`B` edge into a group ran beside the group instead of under its other end.',
+      'A group whose member links to a node outside it was centred on that node as a whole, so `Primary DB` sat 54px above the main row, service labels hung on the group border, and a `T`/`B` edge into a group ran beside the group instead of under its other end. The same source also fixed a service under a junction staying in its group column: `fan:B --> T:replica` left `replica` beside `Primary DB` instead of under the junction.',
     source:
       'architecture-beta\n  group cloud(cloud)[Cloud]\n  group api(server)[API Tier] in cloud\n  group data(database)[Data Tier] in cloud\n  service gw(internet)[Gateway] in api\n  service app(server)[App] in api\n  service db(database)[Primary DB] in data\n  service replica(disk)[Replica] in data\n  junction fan in cloud\n  service client(internet)[Client]\n  client:R --> L:gw\n  gw:R -- L:app\n  app:R -- L:fan\n  fan:R --> L:db\n  fan:B --> T:replica',
     fixCommit: '08ef003d',
@@ -1064,6 +965,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-init-mirror-actors',
+    group: 'features',
     title:
       'Sequence `%%{init}%%` mirrorActors and showSequenceNumbers were ignored',
     symptom:
@@ -1078,6 +980,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-nested-rect-order',
+    parked: 'svg-sequence',
     title: 'A sequence rect nested inside another rect was hidden',
     symptom:
       'The inner `rect` was painted before the outer one, so the opaque outer fill covered it and its highlight never showed.',
@@ -1091,6 +994,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-note-over-span',
+    parked: 'svg-sequence',
     title: 'A sequence note over two participants shrank to its text',
     symptom:
       '`Note over A,B` was sized to its text and centred between the two lifelines, so a short note touched neither; mermaid spans it across both.',
@@ -1104,6 +1008,7 @@ export const forkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-multiline-label-spacing',
+    parked: 'svg-sequence',
     title: 'Multi-line sequence labels crowded the frame border and the arrow',
     symptom:
       'A `<br/>` message label ran its second line onto the arrow, and a `<br/>` frame label put its second line right above the first message label.',
@@ -1116,3 +1021,8 @@ export const forkFixes: ForkFix[] = [
       'Before: `message line two` sits on the arrow and `second line` touches the message label. After: the arrow drops below both message lines and the first message clears the frame label, as in mermaid 12.3.0.',
   },
 ]
+
+/** Entries shown on the page: everything not parked. */
+export const forkFixes: ForkFix[] = allForkFixes.filter((f) => !f.parked)
+
+export const parkedForkFixes: ForkFix[] = allForkFixes.filter((f) => f.parked)

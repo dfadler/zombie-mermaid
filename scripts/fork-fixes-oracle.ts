@@ -13,7 +13,7 @@
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
-import { forkFixes } from '../demo/fork-fixes-data.ts'
+import { allForkFixes as forkFixes } from '../demo/fork-fixes-data.ts'
 import {
   startRealMermaid,
   renderRealMermaidSvg,

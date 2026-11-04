@@ -100,6 +100,11 @@ ALLOWLIST=(
   # editor component test; the .txt files under __tests__/__ascii-snapshots__/
   # are reviewed via `git diff` (`pnpm run test:ascii-text:update`).
   "__tests__/ascii-text-snapshots.test.ts"
+  # Exact plain-text goldens of each shown fork-fixes entry's After render
+  # (#2619): the drift guard that makes a renderer change fail until the
+  # real-terminal screenshot is re-captured. Reviewed via `git diff` on the
+  # .txt files under __tests__/__fork-fixes-snapshots__/.
+  "__tests__/fork-fixes-ascii-snapshots.test.ts"
   # SVG + ASCII goldens for the opt-in themeVariables mapping (#2108): the
   # repo rule is an SVG and an ASCII snapshot per case. Not a component test;
   # the files under src/__tests__/__theme-variables-snapshots__/ are reviewed
