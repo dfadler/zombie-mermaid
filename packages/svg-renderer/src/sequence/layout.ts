@@ -284,6 +284,10 @@ function fitLabelsBetweenLifelines(
     else if (n.actorIds.length === 1) {
       widen(i, i + 1, w / 2 + LABEL_CLEARANCE)
       widen(i - 1, i, w / 2 + LABEL_CLEARANCE)
+    } else {
+      // Mermaid spreads the actors so a long note fits its 25px-overhang span.
+      const j = index.get(n.actorIds[n.actorIds.length - 1]!)!
+      widen(Math.min(i, j), Math.max(i, j), w - 50)
     }
   }
 
