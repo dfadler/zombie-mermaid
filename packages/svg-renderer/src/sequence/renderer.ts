@@ -711,15 +711,28 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   // Outer rectangle
   parts.push(
     f`  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
-      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-dasharray="2 2" />`,
   )
 
-  // Type label tab (top-left corner); the `[label]` is centred on the top edge
+  // Type label tab (top-left corner) with its bottom-right corner cut, as in
+  // Mermaid; the `[label]` is centred on the top edge
   const tabWidth = blockTabWidth(block, fontSizes.edgeLabel)
   const tabHeight = BLOCK_TAB_HEIGHT
+  const { x: bx, y: by } = block
+  const cutX = tabHeight * 0.24
+  const cutY = tabHeight * 0.2
+  const tabPoints = [
+    [bx, by],
+    [bx + tabWidth, by],
+    [bx + tabWidth, by + tabHeight - cutY],
+    [bx + tabWidth - cutX, by + tabHeight],
+    [bx, by + tabHeight],
+  ]
+    .map(([px, py]) => f`${px},${py}`)
+    .join(' ')
 
   parts.push(
-    f`  <rect x="${block.x}" y="${block.y}" width="${tabWidth}" height="${tabHeight}" ` +
+    f`  <polygon points="${tabPoints}" ` +
       f`fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
   parts.push(
@@ -749,7 +762,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   for (const divider of block.dividers) {
     parts.push(
       f`  <line x1="${block.x}" y1="${divider.y}" x2="${block.x + block.width}" y2="${divider.y}" ` +
-        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`,
+        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="3 3" />`,
     )
     if (divider.label) {
       // Divider label supports multi-line

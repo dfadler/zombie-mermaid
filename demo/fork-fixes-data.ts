@@ -348,8 +348,20 @@ export const allForkFixes: ForkFix[] = [
     upstreamIssues: [121],
   },
   {
+    id: 'class-blank-compartment',
+    title: 'Class boxes now print their members and names the way Mermaid does',
+    symptom:
+      'Mermaid draws every class as three compartments (name, attributes, methods), even when one is empty: the blank attribute compartment is correct, and the fork change that removed it (#92) was wrong. It also centres the name, writes `«interface»` for an annotation, and prints a method as `+start() : void`. Upstream left-aligned the name, wrote `<<interface>>`, and printed `+start: void`.',
+    source:
+      'classDiagram\n  class Service {\n    +start() void\n    +stop() void\n  }',
+    fixCommit: 'dbc2e44',
+    pr: 2627,
+    render: 'ascii',
+    lookFor:
+      'Before: a left-aligned name and `+start: void`. After: a centred name, the same blank attribute compartment (Mermaid draws it too), and `+start() : void`, as Mermaid 12.3.0 draws it.',
+  },
+  {
     id: 'class-label-column-width',
-    parked: 'ascii-class',
     title: 'Long class relationship labels on narrow classes were truncated',
     symptom:
       'A class’s column was sized from its box alone, never from the relationship label that had to fit beside it — so single-letter classes with labels like `inheritance` had every label squeezed into the box’s own width and cut to `…`.',
@@ -363,7 +375,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'class-fanned-relationships',
-    parked: 'ascii-class',
     title:
       'More than two relationships between narrow classes overwrote each other',
     symptom:
@@ -378,7 +389,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'class-label-detour-routing',
-    parked: 'ascii-class',
     title: 'A detoured relationship’s label ignored its own routed path',
     symptom:
       'A relationship’s label always anchored on the straight-line midpoint between its source and target boxes, even when its line detoured around an intermediate box to avoid it — so the label sat wherever the *unrouted* line would have gone, not the *actual* one, reading as though it terminated at the wrong box.',
@@ -392,7 +402,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'class-generic-types',
-    parked: 'ascii-class',
     title: 'Class member generics kept mermaid’s raw `~T~` tildes',
     symptom:
       'Mermaid converts `List~Observer~` to `List<Observer>` before rendering; the class parser here kept the tildes, so both the SVG and ASCII output showed `List~Observer~` — flagged by the weekly form-judge audit (#418).',
@@ -773,7 +782,6 @@ export const allForkFixes: ForkFix[] = [
   {
     id: 'architecture-junction-group-icons',
     group: 'features',
-    parked: 'svg-architecture',
     title:
       'Architecture junctions drew a gray disc and group icons were dropped',
     symptom:
@@ -816,7 +824,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-block-label-layout',
-    parked: 'svg-sequence',
     title: 'Sequence block labels were laid out unlike mermaid.js',
     symptom:
       'The `[label]` sat inside a wide tab, divider labels were left-aligned on the same row as their message label, and the frame stood about 47px outside the lifelines. In ASCII a long label pushed the wall far past the last lifeline.',
@@ -826,7 +833,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2568,
     render: 'svg',
     lookFor:
-      'Before: the tab swallows the label, `[Network timeout]` shares a row with `retry`, and the frame is far wider than the lifelines. After: the tab holds only `critical`, each divider label is centred on its own row above its message, and the frame hugs the lifelines, as in mermaid 12.2.0.',
+      'Before: the tab swallows the label, `[Network timeout]` shares a row with `retry`, and the frame is far wider than the lifelines. After: the tab holds only `critical`, each divider label is centred on its own row above its message, and the frame hugs the lifelines, drawn dotted with a notched tab, as in mermaid 12.3.0.',
   },
   {
     id: 'class-cardinality-sides',
@@ -898,7 +905,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-critical-option',
-    parked: 'svg-sequence',
     title: 'An option inside a critical block vanished',
     symptom:
       'Each `option` in a `critical` block was dropped silently, along with its `[label]` and the divider line.',
@@ -908,7 +914,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2540,
     render: 'svg',
     lookFor:
-      'Before: one undivided block, the retry and abort messages run on. After: a dashed divider with its `[label]` for each option, as in mermaid 12.2.0.',
+      'Before: one undivided block, the retry and abort messages run on. After: a dashed divider with its `[label]` for each option, as in mermaid 12.3.0.',
   },
   {
     id: 'flowchart-circle-cross-terminators',
@@ -939,7 +945,6 @@ export const allForkFixes: ForkFix[] = [
   {
     id: 'architecture-group-row-level',
     group: 'features',
-    parked: 'svg-architecture',
     title: 'Architecture groups rode off the row of the node they link to',
     symptom:
       'A group whose member links to a node outside it was centred on that node as a whole, so `Primary DB` sat 54px above the main row, service labels hung on the group border, and a `T`/`B` edge into a group ran beside the group instead of under its other end. The same source also fixed a service under a junction staying in its group column: `fan:B --> T:replica` left `replica` beside `Primary DB` instead of under the junction.',
@@ -950,6 +955,19 @@ export const allForkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: the Data Tier group is shifted up, `Primary DB` sits above the main row and `Replica` beside it, with service labels on the group border. After: `Primary DB` is level with the gateway row, the `fan:B` edge drops straight down into `Replica` beneath the junction, and every label stays inside its group.',
+  },
+  {
+    id: 'yaml-front-matter',
+    title: 'A leading YAML front matter block made every diagram fail',
+    symptom:
+      '`---\ntitle: T\n---\nflowchart TD\n  A-->B` threw "Invalid mermaid header" for every diagram type, though mermaid.js and GitHub accept it. Its `config:` now applies like `%%{init}%%`, here dropping the mirrored participant row.',
+    source:
+      '---\nconfig:\n  sequence:\n    mirrorActors: false\n---\nsequenceDiagram\n  participant A as Alice\n  participant B as Bob\n  A->>B: Hello\n  B-->>A: Hi',
+    fixCommit: '8757f5d2',
+    pr: 2597,
+    render: 'svg',
+    lookFor:
+      'Before: an error instead of a diagram. After: the diagram renders and the `config:` block drops the footer row of Alice and Bob boxes, as in mermaid 12.3.0.',
   },
   {
     id: 'sequence-init-mirror-actors',
@@ -968,7 +986,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-nested-rect-order',
-    parked: 'svg-sequence',
     title: 'A sequence rect nested inside another rect was hidden',
     symptom:
       'The inner `rect` was painted before the outer one, so the opaque outer fill covered it and its highlight never showed.',
@@ -982,7 +999,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-note-over-span',
-    parked: 'svg-sequence',
     title: 'A sequence note over two participants shrank to its text',
     symptom:
       '`Note over A,B` was sized to its text and centred between the two lifelines, so a short note touched neither; mermaid spans it across both.',
@@ -996,7 +1012,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-multiline-label-spacing',
-    parked: 'svg-sequence',
     title: 'Multi-line sequence labels crowded the frame border and the arrow',
     symptom:
       'A `<br/>` message label ran its second line onto the arrow, and a `<br/>` frame label put its second line right above the first message label.',

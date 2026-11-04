@@ -781,13 +781,10 @@ export function markerArrowChar(
       ? [Up, Down, Left, Right].findIndex((d) => dirEquals(dir, d))
       : 3
     const hollow = marker === 'class-triangle'
-    return (
-      useAscii
-        ? ['^', 'v', '<', '>']
-        : hollow
-          ? ['△', '▽', '◁', '▷']
-          : ['▲', '▼', '◀', '▶']
-    )[i < 0 ? 3 : i]
+    // An association/dependency head is Mermaid's open V in both charsets.
+    return (!hollow || useAscii ? ['^', 'v', '<', '>'] : ['△', '▽', '◁', '▷'])[
+      i < 0 ? 3 : i
+    ]
   }
   return undefined
 }

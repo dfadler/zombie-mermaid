@@ -91,7 +91,7 @@ function getRelMarker(
 function getMarkerShape(
   type: RelationshipType,
   useAscii: boolean,
-  direction?: 'up' | 'down' | 'left' | 'right',
+  direction: 'up' | 'down' | 'left' | 'right',
 ): string {
   switch (type) {
     case 'inheritance':
@@ -122,17 +122,8 @@ function getMarkerShape(
       return useAscii ? 'O' : '○'
     case 'association':
     case 'dependency':
-      // Directional arrow - rotate based on line direction
-      if (direction === 'down') {
-        return useAscii ? 'v' : '▼'
-      } else if (direction === 'up') {
-        return useAscii ? '^' : '▲'
-      } else if (direction === 'left') {
-        return useAscii ? '<' : '◀'
-      } else {
-        // Default to right (or when direction not specified)
-        return useAscii ? '>' : '▶'
-      }
+      // Directional arrow: Mermaid's open V, the same in both charsets.
+      return { up: '^', down: 'v', left: '<', right: '>' }[direction]
   }
 }
 
@@ -425,7 +416,11 @@ export function renderClassAscii(
   const classBoxH = new Map<string, number>()
 
   for (const cls of diagram.classes) {
-    const sections = buildClassSections(cls)
+    const sections = buildClassSections(
+      cls,
+      config.useAscii,
+      notesById.has(cls.id),
+    )
     classSections.set(cls.id, sections)
 
     // An interface name has no box: one text row, with the circle drawn by
@@ -1256,6 +1251,8 @@ export function renderClassAscii(
       p.sections,
       useAscii,
       config.boxBorderPadding,
+      undefined,
+      !notesById.has(p.cls.id),
     )
     // Copy box onto main canvas at (p.x, p.y) with role tracking
     for (let bx = 0; bx < boxCanvas.length; bx++) {

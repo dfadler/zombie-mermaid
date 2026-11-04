@@ -169,9 +169,12 @@ function labelWidth(
   return measureMultilineText(text, fontSize, weight).width
 }
 
-/** How far a block's frame extends past its outermost lifelines. */
+/**
+ * How far a block's frame extends past its outermost lifelines: mermaid 12.3.0
+ * draws it 11px out (`boxMargin` 10 plus the stroke).
+ */
 function blockFramePad(seq: ReturnType<typeof resolveSeqOptions>): number {
-  return seq.blockPadX + seq.activationWidth / 2
+  return seq.blockPadX + 1
 }
 
 /**

@@ -30,10 +30,10 @@ describe('ASCII class diagram: relationship cardinalities (issue #2114)', () => 
       // Both ends of each edge, next to the box they belong to.
       const lines = out.split('\n')
       const idx = (t: string) => lines.findIndex((l) => l.includes(t))
-      expect(lines[idx('Customer') + 2]).toMatch(/ 1\s*$/) // Below Customer
+      expect(lines[idx('Customer') + 6]).toMatch(/ 1\s*$/) // Below Customer (title + 3 compartments)
       expect(lines[idx('Order') - 2]).toMatch(/ \*\s*$/) // Above Order
       expect(lines[idx('Item') - 2]).toMatch(/ 1\.\.\*\s*$/)
-      expect(lines[idx('Item') + 2]).toMatch(/ 0\.\.1\s*$/)
+      expect(lines[idx('Item') + 6]).toMatch(/ 0\.\.1\s*$/)
       expect(lines[idx('Tag') - 2]).toMatch(/ many\s*$/)
     })
 
@@ -56,7 +56,7 @@ describe('ASCII class diagram: relationship cardinalities (issue #2114)', () => 
       // Same markers with and without cardinalities (the ASCII charset's
       // marker letters collide with cardinality text, so count unicode only).
       if (!useAscii) {
-        const markers = /[△▽◆◇▲▼]/g
+        const markers = /[△▽◆◇]/g
         expect(out.match(markers)?.length).toBe(bare.match(markers)?.length)
       }
       for (const c of ['0..*', '1..*', '4']) expect(out).toContain(` ${c}`)
@@ -68,7 +68,7 @@ describe('ASCII class diagram: relationship cardinalities (issue #2114)', () => 
     const out = render(`classDiagram\n  A "1" --> B\n  C --> "n" D`, false)
     const r = rows(out)
     expect(out).toContain('│ 1')
-    expect(out).toContain('▼ n')
+    expect(out).toContain('v n')
     expect(r.flat().filter((c) => c === '1')).toHaveLength(1)
   })
 
@@ -77,10 +77,10 @@ describe('ASCII class diagram: relationship cardinalities (issue #2114)', () => 
     const lines = labelled.split('\n').map((l) => l.trimEnd())
     const at = (t: string) => lines.findIndex((l) => l.includes(t))
     expect(at('│ x')).toBeLessThan(at('edge'))
-    expect(at('edge')).toBeLessThan(at('▼ y'))
+    expect(at('edge')).toBeLessThan(at('v y'))
     const bare = render(`classDiagram\n  A "x" --> "y" B`, false)
     expect(bare).toContain('│ x')
-    expect(bare).toContain('▼ y')
+    expect(bare).toContain('v y')
   })
 
   it('makes room for a two-line label between the cardinalities', () => {
@@ -91,7 +91,7 @@ describe('ASCII class diagram: relationship cardinalities (issue #2114)', () => 
     expect(out).toContain('│ 1')
     expect(out).toContain('line one')
     expect(out).toContain('line two')
-    expect(out).toContain('▼ *')
+    expect(out).toContain('v *')
   })
 
   it('keeps each cardinality beside its own line when classes share an end', () => {
@@ -145,18 +145,30 @@ describe('ASCII class diagram: relationship cardinalities (issue #2114)', () => 
     expect(out.split('\n').map((l) => l.trimEnd())).toEqual([
       '┌───┐',
       '│ A │',
+      '├───┤',
+      '│   │',
+      '├───┤',
+      '│   │',
       '└───┘',
       '  │',
       '  x',
-      '  ▼',
+      '  v',
       '┌───┐',
       '│ B │',
+      '├───┤',
+      '│   │',
+      '├───┤',
+      '│   │',
       '└───┘',
       '  △',
       '  │',
       '  │',
       '┌───┐',
       '│ C │',
+      '├───┤',
+      '│   │',
+      '├───┤',
+      '│   │',
       '└───┘',
       '',
       '',
@@ -166,6 +178,6 @@ describe('ASCII class diagram: relationship cardinalities (issue #2114)', () => 
   it('keeps wide-character cardinalities whole', () => {
     const out = render(`classDiagram\n  A "一対多" --> "多" B`, false)
     expect(out).toContain('一対多')
-    expect(out).toContain('▼ 多')
+    expect(out).toContain('v 多')
   })
 })

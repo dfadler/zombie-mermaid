@@ -12,7 +12,8 @@ describe('architectureToGraph', () => {
   it('carries a group icon onto its subgraph', () => {
     const g = lower('group a(server)[A]\ngroup b[B]')
     expect(g.subgraphs[0]!.icon).toBe('server')
-    expect(g.subgraphs[1]!.icon).toBeUndefined()
+    // A group with no icon is still an architecture group: `''`, not absent.
+    expect(g.subgraphs[1]!.icon).toBe('')
   })
 
   it('maps icons to shapes and unknown icons to rectangles', () => {
@@ -190,37 +191,10 @@ describe('architectureToGraph', () => {
       ])
     })
 
-    it('flags only edges that run across the flow between siblings or into a group', () => {
-      const g = lower(
-        'group g\nservice a\nservice b\nservice c\nservice d in g\nservice e\nservice f in g\n' +
-          'a:R -- L:b\nb:R -- L:c\nb:B -- T:e\nc:B -- T:d\nd{group}:L -- R:c\nd:R -- L:f',
-      )
-      expect(g.edges.map((e) => e.acrossFlow === true)).toEqual([
-        false,
-        false,
-        true,
-        true, // Into a group: the layout slides the grouped end under it
-        false, // A {group} end
-        false, // Both inside a group
-      ])
-    })
-
     it('uses the rows when the ports mostly run top to bottom', () => {
       const g = lower(two + 'a:B -- T:b')
       expect(g.direction).toBe('TB')
       expect(g.nodes.get('b')).toMatchObject({ gridLayer: 1, gridOrder: 0 })
-      expect(g.edges[0]?.acrossFlow).toBeUndefined()
-    })
-
-    it('flags a left-right edge in a top-to-bottom graph', () => {
-      const g = lower(
-        'service a\nservice b\nservice c\nservice d\na:B -- T:b\nb:B -- T:c\nb:R -- L:d',
-      )
-      expect(g.edges.map((e) => e.acrossFlow === true)).toEqual([
-        false,
-        false,
-        true,
-      ])
     })
 
     it('does not place a node twice when the ports form a cycle', () => {

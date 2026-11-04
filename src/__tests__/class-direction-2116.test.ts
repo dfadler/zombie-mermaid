@@ -65,10 +65,10 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
       ),
     ).split('\n')
     const at = (s: string) => out.findIndex((l) => l.includes(s))
-    expect(at('<<abstract>>')).toBeLessThan(at('Animal'))
-    expect(at('Animal')).toBeLessThan(at('+ String name'))
-    expect(at('+ String name')).toBeLessThan(at('+ eat(): void'))
-    expect(at('Dog')).toBeLessThan(at('<<abstract>>'))
+    expect(at('«abstract»')).toBeLessThan(at('Animal'))
+    expect(at('Animal')).toBeLessThan(at('+String name'))
+    expect(at('+String name')).toBeLessThan(at('+eat() : void'))
+    expect(at('Dog')).toBeLessThan(at('«abstract»'))
   })
 
   it('keeps a multi-line label reading top to bottom', () => {
@@ -128,8 +128,8 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
     const out = ascii(
       dir('BT', 'Shape <|-- Square\n  note for Square "all sides equal"'),
     ).split('\n')
-    const square = out.findIndex((l) => l.includes('│ Square │'))
-    expect(out[square]).toMatch(/│ Square │╌+╮/)
+    // The link leaves from the last (empty) row of the box, not its title row
+    expect(out.join('\n')).toMatch(/│ {8}│╌+╮/)
     expect(out.find((l) => l.includes('│ Shape │'))).toContain('│ Shape │ ')
     expect(out.join('\n')).toContain('│ all sides equal │')
   })
@@ -164,7 +164,7 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
         'Shape <|-- Mid\n  Mid <|-- Top\n  Shape <|-- Top\n  note for Mid "n"',
       ),
     )
-    expect(out).toMatch(/│ Mid ││╌+╮/)
+    expect(out).toMatch(/│ {5}││╌+╮/)
   })
 
   it('does not draw the BT note link over a relationship line it crosses', () => {
@@ -172,7 +172,7 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
       dir('BT', 'Sh <|-- Square\n  Sh <|-- Right\n  note for Square "n"'),
     )
     expect(out).toContain(' ┌──┼────────────┘')
-    expect(out).toMatch(/│ Square │╌+╮/)
+    expect(out).toMatch(/│ {8}│╌+╮/)
   })
 
   it('keeps the BT note link when a taller box only sits between its segments', () => {
@@ -182,7 +182,7 @@ describe('ASCII: BT flips the stack with the boxes upright', () => {
         'class Shape {\n    +area() double\n    +perimeter() double\n    +describe() string\n  }\n  Shape <|-- Sq\n  note for Sq "n"',
       ),
     )
-    expect(out).toMatch(/│ Sq │╌+╮/)
+    expect(out).toMatch(/│ {4}│╌+╮/)
     expect(out).toContain('┊')
   })
 

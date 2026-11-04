@@ -28,7 +28,14 @@ describe('ASCII class diagram detours (issue #2056)', () => {
   it('gives every arrowhead entering View a vertical stem above it', () => {
     const r = rows()
     const heads = r.flatMap((row, y) =>
-      row.flatMap((ch, x) => (ch === '▼' ? [[x, y] as const] : [])),
+      row.flatMap((ch, x) =>
+        // A head `v` sits on a line, never inside a word (e.g. "event")
+        ch === 'v' &&
+        !/[A-Za-z]/.test(row[x - 1] ?? ' ') &&
+        !/[A-Za-z]/.test(row[x + 1] ?? ' ')
+          ? [[x, y] as const]
+          : [],
+      ),
     )
     expect(heads.length).toBe(3)
     for (const [x, y] of heads) {

@@ -42,7 +42,7 @@ describe('critical block option dividers', () => {
     }
     // One dashed horizontal separator per divider (y1 === y2), none for lifelines.
     const separators = svg.match(
-      /<line x1="[^"]+" y1="([^"]+)" x2="[^"]+" y2="\1" stroke="var\(--_line\)" stroke-width="0.75" stroke-dasharray="6 4"/g,
+      /<line x1="[^"]+" y1="([^"]+)" x2="[^"]+" y2="\1" stroke="var\(--_line\)" stroke-width="0.75" stroke-dasharray="3 3"/g,
     )
     expect(separators).toHaveLength(2)
   })

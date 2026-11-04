@@ -68,8 +68,8 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       const rl = render(INHERIT, 'RL')
       for (const word of [
         'Animal',
-        '+ String name',
-        '+ eat(): void',
+        '+String name',
+        '+eat() : void',
         'Dog',
         'owns',
       ]) {
@@ -115,8 +115,8 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       ['realization', 'A <|.. B', '◁', '▷', '<', '┄'],
       ['composition', 'A *-- B', '◆', '◆', '*', '─'],
       ['aggregation', 'A o-- B', '◇', '◇', 'o', '─'],
-      ['association', 'A --> B', '▶', '◀', '>', '─'],
-      ['dependency', 'A ..> B', '▶', '◀', '>', '┄'],
+      ['association', 'A --> B', '>', '<', '>', '─'],
+      ['dependency', 'A ..> B', '>', '<', '>', '┄'],
     ]
     for (const [name, src, lr, rl, asciiLr, stroke] of cases) {
       it(`${name}: glyph at the marked end, ${stroke === '┄' ? 'dashed' : 'solid'} line`, () => {
@@ -133,15 +133,15 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
 
     it('marks the from end for `<|--` and the to end for `..|>`', () => {
       const from = render('  A <|-- B', 'LR')
-      // The head sits against A's right border, on the line to B
-      expect(from).toMatch(/│ A │◁─+┤ B │/)
+      // The head sits against A's right border, on the (blank) middle row, on the line to B
+      expect(from).toMatch(/│   │◁─+┤   │/)
       const to = render('  A ..|> B', 'LR')
-      expect(to).toMatch(/│ A ├┄+▷│ B │/)
+      expect(to).toMatch(/│   ├┄+▷│   │/)
     })
 
     it('draws both ends of a two-ended relationship', () => {
-      expect(render('  A <|--|> B', 'LR')).toMatch(/│ A │◁─+▷│ B │/)
-      expect(render('  A <--> B', 'RL')).toMatch(/│ B │◀─+▶│ A │/)
+      expect(render('  A <|--|> B', 'LR')).toMatch(/│   │◁─+▷│   │/)
+      expect(render('  A <--> B', 'RL')).toMatch(/│   │<─+>│   │/)
     })
 
     it('leaves by the right face so the shared inheritance head points sideways into its box', () => {
@@ -180,7 +180,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
   describe('cardinalities', () => {
     it('sets each beside its own end: source above the line, target below (LR)', () => {
       const out = render('  A "1" --> "many" B : owns', 'LR')
-      const line = at(out, '▶')
+      const line = at(out, '>')
       const one = at(out, '1')
       const many = at(out, 'many')
       expect(one.y).toBe(line.y - 1)
@@ -191,7 +191,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
 
     it('mirrors to RL', () => {
       const out = render('  A "1" --> "many" B : owns', 'RL')
-      const line = at(out, '◀')
+      const line = at(out, '<')
       const one = at(out, '1')
       const many = at(out, 'many')
       expect(one.y).toBe(line.y - 1)
@@ -264,11 +264,11 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
 
     it('sits left of its class in LR, right in RL, joined by a dotted link', () => {
       const lr = render(NOTE, 'LR')
-      expect(at(lr, 'about A').x).toBeLessThan(at(lr, '┤ A │').x)
+      expect(at(lr, 'about A').x).toBeLessThan(at(lr, '│ A │').x)
       expect(lr).toContain('╭')
       expect(lr).toMatch(/┄/)
       const rl = render(NOTE, 'RL')
-      expect(at(rl, 'about A').x).toBeGreaterThan(at(rl, '│ A ├').x)
+      expect(at(rl, 'about A').x).toBeGreaterThan(at(rl, '│ A │').x)
     })
 
     it('draws a free note without a link', () => {
@@ -288,20 +288,18 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
   describe('lollipops', () => {
     it('sets the interface name against its circle: name, circle, line, host (LR)', () => {
       const out = render('  Shape ()-- Drawable', 'LR')
-      expect(out).toMatch(/Shape○─+┤ Drawable │/)
+      expect(out).toMatch(/Shape○─+┤ +│/)
     })
 
     it('mirrors it for RL', () => {
       const out = render('  Shape ()-- Drawable', 'RL')
-      expect(out).toMatch(/│ Drawable ├─+○Shape/)
+      expect(out).toMatch(/│ +├─+○Shape/)
     })
 
     it('handles the suffix form and the ASCII charset', () => {
-      expect(render('  Drawable --() Shape', 'LR')).toMatch(
-        /│ Drawable ├─+○Shape/,
-      )
+      expect(render('  Drawable --() Shape', 'LR')).toMatch(/│ +├─+○Shape/)
       expect(render('  Shape ()-- Drawable', 'LR', true)).toMatch(
-        /ShapeO-+\+ Drawable \|/,
+        /ShapeO-+\+ +\|/,
       )
     })
   })
@@ -310,7 +308,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
     it('loops back into the same class with the head on the box', () => {
       const out = render('  class A\n  A --> A : self', 'LR')
       expect(out).toContain('self')
-      expect(out).toMatch(/[▲▼]/)
+      expect(out).toMatch(/[^v]/)
       expect(out).toContain('┘')
     })
   })
@@ -357,7 +355,8 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
   describe('dividers and crossings', () => {
     it('joins a line that meets a compartment divider into a cross', () => {
       const out = render(
-        '  Animal <|-- Dog\n  class Dog {\n    +bark() void\n  }',
+        // Three methods and no attributes put the box's middle on the divider
+        '  Animal <|-- Dog\n  class Dog {\n    +bark() void\n    +eat() void\n    +run() void\n  }',
         'LR',
       )
       expect(out).toContain('┼')
@@ -411,10 +410,10 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       expect(markerArrowChar(false, 'class-triangle', Down)).toBe('▽')
       expect(markerArrowChar(false, 'class-triangle', Left)).toBe('◁')
       expect(markerArrowChar(false, 'class-triangle', Right)).toBe('▷')
-      expect(markerArrowChar(false, 'class-arrow', Up)).toBe('▲')
-      expect(markerArrowChar(false, 'class-arrow', Down)).toBe('▼')
-      expect(markerArrowChar(false, 'class-arrow', Left)).toBe('◀')
-      expect(markerArrowChar(false, 'class-arrow', Right)).toBe('▶')
+      expect(markerArrowChar(false, 'class-arrow', Up)).toBe('^')
+      expect(markerArrowChar(false, 'class-arrow', Down)).toBe('v')
+      expect(markerArrowChar(false, 'class-arrow', Left)).toBe('<')
+      expect(markerArrowChar(false, 'class-arrow', Right)).toBe('>')
       expect(markerArrowChar(true, 'class-arrow', Up)).toBe('^')
       expect(markerArrowChar(true, 'class-triangle', Down)).toBe('v')
       expect(markerArrowChar(true, 'class-triangle', Left)).toBe('<')
@@ -422,7 +421,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
     })
 
     it('defaults to pointing right and knows the omnidirectional ones', () => {
-      expect(markerArrowChar(false, 'class-arrow')).toBe('▶')
+      expect(markerArrowChar(false, 'class-arrow')).toBe('>')
       expect(markerArrowChar(false, 'class-diamond-filled')).toBe('◆')
       expect(markerArrowChar(true, 'class-diamond-filled')).toBe('*')
       expect(markerArrowChar(false, 'class-diamond')).toBe('◇')

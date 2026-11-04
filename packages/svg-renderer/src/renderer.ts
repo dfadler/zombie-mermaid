@@ -325,6 +325,9 @@ function dashAttr(style: Record<string, string> | undefined): string {
   return d && /^[\d.\s,]+$/.test(d) ? f` stroke-dasharray="${d.trim()}"` : ''
 }
 
+/** Edge of the icon tile in an architecture group's corner, as Mermaid draws it. */
+const ARCH_GROUP_ICON = 30
+
 function renderGroup(
   group: PositionedGroup,
   font: string,
@@ -339,6 +342,35 @@ function renderGroup(
       f`<g class="subgraph subgraph-region" data-id="${escapeAttr(group.id)}">`,
       f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
         f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-dasharray="6 4" />`,
+    )
+    for (const child of group.children) {
+      parts.push(renderGroup(child, font, fontSizes))
+    }
+    parts.push('</g>')
+    return parts.join('\n')
+  }
+
+  // Architecture group (#2619): Mermaid draws a dashed, unfilled box with the
+  // icon tile in its top-left corner and the title beside it, no header band.
+  if (group.icon !== undefined) {
+    const glyph = group.icon && (ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH)
+    parts.push(
+      f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
+      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" fill="none" stroke="hsl(240, 60%, 86.3%)" stroke-width="2" stroke-dasharray="8" />`,
+    )
+    if (glyph)
+      parts.push(
+        f`  <g transform="translate(${group.x + 1} ${group.y + 1}) scale(${ARCH_GROUP_ICON / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
+      )
+    parts.push(
+      '  ' +
+        renderMultilineText(
+          group.label,
+          group.x + (glyph ? ARCH_GROUP_ICON + 4 : 6),
+          group.y + 1 + ARCH_GROUP_ICON / 2,
+          fontSizes.groupHeader,
+          f`font-size="${fontSizes.groupHeader}" font-weight="400" fill="var(--_text)"`,
+        ),
     )
     for (const child of group.children) {
       parts.push(renderGroup(child, font, fontSizes))

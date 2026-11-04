@@ -64,7 +64,7 @@ describe('ASCII class diagram namespaces (#1196)', () => {
   it('does not overwrite a relationship stroke crossing a frame', () => {
     const rows = lines(SRC)
     // The A -> C line crosses Extras' top border and still ends in an arrow.
-    expect(rows.join('\n')).toContain('▼')
+    expect(rows.join('\n')).toContain('v')
     const top = rows.find((l) => l.includes('Extras'))!
     expect(top).toMatch(/^┌[─│]+ Extras ─+┐/)
     expect(top).toContain('│')
@@ -157,9 +157,9 @@ A --> C
 B --> D`)
     const oneBottom = rows.findIndex((l) => l.startsWith('└'))
     expect(rows[oneBottom + 1]!.match(/│/g)).toHaveLength(2)
-    const arrival = rows.findLast((l) => l.includes('▼'))!
+    const arrival = rows.findLast((l) => l.includes('v'))!
     // B -> D's head sits beside the C <|-- D stem, not on top of it.
-    expect(arrival).toMatch(/▼│/)
+    expect(arrival).toMatch(/v│/)
   })
 
   // Edges running both ways between two frames can't be stacked; the frames

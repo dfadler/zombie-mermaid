@@ -91,7 +91,8 @@ import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
 import { layoutQuadrantChart } from './quadrant/layout.ts'
 import { renderQuadrantSvg } from './quadrant/renderer.ts'
-import { layoutFlowchartSync, layoutGraphSync } from './layout-engine.ts'
+import { layoutFlowchartSync } from './layout-engine.ts'
+import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 
@@ -383,7 +384,7 @@ const architectureModule: DiagramModule<
       options.direction,
     )
     return {
-      graph: layoutGraphSync(graph, options),
+      graph: layoutArchitectureGrid(graph, options.padding),
       curve: options.curve ?? 'linear',
     }
   },
