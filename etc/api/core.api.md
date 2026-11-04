@@ -408,6 +408,7 @@ export interface MermaidSubgraph {
     // (undocumented)
     nodeIds: string[];
     region?: boolean;
+    stateComposite?: boolean;
 }
 
 // @public (undocumented)
@@ -526,6 +527,7 @@ export interface PositionedGraph {
 
 // @public (undocumented)
 export interface PositionedGroup {
+    bandless?: boolean;
     // (undocumented)
     children: PositionedGroup[];
     // (undocumented)
