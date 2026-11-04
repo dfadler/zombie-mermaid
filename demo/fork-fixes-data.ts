@@ -1049,4 +1049,18 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the Data Tier group is shifted up, `Primary DB` sits above the main row and `Replica` beside it, with service labels on the group border. After: `Primary DB` is level with the gateway row, the `fan:B` edge drops straight down into `Replica` beneath the junction, and every label stays inside its group.',
   },
+  {
+    id: 'sequence-init-mirror-actors',
+    title:
+      'Sequence `%%{init}%%` mirrorActors and showSequenceNumbers were ignored',
+    symptom:
+      '`%%{init: {"sequence": {"mirrorActors": false}}}%%` still drew the participant row under the lifelines, and `showSequenceNumbers: true` drew no message numbers, while mermaid 12.3.0 honours both.',
+    source:
+      '%%{init: {"sequence": {"mirrorActors": false, "showSequenceNumbers": true}}}%%\nsequenceDiagram\n  participant A as Alice\n  participant B as Bob\n  A->>B: Hello\n  B-->>A: Hi',
+    fixCommit: 'c3872265',
+    pr: 2600,
+    render: 'svg',
+    lookFor:
+      'Before: a footer row of Alice and Bob boxes and unnumbered arrows. After: no footer row and the messages numbered 1 and 2, as in mermaid 12.3.0.',
+  },
 ]
