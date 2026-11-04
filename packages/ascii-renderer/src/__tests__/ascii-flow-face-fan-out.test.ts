@@ -27,6 +27,53 @@ describe('flow-face fan-out (TD)', () => {
     )
   })
 
+  it('gives a straight target and a bend either side a stem each', () => {
+    // Mermaid draws three separate edges out of A; the outer bend must not
+    // share the straight stem (a `├` off it reads as one edge forking).
+    const rows = render(`graph TD
+  A -->|x| B
+  A -->|yy| C
+  A -->|zzz| D`)
+    const border = rows.find((l) => l.includes('└') && l.includes('┬'))!
+    expect(border.match(/┬/g)).toHaveLength(3)
+    expect(rows.join('\n')).not.toMatch(/├/)
+  })
+
+  it('centres parents over their children without dragging the chain right', () => {
+    // A labelled child must not widen the straddle, and D's children slide
+    // under D rather than D (and C above it) moving out to meet them.
+    const rows = render(`flowchart TD
+    A --> B
+    A -->|no| C
+    C --> D
+    D --> E
+    D --> F`)
+    const col = (n: string): number => {
+      const row = rows.find((l) =>
+        l.split('│').some((seg) => seg.trim() === n),
+      )!
+      return row.indexOf(n)
+    }
+    expect(Math.abs(col('A') - (col('B') + col('C')) / 2)).toBeLessThanOrEqual(
+      1,
+    )
+    expect(Math.abs(col('D') - (col('E') + col('F')) / 2)).toBeLessThanOrEqual(
+      1,
+    )
+    expect(col('C') - col('B')).toBeLessThanOrEqual(14)
+    expect(col('C')).toBe(col('D'))
+  })
+
+  it('gives unlabelled mixed-style edges a stem each around a straight one', () => {
+    const rows = render(`graph TD
+  A --> C
+  A -.-> B
+  A ==> D`)
+    const border = rows.find((l) => l.includes('└') && l.includes('┬'))!
+    expect(border.match(/┬/g)).toHaveLength(3)
+    expect(rows.join('\n')).not.toMatch(/├/)
+  })
+
   it('puts each label on its own drop, between the bend and the arrowhead', () => {
     const rows = render(`graph TD
   A -->|x| B
