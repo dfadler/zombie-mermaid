@@ -752,7 +752,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'xychart-bar-series-overlap',
-    parked: 'svg-xychart',
     title: 'XY chart bar series were drawn side by side, not overlapping',
     symptom:
       'Two `bar` series on the same categories were split into narrow adjacent bars, while mermaid 12.2.0 draws each series centred on the category with later series on top.',
@@ -936,7 +935,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'xychart-numeric-x-range',
-    parked: 'svg-xychart',
     title: 'A numeric xychart x-axis range was laid out as categories',
     symptom:
       '`x-axis 0 --> 100` spaced the points evenly like categories, so tick labels and bars landed where mermaid.js does not put them.',

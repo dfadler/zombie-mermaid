@@ -218,10 +218,7 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   )
 
   // Margins
-  const top =
-    XY.padding +
-    (hasTitle ? XY.titleHeight : 0) +
-    (hasLegend ? XY.legendHeight : 0)
+  const top = XY.padding + (hasTitle ? XY.titleHeight : 0) + 0 // Mermaid draws no legend, so none is reserved
   const bottom =
     XY.padding + XY.xLabelHeight + (hasXTitle ? XY.axisTitlePad : 0)
   const left =
@@ -409,10 +406,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     40,
   )
 
-  const top =
-    XY.padding +
-    (hasTitle ? XY.titleHeight : 0) +
-    (hasLegend ? XY.legendHeight : 0)
+  const top = XY.padding + (hasTitle ? XY.titleHeight : 0) + 0 // Mermaid draws no legend, so none is reserved
   const bottom =
     XY.padding + XY.xLabelHeight + (hasYTitle ? XY.axisTitlePad : 0)
   const left =
