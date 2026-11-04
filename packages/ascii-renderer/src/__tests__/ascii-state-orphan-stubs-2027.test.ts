@@ -16,8 +16,12 @@ describe('state diagram orphan stubs (#2027)', () => {
   end note
   Idle --> [*]`,
     )
-    const row = out.split('\n').find((l) => l.includes('Active'))!
-    expect(row).toMatch(/Active\s+├─+┐/)
+    // The edge leaves Active's bottom border (the flow face, as Mermaid
+    // draws it) and its stem is attached to the border glyph.
+    const rows = out.split('\n')
+    const at = rows.findIndex((l) => l.includes('Active'))
+    expect(rows[at + 2]).toMatch(/╰─+┬/)
+    expect(rows[at + 3]).toMatch(/┆|│/)
   })
 
   it('fork/join bars touch their stems', () => {

@@ -52,9 +52,11 @@ export function findStyleConflict(
   cellStyles: EdgeCellStyles,
   path: readonly GridCoord[],
   style: AsciiEdgeStyle,
+  exempt?: (cell: GridCoord) => boolean,
 ): GridCoord | null {
   for (const cell of pathCells(path)) {
     if (isOccupied(grid, cell)) continue
+    if (exempt?.(cell)) continue
     const existing = cellStyles.get(gridKey(cell))
     if (existing !== undefined && existing !== style) return cell
   }

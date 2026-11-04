@@ -487,8 +487,27 @@ export function spreadCandidates(
       out.set(to, [...(out.get(to) ?? []), { ...entry, below: b.y > a.y }])
     }
   }
+  // A labeled flow-face fan-out edge carries its label on the drop into its
+  // target, below the bend: the gap holds the bend, a plain stroke row, the
+  // label, a plain stroke row and the arrowhead, with the bend mid-gap.
+  for (const e of graph.edges) {
+    if (
+      e.text === '' ||
+      !leavesFlowFace(graph, e, graph.config.graphDirection)
+    ) {
+      continue
+    }
+    const rows = FLOW_FAN_LABEL_ROWS + splitLines(e.text).length
+    out.set(e.to, [
+      ...(out.get(e.to) ?? []),
+      { vertical: true, strokes: 1, rows, below: true },
+    ])
+  }
   return out
 }
+
+/** Gap rows a flow-face fan-out label needs beyond its own lines. */
+const FLOW_FAN_LABEL_ROWS = 2
 
 /**
  * Whether `group` (edges between one ordered pair of nodes) can run side by
@@ -1559,6 +1578,35 @@ function buildFaceLaneRoute(
  * Uses the effective direction for edge routing, respecting subgraph direction overrides
  * when both source and target are in the same subgraph.
  */
+/**
+ * A TD edge from a fan-out source (two or more distinct targets) to a child
+ * diagonally below it, outside any subgraph: it takes the flow faces.
+ */
+export function leavesFlowFace(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+): boolean {
+  if (effectiveDir === 'LR' || edge.from === edge.to) return false
+  if (edge.clusterSource || edge.clusterTarget) return false
+  const a = requireGridCoord(edge.from)
+  const b = requireGridCoord(edge.to)
+  if (b.y <= a.y || b.x === a.x) return false
+  // A reciprocal pair keeps the paired routing of #1349 / #530.
+  if (graph.edges.some((o) => o.from === edge.to && o.to === edge.from)) {
+    return false
+  }
+  if (getNodeSubgraph(graph, edge.from) || getNodeSubgraph(graph, edge.to)) {
+    return false
+  }
+  const targets = new Set(
+    graph.edges
+      .filter((o) => o.from === edge.from && o.to !== edge.from)
+      .map((o) => o.to),
+  )
+  return targets.size > 1
+}
+
 export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   exhaustedLaneEdges.delete(edge)
   // Determine effective direction for this edge
@@ -1577,6 +1625,18 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     alternativeDir,
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
+  // Mermaid leaves every edge of a fan-out by the flow face (bottom in TD) and
+  // enters each target by its top face, so a diagonal child is reached from
+  // the source's bottom, not by a side-face L. port-offsets.ts gives each
+  // edge its own stem. Cluster edges and members keep their own routing.
+  const flowFan = leavesFlowFace(graph, edge, effectiveDir)
+  if (flowFan) {
+    ;[preferredDir, preferredOppositeDir] = [Down, Up]
+    ;[alternativeDir, alternativeOppositeDir] = [
+      preferredDir === alternativeDir ? preferredDir : alternativeDir,
+      alternativeOppositeDir,
+    ]
+  }
   if (loopEntersTop(graph, edge, effectiveDir)) {
     ;[preferredDir, preferredOppositeDir] = [Right, Up]
     ;[alternativeDir, alternativeOppositeDir] = [Right, Up]
@@ -1852,7 +1912,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
 
   // Case 1: Both paths found — pick the shorter one (routeEdge already merged each)
   if (preferredPath !== null && alternativePath !== null) {
-    if (preferredPath.length <= alternativePath.length) {
+    if (flowFan || preferredPath.length <= alternativePath.length) {
       edge.startDir = preferredDir
       edge.endDir = preferredOppositeDir
       edge.path = preferredPath
@@ -2068,6 +2128,19 @@ export function determineLabelLine(
   ) {
     applyLabelLine(graph, edge, [edge.path[0]!, edge.path[1]!], lenLabel)
     return
+  }
+
+  // A flow-face fan-out edge that bends carries its label on the drop into
+  // the target, as Mermaid does, not on the bar it shares with its siblings.
+  if (
+    edge.path.length >= 3 &&
+    leavesFlowFace(graph, edge, graph.config.graphDirection)
+  ) {
+    const [a, b] = edge.path.slice(-2) as [GridCoord, GridCoord]
+    if (a.x === b.x && b.y > a.y) {
+      applyLabelLine(graph, edge, [a, b], lenLabel)
+      return
+    }
   }
 
   // Every routed path is axis-aligned (A* is 4-directional and

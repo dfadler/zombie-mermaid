@@ -34,6 +34,7 @@ import type { DrawingCoord } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
+import { leavesFlowFace } from './edge-routing.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
@@ -311,14 +312,27 @@ export function staggerFanOuts(
   for (const side of ['top', 'bottom', 'left', 'right'] as const) {
     const group = members.filter((m) => m.run.side === side)
     const anchored = group.some((m) => m.straight)
+    // Edges of different line styles cannot share a stem (one glyph per cell),
+    // so each (distance, style) pair takes a stem of its own.
+    const mixed = new Set(group.map((m) => m.edge.style)).size > 1
+    const keyOf = (m: FanOutMember): string =>
+      mixed
+        ? `${runExtent(m.edge, m.run)}|${m.edge.style}`
+        : String(runExtent(m.edge, m.run))
     for (const turn of [-1, 1] as const) {
       const bent = group.filter((m) => !m.straight && m.run.turn === turn)
-      const extents = [...new Set(bent.map((m) => runExtent(m.edge, m.run)))]
-      extents.sort((a, b) => b - a)
-      if (extents.length + (anchored ? 1 : 0) < 2) continue
-      const offsetOf = (extent: number): number =>
-        base +
-        turn * STROKE_SPACING * (extents.indexOf(extent) + (anchored ? 1 : 0))
+      const extents = [...new Set(bent.map(keyOf))]
+      extents.sort((a, b) => parseInt(b) - parseInt(a))
+      // With no straight stem, mixed styles split the two turns a cell each
+      // side of the port so a left and a right bend do not share one.
+      const apart = mixed && !anchored
+      if (extents.length + (anchored || apart ? 1 : 0) < 2 && !apart) continue
+      if (extents.length === 0) continue
+      const offsetOf = (key: string): number =>
+        apart
+          ? base + turn * (extents.indexOf(key) + 1) * (STROKE_SPACING / 2)
+          : base +
+            turn * STROKE_SPACING * (extents.indexOf(key) + (anchored ? 1 : 0))
       const geo = portGeometry(graph, bent[0]!.run)
       const fits =
         geo !== undefined &&
@@ -330,7 +344,7 @@ export function staggerFanOuts(
           )
         })
       if (!fits) continue
-      for (const m of bent) out.set(m.edge, offsetOf(runExtent(m.edge, m.run)))
+      for (const m of bent) out.set(m.edge, offsetOf(keyOf(m)))
     }
   }
 }
@@ -684,9 +698,43 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (r.end) shift.endRun = shiftedRun(r.end)
     result.set(edge, shift)
   }
+  raiseFlowFanBars(graph, runs, result)
   allocateFaces(graph, result, shiftedRun)
   spreadFaceLaneRuns(graph, result)
   return result
+}
+
+/**
+ * A flow-face fan-out edge bends on the row two below its source's border,
+ * not mid-gap: the drop into the target then has room for its label, the way
+ * Mermaid draws the bend near the source and the label on the drop.
+ */
+function raiseFlowFanBars(
+  graph: AsciiGraph,
+  runs: ReadonlyMap<AsciiEdge, RunEntry>,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  for (const [edge, { r }] of runs) {
+    const p = edge.path
+    if (
+      r.straight ||
+      p.length !== 4 ||
+      !leavesFlowFace(graph, edge, graph.config.graphDirection)
+    ) {
+      continue
+    }
+    const from = edge.from.drawingCoord
+    const rows = edge.from.drawing?.[0]?.length
+    if (!from || !rows) continue
+    const was = gridToDrawingCoord(graph, p[1]!).y
+    const dy = from.y + rows + 1 - was
+    if (dy >= 0) continue
+    const shift = result.get(edge) ?? { start: 0, end: 0 }
+    const points = shift.points ?? p.map(() => ({ x: 0, y: 0 }))
+    points[1]!.y = dy
+    points[2]!.y = dy
+    result.set(edge, { ...shift, points })
+  }
 }
 
 /**

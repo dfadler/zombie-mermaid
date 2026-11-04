@@ -75,7 +75,7 @@ describe('centering a node over its children', () => {
   B -->|approve| C[Done]
   B -->|reject| D[Fail]`)
     const row = out.find((l) => l.includes('approve'))!
-    expect(row).toMatch(/┌─+approve─+┤/)
+    expect(row).toMatch(/^\s*approve\s+reject\s*$/)
     // The chain follows: Start sits over Check.
     expect(
       Math.abs(centerOf(out, 'Start') - centerOf(out, 'Check')),

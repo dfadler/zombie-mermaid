@@ -16,7 +16,12 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { DEFAULT_PADDING_Y, paddingOffset, requireGridCoord } from './types.ts'
+import {
+  DEFAULT_PADDING_Y,
+  gridKey,
+  paddingOffset,
+  requireGridCoord,
+} from './types.ts'
 import { subgraphsTied } from '@zombie-mermaid/core'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
@@ -400,6 +405,29 @@ const MAX_STYLE_CONFLICT_REROUTES = 8
  * ascii-edge-cross-style-overlap.test.ts's regression test for this exact
  * scenario.
  */
+function sharesFanOutStem(
+  owners: EdgeCellOwners,
+  edge: AsciiEdge,
+  cell: GridCoord,
+): boolean {
+  if (
+    edge.path.length < 2 ||
+    edge.bundle ||
+    edge.parallelLane ||
+    edge.faceLane
+  ) {
+    return false
+  }
+  const stem = pathCells([edge.path[0]!, edge.path[1]!])
+  if (!stem.some((c) => c.x === cell.x && c.y === cell.y)) return false
+  const own = owners.get(gridKey(cell))
+  return (
+    own !== undefined &&
+    own.size > 0 &&
+    [...own].every((o) => o.from === edge.from && o !== edge && !o.bundle)
+  )
+}
+
 function rerouteAroundStyleConflicts(
   graph: AsciiGraph,
   edge: AsciiEdge,
@@ -422,7 +450,15 @@ function rerouteAroundStyleConflicts(
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
-        findStyleConflict(nodeOnlyGrid, cellStyles, edge.path, edge.style) ??
+        findStyleConflict(
+          nodeOnlyGrid,
+          cellStyles,
+          edge.path,
+          edge.style,
+          // Fan-out siblings share the stem out of one port; port-offsets.ts
+          // (`staggerFanOuts`) gives each line style a stem of its own.
+          (cell) => sharesFanOutStem(cellOwners, edge, cell),
+        ) ??
         // A lane already keeps off other edges' runs (`runTaken`); the stem
         // it shares with a chain partner is split by port-offsets.ts.
         (edge.parallelLane?.index || edge.faceLane
