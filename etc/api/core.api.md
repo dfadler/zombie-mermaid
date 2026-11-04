@@ -320,6 +320,7 @@ export function measureTextWidth(text: string, fontSize: number, fontWeight: num
 
 // @public (undocumented)
 export interface MermaidEdge {
+    // @deprecated
     acrossFlow?: boolean;
     animate?: boolean;
     endMarker?: 'circle' | 'cross';
@@ -397,6 +398,7 @@ export interface MermaidParseErrorOptions {
 
 // @public (undocumented)
 export interface MermaidSubgraph {
+    architecture?: boolean;
     // (undocumented)
     children: MermaidSubgraph[];
     direction?: Direction;
@@ -526,6 +528,7 @@ export interface PositionedGraph {
 
 // @public (undocumented)
 export interface PositionedGroup {
+    architecture?: boolean;
     // (undocumented)
     children: PositionedGroup[];
     // (undocumented)
