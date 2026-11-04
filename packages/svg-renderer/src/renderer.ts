@@ -144,7 +144,8 @@ export function renderSvg(
   // Per-color arrow markers for edges with custom stroke via linkStyle
   const customStrokeColors = new Set<string>()
   for (const edge of graph.edges) {
-    if (edge.headColor) customStrokeColors.add(edge.headColor)
+    const head = headColorOf(edge)
+    if (head) customStrokeColors.add(head)
   }
   for (const color of customStrokeColors) {
     parts.push(arrowMarkerDefsForColor(color))
@@ -302,6 +303,15 @@ function terminatorMarker(kind: 'circle' | 'cross'): string {
 /** Sanitize a color value into a collision-free SVG ID suffix.
  *  Non-alphanumeric chars are hex-encoded so distinct inputs never collapse
  *  (e.g. "var(--line-1)" → "var28--line2d129", "var(--line1)" → "var28--line129"). */
+/**
+ * Mermaid 12.2.0 colours a head with the `linkStyle default` stroke when there is
+ * one, else with the edge's own `linkStyle` stroke (#2476). `headColor` is the
+ * default stroke, so with no default the edge's own stroke is what remains.
+ */
+function headColorOf(edge: PositionedEdge): string | undefined {
+  return edge.headColor ?? edge.inlineStyle?.stroke
+}
+
 function markerSuffix(color: string): string {
   return color.replace(/[^a-zA-Z0-9]/g, (ch) => ch.charCodeAt(0).toString(16))
 }
@@ -365,12 +375,22 @@ function renderGroup(
       f`rx="0" ry="0" fill="${hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
+  // Architecture group icon, as in Mermaid's header (the glyph tile, scaled).
+  const iconSize = headerHeight - 6
+  if (group.icon) {
+    const glyph = ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH
+    parts.push(
+      f`  <g transform="translate(${group.x + 3} ${group.y + 3}) scale(${iconSize / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
+    )
+  }
+  const titleX = group.x + 12 + (group.icon ? iconSize + 2 : 0)
+
   // Header label (supports multi-line via <br> tags)
   parts.push(
     '  ' +
       renderMultilineText(
         group.label,
-        group.x + 12,
+        titleX,
         group.y + headerHeight / 2,
         fontSizes.groupHeader,
         f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
@@ -435,7 +455,8 @@ function renderEdge(
 
   // Build marker attributes based on arrow direction flags
   // Use color-specific markers when edge has a custom stroke from linkStyle
-  const suffix = edge.headColor ? f`-${markerSuffix(edge.headColor)}` : ''
+  const head = headColorOf(edge)
+  const suffix = head ? f`-${markerSuffix(head)}` : ''
   let markers = ''
   if (!invisible) {
     if (edge.hasArrowEnd)
@@ -766,6 +787,8 @@ function renderNodeShapeBase(node: PositionedNode): string {
       return renderTriangle(x, y, width, height, fill, stroke, sw, false)
     case 'flipped-triangle':
       return renderTriangle(x, y, width, height, fill, stroke, sw, true)
+    case 'junction':
+      return ''
     case 'filled-circle':
       return renderFilledCircle(x, y, width, height, stroke)
     case 'crossed-circle':
@@ -800,6 +823,16 @@ function renderNodeShapeBase(node: PositionedNode): string {
       return renderBraces(x, y, width, height, fill, stroke, sw, 'both')
     case 'bolt':
       return renderBolt(x, y, width, height, fill, stroke, sw)
+    case 'cloud':
+      return renderCloud(x, y, width, height, fill, stroke, sw)
+    case 'horizontal-cylinder':
+      return renderHorizontalCylinder(x, y, width, height, fill, stroke, sw)
+    case 'tagged-rectangle':
+      return renderTaggedRectangle(x, y, width, height, fill, stroke, sw)
+    case 'fork-bar':
+      return renderRect(x, y, width, height, fill, stroke, sw)
+    case 'small-circle':
+      return renderSmallCircle(x, y, width, height, fill, stroke, sw)
     case 'text':
     case 'anchor':
       // No outline — the label (rendered separately) is the whole node.
@@ -1320,6 +1353,87 @@ function renderForkJoin(
 ): string {
   const barH = Math.min(8, h)
   return f`<rect x="${x}" y="${y + (h - barH) / 2}" width="${w}" height="${barH}" fill="${stroke}" stroke="${stroke}" />`
+}
+
+/**
+ * Mermaid's cloud: its own arc path for a w0 by h0 label box, which spans
+ * 1.25*w0 by h0 + 0.48*w0 starting 0.1*w0 left of and 0.225*w0 above its
+ * origin. The node box is that span, so the origin sits inside it.
+ */
+function renderCloud(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const w0 = w / 1.25
+  const h0 = h - 0.48 * w0
+  const [r1, r2, r3, r4] = [0.15 * w0, 0.25 * w0, 0.35 * w0, 0.2 * w0]
+  const d =
+    f`M0 0 a${r1},${r1} 0 0,1 ${0.25 * w0},${-0.1 * w0} ` +
+    f`a${r3},${r3} 1 0,1 ${0.4 * w0},${-0.1 * w0} ` +
+    f`a${r2},${r2} 1 0,1 ${0.35 * w0},${0.2 * w0} ` +
+    f`a${r1},${r1} 1 0,1 ${0.15 * w0},${0.35 * h0} ` +
+    f`a${r4},${r4} 1 0,1 ${-0.15 * w0},${0.65 * h0} ` +
+    f`a${r2},${r1} 1 0,1 ${-0.25 * w0},${0.15 * w0} ` +
+    f`a${r3},${r3} 1 0,1 ${-0.5 * w0},0 ` +
+    f`a${r1},${r1} 1 0,1 ${-0.25 * w0},${-0.15 * w0} ` +
+    f`a${r1},${r1} 1 0,1 ${-0.1 * w0},${-0.35 * h0} ` +
+    f`a${r4},${r4} 1 0,1 ${0.1 * w0},${-0.65 * h0} H0 V0 Z`
+  return f`<path transform="translate(${x + 0.1 * w0} ${y + 0.225 * w0})" d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+}
+
+/** Cylinder on its side: end caps are half-ellipses, the right one fully drawn. */
+function renderHorizontalCylinder(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const ry = h / 2
+  const rx = ry / (2.5 + h / 50)
+  const body = w - 2 * rx
+  return (
+    f`<path d="M${x + rx},${y + h} a${rx},${ry} 0,0,1 0,${-h} l${body},0 a${rx},${ry} 0,0,1 0,${h} ` +
+    f`l${-body},0 Z" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
+    f`\n<path d="M${x + rx + body},${y} a${rx},${ry} 0,0,0 0,${h}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`
+  )
+}
+
+/** Rectangle with a filled dog-ear triangle in the bottom-right corner (0.2h). */
+function renderTaggedRectangle(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const tag = 0.2 * h
+  return (
+    renderRect(x, y, w, h, fill, stroke, sw) +
+    f`\n<polygon points="${x + w - tag},${y + h} ${x + w},${y + h} ${x + w},${y + h - tag}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+  )
+}
+
+/** Mermaid's small circle: a 14px circle in the node colours. */
+function renderSmallCircle(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  return f`<circle cx="${x + w / 2}" cy="${y + h / 2}" r="7" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 /** State diagram note: a dog-eared box, like the sequence/class notes. */

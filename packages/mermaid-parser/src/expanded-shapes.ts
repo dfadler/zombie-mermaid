@@ -58,9 +58,9 @@ const SHAPE_ALIASES: Record<string, NodeShape> = {
   cylinder: 'cylinder',
   db: 'cylinder',
   database: 'cylinder',
-  'h-cyl': 'cylinder',
-  das: 'cylinder',
-  'horizontal-cylinder': 'cylinder',
+  'h-cyl': 'horizontal-cylinder',
+  das: 'horizontal-cylinder',
+  'horizontal-cylinder': 'horizontal-cylinder',
   'lin-cyl': 'cylinder',
   'lined-cylinder': 'cylinder',
   disk: 'cylinder',
@@ -68,7 +68,11 @@ const SHAPE_ALIASES: Record<string, NodeShape> = {
   // --- Circle ---
   circ: 'circle',
   circle: 'circle',
-  start: 'circle',
+
+  // --- Small solid circle (no label) ---
+  'sm-circ': 'small-circle',
+  'small-circle': 'small-circle',
+  start: 'small-circle',
 
   // --- Double circle ---
   'dbl-circ': 'doublecircle',
@@ -142,9 +146,10 @@ const SHAPE_ALIASES: Record<string, NodeShape> = {
   'div-rect': 'divided-process',
   'divided-rectangle': 'divided-process',
   'div-proc': 'divided-process',
-  'tag-rect': 'rectangle',
-  'tagged-rectangle': 'rectangle',
-  'tag-proc': 'rectangle',
+  'tag-rect': 'tagged-rectangle',
+  'tagged-rectangle': 'tagged-rectangle',
+  'tag-proc': 'tagged-rectangle',
+  'tagged-process': 'tagged-rectangle',
   procs: 'stacked-process',
   processes: 'stacked-process',
   'st-rect': 'stacked-process',
@@ -164,9 +169,12 @@ const SHAPE_ALIASES: Record<string, NodeShape> = {
   'internal-storage': 'window-pane',
 
   // --- Fork / join ---
-  fork: 'fork-join',
-  join: 'fork-join',
-  'long-rect': 'fork-join',
+  fork: 'fork-bar',
+  join: 'fork-bar',
+  'long-rect': 'fork-bar',
+
+  // --- Cloud ---
+  cloud: 'cloud',
 
   // --- Notched pentagon / loop limit ---
   'notch-pent': 'notched-pentagon',

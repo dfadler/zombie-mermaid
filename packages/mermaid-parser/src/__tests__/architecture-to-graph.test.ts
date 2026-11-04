@@ -9,6 +9,12 @@ const lower = (b: string) =>
 const two = 'service a\nservice b\n'
 
 describe('architectureToGraph', () => {
+  it('carries a group icon onto its subgraph', () => {
+    const g = lower('group a(server)[A]\ngroup b[B]')
+    expect(g.subgraphs[0]!.icon).toBe('server')
+    expect(g.subgraphs[1]!.icon).toBeUndefined()
+  })
+
   it('maps icons to shapes and unknown icons to rectangles', () => {
     const g = lower(
       'service a(database)\nservice b(disk)\nservice c(cloud)\nservice d(internet)\nservice e(server)\nservice f("logos:aws")\nservice g',
@@ -45,11 +51,11 @@ describe('architectureToGraph', () => {
     expect(g.subgraphs.map((s) => s.id)).toEqual(['a', 'b'])
   })
 
-  it('draws a junction as an unlabelled filled circle', () => {
+  it('draws a junction as an unlabelled join', () => {
     expect(lower('junction j').nodes.get('j')).toMatchObject({
       id: 'j',
       label: '',
-      shape: 'filled-circle',
+      shape: 'junction',
     })
   })
 

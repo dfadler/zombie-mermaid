@@ -119,6 +119,7 @@ export type NodeShape =
   | 'triangle' // Apex up
   | 'flipped-triangle' // Apex down
   | 'filled-circle' // Solid dot — junction
+  | 'junction' // Architecture junction: a join point; SVG draws nothing, ASCII a dot
   | 'crossed-circle' // Circle with an X through it — summary
   | 'fork-join' // Solid bar
   | 'notched-pentagon' // Rectangle with clipped top corners — loop limit
@@ -130,6 +131,11 @@ export type NodeShape =
   | 'brace-right' // Right brace only
   | 'braces' // Braces on both sides
   | 'bolt' // Lightning bolt — communication link
+  | 'cloud' // Cloud outline
+  | 'horizontal-cylinder' // Cylinder lying on its side — direct access storage
+  | 'tagged-rectangle' // Rectangle with a dog-ear in the bottom-right corner
+  | 'small-circle' // Small circle, no label — start
+  | 'fork-bar' // Flowchart fork/join: an unlabelled bar across the flow, in node colours
   | 'text' // Label with no outline
   | 'anchor' // Invisible point
   // State diagram `note left of X` / `note right of X`
@@ -220,6 +226,8 @@ export interface MermaidSubgraph {
    * titled subgraph, like mermaid.js's `divider` cluster.
    */
   region?: boolean
+  /** Architecture group icon name from `group id(icon)`; SVG draws it in the header. */
+  icon?: string
 }
 
 // ============================================================================
@@ -268,7 +276,7 @@ export interface PositionedEdge {
   labelPosition?: Point
   /** Inline styles resolved from `linkStyle` directives — override theme defaults */
   inlineStyle?: Record<string, string>
-  /** Arrowhead colour: mermaid colours every head with the `linkStyle default` stroke, never an edge's own (#2476) */
+  /** `linkStyle default` stroke: mermaid colours every head with it, falling back to the edge's own stroke (#2476) */
   headColor?: string
   /** Edge id from `A e1@--> B`, emitted as data-id for CSS targeting */
   id?: string
@@ -293,6 +301,8 @@ export interface PositionedGroup {
   inlineStyle?: Record<string, string>
   /** Concurrency region: draw dashed and untitled (see `MermaidSubgraph.region`) */
   region?: boolean
+  /** Architecture group icon name; see `MermaidSubgraph.icon`. */
+  icon?: string
 }
 
 // ============================================================================

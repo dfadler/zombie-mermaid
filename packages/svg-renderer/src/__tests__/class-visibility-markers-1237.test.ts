@@ -21,7 +21,17 @@ describe('class diagram visibility markers (#1237)', () => {
     })
   }
 
-  it('keeps a faint spacer between marker and name', () => {
-    expect(svg).toContain('<tspan fill="var(--_text-faint)"> </tspan>')
+  // Mermaid prints `+String name` with no gap after the marker (#2548)
+  it('adds no spacer when the source has none', () => {
+    expect(svg).not.toContain('<tspan fill="var(--_text-faint)"> </tspan>')
+  })
+
+  it('keeps a faint spacer when the source has one, and prints a return type as " : type"', () => {
+    const spaced = renderMermaidSVG(`classDiagram
+  class A {
+    + run() void
+  }`)
+    expect(spaced).toContain('<tspan fill="var(--_text-faint)"> </tspan>')
+    expect(spaced).toContain('<tspan fill="var(--_text-faint)"> : </tspan>')
   })
 })

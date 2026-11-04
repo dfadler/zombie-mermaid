@@ -135,8 +135,7 @@ function buildErElkGraph(
       headerTextW + ER.boxPadX * 2,
       maxAttrW + ER.boxPadX * 2,
     )
-    const height =
-      ER.headerHeight + Math.max(entity.attributes.length, 1) * ER.rowHeight
+    const height = ER.headerHeight + entity.attributes.length * ER.rowHeight
     entitySizes.set(entity.id, { width, height })
   }
 

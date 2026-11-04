@@ -21,7 +21,7 @@ import type {
 //
 //   group          -> subgraph (nested via `in`)
 //   service        -> node; the icon picks a shape
-//   junction       -> small filled circle, no label
+//   junction       -> `junction` shape: no label, SVG draws nothing (a join)
 //   edge           -> edge; `<`/`>` become arrowheads
 //   `{group}` end  -> the edge attaches to the service's enclosing group
 //
@@ -130,7 +130,7 @@ export function architectureToGraph(
     parentOf.set(s.id, s.parent)
   }
   for (const j of diagram.junctions) {
-    nodes.set(j.id, { id: j.id, label: '', shape: 'filled-circle' })
+    nodes.set(j.id, { id: j.id, label: '', shape: 'junction' })
     parentOf.set(j.id, j.parent)
   }
 
@@ -142,6 +142,7 @@ export function architectureToGraph(
       label: g.title,
       nodeIds: [],
       children: [],
+      ...(g.icon ? { icon: g.icon } : {}),
     })
   }
   const roots: MermaidSubgraph[] = []

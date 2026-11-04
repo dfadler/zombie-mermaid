@@ -202,6 +202,7 @@ export function layoutSimple(
       node.shape,
       opts.fontSizes.nodeLabel,
       node.icon,
+      graph.direction,
     )
     nodeSize.set(id, abstractSize(s.width, s.height))
   }
@@ -339,6 +340,7 @@ export function layoutSimple(
           children,
           ...groupStyle(id, graph),
           ...(sg.region ? { region: true } : {}),
+          ...(sg.icon ? { icon: sg.icon } : {}),
         })
       }
     }

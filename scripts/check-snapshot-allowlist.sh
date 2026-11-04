@@ -110,12 +110,21 @@ ALLOWLIST=(
   # the files under src/__tests__/__snapshots__/ are reviewed via `git diff`
   # (`vitest -u`).
   "src/__tests__/architecture-icon-tiles-2518.test.ts"
+  # SVG + ASCII goldens for the architecture junction join and group header
+  # icons (#2563, #2564); reviewed via `git diff` (`vitest -u`).
+  "src/__tests__/architecture-junction-group-icon-2563-2564.test.ts"
+  # SVG + ASCII goldens for flowchart cloud/h-cyl/tag-rect/sm-circ/fork shapes
+  # (#2552); reviewed via the .snap diff.
+  "src/__tests__/flowchart-shapes-2552.test.ts"
   # ASCII + SVG goldens for opposing edges at a diamond vertex or slanted
   # side (#2492): the repo rule is an SVG and an ASCII snapshot per case.
   # Not a component test; the files under
   # packages/ascii-renderer/src/__tests__/ are reviewed via `git diff`
   # (`vitest -u`).
   "packages/ascii-renderer/src/__tests__/ascii-opposing-edges-diamond-2492.test.ts"
+  # ASCII + SVG goldens for a compact LR labelled fan-out (#2561), same rule
+  # and review path as above.
+  "packages/ascii-renderer/src/__tests__/ascii-lr-compact-labeled-fanout-2561.test.ts"
   # ASCII + SVG goldens for a block wall that encloses its notes (#2514),
   # same rule and review path as above.
   "packages/ascii-renderer/src/__tests__/ascii-sequence-block-notes-2514.test.ts"

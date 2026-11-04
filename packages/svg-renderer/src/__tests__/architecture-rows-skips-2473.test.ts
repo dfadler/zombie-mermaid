@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { MermaidGraph } from '@zombie-mermaid/core'
-import { alignArchitectureRows } from '../layout-engine/architecture-rows.ts'
+import {
+  alignAcrossFlowMembers,
+  alignArchitectureRows,
+} from '../layout-engine/architecture-rows.ts'
 
 // Skip conditions of the architecture row pass, on hand-built boxes (#2473).
 const box = (id: string, x: number, y: number) => ({
@@ -42,6 +45,30 @@ const run = (
   const moved = alignArchitectureRows(graph, nodes, [], groups)
   return { moved, b: nodes[1]! }
 }
+
+describe('across-flow stacking skips (#2557)', () => {
+  const stack = (blocker: ReturnType<typeof box>[]) => {
+    const graph = {
+      direction: 'LR',
+      nodes: new Map(),
+      edges: [{ source: 'a', target: 'm', acrossFlow: true }],
+      subgraphs: [{ id: 'g', nodeIds: ['m'], children: [] }],
+    } as unknown as MermaidGraph
+    const nodes = [box('a', 0, 0), box('m', 300, 200), ...blocker]
+    const moved = alignAcrossFlowMembers(graph, nodes, [grp('g', 290, 190)])
+    return { moved, m: nodes[1]! }
+  }
+
+  it('moves the member when the grown group has room', () => {
+    expect(stack([]).m.x).toBe(0)
+  })
+
+  it('leaves the member when even the tighter margin hits a neighbour', () => {
+    const r = stack([box('c', 100, 200)])
+    expect(r.moved).toBe(false)
+    expect(r.m.x).toBe(300)
+  })
+})
 
 describe('architecture row alignment skips', () => {
   it('moves when nothing is in the way', () => {

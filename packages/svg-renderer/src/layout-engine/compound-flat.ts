@@ -443,6 +443,7 @@ function buildGroups(
       children,
       ...groupStyle(sg.id, graph),
       ...(sg.region ? { region: true } : {}),
+      ...(sg.icon ? { icon: sg.icon } : {}),
     }
   }
   return subgraphs.map(build)
