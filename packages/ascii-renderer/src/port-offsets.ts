@@ -363,6 +363,7 @@ function spreadRightFan(
   graph: AsciiGraph,
   members: readonly FanOutMember[],
   out: Map<AsciiEdge, number>,
+  taken: readonly number[],
 ): boolean {
   if (
     members.some((m) => m.run.side !== 'right') ||
@@ -379,7 +380,10 @@ function spreadRightFan(
   if (
     new Set(rows).size !== rows.length ||
     !geo ||
-    !rows.every((o) => attachesAt(members[0]!.run, geo.centre + o, geo))
+    !rows.every((o) => attachesAt(members[0]!.run, geo.centre + o, geo)) ||
+    // A back edge into the same face holds its own row: leave the group to
+    // `staggerFanOuts`, which keeps clear of `taken`.
+    rows.some((o) => taken.includes(o))
   ) {
     return false
   }
@@ -704,7 +708,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     const taken = [...slots.keys()]
       .filter((k) => k !== key && portOf(k) === port)
       .map(slotOffset)
-    if (!spreadRightFan(graph, members, staggered)) {
+    if (!spreadRightFan(graph, members, staggered, taken)) {
       staggerFanOuts(graph, members, slotOffset(key), taken, staggered)
     }
   }

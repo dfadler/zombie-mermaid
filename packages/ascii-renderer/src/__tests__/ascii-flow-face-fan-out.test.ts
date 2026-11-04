@@ -96,6 +96,19 @@ describe('flow-face fan-out (LR)', () => {
     expect(out).toMatch(/━►/)
   })
 
+  it('keeps same-side targets of different line styles off one shared bar column', () => {
+    const out = render(`graph LR
+  A --> B
+  A -.-> C
+  A ==> D
+  A --> E`).join('\n')
+    // Each style keeps its own glyphs on its own run into the target.
+    expect(out).toMatch(/┄+►│ C/)
+    expect(out).toMatch(/━+►│ D/)
+    expect(out).toMatch(/─+►│ E/)
+    expect(out).not.toMatch(/┄{2,}┴/)
+  })
+
   it('leaves a source with a self-loop or a reciprocal edge alone', () => {
     const out = render(`graph LR
   A --> A

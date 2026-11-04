@@ -1632,6 +1632,24 @@ function flowFanOut(
   ) {
     return false
   }
+  // Two targets on one side with different line styles would share the bar
+  // column, and one edge would show the other's glyphs on the shared rows.
+  const sides = new Map<number, Set<string>>()
+  for (const o of out) {
+    const side = Math.sign(requireGridCoord(o.to).y - a.y)
+    sides.set(side, (sides.get(side) ?? new Set()).add(o.style))
+  }
+  if (
+    lr &&
+    [...sides.values()].some((styles) => styles.size > 1) &&
+    out.some(
+      (o) =>
+        o !== edge &&
+        Math.sign(requireGridCoord(o.to).y - a.y) === Math.sign(b.y - a.y),
+    )
+  ) {
+    return false
+  }
   return new Set(out.map((o) => o.to)).size > 1
 }
 
