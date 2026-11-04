@@ -17,12 +17,12 @@ import {
   f,
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
+import { erCells, erColumns } from './layout.ts'
 import {
   buildSvgStyleBlock,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
-  estimateTextWidth,
   TEXT_BASELINE_SHIFT,
 } from '../styles.ts'
 import type { FontSizes } from '../styles.ts'
@@ -53,9 +53,10 @@ const ER_EDGE_LABEL_FG_PERCENT = 70
 const ER_FONT = {
   attrSize: 11,
   attrWeight: 400,
-  keySize: 9,
-  keyWeight: 600,
 } as const
+
+/** Left/right padding inside one attribute cell (matches layout.ts). */
+const CELL_PAD_X = 10
 
 /**
  * Render a positioned ER diagram as an SVG string.
@@ -207,23 +208,51 @@ function renderEntityBox(
       ),
   )
 
-  // Divider (header-only box when there are no attributes, like mermaid, #2547)
+  // Attribute table, as mermaid draws it: a divider under the header, a line
+  // between rows and between columns, every other row tinted. An entity
+  // without attributes is a bare header box (#2547).
   const attrTop = y + headerHeight
   if (attributes.length > 0) {
-    parts.push(
-      f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
-        f`stroke="${stroke}" stroke-width="${innerWidth}" />`,
-    )
-  }
+    const bottom = y + height
+    const cols = erColumns(entity)
+    // Spread any width beyond the table's natural width evenly over the columns.
+    const extra =
+      (width - cols.reduce((sum, c) => sum + c.width, 0)) / cols.length
+    const xs = [x]
+    for (const c of cols) xs.push(xs[xs.length - 1]! + c.width + extra)
 
-  // Attribute rows
-  for (let i = 0; i < attributes.length; i++) {
-    const attr = attributes[i]!
-    const rowY = attrTop + i * rowHeight + rowHeight / 2
-    parts.push(
-      '  ' +
-        renderAttribute(attr, x, rowY, width, textColor).replace(/\n/g, '\n  '),
-    )
+    for (let i = 1; i < attributes.length; i += 2) {
+      parts.push(
+        f`  <rect x="${x}" y="${attrTop + i * rowHeight}" width="${width}" height="${rowHeight}" ` +
+          f`fill="var(--_key-badge)" />`,
+      )
+    }
+    const line = (x1: number, y1: number, x2: number, y2: number) =>
+      f`  <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${innerWidth}" />`
+    parts.push(line(x, attrTop, x + width, attrTop))
+    for (let i = 1; i < attributes.length; i++) {
+      const ry = attrTop + i * rowHeight
+      parts.push(line(x, ry, x + width, ry))
+    }
+    for (let c = 1; c < cols.length; c++) {
+      parts.push(line(xs[c]!, attrTop, xs[c]!, bottom))
+    }
+    for (let i = 0; i < attributes.length; i++) {
+      const rowY = attrTop + i * rowHeight + rowHeight / 2
+      const cells = erCells(attributes[i]!)
+      parts.push(
+        '  ' +
+          renderAttribute(
+            attributes[i]!,
+            cols.map((c, ci) => ({
+              x: xs[ci]! + CELL_PAD_X,
+              text: cells[c.cell]!,
+            })),
+            rowY,
+            textColor,
+          ).replace(/\n/g, '\n  '),
+      )
+    }
   }
 
   parts.push('</g>')
@@ -231,67 +260,32 @@ function renderEntityBox(
 }
 
 /**
- * Render a single attribute row with monospace syntax highlighting.
- * Layout: [PK badge]  type  name  (left-aligned in mono, name right-aligned)
- * Uses <tspan> elements for per-part coloring, matching the class diagram style.
- *
- * Key badge uses var(--_key-badge) for background tint.
- * Comments are shown as tooltips via SVG <title> element.
+ * Render one attribute row: a left-aligned monospace text per cell
+ * (type, name, keys, comment). The comment is also a tooltip, so a long one
+ * stays readable.
  */
 function renderAttribute(
   attr: ErAttribute,
-  boxX: number,
+  cells: Array<{ x: number; text: string }>,
   y: number,
-  boxWidth: number,
   textColor?: string,
 ): string {
   const parts: string[] = []
-
-  // Wrap in a group if there's a comment (for tooltip support)
-  const hasComment = attr.comment && attr.comment.length > 0
   if (attr.comment && attr.comment.length > 0) {
-    // Replace <br> with newlines for tooltip display
     const tooltipText = attr.comment.replace(/<br\s*\/?>/gi, '\n')
     parts.push(f`<g><title>${escapeXml(tooltipText)}</title>`)
   }
-
-  // Key badges on the left (keep proportional font — they're visual tags, not code)
-  let keyWidth = 0
-  if (attr.keys.length > 0) {
-    const keyText = attr.keys.join(',')
-    keyWidth =
-      estimateTextWidth(keyText, ER_FONT.keySize, ER_FONT.keyWeight) + 8
+  cells.forEach((cell, i) => {
+    if (!cell.text) return
+    // Name stays the strongest text, type and keys sit back, as before.
+    const tone = i === 1 ? '--_text-sec' : '--_text-muted'
     parts.push(
-      f`<rect x="${boxX + 6}" y="${y - 7}" width="${keyWidth}" height="14" rx="2" ry="2" ` +
-        `fill="var(--_key-badge)" />`,
+      f`<text x="${cell.x}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
+        f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
+        f`<tspan fill="${textColor ?? `var(${tone})`}">${escapeXml(cell.text)}</tspan></text>`,
     )
-    parts.push(
-      f`<text x="${boxX + 6 + keyWidth / 2}" y="${y}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
-        f`font-size="${ER_FONT.keySize}" font-weight="${ER_FONT.keyWeight}" fill="${textColor ?? 'var(--_text-sec)'}">${attr.keys.join(',')}</text>`,
-    )
-  }
-
-  // Type (left-aligned after keys, monospace with syntax highlighting)
-  const typeX = boxX + 8 + (keyWidth > 0 ? keyWidth + 6 : 0)
-  parts.push(
-    f`<text x="${typeX}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
-      f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
-      f`<tspan fill="${textColor ?? 'var(--_text-muted)'}">${escapeXml(attr.type)}</tspan></text>`,
-  )
-
-  // Name (right-aligned, monospace with syntax highlighting)
-  const nameX = boxX + boxWidth - 8
-  parts.push(
-    f`<text x="${nameX}" y="${y}" class="mono" text-anchor="end" dy="${TEXT_BASELINE_SHIFT}" ` +
-      f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
-      f`<tspan fill="${textColor ?? 'var(--_text-sec)'}">${escapeXml(attr.name)}</tspan></text>`,
-  )
-
-  // Close the group if we opened one
-  if (hasComment) {
-    parts.push('</g>')
-  }
-
+  })
+  if (attr.comment && attr.comment.length > 0) parts.push('</g>')
   return parts.join('\n')
 }
 

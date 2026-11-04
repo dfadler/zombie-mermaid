@@ -10,6 +10,7 @@ import type { ElkNode, ElkExtendedEdge } from '@zombie-mermaid/core'
 import type {
   ErDiagram,
   ErEntity,
+  ErAttribute,
   PositionedErDiagram,
   PositionedErEntity,
   PositionedErRelationship,
@@ -36,7 +37,11 @@ import {
 const ER = {
   padding: 40,
   boxPadX: 14,
+  /** Left/right padding inside one attribute cell. */
+  cellPadX: 10,
   headerHeight: 34,
+  /** An attribute-less entity is a taller box with a centred name, as in mermaid. */
+  bareHeight: 68,
   rowHeight: 22,
   minWidth: 140,
   attrFontSize: 11,
@@ -95,6 +100,35 @@ function selfLoops(
   return loops
 }
 
+/**
+ * Each attribute column (index into `erCells` and its natural width), as mermaid lays an entity out as a
+ * table: type | name | keys | comment. The keys and comment columns exist only
+ * when some attribute has one. Shared with the renderer, which spreads any
+ * extra box width over these.
+ */
+export function erColumns(entity: {
+  attributes: ReadonlyArray<ErAttribute>
+}): Array<{ cell: number; width: number }> {
+  const rows = entity.attributes.map(erCells)
+  return [0, 1, 2, 3]
+    .filter((i) => i < 2 || rows.some((r) => r[i]!.length > 0))
+    .map((cell) => ({
+      cell,
+      width:
+        Math.max(...rows.map((r) => attrTextWidth(r[cell]!))) + ER.cellPadX * 2,
+    }))
+}
+
+/** One attribute's cell texts: type, name, keys, comment (a `<br>` is a space). */
+export function erCells(a: ErAttribute): [string, string, string, string] {
+  return [
+    a.type,
+    a.name,
+    a.keys.join(','),
+    (a.comment ?? '').replace(/<br\s*\/?>|\s*\n\s*/gi, ' '),
+  ]
+}
+
 type EntitySizeMap = Map<string, { width: number; height: number }>
 
 /** Build ELK graph and size map from an ER diagram. */
@@ -124,18 +158,13 @@ function buildErElkGraph(
       fontSizes.nodeLabel,
       FONT_WEIGHTS.nodeLabel,
     )
-    let maxAttrW = 0
-    for (const attr of entity.attributes) {
-      const attrText = `${attr.type}  ${attr.name}${attr.keys.length > 0 ? '  ' + attr.keys.join(',') : ''}`
-      const w = attrTextWidth(attrText)
-      if (w > maxAttrW) maxAttrW = w
-    }
-    const width = Math.max(
-      ER.minWidth,
-      headerTextW + ER.boxPadX * 2,
-      maxAttrW + ER.boxPadX * 2,
-    )
-    const height = ER.headerHeight + entity.attributes.length * ER.rowHeight
+    const bare = entity.attributes.length === 0
+    const tableW = erColumns(entity).reduce((sum, c) => sum + c.width, 0)
+    const headerW = headerTextW + ER.boxPadX * 2
+    const width = bare ? headerW : Math.max(ER.minWidth, headerW, tableW)
+    const height = bare
+      ? ER.bareHeight
+      : ER.headerHeight + entity.attributes.length * ER.rowHeight
     entitySizes.set(entity.id, { width, height })
   }
 
@@ -230,7 +259,8 @@ function extractErLayout(
         y: child.y ?? 0,
         width: child.width ?? size.width,
         height: child.height ?? size.height,
-        headerHeight: ER.headerHeight,
+        headerHeight:
+          entity.attributes.length === 0 ? size.height : ER.headerHeight,
         rowHeight: ER.rowHeight,
         // Same cascade flowcharts and class diagrams use: classDef default →
         // assigned class → `style`. Invalid colours are dropped there.

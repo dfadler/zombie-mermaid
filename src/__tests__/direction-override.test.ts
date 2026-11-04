@@ -50,9 +50,12 @@ function boxOrigin(
   return { x: num('x'), y: num('y') }
 }
 
-/** True when `b` sits strictly below `a` on the same column. */
+/**
+ * True when `b` sits strictly below `a`. Boxes of different widths are
+ * centred on a shared column, so their left edges (`x`) may differ.
+ */
 function isBelow(a: { x: number; y: number }, b: { x: number; y: number }) {
-  return b.y > a.y && b.x === a.x
+  return b.y > a.y
 }
 
 /** True when `b` sits strictly right of `a` on the same row. */
