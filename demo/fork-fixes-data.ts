@@ -3,7 +3,8 @@
 //
 // Each entry names a real bug this fork fixed, the commit that fixed it, and a
 // diagram that demonstrates it. The generator renders every entry TWICE: once
-// against the tree at `fixCommit^` (the code immediately before the fix) and
+// against upstream lukilabs/beautiful-mermaid (pinned at the fork point, see
+// fork-fixes-before.ts; `fixCommit` is only the fork's fix, not the "before") and
 // once against the working tree. Nothing here is hand-drawn — a "before" that
 // stopped reproducing would show up as an identical pair, which the generator
 // fails on rather than quietly publishing.

@@ -1,6 +1,6 @@
 /**
  * The "before" half of fork-fixes.html (#1844): renders each fix's source with
- * the renderer as it was at `fixCommit^`.
+ * upstream beautiful-mermaid (`UPSTREAM_COMMIT`).
  *
  * Each commit's tree is `git archive`d, then ALL trees are bundled by one Vite
  * (rolldown) SSR build and imported in this process. That replaces the old
@@ -24,6 +24,14 @@ import { promisify } from 'node:util'
 import { build, type Plugin } from 'vite'
 
 const exec = promisify(execFile)
+
+/**
+ * The "before" is always upstream `lukilabs/beautiful-mermaid`, pinned at the
+ * point this fork diverged (its `main` head when pinned, 2026-05-06), never the
+ * fork's own `fixCommit^`: the page compares against upstream, and a fork
+ * parent already carries earlier fork fixes (and fork-only features).
+ */
+export const UPSTREAM_COMMIT = '2ac8bbbb060ca0a65a6a21f3200bd99b1587b488'
 
 export interface BeforeFix {
   id: string
@@ -66,64 +74,26 @@ export function renderWith(
 }
 
 /**
- * Check that `commit`'s first parent is present. The page can only be built
- * from a repository with full history; a shallow clone makes `git archive`
- * fail with a bare "not a valid object name". Both workflows that build the
- * site set `fetch-depth: 0`; this turns the failure into an instruction.
- *
- * Verifies `commit^1`, NOT `commit`: `^{commit}` is a peel operator returning
- * the object itself, so checking `commit^{commit}` proves nothing about the
- * parent, and the parent is what gets archived.
+ * Extract upstream's `src/` at `commit` into `dir`. The page can only be built
+ * from a repository with full history (the pinned commit is an ancestor of
+ * HEAD); a shallow clone makes `git archive` fail with a bare "not a valid
+ * object name". Both workflows that build the site set `fetch-depth: 0`.
  */
-async function requireCommit(commit: string): Promise<void> {
+async function archiveUpstream(commit: string, dir: string) {
   try {
-    await exec('git', ['rev-parse', '--verify', `${commit}^1^{commit}`])
+    await exec('git', ['rev-parse', '--verify', `${commit}^{commit}`])
   } catch {
-    const shallow = await exec('git', ['rev-parse', '--is-shallow-repository'])
-      .then((r) => r.stdout.trim() === 'true')
-      .catch(() => false)
     throw new Error(
-      `Commit ${commit} or its parent is not in this repository.\n` +
-        (shallow
-          ? 'This is a shallow clone. The fork-fixes page renders each "before" from a ' +
-            'historical commit, so it needs full history: run ' +
-            '`git fetch --unshallow`, or set `fetch-depth: 0` on the checkout step.'
-          : 'Check the fixCommit value in demo/fork-fixes-data.ts.'),
+      `Upstream commit ${commit} is not in this repository. The fork-fixes page ` +
+        'renders each "before" from it, so it needs full history: run ' +
+        '`git fetch --unshallow`, or set `fetch-depth: 0` on the checkout step.',
     )
   }
-}
-
-/**
- * Extract the tree at `commit^` into `dir`: `src/`, plus `packages/` and
- * `tsconfig.json` when the commit postdates the monorepo split (#620) (a fix
- * inside a `@zombie-mermaid/*` package needs its own archived tree).
- */
-async function archiveCommitBefore(commit: string, dir: string) {
-  await requireCommit(commit)
   await mkdir(dir, { recursive: true })
-  const hasPackages = await exec('git', [
-    'cat-file',
-    '-e',
-    `${commit}^:packages`,
-  ])
-    .then(() => true)
-    .catch(() => false)
-  const paths = hasPackages ? 'src packages tsconfig.json' : 'src'
-  // `git archive` writes a clean tree with no working-copy interference.
   await exec(
     'sh',
-    ['-c', `git archive ${commit}^ ${paths} | tar -x -C ${JSON.stringify(dir)}`],
+    ['-c', `git archive ${commit} src | tar -x -C ${JSON.stringify(dir)}`],
     { maxBuffer: 64 * 1024 * 1024 },
-  )
-}
-
-/** Run `fn` over `items`, at most `limit` at a time. */
-async function pool<T>(items: T[], limit: number, fn: (t: T) => Promise<void>) {
-  const queue = [...items]
-  await Promise.all(
-    Array.from({ length: limit }, async () => {
-      for (let item = queue.shift(); item; item = queue.shift()) await fn(item)
-    }),
   )
 }
 
@@ -168,8 +138,8 @@ export async function renderBeforeAll(
   const out = join(workDir, 'out')
   try {
     await rm(workDir, { recursive: true, force: true })
-    const commits = [...new Set(fixes.map((f) => f.fixCommit))]
-    await pool(commits, 8, (c) => archiveCommitBefore(c, join(trees, c)))
+    const commits = [UPSTREAM_COMMIT]
+    await archiveUpstream(UPSTREAM_COMMIT, join(trees, UPSTREAM_COMMIT))
 
     await build({
       configFile: false,
@@ -195,7 +165,7 @@ export async function renderBeforeAll(
     const results = new Map<string, BeforeResult>()
     for (const fix of fixes) {
       const mod = (await import(
-        pathToFileURL(join(out, `${fix.fixCommit}.mjs`)).href
+        pathToFileURL(join(out, `${UPSTREAM_COMMIT}.mjs`)).href
       )) as RendererModule
       try {
         results.set(fix.id, { output: renderWith(mod, fix.source, fix.render, fix.options) })
