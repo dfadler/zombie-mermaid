@@ -20,5 +20,7 @@ graders:
     arm: both
   - name: mentions_attestation
     type: regex
-    pattern: '\b(?:attest\w*|sigstore|(?<!un)signed)\b'
+    target: last_message
+    pattern: '\b(?:attest\w*|sigstore|(?<!un)signed|cryptographic\w*|verif\w*)\b|(?:links?|ties|proves?|records?)[^\n]{0,60}(?:build|source|repo|workflow)'
     flags: i
+    match: contains

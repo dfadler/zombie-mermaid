@@ -34,7 +34,7 @@ graders:
   - name: names_trailer_check
     type: regex
     target: last_message
-    pattern: 'trailer|Co-Authored-By'
+    pattern: 'trailer[^\n]{0,80}(?:count|check|git log)|git log[^\n]{0,120}Co-Authored-By|Co-Authored-By[^\n]{0,80}(?:count|check)'
     flags: i
     match: contains
   - name: report_only

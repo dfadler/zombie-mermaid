@@ -20,5 +20,10 @@ graders:
   - name: fixes_typo
     type: regex
     target: last_message
-    pattern: '\bthere is no token|uses trusted publishing'
+    pattern: '\buses trusted publishing'
+    flags: i
+  - name: fixes_ther
+    type: regex
+    target: last_message
+    pattern: '\bthere is no token'
     flags: i
