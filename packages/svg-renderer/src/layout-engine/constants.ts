@@ -13,7 +13,7 @@ export const DEFAULTS = {
   padding: 40,
   nodeSpacing: 28,
   layerSpacing: 48,
-  mergeEdges: true,
+  mergeEdges: false,
   thoroughness: 3,
   fontSizes: FONT_SIZES,
 } as const
