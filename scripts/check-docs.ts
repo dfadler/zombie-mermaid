@@ -234,11 +234,7 @@ export function decisionStatus(fs: Fs = realFs): string[] {
 // generated fork-fixes page are the source of truth.
 export function forkFixesCount(fs: Fs = realFs): string[] {
   const m = /\(\d+ fixes\)/.exec(fs.read('README.md'))
-  return m
-    ? [
-        `README.md: hard-codes "${m[0]}"; drop the count (#2590)`,
-      ]
-    : []
+  return m ? [`README.md: hard-codes "${m[0]}"; drop the count (#2590)`] : []
 }
 
 export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
