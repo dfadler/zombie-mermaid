@@ -1049,4 +1049,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the Data Tier group is shifted up, `Primary DB` sits above the main row and `Replica` beside it, with service labels on the group border. After: `Primary DB` is level with the gateway row, the `fan:B` edge drops straight down into `Replica` beneath the junction, and every label stays inside its group.',
   },
+  {
+    id: 'sequence-multiline-label-spacing',
+    title: 'Multi-line sequence labels crowded the frame border and the arrow',
+    symptom:
+      'A `<br/>` message label ran its second line onto the arrow, and a `<br/>` frame label put its second line right above the first message label.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  loop first line<br/>second line\n    A->>B: message line one<br/>message line two\n  end\n  A->>B: after',
+    fixCommit: '485fdd40',
+    pr: 2599,
+    render: 'svg',
+    lookFor:
+      'Before: `message line two` sits on the arrow and `second line` touches the message label. After: the arrow drops below both message lines and the first message clears the frame label, as in mermaid 12.3.0.',
+  },
 ]
