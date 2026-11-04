@@ -557,9 +557,9 @@ export const allForkFixes: ForkFix[] = [
     fixCommit: '5cc12f3f',
     pr: 1163,
     render: 'svg',
-    excerpt: { from: '<polyline', to: '/>' },
+    excerpt: { from: 'class="edge"', to: '/>' },
     lookFor:
-      'The picture is the same, so this shows the first edge’s markup. Before: `points` carries long decimal tails. After: at most 2 decimal places.',
+      'The picture is the same, so this shows the first edge’s markup. Before: the edge’s `points` carries long decimal tails. After: its path data `d` has at most 2 decimal places.',
     upstreamIssues: [77],
   },
   {
