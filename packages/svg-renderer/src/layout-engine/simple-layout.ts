@@ -202,6 +202,7 @@ export function layoutSimple(
       node.shape,
       opts.fontSizes.nodeLabel,
       node.icon,
+      graph.direction,
     )
     nodeSize.set(id, abstractSize(s.width, s.height))
   }

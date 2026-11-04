@@ -236,6 +236,7 @@ export function estimateNodeSize(
   shape: string,
   nodeLabelFontSize: number,
   icon?: string,
+  direction?: string,
 ): { width: number; height: number } {
   // An architecture icon tile is Mermaid's fixed 80px square; its label hangs below.
   if (icon !== undefined) return { width: TILE, height: TILE }
@@ -283,6 +284,23 @@ export function estimateNodeSize(
     height += 14
   }
 
+  // Mermaid's cloud path spans 1.25w by h + 0.48w, for a label box w by h
+  // (w kept at least 2.5h so the bumps stay inside that span).
+  if (shape === 'cloud') {
+    const w = Math.max(width, height * 2.5)
+    return { width: w * 1.25, height: height + w * 0.48 }
+  }
+
+  // Mermaid's small circle is a fixed 14px dot.
+  if (shape === 'small-circle') return { width: 14, height: 14 }
+
+  // A fork/join bar lies across the flow: 70x10, upright when flowing LR/RL.
+  if (shape === 'fork-join' && label === '') {
+    return direction === 'LR' || direction === 'RL'
+      ? { width: 10, height: 70 }
+      : { width: 70, height: 10 }
+  }
+
   if (shape === 'state-start' || shape === 'state-end') {
     return { width: 28, height: 28 }
   }
@@ -293,7 +311,6 @@ export function estimateNodeSize(
   // Unlabeled state pseudo-states (`<<choice>>`, `<<fork>>`/`<<join>>`), at
   // mermaid.js's sizes: a 28px diamond and a 70x10 bar.
   if (label === '' && shape === 'diamond') return { width: 28, height: 28 }
-  if (label === '' && shape === 'fork-join') return { width: 70, height: 10 }
 
   width = Math.max(width, 60)
   height = Math.max(height, 36)
@@ -606,6 +623,7 @@ export function mermaidToElk(
         node.shape,
         opts.fontSizes.nodeLabel,
         node.icon,
+        graph.direction,
       )
       const fixedWidth = hints?.fixedWidths?.get(id)
       if (fixedWidth !== undefined) size.width = fixedWidth
@@ -837,6 +855,7 @@ function subgraphToElk(
         node.shape,
         opts.fontSizes.nodeLabel,
         node.icon,
+        graph.direction,
       )
       const leaf = buildElkLeafNode(nodeId, size, node.label)
       if (node.gridLayer !== undefined) {

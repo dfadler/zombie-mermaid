@@ -268,6 +268,25 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     ascii: { tl: '/', tr: '\\', bl: '\\', br: '/' },
   },
 
+  // SVG-only outlines (#2552): the converter draws the horizontal cylinder and
+  // small circle as the shapes they map to; cloud and tagged rectangle are boxes.
+  cloud: {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'tagged-rectangle': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'horizontal-cylinder': {
+    unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
+    ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
+  },
+  'small-circle': {
+    unicode: { tl: '●', tr: '●', bl: '●', br: '●' },
+    ascii: { tl: '*', tr: '*', bl: '*', br: '*' },
+  },
+
   // State diagram note — square corners; every state beside it is rounded
   note: {
     unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
