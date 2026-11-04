@@ -1076,6 +1076,19 @@ export const forkFixes: ForkFix[] = [
       'Before: a footer row of Alice and Bob boxes and unnumbered arrows. After: no footer row and the messages numbered 1 and 2, as in mermaid 12.3.0.',
   },
   {
+    id: 'sequence-note-over-span',
+    title: 'A sequence note over two participants shrank to its text',
+    symptom:
+      '`Note over A,B` was sized to its text and centred between the two lifelines, so a short note touched neither; mermaid spans it across both.',
+    source:
+      'sequenceDiagram\n  participant Alice\n  participant Bob\n  Alice->>Bob: hello there friend\n  Note over Alice,Bob: hi',
+    fixCommit: '9791be18',
+    pr: 2598,
+    render: 'svg',
+    lookFor:
+      'Before: a small note floating between the lifelines. After: the note spans from just left of Alice to just right of Bob, as in mermaid 12.3.0.',
+  },
+  {
     id: 'sequence-multiline-label-spacing',
     title: 'Multi-line sequence labels crowded the frame border and the arrow',
     symptom:
