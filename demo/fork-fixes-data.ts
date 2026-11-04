@@ -931,4 +931,82 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a compact staircase, S1/S4 in the first column and S2/S3 in the second, as mermaid draws it.',
   },
+  {
+    id: 'architecture-group-row-level',
+    title: 'Architecture groups rode off the row of the node they link to',
+    symptom:
+      'A group whose member links to a node outside it was centred on that node as a whole, so `Primary DB` sat 54px above the main row, service labels hung on the group border, and a `T`/`B` edge into a group ran beside the group instead of under its other end.',
+    source:
+      'architecture-beta\n  group cloud(cloud)[Cloud]\n  group api(server)[API Tier] in cloud\n  group data(database)[Data Tier] in cloud\n  service gw(internet)[Gateway] in api\n  service app(server)[App] in api\n  service db(database)[Primary DB] in data\n  service replica(disk)[Replica] in data\n  junction fan in cloud\n  service client(internet)[Client]\n  client:R --> L:gw\n  gw:R -- L:app\n  app:R -- L:fan\n  fan:R --> L:db\n  fan:B --> T:replica',
+    fixCommit: '08ef003d',
+    pr: 2538,
+    render: 'svg',
+    lookFor:
+      'Before: `Primary DB` floats above the row of `fan`, and `Replica` sits beside it. After: `Primary DB` is level with the junction, `Replica` sits under it, and every label stays inside its group.',
+  },
+  {
+    id: 'class-annotation-guillemets',
+    title: 'Class annotations were drawn as `<<interface>>`',
+    symptom:
+      'SVG class diagrams printed an annotation with two angle brackets on each side; mermaid.js draws guillemets.',
+    source:
+      'classDiagram\n  class Serializable {\n    <<interface>>\n    +serialize() String\n    +deserialize(data) void\n  }',
+    fixCommit: '5cab1ddd',
+    pr: 2539,
+    render: 'svg',
+    lookFor:
+      'Before: `<<interface>>` above the class name. After: `«interface»`, as in mermaid 12.2.0.',
+  },
+  {
+    id: 'sequence-critical-option',
+    title: 'An option inside a critical block vanished',
+    symptom:
+      'Each `option` in a `critical` block was dropped silently, along with its `[label]` and the divider line.',
+    source:
+      'sequenceDiagram\n  participant A as App\n  participant B as Broker\n  critical Establish connection\n    A->>B: connect\n  option Network timeout\n    B->>A: retry\n  option Credentials denied\n    B->>A: abort\n  end',
+    fixCommit: '34bc03a7',
+    pr: 2540,
+    render: 'svg',
+    lookFor:
+      'Before: one undivided block, the retry and abort messages run on. After: a dashed divider with its `[label]` for each option, as in mermaid 12.2.0.',
+  },
+  {
+    id: 'flowchart-circle-cross-terminators',
+    title: 'Flowchart `--o` and `--x` edges ended in a plain arrowhead',
+    symptom:
+      'SVG flowcharts drew an arrowhead for `A --o B`, `A --x B`, `o--` and `x--` edges; the marker the parser recorded was dropped by the layout.',
+    source:
+      'flowchart LR\n  A --o B\n  C --x D\n  E o--o F\n  G x--x H\n  I --> J',
+    fixCommit: '360d4f0b',
+    pr: 2541,
+    render: 'svg',
+    lookFor:
+      'Before: every edge ends in an arrowhead. After: a filled circle for `o`, a cross for `x`, and the arrowhead only on `I --> J`, as in mermaid 12.2.0.',
+  },
+  {
+    id: 'ascii-lr-label-keeps-arrowhead',
+    title: 'ASCII LR edge label overwrote the arrowhead beside a sibling edge',
+    symptom:
+      'When a label did not fit on its run next to a sibling edge stem, it slid onto the cell beside the target box and printed `┬e1│ S2 │`, with no arrowhead.',
+    source:
+      'flowchart LR\n  S0 --> |e0| S1\n  S1 --> |e1| S2\n  S1 --> S3\n  S0 --> S4',
+    fixCommit: '3e1e9f8e',
+    pr: 2542,
+    render: 'ascii',
+    lookFor:
+      'Before: the label sits against the box and the arrowhead is gone. After: the label sits on its edge and the arrowhead survives.',
+  },
+  {
+    id: 'xychart-numeric-x-range',
+    title: 'A numeric xychart x-axis range was laid out as categories',
+    symptom:
+      '`x-axis 0 --> 100` spaced the points evenly like categories, so tick labels and bars landed where mermaid.js does not put them.',
+    source:
+      'xychart-beta\n  title "Sales"\n  x-axis 0 --> 100\n  y-axis "Revenue" 0 --> 100\n  bar [10, 40, 25, 70]\n  line [10, 40, 25, 70]',
+    fixCommit: 'ed96f8d0',
+    pr: 2543,
+    render: 'svg',
+    lookFor:
+      'Before: four evenly spaced category slots. After: a linear axis with a label at every tick of the range and the points placed by value, as in mermaid 12.2.0.',
+  },
 ]
