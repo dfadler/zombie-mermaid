@@ -1037,6 +1037,18 @@ export const forkFixes: ForkFix[] = [
       'Before: four evenly spaced category slots. After: a linear axis with a label at every tick of the range and the points placed by value, as in mermaid 12.2.0.',
   },
   {
+    id: 'yaml-front-matter',
+    title: 'A leading YAML front matter block made every diagram fail',
+    symptom:
+      '`---\ntitle: T\n---\nflowchart TD\n  A-->B` threw "Invalid mermaid header" for every diagram type, though mermaid.js and GitHub accept it.',
+    source: '---\nconfig:\n  theme: dark\n---\nflowchart TD\n  A --> B',
+    fixCommit: '8757f5d2',
+    pr: 2597,
+    render: 'svg',
+    lookFor:
+      'Before: an error instead of a diagram. After: the diagram renders and `config:` applies like `%%{init}%%`, as in mermaid 12.3.0.',
+  },
+  {
     id: 'architecture-group-row-level',
     title: 'Architecture groups rode off the row of the node they link to',
     symptom:

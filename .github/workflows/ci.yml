@@ -833,6 +833,12 @@ jobs:
         if: steps.diff_scope.outputs.demo_only != 'true'
         run: pnpm run check:changesets
 
+      # packages/<pkg>/src changes must be named in a changeset, or that
+      # package's own CHANGELOG omits them (#2593).
+      - name: Changeset names each changed package
+        if: steps.diff_scope.outputs.demo_only != 'true'
+        run: pnpm run check:changeset-coverage
+
   pr-hygiene:
     name: PR hygiene
     runs-on: ubuntu-latest
