@@ -35,9 +35,16 @@ export interface RealMermaidSession {
 }
 
 /** Launch a headless browser with the real mermaid.js library loaded and initialized. */
-export async function startRealMermaid(): Promise<RealMermaidSession> {
+export async function startRealMermaid(
+  /** Alternate `mermaid.min.js` (e.g. a scratch install of mermaid@latest); defaults to the repo pin. */
+  distPath?: string,
+): Promise<RealMermaidSession> {
   const mermaidJs = await readFile(
-    new URL('../../node_modules/mermaid/dist/mermaid.min.js', import.meta.url),
+    distPath ??
+      new URL(
+        '../../node_modules/mermaid/dist/mermaid.min.js',
+        import.meta.url,
+      ),
     'utf8',
   )
 
