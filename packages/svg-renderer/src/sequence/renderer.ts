@@ -10,6 +10,8 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import {
   ACTOR_LABEL_OFFSET,
+  BLOCK_TAB_HEIGHT,
+  blockTabPoints,
   blockTabWidth,
   boxLabelHeight,
   dividerLabelExtra,
@@ -368,8 +370,11 @@ function dividerLabelCy(
   )
 }
 
-/** Height of a block's type-label tab, in px. */
-const BLOCK_TAB_HEIGHT = 18
+/** Dash pattern of a block's outer frame (mermaid 12.3.0: dotted). */
+const BLOCK_FRAME_DASH = '2 2'
+
+/** Dash pattern of a block's divider lines (`else`/`and`). */
+const BLOCK_DIVIDER_DASH = '3 3'
 
 /** A rectangle some text occupies; lifelines are cut around it. */
 interface LabelBox {
@@ -711,7 +716,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   // Outer rectangle
   parts.push(
     f`  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
-      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-dasharray="2 2" />`,
+      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-dasharray="${BLOCK_FRAME_DASH}" />`,
   )
 
   // Type label tab (top-left corner) with its bottom-right corner cut, as in
@@ -719,15 +724,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   const tabWidth = blockTabWidth(block, fontSizes.edgeLabel)
   const tabHeight = BLOCK_TAB_HEIGHT
   const { x: bx, y: by } = block
-  const cutX = tabHeight * 0.24
-  const cutY = tabHeight * 0.2
-  const tabPoints = [
-    [bx, by],
-    [bx + tabWidth, by],
-    [bx + tabWidth, by + tabHeight - cutY],
-    [bx + tabWidth - cutX, by + tabHeight],
-    [bx, by + tabHeight],
-  ]
+  const tabPoints = blockTabPoints(bx, by, tabWidth)
     .map(([px, py]) => f`${px},${py}`)
     .join(' ')
 
@@ -762,7 +759,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   for (const divider of block.dividers) {
     parts.push(
       f`  <line x1="${block.x}" y1="${divider.y}" x2="${block.x + block.width}" y2="${divider.y}" ` +
-        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="3 3" />`,
+        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="${BLOCK_DIVIDER_DASH}" />`,
     )
     if (divider.label) {
       // Divider label supports multi-line

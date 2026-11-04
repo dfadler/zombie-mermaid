@@ -11,7 +11,12 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import type { RenderOptions, SequenceRenderOptions } from '@zombie-mermaid/core'
 import { LINE_HEIGHT_RATIO, measureMultilineText } from '@zombie-mermaid/core'
-import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
+import {
+  estimateTextWidth,
+  FONT_WEIGHTS,
+  resolveFontSizes,
+  STROKE_WIDTHS,
+} from '../styles.ts'
 
 // ============================================================================
 // Sequence diagram layout engine
@@ -171,10 +176,40 @@ function labelWidth(
 
 /**
  * How far a block's frame extends past its outermost lifelines: mermaid 12.3.0
- * draws it 11px out (`boxMargin` 10 plus the stroke).
+ * draws it 11px out (`boxMargin` 10 plus the frame's stroke width).
  */
-function blockFramePad(seq: ReturnType<typeof resolveSeqOptions>): number {
-  return seq.blockPadX + 1
+export function blockFramePad(
+  seq: Pick<ReturnType<typeof resolveSeqOptions>, 'blockPadX'>,
+): number {
+  return seq.blockPadX + STROKE_WIDTHS.outerBox
+}
+
+/** Height of a block's type-label tab, in px. */
+export const BLOCK_TAB_HEIGHT = 18
+
+/**
+ * The tab's cut bottom-right corner, as fractions of the tab height. Mermaid
+ * 12.3.0 draws a 35px tab as `114,111 105.6,118`: a 7px rise and an 8.4px
+ * run, i.e. 0.2 and 0.24 of the height.
+ */
+export const BLOCK_TAB_CUT_RISE_RATIO = 0.2
+export const BLOCK_TAB_CUT_RUN_RATIO = 0.24
+
+/** The tab polygon's vertices, clockwise from the block's top-left corner. */
+export function blockTabPoints(
+  x: number,
+  y: number,
+  tabWidth: number,
+): [number, number][] {
+  const cutRun = BLOCK_TAB_HEIGHT * BLOCK_TAB_CUT_RUN_RATIO
+  const cutRise = BLOCK_TAB_HEIGHT * BLOCK_TAB_CUT_RISE_RATIO
+  return [
+    [x, y],
+    [x + tabWidth, y],
+    [x + tabWidth, y + BLOCK_TAB_HEIGHT - cutRise],
+    [x + tabWidth - cutRun, y + BLOCK_TAB_HEIGHT],
+    [x, y + BLOCK_TAB_HEIGHT],
+  ]
 }
 
 /**
