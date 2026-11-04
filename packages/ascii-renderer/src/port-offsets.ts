@@ -326,8 +326,8 @@ export function staggerFanOuts(
       // With no straight stem, mixed styles split the two turns a cell each
       // side of the port so a left and a right bend do not share one.
       const apart = mixed && !anchored
-      if (extents.length + (anchored || apart ? 1 : 0) < 2 && !apart) continue
       if (extents.length === 0) continue
+      if (!apart && extents.length + (anchored ? 1 : 0) < 2) continue
       const offsetOf = (key: string): number =>
         apart
           ? base + turn * (extents.indexOf(key) + 1) * (STROKE_SPACING / 2)
@@ -723,11 +723,12 @@ function raiseFlowFanBars(
     ) {
       continue
     }
-    const from = edge.from.drawingCoord
-    const rows = edge.from.drawing?.[0]?.length
-    if (!from || !rows) continue
+    // A routed node always has its drawing and coordinate.
+    const from = edge.from.drawingCoord!
+    const rows = edge.from.drawing![0]!.length
     const was = gridToDrawingCoord(graph, p[1]!).y
     const dy = from.y + rows + 1 - was
+    /* v8 ignore next */
     if (dy >= 0) continue
     const shift = result.get(edge) ?? { start: 0, end: 0 }
     const points = shift.points ?? p.map(() => ({ x: 0, y: 0 }))

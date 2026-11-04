@@ -1632,10 +1632,6 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   const flowFan = leavesFlowFace(graph, edge, effectiveDir)
   if (flowFan) {
     ;[preferredDir, preferredOppositeDir] = [Down, Up]
-    ;[alternativeDir, alternativeOppositeDir] = [
-      preferredDir === alternativeDir ? preferredDir : alternativeDir,
-      alternativeOppositeDir,
-    ]
   }
   if (loopEntersTop(graph, edge, effectiveDir)) {
     ;[preferredDir, preferredOppositeDir] = [Right, Up]
@@ -2137,10 +2133,8 @@ export function determineLabelLine(
     leavesFlowFace(graph, edge, graph.config.graphDirection)
   ) {
     const [a, b] = edge.path.slice(-2) as [GridCoord, GridCoord]
-    if (a.x === b.x && b.y > a.y) {
-      applyLabelLine(graph, edge, [a, b], lenLabel)
-      return
-    }
+    applyLabelLine(graph, edge, [a, b], lenLabel)
+    return
   }
 
   // Every routed path is axis-aligned (A* is 4-directional and
