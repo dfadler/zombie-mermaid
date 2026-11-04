@@ -144,7 +144,8 @@ export function renderSvg(
   // Per-color arrow markers for edges with custom stroke via linkStyle
   const customStrokeColors = new Set<string>()
   for (const edge of graph.edges) {
-    if (edge.headColor) customStrokeColors.add(edge.headColor)
+    const head = headColorOf(edge)
+    if (head) customStrokeColors.add(head)
   }
   for (const color of customStrokeColors) {
     parts.push(arrowMarkerDefsForColor(color))
@@ -302,6 +303,15 @@ function terminatorMarker(kind: 'circle' | 'cross'): string {
 /** Sanitize a color value into a collision-free SVG ID suffix.
  *  Non-alphanumeric chars are hex-encoded so distinct inputs never collapse
  *  (e.g. "var(--line-1)" → "var28--line2d129", "var(--line1)" → "var28--line129"). */
+/**
+ * Mermaid 12.2.0 colours a head with the `linkStyle default` stroke when there is
+ * one, else with the edge's own `linkStyle` stroke (#2476). `headColor` is the
+ * default stroke, so with no default the edge's own stroke is what remains.
+ */
+function headColorOf(edge: PositionedEdge): string | undefined {
+  return edge.headColor ?? edge.inlineStyle?.stroke
+}
+
 function markerSuffix(color: string): string {
   return color.replace(/[^a-zA-Z0-9]/g, (ch) => ch.charCodeAt(0).toString(16))
 }
@@ -445,7 +455,8 @@ function renderEdge(
 
   // Build marker attributes based on arrow direction flags
   // Use color-specific markers when edge has a custom stroke from linkStyle
-  const suffix = edge.headColor ? f`-${markerSuffix(edge.headColor)}` : ''
+  const head = headColorOf(edge)
+  const suffix = head ? f`-${markerSuffix(head)}` : ''
   let markers = ''
   if (!invisible) {
     if (edge.hasArrowEnd)
