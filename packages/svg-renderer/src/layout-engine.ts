@@ -41,6 +41,7 @@ import {
   layoutCompoundFlat,
 } from './layout-engine/compound-flat.ts'
 import type { LayoutHints } from './layout-engine/layout-hints.ts'
+import { clampEdgeEnds } from './layout-engine/clamp-edge-ends.ts'
 import { layoutSimple } from './layout-engine/simple-layout.ts'
 
 // ============================================================================
@@ -109,7 +110,7 @@ export function layoutFlowchartSync(
       (g, hints) => layoutWithHints(g, options, hints),
       fontSizes,
     )
-    if (flat) return flat
+    if (flat) return clampEdgeEnds(flat)
   }
   return layoutGraphSync(graph, options)
 }

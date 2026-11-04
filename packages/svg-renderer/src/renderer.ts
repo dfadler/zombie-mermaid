@@ -288,16 +288,15 @@ function arrowMarkerPair(color: string, idSuffix: string): string {
 }
 
 /**
- * Circle (`--o`) and cross (`--x`) terminators: mermaid 12.2.0's
- * `circleEnd-margin` / `crossEnd-margin` geometry, one marker for both ends.
+ * Circle (`--o`) and cross (`--x`) terminators: mermaid 12.3.0's
+ * `circleEnd-margin` / `crossEnd-margin` geometry (a ~3px gap before the node
+ * border), one marker for both ends via `auto-start-reverse`. Mermaid's start
+ * markers use a slightly different refX (0.6px more gap on the cross).
  */
 function terminatorMarker(kind: 'circle' | 'cross'): string {
-  const shape =
-    kind === 'circle'
-      ? '<circle cx="5" cy="5" r="5" fill="var(--_arrow)"/>'
-      : '<path d="M1 1L9 9M1 9L9 1" stroke="var(--_arrow)" stroke-width="1.7"/>'
-  const size = kind === 'circle' ? 14 : 12
-  return f`<marker id="${kind}" viewBox="0 0 10 10" refX="12" refY="5" markerUnits="userSpaceOnUse" markerWidth="${size}" markerHeight="${size}" orient="auto-start-reverse">${shape}</marker>`
+  return kind === 'circle'
+    ? f`<marker id="circle" viewBox="0 0 10 10" refX="12.25" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto-start-reverse"><circle cx="5" cy="5" r="5" fill="var(--_arrow)"/></marker>`
+    : f`<marker id="cross" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1 1L14 14M1 14L14 1" stroke="var(--_arrow)" stroke-width="2.5"/></marker>`
 }
 
 /** Sanitize a color value into a collision-free SVG ID suffix.

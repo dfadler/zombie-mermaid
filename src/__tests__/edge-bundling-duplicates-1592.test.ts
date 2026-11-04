@@ -22,12 +22,15 @@ function pointsOf(svg: string, from: string, to: string): string[] {
 describe('repeated edges between one pair of nodes', () => {
   for (const dir of ['TD', 'LR'] as const) {
     it(`${dir}: four a-->b edges have four distinct paths`, async () => {
-      const svg = await renderMermaidSVG(`flowchart ${dir}
+      const svg = await renderMermaidSVG(
+        `flowchart ${dir}
   a --> b
   a --> b
   a --> b
   a --> b
-  a --> c`)
+  a --> c`,
+        { mergeEdges: true },
+      )
       const ab = pointsOf(svg, 'a', 'b')
       expect(ab).toHaveLength(4)
       expect(new Set(ab).size).toBe(4)
@@ -35,10 +38,13 @@ describe('repeated edges between one pair of nodes', () => {
   }
 
   it('still bundles a fan-out of distinct targets', async () => {
-    const svg = await renderMermaidSVG(`flowchart TD
+    const svg = await renderMermaidSVG(
+      `flowchart TD
   a --> b
   a --> c
-  a --> d`)
+  a --> d`,
+      { mergeEdges: true },
+    )
     const starts = ['b', 'c', 'd'].map(
       (t) => pointsOf(svg, 'a', t)[0]!.split(' ')[0],
     )
@@ -46,10 +52,13 @@ describe('repeated edges between one pair of nodes', () => {
   })
 
   it('still bundles a fan-in of distinct sources', async () => {
-    const svg = await renderMermaidSVG(`flowchart TD
+    const svg = await renderMermaidSVG(
+      `flowchart TD
   b --> a
   c --> a
-  d --> a`)
+  d --> a`,
+      { mergeEdges: true },
+    )
     const ends = ['b', 'c', 'd'].map((s) =>
       pointsOf(svg, s, 'a')[0]!.split(' ').at(-1),
     )
