@@ -91,7 +91,7 @@ function getRelMarker(
 function getMarkerShape(
   type: RelationshipType,
   useAscii: boolean,
-  direction?: 'up' | 'down' | 'left' | 'right',
+  direction: 'up' | 'down' | 'left' | 'right',
 ): string {
   switch (type) {
     case 'inheritance':
@@ -122,9 +122,8 @@ function getMarkerShape(
       return useAscii ? 'O' : '○'
     case 'association':
     case 'dependency':
-      // Directional arrow: Mermaid's open V, the same in both charsets;
-      // defaults to right when the direction isn't given.
-      return { up: '^', down: 'v', left: '<', right: '>' }[direction ?? 'right']
+      // Directional arrow: Mermaid's open V, the same in both charsets.
+      return { up: '^', down: 'v', left: '<', right: '>' }[direction]
   }
 }
 
