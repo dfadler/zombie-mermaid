@@ -415,7 +415,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'edge-label-diagonal-fallback',
-    parked: 'ascii-flow-axis-faces',
     title: 'An edge label could float next to a different edge’s line',
     symptom:
       'When an edge’s route fell back to a direct path (every L-shaped route and A* blocked — e.g. the third edge leaving the same side of a node), its label was centered on the never-drawn diagonal between the two legs that actually get drawn, landing in open grid next to an unrelated edge’s connector: `┆thick` two columns away from the thick edge’s own `┃`. Flagged by the weekly form-judge audit (#418).',
@@ -538,7 +537,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-fanout-arrowhead-column',
-    parked: 'ascii-flow-axis-faces',
     title: 'An ASCII fan-out arrowhead sat one column off its stem',
     symptom:
       'Under an even-width box, the bundled arrowhead took its column from the box’s own centre while the stem was drawn in the middle grid column’s centre, so the head landed one column right of the line feeding it.',
