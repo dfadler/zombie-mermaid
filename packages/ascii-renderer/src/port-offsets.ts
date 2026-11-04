@@ -34,7 +34,7 @@ import type { DrawingCoord } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
-import { leavesFlowFace } from './edge-routing.ts'
+import { leavesFlowFace, leavesRightFace } from './edge-routing.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
@@ -714,26 +714,30 @@ function raiseFlowFanBars(
   runs: ReadonlyMap<AsciiEdge, RunEntry>,
   result: Map<AsciiEdge, PortShift>,
 ): void {
+  const lr = graph.config.graphDirection === 'LR'
   for (const [edge, { r }] of runs) {
     const p = edge.path
     if (
       r.straight ||
       p.length !== 4 ||
-      !leavesFlowFace(graph, edge, graph.config.graphDirection)
+      !(lr ? leavesRightFace : leavesFlowFace)(
+        graph,
+        edge,
+        graph.config.graphDirection,
+      )
     ) {
       continue
     }
     // A routed node always has its drawing and coordinate.
     const from = edge.from.drawingCoord!
-    const rows = edge.from.drawing![0]!.length
-    const was = gridToDrawingCoord(graph, p[1]!).y
-    const dy = from.y + rows + 1 - was
+    const size = lr ? edge.from.drawing!.length : edge.from.drawing![0]!.length
+    const at = gridToDrawingCoord(graph, p[1]!)
+    const d = (lr ? from.x : from.y) + size + 1 - (lr ? at.x : at.y)
     /* v8 ignore next */
-    if (dy >= 0) continue
+    if (d >= 0) continue
     const shift = result.get(edge) ?? { start: 0, end: 0 }
     const points = shift.points ?? p.map(() => ({ x: 0, y: 0 }))
-    points[1]!.y = dy
-    points[2]!.y = dy
+    for (const i of [1, 2]) points[i]![lr ? 'x' : 'y'] = d
     result.set(edge, { ...shift, points })
   }
 }

@@ -67,3 +67,41 @@ describe('flow-face fan-out (TD)', () => {
     expect(lr.find((l) => l.includes('A'))).toMatch(/A/)
   })
 })
+
+// LR mirror: out of the right face, a stem each, label on its own run.
+describe('flow-face fan-out (LR)', () => {
+  it('leaves the right face for every target, labels on their own runs', () => {
+    const out = render(`flowchart LR
+  S0 --> |e0| S1
+  S1 --> |e1| S2
+  S1 --> S3
+  S0 --> S4`).join('\n')
+    expect(out).toMatch(/│ S0 ├─/)
+    expect(out).toMatch(/┌─e0─►│ S1/)
+    expect(out).toMatch(/└─+►│ S4/)
+    expect(out).toMatch(/└────┘ +│/)
+  })
+
+  it('keeps mixed line styles from sharing a glyph', () => {
+    const out = render(`graph LR
+  C --> B
+  B --> E
+  B -.-> F
+  B ==> G`).join('\n')
+    expect(out).toMatch(/┄►/)
+    expect(out).toMatch(/━►/)
+  })
+
+  it('leaves a source with a self-loop or a reciprocal edge alone', () => {
+    const out = render(`graph LR
+  A --> A
+  A --> B
+  A --> C`).join('\n')
+    expect(out).toContain('B')
+    const pair = render(`graph LR
+  A --> B
+  B --> A
+  A --> C`).join('\n')
+    expect(pair).toContain('C')
+  })
+})

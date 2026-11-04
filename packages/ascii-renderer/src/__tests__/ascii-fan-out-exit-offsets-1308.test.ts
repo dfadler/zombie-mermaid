@@ -28,7 +28,10 @@ function layout(source: string): AsciiGraph {
 const edge = (g: AsciiGraph, from: string, to: string): AsciiEdge =>
   g.edges.find((e) => e.from.name === from && e.to.name === to)!
 
+// In a subgraph: an unframed LR fan-out leaves the right face (as Mermaid
+// draws it), while these tests pin the bottom-face stems of the framed layout.
 const BRANCHING = `graph LR
+  subgraph s
   A[main] --> B[develop]
   B --> C[feature/auth]
   B --> D[feature/ui]
@@ -38,7 +41,8 @@ const BRANCHING = `graph LR
   B --> F[release/1.0]
   F --> G{Tests?}
   G -->|pass| A
-  G -->|fail| F`
+  G -->|fail| F
+  end`
 
 // In a subgraph so the fan-out keeps the one-sided layout (an unwrapped LR
 // fan-out is centred over its children since #2163, which splits the bends
@@ -95,7 +99,7 @@ describe('ASCII fan-out exit offsets (#1308)', () => {
   })
 
   it('keeps edges that bend at the same distance on one trunk', () => {
-    const g = layout('graph LR\nA --> B\nA --> C')
+    const g = layout('graph LR\nsubgraph s\nA --> B\nA --> C\nend')
     expect(portShifts(g).size).toBe(0)
   })
 

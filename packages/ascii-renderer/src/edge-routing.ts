@@ -1587,11 +1587,31 @@ export function leavesFlowFace(
   edge: AsciiEdge,
   effectiveDir: string,
 ): boolean {
-  if (effectiveDir === 'LR' || edge.from === edge.to) return false
+  return flowFanOut(graph, edge, effectiveDir, false)
+}
+
+/** LR mirror of `leavesFlowFace`: out of the right face, into the left. */
+export function leavesRightFace(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+): boolean {
+  return flowFanOut(graph, edge, effectiveDir, true)
+}
+
+function flowFanOut(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+  lr: boolean,
+): boolean {
+  if ((effectiveDir === 'LR') !== lr || edge.from === edge.to) return false
+  // A centred fan-out/fan-in already leaves and enters by the flow faces.
+  if (lr && (edge.from.fanOutCentered || edge.to.fanInCentered)) return false
   if (edge.clusterSource || edge.clusterTarget) return false
   const a = requireGridCoord(edge.from)
   const b = requireGridCoord(edge.to)
-  if (b.y <= a.y || b.x === a.x) return false
+  if (lr ? b.x <= a.x || b.y === a.y : b.y <= a.y || b.x === a.x) return false
   // A reciprocal pair keeps the paired routing of #1349 / #530.
   if (graph.edges.some((o) => o.from === edge.to && o.to === edge.from)) {
     return false
@@ -1599,12 +1619,20 @@ export function leavesFlowFace(
   if (getNodeSubgraph(graph, edge.from) || getNodeSubgraph(graph, edge.to)) {
     return false
   }
-  const targets = new Set(
-    graph.edges
-      .filter((o) => o.from === edge.from && o.to !== edge.from)
-      .map((o) => o.to),
-  )
-  return targets.size > 1
+  const out = graph.edges.filter((o) => o.from === edge.from)
+  // A self-loop or a reciprocal edge at the source keeps the routing it was
+  // laid out with (#2025-#2030, #1349).
+  if (
+    lr &&
+    out.some(
+      (o) =>
+        o.to === edge.from ||
+        graph.edges.some((r) => r.from === o.to && r.to === o.from),
+    )
+  ) {
+    return false
+  }
+  return new Set(out.map((o) => o.to)).size > 1
 }
 
 export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
@@ -1632,6 +1660,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   const flowFan = leavesFlowFace(graph, edge, effectiveDir)
   if (flowFan) {
     ;[preferredDir, preferredOppositeDir] = [Down, Up]
+  }
+  const rightFan = leavesRightFace(graph, edge, effectiveDir)
+  if (rightFan) {
+    ;[preferredDir, preferredOppositeDir] = [Right, Left]
   }
   if (loopEntersTop(graph, edge, effectiveDir)) {
     ;[preferredDir, preferredOppositeDir] = [Right, Up]
@@ -1908,7 +1940,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
 
   // Case 1: Both paths found — pick the shorter one (routeEdge already merged each)
   if (preferredPath !== null && alternativePath !== null) {
-    if (flowFan || preferredPath.length <= alternativePath.length) {
+    if (flowFan || rightFan || preferredPath.length <= alternativePath.length) {
       edge.startDir = preferredDir
       edge.endDir = preferredOppositeDir
       edge.path = preferredPath
@@ -2130,7 +2162,8 @@ export function determineLabelLine(
   // the target, as Mermaid does, not on the bar it shares with its siblings.
   if (
     edge.path.length >= 3 &&
-    leavesFlowFace(graph, edge, graph.config.graphDirection)
+    (leavesFlowFace(graph, edge, graph.config.graphDirection) ||
+      leavesRightFace(graph, edge, graph.config.graphDirection))
   ) {
     const [a, b] = edge.path.slice(-2) as [GridCoord, GridCoord]
     applyLabelLine(graph, edge, [a, b], lenLabel)
