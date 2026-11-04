@@ -140,7 +140,7 @@ try {
       id: f.id,
       ok: !l.error,
       png,
-      svgHash: l.svg ? hash(trimMermaidSvg(l.svg)) : null,
+      svgHash: l.svg ? hash(norm(l.svg)) : null,
     })
   }
 } finally {
