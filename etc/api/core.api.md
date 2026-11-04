@@ -204,7 +204,7 @@ export function escapeAttr(value: string): string;
 export function escapeXml(text: string): string;
 
 // @public
-export function extractAccessibility(text: string): AccessibleText;
+export function extractAccessibility(source: string): AccessibleText;
 
 // @public
 export function extractInitConfig(lines: string[]): InitConfig;
@@ -687,6 +687,9 @@ export interface Statement {
 
 // @public
 export function stripFormattingTags(text: string): string;
+
+// @public
+export function stripFrontMatter(text: string): string;
 
 // @public
 export interface StyleDirectives {
