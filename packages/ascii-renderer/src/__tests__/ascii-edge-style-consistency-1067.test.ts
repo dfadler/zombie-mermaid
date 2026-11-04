@@ -51,15 +51,14 @@ describe('edge line style consistency on a same-source mixed-style fan-out (#106
   })
 
   it("keeps the thick edge's own horizontal leg entirely heavy, never dashed", () => {
-    // Source is centred over its targets, so the dotted edge leaves the
-    // bottom border and only the solid and thick edges leave the Source
-    // row's sides. The thick edge's leg runs right from the box edge to its
+    // All three edges leave Source's bottom face on stems of their own (as in
+    // Mermaid). The thick edge's leg runs right along the bar row to its
     // corner ('┐'); none of it may borrow the dotted style.
-    const sourceRow = lines.find((l) => l.includes('Source'))!
-    const afterBox = sourceRow.slice(sourceRow.lastIndexOf('│') + 1)
-    const thickCornerIndex = afterBox.indexOf('┐')
-    expect(thickCornerIndex).toBeGreaterThan(-1)
-    const thickSegment = afterBox.slice(0, thickCornerIndex + 1)
+    const barRow = lines.find((l) => l.includes('┐') && l.includes('━'))!
+    const thickSegment = barRow.slice(
+      barRow.indexOf('━') - 1,
+      barRow.lastIndexOf('┐') + 1,
+    )
 
     expect(thickSegment).toMatch(HEAVY_CHARS)
     expect(thickSegment).not.toMatch(DASHED_CHARS)

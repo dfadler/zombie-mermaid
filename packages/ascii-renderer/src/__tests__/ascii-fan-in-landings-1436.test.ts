@@ -44,8 +44,10 @@ describe('TD fan-in landings (#1436)', () => {
     const mode = useAscii ? 'ascii' : 'unicode'
 
     it(`lands edges from the left beside a straight one (${mode})`, () => {
-      // Sixth (bent, from the left) and seventh (straight) get a head each.
-      expect(headsAbove(render(FROM_LEFT, useAscii), 'D', head)).toBe(2)
+      // Sixth (bent, from the left) and seventh (straight) get a head each,
+      // and the fan-out edges of A and B (third, fifth) land on the top face
+      // too, as Mermaid draws them.
+      expect(headsAbove(render(FROM_LEFT, useAscii), 'D', head)).toBe(4)
     })
 
     it(`lands every arrival where the port also starts an edge (${mode})`, () => {
