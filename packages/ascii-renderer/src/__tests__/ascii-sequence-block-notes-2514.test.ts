@@ -92,8 +92,8 @@ describe('ASCII sequence block walls enclose notes (#2514)', () => {
     end
   end`)
     const row = out.split('\n').find((l) => l.includes('hello there'))!
-    // Three walls, then a blank column, then the note border.
-    expect(row.startsWith('│││ │ hello there │')).toBe(true)
+    // Three walls one blank column apart, a blank column, the note border.
+    expect(row.startsWith('│ │ │ │ hello there │')).toBe(true)
   })
 
   it('leaves a clear column between a note wall and an uninvolved lifeline', () => {

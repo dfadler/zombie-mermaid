@@ -13,9 +13,10 @@ describe('ER entity without attributes (#2547)', () => {
     expect(svg).not.toContain('no attributes')
   })
 
-  it('draws the header divider only for entities with attributes', () => {
+  it('draws the table lines only for entities with attributes', () => {
     const bare = renderMermaidSVG('erDiagram\n  A {\n  }\n')
     const full = renderMermaidSVG('erDiagram\n  A {\n    int id PK\n  }\n')
-    expect(lines(full) - lines(bare)).toBe(1)
+    // The header divider plus a divider between each of the 3 columns (type, name, keys)
+    expect(lines(full) - lines(bare)).toBe(1 + 2)
   })
 })

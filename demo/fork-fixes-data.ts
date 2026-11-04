@@ -248,7 +248,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'er-entity-alias',
-    parked: 'svg-singles',
     title: 'ER entity aliases discarded the alias and every attribute',
     symptom:
       'The entity-header pattern did not recognize `id[Alias]` bodies at all, so the line fell back to matching only the bare id — losing the alias *and* the entire attribute block that followed it.',
@@ -665,7 +664,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'er-multi-key-attributes',
-    parked: 'svg-singles',
     title: 'An ER attribute with two keys lost one of them',
     symptom:
       'An attribute written `PK, FK` showed only `FK`, and `PK,FK` showed no key at all. Mermaid shows `PK,FK` for both spellings.',
@@ -679,7 +677,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'er-style-classdef',
-    parked: 'svg-singles',
     title: 'ER style, classDef and class were ignored',
     symptom:
       'An ER entity given `style`, `classDef` plus `class`, or the `:::` shorthand rendered unstyled, although mermaid paints it.',
@@ -747,7 +744,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-nested-blocks',
-    parked: 'ascii-sequence',
     title: 'Nested sequence blocks were drawn stacked, not nested, in ASCII',
     symptom:
       'A block inside another block (`alt` containing `loop`, `opt`) was laid out as if it were a sibling: its header and walls landed on the container’s walls, so the nesting was unreadable.',
@@ -761,7 +757,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'xychart-bar-series-overlap',
-    parked: 'svg-xychart',
     title: 'XY chart bar series were drawn side by side, not overlapping',
     symptom:
       'Two `bar` series on the same categories were split into narrow adjacent bars, while mermaid 12.2.0 draws each series centred on the category with later series on top.',
@@ -875,7 +870,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-expanded-shapes-draw',
-    parked: 'svg-singles',
     title:
       'Flowchart cloud, h-cyl, tag-rect, sm-circ and fork drew as rough approximations',
     symptom:
@@ -931,7 +925,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-circle-cross-terminators',
-    parked: 'svg-singles',
     title: 'Flowchart `--o` and `--x` edges ended in a plain arrowhead',
     symptom:
       'SVG flowcharts drew an arrowhead for `A --o B`, `A --x B`, `o--` and `x--` edges; the marker the parser recorded was dropped by the layout.',
@@ -945,7 +938,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'xychart-numeric-x-range',
-    parked: 'svg-xychart',
     title: 'A numeric xychart x-axis range was laid out as categories',
     symptom:
       '`x-axis 0 --> 100` spaced the points evenly like categories, so tick labels and bars landed where mermaid.js does not put them.',

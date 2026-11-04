@@ -102,6 +102,7 @@ describe('subgraph border clearance (#1796)', () => {
   it('System Architecture: the API Gateway fan-out shares a trunk >= 8px from Client Layer', () => {
     const svg = renderMermaidSVG(
       samples.find((s) => s.title === 'System Architecture')!.source,
+      { mergeEdges: true },
     )
     const { boxes } = geometry(svg)
     const client = boxes[0]! // First <g class="subgraph"> is clients (graph LR)
