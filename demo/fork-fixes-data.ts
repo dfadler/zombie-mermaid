@@ -1057,7 +1057,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'sequenceDiagram\n  participant Alice\n  participant Bob\n  Alice->>Bob: hello there friend\n  Note over Alice,Bob: hi',
     fixCommit: '9791be18',
-    pr: 2595,
+    pr: 2598,
     render: 'svg',
     lookFor:
       'Before: a small note floating between the lifelines. After: the note spans from just left of Alice to just right of Bob, as in mermaid 12.3.0.',
