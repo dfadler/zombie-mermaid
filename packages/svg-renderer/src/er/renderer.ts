@@ -272,7 +272,7 @@ function renderAttribute(
 ): string {
   const parts: string[] = []
   if (attr.comment && attr.comment.length > 0) {
-    const tooltipText = attr.comment.replace(/<br\s*\/?>/gi, '\n')
+    const tooltipText = attr.comment.replace(/<br\s{0,8}\/?>/gi, '\n')
     parts.push(f`<g><title>${escapeXml(tooltipText)}</title>`)
   }
   cells.forEach((cell, i) => {
