@@ -892,6 +892,7 @@ export function layoutSequenceDiagram(
   // The lifelines end where the mirrored footer actors begin; a stick figure
   // or typed icon keeps its label below the box, so the footer row grows by it.
   const lifelineBottom = messageY
+  const mirror = diagram.mirrorActors !== false
   const footerLabelRoom = Math.max(
     0,
     ...diagram.actors.map((a, i) =>
@@ -901,7 +902,9 @@ export function layoutSequenceDiagram(
     ),
   )
   const diagramBottom =
-    lifelineBottom + seq.actorHeight + footerLabelRoom + seq.padding
+    lifelineBottom +
+    (mirror ? seq.actorHeight + footerLabelRoom : 0) +
+    seq.padding
 
   // Find global X extents across actors, blocks, notes, and message labels
   let globalMinX: number = seq.padding // Actors already start at seq.padding
@@ -1000,7 +1003,7 @@ export function layoutSequenceDiagram(
   // Mermaid mirrors every participant along the bottom of the lifelines; a
   // destroyed one ended at its destroying message, so it has no footer.
   const footerActors = actors
-    .filter((_, i) => diagram.actors[i]!.destroyedAt === undefined)
+    .filter((_, i) => mirror && diagram.actors[i]!.destroyedAt === undefined)
     .map((a) => ({ ...a, y: lifelineBottom }))
 
   // Box backgrounds run from the top padding to just under the footer

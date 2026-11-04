@@ -124,6 +124,35 @@ Not matched:
   block tab or an `else`/`and` label is cut around it; mermaid draws the line through the text.
   Kept for legibility.
 
+## Sequence: `%%{init}%%` options and `link`/`links` ([#2589](https://github.com/dfadler/zombie-mermaid/issues/2589))
+
+Measured on mermaid 12.3.0 (headless Chromium, `%%{init: {"sequence": {...}}}%%` over a
+three-message sample, viewBox compared with the default).
+
+Honoured: `mirrorActors: false` (no participant row under the lifelines, SVG and ASCII) and
+`showSequenceNumbers: true` (numbers messages like `autonumber`).
+
+Ignored, although mermaid changes the output (no warning is raised; there is no warnings
+channel for diagram text):
+
+| Option                                                | mermaid 12.3.0 effect                          |
+| ----------------------------------------------------- | ---------------------------------------------- |
+| `actorMargin`, `width`, `height`                      | participant spacing and box size               |
+| `messageMargin`, `boxMargin`, `noteMargin`            | vertical spacing between rows                  |
+| `diagramMarginX`, `diagramMarginY`, `bottomMarginAdj` | outer padding                                  |
+| `wrap` (with `width`)                                 | wraps long labels and notes                    |
+| `noteAlign`, `messageAlign`, `rightAngles`            | note and label alignment, self-message corners |
+| `hideUnusedParticipants`                              | drops participants with no messages            |
+| `actorFontSize`, `messageFontSize`, `activationWidth` | sizes                                          |
+
+The sizes and margins follow this renderer's own scale (see the self-message entry above), so
+copying mermaid's pixel values would not match anyway; `wrap`, `noteAlign` and
+`hideUnusedParticipants` are the ones a user could expect to see.
+
+`link` / `links` (participant menus): mermaid wraps the participant label in an `<a xlink:href>`
+and shows a popup on hover. Nothing visible changes in a static image, so the line is parsed
+and dropped.
+
 ## Escaped characters in pie titles
 
 mermaid.js double-escapes `<`, `&` and `>` in a pie title: `pie title Labels <&> "quotes"`

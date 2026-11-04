@@ -515,7 +515,7 @@ export function parsePieChart(text: string): PieChart;
 export function parseQuadrantChart(source: string): QuadrantChart;
 
 // @public
-export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram;
+export function parseSequenceDiagram(lines: Statement[], text?: string): SequenceDiagram;
 
 // @public
 export function parseXYChart(lines: Statement[]): XYChart;
@@ -1162,6 +1162,7 @@ export interface SequenceDiagram {
     blocks: Block[];
     boxes: ParticipantBox[];
     messages: Message[];
+    mirrorActors?: false;
     notes: Note[];
     title?: string;
 }
