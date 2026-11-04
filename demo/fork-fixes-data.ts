@@ -833,7 +833,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2568,
     render: 'svg',
     lookFor:
-      'Before: the tab swallows the label, `[Network timeout]` shares a row with `retry`, and the frame is far wider than the lifelines. After: the tab holds only `critical`, each divider label is centred on its own row above its message, and the frame hugs the lifelines, as in mermaid 12.2.0.',
+      'Before: the tab swallows the label, `[Network timeout]` shares a row with `retry`, and the frame is far wider than the lifelines. After: the tab holds only `critical`, each divider label is centred on its own row above its message, and the frame hugs the lifelines, drawn dotted with a notched tab, as in mermaid 12.3.0.',
   },
   {
     id: 'class-cardinality-sides',
@@ -916,7 +916,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2540,
     render: 'svg',
     lookFor:
-      'Before: one undivided block, the retry and abort messages run on. After: a dashed divider with its `[label]` for each option, as in mermaid 12.2.0.',
+      'Before: one undivided block, the retry and abort messages run on. After: a dashed divider with its `[label]` for each option, as in mermaid 12.3.0.',
   },
   {
     id: 'flowchart-circle-cross-terminators',
