@@ -939,7 +939,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'architecture-beta\n  group cloud(cloud)[Cloud]\n  group api(server)[API Tier] in cloud\n  group data(database)[Data Tier] in cloud\n  service gw(internet)[Gateway] in api\n  service app(server)[App] in api\n  service db(database)[Primary DB] in data\n  service replica(disk)[Replica] in data\n  junction fan in cloud\n  service client(internet)[Client]\n  client:R --> L:gw\n  gw:R -- L:app\n  app:R -- L:fan\n  fan:R --> L:db\n  fan:B --> T:replica',
     fixCommit: '083ce722',
-    pr: 0,
+    pr: 2579,
     render: 'svg',
     lookFor:
       'Before: Replica sits below Primary DB. After: Replica sits directly under the junction, left of Primary DB, as in mermaid 12.2.0.',
