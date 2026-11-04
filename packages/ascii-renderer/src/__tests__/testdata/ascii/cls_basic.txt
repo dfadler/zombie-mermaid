@@ -5,11 +5,11 @@ classDiagram
   }
 ---
 +---------------+    
-| Animal        |    
+|    Animal     |    
 +---------------+    
-| + String name |    
+| +String name  |    
 +---------------+    
-| + eat(): void |    
+| +eat() : void |    
 +---------------+    
                      
                      

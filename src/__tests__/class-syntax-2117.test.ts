@@ -68,14 +68,14 @@ describe('both-ends and lollipop arrows', () => {
     expect(uni).toContain('△')
     expect(uni).toContain('▽')
     const arrows = renderMermaidASCII('classDiagram\n  A <--> B')
-    expect(arrows).toContain('▲')
-    expect(arrows).toContain('▼')
+    expect(arrows).toContain('^')
+    expect(arrows).toContain('v')
   })
 
   it('ASCII from-end arrowhead points into the from box', () => {
     const out = renderMermaidASCII('classDiagram\n  A <-- B')
-    expect(out).toContain('▲')
-    expect(out).not.toContain('▼')
+    expect(out).toContain('^')
+    expect(out).not.toContain('v')
   })
 
   it('ASCII draws a lollipop circle in both charsets', () => {
@@ -121,7 +121,8 @@ describe('both-ends and lollipop arrows', () => {
     const withMember = renderMermaidASCII(
       'classDiagram\n  class A {\n    +run()\n  }\n  A ()-- B',
     )
-    expect(withMember).toContain('│ A ')
+    // The name is centred in the header, so it no longer hugs the left border
+    expect(withMember).toMatch(/│ +A +│/)
     const noted = renderMermaidASCII(
       'classDiagram\n  A ()-- B\n  note for A "hi"',
     )

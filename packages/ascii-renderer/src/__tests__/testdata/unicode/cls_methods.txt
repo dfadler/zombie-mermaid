@@ -8,14 +8,14 @@ classDiagram
   }
 ---
 ┌──────────────────────────────┐    
-│ BankAccount                  │    
+│         BankAccount          │    
 ├──────────────────────────────┤    
-│ + String owner               │    
-│ - int balance                │    
+│ +String owner                │    
+│ -int balance                 │    
 ├──────────────────────────────┤    
-│ + deposit(int amount): void  │    
-│ + withdraw(int amount): bool │    
-│ - validate(): bool           │    
+│ +deposit(int amount) : void  │    
+│ +withdraw(int amount) : bool │    
+│ -validate() : bool           │    
 └──────────────────────────────┘    
                                     
                                     

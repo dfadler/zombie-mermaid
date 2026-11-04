@@ -1,11 +1,13 @@
 +-----------------+    
 | <<enumeration>> |    
-| Status          |    
+|     Status      |    
 +-----------------+    
 | ACTIVE          |    
 | INACTIVE        |    
 | PENDING         |    
 | DELETED         |    
++-----------------+    
+|                 |    
 +-----------------+    
                        
                        

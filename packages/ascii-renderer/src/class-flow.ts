@@ -94,7 +94,7 @@ export function renderClassFlowAscii(
     } else {
       kindOf.set(cls.id, {
         shape: 'class-box',
-        label: encodeSections(buildClassSections(cls)),
+        label: encodeSections(buildClassSections(cls, config.useAscii)),
       })
     }
   }
@@ -194,7 +194,7 @@ export function renderClassFlowAscii(
   const linkRows = (node: AsciiNode) => {
     const cls = diagram.classes.find((c) => c.id === node.name)
     if (!cls || node.shape !== 'class-box' || !node.drawing) return undefined
-    const sections = buildClassSections(cls)
+    const sections = buildClassSections(cls, config.useAscii)
     // drawMultiBox centres a lone compartment in a taller cell, so the header
     // starts below that slack.
     const slack =

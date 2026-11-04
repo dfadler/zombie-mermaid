@@ -5,29 +5,42 @@
 // (class-flow.ts), so a class is the same box in both.
 // ============================================================================
 
-import { formatClassMember } from '@zombie-mermaid/mermaid-parser'
-import type { ClassNode } from '@zombie-mermaid/mermaid-parser'
+import type { ClassMember, ClassNode } from '@zombie-mermaid/mermaid-parser'
 import { splitLines } from './multiline-utils.ts'
 
-/** Build the text sections for a class box: [header], [attributes], [methods] */
-export function buildClassSections(cls: ClassNode): string[][] {
+/**
+ * A member as Mermaid prints it: visibility glued to the name (`-model Model`),
+ * and a method's return type after ` : ` (`+start() : void`). Attributes keep
+ * the `name: type` form the parser hands over.
+ */
+function formatMember(m: ClassMember): string {
+  const vis = m.visibility + (m.visibility && m.visibilitySpace ? ' ' : '')
+  if (m.isMethod) {
+    const ret = m.type ? ` : ${m.type}` : ''
+    return `${vis}${m.name}(${m.params || ''})${ret}`
+  }
+  return `${vis}${m.name}${m.type ? `: ${m.type}` : ''}`
+}
+
+/**
+ * Build the text sections for a class box: [header], [attributes], [methods].
+ * Mermaid always draws all three compartments, so an empty one stays as a
+ * blank row. A note pseudo-class is one header-only box (`note`).
+ */
+export function buildClassSections(
+  cls: ClassNode,
+  useAscii: boolean,
+  note = false,
+): string[][] {
   // Header section: optional annotation + class name (may be multi-line)
   const header: string[] = []
-  if (cls.annotation) header.push(`<<${cls.annotation}>>`)
-  // Support multi-line class names
-  const nameLines = splitLines(cls.label)
-  header.push(...nameLines)
-
-  // Attributes section
-  const attrs = cls.attributes.map(formatClassMember)
-
-  // Methods section
-  const methods = cls.methods.map(formatClassMember)
-
-  // Build sections from only the non-empty parts. Only attrs (2-section),
-  // only methods (2-section), both (3-section), or neither (1-section, header only).
-  const sections: string[][] = [header]
-  if (attrs.length > 0) sections.push(attrs)
-  if (methods.length > 0) sections.push(methods)
-  return sections
+  if (cls.annotation)
+    header.push(useAscii ? `<<${cls.annotation}>>` : `«${cls.annotation}»`)
+  header.push(...splitLines(cls.label))
+  if (note) return [header]
+  return [
+    header,
+    cls.attributes.map(formatMember),
+    cls.methods.map(formatMember),
+  ]
 }

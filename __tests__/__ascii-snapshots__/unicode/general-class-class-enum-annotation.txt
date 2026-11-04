@@ -1,11 +1,13 @@
-┌─────────────────┐    
-│ <<enumeration>> │    
-│ Status          │    
-├─────────────────┤    
-│ ACTIVE          │    
-│ INACTIVE        │    
-│ PENDING         │    
-│ DELETED         │    
-└─────────────────┘    
-                       
-                       
+┌───────────────┐    
+│ «enumeration» │    
+│    Status     │    
+├───────────────┤    
+│ ACTIVE        │    
+│ INACTIVE      │    
+│ PENDING       │    
+│ DELETED       │    
+├───────────────┤    
+│               │    
+└───────────────┘    
+                     
+                     

@@ -134,10 +134,10 @@ describe('ASCII class diagram — relationships converging on a shared target fr
       colorMode: 'none',
     })
     // Before the fix, both relationships anchored at the exact same
-    // column, so only a single '▼' was ever drawn for both of them
+    // column, so only a single 'v' was ever drawn for both of them
     // combined — the `Student --> Course` connector had no arrowhead of
     // its own at all.
-    const arrowCount = (ascii.match(/▼/g) ?? []).length
+    const arrowCount = (ascii.match(/v/g) ?? []).length
     expect(arrowCount).toBe(2)
   })
 
@@ -147,7 +147,7 @@ describe('ASCII class diagram — relationships converging on a shared target fr
     })
     const lines = ascii.split('\n')
     const arrowCols = lines.flatMap((line) =>
-      [...line].map((ch, i) => (ch === '▼' ? i : -1)).filter((i) => i >= 0),
+      [...line].map((ch, i) => (ch === 'v' ? i : -1)).filter((i) => i >= 0),
     )
     expect(arrowCols).toHaveLength(2)
     expect(arrowCols[0]).not.toBe(arrowCols[1])

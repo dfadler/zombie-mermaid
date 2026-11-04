@@ -10,20 +10,22 @@ classDiagram
   Shape <|-- Circle
 ---
 ┌────────────────┐    
-│ <<abstract>>   │    
-│ Shape          │    
+│   «abstract»   │    
+│     Shape      │    
 ├────────────────┤    
-│ + draw(): void │    
+│                │    
+├────────────────┤    
+│ +draw() : void │    
 └────────────────┘    
          △            
          │            
          │            
 ┌────────────────┐    
-│ Circle         │    
+│     Circle     │    
 ├────────────────┤    
-│ + radius int   │    
+│ +radius int    │    
 ├────────────────┤    
-│ + draw(): void │    
+│ +draw() : void │    
 └────────────────┘    
                       
                       
