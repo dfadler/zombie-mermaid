@@ -356,7 +356,7 @@ export const allForkFixes: ForkFix[] = [
     source:
       'classDiagram\n  class Service {\n    +start() void\n    +stop() void\n  }',
     fixCommit: 'dbc2e44',
-    pr: 0,
+    pr: 2627,
     render: 'ascii',
     lookFor:
       'Before: a left-aligned name and `+start: void`. After: a centred name, the same blank attribute compartment (Mermaid draws it too), and `+start() : void`, as Mermaid 12.3.0 draws it.',
