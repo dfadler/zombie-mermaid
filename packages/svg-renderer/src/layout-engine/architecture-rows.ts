@@ -218,28 +218,33 @@ export function alignAcrossFlowMembers(
     const grown = own.filter((id) => !other.includes(id))
     const top = groupById.get(grown[grown.length - 1]!)
     if (!top) continue
-    const lo = Math.min(top[f], m[f] + d - FLOW_PAD)
-    const hi = Math.max(top[f] + top[fsize], m[f] + d + m[fsize] + FLOW_PAD)
-    const next = { ...top, [f]: lo, [fsize]: hi - lo }
     const inside = (id: string): boolean =>
       (chains.get(id) ?? []).includes(top.id)
-    const blocked =
-      nodes.some((n) => n !== anchor && !inside(n.id) && clash(next, n)) ||
-      [...groupById.values()].some(
-        (g) =>
-          g !== top &&
-          !inside(g.id) &&
-          !(chains.get(top.id) ?? []).includes(g.id) &&
-          clash(next, g),
+    const blockedBy = (pad: number): boolean => {
+      const lo = Math.min(top[f], m[f] + d - pad)
+      const hi = Math.max(top[f] + top[fsize], m[f] + d + m[fsize] + pad)
+      const next = { ...top, [f]: lo, [fsize]: hi - lo }
+      return (
+        nodes.some((n) => n !== anchor && !inside(n.id) && clash(next, n)) ||
+        [...groupById.values()].some(
+          (g) =>
+            g !== top &&
+            !inside(g.id) &&
+            !(chains.get(top.id) ?? []).includes(g.id) &&
+            clash(next, g),
+        )
       )
-    if (blocked) continue
+    }
+    // A neighbouring group a few px short of FLOW_PAD still gets a tighter margin.
+    const pad = [FLOW_PAD, FLOW_PAD / 2].find((p) => !blockedBy(p))
+    if (pad === undefined) continue
 
     m[f] += d
     for (const id of own) {
       const g = groupById.get(id)
       if (!g) continue
-      const glo = Math.min(g[f], m[f] - FLOW_PAD)
-      const ghi = Math.max(g[f] + g[fsize], m[f] + m[fsize] + FLOW_PAD)
+      const glo = Math.min(g[f], m[f] - pad)
+      const ghi = Math.max(g[f] + g[fsize], m[f] + m[fsize] + pad)
       g[f] = glo
       g[fsize] = ghi - glo
     }

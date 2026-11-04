@@ -95,6 +95,19 @@ describe('architecture row alignment', () => {
     expect(mid(before, 'db', 'y')).toBeCloseTo(mid(before, 'fan', 'y'), 0)
   })
 
+  it('stacks a member under the junction with a tighter margin when a neighbour is just short (#2557)', () => {
+    const g = lay(
+      'group cloud(cloud)[Cloud]\ngroup api(server)[API] in cloud\ngroup data(database)[Data] in cloud\n' +
+        'service gw(internet)[Gateway] in api\nservice app(server)[App] in api\n' +
+        'service db(database)[DB] in data\nservice replica(disk)[Replica] in data\n' +
+        'junction fan in cloud\nservice client(internet)[Client]\n' +
+        'client:R --> L:gw\ngw:R -- L:app\napp:R -- L:fan\nfan:R --> L:db\nfan:B --> T:replica',
+    )
+    expect(mid(g, 'replica', 'x')).toBeCloseTo(mid(g, 'fan', 'x'), 0)
+    const api = group(g, 'api')
+    expect(group(g, 'data').x).toBeGreaterThanOrEqual(api.x + api.width)
+  })
+
   it('does not run a group into a neighbour on the way to its row', () => {
     // `above` fills the cell the shift would take; the group stays put.
     const g = lay(
