@@ -1037,6 +1037,18 @@ export const forkFixes: ForkFix[] = [
       'Before: four evenly spaced category slots. After: a linear axis with a label at every tick of the range and the points placed by value, as in mermaid 12.2.0.',
   },
   {
+    id: 'yaml-front-matter',
+    title: 'A leading YAML front matter block made every diagram fail',
+    symptom:
+      '`---\ntitle: T\n---\nflowchart TD\n  A-->B` threw "Invalid mermaid header" for every diagram type, though mermaid.js and GitHub accept it.',
+    source: '---\nconfig:\n  theme: dark\n---\nflowchart TD\n  A --> B',
+    fixCommit: '8757f5d2',
+    pr: 2597,
+    render: 'svg',
+    lookFor:
+      'Before: an error instead of a diagram. After: the diagram renders and `config:` applies like `%%{init}%%`, as in mermaid 12.3.0.',
+  },
+  {
     id: 'architecture-group-row-level',
     title: 'Architecture groups rode off the row of the node they link to',
     symptom:
@@ -1061,6 +1073,19 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: only the outer blue highlight shows. After: the inner orange highlight sits on top of it around the `inner` message, as in mermaid 12.3.0.',
+  },
+  {
+    id: 'sequence-note-over-span',
+    title: 'A sequence note over two participants shrank to its text',
+    symptom:
+      '`Note over A,B` was sized to its text and centred between the two lifelines, so a short note touched neither; mermaid spans it across both.',
+    source:
+      'sequenceDiagram\n  participant Alice\n  participant Bob\n  Alice->>Bob: hello there friend\n  Note over Alice,Bob: hi',
+    fixCommit: '9791be18',
+    pr: 2598,
+    render: 'svg',
+    lookFor:
+      'Before: a small note floating between the lifelines. After: the note spans from just left of Alice to just right of Bob, as in mermaid 12.3.0.',
   },
   {
     id: 'sequence-multiline-label-spacing',
