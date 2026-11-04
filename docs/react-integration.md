@@ -32,7 +32,7 @@ function MermaidDiagram({ code }: { code: string }) {
 }
 ```
 
-**Setup:** in a browser, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you call `registerElk()`, so run `npm install elkjs` and register it as above. Sequence, pie, xychart and C4 diagrams need nothing. To keep `elkjs` out of your initial bundle, register it lazily instead: `const { default: ELK } = await import('elkjs/lib/elk.bundled.js'); registerElk(ELK)`, and render only after that resolves. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
+**Setup:** in a browser, flowchart, state, class and ER diagrams throw `ElkNotRegisteredError` until you call `registerElk()`, so run `npm install elkjs` and register it as above. Sequence, pie, xychart, C4 and architecture diagrams need nothing. To keep `elkjs` out of your initial bundle, register it lazily instead: `const { default: ELK } = await import('elkjs/lib/elk.bundled.js'); registerElk(ELK)`, and render only after that resolves. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
 
 **Why this works well:**
 

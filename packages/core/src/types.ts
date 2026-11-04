@@ -166,7 +166,8 @@ export interface MermaidEdge {
   animate?: boolean
   /**
    * Architecture only. No longer set: the SVG grid layout (#2619) draws every
-   * edge between the cells its ports name. Kept so the public type is unchanged.
+   * edge between the cells its ports name.
+   * @deprecated Never set; remove at the next major.
    */
   acrossFlow?: boolean
 }
@@ -225,8 +226,10 @@ export interface MermaidSubgraph {
    * titled subgraph, like mermaid.js's `divider` cluster.
    */
   region?: boolean
-  /** Architecture group icon name from `group id(icon)`; SVG draws it in the header. */
+  /** Architecture group icon name from `group id(icon)`; absent when it has none. */
   icon?: string
+  /** An `architecture-beta` group: the SVG renderer draws Mermaid's dashed box instead of a header band. */
+  architecture?: boolean
 }
 
 // ============================================================================
@@ -302,6 +305,8 @@ export interface PositionedGroup {
   region?: boolean
   /** Architecture group icon name; see `MermaidSubgraph.icon`. */
   icon?: string
+  /** See `MermaidSubgraph.architecture`. */
+  architecture?: boolean
 }
 
 // ============================================================================

@@ -13,6 +13,7 @@ import {
   buildStyleBlock,
   styleOpenTag,
   getReadableTextColor,
+  LINE_HEIGHT_RATIO,
   measureMultilineText,
   renderMultilineText,
   renderMultilineTextWithBackground,
@@ -352,11 +353,11 @@ function renderGroup(
 
   // Architecture group (#2619): Mermaid draws a dashed, unfilled box with the
   // icon tile in its top-left corner and the title beside it, no header band.
-  if (group.icon !== undefined) {
+  if (group.architecture) {
     const glyph = group.icon && (ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH)
     parts.push(
       f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
-      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" fill="none" stroke="hsl(240, 60%, 86.3%)" stroke-width="2" stroke-dasharray="8" />`,
+      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`,
     )
     if (glyph)
       parts.push(
@@ -725,6 +726,9 @@ function renderNode(
 
 /** Gap from an icon tile's bottom edge to the centre of its label line. */
 const SERVICE_LABEL_DROP = 13
+/** Mermaid's architecture group border: 2px, dashed `8`. */
+const ARCH_GROUP_STROKE = 2
+const ARCH_GROUP_DASH = 8
 
 /**
  * An architecture service as Mermaid draws it (#2518): an 80px tile with its
@@ -733,7 +737,7 @@ const SERVICE_LABEL_DROP = 13
 function renderServiceTile(x: number, y: number, icon: string): string {
   const at = f`transform="translate(${x} ${y})"`
   if (icon === '') {
-    return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="hsl(240, 60%, 86.3%)" stroke-width="2" stroke-dasharray="8" />`
+    return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`
   }
   const glyph = ICON_GLYPHS[icon] ?? UNKNOWN_GLYPH
   return f`<g ${at}><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`
@@ -1707,10 +1711,15 @@ function renderNodeLabel(
     node.width / 2 +
     (node.shape === 'asymmetric' ? ASYMMETRIC_NOTCH / 2 : 0)
   // An icon tile's label hangs below it, as Mermaid's does.
+  // Its first line stays put and further (wrapped) lines hang below it.
+  const labelLines = node.label.split('\n').length
   const cy =
     node.icon === undefined
       ? node.y + node.height / 2
-      : node.y + node.height + SERVICE_LABEL_DROP
+      : node.y +
+        node.height +
+        SERVICE_LABEL_DROP +
+        ((labelLines - 1) / 2) * fontSizes.nodeLabel * LINE_HEIGHT_RATIO
 
   // Resolve text color — inline styles can override the CSS variable default.
   // When there's no explicit `color` but there IS a concrete, resolvable
