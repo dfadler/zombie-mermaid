@@ -1049,4 +1049,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: the Data Tier group is shifted up, `Primary DB` sits above the main row and `Replica` beside it, with service labels on the group border. After: `Primary DB` is level with the gateway row, the `fan:B` edge drops straight down into `Replica` beneath the junction, and every label stays inside its group.',
   },
+  {
+    id: 'sequence-note-over-span',
+    title: 'A sequence note over two participants shrank to its text',
+    symptom:
+      '`Note over A,B` was sized to its text and centred between the two lifelines, so a short note touched neither; mermaid spans it across both.',
+    source:
+      'sequenceDiagram\n  participant Alice\n  participant Bob\n  Alice->>Bob: hello there friend\n  Note over Alice,Bob: hi',
+    fixCommit: '9791be18',
+    pr: 2595,
+    render: 'svg',
+    lookFor:
+      'Before: a small note floating between the lifelines. After: the note spans from just left of Alice to just right of Bob, as in mermaid 12.3.0.',
+  },
 ]

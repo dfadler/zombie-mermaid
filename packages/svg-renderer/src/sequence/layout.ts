@@ -522,7 +522,7 @@ export function layoutSequenceDiagram(
         firstActorIdx
       const c1 = actorCenterX[firstActorIdx]!
       const c2 = actorCenterX[lastActorIdx]!
-      // mermaid 12.3.0 spans the note across both lifelines, overhanging
+      // Mermaid 12.3.0 spans the note across both lifelines, overhanging
       // each by 25px, and only grows past that for longer text (#2587).
       noteW = Math.max(noteW, Math.abs(c1 - c2) + 50)
       noteX = (c1 + c2) / 2 - noteW / 2

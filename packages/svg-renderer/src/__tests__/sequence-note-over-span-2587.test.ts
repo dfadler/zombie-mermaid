@@ -4,9 +4,8 @@ import { parseSequenceDiagram } from '@zombie-mermaid/mermaid-parser'
 import { layoutSequenceDiagram } from '../sequence/layout.ts'
 
 const lay = (src: string) =>
-  layoutSequenceDiagram(parseSequenceDiagram(
-      src.split('\n').map((text, line) => ({ text, line })),
-    ),
+  layoutSequenceDiagram(
+    parseSequenceDiagram(src.split('\n').map((text, line) => ({ text, line }))),
   )
 const cx = (a: { x: number }) => a.x
 
