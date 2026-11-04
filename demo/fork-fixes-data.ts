@@ -349,8 +349,20 @@ export const allForkFixes: ForkFix[] = [
     upstreamIssues: [121],
   },
   {
+    id: 'class-blank-compartment',
+    title: 'Class boxes now print their members and names the way Mermaid does',
+    symptom:
+      'Mermaid draws every class as three compartments (name, attributes, methods), even when one is empty: the blank attribute compartment is correct, and the fork change that removed it (#92) was wrong. It also centres the name, writes `«interface»` for an annotation, and prints a method as `+start() : void`. Upstream left-aligned the name, wrote `<<interface>>`, and printed `+start: void`.',
+    source:
+      'classDiagram\n  class Service {\n    +start() void\n    +stop() void\n  }',
+    fixCommit: 'dbc2e44',
+    pr: 0,
+    render: 'ascii',
+    lookFor:
+      'Before: a left-aligned name and `+start: void`. After: a centred name, the same blank attribute compartment (Mermaid draws it too), and `+start() : void`, as Mermaid 12.3.0 draws it.',
+  },
+  {
     id: 'class-label-column-width',
-    parked: 'ascii-class',
     title: 'Long class relationship labels on narrow classes were truncated',
     symptom:
       'A class’s column was sized from its box alone, never from the relationship label that had to fit beside it — so single-letter classes with labels like `inheritance` had every label squeezed into the box’s own width and cut to `…`.',
@@ -364,7 +376,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'class-fanned-relationships',
-    parked: 'ascii-class',
     title:
       'More than two relationships between narrow classes overwrote each other',
     symptom:
@@ -379,7 +390,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'class-label-detour-routing',
-    parked: 'ascii-class',
     title: 'A detoured relationship’s label ignored its own routed path',
     symptom:
       'A relationship’s label always anchored on the straight-line midpoint between its source and target boxes, even when its line detoured around an intermediate box to avoid it — so the label sat wherever the *unrouted* line would have gone, not the *actual* one, reading as though it terminated at the wrong box.',
@@ -393,7 +403,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'class-generic-types',
-    parked: 'ascii-class',
     title: 'Class member generics kept mermaid’s raw `~T~` tildes',
     symptom:
       'Mermaid converts `List~Observer~` to `List<Observer>` before rendering; the class parser here kept the tildes, so both the SVG and ASCII output showed `List~Observer~` — flagged by the weekly form-judge audit (#418).',
