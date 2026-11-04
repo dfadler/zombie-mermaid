@@ -70,7 +70,7 @@ The same fix ([#80](https://github.com/dfadler/zombie-mermaid/pull/80), landed i
 
 ### Edge bundling drawn through unrelated nodes
 
-`mergeEdges` (on by default) replaces separately routed fan-out/fan-in edges with a shared trunk plus straight branches. That substitution assumed a branch only ever spans the gap between adjacent layers; when a fan-out target is several layers down, the branch could be drawn straight through any node sitting in an intermediate layer:
+`mergeEdges` (opt-in; it was on by default before this fork matched mermaid's one-port-per-edge routing) replaces separately routed fan-out/fan-in edges with a shared trunk plus straight branches. That substitution assumed a branch only ever spans the gap between adjacent layers; when a fan-out target is several layers down, the branch could be drawn straight through any node sitting in an intermediate layer:
 
 ```mermaid
 flowchart TB
@@ -82,7 +82,7 @@ flowchart TB
 
 Fixed in [#217](https://github.com/dfadler/zombie-mermaid/pull/217) (v1.3.0): a bundled branch is now checked against every node box before being adopted, falling back to the layout engine's own (obstacle-avoiding) routing when it would collide.
 
-**Triggered by:** a flowchart or state diagram with `mergeEdges` enabled (the default) and a fan-out/fan-in shape where a bundled edge's target is more than one layer away from its shared trunk.
+**Triggered by:** a flowchart or state diagram with `mergeEdges: true` and a fan-out/fan-in shape where a bundled edge's target is more than one layer away from its shared trunk.
 
 ### ER diagram cardinality and direction
 

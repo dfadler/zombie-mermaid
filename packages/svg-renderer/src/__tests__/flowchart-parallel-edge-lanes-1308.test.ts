@@ -26,9 +26,10 @@ const BUNDLED = `graph LR
   B --> F[three]`
 
 function route(source: string, from: string, to: string) {
-  const edge = layoutGraphSync(parseMermaid(source)).edges.find(
-    (e) => e.source === from && e.target === to,
-  )
+  // These tests are about bundling, which is opt-in.
+  const edge = layoutGraphSync(parseMermaid(source), {
+    mergeEdges: true,
+  }).edges.find((e) => e.source === from && e.target === to)
   expect(edge).toBeDefined()
   return edge?.points ?? []
 }

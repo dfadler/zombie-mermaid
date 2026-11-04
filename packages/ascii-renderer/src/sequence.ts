@@ -484,16 +484,17 @@ export function renderSequenceAscii(
       overNoteHalfLeft[0]!,
       // A note inside a block must also clear the block's left wall at
       // column 0 (#2514), leaving one blank column between wall and note:
-      // one column per enclosing wall plus the blank one (`left` also needs
-      // its separating column from the lifeline).
+      // two columns per enclosing wall (nested walls are one blank column
+      // apart) plus the blank one (`left` also needs its separating column
+      // from the lifeline).
       ...diagram.notes.map((n) =>
         actorIndexOf(n.actorIds[0]!) === 0 &&
         n.position !== 'right' &&
         (n.position === 'left' || n.actorIds.length === 1) &&
         noteDepth(n)
           ? n.position === 'left'
-            ? noteBoxWidth(n) + 2 + noteDepth(n)
-            : Math.floor(noteBoxWidth(n) / 2) + 1 + noteDepth(n)
+            ? noteBoxWidth(n) + 2 + (2 * noteDepth(n) - 1)
+            : Math.floor(noteBoxWidth(n) / 2) + 1 + (2 * noteDepth(n) - 1)
           : 0,
       ),
       // A centred self-message label on the leftmost actor reaches left of
@@ -707,7 +708,7 @@ export function renderSequenceAscii(
         nx = llX[aIdx]! - Math.floor(nWidth / 2)
       }
     }
-    nx = Math.max(noteDepth(note) && noteDepth(note) + 1, nx)
+    nx = Math.max(2 * noteDepth(note), nx)
 
     notePositions.push({
       x: nx,
@@ -1499,7 +1500,7 @@ export function renderSequenceAscii(
     // after the pull-back so a note wins over an untouched lifeline.
     for (const np of notePositions) {
       if (np.y <= topY || np.y >= botY) continue
-      bLeft = Math.min(bLeft, np.x - 1 - np.depth)
+      bLeft = Math.min(bLeft, np.x - 2 * np.depth)
       bRight = Math.max(bRight, np.x + np.width + 1)
     }
 
@@ -1528,9 +1529,9 @@ export function renderSequenceAscii(
     blockExt[b] = { l: bLeft, r: bRight }
   }
 
-  // Nested blocks nest: a container wall encloses every block inside it, one
-  // column clear on each side. Widen right inner-first (array order), inset
-  // left outer-first (reverse order); the label width is re-measured between.
+  // Nested blocks nest: a container wall encloses every block inside it with
+  // one blank column on each side (mermaid insets nested frames ~10px). Widen
+  // right inner-first (array order), inset left outer-first (reverse order); the label width is re-measured between.
   const isInside = (c: Block, p: Block): boolean =>
     c.startIndex >= p.startIndex && c.endIndex <= p.endIndex
   // Blocks without a measured extent (never laid out) take no part.
@@ -1541,7 +1542,7 @@ export function renderSequenceAscii(
     )
   for (const p of [...live].reverse()) {
     for (const c of nestedIn(p))
-      blockExt[c]!.l = Math.max(blockExt[c]!.l, blockExt[p]!.l + 1)
+      blockExt[c]!.l = Math.max(blockExt[c]!.l, blockExt[p]!.l + 2)
   }
   // Label-driven minimum width (#352), measured from the final left wall.
   for (const b of live) {
@@ -1550,7 +1551,7 @@ export function renderSequenceAscii(
   }
   for (const p of live) {
     for (const c of nestedIn(p))
-      blockExt[p]!.r = Math.max(blockExt[p]!.r, blockExt[c]!.r + 1)
+      blockExt[p]!.r = Math.max(blockExt[p]!.r, blockExt[c]!.r + 2)
   }
 
   // Pass 2: grow the canvas to fit, then draw.
