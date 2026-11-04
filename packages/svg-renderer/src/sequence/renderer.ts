@@ -356,6 +356,16 @@ function blockLabelCy(
   )
 }
 
+/** Centre y of a divider label: its first line stays where a one-line label sits. */
+function dividerLabelCy(
+  divider: { y: number; label?: string },
+  fontSizes: FontSizes,
+): number {
+  return (
+    divider.y + 14 + dividerLabelExtra(divider.label, fontSizes.edgeLabel) / 2
+  )
+}
+
 /** Height of a block's type-label tab, in px. */
 const BLOCK_TAB_HEIGHT = 18
 
@@ -422,7 +432,11 @@ function collectLabelBoxes(
     }
     for (const divider of block.dividers) {
       if (!divider.label) continue
-      centred(`[${divider.label}]`, block.x + block.width / 2, divider.y + 14)
+      centred(
+        `[${divider.label}]`,
+        block.x + block.width / 2,
+        dividerLabelCy(divider, fontSizes),
+      )
     }
   }
   return boxes
@@ -742,7 +756,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
           renderMultilineText(
             f`[${divider.label}]`,
             block.x + block.width / 2,
-            divider.y + 14,
+            dividerLabelCy(divider, fontSizes),
             fontSizes.edgeLabel,
             f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
           ),

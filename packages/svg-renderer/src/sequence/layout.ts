@@ -883,7 +883,8 @@ export function layoutSequenceDiagram(
       // that is centred too, so a labelled message needs the taller offset.
       const offset =
         (d.label && msg?.label ? 40 : 28) +
-        dividerLabelExtra(d.label, fontSizes.edgeLabel)
+        dividerLabelExtra(d.label, fontSizes.edgeLabel) +
+        (msgLabelExtra[d.index] ?? 0)
 
       return { y: msgY - offset, label: d.label }
     })

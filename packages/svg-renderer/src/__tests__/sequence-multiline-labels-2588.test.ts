@@ -91,3 +91,40 @@ describe('multi-line frame labels (#2588)', () => {
     )
   })
 })
+
+describe('multi-line divider labels (#2588)', () => {
+  const alt = (label: string, tail = 'A->>B: y') =>
+    layout(`A->>B: m\nalt a\nA->>B: x\nelse ${label}\n${tail}\nend`)
+  const render = (label: string) =>
+    renderMermaidSVG(
+      `sequenceDiagram\nA->>B: m\nalt a\nA->>B: x\nelse ${label}\nA->>B: y\nend`,
+    )
+
+  it('keeps the divider line fixed and pushes the next arrow down', () => {
+    const one = alt('e1')
+    const two = alt('e1<br/>e2')
+    expect(two.blocks[0]!.dividers[0]!.y).toBeCloseTo(
+      one.blocks[0]!.dividers[0]!.y,
+    )
+    expect(two.messages[2]!.y - one.messages[2]!.y).toBeGreaterThan(10)
+  })
+
+  it('keeps the divider fixed under a multi-line message label', () => {
+    const one = alt('e1')
+    const two = alt('e1', 'A->>B: y<br/>y2')
+    expect(two.blocks[0]!.dividers[0]!.y).toBeCloseTo(
+      one.blocks[0]!.dividers[0]!.y,
+    )
+  })
+
+  it('keeps the first line where a one-line label sits', () => {
+    expect(baselines(render('e1<br/>e2'), '[e1')[0]).toBeCloseTo(
+      baselines(render('e1'), '[e1]')[0],
+    )
+  })
+
+  it('handles an else with no message after it', () => {
+    const l = layout('A->>B: m\nalt a\nA->>B: x\nelse e1<br/>e2\nend')
+    expect(l.blocks[0]!.dividers).toHaveLength(1)
+  })
+})
