@@ -7,8 +7,8 @@
  * Run:           MERMAID_LATEST_DIR=<that dir> OUT=<out dir> pnpm exec tsx scripts/fork-fixes-oracle.ts [--only=id,id]
  *
  * Writes, per entry id, to $OUT: `<id>.png`, `<id>.json` (facts: source, error,
- * trimmed SVG, element counts, marker ids) and `<id>.pin.json` when the pin's
- * render differs; plus `manifest.json` (versions, rejected sources, pin-vs-latest diffs).
+ * trimmed SVG, element counts, marker ids; plus `pinTrimmedSvg` when the pin's
+ * render differs) and `manifest.json` (versions, rejected sources, pin-vs-latest diffs).
  */
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
@@ -61,7 +61,9 @@ async function renderOne(s: RealMermaidSession, id: string, source: string) {
 
 const facts = (svg: string) => ({
   nodes: (svg.match(/class="[^"]*\bnode\b/g) ?? []).length,
-  edgePaths: (svg.match(/class="[^"]*\bedgePath\b/g) ?? []).length,
+  // Edge paths carry `edge-thickness-*` (graph-like diagrams) or `messageLine*` (sequence)
+  edgePaths: (svg.match(/class="[^"]*\b(?:edge-thickness-|messageLine)/g) ?? [])
+    .length,
   markers: [...svg.matchAll(/<marker[^>]*id="([^"]+)"/g)].map((m) => m[1]),
   markerRefs: [
     ...new Set(
@@ -75,8 +77,8 @@ const facts = (svg: string) => ({
     .filter(Boolean),
 })
 // Iconify ids carry a per-page random suffix; they're noise for the comparison.
-const norm = (svg: string) =>
-  trimMermaidSvg(svg).replace(/IconifyId[0-9a-f]+/g, 'IconifyId')
+// Full SVG (markers and <style> included) so marker/CSS-only version changes count as differences.
+const norm = (svg: string) => svg.replace(/IconifyId[0-9a-f]+/g, 'IconifyId')
 const hash = (s: string) =>
   createHash('sha1').update(s).digest('hex').slice(0, 10)
 
