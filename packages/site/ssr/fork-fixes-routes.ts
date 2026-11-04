@@ -122,6 +122,7 @@ function fixSectionProps(pair: RenderPair): FixSectionProps {
     fixCommit: fix.fixCommit,
     render: fix.render,
     upstreamIssues: fix.upstreamIssues,
+    group: fix.group,
     source: fix.source,
     before: panel('before'),
     after: panel('after'),
