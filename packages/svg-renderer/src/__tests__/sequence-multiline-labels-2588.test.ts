@@ -38,7 +38,7 @@ describe('multi-line message labels (#2588)', () => {
     const lh = two.messages[0]!.y - one.messages[0]!.y
     expect(lh).toBeGreaterThan(10)
     expect(three.messages[0]!.y - two.messages[0]!.y).toBeCloseTo(lh)
-    // the next row keeps its distance from the arrow
+    // The next row keeps its distance from the arrow
     expect(two.messages[1]!.y - two.messages[0]!.y).toBeCloseTo(
       one.messages[1]!.y - one.messages[0]!.y,
     )
@@ -56,7 +56,7 @@ describe('multi-line message labels (#2588)', () => {
     expect(arrowY(two) - baselines(two, 'first')[1]).toBeCloseTo(
       arrowY(one) - baselines(one, 'first')[1],
     )
-    // and the first line stays at the same y, so nothing moves up into the header
+    // And the first line stays at the same y, so nothing moves up into the header
     expect(baselines(two, 'first')[0]).toBeCloseTo(baselines(one, 'first')[0])
   })
 })
@@ -71,7 +71,7 @@ describe('multi-line frame labels (#2588)', () => {
     expect(two.blocks[0]!.y).toBeCloseTo(one.blocks[0]!.y)
     const extra = two.messages[1]!.y - one.messages[1]!.y
     expect(extra).toBeGreaterThan(10)
-    // arrow stays the same distance below the frame's label block
+    // Arrow stays the same distance below the frame's label block
     expect(two.messages[1]!.y - two.blocks[0]!.y).toBeCloseTo(
       one.messages[1]!.y - one.blocks[0]!.y + extra,
     )
