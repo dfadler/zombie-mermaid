@@ -165,9 +165,8 @@ export interface MermaidEdge {
   /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */
   animate?: boolean
   /**
-   * Architecture only: the ports put the ends side by side across the flow
-   * (`a:B -- T:b` in a left-to-right graph), so the SVG layout keeps the edge
-   * out of the layering and draws it straight between the two (#2473).
+   * Architecture only. No longer set: the SVG grid layout (#2619) draws every
+   * edge between the cells its ports name. Kept so the public type is unchanged.
    */
   acrossFlow?: boolean
 }
