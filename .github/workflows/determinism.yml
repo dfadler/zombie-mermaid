@@ -42,6 +42,10 @@ jobs:
     name: manifest (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    # The node-22 cells check that library consumers on an older Node get identical
+    # output, so they must install despite engineStrict (pnpm-workspace.yaml, #2621).
+    env:
+      pnpm_config_engine_strict: 'false'
     strategy:
       fail-fast: false
       matrix:
