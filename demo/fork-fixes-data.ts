@@ -738,7 +738,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'sequence-nested-blocks',
-    parked: 'ascii-sequence',
     title: 'Nested sequence blocks were drawn stacked, not nested, in ASCII',
     symptom:
       'A block inside another block (`alt` containing `loop`, `opt`) was laid out as if it were a sibling: its header and walls landed on the container’s walls, so the nesting was unreadable.',

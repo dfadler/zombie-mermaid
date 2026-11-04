@@ -33,7 +33,7 @@ describe('ASCII sequence nested blocks (#2497)', () => {
   })
 
   it('closes the inner block inside the outer one', () => {
-    expect(lines.some((l) => l.startsWith('│└'))).toBe(true)
+    expect(lines.some((l) => l.startsWith('│ └'))).toBe(true)
     expect(lines.some((l) => l.startsWith('└'))).toBe(true)
   })
 })
@@ -51,10 +51,10 @@ describe('ASCII sequence nested blocks over the same lifelines (#2497)', () => {
   ).split('\n')
   const row = (s: string) => lines.findIndex((l) => l.includes(s))
 
-  it('insets the inner block one column on each side', () => {
+  it('insets the inner block with one blank column on each side', () => {
     const outer = lines[row('[outer]')]!
     const inner = lines[row('[inner]')]!
-    expect(inner.indexOf('┌')).toBe(outer.indexOf('┌') + 1)
-    expect(inner.lastIndexOf('┐')).toBe(outer.lastIndexOf('┐') - 1)
+    expect(inner.indexOf('┌')).toBe(outer.indexOf('┌') + 2)
+    expect(inner.lastIndexOf('┐')).toBe(outer.lastIndexOf('┐') - 2)
   })
 })
