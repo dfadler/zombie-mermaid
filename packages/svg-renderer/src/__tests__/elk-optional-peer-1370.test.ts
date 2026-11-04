@@ -17,13 +17,13 @@ const GRAPH_DIAGRAMS: [string, string][] = [
   ['state', 'stateDiagram-v2\n  [*] --> A'],
   ['class', 'classDiagram\n  Animal <|-- Dog'],
   ['er', 'erDiagram\n  A ||--o{ B : has'],
+]
+
+const ELK_FREE_DIAGRAMS: [string, string][] = [
   [
     'architecture',
     'architecture-beta\n  service a(server)[A]\n  service b(server)[B]\n  a:R -- L:b',
   ],
-]
-
-const ELK_FREE_DIAGRAMS: [string, string][] = [
   ['sequence', 'sequenceDiagram\n  A->>B: hi'],
   ['pie', 'pie\n  "A" : 1\n  "B" : 2'],
   ['xychart', 'xychart-beta\n  line [1, 2, 3]'],
