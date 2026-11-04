@@ -756,7 +756,7 @@ export const allForkFixes: ForkFix[] = [
     id: 'xychart-bar-series-overlap',
     title: 'XY chart bar series were drawn side by side, not overlapping',
     symptom:
-      'Two `bar` series on the same categories were split into narrow adjacent bars, while mermaid 12.2.0 draws each series centred on the category with later series on top.',
+      'Two `bar` series on the same categories were split into narrow adjacent bars, while mermaid 12.3.0 draws each series centred on the category with later series on top.',
     source:
       'xychart-beta\n  title "2023 vs 2024 Sales"\n  x-axis [Q1, Q2, Q3, Q4]\n  bar [50, 60, 70, 80]\n  bar [60, 70, 80, 90]',
     fixCommit: '1941517f',
@@ -940,7 +940,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2543,
     render: 'svg',
     lookFor:
-      'Before: four evenly spaced category slots. After: a linear axis with a label at every tick of the range and the points placed by value, as in mermaid 12.2.0.',
+      'Before: four evenly spaced category slots. After: a linear axis with a label at every tick of the range and the points placed by value, as in mermaid 12.3.0.',
   },
   {
     id: 'architecture-group-row-level',
