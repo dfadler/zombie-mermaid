@@ -10,6 +10,10 @@
 import { describe, test, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
+/** Count open-V down heads (`v` on a line, never a letter inside a word like "Server"). */
+const downHeads = (out: string): number =>
+  (out.match(/(?<![A-Za-z])v(?![A-Za-z])/g) ?? []).length
+
 describe('Class Diagram Arrow Directions', () => {
   // ============================================================================
   // INHERITANCE (<|--)
@@ -110,8 +114,8 @@ describe('Class Diagram Arrow Directions', () => {
       const result = renderMermaidASCII(diagram)
 
       // Should contain downward arrow
-      expect(result).toContain('▼')
-      expect(result).not.toContain('▲')
+      expect(downHeads(result)).toBeGreaterThan(0)
+      expect(result).not.toContain('^')
 
       // Person should be above Address
       const lines = result.split('\n')
@@ -152,7 +156,7 @@ describe('Class Diagram Arrow Directions', () => {
       expect(bLine).toBeLessThan(cLine)
 
       // Both arrows point down
-      expect(result.match(/▼/g)?.length).toBe(2)
+      expect(downHeads(result)).toBe(2)
     })
 
     test('ASCII mode uses v for downward arrow', () => {
@@ -186,8 +190,8 @@ describe('Class Diagram Arrow Directions', () => {
         Bird --> Flyable`
       const result = renderMermaidASCII(diagram)
 
-      expect(result).toContain('▼')
-      expect(result).not.toContain('▲')
+      expect(downHeads(result)).toBeGreaterThan(0)
+      expect(result).not.toContain('^')
     })
   })
 
@@ -201,8 +205,8 @@ describe('Class Diagram Arrow Directions', () => {
         Client ..> Server`
       const result = renderMermaidASCII(diagram)
 
-      expect(result).toContain('▼')
-      expect(result).not.toContain('▲')
+      expect(downHeads(result)).toBeGreaterThan(0)
+      expect(result).not.toContain('^')
 
       const lines = result.split('\n')
       const clientLine = lines.findIndex((l) => l.includes('Client'))
@@ -376,7 +380,7 @@ describe('Class Diagram Arrow Directions', () => {
       expect(result.match(/▽/g)?.length).toBe(1)
 
       // Downward arrows for association and dependency
-      expect(result.match(/▼/g)?.length).toBe(2)
+      expect(downHeads(result)).toBe(2)
 
       // Diamonds for composition and aggregation
       expect(result).toContain('◆')
@@ -391,7 +395,7 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Should have both up triangle (inheritance) and down arrow (association)
       expect(result).toContain('△')
-      expect(result).toContain('▼')
+      expect(downHeads(result)).toBeGreaterThan(0)
     })
 
     test('circular reference creates valid layout', () => {
@@ -403,8 +407,8 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Cycles may create mixed arrow directions (up and down) to avoid overlaps
       // Just verify arrows are present and classes are rendered
-      const hasUpArrow = result.includes('▲')
-      const hasDownArrow = result.includes('▼')
+      const hasUpArrow = result.includes('^')
+      const hasDownArrow = downHeads(result) > 0
       expect(hasUpArrow || hasDownArrow).toBe(true)
       expect(result).toContain('│ A │')
       expect(result).toContain('│ B │')
@@ -458,11 +462,11 @@ describe('Class Diagram Arrow Directions', () => {
       expect(uAnimal).toBeLessThan(uDog)
       expect(aPerson).toBeLessThan(aAddress)
 
-      // Unicode has △ and ▼, ASCII has ^ and v
+      // Unicode has △ and an open-V head (v), ASCII has ^ and v
       expect(unicode).toContain('△')
-      expect(unicode).toContain('▼')
+      expect(downHeads(unicode)).toBeGreaterThan(0)
       expect(ascii).toContain('^')
-      expect(ascii).toContain('v')
+      expect(downHeads(ascii)).toBeGreaterThan(0)
     })
   })
 

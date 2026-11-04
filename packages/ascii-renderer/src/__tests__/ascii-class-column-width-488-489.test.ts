@@ -133,10 +133,10 @@ describe('ASCII class diagram — more than two relationships between a narrow p
       colorMode: 'none',
     }).split('\n')
 
-    const arrowRow = lines.findIndex((l) => l.includes('▼'))
+    const arrowRow = lines.findIndex((l) => l.includes('v'))
     expect(arrowRow).toBeGreaterThanOrEqual(0)
     const arrowCols = [...lines[arrowRow]!].flatMap((ch, i) =>
-      ch === '▼' ? [i] : [],
+      ch === 'v' ? [i] : [],
     )
     expect(arrowCols).toHaveLength(4)
 
@@ -553,7 +553,7 @@ describe('ASCII class diagram — a detour that clears to the left of its source
     // distinguishes the two branches.
     expect(entryRow).toContain('└')
     expect(entryRow).not.toContain('┘')
-    const arrowCol = lines[cTopRow - 1]!.indexOf('▼')
+    const arrowCol = lines[cTopRow - 1]!.indexOf('v')
     expect(arrowCol).toBeGreaterThanOrEqual(0)
     expect(entryRow.indexOf('└')).toBeLessThan(arrowCol)
     // '┤' where B --> C's own stem joins the run at the shared anchor
@@ -607,14 +607,14 @@ describe('ASCII class diagram — a fanned-out group routed upward (target above
     expect(dRow).toBeGreaterThan(bRow)
 
     // Four upward arrowheads land on the row just below B's bottom border
-    // (B's content row + 2: content, bottom border, then the fanned jog/
-    // arrow row), one per relationship. This row's outer trunk corners
+    // (B's title row + 6: title, divider, two empty compartments with their dividers,
+    // bottom border, then the fanned jog/arrow row), one per relationship. This row's outer trunk corners
     // ('┬'/'┴' merged with the box-border tee) come from `drawJog`'s
     // `toJogs` side (line 1008/1005's loop) — B is the *target* of these
     // upward relationships.
-    const arrowRow = bRow + 2
+    const arrowRow = bRow + 6
     const arrowCols = [...lines[arrowRow]!].flatMap((ch, i) =>
-      ch === '▲' ? [i] : [],
+      ch === '^' ? [i] : [],
     )
     expect(arrowCols.length).toBeGreaterThanOrEqual(4)
     // The outer ends of this row merge the fan's jog into B's own border

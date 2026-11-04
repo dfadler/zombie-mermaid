@@ -1,11 +1,11 @@
 +----------------------------+             
-| Controller                 |             
+|         Controller         |             
 +----------------------------+             
-| - model Model              |             
-| - view View                |             
+| -model Model               |             
+| -view View                 |             
 +----------------------------+             
-| + handleInput(event): void |             
-| + updateModel(data): void  |             
+| +handleInput(event) : void |             
+| +updateModel(data) : void  |             
 +----------------------------+             
                |                           
                ----------------            
@@ -13,13 +13,13 @@
                |              |            
                v              |            
  +---------------------------+|            
- | Model                     ||            
+ |           Model           ||            
  +---------------------------+|            
- | - data Map                ||            
+ | -data Map                 ||            
  +---------------------------+|            
- | + getData(): Map          || refreshes  
- | + setData(key, val): void ||            
- | + notify(): void          ||            
+ | +getData() : Map          || refreshes  
+ | +setData(key, val) : void ||            
+ | +notify() : void          ||            
  +---------------------------+|            
           ^          :        |            
           |          :        |            
@@ -29,12 +29,12 @@
           |    ------:---------            
           |    v     v                     
      +------------------+                  
-     | View             |                  
+     |       View       |                  
      +------------------+                  
-     | - model Model    |                  
+     | -model Model     |                  
      +------------------+                  
-     | + render(): void |                  
-     | + update(): void |                  
+     | +render() : void |                  
+     | +update() : void |                  
      +------------------+                  
                                            
                                            
