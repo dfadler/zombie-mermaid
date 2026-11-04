@@ -74,3 +74,7 @@ overrides:
 blockExoticSubdeps: true
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
+
+# pnpm 11 ignores `engine-strict` in .npmrc (it only warned on Node < 24), so
+# set it here: install/run/verify refuse to start under the wrong Node.
+engineStrict: true
