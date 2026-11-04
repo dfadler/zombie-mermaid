@@ -932,6 +932,19 @@ export const forkFixes: ForkFix[] = [
       'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a compact staircase, S1/S4 in the first column and S2/S3 in the second, as mermaid draws it.',
   },
   {
+    id: 'architecture-replica-under-junction',
+    title: 'Architecture service under a junction stayed in its group column',
+    symptom:
+      'In a nested-groups architecture diagram, `fan:B --> T:replica` left `replica` beside `Primary DB` instead of under the junction, because the neighbouring group was a pixel short of the usual margin.',
+    source:
+      'architecture-beta\n  group cloud(cloud)[Cloud]\n  group api(server)[API Tier] in cloud\n  group data(database)[Data Tier] in cloud\n  service gw(internet)[Gateway] in api\n  service app(server)[App] in api\n  service db(database)[Primary DB] in data\n  service replica(disk)[Replica] in data\n  junction fan in cloud\n  service client(internet)[Client]\n  client:R --> L:gw\n  gw:R -- L:app\n  app:R -- L:fan\n  fan:R --> L:db\n  fan:B --> T:replica',
+    fixCommit: '083ce722',
+    pr: 2579,
+    render: 'svg',
+    lookFor:
+      'Before: Replica sits below Primary DB. After: Replica sits directly under the junction, left of Primary DB, as in mermaid 12.2.0.',
+  },
+  {
     id: 'flowchart-linkstyle-head-colour',
     title: 'A coloured flowchart edge kept a grey arrowhead',
     symptom:
