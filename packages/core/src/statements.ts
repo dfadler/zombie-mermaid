@@ -13,6 +13,8 @@
 // statement".
 // ============================================================================
 
+import { stripFrontMatter } from './front-matter.ts'
+
 /**
  * Matches a character reference in either spelling Mermaid accepts.
  *
@@ -159,7 +161,7 @@ export interface Statement {
  */
 export function splitStatementsByLine(text: string): Statement[][] {
   const groups: Statement[][] = []
-  const rawLines = text.split('\n')
+  const rawLines = stripFrontMatter(text).split('\n')
 
   for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
     let line = rawLines[lineIndex]!.trim()
