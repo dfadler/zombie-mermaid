@@ -1,5 +1,28 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.14.3
+
+### Patch Changes
+
+- [#2573](https://github.com/dfadler/zombie-mermaid/pull/2573) [`427597e`](https://github.com/dfadler/zombie-mermaid/commit/427597e23b42b10d8830c7fa52cded72c825ab3a) Thanks [@dfadler](https://github.com/dfadler)! - Architecture SVG: a `junction` is now a join with no gray disc and no gap in the edge, and a group's icon (`group api(server)[API]`) is drawn in its header, as in mermaid 12.2.0 and 12.3.0 ([#2563](https://github.com/dfadler/zombie-mermaid/issues/2563), [#2564](https://github.com/dfadler/zombie-mermaid/issues/2564)). ASCII output is unchanged.
+
+- [#2572](https://github.com/dfadler/zombie-mermaid/pull/2572) [`1e019fa`](https://github.com/dfadler/zombie-mermaid/commit/1e019fa12439aa207b056d049c7959bba96f9617) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts and state diagrams no longer cut an edge label at the canvas edge. A label centred on a stroke in the outermost column (an `RL` state diagram's `S4-->S0 : e1`) printed as `└1` with its first character off the canvas; the canvas now grows to hold the whole label ([#2554](https://github.com/dfadler/zombie-mermaid/issues/2554)).
+
+- [#2575](https://github.com/dfadler/zombie-mermaid/pull/2575) [`88fda60`](https://github.com/dfadler/zombie-mermaid/commit/88fda60354f16a5a730d03d3ec9260fbf0ee8c0b) Thanks [@dfadler](https://github.com/dfadler)! - ASCII `LR`/`RL` flowcharts no longer push a labelled node's branches far apart. A box with a labelled edge to the first of two children was moved into a slot of its own, opening about ten empty rows between the second-rank nodes (`S0 -->|e0| S1; S1 --> S2; S1 --> S3; S0 --> S4` drew three times as tall as mermaid). It now sits between its children, as mermaid draws it, and the label rides the horizontal run ([#2561](https://github.com/dfadler/zombie-mermaid/issues/2561)).
+
+- [#2542](https://github.com/dfadler/zombie-mermaid/pull/2542) [`3e1e9f8`](https://github.com/dfadler/zombie-mermaid/commit/3e1e9f8e3f65768c7176b677d003700fb77a69ff) Thanks [@dfadler](https://github.com/dfadler)! - ASCII `LR`/`RL` flowcharts, state and class diagrams now draw an edge label on its edge, as mermaid does, and no longer print it over the arrowhead. When a label did not fit on its run beside a sibling edge's stem, it slid to the row above, or landed on the cell next to the target box, so `S1 -->|e1| S2` beside `S1 --> S3` drew `┬e1│ S2 │` with no head on `S2`. The gap between the two nodes now widens until the label fits on the edge with a blank cell each side, so the same graph draws `┬─e1─►│ S2 │`. Some `LR` diagrams with labelled edges come out a few columns wider ([#1592](https://github.com/dfadler/zombie-mermaid/issues/1592)).
+
+- [#2571](https://github.com/dfadler/zombie-mermaid/pull/2571) [`e00ffd6`](https://github.com/dfadler/zombie-mermaid/commit/e00ffd69c481276c051687ecd6d8eb4fc07bb80c) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a numeric xychart x range (`x-axis 0 --> 100`) now labels every nice tick and places it by value, like mermaid and the SVG renderer ([#2553](https://github.com/dfadler/zombie-mermaid/issues/2553)). A trailing empty `else`/`and`/`option` section in a sequence block keeps its divider line ([#2555](https://github.com/dfadler/zombie-mermaid/issues/2555)).
+
+- [#2581](https://github.com/dfadler/zombie-mermaid/pull/2581) [`47ea03c`](https://github.com/dfadler/zombie-mermaid/commit/47ea03c0b092eaac588810931aee417942f74917) Thanks [@dfadler](https://github.com/dfadler)! - Flowchart SVG: `@{ shape: }` now draws `cloud`, `h-cyl`, `tag-rect`, `sm-circ` and `fork`/`join` as Mermaid 12.3.0 does: a cloud outline, a horizontal cylinder, a dog-eared rectangle, a small unlabelled circle, and an unlabelled bar across the flow ([#2552](https://github.com/dfadler/zombie-mermaid/issues/2552)).
+
+- [#2597](https://github.com/dfadler/zombie-mermaid/pull/2597) [`8757f5d`](https://github.com/dfadler/zombie-mermaid/commit/8757f5d24cace494346cb15b40f3047114f1d2d1) Thanks [@dfadler](https://github.com/dfadler)! - A leading YAML front matter block (`---` ... `---`) is now accepted on every diagram type instead of failing with "Invalid mermaid header". `config:` is applied like the equivalent `%%{init}%%` directive; `title:` and other keys are ignored. An unterminated block reports the line of its opening `---` ([#2585](https://github.com/dfadler/zombie-mermaid/issues/2585)).
+
+- [#2600](https://github.com/dfadler/zombie-mermaid/pull/2600) [`c387226`](https://github.com/dfadler/zombie-mermaid/commit/c38722658c4347f4ea56e8d5694373c6bd0f28ea) Thanks [@dfadler](https://github.com/dfadler)! - Sequence diagrams now honour `%%{init: {"sequence": {"mirrorActors": false}}}%%` (no participant row under the lifelines) and `showSequenceNumbers: true` (numbers messages like `autonumber`), as mermaid does. The other sequence init options and `link`/`links` are still ignored and are listed in docs/known-differences.md ([#2589](https://github.com/dfadler/zombie-mermaid/issues/2589)).
+- Updated dependencies [[`427597e`](https://github.com/dfadler/zombie-mermaid/commit/427597e23b42b10d8830c7fa52cded72c825ab3a), [`47ea03c`](https://github.com/dfadler/zombie-mermaid/commit/47ea03c0b092eaac588810931aee417942f74917), [`c75bab5`](https://github.com/dfadler/zombie-mermaid/commit/c75bab509c1d384cf0ee045e26ad5bcc9137a9df), [`8757f5d`](https://github.com/dfadler/zombie-mermaid/commit/8757f5d24cace494346cb15b40f3047114f1d2d1), [`c387226`](https://github.com/dfadler/zombie-mermaid/commit/c38722658c4347f4ea56e8d5694373c6bd0f28ea)]:
+  - @zombie-mermaid/mermaid-parser@5.14.3
+  - @zombie-mermaid/core@5.14.3
+
 ## 5.14.2
 
 ### Patch Changes
