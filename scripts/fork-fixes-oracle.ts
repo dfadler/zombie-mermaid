@@ -21,10 +21,10 @@ import {
   type RealMermaidSession,
 } from './lib/real-mermaid.ts'
 
-const latestDir = resolve(process.env.MERMAID_LATEST_DIR ?? '')
-const out = resolve(process.env.OUT ?? '')
 if (!process.env.MERMAID_LATEST_DIR || !process.env.OUT)
   throw new Error('set MERMAID_LATEST_DIR and OUT')
+const latestDir = resolve(process.env.MERMAID_LATEST_DIR)
+const out = resolve(process.env.OUT)
 const only = process.argv
   .find((a) => a.startsWith('--only='))
   ?.slice(7)
@@ -37,7 +37,7 @@ const version = async (dir: string) =>
 
 async function renderOne(s: RealMermaidSession, id: string, source: string) {
   try {
-    // rough.js seeds its wobble from Math.random; reseed so pin/latest compare deterministically.
+    // Reseed Math.random (rough.js wobble) so pin/latest compare deterministically.
     await s.page.evaluate(() => {
       let a = 0x2f6e2b1
       Math.random = () => {
@@ -47,12 +47,8 @@ async function renderOne(s: RealMermaidSession, id: string, source: string) {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296
       }
     })
-    // One render id per entry so the pin/latest SVGs are comparable byte-for-byte.
-    const svg = await renderRealMermaidSvg(
-      s,
-      `fx_${id.replace(/-/g, '_')}`,
-      source,
-    )
+    const renderId = `fx_${id.replace(/-/g, '_')}` // Same id for pin and latest
+    const svg = await renderRealMermaidSvg(s, renderId, source)
     return { svg, error: null as string | null }
   } catch (e) {
     return { svg: null, error: e instanceof Error ? e.message : String(e) }
@@ -76,8 +72,7 @@ const facts = (svg: string) => ({
     .map((m) => m[1].trim())
     .filter(Boolean),
 })
-// Iconify ids carry a per-page random suffix; they're noise for the comparison.
-// Full SVG (markers and <style> included) so marker/CSS-only version changes count as differences.
+// Full SVG, so marker/CSS-only changes count; Iconify ids are per-page random noise.
 const norm = (svg: string) => svg.replace(/IconifyId[0-9a-f]+/g, 'IconifyId')
 const hash = (s: string) =>
   createHash('sha1').update(s).digest('hex').slice(0, 10)

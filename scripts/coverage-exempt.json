@@ -303,5 +303,10 @@
     "file": "scripts/promo-figures.ts",
     "reason": "thin CLI: runs on import, prints figures read from package.json, README, fork-fixes-data and npm; no logic to unit test",
     "maxLines": 30
+  },
+  {
+    "file": "scripts/fork-fixes-oracle.ts",
+    "reason": "audit harness: needs headless Chromium plus a mermaid@latest install outside the repo, so it only runs as a CLI (rerun command in its header, #2607)",
+    "maxLines": 150
   }
 ]
