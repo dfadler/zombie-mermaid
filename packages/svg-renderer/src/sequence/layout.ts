@@ -284,6 +284,10 @@ function fitLabelsBetweenLifelines(
     else if (n.actorIds.length === 1) {
       widen(i, i + 1, w / 2 + LABEL_CLEARANCE)
       widen(i - 1, i, w / 2 + LABEL_CLEARANCE)
+    } else {
+      // Mermaid spreads the actors so a long note fits its 25px-overhang span.
+      const j = index.get(n.actorIds[n.actorIds.length - 1]!)!
+      widen(Math.min(i, j), Math.max(i, j), w - 50)
     }
   }
 
@@ -502,7 +506,7 @@ export function layoutSequenceDiagram(
     PositionedNote
   >()
   const placeNote = (note: (typeof diagram.notes)[number], noteY: number) => {
-    const noteW = Math.max(
+    let noteW = Math.max(
       seq.noteWidth,
       labelWidth(note.text, fontSizes.edgeLabel) + seq.notePadX * 2,
     )
@@ -530,9 +534,12 @@ export function layoutSequenceDiagram(
       const lastActorIdx =
         actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
         firstActorIdx
-      noteX =
-        (actorCenterX[firstActorIdx]! + actorCenterX[lastActorIdx]!) / 2 -
-        noteW / 2
+      const c1 = actorCenterX[firstActorIdx]!
+      const c2 = actorCenterX[lastActorIdx]!
+      // Mermaid 12.3.0 spans the note across both lifelines, overhanging
+      // each by 25px, and only grows past that for longer text (#2587).
+      noteW = Math.max(noteW, Math.abs(c1 - c2) + 50)
+      noteX = (c1 + c2) / 2 - noteW / 2
     } else {
       noteX = actorCenterX[firstActorIdx]! - noteW / 2
     }
