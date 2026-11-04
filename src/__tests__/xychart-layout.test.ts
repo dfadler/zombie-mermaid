@@ -7,7 +7,7 @@
  * doesn't reach.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaid } from '../index.ts'
+import { renderMermaid, renderMermaidSVG } from '../index.ts'
 import {
   niceTickValues,
   formatTickLabels,
@@ -40,9 +40,9 @@ describe('xychart – horizontal layout', () => {
     expect(svg).toContain('Horizontal Combo')
     expect(svg).toContain('Category')
     expect(svg).toContain('Value')
-    expect(svg).toContain('Bar 1')
-    expect(svg).toContain('Bar 2')
-    expect(svg).toContain('Line 1')
+    // Mermaid draws no legend for multiple series
+    expect(svg).not.toContain('Bar 1')
+    expect(svg).not.toContain('Line 1')
     expect(svg).toContain('data-value="20"')
     expect(svg).toContain('data-value="60"')
     expect(svg).toContain('data-value="15"')
@@ -129,9 +129,9 @@ describe('xychart – vertical layout branch coverage', () => {
   bar [30, 60, 90]
   line [40, 70, 100]`)
     expect(svg).toContain('Multi Bar')
-    expect(svg).toContain('Bar 1')
-    expect(svg).toContain('Bar 2')
-    expect(svg).toContain('Line 1')
+    // Mermaid draws no legend for multiple series
+    expect(svg).not.toContain('Bar 1')
+    expect(svg).not.toContain('Line 1')
     expect(svg).toContain('data-value="120"')
     expect(svg).toContain('data-value="90"')
     expect(svg).not.toContain('NaN')
@@ -214,5 +214,27 @@ describe('xychart – y-axis tick labels stay distinct (#1234)', () => {
     // Mermaid 12.2.0 gives a single value one tick, labelled with the value
     expect(svg).toContain('>42<')
     expect(svg).not.toContain('>41.9')
+  })
+})
+
+describe('xychart – bars as mermaid draws them', () => {
+  const d = (svg: string) =>
+    [...svg.matchAll(/<path d="([^"]+)" class="xychart-bar /g)].map((m) => m[1])
+
+  it('draws flat, unstroked bars', () => {
+    const svg = renderMermaidSVG('xychart-beta\n  x-axis [a, b]\n  bar [1, 2]')
+    expect(d(svg).every((p) => !/[QC]/.test(p!))).toBe(true)
+    expect(svg).toContain('stroke: none; fill: var(--xychart-bar-fill-0)')
+  })
+
+  it('clips a bar that runs below the y-axis range and drops one wholly outside', () => {
+    const svg = renderMermaidSVG(
+      'xychart-beta\n  x-axis [a, b, c]\n  y-axis 50 --> 100\n  bar [30, 70, 20]',
+    )
+    const baseline = svg.match(/<path d="M[\d.]+,[\d.]+ V([\d.]+) H/)![1]
+    const bars = d(svg)
+    // The 30 bar is below the range, so it is dropped; the 70 bar ends on the axis
+    expect(bars).toHaveLength(1)
+    expect(bars[0]).toContain(`V${baseline} `)
   })
 })
