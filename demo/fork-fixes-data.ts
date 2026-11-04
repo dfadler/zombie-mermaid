@@ -939,7 +939,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'graph TD\n  A --> B\n  A --> C\n  linkStyle 0 stroke:#f00,stroke-width:2px',
     fixCommit: 'c4137f7d',
-    pr: 0,
+    pr: 2580,
     render: 'svg',
     lookFor:
       'Before: the A to B line is red with a grey head. After: the head is red too, as in mermaid 12.2.0; the A to C edge keeps its grey head.',
