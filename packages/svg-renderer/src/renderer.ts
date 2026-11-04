@@ -12,7 +12,6 @@ import {
   svgOpenTag,
   buildStyleBlock,
   styleOpenTag,
-  getReadableTextColor,
   measureMultilineText,
   renderMultilineText,
   renderMultilineTextWithBackground,
@@ -1712,16 +1711,10 @@ function renderNodeLabel(
       ? node.y + node.height / 2
       : node.y + node.height + SERVICE_LABEL_DROP
 
-  // Resolve text color — inline styles can override the CSS variable default.
-  // When there's no explicit `color` but there IS a concrete, resolvable
-  // `fill` (e.g. from classDef/style), compute a readable black/white text
-  // color from the fill's luminance instead of defaulting to the ambient
-  // theme foreground, which can be unreadable against a custom fill (e.g.
-  // white theme text on a light pastel fill in dark mode). See issue #55.
-  const textColor = escapeAttr(
-    node.inlineStyle?.color ??
-      getReadableTextColor(node.inlineStyle?.fill, 'var(--_text)'),
-  )
+  // Resolve text color: an explicit `color` (style / classDef / class) wins,
+  // otherwise the theme text color. A custom `fill` never changes the text
+  // color, as in Mermaid 12.3.0 (#2637).
+  const textColor = escapeAttr(node.inlineStyle?.color ?? 'var(--_text)')
 
   let attrs = f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
 

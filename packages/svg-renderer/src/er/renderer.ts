@@ -8,7 +8,6 @@ import type {
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
-  getReadableTextColor,
   sanitizeClassName,
   renderMultilineText,
   escapeXml as escapeXmlUtil,
@@ -173,9 +172,7 @@ function renderEntityBox(
   const headerFill = inlineStyle?.fill ? fill : 'var(--_group-hdr)'
   const textColor = inlineStyle?.color
     ? escapeAttr(inlineStyle.color)
-    : inlineStyle?.fill
-      ? escapeAttr(getReadableTextColor(inlineStyle.fill, 'var(--_text)'))
-      : undefined
+    : undefined
 
   // Semantic wrapper with entity metadata; a style class is emitted after the
   // same allowlist the flowchart renderer applies, so external CSS can use it.
