@@ -122,7 +122,8 @@ export function renderSequenceAscii(
   theme?: AsciiTheme,
 ): string {
   const lines = splitStatements(text)
-  const diagram = parseSequenceDiagram(lines)
+  const diagram = parseSequenceDiagram(lines, text)
+  const mirror = diagram.mirrorActors !== false
 
   if (diagram.actors.length === 0) return ''
 
@@ -841,7 +842,9 @@ export function renderSequenceAscii(
   // footer boxes start one row under it; otherwise it is the boxes' own top.
   const footerY = curY
   const footerBoxTop = footerY + bracketRows
-  const totalH = footerBoxTop + actorBoxH + bracketRows
+  // Without a mirrored footer row (`mirrorActors: false`) the canvas ends on
+  // the row after the last lifeline cell.
+  const totalH = mirror ? footerBoxTop + actorBoxH + bracketRows : footerY
 
   // Total canvas width
   const lastLL = llX[llX.length - 1] ?? 0
@@ -1023,7 +1026,8 @@ export function renderSequenceAscii(
     const boxTop = createdBoxTop.get(i)
     return boxTop === undefined ? headerBottom : boxTop + createdBoxH(i)
   }
-  const lifelineBottom = (i: number) => destroyRow.get(i) ?? footerY
+  const lifelineBottom = (i: number) =>
+    destroyRow.get(i) ?? (mirror ? footerY : footerY - 1)
 
   // ---- LAYOUT: activation intervals (rows where a lifeline is "active") ----
   //
@@ -1160,7 +1164,7 @@ export function renderSequenceAscii(
   }
   for (const span of boxSpans) {
     drawBracket(span, 0, span.label, headerBoxH)
-    drawBracket(span, footerY, '', actorBoxH)
+    if (mirror) drawBracket(span, footerY, '', actorBoxH)
   }
 
   // ---- DRAW: actor header + footer boxes (drawn over lifelines) ----
@@ -1179,7 +1183,7 @@ export function renderSequenceAscii(
       actorGlyphLines(actor),
       headerH,
     )
-    if (!destroyed) {
+    if (mirror && !destroyed) {
       drawActorBox(
         llX[i]!,
         footerBoxTop,
@@ -1192,7 +1196,7 @@ export function renderSequenceAscii(
     // Lifeline junctions on box borders (Unicode only)
     if (!useAscii) {
       setC(llX[i]!, headerTop + headerH - 1, JT, 'junction')
-      if (!destroyed) setC(llX[i]!, footerBoxTop, JB, 'junction')
+      if (mirror && !destroyed) setC(llX[i]!, footerBoxTop, JB, 'junction')
     }
   }
 

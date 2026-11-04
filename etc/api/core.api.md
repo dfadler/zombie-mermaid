@@ -253,6 +253,8 @@ export interface InitConfig {
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
     pieTextPosition?: number;
     quadrant?: QuadrantConfig;
+    sequenceMirrorActors?: boolean;
+    sequenceShowNumbers?: boolean;
     // (undocumented)
     theme?: string;
     themeVariables?: ThemeVariables;
