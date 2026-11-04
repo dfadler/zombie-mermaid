@@ -41,13 +41,13 @@ export function coverageErrors(
   const pkgNames: Record<string, string> = {}
   for (const dir of pkgDirs) {
     const raw = read(`packages/${dir}/package.json`)
-    if (raw === undefined) continue // e.g. packages/site is not a package
+    if (raw === undefined) continue // E.g. packages/site is not a package
     const pkg = JSON.parse(raw) as { name: string; private?: boolean }
     if (!pkg.private) pkgNames[dir] = pkg.name
   }
   const texts = changedFiles
     .filter((f) => /^\.changeset\/(?!README).*\.md$/.test(f))
-    .map((f) => read(f) ?? '') // a deleted changeset reads as empty
+    .map((f) => read(f) ?? '') // A deleted changeset reads as empty
   return missingPackages(changedFiles, texts, pkgNames).map(
     (n) =>
       `${n} source changed but no changeset in this PR names it (its CHANGELOG would omit the change). Add \`'${n}': patch\` to a changeset.`,
