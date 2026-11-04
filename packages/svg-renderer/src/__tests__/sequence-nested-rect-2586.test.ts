@@ -6,7 +6,8 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
 
-const svg = (body: string) => renderMermaidSVG('sequenceDiagram\nA->>B: x\n' + body)
+const svg = (body: string) =>
+  renderMermaidSVG('sequenceDiagram\nA->>B: x\n' + body)
 const at = (s: string, needle: string) => {
   const i = s.indexOf(needle)
   expect(i).toBeGreaterThan(-1)
