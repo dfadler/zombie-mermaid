@@ -143,7 +143,7 @@ export function analyzeEdgeBundles(graph: AsciiGraph): EdgeBundle[] {
  * Returns false if edges have different styles, any have labels,
  * or if the edges span subgraph boundaries (which creates complex routing).
  */
-function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
+export function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
   if (edges.length < 2) return false
 
   const firstStyle = edges[0]!.style
