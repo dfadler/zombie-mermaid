@@ -122,17 +122,9 @@ function getMarkerShape(
       return useAscii ? 'O' : '○'
     case 'association':
     case 'dependency':
-      // Directional arrow - rotate based on line direction
-      if (direction === 'down') {
-        return 'v'
-      } else if (direction === 'up') {
-        return '^'
-      } else if (direction === 'left') {
-        return '<'
-      } else {
-        // Default to right (or when direction not specified)
-        return '>'
-      }
+      // Directional arrow: Mermaid's open V, the same in both charsets;
+      // defaults to right when the direction isn't given.
+      return { up: '^', down: 'v', left: '<', right: '>' }[direction ?? 'right']
   }
 }
 
