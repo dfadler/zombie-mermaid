@@ -64,6 +64,16 @@ describe('flow-face fan-out (TD)', () => {
     expect(col('C')).toBe(col('D'))
   })
 
+  it('gives unlabelled mixed-style edges a stem each around a straight one', () => {
+    const rows = render(`graph TD
+  A --> C
+  A -.-> B
+  A ==> D`)
+    const border = rows.find((l) => l.includes('└') && l.includes('┬'))!
+    expect(border.match(/┬/g)).toHaveLength(3)
+    expect(rows.join('\n')).not.toMatch(/├/)
+  })
+
   it('puts each label on its own drop, between the bend and the arrowhead', () => {
     const rows = render(`graph TD
   A -->|x| B
