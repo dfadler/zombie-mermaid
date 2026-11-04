@@ -127,12 +127,15 @@ describe('ER entity table (issue #2630)', () => {
 
   it('pads the last row so a self loop on a short table entity fits', () => {
     const out = renderMermaidASCII(
-      'erDiagram\n  A ||--o{ A : parent\n  A {\n    int id\n  }',
+      'erDiagram\n  A ||--o{ A : parent\n  A ||--o{ A : child\n  A {\n    int id\n  }',
       { colorMode: 'none' },
     )
     expect(out).toContain('parent')
+    expect(out).toContain('child')
     expect(out.split('\n').filter((l) => l.includes('│ int')).length).toBe(1)
-    // 3 rows of box interior at least: name, rule, row line + padding.
-    expect(out.split('\n').findIndex((l) => l.includes('└'))).toBeGreaterThan(4)
+    // Two loops need 5 interior rows; name + rule + row line is only 3.
+    expect(
+      out.split('\n').findIndex((l) => l.includes('┴')),
+    ).toBeGreaterThanOrEqual(6)
   })
 })
