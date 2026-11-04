@@ -125,7 +125,7 @@ with its output; cite the line it came from in the draft's sources table.
 | Figure                | Source                                                                                                                              | Re-check                          |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | Latest version        | npm registry (`package.json` is only the unreleased tip)                                                                            | `npm view zombie-mermaid version` |
-| Fix count             | `forkFixes.length` in `demo/fork-fixes-data.ts`, which the README's "(N fixes)" must match                                          | script lines 3-4                  |
+| Fix count             | `forkFixes.length` in `demo/fork-fixes-data.ts`, which the README no longer states (#2590)                                          | script lines 3-4                  |
 | "N reported upstream" | entries with `upstreamIssues`, a smaller number than the fix count ([#1789](https://github.com/dfadler/zombie-mermaid/issues/1789)) | script line 5                     |
 
 The count moves with every fork-fix PR, so a draft written before a merge is wrong after it.
