@@ -787,7 +787,7 @@ export function layoutSequenceDiagram(
     let blockTop =
       (startMsg?.y ?? messageY) -
       seq.blockPadTop -
-      (startLabelExtra.get(block.startIndex) ?? 0) -
+      startLabelExtra.get(block.startIndex)! -
       (msgLabelExtra[block.startIndex] ?? 0)
     for (const c of inner)
       blockTop = Math.min(blockTop, c.y - seq.blockHeaderExtra)
