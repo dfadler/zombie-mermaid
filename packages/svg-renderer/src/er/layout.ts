@@ -126,7 +126,7 @@ export function erCells(a: ErAttribute): [string, string, string, string] {
     a.name,
     a.keys.join(','),
     (a.comment ?? '')
-      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<br\s{0,8}\/?>/gi, '\n')
       .split('\n')
       .map((line) => line.trim())
       .join(' '),
