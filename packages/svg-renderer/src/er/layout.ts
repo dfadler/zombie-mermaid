@@ -146,7 +146,12 @@ type EntitySizeMap = Map<string, { width: number; height: number }>
  * right-aligned name (#1262, same cause as class members in #1238).
  */
 function attrTextWidth(text: string): number {
-  return text.length * Math.ceil(estimateMonoTextWidth('M', ER.attrFontSize))
+  // Fullwidth (CJK) glyphs take two cells.
+  const cells = [...text].reduce(
+    (n, ch) => n + (ch.codePointAt(0)! >= 0x2e80 ? 2 : 1),
+    0,
+  )
+  return cells * Math.ceil(estimateMonoTextWidth('M', ER.attrFontSize))
 }
 
 function buildErElkGraph(

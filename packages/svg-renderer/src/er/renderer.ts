@@ -221,7 +221,8 @@ function renderEntityBox(
     const xs = [x]
     for (const c of cols) xs.push(xs[xs.length - 1]! + c.width + extra)
 
-    for (let i = 1; i < attributes.length; i += 2) {
+    // A custom fill paints the whole box; a tint over it could hide the text.
+    for (let i = 1; !inlineStyle?.fill && i < attributes.length; i += 2) {
       parts.push(
         f`  <rect x="${x}" y="${attrTop + i * rowHeight}" width="${width}" height="${rowHeight}" ` +
           f`fill="var(--_key-badge)" />`,

@@ -50,3 +50,24 @@ describe('ER attribute table', () => {
     expect(texts(svg)).toContain('x y')
   })
 })
+
+describe('ER attribute table edge cases', () => {
+  it('leaves rows untinted under a custom entity fill', () => {
+    const svg = renderMermaidSVG(
+      'erDiagram\n  T {\n    int a\n    int b\n  }\n  style T fill:#1e293b',
+    )
+    expect(svg).not.toContain('fill="var(--_key-badge)"')
+  })
+
+  it('makes a column wider for fullwidth text', () => {
+    const width = (name: string) =>
+      Number(
+        /<rect x="[^"]*" y="[^"]*" width="([\d.]+)"/.exec(
+          renderMermaidSVG(`erDiagram\n  T {\n    int ${name}\n  }`),
+        )![1],
+      )
+    expect(width('名前名前名前名前名前名前')).toBeGreaterThan(
+      width('abcdefghijkl'),
+    )
+  })
+})

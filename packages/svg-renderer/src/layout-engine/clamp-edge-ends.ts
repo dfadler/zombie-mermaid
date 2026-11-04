@@ -22,16 +22,31 @@ function clampEnd(end: Point, next: Point, node: PositionedNode): void {
   }
 }
 
+/** Shapes whose outline is not their box face, so the end is left where it is. */
+const CURVED = new Set([
+  'diamond',
+  'circle',
+  'doublecircle',
+  'small-circle',
+  'state-start',
+  'state-end',
+])
+
 export function clampEdgeEnds(graph: PositionedGraph): PositionedGraph {
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]))
   for (const e of graph.edges) {
     const p = e.points
     const source = nodes.get(e.source)
     const target = nodes.get(e.target)
-    // A diamond's face is a slope, not its box.
     if (p.length < 2 || !source || !target) continue
-    if (source.shape !== 'diamond') clampEnd(p[0]!, p[1]!, source)
-    if (target.shape !== 'diamond')
+    // Clamping a two-point edge moves its other end too, so both must be flat.
+    if (
+      p.length === 2 &&
+      (CURVED.has(source.shape) || CURVED.has(target.shape))
+    )
+      continue
+    if (!CURVED.has(source.shape)) clampEnd(p[0]!, p[1]!, source)
+    if (!CURVED.has(target.shape))
       clampEnd(p[p.length - 1]!, p[p.length - 2]!, target)
   }
   return graph
