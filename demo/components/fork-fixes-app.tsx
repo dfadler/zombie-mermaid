@@ -802,7 +802,7 @@ const FIX_GROUPS: readonly {
     key: 'markup',
     heading: 'Markup-only fixes',
     blurb:
-      'These change the SVG markup, not what a browser shows, so each panel is an excerpt. They make no claim to match Mermaid’s output.',
+      'These change the SVG markup, and a default browser render looks the same either way, so each panel is an excerpt. Two can show in a browser given the host page’s CSS: the font variable (a page that defines it) and the class attribute (an external stylesheet that targets it). They make no claim to match Mermaid’s output.',
   },
 ]
 

@@ -201,6 +201,7 @@ describe('ForkFixesApp groups', () => {
     const html = render([fix('m1', 'markup'), fix('f1', 'features'), fix('x1')])
     expect(html).not.toContain('id="group-fixes"')
     const at = (s: string) => html.indexOf(s)
+    expect(html).toContain('id="x1"')
     expect(at('id="x1"')).toBeLessThan(at('id="group-features"'))
     expect(at('id="group-features"')).toBeLessThan(at('id="f1"'))
     expect(at('id="f1"')).toBeLessThan(at('id="group-markup"'))
@@ -209,6 +210,8 @@ describe('ForkFixesApp groups', () => {
   })
 
   it('omits the heading of an empty group', () => {
-    expect(render([fix('x1')])).not.toContain('id="group-markup"')
+    const html = render([fix('x1')])
+    expect(html).not.toContain('id="group-markup"')
+    expect(html).not.toContain('id="group-features"')
   })
 })

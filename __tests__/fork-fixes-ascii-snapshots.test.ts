@@ -6,8 +6,11 @@
  * nothing noticed when a renderer change made them stale: 22 of 44 had drifted
  * by the time of the audit (#2606). This snapshots each shown ASCII entry's
  * After text, rendered the way the capture does (`colorMode: 'none'`), so a PR
- * that changes any of them fails here until the author re-runs the capture and
- * commits the PNG next to the updated snapshot.
+ * that changes any of them fails here until the author updates the snapshot.
+ * It cannot check the PNG itself (that needs the asciinema pipeline, which
+ * does not run in the test job): the failure message says to re-capture, and
+ * the updated .txt shows up in the PR diff next to the PNG, where a reviewer
+ * can see that one changed without the other.
  */
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
