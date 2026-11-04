@@ -1062,6 +1062,8 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: a footer row of Alice and Bob boxes and unnumbered arrows. After: no footer row and the messages numbered 1 and 2, as in mermaid 12.3.0.',
+  },
+  {
     id: 'sequence-multiline-label-spacing',
     title: 'Multi-line sequence labels crowded the frame border and the arrow',
     symptom:
