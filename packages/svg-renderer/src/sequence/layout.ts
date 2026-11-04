@@ -492,7 +492,7 @@ export function layoutSequenceDiagram(
     PositionedNote
   >()
   const placeNote = (note: (typeof diagram.notes)[number], noteY: number) => {
-    const noteW = Math.max(
+    let noteW = Math.max(
       seq.noteWidth,
       labelWidth(note.text, fontSizes.edgeLabel) + seq.notePadX * 2,
     )
@@ -520,9 +520,12 @@ export function layoutSequenceDiagram(
       const lastActorIdx =
         actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
         firstActorIdx
-      noteX =
-        (actorCenterX[firstActorIdx]! + actorCenterX[lastActorIdx]!) / 2 -
-        noteW / 2
+      const c1 = actorCenterX[firstActorIdx]!
+      const c2 = actorCenterX[lastActorIdx]!
+      // mermaid 12.3.0 spans the note across both lifelines, overhanging
+      // each by 25px, and only grows past that for longer text (#2587).
+      noteW = Math.max(noteW, Math.abs(c1 - c2) + 50)
+      noteX = (c1 + c2) / 2 - noteW / 2
     } else {
       noteX = actorCenterX[firstActorIdx]! - noteW / 2
     }
