@@ -482,7 +482,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-edge-line-style-bleed',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII fan-out edges bled their line style into each other',
     symptom:
       'Edges with different styles leaving one node shared a routing corridor, and the later thick edge overwrote the dotted edge’s glyphs. Separately, two edges routed through a shared node could land on the same column and read as one line.',
@@ -851,7 +850,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-lr-compact-labeled-fanout',
-    parked: 'ascii-flow-axis-faces',
     title:
       'ASCII LR fan-out with a labelled edge drew three times as tall as mermaid',
     symptom:

@@ -67,3 +67,74 @@ describe('flow-face fan-out (TD)', () => {
     expect(lr.find((l) => l.includes('A'))).toMatch(/A/)
   })
 })
+
+// LR mirror: out of the right face, a stem each, label on its own run.
+describe('flow-face fan-out (LR)', () => {
+  it('leaves the right face for every target, labels on their own runs', () => {
+    const out = render(`flowchart LR
+  S0 --> |e0| S1
+  S1 --> |e1| S2
+  S1 --> S3
+  S0 --> S4`).join('\n')
+    // A row of S0's right face per target, and S1 -> S3 apart from e1's run.
+    expect(out).toMatch(/│ {4}├─┘/)
+    expect(out).toMatch(/│ {4}├─┐/)
+    expect(out).toMatch(/│ S1 ├─e1─►│ S2/)
+    expect(out).toMatch(/│ {4}├─┐ {3}│/)
+    expect(out).toMatch(/┌─e0─►│ S1/)
+    expect(out).toMatch(/└─+►│ S4/)
+    expect(out).toMatch(/└────┘ +│/)
+  })
+
+  it('keeps mixed line styles from sharing a glyph', () => {
+    const out = render(`graph LR
+  C --> B
+  B --> E
+  B -.-> F
+  B ==> G`).join('\n')
+    expect(out).toMatch(/┄►/)
+    expect(out).toMatch(/━►/)
+  })
+
+  it('keeps same-side targets of different line styles off one shared bar column', () => {
+    const out = render(`graph LR
+  A --> B
+  A -.-> C
+  A ==> D
+  A --> E`).join('\n')
+    // Each style keeps its own glyphs on its own run into the target.
+    expect(out).toMatch(/┄+►│ C/)
+    expect(out).toMatch(/━+►│ D/)
+    expect(out).toMatch(/─+►│ E/)
+    expect(out).not.toMatch(/┄{2,}┴/)
+  })
+
+  it("checks mixed styles on the edge's own side only", () => {
+    // Two solid targets above, a dotted and a thick below: the mixed side
+    // keeps its routing, the all-solid side still leaves the right face.
+    const out = render(`graph LR
+  A --> B
+  A --> C
+  A -.-> D
+  A ==> E`).join('\n')
+    // The solid side leaves A's right face (A's border carries no ┴ tee).
+    expect(out).toMatch(/│ A ├─┘/)
+    expect(out).toMatch(/─+►│ B/)
+    expect(out).toMatch(/─+►│ C/)
+    expect(out).toMatch(/┄+►│ D/)
+    expect(out).toMatch(/━+►│ E/)
+  })
+
+  it('leaves a source with a self-loop or a reciprocal edge alone', () => {
+    const out = render(`graph LR
+  A --> A
+  A --> B
+  A --> C`).join('\n')
+    expect(out).toContain('B')
+    const pair = render(`graph LR
+  A --> B
+  B --> A
+  A --> C`).join('\n')
+    expect(pair).toContain('C')
+  })
+})

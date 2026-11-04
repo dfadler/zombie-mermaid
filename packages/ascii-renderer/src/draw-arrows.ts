@@ -39,7 +39,11 @@ import {
 } from './types.ts'
 import { pseudoStateGlyph } from './draw-boxes.ts'
 import { blankLayer, copyCanvas, drawText, write } from './canvas.ts'
-import { determineDirection, dirEquals } from './edge-routing.ts'
+import {
+  determineDirection,
+  dirEquals,
+  leavesRightFace,
+} from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { gridToDrawingCoord } from './grid.ts'
 import { exitGutter } from './types.ts'
@@ -1442,6 +1446,15 @@ function comfortableOnRun(
   const end = placement[0]!.x + displayWidth(placement[0]!.text) - 1
   const headRoom = Math.max(line[0]!.x, line[1]!.x) - 2
   if (edge.hasArrowEnd && end >= headRoom) return false
+  // A fan-out's bend sits just after the source: keep a blank cell between it
+  // and the label, as Mermaid draws the label mid-run.
+  if (
+    edge.path.length === 4 &&
+    leavesRightFace(graph, edge, graph.config.graphDirection) &&
+    placement[0]!.x - Math.min(line[0]!.x, line[1]!.x) < 2
+  ) {
+    return false
+  }
   // Sideways only: a stroke on the row above or below can move with the gap,
   // so no amount of widening would clear it.
   return besideFree(graph, edge, placement, labelAware, 1, true)

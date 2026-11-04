@@ -130,20 +130,20 @@ describe('LR decision node branches leave the right face (#2351)', () => {
     )
   })
 
-  it('keeps a plain box fanning out through its top and bottom faces', () => {
+  it('sends a plain box fan-out out of its right face too, as Mermaid does', () => {
     expect(render('graph LR\n  A --> B\n  A --> C')).toBe(
       [
         '          ┌───┐',
         '          │   │',
-        '  ┌──────►│ B │',
-        '  │       │   │',
-        '┌─┴─┐     └───┘',
-        '│   │',
+        '      ┌──►│ B │',
+        '      │   │   │',
+        '┌───┐ │   └───┘',
+        '│   ├─┘',
         '│ A │',
-        '│   │',
-        '└─┬─┘     ┌───┐',
-        '  │       │   │',
-        '  └──────►│ C │',
+        '│   ├─┐',
+        '└───┘ │   ┌───┐',
+        '      │   │   │',
+        '      └──►│ C │',
         '          │   │',
         '          └───┘',
       ].join('\n'),
