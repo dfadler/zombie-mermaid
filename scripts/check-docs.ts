@@ -230,8 +230,8 @@ export function decisionStatus(fs: Fs = realFs): string[] {
 }
 
 // #1996/#2590: the README must not hand-write the fork-fixes count; every
-// PR that added an entry used to conflict on it. The entries array and the
-// generated fork-fixes page are the source of truth.
+// PR that added an entry used to conflict on it. The count is
+// forkFixes.length in demo/fork-fixes-data.ts (the page itself shows none).
 export function forkFixesCount(fs: Fs = realFs): string[] {
   const m = /\(\d+ fixes\)/.exec(fs.read('README.md'))
   return m ? [`README.md: hard-codes "${m[0]}"; drop the count (#2590)`] : []
