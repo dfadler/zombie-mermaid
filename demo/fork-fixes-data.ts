@@ -946,6 +946,19 @@ export const forkFixes: ForkFix[] = [
       'Before: a plain box, a vertical cylinder, an undecorated box, a box labelled D and a labelled bar. After: a cloud, a horizontal cylinder, a dog-eared box, a small circle and an unlabelled upright bar, as in mermaid 12.2.0.',
   },
   {
+    id: 'flowchart-linkstyle-head-colour',
+    title: 'A coloured flowchart edge kept a grey arrowhead',
+    symptom:
+      'An edge given its own `linkStyle` stroke was drawn in that colour but its arrowhead stayed the default grey, unlike mermaid.',
+    source:
+      'graph TD\n  A --> B\n  A --> C\n  linkStyle 0 stroke:#f00,stroke-width:2px',
+    fixCommit: 'c4137f7d',
+    pr: 2580,
+    render: 'svg',
+    lookFor:
+      'Before: the A to B line is red with a grey head. After: the head is red too, as in mermaid 12.2.0; the A to C edge keeps its grey head.',
+  },
+  {
     id: 'class-annotation-guillemets',
     title: 'Class annotations were drawn as `<<interface>>`',
     symptom:

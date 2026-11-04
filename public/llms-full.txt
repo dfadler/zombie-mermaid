@@ -2331,7 +2331,9 @@ output). A diagram with no title, elements, or boundaries still renders nothing.
 ## Flowchart SVG presentation (#2476)
 
 Measured against mermaid 12.2.0 (headless, `scripts/lib/real-mermaid.ts`). Arrowhead
-size, thick width, dotted pattern and head colour now match; these do not:
+size, thick width, dotted pattern and head colour now match (a head takes the
+`linkStyle default` stroke if there is one, else its own edge's `linkStyle` stroke;
+checked on 12.2.0 with `linkStyle 0`, `default`, and both); these do not:
 
 - **Edges into one node share a bus and a single head.** Mermaid draws a separate
   head per edge. This comes from the layout's edge routing (the SVG twin of the

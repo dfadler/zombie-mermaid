@@ -113,13 +113,21 @@ describe('linkStyle – SVG integration', () => {
     expect(svg).toMatch(/marker-end="url\(#zm[0-9a-z]+-arrowhead-23ff0000\)"/)
   })
 
-  it('an edge-specific stroke does not tint its arrowhead (#2476)', () => {
+  it('an edge-specific stroke tints its own arrowhead only (#2476)', () => {
     const svg = renderMermaidSVG(
-      'graph TD\n  A --> B\n  linkStyle 0 stroke:#ff0000',
+      'graph TD\n  A --> B\n  A --> C\n  linkStyle 0 stroke:#ff0000',
+    )
+    expect(svg).toMatch(/marker-end="url\(#zm[0-9a-z]+-arrowhead-23ff0000\)"/)
+    expect(svg).toMatch(/marker-end="url\(#zm[0-9a-z]+-arrowhead\)"/)
+  })
+
+  it('the default stroke wins over an edge-specific one for the head (#2476)', () => {
+    const svg = renderMermaidSVG(
+      'graph TD\n  A --> B\n  linkStyle default stroke:#0000ff\n  linkStyle 0 stroke:#ff0000',
     )
     expect(svg).toContain('stroke="#ff0000"')
+    expect(svg).toMatch(/marker-end="url\(#zm[0-9a-z]+-arrowhead-230000ff\)"/)
     expect(svg).not.toContain('arrowhead-23ff0000')
-    expect(svg).toMatch(/marker-end="url\(#zm[0-9a-z]+-arrowhead\)"/)
   })
 
   it('escapes XSS injection in stroke value', () => {
