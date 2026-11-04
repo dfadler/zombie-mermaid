@@ -31,6 +31,7 @@
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
+import { requireGridCoord } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
@@ -347,6 +348,43 @@ export function staggerFanOuts(
       for (const m of bent) out.set(m.edge, offsetOf(keyOf(m)))
     }
   }
+}
+
+/**
+ * An LR fan-out leaves the source's right face on a row of its own per edge,
+ * as Mermaid does: a target above takes the row above the centre, one level
+ * with the source keeps the centre, one below takes the row below. A shared
+ * stem would read as one edge splitting, and could not carry two line styles.
+ * Returns false (leaving the stems to `staggerFanOuts`) when two targets lie
+ * the same side or the face has no room.
+ */
+// ponytail: one row per side, so a source with two targets above keeps the shared stem.
+function spreadRightFan(
+  graph: AsciiGraph,
+  members: readonly FanOutMember[],
+  out: Map<AsciiEdge, number>,
+): boolean {
+  if (
+    members.some((m) => m.run.side !== 'right') ||
+    !members.some((m) =>
+      leavesRightFace(graph, m.edge, graph.config.graphDirection),
+    )
+  ) {
+    return false
+  }
+  const rowOf = (m: FanOutMember): number =>
+    Math.sign(requireGridCoord(m.edge.to).y - requireGridCoord(m.edge.from).y)
+  const rows = members.map(rowOf)
+  const geo = portGeometry(graph, members[0]!.run)
+  if (
+    new Set(rows).size !== rows.length ||
+    !geo ||
+    !rows.every((o) => attachesAt(members[0]!.run, geo.centre + o, geo))
+  ) {
+    return false
+  }
+  members.forEach((m, i) => out.set(m.edge, rows[i]!))
+  return true
 }
 
 export interface Slot {
@@ -666,7 +704,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     const taken = [...slots.keys()]
       .filter((k) => k !== key && portOf(k) === port)
       .map(slotOffset)
-    staggerFanOuts(graph, members, slotOffset(key), taken, staggered)
+    if (!spreadRightFan(graph, members, staggered)) {
+      staggerFanOuts(graph, members, slotOffset(key), taken, staggered)
+    }
   }
 
   const split = splitLabeledArrivals(runs)

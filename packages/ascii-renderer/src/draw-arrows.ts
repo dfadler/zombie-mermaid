@@ -1452,6 +1452,7 @@ function comfortableOnRun(
   // A fan-out's bend sits just after the source: keep a blank cell between it
   // and the label, as Mermaid draws the label mid-run.
   if (
+    edge.path.length === 4 &&
     leavesRightFace(graph, edge, graph.config.graphDirection) &&
     placement[0]!.x - Math.min(line[0]!.x, line[1]!.x) < 2
   ) {

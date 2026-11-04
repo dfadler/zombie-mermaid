@@ -76,7 +76,11 @@ describe('flow-face fan-out (LR)', () => {
   S1 --> |e1| S2
   S1 --> S3
   S0 --> S4`).join('\n')
-    expect(out).toMatch(/│ S0 ├─/)
+    // A row of S0's right face per target, and S1 -> S3 apart from e1's run.
+    expect(out).toMatch(/│ {4}├─┘/)
+    expect(out).toMatch(/│ {4}├─┐/)
+    expect(out).toMatch(/│ S1 ├─e1─►│ S2/)
+    expect(out).toMatch(/│ {4}├─┐ {3}│/)
     expect(out).toMatch(/┌─e0─►│ S1/)
     expect(out).toMatch(/└─+►│ S4/)
     expect(out).toMatch(/└────┘ +│/)
