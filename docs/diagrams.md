@@ -111,7 +111,11 @@ diagram — Mermaid adds names regularly.
 | `flip-tri`, `manual-file`                 | triangle, apex down              |
 | `f-circ`, `junction`                      | filled circle                    |
 | `cross-circ`, `summary`                   | circle with an X                 |
-| `fork`, `join`                            | solid bar                        |
+| `fork`, `join`                            | unlabelled bar across the flow   |
+| `cloud`                                   | cloud outline                    |
+| `h-cyl`, `das`                            | cylinder on its side             |
+| `tag-rect`, `tag-proc`                    | rectangle with a dog-ear corner  |
+| `sm-circ`, `start`                        | small unlabelled circle          |
 | `notch-pent`, `loop-limit`                | pentagon, clipped top corners    |
 | `sl-rect`, `manual-input`                 | sloped top edge                  |
 | `flag`, `paper-tape`                      | wavy top and bottom              |
@@ -131,12 +135,9 @@ outlines, some distinct names share one outline here — for example
 `lin-doc` and `tag-doc` both draw a plain document. That is a rendering
 choice, not a parse failure.
 
-Known differences from Mermaid 12.3.0 (#2552): `cloud` has no cloud outline
-and draws a rectangle; `h-cyl` draws a vertical cylinder, not a horizontal
-one; `tag-rect`/`tag-proc` have no dog-ear; `sm-circ` draws a labelled
-rectangle, not a small unlabelled circle; and `fork`/`join` keep their label
-and a horizontal bar, where Mermaid draws an unlabelled bar perpendicular to
-the flow.
+`fork`, `join` and `sm-circ` draw no label, as in Mermaid, and the fork bar
+lies across the flow (upright in `LR`/`RL`). ASCII draws `cloud` and `tag-rect`
+as a plain box, `h-cyl` as a cylinder and `sm-circ` as the state-start dot.
 
 #### Icons and images
 

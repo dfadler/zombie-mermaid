@@ -2927,4 +2927,18 @@ pie title Pets adopted by volunteers
   end
   B->>A: pong`,
   },
+  {
+    title: 'Cloud, Horizontal Cylinder, Tag and Fork Shapes',
+    category: 'Flowchart',
+    description:
+      'Expanded-syntax shapes drawn as Mermaid draws them: a cloud, a cylinder on its side, a rectangle with a dog-ear, a small unlabelled circle, and fork and join bars lying across the flow.',
+    source: `flowchart TD
+  A@{ shape: cloud, label: "cloud" }
+  B@{ shape: h-cyl, label: "h-cyl" }
+  C@{ shape: tag-rect, label: "tag" }
+  D@{ shape: sm-circ }
+  E@{ shape: fork }
+  F@{ shape: join }
+  A --> B --> C --> D --> E --> F`,
+  },
 ]

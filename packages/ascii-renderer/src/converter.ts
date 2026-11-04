@@ -6,7 +6,11 @@
 // for ASCII rendering — we reuse parseMermaid() and convert its output.
 // ============================================================================
 
-import type { MermaidGraph, MermaidSubgraph } from '@zombie-mermaid/core'
+import type {
+  MermaidGraph,
+  MermaidSubgraph,
+  NodeShape,
+} from '@zombie-mermaid/core'
 import type {
   AsciiGraph,
   AsciiNode,
@@ -33,6 +37,13 @@ import {
  * - MermaidGraph.subgraphs → AsciiSubgraph[] with parent/child tree
  * - Node labels are used as display names (not raw IDs)
  */
+/** SVG-only outlines drawn as the nearest ASCII shape (the rest fall back to a rectangle). */
+const ASCII_SHAPE: Partial<Record<NodeShape, NodeShape>> = {
+  'horizontal-cylinder': 'cylinder',
+  'small-circle': 'state-start',
+  'fork-bar': 'fork-join',
+}
+
 export function convertToAsciiGraph(
   parsed: MermaidGraph,
   config: AsciiConfig,
@@ -74,7 +85,7 @@ export function convertToAsciiGraph(
       // literally — see issue #65.
       displayLabel: stripFormattingTags(mNode.label),
       // Preserve shape from parser for shape-aware rendering
-      shape: mNode.shape,
+      shape: ASCII_SHAPE[mNode.shape] ?? mNode.shape,
       index,
       gridCoord: null,
       drawingCoord: null,
