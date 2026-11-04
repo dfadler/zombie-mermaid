@@ -124,4 +124,15 @@ describe('ER entity table (issue #2630)', () => {
     const row = out.split('\n').find((l) => l.includes('╟'))!
     expect(row).toMatch(/^│ int/)
   })
+
+  it('pads the last row so a self loop on a short table entity fits', () => {
+    const out = renderMermaidASCII(
+      'erDiagram\n  A ||--o{ A : parent\n  A {\n    int id\n  }',
+      { colorMode: 'none' },
+    )
+    expect(out).toContain('parent')
+    expect(out.split('\n').filter((l) => l.includes('│ int')).length).toBe(1)
+    // 3 rows of box interior at least: name, rule, row line + padding.
+    expect(out.split('\n').findIndex((l) => l.includes('└'))).toBeGreaterThan(4)
+  })
 })
