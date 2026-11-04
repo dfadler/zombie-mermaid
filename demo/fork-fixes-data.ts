@@ -931,4 +931,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a compact staircase, S1/S4 in the first column and S2/S3 in the second, as mermaid draws it.',
   },
+  {
+    id: 'flowchart-linkstyle-head-colour',
+    title: 'A coloured flowchart edge kept a grey arrowhead',
+    symptom:
+      'An edge given its own `linkStyle` stroke was drawn in that colour but its arrowhead stayed the default grey, unlike mermaid.',
+    source:
+      'graph TD\n  A --> B\n  A --> C\n  linkStyle 0 stroke:#f00,stroke-width:2px',
+    fixCommit: 'c4137f7d',
+    pr: 0,
+    render: 'svg',
+    lookFor:
+      'Before: the A to B line is red with a grey head. After: the head is red too, as in mermaid 12.2.0; the A to C edge keeps its grey head.',
+  },
 ]
