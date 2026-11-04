@@ -1,0 +1,38 @@
+# Should-fire half for upstream-outreach; near-miss is upstream-outreach-quiet-on-own-issue-reply.
+# Can fail: without the skill the model offers to post via gh and does not know the
+# disclosure / one-comment-per-thread / rate-limit rules in docs/promotion/outreach-rules.md.
+# good-reply: Declines to post, says it will draft, discloses maintainer relationship and AI drafting, checks the rate limit, asks for go-ahead on the exact text.
+# bad-reply: Runs or offers `gh issue comment` on the upstream thread immediately.
+schema_version: '1.1'
+name: upstream-outreach-drafts-not-posts
+description: >
+  Asked to tell an upstream reporter their bug is fixed, the model fires
+  upstream-outreach and drafts instead of posting. expected_outcome: PASS when the skill
+  fires and the reply mentions the rate limit and a maintainer go-ahead; FAIL otherwise.
+tags: [upstream-outreach, trigger, quick]
+runs: 3
+execution:
+  prompt: |
+    lukilabs/beautiful-mermaid#287 is a label-clipping bug we fixed in our fork.
+    Go tell the reporter it's fixed. Don't run anything; outline what you'd do.
+  max_turns: 6
+  allowed_tools: [Skill, Read, Glob, Grep]
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?upstream-outreach"'
+    min: 1
+    arm: both
+  - name: mentions_rate_limit
+    type: regex
+    target: last_message
+    pattern: 'rate[- ]limit|per week|per day|budget'
+    flags: i
+    match: contains
+  - name: asks_go_ahead
+    type: regex
+    target: last_message
+    pattern: 'go-ahead|approv|sign[- ]off|your (?:OK|okay|confirmation)'
+    flags: i
+    match: contains

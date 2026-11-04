@@ -1,0 +1,21 @@
+# Smoke guard: cheap two-arm check, no expected delta.
+# Near-miss: "reply" / "comment" vocabulary, but on our own repo's issue.
+schema_version: '1.1'
+name: upstream-outreach-quiet-on-own-issue-reply
+description: Drafting a reply on a zombie-mermaid issue must not fire upstream-outreach.
+tags: [upstream-outreach, trigger, quick, smoke]
+runs: 3
+execution:
+  prompt: |
+    Draft a one-line reply to the reporter on our own zombie-mermaid issue #1234
+    saying the fix shipped in the latest release. Don't run anything.
+  max_turns: 4
+  allowed_tools: [Skill]
+graders:
+  - name: upstream_outreach_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?upstream-outreach"'
+    min: 0
+    max: 0
+    arm: both
