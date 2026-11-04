@@ -29,7 +29,7 @@ import {
   requireCardinalDirection,
 } from './types.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
-import { crowdedTopFaceEnds } from './edge-bundling.ts'
+import { canBundle, crowdedTopFaceEnds } from './edge-bundling.ts'
 import {
   getNodeSubgraph,
   gridToDrawingCoord,
@@ -501,6 +501,37 @@ export function spreadCandidates(
     out.set(e.to, [
       ...(out.get(e.to) ?? []),
       { vertical: true, strokes: 1, rows, below: true },
+    ])
+  }
+  // A straight stem with flow-face bends either side takes a stem each
+  // (`staggerFanOuts` anchors the straight one and steps the bends out): the
+  // face needs room for all of them, or the outer bend shares the straight
+  // stem and reads as one edge forking.
+  const fanSources = new Set<AsciiNode>()
+  for (const e of graph.edges) {
+    if (leavesFlowFace(graph, e, graph.config.graphDirection)) {
+      fanSources.add(e.from)
+    }
+  }
+  for (const from of fanSources) {
+    const a = requireGridCoord(from)
+    const outgoing = graph.edges.filter((e) => e.from === from && e.to !== from)
+    if (!outgoing.some((e) => requireGridCoord(e.to).x === a.x)) continue
+    // Bundled edges share one trunk, not stems.
+    if (canBundle(outgoing, graph)) continue
+    const mixed = new Set(outgoing.map((e) => e.style)).size > 1
+    const stems = new Set<string>()
+    for (const e of outgoing) {
+      if (!leavesFlowFace(graph, e, graph.config.graphDirection)) continue
+      const b = requireGridCoord(e.to)
+      stems.add(
+        `${Math.sign(b.x - a.x)}|${b.y - a.y}${mixed ? `|${e.style}` : ''}`,
+      )
+    }
+    if (stems.size < 2) continue
+    out.set(from, [
+      ...(out.get(from) ?? []),
+      { vertical: true, strokes: 1 + stems.size, rows: 0, below: false },
     ])
   }
   return out
