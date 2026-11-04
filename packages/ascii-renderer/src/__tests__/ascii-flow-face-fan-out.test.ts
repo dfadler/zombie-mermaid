@@ -49,7 +49,9 @@ describe('flow-face fan-out (TD)', () => {
     D --> E
     D --> F`)
     const col = (n: string): number => {
-      const row = rows.find((l) => new RegExp(`│\\s+${n}\\s+│`).test(l))!
+      const row = rows.find((l) =>
+        l.split('│').some((seg) => seg.trim() === n),
+      )!
       return row.indexOf(n)
     }
     expect(Math.abs(col('A') - (col('B') + col('C')) / 2)).toBeLessThanOrEqual(
