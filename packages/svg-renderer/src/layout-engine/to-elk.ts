@@ -19,7 +19,12 @@ import type {
 } from '@zombie-mermaid/core'
 import { TILE } from '../architecture-icons.ts'
 import type { FontSizes } from '../styles.ts'
-import { ASYMMETRIC_NOTCH, FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
+import {
+  ASYMMETRIC_NOTCH,
+  FONT_WEIGHTS,
+  GROUP_HEADER_CONTENT_PAD,
+  NODE_PADDING,
+} from '../styles.ts'
 import {
   measureMultilineText,
   subgraphDirectionIsHonored,
@@ -114,6 +119,17 @@ export const STATE_COMPOSITE_PADDING = {
   right: 24,
 }
 
+/**
+ * mermaid@12.3.0 subgraph: 24px on every side, plus the title strip on top
+ * (24px label + 3px) so the title never overlaps the first node.
+ */
+export const MERMAID_SUBGRAPH_PADDING = {
+  top: 51,
+  left: 24,
+  bottom: 24,
+  right: 24,
+}
+
 export const SUBGRAPH_PADDING = { top: 44, left: 16, bottom: 16, right: 16 }
 
 /** Padding for an untitled concurrency region (no header band). */
@@ -140,6 +156,104 @@ function hasLabelledParallelRun(graph: MermaidGraph): boolean {
   return false
 }
 
+/**
+ * Flowcharts with subgraphs are laid out the way mermaid@12.3.0 does it: one
+ * ELK pass over the whole hierarchy (`INCLUDE_CHILDREN`) with ELK's own
+ * `DEPTH_FIRST` cycle breaking. State diagrams and flowcharts without
+ * subgraphs keep the settings tuned for them.
+ */
+export function usesMermaidElkPipeline(graph: MermaidGraph): boolean {
+  return graph.subgraphs.length > 0 && !isStateGraph(graph)
+}
+
+/**
+ * Spacing mermaid@12.3.0 gives ELK, replacing the fork's explicit values when
+ * the caller left `nodeSpacing`/`layerSpacing` at their defaults: the root sets
+ * only `spacing.baseValue` (ELK derives node, layer and edge gaps from it);
+ * a subgraph sets its own base value plus three gaps.
+ */
+function mermaidSpacing(
+  graph: MermaidGraph,
+  opts: { nodeSpacing: number; layerSpacing: number },
+  level: 'root' | 'subgraph',
+): LayoutOptions | undefined {
+  if (
+    !usesMermaidElkPipeline(graph) ||
+    opts.nodeSpacing !== DEFAULTS.nodeSpacing ||
+    opts.layerSpacing !== DEFAULTS.layerSpacing
+  ) {
+    return undefined
+  }
+  return level === 'root'
+    ? { 'elk.spacing.baseValue': '40' }
+    : {
+        'elk.spacing.baseValue': '24',
+        'elk.spacing.nodeNode': '50',
+        'elk.layered.spacing.edgeNodeBetweenLayers': '30',
+        'elk.spacing.edgeEdge': '20',
+      }
+}
+
+/** Layout option keys that `mermaidSpacing` replaces. */
+const FORK_SPACING_KEYS = [
+  'elk.spacing.nodeNode',
+  'elk.layered.spacing.nodeNodeBetweenLayers',
+  'elk.spacing.edgeEdge',
+  'elk.layered.spacing.edgeEdgeBetweenLayers',
+  'elk.layered.spacing.edgeNodeBetweenLayers',
+]
+
+function withMermaidSpacing(
+  options: LayoutOptions,
+  spacing: LayoutOptions | undefined,
+): LayoutOptions {
+  if (!spacing) return options
+  const out = { ...options }
+  for (const key of FORK_SPACING_KEYS) delete out[key]
+  return { ...out, ...spacing }
+}
+
+/**
+ * Edge order mermaid@12.3.0 hands ELK (`orderNestedEdgeEnds`): an edge whose
+ * end lies inside the node an earlier edge shares with it moves in front of
+ * that edge. Returns indices into `graph.edges`.
+ */
+function mermaidEdgeOrder(graph: MermaidGraph): number[] {
+  const parent = new Map<string, string>()
+  const walk = (subgraphs: MermaidSubgraph[], up?: string): void => {
+    for (const sg of subgraphs) {
+      if (up) parent.set(sg.id, up)
+      for (const id of sg.nodeIds) parent.set(id, sg.id)
+      walk(sg.children, sg.id)
+    }
+  }
+  walk(graph.subgraphs)
+  const inside = (id: string, ancestor: string): boolean => {
+    for (let c = parent.get(id); c !== undefined; c = parent.get(c)) {
+      if (c === ancestor) return true
+    }
+    return false
+  }
+  const edges = graph.edges
+  const order = edges.map((_, i) => i)
+  edges.forEach(({ source, target }, index) => {
+    const from = order.indexOf(index)
+    const to = order.findIndex((o, pos) => {
+      const e = edges[o]!
+      return (
+        pos < from &&
+        ((e.target === target && inside(source, e.source)) ||
+          (e.source === source && inside(target, e.target)))
+      )
+    })
+    if (to !== -1) {
+      order.splice(from, 1)
+      order.splice(to, 0, index)
+    }
+  })
+  return order
+}
+
 const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
 
 /**
@@ -161,11 +275,15 @@ export function edgesReversedForLayout(
   if (!set) {
     set = hasAnyDirectionOverride(graph.subgraphs)
       ? new Set()
-      : findBackEdgeIndexes(
-          graph,
-          hints?.walkOrder,
-          hints?.feedbackEdges ?? subgraphFeedbackEdges(graph),
-        )
+      : usesMermaidElkPipeline(graph)
+        ? // mermaid@12.3.0 only swaps the edges that close a cycle between
+          // subgraphs; ELK's DEPTH_FIRST cycle breaking handles the rest.
+          subgraphFeedbackEdges(graph)
+        : findBackEdgeIndexes(
+            graph,
+            hints?.walkOrder,
+            hints?.feedbackEdges ?? subgraphFeedbackEdges(graph),
+          )
     reversedCache.set(graph, set)
   }
   return set
@@ -477,16 +595,22 @@ export function mermaidToElk(
   // Build the root ELK graph's layout options up front — the graph object
   // itself is assembled at the end, once rootChildren/rootEdges are full.
   const rootLayoutOptions: LayoutOptions = {
-    ...containerLayoutOptions({
-      direction: directionToElk(graph.direction),
-      nodeSpacing: opts.nodeSpacing,
-      layerSpacing:
-        isStateGraph(graph) && opts.layerSpacing === DEFAULTS.layerSpacing
-          ? STATE_LAYER_SPACING
-          : opts.layerSpacing,
-      padding: opts.padding,
-    }),
-    'elk.layered.thoroughness': String(DEFAULTS.thoroughness),
+    ...withMermaidSpacing(
+      containerLayoutOptions({
+        direction: directionToElk(graph.direction),
+        nodeSpacing: opts.nodeSpacing,
+        layerSpacing:
+          isStateGraph(graph) && opts.layerSpacing === DEFAULTS.layerSpacing
+            ? STATE_LAYER_SPACING
+            : opts.layerSpacing,
+        padding: opts.padding,
+      }),
+      mermaidSpacing(graph, opts, 'root'),
+    ),
+    // mermaid@12.3.0 leaves thoroughness at ELK's default.
+    ...(usesMermaidElkPipeline(graph)
+      ? {}
+      : { 'elk.layered.thoroughness': String(DEFAULTS.thoroughness) }),
     // Off (ELK's default): it counts parallel edges, so a node with six edges
     // to one target counted as high degree and the target dropped a layer
     // below its sibling (#2154). dagre has no such treatment.
@@ -498,12 +622,19 @@ export function mermaidToElk(
     'elk.layered.compaction.postCompaction.strategy':
       // A labelled parallel run widens the target's routing channel and
       // compaction then pulls its siblings up past it (#2154).
-      (graph.subgraphs.length === 0 || hasLabelledParallelRun(graph)) &&
+      (graph.subgraphs.length === 0 ||
+        hasLabelledParallelRun(graph) ||
+        usesMermaidElkPipeline(graph)) &&
       !hints?.forceNodeOrder
         ? 'NONE'
         : 'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-    ...(hasLabelledParallelRun(graph) ? { 'elk.spacing.edgeEdge': '40' } : {}),
+    ...(usesMermaidElkPipeline(graph)
+      ? { 'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST' }
+      : {}),
+    ...(hasLabelledParallelRun(graph) && !mermaidSpacing(graph, opts, 'root')
+      ? { 'elk.spacing.edgeEdge': '40' }
+      : {}),
     // Every layer keeps the nodes in the order the graph lists them: the
     // compound layout relies on it to keep a subgraph's nodes together.
     ...(hints?.forceNodeOrder
@@ -677,6 +808,10 @@ export function mermaidToElk(
       ),
     )
   }
+  if (usesMermaidElkPipeline(graph)) {
+    // mermaid@12.3.0 lists every subgraph before the plain nodes.
+    rootChildren.unshift(...rootChildren.splice(leafCount))
+  }
   if (stateGraph && graph.subgraphs.length > 0) {
     // ELK's MODEL_ORDER cycle breaking and crossing minimisation follow the
     // child order, so a composite must sit at its first-mention position
@@ -703,6 +838,7 @@ export function mermaidToElk(
   // zero-length-span polyline for them; from-elk.ts synthesizes a proper
   // side loop for these once node positions are known instead.
   const reversed = edgesReversedForLayout(graph, hints)
+  const flatEdges = usesMermaidElkPipeline(graph) && !hasDirectionOverride
   // Subgraph feedback edges go first: with `considerModelOrder`, an edge
   // listed earlier keeps its track on the near side of a node it spans, as in
   // mermaid (which lifts them ahead of the rest; CJK Labels, #1941).
@@ -714,7 +850,24 @@ export function mermaidToElk(
         ...rootList.filter((e) => !feedback.has(e.index)),
       ]
     : rootList
-  for (const { index, edge } of rootOrdered) {
+  if (flatEdges) {
+    // One pass over the whole hierarchy: every edge sits at the root with its
+    // raw node ids, in mermaid@12.3.0's order.
+    for (const index of mermaidEdgeOrder(graph)) {
+      const edge = graph.edges[index]!
+      if (edge.source === edge.target) continue
+      rootEdges.push(
+        buildElkEdge({
+          id: `e${index}`,
+          source: reversed.has(index) ? edge.target : edge.source,
+          target: reversed.has(index) ? edge.source : edge.target,
+          label: edge.label,
+          labelStyle: edgeLabelStyle(opts),
+        }),
+      )
+    }
+  }
+  for (const { index, edge } of flatEdges ? [] : rootOrdered) {
     if (edge.source === edge.target) continue
     if (hints?.detachedEdges?.has(index)) continue
     const elkEdge = buildElkEdge({
@@ -745,7 +898,7 @@ export function mermaidToElk(
     // which lets ELK route cross-hierarchy edges automatically as long as
     // they're declared with their raw node IDs (no port decomposition
     // needed).
-    for (const { index, edge } of crossHierarchyEdges) {
+    for (const { index, edge } of flatEdges ? [] : crossHierarchyEdges) {
       rootEdges.push(
         buildElkEdge({
           id: `e${index}`,
@@ -806,20 +959,47 @@ function subgraphToElk(
       ? sg.direction
       : inheritedDirection
 
-  const layoutOptions: LayoutOptions = containerLayoutOptions({
-    direction: directionToElk(effectiveDirection),
-    nodeSpacing: opts.nodeSpacing,
-    layerSpacing:
-      isStateGraph(graph) && opts.layerSpacing === DEFAULTS.layerSpacing
-        ? STATE_COMPOSITE_LAYER_SPACING
-        : opts.layerSpacing,
-    // A region has no title bar to leave room for.
-    padding: sg.region
-      ? REGION_PADDING
-      : isStateGraph(graph)
-        ? STATE_COMPOSITE_PADDING
-        : SUBGRAPH_PADDING,
-  })
+  const layoutOptions: LayoutOptions = withMermaidSpacing(
+    containerLayoutOptions({
+      direction: directionToElk(effectiveDirection),
+      nodeSpacing: opts.nodeSpacing,
+      layerSpacing:
+        isStateGraph(graph) && opts.layerSpacing === DEFAULTS.layerSpacing
+          ? STATE_COMPOSITE_LAYER_SPACING
+          : opts.layerSpacing,
+      // A region has no title bar to leave room for.
+      padding: sg.region
+        ? REGION_PADDING
+        : isStateGraph(graph)
+          ? STATE_COMPOSITE_PADDING
+          : usesMermaidElkPipeline(graph)
+            ? MERMAID_SUBGRAPH_PADDING
+            : SUBGRAPH_PADDING,
+    }),
+    mermaidSpacing(graph, opts, 'subgraph'),
+  )
+
+  if (usesMermaidElkPipeline(graph) && !sg.region) {
+    // The box must be wide enough for its title (mermaid@12.3.0 sets
+    // `nodeSize.minimum` from the label width).
+    const titleWidth =
+      measureMultilineText(
+        sg.label,
+        opts.fontSizes.groupHeader,
+        FONT_WEIGHTS.groupHeader,
+      ).width +
+      2 * GROUP_HEADER_CONTENT_PAD
+    layoutOptions['elk.nodeSize.constraints'] = '[MINIMUM_SIZE]'
+    // ELK applies the minimum in the layout's own (rotated) frame, so for a
+    // top-down or bottom-up layout the width goes in the second slot.
+    const vertical =
+      effectiveDirection === 'TD' ||
+      effectiveDirection === 'TB' ||
+      effectiveDirection === 'BT'
+    layoutOptions['elk.nodeSize.minimum'] = vertical
+      ? `(0, ${titleWidth})`
+      : `(${titleWidth}, 0)`
+  }
 
   // Ports, built before children/edges since they don't depend on them.
   let elkPorts: ElkNode['ports']
@@ -831,9 +1011,14 @@ function subgraphToElk(
     }))
   }
 
-  // Add direct child (leaf) nodes, in forward declaration order.
+  // Add direct child (leaf) nodes, in forward declaration order (the order the
+  // graph first mentions them under mermaid@12.3.0).
   const children: ElkGraphNode[] = []
-  for (const nodeId of sg.nodeIds) {
+  const pipeline = usesMermaidElkPipeline(graph)
+  const leafIds = pipeline
+    ? [...graph.nodes.keys()].filter((id) => sg.nodeIds.includes(id))
+    : sg.nodeIds
+  for (const nodeId of leafIds) {
     const node = graph.nodes.get(nodeId)
     if (node) {
       const size = estimateNodeSize(
@@ -860,6 +1045,7 @@ function subgraphToElk(
   const orderedChildren = sg.children.some((c) => c.region)
     ? sg.children
     : [...sg.children].reverse()
+  const leafCount = children.length
   for (const child of orderedChildren) {
     children.push(
       subgraphToElk(
@@ -873,13 +1059,18 @@ function subgraphToElk(
       ),
     )
   }
+  // mermaid@12.3.0 lists nested subgraphs before the plain nodes.
+  if (pipeline) children.unshift(...children.splice(leafCount))
 
   // Add internal edges (edges where both endpoints are in this subgraph).
   // Self-loops are excluded — see the matching comment in mermaidToElk.
   const edges: ElkExtendedEdge[] = []
   const internalEdges = edgesBySubgraph.get(sg.id) ?? []
   const reversed = edgesReversedForLayout(graph)
-  for (const { index, edge } of internalEdges) {
+  for (const { index, edge } of usesMermaidElkPipeline(graph) &&
+  !hasAnyDirectionOverride(graph.subgraphs)
+    ? []
+    : internalEdges) {
     if (edge.source === edge.target) continue
     edges.push(
       buildElkEdge({

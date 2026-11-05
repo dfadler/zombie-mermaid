@@ -130,15 +130,6 @@ function layoutFlowchartUnmarked(
       `zombie-mermaid: unknown layout ${JSON.stringify(options.layout)}; use 'elk' or 'simple'.`,
     )
   }
-  if (canLayOutFlat(graph)) {
-    const fontSizes = resolveFontSizes(options.fontSizes)
-    const flat = layoutCompoundFlat(
-      graph,
-      (g, hints) => layoutWithHints(g, options, hints),
-      fontSizes,
-    )
-    if (flat) return clampEdgeEnds(flat)
-  }
   return layoutGraphSync(graph, options)
 }
 
