@@ -15,8 +15,8 @@ proposed an opt-in async entry (`zombie-mermaid/async`) that loads elk lazily.
 Make `elkjs` an optional peer dependency of `@zombie-mermaid/svg-renderer` and
 have the library stop importing it. The consumer calls `registerElk(ELK)` once;
 under Node and Bun the library auto-loads an installed `elkjs` instead. Without
-a registered constructor, graph diagrams (flowchart, state, class, ER,
-architecture) throw `ElkNotRegisteredError`. Decided in the #1370 research
+a registered constructor, graph diagrams (flowchart, state, class, ER)
+throw `ElkNotRegisteredError`. Decided in the #1370 research
 ([`docs/research/1370-elkjs-optional-peer-dep.md`](../research/1370-elkjs-optional-peer-dep.md)),
 implemented in [#1444](https://github.com/dfadler/zombie-mermaid/pull/1444)
 (merged 2026-10-08, released as 5.0.0, a major). Migration:

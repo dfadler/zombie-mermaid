@@ -12,8 +12,9 @@ describe('architectureToGraph', () => {
   it('carries a group icon onto its subgraph', () => {
     const g = lower('group a(server)[A]\ngroup b[B]')
     expect(g.subgraphs[0]!.icon).toBe('server')
-    // A group with no icon is still an architecture group: `''`, not absent.
-    expect(g.subgraphs[1]!.icon).toBe('')
+    // A group with no icon has no `icon`, and is still marked as an architecture group.
+    expect(g.subgraphs[1]!.icon).toBeUndefined()
+    expect(g.subgraphs.map((sg) => sg.architecture)).toEqual([true, true])
   })
 
   it('maps icons to shapes and unknown icons to rectangles', () => {

@@ -151,7 +151,7 @@ import { registerElk } from 'zombie-mermaid'
 registerElk(ELK)
 ```
 
-Architecture diagrams (`architecture-beta`, see [Supported Diagrams](docs/diagrams.md#architecture-diagrams)) are laid out by `elkjs` too.
+Architecture diagrams (`architecture-beta`, see [Supported Diagrams](docs/diagrams.md#architecture-diagrams)) use their own grid layout (as Mermaid does), so they need no `elkjs`.
 Sequence, pie, quadrant, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
 and no registration. Rendering a graph diagram with no `elkjs` available throws an
 `ElkNotRegisteredError` that says how to fix it.
@@ -159,8 +159,8 @@ and no registration. Rendering a graph diagram with no `elkjs` available throws 
 **Flowcharts without `elkjs`.** Pass `layout: 'simple'` to lay a flowchart out with a
 small built-in layered layout instead of ELK. It needs no `elkjs`, adds about 3.5 KB
 gzipped, and is opt-in: the default output never changes. It is a rougher match for
-ELK on edge routing, and a subgraph's own `direction` is ignored. State, class, ER
-and architecture diagrams still need `elkjs`. See
+ELK on edge routing, and a subgraph's own `direction` is ignored. State, class and ER
+diagrams still need `elkjs`. See
 [the decision record](docs/decisions/simple-layout-1685.md) for the measured quality
 gap.
 
