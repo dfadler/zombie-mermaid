@@ -20,11 +20,13 @@ import {
   blockTabPoints,
 } from '../sequence/layout.ts'
 
-const num = (s: string, re: RegExp) => Number(re.exec(s)![1])
-
 /** The x of the first lifeline of actor `id`. */
-const lifelineX = (svg: string, id: string) =>
-  num(svg, new RegExp(`class="lifeline" data-actor="${id}" x1="([\\d.]+)"`))
+const lifelineX = (svg: string, id: string) => {
+  const m = [
+    ...svg.matchAll(/class="lifeline" data-actor="([^"]+)" x1="([\d.]+)"/g),
+  ].find((x) => x[1] === id)
+  return Number(m![2])
+}
 
 /** The x of every filled `rect <color>` highlight, outer first. */
 const highlightXs = (svg: string) =>
