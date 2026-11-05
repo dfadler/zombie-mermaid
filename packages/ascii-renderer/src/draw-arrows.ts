@@ -42,6 +42,8 @@ import { blankLayer, copyCanvas, drawText, write } from './canvas.ts'
 import {
   determineDirection,
   dirEquals,
+  flowLaneLabel,
+  flowLanePolyline,
   leavesRightFace,
 } from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
@@ -69,9 +71,12 @@ export function drawArrow(
   const labelCanvas = drawArrowLabel(graph, edge)
   const wallEnd = clusterWallEnd(graph, edge)
   const wallStart = clusterWallStart(graph, edge)
-  const drop = wallEnd
-    ? clusterEntryDrop(graph, edge, wallEnd)
-    : clusterExitDrop(graph, edge, wallStart)
+  const flowLane = flowLanePolyline(graph, edge)
+  const drop: EntryDrop | undefined = flowLane
+    ? { points: flowLane, jog: [] }
+    : wallEnd
+      ? clusterEntryDrop(graph, edge, wallEnd)
+      : clusterExitDrop(graph, edge, wallStart)
   const dx = strokeShift(graph, edge)
   const shifts =
     edgePointShifts(graph, edge) ??
@@ -1212,6 +1217,8 @@ function resolveLabelPlacementUncached(
   labelAware: boolean,
 ): LabelLines {
   if (edge.text.length === 0) return null
+  const onLane = flowLaneLabel(graph, edge)
+  if (onLane) return onLane
   const centred = centredLabelPlacement(graph, edge, labelAware)
   const dx = strokeShiftFor(graph, edge, labelAware)
   // #1408 option C: a vertical edge's label goes on its own stroke when the

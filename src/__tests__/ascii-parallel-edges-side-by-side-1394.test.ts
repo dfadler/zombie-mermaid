@@ -72,8 +72,10 @@ describe('parallel edges side by side (#1394)', () => {
     const out = ascii(
       'graph TD\n  A -->|first| B\n  A -->|second| B\n  A -->|third| B\n  B -->|back| A',
     )
-    expect(out.match(/◄/g)).toHaveLength(2)
-    expect(out).not.toMatch(/◄─+┴/)
+    // Four edges in all: each takes a port on the facing faces (#2645).
+    expect(out.match(/▼/g)).toHaveLength(3)
+    expect(out.match(/▲/g)).toHaveLength(1)
+    expect(out).not.toContain('◄')
   })
 
   it('ASCII: three labeled edges in LR each get a row and an arrowhead (#1716)', () => {

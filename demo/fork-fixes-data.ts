@@ -604,7 +604,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-lane-faces-five-parallel',
-    parked: 'ascii-flow-axis-faces',
     title: 'Five or more parallel ASCII edges merged their arrowheads',
     symptom:
       'Each parallel edge gets its own cell on a node’s face, but a default box face has three cells, so past that the extra edges shared one arrowhead. The face is now lengthened to one cell per edge, and cluster exits handle six siblings.',
@@ -618,7 +617,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-lane-faces-forward-and-back',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII forward and back edge groups shared faces and merged heads',
     symptom:
       'In TD/BT, the forward and back edge groups between one pair use the same side faces but were sized separately, so with more than three edges in all two arrowheads merged. A lone cluster exit group and eight or more cluster siblings had the same problem.',
