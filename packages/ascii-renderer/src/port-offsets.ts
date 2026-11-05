@@ -31,7 +31,7 @@
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
-import { requireGridCoord } from './types.ts'
+import { dirEquals, requireGridCoord, Up } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
@@ -1028,6 +1028,19 @@ function allocateFaces(
       if (runsOf(f.edge)?.straight) fixed.set(f.edge, offs[i]!)
     })
   }
+  // #2645: a dense pair's loop is a hook centred over the top face, as
+  // Mermaid draws it (its cells were placed about the grid cell's corner).
+  for (const [f, by0] of placed) {
+    const geo = portGeometry(graph, f.run)
+    if (geo && isDenseHook(f.edge)) {
+      placed.set(
+        f,
+        by0 +
+          Math.round((geo.lo + geo.hi) / 2 - geo.centre) +
+          (f.role === 'S' ? 2 : -2),
+      )
+    }
+  }
   for (const [f, by] of placed) {
     if (by === 0) continue
     const shift = result.get(f.edge) ?? { start: 0, end: 0 }
@@ -1043,6 +1056,16 @@ function allocateFaces(
   for (const loop of lanes) {
     if (loop.from === loop.to) hugLoop(graph, loop, result)
   }
+}
+
+/** A self-loop `determinePath` drew as a hook over the top face (#2645). */
+function isDenseHook(e: AsciiEdge): boolean {
+  return (
+    e.from === e.to &&
+    e.path.length === 4 &&
+    dirEquals(e.startDir, Up) &&
+    dirEquals(e.endDir, Up)
+  )
 }
 
 /** How an end leaves its face: which way it turns and how far out. */

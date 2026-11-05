@@ -415,7 +415,7 @@ export function spreadCandidates(
   const spread = new Map<AsciiNode, number>()
   for (const [from, targets] of byPair) {
     for (const [to, group] of targets) {
-      if (group.length < 2) continue
+      if (group.length < 2 || denseFacingPair(graph, group[0]!)) continue
       const a = requireGridCoord(from)
       const b = requireGridCoord(to)
       if (Math.abs(vertical ? a.y - b.y : a.x - b.x) > 4) continue
@@ -474,7 +474,13 @@ export function spreadCandidates(
         ])
         out.set(to, [...(out.get(to) ?? []), { ...entry, below: b.y > a.y }])
       }
-      if (group.length < 3 || !labelsFitBesideStrokes(group)) continue
+      if (
+        group.length < 3 ||
+        !labelsFitBesideStrokes(group) ||
+        denseFacingPair(graph, group[0]!)
+      ) {
+        continue
+      }
       const entry = {
         vertical: a.x === b.x,
         strokes: group.length,
@@ -678,7 +684,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
       graph.edges.filter((o) => o.from === e.to && o.to === e.from).length,
     )
     const at = requireGridCoord(e.from).y + 1
-    graph.rowHeight.set(at, Math.max(graph.rowHeight.get(at) ?? 0, n + 2))
+    graph.rowHeight.set(at, Math.max(graph.rowHeight.get(at) ?? 0, n + 1))
   }
   const need = new Map<number, { siblings: number; pairs: Set<string> }>()
   for (const group of laneGroups) {
@@ -2138,10 +2144,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     edge.endDir = Up
     edge.faceLane = false
     edge.path = [
-      { x: c.x + 1, y: c.y },
-      { x: c.x + 1, y: c.y - 1 },
-      { x: c.x + 2, y: c.y - 1 },
       { x: c.x + 2, y: c.y },
+      { x: c.x + 2, y: c.y - 1 },
+      { x: c.x + 1, y: c.y - 1 },
+      { x: c.x + 1, y: c.y },
     ]
     return
   }
