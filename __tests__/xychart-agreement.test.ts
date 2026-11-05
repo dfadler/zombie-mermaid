@@ -445,3 +445,18 @@ describe('extent edge cases (#2567)', () => {
     expect(MERMAID_CANNOT_PARSE.has('API Response Time')).toBe(true)
   })
 })
+
+describe('extent compares each axis on its own (#2650)', () => {
+  it('does not pair category ends with value ends when the official chart has no value labels', () => {
+    const o = parseOurXy(renderMermaidSVG(SRC), false)
+    // Official has no value labels and ours does: its category ends agree,
+    // but the lack of value ends must not borrow ours as a match.
+    const a = xyAgreement({ ...o, yLabels: [] }, o)
+    expect(a.extent).toBe(1)
+    const shifted = {
+      ...o,
+      xLabels: o.xLabels.map((l) => ({ ...l, pos: l.pos + 40 })),
+    }
+    expect(xyAgreement({ ...o, yLabels: [] }, shifted).extent).toBe(0)
+  })
+})

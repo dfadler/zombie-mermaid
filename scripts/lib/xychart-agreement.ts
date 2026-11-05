@@ -425,20 +425,21 @@ export function xyAgreement(official: XyLayout, ours: XyLayout): XyAgreement {
         )
   const ends =
     official.axes && ours.axes
-      ? (() => {
-          // Both axes: the value axis' padding and the category axis' inset (#2650).
-          const o = [
-            ...inset(official.yLabels, official.axes.val),
-            ...inset(official.xLabels, official.axes.cat),
-          ]
-          const u = [
-            ...inset(ours.yLabels, ours.axes.val),
-            ...inset(ours.xLabels, ours.axes.cat),
-          ]
+      ? // Both axes, each compared with its own counterpart so a chart with
+        // no value labels cannot pair category ends with value ends (#2650).
+        [
+          [official.yLabels, ours.yLabels, 'val'],
+          [official.xLabels, ours.xLabels, 'cat'],
+        ].flatMap(([ol, ul, axis]) => {
+          const o = inset(
+            ol as XyLabel[],
+            official.axes![axis as 'val' | 'cat'],
+          )
+          const u = inset(ul as XyLabel[], ours.axes![axis as 'val' | 'cat'])
           return o.map(
             (v, i) => Math.abs(v - (u[i] ?? Infinity)) <= FRACTION_TOLERANCE,
           )
-        })()
+        })
       : []
   return {
     extent: share(ends.filter(Boolean).length, ends.length),
