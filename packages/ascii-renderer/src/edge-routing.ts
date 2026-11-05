@@ -1836,7 +1836,27 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       edge.startDir = Left
       edge.endDir = Right
       edge.faceLane = false
-      edge.path = [start, corner, end]
+      // A diamond's right face takes the arrival level, down its slant, so
+      // the return runs up the gutter and ends in a horizontal run (#2645);
+      // the column of the port serves a face with no slant to spare.
+      const lane = end.x + 1
+      const bend = [
+        { x: start.x, y: start.y },
+        { x: lane, y: start.y },
+        { x: lane, y: end.y },
+        end,
+      ]
+      edge.path =
+        edge.to.shape === 'diamond' &&
+        start.x > lane &&
+        // Strokes of other edges already run along the gutter lane, so only
+        // a node in the way rules it out.
+        pathCells([
+          { x: lane, y: end.y },
+          { x: lane, y: start.y },
+        ]).every((c) => !graph.nodes.some((n) => isCellInNodeBlock(n, c)))
+          ? bend
+          : [start, corner, end]
       return
     }
   }
