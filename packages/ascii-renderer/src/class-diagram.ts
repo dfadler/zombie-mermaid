@@ -2328,10 +2328,10 @@ export function renderClassAscii(
       const up = fromP.y > toP.y
       const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
       const labelStart = Math.max(0, idealLabelStart)
-      let best = -1
+      let best = labelY
+      let bestDist = Infinity
       for (let y = gapTop; y <= gapBottom; y++) {
-        if (up && gapBottom - gapTop > 1 && (y === gapTop || y === gapBottom))
-          continue
+        if (up && (y === gapTop || y === gapBottom)) continue
         let clearRow = true
         for (let x = labelStart; x < labelStart + maxLabelWidth; x++) {
           if (isInsideBox(x, y, excludeIds)) {
@@ -2344,10 +2344,13 @@ export function renderClassAscii(
           best = y
           break
         }
-        if (best < 0 || Math.abs(y - baseMidY) < Math.abs(best - baseMidY))
+        const dist = Math.abs(y - baseMidY)
+        if (dist < bestDist) {
           best = y
+          bestDist = dist
+        }
       }
-      if (best >= 0) labelY = best
+      labelY = best
     }
 
     return labelY
