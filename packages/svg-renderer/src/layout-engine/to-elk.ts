@@ -625,7 +625,14 @@ export function mermaidToElk(
     ...(usesMermaidElkPipeline(graph)
       ? { 'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST' }
       : {}),
-    ...(hasLabelledParallelRun(graph) ? { 'elk.spacing.edgeEdge': '40' } : {}),
+    // 50 under mermaid@12.3.0's pipeline: its wider edge-label boxes need more
+    // room for the parallel runs than 12.2.0's did (Five, Six and Nine Cluster
+    // Exit Siblings all match 12.3.0 at 50; Six does not at 40).
+    ...(hasLabelledParallelRun(graph)
+      ? {
+          'elk.spacing.edgeEdge': usesMermaidElkPipeline(graph) ? '50' : '40',
+        }
+      : {}),
     ...(isStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
