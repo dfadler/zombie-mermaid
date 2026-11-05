@@ -2315,25 +2315,39 @@ export function renderClassAscii(
 
     // If label is inside a box, find the gap between boxes
     if (labelInBox) {
-      const gapTop = fromBY + 1
-      const gapBottom = toTY - 1
+      // The gap between the two boxes, whichever is higher: an upward
+      // relationship (`fromP` below `toP`) has `fromBY + 1 > toTY - 1`, which
+      // left the loop below empty and the label over the intervening box.
+      const gapTop = Math.min(fromBY, toP.y + toP.height - 1) + 1
+      const gapBottom = Math.max(fromP.y, toTY) - 1
 
-      // Place label in the middle of the gap, outside any intermediate box
+      // Place label on the clear row nearest its ideal one, outside any
+      // intermediate box. An upward relationship (`fromP` below `toP`) keeps
+      // the head row under `toP` and the junction row above `fromP` free:
+      // the first clear row from the top would sit on the heads.
+      const up = fromP.y > toP.y
+      const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
+      const labelStart = Math.max(0, idealLabelStart)
+      let best = -1
       for (let y = gapTop; y <= gapBottom; y++) {
+        if (up && gapBottom - gapTop > 1 && (y === gapTop || y === gapBottom))
+          continue
         let clearRow = true
-        const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
-        const labelStart = Math.max(0, idealLabelStart)
         for (let x = labelStart; x < labelStart + maxLabelWidth; x++) {
           if (isInsideBox(x, y, excludeIds)) {
             clearRow = false
             break
           }
         }
-        if (clearRow) {
-          labelY = y
+        if (!clearRow) continue
+        if (!up) {
+          best = y
           break
         }
+        if (best < 0 || Math.abs(y - baseMidY) < Math.abs(best - baseMidY))
+          best = y
       }
+      if (best >= 0) labelY = best
     }
 
     return labelY
