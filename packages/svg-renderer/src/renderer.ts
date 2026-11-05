@@ -211,7 +211,15 @@ export function renderSvg(
 
   // 4. Nodes (shape + label wrapped in <g class="node">)
   for (const node of graph.nodes) {
-    parts.push(renderNode(node, font, fontSizes, linksEnabled, graph.stateDiagram === true))
+    parts.push(
+      renderNode(
+        node,
+        font,
+        fontSizes,
+        linksEnabled,
+        graph.stateDiagram === true,
+      ),
+    )
   }
 
   parts.push('</svg>')

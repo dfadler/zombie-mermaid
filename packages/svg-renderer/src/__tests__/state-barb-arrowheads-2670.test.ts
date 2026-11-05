@@ -18,8 +18,12 @@ describe('state diagram barbs and radius (#2670)', () => {
     expect(svg).not.toContain('<polygon')
     expect(svg).toContain('rx="5" ry="5"')
     expect(svg).not.toContain('rx="6"')
-    // the first edge ends 5.5px above B's top border
-    const ys = [...svg.matchAll(/class="edge"[^>]* d="M [\d.]+ ([\d.]+) L [\d.]+ ([\d.]+)"/g)]
+    // The first edge ends 5.5px above B's top border
+    const ys = [
+      ...svg.matchAll(
+        /class="edge"[^>]* d="M [\d.]+ ([\d.]+) L [\d.]+ ([\d.]+)"/g,
+      ),
+    ]
     const b = /data-id="B"[\s\S]*?<rect x="[\d.]+" y="([\d.]+)"/.exec(svg)!
     expect(Number(ys[0]![2])).toBeCloseTo(Number(b[1]) - 5.5)
   })
