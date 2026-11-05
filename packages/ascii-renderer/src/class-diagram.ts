@@ -903,10 +903,7 @@ export function renderClassAscii(
     })
     for (const idx of byPair.values()) {
       const rel = diagram.relationships[idx[0]!]!
-      if (
-        idx.length < 2 ||
-        (level.get(rel.from) ?? 0) - (level.get(rel.to) ?? 0) < 2
-      )
+      if (idx.length < 2 || level.get(rel.from)! - level.get(rel.to)! < 2)
         continue
       const widest = Math.max(
         ...idx.map((i) =>
@@ -1115,7 +1112,9 @@ export function renderClassAscii(
           const lo = cx - f.halfSpan
           const hi = cx + f.halfSpan
           const left = desiredCenter - Math.floor(w / 2)
-          if (left > hi || left + w - 1 < lo) continue
+          // Clear of the fan's columns already: leave it where it is.
+          if (Math.abs(2 * (left - cx) + w - 1) > 2 * f.halfSpan + w - 1)
+            continue
           const own = diagram.relationships.findIndex((r) => r.to === id)
           boxLeftOverride = own < f.firstIndex ? lo - w : hi + 1
         }

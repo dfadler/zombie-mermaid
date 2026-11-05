@@ -67,4 +67,29 @@ describe('ASCII class diagram: up fan past an intermediate class (#2639)', () =>
       })
     }
   }
+
+  it('leaves classes that are clear of the fan, or share a parent, where they were', () => {
+    const base = `classDiagram\n  A --> B\n  B --> C\n  C --> D\n${FAN}`
+    // A sibling of C (same parent) and an unrelated chain on either side
+    for (const extra of [
+      '  B --> X',
+      '  P --> Q\n  Q --> R',
+      '  Q --> R\n  P --> Q',
+    ]) {
+      const lines = renderMermaidASCII(`${base}\n${extra}`, {
+        colorMode: 'none',
+      }).split('\n')
+      expect(lines.filter((l) => l.includes('one'))).toHaveLength(1)
+      const c = boxSpan(lines, 'C', '│')
+      expect(c.c0).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('steps aside for an unlabelled fan too', () => {
+    const src = `classDiagram\n  A --> B\n  B --> C\n  C --> D\n  D --> B\n  D --> B\n  D --> B`
+    const lines = renderMermaidASCII(src, { colorMode: 'none' }).split('\n')
+    const b = boxSpan(lines, 'B', '│')
+    const c = boxSpan(lines, 'C', '│')
+    expect(c.c1).toBeLessThan(b.c0)
+  })
 })
