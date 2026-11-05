@@ -25,24 +25,24 @@
   }
 </style>
 <defs>
-  <marker id="zmon6nkx-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
-    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  <marker id="zm1qn5xaf-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
-  <marker id="zmon6nkx-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  <marker id="zm1qn5xaf-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
 </defs>
-<path class="edge" data-from="_start" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 54 L 108 94" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmon6nkx-arrowhead)" />
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 134 L 108 174" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmon6nkx-arrowhead)" />
+<path class="edge" data-from="_start" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 54 L 108 88.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1qn5xaf-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 134 L 108 168.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1qn5xaf-arrowhead)" />
 <g class="node" data-id="_start" data-label="" data-shape="state-start">
   <circle cx="108" cy="47" r="7" fill="var(--_text)" stroke="none" />
 </g>
 <g class="node" data-id="A" data-label="A" data-shape="rounded">
-  <rect x="40" y="94" width="136" height="40" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="40" y="94" width="136" height="40" rx="5" ry="5" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="108" y="114" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rounded">
-  <rect x="40" y="174" width="136" height="40" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="40" y="174" width="136" height="40" rx="5" ry="5" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="108" y="194" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>

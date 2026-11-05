@@ -96,6 +96,7 @@ export function layoutFlowchartSync(
     }
   }
   mark(positioned.groups)
+  if (rawGraph.stateDiagram) positioned.stateDiagram = true
   return positioned
 }
 

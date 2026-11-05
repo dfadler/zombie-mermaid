@@ -196,7 +196,7 @@ export function parseMermaid(text: string): MermaidGraph {
 
   // State diagram: "stateDiagram-v2" or "stateDiagram"
   const graph = /^stateDiagram(-v2)?\s*$/i.test(headerStmt.text)
-    ? parseStateDiagram(lines)
+    ? { ...parseStateDiagram(lines), stateDiagram: true }
     : parseFlowchart(lines)
 
   // Mermaid reads a state diagram's `lineColor` under `theme: base` only (a
