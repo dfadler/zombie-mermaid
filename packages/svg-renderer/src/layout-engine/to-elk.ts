@@ -34,7 +34,6 @@ import {
   findBackEdgeIndexes,
   subgraphFeedbackEdges,
 } from '@zombie-mermaid/core'
-import type { LayoutHints } from './layout-hints.ts'
 import {
   ELK_DIRECTION_FALLBACK,
   INLINE_CENTERED_EDGE_LABEL,
@@ -268,12 +267,9 @@ const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
  * graph with a subgraph direction override goes through hop edges and ports
  * that this does not rewrite.
  */
-export function edgesReversedForLayout(
-  graph: MermaidGraph,
-  hints?: LayoutHints,
-): Set<number> {
-  // Worked out once per graph object, by whichever of `mermaidToElk` (which
-  // has the hints) and `elkToPositioned` (which doesn't need them) asks first.
+export function edgesReversedForLayout(graph: MermaidGraph): Set<number> {
+  // Worked out once per graph object, by whichever of `mermaidToElk` and
+  // `elkToPositioned` asks first.
   let set = reversedCache.get(graph)
   if (!set) {
     set = hasAnyDirectionOverride(graph.subgraphs)
@@ -282,11 +278,7 @@ export function edgesReversedForLayout(
         ? // mermaid@12.3.0 only swaps the edges that close a cycle between
           // subgraphs; ELK's DEPTH_FIRST cycle breaking handles the rest.
           subgraphFeedbackEdges(graph)
-        : findBackEdgeIndexes(
-            graph,
-            hints?.walkOrder,
-            hints?.feedbackEdges ?? subgraphFeedbackEdges(graph),
-          )
+        : findBackEdgeIndexes(graph, undefined, subgraphFeedbackEdges(graph))
     reversedCache.set(graph, set)
   }
   return set
@@ -518,7 +510,6 @@ export function mermaidToElk(
   givenOpts: Required<
     Pick<RenderOptions, 'font' | 'padding' | 'nodeSpacing' | 'layerSpacing'>
   > & { fontSizes: FontSizes },
-  hints?: LayoutHints,
 ): ElkGraphNode {
   const opts = givenOpts
   // Collect all node IDs that belong to subgraphs
@@ -620,15 +611,14 @@ export function mermaidToElk(
     'elk.layered.highDegreeNodes.treatment': 'false',
     // Post-compaction slides a sink down the flow axis into the gap an inline
     // edge label leaves, one layer past its siblings (#1750); mermaid keeps
-    // it beside them. Subgraph layouts (also the hinted compound pass) keep it:
-    // their border clearance relies on it.
+    // it beside them. Subgraph layouts that are not mermaid@12.3.0's (direction
+    // overrides) keep it.
     'elk.layered.compaction.postCompaction.strategy':
       // A labelled parallel run widens the target's routing channel and
       // compaction then pulls its siblings up past it (#2154).
-      (graph.subgraphs.length === 0 ||
-        hasLabelledParallelRun(graph) ||
-        usesMermaidElkPipeline(graph)) &&
-      !hints?.forceNodeOrder
+      graph.subgraphs.length === 0 ||
+      hasLabelledParallelRun(graph) ||
+      usesMermaidElkPipeline(graph)
         ? 'NONE'
         : 'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
@@ -636,11 +626,6 @@ export function mermaidToElk(
       ? { 'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST' }
       : {}),
     ...(hasLabelledParallelRun(graph) ? { 'elk.spacing.edgeEdge': '40' } : {}),
-    // Every layer keeps the nodes in the order the graph lists them: the
-    // compound layout relies on it to keep a subgraph's nodes together.
-    ...(hints?.forceNodeOrder
-      ? { 'elk.layered.crossingMinimization.forceNodeModelOrder': 'true' }
-      : {}),
     ...(isStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
@@ -751,8 +736,6 @@ export function mermaidToElk(
         graph.direction,
         isStateGraph(graph),
       )
-      const fixedWidth = hints?.fixedWidths?.get(id)
-      if (fixedWidth !== undefined) size.width = fixedWidth
       const leaf = buildElkLeafNode(id, size, node.label)
       // A top-level start `[*]` marks where reading starts: pin it to the
       // first layer so a back-edge can't drag it into the middle. The end
@@ -838,19 +821,9 @@ export function mermaidToElk(
   // excluded — ELK has no native self-loop layout and produces a degenerate
   // zero-length-span polyline for them; from-elk.ts synthesizes a proper
   // side loop for these once node positions are known instead.
-  const reversed = edgesReversedForLayout(graph, hints)
+  const reversed = edgesReversedForLayout(graph)
   const flatEdges = usesMermaidElkPipeline(graph) && !hasDirectionOverride
-  // Subgraph feedback edges go first: with `considerModelOrder`, an edge
-  // listed earlier keeps its track on the near side of a node it spans, as in
-  // mermaid (which lifts them ahead of the rest; CJK Labels, #1941).
-  const feedback = hints?.feedbackEdges
-  const rootList = edgesBySubgraph.get(null)!
-  const rootOrdered = feedback?.size
-    ? [
-        ...rootList.filter((e) => feedback.has(e.index)),
-        ...rootList.filter((e) => !feedback.has(e.index)),
-      ]
-    : rootList
+  const rootOrdered = edgesBySubgraph.get(null)!
   if (flatEdges) {
     // One pass over the whole hierarchy: every edge sits at the root with its
     // raw node ids, in mermaid@12.3.0's order.
@@ -871,22 +844,15 @@ export function mermaidToElk(
   }
   for (const { index, edge } of flatEdges ? [] : rootOrdered) {
     if (edge.source === edge.target) continue
-    if (hints?.detachedEdges?.has(index)) continue
-    const elkEdge = buildElkEdge({
-      id: `e${index}`,
-      source: reversed.has(index) ? edge.target : edge.source,
-      target: reversed.has(index) ? edge.source : edge.target,
-      label: edge.label,
-      labelStyle: edgeLabelStyle(opts),
-    })
-    if (hints?.looseEdges?.has(index)) {
-      // Priority 0: the straightening pass leaves this edge alone.
-      elkEdge.layoutOptions = {
-        ...elkEdge.layoutOptions,
-        'elk.layered.priority.straightness': '0',
-      }
-    }
-    rootEdges.push(elkEdge)
+    rootEdges.push(
+      buildElkEdge({
+        id: `e${index}`,
+        source: reversed.has(index) ? edge.target : edge.source,
+        target: reversed.has(index) ? edge.source : edge.target,
+        label: edge.label,
+        labelStyle: edgeLabelStyle(opts),
+      }),
+    )
   }
 
   if (hasDirectionOverride) {

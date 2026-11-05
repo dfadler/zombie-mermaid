@@ -40,12 +40,6 @@ import {
   usesMermaidElkPipeline,
 } from './layout-engine/to-elk.ts'
 import { elkToPositioned } from './layout-engine/from-elk.ts'
-import {
-  canLayOutFlat,
-  layoutCompoundFlat,
-} from './layout-engine/compound-flat.ts'
-import type { LayoutHints } from './layout-engine/layout-hints.ts'
-import { clampEdgeEnds } from './layout-engine/clamp-edge-ends.ts'
 import { clearBorders } from './layout-engine/clear-borders.ts'
 import { layoutSimple } from './layout-engine/simple-layout.ts'
 
@@ -61,31 +55,22 @@ export function layoutGraphSync(
   graph: MermaidGraph,
   options: FlowchartRenderOptions = {},
 ): PositionedGraph {
-  return layoutWithHints(graph, options)
-}
-
-/** One layout run, with the hints the compound layout gives it. */
-function layoutWithHints(
-  graph: MermaidGraph,
-  options: FlowchartRenderOptions,
-  hints?: LayoutHints,
-): PositionedGraph {
   const opts = {
     ...DEFAULTS,
     ...options,
     fontSizes: resolveFontSizes(options.fontSizes),
   }
-  const elkGraph = mermaidToElk(graph, opts, hints)
+  const elkGraph = mermaidToElk(graph, opts)
   const result = elkLayoutSync(elkGraph, options.layoutCache)
   return elkToPositioned(result, graph, opts.mergeEdges)
 }
 
 /**
- * Lay out a flowchart, with its subgraphs arranged the way mermaid.js arranges
- * them (see `layout-engine/compound-flat.ts`). Anything that layout doesn't
- * handle, or can't make fit, is laid out by `layoutGraphSync`, so this is a
- * drop-in for it wherever the graph is a flowchart. Other diagram types that
- * share the engine (state, architecture) keep using `layoutGraphSync`.
+ * Lay out a flowchart. A flowchart with subgraphs is sent to ELK the way
+ * mermaid@12.3.0 sends it (one pass over the whole hierarchy; see
+ * `layoutGraphSync` and `usesMermaidElkPipeline` in `layout-engine/to-elk.ts`),
+ * then kept clear of subgraph borders. Other diagram types that share the
+ * engine (state, architecture) keep using `layoutGraphSync`.
  */
 export function layoutFlowchartSync(
   rawGraph: MermaidGraph,

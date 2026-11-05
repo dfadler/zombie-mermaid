@@ -168,7 +168,7 @@ async function main(): Promise<number> {
     return 0
   }
 
-  const distPath = process.env.MERMAID_DIST // another mermaid.min.js than the pin
+  const distPath = process.env.MERMAID_DIST // A mermaid.min.js other than the pin
   const fresh = pinFreshness()
   if (fresh.stale) console.error(`warning: ${fresh.message}`)
 
