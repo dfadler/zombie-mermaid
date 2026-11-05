@@ -1697,11 +1697,12 @@ function renderStateStart(x: number, y: number, w: number, h: number): string {
 function renderStateEnd(x: number, y: number, w: number, h: number): string {
   const cx = x + w / 2
   const cy = y + h / 2
-  const outerR = Math.min(w, h) / 2 - 2
-  const innerR = outerR - 4
+  // mermaid@12.3.0: a 7px ring (2px stroke) round a 2.5px dot.
+  const outerR = Math.min(w, h) / 2
+  const innerR = (outerR * 5) / 14
   return (
     f`<circle cx="${cx}" cy="${cy}" r="${outerR}" ` +
-    f`fill="none" stroke="var(--_text)" stroke-width="${STROKE_WIDTHS.innerBox * 2}" />` +
+    f`fill="none" stroke="var(--_text)" stroke-width="2" />` +
     f`\n<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="var(--_text)" stroke="none" />`
   )
 }

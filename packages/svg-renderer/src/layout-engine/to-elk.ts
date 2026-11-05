@@ -104,6 +104,16 @@ export function isStateGraph(graph: MermaidGraph): boolean {
  * title bar (28) plus a gap (16) to match the bottom. Shared with the compound
  * layout, which draws the boxes itself.
  */
+/** mermaid@12.3.0 state diagrams: 40px between ranks, 24px inside a composite, 24px side/bottom padding and 25px below the 26px title band. */
+export const STATE_LAYER_SPACING = 40
+export const STATE_COMPOSITE_LAYER_SPACING = 24
+export const STATE_COMPOSITE_PADDING = {
+  top: 51,
+  left: 24,
+  bottom: 24,
+  right: 24,
+}
+
 export const SUBGRAPH_PADDING = { top: 44, left: 16, bottom: 16, right: 16 }
 
 /** Padding for an untitled concurrency region (no header band). */
@@ -470,7 +480,10 @@ export function mermaidToElk(
     ...containerLayoutOptions({
       direction: directionToElk(graph.direction),
       nodeSpacing: opts.nodeSpacing,
-      layerSpacing: opts.layerSpacing,
+      layerSpacing:
+        isStateGraph(graph) && opts.layerSpacing === DEFAULTS.layerSpacing
+          ? STATE_LAYER_SPACING
+          : opts.layerSpacing,
       padding: opts.padding,
     }),
     'elk.layered.thoroughness': String(DEFAULTS.thoroughness),
@@ -796,9 +809,16 @@ function subgraphToElk(
   const layoutOptions: LayoutOptions = containerLayoutOptions({
     direction: directionToElk(effectiveDirection),
     nodeSpacing: opts.nodeSpacing,
-    layerSpacing: opts.layerSpacing,
+    layerSpacing:
+      isStateGraph(graph) && opts.layerSpacing === DEFAULTS.layerSpacing
+        ? STATE_COMPOSITE_LAYER_SPACING
+        : opts.layerSpacing,
     // A region has no title bar to leave room for.
-    padding: sg.region ? REGION_PADDING : SUBGRAPH_PADDING,
+    padding: sg.region
+      ? REGION_PADDING
+      : isStateGraph(graph)
+        ? STATE_COMPOSITE_PADDING
+        : SUBGRAPH_PADDING,
   })
 
   // Ports, built before children/edges since they don't depend on them.
