@@ -328,7 +328,8 @@ export function parseOurXy(svg: string, horizontal: boolean): XyLayout {
         style.axisLine = true
         // M x,y V y1 H x1: the vertical line runs y..y1, the horizontal x..x1.
         const [x, y, y1, x1] = numbers(d) as [number, number, number, number]
-        frame = { across: [x, x1], down: [y, y1] }
+        // Horizontal charts run the frame up from the bottom-left corner, so order it.
+        frame = { across: [x, x1], down: [Math.min(y, y1), Math.max(y, y1)] }
       } else style.ticks = true
     } else if (classes.includes('xychart-bar')) {
       const box = barBox(d)
@@ -425,8 +426,15 @@ export function xyAgreement(official: XyLayout, ours: XyLayout): XyAgreement {
   const ends =
     official.axes && ours.axes
       ? (() => {
-          const o = inset(official.yLabels, official.axes.val)
-          const u = inset(ours.yLabels, ours.axes.val)
+          // Both axes: the value axis' padding and the category axis' inset (#2650).
+          const o = [
+            ...inset(official.yLabels, official.axes.val),
+            ...inset(official.xLabels, official.axes.cat),
+          ]
+          const u = [
+            ...inset(ours.yLabels, ours.axes.val),
+            ...inset(ours.xLabels, ours.axes.cat),
+          ]
           return o.map(
             (v, i) => Math.abs(v - (u[i] ?? Infinity)) <= FRACTION_TOLERANCE,
           )
