@@ -185,9 +185,9 @@ function mermaidSpacing(
     return undefined
   }
   return level === 'root'
-    ? { 'elk.spacing.baseValue': '40' }
+    ? { 'spacing.baseValue': '40' }
     : {
-        'elk.spacing.baseValue': '24',
+        'spacing.baseValue': '24',
         'elk.spacing.nodeNode': '50',
         'elk.layered.spacing.edgeNodeBetweenLayers': '30',
         'elk.spacing.edgeEdge': '20',
@@ -201,6 +201,7 @@ const FORK_SPACING_KEYS = [
   'elk.spacing.edgeEdge',
   'elk.layered.spacing.edgeEdgeBetweenLayers',
   'elk.layered.spacing.edgeNodeBetweenLayers',
+  'elk.contentAlignment',
 ]
 
 function withMermaidSpacing(
@@ -253,6 +254,8 @@ function mermaidEdgeOrder(graph: MermaidGraph): number[] {
   })
   return order
 }
+
+const PORTS_SURROUNDING = '[top=12,left=12,bottom=12,right=12]'
 
 const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
 
@@ -632,9 +635,7 @@ export function mermaidToElk(
     ...(usesMermaidElkPipeline(graph)
       ? { 'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST' }
       : {}),
-    ...(hasLabelledParallelRun(graph) && !mermaidSpacing(graph, opts, 'root')
-      ? { 'elk.spacing.edgeEdge': '40' }
-      : {}),
+    ...(hasLabelledParallelRun(graph) ? { 'elk.spacing.edgeEdge': '40' } : {}),
     // Every layer keeps the nodes in the order the graph lists them: the
     // compound layout relies on it to keep a subgraph's nodes together.
     ...(hints?.forceNodeOrder
@@ -855,7 +856,8 @@ export function mermaidToElk(
     // raw node ids, in mermaid@12.3.0's order.
     for (const index of mermaidEdgeOrder(graph)) {
       const edge = graph.edges[index]!
-      if (edge.source === edge.target) continue
+      // Self-loops stay in the graph under mermaid@12.3.0 (they shape the
+      // layering); `elkToPositioned` replaces ELK's route with its own loop.
       rootEdges.push(
         buildElkEdge({
           id: `e${index}`,
@@ -999,6 +1001,11 @@ function subgraphToElk(
     layoutOptions['elk.nodeSize.minimum'] = vertical
       ? `(0, ${titleWidth})`
       : `(${titleWidth}, 0)`
+  }
+
+  if (usesMermaidElkPipeline(graph)) {
+    layoutOptions['elk.layered.cycleBreaking.strategy'] = 'DEPTH_FIRST'
+    layoutOptions['elk.spacing.portsSurrounding'] = PORTS_SURROUNDING
   }
 
   // Ports, built before children/edges since they don't depend on them.

@@ -473,6 +473,8 @@ function extractEdgesRecursively(
   for (const [edgeIndex, seg] of segments) {
     const originalEdge = graph.edges[edgeIndex]
     if (!originalEdge) continue
+    // A self-loop sent to ELK only to shape the layout; its loop is synthesized.
+    if (originalEdge.source === originalEdge.target) continue
 
     // Combine points from all segments in path order:
     //   source-side hops (innermost → outermost, i.e. descending level)
