@@ -1,23 +1,21 @@
 /**
- * Oracle harness for the gallery fidelity audit (#2678): the sibling of
- * `fork-fixes-oracle.ts` for `samples/samples-data.ts` and
- * `samples/xychart-samples-data.ts`. Ids match the snapshot PNG names
- * (`general-<i>-<category>-<title>`, `xychart-<i>-...`).
- *
- * Setup (once):  mkdir -p $ORACLE_DIR/mermaid-latest && cd $_ && npm init -y && npm i mermaid@latest
- * Run:           MERMAID_LATEST_DIR=<that dir> OUT=<out dir> pnpm exec tsx scripts/samples-oracle.ts [--only=id,id] [--prefix=general|xychart]
- *
- * Writes, per case id, to $OUT: `<id>.png`, `<id>.json` (facts: source, error,
- * trimmed SVG, element counts, marker ids, the labels our SVG renderer emits;
- * plus `pinTrimmedSvg` when the pin's render differs) and `manifest.json`
- * (versions, rejected sources, pin-vs-latest diffs).
+ * Gallery fidelity oracle (#2678), sibling of `fork-fixes-oracle.ts` for the
+ * two sample files; ids match the snapshot PNG names. Setup: `npm i mermaid@latest`
+ * in an empty dir outside the repo. Run:
+ *   MERMAID_LATEST_DIR=<dir> OUT=<out dir> pnpm exec tsx scripts/samples-oracle.ts [--only=id,id] [--prefix=general|xychart]
+ * Writes `<id>.png`, `<id>.json` and `manifest.json` (versions, rejections, pin-vs-latest diffs) to $OUT.
  */
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { createHash } from 'node:crypto'
 import { samples } from '../samples/samples-data.ts'
 import { xychartSamples } from '../samples/xychart-samples-data.ts'
-import { renderMermaidSVG } from '../src/index.ts'
+import {
+  facts,
+  hash,
+  norm,
+  ourLabels,
+  slug,
+} from './lib/samples-oracle-facts.ts'
 import {
   startRealMermaid,
   renderRealMermaidSvg,
@@ -35,12 +33,7 @@ const only = process.argv
   .split(',')
 const prefix = process.argv.find((a) => a.startsWith('--prefix='))?.slice(9)
 
-const slug = (t: string) =>
-  t
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-// Same names as the snapshot PNGs (svg-samples.visual.test.ts); Hero is not snapshotted.
+// Names as in svg-samples.visual.test.ts; Hero is not snapshotted.
 const cases = [
   ...samples.map((s, i) => ({ s, id: `general-${i}`, group: 'general' })),
   ...xychartSamples.map((s, i) => ({
@@ -60,22 +53,6 @@ const cases = [
     source: s.source,
     options: 'options' in s ? s.options : undefined,
   }))
-
-// What our SVG renderer prints as text, to diff against mermaid's labels.
-const ourLabels = (source: string, options: unknown) => {
-  try {
-    const svg = renderMermaidSVG(source, options as never)
-    return [...svg.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((m) =>
-      m[1]
-        .split(/<[^>]*>/)
-        .join('')
-        .trim(),
-    )
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) }
-  }
-}
-
 const version = async (dir: string) =>
   JSON.parse(
     await readFile(join(dir, 'node_modules/mermaid/package.json'), 'utf8'),
@@ -93,35 +70,13 @@ async function renderOne(s: RealMermaidSession, id: string, source: string) {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296
       }
     })
-    const renderId = `sm_${id.replace(/-/g, '_')}` // Same id for pin and latest
-    const svg = await renderRealMermaidSvg(s, renderId, source)
+    const rid = `sm_${id.replace(/-/g, '_')}`
+    const svg = await renderRealMermaidSvg(s, rid, source)
     return { svg, error: null as string | null }
   } catch (e) {
     return { svg: null, error: e instanceof Error ? e.message : String(e) }
   }
 }
-
-const facts = (svg: string) => ({
-  nodes: (svg.match(/class="[^"]*\bnode\b/g) ?? []).length,
-  // Edge paths carry `edge-thickness-*` (graph-like diagrams) or `messageLine*` (sequence)
-  edgePaths: (svg.match(/class="[^"]*\b(?:edge-thickness-|messageLine)/g) ?? [])
-    .length,
-  markers: [...svg.matchAll(/<marker[^>]*id="([^"]+)"/g)].map((m) => m[1]),
-  markerRefs: [
-    ...new Set(
-      [...svg.matchAll(/marker-(?:start|end)="url\(#([^)]+)\)"/g)].map(
-        (m) => m[1],
-      ),
-    ),
-  ],
-  text: [...svg.matchAll(/<(?:text|span|p)[^>]*>([^<]+)</g)]
-    .map((m) => m[1].trim())
-    .filter(Boolean),
-})
-// Full SVG, so marker/CSS-only changes count; Iconify ids are per-page random noise.
-const norm = (svg: string) => svg.replace(/IconifyId[0-9a-f]+/g, 'IconifyId')
-const hash = (s: string) =>
-  createHash('sha1').update(s).digest('hex').slice(0, 10)
 
 await mkdir(out, { recursive: true })
 const pin = await startRealMermaid()
@@ -142,10 +97,8 @@ const manifest = {
 }
 try {
   for (const f of cases.filter((f) => !only || only.includes(f.id))) {
-    const [l, p] = [
-      await renderOne(latest, f.id, f.source),
-      await renderOne(pin, f.id, f.source),
-    ]
+    const l = await renderOne(latest, f.id, f.source)
+    const p = await renderOne(pin, f.id, f.source)
     manifest.count++
     if (l.error) manifest.rejected.push({ id: f.id, error: l.error })
     if (p.error) manifest.pinRejected.push({ id: f.id, error: p.error })
