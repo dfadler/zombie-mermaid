@@ -356,8 +356,9 @@ function barbGap(edge: PositionedEdge): PositionedEdge['points'] {
     a.x += ((b.x - a.x) / len) * BARB_GAP
     a.y += ((b.y - a.y) / len) * BARB_GAP
   }
-  if (edge.hasArrowEnd) pull(pts.length - 1, pts.length - 2)
-  if (edge.hasArrowStart) pull(0, 1)
+  // Circle / cross terminators carry their own clearance; only barbs get the gap.
+  if (edge.hasArrowEnd && !edge.endMarker) pull(pts.length - 1, pts.length - 2)
+  if (edge.hasArrowStart && !edge.startMarker) pull(0, 1)
   return pts
 }
 

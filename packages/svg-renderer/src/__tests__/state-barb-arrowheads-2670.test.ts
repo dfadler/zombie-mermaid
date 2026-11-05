@@ -56,4 +56,13 @@ describe('state diagram barbs and radius (#2670)', () => {
     const svg = await renderMermaidSVG(`${STATE}\n  linkStyle 0 stroke:#f00`)
     expect(svg).toMatch(/<marker id="[^"]*arrowhead-[^"]*"[^>]*refX="17"/)
   })
+
+  it('does not pull back a circle terminator', () => {
+    const g = layoutFlowchartSync(parseMermaid(STATE))
+    const e = g.edges[0]!
+    const end = e.points[e.points.length - 1]!
+    e.endMarker = 'circle'
+    const svg = renderSvg(g, { bg: '#fff', fg: '#000' })
+    expect(svg).toContain(`L ${end.x} ${end.y}"`)
+  })
 })
