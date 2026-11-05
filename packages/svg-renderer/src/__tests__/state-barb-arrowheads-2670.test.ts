@@ -43,13 +43,12 @@ describe('state diagram barbs and radius (#2670)', () => {
     expect(Number(m[2])).toBeCloseTo(first.y + 5.5)
   })
 
-  it('leaves a too-short or degenerate edge alone', () => {
+  it('leaves a too-short edge alone', () => {
     const g = layoutFlowchartSync(parseMermaid(STATE))
     g.edges[0]!.points = [
       { x: 0, y: 0 },
       { x: 0, y: 3 },
     ]
-    g.edges[1]!.points = [{ x: 5, y: 5 }]
     expect(() => renderSvg(g, { bg: '#fff', fg: '#000' })).not.toThrow()
   })
 

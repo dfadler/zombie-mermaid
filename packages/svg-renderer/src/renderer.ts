@@ -356,7 +356,6 @@ function barbGap(edge: PositionedEdge): PositionedEdge['points'] {
     a.x += ((b.x - a.x) / len) * BARB_GAP
     a.y += ((b.y - a.y) / len) * BARB_GAP
   }
-  if (pts.length < 2) return pts
   if (edge.hasArrowEnd) pull(pts.length - 1, pts.length - 2)
   if (edge.hasArrowStart) pull(0, 1)
   return pts
