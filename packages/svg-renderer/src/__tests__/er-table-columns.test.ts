@@ -37,6 +37,19 @@ describe('ER attribute table', () => {
       'erDiagram\n  LONGENTITYNAMEHERE {\n    int a\n    int b\n  }',
     )
     expect(svg).toContain('fill="var(--_key-badge)"')
+    // One row tinted (the second). The wide header leaves spare width, shared
+    // evenly: the divider sits at the type column's natural width (3 mono
+    // cells of 7px + 20px padding) plus half of what the box has beyond the
+    // two natural widths (41 + 27).
+    expect(svg.match(/fill="var\(--_key-badge\)"/g)).toHaveLength(1)
+    const box = /<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"/.exec(svg)!
+    const divider = /<line x1="([\d.]+)" y1="[\d.]+" x2="\1"/.exec(svg)!
+    const width = Number(box[2])
+    expect(width).toBeGreaterThan(41 + 27)
+    expect(Number(divider[1]) - Number(box[1])).toBeCloseTo(
+      41 + (width - 68) / 2,
+      5,
+    )
   })
 
   it('draws an attribute-less entity as a taller box with the name centred', () => {

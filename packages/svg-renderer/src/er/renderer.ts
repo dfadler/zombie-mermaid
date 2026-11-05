@@ -16,7 +16,7 @@ import {
   f,
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
-import { erCells, erColumns } from './layout.ts'
+import { ER, commentLines, erCells, erColumns } from './layout.ts'
 import {
   buildSvgStyleBlock,
   FONT_SIZES,
@@ -53,9 +53,6 @@ const ER_FONT = {
   attrSize: 11,
   attrWeight: 400,
 } as const
-
-/** Left/right padding inside one attribute cell (matches layout.ts). */
-const CELL_PAD_X = 10
 
 /**
  * Render a positioned ER diagram as an SVG string.
@@ -243,7 +240,7 @@ function renderEntityBox(
           renderAttribute(
             attributes[i]!,
             cols.map((c, ci) => ({
-              x: xs[ci]! + CELL_PAD_X,
+              x: xs[ci]! + ER.cellPadX,
               text: cells[c.cell]!,
             })),
             rowY,
@@ -270,7 +267,7 @@ function renderAttribute(
 ): string {
   const parts: string[] = []
   if (attr.comment && attr.comment.length > 0) {
-    const tooltipText = attr.comment.replace(/<br\s{0,8}\/?>/gi, '\n')
+    const tooltipText = commentLines(attr.comment)
     parts.push(f`<g><title>${escapeXml(tooltipText)}</title>`)
   }
   cells.forEach((cell, i) => {

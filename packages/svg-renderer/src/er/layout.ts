@@ -34,7 +34,7 @@ import {
 } from '../layout-engine/elk-graph-builder.ts'
 
 /** Layout constants for ER diagrams */
-const ER = {
+export const ER = {
   padding: 40,
   boxPadX: 14,
   /** Left/right padding inside one attribute cell. */
@@ -100,15 +100,26 @@ function selfLoops(
   return loops
 }
 
+/** One attribute column: which `erCells` entry it shows, and its natural width. */
+export interface ErColumn {
+  cell: number
+  width: number
+}
+
+/** A comment with each `<br>` as a newline (the tooltip text). */
+export function commentLines(comment: string): string {
+  return comment.replace(/<br\s{0,8}\/?>/gi, '\n')
+}
+
 /**
- * Each attribute column (index into `erCells` and its natural width), as mermaid lays an entity out as a
- * table: type | name | keys | comment. The keys and comment columns exist only
+ * Each attribute column, as mermaid lays an entity out as a table:
+ * type | name | keys | comment. The keys and comment columns exist only
  * when some attribute has one. Shared with the renderer, which spreads any
  * extra box width over these.
  */
 export function erColumns(entity: {
   attributes: ReadonlyArray<ErAttribute>
-}): Array<{ cell: number; width: number }> {
+}): ErColumn[] {
   const rows = entity.attributes.map(erCells)
   return [0, 1, 2, 3]
     .filter((i) => i < 2 || rows.some((r) => r[i]!.length > 0))
@@ -125,8 +136,7 @@ export function erCells(a: ErAttribute): [string, string, string, string] {
     a.type,
     a.name,
     a.keys.join(','),
-    (a.comment ?? '')
-      .replace(/<br\s{0,8}\/?>/gi, '\n')
+    commentLines(a.comment ?? '')
       .split('\n')
       .map((line) => line.trim())
       .join(' '),

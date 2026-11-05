@@ -33,7 +33,7 @@ function boxOrigin(
   svg: string,
   cls: string,
   id: string,
-): { x: number; y: number } {
+): { x: number; y: number; cx: number } {
   const marker = `<g class="${cls}" data-id="${id}"`
   const groupStart = svg.indexOf(marker)
   if (groupStart < 0) throw new Error(`${cls} ${id} not found in SVG`)
@@ -47,15 +47,18 @@ function boxOrigin(
     const valueStart = start + needle.length
     return Number(rectTag.slice(valueStart, rectTag.indexOf('"', valueStart)))
   }
-  return { x: num('x'), y: num('y') }
+  return { x: num('x'), y: num('y'), cx: num('x') + num('width') / 2 }
 }
 
 /**
- * True when `b` sits strictly below `a`. Boxes of different widths are
- * centred on a shared column, so their left edges (`x`) may differ.
+ * True when `b` sits strictly below `a`, in the same column. Boxes of
+ * different widths are centred on it, so compare centres, not left edges.
  */
-function isBelow(a: { x: number; y: number }, b: { x: number; y: number }) {
-  return b.y > a.y
+function isBelow(
+  a: { y: number; cx: number },
+  b: { y: number; cx: number },
+) {
+  return b.y > a.y && Math.abs(b.cx - a.cx) < 1
 }
 
 /** True when `b` sits strictly right of `a` on the same row. */
