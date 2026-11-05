@@ -78,8 +78,57 @@ jobs:
           n_bench="$(printf '%s\n' "$changed" | re="$nobench" awk 'NF && $0 !~ ENVIRON["re"] { c++ } END { print c + 0 }')"
           emit "$([ "$n_code" -gt 0 ] && echo true || echo false)" "$([ "$n_bench" -gt 0 ] && echo true || echo false)"
 
+  # Unit tests run as 3 parallel shards (#2501) because `unit-tests` was the
+  # critical path (~288s vs <=184s for everything else). Each shard writes a
+  # vitest blob report (test results + raw coverage); the `unit-tests` job below
+  # merges them so thresholds, Codecov, junit and diff coverage see ONE result.
+  # Per-shard coverage thresholds are zeroed on purpose: a shard sees only ~1/3
+  # of the code paths, so the real gate is the merged run in `unit-tests`.
+  unit-shards:
+    name: Unit tests (shard ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # only checks out code and runs tests
+    # Same fork guard as `unit-tests`.
+    if: github.repository == 'dfadler/zombie-mermaid'
+    strategy:
+      fail-fast: false # let every shard finish so one run shows all failures
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm, Node.js and install
+        uses: ./.github/actions/setup
+
+      - name: Run test shard with coverage
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: >-
+          pnpm exec vitest run -c config/vitest.config.ts --coverage
+          --shard="$SHARD/3" --reporter=blob
+          --outputFile=".vitest-reports/blob-$SHARD.json"
+          --coverage.thresholds.statements=0 --coverage.thresholds.branches=0
+          --coverage.thresholds.functions=0 --coverage.thresholds.lines=0
+
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vitest-blob-${{ matrix.shard }}
+          path: .vitest-reports/
+          if-no-files-found: error
+          retention-days: 1
+
+  # Merges the shard blobs. Keeps the `unit-tests` key and name so the `test`
+  # aggregate (needs: [unit-tests, static]) and branch protection are unchanged;
+  # a failed shard leaves this job skipped, which `test` rejects.
   unit-tests:
     name: Unit tests + coverage
+    needs: [unit-shards]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -125,8 +174,18 @@ jobs:
       - name: Setup pnpm, Node.js and install
         uses: ./.github/actions/setup
 
-      - name: Run tests with coverage
-        run: pnpm run test:coverage
+      - name: Download blob reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: vitest-blob-*
+          path: .vitest-reports
+          merge-multiple: true
+
+      # Re-reports all shards as one run: repo-wide thresholds from
+      # config/vitest.config.ts are enforced here on the merged coverage, and
+      # the CI reporters (github-actions, junit) fire once.
+      - name: Merge reports and enforce coverage thresholds
+        run: pnpm exec vitest run -c config/vitest.config.ts --merge-reports=.vitest-reports --coverage
 
       # npm ci --dry-run against plugins/claude/npm-shrinkwrap.json (#2517)
       - name: Check plugin lock
