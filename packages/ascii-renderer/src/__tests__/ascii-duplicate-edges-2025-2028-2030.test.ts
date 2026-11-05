@@ -659,6 +659,9 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
       heads += headsOnExitStems(out).length
     }
     expect(cycles).toBeLessThanOrEqual(15)
-    expect(heads).toBeLessThanOrEqual(3)
+    // #2645: a dense facing pair (6+ edges between two neighbours) draws its
+    // i-th edge each way as one `◄──►` row, so a head sits beside the other
+    // edge's exit by design (3 -> 12 over these seeds).
+    expect(heads).toBeLessThanOrEqual(12)
   })
 })

@@ -28,19 +28,20 @@ describe('dense reciprocal group between facing faces (#2645)', () => {
   const src =
     'flowchart RL\n  n0["n0"]\n  n1["n1"]\n  n1 --> n0\n  n0 --> n1\n  n1 --> n0\n  n1 --> n0\n  n1 --> n1\n  n0 --> n0\n  n0 --> n1\n  n1 --> n0\n  n0 --> n1\n  n0 --> n1'
 
-  it('draws every edge as its own stroke between the side faces', () => {
+  it('pairs the edges each way on one stroke per row, heads at both ends', () => {
     const out = renderMermaidASCII(src)
-    // Four strokes each way, none merged; nothing runs under the nodes.
+    // Four rows, each ◄───► : every edge end keeps a cell and an arrowhead.
     expect(out.match(/►/g)).toHaveLength(4)
     expect(out.match(/◄/g)).toHaveLength(4)
-    const lines = out.split('\n')
-    expect(lines.filter((l) => /─►│|◄─/.test(l))).toHaveLength(8)
+    expect(out.split('\n').filter((l) => /◄─+►/.test(l))).toHaveLength(4)
+    // Nothing runs under the nodes.
+    expect(out.split('\n').at(-1)).toMatch(/^└─+┘\s+└─+┘$/)
   })
 
   it('puts the self-loops on top, above the nodes', () => {
     const out = renderMermaidASCII(src)
     const lines = out.split('\n')
-    const firstBox = lines.findIndex((l) => l.includes('┌────────┐'))
+    const firstBox = lines.findIndex((l) => l.includes('┴'))
     expect(firstBox).toBeGreaterThan(0)
     expect(lines.slice(0, firstBox).join('')).toMatch(/▼/)
   })

@@ -673,12 +673,10 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // #2645: a dense facing pair gives each edge a row of its own on the faces.
   for (const e of graph.edges) {
     if (!denseFacingPair(graph, e) || e.from.index > e.to.index) continue
-    const n = graph.edges.filter(
-      (o) =>
-        o.from !== o.to &&
-        new Set([o.from, o.to]).has(e.from) &&
-        new Set([o.from, o.to]).has(e.to),
-    ).length
+    const n = Math.max(
+      graph.edges.filter((o) => o.from === e.from && o.to === e.to).length,
+      graph.edges.filter((o) => o.from === e.to && o.to === e.from).length,
+    )
     const at = requireGridCoord(e.from).y + 1
     graph.rowHeight.set(at, Math.max(graph.rowHeight.get(at) ?? 0, n + 2))
   }
@@ -1396,7 +1394,7 @@ export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
         (o.from === edge.to && o.to === edge.from)),
   )
   return (
-    group.length >= 3 &&
+    group.length >= 6 &&
     group.some((o) => o.from === edge.from) &&
     group.some((o) => o.to === edge.from) &&
     group.every(
@@ -1407,6 +1405,22 @@ export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
         !o.clusterTarget,
     )
   )
+}
+
+/**
+ * Row key of an edge in a dense facing pair: its rank among the edges running
+ * its way, so the i-th edge each way shares one row (a stroke with a head at
+ * each end). Undefined outside such a pair.
+ */
+export function denseRank(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): string | undefined {
+  if (!denseFacingPair(graph, edge)) return undefined
+  const same = graph.edges.filter(
+    (o) => o.from === edge.from && o.to === edge.to,
+  )
+  return `dense|${same.indexOf(edge)}`
 }
 
 /** A self-loop on a node that ends a `backStraight` pair (#2100). */
@@ -1851,6 +1865,31 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
 
   // #2100: a back-edge beside its forward partner, when a skip edge needs the
   // bottom faces, is a second stroke between the facing side faces.
+  // #2645: a loop on a dense pair's node is a hook over the top face, out of
+  // one top cell and back into the next, as Mermaid draws it.
+  if (
+    edge.from === edge.to &&
+    effectiveDir === 'LR' &&
+    loopOnTop(graph, edge) &&
+    !edge.loopTopWanted &&
+    graph.edges.some(
+      (o) =>
+        denseFacingPair(graph, o) &&
+        (o.from === edge.from || o.to === edge.from),
+    )
+  ) {
+    const c = requireGridCoord(edge.from)
+    edge.startDir = Up
+    edge.endDir = Up
+    edge.faceLane = false
+    edge.path = [
+      { x: c.x + 1, y: c.y },
+      { x: c.x + 1, y: c.y - 1 },
+      { x: c.x + 2, y: c.y - 1 },
+      { x: c.x + 2, y: c.y },
+    ]
+    return
+  }
   const dense = denseFacingPair(graph, edge)
   const back =
     backStraight(graph, edge) ||
