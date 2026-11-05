@@ -120,6 +120,7 @@ jobs:
         with:
           name: vitest-blob-${{ matrix.shard }}
           path: .vitest-reports/
+          include-hidden-files: true # .vitest-reports is a dot-dir; skipped by default
           if-no-files-found: error
           retention-days: 1
 
