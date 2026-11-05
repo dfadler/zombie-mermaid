@@ -1621,8 +1621,8 @@ export interface FlowLane {
   /** Jog levels either side of the label rows, and the label rows' count. */
   levels: number
   labelRows: number
-  /** Rows its label sits below the first label row (beside a close neighbour). */
-  drop: number
+  /** Row of its label below the first label row; undefined centres it in the rows. */
+  row: number | undefined
   lines: readonly string[]
 }
 
@@ -1721,7 +1721,8 @@ function planFlowLanes(
   const hi = Math.floor(n / 2)
   // A label of width w centred on x covers x - floor(w/2) .. x + ceil(w/2) - 1.
   const left = (i: number, x: number): number => x - Math.floor(wide[i]! / 2)
-  const right = (i: number, x: number): number => x + Math.ceil(wide[i]! / 2) - 1
+  const right = (i: number, x: number): number =>
+    x + Math.ceil(wide[i]! / 2) - 1
   const lane = [...dx]
   let bound = Math.min(...[lo, hi].map((i) => left(i, dx[i]!)))
   for (let i = lo - 1; i >= 0; i--) {
@@ -1743,11 +1744,13 @@ function planFlowLanes(
     bound = right(i, x)
   }
   const levels = Math.max(lo, n - 1 - hi)
-  // Two straight strokes a port apart: the second label takes the next row.
-  const stagger =
-    lo !== hi && right(lo, dx[lo]!) + 2 > left(hi, dx[hi]!) ? hi : -1
-  const labelRows =
-    Math.max(1, ...lines.map((ls) => ls.length)) + (stagger < 0 ? 0 : 1)
+  // Two straight strokes a port apart: their labels take a row each.
+  const stagger = lo !== hi && right(lo, dx[lo]!) + 2 > left(hi, dx[hi]!)
+  const labelRows = Math.max(
+    1,
+    ...lines.map((ls) => ls.length),
+    stagger ? lines[lo]!.length + lines[hi]!.length : 0,
+  )
   ordered.forEach((e, i) => {
     const level = i < lo ? i + 1 : i > hi ? n - i : 0
     flowLanes.set(e, {
@@ -1756,7 +1759,12 @@ function planFlowLanes(
       level,
       levels,
       labelRows,
-      drop: i === stagger ? 1 : 0,
+      row:
+        stagger && i === lo
+          ? 0
+          : stagger && i === hi
+            ? lines[lo]!.length
+            : undefined,
       lines: lines[i]!,
     })
     e.parallelLane = { index: i, total: n, usedOffsets: new Set() }
@@ -1825,8 +1833,7 @@ export function flowLaneLabel(
     yTop +
     plan.levels +
     2 +
-    plan.drop +
-    (plan.drop ? 0 : Math.floor((plan.labelRows - plan.lines.length) / 2))
+    (plan.row ?? Math.floor((plan.labelRows - plan.lines.length) / 2))
   return plan.lines.map((text, i) => ({
     x: cx + plan.lane - Math.floor(displayWidth(text) / 2),
     y: start + i,

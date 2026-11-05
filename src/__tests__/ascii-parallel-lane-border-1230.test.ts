@@ -34,7 +34,7 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
   // Two labeled edges now draw side by side instead (#1455), so the lanes
   // appear from three.
   // Each lane has its own row and arrowhead (#1743), up to four lanes.
-  for (const count of [3, 4]) {
+  for (const count of [3]) {
     const heads = count - 1
     it(`TD, ${count} lanes: later lanes enter the target's right face with their own arrowhead`, () => {
       const lines = render(lanes('TD', count), false)
@@ -61,6 +61,16 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
       expect(lines.join('\n').match(/</g)).toHaveLength(heads)
     })
   }
+
+  // Four or more take the facing faces instead (#2645): a port each, the
+  // target's side faces stay plain box edges.
+  it('TD, 4 lanes: every edge lands on the target top face', () => {
+    for (const useAscii of [false, true]) {
+      const text = render(lanes('TD', 4), useAscii).join('\n')
+      expect(text.match(useAscii ? /v/g : /▼/g)).toHaveLength(5)
+      expect(text).not.toMatch(useAscii ? /</ : /◄/)
+    }
+  })
 
   for (const count of [3, 4]) {
     it(`LR, ${count} lanes: later lanes run under the nodes and enter the target's bottom face with their own arrowhead`, () => {
