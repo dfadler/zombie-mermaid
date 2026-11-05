@@ -92,10 +92,23 @@ function basisPath(points: Point[]): string {
  * through it — documented in docs/diagrams.md.
  */
 function naturalPath(points: Point[]): string {
+  return roundedPath(points, 12)
+}
+
+/**
+ * Corner radius mermaid@12.3.0 gives every orthogonal edge bend (measured:
+ * each bend starts 7.0711 px = 5 * sqrt(2) before the routed corner).
+ */
+export const MERMAID_CORNER_RADIUS = 5 * Math.SQRT2
+
+/**
+ * Straight runs with each bend replaced by a quadratic fillet of at most
+ * `maxRadius` px, never consuming more than half of either adjacent leg.
+ */
+export function roundedPath(points: Point[], maxRadius: number): string {
   if (points.length < 3) return linearPath(points)
 
-  /** Largest corner radius, in px. Kept small so edges stay readable. */
-  const MAX_RADIUS = 12
+  const MAX_RADIUS = maxRadius
 
   const parts: string[] = [moveTo(points[0]!)]
 

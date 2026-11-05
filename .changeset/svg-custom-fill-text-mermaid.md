@@ -1,4 +1,5 @@
 ---
+'@zombie-mermaid/core': patch
 '@zombie-mermaid/svg-renderer': patch
 ---
 

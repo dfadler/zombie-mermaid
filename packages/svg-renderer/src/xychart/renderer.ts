@@ -38,8 +38,6 @@ const CHART_FONT = {
   axisTitleWeight: 500,
   labelSize: 14,
   labelWeight: 400,
-  legendSize: 14,
-  legendWeight: 400,
   dotRadius: 5,
   lineWidth: 2.5,
 } as const
@@ -147,12 +145,12 @@ export function renderXYChartSvg(
     if (interactive) {
       const tipText = formatTipValue(bar.value)
       const tipTitle = bar.label ? `${bar.label}: ${tipText}` : tipText
-      const tip = tooltipAbove(bar.x + bar.width / 2, bar.y, tipText)
+      const tip = tooltipAbove((x0 + x1) / 2, y0, tipText)
       barOverlay.push({
-        extent: chart.horizontal ? bar.width : bar.height,
+        extent: chart.horizontal ? x1 - x0 : y1 - y0,
         html:
           `<g class="xychart-bar-group">` +
-          `<rect x="${r(bar.x)}" y="${r(bar.y)}" width="${r(bar.width)}" height="${r(bar.height)}" fill="transparent"/>` +
+          `<rect x="${r(x0)}" y="${r(y0)}" width="${r(x1 - x0)}" height="${r(y1 - y0)}" fill="transparent"/>` +
           `<title>${escapeXml(tipTitle)}</title>` +
           tip +
           `</g>`,

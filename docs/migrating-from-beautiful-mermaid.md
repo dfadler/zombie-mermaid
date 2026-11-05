@@ -9,7 +9,7 @@ This page covers what's safe to assume unchanged, itemizes the fixes most likely
 ## Breaking changes since the fork
 
 - **Node `>=24`** is required (`engines.node` in `package.json`).
-- **`registerElk()`**: in browsers and bundlers, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
+- **`registerElk()`**: in browsers and bundlers, flowchart, state, class and ER diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
 - **Packages**: the parser and renderers live under `packages/*` (there is no `src/` library layout to deep-import from).
 
 A full 2.x to 5.x upgrade guide is tracked in [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538).

@@ -81,6 +81,8 @@ describe('ER side-by-side relationship row (#1911 extra cases)', () => {
     }
     CUSTOMER ||--o{ ORDER : places`)
     const c = findBoxRect(ascii, 'CUSTOMER')
-    expect(rowOf(ascii, '╟')).toBe(c.y0 + Math.floor((c.y1 - c.y0 + 1) / 2))
+    // The centre row is a table rule here, so the line takes the text row
+    // just below it.
+    expect(rowOf(ascii, '╟')).toBe(c.y0 + Math.floor((c.y1 - c.y0 + 1) / 2) + 1)
   })
 })

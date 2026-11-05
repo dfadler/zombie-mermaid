@@ -142,7 +142,8 @@ export function architectureToGraph(
       label: g.title,
       nodeIds: [],
       children: [],
-      icon: g.icon ?? '',
+      ...(g.icon !== undefined ? { icon: g.icon } : {}),
+      architecture: true,
     })
   }
   const roots: MermaidSubgraph[] = []

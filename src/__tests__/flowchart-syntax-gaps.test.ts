@@ -175,7 +175,7 @@ describe('invisible links (#198 row 4)', () => {
 
   it('emits an SVG element that participates in layout but paints nothing', () => {
     const svg = renderMermaidSVG('flowchart TD\n  A ~~~ B')
-    const edge = svg.match(/<polyline class="edge"[^>]*>/)?.[0]
+    const edge = svg.match(/<path class="edge"[^>]*>/)?.[0]
     expect(edge).toBeDefined()
     // Kept in the DOM so it stays inspectable and queryable by data-style...
     expect(edge).toContain('data-style="invisible"')

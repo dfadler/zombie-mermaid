@@ -10,13 +10,13 @@ the [CHANGELOG](../../CHANGELOG.md).
 
 ## Do I need to change anything?
 
-| You…                                                                   | Change needed                                                  |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------- |
-| render in a browser or bundler (flowchart/state/class/ER/architecture) | [Register `elkjs`](#browsers-and-bundlers-register-elkjs-500)  |
-| use the CLI or the MCP server                                          | none for `elkjs`; check your [Node version](#node-version-400) |
-| render only sequence, pie, xychart, C4 or ASCII                        | none for `elkjs`                                               |
-| deep-import from `zombie-mermaid/src/...`                              | [Stop](#src-is-no-longer-published-500)                        |
-| call `renderMermaid` or `renderMermaidSync`                            | optional: [rename](#prefer-rendermermaidsvg)                   |
+| You…                                                          | Change needed                                                  |
+| ------------------------------------------------------------- | -------------------------------------------------------------- |
+| render in a browser or bundler (flowchart/state/class/ER)     | [Register `elkjs`](#browsers-and-bundlers-register-elkjs-500)  |
+| use the CLI or the MCP server                                 | none for `elkjs`; check your [Node version](#node-version-400) |
+| render only sequence, pie, xychart, C4, architecture or ASCII | none for `elkjs`                                               |
+| deep-import from `zombie-mermaid/src/...`                     | [Stop](#src-is-no-longer-published-500)                        |
+| call `renderMermaid` or `renderMermaidSync`                   | optional: [rename](#prefer-rendermermaidsvg)                   |
 
 ## Browsers and bundlers: register `elkjs` (5.0.0)
 

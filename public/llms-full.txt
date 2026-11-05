@@ -110,7 +110,7 @@ Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 | `nonce`               | `string?`                              | —          | CSP nonce stamped on every emitted `<style>` element (attribute-escaped). Lets a host with a `style-src 'nonce-…'` policy allow the diagram's styles — see "Strict Content-Security-Policy" below                                                                                                                                                                                                       |
 | `styleAttribute`      | `boolean`                              | `true`     | Emit the root `<svg style="--bg: …">` attribute. Set `false` under a strict CSP (a nonce can't authorise a `style=` attribute) and supply the same declarations from your own stylesheet via `themeCssVariables()` — see below                                                                                                                                                                          |
 
-**`layout: 'simple'`** lays a flowchart (`graph` / `flowchart`) out without ELK, so `renderMermaidSVG` works with no `elkjs` registered or installed. It is opt-in and never a fallback: unset, or `'elk'`, keeps the existing output exactly. It supports every direction, subgraphs (nested, inside-out), edge labels, self-loops, multi-edges, cycles and disconnected components. It ignores `mergeEdges`, `layoutCache` and a subgraph's own `direction`, and draws edges as plain orthogonal polylines. State, class, ER and architecture diagrams ignore it and still need `elkjs`; a state diagram with no `[*]` marker is parsed as a flowchart and gets the simple layout. An unknown value throws. Measured placement quality against mermaid 12.1.0: [docs/decisions/simple-layout-1685.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/simple-layout-1685.md).
+**`layout: 'simple'`** lays a flowchart (`graph` / `flowchart`) out without ELK, so `renderMermaidSVG` works with no `elkjs` registered or installed. It is opt-in and never a fallback: unset, or `'elk'`, keeps the existing output exactly. It supports every direction, subgraphs (nested, inside-out), edge labels, self-loops, multi-edges, cycles and disconnected components. It ignores `mergeEdges`, `layoutCache` and a subgraph's own `direction`, and draws edges as plain orthogonal polylines. State, class and ER diagrams ignore it and still need `elkjs`; a state diagram with no `[*]` marker is parsed as a flowchart and gets the simple layout. An unknown value throws. Measured placement quality against mermaid 12.1.0: [docs/decisions/simple-layout-1685.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/simple-layout-1685.md).
 
 **Which diagram types honor the layout options.** `padding`, `nodeSpacing`, `layerSpacing`, and `mergeEdges` apply to flowchart, state and architecture diagrams (architecture is lowered to the flowchart layout). Class, ER, sequence and xychart use their own fixed internal spacing and ignore them. C4 (`c4/layout.ts`) and pie lay themselves out to Mermaid's geometry and ignore every layout option, including `direction`.
 
@@ -569,9 +569,10 @@ Two deliberate deviations, both visible in output:
   segment, so a staircase ending on a horizontal leg would point the arrowhead
   sideways into the node.
 
-The default (`linear`) still emits `<polyline class="edge">`; only a
-non-linear curve switches the element to `<path class="edge">`, so existing
-CSS and DOM selectors keep working unless a curve is requested.
+Every edge is a `<path class="edge">`. The default (`linear`) is the routed
+orthogonal line with each bend rounded by a 5·√2 px quadratic fillet, as
+mermaid 12.3.0 draws it; a non-linear curve interpolates the same points.
+Selectors written for the old `<polyline class="edge">` need updating.
 
 ### Interactions
 
@@ -2441,7 +2442,7 @@ function MermaidDiagram({ code }: { code: string }) {
 }
 ```
 
-**Setup:** in a browser, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you call `registerElk()`, so run `npm install elkjs` and register it as above. Sequence, pie, xychart and C4 diagrams need nothing. To keep `elkjs` out of your initial bundle, register it lazily instead: `const { default: ELK } = await import('elkjs/lib/elk.bundled.js'); registerElk(ELK)`, and render only after that resolves. See [guides/elkjs-optional-peer.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/elkjs-optional-peer.md).
+**Setup:** in a browser, flowchart, state, class and ER diagrams throw `ElkNotRegisteredError` until you call `registerElk()`, so run `npm install elkjs` and register it as above. Sequence, pie, xychart, C4 and architecture diagrams need nothing. To keep `elkjs` out of your initial bundle, register it lazily instead: `const { default: ELK } = await import('elkjs/lib/elk.bundled.js'); registerElk(ELK)`, and render only after that resolves. See [guides/elkjs-optional-peer.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/elkjs-optional-peer.md).
 
 **Why this works well:**
 
@@ -2495,7 +2496,7 @@ This page covers what's safe to assume unchanged, itemizes the fixes most likely
 ## Breaking changes since the fork
 
 - **Node `>=24`** is required (`engines.node` in `package.json`).
-- **`registerElk()`**: in browsers and bundlers, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/elkjs-optional-peer.md).
+- **`registerElk()`**: in browsers and bundlers, flowchart, state, class and ER diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/guides/elkjs-optional-peer.md).
 - **Packages**: the parser and renderers live under `packages/*` (there is no `src/` library layout to deep-import from).
 
 A full 2.x to 5.x upgrade guide is tracked in [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538).

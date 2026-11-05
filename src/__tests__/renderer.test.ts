@@ -317,12 +317,12 @@ describe('renderSvg – state pseudostates', () => {
 // ============================================================================
 
 describe('renderSvg – edges', () => {
-  it('renders a solid edge as <polyline> with end arrow', () => {
+  it('renders a solid edge as <path> with end arrow', () => {
     const edge = makeEdge({ style: 'solid', hasArrowEnd: true })
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
-    expect(svg).toContain('<polyline')
-    expect(svg).toContain('points="100,120 100,200"')
+    expect(svg).toContain('<path class="edge"')
+    expect(svg).toContain('d="M 100 120 L 100 200"')
     expect(svg).toContain('marker-end="url(#arrowhead)"')
   })
 
@@ -359,14 +359,14 @@ describe('renderSvg – edges', () => {
     const edge = makeEdge({ points: [{ x: 0, y: 0 }] })
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
-    expect(svg).not.toContain('<polyline')
+    expect(svg).not.toContain('<path class="edge"')
   })
 
   it('renders no-arrow edge without marker-end', () => {
     const edge = makeEdge({ hasArrowEnd: false, hasArrowStart: false })
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
-    expect(svg).toContain('<polyline')
+    expect(svg).toContain('<path class="edge"')
     expect(svg).not.toContain('marker-end')
     expect(svg).not.toContain('marker-start')
   })

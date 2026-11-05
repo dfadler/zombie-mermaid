@@ -71,7 +71,7 @@ let rawWorker: RawFakeWorker | null = null
 export class ElkNotRegisteredError extends Error {
   constructor() {
     super(
-      'zombie-mermaid: rendering a flowchart, state, class, ER or architecture ' +
+      'zombie-mermaid: rendering a flowchart, state, class or ER ' +
         'diagram needs the optional peer dependency "elkjs". Install it ' +
         '(npm i elkjs) and call registerElk(ELK) once at startup with ' +
         "`import ELK from 'elkjs/lib/elk.bundled.js'`. Sequence, pie, xychart, " +

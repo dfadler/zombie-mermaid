@@ -12,6 +12,7 @@ import {
   svgOpenTag,
   buildStyleBlock,
   styleOpenTag,
+  LINE_HEIGHT_RATIO,
   measureMultilineText,
   renderMultilineText,
   renderMultilineTextWithBackground,
@@ -34,8 +35,17 @@ import {
   TILE_FILL,
   UNKNOWN_GLYPH,
 } from './architecture-icons.ts'
-import { pointsToPath } from './edge-curves.ts'
-import { edgeCrossesTitle, titleGapMask, titleTextBoxes } from './title-gaps.ts'
+import {
+  pointsToPath,
+  roundedPath,
+  MERMAID_CORNER_RADIUS,
+} from './edge-curves.ts'
+import {
+  BANDLESS_TITLE_WEIGHT,
+  edgeCrossesTitle,
+  titleGapMask,
+  titleTextBoxes,
+} from './title-gaps.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -351,11 +361,11 @@ function renderGroup(
 
   // Architecture group (#2619): Mermaid draws a dashed, unfilled box with the
   // icon tile in its top-left corner and the title beside it, no header band.
-  if (group.icon !== undefined) {
+  if (group.architecture) {
     const glyph = group.icon && (ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH)
     parts.push(
       f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
-      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" fill="none" stroke="hsl(240, 60%, 86.3%)" stroke-width="2" stroke-dasharray="8" />`,
+      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`,
     )
     if (glyph)
       parts.push(
@@ -398,6 +408,26 @@ function renderGroup(
     f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
       f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
+
+  // Flowchart subgraph (#2636): mermaid@12.3.0 draws no header band, only a
+  // centred title along the top edge.
+  if (group.bandless) {
+    parts.push(
+      '  ' +
+        renderMultilineText(
+          group.label,
+          group.x + group.width / 2,
+          group.y + headerHeight / 2,
+          fontSizes.groupHeader,
+          f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
+        ),
+    )
+    for (const child of group.children) {
+      parts.push(renderGroup(child, font, fontSizes))
+    }
+    parts.push('</g>')
+    return parts.join('\n')
+  }
 
   // Header band
   parts.push(
@@ -452,18 +482,6 @@ function renderEdge(
   // `interactivity: 'none'` strips motion: the edge still renders (id,
   // data-* attributes, arrowheads) but never gets the animated class or dash.
   const animate = animationEnabled && (edge.animate ?? false)
-
-  /*
-   * A curved edge must be a <path>; only a path can express the
-   * interpolations Mermaid's `flowchart.curve` selects.
-   *
-   * The default (`linear`) deliberately keeps emitting <polyline>. A path of
-   * straight `L` segments would be geometrically identical, but changing the
-   * element for every diagram would break any consumer selecting
-   * `polyline.edge` — for no benefit to a diagram that asked for no curve.
-   * So the element changes only when the author opts into a curve.
-   */
-  const curved = curve !== 'linear'
 
   /*
    * An invisible link (`A ~~~ B`) still occupies its layout slot — that is
@@ -524,22 +542,21 @@ function renderEdge(
   // edge's own style hasn't already set stroke-dasharray.
   const animatedDash = animate && !dashArray ? ' stroke-dasharray="8 6"' : ''
 
-  const geometry = curved
-    ? f`d="${pointsToPath(edge.points, curve)}"`
-    : f`points="${pointsToPolylinePath(edge.points)}"`
+  // Every edge is a <path>: mermaid@12.3.0 rounds orthogonal bends (#2635),
+  // which a <polyline> cannot express. The default `linear` curve is that
+  // rounded orthogonal route; other curves interpolate the same points.
+  const d =
+    curve === 'linear'
+      ? roundedPath(edge.points, MERMAID_CORNER_RADIUS)
+      : pointsToPath(edge.points, curve)
 
   return (
-    f`<${curved ? 'path' : 'polyline'} ${dataAttrs.join(' ')} ${geometry} ` +
+    f`<path ${dataAttrs.join(' ')} d="${d}" ` +
     f`fill="none" stroke="${strokeColor}" ` +
     f`stroke-width="${strokeWidth}"${dashArray}${animatedDash}${markers}` +
     (titleGapMaskId ? f` mask="url(#${titleGapMaskId})"` : '') +
     ' />'
   )
-}
-
-/** Convert points to SVG polyline points attribute: "x1,y1 x2,y2 ..." */
-function pointsToPolylinePath(points: Point[]): string {
-  return points.map((p) => f`${p.x},${p.y}`).join(' ')
 }
 
 // `_font` isn't read here but is kept to match the `(entity, font)` signature
@@ -724,6 +741,9 @@ function renderNode(
 
 /** Gap from an icon tile's bottom edge to the centre of its label line. */
 const SERVICE_LABEL_DROP = 13
+/** Mermaid's architecture group border: 2px, dashed `8`. */
+const ARCH_GROUP_STROKE = 2
+const ARCH_GROUP_DASH = 8
 
 /**
  * An architecture service as Mermaid draws it (#2518): an 80px tile with its
@@ -732,7 +752,7 @@ const SERVICE_LABEL_DROP = 13
 function renderServiceTile(x: number, y: number, icon: string): string {
   const at = f`transform="translate(${x} ${y})"`
   if (icon === '') {
-    return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="hsl(240, 60%, 86.3%)" stroke-width="2" stroke-dasharray="8" />`
+    return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`
   }
   const glyph = ICON_GLYPHS[icon] ?? UNKNOWN_GLYPH
   return f`<g ${at}><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`
@@ -1706,10 +1726,15 @@ function renderNodeLabel(
     node.width / 2 +
     (node.shape === 'asymmetric' ? ASYMMETRIC_NOTCH / 2 : 0)
   // An icon tile's label hangs below it, as Mermaid's does.
+  // Its first line stays put and further (wrapped) lines hang below it.
+  const labelLines = node.label.split('\n').length
   const cy =
     node.icon === undefined
       ? node.y + node.height / 2
-      : node.y + node.height + SERVICE_LABEL_DROP
+      : node.y +
+        node.height +
+        SERVICE_LABEL_DROP +
+        ((labelLines - 1) / 2) * fontSizes.nodeLabel * LINE_HEIGHT_RATIO
 
   // Resolve text color: an explicit `color` (style / classDef / class) wins,
   // otherwise the theme text color. A custom `fill` never changes the text

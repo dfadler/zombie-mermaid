@@ -18,7 +18,9 @@ import type {
   PositionedGroup,
   PositionedNode,
 } from '@zombie-mermaid/core'
+import { measureTextWidth } from '@zombie-mermaid/core'
 import { TILE } from '../architecture-icons.ts'
+import { FONT_SIZES, FONT_WEIGHTS } from '../styles.ts'
 import { DEFAULTS } from './constants.ts'
 
 /** Centre-to-centre distance between neighbouring cells (a gap of 120 between tiles). */
@@ -27,6 +29,30 @@ const PITCH = 200
 const GROUP_PADDING = 40
 /** A service label hangs this far below its tile. */
 const LABEL_DROP = 20
+/** Mermaid wraps a service label at 1.5 tiles (`iconSize * 1.5`). */
+const LABEL_WRAP = TILE * 1.5
+/** Mermaid draws an architecture edge 3px wide (`archEdgeWidth`). */
+const EDGE_WIDTH = '3'
+
+const labelWidth = (text: string): number =>
+  measureTextWidth(text, FONT_SIZES.nodeLabel, FONT_WEIGHTS.nodeLabel)
+
+/** Break a label into lines no wider than `LABEL_WRAP`; a longer single word stays whole. */
+function wrapLabel(label: string): string[] {
+  const lines: string[] = []
+  for (const para of label.split('\n')) {
+    let line = ''
+    for (const word of para.split(/\s+/).filter(Boolean)) {
+      const next = line ? `${line} ${word}` : word
+      if (line && labelWidth(next) > LABEL_WRAP) {
+        lines.push(line)
+        line = word
+      } else line = next
+    }
+    lines.push(line)
+  }
+  return lines
+}
 
 interface Box {
   x: number
@@ -148,13 +174,25 @@ export function layoutArchitectureGrid(
     const y = rowY[cy - y0]! - size / 2
     const box = { x, y, width: size, height: size }
     body.set(id, box)
+    // A service's label hangs below its tile, wrapped, and may be wider than it.
+    const lines = n.icon === undefined ? [] : wrapLabel(n.label)
+    const textW = Math.max(0, ...lines.map(labelWidth))
+    const spread = Math.max(0, (textW - size) / 2)
     reach.set(
       id,
-      n.icon === undefined ? box : { ...box, height: size + LABEL_DROP },
+      n.icon === undefined
+        ? box
+        : {
+            x: x - spread,
+            y,
+            width: size + spread * 2,
+            // Wrapped lines do not grow the box: Mermaid's padding holds them.
+            height: size + LABEL_DROP,
+          },
     )
     nodes.push({
       id,
-      label: n.label,
+      label: n.icon === undefined ? n.label : lines.join('\n'),
       shape: n.icon === undefined ? n.shape : 'rectangle',
       icon: n.icon,
       ...box,
@@ -183,6 +221,7 @@ export function layoutArchitectureGrid(
       ...box,
       children,
       ...(sg.icon !== undefined ? { icon: sg.icon } : {}),
+      ...(sg.architecture ? { architecture: true } : {}),
     }
   }
   const groups = graph.subgraphs.map(groupBox)
@@ -198,6 +237,7 @@ export function layoutArchitectureGrid(
       hasArrowStart: e.hasArrowStart,
       hasArrowEnd: e.hasArrowEnd,
       points: route(a, b),
+      inlineStyle: { 'stroke-width': EDGE_WIDTH },
     }
   })
 

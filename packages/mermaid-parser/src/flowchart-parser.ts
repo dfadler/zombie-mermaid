@@ -526,7 +526,13 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
     if (compositeMatch) {
       const label = compositeMatch[1] ?? compositeMatch[2]!
       const id = compositeMatch[2]!
-      const sg: MermaidSubgraph = { id, label, nodeIds: [], children: [] }
+      const sg: MermaidSubgraph = {
+        id,
+        label,
+        nodeIds: [],
+        children: [],
+        stateComposite: true,
+      }
       compositeStack.push(sg)
       // Track this ID to avoid creating a duplicate node for the composite state
       compositeStateIds.add(id)

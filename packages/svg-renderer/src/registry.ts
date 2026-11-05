@@ -369,8 +369,9 @@ const c4Module: DiagramModule<C4Diagram, PositionedC4Diagram> = {
  * Architecture diagrams are lowered to the flowchart model
  * (`architectureToGraph` in `@zombie-mermaid/mermaid-parser`) and ride the
  * flowchart layout + renderer, so this module is `flowchartModule` with a
- * different `parse`. The lowered graph carries no `%%{init}%%` config, so
- * `curve` is `options.curve` or 'linear'.
+ * different `parse`. Mermaid's architecture edges are straight runs and
+ * elbows whatever `flowchart.curve` or the caller says (measured against
+ * mermaid@12.3.0, #2632), so `curve` is always 'linear'.
  */
 const architectureModule: DiagramModule<
   ArchitectureDiagram,
@@ -385,7 +386,7 @@ const architectureModule: DiagramModule<
     )
     return {
       graph: layoutArchitectureGrid(graph, options.padding),
-      curve: options.curve ?? 'linear',
+      curve: 'linear',
     }
   },
   renderSvg: flowchartModule.renderSvg,

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { pathPoints } from './edge-path-points.ts'
 import { splitStatements, detectDiagramType } from '@zombie-mermaid/core'
 import {
   parseArchitecture,
@@ -162,9 +163,9 @@ describe('architecture-beta nested groups and junctions', () => {
   it('SVG junction draws no disc and leaves no gap in the edge', () => {
     const svg = renderMermaidSVG(NESTED)
     expect(svg).not.toContain('<circle')
-    const [a, b] = [...svg.matchAll(/<polyline[^>]*points="([^"]+)"/g)].map(
-      (m) => m[1]!.split(' ').map((p) => p.split(',').map(Number)),
-    )
+    const [a, b] = [
+      ...svg.matchAll(/<path class="edge"[^>]* d="([^"]+)"/g),
+    ].map((m) => pathPoints(m[1]!).map((p) => [p.x, p.y]))
     // The two edges meet at the junction (within its 2px box).
     const end = a!.at(-1)!
     const start = b![0]!
