@@ -87,10 +87,16 @@ describe('subgraph title (#2636)', () => {
     expect(svg.match(/<rect[^>]*fill="var\(--_group-hdr\)"/g)).toBeNull()
   })
 
-  it('keeps the header band on a state composite', () => {
+  it('keeps the header band on a state composite, with a centred regular title (#2651)', () => {
     const svg = renderMermaidSVG(state)
     const g = svg.match(/<g class="subgraph"[\s\S]*?<\/g>/)![0]
     expect(g.match(/<rect/g)).toHaveLength(2)
-    expect(g).not.toContain('text-anchor="middle"')
+    const title = g.match(/<text[^>]*>/)![0]
+    expect(title).toContain('text-anchor="middle"')
+    expect(title).toContain('font-weight="400"')
+    const [, x = '0', w = '0'] = g.match(
+      /<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"/,
+    )!
+    expect(title).toContain(`x="${+(+x + +w / 2).toFixed(2)}"`)
   })
 })

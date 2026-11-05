@@ -50,13 +50,16 @@ export function titleTextBoxes(
       const text = measureMultilineText(
         g.label,
         fontSizes.groupHeader,
-        g.bandless ? BANDLESS_TITLE_WEIGHT : FONT_WEIGHTS.groupHeader,
+        g.bandless || !g.icon
+          ? BANDLESS_TITLE_WEIGHT
+          : FONT_WEIGHTS.groupHeader,
       )
       return {
-        // A bandless (flowchart) title is centred; the banded one is inset.
-        x: g.bandless
-          ? g.x + g.width / 2 - text.width / 2 - GAP_PADDING
-          : g.x + TITLE_TEXT_INSET - GAP_PADDING,
+        // Flowchart and state-composite titles are centred; an icon'd one is inset.
+        x:
+          g.bandless || !g.icon
+            ? g.x + g.width / 2 - text.width / 2 - GAP_PADDING
+            : g.x + TITLE_TEXT_INSET - GAP_PADDING,
         y: g.y + headerHeight / 2 - text.height / 2 - GAP_PADDING,
         width: text.width + 2 * GAP_PADDING,
         height: text.height + 2 * GAP_PADDING,

@@ -443,7 +443,12 @@ function renderGroup(
       f`  <g transform="translate(${group.x + 3} ${group.y + 3}) scale(${iconSize / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
     )
   }
-  const titleX = group.x + 12 + (group.icon ? iconSize + 2 : 0)
+  // A state composite (#2651): mermaid@12.3.0 centres a regular-weight title in
+  // the band. An icon'd header keeps the title beside the icon.
+  const centred = !group.icon
+  const titleX = centred
+    ? group.x + group.width / 2
+    : group.x + 12 + (group.icon ? iconSize + 2 : 0)
 
   // Header label (supports multi-line via <br> tags)
   parts.push(
@@ -453,7 +458,7 @@ function renderGroup(
         titleX,
         group.y + headerHeight / 2,
         fontSizes.groupHeader,
-        f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
+        f`${centred ? 'text-anchor="middle" ' : ''}font-size="${fontSizes.groupHeader}" font-weight="${centred ? BANDLESS_TITLE_WEIGHT : FONT_WEIGHTS.groupHeader}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
       ),
   )
 
