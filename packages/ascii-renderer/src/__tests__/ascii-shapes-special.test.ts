@@ -217,11 +217,34 @@ describe('cylinder shape [(text)]', () => {
     expect(databaseRimSpan).toMatch(/^─+$/)
   })
 
-  it('computes extra height for the curved top/bottom rows', () => {
+  it('draws one rim rule under the top edge and none above the bottom, like mermaid 12.3.0 (#2164)', () => {
+    const src = `flowchart TD
+  A[(Database)]`
+    expect(renderMermaidASCII(src, { useAscii: false })).toBe(
+      [
+        '╭──────────╮',
+        '│──────────│',
+        '│ Database │',
+        '│          │',
+        '╰──────────╯',
+      ].join('\n'),
+    )
+    expect(renderMermaidASCII(src, { useAscii: true })).toBe(
+      [
+        '.----------.',
+        '|----------|',
+        '| Database |',
+        '|          |',
+        "'----------'",
+      ].join('\n'),
+    )
+  })
+
+  it('sizes the grid like a box, with the top rim in the first padding row', () => {
     const dims = cylinderRenderer.getDimensions('DB', unicodeOpts)
-    expect(dims.gridRows[0]).toBe(2)
-    expect(dims.gridRows[2]).toBe(2)
-    expect(dims.labelArea.y).toBe(3)
+    expect(dims.gridRows[0]).toBe(1)
+    expect(dims.gridRows[2]).toBe(1)
+    expect(dims.labelArea.y).toBe(2)
   })
 
   it('draws the double-row ellipse caps and centers the label', () => {
@@ -232,7 +255,8 @@ describe('cylinder shape [(text)]', () => {
     expect(lines[0]!.startsWith('╭')).toBe(true)
     expect(lines[0]!.endsWith('╮')).toBe(true)
     expect(lines[1]).toMatch(/^│─+│$/)
-    expect(lines[lines.length - 2]).toMatch(/^│─+│$/)
+    // 12.3.0 draws a single arc at the bottom: no rule above it (#2164).
+    expect(lines[lines.length - 2]).not.toMatch(/─/)
     expect(lines[lines.length - 1]!.startsWith('╰')).toBe(true)
     expect(lines[lines.length - 1]!.endsWith('╯')).toBe(true)
     expect(str).toContain('DB')

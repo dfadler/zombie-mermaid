@@ -1,12 +1,10 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`flowchart expanded shapes (#2552) > ASCII snapshot 1`] = `
-"                                                                    
-┌───────┐     ╭───────╮     ┌─────┐          █████████     █████████
+"┌───────┐     ╭───────╮     ┌─────┐          █████████     █████████
 │       │     │───────│     │     │                                 
 │ cloud ├────►│ h-cyl ├────►│ tag ├────►●───►        ─────►         
 │       │     │       │     │     │                                 
-│       │     │───────│     │     │                                 
 └───────┘     ╰───────╯     └─────┘                                 "
 `;
 
