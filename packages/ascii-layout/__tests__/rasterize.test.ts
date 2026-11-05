@@ -144,6 +144,8 @@ const maxBoxError = ({ layout, r }: Case) =>
     }),
   )
 
+// Provenance (#2679): the .ascii.txt goldens are this rasterizer's own output, accepted once
+// (class b); only the layout under them is checked against mermaid (elk-layout oracle).
 describe('ascii-layout: goldens', () => {
   it('covers d1-d3', () =>
     expect(fixtures).toEqual(

@@ -4,6 +4,7 @@
  * horizontal cylinder have no ASCII analogue beyond a box (the horizontal
  * cylinder keeps the cylinder glyph); `sm-circ` is the state-start dot.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, expect, it } from 'vitest'
 import { parseMermaid, renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 import { estimateNodeSize } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'

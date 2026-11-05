@@ -7,6 +7,7 @@
  * face (`fanOutCentered`), the back edge goes for that face, and `nestedRow`
  * gives the pair rows that follow their lanes.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'

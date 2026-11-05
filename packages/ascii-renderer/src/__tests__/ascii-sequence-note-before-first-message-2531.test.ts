@@ -4,6 +4,7 @@
  * the block (loopLine top y=130, note rect y=175, first message y=229 for the
  * issue source), and so does the ASCII renderer now.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'

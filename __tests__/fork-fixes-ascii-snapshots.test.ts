@@ -1,6 +1,9 @@
 /**
  * Drift guard for the fork-fixes page's real-terminal screenshots (#2619 Q5).
  *
+ * Provenance (#2679): the .txt files are our own After output (class b); the sources were
+ * audited against mermaid 12.3.0 in the #2606 map, the snapshots only guard against drift.
+ *
  * The After PNGs under public/fork-fixes-screenshots/ are captured by hand
  * (scripts/capture-fork-fixes-terminal.ts needs asciinema, agg and ffmpeg), so
  * nothing noticed when a renderer change made them stale: 22 of 44 had drifted

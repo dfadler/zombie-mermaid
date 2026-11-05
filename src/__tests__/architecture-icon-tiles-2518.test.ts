@@ -5,6 +5,7 @@
  * empty box for no icon, with the label under it. ASCII has no glyph, so its
  * snapshots pin the shapes it already drew.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, expect, it } from 'vitest'
 import { splitStatements } from '@zombie-mermaid/core'
 import {

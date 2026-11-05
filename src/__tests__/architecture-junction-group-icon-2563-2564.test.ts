@@ -4,6 +4,7 @@
  * with fill-opacity 0) and put a group's icon, a 30px tile, in its header.
  * ASCII has no icons and keeps a one-cell dot for the junction.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, expect, it } from 'vitest'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
