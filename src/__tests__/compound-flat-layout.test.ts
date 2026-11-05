@@ -912,22 +912,32 @@ describe('layoutFlowchartSync: other shapes of subgraph diagram', () => {
   })
 })
 
+/** `layoutFlowchartSync` also marks flowchart groups `bandless` (#2636). */
+const unmarked = (p: unknown): unknown =>
+  JSON.parse(JSON.stringify(p, (k, v) => (k === 'bandless' ? undefined : v)))
+
 describe('layoutFlowchartSync: falls back to the nested layout', () => {
   it('for a subgraph with its own direction', () => {
     const g = graphOf(
       'graph TD\n  subgraph s\n    direction LR\n    A --> B\n  end\n  X --> A',
     )
-    expect(layoutFlowchartSync(g)).toEqual(layoutGraphSync(g))
+    expect(unmarked(layoutFlowchartSync(g))).toEqual(
+      unmarked(layoutGraphSync(g)),
+    )
   })
 
   it('for an edge to a subgraph', () => {
     const g = graphOf('graph TD\n  A --> s\n  subgraph s\n    B --> C\n  end')
-    expect(layoutFlowchartSync(g)).toEqual(layoutGraphSync(g))
+    expect(unmarked(layoutFlowchartSync(g))).toEqual(
+      unmarked(layoutGraphSync(g)),
+    )
   })
 
   it('for a graph with no subgraph', () => {
     const g = graphOf('graph TD\n  A --> B\n  B --> C')
-    expect(layoutFlowchartSync(g)).toEqual(layoutGraphSync(g))
+    expect(unmarked(layoutFlowchartSync(g))).toEqual(
+      unmarked(layoutGraphSync(g)),
+    )
   })
 })
 

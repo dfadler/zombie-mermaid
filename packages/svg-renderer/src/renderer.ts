@@ -36,8 +36,17 @@ import {
   TILE_FILL,
   UNKNOWN_GLYPH,
 } from './architecture-icons.ts'
-import { pointsToPath } from './edge-curves.ts'
-import { edgeCrossesTitle, titleGapMask, titleTextBoxes } from './title-gaps.ts'
+import {
+  pointsToPath,
+  roundedPath,
+  MERMAID_CORNER_RADIUS,
+} from './edge-curves.ts'
+import {
+  BANDLESS_TITLE_WEIGHT,
+  edgeCrossesTitle,
+  titleGapMask,
+  titleTextBoxes,
+} from './title-gaps.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -401,6 +410,26 @@ function renderGroup(
       f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
+  // Flowchart subgraph (#2636): mermaid@12.3.0 draws no header band, only a
+  // centred title along the top edge.
+  if (group.bandless) {
+    parts.push(
+      '  ' +
+        renderMultilineText(
+          group.label,
+          group.x + group.width / 2,
+          group.y + headerHeight / 2,
+          fontSizes.groupHeader,
+          f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
+        ),
+    )
+    for (const child of group.children) {
+      parts.push(renderGroup(child, font, fontSizes))
+    }
+    parts.push('</g>')
+    return parts.join('\n')
+  }
+
   // Header band
   parts.push(
     f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${headerHeight}" ` +
@@ -454,18 +483,6 @@ function renderEdge(
   // `interactivity: 'none'` strips motion: the edge still renders (id,
   // data-* attributes, arrowheads) but never gets the animated class or dash.
   const animate = animationEnabled && (edge.animate ?? false)
-
-  /*
-   * A curved edge must be a <path>; only a path can express the
-   * interpolations Mermaid's `flowchart.curve` selects.
-   *
-   * The default (`linear`) deliberately keeps emitting <polyline>. A path of
-   * straight `L` segments would be geometrically identical, but changing the
-   * element for every diagram would break any consumer selecting
-   * `polyline.edge` — for no benefit to a diagram that asked for no curve.
-   * So the element changes only when the author opts into a curve.
-   */
-  const curved = curve !== 'linear'
 
   /*
    * An invisible link (`A ~~~ B`) still occupies its layout slot — that is
@@ -526,22 +543,21 @@ function renderEdge(
   // edge's own style hasn't already set stroke-dasharray.
   const animatedDash = animate && !dashArray ? ' stroke-dasharray="8 6"' : ''
 
-  const geometry = curved
-    ? f`d="${pointsToPath(edge.points, curve)}"`
-    : f`points="${pointsToPolylinePath(edge.points)}"`
+  // Every edge is a <path>: mermaid@12.3.0 rounds orthogonal bends (#2635),
+  // which a <polyline> cannot express. The default `linear` curve is that
+  // rounded orthogonal route; other curves interpolate the same points.
+  const d =
+    curve === 'linear'
+      ? roundedPath(edge.points, MERMAID_CORNER_RADIUS)
+      : pointsToPath(edge.points, curve)
 
   return (
-    f`<${curved ? 'path' : 'polyline'} ${dataAttrs.join(' ')} ${geometry} ` +
+    f`<path ${dataAttrs.join(' ')} d="${d}" ` +
     f`fill="none" stroke="${strokeColor}" ` +
     f`stroke-width="${strokeWidth}"${dashArray}${animatedDash}${markers}` +
     (titleGapMaskId ? f` mask="url(#${titleGapMaskId})"` : '') +
     ' />'
   )
-}
-
-/** Convert points to SVG polyline points attribute: "x1,y1 x2,y2 ..." */
-function pointsToPolylinePath(points: Point[]): string {
-  return points.map((p) => f`${p.x},${p.y}`).join(' ')
 }
 
 // `_font` isn't read here but is kept to match the `(entity, font)` signature

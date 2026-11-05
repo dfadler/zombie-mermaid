@@ -75,10 +75,10 @@ exports[`architecture junction and group icons (#2563, #2564) > SVG: group icons
   }
 </style>
 <defs>
-  <marker id="zmhcgqv4-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmny3be9-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmhcgqv4-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmny3be9-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
@@ -97,7 +97,7 @@ exports[`architecture junction and group icons (#2563, #2564) > SVG: group icons
   <text x="394" y="96" font-size="12" font-weight="400" fill="var(--_text)" dy="4.2">Data Tier</text>
 </g>
 </g>
-<polyline class="edge" data-from="gw" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="200,160 400,160" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmhcgqv4-arrowhead)" />
+<path class="edge" data-from="gw" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 200 160 L 400 160" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmny3be9-arrowhead)" />
 <g class="node" data-id="gw" data-label="Gateway" data-shape="rectangle">
   <g transform="translate(120 120)"><rect width="80" height="80" fill="#087ebf" /><circle cx="40" cy="40" r="22.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></circle><line x1="40" y1="17.5" x2="40" y2="62.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="17.5" y1="40" x2="62.5" y2="40" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><path d="m39.99,17.51c-15.28,11.1-15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m40.01,17.51c15.28,11.1,15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><line x1="19.75" y1="30.1" x2="60.25" y2="30.1" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="19.75" y1="49.9" x2="60.25" y2="49.9" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
   <text x="160" y="213" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Gateway</text>
@@ -137,10 +137,10 @@ exports[`architecture junction and group icons (#2563, #2564) > SVG: junction 1`
   }
 </style>
 <defs>
-  <marker id="zmkqed6b-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmnpyeia-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmkqed6b-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmnpyeia-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
@@ -149,9 +149,9 @@ exports[`architecture junction and group icons (#2563, #2564) > SVG: junction 1`
   <g transform="translate(41 41) scale(0.38)"><rect width="80" height="80" fill="#087ebf" /><path d="m65,47.5c0,2.76-2.24,5-5,5H20c-2.76,0-5-2.24-5-5,0-1.87,1.03-3.51,2.56-4.36-.04-.21-.06-.42-.06-.64,0-2.6,2.48-4.74,5.65-4.97,1.65-4.51,6.34-7.76,11.85-7.76.86,0,1.69.08,2.5.23,2.09-1.57,4.69-2.5,7.5-2.5,6.1,0,11.19,4.38,12.28,10.17,2.14.56,3.72,2.51,3.72,4.83,0,.03,0,.07-.01.1,2.29.46,4.01,2.48,4.01,4.9Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path></g>
   <text x="74" y="56" font-size="12" font-weight="400" fill="var(--_text)" dy="4.2">Cloud</text>
 </g>
-<polyline class="edge" data-from="gw" data-to="fan" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="160,120 319,120" fill="none" stroke="var(--_line)" stroke-width="3" />
-<polyline class="edge" data-from="fan" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="321,120 480,120" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmkqed6b-arrowhead)" />
-<polyline class="edge" data-from="fan" data-to="replica" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="320,121 320,280" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmkqed6b-arrowhead)" />
+<path class="edge" data-from="gw" data-to="fan" data-style="solid" data-arrow-start="false" data-arrow-end="false" d="M 160 120 L 319 120" fill="none" stroke="var(--_line)" stroke-width="3" />
+<path class="edge" data-from="fan" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 321 120 L 480 120" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmnpyeia-arrowhead)" />
+<path class="edge" data-from="fan" data-to="replica" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 320 121 L 320 280" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmnpyeia-arrowhead)" />
 <g class="node" data-id="gw" data-label="Gateway" data-shape="rectangle">
   <g transform="translate(80 80)"><rect width="80" height="80" fill="#087ebf" /><circle cx="40" cy="40" r="22.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></circle><line x1="40" y1="17.5" x2="40" y2="62.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="17.5" y1="40" x2="62.5" y2="40" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><path d="m39.99,17.51c-15.28,11.1-15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m40.01,17.51c15.28,11.1,15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><line x1="19.75" y1="30.1" x2="60.25" y2="30.1" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="19.75" y1="49.9" x2="60.25" y2="49.9" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
   <text x="120" y="173" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Gateway</text>

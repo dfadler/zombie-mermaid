@@ -320,7 +320,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'text-embedded-edge-labels',
-    parked: 'svg-singles',
     title: 'Text-embedded edge labels (`-- Yes -->`) were not parsed',
     symptom:
       'Mermaid’s inline label syntax on an arrow body — as opposed to the `-->|Yes|` pipe form — had no parser support. The label vanished, and the mis-tokenization also swallowed the bracketed label off the node the arrow pointed at.',
@@ -509,7 +508,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-er-stacked-center',
-    parked: 'ascii-er',
     title: 'A narrower stacked ER entity sat off-center, so its edge jogged',
     symptom:
       'Each stacked ER row started at the left edge, so a narrower entity was left-aligned under its neighbor while the relationship attaches at each box’s center, and the edge jogged sideways between two off-center stems.',
@@ -519,7 +517,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2245,
     render: 'ascii',
     lookFor:
-      'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL and one straight vertical edge joins them.',
+      'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL, one straight vertical edge joins them, and INSTALL is a table with the name centered and type and name in separate columns, as in Mermaid.',
   },
   {
     id: 'elk-invalid-hitboxes-wide-labels',
@@ -558,9 +556,9 @@ export const allForkFixes: ForkFix[] = [
     fixCommit: '5cc12f3f',
     pr: 1163,
     render: 'svg',
-    excerpt: { from: '<polyline', to: '/>' },
+    excerpt: { from: 'class="edge"', to: '/>' },
     lookFor:
-      'The picture is the same, so this shows the first edge’s markup. Before: `points` carries long decimal tails. After: at most 2 decimal places.',
+      'The picture is the same, so this shows the first edge’s markup. Before: the edge’s `points` carries long decimal tails. After: its path data `d` has at most 2 decimal places.',
     upstreamIssues: [77],
   },
   {
@@ -687,6 +685,10 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'er-ascii-crossings-labels',
+    // Parked on a named limit (#2630): Mermaid 12.3.0 orders ER layers with ELK,
+    // and among equal-crossing orders its choice (here the mirror of ours) cannot
+    // be derived from the source; ordering by crossings alone made the router's
+    // port and row assignment worse (see the PR for #2630).
     parked: 'ascii-er',
     title:
       'ER ASCII edges crossed without a junction and labels were ambiguous',
@@ -796,7 +798,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-subgraph-node-style',
-    parked: 'svg-singles',
     title: 'Flowchart subgraph style/class and node dash/radius were ignored',
     symptom:
       'A `style` on a subgraph id left the cluster default grey, and a node `style` dropped `stroke-dasharray` and `rx`/`ry`, while mermaid 12.3.0 applies all of them.',
@@ -878,7 +879,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'flowchart-linkstyle-head-colour',
-    parked: 'svg-singles',
     title: 'A coloured flowchart edge kept a grey arrowhead',
     symptom:
       'An edge given its own `linkStyle` stroke was drawn in that colour but its arrowhead stayed the default grey, unlike mermaid.',

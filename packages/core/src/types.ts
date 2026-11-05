@@ -226,6 +226,8 @@ export interface MermaidSubgraph {
    * titled subgraph, like mermaid.js's `divider` cluster.
    */
   region?: boolean
+  /** A state diagram's composite state: mermaid draws it with a header band. */
+  stateComposite?: boolean
   /** Architecture group icon name from `group id(icon)`; absent when it has none. */
   icon?: string
   /** An `architecture-beta` group: the SVG renderer draws Mermaid's dashed box instead of a header band. */
@@ -303,6 +305,11 @@ export interface PositionedGroup {
   inlineStyle?: Record<string, string>
   /** Concurrency region: draw dashed and untitled (see `MermaidSubgraph.region`) */
   region?: boolean
+  /**
+   * A flowchart subgraph: mermaid draws a centred title and no header band
+   * (state composites keep the band).
+   */
+  bandless?: boolean
   /** Architecture group icon name; see `MermaidSubgraph.icon`. */
   icon?: string
   /** See `MermaidSubgraph.architecture`. */

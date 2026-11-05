@@ -569,9 +569,10 @@ Two deliberate deviations, both visible in output:
   segment, so a staircase ending on a horizontal leg would point the arrowhead
   sideways into the node.
 
-The default (`linear`) still emits `<polyline class="edge">`; only a
-non-linear curve switches the element to `<path class="edge">`, so existing
-CSS and DOM selectors keep working unless a curve is requested.
+Every edge is a `<path class="edge">`. The default (`linear`) is the routed
+orthogonal line with each bend rounded by a 5·√2 px quadratic fillet, as
+mermaid 12.3.0 draws it; a non-linear curve interpolates the same points.
+Selectors written for the old `<polyline class="edge">` need updating.
 
 ### Interactions
 

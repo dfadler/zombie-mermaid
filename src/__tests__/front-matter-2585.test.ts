@@ -25,7 +25,7 @@ describe('front matter (#2585)', () => {
   }
 
   it('config: maps to the init directive', () => {
-    const body = 'flowchart TD\n  A-->B'
+    const body = 'flowchart TD\n  A-->B\n  A-->C'
     const viaFm = renderMermaidSVG(
       '---\nconfig:\n  flowchart:\n    curve: stepAfter\n---\n' + body,
     )

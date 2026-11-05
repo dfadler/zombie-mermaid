@@ -23,6 +23,7 @@
  *  - `mergeEdges` trunk-bundling still works for edges that go through this
  *    decomposition
  */
+import { pathPointsAttr } from './edge-path-points.ts'
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, parseMermaid } from '../index.ts'
 import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
@@ -76,10 +77,13 @@ function nodeRect(
   }
 }
 
-/** Extract the polyline `points` attribute for a given edge. */
+/** The routed points of a given edge, as `x,y x,y …` (from its path `d`). */
 function edgePoints(svg: string, from: string, to: string): string {
   const marker = `data-from="${from}" data-to="${to}"`
-  return attrAfter(svg, marker, 'points')
+  const tagStart = svg.indexOf(marker)
+  if (tagStart < 0) throw new Error(`marker ${marker} not found in SVG`)
+  const tag = svg.slice(tagStart, svg.indexOf('>', tagStart) + 1)
+  return pathPointsAttr(/ d="([^"]+)"/.exec(tag)![1]!)
 }
 
 function parsePoints(pointsAttr: string): Array<{ x: number; y: number }> {

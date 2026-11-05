@@ -41,7 +41,7 @@ describe('architecture residual gaps (#2632)', () => {
   it('draws every edge 3px wide and ignores curve, as Mermaid does', () => {
     const src = arch('service a(server)[A]\nservice b(server)[B]\na:R -- L:b')
     const svg = renderMermaidSVG(src)
-    expect(svg).toMatch(/<polyline class="edge"[^>]*stroke-width="3"/)
+    expect(svg).toMatch(/<(?:polyline|path) class="edge"[^>]*stroke-width="3"/)
     expect(renderMermaidSVG(src, { curve: 'basis' })).toBe(
       renderMermaidSVG(src, { curve: 'linear' }),
     )

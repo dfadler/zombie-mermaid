@@ -7,6 +7,7 @@
  * within BORDER_GAP px of it unless it is the edge's first or last segment
  * (the one attached to a node).
  */
+import { pathPoints } from '../src/__tests__/edge-path-points.ts'
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../src/index.ts'
 import { samples } from '../samples/samples-data.ts'
@@ -37,13 +38,8 @@ function geometry(svg: string): { boxes: Box[]; edges: Pt[][] } {
       /<g class="subgraph"[^>]*>\s*<rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)"/g,
     ),
   ].map((m) => ({ x: +m[1]!, y: +m[2]!, w: +m[3]!, h: +m[4]! }))
-  const edges = [
-    ...svg.matchAll(/<polyline class="edge"[^>]* points="([^"]+)"/g),
-  ].map((m) =>
-    m[1]!
-      .trim()
-      .split(/\s+/)
-      .map((p) => p.split(',').map(Number) as Pt),
+  const edges = [...svg.matchAll(/<path class="edge"[^>]* d="([^"]+)"/g)].map(
+    (m) => pathPoints(m[1]!).map((p) => [p.x, p.y] as Pt),
   )
   return { boxes, edges }
 }
@@ -109,17 +105,11 @@ describe('subgraph border clearance (#1796)', () => {
     const right = client.x + client.w
     const out = [
       ...svg.matchAll(
-        /<polyline class="edge" data-from="B" data-to="([DEF])"[^>]* points="([^"]+)"/g,
+        /<path class="edge" data-from="B" data-to="([DEF])"[^>]* d="([^"]+)"/g,
       ),
     ]
     expect(out.map((m) => m[1])).toEqual(['D', 'E', 'F'])
-    const trunks = out.map(
-      (m) =>
-        m[2]!
-          .trim()
-          .split(/\s+/)
-          .map((p) => +p.split(',')[0]!)[1]!,
-    )
+    const trunks = out.map((m) => pathPoints(m[2]!)[1]!.x)
     // One shared trunk x, exactly BORDER_GAP right of the Client Layer side
     expect(new Set(trunks).size).toBe(1)
     expect(trunks[0]! - right).toBeCloseTo(BORDER_GAP, 1)
