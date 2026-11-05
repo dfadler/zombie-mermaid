@@ -11,12 +11,7 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import type { RenderOptions, SequenceRenderOptions } from '@zombie-mermaid/core'
 import { LINE_HEIGHT_RATIO, measureMultilineText } from '@zombie-mermaid/core'
-import {
-  estimateTextWidth,
-  FONT_WEIGHTS,
-  resolveFontSizes,
-  STROKE_WIDTHS,
-} from '../styles.ts'
+import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 
 // ============================================================================
 // Sequence diagram layout engine
@@ -175,13 +170,21 @@ function labelWidth(
 }
 
 /**
+ * Stroke width of a block's frame and divider lines. Mermaid 12.3.0 draws
+ * `.loopLine` 2px wide (the tab's `.labelBox` outline is 1px), in absolute
+ * px: its geometry is not scaled to the fork's smaller font, so neither are
+ * these.
+ */
+export const BLOCK_LINE_STROKE = 2
+
+/**
  * How far a block's frame extends past its outermost lifelines: mermaid 12.3.0
- * draws it 11px out (`boxMargin` 10 plus the frame's stroke width).
+ * draws it 11px out (`boxMargin` 10 plus half the frame's stroke width).
  */
 export function blockFramePad(
   seq: Pick<ReturnType<typeof resolveSeqOptions>, 'blockPadX'>,
 ): number {
-  return seq.blockPadX + STROKE_WIDTHS.outerBox
+  return seq.blockPadX + BLOCK_LINE_STROKE / 2
 }
 
 /** Height of a block's type-label tab, in px. */

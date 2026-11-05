@@ -22,11 +22,11 @@ import {
 
 const num = (s: string, re: RegExp) => Number(re.exec(s)![1])
 
-/** x of the first lifeline of actor `id`. */
+/** The x of the first lifeline of actor `id`. */
 const lifelineX = (svg: string, id: string) =>
   num(svg, new RegExp(`class="lifeline" data-actor="${id}" x1="([\\d.]+)"`))
 
-/** x of every filled `rect <color>` highlight, outer first. */
+/** The x of every filled `rect <color>` highlight, outer first. */
 const highlightXs = (svg: string) =>
   [...svg.matchAll(/<rect x="([\d.]+)"[^>]*fill="rgb\(/g)].map((m) => +m[1]!)
 
@@ -88,7 +88,7 @@ describe('sequence block geometry (#2629)', () => {
       .split(' ')
       .map((pt) => pt.split(',').map(Number) as [number, number])
     expect(p).toHaveLength(5)
-    // notch: BLOCK_TAB_HEIGHT * 0.2 up the right edge, * 0.24 along the bottom
+    // Notch: BLOCK_TAB_HEIGHT * 0.2 up the right edge, * 0.24 along the bottom
     expect(p[1]![1]! + h - p[2]![1]!).toBeCloseTo(h * 0.2)
     expect(p[2]![0]! - p[3]![0]!).toBeCloseTo(h * 0.24)
     expect(p[4]![1]! - p[0]![1]!).toBe(h)
@@ -100,5 +100,23 @@ describe('sequence block geometry (#2629)', () => {
     )
     expect(svg).toMatch(/<rect [^>]*rx="0"[^>]*stroke-dasharray="2 2"/)
     expect(svg).toMatch(/<line [^>]*stroke-dasharray="3 3"/)
+  })
+
+  // #2628: mermaid 12.3.0 computed styles: `.loopLine` 2px (frame and
+  // dividers), `.labelBox` 1px, `.note` a plain 1px rectangle.
+  it('strokes the frame and dividers 2px and the tab 1px', () => {
+    const svg = renderMermaidSVG(
+      'sequenceDiagram\nA->>B: x\nalt a\nB->>A: y\nelse b\nA->>B: z\nend',
+    )
+    expect(svg).toMatch(/<rect [^>]*stroke-width="2" stroke-dasharray="2 2"/)
+    expect(svg).toMatch(/<line [^>]*stroke-width="2" stroke-dasharray="3 3"/)
+    expect(svg).toMatch(/<polygon [^>]*group-hdr[^>]*stroke-width="1"/)
+  })
+
+  it('draws a note as a plain 1px rectangle, with no dog-ear', () => {
+    const svg = renderMermaidSVG('sequenceDiagram\nA->>B: x\nNote over A,B: hi')
+    const note = /<g class="note"[^>]*>([\s\S]*?)<\/g>/.exec(svg)![1]!
+    expect(note).toMatch(/<rect [^>]*stroke-width="1"/)
+    expect(note).not.toContain('<polygon')
   })
 })
