@@ -179,7 +179,7 @@
   {
     "file": "scripts/lib/real-mermaid.ts",
     "reason": "Playwright-driven helper: needs a real Chromium, so it is only reachable from the form-diff/form-facts CLIs",
-    "maxLines": 119,
+    "maxLines": 121,
     "legacy": true
   },
   {
@@ -308,5 +308,10 @@
     "file": "scripts/fork-fixes-oracle.ts",
     "reason": "audit harness: needs headless Chromium plus a mermaid@latest install outside the repo, so it only runs as a CLI (rerun command in its header, #2607)",
     "maxLines": 150
+  },
+  {
+    "file": "scripts/samples-oracle.ts",
+    "reason": "audit harness: needs headless Chromium plus a mermaid@latest install outside the repo, so it only runs as a CLI (rerun command in its header, #2678)",
+    "maxLines": 160
   }
 ]
