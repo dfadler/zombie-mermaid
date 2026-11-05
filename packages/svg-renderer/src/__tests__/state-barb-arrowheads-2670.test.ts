@@ -42,4 +42,19 @@ describe('state diagram barbs and radius (#2670)', () => {
     const m = /data-from="A"[^>]* d="M ([\d.]+) ([\d.]+)/.exec(svg)!
     expect(Number(m[2])).toBeCloseTo(first.y + 5.5)
   })
+
+  it('leaves a too-short or degenerate edge alone', () => {
+    const g = layoutFlowchartSync(parseMermaid(STATE))
+    g.edges[0]!.points = [
+      { x: 0, y: 0 },
+      { x: 0, y: 3 },
+    ]
+    g.edges[1]!.points = [{ x: 5, y: 5 }]
+    expect(() => renderSvg(g, { bg: '#fff', fg: '#000' })).not.toThrow()
+  })
+
+  it('draws a barb in a linkStyle colour', async () => {
+    const svg = await renderMermaidSVG(`${STATE}\n  linkStyle 0 stroke:#f00`)
+    expect(svg).toMatch(/<marker id="[^"]*arrowhead-[^"]*"[^>]*refX="17"/)
+  })
 })
