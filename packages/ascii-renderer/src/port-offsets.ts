@@ -35,7 +35,12 @@ import { requireGridCoord } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
-import { leavesFlowFace, leavesRightFace } from './edge-routing.ts'
+import {
+  flowLanePolyline,
+  flowLaneOf,
+  leavesFlowFace,
+  leavesRightFace,
+} from './edge-routing.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
@@ -743,6 +748,10 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     result.set(edge, shift)
   }
   raiseFlowFanBars(graph, runs, result)
+  // A flow-face lane is drawn from its plan, on its own port: nothing to place.
+  for (const e of graph.edges) {
+    if (flowLaneOf(e)) result.set(e, { start: 0, end: 0 })
+  }
   allocateFaces(graph, result, shiftedRun)
   spreadFaceLaneRuns(graph, result)
   return result
@@ -1440,6 +1449,8 @@ function drawnPath(
   edge: AsciiEdge,
   shift: PortShift | undefined,
 ): DrawingCoord[] {
+  const lane = flowLanePolyline(graph, edge)
+  if (lane) return lane
   const base = lineToDrawing(graph, edge.path)
   if (!shift) return base
   const shifts = pointShifts(edge, shift)
