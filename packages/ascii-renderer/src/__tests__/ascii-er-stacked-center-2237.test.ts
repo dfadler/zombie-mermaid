@@ -18,11 +18,11 @@ const THEIRS = `erDiagram
         string installPath
     }`
 
-/** Column of the box's left border and its width, found from the name row. */
+/** Columns of the box's left and right borders, found from the name row. */
 const box = (out: string, name: string) => {
   const line = out.split('\n').find((l) => l.includes(`${name} `))!
-  const left = line.indexOf(name) - 2
-  const right = line.lastIndexOf(line.trimEnd().slice(-1))
+  const left = line.search(/[│|]/)
+  const right = line.trimEnd().length - 1
   return { left, right }
 }
 
@@ -54,8 +54,8 @@ describe('ASCII ER stacked centering (issue #2237)', () => {
   it('leaves two entities of equal width where they were', () => {
     const out = renderMermaidASCII('erDiagram\n  A ||--o{ B : x')
     const rows = out.split('\n')
-    const a = rows.find((l) => l.includes('│ A'))!.indexOf('│')
-    const b = rows.find((l) => l.includes('│ B'))!.indexOf('│')
+    const a = rows.find((l) => /│\s+A\s+│/.test(l))!.indexOf('│')
+    const b = rows.find((l) => /│\s+B\s+│/.test(l))!.indexOf('│')
     expect(a).toBe(b)
   })
 

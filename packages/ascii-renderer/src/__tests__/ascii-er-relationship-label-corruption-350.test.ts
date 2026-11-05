@@ -26,10 +26,13 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
+/** Join attribute cells (`│ string │ id │`) so a row reads as `string id`. */
+const squash = (s: string): string => s.replace(/\s*[│|]\s*/g, ' ')
+
 /** Assert every one of `needles` appears verbatim, exactly once, in `text`. */
 function expectAllPresentOnce(text: string, needles: string[]): void {
   for (const needle of needles) {
-    const count = text.split(needle).length - 1
+    const count = squash(text).split(needle).length - 1
     expect(count, `expected "${needle}" to appear exactly once`).toBe(1)
   }
 }
@@ -175,8 +178,8 @@ describe('ASCII ER relationship labels never corrupt entity boxes (issue #350)',
   it('keeps every entity box border fully intact (no line/label punched through a border)', () => {
     const ascii = renderMermaidASCII(REPRO_MINIMAL, { colorMode: 'none' })
     const lines = ascii.split('\n')
-    // Every box's header row (e.g. "│ LINE_ITEM ") must still open with the
-    // left border directly followed by a space, never a relationship glyph.
+    // Every box's header row (e.g. "│  LINE_ITEM  │") must still sit between
+    // its two borders, never beside a relationship glyph.
     for (const name of [
       'ORDER',
       'LINE_ITEM',
@@ -184,7 +187,9 @@ describe('ASCII ER relationship labels never corrupt entity boxes (issue #350)',
       'PRODUCT',
       'WAREHOUSE',
     ]) {
-      const headerLine = lines.find((l) => l.includes(`│ ${name}`))
+      const headerLine = lines.find((l) =>
+        new RegExp(`│\\s+${name}\\s+│`).test(l),
+      )
       expect(headerLine, `expected a header line for ${name}`).toBeDefined()
     }
   })
@@ -273,8 +278,8 @@ describe('ASCII ER relationship label routing — long labels and crowded areas 
     // detour around LINE_ITEM rather than being written into its box.
     const ascii = renderMermaidASCII(REPRO_MINIMAL, { colorMode: 'none' })
     expect(ascii).toContain('fulfilled_by')
-    expect(ascii).toContain('string productId')
-    expect(ascii).toContain('int quantity')
+    expect(squash(ascii)).toContain('string productId')
+    expect(squash(ascii)).toContain('int quantity')
   })
 
   it('keeps multiple relationship labels distinct when several need to route through the same row-gap band', () => {
@@ -304,8 +309,8 @@ describe('ASCII ER relationship label routing — long labels and crowded areas 
       { colorMode: 'none' },
     )
     expect(ascii).toContain('ships to')
-    expect(ascii).toContain('int totalCents')
-    expect(ascii).toContain('string name')
+    expect(squash(ascii)).toContain('int totalCents')
+    expect(squash(ascii)).toContain('string name')
   })
 })
 
@@ -378,10 +383,10 @@ describe('ASCII ER relationship routing — multi-row obstruction (CodeRabbit fo
       { colorMode: 'none' },
     )
     // No box content lost.
-    expect(ascii).toContain('string id')
-    expect(ascii).toContain('string name')
-    expect(ascii).toContain('string title')
-    expect(ascii).toContain('string label')
+    expect(squash(ascii)).toContain('string id')
+    expect(squash(ascii)).toContain('string name')
+    expect(squash(ascii)).toContain('string title')
+    expect(squash(ascii)).toContain('string label')
     // Every relationship label survives, including the multi-row one.
     expect(ascii).toContain('ab')
     expect(ascii).toContain('bc')
@@ -459,7 +464,7 @@ describe('ASCII ER relationship routing — multi-row obstruction (CodeRabbit fo
     )
     const lines = ascii.split('\n')
     const dTopIdx = lines.findIndex(
-      (l, i) => l.includes('┌') && lines[i + 1]?.includes('│ D'),
+      (l, i) => l.includes('┌') && /│\s+D\s+│/.test(lines[i + 1] ?? ''),
     )
     expect(dTopIdx, 'expected to find D’s top-border row').toBeGreaterThan(-1)
     // Issue #1134 reordered ER attribute columns to type/name/keys, dropping
