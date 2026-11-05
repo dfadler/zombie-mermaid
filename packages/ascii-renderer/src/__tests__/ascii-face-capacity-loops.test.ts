@@ -23,3 +23,27 @@ describe('face capacity counts self-loops and back-edges', () => {
     expect(out).not.toMatch(/┴─+┘/)
   })
 })
+
+describe('dense reciprocal group between facing faces (#2645)', () => {
+  const src =
+    'flowchart RL\n  n0["n0"]\n  n1["n1"]\n  n1 --> n0\n  n0 --> n1\n  n1 --> n0\n  n1 --> n0\n  n1 --> n1\n  n0 --> n0\n  n0 --> n1\n  n1 --> n0\n  n0 --> n1\n  n0 --> n1'
+
+  it('draws every edge as its own one-way stroke between the side faces', () => {
+    const out = renderMermaidASCII(src)
+    expect(out.match(/►/g)).toHaveLength(4)
+    expect(out.match(/◄/g)).toHaveLength(4)
+    const rows = out.split('\n').filter((l) => /─►|◄─/.test(l))
+    expect(rows).toHaveLength(8)
+    expect(rows.some((l) => /◄─+►/.test(l))).toBe(false)
+    // Nothing runs under the nodes.
+    expect(out.split('\n').at(-1)).toMatch(/^└─+┘\s+└─+┘$/)
+  })
+
+  it('puts the self-loops on top, above the nodes', () => {
+    const out = renderMermaidASCII(src)
+    const lines = out.split('\n')
+    const firstBox = lines.findIndex((l) => l.includes('┴'))
+    expect(firstBox).toBeGreaterThan(0)
+    expect(lines.slice(0, firstBox).join('')).toMatch(/▼/)
+  })
+})

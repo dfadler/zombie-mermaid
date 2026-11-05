@@ -415,7 +415,7 @@ export function spreadCandidates(
   const spread = new Map<AsciiNode, number>()
   for (const [from, targets] of byPair) {
     for (const [to, group] of targets) {
-      if (group.length < 2) continue
+      if (group.length < 2 || denseFacingPair(graph, group[0]!)) continue
       const a = requireGridCoord(from)
       const b = requireGridCoord(to)
       if (Math.abs(vertical ? a.y - b.y : a.x - b.x) > 4) continue
@@ -474,7 +474,13 @@ export function spreadCandidates(
         ])
         out.set(to, [...(out.get(to) ?? []), { ...entry, below: b.y > a.y }])
       }
-      if (group.length < 3 || !labelsFitBesideStrokes(group)) continue
+      if (
+        group.length < 3 ||
+        !labelsFitBesideStrokes(group) ||
+        denseFacingPair(graph, group[0]!)
+      ) {
+        continue
+      }
       const entry = {
         vertical: a.x === b.x,
         strokes: group.length,
@@ -670,6 +676,18 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // target (`splitSharedLabeledLane`) keep sharing the target's face, which
   // keeps `Labeled Fan-In (LR)` as it is (#1826). docs/known-differences.md
   // gets the entry once PR #2090 lands.
+  // #2645: a dense facing pair gives each edge a row of its own on the faces.
+  for (const e of graph.edges) {
+    if (!denseFacingPair(graph, e) || e.from.index > e.to.index) continue
+    const n = graph.edges.filter(
+      (o) =>
+        o.from !== o.to &&
+        (o.from === e.from || o.to === e.from) &&
+        (o.from === e.to || o.to === e.to),
+    ).length
+    const at = requireGridCoord(e.from).y + 1
+    graph.rowHeight.set(at, Math.max(graph.rowHeight.get(at) ?? 0, n + 1))
+  }
   const need = new Map<number, { siblings: number; pairs: Set<string> }>()
   for (const group of laneGroups) {
     const to = group[0]!.to
@@ -1350,6 +1368,53 @@ export function reserveUnderRow(graph: AsciiGraph, edge: AsciiEdge): void {
   }
 }
 
+/**
+ * A dense reciprocal group (#2645): three or more unlabeled edges between two
+ * neighbours on one row, some each way, as in a multigraph. Mermaid draws
+ * every one as a stroke of its own between the facing side faces, so the
+ * bottom faces stay free; the strokes take a row each (`allocateFaces`).
+ * Ceiling: LR without frames, neighbours with nothing between them.
+ */
+export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  if (graph.config.graphDirection !== 'LR' || edge.from === edge.to) {
+    return false
+  }
+  const f = edge.from.gridCoord
+  const t = edge.to.gridCoord
+  if (!f || !t || f.y !== t.y || graph.subgraphs.length > 0) return false
+  // Diamond and circle faces have one port cell, not a run of them.
+  if (edge.from.shape !== 'rectangle' || edge.to.shape !== 'rectangle') {
+    return false
+  }
+  const lo = Math.min(f.x, t.x)
+  const hi = Math.max(f.x, t.x)
+  if (
+    graph.nodes.some(
+      (n) => n.gridCoord?.y === f.y && n.gridCoord.x > lo && n.gridCoord.x < hi,
+    )
+  ) {
+    return false
+  }
+  const group = graph.edges.filter(
+    (o) =>
+      o.from !== o.to &&
+      ((o.from === edge.from && o.to === edge.to) ||
+        (o.from === edge.to && o.to === edge.from)),
+  )
+  return (
+    group.length >= 6 &&
+    group.some((o) => o.from === edge.from) &&
+    group.some((o) => o.to === edge.from) &&
+    group.every(
+      (o) =>
+        o.text.length === 0 &&
+        !o.bundle &&
+        !o.clusterSource &&
+        !o.clusterTarget,
+    )
+  )
+}
+
 /** A self-loop on a node that ends a `backStraight` pair (#2100). */
 function loopOnTop(graph: AsciiGraph, edge: AsciiEdge): boolean {
   if (edge.from !== edge.to) return false
@@ -1357,7 +1422,8 @@ function loopOnTop(graph: AsciiGraph, edge: AsciiEdge): boolean {
     (o) =>
       o.from !== o.to &&
       (o.from === edge.from || o.to === edge.from) &&
-      (backStraight(graph, o) ||
+      (denseFacingPair(graph, o) ||
+        backStraight(graph, o) ||
         graph.edges.some(
           (p) => p.from === o.to && p.to === o.from && backStraight(graph, p),
         )),
@@ -2046,8 +2112,37 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
 
   // #2100: a back-edge beside its forward partner, when a skip edge needs the
   // bottom faces, is a second stroke between the facing side faces.
-  const back = backStraight(graph, edge)
+  // #2645: a loop on a dense pair's node is a hook over the top face, out of
+  // one top cell and back into the next, as Mermaid draws it.
   if (
+    edge.from === edge.to &&
+    effectiveDir === 'LR' &&
+    loopOnTop(graph, edge) &&
+    !edge.loopTopWanted &&
+    graph.edges.some(
+      (o) =>
+        denseFacingPair(graph, o) &&
+        (o.from === edge.from || o.to === edge.from),
+    )
+  ) {
+    const c = requireGridCoord(edge.from)
+    edge.startDir = Up
+    edge.endDir = Up
+    edge.faceLane = false
+    edge.path = [
+      { x: c.x + 2, y: c.y },
+      { x: c.x + 2, y: c.y - 1 },
+      { x: c.x + 1, y: c.y - 1 },
+      { x: c.x + 1, y: c.y },
+    ]
+    return
+  }
+  const dense = denseFacingPair(graph, edge)
+  const back =
+    backStraight(graph, edge) ||
+    (dense && requireGridCoord(edge.from).x > requireGridCoord(edge.to).x)
+  if (
+    dense ||
     back ||
     graph.edges.some(
       (o) => o.from === edge.to && o.to === edge.from && backStraight(graph, o),
