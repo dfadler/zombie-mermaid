@@ -704,7 +704,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-face-capacity-loops',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII dense duplicate edges and self-loops shared one cell',
     symptom:
       'A node’s side face was sized for reciprocal and duplicate edges only. Self-loop ends and back-edges also take a cell, so the face came out short and two edge ends shared a cell: merged arrowheads and `├`/`┤` tick marks.',
