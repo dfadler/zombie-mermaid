@@ -642,7 +642,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   for (const edge of graph.edges) {
     if (edge.from === edge.to) continue // self-loop: not in scope here
     // A planned face lane is its own route (#2121); no lane group for it.
-    if (edge.faceLanePlan) continue
+    if (edge.faceLanePlan || flowLanes.has(edge)) continue
     const key = parallelGroupKey(edge)
     const existing = groups.get(key)
     if (existing) existing.push(edge)
@@ -1513,6 +1513,7 @@ function faceLaneCandidates(graph: AsciiGraph): FaceLaneCandidate[] {
       continue
     }
     if (graph.faceLaneOff?.has(i)) continue
+    if (flowLanes.has(edge)) continue
     const dir = effectiveDirection(graph, edge)
     if (dir !== 'TD' && dir !== 'LR') continue
     const vertical = dir === 'TD'
@@ -1672,6 +1673,248 @@ function buildFaceLaneRoute(
   return { path, startDir: out, endDir: into }
 }
 
+// ============================================================================
+// Same-pair groups on the flow faces (TD)
+// ============================================================================
+
+/**
+ * One edge of a TD group of 4+ edges between two stacked nodes (forward and
+ * back together). Mermaid gives each its own port, the same cell on both
+ * faces, and a Z: down from the port to a jog row, across to a lane beside
+ * the group, along it (the label sits there), and back across to the port.
+ * Lanes lie both sides of the centre; the outermost edge jogs nearest the
+ * nodes, so the left and right jogs share rows and nothing crosses.
+ */
+export interface FlowLane {
+  /** Port offset from the nodes' centre column, the same on both faces. */
+  dx: number
+  /** Lane offset from the centre column (equals `dx` for a straight edge). */
+  lane: number
+  /** 1 = outermost (jogs nearest the nodes); 0 for a straight edge. */
+  level: number
+  /** Jog levels either side of the label rows, and the label rows' count. */
+  levels: number
+  labelRows: number
+  /** Row of its label below the first label row; undefined centres it in the rows. */
+  row: number | undefined
+  lines: readonly string[]
+}
+
+const flowLanes = new WeakMap<AsciiEdge, FlowLane>()
+
+/** The planned flow-face lane of `edge`, if it is in a same-pair group. */
+export function flowLaneOf(edge: AsciiEdge): FlowLane | undefined {
+  return flowLanes.get(edge)
+}
+
+/** Edges needed in one stacked pair before they take flow-face lanes. */
+const FLOW_LANE_MIN = 4
+
+/** Whether a group's nodes and neighbours leave the facing faces and the sides clear. */
+function flowLaneRoom(
+  graph: AsciiGraph,
+  group: readonly AsciiEdge[],
+  upper: AsciiNode,
+  lower: AsciiNode,
+): boolean {
+  const u = requireGridCoord(upper)
+  const l = requireGridCoord(lower)
+  if (u.x !== l.x || l.y - u.y !== 4) return false
+  if (getNodeSubgraph(graph, upper) || getNodeSubgraph(graph, lower)) {
+    return false
+  }
+  // Lanes run beside both nodes: no other node on their rows.
+  for (const n of graph.nodes) {
+    if (n === upper || n === lower) continue
+    const c = requireGridCoord(n)
+    if (c.y <= l.y + 2 && c.y + 2 >= u.y) return false
+  }
+  // Nothing else may use the facing faces.
+  for (const e of graph.edges) {
+    if (group.includes(e)) continue
+    for (const [node, away] of [
+      [upper, -1],
+      [lower, 1],
+    ] as const) {
+      if (e.from !== node && e.to !== node) continue
+      if (e.from === e.to) return false
+      const far = requireGridCoord(e.from === node ? e.to : e.from)
+      if (Math.sign(far.y - requireGridCoord(node).y) !== away) return false
+    }
+  }
+  return true
+}
+
+/**
+ * Plan the flow-face lanes of every stacked pair joined by 4+ edges that
+ * `spreadsOnFaces` does not already draw side by side, and make room: the
+ * faces one cell per port, the gap rows for the jogs and labels, and the
+ * right-hand margin for the lanes. Run after `setColumnWidth`.
+ */
+export function assignFlowLanes(graph: AsciiGraph): void {
+  if (graph.config.graphDirection !== 'TD') return
+  const pairs = new Map<string, AsciiEdge[]>()
+  for (const e of graph.edges) {
+    if (e.from === e.to || e.clusterSource || e.clusterTarget) continue
+    const key = [e.from.index, e.to.index].sort((a, b) => a - b).join('|')
+    pairs.set(key, [...(pairs.get(key) ?? []), e])
+  }
+  for (const group of pairs.values()) {
+    if (group.length < FLOW_LANE_MIN || spreadsOnFaces(graph, group)) continue
+    const first = group[0]!
+    const [upper, lower] =
+      requireGridCoord(first.from).y < requireGridCoord(first.to).y
+        ? [first.from, first.to]
+        : [first.to, first.from]
+    if (!flowLaneRoom(graph, group, upper, lower)) continue
+    planFlowLanes(graph, group, upper)
+  }
+}
+
+function planFlowLanes(
+  graph: AsciiGraph,
+  group: readonly AsciiEdge[],
+  upper: AsciiNode,
+): void {
+  // Forward edges first, then back edges: one port order on both faces.
+  const ordered = [
+    ...group.filter((e) => e.from === upper),
+    ...group.filter((e) => e.from !== upper),
+  ]
+  const n = ordered.length
+  const fc = requireGridCoord(upper).x
+  const fm = requireGridCoord(upper).y
+  const width = Math.max(graph.columnWidth.get(fc + 1) ?? 0, 2 * n - 1)
+  graph.columnWidth.set(fc + 1, width)
+
+  const lines = ordered.map((e) => splitLines(e.text))
+  const wide = lines.map((ls) => Math.max(1, ...ls.map((l) => displayWidth(l))))
+  const dx = ordered.map((_, i) => (i - (n - 1) / 2) * 2)
+  // The middle one (two, for an even group) runs straight down its port.
+  const lo = Math.ceil(n / 2) - 1
+  const hi = Math.floor(n / 2)
+  // A label of width w centred on x covers x - floor(w/2) .. x + ceil(w/2) - 1.
+  const left = (i: number, x: number): number => x - Math.floor(wide[i]! / 2)
+  const right = (i: number, x: number): number =>
+    x + Math.ceil(wide[i]! / 2) - 1
+  const lane = [...dx]
+  let bound = Math.min(...[lo, hi].map((i) => left(i, dx[i]!)))
+  for (let i = lo - 1; i >= 0; i--) {
+    // Lanes sit clear of the ports and of the label beside them.
+    const x = Math.min(
+      i === lo - 1 ? dx[0]! - 1 : Infinity,
+      bound - 2 - Math.ceil(wide[i]! / 2) + 1,
+    )
+    lane[i] = x
+    bound = left(i, x)
+  }
+  bound = Math.max(...[lo, hi].map((i) => right(i, dx[i]!)))
+  for (let i = hi + 1; i < n; i++) {
+    const x = Math.max(
+      i === hi + 1 ? dx[n - 1]! + 1 : -Infinity,
+      bound + 2 + Math.floor(wide[i]! / 2),
+    )
+    lane[i] = x
+    bound = right(i, x)
+  }
+  const levels = Math.max(lo, n - 1 - hi)
+  // Two straight strokes a port apart: their labels take a row each.
+  const stagger = lo !== hi && right(lo, dx[lo]!) + 2 > left(hi, dx[hi]!)
+  const labelRows = Math.max(
+    1,
+    ...lines.map((ls) => ls.length),
+    stagger ? lines[lo]!.length + lines[hi]!.length : 0,
+  )
+  ordered.forEach((e, i) => {
+    const level = i < lo ? i + 1 : i > hi ? n - i : 0
+    flowLanes.set(e, {
+      dx: dx[i]!,
+      lane: lane[i]!,
+      level,
+      levels,
+      labelRows,
+      row:
+        stagger && i === lo
+          ? 0
+          : stagger && i === hi
+            ? lines[lo]!.length
+            : undefined,
+      lines: lines[i]!,
+    })
+    e.parallelLane = { index: i, total: n, usedOffsets: new Set() }
+  })
+
+  // A stroke row, the jog rows, the label rows, then the same back down.
+  const rows = 2 * (levels + 1) + labelRows + 1
+  const gap = fm + 3
+  graph.rowHeight.set(gap, Math.max(graph.rowHeight.get(gap) ?? 0, rows))
+  // The lanes may reach past the nodes' right border.
+  const reach = Math.max(...ordered.map((_, i) => right(i, lane[i]!)))
+  const beyond = reach - (width - Math.floor(width / 2)) + 1
+  const at = fc + 3
+  graph.columnWidth.set(at, Math.max(graph.columnWidth.get(at) ?? 0, beyond))
+}
+
+/**
+ * `edge`'s drawn polyline, source to target, for a planned flow-face lane:
+ * straight down (up, for a back edge) its port, or the Z described at
+ * `FlowLane`. Undefined for any other edge.
+ */
+export function flowLanePolyline(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { x: number; y: number }[] | undefined {
+  const plan = flowLanes.get(edge)
+  if (!plan) return undefined
+  const a = requireGridCoord(edge.from)
+  const b = requireGridCoord(edge.to)
+  const up = a.y > b.y
+  const [top, bottom] = up ? [b, a] : [a, b]
+  const cx = gridToDrawingCoord(graph, { x: top.x + 1, y: top.y }).x
+  const yTop = gridToDrawingCoord(graph, { x: top.x + 1, y: top.y + 2 }).y
+  const yBottom = gridToDrawingCoord(graph, { x: bottom.x + 1, y: bottom.y }).y
+  const x = cx + plan.dx
+  const down: { x: number; y: number }[] = [{ x, y: yTop }]
+  if (plan.level > 0) {
+    const rows = yBottom - yTop - 1
+    const jogTop = yTop + plan.level + 1
+    const jogBottom = yTop + rows - plan.level - 1
+    const lane = cx + plan.lane
+    down.push(
+      { x, y: jogTop },
+      { x: lane, y: jogTop },
+      { x: lane, y: jogBottom },
+      { x, y: jogBottom },
+    )
+  }
+  down.push({ x, y: yBottom })
+  return up ? down.reverse() : down
+}
+
+/** Where a planned flow-face lane's label goes: on its lane, in the label rows. */
+export function flowLaneLabel(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { x: number; y: number; text: string }[] | undefined {
+  const plan = flowLanes.get(edge)
+  if (!plan) return undefined
+  const a = requireGridCoord(edge.from)
+  const b = requireGridCoord(edge.to)
+  const top = a.y > b.y ? b : a
+  const cx = gridToDrawingCoord(graph, { x: top.x + 1, y: top.y }).x
+  const yTop = gridToDrawingCoord(graph, { x: top.x + 1, y: top.y + 2 }).y
+  const start =
+    yTop +
+    plan.levels +
+    2 +
+    (plan.row ?? Math.floor((plan.labelRows - plan.lines.length) / 2))
+  return plan.lines.map((text, i) => ({
+    x: cx + plan.lane - Math.floor(displayWidth(text) / 2),
+    y: start + i,
+    text,
+  }))
+}
+
 /**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
@@ -1751,6 +1994,18 @@ function flowFanOut(
 
 export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   exhaustedLaneEdges.delete(edge)
+  // A planned same-pair flow-face lane (assignFlowLanes): a straight stem
+  // between the facing faces; the Z is drawn from the plan (flowLanePolyline).
+  if (flowLanes.has(edge)) {
+    const down = requireGridCoord(edge.from).y < requireGridCoord(edge.to).y
+    ;[edge.startDir, edge.endDir] = down ? [Down, Up] : [Up, Down]
+    edge.faceLane = true
+    edge.path = [
+      gridCoordDirection(requireGridCoord(edge.from), edge.startDir),
+      gridCoordDirection(requireGridCoord(edge.to), edge.endDir),
+    ]
+    return
+  }
   // Determine effective direction for this edge
   // If both nodes are in the same subgraph with a direction override, use it
   // Otherwise, use the graph's direction (not source's effective direction)
@@ -2294,7 +2549,7 @@ export function determineLabelLine(
   edge: AsciiEdge,
   ctx?: LabelContext,
 ): void {
-  if (edge.text.length === 0) return
+  if (edge.text.length === 0 || flowLanes.has(edge)) return
   if (edge.parallelLane && edge.parallelLane.index > 0) return
   // Likewise a cluster-exit edge: determinePath placed its label directly
   // on the first segment outside the cluster. The width-based search below

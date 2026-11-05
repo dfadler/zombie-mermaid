@@ -71,14 +71,14 @@ const violations = (out: string, skip: Rule[] = []): string[] =>
 
 describe('plain parallel lanes past a three-cell face (#1743, #1826)', () => {
   it.each([5, 6, 7, 8] as const)(
-    'TD: %i labeled lanes each get an arrowhead on its own row',
+    'TD: %i labeled lanes each get an arrowhead in their own column of the top face',
     (n) => {
       const out = render(plain('TD', n))
       expect(violations(out)).toEqual([])
-      // The first edge enters the top; the other n - 1 stack on the right face.
-      const sides = headCells(out, '◄', 'row')
-      expect(sides).toHaveLength(n - 1)
-      expect(new Set(sides).size).toBe(n - 1)
+      // Flow-face lanes (#2645): every edge lands on the target's top face.
+      const tops = headCells(out, '▼', 'col')
+      expect(tops).toHaveLength(n)
+      expect(new Set(tops).size).toBe(n)
       expect(heads(out)).toBe(n)
     },
   )
@@ -106,10 +106,27 @@ describe('plain parallel lanes past a three-cell face (#1743, #1826)', () => {
   it('unlabeled and ASCII-charset lanes size the same way', () => {
     expect(heads(render(plain('TD', 6, false)))).toBe(6)
     const ascii = render(plain('TD', 6), true)
-    expect(ascii.split('\n').filter((l) => l.includes('<'))).toHaveLength(5)
+    expect(ascii.split('\n').filter((l) => l.includes('v'))).toHaveLength(1)
+    expect(ascii.match(/v/g)?.length).toBeGreaterThanOrEqual(6)
   })
 
-  it('four lanes keep the default box; five lengthen the face by one cell', () => {
+  it('LR: four lanes keep the default box; five lengthen the face by one cell', () => {
+    const face = (n: number): number => {
+      const graph = convertToAsciiGraph(parseMermaid(plain('LR', n)), {
+        useAscii: false,
+        paddingX: 6,
+        paddingY: 5,
+        boxBorderPadding: 1,
+        graphDirection: 'LR',
+      })
+      createMapping(graph)
+      const a = graph.nodes.find((node) => node.name === 'A')!
+      return graph.columnWidth.get(a.gridCoord!.x + 1)!
+    }
+    expect(face(5)).toBeGreaterThan(face(4))
+  })
+
+  it('TD: a flow-face group widens both faces to one port per edge', () => {
     const face = (n: number): number => {
       const graph = convertToAsciiGraph(parseMermaid(plain('TD', n)), {
         useAscii: false,
@@ -120,9 +137,9 @@ describe('plain parallel lanes past a three-cell face (#1743, #1826)', () => {
       })
       createMapping(graph)
       const a = graph.nodes.find((node) => node.name === 'A')!
-      return graph.rowHeight.get(a.gridCoord!.y + 1)!
+      return graph.columnWidth.get(a.gridCoord!.x + 1)!
     }
-    expect([face(4), face(5), face(7)]).toEqual([3, 4, 6])
+    expect([face(4), face(5), face(7)]).toEqual([7, 9, 13])
   })
 })
 
