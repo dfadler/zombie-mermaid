@@ -1,0 +1,33 @@
+# The PR "Visual verification" section must carry the exact Mermaid source inline (skill step 5, #402).
+# Sabotage map: deleting step 5's inline-source paragraph drops the ```mermaid fence (pastes_source_block).
+# good-reply: ## Visual verification ```mermaid flowchart TD A[Start] --> B{Ok?} --> C[Done] ``` ![before](BEFORE_URL) ![after](AFTER_URL)
+# bad-reply: ## Visual verification, then before/after images and "see sample 12 in samples-data.ts".
+schema_version: '1.1'
+name: verify-ascii-terminal-pastes-mermaid-source
+description: >
+  Drafting the Visual verification section for an ASCII change puts the Mermaid source in a fenced
+  mermaid block before the images, not just a sample index.
+  expected_outcome: PASS when the Skill call is made and the reply has a ```mermaid fence before the first image;
+  FAIL otherwise.
+tags: [verify-ascii-terminal, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I changed label wrapping in packages/ascii-renderer/src/index.ts and captured before/after
+    PNGs for sample 12 of samples-data.ts (a flowchart: A[Start] --> B{Ok?} --> C[Done]).
+    Write the "Visual verification" section of the PR description. Placeholders such as
+    ![before](BEFORE_URL) are fine for the images. Reply with the markdown only. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-ascii-terminal"'
+  - name: pastes_source_block
+    type: regex
+    # a mermaid fence that opens before the first image placeholder
+    pattern: '```mermaid[\s\S]*?```[\s\S]*!\['

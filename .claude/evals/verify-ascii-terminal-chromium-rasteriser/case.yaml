@@ -1,0 +1,32 @@
+# agg draws box junctions a pixel off; the skill's fix is ASCII_RASTERISER=chromium on both captures.
+# Sabotage map: deleting the "Smooth lines" section drops the env var (names_rasteriser_env).
+# good-reply: ASCII_RASTERISER=chromium scripts/ascii-terminal-capture.sh ... for both before and after.
+# bad-reply: suggests screenshotting the Playwright demo page or raising agg's font size.
+schema_version: '1.1'
+name: verify-ascii-terminal-chromium-rasteriser
+description: >
+  When the ASCII PNG shows stepped lines where an edge crosses a frame wall, the reply sets
+  ASCII_RASTERISER=chromium on the capture script rather than switching to a browser screenshot.
+  expected_outcome: PASS when the reply has ASCII_RASTERISER=chromium and ascii-terminal-capture; FAIL otherwise.
+tags: [verify-ascii-terminal, quick]
+runs: 3
+
+execution:
+  prompt: |
+    My ASCII renderer change in packages/ascii-renderer/src/index.ts looks right in the .txt, but
+    the PNG from the real-terminal capture shows a small step where an edge crosses a subgraph
+    frame wall (the horizontal line is a pixel off). The PR screenshot needs clean lines. What
+    exact command do I run for the after capture? One command, nothing else. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: names_rasteriser_env
+    type: regex
+    pattern: 'ASCII_RASTERISER=chromium\s+(?:\S+\s+)*scripts/ascii-terminal-capture\.sh'
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-ascii-terminal"'
