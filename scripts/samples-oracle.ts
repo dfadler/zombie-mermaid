@@ -66,7 +66,10 @@ const ourLabels = (source: string, options: unknown) => {
   try {
     const svg = renderMermaidSVG(source, options as never)
     return [...svg.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((m) =>
-      m[1].replace(/<[^>]+>/g, '').trim(),
+      m[1]
+        .split(/<[^>]*>/)
+        .join('')
+        .trim(),
     )
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) }
