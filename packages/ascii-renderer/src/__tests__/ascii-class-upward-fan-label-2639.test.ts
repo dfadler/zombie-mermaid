@@ -36,6 +36,7 @@ describe('ASCII class diagram: up fan past an intermediate class (#2639)', () =>
         const c = boxSpan(lines, 'C', v)
         const d = boxSpan(lines, 'D', v)
         expect(d.c0).toBe(b.c0) // D stays under B
+        expect(boxSpan(lines, 'A', v).c0).toBe(b.c0) // A stays centred over B
 
         const labelRows = ['one', 'two', 'three', 'four'].map((l) =>
           lines.findIndex((x) => x.includes(l)),

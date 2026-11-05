@@ -1146,7 +1146,7 @@ export function renderClassAscii(
         leftPadOf.get(lastMember)! -
         classBoxW.get(lastMember)!
       const visibleWidth = totalWidth - firstLeftPad - lastRightPad
-      const blockDesiredLeft =
+      let blockDesiredLeft =
         desiredCenter - firstLeftPad - Math.floor(visibleWidth / 2)
       if (boxLeftOverride !== undefined) {
         // Room on the left may need every placed class to move right.
@@ -1157,6 +1157,19 @@ export function renderClassAscii(
         placeAt(id, Math.max(left, currentX, 0))
         placedThisLevel.add(id)
         continue
+      }
+      // The shallower end of an up fan has the fan's outer lanes as left
+      // overhang. When that would reach past the canvas edge, move its
+      // parents right instead, so a single parent stays centred above it as
+      // in Mermaid (other diagrams keep their positions).
+      if (
+        blockDesiredLeft < 0 &&
+        currentX === 0 &&
+        upFans.some((f) => f.toId === id)
+      ) {
+        for (const p of placed.values()) p.x -= blockDesiredLeft
+        maxSlotEnd -= blockDesiredLeft
+        blockDesiredLeft = 0
       }
       const blockActualLeft = Math.max(blockDesiredLeft, currentX, 0)
 
