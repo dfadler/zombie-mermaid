@@ -40,13 +40,6 @@ const XY = {
   yLabelGap: 18,
   axisTitlePad: 30,
   tickLength: 4,
-  legendFontSize: 14,
-  legendFontWeight: 400,
-  legendHeight: 28,
-  legendSwatchW: 14,
-  legendSwatchH: 14,
-  legendGap: 6,
-  legendItemGap: 16,
 } as const
 
 /**
@@ -193,7 +186,6 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
-  const hasLegend = chart.series.length > 1
 
   // Compute y-axis label width from tick labels
   //
@@ -297,12 +289,7 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   // Lines
   const lines = layoutLines(chart, xScale, yScale, catLabels, colorMap)
 
-  // Legend
-  const legendY =
-    XY.padding + (hasTitle ? XY.titleHeight : 0) + XY.legendHeight / 2
-  const legend = hasLegend
-    ? buildLegendItems(chart, totalW / 2, legendY, colorMap)
-    : []
+  const legend = seriesLabels(chart, colorMap)
 
   // Axis lines
   const xAxisLine = {
@@ -369,7 +356,6 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
-  const hasLegend = chart.series.length > 1
 
   // In horizontal mode: categories go on y-axis (left side), values go on x-axis (bottom)
   //
@@ -587,12 +573,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     ? { text: chart.title, x: totalW / 2, y: XY.padding + XY.titleFontSize }
     : undefined
 
-  // Legend
-  const legendY =
-    XY.padding + (hasTitle ? XY.titleHeight : 0) + XY.legendHeight / 2
-  const legend = hasLegend
-    ? buildLegendItems(chart, totalW / 2, legendY, colorMap)
-    : []
+  const legend = seriesLabels(chart, colorMap)
 
   return {
     width: totalW,
@@ -774,49 +755,23 @@ function formatTickValue(v: number): string {
   return v.toFixed(Math.abs(v) < 10 ? 1 : 0)
 }
 
-/** Build centered legend items for multi-series charts */
-function buildLegendItems(
-  chart: XYChart,
-  centerX: number,
-  y: number,
-  colorMap: number[],
-): LegendItem[] {
-  const items: LegendItem[] = []
+/**
+ * Per-series "Bar N" / "Line N" labels. Mermaid draws no legend, so there is no
+ * geometry (x/y are 0); the tooltip reads `type`/`seriesIndex`/`label` only.
+ */
+function seriesLabels(chart: XYChart, colorMap: number[]): LegendItem[] {
   let barIdx = 0,
     lineIdx = 0
-  for (let si = 0; si < chart.series.length; si++) {
-    const s = chart.series[si]!
-    const label = s.type === 'bar' ? `Bar ${barIdx + 1}` : `Line ${lineIdx + 1}`
-    items.push({
+  return chart.series.map((s, si) => {
+    const seriesIndex = s.type === 'bar' ? barIdx++ : lineIdx++
+    const label = `${s.type === 'bar' ? 'Bar' : 'Line'} ${seriesIndex + 1}`
+    return {
       label,
       x: 0,
-      y,
+      y: 0,
       type: s.type,
-      seriesIndex: s.type === 'bar' ? barIdx : lineIdx,
+      seriesIndex,
       colorIndex: colorMap[si]!,
-    })
-    if (s.type === 'bar') barIdx++
-    else lineIdx++
-  }
-
-  // Measure total width, then center
-  const itemWidths = items.map((item) => {
-    const textW = estimateTextWidth(
-      item.label,
-      XY.legendFontSize,
-      XY.legendFontWeight,
-    )
-    return XY.legendSwatchW + XY.legendGap + textW
+    }
   })
-  const totalWidth =
-    itemWidths.reduce((a, b) => a + b, 0) +
-    (items.length - 1) * XY.legendItemGap
-  let x = centerX - totalWidth / 2
-
-  for (let i = 0; i < items.length; i++) {
-    items[i]!.x = x
-    x += itemWidths[i]! + XY.legendItemGap
-  }
-
-  return items
 }
