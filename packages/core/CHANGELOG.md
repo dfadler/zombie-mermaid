@@ -1,5 +1,23 @@
 # @zombie-mermaid/core
 
+## 5.14.4
+
+### Patch Changes
+
+- [#2626](https://github.com/dfadler/zombie-mermaid/pull/2626) [`bd2e21a`](https://github.com/dfadler/zombie-mermaid/commit/bd2e21a703aa70ba4138a6cfb88588d51fab6b1f) Thanks [@dfadler](https://github.com/dfadler)! - Output change: `architecture-beta` SVG now lays services out on Mermaid's grid instead of through ELK, so a service named by a `B`/`T`/`L`/`R` port sits exactly one cell beyond its neighbour (a replica under a junction no longer slides into the next column) and every link on the grid is one straight run. Groups are drawn as Mermaid draws them: a dashed unfilled box with the icon tile in the top-left corner and the title beside it, no header band, with Mermaid's padding. Architecture diagrams no longer need `elkjs`.
+
+- [#2655](https://github.com/dfadler/zombie-mermaid/pull/2655) [`1f2cdeb`](https://github.com/dfadler/zombie-mermaid/commit/1f2cdeb0900be425ef5b31b6c39efd5fbb1540c8) Thanks [@dfadler](https://github.com/dfadler)! - Output change: `architecture-beta` SVG now draws edges 3px wide as Mermaid does, wraps a service label longer than 1.5 tiles onto further lines instead of overflowing, widens a group around a label that cannot wrap, takes the group border colour from the theme (`--_node-stroke`) so it follows dark mode, and ignores `curve` as Mermaid does. `MermaidSubgraph` and `PositionedGroup` gain `architecture?: boolean` (an architecture group's `icon` is now absent rather than `''`), and `MermaidEdge.acrossFlow` is marked `@deprecated`. The ELK-error message and the docs no longer list architecture among the diagrams that need `elkjs`.
+
+- [#2675](https://github.com/dfadler/zombie-mermaid/pull/2675) [`615937d`](https://github.com/dfadler/zombie-mermaid/commit/615937d2218e1ea13f6283564c70c5e2bd8990c1) Thanks [@dfadler](https://github.com/dfadler)! - Output change: SVG state diagrams draw mermaid@12.3.0's barbed `stateDiagram-barbEnd-margin` arrowheads (the edge stops 5.5px short of the box so the tip sits 3.5px clear of it) and state boxes with a 5px corner radius instead of 6. `MermaidGraph` and `PositionedGraph` gain an optional `stateDiagram` flag. Drop shadows are not matched (visual effect, out of scope per [#2617](https://github.com/dfadler/zombie-mermaid/issues/2617)).
+
+- [#2649](https://github.com/dfadler/zombie-mermaid/pull/2649) [`3a3c7ac`](https://github.com/dfadler/zombie-mermaid/commit/3a3c7ac0f82cd0955e2d6b736b197897da18ade9) Thanks [@dfadler](https://github.com/dfadler)! - Output change: text on a node with a custom `fill` now keeps the theme's text colour, as Mermaid 12.3.0 does, instead of being switched to black or white from the fill's brightness. A dark `style`/`classDef` fill therefore keeps dark text unless the diagram sets `color:` itself, which still wins. Applies to flowchart, state, class and ER nodes. `getReadableTextColor` stays exported from `@zombie-mermaid/core` (deprecated, unused) so the API does not break. To keep the old readability, add `color:` to the `style`/`classDef`.
+
+- [#2653](https://github.com/dfadler/zombie-mermaid/pull/2653) [`a8a524e`](https://github.com/dfadler/zombie-mermaid/commit/a8a524e15ed347eb551a302c8c0e5daf2c9527f3) Thanks [@dfadler](https://github.com/dfadler)! - Output change: flowchart and state SVG edges are now `<path>` elements with rounded orthogonal corners (radius 5·√2 px, as mermaid 12.3.0 draws them) instead of `<polyline>`; an explicit `curve` other than `linear` is unchanged. A flowchart subgraph is drawn as mermaid 12.3.0 draws it: a centred regular-weight title along the top edge with no header band (state composites keep the band).
+
+- [#2625](https://github.com/dfadler/zombie-mermaid/pull/2625) [`bcbe70c`](https://github.com/dfadler/zombie-mermaid/commit/bcbe70ce628cd1034b14623da6460744815e567b) Thanks [@dfadler](https://github.com/dfadler)! - Output change: ER entities are drawn as mermaid 12.3.0 draws them: a table with type, name, key and comment columns (the comment column was dropped before), lines between rows and columns, and an attribute-less entity as a taller box with the name centred. Circle (`--o`) and cross (`--x`) terminators use mermaid 12.3.0's `circleEnd-margin` / `crossEnd-margin` size.
+
+  Output change: `mergeEdges` now defaults to `false`, so fan-out and fan-in edges each keep their own port on a node, as in mermaid 12.3.0. Pass `mergeEdges: true` for the shared trunks. Edge ends in a compound (subgraph) layout are kept on their node's face.
+
 ## 5.14.3
 
 ### Patch Changes
