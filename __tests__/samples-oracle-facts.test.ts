@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   facts,
   hash,
@@ -30,6 +30,22 @@ describe('samples-oracle-facts', () => {
       markerRefs: ['m1'],
       text: ['Hi'],
     })
+  })
+
+  it('reports zero counts for an svg with no nodes or edges', () => {
+    expect(facts('<svg/>')).toMatchObject({ nodes: 0, edgePaths: 0 })
+  })
+
+  it('stringifies a non-Error throw from the renderer', async () => {
+    vi.resetModules()
+    vi.doMock('../src/index.ts', () => ({
+      renderMermaidSVG: () => {
+        throw 'boom'
+      },
+    }))
+    const mod = await import('../scripts/lib/samples-oracle-facts.ts')
+    expect(mod.ourLabels('x', undefined)).toEqual({ error: 'boom' })
+    vi.doUnmock('../src/index.ts')
   })
 
   it('normalises Iconify ids and hashes to 10 hex chars', () => {
