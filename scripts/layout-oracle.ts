@@ -32,10 +32,7 @@ import { writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 import { samples } from '../samples/samples-data.ts'
-import {
-  pinFreshness,
-  pinnedMermaidVersion,
-} from './lib/mermaid-pin-freshness.ts'
+import { pinFreshness, mermaidVersion } from './lib/mermaid-pin-freshness.ts'
 import {
   TABLE_HEADER,
   USAGE,
@@ -171,6 +168,7 @@ async function main(): Promise<number> {
     return 0
   }
 
+  const distPath = process.env.MERMAID_DIST // A mermaid.min.js other than the pin
   const fresh = pinFreshness()
   if (fresh.stale) console.error(`warning: ${fresh.message}`)
 
@@ -180,7 +178,7 @@ async function main(): Promise<number> {
 
   let session
   try {
-    session = await startRealMermaid()
+    session = await startRealMermaid(distPath)
   } catch (err) {
     console.error(
       `Could not start headless Chromium: ${(err as Error).message}\n` +
@@ -217,7 +215,7 @@ async function main(): Promise<number> {
           commit,
           tolerance: args.tolerance,
           type,
-          mermaid: pinnedMermaidVersion(),
+          mermaid: mermaidVersion(distPath),
         }),
       })
     }

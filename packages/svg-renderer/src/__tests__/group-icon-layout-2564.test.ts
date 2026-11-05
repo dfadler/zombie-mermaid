@@ -1,6 +1,6 @@
 /**
  * #2564: a group's icon reaches the positioned group in every layout path
- * (ELK, the compound-flat arrangement, and `layout: 'simple'`), and a group
+ * (ELK, the nested ELK arrangement, and `layout: 'simple'`), and a group
  * without one carries none.
  */
 import { describe, expect, it } from 'vitest'
@@ -31,19 +31,5 @@ describe('group icon through each layout (#2564)', () => {
     )
     expect(byId(g.groups, 'a').icon).toBe('server')
     expect(byId(g.groups, 'b').icon).toBeUndefined()
-  })
-
-  it('compound-flat layout', async () => {
-    const { layoutCompoundFlat } =
-      await import('../layout-engine/compound-flat.ts')
-    const { layoutSimple } = await import('../layout-engine/simple-layout.ts')
-    const { resolveFontSizes } = await import('../styles.ts')
-    const gr = graph()
-    const out = layoutCompoundFlat(
-      gr,
-      (g) => layoutSimple(g, {}),
-      resolveFontSizes(undefined),
-    )
-    expect(byId(out!.groups, 'a').icon).toBe('server')
   })
 })

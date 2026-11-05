@@ -12,6 +12,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 
 export interface PinFreshness {
   pinned: string
@@ -35,6 +36,13 @@ export function pinnedMermaidVersion(): string {
       readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
     ) as { devDependencies: Record<string, string> }
   ).devDependencies['mermaid']!.replace(/^[^\d]*/, '')
+}
+
+/** Version of the mermaid build scored against: the pin, or an alternate `dist/mermaid.min.js`. */
+export function mermaidVersion(distPath?: string): string {
+  if (distPath === undefined) return pinnedMermaidVersion()
+  const pkg = join(dirname(distPath), '..', 'package.json')
+  return (JSON.parse(readFileSync(pkg, 'utf8')) as { version: string }).version
 }
 
 export function pinFreshness(
