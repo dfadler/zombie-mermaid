@@ -5,18 +5,17 @@
  * `a --> b` edges as four polylines with identical points. mermaid.js draws a
  * lane per edge, so repeated pairs are left out of the bundle.
  */
+import { pathPointsAttr } from './edge-path-points.ts'
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
 
 /** The `points` of every edge from `from` to `to`, in document order. */
 function pointsOf(svg: string, from: string, to: string): string[] {
   return [
-    ...svg.matchAll(
-      /data-from="([^"]+)" data-to="([^"]+)"[^>]*points="([^"]+)"/g,
-    ),
+    ...svg.matchAll(/data-from="([^"]+)" data-to="([^"]+)"[^>]* d="([^"]+)"/g),
   ]
     .filter((m) => m[1] === from && m[2] === to)
-    .map((m) => m[3]!)
+    .map((m) => pathPointsAttr(m[3]!))
 }
 
 describe('repeated edges between one pair of nodes', () => {
