@@ -1,5 +1,15 @@
 # @zombie-mermaid/cli
 
+## 5.14.4
+
+### Patch Changes
+
+- Updated dependencies [[`bd2e21a`](https://github.com/dfadler/zombie-mermaid/commit/bd2e21a703aa70ba4138a6cfb88588d51fab6b1f), [`1f2cdeb`](https://github.com/dfadler/zombie-mermaid/commit/1f2cdeb0900be425ef5b31b6c39efd5fbb1540c8), [`dc32d5a`](https://github.com/dfadler/zombie-mermaid/commit/dc32d5a03ff36f013a311370adfcdba0ac46c25d), [`dbc2e44`](https://github.com/dfadler/zombie-mermaid/commit/dbc2e44d29f993943abe583a715bac8fee6ee130), [`343bed4`](https://github.com/dfadler/zombie-mermaid/commit/343bed4b1f905c815579faed8f737feb43371c67), [`6742ec1`](https://github.com/dfadler/zombie-mermaid/commit/6742ec12dd4f36901fd7adc729b8394fb05cb6c1), [`05bb530`](https://github.com/dfadler/zombie-mermaid/commit/05bb530b124807e5fa274de686d305be6eb8b56c), [`aa7e1b8`](https://github.com/dfadler/zombie-mermaid/commit/aa7e1b853a3ba4fa0c802f9b009682e89ef89a52), [`4ac10b9`](https://github.com/dfadler/zombie-mermaid/commit/4ac10b9ada5373b6f0d96c117e8430db0e920481), [`4672083`](https://github.com/dfadler/zombie-mermaid/commit/4672083a2429022339634625c54e0fd405bf636f), [`2cd3569`](https://github.com/dfadler/zombie-mermaid/commit/2cd3569debb60dee47df194e65be7de5698dcdc3), [`f77c298`](https://github.com/dfadler/zombie-mermaid/commit/f77c298f9e2bdfcb70558832c91807eb985c5e15), [`d0f6a4e`](https://github.com/dfadler/zombie-mermaid/commit/d0f6a4e9062e14c210ddacc49c2a67786355cbba), [`8fca8fa`](https://github.com/dfadler/zombie-mermaid/commit/8fca8fa456b0b969adf274547158651d276499c0), [`69d756e`](https://github.com/dfadler/zombie-mermaid/commit/69d756edb612693f161e8acd1f3426e597a29401), [`79c80f7`](https://github.com/dfadler/zombie-mermaid/commit/79c80f71efc0817c4143650bb0f0ebd96ae439e7), [`615937d`](https://github.com/dfadler/zombie-mermaid/commit/615937d2218e1ea13f6283564c70c5e2bd8990c1), [`26de325`](https://github.com/dfadler/zombie-mermaid/commit/26de325e318e51f563480a791525294523881b02), [`3a3c7ac`](https://github.com/dfadler/zombie-mermaid/commit/3a3c7ac0f82cd0955e2d6b736b197897da18ade9), [`4513203`](https://github.com/dfadler/zombie-mermaid/commit/451320397bdb7cba734c0dc35676f92c1ec9594b), [`a8a524e`](https://github.com/dfadler/zombie-mermaid/commit/a8a524e15ed347eb551a302c8c0e5daf2c9527f3), [`4366ad7`](https://github.com/dfadler/zombie-mermaid/commit/4366ad71e81cff6ecbfdb320ddf472e257c0556d), [`bcbe70c`](https://github.com/dfadler/zombie-mermaid/commit/bcbe70ce628cd1034b14623da6460744815e567b), [`67fc597`](https://github.com/dfadler/zombie-mermaid/commit/67fc5975db7d19d1dcc57ec90a9e0e38cafe138e), [`95b2272`](https://github.com/dfadler/zombie-mermaid/commit/95b22727a28f627db81efbeafbaca075d0314b05), [`6f2607d`](https://github.com/dfadler/zombie-mermaid/commit/6f2607daf73d2859aa8929268bd1f3520d214435)]:
+  - @zombie-mermaid/svg-renderer@5.14.4
+  - @zombie-mermaid/core@5.14.4
+  - @zombie-mermaid/ascii-renderer@5.14.4
+  - @zombie-mermaid/mcp@5.14.4
+
 ## 5.14.3
 
 ### Patch Changes
