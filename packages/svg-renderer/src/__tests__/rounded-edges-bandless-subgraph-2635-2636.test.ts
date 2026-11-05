@@ -125,9 +125,9 @@ describe('state composite as mermaid@12.3.0 draws it (#2651)', () => {
   it('keeps a cycle in source order: Idle above Busy, 14px start dots, 136px boxes', () => {
     const y = (id: string) =>
       Number(
-        new RegExp(
-          `data-id="${id}"[\\s\\S]*?<rect x="[\\d.]+" y="([\\d.]+)"`,
-        ).exec(svg)![1]!,
+        /<rect x="[\d.]+" y="([\d.]+)"/.exec(
+          svg.slice(svg.indexOf(`data-id="${id}"`)),
+        )![1],
       )
     expect(y('Idle')).toBeLessThan(y('Busy'))
     expect(
