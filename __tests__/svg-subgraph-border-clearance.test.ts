@@ -2,7 +2,7 @@
  * Platform-independent geometry guard for #1796. The Playwright PNG suite
  * tolerates ~680 changed pixels, so a 2px -> 8px trunk move (#1782) slipped
  * past it. This asserts the invariant `clearBorders`
- * (packages/svg-renderer/src/layout-engine/compound-flat.ts) enforces, on the
+ * (packages/svg-renderer/src/layout-engine/clear-borders.ts) enforces, on the
  * SVG numbers directly: no edge segment runs parallel to a subgraph box side
  * within BORDER_GAP px of it unless it is the edge's first or last segment
  * (the one attached to a node).
@@ -101,7 +101,8 @@ describe('subgraph border clearance (#1796)', () => {
       { mergeEdges: true },
     )
     const { boxes } = geometry(svg)
-    const client = boxes[0]! // First <g class="subgraph"> is clients (graph LR)
+    // The Client Layer is the leftmost box (graph LR).
+    const client = boxes.reduce((a, b) => (b.x < a.x ? b : a))
     const right = client.x + client.w
     const out = [
       ...svg.matchAll(
