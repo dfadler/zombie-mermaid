@@ -1102,22 +1102,22 @@ export function renderClassAscii(
       let boxLeftOverride: number | undefined
       if (blockMembers.get(key)!.length === 1) {
         const fanEnd = upFans.find((f) => f.fromId === id)
-        if (fanEnd && placed.has(fanEnd.toId)) {
+        if (fanEnd) {
+          // Shallower than `id`, so already placed.
           const t = placed.get(fanEnd.toId)!
           desiredCenter = t.x + Math.floor(t.width / 2)
         }
         const w = classBoxW.get(id)!
         for (const f of upFans) {
-          const t = placed.get(f.toId)
-          if (!t || !(lv > level.get(f.toId)! && lv < level.get(f.fromId)!))
-            continue
+          if (!(lv > level.get(f.toId)! && lv < level.get(f.fromId)!)) continue
+          const t = placed.get(f.toId)!
           const cx = t.x + Math.floor(t.width / 2)
           const lo = cx - f.halfSpan
           const hi = cx + f.halfSpan
           const left = desiredCenter - Math.floor(w / 2)
           if (left > hi || left + w - 1 < lo) continue
           const own = diagram.relationships.findIndex((r) => r.to === id)
-          boxLeftOverride = own !== -1 && own < f.firstIndex ? lo - w : hi + 1
+          boxLeftOverride = own < f.firstIndex ? lo - w : hi + 1
         }
       }
 
