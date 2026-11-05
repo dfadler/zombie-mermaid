@@ -234,8 +234,6 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
 - **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
   value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
   correct reading (a known mermaid quirk).
-- **Horizontal charts.** The value axis sits at the bottom; mermaid puts it at the top
-  (its `top-axis` group).
 - **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
   mermaid 12.2.0 renders `NewUsers`.
 - **Value-axis padding, flat data and x labels match mermaid in SVG only**
@@ -246,10 +244,6 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   x-axis category is labelled, even when neighbouring labels touch, as mermaid does (the
   #1243 thinning is gone from SVG). The ASCII renderer has its own layout and is unchanged:
   it still uses a -0.1..0.1 / 41.9..42.1 range for flat data and thins crowded labels.
-- **Category-axis inset.** Mermaid insets the first and last category by a bar-based padding
-  (about 0.35 of a band with bars); ours centres each category in an equal band (0.5), so
-  the end categories sit a little further in. The oracle's `extent` figure covers the value
-  axis only for this reason.
 - **ASCII y-axis.** Mermaid has no ASCII output. The plot is 20 rows tall, fewer than
   mermaid's ~10 d3 ticks need once they round to rows, so the renderer labels every Nth
   tick (the smallest N that leaves an unlabeled row between labels) rather than putting

@@ -87,10 +87,65 @@ describe('subgraph title (#2636)', () => {
     expect(svg.match(/<rect[^>]*fill="var\(--_group-hdr\)"/g)).toBeNull()
   })
 
-  it('keeps the header band on a state composite', () => {
+  it('keeps the header band on a state composite, with a centred regular title (#2651)', () => {
     const svg = renderMermaidSVG(state)
     const g = svg.match(/<g class="subgraph"[\s\S]*?<\/g>/)![0]
     expect(g.match(/<rect/g)).toHaveLength(2)
-    expect(g).not.toContain('text-anchor="middle"')
+    const title = g.match(/<text[^>]*>/)![0]
+    expect(title).toContain('text-anchor="middle"')
+    expect(title).toContain('font-weight="400"')
+    const [, x = '0', w = '0'] = g.match(
+      /<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"/,
+    )!
+    expect(title).toContain(`x="${+(+x + +w / 2).toFixed(2)}"`)
+  })
+})
+
+describe('state composite as mermaid@12.3.0 draws it (#2651)', () => {
+  const src =
+    'stateDiagram-v2\n  [*] --> Active\n  state Active {\n    [*] --> Idle\n    Idle --> Busy\n    Busy --> Idle\n  }\n  Active --> [*]'
+  const svg = renderMermaidSVG(src)
+  const g = svg.match(/<g class="subgraph"[\s\S]*?<\/g>/)![0]
+  const nums = (re: RegExp, s: string) => [...s.matchAll(re)].map((m) => +m[1]!)
+
+  it('rounds the outer rect and insets the body 4px from its bottom edge', () => {
+    const [outer, body] = g.match(/<rect[^>]*>/g)!
+    expect(outer).toContain('rx="5"')
+    expect(body).toContain('rx="0"')
+    const yh = (r: string) => [
+      Number(/ y="([\d.]+)"/.exec(r)![1]),
+      Number(/ height="([\d.]+)"/.exec(r)![1]),
+    ]
+    const [oy = 0, oh = 0] = yh(outer!)
+    const [by = 0, bh = 0] = yh(body!)
+    expect(by).toBe(oy + 26)
+    expect(by + bh).toBe(oy + oh - 4)
+  })
+
+  it('keeps a cycle in source order: Idle above Busy, 14px start dots, 136px boxes', () => {
+    const y = (id: string) =>
+      Number(
+        /<rect x="[\d.]+" y="([\d.]+)"/.exec(
+          svg.slice(svg.indexOf(`data-id="${id}"`)),
+        )![1],
+      )
+    expect(y('Idle')).toBeLessThan(y('Busy'))
+    expect(
+      nums(/<circle[^>]* r="([\d.]+)" fill="var\(--_text\)"/g, svg)[0],
+    ).toBe(7)
+    expect(svg).toMatch(/<rect[^>]* width="136" height="40"/)
+  })
+
+  it('spaces it like mermaid: 184x217 box, 24px between the inner states, 40px above', () => {
+    const [outer] = g.match(/<rect[^>]*>/g)!
+    expect(outer).toContain('width="184" height="217"')
+    const ys = [
+      ...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="136" height="40"/g),
+    ]
+    expect(Number(ys[1]![1]) - Number(ys[0]![1]) - 40).toBe(24)
+    const dot = /<circle cx="[\d.]+" cy="([\d.]+)" r="7"/.exec(svg)!
+    expect(
+      Number(/ y="([\d.]+)"/.exec(outer!)![1]) - (Number(dot[1]) + 7),
+    ).toBe(40)
   })
 })

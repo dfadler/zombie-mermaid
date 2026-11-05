@@ -117,8 +117,11 @@ export function renderXYChartSvg(
   // 1. Axis lines and tick marks
   const { plotArea } = chart
   const axisY = plotArea.y + plotArea.height
+  // Horizontal charts put the value axis along the top, as mermaid does.
   parts.push(
-    `<path d="M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`,
+    chart.horizontal
+      ? `<path d="M${r(plotArea.x)},${r(axisY)} V${r(plotArea.y)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`
+      : `<path d="M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`,
   )
   for (const t of [...chart.xAxis.ticks, ...chart.yAxis.ticks]) {
     parts.push(

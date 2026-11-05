@@ -8,12 +8,16 @@ const src = (head: string) =>
 const nums = (d: string) =>
   [...d.matchAll(/-?[\d.]+/g)].map((m) => Number(m[0]))
 
-/** Plot area from the axis path `M<x>,<top> V<bottom> H<right>`. */
+/**
+ * Plot area from the axis path: `M<x>,<top> V<bottom> H<right>` (value axis at
+ * the bottom), or `M<x>,<bottom> V<top> H<right>` for a horizontal chart
+ * (value axis along the top).
+ */
 function plot(svg: string) {
-  const [x, top, bottom, right] = nums(
+  const [x, y0, y1, right] = nums(
     svg.match(/<path d="(M[^"]*)" class="xychart-axis"/)![1]!,
   ) as [number, number, number, number]
-  return { x, top, bottom, right }
+  return { x, top: Math.min(y0, y1), bottom: Math.max(y0, y1), right }
 }
 
 describe.each(['xychart-beta', 'xychart-beta horizontal'])(

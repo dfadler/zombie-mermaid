@@ -16,13 +16,12 @@ import type {
   Point,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from './styles.ts'
-import { FONT_WEIGHTS } from './styles.ts'
 
 /** Weight of a flowchart subgraph title (mermaid draws it regular). */
 export const BANDLESS_TITLE_WEIGHT = 400
 
-/** Left inset of the title text inside the box, matching `renderGroup`. */
-const TITLE_TEXT_INSET = 12
+/** Height of a state composite's title band (mermaid@12.3.0). */
+export const COMPOSITE_BAND = 26
 
 /** Space left clear around the title text, in px. */
 const GAP_PADDING = 2
@@ -50,14 +49,16 @@ export function titleTextBoxes(
       const text = measureMultilineText(
         g.label,
         fontSizes.groupHeader,
-        g.bandless ? BANDLESS_TITLE_WEIGHT : FONT_WEIGHTS.groupHeader,
+        BANDLESS_TITLE_WEIGHT,
       )
       return {
-        // A bandless (flowchart) title is centred; the banded one is inset.
-        x: g.bandless
-          ? g.x + g.width / 2 - text.width / 2 - GAP_PADDING
-          : g.x + TITLE_TEXT_INSET - GAP_PADDING,
-        y: g.y + headerHeight / 2 - text.height / 2 - GAP_PADDING,
+        // Flowchart and state-composite titles are both centred.
+        x: g.x + g.width / 2 - text.width / 2 - GAP_PADDING,
+        y:
+          g.y +
+          (g.bandless ? headerHeight : COMPOSITE_BAND) / 2 -
+          text.height / 2 -
+          GAP_PADDING,
         width: text.width + 2 * GAP_PADDING,
         height: text.height + 2 * GAP_PADDING,
       }
