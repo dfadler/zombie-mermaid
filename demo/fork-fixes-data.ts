@@ -604,7 +604,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-lane-faces-five-parallel',
-    parked: 'ascii-flow-axis-faces',
     title: 'Five or more parallel ASCII edges merged their arrowheads',
     symptom:
       'Each parallel edge gets its own cell on a node’s face, but a default box face has three cells, so past that the extra edges shared one arrowhead. The face is now lengthened to one cell per edge, and cluster exits handle six siblings.',
@@ -618,7 +617,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-lane-faces-forward-and-back',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII forward and back edge groups shared faces and merged heads',
     symptom:
       'In TD/BT, the forward and back edge groups between one pair use the same side faces but were sized separately, so with more than three edges in all two arrowheads merged. A lone cluster exit group and eight or more cluster siblings had the same problem.',
@@ -685,10 +683,12 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'er-ascii-crossings-labels',
-    // Parked on a named limit (#2630): Mermaid 12.3.0 orders ER layers with ELK,
-    // and among equal-crossing orders its choice (here the mirror of ours) cannot
-    // be derived from the source; ordering by crossings alone made the router's
-    // port and row assignment worse (see the PR for #2630).
+    // Parked on a named limit (#2656, #2663): Mermaid 12.3.0 orders ER layers with
+    // ELK for minimum crossings (149 of 150 random layered graphs), and among tied
+    // orders its pick is not derivable (best proxy 107 of 150). Ordering by
+    // crossings here gave Mermaid's order and no junction, but the router, which
+    // left-aligns each row, then drew the `receives` label over another edge's
+    // stem and broke four ER snapshots; see #2663.
     parked: 'ascii-er',
     title:
       'ER ASCII edges crossed without a junction and labels were ambiguous',
@@ -769,7 +769,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-opposing-edges-diamond',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII opposing edges merged into one route at a diamond',
     symptom:
       'Two edges between the same pair (`B -->|no| D` and `D --> B`) in a left-to-right chart drew a single merged route when B was a diamond or D a parallelogram, so the loop-back looked like one two-way line.',

@@ -30,7 +30,9 @@ import {
   laneSearchExhausted,
   determineLabelLine,
   createLabelContext,
+  assignFlowLanes,
   assignParallelEdgeLanes,
+  flowLanePolyline,
   assignFaceLanes,
   noteRejectedFaceLanes,
   splitSharedLabeledLane,
@@ -1009,6 +1011,10 @@ export function offsetDrawingForSubgraphs(graph: AsciiGraph): void {
   // #2554: a label centred on a stroke in the leftmost column reaches left of
   // the canvas (`e1` drawn as `1`); shift everything right to make room.
   for (const edge of graph.edges) {
+    // A flow-face lane (assignFlowLanes) may run left of the leftmost node.
+    for (const pt of flowLanePolyline(graph, edge) ?? []) {
+      minX = Math.min(minX, pt.x)
+    }
     if (edge.text === '' || edge.path.length < 2) continue
     withPortShifts(graph, () => edgeLabelPlacement(graph, edge))?.forEach(
       ({ x }) => {
@@ -2333,6 +2339,7 @@ export function createMapping(graph: AsciiGraph): void {
   // analysis runs, so determinePath below can route sibling edges past the
   // first through distinct offset lanes instead of all computing the
   // identical center path (see #329).
+  assignFlowLanes(graph)
   assignFaceLanes(graph)
   assignParallelEdgeLanes(graph)
 

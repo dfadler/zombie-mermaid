@@ -9,6 +9,7 @@ import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from '../converter.ts'
 import { createMapping } from '../grid.ts'
 import { portShifts } from '../port-offsets.ts'
+import { flowLaneOf } from '../edge-routing.ts'
 
 const build = (lanes: number) => {
   // Long labels keep the lanes (short ones are drawn side by side instead).
@@ -32,6 +33,7 @@ const build = (lanes: number) => {
     .filter((e) => e.parallelLane && e.parallelLane.index > 0)
     .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
   return {
+    planned: graph.edges.flatMap((e) => flowLaneOf(e)?.dx ?? []),
     ends: later.map((e) => shifts.get(e)?.end ?? 0),
     starts: later.map((e) => shifts.get(e)?.start ?? 0),
   }
@@ -45,7 +47,9 @@ describe('plain parallel lanes on the target face (#1743, #2025)', () => {
     expect(starts[0]).toBeGreaterThan(starts[1]!)
   })
 
-  it('four lanes take the face rows -1, 0, +1 (index 1 to 3)', () => {
-    expect(build(4).ends).toEqual([-1, 0, 1])
+  it('four lanes leave the side faces for a port each on the flow faces (#2645)', () => {
+    expect(build(4).ends).toEqual([0, 0, 0])
+    const ports = build(4).planned
+    expect(new Set(ports).size).toBe(4)
   })
 })
