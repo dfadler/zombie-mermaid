@@ -5,9 +5,11 @@
  *
  * Usage: tsx scripts/xychart-oracle.ts [--filter=<text>] [--thresholds]
  * `--thresholds` exits 1 when a sample is under XYCHART_FLOOR or errored.
+ * Set MERMAID_DIST=<path to mermaid.min.js> to score another mermaid build.
  * Needs Chromium (`pnpm exec playwright install chromium`). A diagnostic, not
  * CI; `pnpm run layout:scorecard` records the same figures in the scorecard.
  */
+import { mermaidVersion } from './lib/mermaid-pin-freshness.ts'
 import { startRealMermaid } from './lib/real-mermaid.ts'
 import { scoreXyChart } from './lib/xychart-measure.ts'
 
@@ -17,7 +19,9 @@ const pct = (n: number | null): string =>
 async function main(): Promise<number> {
   const args = process.argv.slice(2)
   const filter = args.find((a) => a.startsWith('--filter='))?.slice(9)
-  const session = await startRealMermaid()
+  const distPath = process.env.MERMAID_DIST // A mermaid.min.js other than the pin
+  console.log(`mermaid ${mermaidVersion(distPath)}`)
+  const session = await startRealMermaid(distPath)
   try {
     const { results, breaches, skipped } = await scoreXyChart(
       session,
