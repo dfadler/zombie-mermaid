@@ -13,12 +13,12 @@ import {
 } from '@zombie-mermaid/svg-renderer'
 import {
   canLayOutFlat,
-  clearBorders,
   layerIndexes,
   orderNodes,
   orderSiblings,
   planSpines,
 } from '../../packages/svg-renderer/src/layout-engine/compound-flat.ts'
+import { clearBorders } from '../../packages/svg-renderer/src/layout-engine/clear-borders.ts'
 import { routeInnerEdge } from '../../packages/svg-renderer/src/layout-engine/inner-edges.ts'
 import { measureMultilineText } from '@zombie-mermaid/core'
 import {

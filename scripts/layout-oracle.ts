@@ -28,16 +28,11 @@
  * scripts/architecture-oracle.ts, recorded in the scorecard).
  */
 
-import { readFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 import { samples } from '../samples/samples-data.ts'
-import {
-  pinFreshness,
-  pinnedMermaidVersion,
-} from './lib/mermaid-pin-freshness.ts'
+import { pinFreshness, mermaidVersion } from './lib/mermaid-pin-freshness.ts'
 import {
   TABLE_HEADER,
   USAGE,
@@ -117,12 +112,6 @@ async function measureOfficial(
   return { nodes, groups }
 }
 
-/** Version of a scratch mermaid install, read from the package.json beside its dist/. */
-function distVersion(distPath: string): string {
-  const pkg = join(dirname(distPath), '..', 'package.json')
-  return (JSON.parse(readFileSync(pkg, 'utf8')) as { version: string }).version
-}
-
 /** Score every sample of one diagram type; returns the table rows, figures and failures. */
 async function scoreType(
   session: Awaited<ReturnType<typeof startRealMermaid>>,
@@ -179,9 +168,7 @@ async function main(): Promise<number> {
     return 0
   }
 
-  // MERMAID_DIST=<path to mermaid.min.js> scores against another mermaid build
-  // (e.g. a scratch `npm i mermaid@12.3.0`) instead of the repo pin.
-  const distPath = process.env.MERMAID_DIST
+  const distPath = process.env.MERMAID_DIST // another mermaid.min.js than the pin
   const fresh = pinFreshness()
   if (fresh.stale) console.error(`warning: ${fresh.message}`)
 
@@ -228,7 +215,7 @@ async function main(): Promise<number> {
           commit,
           tolerance: args.tolerance,
           type,
-          mermaid: distPath ? distVersion(distPath) : pinnedMermaidVersion(),
+          mermaid: mermaidVersion(distPath),
         }),
       })
     }

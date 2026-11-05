@@ -34,7 +34,11 @@ import { withoutOwnClusterEdges } from '@zombie-mermaid/core'
 import { elkLayoutSync } from './elk-instance.ts'
 import { resolveFontSizes } from './styles.ts'
 import { DEFAULTS } from './layout-engine/constants.ts'
-import { isStateGraph, mermaidToElk } from './layout-engine/to-elk.ts'
+import {
+  isStateGraph,
+  mermaidToElk,
+  usesMermaidElkPipeline,
+} from './layout-engine/to-elk.ts'
 import { elkToPositioned } from './layout-engine/from-elk.ts'
 import {
   canLayOutFlat,
@@ -42,6 +46,7 @@ import {
 } from './layout-engine/compound-flat.ts'
 import type { LayoutHints } from './layout-engine/layout-hints.ts'
 import { clampEdgeEnds } from './layout-engine/clamp-edge-ends.ts'
+import { clearBorders } from './layout-engine/clear-borders.ts'
 import { layoutSimple } from './layout-engine/simple-layout.ts'
 
 // ============================================================================
@@ -130,7 +135,21 @@ function layoutFlowchartUnmarked(
       `zombie-mermaid: unknown layout ${JSON.stringify(options.layout)}; use 'elk' or 'simple'.`,
     )
   }
-  return layoutGraphSync(graph, options)
+  const laidOut = layoutGraphSync(graph, options)
+  if (usesMermaidElkPipeline(graph)) {
+    // ELK can run a trunk along a subgraph's side; keep it off the border.
+    const groups = (
+      list: PositionedGraph['groups'],
+    ): PositionedGraph['groups'] =>
+      list.flatMap((g) => [g, ...groups(g.children)])
+    clearBorders(
+      laidOut.edges,
+      laidOut.nodes,
+      groups(laidOut.groups),
+      graph.direction,
+    )
+  }
+  return laidOut
 }
 
 /**
