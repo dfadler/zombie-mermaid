@@ -69,10 +69,9 @@ export interface XyAgreement {
   /** Drawing features (curved lines, circles, axis line, tick marks) that match (#2543). */
   style: number
   /**
-   * Value-axis ends (lowest and highest label) that sit at the same fraction
-   * of the axis line, i.e. the same padding. The category axis is not scored:
-   * ours keeps evenly divided bands, mermaid insets by a bar-based padding
-   * (docs/known-differences.md). Null without lines.
+   * First and last label on each axis that sit at the same fraction of that
+   * axis line, i.e. the same padding or inset. Up to four ends: two on the
+   * value axis and two on the category axis. Null without lines.
    */
   extent: number | null
   points: number

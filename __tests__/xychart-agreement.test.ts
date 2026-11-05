@@ -447,6 +447,16 @@ describe('extent edge cases (#2567)', () => {
 })
 
 describe('extent compares each axis on its own (#2650)', () => {
+  it('drops below 1 when only the category axis differs', () => {
+    const o = parseOurXy(renderMermaidSVG(SRC), false)
+    const moved = {
+      ...o,
+      xLabels: o.xLabels.map((l) => ({ ...l, pos: l.pos + 40 })),
+    }
+    expect(xyAgreement(o, o).extent).toBe(1)
+    expect(xyAgreement(o, moved).extent).toBe(0.5)
+  })
+
   it('does not pair category ends with value ends when the official chart has no value labels', () => {
     const o = parseOurXy(renderMermaidSVG(SRC), false)
     // Official has no value labels and ours does: its category ends agree,
