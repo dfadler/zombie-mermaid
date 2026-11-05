@@ -576,6 +576,10 @@ function perceptualLuminance(r: number, g: number, b: number): number {
  * or isn't a resolvable color (a `var(...)` reference, a named CSS color,
  * or malformed input), returns `fallback` unchanged so callers don't guess
  * at colors they can't actually evaluate.
+ *
+ * @deprecated No renderer calls this any more: Mermaid 12.3.0 keeps the theme
+ * text color on a custom fill, so the renderers do too (#2637). Kept exported
+ * so the public API does not break; remove at the next major.
  */
 export function getReadableTextColor(
   fill: string | undefined,

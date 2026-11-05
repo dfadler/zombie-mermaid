@@ -10,7 +10,6 @@ import type {
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
-  getReadableTextColor,
   sanitizeClassName,
   renderMultilineText,
   renderMultilineTextWithBackground,
@@ -263,15 +262,12 @@ function renderClassBox(
   // Mermaid paints the whole class box one color, so a custom fill replaces
   // the header band too rather than leaving the theme's band on top of it.
   const headerFill = inlineStyle?.fill ? fill : 'var(--_group-hdr)'
-  // An explicit `color:` wins; otherwise a concrete custom fill gets a
-  // black/white text color chosen for contrast (see getReadableTextColor,
-  // issue #55). Left undefined when neither applies so the syntax-colored
-  // member tspans keep their theme defaults.
+  // Only an explicit `color:` changes the text color, as in Mermaid 12.3.0; a
+  // custom fill alone leaves it undefined so the syntax-colored member tspans
+  // keep their theme defaults (#2637).
   const textColor = inlineStyle?.color
     ? escapeAttr(inlineStyle.color)
-    : inlineStyle?.fill
-      ? escapeAttr(getReadableTextColor(inlineStyle.fill, 'var(--_text)'))
-      : undefined
+    : undefined
 
   // Semantic wrapper with class metadata
   // data-id: class identifier
