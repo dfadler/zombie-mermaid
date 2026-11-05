@@ -69,10 +69,9 @@ export interface XyAgreement {
   /** Drawing features (curved lines, circles, axis line, tick marks) that match (#2543). */
   style: number
   /**
-   * Value-axis ends (lowest and highest label) that sit at the same fraction
-   * of the axis line, i.e. the same padding. The category axis is not scored:
-   * ours keeps evenly divided bands, mermaid insets by a bar-based padding
-   * (docs/known-differences.md). Null without lines.
+   * First and last label on each axis that sit at the same fraction of that
+   * axis line, i.e. the same padding or inset. Up to four ends: two on the
+   * value axis and two on the category axis. Null without lines.
    */
   extent: number | null
   points: number
@@ -328,7 +327,8 @@ export function parseOurXy(svg: string, horizontal: boolean): XyLayout {
         style.axisLine = true
         // M x,y V y1 H x1: the vertical line runs y..y1, the horizontal x..x1.
         const [x, y, y1, x1] = numbers(d) as [number, number, number, number]
-        frame = { across: [x, x1], down: [y, y1] }
+        // Horizontal charts run the frame up from the bottom-left corner, so order it.
+        frame = { across: [x, x1], down: [Math.min(y, y1), Math.max(y, y1)] }
       } else style.ticks = true
     } else if (classes.includes('xychart-bar')) {
       const box = barBox(d)
@@ -424,13 +424,21 @@ export function xyAgreement(official: XyLayout, ours: XyLayout): XyAgreement {
         )
   const ends =
     official.axes && ours.axes
-      ? (() => {
-          const o = inset(official.yLabels, official.axes.val)
-          const u = inset(ours.yLabels, ours.axes.val)
+      ? // Both axes, each compared with its own counterpart so a chart with
+        // no value labels cannot pair category ends with value ends (#2650).
+        [
+          [official.yLabels, ours.yLabels, 'val'],
+          [official.xLabels, ours.xLabels, 'cat'],
+        ].flatMap(([ol, ul, axis]) => {
+          const o = inset(
+            ol as XyLabel[],
+            official.axes![axis as 'val' | 'cat'],
+          )
+          const u = inset(ul as XyLabel[], ours.axes![axis as 'val' | 'cat'])
           return o.map(
             (v, i) => Math.abs(v - (u[i] ?? Infinity)) <= FRACTION_TOLERANCE,
           )
-        })()
+        })
       : []
   return {
     extent: share(ends.filter(Boolean).length, ends.length),

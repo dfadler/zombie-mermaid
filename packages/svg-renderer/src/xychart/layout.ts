@@ -49,21 +49,14 @@ const XY = {
 const MERMAID_TEXT_SCALE = 0.8
 
 /**
- * Bar thickness following mermaid 12.2.0's band axis (xychartDiagram
- * `BaseAxis`/`BarPlot`): the axis reserves an outer padding of at least half
- * the widest label (capped at 20% of the extent), widened to 35% of the tick
- * distance when bars need the room, and a bar is 95% of the smaller of twice
- * that padding and the tick distance. Mermaid then spaces bars by the label
- * pitch `inner / (n - 1)`; ours are `extent / n` apart, so the result is
- * rescaled to keep the bar the same share of the spacing (#2515).
+ * Outer padding of a mermaid axis (xychartDiagram `BaseAxis`/`BarPlot`; bar
+ * thickness checked against mermaid 12.3.0): the axis reserves an outer
+ * padding of at least half the widest label (capped at 20% of the extent),
+ * widened to 35% of the tick distance when bars need the room, and a bar is
+ * 95% of the smaller of twice that padding and the tick distance. Points sit
+ * `pad` inside the axis line, `inner / (n - 1)` apart (`n` ticks).
  * `labelHalf` is half the widest label along the axis.
  */
-function barThickness(extent: number, n: number, labelHalf: number): number {
-  const { pad, bar } = barPad(extent, n, labelHalf)
-  return n < 2 ? bar : (bar * (extent / n) * (n - 1)) / (extent - 2 * pad)
-}
-
-/** Outer padding of a mermaid axis drawing bars, and the bar thickness it gives (`n` ticks). */
 function barPad(extent: number, n: number, labelHalf: number) {
   const p0 = Math.min(labelHalf, 0.2 * extent)
   const tick0 = (extent - 2 * p0) / n
@@ -138,23 +131,24 @@ function buildCatAxis(
             ),
           )) /
         2
+  const hasBar = chart.series.some((s) => s.type === 'bar')
   if (!range) {
     const n = getDataCount(chart)
     const labels = getCategoryLabels(chart, n)
-    const at = (i: number) => (i + 0.5) * (extent / n)
+    const { p0, pad, bar } = barPad(extent, n, half(labels))
+    const p = hasBar ? pad : p0
+    const at = (i: number) =>
+      n < 2 ? extent / 2 : p + (i * (extent - 2 * p)) / (n - 1)
     return {
       at: (_n, i) => at(i),
-      ticks: labels.map((label, i) => ({
-        label,
-        at: at(i),
-      })),
-      bar: barThickness(extent, n, half(labels)),
+      ticks: labels.map((label, i) => ({ label, at: at(i) })),
+      bar,
     }
   }
   const values = niceTickValues(range.min, range.max)
   const labels = formatTickLabels(values)
   const { p0, pad, bar } = barPad(extent, values.length, half(labels))
-  const p = chart.series.some((s) => s.type === 'bar') ? pad : p0
+  const p = hasBar ? pad : p0
   const span = range.max - range.min
   const place = (v: number) => {
     const t = span > 0 ? (v - range.min) / span : 0.5
@@ -357,7 +351,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
 
-  // In horizontal mode: categories go on y-axis (left side), values go on x-axis (bottom)
+  // In horizontal mode: categories go on y-axis (left side), values go on x-axis (top)
   //
   // See the matching comment in layoutVertical: the parser always derives a
   // y-axis range before returning, but that guarantee lives in a different
@@ -392,9 +386,13 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     40,
   )
 
-  const top = XY.padding + (hasTitle ? XY.titleHeight : 0) // No legend height: Mermaid draws none
-  const bottom =
-    XY.padding + XY.xLabelHeight + (hasYTitle ? XY.axisTitlePad : 0)
+  // The value axis runs along the top, under the chart title, as in mermaid's `top-axis`.
+  const top =
+    XY.padding +
+    (hasTitle ? XY.titleHeight : 0) +
+    (hasYTitle ? XY.axisTitlePad : 0) +
+    XY.xLabelHeight
+  const bottom = XY.padding
   const left =
     XY.padding +
     maxCatLabelWidth +
@@ -427,15 +425,15 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   // Category scale (vertical: top to bottom)
   const catScale = (n: number, i: number) => top + cat.at(n, i)
 
-  // X-axis (bottom): value ticks
+  // X-axis (top): value ticks
   const xTicks: AxisTick[] = valueTicks.map((v, i) => ({
     label: valueLabels[i]!,
     x: valueScale(v),
-    y: top + plotH,
+    y: top,
     tx: valueScale(v),
-    ty: top + plotH + XY.tickLength,
+    ty: top - XY.tickLength,
     labelX: valueScale(v),
-    labelY: top + plotH + 18,
+    labelY: top - 18,
     textAnchor: 'middle' as const,
   }))
 
@@ -532,15 +530,10 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     lineSeriesIdx++
   }
 
-  const xAxisLine = {
-    x1: left,
-    y1: top + plotH,
-    x2: left + plotW,
-    y2: top + plotH,
-  }
+  const xAxisLine = { x1: left, y1: top, x2: left + plotW, y2: top }
   const yAxisLine = { x1: left, y1: top, x2: left, y2: top + plotH }
 
-  // In horizontal mode, the "y-axis" title describes values (bottom) and "x-axis" title describes categories (left)
+  // In horizontal mode, the "y-axis" title describes values (top) and "x-axis" title describes categories (left)
   const xAxisObj: PositionedAxis = {
     ticks: xTicks,
     line: xAxisLine,
@@ -549,7 +542,10 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
           title: {
             text: chart.yAxis.title,
             x: left + plotW / 2,
-            y: totalH - XY.padding,
+            y:
+              XY.padding +
+              (hasTitle ? XY.titleHeight : 0) +
+              XY.axisTitlePad / 2,
           },
         }
       : {}),
