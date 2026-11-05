@@ -679,10 +679,12 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // #2645: a dense facing pair gives each edge a row of its own on the faces.
   for (const e of graph.edges) {
     if (!denseFacingPair(graph, e) || e.from.index > e.to.index) continue
-    const n = Math.max(
-      graph.edges.filter((o) => o.from === e.from && o.to === e.to).length,
-      graph.edges.filter((o) => o.from === e.to && o.to === e.from).length,
-    )
+    const n = graph.edges.filter(
+      (o) =>
+        o.from !== o.to &&
+        (o.from === e.from || o.to === e.from) &&
+        (o.from === e.to || o.to === e.to),
+    ).length
     const at = requireGridCoord(e.from).y + 1
     graph.rowHeight.set(at, Math.max(graph.rowHeight.get(at) ?? 0, n + 1))
   }
@@ -1411,22 +1413,6 @@ export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
         !o.clusterTarget,
     )
   )
-}
-
-/**
- * Row key of an edge in a dense facing pair: its rank among the edges running
- * its way, so the i-th edge each way shares one row (a stroke with a head at
- * each end). Undefined outside such a pair.
- */
-export function denseRank(
-  graph: AsciiGraph,
-  edge: AsciiEdge,
-): string | undefined {
-  if (!denseFacingPair(graph, edge)) return undefined
-  const same = graph.edges.filter(
-    (o) => o.from === edge.from && o.to === edge.to,
-  )
-  return `dense|${same.indexOf(edge)}`
 }
 
 /** A self-loop on a node that ends a `backStraight` pair (#2100). */

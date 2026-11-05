@@ -36,7 +36,7 @@ import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
 import {
-  denseRank,
+  denseFacingPair,
   flowLanePolyline,
   flowLaneOf,
   leavesFlowFace,
@@ -1112,10 +1112,8 @@ function placeFace(
       ...shape,
       // Ends that turn the same way at the same depth run on together
       // beyond the stem: they are one route (a fan, or duplicate loops).
-      // A dense facing pair (#2645) pairs its i-th edge each way on one row.
-      key:
-        denseRank(graph, f.edge) ??
-        `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}`,
+      // A dense facing pair (#2645) gives every edge a row of its own.
+      key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}|${denseFacingPair(graph, f.edge) ? graph.edges.indexOf(f.edge) : ''}`,
       // A straight lane: the #1284 pair side (down-travelling right).
       push: pushOf(f.run, f.role),
       // A flow-axis face lane stays on its outer side of every stem.
