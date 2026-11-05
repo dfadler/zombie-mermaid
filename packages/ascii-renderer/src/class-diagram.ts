@@ -884,6 +884,41 @@ export function renderClassAscii(
   // its box, so the canvas has to cover the slot, not just the box.
   let maxSlotEnd = 0
 
+  // A fanned group running up past one or more levels (`D --> B` x4 with
+  // `B --> C --> D` between) keeps its lanes in a straight column under the
+  // shallower end, as Mermaid draws it: the class between the ends moves
+  // beside the fan and the deeper end stays under the shallower one (#2639).
+  const upFans: {
+    fromId: string
+    toId: string
+    firstIndex: number
+    halfSpan: number
+  }[] = []
+  {
+    const byPair = new Map<string, number[]>()
+    diagram.relationships.forEach((rel, i) => {
+      if (!relGroupSize.has(i)) return
+      const key = `${rel.from}>${rel.to}`
+      byPair.set(key, [...(byPair.get(key) ?? []), i])
+    })
+    for (const idx of byPair.values()) {
+      const rel = diagram.relationships[idx[0]!]!
+      if (idx.length < 2 || level.get(rel.from)! - level.get(rel.to)! < 2)
+        continue
+      const widest = Math.max(
+        ...idx.map((i) =>
+          labelCellWidth(diagram.relationships[i]!.label ?? ''),
+        ),
+      )
+      upFans.push({
+        fromId: rel.from,
+        toId: rel.to,
+        firstIndex: idx[0]!,
+        halfSpan: Math.ceil(relGroupSpread.get(idx[0]!)! / 2 + widest / 2) + 1,
+      })
+    }
+  }
+
   for (let lv = 0; lv <= maxLevel; lv++) {
     const group = levelGroups[lv]!
     if (group.length === 0) continue
@@ -1055,9 +1090,48 @@ export function renderClassAscii(
         const p = placed.get(pid)!
         return p.x + Math.floor(p.width / 2)
       })
-      const desiredCenter = Math.round(
+      let desiredCenter = Math.round(
         parentCenters.reduce((sum, c) => sum + c, 0) / parentCenters.length,
       )
+      // The deeper end of an up fan stays under the shallower end, and a
+      // class between them steps aside to the side its first edge was
+      // declared on (the order Mermaid's layout follows).
+      let boxLeftOverride: number | undefined
+      if (blockMembers.get(key)!.length === 1) {
+        const fanEnd = upFans.find((f) => f.fromId === id)
+        if (fanEnd) {
+          // Shallower than `id`, so already placed.
+          const t = placed.get(fanEnd.toId)!
+          desiredCenter = t.x + Math.floor(t.width / 2)
+        }
+        const w = classBoxW.get(id)!
+        const crossed = upFans.filter((f) => {
+          if (!(lv > level.get(f.toId)! && lv < level.get(f.fromId)!))
+            return false
+          const t = placed.get(f.toId)!
+          const left = desiredCenter - Math.floor(w / 2)
+          // Clear of the fan's columns already: leave it where it is.
+          return (
+            Math.abs(2 * (left - t.x - Math.floor(t.width / 2)) + w - 1) <=
+            2 * f.halfSpan + w - 1
+          )
+        })
+        // Only the plain case steps aside: one fan, nothing placed earlier on
+        // this row for the shift to collide with, and no attached note that
+        // would land inside the fan. Anything else keeps its column.
+        if (
+          crossed.length === 1 &&
+          placedThisLevel.size === 0 &&
+          ![...notesById.values()].some((n) => n.forClass === id)
+        ) {
+          const f = crossed[0]!
+          const t = placed.get(f.toId)!
+          const cx = t.x + Math.floor(t.width / 2)
+          const own = diagram.relationships.findIndex((r) => r.to === id)
+          boxLeftOverride =
+            own < f.firstIndex ? cx - f.halfSpan - w : cx + f.halfSpan + 1
+        }
+      }
 
       let totalWidth = 0
       for (let i = 0; i < members.length; i++) {
@@ -1085,8 +1159,31 @@ export function renderClassAscii(
         leftPadOf.get(lastMember)! -
         classBoxW.get(lastMember)!
       const visibleWidth = totalWidth - firstLeftPad - lastRightPad
-      const blockDesiredLeft =
+      let blockDesiredLeft =
         desiredCenter - firstLeftPad - Math.floor(visibleWidth / 2)
+      if (boxLeftOverride !== undefined) {
+        // Room on the left may need every placed class to move right.
+        const shift = Math.max(0, leftPadOf.get(id)! - boxLeftOverride)
+        for (const p of placed.values()) p.x += shift
+        maxSlotEnd += shift
+        const left = boxLeftOverride + shift - leftPadOf.get(id)!
+        placeAt(id, Math.max(left, currentX, 0))
+        placedThisLevel.add(id)
+        continue
+      }
+      // The shallower end of an up fan has the fan's outer lanes as left
+      // overhang. When that would reach past the canvas edge, move its
+      // parents right instead, so a single parent stays centred above it as
+      // in Mermaid (other diagrams keep their positions).
+      if (
+        blockDesiredLeft < 0 &&
+        currentX === 0 &&
+        upFans.some((f) => f.toId === id)
+      ) {
+        for (const p of placed.values()) p.x -= blockDesiredLeft
+        maxSlotEnd -= blockDesiredLeft
+        blockDesiredLeft = 0
+      }
       const blockActualLeft = Math.max(blockDesiredLeft, currentX, 0)
 
       let memberX = blockActualLeft
