@@ -31,11 +31,11 @@ describe('gallery sequence samples cut lifelines around labels (#2280)', () => {
     // The else label is centred in the frame, clear of A's lifeline.
     expect(segments(svg, 'A')).toEqual([
       [70, 76],
-      [98, 222],
+      [98, 248],
     ])
     // The uninvolved participants stay whole.
-    expect(segments(svg, 'B')).toEqual([[70, 222]])
-    expect(segments(svg, 'C')).toEqual([[70, 222]])
+    expect(segments(svg, 'B')).toEqual([[70, 248]])
+    expect(segments(svg, 'C')).toEqual([[70, 248]])
   })
 
   it('Microservice Orchestration: Auth and Users lifelines are cut around the labels crossing them', () => {
@@ -44,20 +44,20 @@ describe('gallery sequence samples cut lifelines around labels (#2280)', () => {
     expect(segments(svg, 'A')).toEqual([
       [70, 178.85],
       [197.15, 218.85],
-      [237.15, 477],
+      [237.15, 503],
     ])
-    // "Send notification" y=372 crosses Users.
+    // "Send notification" y=398 crosses Users.
     expect(segments(svg, 'U')).toEqual([
-      [70, 362.85],
-      [381.15, 402.85],
-      [421.15, 477],
+      [70, 388.85],
+      [407.15, 428.85],
+      [447.15, 503],
     ])
     // Gateway is cut by the par title tab; Orders and Notify are never crossed.
     expect(segments(svg, 'G')).toEqual([
       [70, 156],
-      [178, 477],
+      [178, 503],
     ])
-    expect(segments(svg, 'O')).toEqual([[70, 477]])
-    expect(segments(svg, 'N')).toEqual([[70, 477]])
+    expect(segments(svg, 'O')).toEqual([[70, 503]])
+    expect(segments(svg, 'N')).toEqual([[70, 503]])
   })
 })

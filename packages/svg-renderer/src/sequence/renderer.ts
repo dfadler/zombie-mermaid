@@ -17,6 +17,7 @@ import {
   boxLabelHeight,
   dividerLabelExtra,
   hasLabelBelowIcon,
+  LIFELINE_STROKE,
   SELF_LOOP_CONTROL,
   SELF_LOOP_HEIGHT,
   TITLE_FONT_SIZE,
@@ -48,7 +49,7 @@ import type { FontSizes } from '../styles.ts'
 // Render order (back to front):
 //   0. Participant-group backgrounds (box … end)
 //   1. `rect <color>` highlight fills
-//   2. Lifelines (dashed vertical lines)
+//   2. Lifelines (solid vertical lines)
 //   3. Activation boxes
 //   3b. Framed blocks (loop/alt/opt), over the bars so tab labels stay legible
 //   4. Messages (arrows with labels)
@@ -120,7 +121,7 @@ export function renderSequenceSvg(
     if (isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 
-  // 2. Lifelines (dashed vertical lines from actor to bottom), interrupted
+  // 2. Lifelines (solid vertical lines from actor to bottom), interrupted
   //    where a message / block label sits on them so no line runs through text
   const labelBoxes = collectLabelBoxes(diagram, fontSizes)
   for (const lifeline of diagram.lifelines) {
@@ -487,7 +488,7 @@ function lifelineSegments(
 }
 
 /**
- * Render a lifeline (dashed vertical line from actor to bottom), as one
+ * Render a lifeline (solid vertical line from actor to bottom), as one
  * `<line>` per stretch between label boxes it would otherwise pass through.
  * Includes data-actor to link to its actor.
  */
@@ -500,7 +501,7 @@ function renderLifeline(
       ([y0, y1]) =>
         f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
         f`x1="${lifeline.x}" y1="${y0}" x2="${lifeline.x}" y2="${y1}" ` +
-        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`,
+        `stroke="var(--_line)" stroke-width="${LIFELINE_STROKE}" />`,
     )
     .join('\n')
   if (!lifeline.destroyed) return line

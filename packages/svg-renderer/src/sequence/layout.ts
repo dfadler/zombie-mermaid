@@ -52,6 +52,12 @@ const SEQ = {
   blockHeaderExtra: 28,
   /** Extra vertical space before a message at a divider boundary (room for else/and label) */
   dividerExtra: 24,
+  /**
+   * Extra room between a divider and the message below it, so the divider
+   * label sits 28px above that message's label as in mermaid 12.3.0 (measured
+   * at 16px text, in absolute px; ours was 2px).
+   */
+  dividerLabelGap: 26,
   /** Note dimensions */
   noteWidth: 60,
   notePadX: 12,
@@ -168,6 +174,12 @@ function labelWidth(
 ): number {
   return measureMultilineText(text, fontSize, weight).width
 }
+
+/**
+ * Stroke width of a lifeline. Mermaid 12.3.0 draws `.actor-line` solid at
+ * `stroke-width="0.5px"`, in absolute px like the block frame below.
+ */
+export const LIFELINE_STROKE = 0.5
 
 /**
  * Stroke width of a block's frame and divider lines. Mermaid 12.3.0 draws
@@ -511,9 +523,14 @@ export function layoutSequenceDiagram(
 
     // Each divider (else/and) needs room for the divider label
     for (const div of block.dividers) {
+      // A nested block opening right below the divider has its own header
+      // between the two, so it needs no extra gap.
+      const opensBlock = diagram.blocks.some((b) => b.startIndex === div.index)
       dividerSpaceBefore.set(
         div.index,
-        seq.dividerExtra + dividerLabelExtra(div.label, fontSizes.edgeLabel),
+        seq.dividerExtra +
+          (opensBlock ? 0 : seq.dividerLabelGap) +
+          dividerLabelExtra(div.label, fontSizes.edgeLabel),
       )
     }
   }
@@ -931,6 +948,7 @@ export function layoutSequenceDiagram(
       // that is centred too, so a labelled message needs the taller offset.
       const offset =
         (d.label && msg?.label ? 40 : 28) +
+        seq.dividerLabelGap +
         dividerLabelExtra(d.label, fontSizes.edgeLabel) +
         (msgLabelExtra[d.index] ?? 0)
 
