@@ -137,7 +137,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'circle-cross-edges',
-    parked: 'ascii-layout-details',
     title: 'Circle and cross edge terminators dropped the target node',
     symptom:
       '`A --o B` and `A --x B` were not recognised by the arrow regex, so parsing broke out of the edge loop early — losing the edge *and* the node it pointed at.',

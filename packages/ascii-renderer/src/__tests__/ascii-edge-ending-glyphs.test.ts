@@ -18,7 +18,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
       graph TD
         A --o B
     `)
-    expect(result).toContain('○')
+    expect(result).toContain('●')
     expect(result).not.toMatch(/[►◄▲▼◢◣◤◥↖↗↘↙]/)
   })
 
@@ -61,7 +61,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
         A --o E
         A --x F
     `)
-    expect(result).toContain('○')
+    expect(result).toContain('●')
     expect(result).toContain('✕')
   })
 
@@ -77,7 +77,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
       graph LR
         A -- label --o B
     `)
-    expect(result).toContain('○')
+    expect(result).toContain('●')
   })
 
   it('draws the cross glyph for the text-embedded label form (-- label --x)', () => {
@@ -93,7 +93,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
       graph LR
         A o--o B
     `)
-    expect(resultCircle.match(/○/g)?.length).toBe(2)
+    expect(resultCircle.match(/●/g)?.length).toBe(2)
 
     const resultCross = renderMermaidASCII(`
       graph LR
@@ -108,7 +108,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
         A --> B
     `)
     expect(result).toContain('▼')
-    expect(result).not.toContain('○')
+    expect(result).not.toContain('●')
     expect(result).not.toContain('✕')
   })
 
@@ -122,7 +122,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
         A --x F
         A --> G
     `)
-    expect(result).toContain('○')
+    expect(result).toContain('●')
     expect(result).toContain('✕')
     expect(result).toContain('▼')
   })
@@ -137,7 +137,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
         E --o C
         F --o C
     `)
-    expect(result).toContain('○')
+    expect(result).toContain('●')
     expect(result).not.toMatch(/[►◄▲▼◢◣◤◥↖↗↘↙]/)
   })
 
@@ -150,7 +150,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
         E --o C
         F --x C
     `)
-    expect(result).not.toContain('○')
+    expect(result).not.toContain('●')
     expect(result).not.toContain('✕')
     expect(result).toContain('▼')
   })
