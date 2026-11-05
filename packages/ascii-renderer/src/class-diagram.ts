@@ -2345,7 +2345,7 @@ export function renderClassAscii(
           break
         }
         const dist = Math.abs(y - baseMidY)
-        if (dist < bestDist) {
+        if (dist <= bestDist) {
           best = y
           bestDist = dist
         }
@@ -2435,7 +2435,7 @@ export function renderClassAscii(
       lines.length,
     )
     const excludeIds = new Set([rel.from, rel.to])
-    const labelY = resolveLabelFinalY(
+    let labelY = resolveLabelFinalY(
       fromP,
       toP,
       idealMidX,
@@ -2444,6 +2444,36 @@ export function renderClassAscii(
       lines.length,
       excludeIds,
     )
+    // A fanned group (same two classes) keeps all its labels on one row, as
+    // Mermaid does. When one label had to leave an intermediate box, resolve
+    // the row for the group's whole span so the others follow it (#2639).
+    if (fromP.y > toP.y) {
+      const group = diagram.relationships.flatMap((r, i) =>
+        r.label && r.from === rel.from && r.to === rel.to ? [i] : [],
+      )
+      if (group.length > 1) {
+        const anchors = group.map((i) => {
+          const r = diagram.relationships[i]!
+          const w = labelCellWidth(r.label!)
+          return { w, ...computeLabelAnchor(i, fromP, toP, w, 1) }
+        })
+        const lo = Math.min(
+          ...anchors.map((a) => a.idealMidX - Math.floor(a.w / 2)),
+        )
+        const hi = Math.max(
+          ...anchors.map((a) => a.idealMidX + Math.ceil(a.w / 2)),
+        )
+        labelY = resolveLabelFinalY(
+          fromP,
+          toP,
+          Math.floor((lo + hi) / 2),
+          baseMidY,
+          hi - lo,
+          lines.length,
+          excludeIds,
+        )
+      }
+    }
     finalLabelYByRel.set(rel, labelY)
     // Clamped the same way the draw loop below clamps it (never negative —
     // a label can't render left of the canvas edge) so this overlap check

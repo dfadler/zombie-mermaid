@@ -36,6 +36,14 @@ describe('ASCII class diagram: upward fan label over an intermediate class (#263
       for (const l of ['one', 'two', 'three', 'four']) {
         expect(lines.filter((x) => x.includes(l))).toHaveLength(1)
       }
+      // The fan's labels share one row, as in Mermaid
+      expect(
+        new Set(
+          ['one', 'two', 'three', 'four'].map((l) =>
+            lines.findIndex((x) => x.includes(l)),
+          ),
+        ).size,
+      ).toBe(1)
       // The four arrowheads stay on the row under B
       const heads = lines.find((l) => l.split('^').length - 1 === 4)
       expect(heads).toBeDefined()
