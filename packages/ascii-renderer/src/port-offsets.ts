@@ -35,7 +35,11 @@ import { requireGridCoord } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
-import { leavesFlowFace, leavesRightFace } from './edge-routing.ts'
+import {
+  denseFacingPair,
+  leavesFlowFace,
+  leavesRightFace,
+} from './edge-routing.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
@@ -963,7 +967,7 @@ function placeFace(
       ...shape,
       // Ends that turn the same way at the same depth run on together
       // beyond the stem: they are one route (a fan, or duplicate loops).
-      key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}`,
+      key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}|${denseFacingPair(graph, f.edge) ? graph.edges.indexOf(f.edge) : ''}`,
       // A straight lane: the #1284 pair side (down-travelling right).
       push: pushOf(f.run, f.role),
       // A flow-axis face lane stays on its outer side of every stem.
