@@ -233,7 +233,7 @@ export function fromShikiTheme(theme: ShikiThemeLike): DiagramColors;
 // @public
 export function getCharWidth(char: string): number;
 
-// @public
+// @public @deprecated
 export function getReadableTextColor(fill: string | undefined, fallback: string): string;
 
 // @public

@@ -10,6 +10,9 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import {
   ACTOR_LABEL_OFFSET,
+  BLOCK_LINE_STROKE,
+  BLOCK_TAB_HEIGHT,
+  blockTabPoints,
   blockTabWidth,
   boxLabelHeight,
   dividerLabelExtra,
@@ -368,8 +371,11 @@ function dividerLabelCy(
   )
 }
 
-/** Height of a block's type-label tab, in px. */
-const BLOCK_TAB_HEIGHT = 18
+/** Dash pattern of a block's outer frame (mermaid 12.3.0: dotted). */
+const BLOCK_FRAME_DASH = '2 2'
+
+/** Dash pattern of a block's divider lines (`else`/`and`). */
+const BLOCK_DIVIDER_DASH = '3 3'
 
 /** A rectangle some text occupies; lifelines are cut around it. */
 interface LabelBox {
@@ -711,7 +717,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   // Outer rectangle
   parts.push(
     f`  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
-      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-dasharray="2 2" />`,
+      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${BLOCK_LINE_STROKE}" stroke-dasharray="${BLOCK_FRAME_DASH}" />`,
   )
 
   // Type label tab (top-left corner) with its bottom-right corner cut, as in
@@ -719,15 +725,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   const tabWidth = blockTabWidth(block, fontSizes.edgeLabel)
   const tabHeight = BLOCK_TAB_HEIGHT
   const { x: bx, y: by } = block
-  const cutX = tabHeight * 0.24
-  const cutY = tabHeight * 0.2
-  const tabPoints = [
-    [bx, by],
-    [bx + tabWidth, by],
-    [bx + tabWidth, by + tabHeight - cutY],
-    [bx + tabWidth - cutX, by + tabHeight],
-    [bx, by + tabHeight],
-  ]
+  const tabPoints = blockTabPoints(bx, by, tabWidth)
     .map(([px, py]) => f`${px},${py}`)
     .join(' ')
 
@@ -762,7 +760,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   for (const divider of block.dividers) {
     parts.push(
       f`  <line x1="${block.x}" y1="${divider.y}" x2="${block.x + block.width}" y2="${divider.y}" ` +
-        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="3 3" />`,
+        `stroke="var(--_line)" stroke-width="${BLOCK_LINE_STROKE}" stroke-dasharray="${BLOCK_DIVIDER_DASH}" />`,
     )
     if (divider.label) {
       // Divider label supports multi-line
@@ -784,12 +782,10 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
 }
 
 /**
- * Render a note box.
+ * Render a note box: a plain rectangle, as in Mermaid.
  * Wrapped in <g class="note"> with semantic data attributes.
  */
 function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
-  // Dog-ear note: polygon with clipped top-right corner + fold triangle
-  const foldSize = 6
   const { x, y, width: w, height: h } = note
 
   // Build actor reference attribute if present
@@ -801,24 +797,11 @@ function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
     ? f` data-position="${escapeAttr(note.position)}"`
     : ''
 
-  // Note body: polygon with top-right corner cut off
-  //   (x,y) → (x+w-fold,y) → (x+w,y+fold) → (x+w,y+h) → (x,y+h)
-  const bodyPoints = [
-    f`${x},${y}`,
-    f`${x + w - foldSize},${y}`,
-    f`${x + w},${y + foldSize}`,
-    f`${x + w},${y + h}`,
-    f`${x},${y + h}`,
-  ].join(' ')
-
   return (
     f`<g class="note"${positionAttr}${actorsAttr}>` +
-    // Note body with bg fill and clipped corner
-    f`\n  <polygon points="${bodyPoints}" ` +
-    f`fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
-    // Fold triangle (the folded-over corner)
-    f`\n  <polygon points="${x + w - foldSize},${y} ${x + w},${y + foldSize} ${x + w - foldSize},${y + foldSize}" ` +
-    f`fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    // Plain rectangle, as in Mermaid (no dog-ear fold)
+    f`\n  <rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
+    f`fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />` +
     // Note text (supports multi-line)
     f`\n  ${renderMultilineText(
       note.text,

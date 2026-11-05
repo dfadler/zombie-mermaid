@@ -768,7 +768,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-opposing-edges-diamond',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII opposing edges merged into one route at a diamond',
     symptom:
       'Two edges between the same pair (`B -->|no| D` and `D --> B`) in a left-to-right chart drew a single merged route when B was a diamond or D a parallelogram, so the loop-back looked like one two-way line.',

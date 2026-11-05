@@ -686,7 +686,7 @@ one to a class. A literal `\n` in the text is a line break, as in Mermaid
 too, as it does in every other label here. The text must be double-quoted.
 
 The SVG follows Mermaid's own construction: a note is a node of its own
-(drawn as the same dog-eared box the sequence renderer uses), and an
+(drawn as a plain rectangle, like the sequence renderer's notes), and an
 attached note is joined to its class by a dotted, arrowless link, which is
 what keeps the two adjacent in the layout — with the top-to-bottom layout
 that puts the note above its class. A note whose class is never declared
