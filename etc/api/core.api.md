@@ -353,6 +353,7 @@ export interface MermaidGraph {
     // (undocumented)
     nodes: Map<string, MermaidNode>;
     nodeStyles: Map<string, Record<string, string>>;
+    stateDiagram?: boolean;
     // (undocumented)
     subgraphs: MermaidSubgraph[];
 }
@@ -523,6 +524,7 @@ export interface PositionedGraph {
     height: number;
     // (undocumented)
     nodes: PositionedNode[];
+    stateDiagram?: boolean;
     // (undocumented)
     width: number;
 }

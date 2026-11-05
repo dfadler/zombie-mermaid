@@ -42,6 +42,8 @@ export interface LayoutCache {
 }
 
 export interface MermaidGraph {
+  /** Set by the parser for `stateDiagram` / `stateDiagram-v2` */
+  stateDiagram?: boolean
   direction: Direction
   nodes: Map<string, MermaidNode>
   edges: MermaidEdge[]
@@ -239,6 +241,8 @@ export interface MermaidSubgraph {
 // ============================================================================
 
 export interface PositionedGraph {
+  /** Set for a `stateDiagram`: state boxes, arrowheads and composites follow Mermaid's state look */
+  stateDiagram?: boolean
   width: number
   height: number
   nodes: PositionedNode[]
