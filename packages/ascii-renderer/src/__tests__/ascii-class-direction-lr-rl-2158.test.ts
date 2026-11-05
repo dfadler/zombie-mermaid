@@ -428,7 +428,7 @@ describe('class diagram direction LR / RL in ASCII (#2158)', () => {
       expect(markerArrowChar(true, 'class-diamond')).toBe('o')
       expect(markerArrowChar(false, 'class-circle')).toBe('○')
       expect(markerArrowChar(true, 'class-circle')).toBe('O')
-      expect(markerArrowChar(false, 'circle')).toBe('○')
+      expect(markerArrowChar(false, 'circle')).toBe('●')
       expect(markerArrowChar(false, 'cross')).toBe('✕')
       expect(markerArrowChar(false, undefined)).toBeUndefined()
     })

@@ -50,7 +50,7 @@ describe('flowchart circle and cross terminators (SVG)', () => {
 
   it('keeps the ASCII twin on distinct glyphs', () => {
     const ascii = renderMermaidASCII('flowchart LR\n  A --o B\n  A --x C')
-    expect(ascii).toContain('○')
+    expect(ascii).toContain('●')
     expect(ascii).toContain('✕')
   })
 })

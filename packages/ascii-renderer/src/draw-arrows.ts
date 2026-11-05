@@ -773,7 +773,7 @@ export function markerArrowChar(
   marker: AsciiEdgeMarker | undefined,
   dir?: Direction,
 ): string | undefined {
-  if (marker === 'circle') return useAscii ? 'o' : '○'
+  if (marker === 'circle') return useAscii ? 'o' : '●'
   if (marker === 'cross') return useAscii ? 'x' : '✕'
   if (marker === 'class-circle') return useAscii ? 'O' : '○'
   if (marker === 'class-diamond-filled') return useAscii ? '*' : '◆'
