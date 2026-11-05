@@ -69,20 +69,28 @@ describe('ASCII class diagram: up fan past an intermediate class (#2639)', () =>
     }
   }
 
-  it('leaves classes that are clear of the fan, or share a parent, where they were', () => {
+  it('keeps every box whole when the step-aside does not apply', () => {
     const base = `classDiagram\n  A --> B\n  B --> C\n  C --> D\n${FAN}`
-    // A sibling of C (same parent) and an unrelated chain on either side
-    for (const extra of [
-      '  B --> X',
-      '  P --> Q\n  Q --> R',
-      '  Q --> R\n  P --> Q',
-    ]) {
+    // Each case keeps the old column-aligned placement (or, for the sibling,
+    // the unchanged one) rather than shifting into another box or a note.
+    const cases: [string, string[]][] = [
+      ['  B --> X', ['A', 'B', 'C', 'D', 'X']],
+      ['  P --> Q\n  Q --> R', ['A', 'B', 'C', 'D', 'P', 'Q', 'R']],
+      ['  Q --> R\n  P --> Q', ['A', 'B', 'C', 'D', 'P', 'Q', 'R']],
+      ['  note for C "hello there"', ['A', 'B', 'C', 'D']],
+      ['  E --> B : x\n  E --> B : y', ['A', 'B', 'C', 'D', 'E']],
+    ]
+    for (const [extra, names] of cases) {
       const lines = renderMermaidASCII(`${base}\n${extra}`, {
         colorMode: 'none',
       }).split('\n')
-      expect(lines.filter((l) => l.includes('one'))).toHaveLength(1)
-      const c = boxSpan(lines, 'C', '│')
-      expect(c.c0).toBeGreaterThanOrEqual(0)
+      for (const n of names) {
+        // One whole box per class: its name row survives, so nothing drew over it
+        expect(lines.filter((l) => l.includes(`│ ${n} │`))).toHaveLength(1)
+      }
+      for (const l of ['one', 'two', 'three', 'four']) {
+        expect(lines.filter((x) => x.includes(l))).toHaveLength(1)
+      }
     }
   })
 

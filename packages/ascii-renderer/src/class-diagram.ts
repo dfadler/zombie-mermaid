@@ -1105,18 +1105,31 @@ export function renderClassAscii(
           desiredCenter = t.x + Math.floor(t.width / 2)
         }
         const w = classBoxW.get(id)!
-        for (const f of upFans) {
-          if (!(lv > level.get(f.toId)! && lv < level.get(f.fromId)!)) continue
+        const crossed = upFans.filter((f) => {
+          if (!(lv > level.get(f.toId)! && lv < level.get(f.fromId)!))
+            return false
           const t = placed.get(f.toId)!
-          const cx = t.x + Math.floor(t.width / 2)
-          const lo = cx - f.halfSpan
-          const hi = cx + f.halfSpan
           const left = desiredCenter - Math.floor(w / 2)
           // Clear of the fan's columns already: leave it where it is.
-          if (Math.abs(2 * (left - cx) + w - 1) > 2 * f.halfSpan + w - 1)
-            continue
+          return (
+            Math.abs(2 * (left - t.x - Math.floor(t.width / 2)) + w - 1) <=
+            2 * f.halfSpan + w - 1
+          )
+        })
+        // Only the plain case steps aside: one fan, nothing placed earlier on
+        // this row for the shift to collide with, and no attached note that
+        // would land inside the fan. Anything else keeps its column.
+        if (
+          crossed.length === 1 &&
+          placedThisLevel.size === 0 &&
+          ![...notesById.values()].some((n) => n.forClass === id)
+        ) {
+          const f = crossed[0]!
+          const t = placed.get(f.toId)!
+          const cx = t.x + Math.floor(t.width / 2)
           const own = diagram.relationships.findIndex((r) => r.to === id)
-          boxLeftOverride = own < f.firstIndex ? lo - w : hi + 1
+          boxLeftOverride =
+            own < f.firstIndex ? cx - f.halfSpan - w : cx + f.halfSpan + 1
         }
       }
 
