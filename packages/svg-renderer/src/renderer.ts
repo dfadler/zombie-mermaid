@@ -1112,7 +1112,9 @@ function renderHexagon(
   stroke: string,
   sw: string,
 ): string {
-  const inset = h / 4 // Horizontal inset for the angled sides
+  // Horizontal inset for the angled sides: mermaid@12.3.0 uses height / 3.5
+  // (measured on one-, two- and three-line labels).
+  const inset = h / 3.5
   const points = [
     f`${x + inset},${y}`, // top-left
     f`${x + w - inset},${y}`, // top-right
