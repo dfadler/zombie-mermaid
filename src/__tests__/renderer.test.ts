@@ -439,7 +439,7 @@ describe('renderSvg – groups', () => {
     }
     const graph = makeGraph({ groups: [group] })
     const svg = renderSvg(graph, lightColors)
-    // outer rect at y=20, body rect below the 26px title band (#2651)
+    // Outer rect at y=20, body rect below the 26px title band (#2651)
     expect(svg.match(/x="20" y="20"/g) ?? []).toHaveLength(1)
     expect(svg.match(/x="20" y="46"/g) ?? []).toHaveLength(1)
     expect(svg).toContain('>Backend</text>')
