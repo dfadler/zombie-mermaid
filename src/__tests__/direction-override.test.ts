@@ -54,10 +54,7 @@ function boxOrigin(
  * True when `b` sits strictly below `a`, in the same column. Boxes of
  * different widths are centred on it, so compare centres, not left edges.
  */
-function isBelow(
-  a: { y: number; cx: number },
-  b: { y: number; cx: number },
-) {
+function isBelow(a: { y: number; cx: number }, b: { y: number; cx: number }) {
   return b.y > a.y && Math.abs(b.cx - a.cx) < 1
 }
 
