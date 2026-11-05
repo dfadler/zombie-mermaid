@@ -884,6 +884,44 @@ export function renderClassAscii(
   // its box, so the canvas has to cover the slot, not just the box.
   let maxSlotEnd = 0
 
+  // A fanned group running up past one or more levels (`D --> B` x4 with
+  // `B --> C --> D` between) keeps its lanes in a straight column under the
+  // shallower end, as Mermaid draws it: the class between the ends moves
+  // beside the fan and the deeper end stays under the shallower one (#2639).
+  const upFans: {
+    fromId: string
+    toId: string
+    firstIndex: number
+    halfSpan: number
+  }[] = []
+  {
+    const byPair = new Map<string, number[]>()
+    diagram.relationships.forEach((rel, i) => {
+      if (!relGroupSize.has(i)) return
+      const key = `${rel.from}>${rel.to}`
+      byPair.set(key, [...(byPair.get(key) ?? []), i])
+    })
+    for (const idx of byPair.values()) {
+      const rel = diagram.relationships[idx[0]!]!
+      if (
+        idx.length < 2 ||
+        (level.get(rel.from) ?? 0) - (level.get(rel.to) ?? 0) < 2
+      )
+        continue
+      const widest = Math.max(
+        ...idx.map((i) =>
+          labelCellWidth(diagram.relationships[i]!.label ?? ''),
+        ),
+      )
+      upFans.push({
+        fromId: rel.from,
+        toId: rel.to,
+        firstIndex: idx[0]!,
+        halfSpan: Math.ceil(relGroupSpread.get(idx[0]!)! / 2 + widest / 2) + 1,
+      })
+    }
+  }
+
   for (let lv = 0; lv <= maxLevel; lv++) {
     const group = levelGroups[lv]!
     if (group.length === 0) continue
@@ -1055,9 +1093,33 @@ export function renderClassAscii(
         const p = placed.get(pid)!
         return p.x + Math.floor(p.width / 2)
       })
-      const desiredCenter = Math.round(
+      let desiredCenter = Math.round(
         parentCenters.reduce((sum, c) => sum + c, 0) / parentCenters.length,
       )
+      // The deeper end of an up fan stays under the shallower end, and a
+      // class between them steps aside to the side its first edge was
+      // declared on (the order Mermaid's layout follows).
+      let boxLeftOverride: number | undefined
+      if (blockMembers.get(key)!.length === 1) {
+        const fanEnd = upFans.find((f) => f.fromId === id)
+        if (fanEnd && placed.has(fanEnd.toId)) {
+          const t = placed.get(fanEnd.toId)!
+          desiredCenter = t.x + Math.floor(t.width / 2)
+        }
+        const w = classBoxW.get(id)!
+        for (const f of upFans) {
+          const t = placed.get(f.toId)
+          if (!t || !(lv > level.get(f.toId)! && lv < level.get(f.fromId)!))
+            continue
+          const cx = t.x + Math.floor(t.width / 2)
+          const lo = cx - f.halfSpan
+          const hi = cx + f.halfSpan
+          const left = desiredCenter - Math.floor(w / 2)
+          if (left > hi || left + w - 1 < lo) continue
+          const own = diagram.relationships.findIndex((r) => r.to === id)
+          boxLeftOverride = own !== -1 && own < f.firstIndex ? lo - w : hi + 1
+        }
+      }
 
       let totalWidth = 0
       for (let i = 0; i < members.length; i++) {
@@ -1087,6 +1149,16 @@ export function renderClassAscii(
       const visibleWidth = totalWidth - firstLeftPad - lastRightPad
       const blockDesiredLeft =
         desiredCenter - firstLeftPad - Math.floor(visibleWidth / 2)
+      if (boxLeftOverride !== undefined) {
+        // Room on the left may need every placed class to move right.
+        const shift = Math.max(0, leftPadOf.get(id)! - boxLeftOverride)
+        for (const p of placed.values()) p.x += shift
+        maxSlotEnd += shift
+        const left = boxLeftOverride + shift - leftPadOf.get(id)!
+        placeAt(id, Math.max(left, currentX, 0))
+        placedThisLevel.add(id)
+        continue
+      }
       const blockActualLeft = Math.max(blockDesiredLeft, currentX, 0)
 
       let memberX = blockActualLeft
@@ -2315,42 +2387,25 @@ export function renderClassAscii(
 
     // If label is inside a box, find the gap between boxes
     if (labelInBox) {
-      // The gap between the two boxes, whichever is higher: an upward
-      // relationship (`fromP` below `toP`) has `fromBY + 1 > toTY - 1`, which
-      // left the loop below empty and the label over the intervening box.
-      const gapTop = Math.min(fromBY, toP.y + toP.height - 1) + 1
-      const gapBottom = Math.max(fromP.y, toTY) - 1
+      const gapTop = fromBY + 1
+      const gapBottom = toTY - 1
 
-      // Place label on the clear row nearest its ideal one, outside any
-      // intermediate box. An upward relationship (`fromP` below `toP`) keeps
-      // the head row under `toP` and the junction row above `fromP` free:
-      // the first clear row from the top would sit on the heads.
-      const up = fromP.y > toP.y
-      const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
-      const labelStart = Math.max(0, idealLabelStart)
-      let best = labelY
-      let bestDist = Infinity
+      // Place label in the middle of the gap, outside any intermediate box
       for (let y = gapTop; y <= gapBottom; y++) {
-        if (up && (y === gapTop || y === gapBottom)) continue
         let clearRow = true
+        const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
+        const labelStart = Math.max(0, idealLabelStart)
         for (let x = labelStart; x < labelStart + maxLabelWidth; x++) {
           if (isInsideBox(x, y, excludeIds)) {
             clearRow = false
             break
           }
         }
-        if (!clearRow) continue
-        if (!up) {
-          best = y
+        if (clearRow) {
+          labelY = y
           break
         }
-        const dist = Math.abs(y - baseMidY)
-        if (dist <= bestDist) {
-          best = y
-          bestDist = dist
-        }
       }
-      labelY = best
     }
 
     return labelY
@@ -2435,7 +2490,7 @@ export function renderClassAscii(
       lines.length,
     )
     const excludeIds = new Set([rel.from, rel.to])
-    let labelY = resolveLabelFinalY(
+    const labelY = resolveLabelFinalY(
       fromP,
       toP,
       idealMidX,
@@ -2444,36 +2499,6 @@ export function renderClassAscii(
       lines.length,
       excludeIds,
     )
-    // A fanned group (same two classes) keeps all its labels on one row, as
-    // Mermaid does. When one label had to leave an intermediate box, resolve
-    // the row for the group's whole span so the others follow it (#2639).
-    if (fromP.y > toP.y) {
-      const group = diagram.relationships.flatMap((r, i) =>
-        r.label && r.from === rel.from && r.to === rel.to ? [i] : [],
-      )
-      if (group.length > 1) {
-        const anchors = group.map((i) => {
-          const r = diagram.relationships[i]!
-          const w = labelCellWidth(r.label!)
-          return { w, ...computeLabelAnchor(i, fromP, toP, w, 1) }
-        })
-        const lo = Math.min(
-          ...anchors.map((a) => a.idealMidX - Math.floor(a.w / 2)),
-        )
-        const hi = Math.max(
-          ...anchors.map((a) => a.idealMidX + Math.ceil(a.w / 2)),
-        )
-        labelY = resolveLabelFinalY(
-          fromP,
-          toP,
-          Math.floor((lo + hi) / 2),
-          baseMidY,
-          hi - lo,
-          lines.length,
-          excludeIds,
-        )
-      }
-    }
     finalLabelYByRel.set(rel, labelY)
     // Clamped the same way the draw loop below clamps it (never negative —
     // a label can't render left of the canvas edge) so this overlap check
