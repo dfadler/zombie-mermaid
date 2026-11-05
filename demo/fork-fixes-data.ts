@@ -748,11 +748,11 @@ export const allForkFixes: ForkFix[] = [
       'A block inside another block (`alt` containing `loop`, `opt`) was laid out as if it were a sibling: its header and walls landed on the container’s walls, so the nesting was unreadable.',
     source:
       'sequenceDiagram\n  participant A\n  participant B\n  alt cache hit\n    loop every retry\n      A->>B: fetch\n    end\n  else cache miss\n    opt warm up\n      B->>B: rebuild\n    end\n  end',
-    fixCommit: 'ee1a26d',
-    pr: 2510,
+    fixCommit: 'd0f6a4e9',
+    pr: 2622,
     render: 'ascii',
     lookFor:
-      'Before: the inner `loop` and `opt` headers collide with the `alt` frame. After: each sits inside the `alt`, one column clear of its walls.',
+      'Before: the inner `loop` and `opt` headers collide with the `alt` frame. After: each sits one column inside the `alt`’s walls.',
   },
   {
     id: 'xychart-bar-series-overlap',

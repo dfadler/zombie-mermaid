@@ -80,6 +80,11 @@ function actorGlyphLines(a: {
 // lifeline).
 const BLOCK_WALL_MARGIN = 4
 
+// Columns from a container block's wall to the wall of a block nested in it:
+// the wall itself plus one blank column (mermaid insets nested frames ~10px,
+// one column). Also the reach of each enclosing wall into a note's left side.
+const NESTED_WALL_PITCH = 2
+
 // Effective width of a self-message's loop, including room for an
 // autonumber badge drawn at the start of the top arm when active. The badge
 // digits replace the leading dashes rather than adding a second arrowhead,
@@ -493,8 +498,10 @@ export function renderSequenceAscii(
         (n.position === 'left' || n.actorIds.length === 1) &&
         noteDepth(n)
           ? n.position === 'left'
-            ? noteBoxWidth(n) + 2 + (2 * noteDepth(n) - 1)
-            : Math.floor(noteBoxWidth(n) / 2) + 1 + (2 * noteDepth(n) - 1)
+            ? noteBoxWidth(n) + 2 + (NESTED_WALL_PITCH * noteDepth(n) - 1)
+            : Math.floor(noteBoxWidth(n) / 2) +
+              1 +
+              (NESTED_WALL_PITCH * noteDepth(n) - 1)
           : 0,
       ),
       // A centred self-message label on the leftmost actor reaches left of
@@ -506,6 +513,19 @@ export function renderSequenceAscii(
             (diagram.blocks.some((b) => mi >= b.startIndex && mi <= b.endIndex)
               ? 2
               : 0)
+          : 0,
+      ),
+      // The innermost block touching the first actor sits at nesting depth d,
+      // so its left wall is at column NESTED_WALL_PITCH * (d - 1); keep one
+      // blank column between that wall and the lifeline, as mermaid does.
+      ...diagram.blocks.map((b) =>
+        diagram.messages
+          .slice(b.startIndex, b.endIndex + 1)
+          .some((m) => actorIndexOf(m.from) === 0 || actorIndexOf(m.to) === 0)
+          ? NESTED_WALL_PITCH *
+            diagram.blocks.filter(
+              (p) => b.startIndex >= p.startIndex && b.endIndex <= p.endIndex,
+            ).length
           : 0,
       ),
     ),
@@ -708,7 +728,7 @@ export function renderSequenceAscii(
         nx = llX[aIdx]! - Math.floor(nWidth / 2)
       }
     }
-    nx = Math.max(2 * noteDepth(note), nx)
+    nx = Math.max(NESTED_WALL_PITCH * noteDepth(note), nx)
 
     notePositions.push({
       x: nx,
@@ -1457,7 +1477,23 @@ export function renderSequenceAscii(
       }
     }
 
-    let bLeft = minLX - BLOCK_WALL_MARGIN
+    // Each nested level adds a wall, so a block with three or more levels
+    // inside it widens its own left margin to keep the innermost wall clear of
+    // the lifeline (depth 2 already fits in BLOCK_WALL_MARGIN).
+    const nestHeight = (i: number): number =>
+      1 +
+      Math.max(
+        0,
+        ...diagram.blocks.map((c, ci) =>
+          ci < i &&
+          c.startIndex >= diagram.blocks[i]!.startIndex &&
+          c.endIndex <= diagram.blocks[i]!.endIndex
+            ? nestHeight(ci)
+            : 0,
+        ),
+      )
+    let bLeft =
+      minLX - Math.max(BLOCK_WALL_MARGIN, NESTED_WALL_PITCH * nestHeight(b))
     let bRight = maxLX + BLOCK_WALL_MARGIN
 
     // minLX/maxLX (and therefore bLeft/bRight) only account for lifelines
@@ -1500,7 +1536,7 @@ export function renderSequenceAscii(
     // after the pull-back so a note wins over an untouched lifeline.
     for (const np of notePositions) {
       if (np.y <= topY || np.y >= botY) continue
-      bLeft = Math.min(bLeft, np.x - 2 * np.depth)
+      bLeft = Math.min(bLeft, np.x - NESTED_WALL_PITCH * np.depth)
       bRight = Math.max(bRight, np.x + np.width + 1)
     }
 
@@ -1531,7 +1567,8 @@ export function renderSequenceAscii(
 
   // Nested blocks nest: a container wall encloses every block inside it with
   // one blank column on each side (mermaid insets nested frames ~10px). Widen
-  // right inner-first (array order), inset left outer-first (reverse order); the label width is re-measured between.
+  // right inner-first (array order), inset left outer-first (reverse order);
+  // the label width is re-measured between.
   const isInside = (c: Block, p: Block): boolean =>
     c.startIndex >= p.startIndex && c.endIndex <= p.endIndex
   // Blocks without a measured extent (never laid out) take no part.
@@ -1542,7 +1579,10 @@ export function renderSequenceAscii(
     )
   for (const p of [...live].reverse()) {
     for (const c of nestedIn(p))
-      blockExt[c]!.l = Math.max(blockExt[c]!.l, blockExt[p]!.l + 2)
+      blockExt[c]!.l = Math.max(
+        blockExt[c]!.l,
+        blockExt[p]!.l + NESTED_WALL_PITCH,
+      )
   }
   // Label-driven minimum width (#352), measured from the final left wall.
   for (const b of live) {
@@ -1551,7 +1591,10 @@ export function renderSequenceAscii(
   }
   for (const p of live) {
     for (const c of nestedIn(p))
-      blockExt[p]!.r = Math.max(blockExt[p]!.r, blockExt[c]!.r + 2)
+      blockExt[p]!.r = Math.max(
+        blockExt[p]!.r,
+        blockExt[c]!.r + NESTED_WALL_PITCH,
+      )
   }
 
   // Pass 2: grow the canvas to fit, then draw.
