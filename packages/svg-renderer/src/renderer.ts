@@ -42,6 +42,7 @@ import {
 } from './edge-curves.ts'
 import {
   BANDLESS_TITLE_WEIGHT,
+  COMPOSITE_BAND,
   edgeCrossesTitle,
   titleGapMask,
   titleTextBoxes,
@@ -403,10 +404,13 @@ function renderGroup(
   const fill = escapeAttr(gs?.fill ?? 'var(--_group-fill)')
   const hdrFill = escapeAttr(gs?.fill ?? 'var(--_group-hdr)')
 
-  // Outer rectangle
+  // Outer rectangle. A state composite (#2651) is drawn as mermaid@12.3.0
+  // draws it: the outer rect carries the band colour with rounded corners, and
+  // a square-cornered body rect sits inside it (below).
+  const bandless = group.bandless === true
   parts.push(
     f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
-      f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
+      f`rx="${bandless ? 0 : COMPOSITE_RADIUS}" ry="${bandless ? 0 : COMPOSITE_RADIUS}" fill="${bandless ? fill : hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
   // Flowchart subgraph (#2636): mermaid@12.3.0 draws no header band, only a
@@ -429,20 +433,13 @@ function renderGroup(
     return parts.join('\n')
   }
 
-  // Header band
+  // Body: mermaid's `inner` rect, which starts below the 26 px title band and
+  // stops COMPOSITE_BODY_INSET short of the outer rect's bottom edge.
   parts.push(
-    f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${headerHeight}" ` +
-      f`rx="0" ry="0" fill="${hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
+    f`  <rect x="${group.x}" y="${group.y + COMPOSITE_BAND}" width="${group.width}" height="${Math.max(0, group.height - COMPOSITE_BAND - COMPOSITE_BODY_INSET)}" ` +
+      f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
-  // Architecture group icon, as in Mermaid's header (the glyph tile, scaled).
-  const iconSize = headerHeight - 6
-  if (group.icon) {
-    const glyph = ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH
-    parts.push(
-      f`  <g transform="translate(${group.x + 3} ${group.y + 3}) scale(${iconSize / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
-    )
-  }
   // A state composite (#2651): mermaid@12.3.0 centres a regular-weight title in
   // the band. (Icon groups are architecture groups, drawn above, never here.)
   const titleX = group.x + group.width / 2
@@ -453,7 +450,7 @@ function renderGroup(
       renderMultilineText(
         group.label,
         titleX,
-        group.y + headerHeight / 2,
+        group.y + COMPOSITE_BAND / 2,
         fontSizes.groupHeader,
         f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
       ),
@@ -744,6 +741,9 @@ function renderNode(
 /** Gap from an icon tile's bottom edge to the centre of its label line. */
 const SERVICE_LABEL_DROP = 13
 /** Mermaid's architecture group border: 2px, dashed `8`. */
+/** State composite chrome, measured from mermaid@12.3.0: corner radius, title band height, and the gap between the body rect and the outer rect's bottom edge. */
+const COMPOSITE_RADIUS = 5
+const COMPOSITE_BODY_INSET = 4
 const ARCH_GROUP_STROKE = 2
 const ARCH_GROUP_DASH = 8
 
@@ -1369,7 +1369,7 @@ function renderFilledCircle(
   h: number,
   stroke: string,
 ): string {
-  const r = Math.min(w, h) / 2 - 2
+  const r = Math.min(w, h) / 2
   return f`<circle cx="${x + w / 2}" cy="${y + h / 2}" r="${r}" fill="${stroke}" stroke="${stroke}" />`
 }
 
@@ -1689,7 +1689,7 @@ function renderBolt(
 function renderStateStart(x: number, y: number, w: number, h: number): string {
   const cx = x + w / 2
   const cy = y + h / 2
-  const r = Math.min(w, h) / 2 - 2
+  const r = Math.min(w, h) / 2
   return f`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--_text)" stroke="none" />`
 }
 

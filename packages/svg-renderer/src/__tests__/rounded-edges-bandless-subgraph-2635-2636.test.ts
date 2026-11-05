@@ -100,3 +100,39 @@ describe('subgraph title (#2636)', () => {
     expect(title).toContain(`x="${+(+x + +w / 2).toFixed(2)}"`)
   })
 })
+
+describe('state composite as mermaid@12.3.0 draws it (#2651)', () => {
+  const src =
+    'stateDiagram-v2\n  [*] --> Active\n  state Active {\n    [*] --> Idle\n    Idle --> Busy\n    Busy --> Idle\n  }\n  Active --> [*]'
+  const svg = renderMermaidSVG(src)
+  const g = svg.match(/<g class="subgraph"[\s\S]*?<\/g>/)![0]
+  const nums = (re: RegExp, s: string) => [...s.matchAll(re)].map((m) => +m[1]!)
+
+  it('rounds the outer rect and insets the body 4px from its bottom edge', () => {
+    const [outer, body] = g.match(/<rect[^>]*>/g)!
+    expect(outer).toContain('rx="5"')
+    expect(body).toContain('rx="0"')
+    const yh = (r: string) => [
+      Number(/ y="([\d.]+)"/.exec(r)![1]),
+      Number(/ height="([\d.]+)"/.exec(r)![1]),
+    ]
+    const [oy = 0, oh = 0] = yh(outer!)
+    const [by = 0, bh = 0] = yh(body!)
+    expect(by).toBe(oy + 26)
+    expect(by + bh).toBe(oy + oh - 4)
+  })
+
+  it('keeps a cycle in source order: Idle above Busy, 14px start dots, 136px boxes', () => {
+    const y = (id: string) =>
+      Number(
+        new RegExp(
+          `data-id="${id}"[\\s\\S]*?<rect x="[\\d.]+" y="([\\d.]+)"`,
+        ).exec(svg)![1]!,
+      )
+    expect(y('Idle')).toBeLessThan(y('Busy'))
+    expect(
+      nums(/<circle[^>]* r="([\d.]+)" fill="var\(--_text\)"/g, svg)[0],
+    ).toBe(7)
+    expect(svg).toMatch(/<rect[^>]* width="136" height="40"/)
+  })
+})

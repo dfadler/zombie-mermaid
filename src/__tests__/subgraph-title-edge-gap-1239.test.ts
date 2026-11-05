@@ -57,18 +57,11 @@ function edge(points: Array<[number, number]>): PositionedEdge {
 }
 
 describe('title text boxes', () => {
-  const [box] = titleTextBoxes([group({ icon: 'cloud' })], FONT_SIZES)
+  const [box] = titleTextBoxes([group()], FONT_SIZES)
 
-  it('centres a state-composite title on the group (#2651)', () => {
-    const [b] = titleTextBoxes([group()], FONT_SIZES)
-    expect(b!.x + b!.width / 2).toBeCloseTo(200, 5)
-  })
-
-  it('starts at the text inset and is centred in the title bar', () => {
-    expect(box!.x).toBeLessThan(112)
-    expect(box!.x + box!.width).toBeGreaterThan(112)
-    const centre = box!.y + box!.height / 2
-    expect(centre).toBeCloseTo(100 + (FONT_SIZES.groupHeader + 16) / 2, 5)
+  it('centres a state-composite title in its 26px title band (#2651)', () => {
+    expect(box!.x + box!.width / 2).toBeCloseTo(200, 5)
+    expect(box!.y + box!.height / 2).toBeCloseTo(100 + 13, 5)
   })
 
   it('covers nested groups and skips an empty title', () => {

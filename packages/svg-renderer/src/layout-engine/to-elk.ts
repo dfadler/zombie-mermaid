@@ -149,14 +149,13 @@ export function edgesReversedForLayout(
   // has the hints) and `elkToPositioned` (which doesn't need them) asks first.
   let set = reversedCache.get(graph)
   if (!set) {
-    set =
-      isStateGraph(graph) || hasAnyDirectionOverride(graph.subgraphs)
-        ? new Set()
-        : findBackEdgeIndexes(
-            graph,
-            hints?.walkOrder,
-            hints?.feedbackEdges ?? subgraphFeedbackEdges(graph),
-          )
+    set = hasAnyDirectionOverride(graph.subgraphs)
+      ? new Set()
+      : findBackEdgeIndexes(
+          graph,
+          hints?.walkOrder,
+          hints?.feedbackEdges ?? subgraphFeedbackEdges(graph),
+        )
     reversedCache.set(graph, set)
   }
   return set
@@ -223,6 +222,9 @@ function edgeLabelStyle(opts: { fontSizes: FontSizes }): ElkEdgeLabelStyle {
 // Node sizing
 // ============================================================================
 
+const STATE_MIN_WIDTH = 136
+const STATE_MIN_HEIGHT = 40
+
 export function estimateNodeSize(
   id: string,
   label: string,
@@ -230,6 +232,7 @@ export function estimateNodeSize(
   nodeLabelFontSize: number,
   icon?: string,
   direction?: string,
+  stateDiagram = false,
 ): { width: number; height: number } {
   // An architecture icon tile is Mermaid's fixed 80px square; its label hangs below.
   if (icon !== undefined) return { width: TILE, height: TILE }
@@ -294,8 +297,9 @@ export function estimateNodeSize(
       : { width: 70, height: 10 }
   }
 
+  // mermaid@12.3.0 draws the start and end pseudostates as 14px circles.
   if (shape === 'state-start' || shape === 'state-end') {
-    return { width: 28, height: 28 }
+    return { width: 14, height: 14 }
   }
 
   // Architecture junction: a join point, so edges meet with no gap.
@@ -306,8 +310,10 @@ export function estimateNodeSize(
   if (label === '' && shape === 'diamond') return { width: 28, height: 28 }
   if (label === '' && shape === 'fork-join') return { width: 70, height: 10 }
 
-  width = Math.max(width, 60)
-  height = Math.max(height, 36)
+  // mermaid@12.3.0's state boxes are never narrower than 136px nor shorter
+  // than 40px.
+  width = Math.max(width, stateDiagram ? STATE_MIN_WIDTH : 60)
+  height = Math.max(height, stateDiagram ? STATE_MIN_HEIGHT : 36)
 
   return { width, height }
 }
@@ -598,6 +604,7 @@ export function mermaidToElk(
         opts.fontSizes.nodeLabel,
         node.icon,
         graph.direction,
+        isStateGraph(graph),
       )
       const fixedWidth = hints?.fixedWidths?.get(id)
       if (fixedWidth !== undefined) size.width = fixedWidth
@@ -816,6 +823,7 @@ function subgraphToElk(
         opts.fontSizes.nodeLabel,
         node.icon,
         graph.direction,
+        isStateGraph(graph),
       )
       const leaf = buildElkLeafNode(nodeId, size, node.label)
       children.push(leaf)
