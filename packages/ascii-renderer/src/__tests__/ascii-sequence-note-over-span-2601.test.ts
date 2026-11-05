@@ -64,4 +64,9 @@ describe('ASCII sequence Note over A,B spans the lifelines (#2601)', () => {
       expect(line.trimEnd().endsWith('│ │')).toBe(true)
     }
   })
+
+  it('keeps a note over the same actor twice centred on its lifeline', () => {
+    const out = renderMermaidASCII(SRC('Alice,Alice', 'hi'))
+    expect(out).toMatch(/┌────┐/)
+  })
 })
