@@ -509,7 +509,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-er-stacked-center',
-    parked: 'ascii-er',
     title: 'A narrower stacked ER entity sat off-center, so its edge jogged',
     symptom:
       'Each stacked ER row started at the left edge, so a narrower entity was left-aligned under its neighbor while the relationship attaches at each box’s center, and the edge jogged sideways between two off-center stems.',
@@ -519,7 +518,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2245,
     render: 'ascii',
     lookFor:
-      'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL and one straight vertical edge joins them.',
+      'Before: PROJECT is left-aligned and the edge jogs left halfway down. After: PROJECT is centered under INSTALL, one straight vertical edge joins them, and INSTALL is a table with the name centered and type and name in separate columns, as in Mermaid.',
   },
   {
     id: 'elk-invalid-hitboxes-wide-labels',
@@ -687,6 +686,10 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'er-ascii-crossings-labels',
+    // Parked on a named limit (#2630): Mermaid 12.3.0 orders ER layers with ELK,
+    // and among equal-crossing orders its choice (here the mirror of ours) cannot
+    // be derived from the source; ordering by crossings alone made the router's
+    // port and row assignment worse (see the PR for #2630).
     parked: 'ascii-er',
     title:
       'ER ASCII edges crossed without a junction and labels were ambiguous',
