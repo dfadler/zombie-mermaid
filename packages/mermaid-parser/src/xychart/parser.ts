@@ -48,9 +48,9 @@ export function parseXYChart(lines: Statement[]): XYChart {
       continue
     }
     // Unquoted: letters, digits and spaces only, spaces dropped (mermaid 12.3.0, #2728)
-    const bareTitle = line.match(/^title\s+([A-Za-z0-9\s]+?)\s*$/)
-    if (bareTitle) {
-      title = bareTitle[1]!.replace(/\s+/g, '')
+    const bareTitle = bareText(line, 'title')
+    if (bareTitle !== null) {
+      title = bareTitle
       continue
     }
 
@@ -83,14 +83,15 @@ export function parseXYChart(lines: Statement[]): XYChart {
 
     // y-axis with range: y-axis "Title" min --> max or y-axis min --> max
     const yRangeMatch = line.match(
-      /^y-axis\s+(?:"([^"]*)"\s+|([A-Za-z][A-Za-z0-9\s]*?)\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
+      /^y-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
     )
-    if (yRangeMatch) {
-      if (yRangeMatch[1]) yAxis.title = decodeMermaidEntities(yRangeMatch[1])
-      else if (yRangeMatch[2]) yAxis.title = yRangeMatch[2].replace(/\s+/g, '')
+    const yBareRange = yRangeMatch ? null : bareYRange(line)
+    if (yRangeMatch || yBareRange) {
+      if (yRangeMatch?.[1]) yAxis.title = decodeMermaidEntities(yRangeMatch[1])
+      else if (yBareRange) yAxis.title = yBareRange.title
       yAxis.range = {
-        min: parseFloat(yRangeMatch[3]!),
-        max: parseFloat(yRangeMatch[4]!),
+        min: parseFloat((yRangeMatch?.[2] ?? yBareRange?.min)!),
+        max: parseFloat((yRangeMatch?.[3] ?? yBareRange?.max)!),
       }
       continue
     }
@@ -101,9 +102,9 @@ export function parseXYChart(lines: Statement[]): XYChart {
       yAxis.title = decodeMermaidEntities(yTitleOnly[1]!)
       continue
     }
-    const yBareTitle = line.match(/^y-axis\s+([A-Za-z][A-Za-z0-9\s]*?)\s*$/)
-    if (yBareTitle) {
-      yAxis.title = yBareTitle[1]!.replace(/\s+/g, '')
+    const yBareTitle = bareText(line, 'y-axis')
+    if (yBareTitle !== null && /^[A-Za-z]/.test(yBareTitle)) {
+      yAxis.title = yBareTitle
       continue
     }
 
@@ -195,6 +196,36 @@ function splitCategoryList(str: string): string[] {
   }
   items.push(current)
   return items
+}
+
+/**
+ * An unquoted `title`/`y-axis` text: letters, digits and spaces, spaces dropped
+ * (mermaid 12.3.0, #2728). Plain string steps keep it linear on hostile input.
+ */
+function bareText(line: string, keyword: string): string | null {
+  if (!line.startsWith(keyword)) return null
+  const rest = line.slice(keyword.length)
+  if (rest.trimStart().length === rest.length) return null // Needs whitespace after the keyword
+  const text = rest.trim()
+  return /^[A-Za-z0-9\s]+$/.test(text) ? text.replace(/\s+/g, '') : null
+}
+
+/** `y-axis Unquoted Title 0 --> 5`: split on `-->`, the last word before it is the minimum. */
+function bareYRange(
+  line: string,
+): { title: string; min: string; max: string } | null {
+  if (!line.startsWith('y-axis')) return null
+  const arrow = line.indexOf('-->')
+  if (arrow < 0) return null
+  const left = line.slice('y-axis'.length, arrow).trim()
+  const max = line.slice(arrow + 3).trim()
+  const cut = Math.max(left.lastIndexOf(' '), left.lastIndexOf('\t'))
+  const min = left.slice(cut + 1)
+  const raw = cut < 0 ? '' : left.slice(0, cut)
+  const title = bareText('y-axis ' + raw, 'y-axis')
+  if (title === null || !/^[A-Za-z]/.test(title)) return null
+  if (!/^-?\d+(\.\d+)?$/.test(min) || !/^-?\d+(\.\d+)?$/.test(max)) return null
+  return { title, min, max }
 }
 
 /** Characters mermaid 12.3.0's xychart lexer accepts in an unquoted category (plus whitespace). */
