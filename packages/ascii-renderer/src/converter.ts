@@ -71,7 +71,8 @@ function lowerEmptySubgraphs(parsed: MermaidGraph): {
         !sg.architecture
       ) {
         bare.add(sg.id)
-        labels.set(sg.id, sg.label)
+        // Mermaid 12.3.0 keeps the first title of a repeated id.
+        if (!labels.has(sg.id)) labels.set(sg.id, sg.label)
         ids.push(sg.id)
       } else {
         const inner = lower(sg.children)
@@ -181,7 +182,7 @@ export function convertToAsciiGraph(
     if (subgraphIds.has(sourceId)) {
       const mSg = subgraphById.get(sourceId)
       const resolved = mSg
-        ? resolveSubgraphEndpoint(mSg, parsed, 'exit')
+        ? resolveSubgraphEndpoint(mSg, parsed, 'exit', bare)
         : undefined
       if (resolved) sourceId = resolved
       clusterMSg = resolved ? mSg : undefined
@@ -189,7 +190,7 @@ export function convertToAsciiGraph(
     if (subgraphIds.has(targetId)) {
       const mSg = subgraphById.get(targetId)
       const resolved = mSg
-        ? resolveSubgraphEndpoint(mSg, parsed, 'entry')
+        ? resolveSubgraphEndpoint(mSg, parsed, 'entry', bare)
         : undefined
       if (resolved) targetId = resolved
       clusterTargetMSg = resolved ? mSg : undefined
@@ -328,13 +329,17 @@ function resolveSubgraphEndpoint(
   mSg: MermaidSubgraph,
   parsed: MermaidGraph,
   end: 'entry' | 'exit',
+  bare: ReadonlySet<string>,
 ): string | undefined {
   const memberIds = new Set<string>()
   collectAllMemberNodeIds(mSg, memberIds)
   if (memberIds.size === 0) return undefined
 
   // Preserve overall node declaration order for deterministic selection.
-  const orderedIds = [...parsed.nodes.keys()].filter((id) => memberIds.has(id))
+  // A bare empty-subgraph title cannot take an arrowhead: prefer real members.
+  const all = [...parsed.nodes.keys()].filter((id) => memberIds.has(id))
+  const real = all.filter((id) => !bare.has(id))
+  const orderedIds = real.length > 0 ? real : all
   if (orderedIds.length === 0) return undefined
 
   const candidates = orderedIds.filter((id) =>

@@ -38,6 +38,29 @@ describe('an empty subgraph prints its title (#2694)', () => {
     expect(row).not.toMatch(/[│┌┐└┘]\s{0,2}one|one\s{0,2}[│┌┐└┘]/)
   })
 
+  it('an edge to a parent anchors on a real member, not an empty child', () => {
+    const out = renderMermaidASCII(
+      'graph LR\nA --> P\nsubgraph P\nsubgraph inner\nend\nX\nend',
+    )
+    expect(out).toContain('inner')
+    expect(out).toMatch(/►│ │ X/)
+  })
+
+  it('a repeated empty subgraph id keeps the first title (mermaid 12.3.0)', () => {
+    const out = renderMermaidASCII(
+      'graph LR\nsubgraph a[First]\nend\nsubgraph a[Second]\nend\nA --> B',
+    )
+    expect(out).toContain('First')
+    expect(out).not.toContain('Second')
+  })
+
+  it('empty subgraphs count toward maxNodes', () => {
+    const src = 'graph LR\nsubgraph a\nend\nsubgraph b\nend\nA --> B'
+    expect(() => renderMermaidASCII(src, { limits: { maxNodes: 3 } })).toThrow(
+      /maxNodes/,
+    )
+  })
+
   it('an edge endpoint keeps a box so the arrowhead cannot clip the title', () => {
     expect(renderMermaidASCII(SOURCES[4]![1])).toContain('│ one ├')
   })
