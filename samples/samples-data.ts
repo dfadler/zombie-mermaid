@@ -2903,7 +2903,7 @@ pie title Pets adopted by volunteers
     title: 'Sequence: Long Block Tab And Divider Labels',
     category: 'Sequence',
     description:
-      'Long block and divider labels over adjacent participants: the gap between the participants widens so the label ends before the next lifeline.',
+      'Long block and divider labels over adjacent participants: the labels wrap onto several lines and the gap between the participants stays as it is.',
     source: `sequenceDiagram
   participant A
   participant B
