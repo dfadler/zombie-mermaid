@@ -2140,8 +2140,10 @@ agree) draws a stadium as a pill with semicircular ends and a hexagon with point
 left and right middle.
 
 - **Stadium.** Rounded top and bottom rows (`╭─╮` / `╰─╯`, `.-.` / `'-'` in ASCII) with `(` `)` on
-  every row between. Same grid cell as before. A character grid cannot draw a true
-  semicircle, so the ends are the `(` `)` glyphs, not a curve.
+  every row between. Same grid cell as before. The grid could draw a semicircular end (the
+  circle's), but at the default 5 rows that end is two columns deep, the same as the circle's, so a
+  pill drawn that way would be the circle one column wider and the two shapes could not be
+  told apart; the `(` `)` rows keep them distinct.
 - **Hexagon.** Diagonals `╱ ╲` (`/ \`) cost one column per row and meet at `<` `>` on the
   middle row. A one-line label keeps the rectangle's width; a taller label, or a narrow one
   next to a tall one, grows the node so the diagonal stays a cell clear of the text.
@@ -2165,6 +2167,12 @@ left and right middle.
   5-row minimum shape, not a true circle. Edges attach as for the stadium.
 - **Corner glyphs of the outline.** `╭ ╮ ╰ ╯ . '` and the diagonals are now protected from
   an edge stroke like `( ) < >` are, so a port on a corner column starts beside it.
+- **Cylinder** (`[(x)]`). Mermaid 12.3.0 (neo and classic looks) draws a full ellipse on top
+  (back and front rim) and a single arc at the bottom. Ours has the rim rule `│───│` under
+  the top edge and nothing above the bottom edge (`╰───╯` is the bottom arc), so a cylinder is
+  as tall as a plain box. It used to draw a second rule above the bottom edge
+  ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)). The horizontal cylinder
+  (`h-cyl`) shares this glyph set, so it lost the lower rule as well.
 - **Subroutine** (`[[x]]`). Mermaid 12.2.0 draws a rectangle with a second vertical line
   just inside each side. Ours is the same: `┌┬──┬┐` / `││ x ││` / `└┴──┴┘` (`+` and `|` in
   ASCII), two columns wider than a plain box. The inner bars are on the node's own columns,
@@ -2204,6 +2212,11 @@ left and right middle.
   of every node on the same layout row grow with it, and the label rows keep the inner ring a cell clear of the text. Edges
   attach at the outer ring as for the circle. The ring gap is one cell, not mermaid's
   proportional gap.
+- **Re-checked against 12.3.0.** Every shape above was rendered again in mermaid 12.3.0
+  (`look: neo` and `look: classic`): same silhouette class as 12.2.0, except the
+  cylinder's bottom (above). Circle, double circle and diamond are 1:1 in 12.3.0 at every
+  label size; ours keeps the rows of a box, so a wider label is flatter (a square one would
+  need about half as many rows as it has columns: 8 rows for a 16-column diamond).
 - Every shape in the issue is now drawn as a silhouette; the remaining differences are the
   ones listed per shape above (diagonals and curves quantised to cells).
 
