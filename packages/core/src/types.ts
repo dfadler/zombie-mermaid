@@ -314,6 +314,11 @@ export interface PositionedGroup {
    * (state composites keep the band).
    */
   bandless?: boolean
+  /**
+   * An empty flowchart subgraph (no nodes, no children): mermaid draws a
+   * zero-height cluster, so only the title is visible, no frame.
+   */
+  titleOnly?: boolean
   /** Architecture group icon name; see `MermaidSubgraph.icon`. */
   icon?: string
   /** See `MermaidSubgraph.architecture`. */

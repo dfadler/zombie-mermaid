@@ -178,17 +178,14 @@ describe('pie layout: legend', () => {
     expect(layout('pie\n  "A" : 1').legend[0]!.text).toBe('A')
   })
 
-  it('grows the viewBox for a legend taller than the frame instead of clipping it', () => {
+  it('clips a legend taller than the frame like Mermaid 12.3.0 (viewBox stays 450)', () => {
     const lines = Array.from({ length: 30 }, (_, i) => `  "S${i}" : 1`)
     const p = layout(`pie\n${lines.join('\n')}`)
-    // Mermaid would start the legend at 225 - 330 = -105, above the frame.
-    const first = p.legend[0]!
-    const last = p.legend[p.legend.length - 1]!
-    expect(first.y).toBe(0)
-    expect(last.y + last.size).toBeLessThanOrEqual(p.height)
-    // The pie moved down by the same amount and keeps its frame.
-    expect(p.cy).toBe(225 + 105)
-    expect(p.height).toBe(30 * 22 - 4)
+    // Mermaid starts the legend at 225 - 330 = -105, above the frame.
+    expect(p.legend[0]!.y).toBe(225 - (30 * 22) / 2)
+    expect(p.legend[p.legend.length - 1]!.y).toBeGreaterThan(450)
+    expect(p.cy).toBe(225)
+    expect(p.height).toBe(450)
   })
 })
 

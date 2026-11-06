@@ -174,6 +174,10 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   theme accent; mermaid uses its pastel `pie1`..`pie12` scale (`#ECECFF`, `#ffffde`, ...).
   `themeVariables` `pie1`..`pie12` are honoured only when opted in (see the
   `themeVariables` section below).
+- **Tall legend.** A legend taller than the 450px frame (about 20 slices or more) is
+  clipped at the top and bottom, as in mermaid 12.3.0: the viewBox height stays 450 and
+  the rows outside it are cut off. The ASCII table still lists every slice
+  ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722)).
 - **Empty pie.** When every slice is zero, zombie-mermaid draws a full outline circle;
   mermaid draws a half arc, which reads as a rendering glitch.
 - **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
@@ -236,8 +240,6 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
 - **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
   value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
   correct reading (a known mermaid quirk).
-- **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
-  mermaid 12.2.0 renders `NewUsers`.
 - **Value-axis padding, flat data and x labels match mermaid in SVG only**
   ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0).
   The value axis keeps half a label's height (half its width, horizontally) of padding
