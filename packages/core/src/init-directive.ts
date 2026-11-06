@@ -38,6 +38,7 @@ const SEQUENCE_NUMBER_KEYS = new Set<string>([
   'diagramMarginX',
   'diagramMarginY',
   'bottomMarginAdj',
+  'activationWidth',
 ])
 
 /**
@@ -47,6 +48,8 @@ const SEQUENCE_NUMBER_KEYS = new Set<string>([
  */
 export interface SequenceInitLayout {
   wrap?: boolean
+  rightAngles?: boolean
+  activationWidth?: number
   noteAlign?: 'left' | 'center' | 'right'
   messageAlign?: 'left' | 'center' | 'right'
   width?: number
@@ -404,7 +407,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         if (
           SEQUENCE_NUMBER_KEYS.has(sk)
             ? typeof sv === 'number' && sv >= 0 && Number.isFinite(sv)
-            : sk === 'wrap'
+            : sk === 'wrap' || sk === 'rightAngles'
               ? typeof sv === 'boolean'
               : (sk === 'noteAlign' || sk === 'messageAlign') &&
                 (sv === 'left' || sv === 'center' || sv === 'right')

@@ -679,6 +679,8 @@ export function sanitizeClassName(className: string | undefined): string | undef
 // @public
 export interface SequenceInitLayout {
     // (undocumented)
+    activationWidth?: number;
+    // (undocumented)
     actorMargin?: number;
     // (undocumented)
     bottomMarginAdj?: number;
@@ -696,6 +698,8 @@ export interface SequenceInitLayout {
     noteAlign?: 'left' | 'center' | 'right';
     // (undocumented)
     noteMargin?: number;
+    // (undocumented)
+    rightAngles?: boolean;
     // (undocumented)
     width?: number;
     // (undocumented)

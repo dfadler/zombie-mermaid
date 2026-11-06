@@ -191,6 +191,8 @@ function resolveSeqOptions(
     bottomAdj: Math.max(0, d(init?.bottomMarginAdj, 1)),
     actorMinWidth: SEQ.actorMinWidth + d(init?.width, 150),
     actorGap: SEQ.actorGap + d(init?.actorMargin, 50),
+    activationWidth: SEQ.activationWidth + d(init?.activationWidth, 10),
+    selfMessageHeight: SEQ.selfMessageHeight - (init?.rightAngles ? 10 : 0),
     notePadX: SEQ.notePadX + dn,
     notePadY: SEQ.notePadY + dn,
     actorHeight:
@@ -878,6 +880,8 @@ export function layoutSequenceDiagram(
       bidirectional: msg.bidirectional ?? false,
       ...(msg.isLost && { isLost: true }),
       ...(msgAlign && { labelAlign: msgAlign }),
+      ...(isSelf &&
+        diagram.layout?.rightAngles && { rightAngles: true as const }),
       seqNumber: msg.seqNumber,
     })
 

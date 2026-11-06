@@ -891,6 +891,7 @@ export interface PositionedMessage {
     labelAlign?: 'left' | 'right';
     // (undocumented)
     lineStyle: 'solid' | 'dashed';
+    rightAngles?: true;
     seqNumber?: number;
     // (undocumented)
     to: string;

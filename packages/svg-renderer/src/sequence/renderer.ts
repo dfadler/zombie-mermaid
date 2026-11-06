@@ -423,8 +423,12 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
     // Self-message: the same cubic loop mermaid draws, going right and back
     const loopW = SELF_LOOP_CONTROL
     const loopH = SELF_LOOP_HEIGHT
+    // `rightAngles`: mermaid's square loop (`M x,y-10 H x+75 V y+15 H x`)
+    const d = msg.rightAngles
+      ? f`M ${msg.x1},${msg.y - 10} H ${msg.x1 + 75} V ${msg.y + 15} H ${msg.x2}`
+      : f`M ${msg.x1},${msg.y} C ${msg.x1 + loopW},${msg.y - 10} ${msg.x1 + loopW},${msg.y + loopH + 10} ${msg.x2},${msg.y + loopH}`
     parts.push(
-      f`  <path d="M ${msg.x1},${msg.y} C ${msg.x1 + loopW},${msg.y - 10} ${msg.x1 + loopW},${msg.y + loopH + 10} ${msg.x2},${msg.y + loopH}" ` +
+      f`  <path d="${d}" ` +
         f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
     )
   } else {

@@ -100,6 +100,22 @@ describe('sequence init layout keys (#2703)', () => {
   })
 })
 
+describe('sequence init rightAngles and activationWidth (#2703)', () => {
+  const src = 'sequenceDiagram\n  A->>+B: hi\n  B->>B: self\n  B-->>-A: yo'
+  const run = (cfg: string) =>
+    renderMermaidSVG(`%%{init: {"sequence": ${cfg}}}%%\n${src}`)
+  it('rightAngles draws the square self loop and shortens the diagram', () => {
+    const sq = run('{"rightAngles":true}')
+    expect(sq).toMatch(/d="M [\d.]+,[\d.]+ H [\d.]+ V [\d.]+ H [\d.]+"/)
+    expect(vb(sq)[1]).toBe(vb(run('{}'))[1] - 10)
+  })
+  it('activationWidth widens the activation bar by the delta', () => {
+    const w = (svg: string) =>
+      Number(/class="activation[^>]*?width="([\d.]+)"/.exec(svg)?.[1])
+    expect(w(run('{"activationWidth":30}'))).toBe(w(run('{}')) + 20)
+  })
+})
+
 describe('sequence init layout keys, ASCII (#2703)', () => {
   const a = renderMermaidASCII(body)
   const rows = (s: string) => s.trimEnd().split('\n')

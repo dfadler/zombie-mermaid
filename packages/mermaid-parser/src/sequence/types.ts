@@ -225,6 +225,8 @@ export interface PositionedMessage {
   /** Start point (from actor's lifeline) */
   /** `sequence.messageAlign: left|right`: label hugs that end of the arrow (unset = centred). */
   labelAlign?: 'left' | 'right'
+  /** `sequence.rightAngles`: the self-message loop is drawn square. */
+  rightAngles?: true
   x1: number
   /** End point (to actor's lifeline) */
   x2: number

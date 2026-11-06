@@ -140,18 +140,18 @@ here), so each size or margin key moves our constant by its distance from mermai
 (`actorMargin: 100` moves the second lifeline 50 px, as in mermaid); a key at its default, or
 absent, changes nothing.
 
-| Option                                     | SVG                                                      | ASCII                         |
-| ------------------------------------------ | -------------------------------------------------------- | ----------------------------- |
-| `wrap` (with `width`, `actorMargin`)       | notes wrap at `width`, messages at `width + actorMargin` | same, at 8 px a column        |
-| `noteAlign`, `messageAlign` `left`/`right` | text-anchor start/end                                    | text sits at that side        |
-| `actorMargin`, `width`, `height`           | lifeline gap, box width, box height                      | no analogue (character cells) |
-| `boxMargin`, `noteMargin`                  | row spacing, note padding                                | no analogue                   |
-| `diagramMarginX/Y`, `bottomMarginAdj`      | outer padding                                            | no analogue                   |
+| Option                                     | SVG                                                      | ASCII                                     |
+| ------------------------------------------ | -------------------------------------------------------- | ----------------------------------------- |
+| `wrap` (with `width`, `actorMargin`)       | notes wrap at `width`, messages at `width + actorMargin` | same, at 8 px a column                    |
+| `noteAlign`, `messageAlign` `left`/`right` | text-anchor start/end                                    | text sits at that side                    |
+| `actorMargin`, `width`, `height`           | lifeline gap, box width, box height                      | no analogue (character cells)             |
+| `boxMargin`, `noteMargin`                  | row spacing, note padding                                | no analogue                               |
+| `rightAngles`, `activationWidth`           | square self loop, bar width                              | loop is already square; no width analogue |
+| `diagramMarginX/Y`, `bottomMarginAdj`      | outer padding                                            | no analogue                               |
 
 Nothing to honour: mermaid 12.3.0 itself ignores `actorFontSize`, `messageFontSize`,
 `noteFontSize` (text stays 16 px) and `messageMargin` (rows do not move), so we match by
-ignoring them. Still ignored although mermaid changes the output: `rightAngles` (self-message
-corners) and `activationWidth`; `wrap` is not applied to participant names.
+ignoring them. Not applied: `wrap` on participant names and per-message `wrap:`/`nowrap:` prefixes (#2783).
 
 `link` / `links` (participant menus): measured on mermaid 12.3.0, the menu is a
 `display="none"` `actorPopupMenu` group with `<a xlink:href>` entries that only a click in a
