@@ -218,13 +218,14 @@ export function parseSequenceDiagram(
   // block/divider lines don't advance the counter.
   const autonumber = { enabled: false, next: 1, step: 1 }
 
-  // `%%{init: {"sequence": {...}}}%%`: only `mirrorActors`,
-  // `showSequenceNumbers` and `hideUnusedParticipants` are read (docs/known-differences.md lists the rest).
+  // `%%{init: {"sequence": {...}}}%%`: `mirrorActors`,
+  // `showSequenceNumbers`, `hideUnusedParticipants` and the layout keys are read (docs/known-differences.md lists the rest).
   // `text` is the raw source (comment lines, where the directive lives, are
   // already gone from `lines`); callers without it get the defaults.
   const init = extractInitConfig((text ?? '').split(/\r\n?|\n/))
   if (init.sequenceShowNumbers) autonumber.enabled = true
   if (init.sequenceMirrorActors === false) diagram.mirrorActors = false
+  if (init.sequenceLayout) diagram.layout = init.sequenceLayout
 
   // `create participant X` / `destroy X` bind to the very next message —
   // Mermaid's sequenceDb enforces that the next message's recipient is the

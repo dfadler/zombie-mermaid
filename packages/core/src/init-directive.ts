@@ -28,6 +28,40 @@ export type CurveStyle =
   | 'stepBefore'
   | 'stepAfter'
 
+/** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
+const SEQUENCE_NUMBER_KEYS = new Set<string>([
+  'width',
+  'height',
+  'actorMargin',
+  'boxMargin',
+  'noteMargin',
+  'diagramMarginX',
+  'diagramMarginY',
+  'bottomMarginAdj',
+  'activationWidth',
+])
+
+/**
+ * `%%{init: {"sequence": {...}}}%%` layout keys, in mermaid's own units
+ * (px at 16px text). Renderers apply each as a delta from mermaid's default
+ * onto their own scale.
+ */
+export interface SequenceInitLayout {
+  wrap?: boolean
+  rightAngles?: boolean
+  activationWidth?: number
+  noteAlign?: 'left' | 'center' | 'right'
+  messageAlign?: 'left' | 'center' | 'right'
+  width?: number
+  height?: number
+  actorMargin?: number
+  boxMargin?: number
+  noteMargin?: number
+  diagramMarginX?: number
+  diagramMarginY?: number
+  bottomMarginAdj?: number
+}
+
 const PIE_LEGEND_POSITIONS = new Set([
   'left',
   'right',
@@ -147,6 +181,8 @@ export interface InitConfig {
   sequenceShowNumbers?: boolean
   /** `sequence.hideUnusedParticipants`: true drops participants no message or note touches. */
   sequenceHideUnused?: boolean
+  /** Other `sequence.*` layout keys (numbers >= 0, `wrap`, `noteAlign`, `messageAlign`). */
+  sequenceLayout?: SequenceInitLayout
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
@@ -366,8 +402,18 @@ export function parseInitDirective(line: string): InitConfig | undefined {
 
     if (lower === 'sequence' && typeof value === 'object' && value !== null) {
       for (const [sk, sv] of Object.entries({ ...value })) {
-        if (typeof sv !== 'boolean') continue
         const sl = sk.toLowerCase()
+        const layout = (config.sequenceLayout ??= {}) as Record<string, unknown>
+        if (
+          SEQUENCE_NUMBER_KEYS.has(sk)
+            ? typeof sv === 'number' && sv >= 0 && Number.isFinite(sv)
+            : sk === 'wrap' || sk === 'rightAngles'
+              ? typeof sv === 'boolean'
+              : (sk === 'noteAlign' || sk === 'messageAlign') &&
+                (sv === 'left' || sv === 'center' || sv === 'right')
+        )
+          layout[sk] = sv
+        if (typeof sv !== 'boolean') continue
         if (sl === 'mirroractors') config.sequenceMirrorActors = sv
         else if (sl === 'showsequencenumbers') config.sequenceShowNumbers = sv
         else if (sl === 'hideunusedparticipants') config.sequenceHideUnused = sv
@@ -432,6 +478,12 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.sequenceHideUnused !== undefined) {
       merged.sequenceHideUnused = config.sequenceHideUnused
+    }
+    if (config.sequenceLayout) {
+      merged.sequenceLayout = {
+        ...merged.sequenceLayout,
+        ...config.sequenceLayout,
+      }
     }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }

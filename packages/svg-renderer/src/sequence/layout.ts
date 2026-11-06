@@ -9,7 +9,11 @@ import type {
   PositionedNote,
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
-import type { RenderOptions, SequenceRenderOptions } from '@zombie-mermaid/core'
+import type {
+  RenderOptions,
+  SequenceInitLayout,
+  SequenceRenderOptions,
+} from '@zombie-mermaid/core'
 import { LINE_HEIGHT_RATIO, measureMultilineText } from '@zombie-mermaid/core'
 import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 
@@ -30,6 +34,12 @@ import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 const SEQ = {
   /** Padding around the entire diagram */
   padding: 30,
+  /** Padding above and below the diagram (`padding` is the horizontal one). */
+  paddingY: 30,
+  /** Extra room under the bottom row (`bottomMarginAdj`). */
+  bottomAdj: 0,
+  /** Narrowest an actor box gets. */
+  actorMinWidth: 80,
   /** Minimum gap between actor centers */
   actorGap: 140,
   /** Actor box height */
@@ -163,12 +173,34 @@ type SeqConfig = { [K in keyof typeof SEQ]: number }
  * Merge user-provided sequence-layout overrides over the {@link SEQ} defaults.
  * Any field left unspecified (or `undefined`) falls back to its default.
  */
-function resolveSeqOptions(overrides?: RenderOptions['sequence']): SeqConfig {
+function resolveSeqOptions(
+  overrides?: RenderOptions['sequence'],
+  init?: SequenceInitLayout,
+): SeqConfig {
+  // `%%{init}%%` keys are mermaid px at 16px text. This renderer lays out at
+  // its own scale, so each key moves our constant by its distance from
+  // mermaid's default (absent or default = unchanged). Explicit render
+  // options win over the directive.
+  const d = (v: number | undefined, def: number) => (v ?? def) - def
+  const dn = d(init?.noteMargin, 10)
+  const dpx = d(init?.diagramMarginX, 50)
   return {
     ...SEQ,
-    actorHeight: overrides?.actorHeight ?? SEQ.actorHeight,
+    padding: SEQ.padding + dpx,
+    paddingY: SEQ.paddingY + d(init?.diagramMarginY, 10),
+    bottomAdj: Math.max(0, d(init?.bottomMarginAdj, 1)),
+    actorMinWidth: SEQ.actorMinWidth + d(init?.width, 150),
+    actorGap: SEQ.actorGap + d(init?.actorMargin, 50),
+    activationWidth: SEQ.activationWidth + d(init?.activationWidth, 10),
+    selfMessageHeight: SEQ.selfMessageHeight - (init?.rightAngles ? 10 : 0),
+    notePadX: SEQ.notePadX + dn,
+    notePadY: SEQ.notePadY + dn,
+    actorHeight:
+      overrides?.actorHeight ?? SEQ.actorHeight + d(init?.height, 65),
     headerGap: overrides?.headerGap ?? SEQ.headerGap,
-    messageRowHeight: overrides?.messageRowHeight ?? SEQ.messageRowHeight,
+    messageRowHeight:
+      overrides?.messageRowHeight ??
+      SEQ.messageRowHeight + d(init?.boxMargin, 10),
     noteOffsetAfterMessage:
       overrides?.noteOffsetAfterMessage ?? SEQ.noteOffsetAfterMessage,
     noteStackGap: overrides?.noteStackGap ?? SEQ.noteStackGap,
@@ -368,10 +400,62 @@ function fitLabelsBetweenLifelines(
  * Lay out a parsed sequence diagram.
  * Returns a fully positioned diagram ready for SVG rendering.
  */
-export function layoutSequenceDiagram(
+/** Greedy word wrap of each line of `text` to `maxWidth` px (a long word stays whole). */
+function wrapLabel(text: string, maxWidth: number, fontSize: number): string {
+  const fit = (s: string) =>
+    estimateTextWidth(s, fontSize, FONT_WEIGHTS.edgeLabel) <= maxWidth
+  return text
+    .split('\n')
+    .map((line) => {
+      const out: string[] = []
+      let cur = ''
+      for (const word of line.split(/\s+/).filter(Boolean)) {
+        if (cur && !fit(`${cur} ${word}`)) {
+          out.push(cur)
+          cur = word
+        } else cur = cur ? `${cur} ${word}` : word
+      }
+      out.push(cur)
+      return out.join('\n')
+    })
+    .join('\n')
+}
+
+/**
+ * `sequence.wrap: true`: mermaid wraps notes at `width` (150px at 16px text)
+ * and messages at the lifeline gap (`width + actorMargin`). Our text is
+ * smaller, so the widths shrink by the font ratio and the same words land on
+ * each line.
+ */
+function wrapDiagramText(
   diagram: SequenceDiagram,
+  fontSize: number,
+): SequenceDiagram {
+  const l = diagram.layout!
+  const k = fontSize / 16
+  const w = l.width ?? 150
+  const noteW = w * k
+  const msgW = (w + (l.actorMargin ?? 50)) * k
+  return {
+    ...diagram,
+    notes: diagram.notes.map((n) => ({
+      ...n,
+      text: wrapLabel(n.text, noteW, fontSize),
+    })),
+    messages: diagram.messages.map((m) => ({
+      ...m,
+      label: wrapLabel(m.label, msgW, fontSize),
+    })),
+  }
+}
+
+export function layoutSequenceDiagram(
+  input: SequenceDiagram,
   options: SequenceRenderOptions = {},
 ): PositionedSequenceDiagram {
+  const diagram = input.layout?.wrap
+    ? wrapDiagramText(input, resolveFontSizes(options.fontSizes).edgeLabel)
+    : input
   if (diagram.actors.length === 0) {
     return {
       width: 0,
@@ -387,7 +471,11 @@ export function layoutSequenceDiagram(
     }
   }
 
-  const seq = resolveSeqOptions(options.sequence)
+  const seq = resolveSeqOptions(options.sequence, diagram.layout)
+  const alignOf = (v?: 'left' | 'center' | 'right') =>
+    v === 'left' || v === 'right' ? v : undefined
+  const noteAlign = alignOf(diagram.layout?.noteAlign)
+  const msgAlign = alignOf(diagram.layout?.messageAlign)
   const fontSizes = resolveFontSizes(options.fontSizes)
 
   // 1. Calculate actor widths and assign horizontal positions (center X)
@@ -397,13 +485,18 @@ export function layoutSequenceDiagram(
       fontSizes.nodeLabel,
       FONT_WEIGHTS.nodeLabel,
     )
-    return Math.max(textW + seq.actorPadX * 2, 80)
+    return Math.max(textW + seq.actorPadX * 2, seq.actorMinWidth)
   })
 
   // Build actor center X positions with minimum gap, widened so message
   // labels fit between their lifelines (ported from lukilabs/beautiful-mermaid#167).
   const gaps = actorWidths.map((w, i) =>
-    i === 0 ? 0 : Math.max(seq.actorGap, (actorWidths[i - 1]! + w) / 2 + 40),
+    i === 0
+      ? 0
+      : Math.max(
+          seq.actorGap,
+          (actorWidths[i - 1]! + w) / 2 + 40 + (seq.actorGap - SEQ.actorGap),
+        ),
   )
   fitLabelsBetweenLifelines(
     diagram,
@@ -438,7 +531,7 @@ export function layoutSequenceDiagram(
       : seq.boxPad + (anyBoxLabel ? boxLabelHeight(fontSizes.edgeLabel) : 0)
   // A `title` line sits above the boxes and actors (as in Mermaid).
   const titleInset = diagram.title ? seq.titleBand : 0
-  const top = seq.padding + titleInset
+  const top = seq.paddingY + titleInset
   const actorY = top + boxTopInset
   const actors: PositionedActor[] = diagram.actors.map((a, i) => ({
     id: a.id,
@@ -652,6 +745,7 @@ export function layoutSequenceDiagram(
       height: noteH,
       position: note.position,
       actors: note.actorIds,
+      ...(noteAlign && { align: noteAlign }),
     }
     positionedNotes.push(positioned)
     notePositions.set(note, positioned)
@@ -785,6 +879,9 @@ export function layoutSequenceDiagram(
       isSelf,
       bidirectional: msg.bidirectional ?? false,
       ...(msg.isLost && { isLost: true }),
+      ...(msgAlign && { labelAlign: msgAlign }),
+      ...(isSelf &&
+        diagram.layout?.rightAngles && { rightAngles: true as const }),
       seqNumber: msg.seqNumber,
     })
 
@@ -1038,7 +1135,8 @@ export function layoutSequenceDiagram(
   const diagramBottom =
     lifelineBottom +
     (mirror ? seq.actorHeight + footerLabelRoom : 0) +
-    seq.padding
+    seq.paddingY +
+    seq.bottomAdj
 
   // Find global X extents across actors, blocks, notes, and message labels
   let globalMinX: number = seq.padding // Actors already start at seq.padding
@@ -1150,7 +1248,7 @@ export function layoutSequenceDiagram(
   // Box backgrounds run from the top padding to just under the footer
   // actors (boxPad < padding, so this stays inside the diagram height).
   for (const b of boxes) {
-    b.height = diagramBottom - seq.padding + seq.boxPad - b.y
+    b.height = diagramBottom - seq.paddingY - seq.bottomAdj + seq.boxPad - b.y
   }
 
   // 9. Calculate diagram dimensions from the bounding box
@@ -1177,7 +1275,7 @@ export function layoutSequenceDiagram(
     boxes,
     footerActors,
     ...(diagram.title && {
-      title: { text: diagram.title, y: seq.padding + TITLE_FONT_SIZE / 2 },
+      title: { text: diagram.title, y: seq.paddingY + TITLE_FONT_SIZE / 2 },
     }),
   }
 }

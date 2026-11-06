@@ -27,7 +27,7 @@ import {
   toDisplayCells,
   WIDE_CHAR_PLACEHOLDER,
 } from './display-width.ts'
-import type { Message } from '@zombie-mermaid/mermaid-parser'
+import type { Message, SequenceDiagram } from '@zombie-mermaid/mermaid-parser'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.
@@ -151,6 +151,36 @@ function selfExtent(msg: Message): number {
  *
  * Pipeline: parse → layout (columns + rows) → draw onto canvas → string.
  */
+/** `sequence.wrap`: notes wrap at `width` (150px), messages at `width + actorMargin`, at 8px a column. */
+function wrapDiagramText(d: SequenceDiagram): SequenceDiagram {
+  const l = d.layout!
+  const wrap = (text: string, px: number) =>
+    splitLines(text)
+      .map((line) =>
+        line
+          .split(/\s+/)
+          .filter(Boolean)
+          .reduce<string[]>((rows, w) => {
+            const last = rows[rows.length - 1]
+            if (last !== undefined && displayWidth(`${last} ${w}`) <= px / 8)
+              rows[rows.length - 1] = `${last} ${w}`
+            else rows.push(w)
+            return rows
+          }, [])
+          .join('\n'),
+      )
+      .join('\n')
+  const w = l.width ?? 150
+  return {
+    ...d,
+    notes: d.notes.map((n) => ({ ...n, text: wrap(n.text, w) })),
+    messages: d.messages.map((m) => ({
+      ...m,
+      label: wrap(m.label, w + (l.actorMargin ?? 50)),
+    })),
+  }
+}
+
 export function renderSequenceAscii(
   text: string,
   config: AsciiConfig,
@@ -158,7 +188,10 @@ export function renderSequenceAscii(
   theme?: AsciiTheme,
 ): string {
   const lines = splitStatements(text)
-  const diagram = parseSequenceDiagram(lines, text)
+  const parsed = parseSequenceDiagram(lines, text)
+  const diagram = parsed.layout?.wrap ? wrapDiagramText(parsed) : parsed
+  const noteAlign = parsed.layout?.noteAlign
+  const messageAlign = parsed.layout?.messageAlign
   const mirror = diagram.mirrorActors !== false
 
   if (diagram.actors.length === 0) return ''
@@ -1486,7 +1519,12 @@ export function renderSequenceAscii(
         const line = msgLines[lineIdx]!
         // Center on display width, not `.length` — see writeTextCells' doc
         // comment for why a code-unit-based offset under-centers CJK labels.
-        const labelStart = midX - Math.floor(displayWidth(line) / 2)
+        const labelStart =
+          messageAlign === 'left'
+            ? Math.min(fromX, toX) + 2
+            : messageAlign === 'right'
+              ? Math.max(fromX, toX) - 1 - displayWidth(line)
+              : midX - Math.floor(displayWidth(line) / 2)
         const y = labelY + lineIdx
         writeTextCells(labelStart, y, line, 'text', totalW)
       }
@@ -1820,7 +1858,13 @@ export function renderSequenceAscii(
       }
       // Centred in the box, as mermaid does (it matters once the box spans
       // two lifelines and is wider than its text).
-      const pad = Math.floor((np.width - 2 - displayWidth(np.lines[l]!)) / 2)
+      const room = np.width - 2 - displayWidth(np.lines[l]!)
+      const pad =
+        noteAlign === 'left'
+          ? 1
+          : noteAlign === 'right'
+            ? room - 1
+            : Math.floor(room / 2)
       writeTextCells(np.x + 1 + pad, ly, np.lines[l]!, 'text')
     }
     // Bottom border

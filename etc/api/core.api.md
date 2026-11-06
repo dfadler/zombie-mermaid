@@ -260,6 +260,7 @@ export interface InitConfig {
     pieTextPosition?: number;
     quadrant?: QuadrantConfig;
     sequenceHideUnused?: boolean;
+    sequenceLayout?: SequenceInitLayout;
     sequenceMirrorActors?: boolean;
     sequenceShowNumbers?: boolean;
     // (undocumented)
@@ -678,6 +679,36 @@ export function safeHref(href: string | undefined): string | undefined;
 
 // @public
 export function sanitizeClassName(className: string | undefined): string | undefined;
+
+// @public
+export interface SequenceInitLayout {
+    // (undocumented)
+    activationWidth?: number;
+    // (undocumented)
+    actorMargin?: number;
+    // (undocumented)
+    bottomMarginAdj?: number;
+    // (undocumented)
+    boxMargin?: number;
+    // (undocumented)
+    diagramMarginX?: number;
+    // (undocumented)
+    diagramMarginY?: number;
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    messageAlign?: 'left' | 'center' | 'right';
+    // (undocumented)
+    noteAlign?: 'left' | 'center' | 'right';
+    // (undocumented)
+    noteMargin?: number;
+    // (undocumented)
+    rightAngles?: boolean;
+    // (undocumented)
+    width?: number;
+    // (undocumented)
+    wrap?: boolean;
+}
 
 // @public
 export type SequenceRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'fontSizes' | 'sequence'>;
