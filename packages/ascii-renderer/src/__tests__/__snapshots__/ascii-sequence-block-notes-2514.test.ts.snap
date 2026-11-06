@@ -49,19 +49,19 @@ exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and 
   }
 </style>
 <defs>
-  <marker id="zmi3ois9-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zmm4prhn-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zmi3ois9-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zmm4prhn-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zmi3ois9-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zmm4prhn-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
-<line class="lifeline" data-actor="A" x1="70" y1="70" x2="70" y2="76" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
-<line class="lifeline" data-actor="A" x1="70" y1="98" x2="70" y2="177" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
-<line class="lifeline" data-actor="B" x1="210" y1="70" x2="210" y2="177" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="A" x1="70" y1="70" x2="70" y2="76" stroke="var(--_line)" stroke-width="0.5" />
+<line class="lifeline" data-actor="A" x1="70" y1="98" x2="70" y2="177" stroke="var(--_line)" stroke-width="0.5" />
+<line class="lifeline" data-actor="B" x1="210" y1="70" x2="210" y2="177" stroke="var(--_line)" stroke-width="0.5" />
 <g class="block" data-type="loop" data-label="every retry">
   <rect x="59" y="78" width="405.01" height="79" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
   <polygon points="59,78 101.74,78 101.74,92.4 97.42,96 59,96" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
@@ -69,7 +69,7 @@ exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and 
   <text x="282.88" y="87" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[every retry]</text>
 </g>
 <g class="message" data-from="A" data-to="B" data-label="fetch" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="70" y1="118" x2="210" y2="118" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi3ois9-seq-arrow)" />
+  <line x1="70" y1="118" x2="210" y2="118" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmm4prhn-seq-arrow)" />
   <text x="140" y="108" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">fetch</text>
 </g>
 <g class="note" data-position="right" data-actors="B">
