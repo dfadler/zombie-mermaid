@@ -3,8 +3,8 @@
 // type sees it. Mermaid accepts it on every diagram type, as does GitHub.
 //
 // `config:` becomes the `%%{init}%%` directive we already parse, so it honours
-// exactly what init does. `title:` and any other key are ignored: front matter
-// has no title slot in the flowchart/sequence/class/ER renderers.
+// exactly what init does. `title:` is read by `readFrontMatterTitle` and drawn
+// like mermaid does (`extractAccessibility` routes it); other keys are ignored.
 import { MermaidParseError } from './parse-error.ts'
 
 const FENCE = /^---[ \t]*$/
@@ -48,6 +48,40 @@ function configOf(body: string[]): Record<string, unknown> | undefined {
 }
 
 /**
+ * Index of the closing fence of a leading block, or undefined when there is
+ * none. Mermaid's regex is anchored at character 0: a blank line, BOM or
+ * comment before the opening `---` is not front matter there either (12.3.0).
+ * An unterminated block throws, pointing at the opening `---`.
+ */
+function blockEnd(lines: string[]): number | undefined {
+  if (!FENCE.test(lines[0]!.trimEnd())) return undefined
+  const close = lines.findIndex((l, i) => i > 1 && FENCE.test(l.trimEnd()))
+  if (close === -1 && FENCE.test((lines[1] ?? '').trimEnd())) return undefined
+  if (close === -1) {
+    throw new MermaidParseError(
+      'Line 1: Unterminated front matter: missing closing "---".',
+      { line: 1 },
+    )
+  }
+  return close
+}
+
+/** The top-level `title:` of a leading front matter block; empty means none. */
+export function readFrontMatterTitle(text: string): string | undefined {
+  const lines = text.split('\n')
+  const close = blockEnd(lines)
+  if (close === undefined) return undefined
+  for (const line of lines.slice(1, close)) {
+    const m = /^title[ \t]*:(.*)$/.exec(line)
+    if (m) {
+      const v = String(scalar(m[1]!)).trim()
+      return v === '' ? undefined : v
+    }
+  }
+  return undefined
+}
+
+/**
  * Blank a leading front matter block (line numbers preserved), turning its
  * `config:` into an init directive on the block's first line. Text without
  * front matter is returned as is. An unterminated block throws, pointing at
@@ -55,18 +89,9 @@ function configOf(body: string[]): Record<string, unknown> | undefined {
  */
 export function stripFrontMatter(text: string): string {
   const lines = text.split('\n')
-  // Mermaid's regex is anchored at character 0: a blank line, BOM or comment
-  // before the opening `---` is not front matter there either (12.3.0).
   const open = 0
-  if (!FENCE.test(lines[0]!.trimEnd())) return text
-  const close = lines.findIndex((l, i) => i > 1 && FENCE.test(l.trimEnd()))
-  if (close === -1 && FENCE.test((lines[1] ?? '').trimEnd())) return text
-  if (close === -1) {
-    throw new MermaidParseError(
-      `Line ${open + 1}: Unterminated front matter: missing closing "---".`,
-      { line: open + 1 },
-    )
-  }
+  const close = blockEnd(lines)
+  if (close === undefined) return text
   const config = configOf(lines.slice(open + 1, close))
   const blanked = lines.map((l, i) => (i >= open && i <= close ? '' : l))
   if (config) blanked[open] = `%%{init: ${JSON.stringify(config)}}%%`

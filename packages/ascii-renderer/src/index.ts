@@ -29,6 +29,8 @@ import {
 import type { Direction, DiagramType, RenderLimits } from '@zombie-mermaid/core'
 import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
+import { colorizeText } from './ansi.ts'
+import { displayWidth } from './display-width.ts'
 import {
   detectColorMode,
   DEFAULT_ASCII_THEME,
@@ -203,7 +205,7 @@ export function renderMermaidASCII(
   checkLineLength(source, options.limits)
   // accTitle/accDescr have no place in text output: drop them, never print.
   // The one exception is C4, where Mermaid draws accTitle as the title.
-  const { text, accTitle } = extractAccessibility(source)
+  const { text, accTitle, frontMatterTitle } = extractAccessibility(source)
   const theme: AsciiTheme = {
     ...DEFAULT_ASCII_THEME,
     ...(options.honorThemeVariables && directiveTheme(text, options.theme)),
@@ -218,13 +220,26 @@ export function renderMermaidASCII(
   // `extras` carries every ASCII-only per-type option: `hyperlinks` (read
   // by 'class' and 'flowchart') and `direction` (read by 'flowchart'
   // only); both are ignored by every other registered type.
-  const result = asciiRegistry[diagramType](text, config, colorMode, theme, {
+  let result = asciiRegistry[diagramType](text, config, colorMode, theme, {
     hyperlinks: options.hyperlinks ?? false,
     direction: options.direction,
     limits: options.limits,
     honorThemeVariables: options.honorThemeVariables ?? false,
     accTitle,
   })
+
+  // A front matter `title:` on flowchart/state/class/ER: a centred row over
+  // the diagram (no colour/markup counted in the width), as pie does.
+  if (frontMatterTitle) {
+    const visible = (l: string) =>
+      displayWidth(l.replace(/\x1b\[[\d;]*m|<[^>]*>/g, ''))
+    const width = Math.max(...result.split('\n').map(visible))
+    const pad = Math.max(
+      0,
+      Math.floor((width - displayWidth(frontMatterTitle)) / 2),
+    )
+    result = `${' '.repeat(pad)}${colorizeText(frontMatterTitle, theme.fg, colorMode)}\n\n${result}`
+  }
 
   return options.showCoords ? addCoordsOverlay(result) : result
 }

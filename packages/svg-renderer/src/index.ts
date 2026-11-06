@@ -158,6 +158,7 @@ import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
 import { loadEmbeddedFont, resolveBodyFont } from './embedded-font.ts'
 import { diagramRegistry } from './registry.ts'
+import { addFrontMatterTitle } from './front-matter-title.ts'
 import type { SvgRenderContext } from './registry.ts'
 
 /**
@@ -393,7 +394,9 @@ function renderMermaidSVGRaw(
     decorative,
     emit,
   }
-  return { svg: registered.renderSvg(positioned, ctx, options), colors }
+  let svg = registered.renderSvg(positioned, ctx, options)
+  if (acc.frontMatterTitle) svg = addFrontMatterTitle(svg, acc.frontMatterTitle)
+  return { svg, colors }
 }
 
 /**
