@@ -1,0 +1,52 @@
+name: PR hygiene
+
+# Split out of ci.yml (#2713): the check reads the PR body from the event
+# payload, so it must re-run when the body is edited. Adding `edited` to ci.yml
+# would re-run the whole CI on every body edit; this workflow runs only the
+# hygiene check. Not a required check (required: test, Build site generator
+# check, Semgrep SAST scan, Changeset present).
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-hygiene:
+    name: PR hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # only checks out code and greps commit subjects and the PR body
+    if: >-
+      github.repository == 'dfadler/zombie-mermaid' &&
+      !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The PR body goes through env, never interpolated into the script.
+      - name: No TEMP commits; follow-ups must link an issue
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          if git log --format=%s origin/main..HEAD | grep -E '^TEMP:'; then
+            echo "::error::Commit subject starts with 'TEMP:'; drop or reword it before merging."
+            exit 1
+          fi
+          # A line mentioning a follow-up / "TODO later" needs a #N link on the same line.
+          # Markdown table rows are skipped: they carry case/test names (e.g. the
+          # run-evals results table's `unfiled-followup`), not promises of later work.
+          if printf '%s\n' "$PR_BODY" | grep -iE 'follow-?[ -]?ups?|todo later' | grep -vE '^[[:space:]]*\|' | grep -vE '#[0-9]+'; then
+            echo "::error::PR body mentions a follow-up without a #N issue link; file the issue and link it."
+            exit 1
+          fi
