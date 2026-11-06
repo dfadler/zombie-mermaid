@@ -618,7 +618,15 @@ const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊', '|', '
 /** Solid fork/join bar cell (Unicode / ASCII): nothing to connect to, nothing to overwrite. */
 const BAR_CHARS = new Set(['█', '#'])
 /** Horizontal box-border characters a vertical connector can genuinely merge with. */
-const HORIZONTAL_BORDER_CHARS = new Set(['─', '━', '═', '╌', '┄', '-', '='])
+export const HORIZONTAL_BORDER_CHARS = new Set([
+  '─',
+  '━',
+  '═',
+  '╌',
+  '┄',
+  '-',
+  '=',
+])
 
 /**
  * Draw the junction character where an edge exits the source node's box.

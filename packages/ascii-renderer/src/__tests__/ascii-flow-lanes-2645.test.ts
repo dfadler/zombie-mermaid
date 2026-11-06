@@ -93,13 +93,11 @@ describe('TD same-pair groups on the flow faces (#2645)', () => {
     expect(bare.match(/▼/g)).toHaveLength(5)
   })
 
-  it('leaves a group with another edge on its faces, or three edges, as before', () => {
+  it('leaves a group with another edge on its faces as before', () => {
     const sibling = render(
       `flowchart TD\n${edges(['first', 'second', 'third', 'fourth'])}\n  A --> C`,
     )
     expect(sibling).not.toMatch(/┬─┬─┬/)
-    const three = render(`flowchart TD\n${edges(['first', 'second', 'third'])}`)
-    expect(three).toContain('◄')
     const framed = render(
       `flowchart TD\n  subgraph S\n    A\n    B\n  end\n${edges(['first', 'second', 'third', 'fourth'])}`,
     )
@@ -116,6 +114,13 @@ describe('TD same-pair groups on the flow faces (#2645)', () => {
       `flowchart TD\n${edges(['first', 'second', 'third', 'fourth'])}\n  X --> Y`,
     )
     expect(beside).toContain('first')
+  })
+
+  it('takes the flow faces for three labels too wide to sit beside their strokes (#2736)', () => {
+    const three = render(`flowchart TD\n${edges(['first', 'second', 'third'])}`)
+    expect(three).not.toContain('◄')
+    expect(three).toMatch(/first +second +third/)
+    expect(three.match(/▼/g)).toHaveLength(3)
   })
 
   it('keeps each line style on its own stroke', () => {
