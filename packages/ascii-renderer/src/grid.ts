@@ -1329,10 +1329,9 @@ function shiftCrossAxis(
  * the nodes staying put, see `centerParentsOverChildren`).
  */
 /**
- * Grid units the skipped node steps aside by: two of a node's three, so it
- * overlaps its neighbours' rows by one, as mermaid's roughly half-node offset
- * does (GitHub renders A --> B --> C plus A --> C with B about 0.45 node
- * heights higher, not a whole slot).
+ * Grid units the skipped node steps aside by: two of a node's three, the
+ * most the grid allows without a whole slot (LR then narrows it to mermaid's
+ * offset, see `tightenSidesteps`).
  */
 const OFF = 2
 
@@ -1383,6 +1382,7 @@ function sidestepSkippedNodes(graph: AsciiGraph): void {
       shiftCrossAxis(graph, lr, c - 1, OFF)
     }
     for (const n of moving) {
+      ;(graph.sidesteps ??= []).push({ node: n, anchor: skip.from })
       relocateNode(
         graph,
         n,
@@ -1423,6 +1423,54 @@ function sidestepSkippedNodes(graph: AsciiGraph): void {
       graph.edges.filter((e) => e.from === skip.from).length === 2 &&
       graph.edges.filter((e) => e.to === skip.to).length === 2
     return ok ? found : []
+  }
+}
+
+/**
+ * LR: mermaid offsets the skipped node by 0.46 node heights (checked against
+ * mermaid 12.2.0 and 12.3.0 alike), but the grid only places it a whole slot
+ * aside, 0.8 of a node. Once sizes are known, split the two rows that hold
+ * the first block's box unevenly (same total): the box starts later in its
+ * cell, so the offset shrinks to 2 of its 5 text rows while edge ports (cell
+ * centres) stay on the box centre. Half a box is the smallest this reaches.
+ * TD keeps the slot: mermaid bends the skip edge around the skipped node
+ * there, and a smaller offset would leave the straight edge touching it.
+ */
+function tightenSidesteps(graph: AsciiGraph): void {
+  if (graph.config.graphDirection !== 'LR' || graph.topMargin) return
+  const sizes = graph.rowHeight
+  const size = (i: number): number => sizes.get(i) ?? 0
+  const row = (n: AsciiNode): number => requireGridCoord(n).y
+  for (const { node, anchor } of graph.sidesteps ?? []) {
+    const gap = row(node) - row(anchor)
+    if (Math.abs(gap) !== OFF) continue
+    // `lead` starts first, `trail` OFF rows on.
+    const lead = gap < 0 ? node : anchor
+    const trail = gap < 0 ? anchor : node
+    const l = row(lead)
+    const box = size(l) + size(l + 1)
+    // Only these blocks (and the anchor's own row) may use the cells.
+    const alone = graph.nodes.every((n) => {
+      if (n === node || n.gridCoord === null || row(n) === row(anchor)) {
+        return true
+      }
+      return row(n) + 2 < l || row(n) > l + OFF + 2
+    })
+    if (!alone) continue
+    const want = Math.min(
+      box - 1,
+      Math.max(Math.ceil(box / 2), Math.round(0.46 * (box + 1))),
+    )
+    const first = 2 * (box - want + Math.floor(size(row(trail)) / 2))
+    if (first > box + 1) continue
+    // The box starts `first / 2` rows into its cell: take them back from the
+    // gap before it, or from the canvas top when it is the first cell.
+    const lost = Math.floor(first / 2)
+    if (l > 0 && size(l - 1) < lost) continue
+    if (l > 0) sizes.set(l - 1, size(l - 1) - lost)
+    else graph.offsetY -= lost
+    sizes.set(l, first)
+    sizes.set(l + 1, box - first)
   }
 }
 
@@ -2529,6 +2577,7 @@ export function createMapping(graph: AsciiGraph): void {
   if (graph.topMargin && graph.subgraphs.length === 0) {
     graph.rowHeight.set(0, 3)
   }
+  tightenSidesteps(graph)
 
   // Fresh render-wide A* iteration budget for this layout pass. Shared by
   // every getPath call below (both bundled-edge routing and per-edge
