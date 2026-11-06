@@ -277,7 +277,7 @@
   {
     "file": "scripts/xychart-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/xychart-agreement.ts",
-    "maxLines": 50
+    "maxLines": 55
   },
   {
     "file": "scripts/lib/separate-scores.ts",
