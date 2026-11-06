@@ -10,6 +10,7 @@ import { NodeInteraction } from '@zombie-mermaid/core';
 import { NodeShape } from '@zombie-mermaid/core';
 import { Point } from '@zombie-mermaid/core';
 import { QuadrantConfig } from '@zombie-mermaid/core';
+import { SequenceInitLayout } from '@zombie-mermaid/core';
 import { Statement } from '@zombie-mermaid/core';
 import { StyleDirectives } from '@zombie-mermaid/core';
 import { ThemeVariables } from '@zombie-mermaid/core';
@@ -888,11 +889,13 @@ export interface PositionedMessage {
     isSelf: boolean;
     // (undocumented)
     label: string;
+    labelAlign?: 'left' | 'right';
     // (undocumented)
     lineStyle: 'solid' | 'dashed';
     seqNumber?: number;
     // (undocumented)
     to: string;
+    // (undocumented)
     x1: number;
     x2: number;
     y: number;
@@ -901,6 +904,7 @@ export interface PositionedMessage {
 // @public (undocumented)
 export interface PositionedNote {
     actors?: string[];
+    align?: 'left' | 'right';
     // (undocumented)
     height: number;
     position?: 'left' | 'right' | 'over';
@@ -1161,6 +1165,7 @@ export interface SequenceDiagram {
     actors: Actor[];
     blocks: Block[];
     boxes: ParticipantBox[];
+    layout?: SequenceInitLayout;
     messages: Message[];
     mirrorActors?: false;
     notes: Note[];

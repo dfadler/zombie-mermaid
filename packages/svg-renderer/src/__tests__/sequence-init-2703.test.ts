@@ -24,9 +24,8 @@ const vb = (svg: string) =>
     number,
   ]
 const rectOf = (svg: string, cls: string) => {
-  const m = new RegExp(
-    `<g class="${cls}"[^>]*>\\s*<rect x="(\\S+)" y="(\\S+)" width="(\\S+)" height="(\\S+)"`,
-  ).exec(svg)!
+  const g = svg.slice(svg.indexOf(`<g class="${cls}"`))
+  const m = /<rect x="(\S+)" y="(\S+)" width="(\S+)" height="(\S+)"/.exec(g)!
   return m.slice(1).map(Number) as [number, number, number, number]
 }
 const base = renderMermaidSVG(body)

@@ -239,8 +239,8 @@ export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedP
 // @public (undocumented)
 export function layoutQuadrantChart(chart: QuadrantChart): PositionedQuadrantChart;
 
-// @public
-export function layoutSequenceDiagram(diagram: SequenceDiagram, options?: SequenceRenderOptions): PositionedSequenceDiagram;
+// @public (undocumented)
+export function layoutSequenceDiagram(input: SequenceDiagram, options?: SequenceRenderOptions): PositionedSequenceDiagram;
 
 // @public
 export function layoutXYChart(chart: XYChart, _options?: XyChartRenderOptions): PositionedXYChart;
