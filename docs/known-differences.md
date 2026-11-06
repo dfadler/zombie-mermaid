@@ -221,8 +221,8 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
 also covered 12.1.0). Unless noted, these are choices, not bugs.
 
-- **SVG styling.** zombie-mermaid draws rounded bars, a generated `Bar 1` / `Line 1` legend
-  when there is more than one series, and grouped bar series side by side. Mermaid draws
+- **SVG styling.** zombie-mermaid draws rounded bars and
+  grouped bar series side by side. Mermaid draws
   square bars, no legend, and draws the second bar series over the first. Lines are straight
   segments with no point markers, there is no grid, and each axis has a line and tick marks,
   as in mermaid (it has no option for curved lines in 12.2.0 or on `develop`); the oracle
@@ -574,6 +574,14 @@ one thing that still differs:
 
 - **Edge labels are drawn in a bordered box; mermaid draws a borderless grey background
   on the line.** Colour palette and chrome, not structure (decision #2617).
+
+## Flowchart `curve` directive is ignored ([#2729](https://github.com/dfadler/zombie-mermaid/issues/2729))
+
+mermaid 12.3.0 draws the same rounded orthogonal ELK edges for every
+`%%{init: {"flowchart": {"curve": ...}}}%%` value (basis, linear, step, stepBefore,
+stepAfter, natural, cardinal, monotoneX, bumpX, catmullRom: identical edge paths, checked
+headless with a scratch `npm i mermaid@12.3.0`). So do we: the directive and front-matter
+`config.flowchart.curve` are ignored. The `curve` render option still applies.
 
 ## Known limitations (not intentional, not yet fixed)
 

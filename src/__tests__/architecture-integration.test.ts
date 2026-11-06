@@ -204,9 +204,9 @@ describe('architecture-beta nested groups and junctions', () => {
     expect(find('Beta')).toMatch(/^│.*Beta.*│$/)
   })
 
-  it('ASCII draws a junction as a small box and keeps its edge arrow', () => {
+  it('ASCII draws no shape for a junction and keeps its edge arrow (#2725)', () => {
     const out = renderMermaidASCII(NESTED)
-    expect(out).toContain('●')
+    expect(out).not.toContain('●')
     expect(out).toContain('►')
   })
 

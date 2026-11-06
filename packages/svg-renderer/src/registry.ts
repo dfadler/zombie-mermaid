@@ -315,13 +315,13 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
   parse: (_lines, text) => parseMermaid(text),
   layoutForSvg(diagram, options) {
     // Same order as the umbrella's original fallback: direction override,
-    // then layout. `options.curve` wins over the diagram's own
-    // `%%{init: ...}%%` directive, which wins over the 'linear' default —
-    // see the doc comment on `PositionedFlowchart` above.
+    // then layout. The curve is the `options.curve` render option or
+    // 'linear'; `flowchart.curve` in an init directive is ignored, as in
+    // mermaid 12.3.0 (#2729).
     const graph = withDirectionOverride(diagram, options.direction)
     return {
       graph: layoutFlowchartSync(graph, options),
-      curve: options.curve ?? diagram.initConfig?.curve ?? 'linear',
+      curve: options.curve ?? 'linear',
     }
   },
   renderSvg(positioned, ctx, options) {
