@@ -81,9 +81,7 @@ describe('xychart ASCII – bar charts', () => {
       x-axis [A]
       bar [10]
       bar [20]`)
-    const lines = result
-      .split('\n')
-      .filter((line) => !/[A-Za-z]/.test(line))
+    const lines = result.split('\n').filter((line) => !/[A-Za-z]/.test(line))
     expect(lines.length).toBeGreaterThan(0)
     for (const line of lines) {
       const runs = line.match(/█+/g) ?? []
