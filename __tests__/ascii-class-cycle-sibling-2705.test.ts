@@ -59,4 +59,21 @@ describe('class cycle with a sibling beside the up edge (#2705)', () => {
     // Both sibling boxes keep their walls in the label's row.
     expect(oneRow.match(/│ {3}│/g)).toHaveLength(2)
   })
+
+  it('leaves siblings below the up edge (not between its ends) in place', () => {
+    const out = renderMermaidASCII(
+      'classDiagram\n  P --> Q\n  Q --> R\n  R --> S\n  S --> P\n  S --> T\n  S --> U',
+      { colorMode: 'none' },
+    )
+    expect(heads(out)).toBe(6)
+  })
+
+  it('keeps a sibling that carries a note where it is, with every edge drawn', () => {
+    const out = renderMermaidASCII(
+      'classDiagram\n  B --> X\n  B --> C\n  C --> D\n  D --> B\n  note for X "hi"',
+      { colorMode: 'none' },
+    )
+    expect(out).toContain('hi')
+    expect(out).toContain('X')
+  })
 })
