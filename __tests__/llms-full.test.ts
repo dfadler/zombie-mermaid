@@ -64,7 +64,9 @@ describe('scripts/check-llms-full.ts', () => {
       return {
         ...real,
         readFile: async (p: unknown, ...a: unknown[]) => {
-          const text = await (real.readFile as Function)(p, ...a)
+          const text = await (
+            real.readFile as (...x: unknown[]) => Promise<string>
+          )(p, ...a)
           return stale && String(p).endsWith('llms-full.txt')
             ? `${text}drift`
             : text
