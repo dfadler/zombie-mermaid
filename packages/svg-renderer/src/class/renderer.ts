@@ -662,12 +662,7 @@ function renderRelationshipLabels(
   if (rel.fromCardinality && rel.points.length >= 2) {
     const p = rel.points[0]!
     const next = rel.points[1]!
-    const offset = cardinalityOffset(
-      p,
-      next,
-      'start',
-      hasMarkerAt(rel, 'from'),
-    )
+    const offset = cardinalityOffset(p, next, 'start', hasMarkerAt(rel, 'from'))
     parts.push(
       renderMultilineText(
         rel.fromCardinality,
