@@ -100,6 +100,21 @@ describe('front matter (#2585)', () => {
         ).toMatchSnapshot()
       })
     }
+    it('ASCII title is centred over coloured and HTML output', () => {
+      const src = titled + bodies.flowchart
+      for (const colorMode of ['ansi16', 'html'] as const) {
+        const out = renderMermaidASCII(src, { colorMode })
+        const plain = renderMermaidASCII(bodies.flowchart!, { colorMode })
+        expect(out.endsWith(plain)).toBe(true)
+        expect(out).toContain('FM Title')
+      }
+      // Wider than the diagram: no negative padding.
+      const wide = renderMermaidASCII(
+        '---\ntitle: A title far wider than a two node diagram is\n---\nflowchart TD\n  A-->B',
+        { colorMode: 'none' },
+      )
+      expect(wide.startsWith('A title far wider')).toBe(true)
+    })
     it('a title wider than the diagram widens the canvas', () => {
       const svg = renderMermaidSVG(
         '---\ntitle: A very long front matter title that outgrows a tiny diagram\n---\nflowchart TD\n  A-->B',
