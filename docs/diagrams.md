@@ -640,7 +640,8 @@ classDiagram
     +int age
   }
   class Mineral
-  Animal <|-- Dog:::highlight
+  class Dog:::highlight
+  Animal <|-- Dog
   classDef default fill:#eef,stroke:#669
   classDef highlight fill:#f96,stroke:#333,stroke-width:2px
   style Mineral fill:#bbf,stroke:#f66,color:#fff
@@ -651,7 +652,8 @@ The same grammar as flowchart [Styling](#styling) above, sharing one
 implementation (`packages/core/src/style-directives.ts`) and one cascade: `classDef
 default` is the base for every class, a class's own style class (attached
 with `cssClass "A,B" name`, `class A,B name`, or the `:::name` shorthand on a
-declaration or either end of a relationship) overrides it property by
+declaration, or on either end of a relationship, which Mermaid 12.3.0 rejects but
+we accept) overrides it property by
 property, and an explicit `style ClassName ...` overrides both. `classDef
 a,b props` defines several classes at once. Mermaid's own class grammar only
 spells the attachment as `cssClass` or `:::`; the flowchart-style `class A,B
