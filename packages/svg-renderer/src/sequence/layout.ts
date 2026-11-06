@@ -50,6 +50,18 @@ const SEQ = {
   blockPadBottom: 8,
   /** Extra vertical space before the first message in a block (room for the header label) */
   blockHeaderExtra: 28,
+  /**
+   * Extra room between a block's header label and the first message below it,
+   * so the label sits 33px above that message's label as in mermaid 12.3.0
+   * (measured at 16px text, in absolute px; ours was 7px).
+   */
+  blockHeaderLabelGap: 26,
+  /**
+   * The same room for a block with another block opening inside it at the same
+   * message: the outer header sits 45px (label top to label top) above the
+   * inner one in mermaid 12.3.0, ours was 28px.
+   */
+  blockNestedHeaderGap: 17,
   /** Extra vertical space before a message at a divider boundary (room for else/and label) */
   dividerExtra: 24,
   /**
@@ -506,11 +518,17 @@ export function layoutSequenceDiagram(
   // Room a multi-line header label (or first message label) adds above a
   // block's first arrow, so the frame top can stay put (#2588).
   const startLabelExtra = new Map<number, number>()
-  for (const block of diagram.blocks) {
+  diagram.blocks.forEach((block, bi) => {
+    const holdsInner = diagram.blocks.some(
+      (b, j) => j < bi && b.startIndex === block.startIndex,
+    )
     const extra = dividerLabelExtra(block.label, fontSizes.edgeLabel)
+    // Only the innermost header sits just above the message; an outer one
+    // sits above the inner tab (see `blockTop` below).
+    const labelGap = holdsInner ? 0 : seq.blockHeaderLabelGap
     startLabelExtra.set(
       block.startIndex,
-      (startLabelExtra.get(block.startIndex) ?? 0) + extra,
+      (startLabelExtra.get(block.startIndex) ?? 0) + extra + labelGap,
     )
     // First message in the block needs room for the block header label;
     // nested blocks opening at the same message stack their headers above it
@@ -518,7 +536,8 @@ export function layoutSequenceDiagram(
       block.startIndex,
       (headerSpaceBefore.get(block.startIndex) ?? 0) +
         seq.blockHeaderExtra +
-        extra,
+        extra +
+        (holdsInner ? seq.blockNestedHeaderGap : labelGap),
     )
 
     // Each divider (else/and) needs room for the divider label
@@ -533,7 +552,7 @@ export function layoutSequenceDiagram(
           dividerLabelExtra(div.label, fontSizes.edgeLabel),
       )
     }
-  }
+  })
 
   // Blocks closing after each message, and their bottom edges once placed
   const nested = nestedBlocks(diagram.blocks)
@@ -855,7 +874,10 @@ export function layoutSequenceDiagram(
       startLabelExtra.get(block.startIndex)! -
       (msgLabelExtra[block.startIndex] ?? 0)
     for (const c of inner)
-      blockTop = Math.min(blockTop, c.y - seq.blockHeaderExtra)
+      blockTop = Math.min(
+        blockTop,
+        c.y - seq.blockHeaderExtra - seq.blockNestedHeaderGap,
+      )
     // An empty block (no message closes it) ends below the last row
     const blockBottom = blockBottoms[bi] ?? messageY + seq.blockPadBottom + 12
 

@@ -120,9 +120,9 @@ Not matched:
   the label centre sits 15 px above its arrow. Here the text is 11 px, actors 40 px, rows 40 px
   and the rise 10 px. The loop and the 30 px drop are mermaid's absolute sizes, so a self-message
   looks slightly larger against the text than in mermaid.
-- **Lifelines cut around other labels.** A lifeline crossed by a message label (#1242, #2280), a
-  block tab or an `else`/`and` label is cut around it; mermaid draws the line through the text.
-  Kept for legibility.
+
+Lifelines are no longer cut around message, block-tab or `else`/`and` labels: like mermaid
+12.3.0, each is one straight line ([#2706](https://github.com/dfadler/zombie-mermaid/issues/2706)).
 
 ## Sequence: `%%{init}%%` options and `link`/`links` ([#2589](https://github.com/dfadler/zombie-mermaid/issues/2589))
 
