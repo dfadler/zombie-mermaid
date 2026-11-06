@@ -63,4 +63,32 @@ describe('cluster exits rank below the whole cluster (#2738)', () => {
     const row = lines.find((l) => l.includes('C'))!
     expect(row.indexOf('C')).toBeLessThan(row.indexOf('D'))
   })
+
+  // Layouts where the cluster is left where it was: each must still render.
+  it.each([
+    ['a back edge', `${SRC}\n  W --> In`],
+    ['a node beside the chain', `${SRC}\n  In --> Q[Side]`],
+    ['targets on different ranks', `${SRC}\n  X --> Y`],
+    ['a target inside another cluster', `${SRC}\n  subgraph T\n    X\n  end`],
+    [
+      'a cluster wider than its exits',
+      'flowchart TD\n  subgraph S\n    a\n    b\n    c\n  end\n  S --> X\n  S --> Y',
+    ],
+    ['a left-to-right graph', SRC.replace('TD', 'LR')],
+    [
+      'a nested cluster',
+      'flowchart TD\n  subgraph S\n    subgraph I\n      a\n    end\n    b\n  end\n  S --> X\n  S --> Y',
+    ],
+    [
+      'four exits from a three-member cluster',
+      'flowchart TD\n  subgraph S\n    a\n    b\n    c\n  end\n  S --> X\n  S --> Y\n  S --> Z\n  S --> W',
+    ],
+    [
+      'a cluster with one exit',
+      'flowchart TD\n  subgraph S\n    a --> b\n    c\n  end\n  S --> X',
+    ],
+  ])('renders %s', (_name, src) => {
+    const out = renderMermaidASCII(src, { colorMode: 'none' })
+    expect(out).toContain('Reply'.slice(0, 0) + '┌')
+  })
 })

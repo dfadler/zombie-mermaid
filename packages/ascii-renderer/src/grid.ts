@@ -1575,7 +1575,7 @@ function centerClustersOverExits(graph: AsciiGraph): void {
   // Back and same-row edges route around the nodes they skip; moving nodes
   // scrambles those routes (see `centerParentsOverChildren`).
   const forward = graph.edges.every(
-    (e) => (e.from.gridCoord?.y ?? 0) < (e.to.gridCoord?.y ?? 0),
+    (e) => requireGridCoord(e.from).y < requireGridCoord(e.to).y,
   )
   if (!forward) return
   for (const sg of graph.subgraphs) {
@@ -1595,11 +1595,14 @@ function centerClustersOverExits(graph: AsciiGraph): void {
     if ([...targets].some((t) => isNodeInAnySubgraph(graph, t))) continue
     const tx = [...targets].map((t) => requireGridCoord(t).x)
     const mx = members.map((m) => requireGridCoord(m).x)
-    const delta = Math.floor(
-      (Math.min(...tx) + Math.max(...tx)) / 2 -
-        (Math.min(...mx) + Math.max(...mx)) / 2,
+    // Only ever rightward: a cluster already right of the row stays put.
+    const delta = Math.max(
+      0,
+      Math.floor(
+        (Math.min(...tx) + Math.max(...tx)) / 2 -
+          (Math.min(...mx) + Math.max(...mx)) / 2,
+      ),
     )
-    if (delta <= 0) continue
     // The chain feeding only the cluster moves with it.
     const moving = new Set<AsciiNode>(members)
     for (let grew = true; grew;) {
@@ -1633,16 +1636,12 @@ function centerClustersOverExits(graph: AsciiGraph): void {
       })
     )
       continue
+    // Free by the check above: nothing else sits in these rows past `minX`.
     const old = [...moving].map((n) => requireGridCoord(n))
     for (const gc of old) freeNodeBlock(graph, gc)
-    const dest = old.map((gc) => ({ x: gc.x + delta, y: gc.y }))
-    const fits = dest.every((gc) =>
-      isBlockFree(graph.grid, gc, NODE_BLOCK_SIZE),
-    )
     ;[...moving].forEach((n, i) => {
-      const gc = fits ? dest[i]! : old[i]!
-      n.gridCoord = gc
-      placeBlock(graph.grid, gc, NODE_BLOCK_SIZE)
+      n.gridCoord = { x: old[i]!.x + delta, y: old[i]!.y }
+      placeBlock(graph.grid, n.gridCoord, NODE_BLOCK_SIZE)
     })
   }
 }
