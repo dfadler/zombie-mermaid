@@ -368,6 +368,10 @@ function renderMermaidSVGRaw(
   // ./registry.ts).
   const registered = diagramRegistry[diagramType]
   const diagram = registered.parse(lines, decoded)
+  // Mermaid 12.3.0 draws C4 `accTitle` in the title slot, replacing any `title`.
+  if (diagramType === 'c4' && acc.accTitle) {
+    ;(diagram as { title?: string }).title = acc.accTitle.replace(/\s+/g, ' ')
+  }
   const g = diagram as { nodes?: unknown; edges?: unknown }
   if (g.nodes instanceof Map && Array.isArray(g.edges)) {
     checkGraphSize(g.nodes.size, g.edges.length, options.limits)
