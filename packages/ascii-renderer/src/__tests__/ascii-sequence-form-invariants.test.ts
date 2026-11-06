@@ -70,7 +70,8 @@ function blockFrameSpan(
  */
 function expectWrappedInside(ascii: string, anchor: string, label: string) {
   const words = label.split(' ')
-  expect(ascii).toMatch(new RegExp(words.join('[^A-Za-z]+')))
+  // Letters only, in order: frame, lifeline and padding chars drop out.
+  expect(ascii.replace(/[^A-Za-z]+/g, ' ')).toContain(words.join(' '))
   const frame = blockFrameSpan(ascii, anchor)
   const lines = ascii.split('\n')
   const top = lines.findIndex((l) => l.includes(anchor))
