@@ -174,6 +174,10 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   theme accent; mermaid uses its pastel `pie1`..`pie12` scale (`#ECECFF`, `#ffffde`, ...).
   `themeVariables` `pie1`..`pie12` are honoured only when opted in (see the
   `themeVariables` section below).
+- **Tall legend.** A legend taller than the 450px frame (about 20 slices or more) is
+  clipped at the top and bottom, as in mermaid 12.3.0: the viewBox height stays 450 and
+  the rows outside it are cut off. The ASCII table still lists every slice
+  ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722)).
 - **Empty pie.** When every slice is zero, zombie-mermaid draws a full outline circle;
   mermaid draws a half arc, which reads as a rendering glitch.
 - **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
@@ -217,8 +221,8 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
 also covered 12.1.0). Unless noted, these are choices, not bugs.
 
-- **SVG styling.** zombie-mermaid draws rounded bars, a generated `Bar 1` / `Line 1` legend
-  when there is more than one series, and grouped bar series side by side. Mermaid draws
+- **SVG styling.** zombie-mermaid draws rounded bars and
+  grouped bar series side by side. Mermaid draws
   square bars, no legend, and draws the second bar series over the first. Lines are straight
   segments with no point markers, there is no grid, and each axis has a line and tick marks,
   as in mermaid (it has no option for curved lines in 12.2.0 or on `develop`); the oracle
@@ -236,8 +240,6 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
 - **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
   value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
   correct reading (a known mermaid quirk).
-- **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
-  mermaid 12.2.0 renders `NewUsers`.
 - **Value-axis padding, flat data and x labels match mermaid in SVG only**
   ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0).
   The value axis keeps half a label's height (half its width, horizontally) of padding
@@ -572,6 +574,14 @@ one thing that still differs:
 
 - **Edge labels are drawn in a bordered box; mermaid draws a borderless grey background
   on the line.** Colour palette and chrome, not structure (decision #2617).
+
+## Flowchart `curve` directive is ignored ([#2729](https://github.com/dfadler/zombie-mermaid/issues/2729))
+
+mermaid 12.3.0 draws the same rounded orthogonal ELK edges for every
+`%%{init: {"flowchart": {"curve": ...}}}%%` value (basis, linear, step, stepBefore,
+stepAfter, natural, cardinal, monotoneX, bumpX, catmullRom: identical edge paths, checked
+headless with a scratch `npm i mermaid@12.3.0`). So do we: the directive and front-matter
+`config.flowchart.curve` are ignored. The `curve` render option still applies.
 
 ## Known limitations (not intentional, not yet fixed)
 

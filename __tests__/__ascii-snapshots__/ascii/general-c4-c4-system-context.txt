@@ -1,59 +1,37 @@
-                                          
-   System Context for Internet Banking    
-                                          
-                                          
-     +---------------------------+        
-     |             o             |        
-     |            /|\            |        
-     |            / \            |        
-     | Personal Banking Customer |        
-     |         [Person]          |        
-     |                           |        
-     |  A customer of the bank   |        
-     +---------------------------+        
-                    |           ^         
-                    |           |         
-                    |           |         
-                    |           |         
-                    | Uses      |         
-                    | [HTTPS]   |         
-  +-----------------|-----------|----+    
-  : Bank            |           |    :    
-  : [ENTERPRISE]    |           |    :    
-  :                 v           +---+:    
-  : +------------------------------+|:    
-  : |   Internet Banking System    ||:    
-  : |      [Software System]       ||:    
-  : |                              ||:    
-  : | Lets customers view accounts ||:    
-  : +------------------------------+|:    
-  :    |            |               |:    
-  :    |            | Reads from    |:    
-  :    |            | and writes    |:    
-  :    |            | to            |:    
-  :    |            v               |:    
-  :    |+---------------------+     |:    
-  :    |+---------------------+     |:    
-  :    ||       Ledger        |     |:    
-  :    ||  [Software System]  |     |:    
-  :    ||                     |     |:    
-  :    || Stores transactions |     |:    
-  :    |+---------------------+     |:    
-  :    |+---------------------+     |:    
-  :    |           Sends e-mails to |:    
-  +----|----------------------------|+    
-       | Sends e-mail using         |     
-       |                            |     
-       |                            |     
-       +--+                         |     
-          v                 +-------+     
-         +...................+            
-         :   E-mail System   :            
-         : [Software System] :            
-         :                   :            
-         :   Sends e-mails   :            
-         +...................+            
-                                          
-                                          
-                                          
-                                          
+                                                                                             
+                            System Context for Internet Banking                              
+                                                                                             
+                                                                                             
+  +---------------------------+                    +...................+                     
+  |             o             |                    :   E-mail System   :                     
+  |            /|\            |                    : [Software System] :                     
+  |            / \            |  Sends e-mails to  :                   :                     
+  | Personal Banking Customer |<-------------------:   Sends e-mails   :                     
+  |         [Person]          |                    +...................+                     
+  |                           |  Sends e-mail using ^                                        
+  |  A customer of the bank   |   +-----------------+                                        
+  +---------------------------+   |                                                          
+                   |              |                                                          
+                   |              |                                                          
+                   |              |                                                          
+                   |              |                                                          
+                   | Uses         |                                                          
+                   | [HTTPS]      |                                                          
+  +----------------|--------------|-----------------------------------------------------+    
+  : Bank           |              |                                                     :    
+  : [ENTERPRISE]   |              |                                                     :    
+  :                v              |                                                     :    
+  : +------------------------------+                            +---------------------+ :    
+  : |   Internet Banking System    |                            +---------------------+ :    
+  : |      [Software System]       |  Reads from and writes to  |       Ledger        | :    
+  : |                              |--------------------------->|  [Software System]  | :    
+  : | Lets customers view accounts |                            |                     | :    
+  : +------------------------------+                            | Stores transactions | :    
+  :                                                             +---------------------+ :    
+  :                                                             +---------------------+ :    
+  :                                                                                     :    
+  +-------------------------------------------------------------------------------------+    
+                                                                                             
+                                                                                             
+                                                                                             
+                                                                                             

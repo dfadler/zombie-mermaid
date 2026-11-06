@@ -1,19 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { splitStatements } from '@zombie-mermaid/core'
-import { parseC4Diagram } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidASCII } from '../../../../src/index.ts'
-import { rankElements } from '../c4-diagram.ts'
 import { samples } from '../../../../samples/samples-data.ts'
-
-function ranks(src: string): Record<string, number> {
-  const d = parseC4Diagram(splitStatements(src))
-  return Object.fromEntries(
-    rankElements(
-      d.elements.map((e) => e.alias),
-      d.relationships,
-    ),
-  )
-}
 
 /** [column, row] of the first occurrence of `needle`. */
 function find(out: string, needle: string): [number, number] {
@@ -24,46 +11,6 @@ function find(out: string, needle: string): [number, number] {
   }
   throw new Error(`"${needle}" not found in:\n${out}`)
 }
-
-describe('rankElements', () => {
-  it('ranks along relationships and lets Rel_U reverse them', () => {
-    expect(
-      ranks(`C4Context
-  System(a, "A")
-  System(b, "B")
-  System(c, "C")
-  Rel(a, b, "x")
-  Rel_U(b, c, "up")`),
-    ).toEqual({ a: 0, b: 1, c: 0 })
-  })
-
-  it('puts Rel_R / Rel_L pairs in one rank', () => {
-    expect(
-      ranks(`C4Context
-  System(a, "A")
-  System(b, "B")
-  System(c, "C")
-  Rel(a, b, "x")
-  Rel_R(b, c, "side")`),
-    ).toEqual({ a: 0, b: 1, c: 1 })
-  })
-
-  it('survives cycles', () => {
-    const r = ranks(`C4Context
-  System(a, "A")
-  System(b, "B")
-  Rel(a, b, "x")
-  Rel(b, a, "y")`)
-    expect(r.a).toBe(0)
-    expect(r.b).toBe(1)
-  })
-
-  it('ignores relationships to unknown or self endpoints', () => {
-    expect(
-      ranks('C4Context\nSystem(a, "A")\nRel(a, a, "loop")\nRel_R(a, a, "l")'),
-    ).toEqual({ a: 0 })
-  })
-})
 
 describe('C4 ASCII rendering', () => {
   const SRC = `C4Container
@@ -108,14 +55,27 @@ describe('C4 ASCII rendering', () => {
     expect(find(out, 'Shop')[1]).toBeLessThan(find(out, 'User')[1])
   })
 
-  it('flows top to bottom and BT reverses the rows', () => {
+  it('places shapes in declaration order and ignores the direction', () => {
     const src = 'C4Context\nSystem(a, "Aaa")\nSystem(b, "Bbb")\nRel(a, b, "x")'
     const td = renderMermaidASCII(src)
-    expect(find(td, 'Aaa')[1]).toBeLessThan(find(td, 'Bbb')[1])
-    const bt = renderMermaidASCII(src, { direction: 'BT' })
-    expect(find(bt, 'Bbb')[1]).toBeLessThan(find(bt, 'Aaa')[1])
-    // Arrowhead points at the target in both.
-    expect(td).toContain('▼')
+    // Mermaid puts both in one row, however the relationship points.
+    expect(find(td, 'Aaa')[1]).toBe(find(td, 'Bbb')[1])
+    expect(find(td, 'Aaa')[0]).toBeLessThan(find(td, 'Bbb')[0])
+    expect(renderMermaidASCII(src, { direction: 'BT' })).toBe(td)
+    // Arrowhead points at the target.
+    expect(td).toContain('►')
+  })
+
+  it('wraps a fifth shape onto a second row, as mermaid does', () => {
+    const out = renderMermaidASCII(
+      'C4Context\n' +
+        ['A1', 'B2', 'C3', 'D4', 'E5']
+          .map((n) => `System(${n}, "${n}")`)
+          .join('\n'),
+    )
+    expect(find(out, 'D4')[1]).toBe(find(out, 'A1')[1])
+    expect(find(out, 'E5')[1]).toBeGreaterThan(find(out, 'A1')[1])
+    expect(find(out, 'E5')[0]).toBe(find(out, 'A1')[0])
   })
 
   it('honors Rel_R: same row, source on the left, label between', () => {
@@ -132,23 +92,22 @@ describe('C4 ASCII rendering', () => {
     expect(out).toContain('►')
   })
 
-  it('honors Rel_L and Rel_U', () => {
-    const l = renderMermaidASCII(
-      'C4Context\nSystem(a, "Aaa")\nSystem(b, "Bbb")\nRel_L(a, b, "x")',
-    )
-    expect(find(l, 'Bbb')[0]).toBeLessThan(find(l, 'Aaa')[0])
-    const u = renderMermaidASCII(
-      'C4Context\nSystem(a, "Aaa")\nSystem(b, "Bbb")\nRel_U(a, b, "x")',
-    )
-    expect(find(u, 'Bbb')[1]).toBeLessThan(find(u, 'Aaa')[1])
+  it('does not move shapes for Rel_L or Rel_U, as in mermaid', () => {
+    for (const rel of ['Rel_L', 'Rel_U']) {
+      const out = renderMermaidASCII(
+        `C4Context\nSystem(a, "Aaa")\nSystem(b, "Bbb")\n${rel}(a, b, "x")`,
+      )
+      expect(find(out, 'Aaa')[1]).toBe(find(out, 'Bbb')[1])
+      expect(find(out, 'Aaa')[0]).toBeLessThan(find(out, 'Bbb')[0])
+    }
   })
 
   it('draws BiRel arrowheads at both ends', () => {
     const out = renderMermaidASCII(
       'C4Context\nSystem(a, "Aaa")\nSystem(b, "Bbb")\nBiRel(a, b, "x")',
     )
-    expect(out).toContain('▼')
-    expect(out).toContain('▲')
+    expect(out).toContain('►')
+    expect(out).toContain('◄')
   })
 
   it('uses only ASCII characters with useAscii', () => {
@@ -239,9 +198,12 @@ describe('relationship labels stay readable', () => {
     return lines.slice(bottom + 1, next)
   }
 
+  // Mermaid wraps after four shapes, so the fifth sits in a row of its own.
   const DYNAMIC = `C4Dynamic
   Person(u, "User")
   System(a, "App")
+  System(f2, "F2")
+  System(f3, "F3")
   System(b, "Backend")
   Rel(u, a, "Clicks")
   Rel(a, b, "Requests")
@@ -274,6 +236,9 @@ describe('relationship labels stay readable', () => {
   it('wraps a long label beside its route instead of drawing it over the route', () => {
     const out = renderMermaidASCII(`C4Container
   Container(w, "Web", "React")
+  System(f1, "F1")
+  System(f2, "F2")
+  System(f3, "F3")
   Container(a, "API", "Node")
   Rel(w, a, "Calls the API with a long label", "JSON/HTTPS")`)
     for (const word of [
@@ -303,11 +268,22 @@ describe('relationship labels stay readable', () => {
         (_, i) => `Rel(a, b, "label ${i}")`,
       )
       const out = renderMermaidASCII(
-        `C4Context\n  System(a, "A")\n  System(b, "B")\n  ${rels.join('\n  ')}`,
+        `C4Context\n  System(a, "A")\n  System(f1, "F1")\n  System(f2, "F2")\n  System(f3, "F3")\n  System(b, "B")\n  ${rels.join('\n  ')}`,
       )
       return between(out, 'A').length
     }
     expect(rows(4)).toBeGreaterThan(rows(1))
+  })
+})
+
+describe('routes keep off box sides (#2723)', () => {
+  it('does not run a stroke along another box border', () => {
+    const src = samples.find((s) =>
+      s.title.includes('Container With Boundary'),
+    )!
+    const out = renderMermaidASCII(src.source)
+    // `│├` / `┤│` and the like: a route on the column next to a box side.
+    expect(out).not.toMatch(/[│┐┘][├┤╭╮╰╯│]{1}[│├]|│[╭├╰]|[╮┤╯]│/)
   })
 })
 

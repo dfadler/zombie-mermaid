@@ -1,5 +1,4 @@
                            Actual, Forecast, Target
-                          # Bar 1  - Line 1  - Line 2
 
     |                                                                    +-
     |                                                                 +--+##

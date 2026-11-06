@@ -44,3 +44,39 @@ describe('xychart ASCII – narrow-range value-axis labels', () => {
     expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(1)
   })
 })
+
+describe('xychart ASCII – flat value series (#2727)', () => {
+  const axisLabels = (out: string) =>
+    out.split('\n').filter((l) => /^\s*-?[\d.]+[┤+]/.test(l))
+
+  it.each([
+    ['bar [42, 42, 42]', '42'],
+    ['bar [0, 0, 0]', '0'],
+    ['line [5]', '5'],
+  ])('vertical %s draws one tick, as Mermaid does', (series, label) => {
+    const rows = axisLabels(render(`xychart-beta\n  ${series}`))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.trim().startsWith(label)).toBe(true)
+  })
+
+  it('horizontal flat bars draw one tick label', () => {
+    const out = render(`xychart-beta horizontal
+      x-axis [a, b]
+      bar [50, 50]`)
+    expect(out).toContain('50')
+    expect(out).not.toMatch(/50\.\d/)
+  })
+
+  it('horizontal flat line and mixed flat bar+line series draw one tick', () => {
+    expect(
+      render(`xychart-beta horizontal
+        x-axis [a, b]
+        line [7, 7]`),
+    ).not.toMatch(/7\.\d/)
+    const mixed = render(`xychart-beta
+      x-axis [a, b]
+      bar [3, 3]
+      line [3, 3]`)
+    expect(axisLabels(mixed)).toHaveLength(1)
+  })
+})

@@ -1,24 +1,24 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and SVG for the issue source > ascii 1`] = `
-" ┌───┐              ┌───┐                                    
- │ A │              │ B │                                    
- └─┬─┘              └─┬─┘                                    
-   │                  │                                      
-┌─ loop ────────────────── [every retry] ───────────────────┐
-│  │                  │                                     │
-│  │      fetch       │                                     │
-│  │──────────────────▶                                     │
-│  │                  │                                     │
-│  │                  │ ┌─────────────────────────────────┐ │
-│  │                  │ │ waits for the upstream response │ │
-│  │                  │ └─────────────────────────────────┘ │
-│  │                  │                                     │
-└───────────────────────────────────────────────────────────┘
-   │                  │                                      
- ┌─┴─┐              ┌─┴─┐                                    
- │ A │              │ B │                                    
- └───┘              └───┘                                    "
+" ┌───┐      ┌───┐                                    
+ │ A │      │ B │                                    
+ └─┬─┘      └─┬─┘                                    
+   │          │                                      
+┌─ loop ────────────── [every retry] ───────────────┐
+│  │          │                                     │
+│  │  fetch   │                                     │
+│  │──────────▶                                     │
+│  │          │                                     │
+│  │          │ ┌─────────────────────────────────┐ │
+│  │          │ │ waits for the upstream response │ │
+│  │          │ └─────────────────────────────────┘ │
+│  │          │                                     │
+└───────────────────────────────────────────────────┘
+   │          │                                      
+ ┌─┴─┐      ┌─┴─┐                                    
+ │ A │      │ B │                                    
+ └───┘      └───┘                                    "
 `;
 
 exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and SVG for the issue source > svg 1`] = `

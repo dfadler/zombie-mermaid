@@ -11,11 +11,11 @@ function render(text: string, useAscii = false): string {
   return renderMermaidASCII(text, { colorMode: 'none', useAscii })
 }
 
-/** Text of the row under the x-axis line (first row after the `┬`/`+` ticks). */
-function labelRow(out: string): string {
+/** Text of the row under the x-axis line (above it for `above`, a horizontal chart's value axis) (first row after the `┬`/`+` ticks). */
+function labelRow(out: string, above = false): string {
   const lines = out.split('\n')
   const axis = lines.findIndex((l) => /[┬+].*[┬+]/.test(l) && /[─-]{3}/.test(l))
-  return lines[axis + 1]!
+  return lines[axis + (above ? -1 : 1)]!
 }
 
 const EIGHT = `xychart-beta
@@ -71,7 +71,7 @@ describe('xychart ASCII – label collisions (#2113)', () => {
     const out = render(`xychart-beta horizontal
       x-axis [A, B]
       bar [40000, 220000]`)
-    const row = labelRow(out)
+    const row = labelRow(out, true)
     const nums = row.trim().split(/\s+/)
     expect(nums.length).toBeGreaterThan(1)
     for (const n of nums) expect(n).toMatch(/^\d+$/)
