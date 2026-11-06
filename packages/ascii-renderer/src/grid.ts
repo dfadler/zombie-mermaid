@@ -1909,6 +1909,16 @@ function computeMinLevels(
           ? [e.to]
           : [],
     )
+    // A cluster is one block to mermaid: a node reached from inside it ranks
+    // below the whole cluster, not just below the member that links to it
+    // (#2738), so every member also feeds the cluster's outside targets.
+    for (const sg of subgraphChain(graph, node)) {
+      const members = collectSubgraphMembers(sg)
+      for (const e of graph.edges) {
+        if (!e.feedback && members.includes(e.from) && !members.includes(e.to))
+          rankChildren.push(e.to)
+      }
+    }
     for (const child of rankChildren) {
       if (child === node || state.get(child) === 'open') continue
       out.push(child)
@@ -2613,5 +2623,11 @@ function compareBySiblingSubgraphOrder(
 
 /** Get all direct children of a node (targets of outgoing edges). */
 function getChildren(graph: AsciiGraph, node: AsciiNode): AsciiNode[] {
-  return getEdgesFromNode(graph, node).map((e) => e.to)
+  // Mermaid hangs `Sub --> X` on the cluster's first member, so its long edge
+  // lands right of what the other members link to. When the exit's source is
+  // not that first member, its targets follow the node's own (#2738).
+  const own = getEdgesFromNode(graph, node)
+  const late = (e: AsciiGraph['edges'][number]) =>
+    e.clusterSource !== undefined && e.clusterSource.nodes[0] !== node
+  return [...own.filter((e) => !late(e)), ...own.filter(late)].map((e) => e.to)
 }

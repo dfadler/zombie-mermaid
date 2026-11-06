@@ -455,7 +455,20 @@ function planOne(
       const start = vertical ? at.y : at.x
       return start <= track && track <= start + 2
     })
-    if (occupied || !sizes.has(track)) return { at: track, flow: true }
+    // The track just above a target is the row its other incoming edges end
+    // their arrowheads on; a run along it would cross them (#2738).
+    const arrowRow = graph.nodes.some((node) => {
+      if (
+        (vertical ? requireGridCoord(node).y : requireGridCoord(node).x) !==
+        track + 1
+      )
+        return false
+      return graph.edges.some(
+        (e) => e.to === node && e.from !== node && !eligible.includes(e),
+      )
+    })
+    if (occupied || arrowRow || !sizes.has(track))
+      return { at: track, flow: true }
   }
 
   const stubLen = (vertical ? gutter.y - face.y : gutter.x - face.x) + rows - 1

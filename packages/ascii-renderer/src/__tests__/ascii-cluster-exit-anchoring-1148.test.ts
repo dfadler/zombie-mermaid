@@ -557,10 +557,9 @@ describe('cluster-exit anchoring: eligibility edge cases', () => {
     for (const [sg, plan] of graph.clusterExitPlans ?? []) {
       expect(gridToDrawingCoord(graph, plan.gutter).x).toBeGreaterThan(sg.maxX)
     }
-    // Rendered: Outer's exits start on its wall (├, #1330), E's straight
-    // out of z's row, then run on past it to their targets.
-    const zRow = render(src).find((l) => l.includes('z'))
-    expect(zRow).toMatch(/z │ +├─+►/)
+    // Rendered: Outer's exits start on its wall (├, #1330) and turn down
+    // toward their targets, which sit in one rank past the whole cluster (#2738).
+    expect(render(src).some((l) => /│ +├─+┐/.test(l))).toBe(true)
   })
 })
 
