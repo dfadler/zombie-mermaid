@@ -9,7 +9,7 @@ import type {
   PlotArea,
   LegendItem,
 } from '@zombie-mermaid/mermaid-parser'
-import { niceTickValues } from '@zombie-mermaid/core'
+import { collapseFlatRange, niceTickValues } from '@zombie-mermaid/core'
 import type { XyChartRenderOptions } from '@zombie-mermaid/core'
 import { estimateTextWidth } from '../styles.ts'
 
@@ -77,16 +77,10 @@ function valueAxis(
   extent: number,
   labelSize: (labels: string[]) => number,
 ) {
-  const { min, max } = chart.yAxis.range!
-  const all = chart.series.flatMap((s) => s.data)
-  const v = all[0]
-  const flat =
-    v !== undefined &&
-    all.every((d) => d === v) &&
-    min === v - 0.1 &&
-    max === v + 0.1
-  // Ceiling: an explicit `y-axis v-0.1 --> v+0.1` over flat data collapses too; the parser would need to flag its synthetic range to tell them apart.
-  const range = flat ? { min: v, max: v } : { min, max }
+  const range = collapseFlatRange(
+    chart.yAxis.range!,
+    chart.series.flatMap((s) => s.data),
+  )
   const ticks = niceTickValues(range.min, range.max)
   const labels = formatTickLabels(ticks)
   const pad = Math.min(labelSize(labels) / 2, 0.2 * extent)
