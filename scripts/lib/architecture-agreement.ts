@@ -18,7 +18,7 @@ import {
   architectureToGraph,
   parseArchitecture,
 } from '@zombie-mermaid/mermaid-parser'
-import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
+import { layoutArchitectureGrid } from '../../packages/svg-renderer/src/layout-engine/architecture-grid.ts'
 import {
   agreement,
   type Agreement,
@@ -88,7 +88,7 @@ export function parseOfficialArchitecture(
 
 /** Box of every service, junction and group in our own layout of `source` (the one the SVG is drawn from). */
 export function measureOurArchitecture(source: string): LayoutBoxes {
-  const laid = layoutGraphSync(
+  const laid = layoutArchitectureGrid(
     architectureToGraph(parseArchitecture(splitStatements(source))),
   )
   const box = (n: { x: number; y: number; width: number; height: number }) => ({
@@ -127,16 +127,14 @@ export function worstArch(a: Agreement): number | null {
 }
 
 /**
- * Floor for every sample's lowest figure. The first run against mermaid 12.2.0
- * had 50% (Group-To-Group Edges, vertical); the port grid (#2473) lifted the
- * weakest sample to 67%, and aligning a node with its upper neighbour lifted
- * Group-To-Group Edges to 83%, and levelling a group's linked row with the
- * node it links to (`architecture-rows.ts`) lifted Nested Groups And Junction
- * from 73% to 100% vertical, leaving Group-To-Group Edges (83% horizontal) the
- * weakest. This holds that gain. A regression guard, not a parity claim:
- * services inside groups still stagger from fcose's rows.
+ * Floor for every sample's lowest figure. Measured on the layout the SVG is
+ * drawn from (`layoutArchitectureGrid`; the oracle once scored the ELK layout
+ * by mistake, which read 67-87% and prompted #2473 / #2557), all three samples
+ * agree with mermaid@12.3.0 on every pair, so the floor holds that. A
+ * regression guard on relative placement only: fcose's distances (group
+ * sizes, the gap below a junction) are not reproduced.
  */
-export const ARCH_FLOOR = 0.8
+export const ARCH_FLOOR = 0.95
 
 /** One tracked data point: mean of each figure over the architecture samples. */
 export interface ArchitectureEntry {
