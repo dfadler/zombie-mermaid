@@ -43,6 +43,7 @@ import { splitStatements } from '@zombie-mermaid/core'
 import { toDisplayCells } from './display-width.ts'
 import { findFreeLane } from './lane-search.ts'
 import { getAsciiLayout } from './layout-hints.ts'
+import type { AsciiLayoutHints } from './layout-hints.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // ============================================================================
@@ -515,9 +516,19 @@ export function renderErAscii(
   // (#2645, #2663). Without one, or for LR/RL, the placement below is the
   // grid's own, unchanged.
   const sideBySide = diagram.direction === 'LR' || diagram.direction === 'RL'
-  const hints = sideBySide ? undefined : getAsciiLayout()?.er?.(diagram)
+  let hints: AsciiLayoutHints | undefined
+  try {
+    hints = sideBySide ? undefined : getAsciiLayout()?.er?.(diagram)
+  } catch {
+    // A layout engine that fails leaves the grid placement, not an error.
+    hints = undefined
+  }
+  // Every entity needs an integer layer: a fractional one would never be reached.
   const useHints =
-    hints !== undefined && diagram.entities.every((e) => hints.nodes.has(e.id))
+    hints !== undefined &&
+    diagram.entities.every((e) =>
+      Number.isInteger(hints.nodes.get(e.id)?.layer),
+    )
 
   // --- Layout: place each component, then stack components vertically ---
   const placed = new Map<string, PlacedEntity>()
@@ -1243,6 +1254,9 @@ export function renderErAscii(
     const b = placed.get(rel.entity2)
     /* v8 ignore next */
     if (!a || !b) return 0
+    // Same-row edges keep declaration order, ahead of the jogs, so a tall
+    // label there cannot be crowded out by the sort.
+    if (a.y === b.y) return -Infinity
     const [up, low] = a.y <= b.y ? [a, b] : [b, a]
     return -(
       low.x +

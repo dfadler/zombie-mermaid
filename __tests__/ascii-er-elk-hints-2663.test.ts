@@ -154,6 +154,41 @@ describe('ER ASCII with ELK layout hints', () => {
     expect(out).toBe(render(SAMPLE))
   })
 
+  it('falls back to the grid when the provider throws or gives a fractional layer', () => {
+    const grid = render(SAMPLE)
+    registerAsciiLayout({
+      er: () => {
+        throw new Error('layout failed')
+      },
+    })
+    expect(render(SAMPLE)).toBe(grid)
+    const ids = ['ORDER', 'LINE_ITEM', 'SHIPMENT', 'PRODUCT', 'REVIEW']
+    registerAsciiLayout({
+      er: () => ({
+        nodes: new Map(
+          ids.map((id, i) => [id, { layer: i / 2, order: 0, cross: 0 }]),
+        ),
+        edges: [],
+      }),
+    })
+    expect(render(SAMPLE)).toBe(grid)
+  })
+
+  it('keeps a label on a same-row edge whatever else is drawn', () => {
+    const hints: AsciiLayoutHints = {
+      nodes: new Map([
+        ['A', { layer: 0, order: 0, cross: 0 }],
+        ['B', { layer: 0, order: 1, cross: 1 }],
+      ]),
+      edges: [],
+    }
+    registerAsciiLayout({ er: () => hints })
+    const out = render(`erDiagram
+  B ||--|| A : lost
+  A ||--|| B : "aaaa<br>bbbb<br>cccc<br>dddd"`)
+    expect(out).toContain('lost')
+  })
+
   it('draws no stray junction when a bypass column is the stem’s own (no provider)', () => {
     const out = render(`erDiagram
   D ||--o{ A : lbl0
