@@ -11,14 +11,14 @@ import { createMapping } from '../grid.ts'
 import { portShifts } from '../port-offsets.ts'
 import { flowLaneOf } from '../edge-routing.ts'
 
-const build = (lanes: number) => {
+const build = (lanes: number, extra = '') => {
   // Long labels keep the lanes (short ones are drawn side by side instead).
   const edges = ['first', 'second', 'third', 'fourth', 'fifth']
     .slice(0, lanes)
     .map((label) => `  A -->|${label}| B`)
     .join('\n')
   const graph = convertToAsciiGraph(
-    parseMermaid(`flowchart TD\n  Start --> A\n${edges}\n`),
+    parseMermaid(`flowchart TD\n  Start --> A\n${edges}\n${extra}`),
     {
       useAscii: false,
       paddingX: 6,
@@ -41,7 +41,8 @@ const build = (lanes: number) => {
 
 describe('plain parallel lanes on the target face (#1743, #2025)', () => {
   it('three lanes: each later lane lands on its own row, the outer one lower', () => {
-    const { ends, starts } = build(3)
+    // A sibling edge on the faces keeps the three on side lanes.
+    const { ends, starts } = build(3, '  A --> A\n')
     expect(ends[0]).toBeLessThan(ends[1]!)
     // Nested on the source too: the outer lane leaves higher.
     expect(starts[0]).toBeGreaterThan(starts[1]!)
