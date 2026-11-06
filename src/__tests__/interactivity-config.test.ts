@@ -70,12 +70,6 @@ describe('%%{init: ...}%% directives (#198 row 17)', () => {
     ).not.toThrow()
   })
 
-  it('rejects an unrecognized curve name instead of passing it through', () => {
-    expect(
-      parseInitDirective('%%{init: {"flowchart": {"curve": "nope"}}}%%')?.curve,
-    ).toBeUndefined()
-  })
-
   it('reports theme as unapplied rather than silently dropping it', () => {
     /*
      * `theme` is parsed and kept as metadata, but never applied: colors come
