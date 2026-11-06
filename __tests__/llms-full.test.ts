@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   absolutizeLinks,
   generateLlmsFull,
@@ -54,4 +54,49 @@ it('verify runs the drift check only when a generator input changed', async () =
     touchesLlmsFullInputs(['src/a.ts', 'docs/unlinked-draft.md'], inputs),
   ).toBe(false)
   expect(touchesLlmsFullInputs([], inputs)).toBe(false)
+})
+
+describe('scripts/check-llms-full.ts', () => {
+  const run = async (argv: string[], stale = false) => {
+    vi.resetModules()
+    vi.doMock('node:fs/promises', async (orig) => {
+      const real = await orig<typeof import('node:fs/promises')>()
+      return {
+        ...real,
+        readFile: async (p: unknown, ...a: unknown[]) => {
+          const text = await (real.readFile as Function)(p, ...a)
+          return stale && String(p).endsWith('llms-full.txt')
+            ? `${text}drift`
+            : text
+        },
+      }
+    })
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const argvSpy = vi
+      .spyOn(process, 'argv', 'get')
+      .mockReturnValue(['n', 's', ...argv])
+    process.exitCode = undefined
+    await import('../scripts/check-llms-full.ts')
+    const result = {
+      code: process.exitCode,
+      msg: String(err.mock.calls[0]?.[0] ?? ''),
+    }
+    process.exitCode = undefined
+    err.mockRestore()
+    argvSpy.mockRestore()
+    vi.doUnmock('node:fs/promises')
+    return result
+  }
+
+  it('skips the comparison when no input changed', async () => {
+    expect((await run(['src/a.ts'], true)).code).toBeUndefined()
+  })
+  it('passes when an input changed and the file is fresh', async () => {
+    expect((await run(['docs/known-differences.md'])).code).toBeUndefined()
+  })
+  it('fails with the fix command when an input changed and the file is stale', async () => {
+    const r = await run(['docs/known-differences.md'], true)
+    expect(r.code).toBe(1)
+    expect(r.msg).toContain('pnpm run docs:llms')
+  })
 })
