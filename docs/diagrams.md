@@ -158,9 +158,10 @@ label; drawing a misleading outline would be worse.
 A diagram can configure itself inline:
 
 ```
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart TD
-  A --> B --> C
+%%{init: {"pie": {"textPosition": 0.6}}}%%
+pie
+  "A" : 2
+  "B" : 1
 ```
 
 Mermaid's relaxed JSON is accepted — unquoted keys and single quotes both
@@ -237,11 +238,14 @@ Keys parsed but deliberately not acted on, and why:
 | `fontFamily`      | use the `font` render option                                                 |
 | `htmlLabels`      | labels are always SVG text                                                   |
 | `maxTextSize`     | no text-size limit is enforced                                               |
+| `flowchart.curve` | mermaid 12.3.0 ignores it too; use the `curve` render option to opt in       |
 
 ### Edge curves
 
-`flowchart.curve` selects how a routed edge is drawn. It changes only the
-drawn line — never where the edge goes.
+The `curve` render option selects how a routed edge is drawn. It changes only
+the drawn line — never where the edge goes. A `%%{init: {"flowchart": {"curve":
+...}}}%%` directive is **ignored**: mermaid 12.3.0 draws the same rounded
+orthogonal edges for every `curve` value (#2729).
 
 | Value                             | Result                             |
 | --------------------------------- | ---------------------------------- |

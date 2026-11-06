@@ -572,6 +572,14 @@ one thing that still differs:
 - **Edge labels are drawn in a bordered box; mermaid draws a borderless grey background
   on the line.** Colour palette and chrome, not structure (decision #2617).
 
+## Flowchart `curve` directive is ignored ([#2729](https://github.com/dfadler/zombie-mermaid/issues/2729))
+
+mermaid 12.3.0 draws the same rounded orthogonal ELK edges for every
+`%%{init: {"flowchart": {"curve": ...}}}%%` value (basis, linear, step, stepBefore,
+stepAfter, natural, cardinal, monotoneX, bumpX, catmullRom: identical edge paths, checked
+headless with a scratch `npm i mermaid@12.3.0`). So do we: the directive and front-matter
+`config.flowchart.curve` are ignored. The `curve` render option still applies.
+
 ## Known limitations (not intentional, not yet fixed)
 
 ## ER diagrams
