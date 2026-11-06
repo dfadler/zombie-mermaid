@@ -1,6 +1,7 @@
 /**
  * `accTitle` / `accDescr` have no place in text output (#1865): every
- * diagram type renders byte-identically with and without them.
+ * diagram type renders byte-identically with and without them, except C4,
+ * where Mermaid 12.3.0 draws accTitle as the title (#2696, c4-ascii.test.ts).
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -14,7 +15,6 @@ const BODIES: Record<string, string> = {
   xychart: 'xychart-beta\n  line [1, 2, 3]',
   architecture:
     'architecture-beta\n  service a(server)[A]\n  service b(server)[B]\n  a:R -- L:b',
-  c4: 'C4Context\n  Person(u, "User")\n  System(s, "System")\n  Rel(u, s, "uses")',
 }
 
 describe.each(Object.entries(BODIES))('%s', (_type, body) => {

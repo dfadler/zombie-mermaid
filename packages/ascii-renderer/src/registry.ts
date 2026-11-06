@@ -58,6 +58,8 @@ export interface AsciiRenderExtras {
   limits?: RenderLimits
   /** Read by `pie` only (`pie1..pie12`); the rest ride on the theme. */
   honorThemeVariables?: boolean
+  /** Read by `c4` only: Mermaid draws `accTitle` in the title slot. */
+  accTitle?: string
 }
 
 /**
