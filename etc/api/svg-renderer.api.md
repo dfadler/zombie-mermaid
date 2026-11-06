@@ -100,7 +100,8 @@ export const CLS: {
     readonly annotationHeight: 16;
     readonly memberRowHeight: 20;
     readonly sectionPadY: 8;
-    readonly emptySectionHeight: 8;
+    readonly emptySectionHeight: 16;
+    readonly emptyBareSectionHeight: 12;
     readonly mermaidPad: 12;
     readonly memberFontSize: 11;
     readonly memberFontWeight: 400;

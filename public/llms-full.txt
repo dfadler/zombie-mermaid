@@ -1415,8 +1415,10 @@ several lines, anywhere after the header. `accTitle` becomes the accessible
 name when the `title` option is not given (the option wins; for C4 the order is
 option, `accTitle`, then the C4 `title`), and `accDescr` becomes a
 `<desc id="zm-desc-N">` referenced by `aria-describedby`. The statements are
-never drawn, and both are dropped when the diagram is `decorative`. ASCII output
-ignores them. The visible chart `title` of a pie chart is not used as its
+never drawn (except C4, where Mermaid 12.3.0 draws `accTitle` in the title slot,
+replacing any `title`, in SVG and ASCII), and both are dropped when the diagram is
+`decorative` (a decorative C4 still draws the `accTitle` text; only the accessible
+name and description are omitted). ASCII output otherwise ignores them. The visible chart `title` of a pie chart is not used as its
 accessible name.
 
 For a diagram that's already described in surrounding prose, mark it
@@ -1953,6 +1955,10 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   theme accent; mermaid uses its pastel `pie1`..`pie12` scale (`#ECECFF`, `#ffffde`, ...).
   `themeVariables` `pie1`..`pie12` are honoured only when opted in (see the
   `themeVariables` section below).
+- **Tall legend.** A legend taller than the 450px frame (about 20 slices or more) is
+  clipped at the top and bottom, as in mermaid 12.3.0: the viewBox height stays 450 and
+  the rows outside it are cut off. The ASCII table still lists every slice
+  ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722)).
 - **Empty pie.** When every slice is zero, zombie-mermaid draws a full outline circle;
   mermaid draws a half arc, which reads as a rendering glitch.
 - **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
@@ -1996,8 +2002,8 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
 also covered 12.1.0). Unless noted, these are choices, not bugs.
 
-- **SVG styling.** zombie-mermaid draws rounded bars, a generated `Bar 1` / `Line 1` legend
-  when there is more than one series, and grouped bar series side by side. Mermaid draws
+- **SVG styling.** zombie-mermaid draws rounded bars and
+  grouped bar series side by side. Mermaid draws
   square bars, no legend, and draws the second bar series over the first. Lines are straight
   segments with no point markers, there is no grid, and each axis has a line and tick marks,
   as in mermaid (it has no option for curved lines in 12.2.0 or on `develop`); the oracle

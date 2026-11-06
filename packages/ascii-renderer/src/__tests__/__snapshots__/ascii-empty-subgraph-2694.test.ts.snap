@@ -36,19 +36,18 @@ exports[`an empty subgraph prints its title (#2694) > edge-endpoint: ASCII and S
   }
 </style>
 <defs>
-  <marker id="zmhkjrl7-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm59nxdm-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmhkjrl7-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm59nxdm-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
-  <rect x="140" y="48.45" width="49.44" height="20" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="164.72" y="62.45" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="one" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 58.45 L 140 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmhkjrl7-arrowhead)" />
-<path class="edge" data-from="one" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 189.44 58.45 L 229.44 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmhkjrl7-arrowhead)" />
+<path class="edge" data-from="A" data-to="one" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 58.45 L 140 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm59nxdm-arrowhead)" />
+<path class="edge" data-from="one" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 189.44 58.45 L 229.44 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm59nxdm-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="40" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="70" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
@@ -108,18 +107,17 @@ exports[`an empty subgraph prints its title (#2694) > lr: ASCII and SVG snapshot
   }
 </style>
 <defs>
-  <marker id="zmdwifg9-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1l468lp-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmdwifg9-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1l468lp-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
-  <rect x="45.28" y="40" width="49.44" height="20" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="70" y="54" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 118.45 L 140 118.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmdwifg9-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 118.45 L 140 118.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1l468lp-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="100" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="70" y="118.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
@@ -190,10 +188,10 @@ exports[`an empty subgraph prints its title (#2694) > nested-in-filled: ASCII an
   }
 </style>
 <defs>
-  <marker id="zm1wia64d-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm134jw3l-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1wia64d-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm134jw3l-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
@@ -201,11 +199,10 @@ exports[`an empty subgraph prints its title (#2694) > nested-in-filled: ASCII an
   <rect x="150" y="40" width="108" height="181.9" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="204" y="54" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">outer</text>
 <g class="subgraph" data-id="inner" data-label="inner">
-  <rect x="175.21" y="91" width="57.57" height="20" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="204" y="105" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">inner</text>
 </g>
 </g>
-<path class="edge" data-from="A" data-to="X" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 179.45 L 174 179.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1wia64d-arrowhead)" />
+<path class="edge" data-from="A" data-to="X" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 179.45 L 174 179.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm134jw3l-arrowhead)" />
 <g class="node" data-id="X" data-label="X" data-shape="rectangle">
   <rect x="174" y="161" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="204" y="179.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">X</text>
@@ -266,15 +263,14 @@ exports[`an empty subgraph prints its title (#2694) > only-empty: ASCII and SVG 
   }
 </style>
 <defs>
-  <marker id="zm27ejql-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1gehdo7-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm27ejql-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1gehdo7-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="s" data-label="s">
-  <rect x="40" y="40" width="20" height="32.83" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="50" y="54" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">s</text>
 </g>
 </svg>"
@@ -328,18 +324,17 @@ exports[`an empty subgraph prints its title (#2694) > td: ASCII and SVG snapshot
   }
 </style>
 <defs>
-  <marker id="zm1e8tw97-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1kmprc8-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1e8tw97-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1kmprc8-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
-  <rect x="40" y="40" width="20" height="49.44" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="50" y="54" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 130 89.44 L 130 129.44" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1e8tw97-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 130 89.44 L 130 129.44" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1kmprc8-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="100" y="52.54" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="130" y="70.99" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
@@ -415,18 +410,17 @@ exports[`an empty subgraph prints its title (#2694) > td-direction-override: ASC
   }
 </style>
 <defs>
-  <marker id="zm19lpnpc-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1vqxxj-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm19lpnpc-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1vqxxj-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
-  <rect x="40" y="40" width="49.44" height="20" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="64.72" y="54" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 70 136.9 L 70 176.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm19lpnpc-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 70 136.9 L 70 176.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1vqxxj-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="100" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="70" y="118.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>

@@ -65,11 +65,20 @@ describe('an empty subgraph prints its title (#2694)', () => {
     expect(renderMermaidASCII(SOURCES[4]![1])).toContain('│ one ├')
   })
 
+  it('SVG draws an empty subgraph as its title only, no frame (#2726)', () => {
+    const svg = renderMermaidSVG(SOURCES[0]![1])
+    const g = /<g class="subgraph"[^>]*>([\s\S]*?)<\/g>/.exec(svg)![1]!
+    expect(g).toContain('>one</text>')
+    expect(g).not.toContain('<rect')
+    // A filled subgraph keeps its frame, and so does a filled parent of an empty one.
+    const nested = renderMermaidSVG(SOURCES[3]![1])
+    expect(nested).toMatch(/data-id="outer"[^>]*>\s*<rect/)
+    expect(nested).not.toMatch(/data-id="inner"[^>]*>\s*<rect/)
+  })
+
   it.each(SOURCES)('%s: ASCII and SVG snapshots', (_n, src) => {
     expect(renderMermaidASCII(src)).toMatchSnapshot('unicode')
     expect(renderMermaidASCII(src, { useAscii: true })).toMatchSnapshot('ascii')
-    // Pins the CURRENT SVG, which still draws a framed box for the empty
-    // subgraph; mermaid 12.3.0 shows only the title (follow-up).
     expect(renderMermaidSVG(src)).toMatchSnapshot('svg')
   })
 })
