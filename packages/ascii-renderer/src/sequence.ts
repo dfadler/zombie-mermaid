@@ -72,6 +72,32 @@ function actorGlyphLines(a: {
   return g === undefined ? [] : [g]
 }
 
+// Wrap budget (columns) for a block header or divider label, from the span
+// of the lifelines the block covers. Mermaid 12.3.0 wraps to the span less
+// 30px at ~7.6px per character; a default 10-column gap is ~200px, so this is
+// ~2.6 columns of text per column of span, less 3 (#2745). Floor ~80px.
+function wrapBudget(span: number): number {
+  return Math.max(Math.floor(2.6 * span) - 3, 10)
+}
+
+// Break a block label (shown as `[label]`) at spaces, mermaid's wrapLabel
+// rule: break once the line so far plus the next word and its trailing space
+// reaches `avail`. A word wider than that stays whole. Explicit newlines kept.
+function wrapBracketed(label: string, avail: number): string[] {
+  const out: string[] = []
+  for (const line of `[${label}]`.split('\n')) {
+    let cur = ''
+    for (const word of line.split(' ')) {
+      if (cur && displayWidth(cur) + displayWidth(word) + 1 >= avail) {
+        out.push(cur)
+        cur = word
+      } else cur = cur ? `${cur} ${word}` : word
+    }
+    out.push(cur)
+  }
+  return out
+}
+
 // Horizontal clearance between a block's (loop/alt/opt/par/etc.) side wall
 // and the lifelines its own messages touch. Shared by every block type —
 // there is no per-type wall calculation, so this constant is the single
@@ -191,14 +217,41 @@ export function renderSequenceAscii(
     // type tab (as mermaid does), so it needs a dash each side.
     let width = maxLineWidth(block.type) + 4
     if (block.label) {
-      width += maxLineWidth(`[${block.label}]`) + 5
+      width += Math.max(...headerLabelLines(block).map(displayWidth)) + 5
     }
-    for (const divider of block.dividers) {
-      if (divider.label) {
-        width = Math.max(width, maxLineWidth(`[${divider.label}]`) + 4)
+    for (let d = 0; d < block.dividers.length; d++) {
+      if (block.dividers[d]!.label) {
+        width = Math.max(
+          width,
+          Math.max(...dividerLabelLines(block, d).map(displayWidth)) + 4,
+        )
       }
     }
     return width
+  }
+
+  // Header and divider labels wrap to the frame instead of widening the
+  // lifeline gap (#2745, mermaid 12.3.0). Read llX lazily: it is only final
+  // after the layout passes below.
+  function wrapAvail(block: Block): number {
+    const xs: number[] = []
+    const last = Math.min(block.endIndex, diagram.messages.length - 1)
+    for (let m = block.startIndex; m <= last; m++) {
+      const msg = diagram.messages[m]!
+      const f = llX[actorIndexOf(msg.from)]!
+      xs.push(f, llX[actorIndexOf(msg.to)]!)
+      // A self-message's loop and label widen mermaid's block too.
+      if (msg.from === msg.to) xs.push(f + selfExtent(msg), f - selfLeft(msg))
+    }
+    // A block with no messages is never laid out, so `xs` is never empty here.
+    const span = Math.max(...xs) - Math.min(...xs)
+    return wrapBudget(span)
+  }
+  function headerLabelLines(block: Block): string[] {
+    return wrapBracketed(block.label, wrapAvail(block))
+  }
+  function dividerLabelLines(block: Block, d: number): string[] {
+    return wrapBracketed(block.dividers[d]!.label, wrapAvail(block))
   }
 
   // Clamped: a negative boxBorderPadding would otherwise produce a negative
@@ -352,32 +405,6 @@ export function renderSequenceAscii(
       maxLineWidth(msg.label) + 4 + (createsRecipient ? 2 * halfBox[ti]! : 0)
     const numGaps = hi - lo
     const perGap = Math.ceil(needed / numGaps)
-    for (let g = lo; g < hi; g++) {
-      adjMaxWidth[g] = Math.max(adjMaxWidth[g]!, perGap)
-    }
-  }
-
-  // A block's wall must be as wide as its header and divider labels. Spread
-  // its lifelines apart to give it that width, so the wall stays centred on
-  // them (as in mermaid.js) instead of growing past the last one.
-  for (const block of diagram.blocks) {
-    let lo = Number.POSITIVE_INFINITY
-    let hi = -1
-    for (const msg of diagram.messages.slice(
-      block.startIndex,
-      block.endIndex + 1,
-    )) {
-      const f = actorIndexOf(msg.from)
-      const t = actorIndexOf(msg.to)
-      lo = Math.min(lo, f, t)
-      hi = Math.max(hi, f, t)
-    }
-    // The wall reaches BLOCK_WALL_MARGIN past each end lifeline; `- 2` is the
-    // margin the gap computation below adds.
-    const perGap =
-      Math.ceil(
-        (maxBlockLabelWidth(block) + 1 - 2 * BLOCK_WALL_MARGIN) / (hi - lo),
-      ) - 2
     for (let g = lo; g < hi; g++) {
       adjMaxWidth[g] = Math.max(adjMaxWidth[g]!, perGap)
     }
@@ -800,7 +827,10 @@ export function renderSequenceAscii(
           if (div.index === m && div.index <= diagram.blocks[b]!.endIndex) {
             curY += rowGap
             divYMap.set(`${b}:${d}`, curY)
-            curY += minSeparatorGap
+            // Extra rows for a wrapped divider label (#2745).
+            curY +=
+              minSeparatorGap +
+              Math.max(0, dividerLabelLines(diagram.blocks[b]!, d).length - 1)
           }
         }
       }
@@ -812,7 +842,7 @@ export function renderSequenceAscii(
     for (let b = diagram.blocks.length - 1; b >= 0; b--) {
       if (diagram.blocks[b]!.startIndex === m) {
         // Blank rows + 1 header row + one more per extra label line.
-        const extra = splitLines(`[${diagram.blocks[b]!.label}]`).length - 1
+        const extra = headerLabelLines(diagram.blocks[b]!).length - 1
         curY += rowGap + 1 + extra
         blockStartY.set(b, curY - 1 - extra)
         // Notes written between this header and the first message (#2531),
@@ -921,7 +951,10 @@ export function renderSequenceAscii(
           if (div.index > m) {
             curY += rowGap
             divYMap.set(`${b}:${d}`, curY)
-            curY += minSeparatorGap
+            // Extra rows for a wrapped divider label (#2745).
+            curY +=
+              minSeparatorGap +
+              Math.max(0, dividerLabelLines(diagram.blocks[b]!, d).length - 1)
           }
         })
         curY += rowGap
@@ -1705,7 +1738,7 @@ export function renderSequenceAscii(
     writeTextCells(bLeft + 2, topY, ` ${block.type} `, 'text', bRight)
     if (block.label) {
       const tabEnd = bLeft + 4 + block.type.length
-      const lines = splitLines(`[${block.label}]`)
+      const lines = headerLabelLines(block)
       for (let i = 0; i < lines.length && topY + i < botY; i++) {
         const w = displayWidth(lines[i]!) + 2
         writeTextCells(
@@ -1738,17 +1771,22 @@ export function renderSequenceAscii(
       for (let x = bLeft + 1; x < bRight; x++) setC(x, dY, dashChar, 'line')
       setC(bRight, dY, JR, 'junction')
       // Divider label
-      const dLabel = block.dividers[d]!.label
-      if (dLabel) {
-        const dStr = `[${dLabel}]`
-        const w = displayWidth(dStr) + 2
-        writeTextCells(
-          Math.max(bLeft + 1, bLeft + Math.floor((bRight - bLeft - w) / 2) + 1),
-          dY,
-          ` ${dStr} `,
-          'text',
-          bRight,
-        )
+      if (block.dividers[d]!.label) {
+        const dLines = dividerLabelLines(block, d)
+        for (let i = 0; i < dLines.length && dY + i < botY; i++) {
+          const dStr = dLines[i]!
+          const w = displayWidth(dStr) + 2
+          writeTextCells(
+            Math.max(
+              bLeft + 1,
+              bLeft + Math.floor((bRight - bLeft - w) / 2) + 1,
+            ),
+            dY + i,
+            ` ${dStr} `,
+            'text',
+            bRight,
+          )
+        }
       }
     }
   }

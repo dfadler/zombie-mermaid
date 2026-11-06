@@ -191,37 +191,37 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
 `;
 
 exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG for nested > ascii 1`] = `
-"  ┌───┐       ┌───┐      
-  │ A │       │ B │      
-  └─┬─┘       └─┬─┘      
-    │           │        
+"  ┌───┐     ┌───┐        
+  │ A │     │ B │        
+  └─┬─┘     └─┬─┘        
+    │         │          
 ┌─ alt ───── [ok] ──────┐
-│   │           │       │
+│   │         │         │
 │ ┌─ opt ── [inner] ──┐ │
-│ │ │           │     │ │
-│ │ │    go     │     │ │
-│ │ │───────────▶     │ │
-│ │ │           │     │ │
+│ │ │         │       │ │
+│ │ │   go    │       │ │
+│ │ │─────────▶       │ │
+│ │ │         │       │ │
 │ └───────────────────┘ │
-│   │           │       │
-│  ┌─────────────┐      │
-│  │   between   │      │
-│  └─────────────┘      │
-│   │           │       │
+│   │         │         │
+│  ┌───────────┐        │
+│  │  between  │        │
+│  └───────────┘        │
+│   │         │         │
 ├╌╌╌╌╌╌╌╌ [bad] ╌╌╌╌╌╌╌╌┤
-│   │           │       │
-│   │   back    │       │
-│   ◀───────────│       │
-│   │           │       │
+│   │         │         │
+│   │  back   │         │
+│   ◀─────────│         │
+│   │         │         │
 └───────────────────────┘
-    │           │        
-    │       ┌──────┐     
-    │       │ last │     
-    │       └──────┘     
-    │           │        
-  ┌─┴─┐       ┌─┴─┐      
-  │ A │       │ B │      
-  └───┘       └───┘      "
+    │         │          
+    │     ┌──────┐       
+    │     │ last │       
+    │     └──────┘       
+    │         │          
+  ┌─┴─┐     ┌─┴─┐        
+  │ A │     │ B │        
+  └───┘     └───┘        "
 `;
 
 exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG for nested > svg 1`] = `
@@ -314,24 +314,24 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
 `;
 
 exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG for side > ascii 1`] = `
-" ┌───┐        ┌───┐          
- │ A │        │ B │          
- └─┬─┘        └─┬─┘          
-   │            │            
-┌─ loop ── [retry] ──┐       
-│  │            │    │       
-│  │   fetch    │    │       
-│  │────────────▶    │       
-│  │            │    │       
-└────────────────────┘       
-   │            │            
-   │            │ ┌───────┐  
-   │            │ │ after │  
-   │            │ └───────┘  
-   │            │            
- ┌─┴─┐        ┌─┴─┐          
- │ A │        │ B │          
- └───┘        └───┘          "
+" ┌───┐      ┌───┐          
+ │ A │      │ B │          
+ └─┬─┘      └─┬─┘          
+   │          │            
+┌─ loop ── [retry] ──┐     
+│  │          │      │     
+│  │  fetch   │      │     
+│  │──────────▶      │     
+│  │          │      │     
+└────────────────────┘     
+   │          │            
+   │          │ ┌───────┐  
+   │          │ │ after │  
+   │          │ └───────┘  
+   │          │            
+ ┌─┴─┐      ┌─┴─┐          
+ │ A │      │ B │          
+ └───┘      └───┘          "
 `;
 
 exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG for side > svg 1`] = `

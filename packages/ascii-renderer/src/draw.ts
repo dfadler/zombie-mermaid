@@ -236,6 +236,58 @@ function bridgeSlantedFaces(graph: AsciiGraph, useAscii: boolean): void {
   }
 }
 
+/**
+ * An architecture junction is one glyph where its edges meet (Mermaid draws
+ * no shape). Its edges may stop short of the cell, because the glyph sits on
+ * the row/column the edges land on while the grid cell around it is taller:
+ * bridge each arm over the blanks to the line it meets, then draw the join
+ * (`┬ ├ ┼`...) for the arms that exist.
+ */
+// Indexed by the arms present: 1 up, 2 right, 4 down, 8 left.
+const JOIN_UNICODE = ' │─└││┌├─┘─┴┐┤┬┼'
+function drawJunctions(graph: AsciiGraph, useAscii: boolean): void {
+  const put = (x: number, y: number, ch: string) => {
+    write(graph.canvas, x, y, ch)
+    setRole(graph.roleCanvas, x, y, 'line')
+  }
+  // Arms: 1 up, 2 right, 4 down, 8 left. `through` = line chars crossing the arm's axis.
+  const ARMS: Array<[number, number, number, string, string]> = [
+    [1, 0, -1, '│┼├┤┬┴▲▼|+', '|'],
+    [2, 1, 0, '─┼┬┴├┤◄►-+', '-'],
+    [4, 0, 1, '│┼├┤┬┴▲▼|+', '|'],
+    [8, -1, 0, '─┼┬┴├┤◄►-+', '-'],
+  ]
+  for (const node of graph.nodes) {
+    if (node.shape !== 'junction' || !node.drawingCoord || !node.drawing)
+      continue
+    const at = node.drawingCoord
+    let gx = -1
+    let gy = -1
+    node.drawing.forEach((col, x) =>
+      col.forEach((ch, y) => {
+        if (ch !== ' ') [gx, gy] = [x, y]
+      }),
+    )
+    const ox = at.x + gx
+    const oy = at.y + gy
+    let mask = 0
+    for (const [bit, dx, dy, through, fill] of ARMS) {
+      let k = 1
+      while (graph.canvas[ox + dx * k]?.[oy + dy * k] === ' ') k++
+      const hit = graph.canvas[ox + dx * k]?.[oy + dy * k]
+      if (hit === undefined || !through.includes(hit)) continue
+      for (let i = 1; i < k; i++)
+        put(
+          ox + dx * i,
+          oy + dy * i,
+          useAscii ? fill : fill === '|' ? '│' : '─',
+        )
+      mask |= bit
+    }
+    put(ox, oy, !mask ? ' ' : useAscii ? '+' : JOIN_UNICODE[mask]!)
+  }
+}
+
 export function drawGraph(graph: AsciiGraph): Canvas {
   return withPortShifts(graph, () => drawGraphScoped(graph))
 }
@@ -462,6 +514,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
   fillRolesFromCanvases(graph.roleCanvas, arrowHeadStartCanvases, zero, 'arrow')
 
   bridgeSlantedFaces(graph, useAscii)
+  drawJunctions(graph, useAscii)
 
   graph.canvas = mergeCanvases(graph.canvas, zero, useAscii, ...labelCanvases)
   fillRolesFromCanvases(graph.roleCanvas, labelCanvases, zero, 'text')
