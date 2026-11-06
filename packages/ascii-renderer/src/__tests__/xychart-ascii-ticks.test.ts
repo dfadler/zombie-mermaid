@@ -66,4 +66,17 @@ describe('xychart ASCII – flat value series (#2727)', () => {
     expect(out).toContain('50')
     expect(out).not.toMatch(/50\.\d/)
   })
+
+  it('horizontal flat line and mixed flat bar+line series draw one tick', () => {
+    expect(
+      render(`xychart-beta horizontal
+        x-axis [a, b]
+        line [7, 7]`),
+    ).not.toMatch(/7\.\d/)
+    const mixed = render(`xychart-beta
+      x-axis [a, b]
+      bar [3, 3]
+      line [3, 3]`)
+    expect(axisLabels(mixed)).toHaveLength(1)
+  })
 })
