@@ -45,3 +45,19 @@ describe.each([
     expect(apex(first!)).toBeCloseTo(a[axis] - 20, 5)
   })
 })
+
+describe('self-loop on a diamond (#2740)', () => {
+  it('reaches the diamond outline, not the bounding-box face', () => {
+    const g = lay('flowchart LR\n  a{d} --> a\n  a --> b')
+    const a = g.nodes.find((n) => n.id === 'a')!
+    const [loop] = loops(g)
+    const start = loop!.points[0]!
+    // Left half of the top-left slanted edge: |dx|/halfW + |dy|/halfH = 1.
+    const cx = a.x + a.width / 2
+    const cy = a.y + a.height / 2
+    const onOutline =
+      Math.abs(start.x - cx) / (a.width / 2) +
+      Math.abs(start.y - cy) / (a.height / 2)
+    expect(onOutline).toBeCloseTo(1, 1)
+  })
+})

@@ -100,7 +100,19 @@ function buildSelfLoopGeometries(
     // (across the face, along it) -> (x, y)
     const at = (across: number, along: number): Point =>
       vertical ? { x: across, y: along } : { x: along, y: across }
-    const points = [at(face, from), at(apex, from), at(apex, to), at(face, to)]
+    // For the shapes `clipEdgeToShape` trims, the legs start at the node's
+    // centre line so the clip lands on the real outline (a diamond's loop then
+    // reaches its slanted edge, as in mermaid); the rest attach at the face.
+    const inside =
+      node.shape === 'diamond' || node.shape === 'asymmetric'
+        ? face + (vertical ? node.width : node.height) / 2
+        : face
+    const points = [
+      at(inside, from),
+      at(apex, from),
+      at(apex, to),
+      at(inside, to),
+    ]
     let labelPosition = at(apex, centre)
     let reach = apex
     if (label) {
