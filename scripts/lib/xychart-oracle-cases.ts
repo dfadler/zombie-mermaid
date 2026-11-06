@@ -52,7 +52,7 @@ export const XYCHART_RANGE_CASES: { title: string; source: string }[] = [
  * Samples real mermaid 12.2.0 cannot render, so there is nothing to compare:
  * they are skipped and listed rather than counted as errors.
  */
-export const MERMAID_CANNOT_PARSE = new Set([
-  // Lexical error in mermaid's xychart grammar.
-  'API Response Time',
+export const MERMAID_CANNOT_PARSE = new Set<string>([
+  // Empty: 'API Response Time' used unquoted `/` labels that mermaid 12.3.0
+  // rejects with a lexical error; the sample now quotes them (#2697).
 ])
