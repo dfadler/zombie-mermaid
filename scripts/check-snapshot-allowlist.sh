@@ -136,6 +136,9 @@ ALLOWLIST=(
   # ASCII + SVG goldens for a note before a block's first message (#2531),
   # same rule and review path as above.
   "packages/ascii-renderer/src/__tests__/ascii-sequence-note-before-first-message-2531.test.ts"
+  # ASCII + SVG goldens for a note after a block's `end` (#2744),
+  # same rule and review path as above.
+  "packages/ascii-renderer/src/__tests__/ascii-sequence-note-after-end-2744.test.ts"
   # ASCII + SVG goldens for slanted shapes stretched taller than 5 rows
   # (#2164): the repo rule is an SVG and an ASCII snapshot per case. Not a
   # component test; the files under packages/ascii-renderer/src/__tests__/
