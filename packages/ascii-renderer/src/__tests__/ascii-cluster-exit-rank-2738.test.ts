@@ -31,9 +31,15 @@ describe('cluster exits rank below the whole cluster (#2738)', () => {
       expect(row.replace(/[^A-Za-z]+/g, ' ').trim()).toBe(
         'Audit Reply Cache Log',
       )
-      // The cluster frame ends above that row.
-      const frameEnd = lines.findLastIndex((l) => /^[└+]-*|^└/.test(l))
-      expect(frameEnd).toBeLessThan(lines.indexOf(row))
+      // The cluster frame (found by its title row) ends above that row.
+      const top = lines.findIndex((l) => l.includes('Cluster')) - 1
+      const left = lines[top]!.search(/\S/)
+      const bottom = lines.findIndex(
+        (l, i) => i > top && /[└+]/.test(l[left] ?? ''),
+      )
+      expect(top).toBeGreaterThanOrEqual(0)
+      expect(bottom).toBeGreaterThan(top)
+      expect(bottom).toBeLessThan(lines.indexOf(row))
     },
   )
 
