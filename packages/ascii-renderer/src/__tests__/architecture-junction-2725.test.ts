@@ -20,7 +20,7 @@ describe('architecture junction (#2725)', () => {
   it('draws a tee, not a box, where an edge branches', () => {
     const out = render('  a:R -- L:j\n  j:R --> L:b\n  j:B --> T:c')
     expect(out).not.toMatch(/[●*]/)
-    // the join is one tee cell on the line from A, with arms reaching B and C
+    // The join is one tee cell on the line from A, with arms reaching B and C
     const lines = out.split('\n')
     const row = lines.findIndex((l) => l.includes('A') && /[┬┴├┤┼]/.test(l))
     const arm = lines[row]!.search(/─[┬┴├┤┼]/) + 1
