@@ -85,6 +85,11 @@ const BLOCK_WALL_MARGIN = 4
 // one column). Also the reach of each enclosing wall into a note's left side.
 const NESTED_WALL_PITCH = 2
 
+// Columns a `Note over A,B` box reaches past each end lifeline: mermaid draws
+// the note from 25px left of the first lifeline to 25px right of the second,
+// i.e. spanning them with a small overhang (the SVG side's `+ 50`, #2598).
+const NOTE_SPAN_OVERHANG = 1
+
 // Effective width of a self-message's loop, including room for an
 // autonumber badge drawn at the start of the top arm when active. The badge
 // digits replace the leading dashes rather than adding a second arrowhead,
@@ -414,6 +419,13 @@ export function renderSequenceAscii(
     )
   }
 
+  // The lifeline indices a two-actor `over` note spans, in left-to-right order.
+  function noteSpanOf(note: (typeof diagram.notes)[number]): [number, number] {
+    const a = actorIndexOf(note.actorIds[0]!)
+    const b = actorIndexOf(note.actorIds[note.actorIds.length - 1]!)
+    return [Math.min(a, b), Math.max(a, b)]
+  }
+
   // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
   // actor i draws into the gap to its left (between actor i-1 and i, or —
   // for the leftmost actor — the canvas's own left margin); a `right` note
@@ -430,8 +442,9 @@ export function renderSequenceAscii(
   // silently spilled into whichever neighbour was closer (issue #992) — the
   // same problem left/rightNoteWidth above already solved for `left`/
   // `right` notes, just for the two halves of a centered one instead. A
-  // multi-actor `over` note (`Note over Alice,Bob`) is excluded on purpose:
-  // spanning both actors' columns is its intended shape, not a collision.
+  // multi-actor `over` note (`Note over Alice,Bob`) is excluded: it spans from
+  // the first lifeline to the second (see `placeNote`), so it widens the gaps
+  // between them instead, like a message label does.
   const overNoteHalfLeft: number[] = new Array(diagram.actors.length).fill(0)
   const overNoteHalfRight: number[] = new Array(diagram.actors.length).fill(0)
   for (const note of diagram.notes) {
@@ -454,6 +467,18 @@ export function renderSequenceAscii(
       const halfRight = w - halfLeft
       overNoteHalfLeft[aIdx] = Math.max(overNoteHalfLeft[aIdx]!, halfLeft)
       overNoteHalfRight[aIdx] = Math.max(overNoteHalfRight[aIdx]!, halfRight)
+    } else if (note.position === 'over') {
+      const [lo, hi] = noteSpanOf(note)
+      if (hi > lo) {
+        // `- 2` is the margin the gap computation below adds.
+        const perGap =
+          Math.ceil(
+            (noteBoxWidth(note) - 2 * NOTE_SPAN_OVERHANG - 1) / (hi - lo),
+          ) - 2
+        for (let g = lo; g < hi; g++) {
+          adjMaxWidth[g] = Math.max(adjMaxWidth[g]!, perGap)
+        }
+      }
     }
   }
 
@@ -493,13 +518,16 @@ export function renderSequenceAscii(
       // apart) plus the blank one (`left` also needs its separating column
       // from the lifeline).
       ...diagram.notes.map((n) =>
-        actorIndexOf(n.actorIds[0]!) === 0 &&
+        (n.position === 'over'
+          ? noteSpanOf(n)[0]
+          : actorIndexOf(n.actorIds[0]!)) === 0 &&
         n.position !== 'right' &&
-        (n.position === 'left' || n.actorIds.length === 1) &&
         noteDepth(n)
           ? n.position === 'left'
             ? noteBoxWidth(n) + 2 + (NESTED_WALL_PITCH * noteDepth(n) - 1)
-            : Math.floor(noteBoxWidth(n) / 2) +
+            : (n.actorIds.length === 1
+                ? Math.floor(noteBoxWidth(n) / 2)
+                : NOTE_SPAN_OVERHANG) +
               1 +
               (NESTED_WALL_PITCH * noteDepth(n) - 1)
           : 0,
@@ -709,7 +737,7 @@ export function renderSequenceAscii(
   function placeNote(note: (typeof diagram.notes)[number]): void {
     curY += rowGap // Gap before note
     const nLines = splitLines(note.text)
-    const nWidth = noteBoxWidth(note)
+    let nWidth = noteBoxWidth(note)
     const nHeight = nLines.length + 2
 
     // Determine x position based on note.position
@@ -721,9 +749,12 @@ export function renderSequenceAscii(
       nx = llX[aIdx]! + 2
     } else {
       // 'over' — center over actor(s)
-      if (note.actorIds.length >= 2) {
-        const aIdx2 = actorIdx.get(note.actorIds[1]!) ?? aIdx
-        nx = Math.floor((llX[aIdx]! + llX[aIdx2]!) / 2) - Math.floor(nWidth / 2)
+      const [lo, hi] = noteSpanOf(note)
+      if (hi > lo) {
+        // Spans from the first lifeline to the second, as mermaid does; gap
+        // sizing above guarantees the text fits.
+        nx = llX[lo]! - NOTE_SPAN_OVERHANG
+        nWidth = llX[hi]! - llX[lo]! + 2 * NOTE_SPAN_OVERHANG + 1
       } else {
         nx = llX[aIdx]! - Math.floor(nWidth / 2)
       }
@@ -1696,7 +1727,10 @@ export function renderSequenceAscii(
       for (let x = np.x + 1; x < np.x + np.width - 1; x++) {
         setC(x, ly, ' ', 'text')
       }
-      writeTextCells(np.x + 1 + boxPad, ly, np.lines[l]!, 'text')
+      // Centred in the box, as mermaid does (it matters once the box spans
+      // two lifelines and is wider than its text).
+      const pad = Math.floor((np.width - 2 - displayWidth(np.lines[l]!)) / 2)
+      writeTextCells(np.x + 1 + pad, ly, np.lines[l]!, 'text')
     }
     // Bottom border
     const by = np.y + np.height - 1
