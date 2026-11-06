@@ -14,6 +14,8 @@ const bodies: Record<string, string> = {
   er: 'erDiagram\n  A ||--o{ B : has',
   pie: 'pie\n  "a": 1\n  "b": 2',
   state: 'stateDiagram-v2\n  [*] --> A',
+  c4: 'C4Context\n  Person(a, "A")',
+  architecture: 'architecture-beta\n  service a(server)[A]',
 }
 
 describe('front matter (#2585)', () => {

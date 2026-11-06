@@ -64,3 +64,38 @@ describe('sequence %%{init}%% (#2589)', () => {
     expect(d.mirrorActors).toBeUndefined()
   })
 })
+
+describe('sequence hideUnusedParticipants (#2589)', () => {
+  const H = (b: string) =>
+    `%%{init: {"sequence": {"hideUnusedParticipants": true}}}%%\nsequenceDiagram\n${b}`
+  const ids = (b: string) => {
+    const t = H(b)
+    return parseSequenceDiagram(splitStatements(t), t).actors.map((a) => a.id)
+  }
+  const decl = '  participant A\n  participant B\n  participant C\n'
+
+  it('drops a participant no message names; keeps one a note or activate names', () => {
+    expect(ids(decl + '  A->>B: hi')).toEqual(['A', 'B'])
+    expect(ids(decl + '  A->>B: hi\n  Note over C: n')).toEqual(['A', 'B', 'C'])
+    expect(ids(decl + '  A->>B: hi\n  activate C')).toEqual(['A', 'B', 'C'])
+  })
+
+  it('box membership alone does not keep a participant', () => {
+    const t = H(
+      '  box Aqua G\n  participant A\n  participant C\n  end\n  A->>A: x',
+    )
+    const d = parseSequenceDiagram(splitStatements(t), t)
+    expect(d.actors.map((a) => a.id)).toEqual(['A'])
+    expect(d.boxes[0]!.actorIds).toEqual(['A'])
+  })
+
+  it('narrows the SVG and the ASCII output; off by default; empty diagram renders', () => {
+    const src = decl + '  A->>B: hi'
+    const plain = `sequenceDiagram\n${src}`
+    expect(renderMermaidSVG(H(src))).not.toBe(renderMermaidSVG(plain))
+    expect(renderMermaidASCII(H(src))).not.toContain('C')
+    expect(renderMermaidASCII(plain)).toContain('C')
+    expect(() => renderMermaidSVG(H('  participant A'))).not.toThrow()
+    expect(() => renderMermaidASCII(H('  participant A'))).not.toThrow()
+  })
+})

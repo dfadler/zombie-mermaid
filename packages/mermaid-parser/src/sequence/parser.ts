@@ -218,8 +218,8 @@ export function parseSequenceDiagram(
   // block/divider lines don't advance the counter.
   const autonumber = { enabled: false, next: 1, step: 1 }
 
-  // `%%{init: {"sequence": {...}}}%%`: only `mirrorActors` and
-  // `showSequenceNumbers` are read (docs/known-differences.md lists the rest).
+  // `%%{init: {"sequence": {...}}}%%`: only `mirrorActors`,
+  // `showSequenceNumbers` and `hideUnusedParticipants` are read (docs/known-differences.md lists the rest).
   // `text` is the raw source (comment lines, where the directive lives, are
   // already gone from `lines`); callers without it get the defaults.
   const init = extractInitConfig((text ?? '').split(/\r\n?|\n/))
@@ -593,6 +593,19 @@ export function parseSequenceDiagram(
       `Line ${boxOpenLine}: Sequence diagram: unclosed "box${openBox.label ? ` ${openBox.label}` : ''}" — expected a matching "end" before the diagram ends.`,
       { diagramType: 'sequence' },
     )
+  }
+
+  if (init.sequenceHideUnused) {
+    // Mermaid keeps a participant any message (incl. `activate X`) or note
+    // names; a box membership alone does not (measured on 12.3.0).
+    const used = new Set<string>()
+    for (const m of diagram.messages) used.add(m.from).add(m.to)
+    for (const n of diagram.notes) n.actorIds.forEach((id) => used.add(id))
+    for (const a of diagram.activations) used.add(a.actorId)
+    diagram.actors = diagram.actors.filter((a) => used.has(a.id))
+    for (const b of diagram.boxes) {
+      b.actorIds = b.actorIds.filter((id) => used.has(id))
+    }
   }
 
   return diagram
