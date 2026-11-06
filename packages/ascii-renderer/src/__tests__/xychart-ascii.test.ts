@@ -153,6 +153,58 @@ describe('xychart ASCII – line charts', () => {
     expect(result).not.toContain('╮')
   })
 
+  const count = (text: string, ch: string) => text.split(ch).length - 1
+
+  it('steps once per row, not one big jump, on a horizontal diagonal', () => {
+    const result = render(`xychart-beta horizontal
+      x-axis [A, B]
+      line [10, 90]`)
+    // A and B are ~10 rows apart: one ╮/╰ pair per row crossed.
+    expect(count(result, '╮')).toBeGreaterThan(5)
+    expect(count(result, '╰')).toBeGreaterThan(5)
+  })
+
+  it('steps once per column, not one big jump, on a vertical diagonal', () => {
+    const result = render(`xychart-beta
+      x-axis [A, B]
+      line [10, 90]`)
+    // A and B are ~30 columns apart; the line climbs row by row.
+    expect(count(result, '╭')).toBeGreaterThan(5)
+    expect(count(result, '╯')).toBeGreaterThan(5)
+  })
+
+  it('caps a vertical peak with ╭─╮ at the data value', () => {
+    const lines = render(`xychart-beta
+      x-axis [A, B, C]
+      line [10, 90, 10]`).split('\n')
+    // The topmost row holding any line glyph is the peak row.
+    const top = lines.find((row) => /[╭╮]/.test(row))!
+    expect(top).toMatch(/╭─*╮/)
+  })
+
+  it('turns a horizontal peak as ╮ over ╯, without folding back (no tees)', () => {
+    const result = render(`xychart-beta horizontal
+      x-axis [A, B, C]
+      line [10, 90, 10]`)
+    const lines = result.split('\n')
+    const hairpin = lines.some((row, i) =>
+      [...row].some((c, j) => c === '╮' && lines[i + 1]?.[j] === '╯'),
+    )
+    expect(hairpin).toBe(true)
+    for (const tee of '├┤┴') expect(result).not.toContain(tee)
+  })
+
+  it('draws the fine staircase with + corners in ASCII mode too', () => {
+    const result = render(
+      `xychart-beta horizontal
+      x-axis [A, B]
+      line [10, 90]`,
+      true,
+    )
+    expect(count(result, '+')).toBeGreaterThan(10)
+    expect(result).toContain('-')
+  })
+
   it('uses + for corners in ASCII mode', () => {
     const result = render(
       `xychart-beta

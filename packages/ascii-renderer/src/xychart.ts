@@ -617,14 +617,135 @@ function renderHorizontal(
 }
 
 // ============================================================================
-// Staircase line drawing — vertical charts
+// Line drawing — fine staircase
 //
-// Connects data points with flat segments (─) at each value's row,
-// vertical segments (│) between rows, and rounded corners (╭╮╰╯)
-// at transitions. The vertical step happens at the midpoint column
-// between adjacent data points.
+// A line series is drawn as a staircase with one small step per category
+// row/column (corners ╭╮╰╯ at every step), so it tracks the diagonal the SVG
+// draws instead of one big right-angle jump between data points. Works with
+// plain box-drawing characters only, so there is no font dependency and
+// `useAscii` gets the same shape with `+` corners.
+//
+// The path is rasterized from the polyline: each category cell (a row for
+// horizontal charts, a column for vertical ones) covers the span of the
+// polyline inside it. Neighbouring cells connect at the value where the
+// polyline crosses the cell boundary. Each cell's glyph comes from which of
+// its four sides the path touches.
 // ============================================================================
 
+const UP = 1
+const DOWN = 2
+const LEFT = 4
+const RIGHT = 8
+
+type LineChars = typeof UNI | typeof ASC
+
+/** Glyph for a cell whose path touches the sides in `mask`. */
+function stepGlyph(mask: number, ch: LineChars): string {
+  const vert = (mask & (UP | DOWN)) !== 0
+  const horiz = (mask & (LEFT | RIGHT)) !== 0
+  if (vert && !horiz) return ch.vLine
+  if (horiz && !vert) return ch.hLine
+  const unicode = ch === UNI
+  switch (mask) {
+    case DOWN | RIGHT:
+      return ch.cornerTL // ╭
+    case DOWN | LEFT:
+      return ch.cornerTR // ╮
+    case UP | RIGHT:
+      return ch.cornerBL // ╰
+    case UP | LEFT:
+      return ch.cornerBR // ╯
+    case LEFT | RIGHT | DOWN:
+      return unicode ? '┬' : '+'
+    case LEFT | RIGHT | UP:
+      return unicode ? '┴' : '+'
+    case UP | DOWN | RIGHT:
+      return unicode ? '├' : '+'
+    case UP | DOWN | LEFT:
+      return unicode ? '┤' : '+'
+    default:
+      return ch.origin // ┼
+  }
+}
+
+/**
+ * Draw the polyline through `points` (display cell coordinates) as a fine
+ * staircase. `major` is the axis the categories run along (`'row'` for
+ * horizontal charts, `'col'` for vertical); the points must increase along it.
+ */
+function drawStepLine(
+  points: { row: number; col: number }[],
+  major: 'row' | 'col',
+  ch: LineChars,
+  drawAt: (row: number, col: number, char: string) => void,
+): void {
+  const pts = points.map((pt) =>
+    major === 'row' ? { t: pt.row, v: pt.col } : { t: pt.col, v: pt.row },
+  )
+  const first = pts[0]!
+  const last = pts[pts.length - 1]!
+
+  // Polyline value (minor axis) at major position t.
+  const valueAt = (t: number): number => {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p = pts[i]!
+      const q = pts[i + 1]!
+      if (t <= q.t) return p.v + ((q.v - p.v) * (t - p.t)) / (q.t - p.t)
+    }
+    return last.v
+  }
+
+  const masks = new Map<string, number>()
+  const cell = (t: number, v: number) =>
+    major === 'row' ? { row: t, col: v } : { row: v, col: t }
+  // Connect two adjacent cells (they differ by one step on exactly one axis).
+  const link = (t1: number, v1: number, t2: number, v2: number) => {
+    const a = cell(t1, v1)
+    const b = cell(t2, v2)
+    const [fromA, fromB] =
+      b.row !== a.row
+        ? b.row > a.row
+          ? [DOWN, UP]
+          : [UP, DOWN]
+        : b.col > a.col
+          ? [RIGHT, LEFT]
+          : [LEFT, RIGHT]
+    const ka = `${a.row},${a.col}`
+    const kb = `${b.row},${b.col}`
+    masks.set(ka, (masks.get(ka) ?? 0) | fromA)
+    masks.set(kb, (masks.get(kb) ?? 0) | fromB)
+  }
+
+  // Column (minor value) where the path crosses from cell k into k + 1: where
+  // the polyline crosses the boundary, except below a peak or trough, where it
+  // steps down at the tip so the line turns there instead of folding back over
+  // itself.
+  const crossing = (k: number): number => {
+    const i = pts.findIndex((pt) => pt.t === k)
+    if (i > 0 && i < pts.length - 1) {
+      const rise = pts[i]!.v - pts[i - 1]!.v
+      const fall = pts[i + 1]!.v - pts[i]!.v
+      if (rise * fall < 0) return Math.round(pts[i]!.v)
+    }
+    return Math.round(valueAt(k + 0.5))
+  }
+
+  for (let k = first.t; k <= last.t; k++) {
+    const enter = k === first.t ? Math.round(first.v) : crossing(k - 1)
+    const exit = k === last.t ? Math.round(last.v) : crossing(k)
+    const vMin = Math.min(enter, exit)
+    const vMax = Math.max(enter, exit)
+    for (let v = vMin; v < vMax; v++) link(k, v, k, v + 1)
+    if (k < last.t) link(k, exit, k + 1, exit)
+  }
+
+  for (const [key, mask] of masks) {
+    const [row, col] = key.split(',').map(Number) as [number, number]
+    drawAt(row, col, stepGlyph(mask, ch))
+  }
+}
+
+// Vertical charts: categories are columns, values are rows.
 function drawStaircaseLine(
   canvas: Canvas,
   roles: RoleCanvas,
@@ -635,114 +756,35 @@ function drawStaircaseLine(
   plotH: number,
   plotLeft: number,
   plotTotalW: number,
-  ch: typeof UNI | typeof ASC,
+  ch: LineChars,
   hexCanvas?: HexCanvas,
   hexColor?: string | null,
 ): void {
   if (data.length === 0) return
 
-  const points = data.map((v, i) => ({
-    col: bandCenter(i),
-    row: valueToRow(v),
-  }))
-
-  // Helper to draw on the canvas (row 0 = bottom, displayed inverted)
-  const drawAt = (col: number, row: number, char: string) => {
-    const displayRow = plotTop + (plotH - 1 - row)
-    if (displayRow >= 0 && col >= plotLeft && col < plotLeft + plotTotalW) {
-      set(canvas, roles, displayRow, col, char, 'arrow', hexCanvas, hexColor)
+  // Value rows count up from the bottom; the canvas row is inverted.
+  const toDisplayRow = (row: number) => plotTop + (plotH - 1 - row)
+  const drawAt = (row: number, col: number, char: string) => {
+    if (row >= 0 && col >= plotLeft && col < plotLeft + plotTotalW) {
+      set(canvas, roles, row, col, char, 'arrow', hexCanvas, hexColor)
     }
   }
+
+  const points = data.map((v, i) => ({
+    col: bandCenter(i),
+    row: toDisplayRow(valueToRow(v)),
+  }))
 
   // Single point: just draw a flat segment
   if (points.length === 1) {
-    drawAt(points[0]!.col, points[0]!.row, ch.hLine)
+    drawAt(points[0]!.row, points[0]!.col, ch.hLine)
     return
   }
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const p1 = points[i]!
-    const p2 = points[i + 1]!
-
-    if (p1.row === p2.row) {
-      // Flat: draw ─ across
-      for (let c = p1.col; c <= p2.col; c++) {
-        drawAt(c, p1.row, ch.hLine)
-      }
-      continue
-    }
-
-    const midCol = Math.round((p1.col + p2.col) / 2)
-    const goingUp = p2.row > p1.row
-
-    // 1. Flat at p1's row from p1.col to midCol-1
-    for (let c = p1.col; c < midCol; c++) {
-      drawAt(c, p1.row, ch.hLine)
-    }
-
-    // 2. Corner at (midCol, p1.row)
-    //    goingUp:   ─ from LEFT, │ going UP   → LEFT+TOP  = ╯ (cornerBR)
-    //    goingDown: ─ from LEFT, │ going DOWN  → LEFT+BOT  = ╮ (cornerTR)
-    if (goingUp) {
-      drawAt(midCol, p1.row, ch.cornerBR) // ╯
-    } else {
-      drawAt(midCol, p1.row, ch.cornerTR) // ╮
-    }
-
-    // 3. Vertical from p1.row to p2.row (exclusive of endpoints)
-    const minRow = Math.min(p1.row, p2.row)
-    const maxRow = Math.max(p1.row, p2.row)
-    for (let row = minRow + 1; row < maxRow; row++) {
-      drawAt(midCol, row, ch.vLine)
-    }
-
-    // 4. Corner at (midCol, p2.row)
-    //    goingUp:   │ from BOTTOM, ─ going RIGHT → BOT+RIGHT = ╭ (cornerTL)
-    //    goingDown: │ from TOP, ─ going RIGHT     → TOP+RIGHT = ╰ (cornerBL)
-    if (goingUp) {
-      drawAt(midCol, p2.row, ch.cornerTL) // ╭
-    } else {
-      drawAt(midCol, p2.row, ch.cornerBL) // ╰
-    }
-
-    // 5. Flat at p2's row from midCol+1 to p2.col
-    for (let c = midCol + 1; c <= p2.col; c++) {
-      drawAt(c, p2.row, ch.hLine)
-    }
-
-    // Leading flat for first segment (before p1.col)
-    if (i === 0) {
-      const leadStart = Math.max(
-        plotLeft,
-        p1.col - Math.floor((p2.col - p1.col) / 4),
-      )
-      for (let c = leadStart; c < p1.col; c++) {
-        drawAt(c, p1.row, ch.hLine)
-      }
-    }
-
-    // Trailing flat for last segment (after p2.col)
-    if (i === points.length - 2) {
-      const trailEnd = Math.min(
-        plotLeft + plotTotalW - 1,
-        p2.col + Math.floor((p2.col - p1.col) / 4),
-      )
-      for (let c = p2.col + 1; c <= trailEnd; c++) {
-        drawAt(c, p2.row, ch.hLine)
-      }
-    }
-  }
+  drawStepLine(points, 'col', ch, drawAt)
 }
 
-// ============================================================================
-// Staircase line drawing — horizontal charts
-//
-// Same staircase approach but with axes swapped:
-// data values map to columns (horizontal position) and categories map to
-// rows (vertical position). Flat segments are vertical (│), transitions
-// are horizontal (─), with the same rounded corners.
-// ============================================================================
-
+// Horizontal charts: categories are rows, values are columns.
 function drawHorizontalStaircaseLine(
   canvas: Canvas,
   roles: RoleCanvas,
@@ -753,7 +795,7 @@ function drawHorizontalStaircaseLine(
   plotH: number,
   plotLeft: number,
   plotW: number,
-  ch: typeof UNI | typeof ASC,
+  ch: LineChars,
   hexCanvas?: HexCanvas,
   hexColor?: string | null,
 ): void {
@@ -780,56 +822,7 @@ function drawHorizontalStaircaseLine(
     return
   }
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const p1 = points[i]!
-    const p2 = points[i + 1]!
-
-    if (p1.col === p2.col) {
-      // Same value: draw │ down
-      for (let r = p1.row; r <= p2.row; r++) {
-        drawAt(r, p1.col, ch.vLine)
-      }
-      continue
-    }
-
-    const midRow = Math.round((p1.row + p2.row) / 2)
-    const goingRight = p2.col > p1.col
-
-    // 1. Vertical at p1's col from p1.row to midRow-1
-    for (let r = p1.row; r < midRow; r++) {
-      drawAt(r, p1.col, ch.vLine)
-    }
-
-    // 2. Corner at (midRow, p1.col)
-    //    goingRight: │ from TOP, ─ going RIGHT → TOP+RIGHT = ╰ (cornerBL)
-    //    goingLeft:  │ from TOP, ─ going LEFT  → TOP+LEFT  = ╯ (cornerBR)
-    if (goingRight) {
-      drawAt(midRow, p1.col, ch.cornerBL) // ╰
-    } else {
-      drawAt(midRow, p1.col, ch.cornerBR) // ╯
-    }
-
-    // 3. Horizontal from p1.col to p2.col (exclusive)
-    const minCol = Math.min(p1.col, p2.col)
-    const maxCol = Math.max(p1.col, p2.col)
-    for (let c = minCol + 1; c < maxCol; c++) {
-      drawAt(midRow, c, ch.hLine)
-    }
-
-    // 4. Corner at (midRow, p2.col)
-    //    goingRight: ─ from LEFT, │ going DOWN  → LEFT+BOT  = ╮ (cornerTR)
-    //    goingLeft:  ─ from RIGHT, │ going DOWN → RIGHT+BOT = ╭ (cornerTL)
-    if (goingRight) {
-      drawAt(midRow, p2.col, ch.cornerTR) // ╮
-    } else {
-      drawAt(midRow, p2.col, ch.cornerTL) // ╭
-    }
-
-    // 5. Vertical at p2's col from midRow+1 to p2.row
-    for (let r = midRow + 1; r <= p2.row; r++) {
-      drawAt(r, p2.col, ch.vLine)
-    }
-  }
+  drawStepLine(points, 'row', ch, drawAt)
 }
 
 // ============================================================================
