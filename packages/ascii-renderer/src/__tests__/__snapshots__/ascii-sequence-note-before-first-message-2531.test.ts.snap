@@ -106,27 +106,27 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
 `;
 
 exports[`ASCII sequence note before a block first message (#2531) > snapshots ASCII and SVG for issue > ascii 1`] = `
-" ┌───┐        ┌───┐                             
- │ A │        │ B │                             
- └─┬─┘        └─┬─┘                             
-   │            │                               
-   │   first    │                               
-   │────────────▶                               
-   │            │                               
-┌─ loop ─────────────── [retry] ───────────────┐
-│  │            │                              │
-│  │            │ ┌──────────────────────────┐ │
-│  │            │ │ before the first message │ │
-│  │            │ └──────────────────────────┘ │
-│  │            │                              │
-│  │   fetch    │                              │
-│  │────────────▶                              │
-│  │            │                              │
-└──────────────────────────────────────────────┘
-   │            │                               
- ┌─┴─┐        ┌─┴─┐                             
- │ A │        │ B │                             
- └───┘        └───┘                             "
+" ┌───┐      ┌───┐                             
+ │ A │      │ B │                             
+ └─┬─┘      └─┬─┘                             
+   │          │                               
+   │  first   │                               
+   │──────────▶                               
+   │          │                               
+┌─ loop ────────────── [retry] ──────────────┐
+│  │          │                              │
+│  │          │ ┌──────────────────────────┐ │
+│  │          │ │ before the first message │ │
+│  │          │ └──────────────────────────┘ │
+│  │          │                              │
+│  │  fetch   │                              │
+│  │──────────▶                              │
+│  │          │                              │
+└────────────────────────────────────────────┘
+   │          │                               
+ ┌─┴─┐      ┌─┴─┐                             
+ │ A │      │ B │                             
+ └───┘      └───┘                             "
 `;
 
 exports[`ASCII sequence note before a block first message (#2531) > snapshots ASCII and SVG for issue > svg 1`] = `
@@ -207,32 +207,32 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
 `;
 
 exports[`ASCII sequence note before a block first message (#2531) > snapshots ASCII and SVG for nested > ascii 1`] = `
-"       ┌───┐        ┌───┐        
-       │ A │        │ B │        
-       └─┬─┘        └─┬─┘        
-         │            │          
-┌─ loop ─────── [outer] ────────┐
-│        │            │         │
-│ ┌────────────┐      │         │
-│ │ outer note │      │         │
-│ └────────────┘      │         │
-│        │            │         │
-│    ┌─ opt ──── [inner] ─────┐ │
-│    │   │            │       │ │
-│    │   │     ┌────────────┐ │ │
-│    │   │     │ inner note │ │ │
-│    │   │     └────────────┘ │ │
-│    │   │            │       │ │
-│    │   │    go      │       │ │
-│    │   │────────────▶       │ │
-│    │   │            │       │ │
-│    └────────────────────────┘ │
-│        │            │         │
-└───────────────────────────────┘
-         │            │          
-       ┌─┴─┐        ┌─┴─┐        
-       │ A │        │ B │        
-       └───┘        └───┘        "
+"       ┌───┐     ┌───┐        
+       │ A │     │ B │        
+       └─┬─┘     └─┬─┘        
+         │         │          
+┌─ loop ────── [outer] ──────┐
+│        │         │         │
+│ ┌────────────┐   │         │
+│ │ outer note │   │         │
+│ └────────────┘   │         │
+│        │         │         │
+│    ┌─ opt ─── [inner] ───┐ │
+│    │   │         │       │ │
+│    │   │  ┌────────────┐ │ │
+│    │   │  │ inner note │ │ │
+│    │   │  └────────────┘ │ │
+│    │   │         │       │ │
+│    │   │   go    │       │ │
+│    │   │─────────▶       │ │
+│    │   │         │       │ │
+│    └─────────────────────┘ │
+│        │         │         │
+└────────────────────────────┘
+         │         │          
+       ┌─┴─┐     ┌─┴─┐        
+       │ A │     │ B │        
+       └───┘     └───┘        "
 `;
 
 exports[`ASCII sequence note before a block first message (#2531) > snapshots ASCII and SVG for nested > svg 1`] = `

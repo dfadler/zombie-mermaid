@@ -4,7 +4,11 @@ import {
   renderMermaidASCII,
   validateMermaid,
 } from '../index.ts'
-import { stripFrontMatter, splitStatements } from '@zombie-mermaid/core'
+import {
+  stripFrontMatter,
+  splitStatements,
+  parseInitDirective,
+} from '@zombie-mermaid/core'
 
 const fm = '---\ntitle: T\n---\n'
 const bodies: Record<string, string> = {
@@ -28,14 +32,17 @@ describe('front matter (#2585)', () => {
 
   it('config: maps to the init directive', () => {
     const body = 'flowchart TD\n  A-->B\n  A-->C'
-    const viaFm = renderMermaidSVG(
-      '---\nconfig:\n  flowchart:\n    curve: stepAfter\n---\n' + body,
-    )
-    const viaInit = renderMermaidSVG(
-      `%%{init: {"flowchart": {"curve": "stepAfter"}}}%%\n` + body,
-    )
-    expect(viaFm).toBe(viaInit)
-    expect(viaFm).not.toBe(renderMermaidSVG(body))
+    const via = (text: string) =>
+      parseInitDirective(stripFrontMatter(text).split('\n')[0]!)?.ignored
+    expect(
+      via('---\nconfig:\n  flowchart:\n    curve: stepAfter\n---\n' + body),
+    ).toEqual(['flowchart.curve'])
+    // Mermaid 12.3.0 ignores the curve (#2729): same drawing either way
+    expect(
+      renderMermaidSVG(
+        '---\nconfig:\n  flowchart:\n    curve: stepAfter\n---\n' + body,
+      ),
+    ).toBe(renderMermaidSVG(body))
   })
 
   it('keeps line numbers for errors after the block', () => {

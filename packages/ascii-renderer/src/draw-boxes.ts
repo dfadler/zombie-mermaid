@@ -74,6 +74,7 @@ export function pseudoStateGlyph(
 ): string | undefined {
   if (node.shape === 'state-start') return useAscii ? '*' : '●'
   if (node.shape === 'state-end') return useAscii ? '@' : '◉'
+  if (node.shape === 'junction') return useAscii ? '+' : '┼'
   if (node.shape === 'diamond' && node.displayLabel === '')
     return useAscii ? 'o' : '◇'
   return undefined

@@ -440,7 +440,7 @@ export const samples: Sample[] = [
     title: 'Interactivity: Curved Edges',
     category: 'Interactivity',
     description:
-      'A diagram can configure its own rendering with `%%{init: ...}%%`. Here it asks for the `basis` curve, a direct port of d3’s `curveBasis`, so edges bow through their bend points instead of turning square corners. An explicit `curve` render option always wins over the directive.',
+      'A diagram can configure its own rendering with `%%{init: ...}%%`. Here it asks for the `basis` curve. Mermaid 12.3.0 ignores `flowchart.curve` (every edge is ELK-routed with rounded orthogonal bends), and so does this renderer; only the `curve` render option changes the edges.',
     source: `%%{init: {"flowchart": {"curve": "basis"}}}%%
 flowchart TD
   Ingest[Ingest] --> Queue[Queue]
@@ -453,7 +453,7 @@ flowchart TD
     title: 'Interactivity: Step Routing',
     category: 'Interactivity',
     description:
-      'The same directive with `step` instead, which routes every edge as right angles. The default stays `linear`, which still emits `<polyline class="edge">` so existing selectors keep working; only a non-linear curve switches the element to `<path>`.',
+      'The same directive with `step`: also ignored, matching Mermaid 12.3.0, so the edges keep their rounded orthogonal routing.',
     source: `%%{init: {"flowchart": {"curve": "step"}}}%%
 flowchart LR
   Client[Client] --> Gateway[Gateway]
