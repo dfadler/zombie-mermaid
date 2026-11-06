@@ -121,6 +121,9 @@ ALLOWLIST=(
   # SVG + ASCII goldens for flowchart cloud/h-cyl/tag-rect/sm-circ/fork shapes
   # (#2552); reviewed via the .snap diff.
   "src/__tests__/flowchart-shapes-2552.test.ts"
+  # Front matter title: SVG + ASCII output per diagram type (#2585); reviewed via
+  # the .snap diff.
+  "src/__tests__/front-matter-2585.test.ts"
   # ASCII + SVG goldens for opposing edges at a diamond vertex or slanted
   # side (#2492): the repo rule is an SVG and an ASCII snapshot per case.
   # Not a component test; the files under

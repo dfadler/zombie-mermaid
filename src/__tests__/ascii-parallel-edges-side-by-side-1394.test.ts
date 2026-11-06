@@ -58,14 +58,13 @@ describe('parallel edges side by side (#1394)', () => {
     expect(out).not.toContain('◄')
   })
 
-  it('ASCII: a label too wide to sit between its neighbours keeps the lanes', () => {
+  it('ASCII: a label too wide to sit between its neighbours takes the flow-face lanes (#2736)', () => {
     const out = ascii(
       'graph TD\n  A -->|first| B\n  A -->|second| B\n  A -->|third| B',
     )
-    // #1743: the third lane has its own row and arrowhead, no shared junction.
-    expect(out).toMatch(/◄─+┘/)
-    expect(out.match(/◄/g)).toHaveLength(2)
-    expect(out).not.toMatch(/◄─+┴/)
+    // Each edge keeps a port and arrowhead of its own on the top face.
+    expect(out).not.toContain('◄')
+    expect(out.match(/▼/g)).toHaveLength(3)
   })
 
   it('ASCII: three lanes plus a reciprocal edge keep separate arrowheads (#1743)', () => {
@@ -105,7 +104,7 @@ describe('parallel edges side by side (#1394)', () => {
     },
   )
 
-  it('ASCII: labels of exactly 3 cells spread, 4 cells keep the lanes', () => {
+  it('ASCII: labels of exactly 3 cells spread, 4 cells take the flow-face lanes', () => {
     const three = ascii(
       'graph TD\n  A -->|abc| B\n  A -->|def| B\n  A -->|ghi| B',
     )
@@ -114,7 +113,8 @@ describe('parallel edges side by side (#1394)', () => {
     const four = ascii(
       'graph TD\n  A -->|abcd| B\n  A -->|efgh| B\n  A -->|ijkl| B',
     )
-    expect(four.match(/◄/g)).toHaveLength(2)
+    expect(four).not.toContain('◄')
+    expect(four.match(/▼/g)).toHaveLength(3)
   })
 
   it('ASCII: a spread group with a node above it still gets its own strokes', () => {

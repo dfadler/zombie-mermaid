@@ -10,7 +10,7 @@ import {
   parseInitDirective,
 } from '@zombie-mermaid/core'
 
-const fm = '---\ntitle: T\n---\n'
+const fm = '---\nother: T\n---\n'
 const bodies: Record<string, string> = {
   flowchart: 'flowchart TD\n  A-->B',
   sequence: 'sequenceDiagram\n  A->>B: hi',
@@ -29,6 +29,103 @@ describe('front matter (#2585)', () => {
       expect(renderMermaidASCII(fm + body)).toBe(renderMermaidASCII(body))
     })
   }
+
+  describe('title: (mermaid 12.3.0 draws it on every type but C4/architecture)', () => {
+    const titled = '---\ntitle: FM Title\n---\n'
+    // Drawn above the diagram by a post-pass: viewBox grows up by 54px.
+    for (const name of ['flowchart', 'class', 'er', 'state']) {
+      it(`${name}: SVG band + ASCII row`, () => {
+        const plain = renderMermaidSVG(bodies[name]!)
+        const svg = renderMermaidSVG(titled + bodies[name])
+        const [, w, h] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(plain)!
+        expect(svg).toContain(`viewBox="0 -54 ${w} ${Number(h) + 54}"`)
+        expect(svg).toContain('>FM Title</text>')
+        expect(svg).toContain('y="-25"')
+        const ascii = renderMermaidASCII(titled + bodies[name], {
+          colorMode: 'none',
+        })
+        expect(ascii.split('\n')[0]!.trim()).toBe('FM Title')
+        expect(
+          ascii.endsWith(
+            renderMermaidASCII(bodies[name]!, { colorMode: 'none' }),
+          ),
+        ).toBe(true)
+      })
+    }
+    for (const name of ['pie', 'sequence']) {
+      it(`${name}: uses the diagram's own title slot`, () => {
+        const own =
+          name === 'pie'
+            ? 'pie title FM Title\n  "a": 1\n  "b": 2'
+            : bodies.sequence + '\n  title FM Title'
+        expect(renderMermaidSVG(titled + bodies[name])).toBe(
+          renderMermaidSVG(own),
+        )
+        expect(renderMermaidASCII(titled + bodies[name])).toBe(
+          renderMermaidASCII(own),
+        )
+      })
+    }
+    it('xychart and quadrant take it as their chart title', () => {
+      const xy = 'xychart-beta\n  x-axis [a, b]\n  bar [1, 2]'
+      expect(renderMermaidSVG(titled + xy)).toBe(
+        renderMermaidSVG(
+          'xychart-beta\n  title "FM Title"\n  x-axis [a, b]\n  bar [1, 2]',
+        ),
+      )
+      const q =
+        'quadrantChart\n  x-axis L --> R\n  y-axis B --> T\n  A: [0.3, 0.6]'
+      expect(renderMermaidSVG(titled + q)).toBe(
+        renderMermaidSVG(q + '\n  title FM Title'),
+      )
+      expect(renderMermaidASCII(titled + q)).toContain('FM Title')
+    })
+    it("the diagram's own title wins; empty title and C4/architecture draw nothing", () => {
+      expect(renderMermaidSVG(titled + 'pie title Body\n  "a": 1')).toBe(
+        renderMermaidSVG('pie title Body\n  "a": 1'),
+      )
+      expect(
+        renderMermaidSVG(titled + 'sequenceDiagram\n  title Body\n  A->>B: hi'),
+      ).toBe(renderMermaidSVG('sequenceDiagram\n  title Body\n  A->>B: hi'))
+      expect(renderMermaidSVG('---\ntitle:\n---\n' + bodies.flowchart)).toBe(
+        renderMermaidSVG(bodies.flowchart!),
+      )
+      for (const n of ['c4', 'architecture']) {
+        expect(renderMermaidSVG(titled + bodies[n])).toBe(
+          renderMermaidSVG(bodies[n]!),
+        )
+      }
+    })
+    for (const name of Object.keys(bodies)) {
+      it(`${name}: SVG and ASCII snapshots`, () => {
+        expect(renderMermaidSVG(titled + bodies[name])).toMatchSnapshot()
+        expect(
+          renderMermaidASCII(titled + bodies[name], { colorMode: 'none' }),
+        ).toMatchSnapshot()
+      })
+    }
+    it('ASCII title is centred over coloured and HTML output', () => {
+      const src = titled + bodies.flowchart
+      for (const colorMode of ['ansi16', 'html'] as const) {
+        const out = renderMermaidASCII(src, { colorMode })
+        const plain = renderMermaidASCII(bodies.flowchart!, { colorMode })
+        expect(out.endsWith(plain)).toBe(true)
+        expect(out).toContain('FM Title')
+      }
+      // Wider than the diagram: no negative padding.
+      const wide = renderMermaidASCII(
+        '---\ntitle: A title far wider than a two node diagram is\n---\nflowchart TD\n  A-->B',
+        { colorMode: 'none' },
+      )
+      expect(wide.startsWith('A title far wider')).toBe(true)
+    })
+    it('a title wider than the diagram widens the canvas', () => {
+      const svg = renderMermaidSVG(
+        '---\ntitle: A very long front matter title that outgrows a tiny diagram\n---\nflowchart TD\n  A-->B',
+      )
+      expect(svg).toMatch(/viewBox="-\d+ -54 /)
+    })
+  })
 
   it('config: maps to the init directive', () => {
     const body = 'flowchart TD\n  A-->B\n  A-->C'
