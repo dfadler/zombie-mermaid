@@ -278,7 +278,7 @@ export function drawBundleSharedPath(
     !bundle.edges.every((e) => e.hasArrowStart)
   ) {
     const start = drawingPath[0]!
-    if (HORIZONTAL_BORDER_CHARS.has(graph.canvas[start.x]?.[start.y] ?? '')) {
+    if (HORIZONTAL_BORDER_CHARS.has(graph.canvas[start.x]![start.y]!)) {
       write(boxStartCanvas, start.x, start.y, useAscii ? '+' : '┬')
     }
   }
