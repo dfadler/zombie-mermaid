@@ -821,7 +821,11 @@ function renderServiceTile(x: number, y: number, icon: string): string {
 function renderNodeShape(node: PositionedNode, stateDiagram: boolean): string {
   const svg = renderNodeShapeBase(node, stateDiagram)
   // `style A stroke-dasharray:5 5`: stroke-dasharray inherits to every child shape.
-  const dash = node.icon === undefined ? dashAttr(node.inlineStyle) : ''
+  // mermaid@12.3.0 ignores every `style`/`classDef` on a `sm-circ`, dash included.
+  const dash =
+    node.icon === undefined && node.shape !== 'small-circle'
+      ? dashAttr(node.inlineStyle)
+      : ''
   return dash && svg ? f`<g${dash}>${svg}</g>` : svg
 }
 
@@ -829,8 +833,11 @@ function renderNodeShapeBase(
   node: PositionedNode,
   stateDiagram: boolean,
 ): string {
-  const { x, y, width, height, shape, inlineStyle } = node
+  const { x, y, width, height, shape } = node
   if (node.icon !== undefined) return renderServiceTile(x, y, node.icon)
+  // mermaid@12.3.0 (and 12.2.0) draw `sm-circ` in the default node colours whatever
+  // `style` or `classDef` says, so the dot never reads the inline style.
+  const inlineStyle = shape === 'small-circle' ? undefined : node.inlineStyle
 
   // Resolve fill and stroke — inline styles (from mermaid `style` directives)
   // override the CSS variable defaults. When no inline style is present, the
