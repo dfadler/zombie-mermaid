@@ -819,7 +819,9 @@ row directly above that arrow (as in Mermaid 12.1.0 and 12.2.0). A created
 actor figure's height does not pad the other participants' header boxes (the
 footer row, which holds every surviving participant, is still uniform).
 `destroy X` ends `X`'s lifeline
-at the next message with a cross, and no footer box is drawn for it.
+at the next message and draws `X`'s footer box there, centred on that message's
+arrow (as in Mermaid 12.3.0), instead of at the bottom of the diagram. There is
+no cross; the only cross is the `-x` message end.
 
 Mermaid's binding rules apply, with Mermaid's own error text: the message
 right after `create` must have the created participant as its _recipient_
@@ -829,46 +831,11 @@ must have the destroyed participant as its sender _or_ recipient, and a
 simulate the behavior"). A directive with no message after it at all is
 treated as a plain declaration rather than an error.
 
-In ASCII output the cross sits on the row directly _under_ the destroying
-arrow, not on the arrow row — a cross on the arrow row would replace the
-arrowhead and read as a lost message (`-x`). One row is reserved for it. A
-self-message cannot create its own recipient (the loop glyphs occupy the
-box's cells), so that degenerate case keeps the header box.
-
-### Participant grouping (`box ... end`)
-
-`box <color?> <label?> ... end` groups a run of participants under a shared
-background, spanning from the leftmost to the rightmost member declared
-inside it:
-
-```
-sequenceDiagram
-  box Aqua Group 1
-  participant A
-  participant B
-  end
-  participant C
-  A->>B: hello
-  B->>C: world
-```
-
-The header word (or an `rgb(...)`/`hsl(...)` call) is a colour if it matches
-a CSS named colour, hex, or `rgb()`/`hsl()` function form; otherwise the
-whole header is the label. `box transparent Group 1` is explicitly
-colourless with a label (Mermaid's own convention), and either piece can be
-omitted — `box`, `box Aqua`, and `box Group 1` are all valid. A box cannot
-nest inside another box, and a participant can only belong to one box;
-both are errors with Mermaid's own wording. A participant first declared
-(or auto-created by a message) while a box is open joins it, matching
-Mermaid's `addActor` rule; one declared after the box's `end` does not, even
-if a later message places it visually between two grouped members.
-
-In SVG, the group is a background rectangle with a themed stroke, drawn
-behind everything else, with the label centred in a band above the
-participant boxes. A colour is blended into the theme background via
-`color-mix()` at a fixed percentage rather than painted as-is, so it reads
-as an appropriate tint in both light and dark themes instead of the same
-opaque swatch in both.
+In ASCII output a destroyed participant's footer box is drawn the same way as a
+created one, centred on the destroying arrow's row; the arrow stops at (or
+starts from) the box's edge. A self-message cannot create its own recipient
+(the loop glyphs occupy the box's cells), so that degenerate case keeps the
+header box; a destroying self-message puts the footer box just under the loop.
 
 In ASCII output the group is a labelled bracket around the header boxes and
 an unlabelled one around the footer boxes — not a full-height background,
@@ -877,8 +844,8 @@ boundary. Colour is not representable in ASCII and is ignored; only the
 label, if any, is drawn. A participant created or destroyed inside an open
 box is included in the box's span, but its header or footer bracket segment
 reflects only the members actually present in that row (a created
-participant has no header box to bracket; a destroyed one has no footer
-box).
+participant has no header box to bracket; a destroyed one's footer box is
+not in the bottom row).
 
 `rect <color> … end` is a background highlight (named colour, hex, `rgb()`/`rgba()`,
 `hsl()`/`hsla()`). SVG paints the region behind the lifelines with the colour as
