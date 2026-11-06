@@ -3,8 +3,8 @@
 // (https://mermaid.js.org/config/accessibility.html): `accTitle: text` and
 // `accDescr: text` on one line, or `accDescr { … }` over several. Pie parses
 // its own copy (its grammar is token-based), so it is passed through as-is.
-import { detectDiagramType } from './diagram-type.ts'
-import { stripFrontMatter } from './front-matter.ts'
+import { detectDiagramType, type DiagramType } from './diagram-type.ts'
+import { readFrontMatterTitle, stripFrontMatter } from './front-matter.ts'
 
 const ACC = /^[ \t]*acc(Title|Descr)[ \t]*(?::([^\n]*)|\{([^}]*)\})/gm
 
@@ -13,7 +13,22 @@ export interface AccessibleText {
   text: string
   accTitle?: string
   accDescr?: string
+  /**
+   * A front matter `title:` for flowchart, state, class and ER, which have no
+   * title statement; the renderer draws it. Other types get it injected as a
+   * `title` statement (see below), so it is unset for them.
+   */
+  frontMatterTitle?: string
 }
+
+// Types with their own `title` statement, and how to spot one in the body.
+const OWN_TITLE: Partial<Record<DiagramType, RegExp>> = {
+  pie: /^[ \t]*pie\b[^\n"]*\btitle\b|^[ \t]*title\b/m,
+  xychart: /^[ \t]*title\b/m,
+  quadrant: /^[ \t]*title\b/m,
+  sequence: /^[ \t]*title\b/m,
+}
+const DRAWN_TITLE: DiagramType[] = ['flowchart', 'class', 'er']
 
 /**
  * Strip `accTitle` / `accDescr` statements from `text` and return their
@@ -22,8 +37,19 @@ export interface AccessibleText {
  * right. Returns `text` untouched for pie and when there is nothing to strip.
  */
 export function extractAccessibility(source: string): AccessibleText {
-  const text = stripFrontMatter(source)
+  let text = stripFrontMatter(source)
+  const title = readFrontMatterTitle(source)
+  const kind = detectDiagramType(text)
+  if (title) {
+    const own = OWN_TITLE[kind]
+    // Mermaid draws the diagram's own title over the front matter one.
+    if (own) {
+      if (!own.test(text))
+        text += `\ntitle ${kind === 'xychart' ? `"${title.replace(/"/g, "'")}"` : title}`
+    }
+  }
   const out: AccessibleText = { text }
+  if (title && DRAWN_TITLE.includes(kind)) out.frontMatterTitle = title
   if (
     !/^[ \t]*acc(?:Title|Descr)/m.test(text) ||
     detectDiagramType(text) === 'pie'
