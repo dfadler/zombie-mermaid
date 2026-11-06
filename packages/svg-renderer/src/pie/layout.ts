@@ -28,10 +28,10 @@
 //
 // Two places differ from Mermaid on purpose, both where Mermaid's output is
 // broken rather than a style choice:
-//   - A legend taller than the 450px frame (more than ~20 rows) grows the
-//     viewBox instead of being clipped at the top and bottom.
 //   - A legend wider than the frame (top, bottom or centre with a very long
 //     label) grows the viewBox instead of being clipped at the sides.
+//     (A legend taller than the 450px frame is clipped top and bottom, as in
+//     Mermaid 12.3.0: the viewBox height stays 450, rows outside it are cut.)
 //   - A chart with no slices keeps the pie's own width. Mermaid's width
 //     formula takes Math.max() of an empty list there (-Infinity), which
 //     leaves a viewBox that crops the circle in half.
@@ -207,18 +207,15 @@ export function layoutPieChart(
   // legend that sticks out (see the header) is clipped there; grow instead.
   const legendLeft = legendOrigin.x
   const legendRight = legendOrigin.x + sideWidth
-  const legendTop = legendOrigin.y
-  const legendBottom =
-    legendOrigin.y + legendBlockHeight - rowHeight + PIE.legendRectSize
   const minX = Math.min(0, titleLeft, rowCount > 0 ? legendLeft : 0)
   const maxX = Math.max(
     chartAndLegendWidth,
     titleRight,
     rowCount > 0 ? legendRight : 0,
   )
-  const minY = rowCount > 0 ? Math.min(0, legendTop) : 0
-  const maxY =
-    rowCount > 0 ? Math.max(chartAndLegendHeight, legendBottom) : height
+  // Vertically the box is Mermaid's own: a tall legend is clipped, not grown.
+  const minY = 0
+  const maxY = chartAndLegendHeight
 
   const dx = -minX
   const dy = -minY
