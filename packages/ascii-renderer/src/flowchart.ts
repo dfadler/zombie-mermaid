@@ -64,6 +64,8 @@ export interface FlowchartAsciiExtras {
   direction?: Direction
   hyperlinks?: boolean
   limits?: RenderLimits
+  /** Set by `renderFlowchartAscii`: flowchart and state take layers and order from the layout provider (#2645). Class and architecture leave it off. */
+  layoutHints?: boolean
 }
 
 /**
@@ -112,7 +114,7 @@ export function renderFlowchartAscii(
     config,
     colorMode,
     theme,
-    extras,
+    { ...extras, layoutHints: true },
   )
 }
 
@@ -248,7 +250,12 @@ export function renderGraphAscii(
   }
 
   checkGraphSize(parsed.nodes.size, parsed.edges.length, extras.limits)
-  let graph = convertToAsciiGraph(parsed, config)
+  const convert = (): AsciiGraph => {
+    const g = convertToAsciiGraph(parsed, config)
+    g.useLayoutHints = extras.layoutHints
+    return g
+  }
+  let graph = convert()
   // Empty subgraphs became nodes in the conversion, so count them too.
   checkGraphSize(graph.nodes.length, graph.edges.length, extras.limits)
   hooks.afterConvert?.(graph)
@@ -260,14 +267,14 @@ export function renderGraphAscii(
   // the nodes, and the layout is redone (#2100).
   const margin = graph.wantsTopMargin === true
   if (margin) {
-    graph = convertToAsciiGraph(parsed, config)
+    graph = convert()
     hooks.afterConvert?.(graph)
     graph.topMargin = true
     createMapping(graph)
   }
   for (let pass = 0; pass < 4 && graph.faceLaneRejected?.size; pass++) {
     for (const i of graph.faceLaneRejected) off.add(i)
-    graph = convertToAsciiGraph(parsed, config)
+    graph = convert()
     hooks.afterConvert?.(graph)
     graph.faceLaneOff = new Set(off)
     graph.topMargin = margin

@@ -1,6 +1,6 @@
 # ASCII graph layout takes layer, order and port hints from ELK when available
 
-Status: accepted (PR 1 landed the seam and the measurement; no placement reads the hints yet)
+Status: accepted (PR 1 landed the seam and the measurement; PR 3 reads the hints in flowchart and state placement; ER, ports and cleanup follow)
 
 ## Context
 
