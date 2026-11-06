@@ -125,41 +125,32 @@ function selfExtent(msg: Message): number {
  *
  * Pipeline: parse → layout (columns + rows) → draw onto canvas → string.
  */
-/** Terminal columns per mermaid px: mermaid's 16px text averages ~8px a column. */
-const PX_PER_COL = 8
-
-/** Greedy word wrap of each line of `text` to `cols` terminal columns. */
-function wrapCols(text: string, cols: number): string {
-  return splitLines(text)
-    .map((line) => {
-      const out: string[] = []
-      let cur = ''
-      for (const word of line.split(/\s+/).filter(Boolean)) {
-        if (cur && displayWidth(`${cur} ${word}`) > cols) {
-          out.push(cur)
-          cur = word
-        } else cur = cur ? `${cur} ${word}` : word
-      }
-      out.push(cur)
-      return out.join('\n')
-    })
-    .join('\n')
-}
-
-/**
- * `sequence.wrap: true`: notes wrap at `width` (150px) and messages at
- * `width + actorMargin`, in columns at {@link PX_PER_COL}.
- */
+/** `sequence.wrap`: notes wrap at `width` (150px), messages at `width + actorMargin`, at 8px a column. */
 function wrapDiagramText(d: SequenceDiagram): SequenceDiagram {
-  const w = d.layout!.width ?? 150
-  const noteCols = Math.floor(w / PX_PER_COL)
-  const msgCols = Math.floor((w + (d.layout!.actorMargin ?? 50)) / PX_PER_COL)
+  const l = d.layout!
+  const wrap = (text: string, px: number) =>
+    splitLines(text)
+      .map((line) =>
+        line
+          .split(/\s+/)
+          .filter(Boolean)
+          .reduce<string[]>((rows, w) => {
+            const last = rows[rows.length - 1]
+            if (last !== undefined && displayWidth(`${last} ${w}`) <= px / 8)
+              rows[rows.length - 1] = `${last} ${w}`
+            else rows.push(w)
+            return rows
+          }, [])
+          .join('\n'),
+      )
+      .join('\n')
+  const w = l.width ?? 150
   return {
     ...d,
-    notes: d.notes.map((n) => ({ ...n, text: wrapCols(n.text, noteCols) })),
+    notes: d.notes.map((n) => ({ ...n, text: wrap(n.text, w) })),
     messages: d.messages.map((m) => ({
       ...m,
-      label: wrapCols(m.label, msgCols),
+      label: wrap(m.label, w + (l.actorMargin ?? 50)),
     })),
   }
 }
