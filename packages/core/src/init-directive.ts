@@ -28,24 +28,17 @@ export type CurveStyle =
   | 'stepBefore'
   | 'stepAfter'
 
-/** `sequence.*` init keys (lowercased) that tune layout, mapped to their canonical name. */
-const SEQUENCE_LAYOUT_KEYS = new Map<string, keyof SequenceInitLayout>(
-  (
-    [
-      'wrap',
-      'noteAlign',
-      'messageAlign',
-      'width',
-      'height',
-      'actorMargin',
-      'boxMargin',
-      'noteMargin',
-      'diagramMarginX',
-      'diagramMarginY',
-      'bottomMarginAdj',
-    ] as const
-  ).map((k) => [k.toLowerCase(), k]),
-)
+/** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
+const SEQUENCE_NUMBER_KEYS = new Set<string>([
+  'width',
+  'height',
+  'actorMargin',
+  'boxMargin',
+  'noteMargin',
+  'diagramMarginX',
+  'diagramMarginY',
+  'bottomMarginAdj',
+])
 
 /**
  * `%%{init: {"sequence": {...}}}%%` layout keys, in mermaid's own units
@@ -407,19 +400,16 @@ export function parseInitDirective(line: string): InitConfig | undefined {
     if (lower === 'sequence' && typeof value === 'object' && value !== null) {
       for (const [sk, sv] of Object.entries({ ...value })) {
         const sl = sk.toLowerCase()
-        const layoutKey = SEQUENCE_LAYOUT_KEYS.get(sl)
-        if (layoutKey) {
-          const ok =
-            layoutKey === 'wrap'
+        const layout = (config.sequenceLayout ??= {}) as Record<string, unknown>
+        if (
+          SEQUENCE_NUMBER_KEYS.has(sk)
+            ? typeof sv === 'number' && sv >= 0 && Number.isFinite(sv)
+            : sk === 'wrap'
               ? typeof sv === 'boolean'
-              : layoutKey === 'noteAlign' || layoutKey === 'messageAlign'
-                ? sv === 'left' || sv === 'center' || sv === 'right'
-                : typeof sv === 'number' && Number.isFinite(sv) && sv >= 0
-          if (ok) {
-            ;(config.sequenceLayout ??= {})[layoutKey] = sv as never
-          }
-          continue
-        }
+              : (sk === 'noteAlign' || sk === 'messageAlign') &&
+                (sv === 'left' || sv === 'center' || sv === 'right')
+        )
+          layout[sk] = sv
         if (typeof sv !== 'boolean') continue
         if (sl === 'mirroractors') config.sequenceMirrorActors = sv
         else if (sl === 'showsequencenumbers') config.sequenceShowNumbers = sv
