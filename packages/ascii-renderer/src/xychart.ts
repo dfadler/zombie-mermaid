@@ -629,33 +629,20 @@ const RIGHT = 8
 
 type LineChars = typeof UNI | typeof ASC
 
-/** Glyph for a cell whose path touches the sides in `mask`. */
+/**
+ * Glyph for a cell whose path touches the sides in `mask`. The path visits each
+ * category cell once, so a cell is a straight run, an end, or a single corner;
+ * it never touches three sides.
+ */
 function stepGlyph(mask: number, ch: LineChars): string {
   const vert = (mask & (UP | DOWN)) !== 0
   const horiz = (mask & (LEFT | RIGHT)) !== 0
   if (vert && !horiz) return ch.vLine
   if (horiz && !vert) return ch.hLine
-  const unicode = ch === UNI
-  switch (mask) {
-    case DOWN | RIGHT:
-      return ch.cornerTL // ╭
-    case DOWN | LEFT:
-      return ch.cornerTR // ╮
-    case UP | RIGHT:
-      return ch.cornerBL // ╰
-    case UP | LEFT:
-      return ch.cornerBR // ╯
-    case LEFT | RIGHT | DOWN:
-      return unicode ? '┬' : '+'
-    case LEFT | RIGHT | UP:
-      return unicode ? '┴' : '+'
-    case UP | DOWN | RIGHT:
-      return unicode ? '├' : '+'
-    case UP | DOWN | LEFT:
-      return unicode ? '┤' : '+'
-    default:
-      return ch.origin // ┼
-  }
+  const down = (mask & DOWN) !== 0
+  const right = (mask & RIGHT) !== 0
+  if (down) return right ? ch.cornerTL : ch.cornerTR // ╭ ╮
+  return right ? ch.cornerBL : ch.cornerBR // ╰ ╯
 }
 
 /**
@@ -677,12 +664,11 @@ function drawStepLine(
 
   // Polyline value (minor axis) at major position t.
   const valueAt = (t: number): number => {
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p = pts[i]!
-      const q = pts[i + 1]!
-      if (t <= q.t) return p.v + ((q.v - p.v) * (t - p.t)) / (q.t - p.t)
-    }
-    return last.v
+    let i = 0
+    while (i < pts.length - 2 && t > pts[i + 1]!.t) i++
+    const p = pts[i]!
+    const q = pts[i + 1]!
+    return p.v + ((q.v - p.v) * (t - p.t)) / (q.t - p.t)
   }
 
   const masks = new Map<string, number>()

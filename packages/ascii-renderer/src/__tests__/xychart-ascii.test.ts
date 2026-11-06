@@ -189,6 +189,17 @@ describe('xychart ASCII – line charts', () => {
     for (const tee of '├┤┴') expect(result).not.toContain(tee)
   })
 
+  it('draws a single-point line as one mark in either orientation', () => {
+    const horizontal = render(`xychart-beta horizontal
+      x-axis [A]
+      line [50]`)
+    const vertical = render(`xychart-beta
+      x-axis [A]
+      line [50]`)
+    expect(horizontal).toContain('│')
+    expect(vertical).toContain('─')
+  })
+
   it('draws the fine staircase with + corners in ASCII mode too', () => {
     const result = render(
       `xychart-beta horizontal
