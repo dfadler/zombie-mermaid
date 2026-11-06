@@ -1143,7 +1143,8 @@ option, `accTitle`, then the C4 `title`), and `accDescr` becomes a
 `<desc id="zm-desc-N">` referenced by `aria-describedby`. The statements are
 never drawn (except C4, where Mermaid 12.3.0 draws `accTitle` in the title slot,
 replacing any `title`, in SVG and ASCII), and both are dropped when the diagram is
-`decorative`. ASCII output otherwise ignores them. The visible chart `title` of a pie chart is not used as its
+`decorative` (a decorative C4 still draws the `accTitle` text; only the accessible
+name and description are omitted). ASCII output otherwise ignores them. The visible chart `title` of a pie chart is not used as its
 accessible name.
 
 For a diagram that's already described in surrounding prose, mark it

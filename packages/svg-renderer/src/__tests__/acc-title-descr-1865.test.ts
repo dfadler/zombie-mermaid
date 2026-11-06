@@ -48,9 +48,9 @@ describe.each(Object.entries(BODIES))('%s', (_type, body) => {
     const named = renderMermaidSVG(withAcc(body, ACC), { title: 'Opt' })
     expect(named).toMatch(/<title id="[^"]+">Opt<\/title>/)
     // C4 also draws accTitle as its visible title (#2733); only <title> is the option's.
-    expect(named.replace(/<text[^>]*>[^<]*<\/text>/g, '')).not.toContain(
-      'Big &lt;Decisions',
-    )
+    const rest =
+      _type === 'c4' ? named.replace(/<text[^>]*>[^<]*<\/text>/g, '') : named
+    expect(rest).not.toContain('Big &lt;Decisions')
     expect(named).toContain('How we decide')
   })
 
