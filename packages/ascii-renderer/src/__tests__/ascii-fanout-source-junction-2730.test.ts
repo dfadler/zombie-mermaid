@@ -16,4 +16,10 @@ describe('fan-out stem junction on the source border (#2730)', () => {
     const out = renderMermaidASCII(FAN, { useAscii: true })
     expect(out).toContain('+-----+-----+')
   })
+
+  it('leaves a diamond source, whose bottom is no straight border, alone', () => {
+    const out = renderMermaidASCII('graph TD\n  A{Choose} --> B\n  A --> C')
+    expect(out).toContain('╲╱')
+    expect(out).not.toContain('┬')
+  })
 })

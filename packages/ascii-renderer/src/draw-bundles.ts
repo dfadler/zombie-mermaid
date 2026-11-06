@@ -28,11 +28,7 @@ import { gridToDrawingCoord } from './grid.ts'
 import { getShapeAttachmentPoint } from './shapes/index.ts'
 import type { ShapeDimensions } from './shapes/index.ts'
 import { drawLine } from './draw-lines.ts'
-import {
-  HORIZONTAL_BORDER_CHARS,
-  VERTICAL_BORDER_CHARS,
-  markerArrowChar,
-} from './draw-arrows.ts'
+import { HORIZONTAL_BORDER_CHARS, markerArrowChar } from './draw-arrows.ts'
 import { pseudoStateGlyph } from './draw-boxes.ts'
 
 // ============================================================================
@@ -278,16 +274,12 @@ export function drawBundleSharedPath(
   // start arrowhead keeps the border plain (#1457).
   if (
     bundle.type === 'fan-out' &&
+    graphDir === 'TD' &&
     !bundle.edges.every((e) => e.hasArrowStart)
   ) {
     const start = drawingPath[0]!
-    const down = graphDir === 'TD'
-    const border = graph.canvas[start.x]?.[start.y]
-    if (
-      border !== undefined &&
-      (down ? HORIZONTAL_BORDER_CHARS : VERTICAL_BORDER_CHARS).has(border)
-    ) {
-      write(boxStartCanvas, start.x, start.y, useAscii ? '+' : down ? '┬' : '├')
+    if (HORIZONTAL_BORDER_CHARS.has(graph.canvas[start.x]?.[start.y] ?? '')) {
+      write(boxStartCanvas, start.x, start.y, useAscii ? '+' : '┬')
     }
   }
 

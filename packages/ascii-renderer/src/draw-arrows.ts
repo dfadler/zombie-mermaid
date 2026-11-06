@@ -599,7 +599,7 @@ function drawPath(
 }
 
 /** Vertical box-border characters a horizontal connector can genuinely merge with. */
-export const VERTICAL_BORDER_CHARS = new Set([
+const VERTICAL_BORDER_CHARS = new Set([
   '│',
   '┃',
   '║',
