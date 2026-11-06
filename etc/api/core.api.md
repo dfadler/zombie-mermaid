@@ -554,6 +554,7 @@ export interface PositionedGroup {
     // (undocumented)
     label: string;
     region?: boolean;
+    titleOnly?: boolean;
     // (undocumented)
     width: number;
     // (undocumented)
