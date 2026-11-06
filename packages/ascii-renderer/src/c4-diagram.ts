@@ -190,12 +190,14 @@ export function renderC4Ascii(
   config: AsciiConfig,
   colorMode: ColorMode,
   theme: AsciiTheme,
-  extras: FlowchartAsciiExtras = {},
+  extras: FlowchartAsciiExtras & { accTitle?: string } = {},
 ): string {
   const diagram = withDirectionOverride(
     parseC4Diagram(splitStatements(text)),
     extras.direction,
   )
+  // Mermaid 12.3.0 draws accTitle in the title slot, over any `title`.
+  diagram.title = extras.accTitle?.replace(/\s+/g, ' ') || diagram.title
   if (
     diagram.elements.length === 0 &&
     diagram.boundaries.length === 0 &&
