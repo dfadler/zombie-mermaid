@@ -52,6 +52,35 @@ position/size deltas and edge-point deltas (`--tol=<px>`, default 1). The unit t
 browser; they compare against committed `__tests__/fixtures/*.expected.json`, so a one-unit
 change to any ELK option (for example `spacing.baseValue` 40 to 41) fails them.
 
+## Fixtures d1 to d3 drift under mermaid 12.3.0 (#2708)
+
+Measured on 2026-11-05 with `scripts/elk-layout-oracle.ts` (tol 1px). Node positions and sizes
+match 12.3.0 to 0.0px on all three; the committed `d1`/`d2`/`d3.expected.json` match the pinned
+12.2.0 oracle on every edge (12/12, 12/12, 10/10) but only part of the edges on 12.3.0:
+
+| Fixture | Edges within 1px of 12.3.0 | Largest delta | Edges that differ (same point count in every case) |
+| ------- | -------------------------- | ------------- | -------------------------------------------------- |
+| d1      | 7/12                       | 66px          | `n1->n0` (all 3), `n0->n1` (both)                  |
+| d2      | 6/12                       | 40px          | `n2->n1`, `n1->n0`, `n1->n2` x2, `n0->n1` x2       |
+| d3      | 2/10                       | 12.4px        | every `n0<->n1` edge (8)                           |
+
+Self-loops (`n1->n1`, `n0->n0`, `n2->n2`), the `n2->n0` edges and the repeated `n1->n2` edges in
+d1 are identical on both versions. So the change is the routing of repeated and opposing edges
+between two different nodes, not node layout. The cause (a different elkjs or ELK option in
+12.3.0, against this package's elkjs 0.9.3) was not investigated.
+
+The fixtures stay as they are until the `mermaid` pin moves to 12.3.0 (a separate decision).
+Regeneration records this package's own output, which still routes like 12.2.0, so on its own
+it would make the unit test pass while the oracle still reports 7/12, 6/12 and 2/10. The edge
+routing has to be brought to 12.3.0 first (or the drift accepted and listed here). Commands:
+
+```sh
+# regenerate (rewrites every *.expected.json in fixtures/: keep unrelated diffs out)
+UPDATE_ELK_LAYOUT=1 pnpm exec vitest run -c config/vitest.config.ts packages/elk-layout
+# compare with the new pin; expect exit 0 and 12/12, 12/12, 10/10
+pnpm exec tsx scripts/elk-layout-oracle.ts packages/elk-layout/__tests__/fixtures/d1.mmd packages/elk-layout/__tests__/fixtures/d2.mmd packages/elk-layout/__tests__/fixtures/d3.mmd
+```
+
 ## Known gaps
 
 - Subgraphs and the shapes listed above are unsupported (signalled, not approximated).

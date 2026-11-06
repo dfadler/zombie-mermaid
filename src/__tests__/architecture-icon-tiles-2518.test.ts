@@ -6,6 +6,7 @@
  * snapshots pin the shapes it already drew.
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
+// Mermaid 12.3.0 verdict (#2708): matches (label level, 8 sources: 'No Icon' and unknown-icon included); SVG viewBox within 5px of mermaid, icon artwork not compared.
 import { describe, expect, it } from 'vitest'
 import { splitStatements } from '@zombie-mermaid/core'
 import {
