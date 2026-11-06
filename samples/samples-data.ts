@@ -1903,7 +1903,7 @@ flowchart LR
     title: 'Pie: More Slices Than Bar Cells',
     category: 'Pie',
     description:
-      'Sixty equal slices. The SVG draws every slice (its legend is clipped like mermaid's); the 50-cell ASCII bar fits fifty, and the other ten are listed like slices under 1% (dot swatch, no percentage).',
+      'Sixty equal slices. The SVG draws every slice (its legend is clipped as in mermaid); the 50-cell ASCII bar fits fifty, and the other ten are listed like slices under 1% (dot swatch, no percentage).',
     source: `pie title Sixty equal slices
 ${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" : 1`).join('\n')}`,
   },
