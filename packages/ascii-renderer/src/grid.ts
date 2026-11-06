@@ -1328,6 +1328,14 @@ function shiftCrossAxis(
  * with no back edge or same-rank edge (the routes around those are tuned to
  * the nodes staying put, see `centerParentsOverChildren`).
  */
+/**
+ * Grid units the skipped node steps aside by: two of a node's three, so it
+ * overlaps its neighbours' rows by one, as mermaid's roughly half-node offset
+ * does (GitHub renders A --> B --> C plus A --> C with B about 0.45 node
+ * heights higher, not a whole slot).
+ */
+const OFF = 2
+
 function sidestepSkippedNodes(graph: AsciiGraph): void {
   if (graph.subgraphs.length > 0) return
   const lr = graph.config.graphDirection === 'LR'
@@ -1370,17 +1378,17 @@ function sidestepSkippedNodes(graph: AsciiGraph): void {
       }
     }
     if (after) {
-      shiftCrossAxis(graph, lr, c, 4)
+      shiftCrossAxis(graph, lr, c, OFF)
     } else {
-      shiftCrossAxis(graph, lr, c - 1, 4)
+      shiftCrossAxis(graph, lr, c - 1, OFF)
     }
     for (const n of moving) {
       relocateNode(
         graph,
         n,
         lr
-          ? { x: rank(n), y: after ? c + 4 : c }
-          : { x: after ? c + 4 : c, y: rank(n) },
+          ? { x: rank(n), y: after ? c + OFF : c }
+          : { x: after ? c + OFF : c, y: rank(n) },
       )
     }
   }

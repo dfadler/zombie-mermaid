@@ -1,7 +1,7 @@
 /**
  * #2043/#2044, then #2739: an LR edge that jumps a node on its row (`A --> C`
  * past `B`) used to share its first segment with `A --> B` and merge with
- * `B --> C` into one arrowhead. Mermaid 12.3.0 steps `B` aside (above, since
+ * `B --> C` into one arrowhead. Mermaid 12.3.0 steps `B` aside by about half a node (above, since
  * `A --> B` is declared first) and runs `A --> C` straight along the row, each
  * edge leaving A's right face and entering C's or B's left face with its own
  * arrowhead. With less than 3 columns of gap the old route under the row stays.
@@ -22,12 +22,7 @@ describe('LR bypass edge keeps its own ports (#2043, #2044, #2739)', () => {
       '          │   │',
       '      ┌──►│ B ├──┐',
       '      │   │   │  │',
-      '      │   └───┘  │',
-      '      │          │',
-      '      │          │',
-      '      │          │',
-      '      │          │',
-      '┌───┐ │          │  ┌───┐',
+      '┌───┐ │   └───┘  │  ┌───┐',
       '│   ├─┘          └─►│   │',
       '│ A │               │ C │',
       '│   ├──────────────►│   │',
@@ -53,12 +48,7 @@ describe('LR bypass edge keeps its own ports (#2043, #2044, #2739)', () => {
       '        |   |',
       '      +>| B +-+',
       '      | |   | |',
-      '      | +---+ |',
-      '      |       |',
-      '      |       |',
-      '      |       |',
-      '      |       |',
-      '+---+ |       | +---+',
+      '+---+ | +---+ | +---+',
       '|   +-+       +>|   |',
       '| A |           | C |',
       '|   +---------->|   |',
