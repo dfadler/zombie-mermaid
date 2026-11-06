@@ -56,3 +56,5 @@ Rejected, with the reasons in the research doc (sections 2 and 3):
 - The peer range has since widened to `^0.11.0 || ^0.12.0`
   ([#1907](https://github.com/dfadler/zombie-mermaid/pull/1907)); the research
   doc still says `^0.11.0`.
+
+See also [ascii-layout-hints-from-elk-2645.md](ascii-layout-hints-from-elk-2645.md): the root entry's ASCII layout provider uses this registration and falls back to the grid without it.
