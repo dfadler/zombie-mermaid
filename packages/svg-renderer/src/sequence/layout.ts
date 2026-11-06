@@ -1104,17 +1104,24 @@ export function layoutSequenceDiagram(
       bottomY:
         destroyedAt === undefined
           ? lifelineBottom
-          : (messages[destroyedAt]?.y ?? messageY),
+          : (messages[destroyedAt]?.y ?? messageY) -
+            (mirror ? seq.actorHeight / 2 : 0),
     }
-    if (destroyedAt !== undefined) lifeline.destroyed = true
     return lifeline
   })
 
   // Mermaid mirrors every participant along the bottom of the lifelines; a
-  // destroyed one ended at its destroying message, so it has no footer.
+  // destroyed one's footer box sits at its destroying message instead, centred
+  // on the arrow (`actor.stopy = lineStartY - actor.height / 2`), and its
+  // lifeline ends at the box top (no cross: the `-x` message end is the only one).
   const footerActors = actors
-    .filter((_, i) => mirror && diagram.actors[i]!.destroyedAt === undefined)
-    .map((a) => ({ ...a, y: lifelineBottom }))
+    .map((a, i) => {
+      const destroyedAt = diagram.actors[i]!.destroyedAt
+      return destroyedAt === undefined
+        ? { ...a, y: lifelineBottom }
+        : { ...a, y: lifelines[i]!.bottomY }
+    })
+    .filter(() => mirror)
 
   // Box backgrounds run from the top padding to just under the footer
   // actors (boxPad < padding, so this stays inside the diagram height).
