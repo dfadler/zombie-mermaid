@@ -35,6 +35,8 @@ const GROUP_PADDING = 42.5
 const NESTED_PADDING = 41.5
 /** A service label hangs this far below its tile (182 - 42.5 - 80 - 42.5 = 17). */
 const LABEL_DROP = 17
+/** The label's own bottom edge below its tile, which sizes the canvas (mermaid@12.3.0 viewBox: 24.5 + 40 page padding). */
+const LABEL_REACH = 24.5
 /** Mermaid wraps a service label at 1.5 tiles (`iconSize * 1.5`). */
 const LABEL_WRAP = TILE * 1.5
 /** Mermaid draws an architecture edge 3px wide (`archEdgeWidth`). */
@@ -199,15 +201,13 @@ export function layoutArchitectureGrid(
             width: TILE,
             height: TILE,
           }
-        : n.icon === undefined
-          ? box
-          : {
-              x: x - spread,
-              y,
-              width: size + spread * 2,
-              // Wrapped lines do not grow the box: Mermaid's padding holds them.
-              height: size + LABEL_DROP,
-            },
+        : {
+            x: x - spread,
+            y,
+            width: size + spread * 2,
+            // Wrapped lines do not grow the box: Mermaid's padding holds them.
+            height: size + LABEL_DROP,
+          },
     )
     nodes.push({
       id,
@@ -283,6 +283,10 @@ export function layoutArchitectureGrid(
     minY = Math.min(minY, b.y)
     maxX = Math.max(maxX, b.x + b.width)
     maxY = Math.max(maxY, b.y + b.height)
+  }
+  for (const n of nodes) {
+    if (n.icon !== undefined)
+      maxY = Math.max(maxY, n.y + n.height + LABEL_REACH)
   }
   for (const b of body.values()) {
     minX = Math.min(minX, b.x)
