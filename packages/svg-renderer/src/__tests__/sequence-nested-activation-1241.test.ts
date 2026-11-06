@@ -35,7 +35,7 @@ describe('nested self-message activation (#1241)', () => {
     const process = msgs.find((m) => m.label === 'Process')!
     const done = msgs.find((m) => m.label === 'Done')!
     const inner = server.find((a) => a.depth === 1)!
-    // mermaid 12.3.0: the bar opens 32 below the loop's top (loop 30 + 2)
+    // Mermaid 12.3.0: the bar opens 32 below the loop's top (loop 30 + 2)
     // and closes 30 below the Done loop's top.
     expect(inner.topY).toBe(process.y + 32)
     expect(inner.bottomY).toBe(done.y + 30)

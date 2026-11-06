@@ -251,9 +251,6 @@ export function blockTabWidth(
   return labelWidth(block.type, fontSize, FONT_WEIGHTS.groupHeader) + 16
 }
 
-/** Space between a block's tab and its centred label, and either side of a divider label. */
-const BLOCK_LABEL_GAP = 8
-
 /**
  * Wrap a block header or divider label (shown as `[label]`) onto lines of at
  * most `avail` px, breaking at spaces. Mermaid wraps these to the frame
@@ -526,7 +523,7 @@ export function layoutSequenceDiagram(
     const span = xs.length
       ? Math.max(...xs) - Math.min(...xs)
       : actorCenterX[actorCenterX.length - 1]! - actorCenterX[0]!
-    // mermaid 12.3.0 wraps to roughly the lifeline span less 30px (floor
+    // Mermaid 12.3.0 wraps to roughly the lifeline span less 30px (floor
     // 80px) at 16px type, measured against its own text widths; this
     // renderer's narrower spans and type give 14px and 60px, which break the
     // same labels at the same words.
@@ -684,11 +681,11 @@ export function layoutSequenceDiagram(
   function startActivation(actorId: string, y: number, selfLoop = false): void {
     // Mermaid opens a bar after a self-message at the point below its loop
     // (loop height + 2), not at the loop's top row (#2743).
-    if (selfLoop) y += seq.selfMessageHeight + 2
+    const startY = selfLoop ? y + seq.selfMessageHeight + 2 : y
     const stack = activationStacks.get(actorId) ?? []
     activationStacks.set(actorId, stack)
     const depth = stack.length // Current depth before pushing
-    stack.push({ startY: y, depth })
+    stack.push({ startY, depth })
   }
 
   /**
@@ -697,7 +694,7 @@ export function layoutSequenceDiagram(
    * itself errors here; this renderer has always been lenient about it).
    */
   function endActivation(actorId: string, y: number, selfLoop = false): void {
-    if (selfLoop) y += seq.selfMessageHeight
+    const endY = selfLoop ? y + seq.selfMessageHeight : y
     const stack = activationStacks.get(actorId)
     if (!stack || stack.length === 0) return
     const { startY, depth } = stack.pop()!
@@ -708,7 +705,7 @@ export function layoutSequenceDiagram(
       actorId,
       x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
       topY: startY,
-      bottomY: y,
+      bottomY: endY,
       width: seq.activationWidth,
       depth,
     })
