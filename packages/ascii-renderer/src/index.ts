@@ -231,8 +231,20 @@ export function renderMermaidASCII(
   // A front matter `title:` on flowchart/state/class/ER: a centred row over
   // the diagram (no colour/markup counted in the width), as pie does.
   if (frontMatterTitle) {
-    const visible = (l: string) =>
-      displayWidth(l.replace(/\x1b\[[\d;]*m|<[^>]*>/g, ''))
+    // Width of the visible text only: skip ANSI escapes and HTML tags (a
+    // measuring scan, not sanitisation; the text is never re-emitted).
+    const visible = (l: string) => {
+      let out = ''
+      let skipTo = ''
+      for (const c of l) {
+        if (skipTo) {
+          if (c === skipTo) skipTo = ''
+        } else if (c === '\x1b') skipTo = 'm'
+        else if (c === '<') skipTo = '>'
+        else out += c
+      }
+      return displayWidth(out)
+    }
     const width = Math.max(...result.split('\n').map(visible))
     const pad = Math.max(
       0,
