@@ -153,9 +153,10 @@ describe('Rel_Back arrow direction', () => {
     expect(Math.hypot(Number(tip[1]) - sx, Number(tip[2]) - sy)).toBeLessThan(1)
   })
 
-  it('draws exactly one ASCII arrowhead, pointing up at "from"', () => {
+  it('draws exactly one ASCII arrowhead, pointing at "from"', () => {
+    // A and B share a row, A on the left: the head points left, at A.
     const out = renderMermaidASCII(src)
-    expect(out).toContain('▲')
-    expect(out).not.toContain('▼')
+    expect(out).toContain('◄')
+    expect(out).not.toContain('►')
   })
 })
