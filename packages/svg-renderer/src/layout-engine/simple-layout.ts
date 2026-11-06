@@ -66,9 +66,9 @@ interface Level {
   inner: Map<string, Level>
 }
 
-const LOOP_REACH = 28
-const LOOP_STACK = 18
-const LOOP_LABEL_GAP = 10
+/** Mermaid's loop reach and apex-to-label gap (see from-elk.ts), in px. */
+const LOOP_REACH = 20
+const LOOP_LABEL_GAP = 4
 /** Room beside a subgraph's title, so a wide title is not clipped. */
 const TITLE_MARGIN = 32
 
@@ -207,18 +207,14 @@ export function layoutSimple(
     )
     nodeSize.set(id, abstractSize(s.width, s.height))
   }
-  /** Room a node's self-loops need on the high side of the cross axis. */
-  const loopRoom = (id: string): number => {
-    const own = loops.get(id)
-    if (!vertical || !own) return 0
-    const widest = Math.max(
-      0,
-      ...own.map(
-        (i) => (edgeLabel(i)?.cross ?? -LOOP_LABEL_GAP) + LOOP_LABEL_GAP,
-      ),
-    )
-    return LOOP_REACH + (own.length - 1) * LOOP_STACK + widest
-  }
+  /** Room a node's self-loops need on the low side of the cross axis (#2740). */
+  const loopRoom = (id: string): number =>
+    (loops.get(id) ?? []).reduce((room, i) => {
+      const label = edgeLabel(i)?.cross
+      return (
+        room + LOOP_REACH + (label === undefined ? 0 : label + LOOP_LABEL_GAP)
+      )
+    }, 0)
 
   const build = (parent: string | undefined): Level => {
     const members = membersOf(parent)
@@ -259,7 +255,7 @@ export function layoutSimple(
       members.map((id) => ({
         axis: sizes.get(id)!.aSize,
         cross: sizes.get(id)!.cSize,
-        after: loopRoom(id),
+        before: loopRoom(id),
       })),
       own.map((e) => ({
         from: position.get(e.from)!,
@@ -448,7 +444,7 @@ export function layoutSimple(
       endMarker: edge.endMarker,
     })
   })
-  synthesizeSelfLoopEdges(graph, nodeMap, edges)
+  synthesizeSelfLoopEdges(graph, nodeMap, edges, opts.fontSizes.edgeLabel)
 
   // --- bounds ----------------------------------------------------------------
   let width = (vertical ? root.crossSize : root.axisSize) + margin * 2
