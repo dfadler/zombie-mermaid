@@ -83,6 +83,59 @@ describe('ASCII sequence note after a block end (#2744)', () => {
     expect(rowOf(out, 'inside')).toBeLessThan(frameBottom(out, 'opt'))
   })
 
+  // Each source checked against mermaid 12.3.0: the note rect starts below the
+  // block's loopLine bottom (frame bottom y=175 / note y=185 for the single
+  // block cases).
+  const H = 'sequenceDiagram\n  participant A\n  participant B\n'
+  const AFTER: Array<[string, string, string]> = [
+    [
+      'left of',
+      `${H}  loop x\n    A->>B: m\n  end\n  Note left of A: nn`,
+      'loop',
+    ],
+    [
+      'right of',
+      `${H}  opt x\n    A->>B: m\n  end\n  Note right of B: nn`,
+      'opt',
+    ],
+    [
+      'par',
+      `${H}  par p\n    A->>B: m\n  and q\n    B->>A: k\n  end\n  Note over A: nn`,
+      'par',
+    ],
+    [
+      'critical',
+      `${H}  critical c\n    A->>B: m\n  option o\n    B->>A: k\n  end\n  Note over A,B: nn`,
+      'critical',
+    ],
+    ['break', `${H}  break b\n    A->>B: m\n  end\n  Note over B: nn`, 'break'],
+    [
+      'else section',
+      `${H}  alt a\n    A->>B: m\n  else b\n    B->>A: k\n    Note over A: in else\n  end\n  Note over B: nn`,
+      'alt',
+    ],
+  ]
+  for (const [name, src, header] of AFTER) {
+    it(`draws a ${name} note below the closed frame`, () => {
+      const out = renderMermaidASCII(src)
+      expect(rowOf(out, 'nn')).toBeGreaterThan(frameBottom(out, header))
+    })
+  }
+
+  it('keeps two notes after one end in order below the frame', () => {
+    const out = renderMermaidASCII(
+      `${H}  opt x\n    A->>B: m\n  end\n  Note over A: one\n  Note over B: two`,
+    )
+    expect(rowOf(out, 'one')).toBeGreaterThan(frameBottom(out, 'opt'))
+    expect(rowOf(out, 'two')).toBeGreaterThan(rowOf(out, 'one'))
+  })
+
+  it('keeps a note inside the else section it was written in', () => {
+    const out = renderMermaidASCII(AFTER[5]![1])
+    expect(rowOf(out, 'in else')).toBeGreaterThan(rowOf(out, '[b]'))
+    expect(rowOf(out, 'in else')).toBeLessThan(frameBottom(out, 'alt'))
+  })
+
   for (const [name, src] of [
     ['issue', ISSUE],
     ['side', SIDE],
