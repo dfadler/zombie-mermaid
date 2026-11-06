@@ -5,6 +5,8 @@
 // Sequence diagrams show actor interactions over time (vertical timeline).
 // ============================================================================
 
+import type { SequenceInitLayout } from '@zombie-mermaid/core'
+
 /** Parsed sequence diagram — logical structure from mermaid text */
 export interface SequenceDiagram {
   /** Ordered list of actors/participants */
@@ -31,6 +33,8 @@ export interface SequenceDiagram {
   boxes: ParticipantBox[]
   /** `%%{init}%%` `sequence.mirrorActors: false`: no participant row under the lifelines. */
   mirrorActors?: false
+  /** `%%{init}%%` `sequence` layout keys (`wrap`, `noteAlign`, spacing...); see {@link SequenceInitLayout}. */
+  layout?: SequenceInitLayout
   /** Text of a `title <text>` line (the last one wins); unset when there is none. */
   title?: string
 }
@@ -225,6 +229,8 @@ export interface PositionedMessage {
   lineStyle: 'solid' | 'dashed'
   arrowHead: 'filled' | 'open'
   /** Start point (from actor's lifeline) */
+  /** `sequence.messageAlign: left|right`: label hugs that end of the arrow (unset = centred). */
+  labelAlign?: 'left' | 'right'
   x1: number
   /** End point (to actor's lifeline) */
   x2: number
@@ -274,4 +280,6 @@ export interface PositionedNote {
   actors?: string[]
   /** Note position relative to actors (for SVG attribution) */
   position?: 'left' | 'right' | 'over'
+  /** `sequence.noteAlign: left|right`: text hugs that side of the note (unset = centred). */
+  align?: 'left' | 'right'
 }

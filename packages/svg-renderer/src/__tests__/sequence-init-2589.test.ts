@@ -55,7 +55,7 @@ describe('sequence %%{init}%% (#2589)', () => {
   })
 
   it('other keys and non-boolean values are ignored', () => {
-    const cfg = '{"actorMargin": 120, "mirrorActors": "no", "wrap": true}'
+    const cfg = '{"messageMargin": 120, "mirrorActors": "no", "actorFontSize": 30}'
     expect(renderMermaidSVG(init(cfg))).toBe(renderMermaidSVG(body))
   })
 

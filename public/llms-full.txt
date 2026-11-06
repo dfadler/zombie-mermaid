@@ -1946,21 +1946,24 @@ Honoured: `mirrorActors: false` (no participant row under the lifelines, SVG and
 `hideUnusedParticipants: true` (drops a participant no message, `activate` or note names; a
 `box` membership alone does not keep it).
 
-Ignored, although mermaid changes the output (no warning is raised; there is no warnings
-channel for diagram text):
+Layout keys (#2703), checked against mermaid 12.3.0 by rendering each key and reading the
+rects and text anchors. This renderer lays out at its own scale (16 px text in mermaid, 11 px
+here), so each size or margin key moves our constant by its distance from mermaid's default
+(`actorMargin: 100` moves the second lifeline 50 px, as in mermaid); a key at its default, or
+absent, changes nothing.
 
-| Option                                                | mermaid 12.3.0 effect                          |
-| ----------------------------------------------------- | ---------------------------------------------- |
-| `actorMargin`, `width`, `height`                      | participant spacing and box size               |
-| `messageMargin`, `boxMargin`, `noteMargin`            | vertical spacing between rows                  |
-| `diagramMarginX`, `diagramMarginY`, `bottomMarginAdj` | outer padding                                  |
-| `wrap` (with `width`)                                 | wraps long labels and notes                    |
-| `noteAlign`, `messageAlign`, `rightAngles`            | note and label alignment, self-message corners |
-| `actorFontSize`, `messageFontSize`, `activationWidth` | sizes                                          |
+| Option                                     | SVG                                                      | ASCII                         |
+| ------------------------------------------ | -------------------------------------------------------- | ----------------------------- |
+| `wrap` (with `width`, `actorMargin`)       | notes wrap at `width`, messages at `width + actorMargin` | same, at 8 px a column        |
+| `noteAlign`, `messageAlign` `left`/`right` | text-anchor start/end                                    | text sits at that side        |
+| `actorMargin`, `width`, `height`           | lifeline gap, box width, box height                      | no analogue (character cells) |
+| `boxMargin`, `noteMargin`                  | row spacing, note padding                                | no analogue                   |
+| `diagramMarginX/Y`, `bottomMarginAdj`      | outer padding                                            | no analogue                   |
 
-The sizes and margins follow this renderer's own scale (see the self-message entry above), so
-copying mermaid's pixel values would not match anyway; `wrap` and
-`noteAlign` are the ones a user could expect to see.
+Nothing to honour: mermaid 12.3.0 itself ignores `actorFontSize`, `messageFontSize`,
+`noteFontSize` (text stays 16 px) and `messageMargin` (rows do not move), so we match by
+ignoring them. Still ignored although mermaid changes the output: `rightAngles` (self-message
+corners) and `activationWidth`; `wrap` is not applied to participant names.
 
 `link` / `links` (participant menus): measured on mermaid 12.3.0, the menu is a
 `display="none"` `actorPopupMenu` group with `<a xlink:href>` entries that only a click in a

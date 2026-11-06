@@ -37,6 +37,44 @@ const CURVE_STYLES = new Set<CurveStyle>([
   'stepAfter',
 ])
 
+/** `sequence.*` init keys (lowercased) that tune layout, mapped to their canonical name. */
+const SEQUENCE_LAYOUT_KEYS = new Map<string, keyof SequenceInitLayout>(
+  (
+    [
+      'wrap',
+      'noteAlign',
+      'messageAlign',
+      'width',
+      'height',
+      'actorMargin',
+      'boxMargin',
+      'noteMargin',
+      'diagramMarginX',
+      'diagramMarginY',
+      'bottomMarginAdj',
+    ] as const
+  ).map((k) => [k.toLowerCase(), k]),
+)
+
+/**
+ * `%%{init: {"sequence": {...}}}%%` layout keys, in mermaid's own units
+ * (px at 16px text). Renderers apply each as a delta from mermaid's default
+ * onto their own scale.
+ */
+export interface SequenceInitLayout {
+  wrap?: boolean
+  noteAlign?: 'left' | 'center' | 'right'
+  messageAlign?: 'left' | 'center' | 'right'
+  width?: number
+  height?: number
+  actorMargin?: number
+  boxMargin?: number
+  noteMargin?: number
+  diagramMarginX?: number
+  diagramMarginY?: number
+  bottomMarginAdj?: number
+}
+
 const PIE_LEGEND_POSITIONS = new Set([
   'left',
   'right',
@@ -158,6 +196,8 @@ export interface InitConfig {
   sequenceShowNumbers?: boolean
   /** `sequence.hideUnusedParticipants`: true drops participants no message or note touches. */
   sequenceHideUnused?: boolean
+  /** Other `sequence.*` layout keys (numbers >= 0, `wrap`, `noteAlign`, `messageAlign`). */
+  sequenceLayout?: SequenceInitLayout
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
@@ -375,8 +415,21 @@ export function parseInitDirective(line: string): InitConfig | undefined {
 
     if (lower === 'sequence' && typeof value === 'object' && value !== null) {
       for (const [sk, sv] of Object.entries({ ...value })) {
-        if (typeof sv !== 'boolean') continue
         const sl = sk.toLowerCase()
+        const layoutKey = SEQUENCE_LAYOUT_KEYS.get(sl)
+        if (layoutKey) {
+          const ok =
+            layoutKey === 'wrap'
+              ? typeof sv === 'boolean'
+              : layoutKey === 'noteAlign' || layoutKey === 'messageAlign'
+                ? sv === 'left' || sv === 'center' || sv === 'right'
+                : typeof sv === 'number' && Number.isFinite(sv) && sv >= 0
+          if (ok) {
+            ;(config.sequenceLayout ??= {})[layoutKey] = sv as never
+          }
+          continue
+        }
+        if (typeof sv !== 'boolean') continue
         if (sl === 'mirroractors') config.sequenceMirrorActors = sv
         else if (sl === 'showsequencenumbers') config.sequenceShowNumbers = sv
         else if (sl === 'hideunusedparticipants') config.sequenceHideUnused = sv
@@ -442,6 +495,12 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.sequenceHideUnused !== undefined) {
       merged.sequenceHideUnused = config.sequenceHideUnused
+    }
+    if (config.sequenceLayout) {
+      merged.sequenceLayout = {
+        ...merged.sequenceLayout,
+        ...config.sequenceLayout,
+      }
     }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }

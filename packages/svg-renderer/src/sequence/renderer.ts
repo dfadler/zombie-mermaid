@@ -461,10 +461,14 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
     '  ' +
       renderMultilineText(
         msg.label,
-        (msg.x1 + msg.x2) / 2,
+        msg.labelAlign === 'left'
+          ? Math.min(msg.x1, msg.x2) + LABEL_ALIGN_INSET
+          : msg.labelAlign === 'right'
+            ? Math.max(msg.x1, msg.x2) - LABEL_ALIGN_INSET
+            : (msg.x1 + msg.x2) / 2,
         messageLabelCy(msg, fontSizes),
         fontSizes.edgeLabel,
-        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="${msg.labelAlign === 'left' ? 'start' : msg.labelAlign === 'right' ? 'end' : 'middle'}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
   )
 
@@ -667,6 +671,11 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
  * Render a note box: a plain rectangle, as in Mermaid.
  * Wrapped in <g class="note"> with semantic data attributes.
  */
+/** Distance from the note edge to left/right-aligned text (mermaid's 10px `noteMargin`). */
+const NOTE_TEXT_INSET = 10
+/** Distance from the lifeline to left/right-aligned message text. */
+const LABEL_ALIGN_INSET = 10
+
 function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
   const { x, y, width: w, height: h } = note
 
@@ -687,10 +696,14 @@ function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
     // Note text (supports multi-line)
     f`\n  ${renderMultilineText(
       note.text,
-      x + w / 2,
+      note.align === 'left'
+        ? x + NOTE_TEXT_INSET
+        : note.align === 'right'
+          ? x + w - NOTE_TEXT_INSET
+          : x + w / 2,
       y + h / 2,
       fontSizes.edgeLabel,
-      f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      f`font-size="${fontSizes.edgeLabel}" text-anchor="${note.align === 'left' ? 'start' : note.align === 'right' ? 'end' : 'middle'}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
     )}` +
     `\n</g>`
   )
