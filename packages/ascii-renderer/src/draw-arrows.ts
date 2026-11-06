@@ -599,15 +599,7 @@ function drawPath(
 }
 
 /** Vertical box-border characters a horizontal connector can genuinely merge with. */
-const VERTICAL_BORDER_CHARS = new Set([
-  '│',
-  '┃',
-  '║',
-  '┆',
-  '┊',
-  '|',
-  '‖',
-])
+const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊', '|', '‖'])
 /** Solid fork/join bar cell (Unicode / ASCII): nothing to connect to, nothing to overwrite. */
 const BAR_CHARS = new Set(['█', '#'])
 /** Horizontal box-border characters a vertical connector can genuinely merge with. */
