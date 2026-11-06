@@ -238,25 +238,17 @@ function renderActor(
   )
 
   if (type === 'actor') {
-    // Circle-person icon: outer circle + head circle + shoulders arc.
-    // Defined in a 24×24 coordinate space, scaled to 90% of the actor box height
-    // and centered both horizontally and vertically within the box.
-    // Stroke width is inverse-scaled so the visual thickness matches STROKE_WIDTHS.outerBox.
-    const s = (height / 24) * 0.9
-    const tx = x - 12 * s // Center icon horizontally on actor.x
-    const ty = y + (height - 24 * s) / 2 // Center icon vertically in actor box
-    const sw = STROKE_WIDTHS.outerBox / s // Compensate for scale transform
-    const iconStroke = 'var(--_line)' // Use line color for actor icon strokes
-
+    // Stick figure as Mermaid 12.3.0 draws it (`g.actor-man`): head circle,
+    // torso, arms and two legs, in a 65-unit-tall design scaled to 90% of the
+    // actor box height, with a 2px stroke. The head's fill is the node fill.
+    const k = (height * 0.9) / 65
+    const top = y + (height - 65 * k) / 2
+    const X = (dx: number): number => x + dx * k
+    const Y = (dy: number): number => top + dy * k
+    const st = f`stroke="var(--_line)" stroke-width="2"`
     parts.push(
-      f`  <g transform="translate(${tx},${ty}) scale(${s})">` +
-        // Outer circle
-        f`\n    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
-        // Head
-        f`\n    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
-        // Shoulders
-        f`\n    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
-        `\n  </g>`,
+      f`  <circle cx="${x}" cy="${Y(15)}" r="${15 * k}" fill="var(--_node-fill)" ${st} />` +
+        f`\n  <path d="M${x} ${Y(30)}V${Y(50)}M${X(-18)} ${Y(38)}H${X(18)}M${X(-18)} ${Y(65)}L${x} ${Y(50)}L${X(16)} ${Y(65)}" fill="none" ${st} />`,
     )
     // Label below the icon (supports multi-line)
     parts.push(
@@ -381,26 +373,12 @@ const BLOCK_DIVIDER_DASH = '3 3'
  * Includes data-actor to link to its actor.
  */
 function renderLifeline(lifeline: Lifeline): string {
-  const line =
+  return (
     f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
     f`x1="${lifeline.x}" y1="${lifeline.topY}" x2="${lifeline.x}" y2="${lifeline.bottomY}" ` +
     `stroke="var(--_line)" stroke-width="${LIFELINE_STROKE}" />`
-  if (!lifeline.destroyed) return line
-  // `destroy X`: the lifeline ends at the destroying message's row, marked
-  // with a cross centred on it — the same glyph Mermaid uses. Drawn in the
-  // lifeline pass (before messages), so the destroying arrow lands on top.
-  const { x, bottomY: y } = lifeline
-  const r = DESTROY_CROSS_HALF
-  return (
-    line +
-    f`\n<path class="destroy" data-actor="${escapeAttr(lifeline.actorId)}" ` +
-    f`d="M${x - r} ${y - r} L${x + r} ${y + r} M${x + r} ${y - r} L${x - r} ${y + r}" ` +
-    f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-linecap="round" />`
   )
 }
-
-/** Half-size of the `destroy` cross at the end of a lifeline, in px. */
-const DESTROY_CROSS_HALF = 8
 
 /**
  * Render an activation box (narrow filled rectangle on lifeline).

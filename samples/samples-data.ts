@@ -440,7 +440,7 @@ export const samples: Sample[] = [
     title: 'Interactivity: Curved Edges',
     category: 'Interactivity',
     description:
-      'A diagram can configure its own rendering with `%%{init: ...}%%`. Here it asks for the `basis` curve, a direct port of d3’s `curveBasis`, so edges bow through their bend points instead of turning square corners. An explicit `curve` render option always wins over the directive.',
+      'A diagram can configure its own rendering with `%%{init: ...}%%`. Here it asks for the `basis` curve. Mermaid 12.3.0 ignores `flowchart.curve` (every edge is ELK-routed with rounded orthogonal bends), and so does this renderer; only the `curve` render option changes the edges.',
     source: `%%{init: {"flowchart": {"curve": "basis"}}}%%
 flowchart TD
   Ingest[Ingest] --> Queue[Queue]
@@ -453,7 +453,7 @@ flowchart TD
     title: 'Interactivity: Step Routing',
     category: 'Interactivity',
     description:
-      'The same directive with `step` instead, which routes every edge as right angles. The default stays `linear`, which still emits `<polyline class="edge">` so existing selectors keep working; only a non-linear curve switches the element to `<path>`.',
+      'The same directive with `step`: also ignored, matching Mermaid 12.3.0, so the edges keep their rounded orthogonal routing.',
     source: `%%{init: {"flowchart": {"curve": "step"}}}%%
 flowchart LR
   Client[Client] --> Gateway[Gateway]
@@ -1773,7 +1773,7 @@ flowchart LR
     title: 'Pie: Tall Legend',
     category: 'Pie',
     description:
-      'Twenty-four slices: the legend is taller than the 450px frame, so the viewBox grows to fit it.',
+      'Twenty-four slices: the legend is taller than the 450px frame, so it is clipped at the top and bottom, as in mermaid 12.3.0.',
     source: `pie title Tickets by component
   "Component 01" : 30
   "Component 02" : 29
@@ -1903,7 +1903,7 @@ flowchart LR
     title: 'Pie: More Slices Than Bar Cells',
     category: 'Pie',
     description:
-      'Sixty equal slices. The SVG draws every one; the 50-cell ASCII bar fits fifty, and the other ten are listed like slices under 1% (dot swatch, no percentage).',
+      'Sixty equal slices. The SVG draws every slice (its legend is clipped as in mermaid); the 50-cell ASCII bar fits fifty, and the other ten are listed like slices under 1% (dot swatch, no percentage).',
     source: `pie title Sixty equal slices
 ${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" : 1`).join('\n')}`,
   },
@@ -2903,7 +2903,7 @@ pie title Pets adopted by volunteers
     title: 'Sequence: Long Block Tab And Divider Labels',
     category: 'Sequence',
     description:
-      'Long block and divider labels over adjacent participants: the gap between the participants widens so the label ends before the next lifeline.',
+      'Long block and divider labels over adjacent participants: the labels wrap onto several lines and the gap between the participants stays as it is.',
     source: `sequenceDiagram
   participant A
   participant B

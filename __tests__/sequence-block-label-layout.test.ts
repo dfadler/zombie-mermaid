@@ -81,13 +81,16 @@ describe('block label layout', () => {
     )
   })
 
-  it('ASCII: the wall sits the same distance outside both lifelines', () => {
+  it('ASCII: the wall encloses both lifelines, hugging the left one', () => {
     const rows = renderMermaidASCII(source).split('\n')
     const row = rows.find((r) => r.includes('retry'))!
     // `│   │   retry   │   │`: wall, gap, lifeline, ..., lifeline, gap, wall.
+    // The gap no longer widens for the labels (#2745), so on a narrow span
+    // the right wall can sit further out to hold a label's text.
     const cols = [...row].flatMap((c, i) => (c === '│' ? [i] : []))
     expect(cols).toHaveLength(4)
-    expect(cols[1]! - cols[0]!).toBe(cols[3]! - cols[2]!)
+    expect(cols[1]! - cols[0]!).toBe(4)
+    expect(cols[3]! - cols[2]!).toBeGreaterThanOrEqual(4)
   })
 
   it('ASCII: divider labels are centred, with dashes on both sides', () => {

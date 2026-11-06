@@ -105,12 +105,14 @@ describe('mirrored footer actors (#2559)', () => {
     expect(l.height).toBeGreaterThan(f.y + f.height + 14)
   })
 
-  it('gives a destroyed participant no footer, and boxes enclose footers', () => {
+  it("puts a destroyed participant's footer at its destroying message, and boxes enclose footers", () => {
     const l = layout(
       'box Aqua G\nparticipant A\nparticipant C\nend\nA->>C: x\ndestroy C\nC->>A: y',
     )
-    expect(l.footerActors.map((a) => a.id)).toEqual(['A'])
-    const f = l.footerActors[0]!
+    expect(l.footerActors.map((a) => a.id)).toEqual(['A', 'C'])
+    const f = l.footerActors.find((a) => a.id === 'A')!
+    const c = l.footerActors.find((a) => a.id === 'C')!
+    expect(c.y).toBeLessThan(f.y)
     expect(l.boxes[0]!.y + l.boxes[0]!.height).toBeGreaterThan(f.y + f.height)
   })
 })

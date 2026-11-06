@@ -20,9 +20,6 @@ export interface AccessibleText {
 export function applyClickStatement(line: string, interactions: Map<string, NodeInteraction>): void;
 
 // @public
-export function applyInitConfig(options: RenderOptions, config: InitConfig): RenderOptions;
-
-// @public
 export function applyThemeVariables(options: RenderOptions, config: InitConfig | undefined): RenderOptions;
 
 // @public
@@ -39,6 +36,15 @@ export function checkLineLength(text: string, limits: RenderLimits | undefined):
 
 // @public
 export type ClassRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'fontSizes' | 'interactivity' | 'layoutCache'>;
+
+// @public
+export function collapseFlatRange(range: {
+    min: number;
+    max: number;
+}, data: number[]): {
+    min: number;
+    max: number;
+};
 
 // @public
 export type CommonRenderOptions = Pick<RenderOptions, 'bg' | 'fg' | 'line' | 'accent' | 'muted' | 'surface' | 'border' | 'font' | 'embedFont' | 'transparent' | 'embedSource' | 'resolveColors' | 'nonce' | 'styleAttribute' | 'title' | 'decorative'>;
@@ -246,7 +252,6 @@ export function hasMeasuredAdvance(char: string): boolean;
 
 // @public
 export interface InitConfig {
-    curve?: CurveStyle;
     ignored: string[];
     pieDonutHole?: number;
     pieHighlightSlice?: string;
@@ -546,6 +551,7 @@ export interface PositionedGroup {
     // (undocumented)
     label: string;
     region?: boolean;
+    titleOnly?: boolean;
     // (undocumented)
     width: number;
     // (undocumented)

@@ -26,14 +26,16 @@ describe('renderMermaidSVG – sequence diagrams', () => {
     expect(svg).toContain('Message')
   })
 
-  it('renders actor circle-person icons', () => {
+  it('renders actors as stick figures (mermaid 12.3.0 g.actor-man)', () => {
     const svg = renderMermaidSVG(`sequenceDiagram
       actor U as User
       participant S as System
       U->>S: Click`)
-    // Actors use the circle-person icon (three paths inside a scaled <g>)
-    expect(svg).toContain('<g transform="translate(')
-    expect(svg).toContain('scale(')
+    // A head circle, plus one path for torso, arms and legs, both 2px strokes
+    const man = svg.match(/<g class="actor" data-id="U"[^>]*>[\s\S]*?<\/g>/)![0]
+    expect(man).toMatch(/<circle [^>]*stroke-width="2"/)
+    expect(man.match(/<path /g)).toHaveLength(1)
+    expect(man).not.toContain('scale(')
     expect(svg).toContain('User')
     expect(svg).toContain('System')
   })
@@ -236,15 +238,16 @@ describe('renderMermaidSVG – standalone activate/deactivate (#419)', () => {
 })
 
 describe('renderMermaidSVG – create/destroy (#419)', () => {
-  it('draws a destroy cross on the destroyed lifeline and none elsewhere', () => {
+  it('draws no destroy cross; the destroyed participant gets a footer box at its destroying message', () => {
     const svg = renderMermaidSVG(`sequenceDiagram
       A->>B: one
       create participant C
       A->>C: two
       destroy B
       A->>B: three`)
-    const crosses = svg.match(/<path class="destroy" data-actor="([^"]*)"/g)
-    expect(crosses).toEqual(['<path class="destroy" data-actor="B"'])
+    expect(svg).not.toContain('class="destroy"')
+    const footers = svg.match(/<g class="actor-footer" data-id="([^"]*)"/g)
+    expect(footers).toHaveLength(3)
     // The created participant still gets an actor box and a lifeline
     expect(svg).toContain('<g class="actor" data-id="C"')
     expect(svg).toContain('<line class="lifeline" data-actor="C"')

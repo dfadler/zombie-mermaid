@@ -8,8 +8,8 @@ import { renderMermaidSVG, renderMermaidASCII } from '../index.ts'
 // in every direction is that each arrowhead sits on the right end of its
 // relationship (`Rel` at `to`, `Rel_Back` at `from`, `BiRel` at both).
 //
-// ASCII keeps its own layout: top to bottom, `BT` flips it, and `LR`/`RL`
-// render like `TB`.
+// ASCII places shapes the same way (declaration order, in rows), so every
+// direction renders like `TB`.
 
 const DIRECTIONS = ['TB', 'BT', 'LR', 'RL'] as const
 type Dir = (typeof DIRECTIONS)[number]
@@ -106,33 +106,13 @@ describe('C4 ASCII orientations', () => {
   const ascii = (dir: Dir): string =>
     renderMermaidASCII(SOURCE, { direction: dir })
 
-  it('draws arrowheads on the right ends in TB', () => {
-    const out = ascii('TB')
-    // Rel, Rel, and one end each of Rel_Back and BiRel point down; the
-    // Rel_Back head and the other BiRel head point up.
-    expect([...out].filter((c) => c === '▼')).toHaveLength(3)
-    expect([...out].filter((c) => c === '▲')).toHaveLength(2)
+  it('draws one arrowhead per headed end', () => {
+    // Rel, Rel, the Rel_Back head and both BiRel heads.
+    expect([...ascii('TB')].filter((c) => '▼▲►◄'.includes(c))).toHaveLength(5)
   })
 
-  it('reverses the rows and the arrowheads in BT', () => {
-    const tb = ascii('TB')
-    const bt = ascii('BT')
-    expect([...bt].filter((c) => c === '▲')).toHaveLength(
-      [...tb].filter((c) => c === '▼').length,
-    )
-    expect([...bt].filter((c) => c === '▼')).toHaveLength(
-      [...tb].filter((c) => c === '▲').length,
-    )
-    expect(bt.indexOf('[Person]')).toBeGreaterThan(
-      bt.indexOf('[Software System]'),
-    )
-  })
-
-  it('flips the contents of a boundary too in BT', () => {
-    const rows = ascii('BT').split('\n')
-    const at = (re: RegExp) => rows.findIndex((l) => re.test(l))
-    // B -> C flows upward, so C sits above B inside the frame.
-    expect(at(/│ +C +│/)).toBeLessThan(at(/│ +B +│/))
+  it('ignores BT, as Mermaid does', () => {
+    expect(ascii('BT')).toBe(ascii('TB'))
   })
 
   it.each(['TB', 'BT'] as const)(
@@ -155,7 +135,7 @@ describe('C4 ASCII orientations', () => {
     },
   )
 
-  it('is top-to-bottom only: LR and RL render exactly like TB', () => {
+  it('ignores LR and RL: they render exactly like TB', () => {
     expect(ascii('LR')).toBe(ascii('TB'))
     expect(ascii('RL')).toBe(ascii('TB'))
   })

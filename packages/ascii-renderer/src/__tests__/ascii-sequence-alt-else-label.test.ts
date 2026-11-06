@@ -111,6 +111,8 @@ sequenceDiagram
     expect(Math.abs(left!.length - right!.length)).toBeLessThanOrEqual(1)
   })
 
+  // Five actors keep the lifeline span wide enough that the label stays on one
+  // line (long labels wrap on a narrow span, #2745).
   it('widens the wall for a very long single-condition label', () => {
     const longLabel =
       'this condition label is extremely long and needs the canvas to grow to fit it properly'
@@ -119,8 +121,11 @@ sequenceDiagram
 sequenceDiagram
     participant A
     participant B
+    participant C
+    participant D
+    participant E
     alt ${longLabel}
-        A->>B: x
+        A->>E: x
     end
 `,
       { useAscii: false },
@@ -137,20 +142,25 @@ sequenceDiagram
     expect(headerLine!.endsWith('┐')).toBe(true)
   })
 
+  // Five actors keep the lifeline span wide enough that the label stays on one
+  // line (long labels wrap on a narrow span, #2745).
   it('widens the wall to fit the longest of several else branches with varying label lengths', () => {
     const result = renderMermaidASCII(
       `
 sequenceDiagram
     participant A
     participant B
+    participant C
+    participant D
+    participant E
     alt short
-        A->>B: w
+        A->>E: w
     else a moderately long condition
-        A->>B: x
+        A->>E: x
     else an even longer condition than the previous one
-        A->>B: y
+        A->>E: y
     else tiny
-        A->>B: z
+        A->>E: z
     end
 `,
       { useAscii: false },
@@ -168,14 +178,19 @@ sequenceDiagram
     expect(result).not.toContain('[an even longer condition than the previous]')
   })
 
+  // Five actors keep the lifeline span wide enough that the label stays on one
+  // line (long labels wrap on a narrow span, #2745).
   it('widens loop/opt block walls too, not just alt', () => {
     const loopResult = renderMermaidASCII(
       `
 sequenceDiagram
     participant A
     participant B
+    participant C
+    participant D
+    participant E
     loop a fairly long loop condition label here
-        A->>B: x
+        A->>E: x
     end
 `,
       { useAscii: false },
@@ -189,8 +204,11 @@ sequenceDiagram
 sequenceDiagram
     participant A
     participant B
+    participant C
+    participant D
+    participant E
     opt a fairly long optional condition label here
-        A->>B: x
+        A->>E: x
     end
 `,
       { useAscii: false },
@@ -221,6 +239,8 @@ sequenceDiagram
     expect(result).not.toContain('par [')
   })
 
+  // Five actors keep the lifeline span wide enough that the label stays on one
+  // line (long labels wrap on a narrow span, #2745).
   it('handles a bare else divider with no label text', () => {
     // `divider.label` is '' (falsy) here — exercises the `if (divider.label)`
     // false branch that a labelled else never reaches.
@@ -229,10 +249,13 @@ sequenceDiagram
 sequenceDiagram
     participant A
     participant B
+    participant C
+    participant D
+    participant E
     alt some long condition that needs the wall widened
-        A->>B: x
+        A->>E: x
     else
-        A->>B: y
+        A->>E: y
     end
 `,
       { useAscii: false },

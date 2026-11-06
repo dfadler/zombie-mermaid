@@ -3,7 +3,7 @@
 //
 // Mermaid lets a diagram carry its own configuration inline:
 //
-//   %%{init: {"theme": "dark", "flowchart": {"curve": "basis"}}}%%
+//   %%{init: {"theme": "dark", "pie": {"textPosition": 0.6}}}%%
 //   flowchart TD
 //     A --> B
 //
@@ -27,15 +27,6 @@ export type CurveStyle =
   | 'step'
   | 'stepBefore'
   | 'stepAfter'
-
-const CURVE_STYLES = new Set<CurveStyle>([
-  'linear',
-  'basis',
-  'natural',
-  'step',
-  'stepBefore',
-  'stepAfter',
-])
 
 /** `sequence.*` init keys (lowercased) that tune layout, mapped to their canonical name. */
 const SEQUENCE_LAYOUT_KEYS = new Map<string, keyof SequenceInitLayout>(
@@ -180,8 +171,6 @@ function directiveColor(value: unknown): string | undefined {
 /** Configuration a diagram can set for itself via `%%{init: ...}%%`. */
 export interface InitConfig {
   theme?: string
-  /** Flowchart edge interpolation. */
-  curve?: CurveStyle
   /** `pie.textPosition`: slice label distance as a fraction of the radius. */
   pieTextPosition?: number
   /** `pie.donutHole`: inner radius as a fraction of the radius. */
@@ -228,6 +217,8 @@ const IGNORED_KEYS: Record<string, string> = {
     'labels are always rendered as SVG text; there is no HTML label mode',
   maxtextsize: 'no text-size limit is enforced',
   startonload: 'not a browser auto-render integration',
+  'flowchart.curve':
+    'mermaid 12.3.0 ignores it (every flowchart edge is ELK-routed with rounded orthogonal bends); pass the `curve` render option to opt in',
   themevariables:
     "only primaryColor, primaryBorderColor, primaryTextColor, lineColor, pie1..pie12 and the quadrant* colours are mapped, and only when the caller sets `honorThemeVariables`; every other variable (secondary/tertiary colours, fontFamily, background, per-diagram variables) is not read, and Mermaid's colours derived from primaryColor are not computed",
 }
@@ -384,9 +375,9 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const flowchart: Record<string, unknown> = { ...value }
       for (const [fk, fv] of Object.entries(flowchart)) {
         if (fk.toLowerCase() === 'curve' && typeof fv === 'string') {
-          if (CURVE_STYLES.has(fv as CurveStyle)) {
-            config.curve = fv as CurveStyle
-          }
+          // Mermaid 12.3.0 lays out every flowchart with ELK and ignores
+          // `flowchart.curve` (#2729): parsed, reported, never applied.
+          config.ignored.push('flowchart.curve')
           continue
         }
         if (fk.toLowerCase() in IGNORED_KEYS) config.ignored.push(fk)
@@ -474,7 +465,6 @@ export function extractInitConfig(lines: string[]): InitConfig {
     const config = parseInitDirective(line)
     if (!config) continue
     if (config.theme !== undefined) merged.theme = config.theme
-    if (config.curve !== undefined) merged.curve = config.curve
     if (config.pieTextPosition !== undefined) {
       merged.pieTextPosition = config.pieTextPosition
     }
@@ -524,22 +514,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
 }
 
 /**
- * Fold an init config into render options.
- *
- * Caller-supplied options always win: a directive supplies a default, never
- * an override. See the module header for why.
- */
-export function applyInitConfig(
-  options: RenderOptions,
-  config: InitConfig,
-): RenderOptions {
-  if (config.curve === undefined || options.curve !== undefined) return options
-  return { ...options, curve: config.curve }
-}
-
-/**
  * Fold the honoured `themeVariables` into render options, for a caller that
- * opted in with `honorThemeVariables`. Like `applyInitConfig`, a directive
+ * opted in with `honorThemeVariables`. Like any directive, it
  * only fills what the caller left unset: `bg`/`fg`/`line`/`surface`/`border`
  * passed in `options` always win.
  */

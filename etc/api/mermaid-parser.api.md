@@ -444,7 +444,6 @@ export interface Lifeline {
     actorId: string;
     // (undocumented)
     bottomY: number;
-    destroyed?: boolean;
     // (undocumented)
     topY: number;
     // (undocumented)

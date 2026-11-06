@@ -53,7 +53,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
     if (xCatMatch) {
       if (xCatMatch[1]) xAxis.title = decodeMermaidEntities(xCatMatch[1])
       xAxis.categories = splitCategoryList(xCatMatch[2]!).map((s) =>
-        decodeMermaidEntities(unquote(s.trim())),
+        decodeMermaidEntities(categoryLabel(s.trim(), line, stmt.line)),
       )
       continue
     }
@@ -181,18 +181,27 @@ function splitCategoryList(str: string): string[] {
   return items
 }
 
+/** Characters mermaid 12.3.0's xychart lexer accepts in an unquoted category (plus whitespace). */
+const UNQUOTED_CATEGORY = /^[A-Za-z0-9+=*#_.&\s-]+$/
+
 /**
- * Strip one matching pair of leading/trailing double quotes from a category
- * item, if present — mirroring how an axis *title* capture group already
- * unquotes via its regex. `x-axis [A, B, C]` items are only split and
- * trimmed, so a quoted item like `"CLI output / logs"` previously kept its
- * literal quote characters in the rendered label. See issue #1087.
+ * Resolve one category item the way mermaid 12.3.0 does. A `"quoted"` item
+ * keeps its text (#1087). An unquoted item may only use letters, digits and
+ * `+ = * # _ . & -`; whitespace inside it is dropped, so `New Users` becomes
+ * `NewUsers` (#2728). Anything else (`/users`, `:`, `;`, an empty item, a
+ * quote in the middle) is a parse error there (#2716).
  */
-function unquote(value: string): string {
-  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
-    return value.slice(1, -1)
-  }
-  return value
+function categoryLabel(
+  value: string,
+  line: string,
+  lineNumber: number,
+): string {
+  if (/^"[^"]*"$/.test(value)) return value.slice(1, -1)
+  if (UNQUOTED_CATEGORY.test(value)) return value.replace(/\s+/g, '')
+  throw new MermaidParseError(
+    `Line ${lineNumber}: Invalid x-axis category ${JSON.stringify(value)} in "${line}". Unquoted categories may only contain letters, digits and + = * # _ . & -; wrap other labels in double quotes.`,
+    { diagramType: 'xychart' },
+  )
 }
 
 /**
