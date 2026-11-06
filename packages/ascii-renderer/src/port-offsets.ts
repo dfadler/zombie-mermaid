@@ -976,6 +976,7 @@ function allocateFaces(
       !result.has(e) &&
       (e.from === e.to ||
         e.faceLane === true ||
+        e.ownPorts === true ||
         (e.parallelLane !== undefined &&
           !e.bundle &&
           !e.clusterSource &&

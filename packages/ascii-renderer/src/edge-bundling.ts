@@ -151,6 +151,9 @@ export function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
   const firstToSg = getNodeSubgraph(graph, edges[0]!.to)
 
   for (const edge of edges) {
+    // A bypass triangle's edges keep a port each (#2731, #2739).
+    if (edge.ownPorts) return false
+
     // Different styles can't be bundled (would look confusing)
     if (edge.style !== firstStyle) return false
 
