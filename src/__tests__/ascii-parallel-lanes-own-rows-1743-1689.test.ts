@@ -39,15 +39,9 @@ const draw = (source: string, useAscii = false): string =>
 const count = (text: string, ch: string): number => text.split(ch).length - 1
 
 describe('plain parallel lanes each get an arrowhead (#1743)', () => {
-  it('TD, 3 lanes', () => {
-    const out = draw(lanes('TD', 3))
-    // One straight arrowhead on top, one per side lane on the right face
-    expect(count(out, '◄')).toBe(2)
-    expect(out).not.toMatch(/◄[─]*┴|┼/)
-  })
-
-  // From four, every edge takes a port of its own on the facing faces (#2645).
-  it.each([4, 5, 6])('TD, %i lanes', (n) => {
+  // From four (three, when the labels are too wide to sit beside their
+  // strokes: #2736), every edge takes a port of its own on the facing faces (#2645).
+  it.each([3, 4, 5, 6])('TD, %i lanes', (n) => {
     const out = draw(lanes('TD', n))
     expect(count(out, '▼')).toBe(n)
     expect(count(out, '◄')).toBe(0)

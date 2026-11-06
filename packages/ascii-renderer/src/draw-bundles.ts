@@ -28,7 +28,11 @@ import { gridToDrawingCoord } from './grid.ts'
 import { getShapeAttachmentPoint } from './shapes/index.ts'
 import type { ShapeDimensions } from './shapes/index.ts'
 import { drawLine } from './draw-lines.ts'
-import { markerArrowChar } from './draw-arrows.ts'
+import {
+  HORIZONTAL_BORDER_CHARS,
+  VERTICAL_BORDER_CHARS,
+  markerArrowChar,
+} from './draw-arrows.ts'
 import { pseudoStateGlyph } from './draw-boxes.ts'
 
 // ============================================================================
@@ -229,12 +233,13 @@ export function drawBundledEdgeSegment(
 export function drawBundleSharedPath(
   graph: AsciiGraph,
   bundle: EdgeBundle,
-): [Canvas, Canvas] {
+): [Canvas, Canvas, Canvas] {
   const pathCanvas = copyCanvas(graph.canvas)
   const cornersCanvas = copyCanvas(graph.canvas)
+  const boxStartCanvas = copyCanvas(graph.canvas)
 
   if (bundle.sharedPath.length < 2) {
-    return [pathCanvas, cornersCanvas]
+    return [pathCanvas, cornersCanvas, boxStartCanvas]
   }
 
   const useAscii = graph.config.useAscii
@@ -265,6 +270,24 @@ export function drawBundleSharedPath(
     if (!drawingCoordEquals(from, to)) {
       // Always skip both endpoints (offset 1, -1), matching non-bundled drawPath.
       drawLine(pathCanvas, from, to, 1, -1, useAscii, style)
+    }
+  }
+
+  // Fan-out stem leaves the source's border: tee into it like a lone edge
+  // and a fan-in's branches do (#2730), where a straight border is. A shared
+  // start arrowhead keeps the border plain (#1457).
+  if (
+    bundle.type === 'fan-out' &&
+    !bundle.edges.every((e) => e.hasArrowStart)
+  ) {
+    const start = drawingPath[0]!
+    const down = graphDir === 'TD'
+    const border = graph.canvas[start.x]?.[start.y]
+    if (
+      border !== undefined &&
+      (down ? HORIZONTAL_BORDER_CHARS : VERTICAL_BORDER_CHARS).has(border)
+    ) {
+      write(boxStartCanvas, start.x, start.y, useAscii ? '+' : down ? '┬' : '├')
     }
   }
 
@@ -307,7 +330,7 @@ export function drawBundleSharedPath(
     write(cornersCanvas, dc.x, dc.y, corner)
   }
 
-  return [pathCanvas, cornersCanvas]
+  return [pathCanvas, cornersCanvas, boxStartCanvas]
 }
 
 /**

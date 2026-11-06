@@ -31,34 +31,17 @@ function boxRows(lines: string[]): string[] {
 }
 
 describe('parallel lanes keep the target border clean (#1230)', () => {
-  // Two labeled edges now draw side by side instead (#1455), so the lanes
-  // appear from three.
-  // Each lane has its own row and arrowhead (#1743), up to four lanes.
-  for (const count of [3]) {
-    const heads = count - 1
-    it(`TD, ${count} lanes: later lanes enter the target's right face with their own arrowhead`, () => {
-      const lines = render(lanes('TD', count), false)
+  // Two labeled edges now draw side by side instead (#1455); three whose
+  // labels are too wide for that take the flow faces (#2736), so the target's
+  // border stays plain and each edge ends on its own arrowhead above it.
+  for (const useAscii of [false, true]) {
+    it(`TD, 3 lanes${useAscii ? ', ASCII mode' : ''}: the target border stays a plain box edge`, () => {
+      const lines = render(lanes('TD', 3), useAscii)
       const rows = boxRows(lines)
-      // The top border is a plain box edge; the lanes arrive at the right face.
-      expect(rows[0]!.trim().slice(0, 9)).toBe('┌───────┐')
-      // Each lane on a row of its own (#1743, #2025).
-      const into = rows
-        .slice(1, 4)
-        .filter((r) => /^│ {3}. {3}│◄/.test(r.trim()))
-      expect(into).toHaveLength(heads)
-      expect(lines.join('\n').match(/◄/g)).toHaveLength(heads)
-      expect(lines.join('\n').match(/▼/g)).toHaveLength(2)
-    })
-
-    it(`TD, ${count} lanes, ASCII mode: later lanes enter the target's right face with their own arrowhead`, () => {
-      const lines = render(lanes('TD', count), true)
-      const rows = boxRows(lines)
-      expect(rows[0]!.trim().slice(0, 9)).toBe('+-------+')
-      const into = rows
-        .slice(1, 4)
-        .filter((r) => /^\| {3}. {3}\|</.test(r.trim()))
-      expect(into).toHaveLength(heads)
-      expect(lines.join('\n').match(/</g)).toHaveLength(heads)
+      expect(rows[0]).toMatch(useAscii ? /^ *\+-+\+ *$/ : /^ *┌─+┐ *$/)
+      const text = lines.join('\n')
+      expect(text).not.toMatch(/[◄<]/)
+      expect(text.match(useAscii ? /v/g : /▼/g)?.length).toBe(4)
     })
   }
 

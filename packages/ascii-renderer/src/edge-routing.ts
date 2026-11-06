@@ -1752,7 +1752,10 @@ export function assignFlowLanes(graph: AsciiGraph): void {
     pairs.set(key, [...(pairs.get(key) ?? []), e])
   }
   for (const group of pairs.values()) {
-    if (group.length < FLOW_LANE_MIN || spreadsOnFaces(graph, group)) continue
+    // Three edges whose labels are too wide to sit beside their strokes
+    // (`labelsFitBesideStrokes`) take the lanes too (#2736).
+    const min = labelsFitBesideStrokes(group) ? FLOW_LANE_MIN : 3
+    if (group.length < min || spreadsOnFaces(graph, group)) continue
     const first = group[0]!
     const [upper, lower] =
       requireGridCoord(first.from).y < requireGridCoord(first.to).y

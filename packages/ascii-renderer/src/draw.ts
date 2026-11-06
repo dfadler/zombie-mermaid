@@ -354,12 +354,11 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         processedBundles.add(bundle)
 
         // Draw shared path (junction → target for fan-in, source → junction for fan-out)
-        const [sharedPathC, sharedCornersC] = drawBundleSharedPath(
-          graph,
-          bundle,
-        )
+        const [sharedPathC, sharedCornersC, sharedStartC] =
+          drawBundleSharedPath(graph, bundle)
         lineCanvases.push(sharedPathC)
         cornerCanvases.push(sharedCornersC)
+        boxStartCanvases.push(sharedStartC)
 
         // Draw arrowhead at target for fan-in (once for all edges in bundle)
         if (bundle.type === 'fan-in') {
