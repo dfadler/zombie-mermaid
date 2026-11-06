@@ -42,6 +42,17 @@ describe('cluster exits rank below the whole cluster (#2738)', () => {
     expect(checkAll(out, { unicode: true }).map((v) => v.message)).toEqual([])
   })
 
+  it('the target row is centred under the cluster, as mermaid@12.3.0 draws it', () => {
+    const lines = render(SRC)
+    const mid = (l: string, a: string, b: string): number =>
+      (l.indexOf(a) + l.lastIndexOf(b) + b.length) / 2
+    const row = lines.find((l) => l.includes('Audit'))!
+    const head = lines.find((l) => l.includes('Request'))!
+    expect(
+      Math.abs(mid(row, 'Audit', 'Log') - mid(head, 'Request', 'Request')),
+    ).toBeLessThanOrEqual(8)
+  })
+
   it('a single-member cluster keeps declaration order', () => {
     const lines = render(`flowchart TD
   subgraph S

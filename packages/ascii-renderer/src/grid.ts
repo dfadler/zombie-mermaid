@@ -1563,6 +1563,91 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
 }
 
 /**
+ * Mermaid centres the row of targets a cluster links out to under the cluster
+ * (#2738). The targets are placed from the cluster's members, so the cluster
+ * sits at the left edge of a row that runs off to its right: slide the whole
+ * cluster, and the free-standing chain feeding only it, right until its
+ * centre meets the row's. TD only, and only when nothing else sits beside the
+ * moved nodes or in the way.
+ */
+function centerClustersOverExits(graph: AsciiGraph): void {
+  if (graph.config.graphDirection !== 'TD') return
+  // Back and same-row edges route around the nodes they skip; moving nodes
+  // scrambles those routes (see `centerParentsOverChildren`).
+  const forward = graph.edges.every(
+    (e) => (e.from.gridCoord?.y ?? 0) < (e.to.gridCoord?.y ?? 0),
+  )
+  if (!forward) return
+  for (const sg of graph.subgraphs) {
+    if (sg.parent !== null) continue
+    const members = collectSubgraphMembers(sg)
+    // A lone member is centred by `centerParentsOverChildren` (#1462).
+    if (members.length < 2 || members.some((m) => m.gridCoord === null))
+      continue
+    const targets = new Set<AsciiNode>()
+    for (const e of graph.edges) {
+      if (members.includes(e.from) && !members.includes(e.to)) targets.add(e.to)
+    }
+    if (targets.size < 2) continue
+    const ty = [...targets].map((t) => t.gridCoord?.y)
+    const my = Math.max(...members.map((m) => requireGridCoord(m).y))
+    if (ty.some((y) => y === undefined || y !== ty[0] || y <= my)) continue
+    if ([...targets].some((t) => isNodeInAnySubgraph(graph, t))) continue
+    const tx = [...targets].map((t) => requireGridCoord(t).x)
+    const mx = members.map((m) => requireGridCoord(m).x)
+    const delta = Math.floor(
+      (Math.min(...tx) + Math.max(...tx)) / 2 -
+        (Math.min(...mx) + Math.max(...mx)) / 2,
+    )
+    if (delta <= 0) continue
+    // The chain feeding only the cluster moves with it.
+    const moving = new Set<AsciiNode>(members)
+    for (let grew = true; grew;) {
+      grew = false
+      for (const n of graph.nodes) {
+        const out = graph.edges.filter((e) => e.from === n && e.to !== n)
+        if (
+          !moving.has(n) &&
+          !isNodeInAnySubgraph(graph, n) &&
+          out.length > 0 &&
+          out.every((e) => moving.has(e.to))
+        ) {
+          moving.add(n)
+          grew = true
+        }
+      }
+    }
+    const minX = Math.min(...[...moving].map((n) => requireGridCoord(n).x))
+    const top = Math.min(...[...moving].map((n) => requireGridCoord(n).y))
+    // Nothing else may share the moved ranks to the right of the block.
+    if (
+      graph.nodes.some((n) => {
+        const gc = n.gridCoord
+        return (
+          !moving.has(n) &&
+          gc !== null &&
+          gc.y >= top &&
+          gc.y <= my &&
+          gc.x >= minX
+        )
+      })
+    )
+      continue
+    const old = [...moving].map((n) => requireGridCoord(n))
+    for (const gc of old) freeNodeBlock(graph, gc)
+    const dest = old.map((gc) => ({ x: gc.x + delta, y: gc.y }))
+    const fits = dest.every((gc) =>
+      isBlockFree(graph.grid, gc, NODE_BLOCK_SIZE),
+    )
+    ;[...moving].forEach((n, i) => {
+      const gc = fits ? dest[i]! : old[i]!
+      n.gridCoord = gc
+      placeBlock(graph.grid, gc, NODE_BLOCK_SIZE)
+    })
+  }
+}
+
+/**
  * A node `fanInCenter` left alone because it fans out itself still takes
  * labelled edges from several parents: flag it so edge-routing gives each
  * edge its own side entry instead of one shared run that overprints the
@@ -2311,6 +2396,7 @@ export function createMapping(graph: AsciiGraph): void {
   placeReachableChildren(graph, highestPositionPerLevel, minLevels)
 
   centerParentsOverChildren(graph)
+  centerClustersOverExits(graph)
 
   separateNonMembersFromFrames(graph)
 
