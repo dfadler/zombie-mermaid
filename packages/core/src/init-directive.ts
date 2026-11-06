@@ -335,7 +335,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const flowchart: Record<string, unknown> = { ...value }
       for (const [fk, fv] of Object.entries(flowchart)) {
         if (fk.toLowerCase() === 'curve' && typeof fv === 'string') {
-          // mermaid 12.3.0 lays out every flowchart with ELK and ignores
+          // Mermaid 12.3.0 lays out every flowchart with ELK and ignores
           // `flowchart.curve` (#2729): parsed, reported, never applied.
           config.ignored.push('flowchart.curve')
           continue

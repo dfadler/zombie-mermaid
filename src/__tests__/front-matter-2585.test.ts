@@ -37,7 +37,7 @@ describe('front matter (#2585)', () => {
     expect(
       via('---\nconfig:\n  flowchart:\n    curve: stepAfter\n---\n' + body),
     ).toEqual(['flowchart.curve'])
-    // mermaid 12.3.0 ignores the curve (#2729): same drawing either way
+    // Mermaid 12.3.0 ignores the curve (#2729): same drawing either way
     expect(
       renderMermaidSVG(
         '---\nconfig:\n  flowchart:\n    curve: stepAfter\n---\n' + body,
