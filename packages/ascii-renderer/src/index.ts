@@ -44,6 +44,15 @@ import {
 } from './types.ts'
 
 export { LimitExceededError } from '@zombie-mermaid/core'
+export { registerAsciiLayout, getAsciiLayout } from './layout-hints.ts'
+export type {
+  AsciiFace,
+  AsciiNodeHint,
+  AsciiEdgeEndHint,
+  AsciiEdgeHint,
+  AsciiLayoutHints,
+  AsciiLayoutProvider,
+} from './layout-hints.ts'
 export type { RenderLimits }
 
 // Re-export types for external use

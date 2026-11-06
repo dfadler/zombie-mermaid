@@ -18,4 +18,9 @@
 // vite.config.lib.ts).
 // ============================================================================
 
+import { registerAsciiLayoutFromElk } from './ascii-layout-provider.ts'
+
 export * from '@zombie-mermaid/mcp'
+
+// The MCP tools render ASCII too; see src/ascii-layout-provider.ts (#2645).
+registerAsciiLayoutFromElk()

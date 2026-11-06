@@ -2025,14 +2025,16 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
 - **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
   value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
   correct reading (a known mermaid quirk).
-- **Value-axis padding, flat data and x labels match mermaid in SVG only**
-  ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0).
-  The value axis keeps half a label's height (half its width, horizontally) of padding
-  inside its line, so the smallest bar and the lowest line point stay visible. A flat series
-  (`bar [42]`, `[0, 0, 0]`) gets one tick in the middle of the axis, as mermaid does. Every
-  x-axis category is labelled, even when neighbouring labels touch, as mermaid does (the
-  #1243 thinning is gone from SVG). The ASCII renderer has its own layout and is unchanged:
-  it still uses a -0.1..0.1 / 41.9..42.1 range for flat data and thins crowded labels.
+- **Value-axis padding and x labels match mermaid in SVG only; flat data matches in both**
+  ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0;
+  flat data in ASCII: [#2727](https://github.com/dfadler/zombie-mermaid/issues/2727), checked
+  on mermaid 12.3.0). The value axis keeps half a label's height (half its width, horizontally)
+  of padding inside its line, so the smallest bar and the lowest line point stay visible. A flat
+  series (`bar [42]`, `[0, 0, 0]`: every value across all series equal, with no explicit
+  `y-axis` range) gets one tick in the middle of the axis, as mermaid does, in both SVG and ASCII.
+  Differing flat series (`bar [42, 42]` with `line [10, 10]`) and explicit ranges keep several ticks. Every x-axis category is labelled, even when neighbouring labels touch,
+  as mermaid does (the #1243 thinning is gone from SVG). The ASCII renderer has its own layout
+  and is unchanged there: it still thins crowded labels.
 - **ASCII category labels widen the chart; they are never cut** ([#2698](https://github.com/dfadler/zombie-mermaid/issues/2698), checked against mermaid 12.3.0). Mermaid prints every category in full on a plot of fixed width and lets neighbours overlap; it does not truncate or rotate (`Engineering`, `ProductManagement`, `CustomerSuccess`, `HumanResources` in the long-label gallery sample). A terminal cannot overlap text, so the ASCII renderer widens every band until no two neighbouring words touch (one blank cell between them). A 60-column plot gives each of up to 10 categories `60 / n` columns, and `6` columns each beyond that; the bands only grow once a word label leaves less than one blank cell to its neighbour, so eight categories fit labels up to 6 characters and `Marketing` makes the whole chart wider. The chart is as wide as its labels need, with no cap. Numbers and dates are still thinned (every n-th shown) rather than widening the chart, where mermaid shows them all. Words in a horizontal chart already get a gutter as wide as the longest label.
 - **ASCII y-axis.** Mermaid has no ASCII output. The plot is 20 rows tall, fewer than
   mermaid's ~10 d3 ticks need once they round to rows, so the renderer labels every Nth

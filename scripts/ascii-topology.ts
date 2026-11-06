@@ -1,0 +1,56 @@
+/**
+ * Scores how closely the ASCII grid's node placement and edge faces follow the
+ * ELK layout, over the gallery flowchart/state samples plus the fork-fixes
+ * entries (#2645). The numbers gate each ASCII placement PR (Q3).
+ *
+ * Usage: tsx scripts/ascii-topology.ts [--verbose]
+ */
+import { allForkFixes } from '../demo/fork-fixes-data.ts'
+import { samples } from '../samples/samples-data.ts'
+import {
+  addCounts,
+  emptyCounts,
+  isExact,
+  measureSample,
+} from './lib/ascii-topology.ts'
+import type { Counts } from './lib/ascii-topology.ts'
+
+const FORK_FIXES = [
+  'ascii-longest-path-layering',
+  'subgraph-frame-merge',
+  'ascii-label-canvas-edge',
+  'ascii-feedback-edge-sibling-order',
+]
+const isGraph = (src: string): boolean =>
+  /^\s*(flowchart|graph|stateDiagram)/m.test(
+    src.replace(/^---[\s\S]*?---/, '').trim(),
+  )
+
+const list = [
+  ...samples
+    .filter((s) => isGraph(s.source))
+    .map((s) => ({ title: s.title, source: s.source })),
+  ...allForkFixes
+    .filter((f) => FORK_FIXES.includes(f.id))
+    .map((f) => ({ title: `ENTRY ${f.id}`, source: f.source })),
+]
+let total = emptyCounts()
+let exact = 0
+for (const e of list) {
+  const c: Counts = measureSample(e.source)
+  total = addCounts(total, c)
+  if (isExact(c)) exact++
+  else
+    console.log(
+      `layer ${c.layerOk}/${c.layerPairs} order ${c.orderOk}/${c.orderPairs}  ${e.title}`,
+    )
+}
+const pct = (a: number, b: number): string =>
+  `${a}/${b} (${b ? ((100 * a) / b).toFixed(1) : '-'}%)`
+console.log(
+  `samples ${list.length}, exact ${exact}\n` +
+    `layer pairs ${pct(total.layerOk, total.layerPairs)}\n` +
+    `in-layer order pairs ${pct(total.orderOk, total.orderPairs)}\n` +
+    `alignment pairs within ${0.5} node widths ${pct(total.alignOk, total.layerPairs)}, mean deviation ${(total.alignDev / total.layerPairs).toFixed(2)}\n` +
+    `edge-end faces ${pct(total.faceOk, total.faceEnds)}`,
+)

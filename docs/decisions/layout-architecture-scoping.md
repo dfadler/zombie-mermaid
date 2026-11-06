@@ -2,6 +2,9 @@
 
 Status: implemented
 
+> Update (#2645): the claim that the ASCII renderers don't touch ELK is superseded by
+> [ascii-layout-hints-from-elk-2645.md](ascii-layout-hints-from-elk-2645.md).
+
 Scoping note, not a decision. Written for
 [#538](https://github.com/dfadler/zombie-mermaid/issues/538), split from
 [#536](https://github.com/dfadler/zombie-mermaid/issues/536). No code under
