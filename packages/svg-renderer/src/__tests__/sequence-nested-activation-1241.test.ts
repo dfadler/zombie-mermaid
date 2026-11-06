@@ -41,6 +41,24 @@ describe('nested self-message activation (#1241)', () => {
     expect(inner.bottomY).toBe(done.y + 30)
   })
 
+  it('applies the same offsets to standalone activate/deactivate after a self-message (#2743)', () => {
+    const l = layoutSequenceDiagram(
+      parseSequenceDiagram(
+        [
+          'participant S',
+          'S->>S: a',
+          'activate S',
+          'S->>S: b',
+          'deactivate S',
+        ].map((text, line) => ({ text, line })),
+      ),
+    )
+    const [a, b] = l.messages
+    expect(l.activations).toHaveLength(1)
+    expect(l.activations[0]!.topY).toBe(a!.y + 32)
+    expect(l.activations[0]!.bottomY).toBe(b!.y + 30)
+  })
+
   it('draws both bars, outer first so the nested one is painted on top', () => {
     const svg = renderMermaidSVG(`sequenceDiagram\n  ${SRC.join('\n  ')}`)
     expect(svg.match(/class="activation"/g)).toHaveLength(2)
