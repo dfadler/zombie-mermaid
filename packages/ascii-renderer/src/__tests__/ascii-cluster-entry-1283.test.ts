@@ -245,10 +245,10 @@ describe('ASCII: edge cases of the cluster-entry shape (#1283)', () => {
     }
   })
 
-  it('drops an edge to an empty subgraph without placing a phantom node', () => {
+  it('keeps an edge to an empty subgraph as a boxed title (#2694)', () => {
     const out = renderMermaidASCII(`graph TD\nX-->Sub\nsubgraph Sub\nend`)
-    expect(out).toMatch(/│ X │/)
-    expect(out).not.toContain('Sub')
+    expect(out).toMatch(/│  X  │/)
+    expect(out).toMatch(/│ Sub │/)
   })
 
   it('does not count an edge from inside the cluster as a source to clear', () => {
