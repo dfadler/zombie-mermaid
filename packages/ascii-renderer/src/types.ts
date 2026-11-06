@@ -298,6 +298,8 @@ export interface AsciiEdge {
    * placed by port-offsets.ts's allocateFaces, like a lane's.
    */
   faceLane?: boolean
+  /** An edge of a bypass triangle (#2731, #2739): its ends take cells of their own on a shared face. */
+  ownPorts?: boolean
   /**
    * The subgraph this edge was originally addressed *from* (`Processing -->
    * Done` where `Processing` is a subgraph id), before the converter

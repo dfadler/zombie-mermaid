@@ -1318,6 +1318,107 @@ function shiftCrossAxis(
 }
 
 /**
+ * A forward skip edge (`A --> C` over `B`, #2731, #2739) runs straight along
+ * the column (row, in LR) of its ends and the nodes it skips step aside, as in
+ * mermaid, whose layout gives the skip edge a slot of its own at that rank:
+ * the skipped nodes take the slot after it (right in TD, below in LR) when
+ * the skip edge is declared before the edge into them, the slot before it
+ * otherwise. A slot is opened for them by moving the nodes past it over.
+ * Only ends and skipped nodes outside every subgraph move, and only graphs
+ * with no back edge or same-rank edge (the routes around those are tuned to
+ * the nodes staying put, see `centerParentsOverChildren`).
+ */
+function sidestepSkippedNodes(graph: AsciiGraph): void {
+  if (graph.subgraphs.length > 0) return
+  const lr = graph.config.graphDirection === 'LR'
+  // Narrower gaps leave no room for a port and a lane each: keep the old layout.
+  // ponytail: tune per direction if tighter gaps matter.
+  if (graph.config.paddingX < 3 || (!lr && graph.config.paddingY < 2)) return
+  const rank = (n: AsciiNode): number =>
+    lr ? requireGridCoord(n).x : requireGridCoord(n).y
+  const cross = (n: AsciiNode): number =>
+    lr ? requireGridCoord(n).y : requireGridCoord(n).x
+  if (
+    graph.edges.some(
+      (e) => e.clusterSource || e.clusterTarget || rank(e.from) >= rank(e.to),
+    )
+  ) {
+    return
+  }
+  // Each pass moves one set of skipped nodes out of the column, so the count
+  // of edges bounds the loop.
+  for (let pass = 0; pass < graph.edges.length; pass++) {
+    const skip = graph.edges.find((e) => {
+      if (cross(e.from) !== cross(e.to) || rank(e.to) - rank(e.from) <= 4) {
+        return false
+      }
+      return skipped(e).length > 0
+    })
+    if (!skip) return
+    const c = cross(skip.from)
+    const moving = skipped(skip)
+    const into = graph.edges.findIndex(
+      (e) => e.from === skip.from && moving.includes(e.to),
+    )
+    const after = graph.edges.indexOf(skip) < into
+    for (const e of graph.edges) {
+      if (
+        (e.from === skip.from || e.to === skip.to) &&
+        (e === skip || moving.includes(e.from) || moving.includes(e.to))
+      ) {
+        e.ownPorts = true
+      }
+    }
+    if (after) {
+      shiftCrossAxis(graph, lr, c, 4)
+    } else {
+      shiftCrossAxis(graph, lr, c - 1, 4)
+    }
+    for (const n of moving) {
+      relocateNode(
+        graph,
+        n,
+        lr
+          ? { x: rank(n), y: after ? c + 4 : c }
+          : { x: after ? c + 4 : c, y: rank(n) },
+      )
+    }
+  }
+
+  /** Nodes in the column of `skip`'s ends, between them, on a path from one to the other. */
+  function skipped(skip: AsciiEdge): AsciiNode[] {
+    const found = graph.nodes.filter(
+      (n) =>
+        n !== skip.from &&
+        n !== skip.to &&
+        n.gridCoord !== null &&
+        cross(n) === cross(skip.from) &&
+        rank(n) > rank(skip.from) &&
+        rank(n) < rank(skip.to) &&
+        isReachableViaEdges(graph, skip.from, n) &&
+        isReachableViaEdges(graph, n, skip.to),
+    )
+    // Only the plain triangle (`A --> N --> C` and `A --> C`, no labels, no
+    // other edge between them): dense fan-ins keep their routes.
+    // ponytail: longer skipped chains and labeled triangles keep the old layout.
+    const [n] = found
+    if (found.length !== 1 || !n) return []
+    const tri = [
+      skip,
+      ...graph.edges.filter((e) => e.from === skip.from && e.to === n),
+      ...graph.edges.filter((e) => e.from === n && e.to === skip.to),
+    ]
+    const ok =
+      tri.length === 3 &&
+      tri.every((e) => e.text.length === 0) &&
+      graph.edges.filter((e) => e.to === n || e.from === n).length === 2 &&
+      graph.edges.filter((e) => e.from === skip.from).length === 2 &&
+      graph.edges.filter((e) => e.to === skip.to).length === 2
+    return ok ? found : []
+  }
+}
+
+/**
  * Whether `node` is outside every subgraph, or the only member of each one it
  * is in. Moving it then moves the whole frame with it (frames are derived
  * from their members afterwards), so a cluster exit's stand-in member can be
@@ -2300,6 +2401,7 @@ export function createMapping(graph: AsciiGraph): void {
   // above since it wasn't on the grid yet — give the traversal another pass.
   placeReachableChildren(graph, highestPositionPerLevel, minLevels)
 
+  sidestepSkippedNodes(graph)
   centerParentsOverChildren(graph)
 
   separateNonMembersFromFrames(graph)

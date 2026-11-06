@@ -123,6 +123,14 @@ export function determineStartAndEndDir(
     requireGridCoord(edge.to),
   )
 
+  // A bypass triangle's edges leave and enter the flow-axis faces, as in
+  // mermaid (#2731, #2739), a diagonal one included.
+  if (edge.ownPorts && !dirEquals(d, Middle)) {
+    return graphDirection === 'LR'
+      ? [Right, Left, Right, Left]
+      : [Down, Up, Down, Up]
+  }
+
   let preferredDir: Direction
   let preferredOppositeDir: Direction
   let alternativeDir: Direction

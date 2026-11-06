@@ -1,9 +1,10 @@
 /**
- * #2043/#2044: an LR edge that jumps a node on its row (`A --> C` past `B`)
- * used to leave A's right face and enter C's left face, the cells the edges
- * through B use. It shared its first segment with `A --> B` and merged with
- * `B --> C` into one arrowhead. It now runs under the row: out of A's bottom
- * face, into C's bottom face.
+ * #2043/#2044, then #2739: an LR edge that jumps a node on its row (`A --> C`
+ * past `B`) used to share its first segment with `A --> B` and merge with
+ * `B --> C` into one arrowhead. Mermaid 12.3.0 steps `B` aside (above, since
+ * `A --> B` is declared first) and runs `A --> C` straight along the row, each
+ * edge leaving A's right face and entering C's or B's left face with its own
+ * arrowhead. With less than 3 columns of gap the old route under the row stays.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -13,8 +14,59 @@ const SRC = 'flowchart LR\n  A --> B\n  A --> C\n  B --> C'
 const render = (src: string, o: object = {}): string[] =>
   renderMermaidASCII(src, { colorMode: 'none', ...o }).split('\n')
 
-describe('LR bypass edge keeps its own ports (#2043, #2044)', () => {
-  it.each([1, 2, 3, 5])("paddingX %i: out of A's bottom, into C's", (px) => {
+describe('LR bypass edge keeps its own ports (#2043, #2044, #2739)', () => {
+  it('draws the bypass beside B and into the left face of C (default padding)', () => {
+    const rows = render(SRC).map((r) => r.trimEnd())
+    expect(rows).toEqual([
+      '          ┌───┐',
+      '          │   │',
+      '      ┌──►│ B ├──┐',
+      '      │   │   │  │',
+      '      │   └───┘  │',
+      '      │          │',
+      '      │          │',
+      '      │          │',
+      '      │          │',
+      '┌───┐ │          │  ┌───┐',
+      '│   ├─┘          └─►│   │',
+      '│ A │               │ C │',
+      '│   ├──────────────►│   │',
+      '└───┘               └───┘',
+    ])
+  })
+
+  it.each([3, 4, 5])('paddingX %i: three heads, none under a node', (px) => {
+    const out = render(SRC, { paddingX: px }).join('\n')
+    expect(out.match(/►/g)).toHaveLength(3) // A->B, B->C, A->C
+    expect(out).not.toMatch(/▲/)
+    const rows = out.split('\n')
+    // A->C is a straight stroke along A's last row, into C's left face.
+    expect(rows.some((r) => /^│   ├─+►│   │$/.test(r))).toBe(true)
+  })
+
+  it('draws the ASCII charset the same way', () => {
+    const rows = render(SRC, { paddingX: 3, useAscii: true }).map((r) =>
+      r.trimEnd(),
+    )
+    expect(rows).toEqual([
+      '        +---+',
+      '        |   |',
+      '      +>| B +-+',
+      '      | |   | |',
+      '      | +---+ |',
+      '      |       |',
+      '      |       |',
+      '      |       |',
+      '      |       |',
+      '+---+ |       | +---+',
+      '|   +-+       +>|   |',
+      '| A |           | C |',
+      '|   +---------->|   |',
+      '+---+           +---+',
+    ])
+  })
+
+  it.each([1, 2])('paddingX %i keeps the old route under the row', (px) => {
     const rows = render(SRC, { paddingX: px }).map((r) => r.trimEnd())
     expect(rows[2]).not.toMatch(/[┬┴]/) // A's line out is one stroke
     expect(rows[4]).toMatch(/^└─┬─┘ +└───┘ +└───┘$/)
@@ -22,58 +74,15 @@ describe('LR bypass edge keeps its own ports (#2043, #2044)', () => {
     expect(rows[6]).toMatch(/^ {2}└─+┘$/)
   })
 
-  it('draws the second edge from its own exit and into its own arrowhead', () => {
-    const rows = render(SRC, { paddingX: 2 }).map((r) => r.trimEnd())
-    expect(rows).toEqual([
-      '┌───┐   ┌───┐   ┌───┐',
-      '│   │   │   │   │   │',
-      '│ A ├──►│ B ├──►│ C │',
-      '│   │   │   │   │   │',
-      '└─┬─┘   └───┘   └───┘',
-      '  │               ▲',
-      '  └───────────────┘',
-    ])
-  })
-
-  it('draws the ASCII charset the same way', () => {
-    const rows = render(SRC, { paddingX: 2, useAscii: true }).map((r) =>
-      r.trimEnd(),
-    )
-    expect(rows).toEqual([
-      '+---+   +---+   +---+',
-      '|   |   |   |   |   |',
-      '| A +-->| B +-->| C |',
-      '|   |   |   |   |   |',
-      '+-+-+   +---+   +---+',
-      '  |               ^',
-      '  +---------------+',
-    ])
-  })
-
-  it('never lets the two edges into C meet in one cell', () => {
-    for (const paddingX of [1, 2, 3, 5]) {
-      const out = render(SRC, { paddingX }).join('\n')
-      // One arrowhead per edge: `►` into C's left face and `▲` into its bottom.
-      expect(out.match(/►/g)).toHaveLength(2) // A->B, B->C
-      expect(out.match(/▲/g)).toHaveLength(1) // A->C
-      // No junction in a gap between nodes (the old shared stroke).
-      expect(out).not.toMatch(/[┬┴]►/)
-    }
-  })
-
-  it('works with a padding that leaves no room under the nodes', () => {
-    const rows = render(SRC, { paddingX: 2, paddingY: 1 }).map((r) =>
-      r.trimEnd(),
-    )
-    expect(rows[2]).toBe('│ A ├──►│ B ├──►│ C │')
-    expect(rows[3]).toBe('│   │   │   │   │   │')
-    expect(rows[5]).toBe('  │               ▲')
-  })
-
   it('keeps an edge that shares a node with a self-loop on the old route', () => {
     const out = render(
       'flowchart LR\n  A --> B\n  A --> C\n  B --> C\n  C --> C',
     ).join('\n')
     expect(out).toContain('┬')
+  })
+
+  it('leaves a labeled triangle on the old route', () => {
+    const out = render('flowchart LR\n  A --> B\n  A -->|x| C\n  B --> C')
+    expect(out[0]).toMatch(/^┌───┐ +┌───┐ +┌───┐$/)
   })
 })

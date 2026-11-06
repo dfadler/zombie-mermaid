@@ -11,17 +11,14 @@ import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 const SRC = 'flowchart LR\n  A --> B\n  A --> C\n  B --> C'
 
 describe('LR fan-in with narrow paddingX (#1393)', () => {
-  it.each([1, 2, 3])(
-    'paddingX %i keeps the arrowhead of B --> C clear',
-    (p) => {
-      const rows = renderMermaidASCII(SRC, {
-        colorMode: 'none',
-        paddingX: p,
-      }).split('\n')
-      expect(rows[2]).toMatch(/B ├──►│ C │$/)
-      expect(rows[3]).toMatch(/│ {3}│ {3}│ {3}│$/)
-    },
-  )
+  it.each([1, 2])('paddingX %i keeps the arrowhead of B --> C clear', (p) => {
+    const rows = renderMermaidASCII(SRC, {
+      colorMode: 'none',
+      paddingX: p,
+    }).split('\n')
+    expect(rows[2]).toMatch(/B ├──►│ C │$/)
+    expect(rows[3]).toMatch(/│ {3}│ {3}│ {3}│$/)
+  })
 
   it('leaves a single-parent gap at the requested paddingX', () => {
     const out = renderMermaidASCII('flowchart LR\n  A --> B', {
