@@ -23,8 +23,8 @@ export interface LayeredNode {
   axis: number
   /** Extent across the flow. */
   cross: number
-  /** Extra room reserved on the high side of the cross axis (self-loops). */
-  after?: number
+  /** Extra room reserved on the low side of the cross axis (self-loops). */
+  before?: number
 }
 
 export interface LayeredEdge {
@@ -71,7 +71,7 @@ const COORD_PASSES = 4
 interface Slot {
   axis: number
   cross: number
-  after: number
+  before: number
   rank: number
   real: boolean
 }
@@ -84,7 +84,7 @@ export function layered(
   const slots: Slot[] = nodes.map((n) => ({
     axis: n.axis,
     cross: n.cross,
-    after: n.after ?? 0,
+    before: n.before ?? 0,
     rank: 0,
     real: true,
   }))
@@ -136,7 +136,7 @@ export function layered(
       slots.push({
         axis: holdsLabel ? label.axis : 0,
         cross: holdsLabel ? label.cross : 0,
-        after: 0,
+        before: 0,
         rank: r,
         real: false,
       })
@@ -177,8 +177,8 @@ export function layered(
     let max = -Infinity
     for (const s of members) {
       cross[s] = x.get(s)!
-      min = Math.min(min, cross[s]! - slots[s]!.cross / 2)
-      max = Math.max(max, cross[s]! + slots[s]!.cross / 2 + slots[s]!.after)
+      min = Math.min(min, cross[s]! - slots[s]!.cross / 2 - slots[s]!.before)
+      max = Math.max(max, cross[s]! + slots[s]!.cross / 2)
     }
     extents.push({ min, max })
     componentSlots.push(members)
@@ -315,7 +315,7 @@ function placeComponent(
   const x = new Map<number, number>()
   const gap = (a: number, b: number): number =>
     (slots[a]!.cross + slots[b]!.cross) / 2 +
-    slots[a]!.after +
+    slots[b]!.before +
     (slots[a]!.real && slots[b]!.real
       ? opts.nodeSep
       : Math.min(opts.nodeSep, EDGE_SEP))

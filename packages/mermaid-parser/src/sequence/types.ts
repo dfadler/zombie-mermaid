@@ -210,12 +210,6 @@ export interface Lifeline {
   x: number
   topY: number
   bottomY: number
-  /**
-   * Set when the actor is destroyed mid-diagram (`Actor.destroyedAt`):
-   * `bottomY` is then the destroying message's row rather than the diagram
-   * bottom, and the renderer marks it with a cross.
-   */
-  destroyed?: boolean
 }
 
 export interface PositionedMessage {

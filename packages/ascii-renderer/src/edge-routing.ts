@@ -41,6 +41,7 @@ import {
   buildClusterExitRoute,
   buildClusterEntryRoute,
   clusterFaceCapacity,
+  clusterFlowGroup,
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
@@ -699,6 +700,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   const need = new Map<number, { siblings: number; pairs: Set<string> }>()
   for (const group of laneGroups) {
     const to = group[0]!.to
+    if (group[0]!.clusterSource && clusterFlowGroup(graph, group[0]!)) continue
     if (group[0]!.clusterSource) {
       // The target's side faces take the siblings two ways (`laneSide`).
       const cells = clusterFaceCapacity(group.length)
@@ -1760,7 +1762,10 @@ export function assignFlowLanes(graph: AsciiGraph): void {
     pairs.set(key, [...(pairs.get(key) ?? []), e])
   }
   for (const group of pairs.values()) {
-    if (group.length < FLOW_LANE_MIN || spreadsOnFaces(graph, group)) continue
+    // Three edges whose labels are too wide to sit beside their strokes
+    // (`labelsFitBesideStrokes`) take the lanes too (#2736).
+    const min = labelsFitBesideStrokes(group) ? FLOW_LANE_MIN : 3
+    if (group.length < min || spreadsOnFaces(graph, group)) continue
     const first = group[0]!
     const [upper, lower] =
       requireGridCoord(first.from).y < requireGridCoord(first.to).y
@@ -2073,7 +2078,9 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     : undefined
   if (clusterPlan?.edges.has(edge)) {
     const route =
-      edge.parallelLane && edge.parallelLane.index > 0
+      edge.parallelLane &&
+      edge.parallelLane.index > 0 &&
+      !clusterFlowGroup(graph, edge)
         ? buildClusterLaneRoute(graph, clusterPlan, edge)
         : buildClusterExitRoute(graph, clusterPlan, edge)
     if (route) {

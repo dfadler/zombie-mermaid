@@ -251,23 +251,31 @@ export function blockTabWidth(
   return labelWidth(block.type, fontSize, FONT_WEIGHTS.groupHeader) + 16
 }
 
-/** Space between a block's tab and its centred label, and either side of a divider label. */
-const BLOCK_LABEL_GAP = 8
-
 /**
- * The block width its header label and divider labels need. The header label
- * is centred in the space right of the tab, divider labels across the block.
+ * Wrap a block header or divider label (shown as `[label]`) onto lines of at
+ * most `avail` px, breaking at spaces. Mermaid wraps these to the frame
+ * instead of widening the participant gap (#2745). A word wider than `avail`
+ * stays whole (mermaid would split it mid-word).
  */
-function blockLabelsWidth(
-  block: SequenceDiagram['blocks'][number],
-  fontSize: number,
-): number {
-  const bracketed = (label?: string) =>
-    label ? labelWidth(`[${label}]`, fontSize) + 2 * BLOCK_LABEL_GAP : 0
-  return Math.max(
-    blockTabWidth(block, fontSize) + bracketed(block.label),
-    ...block.dividers.map((d) => bracketed(d.label)),
-  )
+function wrapBracketed(label: string, avail: number, fontSize: number): string {
+  const text = `[${label}]`
+  const out: string[] = []
+  for (const line of text.split('\n')) {
+    let cur = ''
+    for (const word of line.split(' ')) {
+      // mermaid's wrapLabel: break once the line so far plus the next word
+      // (with its trailing space) reaches the limit.
+      if (
+        cur &&
+        labelWidth(cur, fontSize) + labelWidth(`${word} `, fontSize) >= avail
+      ) {
+        out.push(cur)
+        cur = word
+      } else cur = cur ? `${cur} ${word}` : word
+    }
+    out.push(cur)
+  }
+  return out.join('\n').slice(1, -1)
 }
 
 /** Extra height a multi-line label takes over a single line. */
@@ -300,8 +308,7 @@ function nestedBlocks(blocks: SequenceDiagram['blocks']): number[][] {
  * Widen `gaps` (`gaps[i]` = distance from actor i - 1 to actor i) in place so
  * no label crosses a lifeline: a message label between two actors is centred
  * on the span, a self-message label on its lifeline, a note sits beside or
- * over its actor, and a block's header tab and divider labels start at its
- * left edge. A shortfall on a span of several gaps is spread evenly over them
+ * over its actor. A shortfall on a span of several gaps is spread evenly over them
  * (ported from lukilabs/beautiful-mermaid#167).
  */
 function fitLabelsBetweenLifelines(
@@ -354,20 +361,6 @@ function fitLabelsBetweenLifelines(
       const j = index.get(n.actorIds[n.actorIds.length - 1]!)!
       widen(Math.min(i, j), Math.max(i, j), w - 50)
     }
-  }
-
-  for (const block of diagram.blocks) {
-    // The header label and divider labels are centred across the block, which
-    // spans its first to last lifeline plus the frame's side padding, so
-    // that span must hold the widest of them.
-    const ends = diagram.messages
-      .slice(block.startIndex, block.endIndex + 1)
-      .flatMap((m) => [index.get(m.from)!, index.get(m.to)!])
-    widen(
-      Math.min(...ends),
-      Math.max(...ends),
-      blockLabelsWidth(block, fontSize) - 2 * blockFramePad(seq),
-    )
   }
 }
 
@@ -518,11 +511,38 @@ export function layoutSequenceDiagram(
   // Room a multi-line header label (or first message label) adds above a
   // block's first arrow, so the frame top can stay put (#2588).
   const startLabelExtra = new Map<number, number>()
+  // Header and divider labels wrap to the frame (the lifelines it spans plus
+  // its padding) rather than widening the participant gap (#2745).
+  const wrappedLabels = diagram.blocks.map((block) => {
+    const xs = diagram.messages
+      .slice(block.startIndex, block.endIndex + 1)
+      .flatMap((m) => [
+        actorCenterX[actorIndex.get(m.from)!]!,
+        actorCenterX[actorIndex.get(m.to)!]!,
+      ])
+    const span = xs.length
+      ? Math.max(...xs) - Math.min(...xs)
+      : actorCenterX[actorCenterX.length - 1]! - actorCenterX[0]!
+    // Mermaid 12.3.0 wraps to roughly the lifeline span less 30px (floor
+    // 80px) at 16px type, measured against its own text widths; this
+    // renderer's narrower spans and type give 14px and 60px, which break the
+    // same labels at the same words.
+    const avail = Math.max(span - 14, 60)
+    const wrap = (label: string) =>
+      label ? wrapBracketed(label, avail, fontSizes.edgeLabel) : label
+    return {
+      label: wrap(block.label),
+      dividers: block.dividers.map((d) => wrap(d.label)),
+    }
+  })
   diagram.blocks.forEach((block, bi) => {
     const holdsInner = diagram.blocks.some(
       (b, j) => j < bi && b.startIndex === block.startIndex,
     )
-    const extra = dividerLabelExtra(block.label, fontSizes.edgeLabel)
+    const extra = dividerLabelExtra(
+      wrappedLabels[bi]!.label,
+      fontSizes.edgeLabel,
+    )
     // Only the innermost header sits just above the message; an outer one
     // sits above the inner tab (see `blockTop` below).
     const labelGap = holdsInner ? 0 : seq.blockHeaderLabelGap
@@ -541,7 +561,7 @@ export function layoutSequenceDiagram(
     )
 
     // Each divider (else/and) needs room for the divider label
-    for (const div of block.dividers) {
+    for (const [di, div] of block.dividers.entries()) {
       // A nested block opening right below the divider has its own header
       // between the two, so it needs no extra gap.
       const opensBlock = diagram.blocks.some((b) => b.startIndex === div.index)
@@ -549,7 +569,10 @@ export function layoutSequenceDiagram(
         div.index,
         seq.dividerExtra +
           (opensBlock ? 0 : seq.dividerLabelGap) +
-          dividerLabelExtra(div.label, fontSizes.edgeLabel),
+          dividerLabelExtra(
+            wrappedLabels[bi]!.dividers[di],
+            fontSizes.edgeLabel,
+          ),
       )
     }
   })
@@ -655,11 +678,14 @@ export function layoutSequenceDiagram(
   const nestingOffset = seq.activationWidth / 2
 
   /** Open an activation bar on `actorId` at row `y` (stacks for nesting). */
-  function startActivation(actorId: string, y: number): void {
+  function startActivation(actorId: string, y: number, selfLoop = false): void {
+    // Mermaid opens a bar after a self-message at the point below its loop
+    // (loop height + 2), not at the loop's top row (#2743).
+    const startY = selfLoop ? y + seq.selfMessageHeight + 2 : y
     const stack = activationStacks.get(actorId) ?? []
     activationStacks.set(actorId, stack)
     const depth = stack.length // Current depth before pushing
-    stack.push({ startY: y, depth })
+    stack.push({ startY, depth })
   }
 
   /**
@@ -667,7 +693,8 @@ export function layoutSequenceDiagram(
    * deactivate with nothing open is ignored rather than fatal (Mermaid
    * itself errors here; this renderer has always been lenient about it).
    */
-  function endActivation(actorId: string, y: number): void {
+  function endActivation(actorId: string, y: number, selfLoop = false): void {
+    const endY = selfLoop ? y + seq.selfMessageHeight : y
     const stack = activationStacks.get(actorId)
     if (!stack || stack.length === 0) return
     const { startY, depth } = stack.pop()!
@@ -678,7 +705,7 @@ export function layoutSequenceDiagram(
       actorId,
       x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
       topY: startY,
-      bottomY: y,
+      bottomY: endY,
       width: seq.activationWidth,
       depth,
     })
@@ -699,10 +726,14 @@ export function layoutSequenceDiagram(
     list.push(event)
     activationEventsByAfterIndex.set(event.afterIndex, list)
   }
-  function applyActivationEvents(afterIndex: number, y: number): void {
+  function applyActivationEvents(
+    afterIndex: number,
+    y: number,
+    selfLoop = false,
+  ): void {
     for (const event of activationEventsByAfterIndex.get(afterIndex) ?? []) {
-      if (event.kind === 'start') startActivation(event.actorId, y)
-      else endActivation(event.actorId, y)
+      if (event.kind === 'start') startActivation(event.actorId, y, selfLoop)
+      else endActivation(event.actorId, y, selfLoop)
     }
   }
 
@@ -761,9 +792,9 @@ export function layoutSequenceDiagram(
     // shorthand activates the recipient, `-` deactivates the sender (see
     // parser.ts); standalone statements following this message apply at
     // the same row, after the shorthand, in source order.
-    if (msg.activate) startActivation(msg.to, messageY)
-    if (msg.deactivate) endActivation(msg.from, messageY)
-    applyActivationEvents(msgIdx, messageY)
+    if (msg.activate) startActivation(msg.to, messageY, isSelf)
+    if (msg.deactivate) endActivation(msg.from, messageY, isSelf)
+    applyActivationEvents(msgIdx, messageY, isSelf)
 
     // Advance messageY past the message itself
     messageY += isSelf
@@ -934,14 +965,6 @@ export function layoutSequenceDiagram(
       blockLeft = Math.min(blockLeft, c.x - seq.blockPadX)
       blockRight = Math.max(blockRight, c.x + c.width + seq.blockPadX)
     }
-    // ...and the tab beside the centred header label, and the divider labels
-    const need = blockLabelsWidth(block, fontSizes.edgeLabel)
-    const growth = need - (blockRight - blockLeft)
-    if (growth > 0) {
-      blockLeft -= growth / 2
-      blockRight += growth / 2
-    }
-
     // Position dividers — offset from message Y so the divider label text
     // (rendered at divider.y + 14 in the renderer) clears the message label
     // (rendered at msg.y - 6).
@@ -952,7 +975,8 @@ export function layoutSequenceDiagram(
     // overlap horizontally (e.g. long divider labels like "[Account locked]"
     // next to centered message labels like "403 Forbidden"), we increase the
     // offset to 40 so text bounding boxes have ~5px visual clearance.
-    const dividers = block.dividers.map((d) => {
+    const dividers = block.dividers.map((d, di) => {
+      const dLabel = wrappedLabels[bi]!.dividers[di]!
       // A nested block opening right after the divider: sit above its header tab
       const opening = inner.filter(
         (_, k) => diagram.blocks[nested[bi]![k]!]!.startIndex === d.index,
@@ -960,7 +984,7 @@ export function layoutSequenceDiagram(
       if (opening.length > 0) {
         return {
           y: Math.min(...opening.map((c) => c.y)) - seq.dividerExtra,
-          label: d.label,
+          label: dLabel,
         }
       }
 
@@ -971,15 +995,15 @@ export function layoutSequenceDiagram(
       const offset =
         (d.label && msg?.label ? 40 : 28) +
         seq.dividerLabelGap +
-        dividerLabelExtra(d.label, fontSizes.edgeLabel) +
+        dividerLabelExtra(dLabel, fontSizes.edgeLabel) +
         (msgLabelExtra[d.index] ?? 0)
 
-      return { y: msgY - offset, label: d.label }
+      return { y: msgY - offset, label: dLabel }
     })
 
     blocks.push({
       type: block.type,
-      label: block.label,
+      label: wrappedLabels[bi]!.label,
       ...(block.color !== undefined ? { color: block.color } : {}),
       x: blockLeft,
       y: blockTop,
@@ -1104,17 +1128,24 @@ export function layoutSequenceDiagram(
       bottomY:
         destroyedAt === undefined
           ? lifelineBottom
-          : (messages[destroyedAt]?.y ?? messageY),
+          : (messages[destroyedAt]?.y ?? messageY) -
+            (mirror ? seq.actorHeight / 2 : 0),
     }
-    if (destroyedAt !== undefined) lifeline.destroyed = true
     return lifeline
   })
 
   // Mermaid mirrors every participant along the bottom of the lifelines; a
-  // destroyed one ended at its destroying message, so it has no footer.
+  // destroyed one's footer box sits at its destroying message instead, centred
+  // on the arrow (`actor.stopy = lineStartY - actor.height / 2`), and its
+  // lifeline ends at the box top (no cross: the `-x` message end is the only one).
   const footerActors = actors
-    .filter((_, i) => mirror && diagram.actors[i]!.destroyedAt === undefined)
-    .map((a) => ({ ...a, y: lifelineBottom }))
+    .map((a, i) => {
+      const destroyedAt = diagram.actors[i]!.destroyedAt
+      return destroyedAt === undefined
+        ? { ...a, y: lifelineBottom }
+        : { ...a, y: lifelines[i]!.bottomY }
+    })
+    .filter(() => mirror)
 
   // Box backgrounds run from the top padding to just under the footer
   // actors (boxPad < padding, so this stays inside the diagram height).

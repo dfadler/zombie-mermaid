@@ -158,9 +158,10 @@ label; drawing a misleading outline would be worse.
 A diagram can configure itself inline:
 
 ```
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart TD
-  A --> B --> C
+%%{init: {"pie": {"textPosition": 0.6}}}%%
+pie
+  "A" : 2
+  "B" : 1
 ```
 
 Mermaid's relaxed JSON is accepted — unquoted keys and single quotes both
@@ -237,11 +238,14 @@ Keys parsed but deliberately not acted on, and why:
 | `fontFamily`      | use the `font` render option                                                 |
 | `htmlLabels`      | labels are always SVG text                                                   |
 | `maxTextSize`     | no text-size limit is enforced                                               |
+| `flowchart.curve` | mermaid 12.3.0 ignores it too; use the `curve` render option to opt in       |
 
 ### Edge curves
 
-`flowchart.curve` selects how a routed edge is drawn. It changes only the
-drawn line — never where the edge goes.
+The `curve` render option selects how a routed edge is drawn. It changes only
+the drawn line — never where the edge goes. A `%%{init: {"flowchart": {"curve":
+...}}}%%` directive is **ignored**: mermaid 12.3.0 draws the same rounded
+orthogonal edges for every `curve` value (#2729).
 
 | Value                             | Result                             |
 | --------------------------------- | ---------------------------------- |
@@ -512,7 +516,9 @@ row directly above that arrow (as in Mermaid 12.1.0 and 12.2.0). A created
 actor figure's height does not pad the other participants' header boxes (the
 footer row, which holds every surviving participant, is still uniform).
 `destroy X` ends `X`'s lifeline
-at the next message with a cross, and no footer box is drawn for it.
+at the next message and draws `X`'s footer box there, centred on that message's
+arrow (as in Mermaid 12.3.0), instead of at the bottom of the diagram. There is
+no cross; the only cross is the `-x` message end.
 
 Mermaid's binding rules apply, with Mermaid's own error text: the message
 right after `create` must have the created participant as its _recipient_
@@ -522,46 +528,11 @@ must have the destroyed participant as its sender _or_ recipient, and a
 simulate the behavior"). A directive with no message after it at all is
 treated as a plain declaration rather than an error.
 
-In ASCII output the cross sits on the row directly _under_ the destroying
-arrow, not on the arrow row — a cross on the arrow row would replace the
-arrowhead and read as a lost message (`-x`). One row is reserved for it. A
-self-message cannot create its own recipient (the loop glyphs occupy the
-box's cells), so that degenerate case keeps the header box.
-
-### Participant grouping (`box ... end`)
-
-`box <color?> <label?> ... end` groups a run of participants under a shared
-background, spanning from the leftmost to the rightmost member declared
-inside it:
-
-```
-sequenceDiagram
-  box Aqua Group 1
-  participant A
-  participant B
-  end
-  participant C
-  A->>B: hello
-  B->>C: world
-```
-
-The header word (or an `rgb(...)`/`hsl(...)` call) is a colour if it matches
-a CSS named colour, hex, or `rgb()`/`hsl()` function form; otherwise the
-whole header is the label. `box transparent Group 1` is explicitly
-colourless with a label (Mermaid's own convention), and either piece can be
-omitted — `box`, `box Aqua`, and `box Group 1` are all valid. A box cannot
-nest inside another box, and a participant can only belong to one box;
-both are errors with Mermaid's own wording. A participant first declared
-(or auto-created by a message) while a box is open joins it, matching
-Mermaid's `addActor` rule; one declared after the box's `end` does not, even
-if a later message places it visually between two grouped members.
-
-In SVG, the group is a background rectangle with a themed stroke, drawn
-behind everything else, with the label centred in a band above the
-participant boxes. A colour is blended into the theme background via
-`color-mix()` at a fixed percentage rather than painted as-is, so it reads
-as an appropriate tint in both light and dark themes instead of the same
-opaque swatch in both.
+In ASCII output a destroyed participant's footer box is drawn the same way as a
+created one, centred on the destroying arrow's row; the arrow stops at (or
+starts from) the box's edge. A self-message cannot create its own recipient
+(the loop glyphs occupy the box's cells), so that degenerate case keeps the
+header box; a destroying self-message puts the footer box just under the loop.
 
 In ASCII output the group is a labelled bracket around the header boxes and
 an unlabelled one around the footer boxes — not a full-height background,
@@ -570,8 +541,8 @@ boundary. Colour is not representable in ASCII and is ignored; only the
 label, if any, is drawn. A participant created or destroyed inside an open
 box is included in the box's span, but its header or footer bracket segment
 reflects only the members actually present in that row (a created
-participant has no header box to bracket; a destroyed one has no footer
-box).
+participant has no header box to bracket; a destroyed one's footer box is
+not in the bottom row).
 
 `rect <color> … end` is a background highlight (named colour, hex, `rgb()`/`rgba()`,
 `hsl()`/`hsla()`). SVG paints the region behind the lifelines with the colour as
@@ -938,11 +909,11 @@ Supported: `Person`, `System`, `Container`, `Component` (plus `Db`, `Queue` and 
 
 C4 diagrams have their own renderers (they are not lowered to the flowchart model): persons get a head-and-shoulders glyph, databases a cylinder, queues a pipe, external elements the muted C4 palette, and boundaries and deployment nodes a dashed frame with a title. Relationship labels show the label and, on its own line, the `[technology]`. A `title` is drawn at the top. `Rel` endpoints may be populated boundaries. `RenderOptions.direction` re-orients the SVG layout (default top-to-bottom).
 
-Layout hints: `Rel_D`/`Rel_U`/`Rel_L`/`Rel_R` are layering constraints (target below/above, or side by side in one row) in ASCII. In SVG they have no effect on placement, as in Mermaid: shapes are laid out in declaration order, in rows, and relationships are drawn afterwards without moving anything. C4 SVG uses its own row layout, not ELK, so it does not need `elkjs`.
+Layout hints: `Rel_D`/`Rel_U`/`Rel_L`/`Rel_R` have no effect on placement, in SVG or ASCII, as in Mermaid: shapes are laid out in declaration order, in rows (four to a row, boundaries two to a row), and relationships are drawn afterwards without moving anything. C4 SVG uses its own row layout, not ELK, so it does not need `elkjs`.
 
 Known limitations:
 
-- ASCII output is always top-to-bottom (`BT` reverses the rows; `LR`/`RL` are laid out top-to-bottom).
+- The render direction has no effect on C4 layout, as in Mermaid (`BT`, `LR` and `RL` render like `TB`).
 - `UpdateElementStyle`, `UpdateRelStyle`, `UpdateLayoutConfig`, legends and tags are accepted and ignored. Elements use the standard C4 palette.
 - A relationship from an element to itself is not drawn in ASCII.
 - Two relationships with the same `from` and `to` (for example `Rel(a, b, ...)` and `Rel_Back(a, b, ...)`) are both drawn. Mermaid merges them and draws only the later one; we keep both so nothing the author wrote is dropped (#1209).
@@ -1141,8 +1112,10 @@ several lines, anywhere after the header. `accTitle` becomes the accessible
 name when the `title` option is not given (the option wins; for C4 the order is
 option, `accTitle`, then the C4 `title`), and `accDescr` becomes a
 `<desc id="zm-desc-N">` referenced by `aria-describedby`. The statements are
-never drawn, and both are dropped when the diagram is `decorative`. ASCII output
-ignores them. The visible chart `title` of a pie chart is not used as its
+never drawn (except C4, where Mermaid 12.3.0 draws `accTitle` in the title slot,
+replacing any `title`, in SVG and ASCII), and both are dropped when the diagram is
+`decorative` (a decorative C4 still draws the `accTitle` text; only the accessible
+name and description are omitted). ASCII output otherwise ignores them. The visible chart `title` of a pie chart is not used as its
 accessible name.
 
 For a diagram that's already described in surrounding prose, mark it

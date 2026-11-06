@@ -77,6 +77,35 @@ describe('parseXYChart – categorical x-axis quoting', () => {
   })
 })
 
+describe('parseXYChart – unquoted categories match mermaid 12.3.0 (#2716, #2728)', () => {
+  const cats = (item: string) =>
+    parseXYChart(['xychart-beta', `x-axis [${item}]`, 'bar [1, 2]']).xAxis
+      .categories
+
+  it('joins the words of an unquoted label', () => {
+    expect(cats('New Users, Day  1, a\tb-c d')).toEqual([
+      'NewUsers',
+      'Day1',
+      'ab-cd',
+    ])
+  })
+
+  it('keeps the spaces of a quoted label', () => {
+    expect(cats('"New Users", Returning')).toEqual(['New Users', 'Returning'])
+  })
+
+  it('accepts every punctuation mark the lexer takes', () => {
+    expect(cats('a+b, a=b, a*b, a#b, a_b, a.b, a&b, 1.5, -')).toHaveLength(9)
+  })
+
+  it.each(['/users, /orders', 'a:b, c', 'café, c', 'a, , b', '"a"b, c'])(
+    'rejects %s',
+    (item) => {
+      expect(() => cats(item)).toThrow(/Invalid x-axis category/)
+    },
+  )
+})
+
 describe('parseXYChart – default y-axis range (#1705)', () => {
   it('uses the raw data extent, matching Mermaid (no padding, no zero floor)', () => {
     const chart = parseXYChart([

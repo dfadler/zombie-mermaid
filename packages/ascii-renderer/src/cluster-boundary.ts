@@ -191,6 +191,40 @@ export function buildClusterEntryRoute(
   return { path, startDir, endDir }
 }
 
+/**
+ * A same-target lane group leaving a cluster straight ahead (#2737): mermaid
+ * draws its edges as parallel strokes from the cluster's flow-side wall to the
+ * target's flow-side face, left to right in source order, not round the
+ * target's side faces. Returns the group in lane order, or null when the edge
+ * isn't one (TD only; a one-character label per stroke, so the labels fit
+ * between strokes two cells apart; the target in the stand-in's column).
+ * ponytail: a target off that column, or wider labels, keep the side faces
+ * (`laneSide`); lift when mermaid parity needs them.
+ */
+export function clusterFlowGroup(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): AsciiEdge[] | null {
+  const lane = edge.parallelLane
+  if (!lane || !edge.clusterSource || graph.config.graphDirection === 'LR') {
+    return null
+  }
+  const group = graph.edges
+    .filter((e) => e.parallelLane?.usedOffsets === lane.usedOffsets)
+    .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
+  const from = edge.from.gridCoord
+  const to = edge.to.gridCoord
+  if (
+    !from ||
+    !to ||
+    from.x !== to.x ||
+    group.some((e) => !e.clusterSource || displayWidth(e.text) > 1)
+  ) {
+    return null
+  }
+  return group
+}
+
 /** Whether any exit in `plan` is a parallel-lane sibling (#329, #1182). */
 export function planHasLaneGroup(plan: ClusterExitPlan): boolean {
   for (const edge of plan.edges) if (edge.parallelLane) return true
@@ -371,7 +405,12 @@ function planOne(
   const unroutable = new Set<Set<number>>()
   for (const edge of eligible) {
     const lane = edge.parallelLane
-    if (lane && lane.index > 0 && !clusterLaneSideRoute(graph, trial, edge)) {
+    if (
+      lane &&
+      lane.index > 0 &&
+      !clusterFlowGroup(graph, edge) &&
+      !clusterLaneSideRoute(graph, trial, edge)
+    ) {
       // A sibling that only lacks a gutter track gets one inserted (#1253)
       // when the group would otherwise engage.
       const missing = laneSide(graph, trial, edge)?.insertAt
@@ -425,6 +464,17 @@ function planOne(
       ? { x: face.x, y: face.y + i }
       : { x: face.x + i, y: face.y }
     if (!isFree(graph.grid, cell)) return null
+  }
+
+  // A flow group's strokes sit two cells apart on the target's flow-side
+  // face: the stand-in's column (the target's too) holds one per sibling.
+  for (const edge of eligible) {
+    const group =
+      edge.parallelLane?.index === 0 && clusterFlowGroup(graph, edge)
+    if (!group) continue
+    const sizes = vertical ? graph.columnWidth : graph.rowHeight
+    const mid = requireGridCoord(edge.to)[vertical ? 'x' : 'y'] + 1
+    sizes.set(mid, Math.max(sizes.get(mid)!, 2 * group.length - 1))
   }
 
   const plan: ClusterExitPlan = {
@@ -630,6 +680,14 @@ export function clusterLaneEndShift(
 ): number {
   const lane = edge.parallelLane
   if (!lane) return 0
+  const flow = clusterFlowGroup(graph, edge)
+  if (flow) {
+    // Strokes two cells apart about the face centre, in source order.
+    if (!graph.clusterExitPlans?.get(edge.clusterSource!)?.edges.has(edge)) {
+      return 0
+    }
+    return (lane.index - (flow.length - 1) / 2) * 2
+  }
   for (const plan of graph.clusterExitPlans?.values() ?? []) {
     if (!plan.edges.has(edge) || lane.index === 0) continue
     // The siblings entering the same target face, in lane order, take its

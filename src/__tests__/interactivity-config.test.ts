@@ -10,7 +10,6 @@ import { renderMermaidSVG } from '../index.ts'
 import {
   parseInitDirective,
   extractInitConfig,
-  applyInitConfig,
   describeIgnored,
   isInitDirective,
 } from '@zombie-mermaid/core'
@@ -34,11 +33,11 @@ describe('%%{init: ...}%% directives (#198 row 17)', () => {
     // normalized before parsing.
     expect(
       parseInitDirective("%%{init: {'flowchart': {'curve': 'basis'}}}%%")
-        ?.curve,
-    ).toBe('basis')
+        ?.ignored,
+    ).toEqual(['flowchart.curve'])
     expect(
-      parseInitDirective('%%{init: {flowchart: {curve: step}}}%%')?.curve,
-    ).toBe('step')
+      parseInitDirective('%%{init: {flowchart: {curve: step}}}%%')?.ignored,
+    ).toEqual(['flowchart.curve'])
   })
 
   it('keeps a colon or brace inside a quoted value intact', () => {
@@ -69,12 +68,6 @@ describe('%%{init: ...}%% directives (#198 row 17)', () => {
     expect(() =>
       renderMermaidSVG('%%{init: {malformed]}%%\nflowchart TD\n  A --> B'),
     ).not.toThrow()
-  })
-
-  it('rejects an unrecognized curve name instead of passing it through', () => {
-    expect(
-      parseInitDirective('%%{init: {"flowchart": {"curve": "nope"}}}%%')?.curve,
-    ).toBeUndefined()
   })
 
   it('reports theme as unapplied rather than silently dropping it', () => {
@@ -111,26 +104,10 @@ describe('%%{init: ...}%% directives (#198 row 17)', () => {
 
   it('lets a later directive override an earlier one', () => {
     const merged = extractInitConfig([
-      '%%{init: {"flowchart": {"curve": "basis"}}}%%',
-      '%%{init: {"flowchart": {"curve": "step"}}}%%',
+      '%%{init: {"pie": {"textPosition": 0.3}}}%%',
+      '%%{init: {"pie": {"textPosition": 0.6}}}%%',
     ])
-    expect(merged.curve).toBe('step')
-  })
-
-  it('never overrides an explicit render option', () => {
-    // A directive supplies a default. The caller is closer to the user's
-    // intent than text embedded in a possibly-untrusted diagram.
-    const options = applyInitConfig(
-      { curve: 'linear' },
-      { curve: 'basis', ignored: [] },
-    )
-    expect(options.curve).toBe('linear')
-  })
-
-  it('supplies a default when the caller gave none', () => {
-    expect(applyInitConfig({}, { curve: 'basis', ignored: [] }).curve).toBe(
-      'basis',
-    )
+    expect(merged.pieTextPosition).toBe(0.6)
   })
 
   it('is read even though it starts with the comment marker', () => {
@@ -139,7 +116,7 @@ describe('%%{init: ...}%% directives (#198 row 17)', () => {
     const graph = parseMermaid(
       '%%{init: {"flowchart": {"curve": "basis"}}}%%\nflowchart TD\n  A --> B',
     )
-    expect(graph.initConfig?.curve).toBe('basis')
+    expect(graph.initConfig?.ignored).toContain('flowchart.curve')
   })
 })
 
@@ -310,12 +287,15 @@ describe('edge curve styles (#198 row 9)', () => {
       expect(svg).toContain(' C ')
     })
 
-    it('applies a curve from the diagram’s own init directive', () => {
-      const svg = renderMermaidSVG(
-        `%%{init: {"flowchart": {"curve": "basis"}}}%%\n${branching}`,
-      )
-      expect(svg).toContain('<path class="edge"')
-      expect(svg).toContain(' C ')
+    it('ignores flowchart.curve in the init directive, as mermaid 12.3.0 does (#2729)', () => {
+      const plain = renderMermaidSVG(branching)
+      for (const curve of ['basis', 'step', 'natural', 'stepAfter']) {
+        expect(
+          renderMermaidSVG(
+            `%%{init: {"flowchart": {"curve": "${curve}"}}}%%\n${branching}`,
+          ),
+        ).toBe(plain)
+      }
     })
   })
 
@@ -327,9 +307,9 @@ describe('edge curve styles (#198 row 9)', () => {
   })
 
   it('draws a requested curve through the same <path> element', () => {
-    const svg = renderMermaidSVG(
-      '%%{init: {"flowchart": {"curve": "basis"}}}%%\nflowchart TD\n  A --> B\n  A --> C',
-    )
+    const svg = renderMermaidSVG('flowchart TD\n  A --> B\n  A --> C', {
+      curve: 'basis',
+    })
     expect(svg).toContain('<path class="edge"')
     expect(svg).toContain(' C ')
   })

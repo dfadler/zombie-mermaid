@@ -44,3 +44,23 @@ export function niceTickValues(min: number, max: number): number[] {
   for (let i = i1; i <= i2; i++) ticks.push(inc > 0 ? i * inc : i / -inc)
   return ticks
 }
+
+/**
+ * Mermaid's value-axis range for flat data. The parser gives a flat series a
+ * synthetic `v +- 0.1` span; Mermaid draws that as a single tick at `v`, so
+ * the range collapses to `{ min: v, max: v }`. Any other range is returned
+ * unchanged. Shared by the SVG and ASCII XY chart renderers.
+ */
+export function collapseFlatRange(
+  range: { min: number; max: number },
+  data: number[],
+): { min: number; max: number } {
+  const v = data[0]
+  // Ceiling: an explicit `y-axis v-0.1 --> v+0.1` over flat data collapses too; the parser would need to flag its synthetic range to tell them apart.
+  return v !== undefined &&
+    data.every((d) => d === v) &&
+    range.min === v - 0.1 &&
+    range.max === v + 0.1
+    ? { min: v, max: v }
+    : range
+}

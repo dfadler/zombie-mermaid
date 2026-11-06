@@ -48,6 +48,7 @@ import {
 } from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { gridToDrawingCoord } from './grid.ts'
+import { clusterFlowGroup, clusterLaneEndShift } from './cluster-boundary.ts'
 import { exitGutter } from './types.ts'
 import { splitLines } from './multiline-utils.ts'
 import { drawLine } from './draw-lines.ts'
@@ -273,8 +274,22 @@ function exitLandings(
   if (!plan) return landings
   const lr = graph.config.graphDirection === 'LR'
 
+  // A flow group (#2737) leaves as strokes two cells apart about the target's
+  // centre, straight down to its flow-side face.
+  if (!lr) {
+    for (const edge of plan.edges) {
+      if (!clusterFlowGroup(graph, edge)) continue
+      const to = requireGridCoord(edge.to)
+      landings.set(
+        edge,
+        gridToDrawingCoord(graph, { x: to.x + 1, y: to.y }).x +
+          clusterLaneEndShift(graph, edge),
+      )
+    }
+  }
   const units = new Map<unknown, AsciiEdge[]>()
   for (const edge of plan.edges) {
+    if (landings.has(edge)) continue
     const key = edge.parallelLane?.usedOffsets ?? edge
     const unit = units.get(key)
     if (unit) unit.push(edge)
@@ -563,12 +578,12 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = shift(
+    // The wall landing is already where the stroke is drawn: a flow group's
+    // whole run is shifted (#2737), so shifting it again would double it.
+    const prevDC =
       startOverride && i === 1
         ? startOverride
-        : gridToDrawingCoord(graph, previousCoord),
-      i - 1,
-    )
+        : shift(gridToDrawingCoord(graph, previousCoord), i - 1)
     const nextDC =
       endOverride && i === path.length - 1
         ? shift(endOverride, i)
@@ -603,7 +618,15 @@ const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊', '|', '
 /** Solid fork/join bar cell (Unicode / ASCII): nothing to connect to, nothing to overwrite. */
 const BAR_CHARS = new Set(['█', '#'])
 /** Horizontal box-border characters a vertical connector can genuinely merge with. */
-const HORIZONTAL_BORDER_CHARS = new Set(['─', '━', '═', '╌', '┄', '-', '='])
+export const HORIZONTAL_BORDER_CHARS = new Set([
+  '─',
+  '━',
+  '═',
+  '╌',
+  '┄',
+  '-',
+  '=',
+])
 
 /**
  * Draw the junction character where an edge exits the source node's box.

@@ -33,7 +33,7 @@ Earlier versions aimed for about 6 intervals (5 to 10 ticks) and padded the defa
 
 - **SVG:** the title is rotated 90 degrees along the left edge of the plot (`PositionedAxis.title.rotate`).
 - **ASCII, vertical charts:** a terminal cannot rotate text, so the title is written one character per row down the leftmost column (column 0), starting at the row that centers it on the plot. A title longer than the plot has rows for is cut off at the bottom of the plot. Because the letters are on separate rows, the title cannot be found by searching the text of the output.
-- **ASCII, horizontal charts:** the value axis is horizontal, so its title is ordinary text centered on the last row, under the tick labels.
+- **ASCII, horizontal charts:** the value axis is horizontal, so its title is ordinary text centered on the row above the tick labels; the whole value axis sits above the plot, as in mermaid (#2719).
 
 ```text
 S    │
