@@ -102,7 +102,7 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
 `;
 
 exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type but C4/architecture) > class: SVG and ASCII snapshots 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -54 114.13 290" width="114.13" height="290" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -54 114.13 306" width="114.13" height="306" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   @font-face {
@@ -138,33 +138,33 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
   }
 </style>
 <defs>
-  <marker id="zme12vhr-cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">
+  <marker id="zm1bl4m90-cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">
     <polygon points="0 0, 12 5, 0 10" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
-  <marker id="zme12vhr-cls-composition" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
+  <marker id="zm1bl4m90-cls-composition" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
     <polygon points="9 1.5, 16.5 7, 9 12.5, 1.5 7" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zme12vhr-cls-aggregation" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
+  <marker id="zm1bl4m90-cls-aggregation" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
     <polygon points="9 1.5, 16.5 7, 9 12.5, 1.5 7" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
-  <marker id="zme12vhr-cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">
+  <marker id="zm1bl4m90-cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">
     <polyline points="0 0, 8 3, 0 6" fill="none" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
 </defs>
-<polyline class="class-relationship" data-from="A" data-to="B" data-type="inheritance" data-marker-at="from" points="57.07,88 57.07,148" fill="none" stroke="var(--_line)" stroke-width="1" marker-start="url(#zme12vhr-cls-inherit)" />
+<polyline class="class-relationship" data-from="A" data-to="B" data-type="inheritance" data-marker-at="from" points="57.07,96 57.07,156" fill="none" stroke="var(--_line)" stroke-width="1" marker-start="url(#zm1bl4m90-cls-inherit)" />
 <g class="class-node" data-id="A" data-label="A">
-  <rect x="40" y="40" width="34.13" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="40" width="34.13" height="56" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <rect x="40" y="40" width="34.13" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="57.07" y="56" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">A</text>
   <line x1="40" y1="72" x2="74.13" y2="72" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <line x1="40" y1="80" x2="74.13" y2="80" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="40" y1="84" x2="74.13" y2="84" stroke="var(--_node-stroke)" stroke-width="0.75" />
 </g>
 <g class="class-node" data-id="B" data-label="B">
-  <rect x="40.3" y="148" width="33.52" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="40.3" y="148" width="33.52" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="57.07" y="164" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">B</text>
-  <line x1="40.3" y1="180" x2="73.83" y2="180" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="40.3" y="156" width="33.52" height="56" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40.3" y="156" width="33.52" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="57.07" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">B</text>
   <line x1="40.3" y1="188" x2="73.83" y2="188" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="40.3" y1="200" x2="73.83" y2="200" stroke="var(--_node-stroke)" stroke-width="0.75" />
 </g>
 
 <text x="57.065" y="-25" text-anchor="middle" font-size="18" fill="var(--_text)" class="front-matter-title">FM Title</text>
