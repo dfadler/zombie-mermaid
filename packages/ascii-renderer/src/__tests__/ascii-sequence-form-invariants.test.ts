@@ -21,7 +21,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import { findBoxRect, findTextRect } from './helpers/ascii-form.ts'
+import { findBoxRect } from './helpers/ascii-form.ts'
 
 const LONG_LABEL = 'a rather long condition label that used to get clipped'
 const VERY_LONG_LABEL =
@@ -61,6 +61,22 @@ function blockFrameSpan(
   }
   if (x1 === -1) throw new Error(`blockFrameSpan: no border chars on row ${y}`)
   return { x0, x1 }
+}
+
+/**
+ * A block label wraps onto several rows (#2745), so it is no longer one
+ * contiguous string: assert its words appear in order and that no row of the
+ * block runs past the frame's right wall.
+ */
+function expectWrappedInside(ascii: string, anchor: string, label: string) {
+  const words = label.split(' ')
+  expect(ascii).toMatch(new RegExp(words.join('[^A-Za-z]+')))
+  const frame = blockFrameSpan(ascii, anchor)
+  const lines = ascii.split('\n')
+  const top = lines.findIndex((l) => l.includes(anchor))
+  const bottom = lines.findIndex((l, i) => i > top && /^\+-+\+\s*$/.test(l))
+  for (const l of lines.slice(top, bottom + 1))
+    expect(l.trimEnd().length).toBeLessThanOrEqual(frame.x1 + 1)
 }
 
 // ---------------------------------------------------------------------------
@@ -171,13 +187,7 @@ ${participants(c.actors)}
     ${c.actors[0]}->>${c.actors[1]}: x
   end`
       const ascii = renderMermaidASCII(src, { useAscii: true })
-      // Not just "does the full label appear somewhere" — it must also sit
-      // inside the block's own walls, not spill past them.
-      expect(ascii).toContain(c.label)
-      const frame = blockFrameSpan(ascii, c.type)
-      const labelRect = findTextRect(ascii, c.label)
-      expect(labelRect.x0).toBeGreaterThanOrEqual(frame.x0)
-      expect(labelRect.x1).toBeLessThanOrEqual(frame.x1)
+      expectWrappedInside(ascii, c.type, c.label)
     })
   }
 
@@ -191,17 +201,8 @@ ${participants(c.actors)}
     A->>B: y
   end`
     const ascii = renderMermaidASCII(src, { useAscii: true })
-    expect(ascii).toContain(LONG_LABEL)
-    expect(ascii).toContain(VERY_LONG_LABEL)
-    // Walls are constant across the whole block, so the header row alone
-    // (anchored on "alt", never itself truncated) gives the frame span
-    // both labels — header and divider — must stay inside.
-    const frame = blockFrameSpan(ascii, 'alt')
-    for (const label of [LONG_LABEL, VERY_LONG_LABEL]) {
-      const rect = findTextRect(ascii, label)
-      expect(rect.x0).toBeGreaterThanOrEqual(frame.x0)
-      expect(rect.x1).toBeLessThanOrEqual(frame.x1)
-    }
+    expectWrappedInside(ascii, 'alt', LONG_LABEL)
+    expectWrappedInside(ascii, 'alt', VERY_LONG_LABEL)
   })
 })
 
