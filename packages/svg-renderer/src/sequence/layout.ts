@@ -517,8 +517,8 @@ export function layoutSequenceDiagram(
     const xs = diagram.messages
       .slice(block.startIndex, block.endIndex + 1)
       .flatMap((m) => [
-        actorCenterX[actorIndex.get(m.from) ?? 0]!,
-        actorCenterX[actorIndex.get(m.to) ?? 0]!,
+        actorCenterX[actorIndex.get(m.from)!]!,
+        actorCenterX[actorIndex.get(m.to)!]!,
       ])
     const span = xs.length
       ? Math.max(...xs) - Math.min(...xs)
