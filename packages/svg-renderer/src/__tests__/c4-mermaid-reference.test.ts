@@ -5,6 +5,9 @@ import { parseC4Diagram } from '@zombie-mermaid/mermaid-parser'
 import { layoutC4DiagramSync } from '../c4/layout.ts'
 
 // Provenance (#2679, class a): re-rendered with 12.3.0, all 32 diagram sizes agree to 0.1px.
+// Positions (#2708): the same 32 sources rendered by 11.17.2 and 12.3.0 give identical shape anchors (91, 0.00px),
+// identical boundary rects (21) and relationship line ends within 0.5px (58), so the reference still holds for 12.3.0
+// (read back with scripts/lib/c4-agreement.ts; label positions not compared).
 // Each case is a C4 source rendered by real Mermaid 11.17.2 (headless Chrome,
 // screen width 1440), with the numbers read back from its SVG: the diagram
 // size, the centre of every shape, and each relationship's line and label.

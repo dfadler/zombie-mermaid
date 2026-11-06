@@ -5,6 +5,7 @@
  * rows, as mermaid skews the whole height.
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
+// Mermaid 12.3.0 verdict (#2708): matches (label level, 2 sources); the glyph silhouette is an ASCII design choice, not comparable (docs/known-differences.md, #2164).
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'

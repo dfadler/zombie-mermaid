@@ -5,6 +5,7 @@
  * cylinder keeps the cylinder glyph); `sm-circ` is the state-start dot.
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
+// Mermaid 12.3.0 verdict (#2708): matches (label level, 4 SVG sources and the ASCII one); outline geometry not compared, and the SVG viewBox differs (e.g. sm-circ 80x86 mermaid vs 152x150 here), left to #2678.
 import { describe, expect, it } from 'vitest'
 import { parseMermaid, renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 import { estimateNodeSize } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
