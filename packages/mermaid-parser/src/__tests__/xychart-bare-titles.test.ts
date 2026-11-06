@@ -29,4 +29,20 @@ describe('unquoted xychart titles', () => {
   it('still rejects an unquoted title with other characters', () => {
     expect(() => parse(' title Q1/Q2\n x-axis [a, b]')).toThrow()
   })
+  it('rejects malformed bare forms instead of guessing', () => {
+    // Nothing after the keyword, or a bad range or title
+    expect(() => parse(' title\n x-axis [a, b]')).toThrow()
+    expect(() => parse(' x-axis [a, b]\n y-axis Y Z 0 --> x')).toThrow()
+    expect(() => parse(' x-axis [a, b]\n y-axis Y/Z 0 --> 5')).toThrow()
+    expect(() => parse(' x-axis [a, b]\n y-axis 1Z 0 --> 5')).toThrow()
+    expect(() => parse(' x-axis [a, b]\n y-axis 5')).toThrow()
+  })
+  it('handles a hostile long line quickly', () => {
+    const t = Date.now()
+    expect(() => parse(` title ${'\t'.repeat(50000)}/`)).toThrow()
+    expect(() =>
+      parse(` x-axis [a]\n y-axis A${'\t'.repeat(50000)}/`),
+    ).toThrow()
+    expect(Date.now() - t).toBeLessThan(2000)
+  })
 })
