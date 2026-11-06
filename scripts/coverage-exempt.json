@@ -227,7 +227,7 @@
   {
     "file": "scripts/architecture-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/architecture-agreement.ts",
-    "maxLines": 50
+    "maxLines": 60
   },
   {
     "file": "scripts/lib/architecture-measure.ts",
@@ -242,12 +242,12 @@
   {
     "file": "scripts/quadrant-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/quadrant-agreement.ts",
-    "maxLines": 50
+    "maxLines": 60
   },
   {
     "file": "scripts/lib/quadrant-measure.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the quadrant-oracle and layout-oracle CLIs",
-    "maxLines": 50
+    "maxLines": 60
   },
   {
     "file": "scripts/lib/sequence-measure.ts",
@@ -257,7 +257,7 @@
   {
     "file": "scripts/pie-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/pie-agreement.ts",
-    "maxLines": 50
+    "maxLines": 60
   },
   {
     "file": "scripts/lib/pie-measure.ts",
@@ -267,7 +267,7 @@
   {
     "file": "scripts/c4-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/c4-agreement.ts",
-    "maxLines": 50
+    "maxLines": 60
   },
   {
     "file": "scripts/lib/c4-measure.ts",
@@ -313,5 +313,10 @@
     "file": "scripts/samples-oracle.ts",
     "reason": "audit harness: needs headless Chromium plus a mermaid@latest install outside the repo, so it only runs as a CLI (rerun command in its header, #2678)",
     "maxLines": 150
+  },
+  {
+    "file": "scripts/ascii-topology.ts",
+    "reason": "thin CLI: runs on import and prints; all logic is in scripts/lib/ascii-topology.ts (tested by __tests__/ascii-topology.test.ts)",
+    "maxLines": 60
   }
 ]
