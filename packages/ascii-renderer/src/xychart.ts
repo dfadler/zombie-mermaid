@@ -145,8 +145,8 @@ function renderVertical(
   // different module, so narrow it here explicitly instead of trusting it
   // silently across the boundary.
   const parsedRange = chart.yAxis.range
+  /* v8 ignore next 3 */
   if (!parsedRange) {
-    /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   // Flat data is one mid-axis tick, as in Mermaid and the SVG (#2727).
@@ -437,8 +437,8 @@ function renderHorizontal(
   // y-axis range before returning, but that guarantee lives in a different
   // module, so it's narrowed here explicitly rather than trusted silently.
   const parsedRange = chart.yAxis.range
+  /* v8 ignore next 3 */
   if (!parsedRange) {
-    /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   // Flat data is one mid-axis tick, as in Mermaid and the SVG (#2727).
