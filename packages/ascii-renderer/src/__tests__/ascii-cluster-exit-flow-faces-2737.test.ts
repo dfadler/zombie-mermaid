@@ -50,6 +50,12 @@ describe('cluster-exit siblings use the target flow face (#2737)', () => {
     expect(out).not.toMatch(/[◄►]/)
   })
 
+  it('leaves a lone pair of siblings to ordinary routing', () => {
+    const out = render(src(2))
+    expect(checkAll(out, { unicode: true })).toEqual([])
+    expect(out.match(/[▼◄►]/g)).toHaveLength(3)
+  })
+
   it('keeps the side faces for a wide label', () => {
     const out = render(src(3).replace('|2|', '|second|'))
     expect(out).toMatch(/[◄►]/)

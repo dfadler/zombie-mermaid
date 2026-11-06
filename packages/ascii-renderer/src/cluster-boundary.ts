@@ -469,7 +469,8 @@ function planOne(
   // A flow group's strokes sit two cells apart on the target's flow-side
   // face: the stand-in's column (the target's too) holds one per sibling.
   for (const edge of eligible) {
-    const group = edge.parallelLane?.index === 0 && clusterFlowGroup(graph, edge)
+    const group =
+      edge.parallelLane?.index === 0 && clusterFlowGroup(graph, edge)
     if (!group) continue
     const sizes = vertical ? graph.columnWidth : graph.rowHeight
     const mid = requireGridCoord(edge.to)[vertical ? 'x' : 'y'] + 1
@@ -680,9 +681,9 @@ export function clusterLaneEndShift(
   const lane = edge.parallelLane
   if (!lane) return 0
   const flow = clusterFlowGroup(graph, edge)
-  if (flow && edge.clusterSource) {
+  if (flow) {
     // Strokes two cells apart about the face centre, in source order.
-    if (!graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge)) {
+    if (!graph.clusterExitPlans?.get(edge.clusterSource!)?.edges.has(edge)) {
       return 0
     }
     return (lane.index - (flow.length - 1) / 2) * 2
