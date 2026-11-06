@@ -66,9 +66,8 @@ describe('xychart ASCII – bar charts', () => {
       x-axis [A, B, C]
       bar [10, 20, 30]
       bar [15, 25, 35]`)
-    // Should contain legend for multi-series
-    expect(result).toContain('Bar 1')
-    expect(result).toContain('Bar 2')
+    // Mermaid 12.3.0 draws no generated legend (#2718)
+    expect(result).not.toMatch(/Bar \d/)
   })
 
   it('overlays (not groups side-by-side) multiple bar series in the same category', () => {
@@ -84,8 +83,6 @@ describe('xychart ASCII – bar charts', () => {
       bar [20]`)
     const lines = result
       .split('\n')
-      // Exclude the legend row ("█ Bar 1  █ Bar 2") — its two swatches are
-      // expected to be separate runs; only plot rows matter here.
       .filter((line) => !/[A-Za-z]/.test(line))
     expect(lines.length).toBeGreaterThan(0)
     for (const line of lines) {
@@ -179,9 +176,8 @@ describe('xychart ASCII – mixed charts', () => {
     // Should have both bar blocks and line corners
     expect(result).toContain('█')
     expect(result).toContain('─')
-    // Legend for multi-series
-    expect(result).toContain('Bar 1')
-    expect(result).toContain('Line 1')
+    // No generated legend (#2718)
+    expect(result).not.toMatch(/Bar \d|Line \d/)
   })
 })
 

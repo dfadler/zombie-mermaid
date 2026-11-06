@@ -175,9 +175,8 @@ function renderVertical(
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
-  const hasLegend = chart.series.length > 1
   const titleRow = hasTitle ? 0 : -1
-  const plotTop = (hasTitle ? 2 : 0) + (hasLegend ? 1 : 0)
+  const plotTop = hasTitle ? 2 : 0
   // Reserve a column for the rotated y-axis title (rendered top-to-bottom,
   // one character per row, mirroring how mermaid.js rotates it 90deg along
   // the left edge) plus a 1-column gap before the tick-value gutter.
@@ -187,8 +186,7 @@ function renderVertical(
   const xAxisRow = plotTop + plotH
   const xLabelRow = xAxisRow + 1
   const xTitleRow = hasXTitle ? xLabelRow + 1 : -1
-  const totalH =
-    xLabelRow + 1 + (hasXTitle ? 1 : 0) + (hasLegend && !hasTitle ? 0 : 0)
+  const totalH = xLabelRow + 1 + (hasXTitle ? 1 : 0)
 
   // Create canvas
   const canvas = createCanvas(totalW, totalH)
@@ -215,21 +213,6 @@ function renderVertical(
       Math.floor(totalW / 2 - chart.title.length / 2),
       chart.title,
       'text',
-    )
-  }
-
-  // 2. Legend
-  if (hasLegend) {
-    const legendRow = hasTitle ? 1 : 0
-    drawLegend(
-      canvas,
-      roles,
-      hexColors,
-      chart,
-      legendRow,
-      totalW,
-      ch,
-      seriesColors,
     )
   }
 
@@ -440,12 +423,13 @@ function renderHorizontal(
 
   const hasTitle = !!chart.title
   const hasYTitle = !!chart.yAxis.title
-  const hasLegend = chart.series.length > 1
-  const plotTop = (hasTitle ? 2 : 0) + (hasLegend ? 1 : 0)
+  // Mermaid puts the value axis above the plot: [axis title], tick labels,
+  // then the axis line, then the bars (#2719).
+  const xAxisRow = (hasTitle ? 2 : 0) + (hasYTitle ? 1 : 0) + 1
+  const plotTop = xAxisRow + 1
   const plotLeft = catGutter + 1
   const totalW = plotLeft + plotW + 2
-  const totalH = plotTop + plotH + 2 + (hasYTitle ? 1 : 0)
-  const xAxisRow = plotTop + plotH
+  const totalH = plotTop + plotH
 
   const canvas = createCanvas(totalW, totalH)
   const roles = createRoleCanvas(totalW, totalH)
@@ -473,21 +457,6 @@ function renderHorizontal(
     )
   }
 
-  // Legend
-  if (hasLegend) {
-    const legendRow = hasTitle ? 1 : 0
-    drawLegend(
-      canvas,
-      roles,
-      hexColors,
-      chart,
-      legendRow,
-      totalW,
-      ch,
-      seriesColors,
-    )
-  }
-
   // Y-axis (category axis on left)
   for (let r = plotTop; r < plotTop + plotH; r++) {
     set(canvas, roles, r, plotLeft - 1, ch.vLine, 'border')
@@ -501,7 +470,7 @@ function renderHorizontal(
     writeText(canvas, roles, my, Math.max(0, labelStart), label, 'text')
   }
 
-  // X-axis (value axis on bottom)
+  // X-axis (value axis on top)
   for (let c = plotLeft; c < plotLeft + plotW; c++) {
     set(canvas, roles, xAxisRow, c, ch.hLine, 'border')
   }
@@ -523,7 +492,7 @@ function renderHorizontal(
     writeText(
       canvas,
       roles,
-      xAxisRow + 1,
+      xAxisRow - 1,
       cx - Math.floor(label.length / 2),
       label,
       'text',
@@ -536,7 +505,7 @@ function renderHorizontal(
     writeText(
       canvas,
       roles,
-      totalH - 1,
+      xAxisRow - 2,
       Math.floor(totalW / 2 - title.length / 2),
       title,
       'text',
@@ -829,73 +798,6 @@ function drawHorizontalStaircaseLine(
     for (let r = midRow + 1; r <= p2.row; r++) {
       drawAt(r, p2.col, ch.vLine)
     }
-  }
-}
-
-// ============================================================================
-// Legend — shows series symbols with per-series colors
-// ============================================================================
-
-function drawLegend(
-  canvas: Canvas,
-  roles: RoleCanvas,
-  hexCanvas: HexCanvas,
-  chart: XYChart,
-  row: number,
-  totalW: number,
-  ch: typeof UNI | typeof ASC,
-  seriesColors: string[],
-): void {
-  // Build legend items with global series indices
-  type LegendItem = { symbol: string; label: string; globalIdx: number }
-  const items: LegendItem[] = []
-  let barIdx = 0,
-    lineIdx = 0
-  for (let si = 0; si < chart.series.length; si++) {
-    const s = chart.series[si]!
-    if (s.type === 'bar') {
-      items.push({ symbol: ch.bar, label: `Bar ${barIdx + 1}`, globalIdx: si })
-      barIdx++
-    } else {
-      items.push({
-        symbol: ch.hLine,
-        label: `Line ${lineIdx + 1}`,
-        globalIdx: si,
-      })
-      lineIdx++
-    }
-  }
-
-  // Calculate total legend width: "symbol space label  symbol space label ..."
-  let totalLen = 0
-  for (let i = 0; i < items.length; i++) {
-    if (i > 0) totalLen += 2 // Gap between items
-    totalLen += 1 + 1 + items[i]!.label.length // Symbol + space + label
-  }
-
-  const startCol = Math.max(0, Math.floor(totalW / 2 - totalLen / 2))
-  let col = startCol
-
-  for (let i = 0; i < items.length; i++) {
-    if (i > 0) col += 2 // Gap
-    const item = items[i]!
-    // Symbol with series-specific color
-    set(
-      canvas,
-      roles,
-      row,
-      col,
-      item.symbol,
-      'arrow',
-      hexCanvas,
-      seriesColors[item.globalIdx],
-    )
-    col += 1
-    // Space (already ' ' from canvas init)
-    col += 1
-    // Label text
-    writeText(canvas, roles, row, col, item.label, 'text')
-    col += item.label.length
   }
 }
 
