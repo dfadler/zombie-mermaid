@@ -13,6 +13,7 @@ export interface AccessibleText {
     accDescr?: string;
     // (undocumented)
     accTitle?: string;
+    frontMatterTitle?: string;
     text: string;
 }
 
@@ -583,6 +584,9 @@ export type QuadrantConfig = Partial<Record<(typeof QUADRANT_NUMBER_KEYS)[number
     xAxisPosition?: 'top' | 'bottom';
     yAxisPosition?: 'left' | 'right';
 };
+
+// @public
+export function readFrontMatterTitle(text: string): string | undefined;
 
 // @public (undocumented)
 export interface RenderLimits {
