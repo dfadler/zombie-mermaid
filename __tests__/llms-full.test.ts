@@ -3,6 +3,8 @@ import { expect, it } from 'vitest'
 import {
   absolutizeLinks,
   generateLlmsFull,
+  llmsFullInputs,
+  touchesLlmsFullInputs,
   toLf,
 } from '../scripts/lib/llms-full'
 
@@ -30,4 +32,26 @@ it('absolutizes relative links against the source doc, leaving absolute and anch
 it('toLf turns CRLF checkouts into the LF text the generator emits', () => {
   expect(toLf('a\r\n\r\nb\r\n')).toBe('a\n\nb\n')
   expect(toLf('a\nb')).toBe('a\nb')
+})
+
+it('verify runs the drift check only when a generator input changed', async () => {
+  const inputs = await llmsFullInputs()
+  expect(inputs).toEqual(
+    expect.arrayContaining([
+      'public/llms.txt',
+      'public/llms-full.txt',
+      'scripts/lib/llms-full.ts',
+      'docs/known-differences.md',
+    ]),
+  )
+  expect(touchesLlmsFullInputs(['docs/known-differences.md'], inputs)).toBe(
+    true,
+  )
+  expect(
+    touchesLlmsFullInputs(['src/a.ts', 'scripts/lib/llms-full.ts'], inputs),
+  ).toBe(true)
+  expect(
+    touchesLlmsFullInputs(['src/a.ts', 'docs/unlinked-draft.md'], inputs),
+  ).toBe(false)
+  expect(touchesLlmsFullInputs([], inputs)).toBe(false)
 })
