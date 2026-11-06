@@ -470,9 +470,22 @@ export function renderSequenceAscii(
   // How many blocks enclose this note (#2514)? Each one has a left wall.
   function noteDepth(note: (typeof diagram.notes)[number]): number {
     return (
-      diagram.blocks.filter(
-        (b) => note.afterIndex >= b.startIndex && note.afterIndex <= b.endIndex,
-      ).length + leadingBlocks(note).length
+      diagram.blocks.filter((b) => noteInsideBlock(note, b)).length +
+      leadingBlocks(note).length
+    )
+  }
+
+  // A note after a block's last message sits inside the block only when it was
+  // written before the `end`; one written after it follows the frame (#2744).
+  function noteInsideBlock(
+    note: (typeof diagram.notes)[number],
+    b: Block,
+  ): boolean {
+    return (
+      note.afterIndex >= b.startIndex &&
+      note.afterIndex <= b.endIndex &&
+      (note.afterIndex < b.endIndex ||
+        diagram.notes.indexOf(note) < b.noteEndIndex)
     )
   }
 
@@ -938,14 +951,34 @@ export function renderSequenceAscii(
       curY += createdBoxH(destroyedIdx)
     }
 
-    // Notes after this message
-    for (const note of diagram.notes) {
-      if (note.afterIndex === m && !leadingBlocks(note).length) placeNote(note)
+    // Notes after this message; one written after a block's `end` waits for
+    // that block's closing row below (#2744).
+    const pending = diagram.notes.filter(
+      (n) => n.afterIndex === m && !leadingBlocks(n).length,
+    )
+    const placePending = (inside: (n: (typeof pending)[number]) => boolean) => {
+      for (const note of pending) {
+        if (!placedAfter.has(note) && inside(note)) {
+          placedAfter.add(note)
+          placeNote(note)
+        }
+      }
     }
+    const placedAfter = new Set<(typeof pending)[number]>()
+    // Place the notes still inside every block closing at m from index `from`.
+    const placeInside = (from: number): void =>
+      placePending((n) =>
+        diagram.blocks.every(
+          (blk, bi) =>
+            bi < from || blk.endIndex !== m || noteInsideBlock(n, blk),
+        ),
+      )
+    placeInside(0)
 
-    // Block closings after this message
+    // Block closings after this message (innermost first)
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.endIndex === m) {
+        placeInside(b)
         // Trailing empty else/and/option sections (#2555).
         diagram.blocks[b]!.dividers.forEach((div, d) => {
           if (div.index > m) {
@@ -962,6 +995,7 @@ export function renderSequenceAscii(
         curY += minSeparatorGap
       }
     }
+    placePending(() => true)
   }
 
   curY += minSeparatorGap // Gap before footer (mandatory — see minSeparatorGap)
