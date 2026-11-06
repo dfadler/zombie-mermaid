@@ -8,9 +8,9 @@
  * instead of a loop beside it — see https://github.com/dfadler/zombie-mermaid/issues/537#issuecomment-6130805676
  * for the before/after comparison against current upstream Mermaid.
  *
- * These tests assert the synthesized replacement: a rounded loop bulging
- * out from the node's right side, discretized into enough points to read
- * as smooth, with the label offset clear of the node.
+ * These tests assert the synthesized replacement: a squared loop on the
+ * node's left (TD/BT) or top (LR/RL) face as in mermaid@12.3.0 (#2740), with
+ * the label offset clear of the node.
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
@@ -27,7 +27,7 @@ function isAxisAligned(p1: Point, p2: Point, tolerance = 0.5): boolean {
 }
 
 describe('self-loop edge routing (flowchart)', () => {
-  it('routes a self-loop as a rounded loop beside the node, not a 4-point right-angle bracket', () => {
+  it('routes an LR self-loop as a squared bulge over the top face (#2740)', () => {
     const graph = parseMermaid(`flowchart LR
       A --->|foo| B
       B --->|bar| B`)
@@ -42,33 +42,22 @@ describe('self-loop edge routing (flowchart)', () => {
     expect(selfLoop).toBeDefined()
     const points = selfLoop!.points
 
-    // The old ELK-routed bracket was exactly 4 points. A real loop needs
-    // many more to read as rounded.
-    expect(points.length).toBeGreaterThan(4)
-
-    // The bracket was pure right angles throughout. A rounded loop must
-    // have a majority of genuinely diagonal segments.
-    let diagonalSegments = 0
+    // Out of the top face, across, and back in: a squared bulge whose corners
+    // the renderer rounds, as in mermaid@12.3.0.
+    expect(points).toHaveLength(4)
     for (let i = 1; i < points.length; i++) {
-      if (!isAxisAligned(points[i - 1]!, points[i]!)) diagonalSegments++
+      expect(isAxisAligned(points[i - 1]!, points[i]!)).toBe(true)
     }
-    expect(diagonalSegments).toBeGreaterThan(points.length / 2)
+    expect(Math.min(...points.map((p) => p.y))).toBeCloseTo(nodeB!.y - 20, 5)
+    expect(Math.max(...points.map((p) => p.y))).toBeCloseTo(nodeB!.y, 5)
 
-    // The loop bulges out to the side of the node — every point sits at or
-    // beyond the node's right edge — rather than sitting on top of it (the
-    // old bracket's points landed inside/just above the node's bounding box).
-    for (const p of points) {
-      expect(p.x).toBeGreaterThanOrEqual(nodeB!.x + nodeB!.width - 0.5)
-    }
+    // Both ends attach to the top face, inside the node's width.
+    expect(points[0]!.x).toBeGreaterThan(nodeB!.x)
+    expect(points[3]!.x).toBeLessThan(nodeB!.x + nodeB!.width)
 
-    // Both ends of the loop attach to the node's right edge.
-    expect(points[0]!.x).toBeCloseTo(nodeB!.x + nodeB!.width, 0)
-    expect(points[points.length - 1]!.x).toBeCloseTo(nodeB!.x + nodeB!.width, 0)
-
-    // The label sits clear of the node, out past the loop's apex — not on
-    // top of the node the way the old bracket's cramped shape forced it to.
+    // The label sits above the apex, clear of the node.
     expect(selfLoop!.labelPosition).toBeDefined()
-    expect(selfLoop!.labelPosition!.x).toBeGreaterThan(nodeB!.x + nodeB!.width)
+    expect(selfLoop!.labelPosition!.y).toBeLessThan(nodeB!.y - 20)
   })
 
   it('stacks multiple self-loops on the same node instead of overlapping', () => {
@@ -87,15 +76,14 @@ describe('self-loop edge routing (flowchart)', () => {
       (typeof selfLoops)[0],
     ]
 
-    // The second loop reaches further right than the first, so they nest
-    // rather than draw identically on top of each other.
-    const apexX = (points: Point[]) => Math.max(...points.map((p) => p.x))
-    expect(apexX(second.points)).toBeGreaterThan(apexX(first.points))
+    // The second loop reaches further out (up) than the first, so they nest.
+    const apexY = (points: Point[]) => Math.min(...points.map((p) => p.y))
+    expect(apexY(second.points)).toBeLessThan(apexY(first.points))
   })
 })
 
 describe('self-loop edge routing (state diagram)', () => {
-  it('routes a state-diagram self-transition as a rounded loop', () => {
+  it('routes a state-diagram self-transition as a loop', () => {
     const graph = parseMermaid(`stateDiagram-v2
       [*] --> Idle
       Idle --> Idle: retry`)
@@ -106,7 +94,7 @@ describe('self-loop edge routing (state diagram)', () => {
     )
 
     expect(selfLoop).toBeDefined()
-    expect(selfLoop!.points.length).toBeGreaterThan(4)
+    expect(selfLoop!.points).toHaveLength(4)
     expect(selfLoop!.label).toBe('retry')
   })
 })
