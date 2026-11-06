@@ -77,7 +77,8 @@ routing has to be brought to 12.3.0 first (or the drift accepted and listed here
 ```sh
 # regenerate (rewrites every *.expected.json in fixtures/: keep unrelated diffs out)
 UPDATE_ELK_LAYOUT=1 pnpm exec vitest run -c config/vitest.config.ts packages/elk-layout
-# compare with the new pin; expect exit 0 and 12/12, 12/12, 10/10
+# compare with the new pin; exit 0 means every edge is within 1px (12/12, 12/12, 10/10),
+# any edge beyond tol (accepted drift included) exits 1
 pnpm exec tsx scripts/elk-layout-oracle.ts packages/elk-layout/__tests__/fixtures/d1.mmd packages/elk-layout/__tests__/fixtures/d2.mmd packages/elk-layout/__tests__/fixtures/d3.mmd
 ```
 
