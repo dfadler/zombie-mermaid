@@ -21,9 +21,6 @@ export interface AccessibleText {
 export function applyClickStatement(line: string, interactions: Map<string, NodeInteraction>): void;
 
 // @public
-export function applyInitConfig(options: RenderOptions, config: InitConfig): RenderOptions;
-
-// @public
 export function applyThemeVariables(options: RenderOptions, config: InitConfig | undefined): RenderOptions;
 
 // @public
@@ -256,7 +253,6 @@ export function hasMeasuredAdvance(char: string): boolean;
 
 // @public
 export interface InitConfig {
-    curve?: CurveStyle;
     ignored: string[];
     pieDonutHole?: number;
     pieHighlightSlice?: string;

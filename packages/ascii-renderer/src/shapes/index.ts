@@ -152,6 +152,9 @@ export const shapeRegistry: ShapeRegistry = new Map<
   ['state-end', stateEndRenderer],
   ['fork-join', forkJoinRenderer],
 
+  // Architecture junction: one cell where edges meet (drawn by drawJunctions)
+  ['junction', stateStartRenderer],
+
   // Class diagram LR/RL lowering (class-flow.ts)
   ['class-box', classBoxRenderer],
   ['class-note', classBoxRenderer],
