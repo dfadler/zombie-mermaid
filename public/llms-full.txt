@@ -2022,6 +2022,11 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   ([#1592](https://github.com/dfadler/zombie-mermaid/issues/1592)). The ASCII renderer
   has its own layout and still treats the range as evenly spaced labels at the data
   points, so `0 --> 100` with 5 bars labels 0, 25, 50, 75, 100 there.
+- **Unquoted titles and labels drop their spaces, as in mermaid 12.3.0.** `title Week 1 sales`
+  reads `Week1sales`, `x-axis [New Users]` reads `NewUsers`, `y-axis Y Z 0 --> 5` reads `YZ`
+  (letters and digits only for titles; categories also allow `+ = * # _ . & -`). A one-word
+  `x-axis Foo [a, b]` title works; `x-axis Foo Bar [a, b]` is rejected by mermaid and is
+  not special-cased here. Quote a label (`"New Users"`) to keep its spaces.
 - **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
   value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
   correct reading (a known mermaid quirk).
