@@ -51,7 +51,13 @@ export const CLS = {
   annotationHeight: 16,
   memberRowHeight: 20,
   sectionPadY: 8,
-  emptySectionHeight: 8,
+  /**
+   * Empty compartment height. mermaid 12.3.0 draws 24 (next to a compartment
+   * with members) or 18 (class with no members at all) against a 48 header;
+   * scaled to our 32 header that is 16 / 12 (#2720).
+   */
+  emptySectionHeight: 16,
+  emptyBareSectionHeight: 12,
   /** Padding each side of mermaid's class box (`class.padding`), see {@link mermaidClassBoxWidth} */
   mermaidPad: 12,
   memberFontSize: 11,
@@ -260,15 +266,20 @@ function buildClassElkGraph(
       ? CLS.headerBaseHeight + CLS.annotationHeight
       : CLS.headerBaseHeight
 
+    const emptyHeight =
+      cls.attributes.length + cls.methods.length > 0
+        ? CLS.emptySectionHeight
+        : CLS.emptyBareSectionHeight
+
     const attrHeight =
       cls.attributes.length > 0
         ? cls.attributes.length * CLS.memberRowHeight + CLS.sectionPadY
-        : CLS.emptySectionHeight
+        : emptyHeight
 
     const methodHeight =
       cls.methods.length > 0
         ? cls.methods.length * CLS.memberRowHeight + CLS.sectionPadY
-        : CLS.emptySectionHeight
+        : emptyHeight
 
     const headerTextW = estimateTextWidth(
       cls.label,
