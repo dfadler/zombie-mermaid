@@ -249,6 +249,8 @@ export function renderGraphAscii(
 
   checkGraphSize(parsed.nodes.size, parsed.edges.length, extras.limits)
   let graph = convertToAsciiGraph(parsed, config)
+  // Empty subgraphs became nodes in the conversion, so count them too.
+  checkGraphSize(graph.nodes.length, graph.edges.length, extras.limits)
   hooks.afterConvert?.(graph)
   createMapping(graph)
   // Flow-axis face lanes (#2121) that did not come out as planned are dropped

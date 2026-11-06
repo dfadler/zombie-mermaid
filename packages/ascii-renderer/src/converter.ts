@@ -8,6 +8,7 @@
 
 import type {
   MermaidGraph,
+  MermaidNode,
   MermaidSubgraph,
   NodeShape,
 } from '@zombie-mermaid/core'
@@ -44,10 +45,64 @@ const ASCII_SHAPE: Partial<Record<NodeShape, NodeShape>> = {
   'fork-bar': 'fork-join',
 }
 
+/**
+ * Mermaid 12.3.0 draws an empty flowchart subgraph as its title text only: a
+ * zero-height cluster rect (no visible frame) laid out like a node in the
+ * first rank (#2694). Lower each one to a bare-text node of the same id, in
+ * its parent's membership, so the grid places it with no layout-core change.
+ * Exact placement is dagre's, not measured here.
+ */
+function lowerEmptySubgraphs(parsed: MermaidGraph): {
+  graph: MermaidGraph
+  bare: Set<string>
+} {
+  const bare = new Set<string>()
+  const labels = new Map<string, string>()
+  // Returns the kept subgraphs and the ids of the empty ones among them,
+  // which the caller's subgraph (their parent) takes as members.
+  const lower = (sgs: MermaidSubgraph[]) => {
+    const kept: MermaidSubgraph[] = []
+    const ids: string[] = []
+    for (const sg of sgs) {
+      if (
+        sg.nodeIds.length + sg.children.length === 0 &&
+        !sg.region &&
+        !sg.stateComposite &&
+        !sg.architecture
+      ) {
+        bare.add(sg.id)
+        // Mermaid 12.3.0 keeps the first title of a repeated id.
+        if (!labels.has(sg.id)) labels.set(sg.id, sg.label)
+        ids.push(sg.id)
+      } else {
+        const inner = lower(sg.children)
+        kept.push({
+          ...sg,
+          children: inner.kept,
+          nodeIds: [...sg.nodeIds, ...inner.ids],
+        })
+      }
+    }
+    return { kept, ids }
+  }
+  if (parsed.stateDiagram) return { graph: parsed, bare }
+  const subgraphs = lower(parsed.subgraphs).kept
+  if (bare.size === 0) return { graph: parsed, bare }
+  const nodes = new Map<string, MermaidNode>()
+  for (const [id, label] of labels)
+    nodes.set(id, { id, label, shape: 'rectangle' })
+  for (const [id, n] of parsed.nodes) if (!bare.has(id)) nodes.set(id, n)
+  return { graph: { ...parsed, subgraphs, nodes }, bare }
+}
+
 export function convertToAsciiGraph(
-  parsed: MermaidGraph,
+  original: MermaidGraph,
   config: AsciiConfig,
 ): AsciiGraph {
+  const { graph: parsed, bare } = lowerEmptySubgraphs(original)
+  // An edge's arrowhead would overwrite a letter of a bare title, so an empty
+  // subgraph that is an edge endpoint keeps a box around its title.
+  const onEdge = new Set(parsed.edges.flatMap((e) => [e.source, e.target]))
   // Collect subgraph ids (including nested) up front. When a flowchart edge
   // references a subgraph id directly (e.g. `ONE --> TWO` where ONE/TWO are
   // subgraph ids, not nodes — see issue #65), the parser has no way to know
@@ -85,7 +140,10 @@ export function convertToAsciiGraph(
       // literally — see issue #65.
       displayLabel: stripFormattingTags(mNode.label),
       // Preserve shape from parser for shape-aware rendering
-      shape: ASCII_SHAPE[mNode.shape] ?? mNode.shape,
+      shape:
+        bare.has(id) && !onEdge.has(id)
+          ? 'class-name'
+          : (ASCII_SHAPE[mNode.shape] ?? mNode.shape),
       index,
       gridCoord: null,
       drawingCoord: null,
@@ -124,7 +182,7 @@ export function convertToAsciiGraph(
     if (subgraphIds.has(sourceId)) {
       const mSg = subgraphById.get(sourceId)
       const resolved = mSg
-        ? resolveSubgraphEndpoint(mSg, parsed, 'exit')
+        ? resolveSubgraphEndpoint(mSg, parsed, 'exit', bare)
         : undefined
       if (resolved) sourceId = resolved
       clusterMSg = resolved ? mSg : undefined
@@ -132,7 +190,7 @@ export function convertToAsciiGraph(
     if (subgraphIds.has(targetId)) {
       const mSg = subgraphById.get(targetId)
       const resolved = mSg
-        ? resolveSubgraphEndpoint(mSg, parsed, 'entry')
+        ? resolveSubgraphEndpoint(mSg, parsed, 'entry', bare)
         : undefined
       if (resolved) targetId = resolved
       clusterTargetMSg = resolved ? mSg : undefined
@@ -271,13 +329,17 @@ function resolveSubgraphEndpoint(
   mSg: MermaidSubgraph,
   parsed: MermaidGraph,
   end: 'entry' | 'exit',
+  bare: ReadonlySet<string>,
 ): string | undefined {
   const memberIds = new Set<string>()
   collectAllMemberNodeIds(mSg, memberIds)
   if (memberIds.size === 0) return undefined
 
   // Preserve overall node declaration order for deterministic selection.
-  const orderedIds = [...parsed.nodes.keys()].filter((id) => memberIds.has(id))
+  // A bare empty-subgraph title cannot take an arrowhead: prefer real members.
+  const all = [...parsed.nodes.keys()].filter((id) => memberIds.has(id))
+  const real = all.filter((id) => !bare.has(id))
+  const orderedIds = real.length > 0 ? real : all
   if (orderedIds.length === 0) return undefined
 
   const candidates = orderedIds.filter((id) =>

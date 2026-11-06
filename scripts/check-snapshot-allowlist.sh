@@ -141,6 +141,9 @@ ALLOWLIST=(
   # component test; the files under packages/ascii-renderer/src/__tests__/
   # are reviewed via `git diff` (`vitest -u`).
   "packages/ascii-renderer/src/__tests__/ascii-tall-slanted-shapes-2164.test.ts"
+  # SVG + ASCII goldens for an empty subgraph (#2694): the repo rule is an SVG
+  # and an ASCII snapshot per case; reviewed via `git diff` (`vitest -u`).
+  "packages/ascii-renderer/src/__tests__/ascii-empty-subgraph-2694.test.ts"
   # SVG + ASCII goldens for numeric x-axis ranges on an xychart (#1592): the
   # repo rule is an SVG and an ASCII snapshot per case. Not a component test;
   # the files under src/__tests__/__snapshots__/ are reviewed via `git diff`
