@@ -3,6 +3,8 @@ import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
 import { layoutFlowchart, UnsupportedFlowchartError } from '../src/index.ts'
 
+// Provenance (#2679): the .expected.json files are this package's own output (class b), kept
+// honest by the oracle against the pinned mermaid; d1-d3 route edges differently in 12.3.0.
 // No Chromium here: expected JSON is committed. Its agreement with real mermaid is checked by
 // `pnpm run elk-layout:oracle`. Regenerate after an intentional change with
 // `UPDATE_ELK_LAYOUT=1 pnpm exec vitest run -c config/vitest.config.ts packages/elk-layout`

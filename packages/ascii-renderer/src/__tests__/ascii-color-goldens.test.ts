@@ -14,6 +14,9 @@
  *   ---
  *   <expected output>
  *
+ * Provenance (#2679): every expected value is this renderer's own output, accepted once
+ * (class b); mermaid.js has no terminal colour output to take it from.
+ *
  * Lines are compared with trailing whitespace trimmed (the repo's
  * .editorconfig strips it from every file); nothing else is normalized.
  */

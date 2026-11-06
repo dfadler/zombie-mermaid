@@ -4,6 +4,7 @@
  * around its notes (loopLine right edge 533 vs note right edge 523 for the
  * issue source), and so does the ASCII wall now.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'

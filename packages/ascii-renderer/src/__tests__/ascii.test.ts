@@ -5,7 +5,11 @@
  * Each .txt file contains mermaid input above a `---` separator
  * and the expected ASCII/Unicode output below it.
  *
- * Test data: 44 ASCII files + 22 Unicode files = 66 total.
+ * Provenance (#2679): of testdata/ascii + unicode + markdown, 108 files (66 + 41 + 1) came in
+ * with the beautiful-mermaid v0.1.0 import, itself a port of mermaid-ascii's cases (class c);
+ * the rest were added here, expected output being this renderer's own, accepted once (class b).
+ * None was taken from mermaid.js, so a golden asserts "unchanged", not "matches mermaid".
+ * testdata/color/** (ascii-color-goldens.test.ts) is class b too.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
