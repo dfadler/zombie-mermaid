@@ -1,0 +1,230 @@
+/**
+ * Topology agreement between the ASCII grid and the ELK layout (#2645, PR 1).
+ *
+ * Per node pair: the flow-axis layer relation (same layer / before / after;
+ * ELK tolerance 20 px, grid tolerance 1 cell, RL and BT mirrored on the ASCII
+ * side only), the in-layer order for pairs ELK puts in one layer, and a
+ * normalised cross-axis alignment (centre offset in node widths, so pixels and
+ * cells compare). Per edge end: the face against the ELK hints. Measured from
+ * the grid's own coordinates through `renderGraphAscii`'s `afterDraw` hook.
+ * `scripts/ascii-topology.ts` runs it over the gallery; Q3 of #2645 gates each
+ * ASCII placement PR on these numbers not dropping.
+ */
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
+import {
+  DEFAULT_ASCII_THEME,
+  type AsciiFace,
+  type AsciiLayoutHints,
+} from '@zombie-mermaid/ascii-renderer'
+import { renderGraphAscii } from '../../packages/ascii-renderer/src/flowchart.ts'
+import type { AsciiGraph } from '../../packages/ascii-renderer/src/types.ts'
+import {
+  asciiLayoutProvider,
+  LAYER_TOLERANCE,
+} from '../../src/ascii-layout-provider.ts'
+import { layoutFlowchartSync } from '@zombie-mermaid/svg-renderer'
+
+export const GRID_TOLERANCE = 1
+/** Two nodes agree on alignment when their normalised offsets differ by at most this many node widths. */
+export const ALIGN_TOLERANCE = 0.5
+
+/** A node centre and its cross-axis size. `main`/`cross` are along/across the flow in SVG orientation. */
+export interface Spot {
+  main: number
+  cross: number
+  size: number
+}
+
+export interface Counts {
+  layerPairs: number
+  layerOk: number
+  orderPairs: number
+  orderOk: number
+  alignOk: number
+  /** Sum of |normalised offset difference| over all pairs, for the mean. */
+  alignDev: number
+  faceEnds: number
+  faceOk: number
+}
+
+export const emptyCounts = (): Counts => ({
+  layerPairs: 0,
+  layerOk: 0,
+  orderPairs: 0,
+  orderOk: 0,
+  alignOk: 0,
+  alignDev: 0,
+  faceEnds: 0,
+  faceOk: 0,
+})
+
+export const addCounts = (a: Counts, b: Counts): Counts => {
+  const out = emptyCounts()
+  for (const k of Object.keys(out) as (keyof Counts)[]) out[k] = a[k] + b[k]
+  return out
+}
+
+const rel = (d: number, tol: number): number =>
+  Math.abs(d) <= tol ? 0 : Math.sign(d)
+
+/**
+ * Pairwise comparison of node spots, both in SVG orientation (the grid's main
+ * axis already mirrored for RL/BT).
+ */
+export function compareSpots(
+  elk: Record<string, Spot>,
+  grid: Record<string, Spot>,
+): Counts {
+  const c = emptyCounts()
+  const ids = Object.keys(elk).filter((i) => grid[i])
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const [ea, eb] = [elk[ids[i]!]!, elk[ids[j]!]!]
+      const [ga, gb] = [grid[ids[i]!]!, grid[ids[j]!]!]
+      const er = rel(ea.main - eb.main, LAYER_TOLERANCE)
+      c.layerPairs++
+      if (er === rel(ga.main - gb.main, GRID_TOLERANCE)) c.layerOk++
+      if (er === 0) {
+        c.orderPairs++
+        if (Math.sign(ea.cross - eb.cross) === Math.sign(ga.cross - gb.cross))
+          c.orderOk++
+      }
+      const dev = Math.abs(
+        (ea.cross - eb.cross) / ((ea.size + eb.size) / 2) -
+          (ga.cross - gb.cross) / ((ga.size + gb.size) / 2),
+      )
+      c.alignDev += dev
+      if (dev <= ALIGN_TOLERANCE) c.alignOk++
+    }
+  }
+  return c
+}
+
+/** The faces a grid end direction can stand for; a slant counts as either neighbour. */
+const ADJ: Record<string, AsciiFace[]> = {
+  '1,0': ['T'],
+  '1,2': ['B'],
+  '0,1': ['L'],
+  '2,1': ['R'],
+  '2,0': ['T', 'R'],
+  '0,0': ['T', 'L'],
+  '2,2': ['B', 'R'],
+  '0,2': ['B', 'L'],
+  '1,1': [],
+}
+const MIRROR_H: Record<AsciiFace, AsciiFace> = {
+  T: 'T',
+  B: 'B',
+  L: 'R',
+  R: 'L',
+}
+const MIRROR_V: Record<AsciiFace, AsciiFace> = {
+  T: 'B',
+  B: 'T',
+  L: 'L',
+  R: 'R',
+}
+
+const facesOf = (d: { x: number; y: number }, dir: string): AsciiFace[] =>
+  (ADJ[`${d.x},${d.y}`] ?? []).map((f) =>
+    dir === 'RL' ? MIRROR_H[f] : dir === 'BT' ? MIRROR_V[f] : f,
+  )
+
+export interface GridRender {
+  spots: Record<string, Spot>
+  /** Grid edge ends as faces (already un-mirrored to the SVG side), in graph edge order. */
+  edges: { from: string; to: string; start: AsciiFace[]; end: AsciiFace[] }[]
+}
+
+/** Draws the sample and reads node spots and edge-end faces off the grid. */
+export function readGrid(source: string): GridRender & { direction: string } {
+  const parsed = parseMermaid(source)
+  const dir = parsed.direction
+  const horiz = dir === 'LR' || dir === 'RL'
+  const flip = dir === 'RL' || dir === 'BT' ? -1 : 1
+  const out: GridRender = { spots: {}, edges: [] }
+  const afterDraw = (g: AsciiGraph): void => {
+    for (const n of g.nodes) {
+      if (!n.gridCoord || !n.drawingCoord || !n.drawing) continue
+      const w = n.drawing.length
+      const h = n.drawing[0]?.length ?? 1
+      // Order/layer use grid cells (the unit the layout works in); size uses
+      // drawn characters, so a wide box reads as wide.
+      const gx = n.gridCoord.x + 1
+      const gy = n.gridCoord.y + 1
+      out.spots[n.name] = {
+        main: flip * (horiz ? gx : gy),
+        cross: horiz ? gy : gx,
+        size: horiz ? h : w,
+      }
+    }
+    for (const e of g.edges) {
+      out.edges.push({
+        from: e.from.name,
+        to: e.to.name,
+        start: facesOf(e.startDir, dir),
+        end: facesOf(e.endDir, dir),
+      })
+    }
+  }
+  renderGraphAscii(
+    parsed,
+    {
+      useAscii: false,
+      paddingX: 5,
+      paddingY: 5,
+      boxBorderPadding: 1,
+      graphDirection: 'TD',
+    },
+    'none',
+    DEFAULT_ASCII_THEME,
+    {},
+    { afterDraw },
+  )
+  return { ...out, direction: dir }
+}
+
+/** Counts the grid's edge ends whose face is the hints' face (matched by from/to, in order). */
+export function compareFaces(
+  grid: GridRender['edges'],
+  hints: AsciiLayoutHints,
+): Counts {
+  const c = emptyCounts()
+  const used = new Set<number>()
+  for (const h of hints.edges) {
+    const i = grid.findIndex(
+      (g, k) => !used.has(k) && g.from === h.from && g.to === h.to,
+    )
+    if (i < 0) continue
+    used.add(i)
+    c.faceEnds += 2
+    if (grid[i]!.start.includes(h.start.face)) c.faceOk++
+    if (grid[i]!.end.includes(h.end.face)) c.faceOk++
+  }
+  return c
+}
+
+/** Full measure for one flowchart/state source: grid versus ELK. */
+export function measureSample(source: string): Counts {
+  const parsed = parseMermaid(source)
+  const { spots, edges, direction } = readGrid(source)
+  const pos = layoutFlowchartSync(parsed)
+  const horiz = direction === 'LR' || direction === 'RL'
+  // ELK stays in SVG orientation; the grid side was mirrored to match it.
+  const elk: Record<string, Spot> = {}
+  for (const n of pos.nodes) {
+    const m = horiz ? n.x + n.width / 2 : n.y + n.height / 2
+    elk[n.id] = {
+      main: m,
+      cross: horiz ? n.y + n.height / 2 : n.x + n.width / 2,
+      size: horiz ? n.height : n.width,
+    }
+  }
+  const c = compareSpots(elk, spots)
+  const hints = asciiLayoutProvider.graph!(parsed)
+  return hints ? addCounts(c, compareFaces(edges, hints)) : c
+}
+
+/** A sample is exact when every layer and in-layer-order pair agrees. */
+export const isExact = (c: Counts): boolean =>
+  c.layerOk === c.layerPairs && c.orderOk === c.orderPairs
