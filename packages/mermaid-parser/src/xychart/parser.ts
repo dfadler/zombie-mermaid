@@ -47,12 +47,21 @@ export function parseXYChart(lines: Statement[]): XYChart {
       title = decodeMermaidEntities(titleMatch[1]!)
       continue
     }
+    // Unquoted: letters, digits and spaces only, spaces dropped (mermaid 12.3.0, #2728)
+    const bareTitle = line.match(/^title\s+([A-Za-z0-9\s]+?)\s*$/)
+    if (bareTitle) {
+      title = bareTitle[1]!.replace(/\s+/g, '')
+      continue
+    }
 
     // x-axis with categories: x-axis "Title" [a, b, c] or x-axis [a, b, c]
-    const xCatMatch = line.match(/^x-axis\s+(?:"([^"]*)"\s*)?\[([^\]]+)\]/)
+    const xCatMatch = line.match(
+      /^x-axis\s+(?:"([^"]*)"\s*|([A-Za-z0-9]+)\s*)?\[([^\]]+)\]/,
+    )
     if (xCatMatch) {
       if (xCatMatch[1]) xAxis.title = decodeMermaidEntities(xCatMatch[1])
-      xAxis.categories = splitCategoryList(xCatMatch[2]!).map((s) =>
+      else if (xCatMatch[2]) xAxis.title = xCatMatch[2]
+      xAxis.categories = splitCategoryList(xCatMatch[3]!).map((s) =>
         decodeMermaidEntities(categoryLabel(s.trim(), line, stmt.line)),
       )
       continue
@@ -60,26 +69,28 @@ export function parseXYChart(lines: Statement[]): XYChart {
 
     // x-axis with range: x-axis "Title" min --> max or x-axis min --> max
     const xRangeMatch = line.match(
-      /^x-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
+      /^x-axis\s+(?:"([^"]*)"\s+|([A-Za-z][A-Za-z0-9]*)\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
     )
     if (xRangeMatch) {
       if (xRangeMatch[1]) xAxis.title = decodeMermaidEntities(xRangeMatch[1])
+      else if (xRangeMatch[2]) xAxis.title = xRangeMatch[2]
       xAxis.range = {
-        min: parseFloat(xRangeMatch[2]!),
-        max: parseFloat(xRangeMatch[3]!),
+        min: parseFloat(xRangeMatch[3]!),
+        max: parseFloat(xRangeMatch[4]!),
       }
       continue
     }
 
     // y-axis with range: y-axis "Title" min --> max or y-axis min --> max
     const yRangeMatch = line.match(
-      /^y-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
+      /^y-axis\s+(?:"([^"]*)"\s+|([A-Za-z][A-Za-z0-9\s]*?)\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
     )
     if (yRangeMatch) {
       if (yRangeMatch[1]) yAxis.title = decodeMermaidEntities(yRangeMatch[1])
+      else if (yRangeMatch[2]) yAxis.title = yRangeMatch[2].replace(/\s+/g, '')
       yAxis.range = {
-        min: parseFloat(yRangeMatch[2]!),
-        max: parseFloat(yRangeMatch[3]!),
+        min: parseFloat(yRangeMatch[3]!),
+        max: parseFloat(yRangeMatch[4]!),
       }
       continue
     }
@@ -88,6 +99,11 @@ export function parseXYChart(lines: Statement[]): XYChart {
     const yTitleOnly = line.match(/^y-axis\s+"([^"]+)"\s*$/)
     if (yTitleOnly) {
       yAxis.title = decodeMermaidEntities(yTitleOnly[1]!)
+      continue
+    }
+    const yBareTitle = line.match(/^y-axis\s+([A-Za-z][A-Za-z0-9\s]*?)\s*$/)
+    if (yBareTitle) {
+      yAxis.title = yBareTitle[1]!.replace(/\s+/g, '')
       continue
     }
 

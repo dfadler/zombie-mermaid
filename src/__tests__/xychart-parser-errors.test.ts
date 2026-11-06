@@ -80,9 +80,9 @@ describe('parseXYChart – malformed directives', () => {
     ).toThrow(/Malformed xychart-beta "x-axis" directive/)
   })
 
-  it('throws on an unquoted title', () => {
+  it('throws on an unquoted title with characters mermaid 12.3.0 cannot lex', () => {
     expect(() =>
-      parseXYChart(['xychart-beta', 'title Unquoted Title']),
+      parseXYChart(['xychart-beta', 'title Unquoted/Title']),
     ).toThrow(/Malformed xychart-beta "title" directive/)
   })
 
