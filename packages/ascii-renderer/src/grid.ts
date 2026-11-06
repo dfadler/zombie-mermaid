@@ -1401,8 +1401,8 @@ function sidestepSkippedNodes(graph: AsciiGraph): void {
     // Only the plain triangle (`A --> N --> C` and `A --> C`, no labels, no
     // other edge between them): dense fan-ins keep their routes.
     // ponytail: longer skipped chains and labeled triangles keep the old layout.
-    const [n] = found
-    if (found.length !== 1 || !n) return []
+    if (found.length !== 1) return []
+    const n = found[0]!
     const tri = [
       skip,
       ...graph.edges.filter((e) => e.from === skip.from && e.to === n),

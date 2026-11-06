@@ -49,4 +49,13 @@ describe('TD bypass edge beside the node it skips (#2731)', () => {
     const out = render({ paddingY: 1 }).join('\n')
     expect(out).not.toMatch(/▼ ▼/)
   })
+
+  it('steps aside every triangle in a chain', () => {
+    const out = renderMermaidASCII(
+      'graph TD\n  A --> B\n  B --> C\n  A --> C\n  C --> D\n  D --> E\n  C --> E',
+      { colorMode: 'none' },
+    )
+    // Two skipped nodes, B and D, each beside the spine: two heads per target.
+    expect(out.match(/▼ ▼/g)).toHaveLength(2)
+  })
 })
