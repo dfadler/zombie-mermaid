@@ -14,8 +14,8 @@
     "packages/mermaid-parser/dist/index.cjs": 20710,
     "packages/svg-renderer/dist/index.js": 64800,
     "packages/svg-renderer/dist/index.cjs": 65350,
-    "packages/ascii-renderer/dist/index.js": 78900,
-    "packages/ascii-renderer/dist/index.cjs": 79100,
+    "packages/ascii-renderer/dist/index.js": 78950,
+    "packages/ascii-renderer/dist/index.cjs": 79150,
     "packages/mcp/dist/index.js": 4571,
     "packages/mcp/dist/index.cjs": 7690
   },
@@ -28,7 +28,7 @@
     "packages/core/dist": 212685,
     "packages/mermaid-parser/dist": 200559,
     "packages/svg-renderer/dist": 458850,
-    "packages/ascii-renderer/dist": 478400,
+    "packages/ascii-renderer/dist": 478600,
     "packages/mcp/dist": 41310
   }
 }

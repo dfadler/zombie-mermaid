@@ -124,11 +124,9 @@ describe('ASCII class diagram — multi-parent / overlap resolution (issue #972)
     expect(earlySibling.x1).toBeLessThan(childA.x0)
   })
 
-  it('a block with no qualifying parents (a rootless cycle with two same-level "parent" edges) keeps its plain baseline position', () => {
-    // A and B mutually reference each other with no external root: both
-    // land at level 0, and neither's same-level "parent" edge qualifies --
-    // #972 must not spread or converge this shape, only #971's untouched
-    // no-resolvable-parents fallback applies.
+  it('a mutual A <-> B pair with no external root stacks A over B (#2668)', () => {
+    // Neither has a root above it; the leveling drops B -> A as the back
+    // edge, so A sits above B rather than both sharing one row.
     const src = `classDiagram
   class A
   class B
@@ -137,8 +135,7 @@ describe('ASCII class diagram — multi-parent / overlap resolution (issue #972)
     const ascii = renderMermaidASCII(src, { useAscii: true })
     const a = findBoxRect(ascii, 'A')
     const b = findBoxRect(ascii, 'B')
-    expect(a.x0).toBe(0)
-    expect(a.x1).toBeLessThan(b.x0)
+    expect(a.y1).toBeLessThan(b.y0)
   })
 
   // Regression for a CodeRabbit finding on #972's own PR (thread
@@ -149,10 +146,9 @@ describe('ASCII class diagram — multi-parent / overlap resolution (issue #972)
   // *between* them ahead of its own position, since it hadn't been placed
   // yet when the merged pair's combined placement consumed the columns it
   // would have occupied.
-  it('an unrelated class declared between two same-parent-set siblings with no qualifying parent keeps its own declaration-order position', () => {
-    // Q and R share the exact same parent-id set ({P}), but P is at the
-    // same level as Q/R (a 3-way mutual-reference cycle), so neither
-    // qualifies -- both are "no resolvable parents" blocks on their own.
+  it('an unrelated root declared between two same-parent-set siblings keeps its own row (#2668)', () => {
+    // Q and R share the parent set {P} and P is in a cycle with both; the
+    // leveling puts P above them (back edges Q -> P, R -> P go up).
     // Interloper is a plain, unrelated root declared between Q and R.
     const src = `classDiagram
   class P
@@ -167,9 +163,11 @@ describe('ASCII class diagram — multi-parent / overlap resolution (issue #972)
     const q = findBoxRect(ascii, 'Q')
     const interloper = findBoxRect(ascii, 'Interloper')
     const r = findBoxRect(ascii, 'R')
-    // Declared order Q, Interloper, R must survive as rendered left-to-right order.
-    expect(q.x1).toBeLessThan(interloper.x0)
-    expect(interloper.x1).toBeLessThan(r.x0)
+    const p = findBoxRect(ascii, 'P')
+    expect(p.y1).toBeLessThan(q.y0)
+    expect(p.y1).toBeLessThan(r.y0)
+    expect(q.x1).toBeLessThan(r.x0)
+    expect(rectsOverlap(interloper, p)).toBe(false)
   })
 
   // Regression for a CodeRabbit finding on #972's own PR (thread

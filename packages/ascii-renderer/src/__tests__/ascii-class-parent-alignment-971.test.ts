@@ -63,12 +63,10 @@ describe('ASCII class diagram — single-parent x-alignment (issue #971)', () =>
     expect(lonely.x0).toBe(0)
   })
 
-  it('a class whose only parent edges are same-level (a rootless relationship cycle) is unaffected', () => {
-    // A -> B -> C -> A has no external root: the level-BFS puts every
-    // member at level 0 together, but the `parents` map still records
-    // each one's in-cycle predecessor. That predecessor is same-level, not
-    // strictly shallower, so it doesn't qualify -- every member keeps its
-    // plain declaration-order position, same as before this fix.
+  it('a rootless relationship cycle stacks, its back edge running up (#2668)', () => {
+    // A -> B -> C -> A has no external root. The leveling drops the back
+    // edge C -> A, so the members stack A over B over C instead of sharing
+    // one row (which left A -> B and B -> C undrawn).
     const src = `classDiagram
   class A
   class B
@@ -80,9 +78,8 @@ describe('ASCII class diagram — single-parent x-alignment (issue #971)', () =>
     const a = findBoxRect(ascii, 'A')
     const b = findBoxRect(ascii, 'B')
     const c = findBoxRect(ascii, 'C')
-    expect(a.x0).toBe(0)
-    expect(a.x0).toBeLessThan(b.x0)
-    expect(b.x0).toBeLessThan(c.x0)
+    expect(a.y1).toBeLessThan(b.y0)
+    expect(b.y1).toBeLessThan(c.y0)
   })
 
   // Two children sharing the exact same single parent are a *multi-member*

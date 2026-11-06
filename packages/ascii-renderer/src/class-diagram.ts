@@ -480,30 +480,42 @@ export function renderClassAscii(
     childSet.add(childId)
   }
 
-  // BFS from roots (classes that have no parents) to assign levels.
-  // Cap at classes.length - 1 to prevent infinite loops on cyclic graphs
-  // (e.g. View --> Model and Model ..> View would otherwise push levels
-  // upward forever). In a DAG the longest path has at most N-1 edges.
+  // Longest-path levels over the relationships with each cycle's back edge
+  // dropped. A DFS from the roots (then from the first-declared unvisited
+  // class, so a rootless cycle still gets an entry point) finds the back
+  // edges: an edge into a class still on the DFS stack. Ignoring them makes
+  // the graph a DAG, so a cycle stacks top to bottom and its back edge runs
+  // upward, as Mermaid draws it, instead of the cycle collapsing onto one
+  // row with its forward edges undrawn.
   const level = new Map<string, number>()
   const roots = diagram.classes.filter(
     (c) => !parents.has(c.id) || parents.get(c.id)!.size === 0,
   )
-  const queue: string[] = roots.map((c) => c.id)
-  for (const id of queue) level.set(id, 0)
-
-  const levelCap = diagram.classes.length - 1
-  let qi = 0
-  while (qi < queue.length) {
-    const id = queue[qi++]!
-    const childSet = children.get(id)
-    if (!childSet) continue
-    for (const childId of childSet) {
-      const newLevel = (level.get(id) ?? 0) + 1
-      if (newLevel > levelCap) continue // Cycle detected — skip to prevent infinite loop
-      if (!level.has(childId) || level.get(childId)! < newLevel) {
-        level.set(childId, newLevel)
-        queue.push(childId)
-      }
+  const onStack = new Set<string>()
+  const done = new Set<string>()
+  const finished: string[] = []
+  const forward = new Map<string, string[]>()
+  const visit = (id: string): void => {
+    onStack.add(id)
+    const out: string[] = []
+    for (const childId of children.get(id) ?? []) {
+      if (onStack.has(childId)) continue // Back edge
+      out.push(childId)
+      if (!done.has(childId)) visit(childId)
+    }
+    forward.set(id, out)
+    onStack.delete(id)
+    done.add(id)
+    finished.push(id)
+  }
+  for (const c of [...roots, ...diagram.classes]) {
+    if (!done.has(c.id)) visit(c.id)
+  }
+  for (const id of finished.reverse()) {
+    const lv = level.get(id) ?? 0
+    level.set(id, lv)
+    for (const childId of forward.get(id)!) {
+      if ((level.get(childId) ?? 0) < lv + 1) level.set(childId, lv + 1)
     }
   }
 
@@ -897,14 +909,12 @@ export function renderClassAscii(
   {
     const byPair = new Map<string, number[]>()
     diagram.relationships.forEach((rel, i) => {
-      if (!relGroupSize.has(i)) return
       const key = `${rel.from}>${rel.to}`
       byPair.set(key, [...(byPair.get(key) ?? []), i])
     })
     for (const idx of byPair.values()) {
       const rel = diagram.relationships[idx[0]!]!
-      if (idx.length < 2 || level.get(rel.from)! - level.get(rel.to)! < 2)
-        continue
+      if (level.get(rel.from)! - level.get(rel.to)! < 2) continue
       const widest = Math.max(
         ...idx.map((i) =>
           labelCellWidth(diagram.relationships[i]!.label ?? ''),
@@ -914,7 +924,8 @@ export function renderClassAscii(
         fromId: rel.from,
         toId: rel.to,
         firstIndex: idx[0]!,
-        halfSpan: Math.ceil(relGroupSpread.get(idx[0]!)! / 2 + widest / 2) + 1,
+        halfSpan:
+          Math.ceil((relGroupSpread.get(idx[0]!) ?? 0) / 2 + widest / 2) + 1,
       })
     }
   }
@@ -2059,6 +2070,9 @@ export function renderClassAscii(
       // (mirror of the downward case), then vertical up to midY
       drawJog(fromTY - 1, fromAnchorX, fromCX, lineH, false)
       for (let y = fromTY - (fromJogs ? 2 : 1); y >= midY; y--) {
+        // Another edge's arrowhead into this class's top (a forward edge of
+        // a cycle sharing the column) stays visible.
+        if (rc[fromCX]?.[y] === 'arrow') continue
         setCGuarded(fromCX, y, lineV, 'line')
       }
 

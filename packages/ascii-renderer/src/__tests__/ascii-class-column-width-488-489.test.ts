@@ -308,12 +308,13 @@ describe('ASCII class diagram — two independent multi-relationship groups in o
       { colorMode: 'none' },
     ).split('\n')
 
-    const cRowCombined = combined.find((l) => l.includes('│ C │'))!
-    const cRowIsolated = isolated.find((l) => l.includes('│ C │'))!
-    const distanceCombined =
-      cRowCombined.indexOf('D') - cRowCombined.indexOf('C')
-    const distanceIsolated =
-      cRowIsolated.indexOf('D') - cRowIsolated.indexOf('C')
+    // The pairs stack (A over B, C over D; #2668), so the C-D lanes are
+    // what a leaked width would spread: compare the gap between the x and y
+    // labels on their shared row.
+    const gap = (lines: string[]): number =>
+      /x( +)y/.exec(lines.find((l) => /x +y/.test(l))!)![1]!.length
+    const distanceCombined = gap(combined)
+    const distanceIsolated = gap(isolated)
     expect(distanceCombined).toBe(distanceIsolated)
   })
 })
