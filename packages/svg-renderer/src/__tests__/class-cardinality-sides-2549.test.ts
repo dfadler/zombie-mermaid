@@ -57,4 +57,16 @@ describe('class cardinality label sides (#2549)', () => {
     expect(pos(svg, '1').y).toBeGreaterThan(pos(svg, '9').y)
     expect(pos(svg, '1').anchor).toBe('middle')
   })
+
+  // #2721: mermaid 12.3.0 sets a label 6 further out, along and across the
+  // edge, when its end carries a marker, so it clears the marker.
+  it.each([
+    ['start', 'A "1" <|-- B', 'A "1" --> B'],
+    ['end', 'A --> "1" B', 'A <-- "1" B'],
+  ])('%s marker pushes the label 6 further out', (_n, marked, plain) => {
+    const a = pos(renderMermaidSVG(`classDiagram\n  ${marked}`), '1')
+    const b = pos(renderMermaidSVG(`classDiagram\n  ${plain}`), '1')
+    expect(Math.abs(a.x - b.x)).toBeCloseTo(6, 1)
+    expect(Math.abs(a.y - b.y)).toBeCloseTo(6, 1)
+  })
 })
