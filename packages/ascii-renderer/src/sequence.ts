@@ -235,17 +235,16 @@ export function renderSequenceAscii(
   // after the layout passes below.
   function wrapAvail(block: Block): number {
     const xs: number[] = []
-    for (let m = block.startIndex; m <= block.endIndex; m++) {
-      const msg = diagram.messages[m]
-      if (!msg) break
+    const last = Math.min(block.endIndex, diagram.messages.length - 1)
+    for (let m = block.startIndex; m <= last; m++) {
+      const msg = diagram.messages[m]!
       const f = llX[actorIndexOf(msg.from)]!
       xs.push(f, llX[actorIndexOf(msg.to)]!)
       // A self-message's loop and label widen mermaid's block too.
       if (msg.from === msg.to) xs.push(f + selfExtent(msg), f - selfLeft(msg))
     }
-    const span = xs.length
-      ? Math.max(...xs) - Math.min(...xs)
-      : llX[llX.length - 1]! - llX[0]!
+    // A block with no messages is never laid out, so `xs` is never empty here.
+    const span = Math.max(...xs) - Math.min(...xs)
     return wrapBudget(span)
   }
   function headerLabelLines(block: Block): string[] {
