@@ -41,6 +41,7 @@ import {
   buildClusterExitRoute,
   buildClusterEntryRoute,
   clusterFaceCapacity,
+  clusterFlowGroup,
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
@@ -691,6 +692,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   const need = new Map<number, { siblings: number; pairs: Set<string> }>()
   for (const group of laneGroups) {
     const to = group[0]!.to
+    if (group[0]!.clusterSource && clusterFlowGroup(graph, group[0]!)) continue
     if (group[0]!.clusterSource) {
       // The target's side faces take the siblings two ways (`laneSide`).
       const cells = clusterFaceCapacity(group.length)
@@ -2065,7 +2067,9 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     : undefined
   if (clusterPlan?.edges.has(edge)) {
     const route =
-      edge.parallelLane && edge.parallelLane.index > 0
+      edge.parallelLane &&
+      edge.parallelLane.index > 0 &&
+      !clusterFlowGroup(graph, edge)
         ? buildClusterLaneRoute(graph, clusterPlan, edge)
         : buildClusterExitRoute(graph, clusterPlan, edge)
     if (route) {
