@@ -25,10 +25,16 @@ import { DEFAULTS } from './constants.ts'
 
 /** Centre-to-centre distance between neighbouring cells (a gap of 120 between tiles). */
 const PITCH = 200
-/** Space a group leaves between its border and what it holds. */
-const GROUP_PADDING = 40
-/** A service label hangs this far below its tile. */
-const LABEL_DROP = 20
+/**
+ * Space a group leaves between its border and the services it holds, measured
+ * on mermaid@12.3.0 (a lone service in a group: 165 x 182 around an 80px tile).
+ * The bottom also holds the label (`LABEL_DROP`).
+ */
+const GROUP_PADDING = 42.5
+/** Space an outer group leaves around the groups it holds (mermaid@12.3.0: 248 around 165, 331 around 248). */
+const NESTED_PADDING = 41.5
+/** A service label hangs this far below its tile (182 - 42.5 - 80 - 42.5 = 17). */
+const LABEL_DROP = 17
 /** Mermaid wraps a service label at 1.5 tiles (`iconSize * 1.5`). */
 const LABEL_WRAP = TILE * 1.5
 /** Mermaid draws an architecture edge 3px wide (`archEdgeWidth`). */
@@ -114,8 +120,11 @@ function ancestors(sgs: MermaidSubgraph[], id: string): string[] {
 
 /**
  * Coordinate of each index on one axis: `PITCH` apart, plus
- * `GROUP_PADDING` for every group that starts or stops spanning between two
- * neighbours, so a border and its padding fit between them.
+ * `NESTED_PADDING` for every group border between two neighbours beyond the
+ * first. Mermaid's fcose keeps 120px between the tiles of neighbours and 75px
+ * (`nodeSeparation`) between a border and the next box, so one border (a service
+ * next to a group) costs nothing, two (group beside group) +43 and three +80,
+ * measured on mermaid@12.3.0.
  */
 function axisCoords(
   spans: Map<string, [number, number]>,
@@ -128,7 +137,9 @@ function axisCoords(
     for (const [from, to] of spans.values()) {
       if (from <= i !== from <= i + 1 || to >= i !== to >= i + 1) edges++
     }
-    at.push(at[at.length - 1]! + PITCH + GROUP_PADDING * edges)
+    at.push(
+      at[at.length - 1]! + PITCH + NESTED_PADDING * Math.max(0, edges - 1),
+    )
   }
   return at
 }
@@ -180,15 +191,23 @@ export function layoutArchitectureGrid(
     const spread = Math.max(0, (textW - size) / 2)
     reach.set(
       id,
-      n.icon === undefined
-        ? box
-        : {
-            x: x - spread,
-            y,
-            width: size + spread * 2,
-            // Wrapped lines do not grow the box: Mermaid's padding holds them.
-            height: size + LABEL_DROP,
-          },
+      n.shape === 'junction'
+        ? // Mermaid lays a junction out as a full tile, so groups pad around that.
+          {
+            x: x + size / 2 - TILE / 2,
+            y: y + size / 2 - TILE / 2,
+            width: TILE,
+            height: TILE,
+          }
+        : n.icon === undefined
+          ? box
+          : {
+              x: x - spread,
+              y,
+              width: size + spread * 2,
+              // Wrapped lines do not grow the box: Mermaid's padding holds them.
+              height: size + LABEL_DROP,
+            },
     )
     nodes.push({
       id,
@@ -204,15 +223,28 @@ export function layoutArchitectureGrid(
   // A group is the padded box around its members and its inner groups.
   const groupBox = (sg: MermaidSubgraph): PositionedGroup => {
     const children = sg.children.map(groupBox)
-    let hull: Box | undefined
-    for (const id of sg.nodeIds) hull = union(hull, reach.get(id)!)
-    for (const c of children) hull = union(hull, c)
-    const h = hull ?? { x: 0, y: 0, width: 0, height: 0 }
-    const box = {
-      x: h.x - GROUP_PADDING,
-      y: h.y - GROUP_PADDING,
-      width: h.width + GROUP_PADDING * 2,
-      height: h.height + GROUP_PADDING * 2,
+    const pad = (b: Box, by: number): Box => ({
+      x: b.x - by,
+      y: b.y - by,
+      width: b.width + by * 2,
+      height: b.height + by * 2,
+    })
+    let held: Box | undefined
+    for (const id of sg.nodeIds) held = union(held, reach.get(id)!)
+    let inner: Box | undefined
+    for (const c of children) inner = union(inner, c)
+    const parts = [
+      ...(held ? [pad(held, GROUP_PADDING)] : []),
+      ...(inner ? [pad(inner, NESTED_PADDING)] : []),
+    ]
+    const box = parts.reduce<Box | undefined>(
+      (u, p) => union(u, p),
+      undefined,
+    ) ?? {
+      x: -GROUP_PADDING,
+      y: -GROUP_PADDING,
+      width: GROUP_PADDING * 2,
+      height: GROUP_PADDING * 2,
     }
     body.set(sg.id, box)
     return {
