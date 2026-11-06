@@ -73,11 +73,14 @@ describe('flowchart expanded shapes (#2552)', () => {
     expect(tb).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="70" height="10"/)
   })
 
-  it('fills the bar and the small circle from style and classDef', () => {
+  it('fills the bar from style and classDef, but ignores them on the small circle (#2680)', () => {
     const svg = renderMermaidSVG(
-      'flowchart LR\nD@{ shape: sm-circ }\nE@{ shape: fork }\nclassDef hot fill:#f00,stroke:#00f\nclass D,E hot\nD --> E',
+      'flowchart LR\nD@{ shape: sm-circ }\nE@{ shape: fork }\nclassDef hot fill:#f00,stroke:#00f\nclass D,E hot\nstyle D stroke-width:4px,stroke-dasharray:5 5\nD --> E',
     )
-    expect(svg).toMatch(/<circle [^>]*r="7" fill="#f00" stroke="#00f"/)
+    expect(svg).toMatch(
+      /<circle [^>]*r="7" fill="var\(--_node-fill\)" stroke="var\(--_node-stroke\)" stroke-width="0.75" \/>/,
+    )
+    expect(svg).not.toContain('stroke-dasharray="5')
     expect(svg).toMatch(/<rect [^>]*width="10" height="70" [^>]*fill="#f00"/)
   })
 })
