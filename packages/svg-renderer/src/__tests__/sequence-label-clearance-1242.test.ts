@@ -32,12 +32,17 @@ function textY(svg: string, label: string): number {
   return NaN
 }
 
-/** True when no lifeline segment of `actor` covers height `y`. */
-function lifelineClearAt(svg: string, actor: string, y: number): boolean {
-  return lifelineSegments(svg, actor).every((s) => y < s.y1 || y > s.y2)
+/** Centre y of the `<text>` whose content is `label` (skips `dy`, reads the real `y`). */
+function labelCy(svg: string, label: string): number {
+  for (const m of svg.matchAll(
+    /<text [^>]*\sy="([\d.]+)"[^>]*>([^<]*)<\/text>/g,
+  )) {
+    if (m[2] === label) return Number(m[1])
+  }
+  return NaN
 }
 
-describe('lifelines stay out of message labels (#1242)', () => {
+describe('lifelines run whole through labels, as in mermaid 12.3.0 (#1242, #2706)', () => {
   const svg = renderMermaidSVG(`sequenceDiagram
   participant A
   participant B
@@ -46,17 +51,19 @@ describe('lifelines stay out of message labels (#1242)', () => {
   A->>C: label crossing the middle lifeline
   A->>B: next`)
 
-  it('cuts the crossed lifeline around the label instead of running through it', () => {
-    const labelY = textY(svg, 'label crossing the middle lifeline')
-    expect(lifelineSegments(svg, 'B').length).toBeGreaterThan(1)
-    expect(lifelineClearAt(svg, 'B', labelY)).toBe(true)
+  it('does not cut the crossed lifeline around the label', () => {
+    const y = labelCy(svg, 'label crossing the middle lifeline')
+    const [b] = lifelineSegments(svg, 'B')
+    expect(lifelineSegments(svg, 'B')).toHaveLength(1)
+    expect(b!.y1).toBeLessThan(y)
+    expect(b!.y2).toBeGreaterThan(y)
   })
 
   it('leaves a lifeline whole where no label crosses it', () => {
     expect(lifelineSegments(svg, 'A')).toHaveLength(1)
   })
 
-  it('cuts lifelines around a block title tab', () => {
+  it('does not cut a lifeline under a block title tab', () => {
     const blockSvg = renderMermaidSVG(`sequenceDiagram
   participant A
   participant B
@@ -69,8 +76,10 @@ describe('lifelines stay out of message labels (#1242)', () => {
       /<g class="block"[^>]*>\s*<rect x="([\d.]+)" y="([\d.]+)"/,
     )
     const blockY = Number(rect?.[2])
-    expect(lifelineSegments(blockSvg, 'A').length).toBeGreaterThan(1)
-    expect(lifelineClearAt(blockSvg, 'A', blockY + 9)).toBe(true)
+    const [a] = lifelineSegments(blockSvg, 'A')
+    expect(lifelineSegments(blockSvg, 'A')).toHaveLength(1)
+    expect(a!.y1).toBeLessThan(blockY + 9)
+    expect(a!.y2).toBeGreaterThan(blockY + 9)
   })
 
   it('widens the gap so a self-message label clears the next lifeline', () => {
@@ -191,7 +200,7 @@ describe('lifelines stay out of message labels (#1242)', () => {
     expect(b!.x - a!.x).toBe(140)
   })
 
-  it('cuts lifelines around a bare divider label', () => {
+  it('does not cut a lifeline around a bare divider label', () => {
     const divSvg = renderMermaidSVG(`sequenceDiagram
   participant A
   participant B
@@ -200,9 +209,39 @@ describe('lifelines stay out of message labels (#1242)', () => {
   else other case
     B->>A: y
   end`)
-    const y = textY(divSvg, '[other case]')
-    expect(lifelineSegments(divSvg, 'A').length).toBeGreaterThan(1)
-    expect(lifelineClearAt(divSvg, 'A', y)).toBe(true)
+    expect(lifelineSegments(divSvg, 'A')).toHaveLength(1)
+  })
+
+  // Mermaid 12.3.0, label box to label box: 33.2px header to first message,
+  // 45px outer header to inner tab. Our 11px text is 14px tall, so the label
+  // centres are 14px further apart than the boxes' gap.
+  it('leaves mermaid 12.3.0 room between a header label and the first message (#2706)', () => {
+    const one = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  alt first
+    A->>B: one
+  end`)
+    expect(labelCy(one, 'one') - labelCy(one, '[first]')).toBeCloseTo(
+      33.2 + 14,
+      0,
+    )
+    const nested = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  loop outer
+    alt inner
+      A->>B: one
+    end
+  end`)
+    expect(labelCy(nested, '[inner]') - labelCy(nested, '[outer]')).toBeCloseTo(
+      45,
+      0,
+    )
+    expect(labelCy(nested, 'one') - labelCy(nested, '[inner]')).toBeCloseTo(
+      33.2 + 14,
+      0,
+    )
   })
 
   it('ignores unlabeled blocks and dividers', () => {

@@ -131,8 +131,10 @@ export function worstArch(a: Agreement): number | null {
  * drawn from (`layoutArchitectureGrid`; the oracle once scored the ELK layout
  * by mistake, which read 67-87% and prompted #2473 / #2557), all three samples
  * agree with mermaid@12.3.0 on every pair, so the floor holds that. A
- * regression guard on relative placement only: fcose's distances (group
- * sizes, the gap below a junction) are not reproduced.
+ * regression guard on relative placement only. A group's own size and the
+ * pitch across one to three group borders are fitted to mermaid@12.3.0
+ * (#2682); distances fcose leaves loose (a cross-group edge has no
+ * alignment constraint, so the gap below a junction varies) are not.
  */
 export const ARCH_FLOOR = 0.95
 

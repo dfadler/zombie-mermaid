@@ -947,7 +947,8 @@ classDiagram
     +int age
   }
   class Mineral
-  Animal <|-- Dog:::highlight
+  class Dog:::highlight
+  Animal <|-- Dog
   classDef default fill:#eef,stroke:#669
   classDef highlight fill:#f96,stroke:#333,stroke-width:2px
   style Mineral fill:#bbf,stroke:#f66,color:#fff
@@ -958,7 +959,8 @@ The same grammar as flowchart [Styling](#styling) above, sharing one
 implementation (`packages/core/src/style-directives.ts`) and one cascade: `classDef
 default` is the base for every class, a class's own style class (attached
 with `cssClass "A,B" name`, `class A,B name`, or the `:::name` shorthand on a
-declaration or either end of a relationship) overrides it property by
+declaration, or on either end of a relationship, which Mermaid 12.3.0 rejects but
+we accept) overrides it property by
 property, and an explicit `style ClassName ...` overrides both. `classDef
 a,b props` defines several classes at once. Mermaid's own class grammar only
 spells the attachment as `cssClass` or `:::`; the flowchart-style `class A,B
@@ -1930,9 +1932,9 @@ Not matched:
   the label centre sits 15 px above its arrow. Here the text is 11 px, actors 40 px, rows 40 px
   and the rise 10 px. The loop and the 30 px drop are mermaid's absolute sizes, so a self-message
   looks slightly larger against the text than in mermaid.
-- **Lifelines cut around other labels.** A lifeline crossed by a message label (#1242, #2280), a
-  block tab or an `else`/`and` label is cut around it; mermaid draws the line through the text.
-  Kept for legibility.
+
+Lifelines are no longer cut around message, block-tab or `else`/`and` labels: like mermaid
+12.3.0, each is one straight line ([#2706](https://github.com/dfadler/zombie-mermaid/issues/2706)).
 
 ## Sequence: `%%{init}%%` options and `link`/`links` ([#2589](https://github.com/dfadler/zombie-mermaid/issues/2589))
 
@@ -2056,6 +2058,7 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   x-axis category is labelled, even when neighbouring labels touch, as mermaid does (the
   #1243 thinning is gone from SVG). The ASCII renderer has its own layout and is unchanged:
   it still uses a -0.1..0.1 / 41.9..42.1 range for flat data and thins crowded labels.
+- **ASCII category labels widen the chart; they are never cut** ([#2698](https://github.com/dfadler/zombie-mermaid/issues/2698), checked against mermaid 12.3.0). Mermaid prints every category in full on a plot of fixed width and lets neighbours overlap; it does not truncate or rotate (`Engineering`, `ProductManagement`, `CustomerSuccess`, `HumanResources` in the long-label gallery sample). A terminal cannot overlap text, so the ASCII renderer widens every band until no two neighbouring words touch (one blank cell between them). A 60-column plot gives each of up to 10 categories `60 / n` columns, and `6` columns each beyond that; the bands only grow once a word label leaves less than one blank cell to its neighbour, so eight categories fit labels up to 6 characters and `Marketing` makes the whole chart wider. The chart is as wide as its labels need, with no cap. Numbers and dates are still thinned (every n-th shown) rather than widening the chart, where mermaid shows them all. Words in a horizontal chart already get a gutter as wide as the longest label.
 - **ASCII y-axis.** Mermaid has no ASCII output. The plot is 20 rows tall, fewer than
   mermaid's ~10 d3 ticks need once they round to rows, so the renderer labels every Nth
   tick (the smallest N that leaves an unlabeled row between labels) rather than putting

@@ -1,8 +1,8 @@
 /**
  * #2113: x-category and value-axis tick labels ran together or were
  * overwritten by their neighbour. Rule (xychart.ts thinLabels /
- * ellipsizeTouching): never two labels touching, nothing cut without an
- * ellipsis, every n-th numeric label shown when they do not fit.
+ * widenBandForLabels): never two labels touching, words are never cut (the
+ * bands widen, #2698), every n-th numeric label shown when they do not fit.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -23,14 +23,15 @@ const EIGHT = `xychart-beta
     bar [45, 32, 18, 25, 8, 12, 6, 15]`
 
 describe('xychart ASCII – label collisions (#2113)', () => {
-  it('shortens colliding words with an ellipsis instead of running them together', () => {
+  it('widens the bands to print colliding words in full, as mermaid does (#2698)', () => {
     const row = labelRow(render(EIGHT))
     expect(row).not.toContain('SalesMarketin')
+    expect(row).not.toContain('…')
     expect(row.trim().split(/\s+/)).toEqual([
       'Eng',
       'Sales',
-      'Marke…',
-      'Suppo…',
+      'Marketing',
+      'Support',
       'HR',
       'Finance',
       'Legal',
@@ -38,10 +39,22 @@ describe('xychart ASCII – label collisions (#2113)', () => {
     ])
   })
 
-  it('uses a three-dot ellipsis in the ASCII charset', () => {
-    const row = labelRow(render(EIGHT, true))
-    expect(row).toContain('Mar...')
-    expect(row).not.toContain('…')
+  it('prints long multi-word categories in full in the ASCII charset too', () => {
+    const row = labelRow(
+      render(
+        `xychart-beta
+      x-axis [Engineering, "Product Management", "Customer Success", "Human Resources"]
+      bar [850, 420, 310, 180]`,
+        true,
+      ),
+    )
+    expect(row).not.toContain('...')
+    for (const l of [
+      'Product Management',
+      'Customer Success',
+      'Human Resources',
+    ])
+      expect(row).toContain(l)
   })
 
   it('leaves labels alone when they fit, even next to one long label', () => {

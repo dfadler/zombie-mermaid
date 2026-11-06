@@ -13,6 +13,7 @@ import {
   type XyLayout,
 } from '../scripts/lib/xychart-agreement.ts'
 import { MERMAID_CANNOT_PARSE } from '../scripts/lib/xychart-oracle-cases.ts'
+import { xychartSamples } from '../samples/xychart-samples-data.ts'
 import {
   scorecardMarkdown,
   summarize,
@@ -441,8 +442,10 @@ describe('extent edge cases (#2567)', () => {
     expect(parseOfficialXy(svg, false).axes).toBeUndefined()
   })
 
-  it('lists API Response Time as a sample mermaid cannot parse', () => {
-    expect(MERMAID_CANNOT_PARSE.has('API Response Time')).toBe(true)
+  it('lists no gallery sample as unparsable by mermaid (#2697)', () => {
+    expect(MERMAID_CANNOT_PARSE.size).toBe(0)
+    const api = xychartSamples.find((s) => s.title === 'API Response Time')
+    expect(api?.source).toContain('["/users"')
   })
 })
 

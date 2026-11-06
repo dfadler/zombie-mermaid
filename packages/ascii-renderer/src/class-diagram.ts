@@ -1172,6 +1172,64 @@ export function renderClassAscii(
       const visibleWidth = totalWidth - firstLeftPad - lastRightPad
       let blockDesiredLeft =
         desiredCenter - firstLeftPad - Math.floor(visibleWidth / 2)
+      // Siblings sharing a parent with a class an up fan runs past: the fan's
+      // column stays free between them (siblings declared before its first
+      // edge on the left, the rest on the right) instead of running through
+      // a sibling's box and hiding that sibling's own edge (#2705).
+      if (members.length > 1 && placedThisLevel.size === 0) {
+        const boxL = blockDesiredLeft + firstLeftPad
+        const crossed = upFans.filter((f) => {
+          if (!(lv > level.get(f.toId)! && lv < level.get(f.fromId)!))
+            return false
+          const t = placed.get(f.toId)!
+          const cx = t.x + Math.floor(t.width / 2)
+          return (
+            boxL <= cx + f.halfSpan && boxL + visibleWidth > cx - f.halfSpan
+          )
+        })
+        if (
+          crossed.length === 1 &&
+          ![...notesById.values()].some(
+            (n) => n.forClass !== undefined && members.includes(n.forClass),
+          )
+        ) {
+          const f = crossed[0]!
+          const t = placed.get(f.toId)!
+          const cx = t.x + Math.floor(t.width / 2)
+          const ownIdx = (m: string): number =>
+            diagram.relationships.findIndex((r) => r.to === m)
+          const before = members.filter((m) => ownIdx(m) < f.firstIndex)
+          const after = members.filter((m) => ownIdx(m) >= f.firstIndex)
+          // A run placed in a row spans its slots; the first member's left
+          // pad and the last member's right pad overhang the boxes.
+          const pad = (m: string): number => leftPadOf.get(m)!
+          const visible = (run: string[]): number =>
+            run.reduce((s, m) => s + slotWidthOf.get(m)! + hGap, -hGap) -
+            pad(run[0]!) -
+            (slotWidthOf.get(run[run.length - 1]!)! -
+              pad(run[run.length - 1]!) -
+              classBoxW.get(run[run.length - 1]!)!)
+          const leftBox =
+            cx - f.halfSpan - (before.length > 0 ? visible(before) : 0)
+          const rightBox = cx + f.halfSpan + 1
+          // Room on the left may need every placed class to move right.
+          const shift = Math.max(0, -(before.length > 0 ? leftBox : rightBox))
+          for (const p of placed.values()) p.x += shift
+          maxSlotEnd += shift
+          for (const [run, box] of [
+            [before, leftBox + shift],
+            [after, rightBox + shift],
+          ] as const) {
+            let slot = box - (run.length > 0 ? pad(run[0]!) : 0)
+            for (const m of run) {
+              placeAt(m, slot)
+              placedThisLevel.add(m)
+              slot = currentX
+            }
+          }
+          continue
+        }
+      }
       if (boxLeftOverride !== undefined) {
         // Room on the left may need every placed class to move right.
         const shift = Math.max(0, leftPadOf.get(id)! - boxLeftOverride)

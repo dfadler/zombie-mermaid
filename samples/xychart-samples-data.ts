@@ -921,7 +921,7 @@ export const xychartSamples: Sample[] = [
     description: 'P95 API response times across endpoints.',
     source: `xychart-beta
     title "P95 Response Time by Endpoint"
-    x-axis [/users, /orders, /products, /search, /auth, /reports]
+    x-axis ["/users", "/orders", "/products", "/search", "/auth", "/reports"]
     y-axis "ms" 0 --> 1000
     bar [120, 250, 180, 450, 80, 850]`,
   },
