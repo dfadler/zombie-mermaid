@@ -27,7 +27,6 @@ import {
   svgOpenTag,
   buildStyleBlock,
   renderMultilineText,
-  measureMultilineText,
   escapeAttr,
   f,
 } from '@zombie-mermaid/core'
@@ -121,11 +120,10 @@ export function renderSequenceSvg(
     if (isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 
-  // 2. Lifelines (solid vertical lines from actor to bottom), interrupted
-  //    where a message / block label sits on them so no line runs through text
-  const labelBoxes = collectLabelBoxes(diagram, fontSizes)
+  // 2. Lifelines (solid vertical lines from actor to bottom),
+  //    drawn straight through message / block labels, as Mermaid 12.3.0 does
   for (const lifeline of diagram.lifelines) {
-    parts.push(renderLifeline(lifeline, labelBoxes))
+    parts.push(renderLifeline(lifeline))
   }
 
   // 3. Activation boxes
@@ -378,132 +376,15 @@ const BLOCK_FRAME_DASH = '2 2'
 /** Dash pattern of a block's divider lines (`else`/`and`). */
 const BLOCK_DIVIDER_DASH = '3 3'
 
-/** A rectangle some text occupies; lifelines are cut around it. */
-interface LabelBox {
-  x0: number
-  x1: number
-  y0: number
-  y1: number
-}
-
-/** Breathing room kept between a label and the lifeline segments around it. */
-const LIFELINE_LABEL_PAD_X = 3
-const LIFELINE_LABEL_PAD_Y = 2
-
-/** Lifeline fragments shorter than this are dropped rather than drawn as a stub. */
-const LIFELINE_MIN_SEGMENT = 3
-
 /**
- * Footprints of every text label a lifeline can run through: message labels
- * (above the arrow, or beside a self-message loop), the block type tab, and
- * block divider (`else` / `and`) labels. Mirrors the positions
- * {@link renderMessage} and {@link renderBlock} draw them at (#1242).
- */
-function collectLabelBoxes(
-  diagram: PositionedSequenceDiagram,
-  fontSizes: FontSizes,
-): LabelBox[] {
-  const boxes: LabelBox[] = []
-  const measure = (text: string) =>
-    measureMultilineText(text, fontSizes.edgeLabel, FONT_WEIGHTS.edgeLabel)
-  const centred = (text: string, cx: number, cy: number) => {
-    const m = measure(text)
-    boxes.push({
-      x0: cx - m.width / 2,
-      x1: cx + m.width / 2,
-      y0: cy - m.height / 2,
-      y1: cy + m.height / 2,
-    })
-  }
-
-  for (const msg of diagram.messages) {
-    // A self-message's label is centred on its own lifeline (x1 === x2), and
-    // mermaid lets the lifeline run through it, so it is not cut (#2477).
-    if (!msg.label || msg.isSelf) continue
-    centred(msg.label, (msg.x1 + msg.x2) / 2, messageLabelCy(msg, fontSizes))
-  }
-
-  for (const block of diagram.blocks) {
-    if (isHighlightRect(block)) continue
-    const tabWidth = blockTabWidth(block, fontSizes.edgeLabel)
-    boxes.push({
-      x0: block.x,
-      x1: block.x + tabWidth,
-      y0: block.y,
-      y1: block.y + BLOCK_TAB_HEIGHT,
-    })
-    if (block.label) {
-      centred(
-        `[${block.label}]`,
-        block.x + (tabWidth + block.width) / 2,
-        blockLabelCy(block, fontSizes),
-      )
-    }
-    for (const divider of block.dividers) {
-      if (!divider.label) continue
-      centred(
-        `[${divider.label}]`,
-        block.x + block.width / 2,
-        dividerLabelCy(divider, fontSizes),
-      )
-    }
-  }
-  return boxes
-}
-
-/**
- * The y-ranges of `lifeline` left after cutting out every label box it
- * crosses, as `[y0, y1]` pairs top to bottom.
- */
-function lifelineSegments(
-  lifeline: Lifeline,
-  labelBoxes: readonly LabelBox[],
-): Array<[number, number]> {
-  const cuts = labelBoxes
-    .filter(
-      (b) =>
-        lifeline.x > b.x0 - LIFELINE_LABEL_PAD_X &&
-        lifeline.x < b.x1 + LIFELINE_LABEL_PAD_X &&
-        b.y1 + LIFELINE_LABEL_PAD_Y > lifeline.topY &&
-        b.y0 - LIFELINE_LABEL_PAD_Y < lifeline.bottomY,
-    )
-    .map((b): [number, number] => [
-      b.y0 - LIFELINE_LABEL_PAD_Y,
-      b.y1 + LIFELINE_LABEL_PAD_Y,
-    ])
-    .sort((a, b) => a[0] - b[0])
-
-  const segments: Array<[number, number]> = []
-  let cursor = lifeline.topY
-  for (const [c0, c1] of cuts) {
-    if (c0 - cursor >= LIFELINE_MIN_SEGMENT) segments.push([cursor, c0])
-    cursor = Math.max(cursor, c1)
-  }
-  if (lifeline.bottomY - cursor >= LIFELINE_MIN_SEGMENT) {
-    segments.push([cursor, lifeline.bottomY])
-  }
-  // A lifeline entirely under a label (or otherwise shorter than a stub)
-  // would vanish; keep it whole rather than drop the participant's line.
-  return segments.length > 0 ? segments : [[lifeline.topY, lifeline.bottomY]]
-}
-
-/**
- * Render a lifeline (solid vertical line from actor to bottom), as one
- * `<line>` per stretch between label boxes it would otherwise pass through.
+ * Render a lifeline (solid vertical line from actor to bottom), as one `<line>`.
  * Includes data-actor to link to its actor.
  */
-function renderLifeline(
-  lifeline: Lifeline,
-  labelBoxes: readonly LabelBox[],
-): string {
-  const line = lifelineSegments(lifeline, labelBoxes)
-    .map(
-      ([y0, y1]) =>
-        f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
-        f`x1="${lifeline.x}" y1="${y0}" x2="${lifeline.x}" y2="${y1}" ` +
-        `stroke="var(--_line)" stroke-width="${LIFELINE_STROKE}" />`,
-    )
-    .join('\n')
+function renderLifeline(lifeline: Lifeline): string {
+  const line =
+    f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
+    f`x1="${lifeline.x}" y1="${lifeline.topY}" x2="${lifeline.x}" y2="${lifeline.bottomY}" ` +
+    `stroke="var(--_line)" stroke-width="${LIFELINE_STROKE}" />`
   if (!lifeline.destroyed) return line
   // `destroy X`: the lifeline ends at the destroying message's row, marked
   // with a cross centred on it — the same glyph Mermaid uses. Drawn in the
