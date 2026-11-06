@@ -236,8 +236,6 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
 - **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
   value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
   correct reading (a known mermaid quirk).
-- **Unquoted labels keep their spaces.** `x-axis [New Users, Returning]` shows `New Users`;
-  mermaid 12.2.0 renders `NewUsers`.
 - **Value-axis padding, flat data and x labels match mermaid in SVG only**
   ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0).
   The value axis keeps half a label's height (half its width, horizontally) of padding
@@ -299,7 +297,8 @@ Not fixed ([#2101](https://github.com/dfadler/zombie-mermaid/issues/2101)). Merm
 the node's **left** face in `TD` and `BT`, and on its **top** face in `LR` and `RL`,
 alone or beside other edges. The ASCII renderer draws it on the flow-side faces: out of
 the bottom and back in at the right in `TD`/`BT`, out of the right and back in at the
-bottom in `LR`/`RL` (`selfReferenceDirection`, `edge-routing.ts`).
+bottom in `LR`/`RL` (`selfReferenceDirection`, `edge-routing.ts`). The SVG renderer does
+match mermaid 12.3.0 here ([#2740](https://github.com/dfadler/zombie-mermaid/issues/2740)).
 
 ```mermaid
 flowchart TD

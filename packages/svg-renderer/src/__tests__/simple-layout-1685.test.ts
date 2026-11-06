@@ -92,15 +92,15 @@ describe('layout: simple geometry', () => {
     )
   })
 
-  it('draws a self-loop beside the node, with room reserved for it', () => {
-    const g = lay('graph TD\n  P --> A\n  P --> X\n  A -->|again| A')
+  it('draws a self-loop on the left face, with room reserved for it (#2740)', () => {
+    const g = lay('graph TD\n  X --> P\n  P --> A\n  A -->|again| A')
     const loop = g.edges.find((e) => e.source === 'A' && e.target === 'A')!
     const a = node(g, 'A')
-    const loopRight = Math.max(...loop.points.map((p) => p.x))
-    expect(loopRight).toBeGreaterThan(a.x + a.width)
+    const loopLeft = Math.min(...loop.points.map((p) => p.x))
+    expect(loopLeft).toBeLessThan(a.x)
+    expect(Math.max(...loop.points.map((p) => p.x))).toBeLessThanOrEqual(a.x)
     expect(loop.labelPosition).toBeDefined()
-    // X shares A's rank, to its right: the loop does not run into it.
-    expect(node(g, 'X').x).toBeGreaterThan(loopRight)
+    expect(loop.labelPosition!.x).toBeLessThan(loopLeft)
   })
 
   it('keeps self-loops of a horizontal graph, and stacks several', () => {
