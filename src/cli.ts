@@ -10,10 +10,12 @@ import { THEMES } from '@zombie-mermaid/core'
 import { getPackageVersion } from './package-info.ts'
 import ELK from 'elkjs/lib/elk.bundled.js'
 import { registerElk } from '@zombie-mermaid/svg-renderer'
+import { registerAsciiLayoutFromElk } from './ascii-layout-provider.ts'
 
 // The CLI always has elkjs (it is a regular dependency of this package), so
 // register it explicitly rather than relying on the Node auto-load.
 registerElk(ELK)
+registerAsciiLayoutFromElk()
 
 const pkgVersion = getPackageVersion()
 

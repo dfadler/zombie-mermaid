@@ -19,6 +19,8 @@
 //   const svg = renderMermaidSVG('graph TD\n  A --> B')
 // ============================================================================
 
+import { registerAsciiLayoutFromElk } from './ascii-layout-provider.ts'
+
 export type {
   RenderOptions,
   MermaidGraph,
@@ -69,3 +71,7 @@ export {
   renderMermaidSync,
   renderMermaid,
 } from '@zombie-mermaid/svg-renderer'
+
+// ASCII layout hints from the ELK layout (#2645). The grid ignores them for
+// now; elkjs missing at call time falls back to grid placement.
+registerAsciiLayoutFromElk()
