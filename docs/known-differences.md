@@ -542,22 +542,19 @@ zombie-mermaid deliberately draws it: the SVG canvas is `2 * 50 + title width` b
 with the title inside, and the ASCII output prints the title (mermaid has no ASCII
 output). A diagram with no title, elements, or boundaries still renders nothing.
 
-## Flowchart SVG presentation (#2476)
+## Flowchart SVG presentation (#2476, #2493)
 
-Measured against mermaid 12.2.0 (headless, `scripts/lib/real-mermaid.ts`). Arrowhead
-size, thick width, dotted pattern and head colour now match (a head takes the
-`linkStyle default` stroke if there is one, else its own edge's `linkStyle` stroke;
-checked on 12.2.0 with `linkStyle 0`, `default`, and both); these do not:
+Re-measured on current main against mermaid 12.3.0 (headless, `scripts/lib/real-mermaid.ts`
+with a scratch `npm i mermaid@12.3.0`). Head colour, dotted pattern, thick width, arrowhead
+size and shape, separate heads for edges into one node (spaced about a sixth of the node
+width apart, as mermaid does), a `classDef`/`style` fill with no `color:` keeping the
+default dark text ([#2637](https://github.com/dfadler/zombie-mermaid/issues/2637)), the
+hexagon's angled-side inset (height / 3.5), and the LR/RL parallelogram yes/no routing
+(including the `D --> B` back-edge, which enters the diamond's lower side) all match. The
+one thing that still differs:
 
-- **Edges into one node share a bus and a single head.** Mermaid draws a separate
-  head per edge. This comes from the layout's edge routing (the SVG twin of the
-  ASCII entry below), not from the marker.
-- **A `classDef`/`style` fill with no `color:` gets black or white text picked from
-  the fill's luminance** (#55). Mermaid leaves its default dark text, so a dark fill
-  such as red shows white text here and dark text there. Kept because the ambient
-  text colour is a CSS variable that can be light in dark themes, which made labels
-  unreadable on custom fills.
-- **The hexagon is slightly flatter than mermaid's.** Cosmetic.
+- **Edge labels are drawn in a bordered box; mermaid draws a borderless grey background
+  on the line.** Colour palette and chrome, not structure (decision #2617).
 
 ## Known limitations (not intentional, not yet fixed)
 

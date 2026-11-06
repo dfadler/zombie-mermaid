@@ -142,4 +142,10 @@ describe('architecture agreement (#2451)', () => {
       'Architecture diagrams',
     )
   })
+
+  it('measures the grid layout the SVG is drawn from (200px pitch, #2473)', () => {
+    const { nodes } = measureOurArchitecture(SRC)
+    expect(nodes.b!.x - nodes.a!.x).toBe(200)
+    expect(nodes.b!.y).toBe(nodes.a!.y)
+  })
 })
