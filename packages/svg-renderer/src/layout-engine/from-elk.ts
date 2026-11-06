@@ -17,7 +17,7 @@ import type {
   PositionedGroup,
   Point,
 } from '@zombie-mermaid/core'
-import { ARROW_HEAD } from '../styles.ts'
+import { ARROW_HEAD, FONT_SIZES, FONT_WEIGHTS } from '../styles.ts'
 import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
@@ -31,6 +31,7 @@ import {
 import {
   dropInvalidColors,
   groupStyle,
+  measureMultilineText,
   resolveNodeStyle,
 } from '@zombie-mermaid/core'
 
@@ -47,62 +48,77 @@ interface MarginInfo {
 // `source === target` from the graph it hands to ELK entirely (see the
 // comments in `mermaidToElk`/`subgraphToElk`), so they never reach
 // ELK's own edge routing. Once node positions are final, this module
-// synthesizes a rounded loop bulging out from the node's right side —
-// approximated as a half-ellipse discretized into enough points to read
-// as smooth even under the default `linear` (straight-segment) curve
-// style — rather than letting ELK's generic orthogonal router draw a
-// degenerate zero-span polyline on top of the node.
+// synthesizes the loop the way mermaid@12.3.0 draws it (#2740): a squared-off
+// bulge on the node's LEFT face in TD/BT and its TOP face in LR/RL, never on
+// the face the flow leaves through. Measured against mermaid@12.3.0:
+//   - the bulge reaches 20px past the face;
+//   - for the node's n loops, loop k (0-based, innermost first) attaches at
+//     `centre ± g/2` along the face with `g = (faceLength - 24) / (2n + 1) *
+//     (2k + 1)`;
+//   - a labelled loop pushes the next one out by the label's extent plus 4px,
+//     and its label sits 4px outside the apex, centred along the face;
+//   - TD/RL loops run start-side to end-side in reading order, BT/RL reversed
+//     (TD: top to bottom, BT: bottom to top, LR: left to right, RL: right to
+//     left).
 // ============================================================================
 
-/** Half-ellipse discretization steps; higher reads smoother as straight segments. */
-const SELF_LOOP_SEGMENTS = 16
-/** Base horizontal reach of the loop bulge, in px. */
-const SELF_LOOP_BASE_RADIUS = 28
-/** Additional reach per stacked self-loop on the same node, in px. */
-const SELF_LOOP_STACK_SPACING = 18
-/** Vertical distance between the loop's two attach points, in px (clamped to node height). */
-const SELF_LOOP_ATTACH_GAP = 28
-/**
- * Gap between the loop's apex and its label, in px. Wide enough that the
- * label's own background box (which paints over whatever it sits on top
- * of) doesn't swallow the loop's visible curve.
- */
-const SELF_LOOP_LABEL_GAP = 10
+/** How far past the face the first loop bulges, and the step between loops, in px. */
+const SELF_LOOP_REACH = 20
+/** Gap between a loop's apex and its label, in px. */
+const SELF_LOOP_LABEL_GAP = 4
+/** Face length mermaid subtracts before dividing the attach points between loops, in px. */
+const SELF_LOOP_FACE_INSET = 24
+/** Padding added around a self-loop label's text, matching `simple-layout.ts`. */
+const SELF_LOOP_LABEL_PAD = { width: 8, height: 6 }
 
 /**
- * Build the routed points and label position for one self-loop edge on
- * `node`, as a half-ellipse bulging out from the node's right side.
- *
- * `stackIndex` (0 for the first self-loop on this node, 1 for the second,
- * ...) widens each successive loop so multiple self-loops on the same node
- * nest rather than overlap.
+ * Build the routed points and label position for every self-loop on `node`.
+ * `labels[k]` is the size of loop k's label box (undefined when unlabelled).
  */
-function buildSelfLoopGeometry(
+function buildSelfLoopGeometries(
   node: PositionedNode,
-  stackIndex: number,
-): { points: Point[]; labelPosition: Point } {
-  const attachX = node.x + node.width
-  const midY = node.y + node.height / 2
-  const halfGap = Math.min(SELF_LOOP_ATTACH_GAP, node.height * 0.6) / 2
-  const radius = SELF_LOOP_BASE_RADIUS + stackIndex * SELF_LOOP_STACK_SPACING
+  direction: MermaidGraph['direction'],
+  labels: ({ width: number; height: number } | undefined)[],
+): { points: Point[]; labelPosition: Point; minX: number; minY: number }[] {
+  const vertical =
+    direction === 'TD' || direction === 'TB' || direction === 'BT'
+  const reversed = direction === 'BT' || direction === 'RL'
+  const n = labels.length
+  const faceLength = vertical ? node.height : node.width
+  const centre = vertical ? node.y + node.height / 2 : node.x + node.width / 2
+  const face = vertical ? node.x : node.y
+  const unit = Math.max(faceLength - SELF_LOOP_FACE_INSET, 8) / (2 * n + 1)
 
-  // Half-ellipse from the upper attach point (t=0), out to the apex
-  // (t=PI/2), back to the lower attach point (t=PI). Both attach points
-  // sit exactly on the node's right edge, so shape-clipping (a no-op for
-  // rectangle/rounded/stadium, the common cases) leaves them untouched.
-  const points: Point[] = []
-  for (let i = 0; i <= SELF_LOOP_SEGMENTS; i++) {
-    const t = (Math.PI * i) / SELF_LOOP_SEGMENTS
-    points.push({
-      x: attachX + radius * Math.sin(t),
-      y: midY - halfGap * Math.cos(t),
-    })
-  }
-
-  return {
-    points,
-    labelPosition: { x: attachX + radius + SELF_LOOP_LABEL_GAP, y: midY },
-  }
+  let out = 0
+  return labels.map((label, k) => {
+    out += SELF_LOOP_REACH
+    const apex = face - out
+    const half = (unit * (2 * k + 1)) / 2
+    const [from, to] = reversed
+      ? [centre + half, centre - half]
+      : [centre - half, centre + half]
+    // (across the face, along it) -> (x, y)
+    const at = (across: number, along: number): Point =>
+      vertical ? { x: across, y: along } : { x: along, y: across }
+    const points = [at(face, from), at(apex, from), at(apex, to), at(face, to)]
+    let labelPosition = at(apex, centre)
+    let reach = apex
+    if (label) {
+      const extent = vertical ? label.width : label.height
+      labelPosition = at(apex - SELF_LOOP_LABEL_GAP - extent / 2, centre)
+      reach = apex - SELF_LOOP_LABEL_GAP - extent
+      out += extent + SELF_LOOP_LABEL_GAP
+    }
+    // The label's half-size along the face can poke past the node as well.
+    const half2 = label ? (vertical ? label.height : label.width) / 2 : 0
+    const lo = Math.min(from, to, centre - half2)
+    return {
+      points,
+      labelPosition,
+      minX: vertical ? reach : lo,
+      minY: vertical ? lo : reach,
+    }
+  })
 }
 
 /**
@@ -118,38 +134,88 @@ export function synthesizeSelfLoopEdges(
   graph: MermaidGraph,
   nodeMap: Map<string, PositionedNode>,
   edges: PositionedEdge[],
-): void {
-  const stackIndexByNode = new Map<string, number>()
+  edgeLabelFontSize: number = FONT_SIZES.edgeLabel,
+): { minX: number; minY: number } {
+  let minX = Infinity
+  let minY = Infinity
+  const loopsByNode = new Map<string, number[]>()
+  graph.edges.forEach((edge, index) => {
+    if (edge.source !== edge.target || !nodeMap.has(edge.source)) return
+    loopsByNode.set(edge.source, [
+      ...(loopsByNode.get(edge.source) ?? []),
+      index,
+    ])
+  })
 
-  for (let index = 0; index < graph.edges.length; index++) {
-    const edge = graph.edges[index]!
-    if (edge.source !== edge.target) continue
-
-    const node = nodeMap.get(edge.source)
-    if (!node) continue
-
-    const stackIndex = stackIndexByNode.get(node.id) ?? 0
-    stackIndexByNode.set(node.id, stackIndex + 1)
-
-    const { points, labelPosition } = buildSelfLoopGeometry(node, stackIndex)
-
-    edges.push({
-      source: edge.source,
-      target: edge.target,
-      label: edge.label,
-      style: edge.style,
-      hasArrowStart: edge.hasArrowStart,
-      hasArrowEnd: edge.hasArrowEnd,
-      points,
-      labelPosition: edge.label ? labelPosition : undefined,
-      inlineStyle: resolveEdgeStyle(index, graph),
-      headColor: resolveHeadColor(graph),
-      id: edge.id,
-      animate: edge.animate,
-      startMarker: edge.startMarker,
-      endMarker: edge.endMarker,
+  for (const [id, indices] of loopsByNode) {
+    const node = nodeMap.get(id)!
+    const geometries = buildSelfLoopGeometries(
+      node,
+      graph.direction,
+      indices.map((i) => {
+        const text = graph.edges[i]!.label
+        if (!text) return undefined
+        const m = measureMultilineText(
+          text,
+          edgeLabelFontSize,
+          FONT_WEIGHTS.edgeLabel,
+        )
+        return {
+          width: m.width + SELF_LOOP_LABEL_PAD.width,
+          height: m.height + SELF_LOOP_LABEL_PAD.height,
+        }
+      }),
+    )
+    indices.forEach((index, k) => {
+      const edge = graph.edges[index]!
+      const { points, labelPosition, ...reach } = geometries[k]!
+      minX = Math.min(minX, reach.minX)
+      minY = Math.min(minY, reach.minY)
+      edges.push({
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        style: edge.style,
+        hasArrowStart: edge.hasArrowStart,
+        hasArrowEnd: edge.hasArrowEnd,
+        points,
+        labelPosition: edge.label ? labelPosition : undefined,
+        inlineStyle: resolveEdgeStyle(index, graph),
+        headColor: resolveHeadColor(graph),
+        id: edge.id,
+        animate: edge.animate,
+        startMarker: edge.startMarker,
+        endMarker: edge.endMarker,
+      })
     })
   }
+  return { minX, minY }
+}
+
+/** Shift a positioned layout by (dx, dy). */
+function shiftLayout(
+  nodes: PositionedNode[],
+  edges: PositionedEdge[],
+  groups: PositionedGroup[],
+  dx: number,
+  dy: number,
+): void {
+  const move = (p: Point): void => {
+    p.x += dx
+    p.y += dy
+  }
+  for (const n of nodes) move(n)
+  for (const e of edges) {
+    e.points.forEach(move)
+    if (e.labelPosition) move(e.labelPosition)
+  }
+  const walk = (gs: PositionedGroup[]): void => {
+    for (const g of gs) {
+      move(g)
+      walk(g.children)
+    }
+  }
+  walk(groups)
 }
 
 /** Recursively flatten all group bounding boxes (including nested children) */
@@ -177,6 +243,7 @@ export function elkToPositioned(
   elkResult: ElkNode,
   graph: MermaidGraph,
   mergeEdges: boolean = false,
+  edgeLabelFontSize?: number,
 ): PositionedGraph {
   const nodes: PositionedNode[] = []
   const edges: PositionedEdge[] = []
@@ -219,7 +286,19 @@ export function elkToPositioned(
   // loop geometry is derived from each node's final, not pre-alignment,
   // position.
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
-  synthesizeSelfLoopEdges(graph, nodeMap, edges)
+  const loopReach = synthesizeSelfLoopEdges(
+    graph,
+    nodeMap,
+    edges,
+    edgeLabelFontSize,
+  )
+  // Loops sit on the left/top face (#2740), which ELK did not reserve room for
+  // on the canvas edge: slide the layout over so none is clipped.
+  const shiftX = Math.max(0, DEFAULTS.padding - loopReach.minX)
+  const shiftY = Math.max(0, DEFAULTS.padding - loopReach.minY)
+  if (shiftX > 0 || shiftY > 0) {
+    shiftLayout(nodes, edges, groups, shiftX, shiftY)
+  }
   // Bundle fan-out/fan-in edge paths into shared trunks when mergeEdges is enabled
   if (mergeEdges) {
     bundleEdgePaths(edges, nodes, groups, graph.direction)
@@ -243,8 +322,8 @@ export function elkToPositioned(
 
   // Calculate final bounds including all edge points
   // ELK should include edges in its dimensions, but we verify and expand if needed
-  let width = elkResult.width ?? 800
-  let height = elkResult.height ?? 600
+  let width = (elkResult.width ?? 800) + shiftX
+  let height = (elkResult.height ?? 600) + shiftY
   const arrowMargin = ARROW_HEAD.width
   const padding = DEFAULTS.padding
   for (const edge of edges) {
