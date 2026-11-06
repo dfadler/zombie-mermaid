@@ -82,9 +82,11 @@ export function layoutFlowchartSync(
   // entry point, so mark the flowchart ones here, in one place, whichever
   // layout produced the groups.
   const composites = new Set<string>()
+  const empties = new Set<string>()
   const collect = (sgs: MermaidGraph['subgraphs']): void => {
     for (const sg of sgs) {
       if (sg.stateComposite) composites.add(sg.id)
+      if (!sg.nodeIds.length && !sg.children.length) empties.add(sg.id)
       collect(sg.children)
     }
   }
@@ -92,6 +94,8 @@ export function layoutFlowchartSync(
   const mark = (groups: PositionedGraph['groups']): void => {
     for (const g of groups) {
       if (!g.region && !composites.has(g.id)) g.bandless = true
+      // #2726: mermaid@12.3.0 draws an empty flowchart subgraph as its title only.
+      if (g.bandless && empties.has(g.id) && !g.architecture) g.titleOnly = true
       mark(g.children)
     }
   }
