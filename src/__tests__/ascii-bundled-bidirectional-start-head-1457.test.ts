@@ -34,10 +34,12 @@ describe('bundled bidirectional start heads (#1457)', () => {
     expect(lr).toContain('│ B │◄─┐')
     expect(lr).toContain('│ C │◄─┼─►│ A │')
     const rl = renderMermaidASCII(`graph RL\n${fanOut}`)
-    // A is centred over its children (#2163): B and D hang off its top and
-    // bottom borders, with the head one cell outside the border.
-    expect(rl).toContain('│ B │◄──────┐')
+    // A's three edges leave its left face on a row each (as in Mermaid),
+    // with the head one cell outside each target's border.
+    expect(rl).toContain('│ B │◄──┐')
     expect(rl).toContain('│ C │◄───►│ A │')
-    expect(rl).toMatch(/▼ *\n┌───┐ {5}┌───┐/)
+    expect(rl).toContain('└►│')
+    expect(rl).toContain('┌►│')
+    expect(rl).toContain('│ D │◄──┘')
   })
 })

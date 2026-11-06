@@ -33,11 +33,17 @@ describe('gaps widen so labels clear the next lifeline (#2452)', () => {
     expect(gap(over, 1)).toBeGreaterThan(140)
   })
 
-  it('leaves the gap alone for a note over several actors', () => {
+  it('widens a note over several actors only until it spans its lifelines (#2587)', () => {
     const l = layout(
       'A->>B: x\nNote over A,B: a note with quite a lot of words in it',
     )
-    expect(gap(l, 0)).toBe(140)
+    // Mermaid 12.3.0 grows the lifeline gap until the note, which overhangs
+    // each lifeline by 25px, holds its text; short text leaves the gap alone.
+    const n = l.notes[0]!
+    expect(gap(l, 0)).toBeGreaterThan(140)
+    expect(n.width).toBeCloseTo(gap(l, 0) + 50)
+    const short = layout('A->>B: x\nNote over A,B: hi')
+    expect(gap(short, 0)).toBe(140)
   })
 
   it("widens for a block's header tab and divider labels", () => {

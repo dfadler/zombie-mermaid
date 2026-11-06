@@ -5,29 +5,31 @@
  * `a --> b` edges as four polylines with identical points. mermaid.js draws a
  * lane per edge, so repeated pairs are left out of the bundle.
  */
+import { pathPointsAttr } from './edge-path-points.ts'
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
 
 /** The `points` of every edge from `from` to `to`, in document order. */
 function pointsOf(svg: string, from: string, to: string): string[] {
   return [
-    ...svg.matchAll(
-      /data-from="([^"]+)" data-to="([^"]+)"[^>]*points="([^"]+)"/g,
-    ),
+    ...svg.matchAll(/data-from="([^"]+)" data-to="([^"]+)"[^>]* d="([^"]+)"/g),
   ]
     .filter((m) => m[1] === from && m[2] === to)
-    .map((m) => m[3]!)
+    .map((m) => pathPointsAttr(m[3]!))
 }
 
 describe('repeated edges between one pair of nodes', () => {
   for (const dir of ['TD', 'LR'] as const) {
     it(`${dir}: four a-->b edges have four distinct paths`, async () => {
-      const svg = await renderMermaidSVG(`flowchart ${dir}
+      const svg = await renderMermaidSVG(
+        `flowchart ${dir}
   a --> b
   a --> b
   a --> b
   a --> b
-  a --> c`)
+  a --> c`,
+        { mergeEdges: true },
+      )
       const ab = pointsOf(svg, 'a', 'b')
       expect(ab).toHaveLength(4)
       expect(new Set(ab).size).toBe(4)
@@ -35,10 +37,13 @@ describe('repeated edges between one pair of nodes', () => {
   }
 
   it('still bundles a fan-out of distinct targets', async () => {
-    const svg = await renderMermaidSVG(`flowchart TD
+    const svg = await renderMermaidSVG(
+      `flowchart TD
   a --> b
   a --> c
-  a --> d`)
+  a --> d`,
+      { mergeEdges: true },
+    )
     const starts = ['b', 'c', 'd'].map(
       (t) => pointsOf(svg, 'a', t)[0]!.split(' ')[0],
     )
@@ -46,10 +51,13 @@ describe('repeated edges between one pair of nodes', () => {
   })
 
   it('still bundles a fan-in of distinct sources', async () => {
-    const svg = await renderMermaidSVG(`flowchart TD
+    const svg = await renderMermaidSVG(
+      `flowchart TD
   b --> a
   c --> a
-  d --> a`)
+  d --> a`,
+      { mergeEdges: true },
+    )
     const ends = ['b', 'c', 'd'].map((s) =>
       pointsOf(svg, s, 'a')[0]!.split(' ').at(-1),
     )

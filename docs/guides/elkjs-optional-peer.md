@@ -5,14 +5,14 @@ Design and measurements: [docs/research/1370-elkjs-optional-peer-dep.md](../rese
 Decision record: [elkjs-optional-peer-1370.md](../decisions/elkjs-optional-peer-1370.md).
 
 [`elkjs`](https://github.com/kieler/elkjs) (about 466 KB gzipped) lays out
-flowchart, state, class, ER and architecture diagrams. The library no longer
+flowchart, state, class and ER diagrams. The library no longer
 imports it. You supply it, once, with `registerElk()`.
 
-| Diagram type                              | Needs `elkjs`? |
-| ----------------------------------------- | -------------- |
-| flowchart, state, class, ER, architecture | yes            |
-| sequence, pie, xychart, C4                | no             |
-| any ASCII output                          | no             |
+| Diagram type                             | Needs `elkjs`? |
+| ---------------------------------------- | -------------- |
+| flowchart, state, class, ER              | yes            |
+| sequence, pie, xychart, C4, architecture | no             |
+| any ASCII output                         | no             |
 
 Browser bundle size (esbuild, minified, gzip):
 
@@ -23,7 +23,7 @@ Browser bundle size (esbuild, minified, gzip):
 
 ## What to change
 
-### Browser / bundler apps that render flowcharts, state, class, ER or architecture diagrams
+### Browser / bundler apps that render flowcharts, state, class or ER diagrams
 
 ```bash
 npm install elkjs
@@ -64,7 +64,7 @@ const svg = renderMermaidSVG('graph LR\n  A --> B', { layout: 'simple' }) // no 
 
 It is opt-in, so existing output is unchanged. It costs about 3.5 KB gzipped on
 top of the 74 KB "elkjs not registered" bundle above. It covers flowcharts
-only: state, class, ER and architecture diagrams still need `elkjs`. Edge routing
+only: state, class and ER diagrams still need `elkjs`. Edge routing
 is plainer than ELK's, and `mergeEdges`, `layoutCache` and a subgraph's own
 `direction` have no effect. Quality numbers and the trade-offs are in
 [docs/decisions/simple-layout-1685.md](../decisions/simple-layout-1685.md).
@@ -109,8 +109,8 @@ peer. If you remove it anyway (for example with an overrides or
   for ASCII and sequence diagrams, because `dist/cli.js` imports `elkjs`
   statically.
 - The library keeps working for diagrams that do not need layout: sequence,
-  pie, xychart, C4 and ASCII still render. Flowchart, state, class, ER and
-  architecture diagrams throw `ElkNotRegisteredError` unless you call
+  pie, xychart, C4, architecture and ASCII still render. Flowchart, state, class
+  and ER diagrams throw `ElkNotRegisteredError` unless you call
   `registerElk()`.
 
 Related: [#1685](https://github.com/dfadler/zombie-mermaid/issues/1685)

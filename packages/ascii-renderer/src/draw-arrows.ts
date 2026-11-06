@@ -39,7 +39,13 @@ import {
 } from './types.ts'
 import { pseudoStateGlyph } from './draw-boxes.ts'
 import { blankLayer, copyCanvas, drawText, write } from './canvas.ts'
-import { determineDirection, dirEquals } from './edge-routing.ts'
+import {
+  determineDirection,
+  dirEquals,
+  flowLaneLabel,
+  flowLanePolyline,
+  leavesRightFace,
+} from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { gridToDrawingCoord } from './grid.ts'
 import { exitGutter } from './types.ts'
@@ -65,9 +71,12 @@ export function drawArrow(
   const labelCanvas = drawArrowLabel(graph, edge)
   const wallEnd = clusterWallEnd(graph, edge)
   const wallStart = clusterWallStart(graph, edge)
-  const drop = wallEnd
-    ? clusterEntryDrop(graph, edge, wallEnd)
-    : clusterExitDrop(graph, edge, wallStart)
+  const flowLane = flowLanePolyline(graph, edge)
+  const drop: EntryDrop | undefined = flowLane
+    ? { points: flowLane, jog: [] }
+    : wallEnd
+      ? clusterEntryDrop(graph, edge, wallEnd)
+      : clusterExitDrop(graph, edge, wallStart)
   const dx = strokeShift(graph, edge)
   const shifts =
     edgePointShifts(graph, edge) ??
@@ -764,7 +773,7 @@ export function markerArrowChar(
   marker: AsciiEdgeMarker | undefined,
   dir?: Direction,
 ): string | undefined {
-  if (marker === 'circle') return useAscii ? 'o' : '○'
+  if (marker === 'circle') return useAscii ? 'o' : '●'
   if (marker === 'cross') return useAscii ? 'x' : '✕'
   if (marker === 'class-circle') return useAscii ? 'O' : '○'
   if (marker === 'class-diamond-filled') return useAscii ? '*' : '◆'
@@ -777,13 +786,10 @@ export function markerArrowChar(
       ? [Up, Down, Left, Right].findIndex((d) => dirEquals(dir, d))
       : 3
     const hollow = marker === 'class-triangle'
-    return (
-      useAscii
-        ? ['^', 'v', '<', '>']
-        : hollow
-          ? ['△', '▽', '◁', '▷']
-          : ['▲', '▼', '◀', '▶']
-    )[i < 0 ? 3 : i]
+    // An association/dependency head is Mermaid's open V in both charsets.
+    return (!hollow || useAscii ? ['^', 'v', '<', '>'] : ['△', '▽', '◁', '▷'])[
+      i < 0 ? 3 : i
+    ]
   }
   return undefined
 }
@@ -1211,6 +1217,8 @@ function resolveLabelPlacementUncached(
   labelAware: boolean,
 ): LabelLines {
   if (edge.text.length === 0) return null
+  const onLane = flowLaneLabel(graph, edge)
+  if (onLane) return onLane
   const centred = centredLabelPlacement(graph, edge, labelAware)
   const dx = strokeShiftFor(graph, edge, labelAware)
   // #1408 option C: a vertical edge's label goes on its own stroke when the
@@ -1445,6 +1453,15 @@ function comfortableOnRun(
   const end = placement[0]!.x + displayWidth(placement[0]!.text) - 1
   const headRoom = Math.max(line[0]!.x, line[1]!.x) - 2
   if (edge.hasArrowEnd && end >= headRoom) return false
+  // A fan-out's bend sits just after the source: keep a blank cell between it
+  // and the label, as Mermaid draws the label mid-run.
+  if (
+    edge.path.length === 4 &&
+    leavesRightFace(graph, edge, graph.config.graphDirection) &&
+    placement[0]!.x - Math.min(line[0]!.x, line[1]!.x) < 2
+  ) {
+    return false
+  }
   // Sideways only: a stroke on the row above or below can move with the gap,
   // so no amount of widening would clear it.
   return besideFree(graph, edge, placement, labelAware, 1, true)

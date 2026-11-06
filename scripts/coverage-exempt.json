@@ -25,6 +25,11 @@
     "maxLines": 20
   },
   {
+    "file": "scripts/check-changeset-coverage.ts",
+    "reason": "thin CLI: runs on import and calls process.exit; all logic is in scripts/lib/changeset-coverage.ts (tested)",
+    "maxLines": 20
+  },
+  {
     "file": "scripts/check-changesets.ts",
     "reason": "thin CLI: runs on import and calls process.exit; all logic is in scripts/lib/changeset-lint.ts (tested)",
     "maxLines": 20
@@ -174,7 +179,7 @@
   {
     "file": "scripts/lib/real-mermaid.ts",
     "reason": "Playwright-driven helper: needs a real Chromium, so it is only reachable from the form-diff/form-facts CLIs",
-    "maxLines": 112,
+    "maxLines": 121,
     "legacy": true
   },
   {
@@ -272,7 +277,7 @@
   {
     "file": "scripts/xychart-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/xychart-agreement.ts",
-    "maxLines": 50
+    "maxLines": 55
   },
   {
     "file": "scripts/lib/separate-scores.ts",
@@ -298,5 +303,15 @@
     "file": "scripts/promo-figures.ts",
     "reason": "thin CLI: runs on import, prints figures read from package.json, README, fork-fixes-data and npm; no logic to unit test",
     "maxLines": 30
+  },
+  {
+    "file": "scripts/fork-fixes-oracle.ts",
+    "reason": "audit harness: needs headless Chromium plus a mermaid@latest install outside the repo, so it only runs as a CLI (rerun command in its header, #2607)",
+    "maxLines": 150
+  },
+  {
+    "file": "scripts/samples-oracle.ts",
+    "reason": "audit harness: needs headless Chromium plus a mermaid@latest install outside the repo, so it only runs as a CLI (rerun command in its header, #2678)",
+    "maxLines": 150
   }
 ]

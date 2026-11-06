@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { pathPoints } from './edge-path-points.ts'
 import { splitStatements, detectDiagramType } from '@zombie-mermaid/core'
 import {
   parseArchitecture,
@@ -162,16 +163,16 @@ describe('architecture-beta nested groups and junctions', () => {
   it('SVG junction draws no disc and leaves no gap in the edge', () => {
     const svg = renderMermaidSVG(NESTED)
     expect(svg).not.toContain('<circle')
-    const [a, b] = [...svg.matchAll(/<polyline[^>]*points="([^"]+)"/g)].map(
-      (m) => m[1]!.split(' ').map((p) => p.split(',').map(Number)),
-    )
+    const [a, b] = [
+      ...svg.matchAll(/<path class="edge"[^>]* d="([^"]+)"/g),
+    ].map((m) => pathPoints(m[1]!).map((p) => [p.x, p.y]))
     // The two edges meet at the junction (within its 2px box).
     const end = a!.at(-1)!
     const start = b![0]!
     expect(Math.hypot(end[0]! - start[0]!, end[1]! - start[1]!)).toBeLessThan(4)
   })
 
-  it('SVG draws a group icon in its header; none keeps the plain header', () => {
+  it('SVG draws a group icon beside the title; none draws the title alone', () => {
     const svg = renderMermaidSVG(
       'architecture-beta\n  group a(server)[A]\n  group b[B]\n  service s(cloud)[S] in a\n  service t[T] in b',
     )
@@ -179,8 +180,9 @@ describe('architecture-beta nested groups and junctions', () => {
       svg
         .split('<g class="subgraph"')
         .find((g) => g.includes(`data-id="${id}"`))!
+        .split('<g class="node"')[0]!
     expect(group('a')).toContain('fill="#087ebf"')
-    expect(group('a')).toContain('<rect x="17.5"')
+    expect(group('a')).toContain('scale(0.38)')
     expect(group('b')).not.toContain('#087ebf')
     // A name Mermaid has no icon for gets the `?` glyph, as a service does.
     expect(

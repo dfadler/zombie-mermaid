@@ -4,6 +4,7 @@
 // `accDescr: text` on one line, or `accDescr { … }` over several. Pie parses
 // its own copy (its grammar is token-based), so it is passed through as-is.
 import { detectDiagramType } from './diagram-type.ts'
+import { stripFrontMatter } from './front-matter.ts'
 
 const ACC = /^[ \t]*acc(Title|Descr)[ \t]*(?::([^\n]*)|\{([^}]*)\})/gm
 
@@ -20,7 +21,8 @@ export interface AccessibleText {
  * replaced by the same number of newlines so parser error line numbers stay
  * right. Returns `text` untouched for pie and when there is nothing to strip.
  */
-export function extractAccessibility(text: string): AccessibleText {
+export function extractAccessibility(source: string): AccessibleText {
+  const text = stripFrontMatter(source)
   const out: AccessibleText = { text }
   if (
     !/^[ \t]*acc(?:Title|Descr)/m.test(text) ||

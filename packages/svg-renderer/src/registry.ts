@@ -91,7 +91,8 @@ import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
 import { layoutQuadrantChart } from './quadrant/layout.ts'
 import { renderQuadrantSvg } from './quadrant/renderer.ts'
-import { layoutFlowchartSync, layoutGraphSync } from './layout-engine.ts'
+import { layoutFlowchartSync } from './layout-engine.ts'
+import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 
@@ -368,8 +369,9 @@ const c4Module: DiagramModule<C4Diagram, PositionedC4Diagram> = {
  * Architecture diagrams are lowered to the flowchart model
  * (`architectureToGraph` in `@zombie-mermaid/mermaid-parser`) and ride the
  * flowchart layout + renderer, so this module is `flowchartModule` with a
- * different `parse`. The lowered graph carries no `%%{init}%%` config, so
- * `curve` is `options.curve` or 'linear'.
+ * different `parse`. Mermaid's architecture edges are straight runs and
+ * elbows whatever `flowchart.curve` or the caller says (measured against
+ * mermaid@12.3.0, #2632), so `curve` is always 'linear'.
  */
 const architectureModule: DiagramModule<
   ArchitectureDiagram,
@@ -383,8 +385,8 @@ const architectureModule: DiagramModule<
       options.direction,
     )
     return {
-      graph: layoutGraphSync(graph, options),
-      curve: options.curve ?? 'linear',
+      graph: layoutArchitectureGrid(graph, options.padding),
+      curve: 'linear',
     }
   },
   renderSvg: flowchartModule.renderSvg,

@@ -2,11 +2,12 @@
  * Platform-independent geometry guard for #1796. The Playwright PNG suite
  * tolerates ~680 changed pixels, so a 2px -> 8px trunk move (#1782) slipped
  * past it. This asserts the invariant `clearBorders`
- * (packages/svg-renderer/src/layout-engine/compound-flat.ts) enforces, on the
+ * (packages/svg-renderer/src/layout-engine/clear-borders.ts) enforces, on the
  * SVG numbers directly: no edge segment runs parallel to a subgraph box side
  * within BORDER_GAP px of it unless it is the edge's first or last segment
  * (the one attached to a node).
  */
+import { pathPoints } from '../src/__tests__/edge-path-points.ts'
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../src/index.ts'
 import { samples } from '../samples/samples-data.ts'
@@ -37,13 +38,8 @@ function geometry(svg: string): { boxes: Box[]; edges: Pt[][] } {
       /<g class="subgraph"[^>]*>\s*<rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)"/g,
     ),
   ].map((m) => ({ x: +m[1]!, y: +m[2]!, w: +m[3]!, h: +m[4]! }))
-  const edges = [
-    ...svg.matchAll(/<polyline class="edge"[^>]* points="([^"]+)"/g),
-  ].map((m) =>
-    m[1]!
-      .trim()
-      .split(/\s+/)
-      .map((p) => p.split(',').map(Number) as Pt),
+  const edges = [...svg.matchAll(/<path class="edge"[^>]* d="([^"]+)"/g)].map(
+    (m) => pathPoints(m[1]!).map((p) => [p.x, p.y] as Pt),
   )
   return { boxes, edges }
 }
@@ -102,23 +98,19 @@ describe('subgraph border clearance (#1796)', () => {
   it('System Architecture: the API Gateway fan-out shares a trunk >= 8px from Client Layer', () => {
     const svg = renderMermaidSVG(
       samples.find((s) => s.title === 'System Architecture')!.source,
+      { mergeEdges: true },
     )
     const { boxes } = geometry(svg)
-    const client = boxes[0]! // First <g class="subgraph"> is clients (graph LR)
+    // The Client Layer is the leftmost box (graph LR).
+    const client = boxes.reduce((a, b) => (b.x < a.x ? b : a))
     const right = client.x + client.w
     const out = [
       ...svg.matchAll(
-        /<polyline class="edge" data-from="B" data-to="([DEF])"[^>]* points="([^"]+)"/g,
+        /<path class="edge" data-from="B" data-to="([DEF])"[^>]* d="([^"]+)"/g,
       ),
     ]
     expect(out.map((m) => m[1])).toEqual(['D', 'E', 'F'])
-    const trunks = out.map(
-      (m) =>
-        m[2]!
-          .trim()
-          .split(/\s+/)
-          .map((p) => +p.split(',')[0]!)[1]!,
-    )
+    const trunks = out.map((m) => pathPoints(m[2]!)[1]!.x)
     // One shared trunk x, exactly BORDER_GAP right of the Client Layer side
     expect(new Set(trunks).size).toBe(1)
     expect(trunks[0]! - right).toBeCloseTo(BORDER_GAP, 1)

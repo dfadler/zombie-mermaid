@@ -10,7 +10,7 @@ The three types ended up on different sides of that choice, and only one of them
 
 ## Decision
 
-- **`architecture-beta` is lowered.** `architectureToGraph` (`packages/mermaid-parser/src/architecture/to-graph.ts`) maps group to subgraph, service to node (the icon picks the shape), junction to a small filled circle and edge to edge. SVG goes through ELK and ASCII through the grid router, both via the registry entry in `packages/svg-renderer/src/registry.ts` and `packages/ascii-renderer/src/architecture.ts`. Introduced in `bd266cb6` (2026-09-29).
+- **`architecture-beta` is lowered.** `architectureToGraph` (`packages/mermaid-parser/src/architecture/to-graph.ts`) maps group to subgraph, service to node (the icon picks the shape), junction to a small filled circle and edge to edge. SVG uses Mermaid's grid layout (`layoutArchitectureGrid`, #2626; it went through ELK before that) and ASCII the grid router, both via the registry entry in `packages/svg-renderer/src/registry.ts` and `packages/ascii-renderer/src/architecture.ts`. Introduced in `bd266cb6` (2026-09-29).
 - **C4 has dedicated renderers.** The first cut (`70196e80`, #1188) lowered C4 the same way; `e526333a` (2026-09-29) replaced it with C4-specific SVG and ASCII renderers: person glyph, cylinders and queues, boundary frames, `[technology]` lines, `Rel_*` placement hints. SVG uses its own row layout (`c4/layout.ts`), not ELK.
 - **Pie has dedicated layout and renderers.** A pie is not a graph, so there was nothing to lower (`70f3c780`, 2026-10-06; geometry follows Mermaid's `pieRenderer.ts`).
 

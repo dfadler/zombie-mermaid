@@ -12,7 +12,7 @@ import {
   svgOpenTag,
   buildStyleBlock,
   styleOpenTag,
-  getReadableTextColor,
+  LINE_HEIGHT_RATIO,
   measureMultilineText,
   renderMultilineText,
   renderMultilineTextWithBackground,
@@ -35,8 +35,18 @@ import {
   TILE_FILL,
   UNKNOWN_GLYPH,
 } from './architecture-icons.ts'
-import { pointsToPath } from './edge-curves.ts'
-import { edgeCrossesTitle, titleGapMask, titleTextBoxes } from './title-gaps.ts'
+import {
+  pointsToPath,
+  roundedPath,
+  MERMAID_CORNER_RADIUS,
+} from './edge-curves.ts'
+import {
+  BANDLESS_TITLE_WEIGHT,
+  COMPOSITE_BAND,
+  edgeCrossesTitle,
+  titleGapMask,
+  titleTextBoxes,
+} from './title-gaps.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -140,7 +150,7 @@ export function renderSvg(
     parts.push(edgeAnimationStyle(emit.nonce))
   }
   parts.push('<defs>')
-  parts.push(arrowMarkerDefs())
+  parts.push(arrowMarkerDefs(graph.stateDiagram === true))
   // Per-color arrow markers for edges with custom stroke via linkStyle
   const customStrokeColors = new Set<string>()
   for (const edge of graph.edges) {
@@ -148,7 +158,7 @@ export function renderSvg(
     if (head) customStrokeColors.add(head)
   }
   for (const color of customStrokeColors) {
-    parts.push(arrowMarkerDefsForColor(color))
+    parts.push(arrowMarkerDefsForColor(color, graph.stateDiagram === true))
   }
   // Circle / cross terminators (`--o`, `--x`), emitted only when used.
   const kinds = new Set<'circle' | 'cross'>()
@@ -186,6 +196,7 @@ export function renderSvg(
         curve,
         animationEnabled,
         crossingEdges.has(edge) ? titleGapMaskId : undefined,
+        graph.stateDiagram === true,
       ),
     )
   }
@@ -200,7 +211,15 @@ export function renderSvg(
 
   // 4. Nodes (shape + label wrapped in <g class="node">)
   for (const node of graph.nodes) {
-    parts.push(renderNode(node, font, fontSizes, linksEnabled))
+    parts.push(
+      renderNode(
+        node,
+        font,
+        fontSizes,
+        linksEnabled,
+        graph.stateDiagram === true,
+      ),
+    )
   }
 
   parts.push('</svg>')
@@ -241,16 +260,16 @@ function edgeAnimationStyle(nonce?: string): string {
  * Reusable arrow head markers — both forward (end) and reverse (start) variants.
  * Arrow color uses the var(--_arrow) CSS variable.
  */
-function arrowMarkerDefs(): string {
-  return arrowMarkerPair('var(--_arrow)', '')
+function arrowMarkerDefs(barb: boolean): string {
+  return arrowMarkerPair('var(--_arrow)', '', barb)
 }
 
 /**
  * Arrow markers tinted to a specific color (for linkStyle stroke overrides).
  * IDs are suffixed with a sanitized color string to avoid collisions.
  */
-function arrowMarkerDefsForColor(color: string): string {
-  return arrowMarkerPair(escapeAttr(color), f`-${markerSuffix(color)}`)
+function arrowMarkerDefsForColor(color: string, barb: boolean): string {
+  return arrowMarkerPair(escapeAttr(color), f`-${markerSuffix(color)}`, barb)
 }
 
 /** Mermaid 12.2.0 `.edge-thickness-thick` (normal is 1px, same as ours). */
@@ -265,7 +284,12 @@ const THICK_EDGE_WIDTH = 3.5
  * a double reversal: the head points into the line and vanishes in
  * librsvg/Inkscape/browsers.
  */
-function arrowMarkerPair(color: string, idSuffix: string): string {
+function arrowMarkerPair(
+  color: string,
+  idSuffix: string,
+  barb: boolean,
+): string {
+  if (barb) return barbMarkerPair(color, idSuffix)
   // Mermaid 12.2.0 edges use the `pointEnd-margin` marker: viewBox 11.5x14 in a
   // 10.5x14 userSpaceOnUse box, i.e. a head 10.5 long and 14 * 10.5 / 11.5 =
   // 12.8 wide at any stroke width (#2475). The 8x8 `pointEnd` marker is unused.
@@ -288,16 +312,54 @@ function arrowMarkerPair(color: string, idSuffix: string): string {
 }
 
 /**
- * Circle (`--o`) and cross (`--x`) terminators: mermaid 12.2.0's
- * `circleEnd-margin` / `crossEnd-margin` geometry, one marker for both ends.
+ * A state diagram's `stateDiagram-barbEnd-margin` head, as mermaid@12.3.0
+ * draws it: a 20x14 userSpaceOnUse box, `M 19,7 L11,14 L13,7 L11,0 Z`, filled
+ * with no stroke, refX 17 / refY 7. Same ids as the triangle pair.
+ */
+function barbMarkerPair(color: string, idSuffix: string): string {
+  const marker = (id: string, orient: string) =>
+    f`  <marker id="${id}" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="${orient}">` +
+    f`\n    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="${color}" />` +
+    `\n  </marker>`
+  return (
+    marker(f`arrowhead${idSuffix}`, 'auto') +
+    '\n' +
+    marker(f`arrowhead-start${idSuffix}`, 'auto-start-reverse')
+  )
+}
+
+/**
+ * Circle (`--o`) and cross (`--x`) terminators: mermaid 12.3.0's
+ * `circleEnd-margin` / `crossEnd-margin` geometry (a ~3px gap before the node
+ * border), one marker for both ends via `auto-start-reverse`. Mermaid's start
+ * markers use a slightly different refX (0.6px more gap on the cross).
  */
 function terminatorMarker(kind: 'circle' | 'cross'): string {
-  const shape =
-    kind === 'circle'
-      ? '<circle cx="5" cy="5" r="5" fill="var(--_arrow)"/>'
-      : '<path d="M1 1L9 9M1 9L9 1" stroke="var(--_arrow)" stroke-width="1.7"/>'
-  const size = kind === 'circle' ? 14 : 12
-  return f`<marker id="${kind}" viewBox="0 0 10 10" refX="12" refY="5" markerUnits="userSpaceOnUse" markerWidth="${size}" markerHeight="${size}" orient="auto-start-reverse">${shape}</marker>`
+  return kind === 'circle'
+    ? f`<marker id="circle" viewBox="0 0 10 10" refX="12.25" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto-start-reverse"><circle cx="5" cy="5" r="5" fill="var(--_arrow)"/></marker>`
+    : f`<marker id="cross" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1 1L14 14M1 14L14 1" stroke="var(--_arrow)" stroke-width="2.5"/></marker>`
+}
+
+/**
+ * Mermaid ends a state edge `BARB_GAP` before the node border (its `-margin`
+ * marker), so the barb's tip stops 3.5px short of the box and the line does not
+ * poke through the head. Moves the arrowed end(s) of `edge` back by that much.
+ */
+const BARB_GAP = 5.5
+function barbGap(edge: PositionedEdge): PositionedEdge['points'] {
+  const pts = edge.points.map((p) => ({ ...p }))
+  const pull = (end: number, next: number) => {
+    const a = pts[end]!
+    const b = pts[next]!
+    const len = Math.hypot(b.x - a.x, b.y - a.y)
+    if (len <= BARB_GAP) return
+    a.x += ((b.x - a.x) / len) * BARB_GAP
+    a.y += ((b.y - a.y) / len) * BARB_GAP
+  }
+  // Circle / cross terminators carry their own clearance; only barbs get the gap.
+  if (edge.hasArrowEnd && !edge.endMarker) pull(pts.length - 1, pts.length - 2)
+  if (edge.hasArrowStart && !edge.startMarker) pull(0, 1)
+  return pts
 }
 
 /** Sanitize a color value into a collision-free SVG ID suffix.
@@ -326,6 +388,9 @@ function dashAttr(style: Record<string, string> | undefined): string {
   return d && /^[\d.\s,]+$/.test(d) ? f` stroke-dasharray="${d.trim()}"` : ''
 }
 
+/** Edge of the icon tile in an architecture group's corner, as Mermaid draws it. */
+const ARCH_GROUP_ICON = 30
+
 function renderGroup(
   group: PositionedGroup,
   font: string,
@@ -340,6 +405,35 @@ function renderGroup(
       f`<g class="subgraph subgraph-region" data-id="${escapeAttr(group.id)}">`,
       f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
         f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-dasharray="6 4" />`,
+    )
+    for (const child of group.children) {
+      parts.push(renderGroup(child, font, fontSizes))
+    }
+    parts.push('</g>')
+    return parts.join('\n')
+  }
+
+  // Architecture group (#2619): Mermaid draws a dashed, unfilled box with the
+  // icon tile in its top-left corner and the title beside it, no header band.
+  if (group.architecture) {
+    const glyph = group.icon && (ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH)
+    parts.push(
+      f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
+      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`,
+    )
+    if (glyph)
+      parts.push(
+        f`  <g transform="translate(${group.x + 1} ${group.y + 1}) scale(${ARCH_GROUP_ICON / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
+      )
+    parts.push(
+      '  ' +
+        renderMultilineText(
+          group.label,
+          group.x + (glyph ? ARCH_GROUP_ICON + 4 : 6),
+          group.y + 1 + ARCH_GROUP_ICON / 2,
+          fontSizes.groupHeader,
+          f`font-size="${fontSizes.groupHeader}" font-weight="400" fill="var(--_text)"`,
+        ),
     )
     for (const child of group.children) {
       parts.push(renderGroup(child, font, fontSizes))
@@ -363,27 +457,45 @@ function renderGroup(
   const fill = escapeAttr(gs?.fill ?? 'var(--_group-fill)')
   const hdrFill = escapeAttr(gs?.fill ?? 'var(--_group-hdr)')
 
-  // Outer rectangle
+  // Outer rectangle. A state composite (#2651) is drawn as mermaid@12.3.0
+  // draws it: the outer rect carries the band colour with rounded corners, and
+  // a square-cornered body rect sits inside it (below).
+  const bandless = group.bandless === true
   parts.push(
     f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
+      f`rx="${bandless ? 0 : COMPOSITE_RADIUS}" ry="${bandless ? 0 : COMPOSITE_RADIUS}" fill="${bandless ? fill : hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
+  )
+
+  // Flowchart subgraph (#2636): mermaid@12.3.0 draws no header band, only a
+  // centred title along the top edge.
+  if (group.bandless) {
+    parts.push(
+      '  ' +
+        renderMultilineText(
+          group.label,
+          group.x + group.width / 2,
+          group.y + headerHeight / 2,
+          fontSizes.groupHeader,
+          f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
+        ),
+    )
+    for (const child of group.children) {
+      parts.push(renderGroup(child, font, fontSizes))
+    }
+    parts.push('</g>')
+    return parts.join('\n')
+  }
+
+  // Body: mermaid's `inner` rect, which starts below the 26 px title band and
+  // stops COMPOSITE_BODY_INSET short of the outer rect's bottom edge.
+  parts.push(
+    f`  <rect x="${group.x}" y="${group.y + COMPOSITE_BAND}" width="${group.width}" height="${Math.max(0, group.height - COMPOSITE_BAND - COMPOSITE_BODY_INSET)}" ` +
       f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
   )
 
-  // Header band
-  parts.push(
-    f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${headerHeight}" ` +
-      f`rx="0" ry="0" fill="${hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
-  )
-
-  // Architecture group icon, as in Mermaid's header (the glyph tile, scaled).
-  const iconSize = headerHeight - 6
-  if (group.icon) {
-    const glyph = ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH
-    parts.push(
-      f`  <g transform="translate(${group.x + 3} ${group.y + 3}) scale(${iconSize / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
-    )
-  }
-  const titleX = group.x + 12 + (group.icon ? iconSize + 2 : 0)
+  // A state composite (#2651): mermaid@12.3.0 centres a regular-weight title in
+  // the band. (Icon groups are architecture groups, drawn above, never here.)
+  const titleX = group.x + group.width / 2
 
   // Header label (supports multi-line via <br> tags)
   parts.push(
@@ -391,9 +503,9 @@ function renderGroup(
       renderMultilineText(
         group.label,
         titleX,
-        group.y + headerHeight / 2,
+        group.y + COMPOSITE_BAND / 2,
         fontSizes.groupHeader,
-        f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
+        f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
       ),
   )
 
@@ -416,24 +528,13 @@ function renderEdge(
   curve: CurveStyle,
   animationEnabled: boolean = true,
   titleGapMaskId?: string,
+  stateDiagram: boolean = false,
 ): string {
   if (edge.points.length < 2) return ''
 
   // `interactivity: 'none'` strips motion: the edge still renders (id,
   // data-* attributes, arrowheads) but never gets the animated class or dash.
   const animate = animationEnabled && (edge.animate ?? false)
-
-  /*
-   * A curved edge must be a <path>; only a path can express the
-   * interpolations Mermaid's `flowchart.curve` selects.
-   *
-   * The default (`linear`) deliberately keeps emitting <polyline>. A path of
-   * straight `L` segments would be geometrically identical, but changing the
-   * element for every diagram would break any consumer selecting
-   * `polyline.edge` — for no benefit to a diagram that asked for no curve.
-   * So the element changes only when the author opts into a curve.
-   */
-  const curved = curve !== 'linear'
 
   /*
    * An invisible link (`A ~~~ B`) still occupies its layout slot — that is
@@ -494,22 +595,22 @@ function renderEdge(
   // edge's own style hasn't already set stroke-dasharray.
   const animatedDash = animate && !dashArray ? ' stroke-dasharray="8 6"' : ''
 
-  const geometry = curved
-    ? f`d="${pointsToPath(edge.points, curve)}"`
-    : f`points="${pointsToPolylinePath(edge.points)}"`
+  // Every edge is a <path>: mermaid@12.3.0 rounds orthogonal bends (#2635),
+  // which a <polyline> cannot express. The default `linear` curve is that
+  // rounded orthogonal route; other curves interpolate the same points.
+  const points = stateDiagram ? barbGap(edge) : edge.points
+  const d =
+    curve === 'linear'
+      ? roundedPath(points, MERMAID_CORNER_RADIUS)
+      : pointsToPath(points, curve)
 
   return (
-    f`<${curved ? 'path' : 'polyline'} ${dataAttrs.join(' ')} ${geometry} ` +
+    f`<path ${dataAttrs.join(' ')} d="${d}" ` +
     f`fill="none" stroke="${strokeColor}" ` +
     f`stroke-width="${strokeWidth}"${dashArray}${animatedDash}${markers}` +
     (titleGapMaskId ? f` mask="url(#${titleGapMaskId})"` : '') +
     ' />'
   )
-}
-
-/** Convert points to SVG polyline points attribute: "x1,y1 x2,y2 ..." */
-function pointsToPolylinePath(points: Point[]): string {
-  return points.map((p) => f`${p.x},${p.y}`).join(' ')
 }
 
 // `_font` isn't read here but is kept to match the `(entity, font)` signature
@@ -633,8 +734,9 @@ function renderNode(
   font: string,
   fontSizes: FontSizes,
   linksEnabled: boolean = true,
+  stateDiagram: boolean = false,
 ): string {
-  const shape = renderNodeShape(node)
+  const shape = renderNodeShape(node, stateDiagram)
   const label = renderNodeLabel(node, font, fontSizes)
 
   // Combine shape and label inside a semantic group
@@ -694,6 +796,14 @@ function renderNode(
 
 /** Gap from an icon tile's bottom edge to the centre of its label line. */
 const SERVICE_LABEL_DROP = 13
+/** Mermaid's architecture group border: 2px, dashed `8`. */
+/** State composite chrome, measured from mermaid@12.3.0: corner radius, title band height, and the gap between the body rect and the outer rect's bottom edge. */
+const COMPOSITE_RADIUS = 5
+/** Corner radius of a state box in mermaid@12.3.0 (`rx="5"`). */
+const STATE_BOX_RADIUS = 5
+const COMPOSITE_BODY_INSET = 4
+const ARCH_GROUP_STROKE = 2
+const ARCH_GROUP_DASH = 8
 
 /**
  * An architecture service as Mermaid draws it (#2518): an 80px tile with its
@@ -702,22 +812,32 @@ const SERVICE_LABEL_DROP = 13
 function renderServiceTile(x: number, y: number, icon: string): string {
   const at = f`transform="translate(${x} ${y})"`
   if (icon === '') {
-    return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="hsl(240, 60%, 86.3%)" stroke-width="2" stroke-dasharray="8" />`
+    return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`
   }
   const glyph = ICON_GLYPHS[icon] ?? UNKNOWN_GLYPH
   return f`<g ${at}><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`
 }
 
-function renderNodeShape(node: PositionedNode): string {
-  const svg = renderNodeShapeBase(node)
+function renderNodeShape(node: PositionedNode, stateDiagram: boolean): string {
+  const svg = renderNodeShapeBase(node, stateDiagram)
   // `style A stroke-dasharray:5 5`: stroke-dasharray inherits to every child shape.
-  const dash = node.icon === undefined ? dashAttr(node.inlineStyle) : ''
+  // mermaid@12.3.0 ignores every `style`/`classDef` on a `sm-circ`, dash included.
+  const dash =
+    node.icon === undefined && node.shape !== 'small-circle'
+      ? dashAttr(node.inlineStyle)
+      : ''
   return dash && svg ? f`<g${dash}>${svg}</g>` : svg
 }
 
-function renderNodeShapeBase(node: PositionedNode): string {
-  const { x, y, width, height, shape, inlineStyle } = node
+function renderNodeShapeBase(
+  node: PositionedNode,
+  stateDiagram: boolean,
+): string {
+  const { x, y, width, height, shape } = node
   if (node.icon !== undefined) return renderServiceTile(x, y, node.icon)
+  // mermaid@12.3.0 (and 12.2.0) draw `sm-circ` in the default node colours whatever
+  // `style` or `classDef` says, so the dot never reads the inline style.
+  const inlineStyle = shape === 'small-circle' ? undefined : node.inlineStyle
 
   // Resolve fill and stroke — inline styles (from mermaid `style` directives)
   // override the CSS variable defaults. When no inline style is present, the
@@ -740,7 +860,16 @@ function renderNodeShapeBase(node: PositionedNode): string {
     case 'diamond':
       return renderDiamond(x, y, width, height, fill, stroke, sw)
     case 'rounded':
-      return renderRoundedRect(x, y, width, height, fill, stroke, sw)
+      return renderRoundedRect(
+        x,
+        y,
+        width,
+        height,
+        fill,
+        stroke,
+        sw,
+        stateDiagram ? STATE_BOX_RADIUS : 6,
+      )
     case 'stadium':
       return renderStadium(x, y, width, height, fill, stroke, sw)
     case 'circle':
@@ -870,10 +999,11 @@ function renderRoundedRect(
   fill: string,
   stroke: string,
   sw: string,
+  r: number,
 ): string {
   return (
     f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
-    f`rx="6" ry="6" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`rx="${r}" ry="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -989,7 +1119,9 @@ function renderHexagon(
   stroke: string,
   sw: string,
 ): string {
-  const inset = h / 4 // Horizontal inset for the angled sides
+  // Horizontal inset for the angled sides: mermaid@12.3.0 uses height / 3.5
+  // (measured on one-, two- and three-line labels).
+  const inset = h / 3.5
   const points = [
     f`${x + inset},${y}`, // top-left
     f`${x + w - inset},${y}`, // top-right
@@ -1317,7 +1449,7 @@ function renderFilledCircle(
   h: number,
   stroke: string,
 ): string {
-  const r = Math.min(w, h) / 2 - 2
+  const r = Math.min(w, h) / 2
   return f`<circle cx="${x + w / 2}" cy="${y + h / 2}" r="${r}" fill="${stroke}" stroke="${stroke}" />`
 }
 
@@ -1637,7 +1769,7 @@ function renderBolt(
 function renderStateStart(x: number, y: number, w: number, h: number): string {
   const cx = x + w / 2
   const cy = y + h / 2
-  const r = Math.min(w, h) / 2 - 2
+  const r = Math.min(w, h) / 2
   return f`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--_text)" stroke="none" />`
 }
 
@@ -1645,11 +1777,12 @@ function renderStateStart(x: number, y: number, w: number, h: number): string {
 function renderStateEnd(x: number, y: number, w: number, h: number): string {
   const cx = x + w / 2
   const cy = y + h / 2
-  const outerR = Math.min(w, h) / 2 - 2
-  const innerR = outerR - 4
+  // mermaid@12.3.0: a 7px ring (2px stroke) round a 2.5px dot.
+  const outerR = Math.min(w, h) / 2
+  const innerR = (outerR * 5) / 14
   return (
     f`<circle cx="${cx}" cy="${cy}" r="${outerR}" ` +
-    f`fill="none" stroke="var(--_text)" stroke-width="${STROKE_WIDTHS.innerBox * 2}" />` +
+    f`fill="none" stroke="var(--_text)" stroke-width="2" />` +
     f`\n<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="var(--_text)" stroke="none" />`
   )
 }
@@ -1676,21 +1809,20 @@ function renderNodeLabel(
     node.width / 2 +
     (node.shape === 'asymmetric' ? ASYMMETRIC_NOTCH / 2 : 0)
   // An icon tile's label hangs below it, as Mermaid's does.
+  // Its first line stays put and further (wrapped) lines hang below it.
+  const labelLines = node.label.split('\n').length
   const cy =
     node.icon === undefined
       ? node.y + node.height / 2
-      : node.y + node.height + SERVICE_LABEL_DROP
+      : node.y +
+        node.height +
+        SERVICE_LABEL_DROP +
+        ((labelLines - 1) / 2) * fontSizes.nodeLabel * LINE_HEIGHT_RATIO
 
-  // Resolve text color — inline styles can override the CSS variable default.
-  // When there's no explicit `color` but there IS a concrete, resolvable
-  // `fill` (e.g. from classDef/style), compute a readable black/white text
-  // color from the fill's luminance instead of defaulting to the ambient
-  // theme foreground, which can be unreadable against a custom fill (e.g.
-  // white theme text on a light pastel fill in dark mode). See issue #55.
-  const textColor = escapeAttr(
-    node.inlineStyle?.color ??
-      getReadableTextColor(node.inlineStyle?.fill, 'var(--_text)'),
-  )
+  // Resolve text color: an explicit `color` (style / classDef / class) wins,
+  // otherwise the theme text color. A custom `fill` never changes the text
+  // color, as in Mermaid 12.3.0 (#2637).
+  const textColor = escapeAttr(node.inlineStyle?.color ?? 'var(--_text)')
 
   let attrs = f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
 

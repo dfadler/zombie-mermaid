@@ -13,6 +13,7 @@ import {
   type XyLayout,
 } from '../scripts/lib/xychart-agreement.ts'
 import { MERMAID_CANNOT_PARSE } from '../scripts/lib/xychart-oracle-cases.ts'
+import { xychartSamples } from '../samples/xychart-samples-data.ts'
 import {
   scorecardMarkdown,
   summarize,
@@ -115,6 +116,10 @@ describe('xychart agreement (#2451)', () => {
     expect(ours.yLabels.length).toBeGreaterThan(1)
     expect(ours.points).toHaveLength(2)
     expect(ours.points[1]!.val).toBeCloseTo(ours.yLabels[0]!.pos, 1)
+    // The frame runs up from the bottom-left corner; its extents stay ordered,
+    // and the value labels sit above the category axis (#2650).
+    expect(ours.axes!.cat[0]).toBeLessThan(ours.axes!.cat[1])
+    expect(ours.yLabels[0]!.pos).toBeGreaterThanOrEqual(ours.axes!.val[0])
   })
 
   it('reads line points, upright and horizontal', () => {
@@ -384,8 +389,9 @@ describe('value-axis extent (#2567)', () => {
     const official = axis(8)
     const same = xyAgreement(official, axis(8))
     expect(same.extent).toBe(1)
-    // The lowest and highest label sit on the line: no room for the smallest bar.
-    expect(xyAgreement(official, axis(0)).extent).toBe(0)
+    // The lowest and highest label sit on the line: no room for the smallest
+    // bar. Extent counts both axes (#2650); the category ends still agree.
+    expect(xyAgreement(official, axis(0)).extent).toBe(0.5)
   })
 
   it('has no extent without axis lines', () => {
@@ -418,13 +424,16 @@ describe('extent edge cases (#2567)', () => {
     const o = ours()
     expect(
       xyAgreement(o, { ...o, yLabels: o.yLabels.slice(0, 1) }).extent,
-    ).toBe(0.5)
+    ).toBe(0.75) // Two category ends agree, one of two value ends
   })
 
   it('has no extent when a chart has no value labels', () => {
     const o = ours()
     expect(
-      xyAgreement({ ...o, yLabels: [] }, { ...o, yLabels: [] }).extent,
+      xyAgreement(
+        { ...o, yLabels: [], xLabels: [] },
+        { ...o, yLabels: [], xLabels: [] },
+      ).extent,
     ).toBeNull()
   })
 
@@ -433,7 +442,34 @@ describe('extent edge cases (#2567)', () => {
     expect(parseOfficialXy(svg, false).axes).toBeUndefined()
   })
 
-  it('lists API Response Time as a sample mermaid cannot parse', () => {
-    expect(MERMAID_CANNOT_PARSE.has('API Response Time')).toBe(true)
+  it('lists no gallery sample as unparsable by mermaid (#2697)', () => {
+    expect(MERMAID_CANNOT_PARSE.size).toBe(0)
+    const api = xychartSamples.find((s) => s.title === 'API Response Time')
+    expect(api?.source).toContain('["/users"')
+  })
+})
+
+describe('extent compares each axis on its own (#2650)', () => {
+  it('drops below 1 when only the category axis differs', () => {
+    const o = parseOurXy(renderMermaidSVG(SRC), false)
+    const moved = {
+      ...o,
+      xLabels: o.xLabels.map((l) => ({ ...l, pos: l.pos + 40 })),
+    }
+    expect(xyAgreement(o, o).extent).toBe(1)
+    expect(xyAgreement(o, moved).extent).toBe(0.5)
+  })
+
+  it('does not pair category ends with value ends when the official chart has no value labels', () => {
+    const o = parseOurXy(renderMermaidSVG(SRC), false)
+    // Official has no value labels and ours does: its category ends agree,
+    // but the lack of value ends must not borrow ours as a match.
+    const a = xyAgreement({ ...o, yLabels: [] }, o)
+    expect(a.extent).toBe(1)
+    const shifted = {
+      ...o,
+      xLabels: o.xLabels.map((l) => ({ ...l, pos: l.pos + 40 })),
+    }
+    expect(xyAgreement({ ...o, yLabels: [] }, shifted).extent).toBe(0)
   })
 })

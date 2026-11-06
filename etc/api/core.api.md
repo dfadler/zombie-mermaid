@@ -204,7 +204,7 @@ export function escapeAttr(value: string): string;
 export function escapeXml(text: string): string;
 
 // @public
-export function extractAccessibility(text: string): AccessibleText;
+export function extractAccessibility(source: string): AccessibleText;
 
 // @public
 export function extractInitConfig(lines: string[]): InitConfig;
@@ -233,7 +233,7 @@ export function fromShikiTheme(theme: ShikiThemeLike): DiagramColors;
 // @public
 export function getCharWidth(char: string): number;
 
-// @public
+// @public @deprecated
 export function getReadableTextColor(fill: string | undefined, fallback: string): string;
 
 // @public
@@ -253,6 +253,9 @@ export interface InitConfig {
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
     pieTextPosition?: number;
     quadrant?: QuadrantConfig;
+    sequenceHideUnused?: boolean;
+    sequenceMirrorActors?: boolean;
+    sequenceShowNumbers?: boolean;
     // (undocumented)
     theme?: string;
     themeVariables?: ThemeVariables;
@@ -318,6 +321,7 @@ export function measureTextWidth(text: string, fontSize: number, fontWeight: num
 
 // @public (undocumented)
 export interface MermaidEdge {
+    // @deprecated
     acrossFlow?: boolean;
     animate?: boolean;
     endMarker?: 'circle' | 'cross';
@@ -350,6 +354,7 @@ export interface MermaidGraph {
     // (undocumented)
     nodes: Map<string, MermaidNode>;
     nodeStyles: Map<string, Record<string, string>>;
+    stateDiagram?: boolean;
     // (undocumented)
     subgraphs: MermaidSubgraph[];
 }
@@ -395,6 +400,7 @@ export interface MermaidParseErrorOptions {
 
 // @public (undocumented)
 export interface MermaidSubgraph {
+    architecture?: boolean;
     // (undocumented)
     children: MermaidSubgraph[];
     direction?: Direction;
@@ -406,6 +412,7 @@ export interface MermaidSubgraph {
     // (undocumented)
     nodeIds: string[];
     region?: boolean;
+    stateComposite?: boolean;
 }
 
 // @public (undocumented)
@@ -518,12 +525,15 @@ export interface PositionedGraph {
     height: number;
     // (undocumented)
     nodes: PositionedNode[];
+    stateDiagram?: boolean;
     // (undocumented)
     width: number;
 }
 
 // @public (undocumented)
 export interface PositionedGroup {
+    architecture?: boolean;
+    bandless?: boolean;
     // (undocumented)
     children: PositionedGroup[];
     // (undocumented)
@@ -687,6 +697,9 @@ export interface Statement {
 
 // @public
 export function stripFormattingTags(text: string): string;
+
+// @public
+export function stripFrontMatter(text: string): string;
 
 // @public
 export interface StyleDirectives {

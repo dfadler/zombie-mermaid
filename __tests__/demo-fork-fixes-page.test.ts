@@ -15,6 +15,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   FixPanel,
+  ForkFixesApp,
+  type FixSectionProps,
   tokenizeMermaidSource,
   type PanelContent,
 } from '../demo/components/fork-fixes-app.tsx'
@@ -175,5 +177,41 @@ describe('FixPanel', () => {
     const html = renderPanel({ kind: 'svg', html: '<svg data-x="1"></svg>' })
     expect(html).toContain('class="fix-svg"')
     expect(html).toContain('<svg aria-label="Rendered diagram" data-x="1">')
+  })
+})
+
+describe('ForkFixesApp groups', () => {
+  const fix = (id: string, group?: 'features' | 'markup'): FixSectionProps => ({
+    id,
+    title: id,
+    symptomHtml: '',
+    lookForHtml: '',
+    pr: 1,
+    fixCommit: 'abc',
+    render: 'svg',
+    group,
+    source: 'flowchart LR\n  A-->B',
+    before: { kind: 'empty' },
+    after: { kind: 'empty' },
+  })
+  const render = (fixes: FixSectionProps[]) =>
+    renderToStaticMarkup(createElement(ForkFixesApp, { fixes }))
+
+  it('headings only for non-main groups, entries under their own group in order', () => {
+    const html = render([fix('m1', 'markup'), fix('f1', 'features'), fix('x1')])
+    expect(html).not.toContain('id="group-fixes"')
+    const at = (s: string) => html.indexOf(s)
+    expect(html).toContain('id="x1"')
+    expect(at('id="x1"')).toBeLessThan(at('id="group-features"'))
+    expect(at('id="group-features"')).toBeLessThan(at('id="f1"'))
+    expect(at('id="f1"')).toBeLessThan(at('id="group-markup"'))
+    expect(at('id="group-markup"')).toBeLessThan(at('id="m1"'))
+    expect(html).toContain('make no claim to match Mermaid')
+  })
+
+  it('omits the heading of an empty group', () => {
+    const html = render([fix('x1')])
+    expect(html).not.toContain('id="group-markup"')
+    expect(html).not.toContain('id="group-features"')
   })
 })

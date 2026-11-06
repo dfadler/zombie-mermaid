@@ -38,8 +38,8 @@ describe('ER attribute row padding (#1262)', () => {
   it('leaves a gap between type and name even with whole-pixel glyph advances', () => {
     const typeRight =
       attr(typeText, 'x') + 'varchar(255)'.length * WORST_CASE_ADVANCE
-    const nameLeft =
-      attr(nameText, 'x') - 'emailAddressPrimary'.length * WORST_CASE_ADVANCE
+    // The name is left-aligned in its own cell, so its x is its left edge.
+    const nameLeft = attr(nameText, 'x')
     expect(nameLeft - typeRight).toBeGreaterThanOrEqual(
       MIN_GAP_BETWEEN_TYPE_AND_NAME,
     )

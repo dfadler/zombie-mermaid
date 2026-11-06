@@ -4,6 +4,7 @@ import { splitStatements } from '@zombie-mermaid/core'
 import { parseC4Diagram } from '@zombie-mermaid/mermaid-parser'
 import { layoutC4DiagramSync } from '../c4/layout.ts'
 
+// Provenance (#2679, class a): re-rendered with 12.3.0, all 32 diagram sizes agree to 0.1px.
 // Each case is a C4 source rendered by real Mermaid 11.17.2 (headless Chrome,
 // screen width 1440), with the numbers read back from its SVG: the diagram
 // size, the centre of every shape, and each relationship's line and label.

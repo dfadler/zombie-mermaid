@@ -2,8 +2,8 @@
  * fork-fixes.html — a before/after showcase of bugs this fork fixed (ported from
  * the former packages/site/fork-fixes.ts).
  *
- * Every "before" is rendered by the project's actual renderer as it existed
- * immediately before the fix landed (fork-fixes-before.ts, started by the
+ * Every "before" is rendered by upstream lukilabs/beautiful-mermaid, pinned at
+ * the fork point (fork-fixes-before.ts, started by the
  * build config concurrently with everything else); every "after" is the live
  * tree. Nothing is hand-drawn. The build FAILS if any pair renders
  * identically: a before/after where both halves look the same silently claims a
@@ -122,6 +122,7 @@ function fixSectionProps(pair: RenderPair): FixSectionProps {
     fixCommit: fix.fixCommit,
     render: fix.render,
     upstreamIssues: fix.upstreamIssues,
+    group: fix.group,
     source: fix.source,
     before: panel('before'),
     after: panel('after'),

@@ -152,6 +152,12 @@ export interface InitConfig {
   pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center'
   /** `pie.highlightSlice`: label of the slice to emphasise. */
   pieHighlightSlice?: string
+  /** `sequence.mirrorActors`: false drops the participant row under the lifelines. */
+  sequenceMirrorActors?: boolean
+  /** `sequence.showSequenceNumbers`: true numbers the messages, like `autonumber`. */
+  sequenceShowNumbers?: boolean
+  /** `sequence.hideUnusedParticipants`: true drops participants no message or note touches. */
+  sequenceHideUnused?: boolean
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
@@ -367,6 +373,17 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'sequence' && typeof value === 'object' && value !== null) {
+      for (const [sk, sv] of Object.entries({ ...value })) {
+        if (typeof sv !== 'boolean') continue
+        const sl = sk.toLowerCase()
+        if (sl === 'mirroractors') config.sequenceMirrorActors = sv
+        else if (sl === 'showsequencenumbers') config.sequenceShowNumbers = sv
+        else if (sl === 'hideunusedparticipants') config.sequenceHideUnused = sv
+      }
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -416,6 +433,15 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.pieHighlightSlice !== undefined) {
       merged.pieHighlightSlice = config.pieHighlightSlice
+    }
+    if (config.sequenceMirrorActors !== undefined) {
+      merged.sequenceMirrorActors = config.sequenceMirrorActors
+    }
+    if (config.sequenceShowNumbers !== undefined) {
+      merged.sequenceShowNumbers = config.sequenceShowNumbers
+    }
+    if (config.sequenceHideUnused !== undefined) {
+      merged.sequenceHideUnused = config.sequenceHideUnused
     }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }

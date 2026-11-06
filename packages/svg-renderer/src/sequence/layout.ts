@@ -50,8 +50,26 @@ const SEQ = {
   blockPadBottom: 8,
   /** Extra vertical space before the first message in a block (room for the header label) */
   blockHeaderExtra: 28,
+  /**
+   * Extra room between a block's header label and the first message below it,
+   * so the label sits 33px above that message's label as in mermaid 12.3.0
+   * (measured at 16px text, in absolute px; ours was 7px).
+   */
+  blockHeaderLabelGap: 26,
+  /**
+   * The same room for a block with another block opening inside it at the same
+   * message: the outer header sits 45px (label top to label top) above the
+   * inner one in mermaid 12.3.0, ours was 28px.
+   */
+  blockNestedHeaderGap: 17,
   /** Extra vertical space before a message at a divider boundary (room for else/and label) */
   dividerExtra: 24,
+  /**
+   * Extra room between a divider and the message below it, so the divider
+   * label sits 28px above that message's label as in mermaid 12.3.0 (measured
+   * at 16px text, in absolute px; ours was 2px).
+   */
+  dividerLabelGap: 26,
   /** Note dimensions */
   noteWidth: 60,
   notePadX: 12,
@@ -169,9 +187,56 @@ function labelWidth(
   return measureMultilineText(text, fontSize, weight).width
 }
 
-/** How far a block's frame extends past its outermost lifelines. */
-function blockFramePad(seq: ReturnType<typeof resolveSeqOptions>): number {
-  return seq.blockPadX + seq.activationWidth / 2
+/**
+ * Stroke width of a lifeline. Mermaid 12.3.0 draws `.actor-line` solid at
+ * `stroke-width="0.5px"`, in absolute px like the block frame below.
+ */
+export const LIFELINE_STROKE = 0.5
+
+/**
+ * Stroke width of a block's frame and divider lines. Mermaid 12.3.0 draws
+ * `.loopLine` 2px wide (the tab's `.labelBox` outline is 1px), in absolute
+ * px: its geometry is not scaled to the fork's smaller font, so neither are
+ * these.
+ */
+export const BLOCK_LINE_STROKE = 2
+
+/**
+ * How far a block's frame extends past its outermost lifelines: mermaid 12.3.0
+ * draws it 11px out (`boxMargin` 10 plus half the frame's stroke width).
+ */
+export function blockFramePad(
+  seq: Pick<ReturnType<typeof resolveSeqOptions>, 'blockPadX'>,
+): number {
+  return seq.blockPadX + BLOCK_LINE_STROKE / 2
+}
+
+/** Height of a block's type-label tab, in px. */
+export const BLOCK_TAB_HEIGHT = 18
+
+/**
+ * The tab's cut bottom-right corner, as fractions of the tab height. Mermaid
+ * 12.3.0 draws a 35px tab as `114,111 105.6,118`: a 7px rise and an 8.4px
+ * run, i.e. 0.2 and 0.24 of the height.
+ */
+export const BLOCK_TAB_CUT_RISE_RATIO = 0.2
+export const BLOCK_TAB_CUT_RUN_RATIO = 0.24
+
+/** The tab polygon's vertices, clockwise from the block's top-left corner. */
+export function blockTabPoints(
+  x: number,
+  y: number,
+  tabWidth: number,
+): [number, number][] {
+  const cutRun = BLOCK_TAB_HEIGHT * BLOCK_TAB_CUT_RUN_RATIO
+  const cutRise = BLOCK_TAB_HEIGHT * BLOCK_TAB_CUT_RISE_RATIO
+  return [
+    [x, y],
+    [x + tabWidth, y],
+    [x + tabWidth, y + BLOCK_TAB_HEIGHT - cutRise],
+    [x + tabWidth - cutRun, y + BLOCK_TAB_HEIGHT],
+    [x, y + BLOCK_TAB_HEIGHT],
+  ]
 }
 
 /**
@@ -205,8 +270,8 @@ function blockLabelsWidth(
   )
 }
 
-/** Extra height a multi-line divider label takes over a single line. */
-function dividerLabelExtra(
+/** Extra height a multi-line label takes over a single line. */
+export function dividerLabelExtra(
   label: string | undefined,
   fontSize: number,
 ): number {
@@ -284,6 +349,10 @@ function fitLabelsBetweenLifelines(
     else if (n.actorIds.length === 1) {
       widen(i, i + 1, w / 2 + LABEL_CLEARANCE)
       widen(i - 1, i, w / 2 + LABEL_CLEARANCE)
+    } else {
+      // Mermaid spreads the actors so a long note fits its 25px-overhang span.
+      const j = index.get(n.actorIds[n.actorIds.length - 1]!)!
+      widen(Math.min(i, j), Math.max(i, j), w - 50)
     }
   }
 
@@ -446,22 +515,44 @@ export function layoutSequenceDiagram(
   // overlap with the header/divider text that sits above them.
   const headerSpaceBefore = new Map<number, number>()
   const dividerSpaceBefore = new Map<number, number>()
-  for (const block of diagram.blocks) {
+  // Room a multi-line header label (or first message label) adds above a
+  // block's first arrow, so the frame top can stay put (#2588).
+  const startLabelExtra = new Map<number, number>()
+  diagram.blocks.forEach((block, bi) => {
+    const holdsInner = diagram.blocks.some(
+      (b, j) => j < bi && b.startIndex === block.startIndex,
+    )
+    const extra = dividerLabelExtra(block.label, fontSizes.edgeLabel)
+    // Only the innermost header sits just above the message; an outer one
+    // sits above the inner tab (see `blockTop` below).
+    const labelGap = holdsInner ? 0 : seq.blockHeaderLabelGap
+    startLabelExtra.set(
+      block.startIndex,
+      (startLabelExtra.get(block.startIndex) ?? 0) + extra + labelGap,
+    )
     // First message in the block needs room for the block header label;
     // nested blocks opening at the same message stack their headers above it
     headerSpaceBefore.set(
       block.startIndex,
-      (headerSpaceBefore.get(block.startIndex) ?? 0) + seq.blockHeaderExtra,
+      (headerSpaceBefore.get(block.startIndex) ?? 0) +
+        seq.blockHeaderExtra +
+        extra +
+        (holdsInner ? seq.blockNestedHeaderGap : labelGap),
     )
 
     // Each divider (else/and) needs room for the divider label
     for (const div of block.dividers) {
+      // A nested block opening right below the divider has its own header
+      // between the two, so it needs no extra gap.
+      const opensBlock = diagram.blocks.some((b) => b.startIndex === div.index)
       dividerSpaceBefore.set(
         div.index,
-        seq.dividerExtra + dividerLabelExtra(div.label, fontSizes.edgeLabel),
+        seq.dividerExtra +
+          (opensBlock ? 0 : seq.dividerLabelGap) +
+          dividerLabelExtra(div.label, fontSizes.edgeLabel),
       )
     }
-  }
+  })
 
   // Blocks closing after each message, and their bottom edges once placed
   const nested = nestedBlocks(diagram.blocks)
@@ -492,7 +583,7 @@ export function layoutSequenceDiagram(
     PositionedNote
   >()
   const placeNote = (note: (typeof diagram.notes)[number], noteY: number) => {
-    const noteW = Math.max(
+    let noteW = Math.max(
       seq.noteWidth,
       labelWidth(note.text, fontSizes.edgeLabel) + seq.notePadX * 2,
     )
@@ -520,9 +611,12 @@ export function layoutSequenceDiagram(
       const lastActorIdx =
         actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
         firstActorIdx
-      noteX =
-        (actorCenterX[firstActorIdx]! + actorCenterX[lastActorIdx]!) / 2 -
-        noteW / 2
+      const c1 = actorCenterX[firstActorIdx]!
+      const c2 = actorCenterX[lastActorIdx]!
+      // Mermaid 12.3.0 spans the note across both lifelines, overhanging
+      // each by 25px, and only grows past that for longer text (#2587).
+      noteW = Math.max(noteW, Math.abs(c1 - c2) + 50)
+      noteX = (c1 + c2) / 2 - noteW / 2
     } else {
       noteX = actorCenterX[firstActorIdx]! - noteW / 2
     }
@@ -615,6 +709,7 @@ export function layoutSequenceDiagram(
   // Events before the first message open at the top of the message area.
   applyActivationEvents(-1, messageY)
 
+  const msgLabelExtra: number[] = []
   for (let msgIdx = 0; msgIdx < diagram.messages.length; msgIdx++) {
     const msg = diagram.messages[msgIdx]!
     const fromIdx = actorIndex.get(msg.from) ?? 0
@@ -625,6 +720,12 @@ export function layoutSequenceDiagram(
     messageY +=
       (headerSpaceBefore.get(msgIdx) ?? 0) +
       (dividerSpaceBefore.get(msgIdx) ?? 0)
+
+    // A multi-line label grows upward from the arrow, so its first line stays
+    // where a one-line label's would and the arrow moves down (#2588).
+    const labelExtra = dividerLabelExtra(msg.label, fontSizes.edgeLabel)
+    messageY += labelExtra
+    msgLabelExtra[msgIdx] = labelExtra
 
     const x1 = actorCenterX[fromIdx]!
     let x2 = actorCenterX[toIdx]!
@@ -767,9 +868,16 @@ export function layoutSequenceDiagram(
     // Block spans from the Y of startIndex to endIndex messages, above the
     // header tabs of nested blocks that open at the same message
     const startMsg = messages[block.startIndex]
-    let blockTop = (startMsg?.y ?? messageY) - seq.blockPadTop
+    let blockTop =
+      (startMsg?.y ?? messageY) -
+      seq.blockPadTop -
+      startLabelExtra.get(block.startIndex)! -
+      (msgLabelExtra[block.startIndex] ?? 0)
     for (const c of inner)
-      blockTop = Math.min(blockTop, c.y - seq.blockHeaderExtra)
+      blockTop = Math.min(
+        blockTop,
+        c.y - seq.blockHeaderExtra - seq.blockNestedHeaderGap,
+      )
     // An empty block (no message closes it) ends below the last row
     const blockBottom = blockBottoms[bi] ?? messageY + seq.blockPadBottom + 12
 
@@ -862,7 +970,9 @@ export function layoutSequenceDiagram(
       // that is centred too, so a labelled message needs the taller offset.
       const offset =
         (d.label && msg?.label ? 40 : 28) +
-        dividerLabelExtra(d.label, fontSizes.edgeLabel)
+        seq.dividerLabelGap +
+        dividerLabelExtra(d.label, fontSizes.edgeLabel) +
+        (msgLabelExtra[d.index] ?? 0)
 
       return { y: msgY - offset, label: d.label }
     })
@@ -892,6 +1002,7 @@ export function layoutSequenceDiagram(
   // The lifelines end where the mirrored footer actors begin; a stick figure
   // or typed icon keeps its label below the box, so the footer row grows by it.
   const lifelineBottom = messageY
+  const mirror = diagram.mirrorActors !== false
   const footerLabelRoom = Math.max(
     0,
     ...diagram.actors.map((a, i) =>
@@ -901,7 +1012,9 @@ export function layoutSequenceDiagram(
     ),
   )
   const diagramBottom =
-    lifelineBottom + seq.actorHeight + footerLabelRoom + seq.padding
+    lifelineBottom +
+    (mirror ? seq.actorHeight + footerLabelRoom : 0) +
+    seq.padding
 
   // Find global X extents across actors, blocks, notes, and message labels
   let globalMinX: number = seq.padding // Actors already start at seq.padding
@@ -1000,7 +1113,7 @@ export function layoutSequenceDiagram(
   // Mermaid mirrors every participant along the bottom of the lifelines; a
   // destroyed one ended at its destroying message, so it has no footer.
   const footerActors = actors
-    .filter((_, i) => diagram.actors[i]!.destroyedAt === undefined)
+    .filter((_, i) => mirror && diagram.actors[i]!.destroyedAt === undefined)
     .map((a) => ({ ...a, y: lifelineBottom }))
 
   // Box backgrounds run from the top padding to just under the footer

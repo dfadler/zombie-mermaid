@@ -1,6 +1,7 @@
 import type { SequenceDiagram, Message, Block, Actor } from './types.ts'
 import {
   MermaidParseError,
+  extractInitConfig,
   normalizeBrTags,
   type Statement,
 } from '@zombie-mermaid/core'
@@ -175,7 +176,10 @@ const MESSAGE_ANY_ARROW_RE =
 // any of these guarantees, but removing the `!` would only replace a
 // proven-safe assertion with an unreachable guard. Left as-is; no
 // behavior change.
-export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
+export function parseSequenceDiagram(
+  lines: Statement[],
+  text?: string,
+): SequenceDiagram {
   const diagram: SequenceDiagram = {
     actors: [],
     messages: [],
@@ -213,6 +217,14 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
   // off` turns it back off. Only messages consume a number — notes and
   // block/divider lines don't advance the counter.
   const autonumber = { enabled: false, next: 1, step: 1 }
+
+  // `%%{init: {"sequence": {...}}}%%`: only `mirrorActors`,
+  // `showSequenceNumbers` and `hideUnusedParticipants` are read (docs/known-differences.md lists the rest).
+  // `text` is the raw source (comment lines, where the directive lives, are
+  // already gone from `lines`); callers without it get the defaults.
+  const init = extractInitConfig((text ?? '').split(/\r\n?|\n/))
+  if (init.sequenceShowNumbers) autonumber.enabled = true
+  if (init.sequenceMirrorActors === false) diagram.mirrorActors = false
 
   // `create participant X` / `destroy X` bind to the very next message —
   // Mermaid's sequenceDb enforces that the next message's recipient is the
@@ -581,6 +593,19 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       `Line ${boxOpenLine}: Sequence diagram: unclosed "box${openBox.label ? ` ${openBox.label}` : ''}" — expected a matching "end" before the diagram ends.`,
       { diagramType: 'sequence' },
     )
+  }
+
+  if (init.sequenceHideUnused) {
+    // Mermaid keeps a participant any message (incl. `activate X`) or note
+    // names; a box membership alone does not (measured on 12.3.0).
+    const used = new Set<string>()
+    for (const m of diagram.messages) used.add(m.from).add(m.to)
+    for (const n of diagram.notes) n.actorIds.forEach((id) => used.add(id))
+    for (const a of diagram.activations) used.add(a.actorId)
+    diagram.actors = diagram.actors.filter((a) => used.has(a.id))
+    for (const b of diagram.boxes) {
+      b.actorIds = b.actorIds.filter((id) => used.has(id))
+    }
   }
 
   return diagram

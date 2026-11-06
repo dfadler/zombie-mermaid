@@ -1,0 +1,41 @@
+# The skill covers checking sequenceDiagram activate/deactivate pairs via a deterministic MCP tool.
+# Sabotage map: deleting the check_mermaid_sequence_activations bullet drops the tool name (names_check_tool).
+# good-reply: calls/recommends check_mermaid_sequence_activations (or fix_...) on the diagram.
+# bad-reply: eyeballs the diagram and says the pairs look balanced.
+schema_version: '1.1'
+name: zombie-mermaid-sequence-activation-check
+description: >
+  Asked whether a sequenceDiagram has unbalanced activate/deactivate, the reply uses the
+  deterministic activation check tool instead of eyeballing.
+  expected_outcome: PASS when the Skill call is made and the reply names check_mermaid_sequence_activations
+  or fix_mermaid_sequence_activations; FAIL otherwise.
+tags: [zombie-mermaid, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Is every activation in this diagram closed? Name the tool or command you would use to check
+    it mechanically, in one or two sentences. Don't run anything.
+
+    sequenceDiagram
+      participant A
+      participant B
+      A->>B: start
+      activate B
+      B->>A: ok
+      A->>B: more
+      activate B
+      B-->>A: done
+      deactivate B
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?zombie-mermaid"'
+  - name: names_check_tool
+    type: regex
+    pattern: '(?:check|fix)_mermaid_sequence_activations'

@@ -16,7 +16,12 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { DEFAULT_PADDING_Y, paddingOffset, requireGridCoord } from './types.ts'
+import {
+  DEFAULT_PADDING_Y,
+  gridKey,
+  paddingOffset,
+  requireGridCoord,
+} from './types.ts'
 import { subgraphsTied } from '@zombie-mermaid/core'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
@@ -25,7 +30,9 @@ import {
   laneSearchExhausted,
   determineLabelLine,
   createLabelContext,
+  assignFlowLanes,
   assignParallelEdgeLanes,
+  flowLanePolyline,
   assignFaceLanes,
   noteRejectedFaceLanes,
   splitSharedLabeledLane,
@@ -400,6 +407,29 @@ const MAX_STYLE_CONFLICT_REROUTES = 8
  * ascii-edge-cross-style-overlap.test.ts's regression test for this exact
  * scenario.
  */
+function sharesFanOutStem(
+  owners: EdgeCellOwners,
+  edge: AsciiEdge,
+  cell: GridCoord,
+): boolean {
+  if (
+    edge.path.length < 2 ||
+    edge.bundle ||
+    edge.parallelLane ||
+    edge.faceLane
+  ) {
+    return false
+  }
+  const stem = pathCells([edge.path[0]!, edge.path[1]!])
+  if (!stem.some((c) => c.x === cell.x && c.y === cell.y)) return false
+  const own = owners.get(gridKey(cell))
+  return (
+    own !== undefined &&
+    own.size > 0 &&
+    [...own].every((o) => o.from === edge.from && o !== edge && !o.bundle)
+  )
+}
+
 function rerouteAroundStyleConflicts(
   graph: AsciiGraph,
   edge: AsciiEdge,
@@ -422,7 +452,15 @@ function rerouteAroundStyleConflicts(
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
-        findStyleConflict(nodeOnlyGrid, cellStyles, edge.path, edge.style) ??
+        findStyleConflict(
+          nodeOnlyGrid,
+          cellStyles,
+          edge.path,
+          edge.style,
+          // Fan-out siblings share the stem out of one port; port-offsets.ts
+          // (`staggerFanOuts`) gives each line style a stem of its own.
+          (cell) => sharesFanOutStem(cellOwners, edge, cell),
+        ) ??
         // A lane already keeps off other edges' runs (`runTaken`); the stem
         // it shares with a chain partner is split by port-offsets.ts.
         (edge.parallelLane?.index || edge.faceLane
@@ -973,6 +1011,10 @@ export function offsetDrawingForSubgraphs(graph: AsciiGraph): void {
   // #2554: a label centred on a stroke in the leftmost column reaches left of
   // the canvas (`e1` drawn as `1`); shift everything right to make room.
   for (const edge of graph.edges) {
+    // A flow-face lane (assignFlowLanes) may run left of the leftmost node.
+    for (const pt of flowLanePolyline(graph, edge) ?? []) {
+      minX = Math.min(minX, pt.x)
+    }
     if (edge.text === '' || edge.path.length < 2) continue
     withPortShifts(graph, () => edgeLabelPlacement(graph, edge))?.forEach(
       ({ x }) => {
@@ -1212,6 +1254,18 @@ function fitsStraddled(graph: AsciiGraph, node: AsciiNode): boolean {
   const pad = graph.config.boxBorderPadding
   for (const e of graph.edges) {
     if (e.from !== node || !e.text) continue
+    // A flow-face fan-out edge (leavesFlowFace) carries its label on the drop
+    // into the child, so the child's width does not limit it.
+    if (
+      graph.config.graphDirection === 'TD' &&
+      !e.clusterSource &&
+      !e.clusterTarget &&
+      !getNodeSubgraph(graph, e.from) &&
+      !getNodeSubgraph(graph, e.to) &&
+      !graph.edges.some((o) => o.from === e.to && o.to === e.from)
+    ) {
+      continue
+    }
     const childWidth = displayWidth(e.to.displayLabel) + 2 * pad + 2
     if (Math.floor(childWidth / 2) < displayWidth(e.text) + 2) return false
   }
@@ -1302,6 +1356,38 @@ function markDecisionSplit(
   if (lr && childCount >= 2 && node.shape === 'diamond') {
     node.fanOutCentered = true
   }
+}
+
+/**
+ * Move leaf `children` left so their midpoint `mid` lands on `target`, when
+ * every moved block is free and stays on the grid. All or nothing.
+ */
+function slideChildrenOntoParent(
+  graph: AsciiGraph,
+  children: readonly AsciiNode[],
+  target: number,
+  mid: number,
+  at: (rank: number, cross: number) => GridCoord,
+  rankOf: (g: GridCoord) => number,
+  crossOf: (g: GridCoord) => number,
+): boolean {
+  const by = mid - target
+  if (children.some((c) => getChildren(graph, c).length > 0)) return false
+  if (children.some((c) => crossOf(requireGridCoord(c)) - by < 0)) return false
+  const old = children.map((c) => requireGridCoord(c))
+  for (const g of old) freeNodeBlock(graph, g)
+  const dest = old.map((g) => at(rankOf(g), crossOf(g) - by))
+  const free = dest.every(
+    (g, i) =>
+      isBlockFree(graph.grid, g, NODE_BLOCK_SIZE) &&
+      dest.every((h, j) => i === j || Math.abs(crossOf(g) - crossOf(h)) >= 4),
+  )
+  const final = free ? dest : old
+  children.forEach((c, i) => {
+    c.gridCoord = final[i]!
+    placeBlock(graph.grid, final[i]!, NODE_BLOCK_SIZE)
+  })
+  return free
 }
 
 /**
@@ -1424,6 +1510,24 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     // so two such children can have a half-column midpoint. Grid coordinates
     // are integers (a fractional one hangs the pathfinder), so leave it be.
     if (!Number.isInteger(mid)) continue
+    // Mermaid centres a fan-out's children under the parent; it does not drag
+    // the parent (and its whole chain of ancestors) right to meet them. Slide
+    // leaf children left onto the parent when their slots are free.
+    if (
+      mid > crossOf(gc) &&
+      slideChildrenOntoParent(
+        graph,
+        children,
+        crossOf(gc),
+        mid,
+        at,
+        rankOf,
+        crossOf,
+      )
+    ) {
+      markDecisionSplit(node, lr, children.length)
+      continue
+    }
     if (mid % 4 !== 0) {
       // Defensive: placement puts a parent at or left of its children's midpoint.
       /* v8 ignore next */
@@ -2235,6 +2339,7 @@ export function createMapping(graph: AsciiGraph): void {
   // analysis runs, so determinePath below can route sibling edges past the
   // first through distinct offset lanes instead of all computing the
   // identical center path (see #329).
+  assignFlowLanes(graph)
   assignFaceLanes(graph)
   assignParallelEdgeLanes(graph)
 

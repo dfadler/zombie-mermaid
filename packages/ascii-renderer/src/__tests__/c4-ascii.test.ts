@@ -341,3 +341,40 @@ describe('arrowheads are fed by a stroke (#2026)', () => {
     expect(bad).toEqual([])
   })
 })
+
+// Mermaid 12.3.0 draws accTitle in the title slot, over any `title` (#2696).
+describe('C4 accTitle', () => {
+  const body = `  Person(u, "User")\n  System(s, "System")\n  Rel(u, s, "uses")`
+  const lines = (src: string) =>
+    renderMermaidASCII(src, { colorMode: 'none' }).split('\n')
+
+  it('draws accTitle centred above the diagram, like title', () => {
+    const out = lines(`C4Context\n  accTitle: Accessible title\n${body}`)
+    const row = out.findIndex((l) => l.includes('Accessible title'))
+    expect(row).toBe(
+      lines(`C4Context\n  title Accessible title\n${body}`).findIndex((l) =>
+        l.includes('Accessible title'),
+      ),
+    )
+    expect(row).toBeLessThan(out.findIndex((l) => l.includes('User')))
+  })
+
+  it('lets accTitle win over title, and does not print accDescr', () => {
+    const out = renderMermaidASCII(
+      `C4Context\n  title Shown\n  accTitle: Accessible\n  accDescr: Hidden words\n${body}`,
+      { colorMode: 'none' },
+    )
+    expect(out).toContain('Accessible')
+    expect(out).not.toContain('Shown')
+    expect(out).not.toContain('Hidden words')
+  })
+
+  it('still draws a plain title and widens for a long accTitle', () => {
+    expect(lines(`C4Context\n  title Shown\n${body}`).join('\n')).toContain(
+      'Shown',
+    )
+    const long = 'x'.repeat(60)
+    const out = lines(`C4Context\n  accTitle: ${long}\n${body}`)
+    expect(out.some((l) => l.includes(long))).toBe(true)
+  })
+})

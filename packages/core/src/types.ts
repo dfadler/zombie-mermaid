@@ -42,6 +42,8 @@ export interface LayoutCache {
 }
 
 export interface MermaidGraph {
+  /** Set by the parser for `stateDiagram` / `stateDiagram-v2` */
+  stateDiagram?: boolean
   direction: Direction
   nodes: Map<string, MermaidNode>
   edges: MermaidEdge[]
@@ -165,9 +167,9 @@ export interface MermaidEdge {
   /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */
   animate?: boolean
   /**
-   * Architecture only: the ports put the ends side by side across the flow
-   * (`a:B -- T:b` in a left-to-right graph), so the SVG layout keeps the edge
-   * out of the layering and draws it straight between the two (#2473).
+   * Architecture only. No longer set: the SVG grid layout (#2619) draws every
+   * edge between the cells its ports name.
+   * @deprecated Never set; remove at the next major.
    */
   acrossFlow?: boolean
 }
@@ -226,8 +228,12 @@ export interface MermaidSubgraph {
    * titled subgraph, like mermaid.js's `divider` cluster.
    */
   region?: boolean
-  /** Architecture group icon name from `group id(icon)`; SVG draws it in the header. */
+  /** A state diagram's composite state: mermaid draws it with a header band. */
+  stateComposite?: boolean
+  /** Architecture group icon name from `group id(icon)`; absent when it has none. */
   icon?: string
+  /** An `architecture-beta` group: the SVG renderer draws Mermaid's dashed box instead of a header band. */
+  architecture?: boolean
 }
 
 // ============================================================================
@@ -235,6 +241,8 @@ export interface MermaidSubgraph {
 // ============================================================================
 
 export interface PositionedGraph {
+  /** Set for a `stateDiagram`: state boxes, arrowheads and composites follow Mermaid's state look */
+  stateDiagram?: boolean
   width: number
   height: number
   nodes: PositionedNode[]
@@ -301,8 +309,15 @@ export interface PositionedGroup {
   inlineStyle?: Record<string, string>
   /** Concurrency region: draw dashed and untitled (see `MermaidSubgraph.region`) */
   region?: boolean
+  /**
+   * A flowchart subgraph: mermaid draws a centred title and no header band
+   * (state composites keep the band).
+   */
+  bandless?: boolean
   /** Architecture group icon name; see `MermaidSubgraph.icon`. */
   icon?: string
+  /** See `MermaidSubgraph.architecture`. */
+  architecture?: boolean
 }
 
 // ============================================================================
@@ -361,7 +376,7 @@ export interface RenderOptions {
   nodeSpacing?: number
   /** Vertical spacing between layers. Default: 48. Flowchart/state diagrams only — class/ER diagrams use fixed internal spacing. */
   layerSpacing?: number
-  /** Whether to bundle overlapping fan-out/fan-in edge paths into shared trunks to reduce visual clutter. Default: true */
+  /** Whether to bundle overlapping fan-out/fan-in edge paths into shared trunks to reduce visual clutter. Default: false */
   mergeEdges?: boolean
   /**
    * Force the diagram's layout direction, overriding the one its source

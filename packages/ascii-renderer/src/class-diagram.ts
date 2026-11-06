@@ -91,7 +91,7 @@ function getRelMarker(
 function getMarkerShape(
   type: RelationshipType,
   useAscii: boolean,
-  direction?: 'up' | 'down' | 'left' | 'right',
+  direction: 'up' | 'down' | 'left' | 'right',
 ): string {
   switch (type) {
     case 'inheritance':
@@ -122,17 +122,8 @@ function getMarkerShape(
       return useAscii ? 'O' : '○'
     case 'association':
     case 'dependency':
-      // Directional arrow - rotate based on line direction
-      if (direction === 'down') {
-        return useAscii ? 'v' : '▼'
-      } else if (direction === 'up') {
-        return useAscii ? '^' : '▲'
-      } else if (direction === 'left') {
-        return useAscii ? '<' : '◀'
-      } else {
-        // Default to right (or when direction not specified)
-        return useAscii ? '>' : '▶'
-      }
+      // Directional arrow: Mermaid's open V, the same in both charsets.
+      return { up: '^', down: 'v', left: '<', right: '>' }[direction]
   }
 }
 
@@ -425,7 +416,11 @@ export function renderClassAscii(
   const classBoxH = new Map<string, number>()
 
   for (const cls of diagram.classes) {
-    const sections = buildClassSections(cls)
+    const sections = buildClassSections(
+      cls,
+      config.useAscii,
+      notesById.has(cls.id),
+    )
     classSections.set(cls.id, sections)
 
     // An interface name has no box: one text row, with the circle drawn by
@@ -485,30 +480,42 @@ export function renderClassAscii(
     childSet.add(childId)
   }
 
-  // BFS from roots (classes that have no parents) to assign levels.
-  // Cap at classes.length - 1 to prevent infinite loops on cyclic graphs
-  // (e.g. View --> Model and Model ..> View would otherwise push levels
-  // upward forever). In a DAG the longest path has at most N-1 edges.
+  // Longest-path levels over the relationships with each cycle's back edge
+  // dropped. A DFS from the roots (then from the first-declared unvisited
+  // class, so a rootless cycle still gets an entry point) finds the back
+  // edges: an edge into a class still on the DFS stack. Ignoring them makes
+  // the graph a DAG, so a cycle stacks top to bottom and its back edge runs
+  // upward, as Mermaid draws it, instead of the cycle collapsing onto one
+  // row with its forward edges undrawn.
   const level = new Map<string, number>()
   const roots = diagram.classes.filter(
     (c) => !parents.has(c.id) || parents.get(c.id)!.size === 0,
   )
-  const queue: string[] = roots.map((c) => c.id)
-  for (const id of queue) level.set(id, 0)
-
-  const levelCap = diagram.classes.length - 1
-  let qi = 0
-  while (qi < queue.length) {
-    const id = queue[qi++]!
-    const childSet = children.get(id)
-    if (!childSet) continue
-    for (const childId of childSet) {
-      const newLevel = (level.get(id) ?? 0) + 1
-      if (newLevel > levelCap) continue // Cycle detected — skip to prevent infinite loop
-      if (!level.has(childId) || level.get(childId)! < newLevel) {
-        level.set(childId, newLevel)
-        queue.push(childId)
-      }
+  const onStack = new Set<string>()
+  const done = new Set<string>()
+  const finished: string[] = []
+  const forward = new Map<string, string[]>()
+  const visit = (id: string): void => {
+    onStack.add(id)
+    const out: string[] = []
+    for (const childId of children.get(id) ?? []) {
+      if (onStack.has(childId)) continue // Back edge
+      out.push(childId)
+      if (!done.has(childId)) visit(childId)
+    }
+    forward.set(id, out)
+    onStack.delete(id)
+    done.add(id)
+    finished.push(id)
+  }
+  for (const c of [...roots, ...diagram.classes]) {
+    if (!done.has(c.id)) visit(c.id)
+  }
+  for (const id of finished.reverse()) {
+    const lv = level.get(id) ?? 0
+    level.set(id, lv)
+    for (const childId of forward.get(id)!) {
+      if ((level.get(childId) ?? 0) < lv + 1) level.set(childId, lv + 1)
     }
   }
 
@@ -889,6 +896,40 @@ export function renderClassAscii(
   // its box, so the canvas has to cover the slot, not just the box.
   let maxSlotEnd = 0
 
+  // A fanned group running up past one or more levels (`D --> B` x4 with
+  // `B --> C --> D` between) keeps its lanes in a straight column under the
+  // shallower end, as Mermaid draws it: the class between the ends moves
+  // beside the fan and the deeper end stays under the shallower one (#2639).
+  const upFans: {
+    fromId: string
+    toId: string
+    firstIndex: number
+    halfSpan: number
+  }[] = []
+  {
+    const byPair = new Map<string, number[]>()
+    diagram.relationships.forEach((rel, i) => {
+      const key = `${rel.from}>${rel.to}`
+      byPair.set(key, [...(byPair.get(key) ?? []), i])
+    })
+    for (const idx of byPair.values()) {
+      const rel = diagram.relationships[idx[0]!]!
+      if (level.get(rel.from)! - level.get(rel.to)! < 2) continue
+      const widest = Math.max(
+        ...idx.map((i) =>
+          labelCellWidth(diagram.relationships[i]!.label ?? ''),
+        ),
+      )
+      upFans.push({
+        fromId: rel.from,
+        toId: rel.to,
+        firstIndex: idx[0]!,
+        halfSpan:
+          Math.ceil((relGroupSpread.get(idx[0]!) ?? 0) / 2 + widest / 2) + 1,
+      })
+    }
+  }
+
   for (let lv = 0; lv <= maxLevel; lv++) {
     const group = levelGroups[lv]!
     if (group.length === 0) continue
@@ -1060,9 +1101,48 @@ export function renderClassAscii(
         const p = placed.get(pid)!
         return p.x + Math.floor(p.width / 2)
       })
-      const desiredCenter = Math.round(
+      let desiredCenter = Math.round(
         parentCenters.reduce((sum, c) => sum + c, 0) / parentCenters.length,
       )
+      // The deeper end of an up fan stays under the shallower end, and a
+      // class between them steps aside to the side its first edge was
+      // declared on (the order Mermaid's layout follows).
+      let boxLeftOverride: number | undefined
+      if (blockMembers.get(key)!.length === 1) {
+        const fanEnd = upFans.find((f) => f.fromId === id)
+        if (fanEnd) {
+          // Shallower than `id`, so already placed.
+          const t = placed.get(fanEnd.toId)!
+          desiredCenter = t.x + Math.floor(t.width / 2)
+        }
+        const w = classBoxW.get(id)!
+        const crossed = upFans.filter((f) => {
+          if (!(lv > level.get(f.toId)! && lv < level.get(f.fromId)!))
+            return false
+          const t = placed.get(f.toId)!
+          const left = desiredCenter - Math.floor(w / 2)
+          // Clear of the fan's columns already: leave it where it is.
+          return (
+            Math.abs(2 * (left - t.x - Math.floor(t.width / 2)) + w - 1) <=
+            2 * f.halfSpan + w - 1
+          )
+        })
+        // Only the plain case steps aside: one fan, nothing placed earlier on
+        // this row for the shift to collide with, and no attached note that
+        // would land inside the fan. Anything else keeps its column.
+        if (
+          crossed.length === 1 &&
+          placedThisLevel.size === 0 &&
+          ![...notesById.values()].some((n) => n.forClass === id)
+        ) {
+          const f = crossed[0]!
+          const t = placed.get(f.toId)!
+          const cx = t.x + Math.floor(t.width / 2)
+          const own = diagram.relationships.findIndex((r) => r.to === id)
+          boxLeftOverride =
+            own < f.firstIndex ? cx - f.halfSpan - w : cx + f.halfSpan + 1
+        }
+      }
 
       let totalWidth = 0
       for (let i = 0; i < members.length; i++) {
@@ -1090,8 +1170,89 @@ export function renderClassAscii(
         leftPadOf.get(lastMember)! -
         classBoxW.get(lastMember)!
       const visibleWidth = totalWidth - firstLeftPad - lastRightPad
-      const blockDesiredLeft =
+      let blockDesiredLeft =
         desiredCenter - firstLeftPad - Math.floor(visibleWidth / 2)
+      // Siblings sharing a parent with a class an up fan runs past: the fan's
+      // column stays free between them (siblings declared before its first
+      // edge on the left, the rest on the right) instead of running through
+      // a sibling's box and hiding that sibling's own edge (#2705).
+      if (members.length > 1 && placedThisLevel.size === 0) {
+        const boxL = blockDesiredLeft + firstLeftPad
+        const crossed = upFans.filter((f) => {
+          if (!(lv > level.get(f.toId)! && lv < level.get(f.fromId)!))
+            return false
+          const t = placed.get(f.toId)!
+          const cx = t.x + Math.floor(t.width / 2)
+          return (
+            boxL <= cx + f.halfSpan && boxL + visibleWidth > cx - f.halfSpan
+          )
+        })
+        if (
+          crossed.length === 1 &&
+          ![...notesById.values()].some(
+            (n) => n.forClass !== undefined && members.includes(n.forClass),
+          )
+        ) {
+          const f = crossed[0]!
+          const t = placed.get(f.toId)!
+          const cx = t.x + Math.floor(t.width / 2)
+          const ownIdx = (m: string): number =>
+            diagram.relationships.findIndex((r) => r.to === m)
+          const before = members.filter((m) => ownIdx(m) < f.firstIndex)
+          const after = members.filter((m) => ownIdx(m) >= f.firstIndex)
+          // A run placed in a row spans its slots; the first member's left
+          // pad and the last member's right pad overhang the boxes.
+          const pad = (m: string): number => leftPadOf.get(m)!
+          const visible = (run: string[]): number =>
+            run.reduce((s, m) => s + slotWidthOf.get(m)! + hGap, -hGap) -
+            pad(run[0]!) -
+            (slotWidthOf.get(run[run.length - 1]!)! -
+              pad(run[run.length - 1]!) -
+              classBoxW.get(run[run.length - 1]!)!)
+          const leftBox =
+            cx - f.halfSpan - (before.length > 0 ? visible(before) : 0)
+          const rightBox = cx + f.halfSpan + 1
+          // Room on the left may need every placed class to move right.
+          const shift = Math.max(0, -(before.length > 0 ? leftBox : rightBox))
+          for (const p of placed.values()) p.x += shift
+          maxSlotEnd += shift
+          for (const [run, box] of [
+            [before, leftBox + shift],
+            [after, rightBox + shift],
+          ] as const) {
+            let slot = box - (run.length > 0 ? pad(run[0]!) : 0)
+            for (const m of run) {
+              placeAt(m, slot)
+              placedThisLevel.add(m)
+              slot = currentX
+            }
+          }
+          continue
+        }
+      }
+      if (boxLeftOverride !== undefined) {
+        // Room on the left may need every placed class to move right.
+        const shift = Math.max(0, leftPadOf.get(id)! - boxLeftOverride)
+        for (const p of placed.values()) p.x += shift
+        maxSlotEnd += shift
+        const left = boxLeftOverride + shift - leftPadOf.get(id)!
+        placeAt(id, Math.max(left, currentX, 0))
+        placedThisLevel.add(id)
+        continue
+      }
+      // The shallower end of an up fan has the fan's outer lanes as left
+      // overhang. When that would reach past the canvas edge, move its
+      // parents right instead, so a single parent stays centred above it as
+      // in Mermaid (other diagrams keep their positions).
+      if (
+        blockDesiredLeft < 0 &&
+        currentX === 0 &&
+        upFans.some((f) => f.toId === id)
+      ) {
+        for (const p of placed.values()) p.x -= blockDesiredLeft
+        maxSlotEnd -= blockDesiredLeft
+        blockDesiredLeft = 0
+      }
       const blockActualLeft = Math.max(blockDesiredLeft, currentX, 0)
 
       let memberX = blockActualLeft
@@ -1256,6 +1417,8 @@ export function renderClassAscii(
       p.sections,
       useAscii,
       config.boxBorderPadding,
+      undefined,
+      !notesById.has(p.cls.id),
     )
     // Copy box onto main canvas at (p.x, p.y) with role tracking
     for (let bx = 0; bx < boxCanvas.length; bx++) {
@@ -1965,6 +2128,9 @@ export function renderClassAscii(
       // (mirror of the downward case), then vertical up to midY
       drawJog(fromTY - 1, fromAnchorX, fromCX, lineH, false)
       for (let y = fromTY - (fromJogs ? 2 : 1); y >= midY; y--) {
+        // Another edge's arrowhead into this class's top (a forward edge of
+        // a cycle sharing the column) stays visible.
+        if (rc[fromCX]?.[y] === 'arrow') continue
         setCGuarded(fromCX, y, lineV, 'line')
       }
 

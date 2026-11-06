@@ -153,7 +153,8 @@ L/R/T/B sides in the source. A force layout moves with its seed and font
 metrics, so only relative placement is scored: the share of service pairs
 above / below / beside each other and of (service, group) pairs agreeing on
 containment, with services within `ARCH_TOLERANCE` (half an icon) counted as
-level (`scripts/architecture-oracle.ts`). Every sample must stay at or above
+level (`scripts/architecture-oracle.ts`). Figures up to 2026-11-02 scored the ELK layout, not the grid layout the SVG is drawn
+from (#2473, #2557); rows from 2026-11-05 score the drawn layout. Every sample must stay at or above
 `ARCH_FLOOR` (`--thresholds` exits 1 otherwise), a regression guard, not a
 parity claim. It says nothing about distances or edge routes.
 
@@ -163,6 +164,8 @@ parity claim. It says nothing about distances or edge routes.
 | 2026-10-31 | ac52e8a | 12.2.0  | 3       | 68%      | 84%        | 97%         |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 3       | 68%      | 84%        | 97%         |
 | 2026-11-02 | ae439b3 | 12.2.0  | 3       | 74%      | 90%        | 97%         |
+| 2026-11-05 | 7efe1d2 | 12.2.0  | 3       | 100%     | 100%       | 100%        |
+| 2026-11-05 | 7efe1d2 | 12.3.0  | 3       | 100%     | 100%       | 100%        |
 
 ## Per sample
 

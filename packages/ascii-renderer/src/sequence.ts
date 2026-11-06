@@ -80,6 +80,16 @@ function actorGlyphLines(a: {
 // lifeline).
 const BLOCK_WALL_MARGIN = 4
 
+// Columns from a container block's wall to the wall of a block nested in it:
+// the wall itself plus one blank column (mermaid insets nested frames ~10px,
+// one column). Also the reach of each enclosing wall into a note's left side.
+const NESTED_WALL_PITCH = 2
+
+// Columns a `Note over A,B` box reaches past each end lifeline: mermaid draws
+// the note from 25px left of the first lifeline to 25px right of the second,
+// i.e. spanning them with a small overhang (the SVG side's `+ 50`, #2598).
+const NOTE_SPAN_OVERHANG = 1
+
 // Effective width of a self-message's loop, including room for an
 // autonumber badge drawn at the start of the top arm when active. The badge
 // digits replace the leading dashes rather than adding a second arrowhead,
@@ -122,7 +132,8 @@ export function renderSequenceAscii(
   theme?: AsciiTheme,
 ): string {
   const lines = splitStatements(text)
-  const diagram = parseSequenceDiagram(lines)
+  const diagram = parseSequenceDiagram(lines, text)
+  const mirror = diagram.mirrorActors !== false
 
   if (diagram.actors.length === 0) return ''
 
@@ -408,6 +419,13 @@ export function renderSequenceAscii(
     )
   }
 
+  // The lifeline indices a two-actor `over` note spans, in left-to-right order.
+  function noteSpanOf(note: (typeof diagram.notes)[number]): [number, number] {
+    const a = actorIndexOf(note.actorIds[0]!)
+    const b = actorIndexOf(note.actorIds[note.actorIds.length - 1]!)
+    return [Math.min(a, b), Math.max(a, b)]
+  }
+
   // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
   // actor i draws into the gap to its left (between actor i-1 and i, or —
   // for the leftmost actor — the canvas's own left margin); a `right` note
@@ -424,8 +442,9 @@ export function renderSequenceAscii(
   // silently spilled into whichever neighbour was closer (issue #992) — the
   // same problem left/rightNoteWidth above already solved for `left`/
   // `right` notes, just for the two halves of a centered one instead. A
-  // multi-actor `over` note (`Note over Alice,Bob`) is excluded on purpose:
-  // spanning both actors' columns is its intended shape, not a collision.
+  // multi-actor `over` note (`Note over Alice,Bob`) is excluded: it spans from
+  // the first lifeline to the second (see `placeNote`), so it widens the gaps
+  // between them instead, like a message label does.
   const overNoteHalfLeft: number[] = new Array(diagram.actors.length).fill(0)
   const overNoteHalfRight: number[] = new Array(diagram.actors.length).fill(0)
   for (const note of diagram.notes) {
@@ -448,6 +467,18 @@ export function renderSequenceAscii(
       const halfRight = w - halfLeft
       overNoteHalfLeft[aIdx] = Math.max(overNoteHalfLeft[aIdx]!, halfLeft)
       overNoteHalfRight[aIdx] = Math.max(overNoteHalfRight[aIdx]!, halfRight)
+    } else if (note.position === 'over') {
+      const [lo, hi] = noteSpanOf(note)
+      if (hi > lo) {
+        // `- 2` is the margin the gap computation below adds.
+        const perGap =
+          Math.ceil(
+            (noteBoxWidth(note) - 2 * NOTE_SPAN_OVERHANG - 1) / (hi - lo),
+          ) - 2
+        for (let g = lo; g < hi; g++) {
+          adjMaxWidth[g] = Math.max(adjMaxWidth[g]!, perGap)
+        }
+      }
     }
   }
 
@@ -483,16 +514,22 @@ export function renderSequenceAscii(
       overNoteHalfLeft[0]!,
       // A note inside a block must also clear the block's left wall at
       // column 0 (#2514), leaving one blank column between wall and note:
-      // one column per enclosing wall plus the blank one (`left` also needs
-      // its separating column from the lifeline).
+      // two columns per enclosing wall (nested walls are one blank column
+      // apart) plus the blank one (`left` also needs its separating column
+      // from the lifeline).
       ...diagram.notes.map((n) =>
-        actorIndexOf(n.actorIds[0]!) === 0 &&
+        (n.position === 'over'
+          ? noteSpanOf(n)[0]
+          : actorIndexOf(n.actorIds[0]!)) === 0 &&
         n.position !== 'right' &&
-        (n.position === 'left' || n.actorIds.length === 1) &&
         noteDepth(n)
           ? n.position === 'left'
-            ? noteBoxWidth(n) + 2 + noteDepth(n)
-            : Math.floor(noteBoxWidth(n) / 2) + 1 + noteDepth(n)
+            ? noteBoxWidth(n) + 2 + (NESTED_WALL_PITCH * noteDepth(n) - 1)
+            : (n.actorIds.length === 1
+                ? Math.floor(noteBoxWidth(n) / 2)
+                : NOTE_SPAN_OVERHANG) +
+              1 +
+              (NESTED_WALL_PITCH * noteDepth(n) - 1)
           : 0,
       ),
       // A centred self-message label on the leftmost actor reaches left of
@@ -504,6 +541,19 @@ export function renderSequenceAscii(
             (diagram.blocks.some((b) => mi >= b.startIndex && mi <= b.endIndex)
               ? 2
               : 0)
+          : 0,
+      ),
+      // The innermost block touching the first actor sits at nesting depth d,
+      // so its left wall is at column NESTED_WALL_PITCH * (d - 1); keep one
+      // blank column between that wall and the lifeline, as mermaid does.
+      ...diagram.blocks.map((b) =>
+        diagram.messages
+          .slice(b.startIndex, b.endIndex + 1)
+          .some((m) => actorIndexOf(m.from) === 0 || actorIndexOf(m.to) === 0)
+          ? NESTED_WALL_PITCH *
+            diagram.blocks.filter(
+              (p) => b.startIndex >= p.startIndex && b.endIndex <= p.endIndex,
+            ).length
           : 0,
       ),
     ),
@@ -687,7 +737,7 @@ export function renderSequenceAscii(
   function placeNote(note: (typeof diagram.notes)[number]): void {
     curY += rowGap // Gap before note
     const nLines = splitLines(note.text)
-    const nWidth = noteBoxWidth(note)
+    let nWidth = noteBoxWidth(note)
     const nHeight = nLines.length + 2
 
     // Determine x position based on note.position
@@ -699,14 +749,17 @@ export function renderSequenceAscii(
       nx = llX[aIdx]! + 2
     } else {
       // 'over' — center over actor(s)
-      if (note.actorIds.length >= 2) {
-        const aIdx2 = actorIdx.get(note.actorIds[1]!) ?? aIdx
-        nx = Math.floor((llX[aIdx]! + llX[aIdx2]!) / 2) - Math.floor(nWidth / 2)
+      const [lo, hi] = noteSpanOf(note)
+      if (hi > lo) {
+        // Spans from the first lifeline to the second, as mermaid does; gap
+        // sizing above guarantees the text fits.
+        nx = llX[lo]! - NOTE_SPAN_OVERHANG
+        nWidth = llX[hi]! - llX[lo]! + 2 * NOTE_SPAN_OVERHANG + 1
       } else {
         nx = llX[aIdx]! - Math.floor(nWidth / 2)
       }
     }
-    nx = Math.max(noteDepth(note) && noteDepth(note) + 1, nx)
+    nx = Math.max(NESTED_WALL_PITCH * noteDepth(note), nx)
 
     notePositions.push({
       x: nx,
@@ -841,7 +894,9 @@ export function renderSequenceAscii(
   // footer boxes start one row under it; otherwise it is the boxes' own top.
   const footerY = curY
   const footerBoxTop = footerY + bracketRows
-  const totalH = footerBoxTop + actorBoxH + bracketRows
+  // Without a mirrored footer row (`mirrorActors: false`) the canvas ends on
+  // the row after the last lifeline cell.
+  const totalH = mirror ? footerBoxTop + actorBoxH + bracketRows : footerY
 
   // Total canvas width
   const lastLL = llX[llX.length - 1] ?? 0
@@ -1023,7 +1078,8 @@ export function renderSequenceAscii(
     const boxTop = createdBoxTop.get(i)
     return boxTop === undefined ? headerBottom : boxTop + createdBoxH(i)
   }
-  const lifelineBottom = (i: number) => destroyRow.get(i) ?? footerY
+  const lifelineBottom = (i: number) =>
+    destroyRow.get(i) ?? (mirror ? footerY : footerY - 1)
 
   // ---- LAYOUT: activation intervals (rows where a lifeline is "active") ----
   //
@@ -1160,7 +1216,7 @@ export function renderSequenceAscii(
   }
   for (const span of boxSpans) {
     drawBracket(span, 0, span.label, headerBoxH)
-    drawBracket(span, footerY, '', actorBoxH)
+    if (mirror) drawBracket(span, footerY, '', actorBoxH)
   }
 
   // ---- DRAW: actor header + footer boxes (drawn over lifelines) ----
@@ -1179,7 +1235,7 @@ export function renderSequenceAscii(
       actorGlyphLines(actor),
       headerH,
     )
-    if (!destroyed) {
+    if (mirror && !destroyed) {
       drawActorBox(
         llX[i]!,
         footerBoxTop,
@@ -1192,7 +1248,7 @@ export function renderSequenceAscii(
     // Lifeline junctions on box borders (Unicode only)
     if (!useAscii) {
       setC(llX[i]!, headerTop + headerH - 1, JT, 'junction')
-      if (!destroyed) setC(llX[i]!, footerBoxTop, JB, 'junction')
+      if (mirror && !destroyed) setC(llX[i]!, footerBoxTop, JB, 'junction')
     }
   }
 
@@ -1452,7 +1508,23 @@ export function renderSequenceAscii(
       }
     }
 
-    let bLeft = minLX - BLOCK_WALL_MARGIN
+    // Each nested level adds a wall, so a block with three or more levels
+    // inside it widens its own left margin to keep the innermost wall clear of
+    // the lifeline (depth 2 already fits in BLOCK_WALL_MARGIN).
+    const nestHeight = (i: number): number =>
+      1 +
+      Math.max(
+        0,
+        ...diagram.blocks.map((c, ci) =>
+          ci < i &&
+          c.startIndex >= diagram.blocks[i]!.startIndex &&
+          c.endIndex <= diagram.blocks[i]!.endIndex
+            ? nestHeight(ci)
+            : 0,
+        ),
+      )
+    let bLeft =
+      minLX - Math.max(BLOCK_WALL_MARGIN, NESTED_WALL_PITCH * nestHeight(b))
     let bRight = maxLX + BLOCK_WALL_MARGIN
 
     // minLX/maxLX (and therefore bLeft/bRight) only account for lifelines
@@ -1495,7 +1567,7 @@ export function renderSequenceAscii(
     // after the pull-back so a note wins over an untouched lifeline.
     for (const np of notePositions) {
       if (np.y <= topY || np.y >= botY) continue
-      bLeft = Math.min(bLeft, np.x - 1 - np.depth)
+      bLeft = Math.min(bLeft, np.x - NESTED_WALL_PITCH * np.depth)
       bRight = Math.max(bRight, np.x + np.width + 1)
     }
 
@@ -1524,9 +1596,10 @@ export function renderSequenceAscii(
     blockExt[b] = { l: bLeft, r: bRight }
   }
 
-  // Nested blocks nest: a container wall encloses every block inside it, one
-  // column clear on each side. Widen right inner-first (array order), inset
-  // left outer-first (reverse order); the label width is re-measured between.
+  // Nested blocks nest: a container wall encloses every block inside it with
+  // one blank column on each side (mermaid insets nested frames ~10px). Widen
+  // right inner-first (array order), inset left outer-first (reverse order);
+  // the label width is re-measured between.
   const isInside = (c: Block, p: Block): boolean =>
     c.startIndex >= p.startIndex && c.endIndex <= p.endIndex
   // Blocks without a measured extent (never laid out) take no part.
@@ -1537,7 +1610,10 @@ export function renderSequenceAscii(
     )
   for (const p of [...live].reverse()) {
     for (const c of nestedIn(p))
-      blockExt[c]!.l = Math.max(blockExt[c]!.l, blockExt[p]!.l + 1)
+      blockExt[c]!.l = Math.max(
+        blockExt[c]!.l,
+        blockExt[p]!.l + NESTED_WALL_PITCH,
+      )
   }
   // Label-driven minimum width (#352), measured from the final left wall.
   for (const b of live) {
@@ -1546,7 +1622,10 @@ export function renderSequenceAscii(
   }
   for (const p of live) {
     for (const c of nestedIn(p))
-      blockExt[p]!.r = Math.max(blockExt[p]!.r, blockExt[c]!.r + 1)
+      blockExt[p]!.r = Math.max(
+        blockExt[p]!.r,
+        blockExt[c]!.r + NESTED_WALL_PITCH,
+      )
   }
 
   // Pass 2: grow the canvas to fit, then draw.
@@ -1648,7 +1727,10 @@ export function renderSequenceAscii(
       for (let x = np.x + 1; x < np.x + np.width - 1; x++) {
         setC(x, ly, ' ', 'text')
       }
-      writeTextCells(np.x + 1 + boxPad, ly, np.lines[l]!, 'text')
+      // Centred in the box, as mermaid does (it matters once the box spans
+      // two lifelines and is wider than its text).
+      const pad = Math.floor((np.width - 2 - displayWidth(np.lines[l]!)) / 2)
+      writeTextCells(np.x + 1 + pad, ly, np.lines[l]!, 'text')
     }
     // Bottom border
     const by = np.y + np.height - 1

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 277.8" width="140" height="277.8" role="img" style="--bg:#FFFFFF;--fg:#aa00aa;--line:#0000ff;--surface:#ff0000;--border:#00aa00;background:var(--bg)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 216 254" width="216" height="254" role="img" style="--bg:#FFFFFF;--fg:#aa00aa;--line:#0000ff;--surface:#ff0000;--border:#00aa00;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -25,24 +25,24 @@
   }
 </style>
 <defs>
-  <marker id="zma5c6jl-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
-    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  <marker id="zm7i3rhy-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
-  <marker id="zma5c6jl-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  <marker id="zm7i3rhy-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
 </defs>
-<polyline class="edge" data-from="_start" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="70,68 70,116" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zma5c6jl-arrowhead)" />
-<polyline class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="70,152.9 70,200.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zma5c6jl-arrowhead)" />
+<path class="edge" data-from="_start" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 54 L 108 88.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm7i3rhy-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 134 L 108 168.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm7i3rhy-arrowhead)" />
 <g class="node" data-id="_start" data-label="" data-shape="state-start">
-  <circle cx="70" cy="54" r="12" fill="var(--_text)" stroke="none" />
+  <circle cx="108" cy="47" r="7" fill="var(--_text)" stroke="none" />
 </g>
 <g class="node" data-id="A" data-label="A" data-shape="rounded">
-  <rect x="40" y="116" width="60" height="36.9" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="134.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="40" y="94" width="136" height="40" rx="5" ry="5" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="108" y="114" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rounded">
-  <rect x="40" y="200.9" width="60" height="36.9" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="219.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="40" y="174" width="136" height="40" rx="5" ry="5" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="108" y="194" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>

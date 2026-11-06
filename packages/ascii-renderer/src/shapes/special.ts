@@ -149,8 +149,11 @@ export const doublecircleRenderer: ShapeRenderer = {
  *   ╭─────╮
  *   │─────│
  *   │ DB  │
- *   │─────│
+ *   │     │
  *   ╰─────╯
+ *
+ * Mermaid draws a full ellipse on top (back and front rim) and a single arc at
+ * the bottom, so only the top has a rim rule (#2164).
  */
 export const cylinderRenderer: ShapeRenderer = {
   getDimensions(label: string, options: ShapeRenderOptions): ShapeDimensions {
@@ -160,7 +163,7 @@ export const cylinderRenderer: ShapeRenderer = {
 
     const innerWidth = 2 * options.padding + maxLineWidth
     const width = innerWidth + 2
-    const innerHeight = lineCount + 2 * options.padding + 2 // Extra for curved top/bottom
+    const innerHeight = lineCount + 2 * options.padding // The top rim takes the first padding row
     const height = innerHeight + 2
 
     return {
@@ -168,12 +171,12 @@ export const cylinderRenderer: ShapeRenderer = {
       height,
       labelArea: {
         x: 1 + options.padding,
-        y: 2 + options.padding,
+        y: 1 + options.padding,
         width: maxLineWidth,
         height: lineCount,
       },
       gridColumns: [1, innerWidth, 1],
-      gridRows: [2, innerHeight - 2, 2],
+      gridRows: [1, innerHeight, 1],
     }
   },
 
@@ -204,11 +207,6 @@ export const cylinderRenderer: ShapeRenderer = {
       canvas[width - 1]![y] = vChar
     }
 
-    // Second to last row - top of bottom ellipse
-    canvas[0]![height - 2] = vChar
-    for (let x = 1; x < width - 1; x++) canvas[x]![height - 2] = hChar
-    canvas[width - 1]![height - 2] = vChar
-
     // Bottom ellipse
     canvas[0]![height - 1] = options.useAscii ? "'" : '╰'
     for (let x = 1; x < width - 1; x++) canvas[x]![height - 1] = hChar
@@ -226,7 +224,7 @@ export const cylinderRenderer: ShapeRenderer = {
       for (let j = 0; j < cells.length; j++) {
         const x = textX + j
         const y = startY + i
-        if (x > 0 && x < width - 1 && y > 1 && y < height - 2) {
+        if (x > 0 && x < width - 1 && y > 1 && y < height - 1) {
           canvas[x]![y] = cells[j]!
         }
       }

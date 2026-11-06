@@ -17,19 +17,18 @@ import {
 // Visual style: clean, minimal, modern. Inspired by Apple/Craft chart design.
 //   - Axis lines and tick marks, as mermaid draws them
 //   - No grid
-//   - Bars with rounded tops, flat at baseline
+//   - Flat, unstroked bars clipped to the plot area, and no legend, as mermaid draws them
 //   - Straight line segments and no point markers, as mermaid draws them
 //     (mermaid has no option for curved lines; #2543 follow-up)
 //
 // Render order (back to front):
 //   1. Axis lines and ticks
-//   2. Bars (as paths with rounded tops)
+//   2. Bars (flat rectangles)
 //   3. Lines (straight segments)
 //   4. Dots (interactive only: hover targets)
 //   5. Axis labels
 //   6. Axis titles
 //   7. Chart title
-//   8. Legend
 // ============================================================================
 
 const CHART_FONT = {
@@ -39,11 +38,8 @@ const CHART_FONT = {
   axisTitleWeight: 500,
   labelSize: 14,
   labelWeight: 400,
-  legendSize: 14,
-  legendWeight: 400,
   dotRadius: 5,
   lineWidth: 2.5,
-  barRadius: 8,
 } as const
 
 const TIP = {
@@ -121,8 +117,11 @@ export function renderXYChartSvg(
   // 1. Axis lines and tick marks
   const { plotArea } = chart
   const axisY = plotArea.y + plotArea.height
+  // Horizontal charts put the value axis along the top, as mermaid does.
   parts.push(
-    `<path d="M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`,
+    chart.horizontal
+      ? `<path d="M${r(plotArea.x)},${r(axisY)} V${r(plotArea.y)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`
+      : `<path d="M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`,
   )
   for (const t of [...chart.xAxis.ticks, ...chart.yAxis.ticks]) {
     parts.push(
@@ -135,33 +134,26 @@ export function renderXYChartSvg(
   const barOverlay: { extent: number; html: string }[] = []
   for (const bar of chart.bars) {
     const dataAttrs = ` data-value="${bar.value}"${bar.label ? ` data-label="${escapeXml(bar.label)}"` : ''}`
-    const barPath = chart.horizontal
-      ? roundedRightBarPath(
-          bar.x,
-          bar.y,
-          bar.width,
-          bar.height,
-          CHART_FONT.barRadius,
-        )
-      : roundedTopBarPath(
-          bar.x,
-          bar.y,
-          bar.width,
-          bar.height,
-          CHART_FONT.barRadius,
-        )
+    // Mermaid clips bars at the plot edge (a numeric x-range puts the first
+    // and last bar half outside it).
+    const x0 = Math.max(bar.x, plotArea.x)
+    const x1 = Math.min(bar.x + bar.width, plotArea.x + plotArea.width)
+    const y0 = Math.max(bar.y, plotArea.y)
+    const y1 = Math.min(bar.y + bar.height, plotArea.y + plotArea.height)
+    if (x1 <= x0 || y1 <= y0) continue
+    const barPath = `M${r(x0)},${r(y0)} H${r(x1)} V${r(y1)} H${r(x0)} Z`
     parts.push(
       `<path d="${barPath}" class="xychart-bar xychart-color-${bar.colorIndex}"${dataAttrs}/>`,
     )
     if (interactive) {
       const tipText = formatTipValue(bar.value)
       const tipTitle = bar.label ? `${bar.label}: ${tipText}` : tipText
-      const tip = tooltipAbove(bar.x + bar.width / 2, bar.y, tipText)
+      const tip = tooltipAbove((x0 + x1) / 2, y0, tipText)
       barOverlay.push({
-        extent: chart.horizontal ? bar.width : bar.height,
+        extent: chart.horizontal ? x1 - x0 : y1 - y0,
         html:
           `<g class="xychart-bar-group">` +
-          `<rect x="${r(bar.x)}" y="${r(bar.y)}" width="${r(bar.width)}" height="${r(bar.height)}" fill="transparent"/>` +
+          `<rect x="${r(x0)}" y="${r(y0)}" width="${r(x1 - x0)}" height="${r(y1 - y0)}" fill="transparent"/>` +
           `<title>${escapeXml(tipTitle)}</title>` +
           tip +
           `</g>`,
@@ -327,30 +319,6 @@ export function renderXYChartSvg(
     )
   }
 
-  // 8. Legend
-  for (const item of chart.legend) {
-    const swatchW = 14,
-      swatchH = 14
-    const gap = 6
-    if (item.type === 'bar') {
-      parts.push(
-        `<rect x="${item.x}" y="${item.y - swatchH / 2}" width="${swatchW}" height="${swatchH}" rx="3" ` +
-          `class="xychart-bar xychart-color-${item.colorIndex}"/>`,
-      )
-    } else {
-      const ly = item.y
-      parts.push(
-        `<line x1="${item.x}" y1="${ly}" x2="${item.x + swatchW}" y2="${ly}" ` +
-          `stroke-width="${CHART_FONT.lineWidth}" stroke-linecap="round" class="xychart-legend-line xychart-color-${item.colorIndex}"/>`,
-      )
-    }
-    parts.push(
-      `<text x="${item.x + swatchW + gap}" y="${item.y}" text-anchor="start" ` +
-        `font-size="${CHART_FONT.legendSize}" font-weight="${CHART_FONT.legendWeight}" ` +
-        `dy="${TEXT_BASELINE_SHIFT}" class="xychart-label">${escapeXml(item.label)}</text>`,
-    )
-  }
-
   // 9. Interactive overlay — rendered last so tooltips are always on top
   for (const g of barOverlay) parts.push(g.html)
   for (const g of dotOverlay) parts.push(g)
@@ -395,9 +363,9 @@ function chartStyles(
   const seriesRules: string[] = []
   for (const idx of [...colorIndices].sort((a, b) => a - b)) {
     const color = `var(--xychart-color-${idx})`
-    // Bar-specific: stroke + solid blended fill (no opacity)
+    // Bar-specific: solid blended fill, no stroke
     seriesRules.push(
-      `  .xychart-bar.xychart-color-${idx} { stroke: ${color}; fill: var(--xychart-bar-fill-${idx}); }`,
+      `  .xychart-bar.xychart-color-${idx} { stroke: none; fill: var(--xychart-bar-fill-${idx}); }`,
     )
     // Line/dot-specific: stroke for paths, fill for circles
     seriesRules.push(
@@ -423,7 +391,6 @@ function chartStyles(
 
   const style = `${styleOpenTag(nonce)}
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
-  .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: ${CHART_FONT.lineWidth}; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -434,63 +401,6 @@ ${seriesRules.join('\n')}${tipRules}
 </style>`
 
   return { style, defs: '' }
-}
-
-// ============================================================================
-// Bar path with all corners rounded
-// ============================================================================
-
-function roundedTopBarPath(
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  radius: number,
-): string {
-  const rr = Math.min(radius, w / 2, h / 2)
-  if (rr <= 0) {
-    return `M${r(x)},${r(y)} h${r(w)} v${r(h)} h${r(-w)} Z`
-  }
-  return [
-    `M${r(x)},${r(y + rr)}`, // Start below top-left
-    `Q${r(x)},${r(y)} ${r(x + rr)},${r(y)}`, // top-left
-    `L${r(x + w - rr)},${r(y)}`, // Top edge
-    `Q${r(x + w)},${r(y)} ${r(x + w)},${r(y + rr)}`, // top-right
-    `L${r(x + w)},${r(y + h - rr)}`, // Right edge
-    `Q${r(x + w)},${r(y + h)} ${r(x + w - rr)},${r(y + h)}`, // bottom-right
-    `L${r(x + rr)},${r(y + h)}`, // Bottom edge
-    `Q${r(x)},${r(y + h)} ${r(x)},${r(y + h - rr)}`, // bottom-left
-    'Z',
-  ].join(' ')
-}
-
-// ============================================================================
-// Bar path with all corners rounded (for horizontal charts)
-// ============================================================================
-
-function roundedRightBarPath(
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  radius: number,
-): string {
-  const rr = Math.min(radius, w / 2, h / 2)
-  if (rr <= 0) {
-    return `M${r(x)},${r(y)} h${r(w)} v${r(h)} h${r(-w)} Z`
-  }
-  return [
-    `M${r(x + rr)},${r(y)}`, // Start after top-left
-    `L${r(x + w - rr)},${r(y)}`, // Top edge
-    `Q${r(x + w)},${r(y)} ${r(x + w)},${r(y + rr)}`, // top-right
-    `L${r(x + w)},${r(y + h - rr)}`, // Right edge
-    `Q${r(x + w)},${r(y + h)} ${r(x + w - rr)},${r(y + h)}`, // bottom-right
-    `L${r(x + rr)},${r(y + h)}`, // Bottom edge
-    `Q${r(x)},${r(y + h)} ${r(x)},${r(y + h - rr)}`, // bottom-left
-    `L${r(x)},${r(y + rr)}`, // Left edge
-    `Q${r(x)},${r(y)} ${r(x + rr)},${r(y)}`, // top-left
-    'Z',
-  ].join(' ')
 }
 
 // Horizontal charts plot (value, category) and mermaid draws straight segments

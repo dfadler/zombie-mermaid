@@ -31,7 +31,7 @@ Dispatch table: `packages/svg-renderer/src/registry.ts`. Each type's `layoutForS
 | --------------------------------- | ------------------------------------------ | ------------------------- | ---------------------------------------- |
 | flowchart                         | `layoutFlowchartSync` -> `layoutGraphSync` | yes                       | `registry.ts:317`; `layout-engine.ts:72` |
 | state (shares flowchart pipeline) | same                                       | yes                       | `registry.ts:306` (flowchart module)     |
-| architecture                      | `layoutGraphSync`                          | yes                       | `registry.ts:381`                        |
+| architecture                      | `layoutArchitectureGrid`                   | no (since #2626)          | `registry.ts:381`                        |
 | class                             | `layoutClassDiagramSync`                   | yes                       | `class/layout.ts:498`                    |
 | ER                                | `layoutErDiagramSync`                      | yes                       | `er/layout.ts:214`                       |
 | C4                                | `layoutC4DiagramSync`                      | **no** (own frame layout) | `c4/layout.ts:601`, no elk import        |
@@ -40,7 +40,7 @@ Dispatch table: `packages/svg-renderer/src/registry.ts`. Each type's `layoutForS
 | xychart                           | `layoutXYChart`                            | no                        | `xychart/layout.ts:54`                   |
 
 So four elk call sites (`layout-engine.ts:72`, `class/layout.ts:498`, `er/layout.ts:214`, and
-architecture/state via `layoutGraphSync`), all through `elkLayoutSync()` in
+state via `layoutGraphSync` (architecture did too until #2626 gave it its own grid layout)), all through `elkLayoutSync()` in
 `packages/svg-renderer/src/elk-instance.ts:231`.
 
 Entry points and dist imports (measured from the built dist files):
@@ -102,7 +102,7 @@ Type-only leaks: `packages/core/src/types.ts:5` (`import type { ElkNode }`) and
 Replace the silent assumption with an explicit, typed error thrown from `ensureElk()` when the
 slot is empty and auto-load fails, for example:
 
-> `zombie-mermaid: rendering a flowchart/state/class/ER/architecture diagram needs the optional
+> `zombie-mermaid: rendering a flowchart/state/class/ER diagram needs the optional
 > peer dependency "elkjs". Install it (npm i elkjs) and call registerElk(ELK) with
 > `import ELK from 'elkjs/lib/elk.bundled.js'`. Sequence, pie, xychart, C4 and ASCII output do
 > not need it.`

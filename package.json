@@ -1,6 +1,6 @@
 {
   "name": "zombie-mermaid",
-  "version": "5.14.2",
+  "version": "5.14.4",
   "license": "MIT",
   "mcpName": "io.github.dfadler/zombie-mermaid",
   "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies. Maintained fork of beautiful-mermaid.",
@@ -138,6 +138,7 @@
     "bench:trend": "tsx scripts/bench-trend.ts",
     "bench:mcp": "tsx scripts/bench-mcp.ts",
     "check:changesets": "tsx scripts/check-changesets.ts",
+    "check:changeset-coverage": "tsx scripts/check-changeset-coverage.ts",
     "check:docs": "tsx scripts/check-docs.ts",
     "check:plugin-skill": "tsx scripts/sync-plugin-skill.ts --check",
     "check:plugin-lock": "tsx scripts/check-plugin-lock.ts",

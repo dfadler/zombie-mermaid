@@ -2,23 +2,24 @@
 name: verify-ascii-terminal
 description: |
   Produce the before/after screenshots a PR or issue description needs for
-  an ASCII-rendering change — as a real-terminal capture (via
-  scripts/ascii-terminal-capture.sh), never a browser/HTML screenshot. Use
-  this whenever the diff touches ASCII output — anything under
-  packages/ascii-renderer/**, packages/site/ascii-html.ts, src/cli.ts's ASCII path,
-  __tests__/visual/helpers/terminal-panel.ts (TERMINAL_ASCII_OPTS / applyWideCharWidths), packages/site/index.ts's
-  `.ascii-panel` markup, scripts/visual-diff.ts,
-  __tests__/visual/helpers/terminal-panel.ts, or
-  __tests__/visual/ascii-samples.visual.test.ts and its baselines — and
-  you're about to attach visual-verification screenshots per the project's
-  before/after requirement. Never substitute the Playwright
+  an ASCII-rendering change. If the diff changes what the renderer emits
+  (anything under packages/ascii-renderer/**, src/cli.ts's ASCII path,
+  TERMINAL_ASCII_OPTS / applyWideCharWidths in
+  __tests__/visual/helpers/terminal-panel.ts, or the ASCII baselines), the
+  screenshot must be a real-terminal capture (via
+  scripts/ascii-terminal-capture.sh), never a browser/HTML screenshot or a
+  GUI terminal window (it steals focus). If the diff touches only the
+  browser mockup (`.ascii-output` CSS in demo/styles.css, the chrome of
+  packages/site/ascii-html.ts, the visual helpers, scripts/visual-diff.ts,
+  `.ascii-panel` markup), a real-terminal capture would show nothing: run
+  the four ascii-geometry/seams/legibility/crispness visual tests and attach
+  before/after mockup screenshots labeled as browser mockups instead. Use
+  this whenever a diff touches any of those files and you're about to attach
+  visual-verification screenshots. Never substitute the Playwright
   visual-regression screenshots or scripts/visual-diff.ts's HTML report for
-  this category of change's PR screenshot, and never screenshot a real GUI
-  terminal window either: both render ASCII output through a browser/HTML
-  approximation of a terminal, not a real one (this repo has already
-  shipped a bug — the ascii-terminal-overflow-scroll fix — in that
-  approximation's chrome), and a GUI window steals focus. Only this skill's
-  headless real-PTY capture satisfies the requirement.
+  a renderer-output change's PR screenshot: they render through an HTML
+  approximation of a terminal (the ascii-terminal-overflow-scroll fix was a
+  bug in that approximation's chrome).
 metadata:
   version: '2.1.0'
   # Hidden from `npx skills add dfadler/zombie-mermaid`, which walks
@@ -92,7 +93,20 @@ headless so no window opens.
 
 Before attaching before/after screenshots to a PR/issue (per the global
 visual-verification requirement) whose diff touches any of the files listed
-in this skill's `description`. Skip it for changes that only touch the SVG
+in this skill's `description`. First classify the diff:
+
+- **Changes what the renderer emits** (ASCII output, CLI ASCII path,
+  `TERMINAL_ASCII_OPTS`): follow the procedure below; the PR image must be
+  the real-terminal capture.
+- **Touches only the browser mockup** (`.ascii-output` CSS in
+  `demo/styles.css`, `packages/site/ascii-html.ts` chrome, the visual
+  helpers): a terminal prints the same thing before and after, so skip the
+  capture. Run `__tests__/visual/ascii-geometry`, `ascii-seams`,
+  `ascii-legibility` and `ascii-crispness` `.visual.test.ts`, and attach
+  before/after mockup screenshots each labeled as a browser mockup, not a
+  terminal (CLAUDE.md, "ASCII rendering changes").
+
+Skip the skill for changes that only touch the SVG
 renderer, layout math with no ASCII-specific path, or non-rendering code.
 
 ## One-time setup

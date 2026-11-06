@@ -154,6 +154,7 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
       useAscii,
       graph.config.boxBorderPadding,
       { width: w + 1, height: h + 1 },
+      node.shape === 'class-box',
     )
     if (node.shape === 'class-note') {
       const r = getCorners('rounded', useAscii)
@@ -271,18 +272,17 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     node.labelInsets = Array<number>(to.y + 1).fill(1)
   }
 
-  // Cylinder (database) gets a rim line just inside its top and bottom
-  // border — the ellipse-pinch that makes it read as a cylinder rather than
+  // Cylinder (database) gets a rim line just inside its top border (mermaid's
+  // bottom is a single arc, so none at the bottom, #2164) — the ellipse-pinch that makes it read as a cylinder rather than
   // a plain rounded box, which otherwise uses the identical corner glyphs
   // (see corners.ts's SHAPE_CORNERS.cylinder). getShapeDimensions already
-  // reserves the extra 2 rows of height this needs (see the cylinder branch
+  // reserves the extra row of height this needs (see the cylinder branch
   // of shapes/special.ts's getDimensions) — issue #1119.
   if (node.shape === 'cylinder' && to.y - from.y >= 4) {
-    for (const rimY of [from.y + 1, to.y - 1]) {
-      for (let x = from.x + 1; x < to.x; x++) write(box, x, rimY, hChar)
-      write(box, from.x, rimY, vChar)
-      write(box, to.x, rimY, vChar)
-    }
+    const rimY = from.y + 1
+    for (let x = from.x + 1; x < to.x; x++) write(box, x, rimY, hChar)
+    write(box, from.x, rimY, vChar)
+    write(box, to.x, rimY, vChar)
   }
 
   // Center the multi-line display label inside the box
@@ -375,6 +375,7 @@ export function measureMultiBox(
  * @param sections - Array of sections, each section is an array of text lines
  * @param useAscii - true for ASCII chars, false for Unicode box-drawing
  * @param padding - horizontal padding inside the box (default 1)
+ * @param centerHeader - centre the first section's lines (class names)
  * @returns A standalone Canvas containing the multi-section box
  */
 export function drawMultiBox(
@@ -382,6 +383,7 @@ export function drawMultiBox(
   useAscii: boolean,
   padding: number = 1,
   fit?: { width: number; height: number },
+  centerHeader = false,
 ): Canvas {
   // Clamp here too (not just inside measureMultiBox) since `padding` is also
   // used directly below for each line's startX — see the comment in
@@ -434,8 +436,12 @@ export function drawMultiBox(
     // claims the two grid cells it renders across, and a surrogate pair is
     // never split across two cells.
     for (const line of lines) {
-      const startX = 1 + clampedPadding
       const cells = toDisplayCells(line)
+      // Class names (and their annotation) centre in the box, as Mermaid does.
+      const startX =
+        centerHeader && s === 0
+          ? 1 + Math.floor((boxWidth - 2 - cells.length) / 2)
+          : 1 + clampedPadding
       for (let i = 0; i < cells.length; i++) {
         write(canvas, startX + i, row, cells[i]!)
       }

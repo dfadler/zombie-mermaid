@@ -12,8 +12,7 @@ exports[`architecture junction and group icons (#2563, #2564) > ASCII: group ico
 │ │  ╭───────╮  │ │ ╭────────────╮ │ │
 │ │  ╱       ╲  │ │ │────────────│ │ │
 │ │ ( Gateway )─┼─┼►│ Primary DB │ │ │
-│ │ (         ) │ │ │            │ │ │
-│ │  ╲       ╱  │ │ │────────────│ │ │
+│ │  ╲       ╱  │ │ │            │ │ │
 │ │  ╰───────╯  │ │ ╰────────────╯ │ │
 │ │             │ │                │ │
 │ └─────────────┘ └────────────────┘ │
@@ -29,10 +28,8 @@ exports[`architecture junction and group icons (#2563, #2564) > ASCII: junction 
 │  ╭───────╮      ●──●     ╭────────────╮ │
 │  ╱       ╲      │  │     │────────────│ │
 │ ( Gateway )─────┤  ├────►│ Primary DB │ │
-│ (         )     │  │     │            │ │
-│  ╲       ╱      │  │     │────────────│ │
+│  ╲       ╱      │  │     │            │ │
 │  ╰───────╯      ●─┬●     ╰────────────╯ │
-│                   │                     │
 │                   │                     │
 │                   │                     │
 │                   │                     │
@@ -41,14 +38,13 @@ exports[`architecture junction and group icons (#2563, #2564) > ASCII: junction 
 │                   │      │────────────│ │
 │                   └─────►│  Replica   │ │
 │                          │            │ │
-│                          │────────────│ │
 │                          ╰────────────╯ │
 │                                         │
 └─────────────────────────────────────────┘"
 `;
 
 exports[`architecture junction and group icons (#2563, #2564) > SVG: group icons 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 396 308" width="396" height="308" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 569.5 345" width="569.5" height="345" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -75,45 +71,42 @@ exports[`architecture junction and group icons (#2563, #2564) > SVG: group icons
   }
 </style>
 <defs>
-  <marker id="zm1g3iwd0-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmbc5y2k-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1g3iwd0-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmbc5y2k-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="cloud" data-label="Cloud">
-  <rect x="40" y="40" width="316" height="228" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="40" y="40" width="316" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <g transform="translate(43 43) scale(0.28)"><rect width="80" height="80" fill="#087ebf" /><path d="m65,47.5c0,2.76-2.24,5-5,5H20c-2.76,0-5-2.24-5-5,0-1.87,1.03-3.51,2.56-4.36-.04-.21-.06-.42-.06-.64,0-2.6,2.48-4.74,5.65-4.97,1.65-4.51,6.34-7.76,11.85-7.76.86,0,1.69.08,2.5.23,2.09-1.57,4.69-2.5,7.5-2.5,6.1,0,11.19,4.38,12.28,10.17,2.14.56,3.72,2.51,3.72,4.83,0,.03,0,.07-.01.1,2.29.46,4.01,2.48,4.01,4.9Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path></g>
-  <text x="76" y="54" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.2">Cloud</text>
-<g class="subgraph" data-id="data" data-label="Data Tier">
-  <rect x="228" y="84" width="112" height="154" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="228" y="84" width="112" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <g transform="translate(231 87) scale(0.28)"><rect width="80" height="80" fill="#087ebf" /><path d="m20,57.86c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,45.95c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,34.05c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><ellipse cx="40" cy="22.14" rx="20" ry="7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><line x1="20" y1="57.86" x2="20" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="60" y1="57.86" x2="60" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
-  <text x="264" y="98" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.2">Data Tier</text>
-</g>
+  <rect x="40" y="40" width="489.5" height="265" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="8" />
+  <g transform="translate(41 41) scale(0.38)"><rect width="80" height="80" fill="#087ebf" /><path d="m65,47.5c0,2.76-2.24,5-5,5H20c-2.76,0-5-2.24-5-5,0-1.87,1.03-3.51,2.56-4.36-.04-.21-.06-.42-.06-.64,0-2.6,2.48-4.74,5.65-4.97,1.65-4.51,6.34-7.76,11.85-7.76.86,0,1.69.08,2.5.23,2.09-1.57,4.69-2.5,7.5-2.5,6.1,0,11.19,4.38,12.28,10.17,2.14.56,3.72,2.51,3.72,4.83,0,.03,0,.07-.01.1,2.29.46,4.01,2.48,4.01,4.9Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path></g>
+  <text x="74" y="56" font-size="12" font-weight="400" fill="var(--_text)" dy="4.2">Cloud</text>
 <g class="subgraph" data-id="api" data-label="API Tier">
-  <rect x="56" y="84" width="112" height="154" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="56" y="84" width="112" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <g transform="translate(59 87) scale(0.28)"><rect width="80" height="80" fill="#087ebf" /><rect x="17.5" y="17.5" width="45" height="45" rx="2" ry="2" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></rect><line x1="17.5" y1="32.5" x2="62.5" y2="32.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="17.5" y1="47.5" x2="62.5" y2="47.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><g><path d="m56.25,25c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: #fff; stroke-width: 0px;"></path><path d="m56.25,25c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10;"></path></g><g><path d="m56.25,40c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: #fff; stroke-width: 0px;"></path><path d="m56.25,40c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10;"></path></g><g><path d="m56.25,55c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: #fff; stroke-width: 0px;"></path><path d="m56.25,55c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10;"></path></g><g><circle cx="32.5" cy="25" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="27.5" cy="25" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="22.5" cy="25" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle></g><g><circle cx="32.5" cy="40" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="27.5" cy="40" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="22.5" cy="40" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle></g><g><circle cx="32.5" cy="55" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="27.5" cy="55" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="22.5" cy="55" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle></g></g>
-  <text x="92" y="98" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.2">API Tier</text>
+  <rect x="81.5" y="81.5" width="165" height="182" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="8" />
+  <g transform="translate(82.5 82.5) scale(0.38)"><rect width="80" height="80" fill="#087ebf" /><rect x="17.5" y="17.5" width="45" height="45" rx="2" ry="2" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></rect><line x1="17.5" y1="32.5" x2="62.5" y2="32.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="17.5" y1="47.5" x2="62.5" y2="47.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><g><path d="m56.25,25c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: #fff; stroke-width: 0px;"></path><path d="m56.25,25c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10;"></path></g><g><path d="m56.25,40c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: #fff; stroke-width: 0px;"></path><path d="m56.25,40c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10;"></path></g><g><path d="m56.25,55c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: #fff; stroke-width: 0px;"></path><path d="m56.25,55c0,.27-.45.5-1,.5h-10.5c-.55,0-1-.23-1-.5s.45-.5,1-.5h10.5c.55,0,1,.23,1,.5Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10;"></path></g><g><circle cx="32.5" cy="25" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="27.5" cy="25" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="22.5" cy="25" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle></g><g><circle cx="32.5" cy="40" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="27.5" cy="40" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="22.5" cy="40" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle></g><g><circle cx="32.5" cy="55" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="27.5" cy="55" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle><circle cx="22.5" cy="55" r=".75" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10;"></circle></g></g>
+  <text x="115.5" y="97.5" font-size="12" font-weight="400" fill="var(--_text)" dy="4.2">API Tier</text>
+</g>
+<g class="subgraph" data-id="data" data-label="Data Tier">
+  <rect x="323" y="81.5" width="165" height="182" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="8" />
+  <g transform="translate(324 82.5) scale(0.38)"><rect width="80" height="80" fill="#087ebf" /><path d="m20,57.86c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,45.95c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,34.05c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><ellipse cx="40" cy="22.14" rx="20" ry="7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><line x1="20" y1="57.86" x2="20" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="60" y1="57.86" x2="60" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
+  <text x="357" y="97.5" font-size="12" font-weight="400" fill="var(--_text)" dy="4.2">Data Tier</text>
 </g>
 </g>
-<polyline class="edge" data-from="gw" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="152,168 244,168" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1g3iwd0-arrowhead)" />
-<g class="node" data-id="db" data-label="Primary DB" data-shape="rectangle">
-  <g transform="translate(244 128)"><rect width="80" height="80" fill="#087ebf" /><path d="m20,57.86c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,45.95c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,34.05c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><ellipse cx="40" cy="22.14" rx="20" ry="7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><line x1="20" y1="57.86" x2="20" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="60" y1="57.86" x2="60" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
-  <text x="284" y="221" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Primary DB</text>
-</g>
+<path class="edge" data-from="gw" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 204 164 L 365.5 164" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmbc5y2k-arrowhead)" />
 <g class="node" data-id="gw" data-label="Gateway" data-shape="rectangle">
-  <g transform="translate(72 128)"><rect width="80" height="80" fill="#087ebf" /><circle cx="40" cy="40" r="22.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></circle><line x1="40" y1="17.5" x2="40" y2="62.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="17.5" y1="40" x2="62.5" y2="40" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><path d="m39.99,17.51c-15.28,11.1-15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m40.01,17.51c15.28,11.1,15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><line x1="19.75" y1="30.1" x2="60.25" y2="30.1" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="19.75" y1="49.9" x2="60.25" y2="49.9" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
-  <text x="112" y="221" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Gateway</text>
+  <g transform="translate(124 124)"><rect width="80" height="80" fill="#087ebf" /><circle cx="40" cy="40" r="22.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></circle><line x1="40" y1="17.5" x2="40" y2="62.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="17.5" y1="40" x2="62.5" y2="40" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><path d="m39.99,17.51c-15.28,11.1-15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m40.01,17.51c15.28,11.1,15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><line x1="19.75" y1="30.1" x2="60.25" y2="30.1" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="19.75" y1="49.9" x2="60.25" y2="49.9" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
+  <text x="164" y="217" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Gateway</text>
+</g>
+<g class="node" data-id="db" data-label="Primary DB" data-shape="rectangle">
+  <g transform="translate(365.5 124)"><rect width="80" height="80" fill="#087ebf" /><path d="m20,57.86c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,45.95c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,34.05c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><ellipse cx="40" cy="22.14" rx="20" ry="7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><line x1="20" y1="57.86" x2="20" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="60" y1="57.86" x2="60" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
+  <text x="405.5" y="217" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Primary DB</text>
 </g>
 </svg>"
 `;
 
 exports[`architecture junction and group icons (#2563, #2564) > SVG: junction 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 342" width="370" height="342" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 645 462" width="645" height="462" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -140,37 +133,36 @@ exports[`architecture junction and group icons (#2563, #2564) > SVG: junction 1`
   }
 </style>
 <defs>
-  <marker id="zmqo5wa3-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmitpzxk-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmqo5wa3-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmitpzxk-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="cloud" data-label="Cloud">
-  <rect x="40" y="40" width="290" height="262" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="40" y="40" width="290" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <g transform="translate(43 43) scale(0.28)"><rect width="80" height="80" fill="#087ebf" /><path d="m65,47.5c0,2.76-2.24,5-5,5H20c-2.76,0-5-2.24-5-5,0-1.87,1.03-3.51,2.56-4.36-.04-.21-.06-.42-.06-.64,0-2.6,2.48-4.74,5.65-4.97,1.65-4.51,6.34-7.76,11.85-7.76.86,0,1.69.08,2.5.23,2.09-1.57,4.69-2.5,7.5-2.5,6.1,0,11.19,4.38,12.28,10.17,2.14.56,3.72,2.51,3.72,4.83,0,.03,0,.07-.01.1,2.29.46,4.01,2.48,4.01,4.9Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path></g>
-  <text x="76" y="54" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.2">Cloud</text>
+  <rect x="40" y="40" width="565" height="382" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="8" />
+  <g transform="translate(41 41) scale(0.38)"><rect width="80" height="80" fill="#087ebf" /><path d="m65,47.5c0,2.76-2.24,5-5,5H20c-2.76,0-5-2.24-5-5,0-1.87,1.03-3.51,2.56-4.36-.04-.21-.06-.42-.06-.64,0-2.6,2.48-4.74,5.65-4.97,1.65-4.51,6.34-7.76,11.85-7.76.86,0,1.69.08,2.5.23,2.09-1.57,4.69-2.5,7.5-2.5,6.1,0,11.19,4.38,12.28,10.17,2.14.56,3.72,2.51,3.72,4.83,0,.03,0,.07-.01.1,2.29.46,4.01,2.48,4.01,4.9Z" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path></g>
+  <text x="74" y="56" font-size="12" font-weight="400" fill="var(--_text)" dy="4.2">Cloud</text>
 </g>
-<polyline class="edge" data-from="gw" data-to="fan" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="136,178 184,178" fill="none" stroke="var(--_line)" stroke-width="1" />
-<polyline class="edge" data-from="fan" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="186,177.67 198,177.67 198,124 234,124" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmqo5wa3-arrowhead)" />
-<polyline class="edge" data-from="fan" data-to="replica" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="186,178.33 198,178.33 198,232 234,232" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmqo5wa3-arrowhead)" />
+<path class="edge" data-from="gw" data-to="fan" data-style="solid" data-arrow-start="false" data-arrow-end="false" d="M 162.5 122.5 L 321.5 122.5" fill="none" stroke="var(--_line)" stroke-width="3" />
+<path class="edge" data-from="fan" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 323.5 122.5 L 482.5 122.5" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmitpzxk-arrowhead)" />
+<path class="edge" data-from="fan" data-to="replica" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 322.5 123.5 L 322.5 282.5" fill="none" stroke="var(--_line)" stroke-width="3" marker-end="url(#zmitpzxk-arrowhead)" />
 <g class="node" data-id="gw" data-label="Gateway" data-shape="rectangle">
-  <g transform="translate(56 138)"><rect width="80" height="80" fill="#087ebf" /><circle cx="40" cy="40" r="22.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></circle><line x1="40" y1="17.5" x2="40" y2="62.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="17.5" y1="40" x2="62.5" y2="40" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><path d="m39.99,17.51c-15.28,11.1-15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m40.01,17.51c15.28,11.1,15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><line x1="19.75" y1="30.1" x2="60.25" y2="30.1" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="19.75" y1="49.9" x2="60.25" y2="49.9" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
-  <text x="96" y="231" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Gateway</text>
+  <g transform="translate(82.5 82.5)"><rect width="80" height="80" fill="#087ebf" /><circle cx="40" cy="40" r="22.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></circle><line x1="40" y1="17.5" x2="40" y2="62.5" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="17.5" y1="40" x2="62.5" y2="40" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><path d="m39.99,17.51c-15.28,11.1-15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m40.01,17.51c15.28,11.1,15.28,33.88,0,44.98" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><line x1="19.75" y1="30.1" x2="60.25" y2="30.1" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="19.75" y1="49.9" x2="60.25" y2="49.9" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
+  <text x="122.5" y="175.5" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Gateway</text>
 </g>
 <g class="node" data-id="db" data-label="Primary DB" data-shape="rectangle">
-  <g transform="translate(234 84)"><rect width="80" height="80" fill="#087ebf" /><path d="m20,57.86c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,45.95c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,34.05c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><ellipse cx="40" cy="22.14" rx="20" ry="7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><line x1="20" y1="57.86" x2="20" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="60" y1="57.86" x2="60" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
-  <text x="274" y="177" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Primary DB</text>
+  <g transform="translate(482.5 82.5)"><rect width="80" height="80" fill="#087ebf" /><path d="m20,57.86c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,45.95c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><path d="m20,34.05c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></path><ellipse cx="40" cy="22.14" rx="20" ry="7.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><line x1="20" y1="57.86" x2="20" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line><line x1="60" y1="57.86" x2="60" y2="22.14" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></line></g>
+  <text x="522.5" y="175.5" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Primary DB</text>
+</g>
+<g class="node" data-id="replica" data-label="Replica" data-shape="rectangle">
+  <g transform="translate(282.5 282.5)"><rect width="80" height="80" fill="#087ebf" /><rect x="20" y="15" width="40" height="50" rx="1" ry="1" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></rect><ellipse cx="24" cy="19.17" rx=".8" ry=".83" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="56" cy="19.17" rx=".8" ry=".83" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="24" cy="60.83" rx=".8" ry=".83" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="56" cy="60.83" rx=".8" ry=".83" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="40" cy="33.75" rx="14" ry="14.58" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="40" cy="33.75" rx="4" ry="4.17" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><path d="m37.51,42.52l-4.83,13.22c-.26.71-1.1,1.02-1.76.64l-4.18-2.42c-.66-.38-.81-1.26-.33-1.84l9.01-10.8c.88-1.05,2.56-.08,2.09,1.2Z" style="fill: #fff; stroke-width: 0px;"></path></g>
+  <text x="322.5" y="375.5" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Replica</text>
 </g>
 <g class="node" data-id="fan" data-label="" data-shape="junction">
   
-  <text x="185" y="178" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
-</g>
-<g class="node" data-id="replica" data-label="Replica" data-shape="rectangle">
-  <g transform="translate(234 192)"><rect width="80" height="80" fill="#087ebf" /><rect x="20" y="15" width="40" height="50" rx="1" ry="1" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></rect><ellipse cx="24" cy="19.17" rx=".8" ry=".83" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="56" cy="19.17" rx=".8" ry=".83" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="24" cy="60.83" rx=".8" ry=".83" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="56" cy="60.83" rx=".8" ry=".83" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="40" cy="33.75" rx="14" ry="14.58" style="fill: none; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><ellipse cx="40" cy="33.75" rx="4" ry="4.17" style="fill: #fff; stroke: #fff; stroke-miterlimit: 10; stroke-width: 2px;"></ellipse><path d="m37.51,42.52l-4.83,13.22c-.26.71-1.1,1.02-1.76.64l-4.18-2.42c-.66-.38-.81-1.26-.33-1.84l9.01-10.8c.88-1.05,2.56-.08,2.09,1.2Z" style="fill: #fff; stroke-width: 0px;"></path></g>
-  <text x="274" y="285" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Replica</text>
+  <text x="322.5" y="122.5" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
 </g>
 </svg>"
 `;

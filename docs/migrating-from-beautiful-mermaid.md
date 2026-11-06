@@ -9,7 +9,7 @@ This page covers what's safe to assume unchanged, itemizes the fixes most likely
 ## Breaking changes since the fork
 
 - **Node `>=24`** is required (`engines.node` in `package.json`).
-- **`registerElk()`**: in browsers and bundlers, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
+- **`registerElk()`**: in browsers and bundlers, flowchart, state, class and ER diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
 - **Packages**: the parser and renderers live under `packages/*` (there is no `src/` library layout to deep-import from).
 
 A full 2.x to 5.x upgrade guide is tracked in [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538).
@@ -36,7 +36,7 @@ This is the fix most likely to affect a real diagram, because `classDef`/`class`
 - **A trailing semicolon on a `class` statement produced a stray node.** `class B highlight;` — completely valid, optional Mermaid syntax — fell through class-assignment parsing (which required unterminated `\w+$`) into node parsing, so instead of styling node `B` the diagram grew an extra node literally labeled `class`. Fixed in [#53](https://github.com/dfadler/zombie-mermaid/pull/53).
 - **`:::className` before the shape brackets dropped the node's label entirely.** `A:::external[External User]` matched none of the shape-detection regexes (they require the id immediately before its brackets), so it fell back to a bare-id match and `[External User]` was discarded. Fixed in [#77](https://github.com/dfadler/zombie-mermaid/pull/77).
 - **Custom classes never appeared as a `class` attribute on the SVG element**, even though the class's `fill`/`stroke` were already applied inline — so any external CSS meant to target `.highlight` had nothing to select. Fixed in [#75](https://github.com/dfadler/zombie-mermaid/pull/75).
-- **Text on a custom-fill node could render unreadable.** A node styled via `classDef`/`class`/`style` with a `fill` but no explicit `color` always fell back to the ambient theme text color — white-on-light or black-on-dark, depending on the fill and the active theme. `packages/svg-renderer/src/renderer.ts` now computes a readable black/white text color from the fill's own luminance whenever the fill resolves to a concrete color (via `getReadableTextColor` in `packages/core/src/theme.ts`), only falling back to the theme color when the fill is a CSS variable or otherwise unresolvable. Fixed in [#76](https://github.com/dfadler/zombie-mermaid/pull/76).
+- **Text on a custom-fill node follows Mermaid, not a contrast heuristic.** A node styled via `classDef`/`class`/`style` with a `fill` but no explicit `color` keeps the theme text colour, exactly as Mermaid 12.3.0 does (dark text stays dark on a dark fill); an explicit `color:` wins. An earlier version of this fork picked black or white from the fill's brightness ([#76](https://github.com/dfadler/zombie-mermaid/pull/76)); that was removed to match Mermaid ([#2637](https://github.com/dfadler/zombie-mermaid/issues/2637)). If you relied on it, add `color:` to the `style`/`classDef`.
 - **`style A font-family:...` and `classDef`-supplied `font-family` were parsed but never rendered**, silently ignored in SVG output. Fixed in [#78](https://github.com/dfadler/zombie-mermaid/pull/78).
 - **`classDef default` only applied to nodes that named it explicitly** (`class X default`), instead of styling every node the way Mermaid does it. Fixed in [#206](https://github.com/dfadler/zombie-mermaid/pull/206) (v1.3.0).
 
@@ -70,7 +70,7 @@ The same fix ([#80](https://github.com/dfadler/zombie-mermaid/pull/80), landed i
 
 ### Edge bundling drawn through unrelated nodes
 
-`mergeEdges` (on by default) replaces separately routed fan-out/fan-in edges with a shared trunk plus straight branches. That substitution assumed a branch only ever spans the gap between adjacent layers; when a fan-out target is several layers down, the branch could be drawn straight through any node sitting in an intermediate layer:
+`mergeEdges` (opt-in; it was on by default before this fork matched mermaid's one-port-per-edge routing) replaces separately routed fan-out/fan-in edges with a shared trunk plus straight branches. That substitution assumed a branch only ever spans the gap between adjacent layers; when a fan-out target is several layers down, the branch could be drawn straight through any node sitting in an intermediate layer:
 
 ```mermaid
 flowchart TB
@@ -82,7 +82,7 @@ flowchart TB
 
 Fixed in [#217](https://github.com/dfadler/zombie-mermaid/pull/217) (v1.3.0): a bundled branch is now checked against every node box before being adopted, falling back to the layout engine's own (obstacle-avoiding) routing when it would collide.
 
-**Triggered by:** a flowchart or state diagram with `mergeEdges` enabled (the default) and a fan-out/fan-in shape where a bundled edge's target is more than one layer away from its shared trunk.
+**Triggered by:** a flowchart or state diagram with `mergeEdges: true` and a fan-out/fan-in shape where a bundled edge's target is more than one layer away from its shared trunk.
 
 ### ER diagram cardinality and direction
 

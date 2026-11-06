@@ -89,13 +89,16 @@ describe('renderMermaidSVG – sequence diagrams', () => {
     expect(svg).toContain('--bg:#18181B')
   })
 
-  it('renders lifeline dashed lines', () => {
+  it('renders solid lifelines as mermaid 12.3.0 draws them (#2603)', () => {
     const svg = renderMermaidSVG(`sequenceDiagram
       A->>B: Hello`)
-    // Lifelines are dashed vertical lines
-    const dashedLines = svg.match(/stroke-dasharray="6 4"/g)
-    expect(dashedLines).toBeTruthy()
-    expect(dashedLines!.length).toBeGreaterThanOrEqual(2) // At least 2 lifelines
+    // Mermaid's `.actor-line` is solid, 0.5px wide
+    const lifelines = svg.match(/<line class="lifeline"[^>]*>/g)!
+    expect(lifelines.length).toBeGreaterThanOrEqual(2) // At least 2 lifelines
+    for (const l of lifelines) {
+      expect(l).not.toContain('stroke-dasharray')
+      expect(l).toContain('stroke-width="0.5"')
+    }
   })
 
   it('renders a complex authentication flow', () => {

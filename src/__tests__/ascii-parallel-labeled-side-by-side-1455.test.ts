@@ -14,10 +14,8 @@ const td = 'graph TD\n  A -->|one| B\n  A -->|two| B'
 const lr = 'graph LR\n  A -->|one| B\n  A -->|two| B'
 
 describe('labeled parallel edges side by side (#1455)', () => {
-  it('SVG: draws both labeled edges as separate polylines', () => {
-    expect(renderMermaidSVG(td).match(/<polyline class="edge"/g)).toHaveLength(
-      2,
-    )
+  it('SVG: draws both labeled edges as separate paths', () => {
+    expect(renderMermaidSVG(td).match(/<path class="edge"/g)).toHaveLength(2)
   })
 
   it('ASCII TD: two strokes, labels staggered onto separate rows', () => {

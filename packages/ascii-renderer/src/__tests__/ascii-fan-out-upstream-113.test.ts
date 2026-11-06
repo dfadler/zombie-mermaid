@@ -35,12 +35,13 @@ describe('upstream #111: TB fan-out siblings leave the source on one row', () =>
     expect(lines(out)).toEqual([
       '                    ┌───────────────┐',
       '                    │               │',
-      '       ┌────────────┤     Source    ├─────────────┐',
-      '       │            │               │             │',
-      '       │            └───────┬───────┘             │',
+      '                    │     Source    │',
+      '                    │               │',
+      '                    └─────┬─┬─┬─────┘',
+      '                          │ │ │',
+      '       ┌──────────────────┘ │ └───────────────────┐',
       '       │                    │                     │',
-      '     left*                  │                  right*',
-      '       │                 center*                  │',
+      '     left*               center*               right*',
       '       │                    │                     │',
       '       ▼                    ▼                     ▼',
       '┌─────────────┐     ┌───────────────┐     ┌──────────────┐',
@@ -55,16 +56,16 @@ describe('upstream #111: TB fan-out siblings leave the source on one row', () =>
     const out = lines(
       renderMermaidASCII(TD_FANOUT, { colorMode: 'none', useAscii: true }),
     )
-    // The outer edges leave the source row's sides as long horizontal runs.
-    // The buggy upstream output put a second run (the "right*" detour) on a
-    // lower row: nothing between the source's bottom border and the targets'
-    // top borders (rows starting with '+') may carry a run at all.
+    // All three edges leave the source's bottom face, as Mermaid draws them,
+    // and bend on one shared row just below it. The buggy upstream output put
+    // a second run (the "right*" detour) on a lower row: below that bar row
+    // nothing but the targets' borders may carry a run.
     const sourceIdx = out.findIndex((l) => l.includes('Source'))
-    expect(out[sourceIdx]!.trim()).toMatch(/^\+-+\+\s+Source\s+\+-+\+$/)
-    const below = out.slice(sourceIdx + 3)
-    expect(below.filter((l) => !l.startsWith('+') && /-{3,}/.test(l))).toEqual(
-      [],
-    )
+    expect(out[sourceIdx]!.trim()).toMatch(/^\|\s+Source\s+\|$/)
+    const below = out.slice(sourceIdx + 4)
+    expect(
+      below.filter((l) => !l.startsWith('+') && /-{3,}/.test(l)),
+    ).toHaveLength(1)
     // No label is stranded on a horizontal segment.
     expect(out.join('\n')).not.toMatch(/[-─]\/?(center|right)\*[-─]/)
   })

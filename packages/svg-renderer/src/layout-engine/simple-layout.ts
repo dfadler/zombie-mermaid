@@ -38,7 +38,7 @@ import {
   resolveEdgeStyle,
   resolveHeadColor,
 } from './from-elk.ts'
-import { SUBGRAPH_PADDING, estimateNodeSize } from './to-elk.ts'
+import { SUBGRAPH_PADDING, estimateNodeSize, isStateGraph } from './to-elk.ts'
 
 /** A box in the abstract frame: top-left corner and extents. */
 interface Box {
@@ -203,6 +203,7 @@ export function layoutSimple(
       opts.fontSizes.nodeLabel,
       node.icon,
       graph.direction,
+      isStateGraph(graph),
     )
     nodeSize.set(id, abstractSize(s.width, s.height))
   }

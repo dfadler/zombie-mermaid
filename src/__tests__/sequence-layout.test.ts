@@ -45,8 +45,8 @@ describe('sequence layout – block spacing', () => {
 
     expect(result.messages).toHaveLength(2)
     const gap = result.messages[1]!.y - result.messages[0]!.y
-    // Should be baseRowHeight + blockHeaderExtra = 40 + 28 = 68
-    expect(gap).toBe(40 + 28)
+    // baseRowHeight + blockHeaderExtra + blockHeaderLabelGap = 40 + 28 + 26 = 94
+    expect(gap).toBe(40 + 28 + 26)
   })
 
   it('first message in an alt block gets extra header space', () => {
@@ -58,7 +58,7 @@ describe('sequence layout – block spacing', () => {
 
     expect(result.messages).toHaveLength(2)
     const gap = result.messages[1]!.y - result.messages[0]!.y
-    expect(gap).toBe(40 + 28)
+    expect(gap).toBe(40 + 28 + 26)
   })
 
   it('messages after else dividers get extra divider space', () => {
@@ -73,11 +73,11 @@ describe('sequence layout – block spacing', () => {
     expect(result.messages).toHaveLength(3)
     // msg[0] → msg[1]: base + blockHeaderExtra (first message in alt block)
     const gap01 = result.messages[1]!.y - result.messages[0]!.y
-    expect(gap01).toBe(40 + 28)
+    expect(gap01).toBe(40 + 28 + 26)
 
-    // msg[1] → msg[2]: base + dividerExtra (message after "else Invalid")
+    // msg[1] → msg[2]: base + dividerExtra + dividerLabelGap (message after "else Invalid")
     const gap12 = result.messages[2]!.y - result.messages[1]!.y
-    expect(gap12).toBe(40 + 24)
+    expect(gap12).toBe(40 + 24 + 26)
   })
 
   it('multiple else dividers each get extra space', () => {
@@ -95,15 +95,15 @@ describe('sequence layout – block spacing', () => {
 
     // msg[0] → msg[1]: base + blockHeaderExtra
     const gap01 = result.messages[1]!.y - result.messages[0]!.y
-    expect(gap01).toBe(40 + 28)
+    expect(gap01).toBe(40 + 28 + 26)
 
-    // msg[1] → msg[2]: base + dividerExtra (else Invalid)
+    // msg[1] → msg[2]: base + dividerExtra + dividerLabelGap (else Invalid)
     const gap12 = result.messages[2]!.y - result.messages[1]!.y
-    expect(gap12).toBe(40 + 24)
+    expect(gap12).toBe(40 + 24 + 26)
 
-    // msg[2] → msg[3]: base + dividerExtra (else Account locked)
+    // msg[2] → msg[3]: base + dividerExtra + dividerLabelGap (else Account locked)
     const gap23 = result.messages[3]!.y - result.messages[2]!.y
-    expect(gap23).toBe(40 + 24)
+    expect(gap23).toBe(40 + 24 + 26)
   })
 
   it('par block with and dividers gets correct spacing', () => {
@@ -121,11 +121,11 @@ describe('sequence layout – block spacing', () => {
 
     // msg[0] → msg[1]: base + blockHeaderExtra (first in par block)
     const gap01 = result.messages[1]!.y - result.messages[0]!.y
-    expect(gap01).toBe(40 + 28)
+    expect(gap01).toBe(40 + 28 + 26)
 
-    // msg[1] → msg[2]: base + dividerExtra (and Fetch orders)
+    // msg[1] → msg[2]: base + dividerExtra + dividerLabelGap (and Fetch orders)
     const gap12 = result.messages[2]!.y - result.messages[1]!.y
-    expect(gap12).toBe(40 + 24)
+    expect(gap12).toBe(40 + 24 + 26)
   })
 
   it('opt block header gets extra space', () => {
@@ -137,7 +137,7 @@ describe('sequence layout – block spacing', () => {
 
     expect(result.messages).toHaveLength(2)
     const gap = result.messages[1]!.y - result.messages[0]!.y
-    expect(gap).toBe(40 + 28)
+    expect(gap).toBe(40 + 28 + 26)
   })
 
   it('critical block header gets extra space', () => {
@@ -149,7 +149,7 @@ describe('sequence layout – block spacing', () => {
 
     expect(result.messages).toHaveLength(2)
     const gap = result.messages[1]!.y - result.messages[0]!.y
-    expect(gap).toBe(40 + 28)
+    expect(gap).toBe(40 + 28 + 26)
   })
 
   it('messages after a block return to normal spacing', () => {
@@ -213,7 +213,7 @@ describe('sequence layout – block positioning', () => {
     const firstMsg = result.messages[1]! // Msg at index 1 is startIndex
     // Block top should be above message Y by blockPadTop (40px)
     expect(block.y).toBeLessThan(firstMsg.y)
-    expect(firstMsg.y - block.y).toBe(40) // SEQ.blockPadTop
+    expect(firstMsg.y - block.y).toBe(40 + 26) // SEQ.blockPadTop + blockHeaderLabelGap
   })
 
   it('divider Y is between the messages it separates', () => {
@@ -297,7 +297,7 @@ describe('sequence layout – diagram dimensions', () => {
 
     // The block version should be taller due to header extra space
     expect(withBlock.height).toBeGreaterThan(plain.height)
-    expect(withBlock.height - plain.height).toBe(28) // blockHeaderExtra
+    expect(withBlock.height - plain.height).toBe(28 + 26) // blockHeaderExtra + blockHeaderLabelGap
   })
 
   it('diagram with multiple dividers is taller than one with none', () => {
@@ -317,8 +317,10 @@ describe('sequence layout – diagram dimensions', () => {
         B->>A: M4
       end`)
 
-    // blockHeaderExtra (28) + 2 × dividerExtra (24 each) = 76 extra
-    expect(withDividers.height - noDividers.height).toBe(28 + 24 + 24)
+    // blockHeaderExtra (28) + blockHeaderLabelGap (26) + 2 × (dividerExtra 24 + dividerLabelGap 26) = 128 extra
+    expect(withDividers.height - noDividers.height).toBe(
+      28 + 26 + 2 * (24 + 26),
+    )
   })
 })
 
@@ -497,9 +499,12 @@ describe('sequence layout – render clearance', () => {
     const divider = block.dividers[0]!
     const msgAfter = result.messages[2]!
 
-    // Offset 40: baseline clearance = (msg.y - 6) - (msg.y - 40 + 14) = 20
+    // Offset 40 + dividerLabelGap 26: baseline clearance
+    // = (msg.y - 6) - (msg.y - 66 + 14) = 46
     const baselineClearance = msgAfter.y - 6 - (divider.y + 14)
-    expect(baselineClearance).toBe(20)
+    expect(baselineClearance).toBe(46)
+    // The divider is 66px above the message it introduces (#2602).
+    expect(msgAfter.y - divider.y).toBe(66)
   })
 })
 

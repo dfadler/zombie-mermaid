@@ -4,6 +4,8 @@
  * path from #1286) on a tiny diagram. Headless - asciinema allocates its own
  * PTY, agg/Chromium draw no window - so it steals no focus.
  *
+ * Provenance (#2679): the golden is our own capture output (class b), a pipeline check, not
+ * a mermaid comparison.
  * The .txt export is the golden (exact text the PTY showed); the PNG is only
  * checked as a non-trivial PNG, since pixels vary by font/host.
  *

@@ -317,12 +317,12 @@ describe('renderSvg – state pseudostates', () => {
 // ============================================================================
 
 describe('renderSvg – edges', () => {
-  it('renders a solid edge as <polyline> with end arrow', () => {
+  it('renders a solid edge as <path> with end arrow', () => {
     const edge = makeEdge({ style: 'solid', hasArrowEnd: true })
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
-    expect(svg).toContain('<polyline')
-    expect(svg).toContain('points="100,120 100,200"')
+    expect(svg).toContain('<path class="edge"')
+    expect(svg).toContain('d="M 100 120 L 100 200"')
     expect(svg).toContain('marker-end="url(#arrowhead)"')
   })
 
@@ -359,14 +359,14 @@ describe('renderSvg – edges', () => {
     const edge = makeEdge({ points: [{ x: 0, y: 0 }] })
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
-    expect(svg).not.toContain('<polyline')
+    expect(svg).not.toContain('<path class="edge"')
   })
 
   it('renders no-arrow edge without marker-end', () => {
     const edge = makeEdge({ hasArrowEnd: false, hasArrowStart: false })
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
-    expect(svg).toContain('<polyline')
+    expect(svg).toContain('<path class="edge"')
     expect(svg).not.toContain('marker-end')
     expect(svg).not.toContain('marker-start')
   })
@@ -439,8 +439,9 @@ describe('renderSvg – groups', () => {
     }
     const graph = makeGraph({ groups: [group] })
     const svg = renderSvg(graph, lightColors)
-    const rectCount = (svg.match(/x="20" y="20"/g) ?? []).length
-    expect(rectCount).toBeGreaterThanOrEqual(2)
+    // Outer rect at y=20, body rect below the 26px title band (#2651)
+    expect(svg.match(/x="20" y="20"/g) ?? []).toHaveLength(1)
+    expect(svg.match(/x="20" y="46"/g) ?? []).toHaveLength(1)
     expect(svg).toContain('>Backend</text>')
   })
 
@@ -525,29 +526,15 @@ describe('renderSvg – inline styles', () => {
 // Fill → text color contrast (issue #55)
 // ============================================================================
 
-describe('renderSvg – readable text color for custom fills', () => {
-  it('picks dark text for a light pastel fill in dark mode', () => {
-    // Matches the issue #55 repro: classDef external fill:#FF6B6B in dark mode.
-    const node = makeNode({ inlineStyle: { fill: '#FF6B6B' } })
-    const graph = makeGraph({ nodes: [node] })
-    const svg = renderSvg(graph, darkColors)
-    expect(svg).toContain('fill="#000000"')
-    expect(svg).not.toContain('fill="var(--_text)"')
-  })
-
-  it('picks dark text for a light green fill in dark mode', () => {
-    const node = makeNode({ inlineStyle: { fill: '#90EE90' } })
-    const graph = makeGraph({ nodes: [node] })
-    const svg = renderSvg(graph, darkColors)
-    expect(svg).toContain('fill="#000000"')
-  })
-
-  it('picks light text for a dark fill in light mode', () => {
-    const node = makeNode({ inlineStyle: { fill: '#111111' } })
-    const graph = makeGraph({ nodes: [node] })
-    const svg = renderSvg(graph, lightColors)
-    expect(svg).toContain('fill="#FFFFFF"')
-    expect(svg).not.toContain('fill="var(--_text)"')
+describe('renderSvg – text color on custom fills (matches Mermaid 12.3.0, #2637)', () => {
+  it.each([
+    ['dark fill', '#111111', lightColors],
+    ['light fill', '#FF6B6B', darkColors],
+  ])('keeps the theme foreground on a %s', (_n, fill, colors) => {
+    const graph = makeGraph({ nodes: [makeNode({ inlineStyle: { fill } })] })
+    const svg = renderSvg(graph, colors)
+    expect(svg).toContain('fill="var(--_text)"')
+    expect(svg).not.toMatch(/fill="#(000000|FFFFFF)"/)
   })
 
   it('keeps using the theme foreground when there is no custom fill', () => {
@@ -580,7 +567,6 @@ describe('renderSvg – readable text color for custom fills', () => {
     const graph = makeGraph({ nodes: [node] })
     const svg = renderSvg(graph, darkColors)
     expect(svg).toContain('fill="#0000ff"')
-    expect(svg).not.toContain('fill="#000000"')
   })
 })
 

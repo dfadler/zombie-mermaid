@@ -486,8 +486,11 @@ export const DEFAULT_FLOOR = 0.85
  * differences (#1834).
  */
 export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
-  // Ratcheted (#1834): 100/100 on mermaid 12.2.0 (CJK Labels since #2358). The RL and BT
-  // Nested Subgraphs variants have no entry; they are 100/100 and sit under DEFAULT_FLOOR.
+  // Ratcheted (#1834): 100/100 on mermaid 12.2.0 (CJK Labels since #2358). Nested Subgraphs
+  // is 100/100/100 on 12.3.0 but 100/20 on the 12.2.0 pin since #2671 moved subgraph flowcharts
+  // to 12.3.0's ELK pipeline (12.2.0 uses dagre there). The floor is right and the pin is stale
+  // (#2710): do not lower it. The RL and BT variants have no entry; they are 100/100 and sit
+  // under DEFAULT_FLOOR.
   'Nested Subgraphs': 0.95,
   'Flowchart: CJK Labels': 0.95,
   'State: Notes': 0.8,
@@ -832,7 +835,8 @@ L/R/T/B sides in the source. A force layout moves with its seed and font
 metrics, so only relative placement is scored: the share of service pairs
 above / below / beside each other and of (service, group) pairs agreeing on
 containment, with services within \`ARCH_TOLERANCE\` (half an icon) counted as
-level (\`scripts/architecture-oracle.ts\`). Every sample must stay at or above
+level (\`scripts/architecture-oracle.ts\`). Figures up to 2026-11-02 scored the ELK layout, not the grid layout the SVG is drawn
+from (#2473, #2557); rows from 2026-11-05 score the drawn layout. Every sample must stay at or above
 \`ARCH_FLOOR\` (\`--thresholds\` exits 1 otherwise), a regression guard, not a
 parity claim. It says nothing about distances or edge routes.
 

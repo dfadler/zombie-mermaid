@@ -168,12 +168,8 @@ function renderVertical(
   const yLabels = allLabels.filter((_, i) => i % tickStride === 0)
   const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
 
-  const bandW = Math.floor(plotW / dataCount)
-  const catLabels = ellipsizeTouching(
-    getCategoryLabels(chart, dataCount),
-    bandW,
-    ch === ASC ? '...' : '…',
-  )
+  const catLabels = getCategoryLabels(chart, dataCount)
+  const bandW = widenBandForLabels(catLabels, Math.floor(plotW / dataCount))
 
   // Canvas dimensions
   const hasTitle = !!chart.title
@@ -1107,34 +1103,27 @@ function getDataCount(chart: XYChart): number {
 const LABEL_MIN_GAP = 1
 
 /**
- * Companion to thinLabels for category text: a word label that would touch a
- * neighbour at full width is cut to its band (bandW - LABEL_MIN_GAP cells) and
- * ends in an ellipsis, so every category stays identifiable. Labels that fit
- * are left alone. Numbers and dates are never cut (a cut number reads as a
- * different number) and fall to thinLabels, as does any band too narrow to
- * leave 3 characters of the name before the ellipsis.
+ * Companion to thinLabels for category text: mermaid prints every category in
+ * full (never an ellipsis), so a word label that would touch a neighbour widens
+ * the bands instead of being cut. Returns the smallest band width >= `bandW`
+ * at which no pair with a word label touches. Numbers and dates never widen
+ * the chart (a cut number reads as a different number) and fall to
+ * thinLabels, as the rest of the axis does once words fit.
  */
-function ellipsizeTouching(
-  labels: string[],
-  bandW: number,
-  ellipsis: string,
-): string[] {
-  const budget = bandW - LABEL_MIN_GAP
-  if (budget < ellipsis.length + 3) return labels
-  const start = (i: number) =>
-    Math.floor(bandW * (i + 0.5)) - Math.floor(labels[i]!.length / 2)
-  const end = (i: number) => start(i) + labels[i]!.length - 1
-  const touches = (i: number, j: number) =>
-    j >= 0 &&
-    j < labels.length &&
-    (j > i ? start(j) - end(i) : start(i) - end(j)) - 1 < LABEL_MIN_GAP
-  return labels.map((l, i) =>
-    (touches(i, i - 1) || touches(i, i + 1)) &&
-    l.length > budget &&
-    /\p{L}{2}/u.test(l)
-      ? l.slice(0, budget - ellipsis.length) + ellipsis
-      : l,
-  )
+function widenBandForLabels(labels: string[], bandW: number): number {
+  const isWord = (l: string) => /\p{L}{2}/u.test(l)
+  for (let w = bandW; ; w++) {
+    const start = (i: number) =>
+      Math.floor(w * (i + 0.5)) - Math.floor(labels[i]!.length / 2)
+    const end = (i: number) => start(i) + labels[i]!.length - 1
+    const ok = labels.every(
+      (l, i) =>
+        i === 0 ||
+        !(isWord(l) || isWord(labels[i - 1]!)) ||
+        start(i) - end(i - 1) - 1 >= LABEL_MIN_GAP,
+    )
+    if (ok) return w
+  }
 }
 
 function thinLabels(labels: string[], centers: number[]): boolean[] {

@@ -39,17 +39,35 @@ describe('block label layout', () => {
   it('SVG: the frame sits the same small distance outside both lifelines', () => {
     const outerLeft = Math.min(...lifelineXs)
     const outerRight = Math.max(...lifelineXs)
-    expect(outerLeft - left).toBeGreaterThan(0)
-    expect(outerLeft - left).toBeLessThanOrEqual(20)
+    // mermaid@12.3.0 draws the frame 11px outside the lifelines.
+    expect(outerLeft - left).toBe(11)
     expect(right - outerRight).toBeCloseTo(outerLeft - left, 1)
+  })
+
+  /** Corner points of the block's type tab, which is a polygon. */
+  const tabPoints = (): number[][] =>
+    /<polygon points="([^"]+)"[^>]*group-hdr/
+      .exec(svg)![1]!
+      .split(' ')
+      .map((p) => p.split(',').map(Number))
+
+  it('SVG: the frame is dotted and the tab has its bottom-right corner cut, as in mermaid', () => {
+    expect(svg).toMatch(
+      /<rect x="[\d.]+"[^>]*fill="none"[^>]*stroke-dasharray="2 2"/,
+    )
+    const pts = tabPoints()
+    expect(pts).toHaveLength(5)
+    // top-right, then a vertical edge that stops short of the bottom, then the cut.
+    expect(pts[2]![0]).toBe(pts[1]![0])
+    expect(pts[3]![0]).toBeLessThan(pts[2]![0]!)
+    expect(pts[3]![1]).toBeGreaterThan(pts[2]![1]!)
   })
 
   it('SVG: divider labels are centred on the frame, the header label right of the tab', () => {
     const centre = (left + right) / 2
-    const tab =
-      /<rect x="[\d.]+" y="[\d.]+" width="([\d.]+)"[^>]*group-hdr/.exec(svg)!
+    const tabRight = tabPoints()[1]![0]!
     const header = textTag('[Establish connection]')
-    expect(num(header, 'x')).toBeCloseTo((left + Number(tab[1]) + right) / 2, 1)
+    expect(num(header, 'x')).toBeCloseTo((tabRight + right) / 2, 1)
     for (const label of ['[Network timeout]', '[Credentials denied]']) {
       expect(num(textTag(label), 'x')).toBeCloseTo(centre, 1)
     }

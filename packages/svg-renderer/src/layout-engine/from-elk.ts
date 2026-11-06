@@ -20,11 +20,6 @@ import type {
 import { ARROW_HEAD } from '../styles.ts'
 import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
-import {
-  alignAcrossFlowMembers,
-  alignArchitectureRows,
-  centreArchitectureEnds,
-} from './architecture-rows.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
 import { straightenTinyJogs } from './jog-straightening.ts'
@@ -157,52 +152,6 @@ export function synthesizeSelfLoopEdges(
   }
 }
 
-/**
- * Draw the architecture edges kept out of the layout (`MermaidEdge.acrossFlow`):
- * a straight run between the facing sides of the two nodes, which the layout
- * has put in one layer, so `a:B -- T:b` reads as `b` directly below `a`.
- */
-export function synthesizeAcrossFlowEdges(
-  graph: MermaidGraph,
-  nodeMap: Map<string, PositionedNode>,
-  edges: PositionedEdge[],
-): void {
-  const horizontal = graph.direction === 'LR' || graph.direction === 'RL'
-  graph.edges.forEach((edge, index) => {
-    const a = nodeMap.get(edge.source)
-    const b = nodeMap.get(edge.target)
-    if (!edge.acrossFlow || !a || !b) return
-    // x/y are the top-left of the box; `side` is the cross-flow axis.
-    const [pos, size, flow, flowSize] = horizontal
-      ? (['y', 'height', 'x', 'width'] as const)
-      : (['x', 'width', 'y', 'height'] as const)
-    const first = a[pos] <= b[pos] ? a : b
-    const second = first === a ? b : a
-    const mid = (n: PositionedNode): number => n[flow] + n[flowSize] / 2
-    const run = (mid(a) + mid(b)) / 2
-    const from = first[pos] + first[size]
-    const to = second[pos]
-    const at = (cross: number): Point =>
-      horizontal ? { x: run, y: cross } : { x: cross, y: run }
-    const points = first === a ? [at(from), at(to)] : [at(to), at(from)]
-    edges.push({
-      source: edge.source,
-      target: edge.target,
-      label: edge.label,
-      style: edge.style,
-      hasArrowStart: edge.hasArrowStart,
-      hasArrowEnd: edge.hasArrowEnd,
-      points,
-      inlineStyle: resolveEdgeStyle(index, graph),
-      headColor: resolveHeadColor(graph),
-      id: edge.id,
-      animate: edge.animate,
-      startMarker: edge.startMarker,
-      endMarker: edge.endMarker,
-    })
-  })
-}
-
 /** Recursively flatten all group bounding boxes (including nested children) */
 function flattenGroupBounds(
   groups: PositionedGroup[],
@@ -263,10 +212,6 @@ export function elkToPositioned(
   // edge bends, but this looks bad. We fix it by aligning layers, then let
   // edge bundling and clipping recalculate edge paths from corrected positions.
   alignLayerNodes(nodes, edges, graph.direction)
-  const rowsAligned = alignArchitectureRows(graph, nodes, edges, groups)
-  const stackMoved = alignAcrossFlowMembers(graph, nodes, groups)
-  const rowsMoved = rowsAligned || stackMoved
-  centreArchitectureEnds(graph, nodes, edges)
 
   // Synthesize self-loop edges now that node positions are final. These
   // were excluded from the graph handed to ELK (see to-elk.ts) since ELK
@@ -275,16 +220,6 @@ export function elkToPositioned(
   // position.
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   synthesizeSelfLoopEdges(graph, nodeMap, edges)
-  // A grouped across-flow edge was laid out by ELK to order its ends; the
-  // straight run below replaces that route.
-  const acrossFlow = graph.edges.filter((e) => e.acrossFlow)
-  for (let i = edges.length - 1; i >= 0; i--) {
-    const e = edges[i]!
-    if (acrossFlow.some((a) => a.source === e.source && a.target === e.target))
-      edges.splice(i, 1)
-  }
-  synthesizeAcrossFlowEdges(graph, nodeMap, edges)
-
   // Bundle fan-out/fan-in edge paths into shared trunks when mergeEdges is enabled
   if (mergeEdges) {
     bundleEdgePaths(edges, nodes, groups, graph.direction)
@@ -312,14 +247,6 @@ export function elkToPositioned(
   let height = elkResult.height ?? 600
   const arrowMargin = ARROW_HEAD.width
   const padding = DEFAULTS.padding
-  if (rowsMoved) {
-    // A shifted group can poke past the canvas ELK sized.
-    for (const b of flattenGroupBounds(groups)) {
-      width = Math.max(width, b.right + padding)
-      height = Math.max(height, b.bottom + padding)
-    }
-  }
-
   for (const edge of edges) {
     for (const p of edge.points) {
       width = Math.max(width, p.x + arrowMargin + padding)
@@ -546,6 +473,8 @@ function extractEdgesRecursively(
   for (const [edgeIndex, seg] of segments) {
     const originalEdge = graph.edges[edgeIndex]
     if (!originalEdge) continue
+    // A self-loop sent to ELK only to shape the layout; its loop is synthesized.
+    if (originalEdge.source === originalEdge.target) continue
 
     // Combine points from all segments in path order:
     //   source-side hops (innermost → outermost, i.e. descending level)

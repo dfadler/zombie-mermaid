@@ -774,10 +774,37 @@ export interface FixSectionProps {
   fixCommit: string
   render: 'svg' | 'ascii'
   upstreamIssues?: number[]
+  /** Page section; omitted = the main "fixes" group. See `ForkFix.group`. */
+  group?: 'features' | 'markup'
   source: string
   before: PanelContent
   after: PanelContent
 }
+
+/**
+ * The page's sections, in order. Only the non-main groups get a heading: the
+ * main "fixes" group is the page's default claim (the After matches Mermaid),
+ * the others say what they claim instead.
+ */
+const FIX_GROUPS: readonly {
+  key: NonNullable<FixSectionProps['group']> | 'fixes'
+  heading?: string
+  blurb?: string
+}[] = [
+  { key: 'fixes' },
+  {
+    key: 'features',
+    heading: 'Features added',
+    blurb:
+      'Upstream beautiful-mermaid does not support these at all (Mermaid itself does). The After matches what Mermaid draws.',
+  },
+  {
+    key: 'markup',
+    heading: 'Markup-only fixes',
+    blurb:
+      'These change the SVG markup, and a default browser render looks the same either way, so each panel is an excerpt. Two can show in a browser given the host page’s CSS: the font variable (a page that defines it) and the class attribute (an external stylesheet that targets it). They make no claim to match Mermaid’s output.',
+  },
+]
 
 /** One fix: its metadata, source, and the before/after pair. */
 export function FixSection({
@@ -1052,9 +1079,25 @@ export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
               gap: '56px',
             }}
           >
-            {fixes.map((fix) => (
-              <FixSection key={fix.id} {...fix} />
-            ))}
+            {FIX_GROUPS.map(({ key, heading, blurb }) => {
+              const inGroup = fixes.filter((f) => (f.group ?? 'fixes') === key)
+              if (inGroup.length === 0) return null
+              return (
+                <Fragment key={key}>
+                  {heading && (
+                    <div id={`group-${key}`}>
+                      <h2 style={{ fontSize: `${FONT_SIZE.h3}px` }}>
+                        {heading}
+                      </h2>
+                      <p style={{ color: colorVar('--text-dim') }}>{blurb}</p>
+                    </div>
+                  )}
+                  {inGroup.map((fix) => (
+                    <FixSection key={fix.id} {...fix} />
+                  ))}
+                </Fragment>
+              )
+            })}
           </div>
         </div>
       </main>

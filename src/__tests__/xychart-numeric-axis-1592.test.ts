@@ -6,6 +6,7 @@
  * (#2553); horizontal ones still draw the data points only. Its snapshots pin
  * that.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, expect, it } from 'vitest'
 import { layoutXYChart } from '@zombie-mermaid/svg-renderer'
 import { parseXYChart } from '@zombie-mermaid/mermaid-parser'

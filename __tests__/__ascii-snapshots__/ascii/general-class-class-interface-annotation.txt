@@ -1,9 +1,11 @@
 +---------------------------+    
-| <<interface>>             |    
-| Serializable              |    
+|       <<interface>>       |    
+|       Serializable        |    
 +---------------------------+    
-| + serialize(): String     |    
-| + deserialize(data): void |    
+|                           |    
++---------------------------+    
+| +serialize() : String     |    
+| +deserialize(data) : void |    
 +---------------------------+    
                                  
                                  

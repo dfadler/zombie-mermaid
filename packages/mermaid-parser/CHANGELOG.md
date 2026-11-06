@@ -1,5 +1,31 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.14.4
+
+### Patch Changes
+
+- [#2626](https://github.com/dfadler/zombie-mermaid/pull/2626) [`bd2e21a`](https://github.com/dfadler/zombie-mermaid/commit/bd2e21a703aa70ba4138a6cfb88588d51fab6b1f) Thanks [@dfadler](https://github.com/dfadler)! - Output change: `architecture-beta` SVG now lays services out on Mermaid's grid instead of through ELK, so a service named by a `B`/`T`/`L`/`R` port sits exactly one cell beyond its neighbour (a replica under a junction no longer slides into the next column) and every link on the grid is one straight run. Groups are drawn as Mermaid draws them: a dashed unfilled box with the icon tile in the top-left corner and the title beside it, no header band, with Mermaid's padding. Architecture diagrams no longer need `elkjs`.
+
+- [#2655](https://github.com/dfadler/zombie-mermaid/pull/2655) [`1f2cdeb`](https://github.com/dfadler/zombie-mermaid/commit/1f2cdeb0900be425ef5b31b6c39efd5fbb1540c8) Thanks [@dfadler](https://github.com/dfadler)! - Output change: `architecture-beta` SVG now draws edges 3px wide as Mermaid does, wraps a service label longer than 1.5 tiles onto further lines instead of overflowing, widens a group around a label that cannot wrap, takes the group border colour from the theme (`--_node-stroke`) so it follows dark mode, and ignores `curve` as Mermaid does. `MermaidSubgraph` and `PositionedGroup` gain `architecture?: boolean` (an architecture group's `icon` is now absent rather than `''`), and `MermaidEdge.acrossFlow` is marked `@deprecated`. The ELK-error message and the docs no longer list architecture among the diagrams that need `elkjs`.
+
+- [#2675](https://github.com/dfadler/zombie-mermaid/pull/2675) [`615937d`](https://github.com/dfadler/zombie-mermaid/commit/615937d2218e1ea13f6283564c70c5e2bd8990c1) Thanks [@dfadler](https://github.com/dfadler)! - Output change: SVG state diagrams draw mermaid@12.3.0's barbed `stateDiagram-barbEnd-margin` arrowheads (the edge stops 5.5px short of the box so the tip sits 3.5px clear of it) and state boxes with a 5px corner radius instead of 6. `MermaidGraph` and `PositionedGraph` gain an optional `stateDiagram` flag. Drop shadows are not matched (visual effect, out of scope per [#2617](https://github.com/dfadler/zombie-mermaid/issues/2617)).
+
+- [#2653](https://github.com/dfadler/zombie-mermaid/pull/2653) [`a8a524e`](https://github.com/dfadler/zombie-mermaid/commit/a8a524e15ed347eb551a302c8c0e5daf2c9527f3) Thanks [@dfadler](https://github.com/dfadler)! - Output change: flowchart and state SVG edges are now `<path>` elements with rounded orthogonal corners (radius 5·√2 px, as mermaid 12.3.0 draws them) instead of `<polyline>`; an explicit `curve` other than `linear` is unchanged. A flowchart subgraph is drawn as mermaid 12.3.0 draws it: a centred regular-weight title along the top edge with no header band (state composites keep the band).
+- Updated dependencies [[`bd2e21a`](https://github.com/dfadler/zombie-mermaid/commit/bd2e21a703aa70ba4138a6cfb88588d51fab6b1f), [`1f2cdeb`](https://github.com/dfadler/zombie-mermaid/commit/1f2cdeb0900be425ef5b31b6c39efd5fbb1540c8), [`615937d`](https://github.com/dfadler/zombie-mermaid/commit/615937d2218e1ea13f6283564c70c5e2bd8990c1), [`3a3c7ac`](https://github.com/dfadler/zombie-mermaid/commit/3a3c7ac0f82cd0955e2d6b736b197897da18ade9), [`a8a524e`](https://github.com/dfadler/zombie-mermaid/commit/a8a524e15ed347eb551a302c8c0e5daf2c9527f3), [`bcbe70c`](https://github.com/dfadler/zombie-mermaid/commit/bcbe70ce628cd1034b14623da6460744815e567b)]:
+  - @zombie-mermaid/core@5.14.4
+
+## 5.14.3
+
+### Patch Changes
+
+- [#2573](https://github.com/dfadler/zombie-mermaid/pull/2573) [`427597e`](https://github.com/dfadler/zombie-mermaid/commit/427597e23b42b10d8830c7fa52cded72c825ab3a) Thanks [@dfadler](https://github.com/dfadler)! - Architecture SVG: a `junction` is now a join with no gray disc and no gap in the edge, and a group's icon (`group api(server)[API]`) is drawn in its header, as in mermaid 12.2.0 and 12.3.0 ([#2563](https://github.com/dfadler/zombie-mermaid/issues/2563), [#2564](https://github.com/dfadler/zombie-mermaid/issues/2564)). ASCII output is unchanged.
+
+- [#2581](https://github.com/dfadler/zombie-mermaid/pull/2581) [`47ea03c`](https://github.com/dfadler/zombie-mermaid/commit/47ea03c0b092eaac588810931aee417942f74917) Thanks [@dfadler](https://github.com/dfadler)! - Flowchart SVG: `@{ shape: }` now draws `cloud`, `h-cyl`, `tag-rect`, `sm-circ` and `fork`/`join` as Mermaid 12.3.0 does: a cloud outline, a horizontal cylinder, a dog-eared rectangle, a small unlabelled circle, and an unlabelled bar across the flow ([#2552](https://github.com/dfadler/zombie-mermaid/issues/2552)).
+
+- [#2600](https://github.com/dfadler/zombie-mermaid/pull/2600) [`c387226`](https://github.com/dfadler/zombie-mermaid/commit/c38722658c4347f4ea56e8d5694373c6bd0f28ea) Thanks [@dfadler](https://github.com/dfadler)! - Sequence diagrams now honour `%%{init: {"sequence": {"mirrorActors": false}}}%%` (no participant row under the lifelines) and `showSequenceNumbers: true` (numbers messages like `autonumber`), as mermaid does. The other sequence init options and `link`/`links` are still ignored and are listed in docs/known-differences.md ([#2589](https://github.com/dfadler/zombie-mermaid/issues/2589)).
+- Updated dependencies [[`427597e`](https://github.com/dfadler/zombie-mermaid/commit/427597e23b42b10d8830c7fa52cded72c825ab3a), [`47ea03c`](https://github.com/dfadler/zombie-mermaid/commit/47ea03c0b092eaac588810931aee417942f74917), [`c75bab5`](https://github.com/dfadler/zombie-mermaid/commit/c75bab509c1d384cf0ee045e26ad5bcc9137a9df), [`8757f5d`](https://github.com/dfadler/zombie-mermaid/commit/8757f5d24cace494346cb15b40f3047114f1d2d1), [`c387226`](https://github.com/dfadler/zombie-mermaid/commit/c38722658c4347f4ea56e8d5694373c6bd0f28ea)]:
+  - @zombie-mermaid/core@5.14.3
+
 ## 5.14.2
 
 ### Patch Changes

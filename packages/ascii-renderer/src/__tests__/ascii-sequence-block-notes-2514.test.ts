@@ -4,6 +4,7 @@
  * around its notes (loopLine right edge 533 vs note right edge 523 for the
  * issue source), and so does the ASCII wall now.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'
@@ -92,10 +93,50 @@ describe('ASCII sequence block walls enclose notes (#2514)', () => {
     end
   end`)
     const row = out.split('\n').find((l) => l.includes('hello there'))!
-    // Three walls, then a blank column, then the note border.
-    expect(row.startsWith('│││ │ hello there │')).toBe(true)
+    // Three walls one blank column apart, a blank column, the note border.
+    expect(row.startsWith('│ │ │ │ hello there │')).toBe(true)
   })
 
+  it.each([2, 3])(
+    'keeps the first lifeline one blank column clear of %i nested walls (#2633)',
+    (depth) => {
+      const kw = ['alt', 'loop', 'opt']
+      const open = kw
+        .slice(0, depth)
+        .map((k, i) => `${' '.repeat(i)}${k} c${i}`)
+      const src = `sequenceDiagram
+  participant A
+  participant B
+${open.join('\n')}
+A->>B: deep
+${kw
+  .slice(0, depth)
+  .map(() => 'end')
+  .join('\n')}`
+      const rows = renderMermaidASCII(src).split('\n')
+      const arrow = rows.find((l) => l.includes('▶'))!
+      // Walls one blank column apart, then the lifeline where the arrow starts.
+      expect(arrow.startsWith('│ '.repeat(depth) + '│─')).toBe(true)
+    },
+  )
+  it('encloses left and right notes inside nested blocks (#2633)', () => {
+    const out = renderMermaidASCII(`sequenceDiagram
+  participant A
+  participant B
+  alt one
+    loop two
+      Note left of A: hi
+      A->>B: x
+      Note right of B: there
+    end
+  end`)
+    const hi = out.split('\n').find((l) => l.includes('│ hi │'))!
+    const there = out.split('\n').find((l) => l.includes('│ there │'))!
+    // Two walls, a blank column, the note border on the left...
+    expect(hi.startsWith('│ │ │ hi │')).toBe(true)
+    // ...and the note, a blank column and two walls on the right.
+    expect(there.trimEnd().endsWith('│ there │ │ │')).toBe(true)
+  })
   it('leaves a clear column between a note wall and an uninvolved lifeline', () => {
     const out = renderMermaidASCII(`sequenceDiagram
   participant A

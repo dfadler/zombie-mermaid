@@ -1,7 +1,7 @@
 // ============================================================================
 // ASCII ER diagram: attribute comments render as a trailing quoted column
-// (issue #2127). Mermaid shows `type | name | keys | comment`; the parser kept
-// the comment but formatAttribute never read it.
+// (issue #2127). Mermaid shows `type | name | keys | comment`, one grid column
+// each (#2630), and only draws a column some attribute uses.
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
@@ -9,6 +9,18 @@ import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 const render = (src: string, useAscii = false) =>
   renderMermaidASCII(src, { colorMode: 'none', useAscii })
+
+/** Attribute rows of the first entity, one array of trimmed cells per row. */
+const rows = (out: string): string[][] =>
+  out
+    .split('\n')
+    .filter((l) => /^[│|].*[│|] *$/.test(l) && l.split(/[│|]/).length > 3)
+    .map((l) =>
+      l
+        .split(/[│|]/)
+        .slice(1, -1)
+        .map((c) => c.trim()),
+    )
 
 describe('ASCII ER attribute comments (issue #2127)', () => {
   const src = `erDiagram
@@ -19,12 +31,12 @@ describe('ASCII ER attribute comments (issue #2127)', () => {
     }`
 
   for (const useAscii of [false, true]) {
-    it(`appends the quoted comment after the keys (useAscii=${useAscii})`, () => {
-      const out = render(src, useAscii)
-      expect(out).toContain('string a PK,FK "c"')
-      expect(out).toContain('string nokey "plain comment"')
-      expect(out).toContain('string b PK ')
-      expect(out).not.toContain('PK "')
+    it(`draws the comment as the fourth column after the keys (useAscii=${useAscii})`, () => {
+      expect(rows(render(src, useAscii))).toEqual([
+        ['string', 'a', 'PK,FK', 'c'],
+        ['string', 'nokey', '', 'plain comment'],
+        ['string', 'b', 'PK', ''],
+      ])
     })
   }
 
@@ -33,7 +45,7 @@ describe('ASCII ER attribute comments (issue #2127)', () => {
       T {
         int a "one<br>two"
       }`)
-    expect(out).toContain('int a "one two"')
+    expect(rows(out)).toEqual([['int', 'a', '', 'one two']])
   })
 
   it('does not wrap a very long comment; the box grows instead, as in mermaid', () => {
@@ -42,9 +54,7 @@ describe('ASCII ER attribute comments (issue #2127)', () => {
       T {
         int a "${long}"
       }`)
-    expect(out.split('\n').some((l) => l.includes(`int a "${long}"`))).toBe(
-      true,
-    )
+    expect(rows(out)).toEqual([['int', 'a', '', long]])
   })
 
   it('leaves an empty comment out', () => {

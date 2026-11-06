@@ -7,6 +7,7 @@
  * face (`fanOutCentered`), the back edge goes for that face, and `nestedRow`
  * gives the pair rows that follow their lanes.
  */
+// Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'
@@ -17,45 +18,30 @@ const SRC = (d: string, shape: string): string => `graph ${d}
   B -->|no| D${shape}
   D --> B`
 
-/**
- * The row of the arrow into D and of the return's own corner. D's box has
- * corners too, so the return's is found by following its stroke down from the
- * `▲`: the first row where that column stops being `│`.
- */
-function rows(out: string): { into: number; back: number } {
-  const lines = out.split('\n')
-  const head = lines.findIndex((l) => l.includes('▲'))
-  const col = lines[head]!.indexOf('▲')
-  let back = head + 1
-  while (lines[back]?.[col] === '│') back++
-  const into = lines.map((l) => /[►◄]/.test(l)).lastIndexOf(true)
-  return { into, back }
-}
-
 const CASES: [string, string, string][] = [
-  ['LR', '[Ask Again]', '╱ ▲'],
-  ['LR', '[/Ask Again/]', '╱ ▲'],
-  ['LR', '[\\Ask Again\\]', '╱ ▲'],
-  ['RL', '[/Ask Again/]', '▲ ╲'],
-  ['RL', '[Ask Again]', '▲ ╲'],
+  ['LR', '[Ask Again]', '╱◄'],
+  ['LR', '[/Ask Again/]', '╱◄'],
+  ['LR', '[\\Ask Again\\]', '╱◄'],
+  ['RL', '[/Ask Again/]', '►╲'],
+  ['RL', '[Ask Again]', '►╲'],
 ]
 
 describe('opposing edges at a diamond / slanted node (#2492)', () => {
   it.each(CASES)(
-    '%s %s: the return enters the diamond face, below `no`, uncrossed',
+    '%s %s: the return enters the lower slant of the diamond, below `no`, uncrossed',
     (d, shape, face) => {
       const out = renderMermaidASCII(SRC(d, shape))
       expect(out).not.toContain('┼')
-      // The head sits beside the diamond's lower face, not under the vertex.
+      // The head meets the diamond's lower slant, in a horizontal run: the
+      // return no longer comes up from under the diamond (#2645).
       expect(out).toContain(face)
-      // The stroke runs on straight down from the head (an RL flip once
-      // moved its first cell to the other side of the diamond).
+      expect(out).not.toContain('▲')
+      // `no` arrives above D's label row and the return leaves below it.
       const lines = out.split('\n')
-      const row = lines.findIndex((l) => l.includes('▲'))
-      expect(lines[row + 1]![lines[row]!.indexOf('▲')]).toBe('│')
-      // `no` and the return meet D on different rows, the return lower.
-      const { into, back } = rows(out)
-      expect(back).toBeGreaterThan(into)
+      const label = lines.findIndex((l) => l.includes('Ask Again'))
+      const into = lines.map((l) => /[►◄]/.test(l)).lastIndexOf(true)
+      expect(into).toBeLessThan(label)
+      expect(lines[label + 1]).toMatch(/└─|─┘/)
     },
   )
 

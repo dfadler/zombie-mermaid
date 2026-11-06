@@ -262,9 +262,10 @@ Two deliberate deviations, both visible in output:
   segment, so a staircase ending on a horizontal leg would point the arrowhead
   sideways into the node.
 
-The default (`linear`) still emits `<polyline class="edge">`; only a
-non-linear curve switches the element to `<path class="edge">`, so existing
-CSS and DOM selectors keep working unless a curve is requested.
+Every edge is a `<path class="edge">`. The default (`linear`) is the routed
+orthogonal line with each bend rounded by a 5·√2 px quadratic fillet, as
+mermaid 12.3.0 draws it; a non-linear curve interpolates the same points.
+Selectors written for the old `<polyline class="edge">` need updating.
 
 ### Interactions
 
@@ -639,7 +640,8 @@ classDiagram
     +int age
   }
   class Mineral
-  Animal <|-- Dog:::highlight
+  class Dog:::highlight
+  Animal <|-- Dog
   classDef default fill:#eef,stroke:#669
   classDef highlight fill:#f96,stroke:#333,stroke-width:2px
   style Mineral fill:#bbf,stroke:#f66,color:#fff
@@ -650,7 +652,8 @@ The same grammar as flowchart [Styling](#styling) above, sharing one
 implementation (`packages/core/src/style-directives.ts`) and one cascade: `classDef
 default` is the base for every class, a class's own style class (attached
 with `cssClass "A,B" name`, `class A,B name`, or the `:::name` shorthand on a
-declaration or either end of a relationship) overrides it property by
+declaration, or on either end of a relationship, which Mermaid 12.3.0 rejects but
+we accept) overrides it property by
 property, and an explicit `style ClassName ...` overrides both. `classDef
 a,b props` defines several classes at once. Mermaid's own class grammar only
 spells the attachment as `cssClass` or `:::`; the flowchart-style `class A,B
@@ -685,7 +688,7 @@ one to a class. A literal `\n` in the text is a line break, as in Mermaid
 too, as it does in every other label here. The text must be double-quoted.
 
 The SVG follows Mermaid's own construction: a note is a node of its own
-(drawn as the same dog-eared box the sequence renderer uses), and an
+(drawn as a plain rectangle, like the sequence renderer's notes), and an
 attached note is joined to its class by a dotted, arrowless link, which is
 what keeps the two adjacent in the layout — with the top-to-bottom layout
 that puts the note above its class. A note whose class is never declared

@@ -5,6 +5,11 @@ name: Render determinism
 # to SVG and ASCII and uploads a hash manifest; `compare` diffs every manifest
 # against ubuntu/node-24 and fails on any mismatch.
 #
+# macOS cells run only on `schedule` and `workflow_dispatch`, not on pull
+# requests: GitHub's macOS runner capacity bursts left them queued or cancelled
+# for hours on PRs while the ubuntu cells finish in ~30s (#2501). PRs run the
+# ubuntu node 24 and node 22 cells; `compare` diffs whatever manifests exist.
+#
 # Advisory: `compare` has continue-on-error, so a mismatch shows as a red job
 # plus a step summary without turning the workflow run red. Drop that line to
 # make it enforcing once it has run clean for a while.
@@ -42,10 +47,14 @@ jobs:
     name: manifest (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    # The node-22 cells check that library consumers on an older Node get identical
+    # output, so they must install despite engineStrict (pnpm-workspace.yaml, #2621).
+    env:
+      pnpm_config_engine_strict: 'false'
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest"]' || '["ubuntu-latest","macos-latest"]') }}
         node: ['24', '22']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

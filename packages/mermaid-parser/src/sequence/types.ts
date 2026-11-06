@@ -29,6 +29,8 @@ export interface SequenceDiagram {
    * neither renderer.
    */
   boxes: ParticipantBox[]
+  /** `%%{init}%%` `sequence.mirrorActors: false`: no participant row under the lifelines. */
+  mirrorActors?: false
   /** Text of a `title <text>` line (the last one wins); unset when there is none. */
   title?: string
 }

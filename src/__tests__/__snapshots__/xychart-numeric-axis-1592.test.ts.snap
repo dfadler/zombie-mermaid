@@ -177,7 +177,7 @@ exports[`numeric x-axis range (#1592) > ASCII: ticks short of the end 1`] = `
 `;
 
 exports[`numeric x-axis range (#1592) > SVG: bar and line 2020..2024 1`] = `
-"<svg data-xychart-colors="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 450" width="720" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg data-xychart-colors="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -205,7 +205,6 @@ exports[`numeric x-axis range (#1592) > SVG: bar and line 2020..2024 1`] = `
 </style>
 <style>
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
-  .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -218,63 +217,59 @@ exports[`numeric x-axis range (#1592) > SVG: bar and line 2020..2024 1`] = `
     --xychart-color-1: #0d5ba5;
     --xychart-bar-fill-1: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-1) 25%);
   }
-  .xychart-bar.xychart-color-0 { stroke: var(--xychart-color-0); fill: var(--xychart-bar-fill-0); }
+  .xychart-bar.xychart-color-0 { stroke: none; fill: var(--xychart-bar-fill-0); }
   path.xychart-color-0, line.xychart-color-0 { stroke: var(--xychart-color-0); }
   circle.xychart-color-0 { fill: var(--xychart-color-0); }
-  .xychart-bar.xychart-color-1 { stroke: var(--xychart-color-1); fill: var(--xychart-bar-fill-1); }
+  .xychart-bar.xychart-color-1 { stroke: none; fill: var(--xychart-bar-fill-1); }
   path.xychart-color-1, line.xychart-color-1 { stroke: var(--xychart-color-1); }
   circle.xychart-color-1 { fill: var(--xychart-color-1); }
 </style>
-<path d="M98,50 V390 H698" class="xychart-axis"/>
-<path d="M119,390 L119,394" class="xychart-axis"/>
-<path d="M188.8,390 L188.8,394" class="xychart-axis"/>
-<path d="M258.5,390 L258.5,394" class="xychart-axis"/>
-<path d="M328.3,390 L328.3,394" class="xychart-axis"/>
-<path d="M398,390 L398,394" class="xychart-axis"/>
-<path d="M467.8,390 L467.8,394" class="xychart-axis"/>
-<path d="M537.5,390 L537.5,394" class="xychart-axis"/>
-<path d="M607.3,390 L607.3,394" class="xychart-axis"/>
-<path d="M677,390 L677,394" class="xychart-axis"/>
-<path d="M98,382 L94,382" class="xychart-axis"/>
-<path d="M98,349.6 L94,349.6" class="xychart-axis"/>
-<path d="M98,317.2 L94,317.2" class="xychart-axis"/>
-<path d="M98,284.8 L94,284.8" class="xychart-axis"/>
-<path d="M98,252.4 L94,252.4" class="xychart-axis"/>
-<path d="M98,220 L94,220" class="xychart-axis"/>
-<path d="M98,187.6 L94,187.6" class="xychart-axis"/>
-<path d="M98,155.2 L94,155.2" class="xychart-axis"/>
-<path d="M98,122.8 L94,122.8" class="xychart-axis"/>
-<path d="M98,90.4 L94,90.4" class="xychart-axis"/>
-<path d="M98,58 L94,58" class="xychart-axis"/>
-<path d="M99.1,260.4 Q99.1,252.4 107.1,252.4 L131,252.4 Q139,252.4 139,260.4 L139,382 Q139,390 131,390 L107.1,390 Q99.1,390 99.1,382 Z" class="xychart-bar xychart-color-0" data-value="3" data-label="2020"/>
-<path d="M378.1,130.8 Q378.1,122.8 386.1,122.8 L410,122.8 Q418,122.8 418,130.8 L418,382 Q418,390 410,390 L386.1,390 Q378.1,390 378.1,382 Z" class="xychart-bar xychart-color-0" data-value="5" data-label="2022"/>
-<path d="M657.1,325.2 Q657.1,317.2 665.1,317.2 L688.9,317.2 Q696.9,317.2 696.9,325.2 L696.9,382 Q696.9,390 688.9,390 L665.1,390 Q657.1,390 657.1,382 Z" class="xychart-bar xychart-color-0" data-value="2" data-label="2024"/>
-<path d="M119,187.6 L398,382 L677,58" class="xychart-line-shadow xychart-color-1" transform="translate(0,2)"/>
-<path d="M119,187.6 L398,382 L677,58" class="xychart-line xychart-color-1"/>
-<text x="119" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2020</text>
-<text x="188.75" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2020.5</text>
-<text x="258.5" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2021</text>
-<text x="328.25" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2021.5</text>
-<text x="398" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2022</text>
-<text x="467.75" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2022.5</text>
-<text x="537.5" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2023</text>
-<text x="607.25" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2023.5</text>
-<text x="677" y="408" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2024</text>
-<text x="80" y="382" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1</text>
-<text x="80" y="349.6" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1.5</text>
-<text x="80" y="317.2" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2</text>
-<text x="80" y="284.8" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2.5</text>
-<text x="80" y="252.4" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3</text>
-<text x="80" y="220" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3.5</text>
-<text x="80" y="187.6" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4</text>
-<text x="80" y="155.20000000000002" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4.5</text>
-<text x="80" y="122.80000000000001" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5</text>
-<text x="80" y="90.39999999999998" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5.5</text>
-<text x="80" y="58" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">6</text>
-<rect x="295.25252" y="29" width="14" height="14" rx="3" class="xychart-bar xychart-color-0"/>
-<text x="315.25252" y="36" text-anchor="start" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">Bar 1</text>
-<line x1="365.27840000000003" y1="36" x2="379.27840000000003" y2="36" stroke-width="2.5" stroke-linecap="round" class="xychart-legend-line xychart-color-1"/>
-<text x="385.27840000000003" y="36" text-anchor="start" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">Line 1</text>
+<path d="M98,22 V362 H698" class="xychart-axis"/>
+<path d="M119,362 L119,366" class="xychart-axis"/>
+<path d="M188.8,362 L188.8,366" class="xychart-axis"/>
+<path d="M258.5,362 L258.5,366" class="xychart-axis"/>
+<path d="M328.3,362 L328.3,366" class="xychart-axis"/>
+<path d="M398,362 L398,366" class="xychart-axis"/>
+<path d="M467.8,362 L467.8,366" class="xychart-axis"/>
+<path d="M537.5,362 L537.5,366" class="xychart-axis"/>
+<path d="M607.3,362 L607.3,366" class="xychart-axis"/>
+<path d="M677,362 L677,366" class="xychart-axis"/>
+<path d="M98,354 L94,354" class="xychart-axis"/>
+<path d="M98,321.6 L94,321.6" class="xychart-axis"/>
+<path d="M98,289.2 L94,289.2" class="xychart-axis"/>
+<path d="M98,256.8 L94,256.8" class="xychart-axis"/>
+<path d="M98,224.4 L94,224.4" class="xychart-axis"/>
+<path d="M98,192 L94,192" class="xychart-axis"/>
+<path d="M98,159.6 L94,159.6" class="xychart-axis"/>
+<path d="M98,127.2 L94,127.2" class="xychart-axis"/>
+<path d="M98,94.8 L94,94.8" class="xychart-axis"/>
+<path d="M98,62.4 L94,62.4" class="xychart-axis"/>
+<path d="M98,30 L94,30" class="xychart-axis"/>
+<path d="M99.1,224.4 H139 V362 H99.1 Z" class="xychart-bar xychart-color-0" data-value="3" data-label="2020"/>
+<path d="M378.1,94.8 H418 V362 H378.1 Z" class="xychart-bar xychart-color-0" data-value="5" data-label="2022"/>
+<path d="M657.1,289.2 H696.9 V362 H657.1 Z" class="xychart-bar xychart-color-0" data-value="2" data-label="2024"/>
+<path d="M119,159.6 L398,354 L677,30" class="xychart-line-shadow xychart-color-1" transform="translate(0,2)"/>
+<path d="M119,159.6 L398,354 L677,30" class="xychart-line xychart-color-1"/>
+<text x="119" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2020</text>
+<text x="188.75" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2020.5</text>
+<text x="258.5" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2021</text>
+<text x="328.25" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2021.5</text>
+<text x="398" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2022</text>
+<text x="467.75" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2022.5</text>
+<text x="537.5" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2023</text>
+<text x="607.25" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2023.5</text>
+<text x="677" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2024</text>
+<text x="80" y="354" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1</text>
+<text x="80" y="321.6" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1.5</text>
+<text x="80" y="289.2" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2</text>
+<text x="80" y="256.8" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2.5</text>
+<text x="80" y="224.4" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3</text>
+<text x="80" y="192" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3.5</text>
+<text x="80" y="159.6" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4</text>
+<text x="80" y="127.20000000000002" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4.5</text>
+<text x="80" y="94.80000000000001" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5</text>
+<text x="80" y="62.39999999999998" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5.5</text>
+<text x="80" y="30" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">6</text>
 </svg>"
 `;
 
@@ -307,7 +302,6 @@ exports[`numeric x-axis range (#1592) > SVG: bars 0..100 1`] = `
 </style>
 <style>
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
-  .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -318,7 +312,7 @@ exports[`numeric x-axis range (#1592) > SVG: bars 0..100 1`] = `
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
-  .xychart-bar.xychart-color-0 { stroke: var(--xychart-color-0); fill: var(--xychart-bar-fill-0); }
+  .xychart-bar.xychart-color-0 { stroke: none; fill: var(--xychart-bar-fill-0); }
   path.xychart-color-0, line.xychart-color-0 { stroke: var(--xychart-color-0); }
   circle.xychart-color-0 { fill: var(--xychart-color-0); }
 </style>
@@ -343,11 +337,11 @@ exports[`numeric x-axis range (#1592) > SVG: bars 0..100 1`] = `
 <path d="M98,111 L94,111" class="xychart-axis"/>
 <path d="M98,70.5 L94,70.5" class="xychart-axis"/>
 <path d="M98,30 L94,30" class="xychart-axis"/>
-<path d="M98.9,358 Q98.9,354 102.9,354 L129.1,354 Q133.1,354 133.1,358 L133.1,358 Q133.1,362 129.1,362 L102.9,362 Q98.9,362 98.9,358 Z" class="xychart-bar xychart-color-0" data-value="10" data-label="0"/>
-<path d="M239.9,281 Q239.9,273 247.9,273 L266.1,273 Q274.1,273 274.1,281 L274.1,354 Q274.1,362 266.1,362 L247.9,362 Q239.9,362 239.9,354 Z" class="xychart-bar xychart-color-0" data-value="20" data-label="25"/>
-<path d="M380.9,200 Q380.9,192 388.9,192 L407.1,192 Q415.1,192 415.1,200 L415.1,354 Q415.1,362 407.1,362 L388.9,362 Q380.9,362 380.9,354 Z" class="xychart-bar xychart-color-0" data-value="30" data-label="50"/>
-<path d="M521.9,119 Q521.9,111 529.9,111 L548.1,111 Q556.1,111 556.1,119 L556.1,354 Q556.1,362 548.1,362 L529.9,362 Q521.9,362 521.9,354 Z" class="xychart-bar xychart-color-0" data-value="40" data-label="75"/>
-<path d="M662.9,38 Q662.9,30 670.9,30 L689.1,30 Q697.1,30 697.1,38 L697.1,354 Q697.1,362 689.1,362 L670.9,362 Q662.9,362 662.9,354 Z" class="xychart-bar xychart-color-0" data-value="50" data-label="100"/>
+<path d="M98.9,354 H133.1 V362 H98.9 Z" class="xychart-bar xychart-color-0" data-value="10" data-label="0"/>
+<path d="M239.9,273 H274.1 V362 H239.9 Z" class="xychart-bar xychart-color-0" data-value="20" data-label="25"/>
+<path d="M380.9,192 H415.1 V362 H380.9 Z" class="xychart-bar xychart-color-0" data-value="30" data-label="50"/>
+<path d="M521.9,111 H556.1 V362 H521.9 Z" class="xychart-bar xychart-color-0" data-value="40" data-label="75"/>
+<path d="M662.9,30 H697.1 V362 H662.9 Z" class="xychart-bar xychart-color-0" data-value="50" data-label="100"/>
 <text x="116" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">0</text>
 <text x="172.4" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">10</text>
 <text x="228.8" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">20</text>
@@ -400,7 +394,6 @@ exports[`numeric x-axis range (#1592) > SVG: horizontal bars 0..100 1`] = `
 </style>
 <style>
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
-  .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -411,56 +404,56 @@ exports[`numeric x-axis range (#1592) > SVG: horizontal bars 0..100 1`] = `
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
-  .xychart-bar.xychart-color-0 { stroke: var(--xychart-color-0); fill: var(--xychart-bar-fill-0); }
+  .xychart-bar.xychart-color-0 { stroke: none; fill: var(--xychart-bar-fill-0); }
   path.xychart-color-0, line.xychart-color-0 { stroke: var(--xychart-color-0); }
   circle.xychart-color-0 { fill: var(--xychart-color-0); }
 </style>
-<path d="M80,22 V362 H680" class="xychart-axis"/>
-<path d="M88,362 L88,366" class="xychart-axis"/>
-<path d="M161,362 L161,366" class="xychart-axis"/>
-<path d="M234,362 L234,366" class="xychart-axis"/>
-<path d="M307,362 L307,366" class="xychart-axis"/>
-<path d="M380,362 L380,366" class="xychart-axis"/>
-<path d="M453,362 L453,366" class="xychart-axis"/>
-<path d="M526,362 L526,366" class="xychart-axis"/>
-<path d="M599,362 L599,366" class="xychart-axis"/>
-<path d="M672,362 L672,366" class="xychart-axis"/>
-<path d="M80,352 L76,352" class="xychart-axis"/>
-<path d="M80,320 L76,320" class="xychart-axis"/>
-<path d="M80,288 L76,288" class="xychart-axis"/>
-<path d="M80,256 L76,256" class="xychart-axis"/>
-<path d="M80,224 L76,224" class="xychart-axis"/>
-<path d="M80,192 L76,192" class="xychart-axis"/>
-<path d="M80,160 L76,160" class="xychart-axis"/>
-<path d="M80,128 L76,128" class="xychart-axis"/>
-<path d="M80,96 L76,96" class="xychart-axis"/>
-<path d="M80,64 L76,64" class="xychart-axis"/>
-<path d="M80,32 L76,32" class="xychart-axis"/>
-<path d="M84,342.5 L84,342.5 Q88,342.5 88,346.5 L88,357.5 Q88,361.5 84,361.5 L84,361.5 Q80,361.5 80,357.5 L80,346.5 Q80,342.5 84,342.5 Z" class="xychart-bar xychart-color-0" data-value="10" data-label="0"/>
-<path d="M88,262.5 L226,262.5 Q234,262.5 234,270.5 L234,273.5 Q234,281.5 226,281.5 L88,281.5 Q80,281.5 80,273.5 L80,270.5 Q80,262.5 88,262.5 Z" class="xychart-bar xychart-color-0" data-value="20" data-label="25"/>
-<path d="M88,182.5 L372,182.5 Q380,182.5 380,190.5 L380,193.5 Q380,201.5 372,201.5 L88,201.5 Q80,201.5 80,193.5 L80,190.5 Q80,182.5 88,182.5 Z" class="xychart-bar xychart-color-0" data-value="30" data-label="50"/>
-<path d="M88,102.5 L518,102.5 Q526,102.5 526,110.5 L526,113.5 Q526,121.5 518,121.5 L88,121.5 Q80,121.5 80,113.5 L80,110.5 Q80,102.5 88,102.5 Z" class="xychart-bar xychart-color-0" data-value="40" data-label="75"/>
-<path d="M88,22.5 L664,22.5 Q672,22.5 672,30.5 L672,33.5 Q672,41.5 664,41.5 L88,41.5 Q80,41.5 80,33.5 L80,30.5 Q80,22.5 88,22.5 Z" class="xychart-bar xychart-color-0" data-value="50" data-label="100"/>
-<text x="87.988736" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">10</text>
-<text x="160.991552" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">15</text>
-<text x="233.994368" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">20</text>
-<text x="306.997184" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">25</text>
-<text x="380" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">30</text>
-<text x="453.002816" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">35</text>
-<text x="526.005632" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">40</text>
-<text x="599.0084479999999" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">45</text>
-<text x="672.011264" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">50</text>
-<text x="62" y="352" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">0</text>
-<text x="62" y="320" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">10</text>
-<text x="62" y="288" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">20</text>
-<text x="62" y="256" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">30</text>
-<text x="62" y="224" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">40</text>
-<text x="62" y="192" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">50</text>
-<text x="62" y="160" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">60</text>
-<text x="62" y="128" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">70</text>
-<text x="62" y="95.99999999999999" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">80</text>
-<text x="62" y="63.99999999999999" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">90</text>
-<text x="62" y="32" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">100</text>
+<path d="M80,400 V60 H680" class="xychart-axis"/>
+<path d="M88,60 L88,56" class="xychart-axis"/>
+<path d="M161,60 L161,56" class="xychart-axis"/>
+<path d="M234,60 L234,56" class="xychart-axis"/>
+<path d="M307,60 L307,56" class="xychart-axis"/>
+<path d="M380,60 L380,56" class="xychart-axis"/>
+<path d="M453,60 L453,56" class="xychart-axis"/>
+<path d="M526,60 L526,56" class="xychart-axis"/>
+<path d="M599,60 L599,56" class="xychart-axis"/>
+<path d="M672,60 L672,56" class="xychart-axis"/>
+<path d="M80,390 L76,390" class="xychart-axis"/>
+<path d="M80,358 L76,358" class="xychart-axis"/>
+<path d="M80,326 L76,326" class="xychart-axis"/>
+<path d="M80,294 L76,294" class="xychart-axis"/>
+<path d="M80,262 L76,262" class="xychart-axis"/>
+<path d="M80,230 L76,230" class="xychart-axis"/>
+<path d="M80,198 L76,198" class="xychart-axis"/>
+<path d="M80,166 L76,166" class="xychart-axis"/>
+<path d="M80,134 L76,134" class="xychart-axis"/>
+<path d="M80,102 L76,102" class="xychart-axis"/>
+<path d="M80,70 L76,70" class="xychart-axis"/>
+<path d="M80,380.5 H88 V399.5 H80 Z" class="xychart-bar xychart-color-0" data-value="10" data-label="0"/>
+<path d="M80,300.5 H234 V319.5 H80 Z" class="xychart-bar xychart-color-0" data-value="20" data-label="25"/>
+<path d="M80,220.5 H380 V239.5 H80 Z" class="xychart-bar xychart-color-0" data-value="30" data-label="50"/>
+<path d="M80,140.5 H526 V159.5 H80 Z" class="xychart-bar xychart-color-0" data-value="40" data-label="75"/>
+<path d="M80,60.5 H672 V79.5 H80 Z" class="xychart-bar xychart-color-0" data-value="50" data-label="100"/>
+<text x="87.988736" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">10</text>
+<text x="160.991552" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">15</text>
+<text x="233.994368" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">20</text>
+<text x="306.997184" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">25</text>
+<text x="380" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">30</text>
+<text x="453.002816" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">35</text>
+<text x="526.005632" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">40</text>
+<text x="599.0084479999999" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">45</text>
+<text x="672.011264" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">50</text>
+<text x="62" y="390" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">0</text>
+<text x="62" y="358" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">10</text>
+<text x="62" y="326" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">20</text>
+<text x="62" y="294" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">30</text>
+<text x="62" y="262" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">40</text>
+<text x="62" y="230" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">50</text>
+<text x="62" y="198" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">60</text>
+<text x="62" y="166" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">70</text>
+<text x="62" y="134" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">80</text>
+<text x="62" y="102" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">90</text>
+<text x="62" y="70" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">100</text>
 </svg>"
 `;
 
@@ -493,7 +486,6 @@ exports[`numeric x-axis range (#1592) > SVG: horizontal line 0..9 1`] = `
 </style>
 <style>
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
-  .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -504,63 +496,63 @@ exports[`numeric x-axis range (#1592) > SVG: horizontal line 0..9 1`] = `
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
-  .xychart-bar.xychart-color-0 { stroke: var(--xychart-color-0); fill: var(--xychart-bar-fill-0); }
+  .xychart-bar.xychart-color-0 { stroke: none; fill: var(--xychart-bar-fill-0); }
   path.xychart-color-0, line.xychart-color-0 { stroke: var(--xychart-color-0); }
   circle.xychart-color-0 { fill: var(--xychart-color-0); }
 </style>
-<path d="M80,22 V362 H680" class="xychart-axis"/>
-<path d="M89.4,362 L89.4,366" class="xychart-axis"/>
-<path d="M130.9,362 L130.9,366" class="xychart-axis"/>
-<path d="M172.4,362 L172.4,366" class="xychart-axis"/>
-<path d="M213.9,362 L213.9,366" class="xychart-axis"/>
-<path d="M255.5,362 L255.5,366" class="xychart-axis"/>
-<path d="M297,362 L297,366" class="xychart-axis"/>
-<path d="M338.5,362 L338.5,366" class="xychart-axis"/>
-<path d="M380,362 L380,366" class="xychart-axis"/>
-<path d="M421.5,362 L421.5,366" class="xychart-axis"/>
-<path d="M463,362 L463,366" class="xychart-axis"/>
-<path d="M504.5,362 L504.5,366" class="xychart-axis"/>
-<path d="M546.1,362 L546.1,366" class="xychart-axis"/>
-<path d="M587.6,362 L587.6,366" class="xychart-axis"/>
-<path d="M629.1,362 L629.1,366" class="xychart-axis"/>
-<path d="M670.6,362 L670.6,366" class="xychart-axis"/>
-<path d="M80,355 L76,355" class="xychart-axis"/>
-<path d="M80,318.8 L76,318.8" class="xychart-axis"/>
-<path d="M80,282.6 L76,282.6" class="xychart-axis"/>
-<path d="M80,246.3 L76,246.3" class="xychart-axis"/>
-<path d="M80,210.1 L76,210.1" class="xychart-axis"/>
-<path d="M80,173.9 L76,173.9" class="xychart-axis"/>
-<path d="M80,137.7 L76,137.7" class="xychart-axis"/>
-<path d="M80,101.4 L76,101.4" class="xychart-axis"/>
-<path d="M80,65.2 L76,65.2" class="xychart-axis"/>
-<path d="M80,29 L76,29" class="xychart-axis"/>
-<path d="M89.4,355 L421.5,246.3 L255.5,137.7 L670.6,29" class="xychart-line-shadow xychart-color-0" transform="translate(0,2)"/>
-<path d="M89.4,355 L421.5,246.3 L255.5,137.7 L670.6,29" class="xychart-line xychart-color-0"/>
-<text x="89.394896" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1</text>
-<text x="130.90991085714285" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1.5</text>
-<text x="172.4249257142857" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2</text>
-<text x="213.93994057142856" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2.5</text>
-<text x="255.4549554285714" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3</text>
-<text x="296.9699702857143" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3.5</text>
-<text x="338.4849851428571" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4</text>
-<text x="380" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4.5</text>
-<text x="421.51501485714283" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5</text>
-<text x="463.0300297142857" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5.5</text>
-<text x="504.54504457142855" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">6</text>
-<text x="546.0600594285714" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">6.5</text>
-<text x="587.5750742857142" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">7</text>
-<text x="629.0900891428571" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">7.5</text>
-<text x="670.605104" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">8</text>
-<text x="62" y="355" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">0</text>
-<text x="62" y="318.77777777777777" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1</text>
-<text x="62" y="282.55555555555554" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2</text>
-<text x="62" y="246.33333333333337" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3</text>
-<text x="62" y="210.11111111111111" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4</text>
-<text x="62" y="173.88888888888889" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5</text>
-<text x="62" y="137.66666666666669" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">6</text>
-<text x="62" y="101.44444444444444" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">7</text>
-<text x="62" y="65.22222222222223" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">8</text>
-<text x="62" y="29" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">9</text>
+<path d="M80,400 V60 H680" class="xychart-axis"/>
+<path d="M89.4,60 L89.4,56" class="xychart-axis"/>
+<path d="M130.9,60 L130.9,56" class="xychart-axis"/>
+<path d="M172.4,60 L172.4,56" class="xychart-axis"/>
+<path d="M213.9,60 L213.9,56" class="xychart-axis"/>
+<path d="M255.5,60 L255.5,56" class="xychart-axis"/>
+<path d="M297,60 L297,56" class="xychart-axis"/>
+<path d="M338.5,60 L338.5,56" class="xychart-axis"/>
+<path d="M380,60 L380,56" class="xychart-axis"/>
+<path d="M421.5,60 L421.5,56" class="xychart-axis"/>
+<path d="M463,60 L463,56" class="xychart-axis"/>
+<path d="M504.5,60 L504.5,56" class="xychart-axis"/>
+<path d="M546.1,60 L546.1,56" class="xychart-axis"/>
+<path d="M587.6,60 L587.6,56" class="xychart-axis"/>
+<path d="M629.1,60 L629.1,56" class="xychart-axis"/>
+<path d="M670.6,60 L670.6,56" class="xychart-axis"/>
+<path d="M80,393 L76,393" class="xychart-axis"/>
+<path d="M80,356.8 L76,356.8" class="xychart-axis"/>
+<path d="M80,320.6 L76,320.6" class="xychart-axis"/>
+<path d="M80,284.3 L76,284.3" class="xychart-axis"/>
+<path d="M80,248.1 L76,248.1" class="xychart-axis"/>
+<path d="M80,211.9 L76,211.9" class="xychart-axis"/>
+<path d="M80,175.7 L76,175.7" class="xychart-axis"/>
+<path d="M80,139.4 L76,139.4" class="xychart-axis"/>
+<path d="M80,103.2 L76,103.2" class="xychart-axis"/>
+<path d="M80,67 L76,67" class="xychart-axis"/>
+<path d="M89.4,393 L421.5,284.3 L255.5,175.7 L670.6,67" class="xychart-line-shadow xychart-color-0" transform="translate(0,2)"/>
+<path d="M89.4,393 L421.5,284.3 L255.5,175.7 L670.6,67" class="xychart-line xychart-color-0"/>
+<text x="89.394896" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1</text>
+<text x="130.90991085714285" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1.5</text>
+<text x="172.4249257142857" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2</text>
+<text x="213.93994057142856" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2.5</text>
+<text x="255.4549554285714" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3</text>
+<text x="296.9699702857143" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3.5</text>
+<text x="338.4849851428571" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4</text>
+<text x="380" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4.5</text>
+<text x="421.51501485714283" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5</text>
+<text x="463.0300297142857" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5.5</text>
+<text x="504.54504457142855" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">6</text>
+<text x="546.0600594285714" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">6.5</text>
+<text x="587.5750742857142" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">7</text>
+<text x="629.0900891428571" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">7.5</text>
+<text x="670.605104" y="42" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">8</text>
+<text x="62" y="393" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">0</text>
+<text x="62" y="356.77777777777777" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1</text>
+<text x="62" y="320.55555555555554" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2</text>
+<text x="62" y="284.33333333333337" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">3</text>
+<text x="62" y="248.11111111111111" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">4</text>
+<text x="62" y="211.88888888888889" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">5</text>
+<text x="62" y="175.66666666666669" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">6</text>
+<text x="62" y="139.44444444444446" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">7</text>
+<text x="62" y="103.22222222222223" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">8</text>
+<text x="62" y="67" text-anchor="end" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">9</text>
 </svg>"
 `;
 
@@ -593,7 +585,6 @@ exports[`numeric x-axis range (#1592) > SVG: line 0..9 1`] = `
 </style>
 <style>
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
-  .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -604,7 +595,7 @@ exports[`numeric x-axis range (#1592) > SVG: line 0..9 1`] = `
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
-  .xychart-bar.xychart-color-0 { stroke: var(--xychart-color-0); fill: var(--xychart-bar-fill-0); }
+  .xychart-bar.xychart-color-0 { stroke: none; fill: var(--xychart-bar-fill-0); }
   path.xychart-color-0, line.xychart-color-0 { stroke: var(--xychart-color-0); }
   circle.xychart-color-0 { fill: var(--xychart-color-0); }
 </style>
@@ -693,7 +684,6 @@ exports[`numeric x-axis range (#1592) > SVG: single point 1`] = `
 </style>
 <style>
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
-  .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -704,7 +694,7 @@ exports[`numeric x-axis range (#1592) > SVG: single point 1`] = `
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
-  .xychart-bar.xychart-color-0 { stroke: var(--xychart-color-0); fill: var(--xychart-bar-fill-0); }
+  .xychart-bar.xychart-color-0 { stroke: none; fill: var(--xychart-bar-fill-0); }
   path.xychart-color-0, line.xychart-color-0 { stroke: var(--xychart-color-0); }
   circle.xychart-color-0 { fill: var(--xychart-color-0); }
 </style>
@@ -731,7 +721,7 @@ exports[`numeric x-axis range (#1592) > SVG: single point 1`] = `
 <path d="M98,94.8 L94,94.8" class="xychart-axis"/>
 <path d="M98,62.4 L94,62.4" class="xychart-axis"/>
 <path d="M98,30 L94,30" class="xychart-axis"/>
-<path d="M98.9,200 Q98.9,192 106.9,192 L125.1,192 Q133.1,192 133.1,200 L133.1,354 Q133.1,362 125.1,362 L106.9,362 Q98.9,362 98.9,354 Z" class="xychart-bar xychart-color-0" data-value="5" data-label="0"/>
+<path d="M98.9,192 H133.1 V362 H98.9 Z" class="xychart-bar xychart-color-0" data-value="5" data-label="0"/>
 <text x="116" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">0</text>
 <text x="172.4" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">1</text>
 <text x="228.8" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">2</text>
@@ -786,7 +776,6 @@ exports[`numeric x-axis range (#1592) > SVG: ticks short of the end 1`] = `
 </style>
 <style>
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
-  .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -797,7 +786,7 @@ exports[`numeric x-axis range (#1592) > SVG: ticks short of the end 1`] = `
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
-  .xychart-bar.xychart-color-0 { stroke: var(--xychart-color-0); fill: var(--xychart-bar-fill-0); }
+  .xychart-bar.xychart-color-0 { stroke: none; fill: var(--xychart-bar-fill-0); }
   path.xychart-color-0, line.xychart-color-0 { stroke: var(--xychart-color-0); }
   circle.xychart-color-0 { fill: var(--xychart-color-0); }
 </style>
@@ -827,13 +816,13 @@ exports[`numeric x-axis range (#1592) > SVG: ticks short of the end 1`] = `
 <path d="M98,76.3 L94,76.3" class="xychart-axis"/>
 <path d="M98,53.1 L94,53.1" class="xychart-axis"/>
 <path d="M98,30 L94,30" class="xychart-axis"/>
-<path d="M99,269.4 Q99,261.4 107,261.4 L129,261.4 Q137,261.4 137,269.4 L137,354 Q137,362 129,362 L107,362 Q99,362 99,354 Z" class="xychart-bar xychart-color-0" data-value="4" data-label="0"/>
-<path d="M192.3,84.3 Q192.3,76.3 200.3,76.3 L222.3,76.3 Q230.3,76.3 230.3,84.3 L230.3,354 Q230.3,362 222.3,362 L200.3,362 Q192.3,362 192.3,354 Z" class="xychart-bar xychart-color-0" data-value="8" data-label="16"/>
-<path d="M285.7,176.9 Q285.7,168.9 293.7,168.9 L315.7,168.9 Q323.7,168.9 323.7,176.9 L323.7,354 Q323.7,362 315.7,362 L293.7,362 Q285.7,362 285.7,354 Z" class="xychart-bar xychart-color-0" data-value="6" data-label="32"/>
-<path d="M379,38 Q379,30 387,30 L409,30 Q417,30 417,38 L417,354 Q417,362 409,362 L387,362 Q379,362 379,354 Z" class="xychart-bar xychart-color-0" data-value="9" data-label="48"/>
-<path d="M472.3,358 Q472.3,354 476.3,354 L506.3,354 Q510.3,354 510.3,358 L510.3,358 Q510.3,362 506.3,362 L476.3,362 Q472.3,362 472.3,358 Z" class="xychart-bar xychart-color-0" data-value="2" data-label="63"/>
-<path d="M565.7,130.6 Q565.7,122.6 573.7,122.6 L595.7,122.6 Q603.7,122.6 603.7,130.6 L603.7,354 Q603.7,362 595.7,362 L573.7,362 Q565.7,362 565.7,354 Z" class="xychart-bar xychart-color-0" data-value="7" data-label="79"/>
-<path d="M659,223.1 Q659,215.1 667,215.1 L689,215.1 Q697,215.1 697,223.1 L697,354 Q697,362 689,362 L667,362 Q659,362 659,354 Z" class="xychart-bar xychart-color-0" data-value="5" data-label="95"/>
+<path d="M99,261.4 H137 V362 H99 Z" class="xychart-bar xychart-color-0" data-value="4" data-label="0"/>
+<path d="M192.3,76.3 H230.3 V362 H192.3 Z" class="xychart-bar xychart-color-0" data-value="8" data-label="16"/>
+<path d="M285.7,168.9 H323.7 V362 H285.7 Z" class="xychart-bar xychart-color-0" data-value="6" data-label="32"/>
+<path d="M379,30 H417 V362 H379 Z" class="xychart-bar xychart-color-0" data-value="9" data-label="48"/>
+<path d="M472.3,354 H510.3 V362 H472.3 Z" class="xychart-bar xychart-color-0" data-value="2" data-label="63"/>
+<path d="M565.7,122.6 H603.7 V362 H565.7 Z" class="xychart-bar xychart-color-0" data-value="7" data-label="79"/>
+<path d="M659,215.1 H697 V362 H659 Z" class="xychart-bar xychart-color-0" data-value="5" data-label="95"/>
 <text x="118" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">0</text>
 <text x="176.94736842105263" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">10</text>
 <text x="235.89473684210526" y="380" text-anchor="middle" font-size="14" font-weight="400" dy="0.35em" class="xychart-label">20</text>

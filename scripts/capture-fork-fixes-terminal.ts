@@ -52,6 +52,7 @@ import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { forkFixes } from '../demo/fork-fixes-data.ts'
+import { UPSTREAM_COMMIT } from '../packages/site/ssr/fork-fixes-before.ts'
 import { displayWidth } from '../packages/ascii-renderer/src/display-width.ts'
 
 const exec = promisify(execFile)
@@ -71,69 +72,26 @@ const RENDER_BEFORE_SCRIPT = new URL(
   import.meta.url,
 ).pathname
 
-/** Mirrors fork-fixes.ts's own guard — see there for the full rationale. */
-async function requireCommit(commit: string): Promise<void> {
-  try {
-    await exec('git', ['rev-parse', '--verify', `${commit}^1^{commit}`])
-  } catch {
-    const shallow = await exec('git', ['rev-parse', '--is-shallow-repository'])
-      .then((r) => r.stdout.trim() === 'true')
-      .catch(() => false)
-    throw new Error(
-      `Commit ${commit} or its parent is not in this repository.\n` +
-        (shallow
-          ? 'This is a shallow clone — run `git fetch --unshallow`.'
-          : `Check the fixCommit value in demo/fork-fixes-data.ts.`),
-    )
-  }
-}
-
 /**
- * Extract `commit^`'s src/, packages/, and tsconfig.json into a scratch dir
- * and return its index.ts path. Mirrors fork-fixes.ts's `archiveCommitBefore()`
- * exactly, including the `hasPackages` guard: an old fixCommit predating the
- * packages/ split (#769/#1111) has no packages/ tree to archive, so this
- * checks before requesting it rather than letting `git archive` fail.
- *
- * Checks for the *specific files* a complete extraction needs, not just
- * that `dir` exists: a directory left behind by a run that predates this
- * function's packages/tsconfig.json archiving (or one interrupted between
- * the two `git archive` calls) would otherwise look "already populated"
- * and get reused as-is - silently resolving @zombie-mermaid/* bare
- * specifiers against the working tree instead of the archived commit,
- * exactly the bug this whole extraction exists to avoid (see issue #1141).
+ * Extract upstream beautiful-mermaid's `src/` (pinned at `UPSTREAM_COMMIT`, the
+ * only "before" the page compares against) into a scratch dir and return its
+ * index.ts path. Upstream predates the packages/ split, so there is no
+ * packages/ or tsconfig.json to archive.
  */
-async function extractBefore(commit: string): Promise<string> {
-  const dir = `${CACHE_DIR}${commit}`
-  const hasPackages = await exec('git', [
-    'cat-file',
-    '-e',
-    `${commit}^:packages`,
-  ])
-    .then(() => true)
-    .catch(() => false)
-  const isComplete =
-    existsSync(`${dir}/src/index.ts`) &&
-    (!hasPackages || existsSync(`${dir}/tsconfig.json`))
-  if (!isComplete) {
-    await requireCommit(commit)
+async function extractBefore(): Promise<string> {
+  const dir = `${CACHE_DIR}${UPSTREAM_COMMIT}`
+  if (!existsSync(`${dir}/src/index.ts`)) {
+    await exec('git', ['rev-parse', '--verify', `${UPSTREAM_COMMIT}^{commit}`])
     await rm(dir, { recursive: true, force: true })
     await mkdir(dir, { recursive: true })
     await exec(
       'sh',
-      ['-c', `git archive ${commit}^ src | tar -x -C ${JSON.stringify(dir)}`],
+      [
+        '-c',
+        `git archive ${UPSTREAM_COMMIT} src | tar -x -C ${JSON.stringify(dir)}`,
+      ],
       { maxBuffer: 64 * 1024 * 1024 },
     )
-    if (hasPackages) {
-      await exec(
-        'sh',
-        [
-          '-c',
-          `git archive ${commit}^ packages tsconfig.json | tar -x -C ${JSON.stringify(dir)}`,
-        ],
-        { maxBuffer: 64 * 1024 * 1024 },
-      )
-    }
   }
   return `${dir}/src/index.ts`
 }
@@ -296,7 +254,7 @@ async function main() {
   for (const fix of fixes) {
     process.stdout.write(`  ${fix.id}… `)
     const afterIndexPath = `${REPO_ROOT}src/index.ts`
-    const beforeIndexPath = await extractBefore(fix.fixCommit)
+    const beforeIndexPath = await extractBefore()
 
     // A render can throw (a crash IS the "before" state for some fixes) or
     // produce empty output (the diagram was dropped entirely) — fork-fixes.ts

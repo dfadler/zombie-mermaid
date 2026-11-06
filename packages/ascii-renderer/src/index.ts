@@ -261,7 +261,8 @@ function renderOnce(source: string, options: AsciiRenderOptions): string {
   checkLimit('maxInputLength', source.length, options.limits)
   checkLineLength(source, options.limits)
   // accTitle/accDescr have no place in text output: drop them, never print.
-  const text = extractAccessibility(source).text
+  // The one exception is C4, where Mermaid draws accTitle as the title.
+  const { text, accTitle } = extractAccessibility(source)
   const theme: AsciiTheme = {
     ...DEFAULT_ASCII_THEME,
     ...(options.honorThemeVariables && directiveTheme(text, options.theme)),
@@ -281,6 +282,7 @@ function renderOnce(source: string, options: AsciiRenderOptions): string {
     direction: options.direction,
     limits: options.limits,
     honorThemeVariables: options.honorThemeVariables ?? false,
+    accTitle,
   })
 
   return options.showCoords ? addCoordsOverlay(result) : result

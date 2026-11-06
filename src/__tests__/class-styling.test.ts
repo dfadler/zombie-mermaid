@@ -396,29 +396,24 @@ describe('renderMermaidSVG – class diagram styling', () => {
     expect(mineral).toContain('fill="red"')
   })
 
-  it('picks a readable text color for a concrete custom fill', () => {
+  it('keeps the theme text color on a custom fill (as Mermaid 12.3.0), unless color is set', () => {
     const svg = renderMermaidSVG(`classDiagram
       class Dark {
         +int id
       }
-      class Light {
+      class Red {
         +int id
       }
       style Dark fill:#000000
-      style Light fill:#ffffff`)
-    const dark = svg.slice(
-      svg.indexOf('data-id="Dark"'),
-      svg.indexOf('</g>', svg.indexOf('data-id="Dark"')),
-    )
-    const light = svg.slice(
-      svg.indexOf('data-id="Light"'),
-      svg.indexOf('</g>', svg.indexOf('data-id="Light"')),
-    )
-    // Name and every member tspan follow the computed color
-    expect(dark).toContain('fill="#FFFFFF"')
-    expect(dark).not.toContain('var(--_text-sec)')
-    expect(light).toContain('fill="#000000"')
-    expect(light).not.toContain('var(--_text-sec)')
+      style Red fill:#000000,color:#ff0000`)
+    const box = (id: string) =>
+      svg.slice(
+        svg.indexOf(`data-id="${id}"`),
+        svg.indexOf('</g>', svg.indexOf(`data-id="${id}"`)),
+      )
+    expect(box('Dark')).not.toContain('fill="#FFFFFF"')
+    expect(box('Dark')).toContain('var(--_text)')
+    expect(box('Red')).toContain('fill="#ff0000"')
   })
 
   it('keeps syntax-tinted members when only stroke is customized', () => {

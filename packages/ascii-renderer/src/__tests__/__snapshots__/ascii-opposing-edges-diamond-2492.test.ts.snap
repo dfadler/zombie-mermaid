@@ -11,18 +11,18 @@ exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII an
                       │                   
                       │                   
 ┌───┐         ╱╲      │                   
-│   │       ╱    ╲    │                   
-│ A ├────►< Valid? >──┤                   
-│   │       ╲    ╱ ▲  │                   
-└───┘         ╲╱   │  │                   
-                   │  │                   
-                   │  │                   
-                   │  │                   
-                   │ no                   
-                   │  │      ╱───────────╱
-                   │  └────►╱           ╱ 
-                   │       ╱ Ask Again ╱  
-                   └──────╱           ╱   
+│   │       ╱    ╲────┘                   
+│ A ├────►< Valid? >──┐                   
+│   │       ╲    ╱◄──┐│                   
+└───┘         ╲╱     ││                   
+                     ││                   
+                     ││                   
+                     ││                   
+                     ││ no                
+                     ││      ╱───────────╱
+                     │└────►╱           ╱ 
+                     │     ╱ Ask Again ╱  
+                     └────╱           ╱   
                          ╱───────────╱    "
 `;
 
@@ -54,17 +54,17 @@ exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII an
   }
 </style>
 <defs>
-  <marker id="zmsti0le-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm3himys-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmsti0le-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm3himys-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<polyline class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="100,100.13 148,100.13" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmsti0le-arrowhead)" />
-<polyline class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="yes" points="226.89,73.83 265.19,73.83 265.19,58.45 377.24,58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmsti0le-arrowhead)" />
-<polyline class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="no" points="253.19,100.13 265.19,100.13 265.19,110.2 341.24,110.2 341.24,117.2 377.24,117.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmsti0le-arrowhead)" />
-<polyline class="edge" data-from="D" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="377.24,129.5 341.24,129.5 341.24,133.5 265.19,133.5 265.19,126.43 226.89,126.43" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmsti0le-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 100.13 L 148 100.13" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm3himys-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="yes" d="M 226.89 73.83 L 258.11 73.83 Q 265.19 73.83, 265.19 66.76 L 265.19 65.52 Q 265.19 58.45, 272.26 58.45 L 377.24 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm3himys-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="no" d="M 253.19 100.13 L 260.15 100.13 Q 265.19 100.13, 265.19 105.17 L 265.19 105.17 Q 265.19 110.2, 270.22 110.2 L 337.74 110.2 Q 341.24 110.2, 341.24 113.7 L 341.24 113.7 Q 341.24 117.2, 344.74 117.2 L 377.24 117.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm3himys-arrowhead)" />
+<path class="edge" data-from="D" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 377.24 129.5 L 343.24 129.5 Q 341.24 129.5, 341.24 131.5 L 341.24 131.5 Q 341.24 133.5, 339.24 133.5 L 268.72 133.5 Q 265.19 133.5, 265.19 129.96 L 265.19 129.96 Q 265.19 126.43, 261.65 126.43 L 226.89 126.43" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm3himys-arrowhead)" />
 <g class="edge-label" data-from="B" data-to="C" data-label="yes">
   <rect x="297.19" y="42.45" width="36.05" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
   <text x="315.21" y="57.6" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">yes</text>

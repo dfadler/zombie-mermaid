@@ -31,9 +31,17 @@
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
+import { dirEquals, requireGridCoord, Up } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
+import {
+  denseFacingPair,
+  flowLanePolyline,
+  flowLaneOf,
+  leavesFlowFace,
+  leavesRightFace,
+} from './edge-routing.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
@@ -227,7 +235,13 @@ function portGeometry(graph: AsciiGraph, run: PortRun): Geometry | undefined {
 }
 
 /** Whether a stroke at `pos` along the offset axis meets a plain border. */
-function attachesAt(run: PortRun, pos: number, geo: Geometry): boolean {
+function attachesAt(
+  run: PortRun,
+  pos: number,
+  geo: Geometry,
+  /** A diamond's slanted face takes a stroke too (`spreadDiamondFaces`). */
+  diamond = false,
+): boolean {
   if (pos < geo.lo || pos > geo.hi) return false
   const dc = run.node.drawingCoord!
   const drawing = run.node.drawing!
@@ -241,7 +255,9 @@ function attachesAt(run: PortRun, pos: number, geo: Geometry): boolean {
   let ch: string | undefined = ' '
   for (let x = geo.border; ch === ' ' && drawing[x]; x += step)
     ch = drawing[x]![pos - dc.y]
-  const slant = run.node.shape.startsWith('parallelogram')
+  const slant =
+    run.node.shape.startsWith('parallelogram') ||
+    (diamond && run.node.shape === 'diamond')
   return ch === '│' || ch === '|' || (slant && (ch === '╱' || ch === '╲'))
 }
 
@@ -311,14 +327,27 @@ export function staggerFanOuts(
   for (const side of ['top', 'bottom', 'left', 'right'] as const) {
     const group = members.filter((m) => m.run.side === side)
     const anchored = group.some((m) => m.straight)
+    // Edges of different line styles cannot share a stem (one glyph per cell),
+    // so each (distance, style) pair takes a stem of its own.
+    const mixed = new Set(group.map((m) => m.edge.style)).size > 1
+    const keyOf = (m: FanOutMember): string =>
+      mixed
+        ? `${runExtent(m.edge, m.run)}|${m.edge.style}`
+        : String(runExtent(m.edge, m.run))
     for (const turn of [-1, 1] as const) {
       const bent = group.filter((m) => !m.straight && m.run.turn === turn)
-      const extents = [...new Set(bent.map((m) => runExtent(m.edge, m.run)))]
-      extents.sort((a, b) => b - a)
-      if (extents.length + (anchored ? 1 : 0) < 2) continue
-      const offsetOf = (extent: number): number =>
-        base +
-        turn * STROKE_SPACING * (extents.indexOf(extent) + (anchored ? 1 : 0))
+      const extents = [...new Set(bent.map(keyOf))]
+      extents.sort((a, b) => parseInt(b) - parseInt(a))
+      // With no straight stem, mixed styles split the two turns a cell each
+      // side of the port so a left and a right bend do not share one.
+      const apart = mixed && !anchored
+      if (extents.length === 0) continue
+      if (!apart && extents.length + (anchored ? 1 : 0) < 2) continue
+      const offsetOf = (key: string): number =>
+        apart
+          ? base + turn * (extents.indexOf(key) + 1) * (STROKE_SPACING / 2)
+          : base +
+            turn * STROKE_SPACING * (extents.indexOf(key) + (anchored ? 1 : 0))
       const geo = portGeometry(graph, bent[0]!.run)
       const fits =
         geo !== undefined &&
@@ -330,9 +359,112 @@ export function staggerFanOuts(
           )
         })
       if (!fits) continue
-      for (const m of bent) out.set(m.edge, offsetOf(runExtent(m.edge, m.run)))
+      for (const m of bent) out.set(m.edge, offsetOf(keyOf(m)))
     }
   }
+}
+
+/**
+ * An LR fan-out leaves the source's right face on a row of its own per edge,
+ * as Mermaid does: a target above takes the row above the centre, one level
+ * with the source keeps the centre, one below takes the row below. A shared
+ * stem would read as one edge splitting, and could not carry two line styles.
+ * Returns false (leaving the stems to `staggerFanOuts`) when two targets lie
+ * the same side or the face has no room.
+ */
+// ponytail: one row per side, so a source with two targets above keeps the shared stem.
+function spreadRightFan(
+  graph: AsciiGraph,
+  members: readonly FanOutMember[],
+  out: Map<AsciiEdge, number>,
+  taken: readonly number[],
+): boolean {
+  if (
+    members.some((m) => m.run.side !== 'right') ||
+    !members.some((m) =>
+      leavesRightFace(graph, m.edge, graph.config.graphDirection),
+    )
+  ) {
+    return false
+  }
+  const rowOf = (m: FanOutMember): number =>
+    Math.sign(requireGridCoord(m.edge.to).y - requireGridCoord(m.edge.from).y)
+  const rows = members.map(rowOf)
+  const geo = portGeometry(graph, members[0]!.run)
+  if (
+    new Set(rows).size !== rows.length ||
+    !geo ||
+    !rows.every((o) => attachesAt(members[0]!.run, geo.centre + o, geo)) ||
+    // A back edge into the same face holds its own row: leave the group to
+    // `staggerFanOuts`, which keeps clear of `taken`.
+    rows.some((o) => taken.includes(o))
+  ) {
+    return false
+  }
+  members.forEach((m, i) => out.set(m.edge, rows[i]!))
+  return true
+}
+
+/**
+ * The edges on a diamond's right face in LR (a decision's branches and a
+ * return edge into it) each take a cell of the slanted face, ordered by where
+ * their other end lies, as Mermaid spreads its ports: two take the upper and
+ * lower slant, three add the vertex. Beyond three the face keeps the shared
+ * stems.
+ */
+function spreadDiamondFaces(
+  graph: AsciiGraph,
+  runs: ReadonlyMap<AsciiEdge, RunEntry>,
+): Map<AsciiEdge, { start?: number; end?: number }> {
+  const out = new Map<AsciiEdge, { start?: number; end?: number }>()
+  if (graph.config.graphDirection !== 'LR') return out
+  interface Use {
+    edge: AsciiEdge
+    role: 'start' | 'end'
+    y: number
+    run: PortRun
+  }
+  const faces = new Map<AsciiNode, Use[]>()
+  const add = (run: PortRun | undefined, u: Omit<Use, 'run'>): void => {
+    if (!run || run.node.shape !== 'diamond' || run.side !== 'right') return
+    faces.set(run.node, [...(faces.get(run.node) ?? []), { ...u, run }])
+  }
+  for (const [edge, { r }] of runs) {
+    add(r.start, {
+      edge,
+      role: 'start',
+      y: requireGridCoord(edge.to).y,
+    })
+    add(r.end, {
+      edge,
+      role: 'end',
+      y: requireGridCoord(edge.from).y,
+    })
+  }
+  for (const uses of faces.values()) {
+    // A decision with no return keeps its branches on the shared stem.
+    if (
+      uses.length < 2 ||
+      uses.length > 3 ||
+      !uses.some((u) => u.role === 'end')
+    )
+      continue
+    const geo = portGeometry(graph, uses[0]!.run)
+    const rows = uses.length === 2 ? [-1, 1] : [-1, 0, 1]
+    if (
+      !geo ||
+      !rows.every(
+        (o) => o === 0 || attachesAt(uses[0]!.run, geo.centre + o, geo, true),
+      )
+    )
+      continue
+    uses
+      .sort((a, b) => a.y - b.y || (a.role === 'start' ? -1 : 1))
+      .forEach((u, i) => {
+        out.set(u.edge, { ...out.get(u.edge), [u.role]: rows[i]! })
+      })
+  }
+  return out
 }
 
 export interface Slot {
@@ -360,7 +492,20 @@ function laneOf(
   if (run.axis !== 'h') return undefined
   const turn = role === 'S' ? run.to : run.from
   const last = edge.path.length - 1
-  return turn > 0 && turn < last ? edge.path[turn]!.x : undefined
+  if (!(turn > 0 && turn < last)) return undefined
+  // A return into a diamond is drawn a column left of the lane it shares.
+  return edge.path[turn]!.x - (returnsToDiamond(edge) ? 0.5 : 0)
+}
+
+/** A Z back edge into a diamond's right face: out of the node, up, then in. */
+function returnsToDiamond(edge: AsciiEdge): boolean {
+  const p = edge.path
+  return (
+    edge.to.shape === 'diamond' &&
+    p.length === 4 &&
+    p[0]!.x > p[3]!.x &&
+    p[0]!.y !== p[3]!.y
+  )
 }
 
 /** Slope of an edge read left to right, so both edges of a pair agree. */
@@ -652,9 +797,12 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     const taken = [...slots.keys()]
       .filter((k) => k !== key && portOf(k) === port)
       .map(slotOffset)
-    staggerFanOuts(graph, members, slotOffset(key), taken, staggered)
+    if (!spreadRightFan(graph, members, staggered, taken)) {
+      staggerFanOuts(graph, members, slotOffset(key), taken, staggered)
+    }
   }
 
+  const diamond = spreadDiamondFaces(graph, runs)
   const split = splitLabeledArrivals(runs)
   const spread = spreadParallelEdges(runs, rolesAt, portOf)
   const landings = separateFanIns(
@@ -671,10 +819,15 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     const own = spread.get(edge)
     const lane = landings.get(edge)
     const start =
-      own ?? lane?.start ?? staggered.get(edge) ?? (s ? slotOffset(s) : 0)
+      own ??
+      lane?.start ??
+      diamond.get(edge)?.start ??
+      staggered.get(edge) ??
+      (s ? slotOffset(s) : 0)
     const end =
       own ??
       lane?.end ??
+      diamond.get(edge)?.end ??
       split.get(edge) ??
       (e ? (offsets.get(find(e)) ?? 0) : 0)
     if (start === 0 && end === 0 && !lane?.points) continue
@@ -682,11 +835,81 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (lane?.points) shift.points = lane.points
     if (r.start) shift.startRun = shiftedRun(r.start)
     if (r.end) shift.endRun = shiftedRun(r.end)
+    // A branch leaving a diamond's slant starts on the slant, not a cell off it.
+    if (diamond.get(edge)?.start) {
+      shift.points ??= edge.path.map(() => ({ x: 0, y: 0 }))
+      shift.points[0]!.x -= 2
+    }
     result.set(edge, shift)
+  }
+  raiseFlowFanBars(graph, runs, result)
+  nudgeDiamondReturns(graph, result)
+  // A flow-face lane is drawn from its plan, on its own port: nothing to place.
+  for (const e of graph.edges) {
+    if (flowLaneOf(e)) result.set(e, { start: 0, end: 0 })
   }
   allocateFaces(graph, result, shiftedRun)
   spreadFaceLaneRuns(graph, result)
   return result
+}
+
+/**
+ * A flow-face fan-out edge bends on the row two below its source's border,
+ * not mid-gap: the drop into the target then has room for its label, the way
+ * Mermaid draws the bend near the source and the label on the drop.
+ */
+function raiseFlowFanBars(
+  graph: AsciiGraph,
+  runs: ReadonlyMap<AsciiEdge, RunEntry>,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  const lr = graph.config.graphDirection === 'LR'
+  for (const [edge, { r }] of runs) {
+    const p = edge.path
+    if (
+      r.straight ||
+      p.length !== 4 ||
+      !(lr ? leavesRightFace : leavesFlowFace)(
+        graph,
+        edge,
+        graph.config.graphDirection,
+      )
+    ) {
+      continue
+    }
+    // A routed node always has its drawing and coordinate.
+    const from = edge.from.drawingCoord!
+    const size = lr ? edge.from.drawing!.length : edge.from.drawing![0]!.length
+    const at = gridToDrawingCoord(graph, p[1]!)
+    const d = (lr ? from.x : from.y) + size + 1 - (lr ? at.x : at.y)
+    /* v8 ignore next */
+    if (d >= 0) continue
+    const shift = result.get(edge) ?? { start: 0, end: 0 }
+    const points = shift.points ?? p.map(() => ({ x: 0, y: 0 }))
+    for (const i of [1, 2]) points[i]![lr ? 'x' : 'y'] = d
+    result.set(edge, { ...shift, points })
+  }
+}
+
+/**
+ * Draw a return into a diamond's right face (#2645) one column inside the
+ * gutter lane it shares with the decision's own branch, and its ends on the
+ * slant: the arrow meets the face as Mermaid's does, with no gap.
+ */
+function nudgeDiamondReturns(
+  graph: AsciiGraph,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  if (graph.config.graphDirection !== 'LR') return
+  for (const edge of graph.edges) {
+    if (!returnsToDiamond(edge)) continue
+    const shift = result.get(edge) ?? { start: 0, end: 0 }
+    const points = shift.points ?? edge.path.map(() => ({ x: 0, y: 0 }))
+    points[1]!.x -= 1
+    points[2]!.x -= 1
+    points[3]!.x -= 2
+    result.set(edge, { ...shift, points })
+  }
 }
 
 /**
@@ -805,6 +1028,19 @@ function allocateFaces(
       if (runsOf(f.edge)?.straight) fixed.set(f.edge, offs[i]!)
     })
   }
+  // #2645: a dense pair's loop is a hook centred over the top face, as
+  // Mermaid draws it (its cells were placed about the grid cell's corner).
+  for (const [f, by0] of placed) {
+    const geo = portGeometry(graph, f.run)
+    if (geo && isDenseHook(f.edge)) {
+      placed.set(
+        f,
+        by0 +
+          Math.round((geo.lo + geo.hi) / 2 - geo.centre) +
+          (f.role === 'S' ? 2 : -2),
+      )
+    }
+  }
   for (const [f, by] of placed) {
     if (by === 0) continue
     const shift = result.get(f.edge) ?? { start: 0, end: 0 }
@@ -820,6 +1056,16 @@ function allocateFaces(
   for (const loop of lanes) {
     if (loop.from === loop.to) hugLoop(graph, loop, result)
   }
+}
+
+/** A self-loop `determinePath` drew as a hook over the top face (#2645). */
+function isDenseHook(e: AsciiEdge): boolean {
+  return (
+    e.from === e.to &&
+    e.path.length === 4 &&
+    dirEquals(e.startDir, Up) &&
+    dirEquals(e.endDir, Up)
+  )
 }
 
 /** How an end leaves its face: which way it turns and how far out. */
@@ -866,7 +1112,8 @@ function placeFace(
       ...shape,
       // Ends that turn the same way at the same depth run on together
       // beyond the stem: they are one route (a fan, or duplicate loops).
-      key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}`,
+      // A dense facing pair (#2645) gives every edge a row of its own.
+      key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}|${denseFacingPair(graph, f.edge) ? graph.edges.indexOf(f.edge) : ''}`,
       // A straight lane: the #1284 pair side (down-travelling right).
       push: pushOf(f.run, f.role),
       // A flow-axis face lane stays on its outer side of every stem.
@@ -1343,6 +1590,8 @@ function drawnPath(
   edge: AsciiEdge,
   shift: PortShift | undefined,
 ): DrawingCoord[] {
+  const lane = flowLanePolyline(graph, edge)
+  if (lane) return lane
   const base = lineToDrawing(graph, edge.path)
   if (!shift) return base
   const shifts = pointShifts(edge, shift)

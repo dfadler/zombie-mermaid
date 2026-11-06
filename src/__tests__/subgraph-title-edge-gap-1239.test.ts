@@ -59,11 +59,9 @@ function edge(points: Array<[number, number]>): PositionedEdge {
 describe('title text boxes', () => {
   const [box] = titleTextBoxes([group()], FONT_SIZES)
 
-  it('starts at the text inset and is centred in the title bar', () => {
-    expect(box!.x).toBeLessThan(112)
-    expect(box!.x + box!.width).toBeGreaterThan(112)
-    const centre = box!.y + box!.height / 2
-    expect(centre).toBeCloseTo(100 + (FONT_SIZES.groupHeader + 16) / 2, 5)
+  it('centres a state-composite title in its 26px title band (#2651)', () => {
+    expect(box!.x + box!.width / 2).toBeCloseTo(200, 5)
+    expect(box!.y + box!.height / 2).toBeCloseTo(100 + 13, 5)
   })
 
   it('covers nested groups and skips an empty title', () => {
@@ -197,10 +195,10 @@ describe('title gap mask', () => {
 })
 
 describe('rendered output', () => {
-  it('does not mask an edge that only grazes the right of a title', () => {
-    // A -> B runs at x=102; the "Inner" text ends just left of it.
+  it('does not mask an edge that enters beside the centred title', () => {
+    // The title "T" is centred over the box; A -> C enters well to its right.
     const svg = renderMermaidSVG(
-      'flowchart TD\n  subgraph Outer\n    subgraph Inner\n      B\n    end\n  end\n  A --> B',
+      'flowchart TD\n  subgraph Outer [T]\n    B[A very wide node label here]\n    C[Right]\n  end\n  A --> C',
     )
     expect(svg).not.toContain('zm-title-gap')
   })
@@ -208,7 +206,7 @@ describe('rendered output', () => {
   it('masks the edges that cross a subgraph title, and only those', () => {
     const svg = renderMermaidSVG(NESTED)
     expect(svg).toContain('<mask id="zm-title-gap-')
-    const edges = svg.match(/<polyline [^>]*class="edge"[^>]*>/g)!
+    const edges = svg.match(/<path [^>]*class="edge"[^>]*>/g)!
     const masked = edges.filter((e) => e.includes('mask="url(#zm-title-gap-'))
     // E -> A and E -> C cross the "US East/West Region" titles.
     expect(masked).toHaveLength(2)
@@ -220,10 +218,10 @@ describe('rendered output', () => {
   it('leaves the edge geometry the same as without the mask', () => {
     const svg = renderMermaidSVG(NESTED)
     const unmasked = svg.replace(/ mask="url\(#[^)]*\)"/g, '')
-    // Same polyline points either way: the mask is the only difference.
-    expect(unmasked.match(/points="[^"]*"/g)).toEqual(
-      svg.match(/points="[^"]*"/g),
-    )
+    // Same path geometry either way: the mask is the only difference.
+    const geometry = (x: string) => x.match(/ d="[^"]*"/g)
+    expect(geometry(svg)!.length).toBeGreaterThan(0)
+    expect(geometry(unmasked)).toEqual(geometry(svg))
   })
 
   it('emits no mask when no edge crosses a title', () => {

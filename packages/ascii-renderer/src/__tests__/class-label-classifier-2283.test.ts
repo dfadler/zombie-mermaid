@@ -19,8 +19,8 @@ describe.each([false, true])(
       const out = renderMermaidASCII(src(dir), { colorMode: 'none', useAscii })
       expect(out).toContain('Pretty Label')
       expect(out).not.toMatch(/Pretty(?! Label)/)
-      expect(out).toContain('+ size(): int')
-      expect(out).toContain('+ make(): A')
+      expect(out).toContain('+size() : int')
+      expect(out).toContain('+make() : A')
       expect(out).not.toMatch(/[*$]/)
     })
   },

@@ -102,9 +102,9 @@ describe('findBackEdgeIndexes', () => {
 })
 
 describe('edgesReversedForLayout', () => {
-  it('is empty for a state diagram, which has its own cycle breaking', () => {
+  it('reverses the back edge of a state diagram too (#2651)', () => {
     const g = parseMermaid('stateDiagram-v2\n  [*] --> A\n  A --> B\n  B --> A')
-    expect(edgesReversedForLayout(g as never).size).toBe(0)
+    expect(edgesReversedForLayout(g as never).size).toBe(1)
   })
 
   it('is empty for a graph with a subgraph direction override', () => {

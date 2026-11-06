@@ -23,41 +23,20 @@ function segments(svg: string, actor: string): Array<[number, number]> {
     .map((m): [number, number] => [Number(m[2]), Number(m[3])])
 }
 
-describe('gallery sequence samples cut lifelines around labels (#2280)', () => {
-  it('Alt/Else Long Label: lifeline A is cut only around the "alt" tab, not "[credentials rejected]"', () => {
+describe('gallery sequence samples draw whole lifelines through labels (#2706)', () => {
+  it('Alt/Else Long Label: every lifeline is one line, like mermaid 12.3.0', () => {
     const svg = gallerySvg(
       'Sequence: Alt/Else Long Label With Uninvolved Participant',
     )
-    // The else label is centred in the frame, clear of A's lifeline.
-    expect(segments(svg, 'A')).toEqual([
-      [70, 76],
-      [98, 222],
-    ])
-    // The uninvolved participants stay whole.
-    expect(segments(svg, 'B')).toEqual([[70, 222]])
-    expect(segments(svg, 'C')).toEqual([[70, 222]])
+    for (const id of ['A', 'B', 'C']) {
+      expect(segments(svg, id)).toHaveLength(1)
+    }
   })
 
-  it('Microservice Orchestration: Auth and Users lifelines are cut around the labels crossing them', () => {
+  it('Microservice Orchestration: lifelines crossed by labels are not cut', () => {
     const svg = gallerySvg('Sequence: Microservice Orchestration')
-    // "Get user" y=188 and "User data" y=228 cross Auth.
-    expect(segments(svg, 'A')).toEqual([
-      [70, 178.85],
-      [197.15, 218.85],
-      [237.15, 477],
-    ])
-    // "Send notification" y=372 crosses Users.
-    expect(segments(svg, 'U')).toEqual([
-      [70, 362.85],
-      [381.15, 402.85],
-      [421.15, 477],
-    ])
-    // Gateway is cut by the par title tab; Orders and Notify are never crossed.
-    expect(segments(svg, 'G')).toEqual([
-      [70, 156],
-      [178, 477],
-    ])
-    expect(segments(svg, 'O')).toEqual([[70, 477]])
-    expect(segments(svg, 'N')).toEqual([[70, 477]])
+    for (const id of ['A', 'U', 'G', 'O', 'N']) {
+      expect(segments(svg, id)).toHaveLength(1)
+    }
   })
 })

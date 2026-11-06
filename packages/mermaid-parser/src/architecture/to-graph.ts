@@ -142,7 +142,8 @@ export function architectureToGraph(
       label: g.title,
       nodeIds: [],
       children: [],
-      ...(g.icon ? { icon: g.icon } : {}),
+      ...(g.icon !== undefined ? { icon: g.icon } : {}),
+      architecture: true,
     })
   }
   const roots: MermaidSubgraph[] = []
@@ -172,20 +173,9 @@ export function architectureToGraph(
     const [source, target] = forward
       ? [end(e.source, e.sourceGroup), end(e.target, e.targetGroup)]
       : [end(e.target, e.targetGroup), end(e.source, e.sourceGroup)]
-    const across =
-      !HORIZONTAL.has(e.sourcePort) === (axis === 0) &&
-      cells.get(e.source)![axis] === cells.get(e.target)![axis]
     return {
       source,
       target,
-      ...(across &&
-      (parentOf.get(e.source) !== parentOf.get(e.target) ||
-        parentOf.get(e.source) === undefined) &&
-      e.source !== e.target &&
-      !e.sourceGroup &&
-      !e.targetGroup
-        ? { acrossFlow: true }
-        : {}),
       style: 'solid',
       hasArrowStart: forward ? e.arrowStart : e.arrowEnd,
       hasArrowEnd: forward ? e.arrowEnd : e.arrowStart,

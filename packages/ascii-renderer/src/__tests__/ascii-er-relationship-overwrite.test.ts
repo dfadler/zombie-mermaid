@@ -202,8 +202,10 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // the label is now preceded by the vertical line the jog turned into.)
     // (#2112: the label now sits on its own jog, between the jog's corner
     // and its line, so it can only belong to that edge.)
-    expect(row.slice(idx - 2, idx)).toBe('┌ ')
-    const cornerCol = idx - 2
+    // (The jog's corner may lead into the label with a few ─ now that the
+    // table boxes are wider: "┌── tagged-with".)
+    expect(row.slice(0, idx)).toMatch(/┌─* $/)
+    const cornerCol = row.lastIndexOf('┌', idx)
     // The marker sits at or adjacent to the corner's column, connected by
     // the vertical line the corner turns into — but not necessarily on the
     // very next row: issue #351's multi-row-obstruction routing can insert

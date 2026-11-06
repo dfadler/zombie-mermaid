@@ -1,11 +1,11 @@
 ┌──────────────────┐    
-│ <<abstract>>     │    
-│ Shape            │    
+│    «abstract»    │    
+│      Shape       │    
 ├──────────────────┤    
-│ + String color   │    
+│ +String color    │    
 ├──────────────────┤    
-│ + area(): double │    
-│ + draw(): void   │    
+│ +area() : double │    
+│ +draw() : void   │    
 └──────────────────┘    
                         
                         

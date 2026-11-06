@@ -10,9 +10,14 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import {
   ACTOR_LABEL_OFFSET,
+  BLOCK_LINE_STROKE,
+  BLOCK_TAB_HEIGHT,
+  blockTabPoints,
   blockTabWidth,
   boxLabelHeight,
+  dividerLabelExtra,
   hasLabelBelowIcon,
+  LIFELINE_STROKE,
   SELF_LOOP_CONTROL,
   SELF_LOOP_HEIGHT,
   TITLE_FONT_SIZE,
@@ -22,7 +27,6 @@ import {
   svgOpenTag,
   buildStyleBlock,
   renderMultilineText,
-  measureMultilineText,
   escapeAttr,
   f,
 } from '@zombie-mermaid/core'
@@ -44,7 +48,7 @@ import type { FontSizes } from '../styles.ts'
 // Render order (back to front):
 //   0. Participant-group backgrounds (box … end)
 //   1. `rect <color>` highlight fills
-//   2. Lifelines (dashed vertical lines)
+//   2. Lifelines (solid vertical lines)
 //   3. Activation boxes
 //   3b. Framed blocks (loop/alt/opt), over the bars so tab labels stay legible
 //   4. Messages (arrows with labels)
@@ -109,16 +113,17 @@ export function renderSequenceSvg(
     parts.push(renderParticipantBox(box, fontSizes))
   }
 
-  // 1. `rect <color>` highlight fills, behind lifelines and activation bars
-  for (const block of diagram.blocks) {
+  // 1. `rect <color>` highlight fills, behind lifelines and activation bars.
+  //    Blocks are listed innermost first, so walk backwards: outer rects paint
+  //    first and a nested rect lands on top of its parent (#2586).
+  for (const block of diagram.blocks.toReversed()) {
     if (isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 
-  // 2. Lifelines (dashed vertical lines from actor to bottom), interrupted
-  //    where a message / block label sits on them so no line runs through text
-  const labelBoxes = collectLabelBoxes(diagram, fontSizes)
+  // 2. Lifelines (solid vertical lines from actor to bottom),
+  //    drawn straight through message / block labels, as Mermaid 12.3.0 does
   for (const lifeline of diagram.lifelines) {
-    parts.push(renderLifeline(lifeline, labelBoxes))
+    parts.push(renderLifeline(lifeline))
   }
 
   // 3. Activation boxes
@@ -334,131 +339,52 @@ function renderActor(
 /** How far above its arrow a message label's centre sits, in px. */
 const MESSAGE_LABEL_RISE = 10
 
-/** Height of a block's type-label tab, in px. */
-const BLOCK_TAB_HEIGHT = 18
-
-/** A rectangle some text occupies; lifelines are cut around it. */
-interface LabelBox {
-  x0: number
-  x1: number
-  y0: number
-  y1: number
+/** Centre y of a message label: its last line sits where a one-line label would. */
+function messageLabelCy(msg: PositionedMessage, fontSizes: FontSizes): number {
+  return (
+    msg.y -
+    MESSAGE_LABEL_RISE -
+    dividerLabelExtra(msg.label, fontSizes.edgeLabel) / 2
+  )
 }
 
-/** Breathing room kept between a label and the lifeline segments around it. */
-const LIFELINE_LABEL_PAD_X = 3
-const LIFELINE_LABEL_PAD_Y = 2
-
-/** Lifeline fragments shorter than this are dropped rather than drawn as a stub. */
-const LIFELINE_MIN_SEGMENT = 3
-
-/**
- * Footprints of every text label a lifeline can run through: message labels
- * (above the arrow, or beside a self-message loop), the block type tab, and
- * block divider (`else` / `and`) labels. Mirrors the positions
- * {@link renderMessage} and {@link renderBlock} draw them at (#1242).
- */
-function collectLabelBoxes(
-  diagram: PositionedSequenceDiagram,
+/** Centre y of a block's header label: its first line sits in the tab band. */
+function blockLabelCy(
+  block: { y: number; label?: string },
   fontSizes: FontSizes,
-): LabelBox[] {
-  const boxes: LabelBox[] = []
-  const measure = (text: string) =>
-    measureMultilineText(text, fontSizes.edgeLabel, FONT_WEIGHTS.edgeLabel)
-  const centred = (text: string, cx: number, cy: number) => {
-    const m = measure(text)
-    boxes.push({
-      x0: cx - m.width / 2,
-      x1: cx + m.width / 2,
-      y0: cy - m.height / 2,
-      y1: cy + m.height / 2,
-    })
-  }
-
-  for (const msg of diagram.messages) {
-    // A self-message's label is centred on its own lifeline (x1 === x2), and
-    // mermaid lets the lifeline run through it, so it is not cut (#2477).
-    if (!msg.label || msg.isSelf) continue
-    centred(msg.label, (msg.x1 + msg.x2) / 2, msg.y - MESSAGE_LABEL_RISE)
-  }
-
-  for (const block of diagram.blocks) {
-    if (isHighlightRect(block)) continue
-    const tabWidth = blockTabWidth(block, fontSizes.edgeLabel)
-    boxes.push({
-      x0: block.x,
-      x1: block.x + tabWidth,
-      y0: block.y,
-      y1: block.y + BLOCK_TAB_HEIGHT,
-    })
-    if (block.label) {
-      centred(
-        `[${block.label}]`,
-        block.x + (tabWidth + block.width) / 2,
-        block.y + BLOCK_TAB_HEIGHT / 2,
-      )
-    }
-    for (const divider of block.dividers) {
-      if (!divider.label) continue
-      centred(`[${divider.label}]`, block.x + block.width / 2, divider.y + 14)
-    }
-  }
-  return boxes
+): number {
+  return (
+    block.y +
+    BLOCK_TAB_HEIGHT / 2 +
+    dividerLabelExtra(block.label, fontSizes.edgeLabel) / 2
+  )
 }
 
-/**
- * The y-ranges of `lifeline` left after cutting out every label box it
- * crosses, as `[y0, y1]` pairs top to bottom.
- */
-function lifelineSegments(
-  lifeline: Lifeline,
-  labelBoxes: readonly LabelBox[],
-): Array<[number, number]> {
-  const cuts = labelBoxes
-    .filter(
-      (b) =>
-        lifeline.x > b.x0 - LIFELINE_LABEL_PAD_X &&
-        lifeline.x < b.x1 + LIFELINE_LABEL_PAD_X &&
-        b.y1 + LIFELINE_LABEL_PAD_Y > lifeline.topY &&
-        b.y0 - LIFELINE_LABEL_PAD_Y < lifeline.bottomY,
-    )
-    .map((b): [number, number] => [
-      b.y0 - LIFELINE_LABEL_PAD_Y,
-      b.y1 + LIFELINE_LABEL_PAD_Y,
-    ])
-    .sort((a, b) => a[0] - b[0])
-
-  const segments: Array<[number, number]> = []
-  let cursor = lifeline.topY
-  for (const [c0, c1] of cuts) {
-    if (c0 - cursor >= LIFELINE_MIN_SEGMENT) segments.push([cursor, c0])
-    cursor = Math.max(cursor, c1)
-  }
-  if (lifeline.bottomY - cursor >= LIFELINE_MIN_SEGMENT) {
-    segments.push([cursor, lifeline.bottomY])
-  }
-  // A lifeline entirely under a label (or otherwise shorter than a stub)
-  // would vanish; keep it whole rather than drop the participant's line.
-  return segments.length > 0 ? segments : [[lifeline.topY, lifeline.bottomY]]
+/** Centre y of a divider label: its first line stays where a one-line label sits. */
+function dividerLabelCy(
+  divider: { y: number; label?: string },
+  fontSizes: FontSizes,
+): number {
+  return (
+    divider.y + 14 + dividerLabelExtra(divider.label, fontSizes.edgeLabel) / 2
+  )
 }
 
+/** Dash pattern of a block's outer frame (mermaid 12.3.0: dotted). */
+const BLOCK_FRAME_DASH = '2 2'
+
+/** Dash pattern of a block's divider lines (`else`/`and`). */
+const BLOCK_DIVIDER_DASH = '3 3'
+
 /**
- * Render a lifeline (dashed vertical line from actor to bottom), as one
- * `<line>` per stretch between label boxes it would otherwise pass through.
+ * Render a lifeline (solid vertical line from actor to bottom), as one `<line>`.
  * Includes data-actor to link to its actor.
  */
-function renderLifeline(
-  lifeline: Lifeline,
-  labelBoxes: readonly LabelBox[],
-): string {
-  const line = lifelineSegments(lifeline, labelBoxes)
-    .map(
-      ([y0, y1]) =>
-        f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
-        f`x1="${lifeline.x}" y1="${y0}" x2="${lifeline.x}" y2="${y1}" ` +
-        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`,
-    )
-    .join('\n')
+function renderLifeline(lifeline: Lifeline): string {
+  const line =
+    f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
+    f`x1="${lifeline.x}" y1="${lifeline.topY}" x2="${lifeline.x}" y2="${lifeline.bottomY}" ` +
+    `stroke="var(--_line)" stroke-width="${LIFELINE_STROKE}" />`
   if (!lifeline.destroyed) return line
   // `destroy X`: the lifeline ends at the destroying message's row, marked
   // with a cross centred on it — the same glyph Mermaid uses. Drawn in the
@@ -536,7 +462,7 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
       renderMultilineText(
         msg.label,
         (msg.x1 + msg.x2) / 2,
-        msg.y - MESSAGE_LABEL_RISE,
+        messageLabelCy(msg, fontSizes),
         fontSizes.edgeLabel,
         f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
@@ -673,15 +599,20 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   // Outer rectangle
   parts.push(
     f`  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
-      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${BLOCK_LINE_STROKE}" stroke-dasharray="${BLOCK_FRAME_DASH}" />`,
   )
 
-  // Type label tab (top-left corner); the `[label]` is centred on the top edge
+  // Type label tab (top-left corner) with its bottom-right corner cut, as in
+  // Mermaid; the `[label]` is centred on the top edge
   const tabWidth = blockTabWidth(block, fontSizes.edgeLabel)
   const tabHeight = BLOCK_TAB_HEIGHT
+  const { x: bx, y: by } = block
+  const tabPoints = blockTabPoints(bx, by, tabWidth)
+    .map(([px, py]) => f`${px},${py}`)
+    .join(' ')
 
   parts.push(
-    f`  <rect x="${block.x}" y="${block.y}" width="${tabWidth}" height="${tabHeight}" ` +
+    f`  <polygon points="${tabPoints}" ` +
       f`fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
   parts.push(
@@ -700,7 +631,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
         renderMultilineText(
           f`[${block.label}]`,
           block.x + (tabWidth + block.width) / 2,
-          block.y + tabHeight / 2,
+          blockLabelCy(block, fontSizes),
           fontSizes.edgeLabel,
           f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
         ),
@@ -711,7 +642,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   for (const divider of block.dividers) {
     parts.push(
       f`  <line x1="${block.x}" y1="${divider.y}" x2="${block.x + block.width}" y2="${divider.y}" ` +
-        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`,
+        `stroke="var(--_line)" stroke-width="${BLOCK_LINE_STROKE}" stroke-dasharray="${BLOCK_DIVIDER_DASH}" />`,
     )
     if (divider.label) {
       // Divider label supports multi-line
@@ -720,7 +651,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
           renderMultilineText(
             f`[${divider.label}]`,
             block.x + block.width / 2,
-            divider.y + 14,
+            dividerLabelCy(divider, fontSizes),
             fontSizes.edgeLabel,
             f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
           ),
@@ -733,12 +664,10 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
 }
 
 /**
- * Render a note box.
+ * Render a note box: a plain rectangle, as in Mermaid.
  * Wrapped in <g class="note"> with semantic data attributes.
  */
 function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
-  // Dog-ear note: polygon with clipped top-right corner + fold triangle
-  const foldSize = 6
   const { x, y, width: w, height: h } = note
 
   // Build actor reference attribute if present
@@ -750,24 +679,11 @@ function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
     ? f` data-position="${escapeAttr(note.position)}"`
     : ''
 
-  // Note body: polygon with top-right corner cut off
-  //   (x,y) → (x+w-fold,y) → (x+w,y+fold) → (x+w,y+h) → (x,y+h)
-  const bodyPoints = [
-    f`${x},${y}`,
-    f`${x + w - foldSize},${y}`,
-    f`${x + w},${y + foldSize}`,
-    f`${x + w},${y + h}`,
-    f`${x},${y + h}`,
-  ].join(' ')
-
   return (
     f`<g class="note"${positionAttr}${actorsAttr}>` +
-    // Note body with bg fill and clipped corner
-    f`\n  <polygon points="${bodyPoints}" ` +
-    f`fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
-    // Fold triangle (the folded-over corner)
-    f`\n  <polygon points="${x + w - foldSize},${y} ${x + w},${y + foldSize} ${x + w - foldSize},${y + foldSize}" ` +
-    f`fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    // Plain rectangle, as in Mermaid (no dog-ear fold)
+    f`\n  <rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
+    f`fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />` +
     // Note text (supports multi-line)
     f`\n  ${renderMultilineText(
       note.text,

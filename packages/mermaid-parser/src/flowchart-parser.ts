@@ -196,7 +196,7 @@ export function parseMermaid(text: string): MermaidGraph {
 
   // State diagram: "stateDiagram-v2" or "stateDiagram"
   const graph = /^stateDiagram(-v2)?\s*$/i.test(headerStmt.text)
-    ? parseStateDiagram(lines)
+    ? { ...parseStateDiagram(lines), stateDiagram: true }
     : parseFlowchart(lines)
 
   // Mermaid reads a state diagram's `lineColor` under `theme: base` only (a
@@ -526,7 +526,13 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
     if (compositeMatch) {
       const label = compositeMatch[1] ?? compositeMatch[2]!
       const id = compositeMatch[2]!
-      const sg: MermaidSubgraph = { id, label, nodeIds: [], children: [] }
+      const sg: MermaidSubgraph = {
+        id,
+        label,
+        nodeIds: [],
+        children: [],
+        stateComposite: true,
+      }
       compositeStack.push(sg)
       // Track this ID to avoid creating a duplicate node for the composite state
       compositeStateIds.add(id)

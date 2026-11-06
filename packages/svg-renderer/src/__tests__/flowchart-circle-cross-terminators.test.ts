@@ -1,6 +1,6 @@
 /**
  * `A --o B` and `A --x B` end in a circle / cross, `o--` and `x--` start with
- * one (mermaid 12.2.0 `circleEnd-margin` / `crossEnd-margin`). The SVG used to
+ * one (mermaid 12.3.0 `circleEnd-margin` / `crossEnd-margin`). The SVG used to
  * draw a plain arrowhead for all of them; the ASCII renderer already drew the
  * distinct glyphs.
  */
@@ -38,7 +38,9 @@ describe('flowchart circle and cross terminators (SVG)', () => {
     expect(svg).toMatch(/<marker id="[\w-]*circle"[^>]*markerWidth="14"/)
     expect(svg).toMatch(/<circle cx="5" cy="5" r="5" fill="var\(--_arrow\)"/)
     expect(svg).toMatch(/<marker id="[\w-]*cross"[^>]*markerWidth="12"/)
-    expect(svg).toMatch(/<path d="M1 1L9 9M1 9L9 1" stroke="var\(--_arrow\)"/)
+    expect(svg).toMatch(
+      /<path d="M1 1L14 14M1 14L14 1" stroke="var\(--_arrow\)"/,
+    )
   })
 
   it('adds no terminator markup to a diagram without them', () => {
@@ -48,7 +50,7 @@ describe('flowchart circle and cross terminators (SVG)', () => {
 
   it('keeps the ASCII twin on distinct glyphs', () => {
     const ascii = renderMermaidASCII('flowchart LR\n  A --o B\n  A --x C')
-    expect(ascii).toContain('○')
+    expect(ascii).toContain('●')
     expect(ascii).toContain('✕')
   })
 })
