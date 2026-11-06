@@ -1,4 +1,5 @@
 ---
+'@zombie-mermaid/mermaid-parser': patch
 '@zombie-mermaid/svg-renderer': patch
 '@zombie-mermaid/ascii-renderer': patch
 ---
