@@ -403,7 +403,9 @@ describe('value-axis extent (#2567)', () => {
 
   it('compares labels without whitespace, as mermaid drops it', () => {
     const ours = parseOurXy(
-      renderMermaidSVG('xychart-beta\n x-axis [Week 1, Week 2]\n bar [1, 2]'),
+      renderMermaidSVG(
+        'xychart-beta\n x-axis ["Week 1", "Week 2"]\n bar [1, 2]',
+      ),
       false,
     )
     const official = {

@@ -41,6 +41,15 @@ export function checkLineLength(text: string, limits: RenderLimits | undefined):
 export type ClassRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'fontSizes' | 'interactivity' | 'layoutCache'>;
 
 // @public
+export function collapseFlatRange(range: {
+    min: number;
+    max: number;
+}, data: number[]): {
+    min: number;
+    max: number;
+};
+
+// @public
 export type CommonRenderOptions = Pick<RenderOptions, 'bg' | 'fg' | 'line' | 'accent' | 'muted' | 'surface' | 'border' | 'font' | 'embedFont' | 'transparent' | 'embedSource' | 'resolveColors' | 'nonce' | 'styleAttribute' | 'title' | 'decorative'>;
 
 // @public
@@ -545,6 +554,7 @@ export interface PositionedGroup {
     // (undocumented)
     label: string;
     region?: boolean;
+    titleOnly?: boolean;
     // (undocumented)
     width: number;
     // (undocumented)

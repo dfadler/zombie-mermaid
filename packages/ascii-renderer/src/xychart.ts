@@ -27,7 +27,11 @@ import type {
 } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { mkCanvas, mkRoleCanvas, write } from './canvas.ts'
-import { niceTickValues, splitStatements } from '@zombie-mermaid/core'
+import {
+  collapseFlatRange,
+  niceTickValues,
+  splitStatements,
+} from '@zombie-mermaid/core'
 
 // ============================================================================
 // Constants
@@ -140,11 +144,16 @@ function renderVertical(
   // actually undefined for parsed input. That guarantee lives in a
   // different module, so narrow it here explicitly instead of trusting it
   // silently across the boundary.
-  const yRange = chart.yAxis.range
-  if (!yRange) {
-    /* v8 ignore next */
+  const parsedRange = chart.yAxis.range
+  /* v8 ignore next 3 */
+  if (!parsedRange) {
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
+  // Flat data is one mid-axis tick, as in Mermaid and the SVG (#2727).
+  const yRange = collapseFlatRange(
+    parsedRange,
+    chart.series.flatMap((s) => s.data),
+  )
   const plotW = Math.max(PLOT_WIDTH, dataCount * 6)
   const plotH = PLOT_HEIGHT
   const allTicks = niceTickValues(yRange.min, yRange.max)
@@ -153,8 +162,14 @@ function renderVertical(
   // plotH rows), so adjacent ticks can round onto neighbouring rows. Keep
   // every Nth tick, with the smallest N that leaves an unlabeled row between
   // labels, so they land on evenly spaced rows (#2310).
-  const tickRow = (v: number): number =>
-    Math.round(((v - yRange.min) / (yRange.max - yRange.min)) * (plotH - 1))
+  const valueToRow = (v: number): number => {
+    const t =
+      yRange.max > yRange.min
+        ? (v - yRange.min) / (yRange.max - yRange.min)
+        : 0.5
+    return Math.round(t * (plotH - 1))
+  }
+  const tickRow = valueToRow
   let tickStride = 1
   while (
     allTicks.some(
@@ -199,10 +214,6 @@ function renderVertical(
   const seriesColors = getSeriesColors(chart.series.length, theme)
 
   // Scales
-  const valueToRow = (v: number): number => {
-    const t = (v - yRange.min) / (yRange.max - yRange.min || 1)
-    return Math.round(t * (plotH - 1))
-  }
   const bandCenter = (i: number): number =>
     plotLeft + Math.floor(bandW * (i + 0.5))
 
@@ -348,7 +359,8 @@ function renderVertical(
     // a later series drawn on top of an earlier, taller-or-shorter one.
     const usable = Math.max(1, bandW - 2)
     const singleBarW = Math.max(1, Math.min(usable, 8))
-    const baseRow = valueToRow(Math.max(0, yRange.min))
+    const baseRow =
+      yRange.max > yRange.min ? valueToRow(Math.max(0, yRange.min)) : 0
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
       const entry = barEntries[bIdx]!
@@ -424,11 +436,16 @@ function renderHorizontal(
   // See the matching comment in renderVertical: the parser always derives a
   // y-axis range before returning, but that guarantee lives in a different
   // module, so it's narrowed here explicitly rather than trusted silently.
-  const yRange = chart.yAxis.range
-  if (!yRange) {
-    /* v8 ignore next */
+  const parsedRange = chart.yAxis.range
+  /* v8 ignore next 3 */
+  if (!parsedRange) {
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
+  // Flat data is one mid-axis tick, as in Mermaid and the SVG (#2727).
+  const yRange = collapseFlatRange(
+    parsedRange,
+    chart.series.flatMap((s) => s.data),
+  )
   const valueTicks = niceTickValues(yRange.min, yRange.max)
   const valueLabels = formatTickLabels(valueTicks)
   const catLabels = getCategoryLabels(chart, dataCount)
@@ -456,7 +473,10 @@ function renderHorizontal(
 
   // Value scale (horizontal)
   const valueToCol = (v: number): number => {
-    const t = (v - yRange.min) / (yRange.max - yRange.min || 1)
+    const t =
+      yRange.max > yRange.min
+        ? (v - yRange.min) / (yRange.max - yRange.min)
+        : 0.5
     return plotLeft + Math.round(t * (plotW - 1))
   }
   const bandMid = (i: number): number => plotTop + Math.floor(bandH * (i + 0.5))
@@ -567,7 +587,8 @@ function renderHorizontal(
     // being split into grouped sub-rows, so a later series' bar paints over
     // an earlier one.
     const singleBarH = 1
-    const baseCol = valueToCol(Math.max(0, yRange.min))
+    const baseCol =
+      yRange.max > yRange.min ? valueToCol(Math.max(0, yRange.min)) : plotLeft
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
       const entry = barEntries[bIdx]!

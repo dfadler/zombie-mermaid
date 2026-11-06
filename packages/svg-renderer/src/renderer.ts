@@ -461,10 +461,11 @@ function renderGroup(
   // draws it: the outer rect carries the band colour with rounded corners, and
   // a square-cornered body rect sits inside it (below).
   const bandless = group.bandless === true
-  parts.push(
-    f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
-      f`rx="${bandless ? 0 : COMPOSITE_RADIUS}" ry="${bandless ? 0 : COMPOSITE_RADIUS}" fill="${bandless ? fill : hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
-  )
+  if (!group.titleOnly)
+    parts.push(
+      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
+        f`rx="${bandless ? 0 : COMPOSITE_RADIUS}" ry="${bandless ? 0 : COMPOSITE_RADIUS}" fill="${bandless ? fill : hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
+    )
 
   // Flowchart subgraph (#2636): mermaid@12.3.0 draws no header band, only a
   // centred title along the top edge.
