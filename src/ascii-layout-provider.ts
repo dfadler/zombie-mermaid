@@ -27,6 +27,8 @@ interface Box {
   cy: number
   w: number
   h: number
+  /** A diamond's ends sit on its slants (`faceOf`). */
+  diamond?: boolean
 }
 interface Path {
   from: string
@@ -37,7 +39,24 @@ interface Path {
 /** Centres closer than this on the flow axis share a layer (the topology check uses the same 20 px). */
 export const LAYER_TOLERANCE = 20
 
-const faceOf = (b: Box, p: { x: number; y: number }): AsciiFace => {
+/** Ends within this many px along a face are one position. */
+const PORT_TOLERANCE = 0.5
+
+const faceOf = (
+  b: Box,
+  p: { x: number; y: number },
+  horizontal: boolean,
+): AsciiFace => {
+  if (b.diamond) {
+    // A slant belongs to the flow-axis face once the point is about half way to
+    // that vertex; the grid draws a stroke on a slant, not on a side vertex.
+    const [df, hf, dc] = horizontal
+      ? [p.x - b.cx, b.w / 2, p.y - b.cy]
+      : [p.y - b.cy, b.h / 2, p.x - b.cx]
+    if (Math.abs(df) / hf >= 0.49)
+      return horizontal ? (df < 0 ? 'L' : 'R') : df < 0 ? 'T' : 'B'
+    return horizontal ? (dc < 0 ? 'T' : 'B') : dc < 0 ? 'L' : 'R'
+  }
   const d = {
     T: Math.abs(p.y - (b.cy - b.h / 2)),
     B: Math.abs(p.y - (b.cy + b.h / 2)),
@@ -98,7 +117,7 @@ export function buildHints(
       pt: { x: number; y: number },
       start: boolean,
     ): End => {
-      const face = faceOf(box, pt)
+      const face = faceOf(box, pt, horizontal)
       const end = {
         edge,
         start,
@@ -111,10 +130,12 @@ export function buildHints(
     }
     return { p, s: mk(a, s, true), e: mk(b, e, false) }
   })
-  const orderOf = (box: string, end: End): number =>
-    [...ends.get(`${box}|${end.face}`)!]
-      .sort((x, y) => x.at - y.at || x.edge - y.edge)
-      .indexOf(end)
+  // Ends at one position (an out/in pair ELK gives the same port) share a rank:
+  // the consumer breaks that tie, forward end first.
+  const orderOf = (box: string, end: End): number => {
+    const at = [...ends.get(`${box}|${end.face}`)!].map((x) => x.at)
+    return new Set(at.filter((a) => a < end.at - PORT_TOLERANCE)).size
+  }
   const edges: AsciiLayoutHints['edges'] = []
   raw.forEach((r, index) => {
     if (!r) return
@@ -150,6 +171,7 @@ export const asciiLayoutProvider: AsciiLayoutProvider = {
           cy: n.y + n.height / 2,
           w: n.width,
           h: n.height,
+          diamond: n.shape === 'diamond',
         })),
         pos.edges.map((e) => ({
           from: e.source,

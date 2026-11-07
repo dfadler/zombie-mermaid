@@ -946,12 +946,88 @@ interface FaceEnd {
   edge: AsciiEdge
   run: PortRun
   role: 'S' | 'E'
+  /** Place in ELK's order along the face (smaller first), one cell of its own (#2645). */
+  rank?: number
 }
 
 const endsOf = (e: AsciiEdge): [PortRun | undefined, 'S' | 'E'][] => [
   [startRun(e), 'S'],
   [endRun(e), 'E'],
 ]
+
+const SIDE_FACE = { top: 'T', bottom: 'B', left: 'L', right: 'R' } as const
+
+/**
+ * Both edges of a labelled reciprocal pair that bend (not straight strokes) run
+ * along one bend row, so their labels land on the same run and print over each
+ * other; until each edge has a jog row of its own (#2888) such a pair keeps the
+ * grid's placement.
+ */
+function labelledBentPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const other = graph.edges.find(
+    (o) => o !== edge && o.from === edge.to && o.to === edge.from,
+  )
+  return (
+    other !== undefined &&
+    edge.text !== '' &&
+    other.text !== '' &&
+    !runsOf(edge)?.straight &&
+    !runsOf(other)?.straight
+  )
+}
+
+/**
+ * The faces whose every end is a plain edge with an ELK hint for that very
+ * face, as ends ranked by ELK's order along it (#2645). Within a reciprocal
+ * pair ELK gives both ends one position: the forward end goes first. A face
+ * with any other end (a loop, a bundle, a cluster edge, an end the hint puts
+ * elsewhere) keeps the grid's own placement.
+ */
+function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
+  const hints = graph.edgeHints
+  const out = new Map<string, FaceEnd[]>()
+  if (!hints) return out
+  const all = new Map<string, FaceEnd[]>()
+  for (const edge of graph.edges) {
+    /* v8 ignore next */
+    if (edge.path.length < 2) continue
+    for (const [run, role] of endsOf(edge)) {
+      /* v8 ignore next */
+      if (!run) continue
+      const k = `${run.node.index}|${run.side}`
+      all.set(k, [...(all.get(k) ?? []), { edge, run, role }])
+    }
+  }
+  const dir = graph.parsed?.direction
+  const horizontal = graph.config.graphDirection === 'LR'
+  for (const [k, list] of all) {
+    const ranked = list.map((f) => {
+      const h = hints.get(f.edge)
+      const e = f.role === 'S' ? h?.start : h?.end
+      const plain =
+        f.edge.from !== f.edge.to &&
+        f.edge.bundle === undefined &&
+        !f.edge.clusterSource &&
+        !f.edge.clusterTarget &&
+        f.edge.style !== 'invisible'
+      if (!e || !plain || e.face !== SIDE_FACE[f.run.side]) return undefined
+      // RL and BT are flipped after drawing: the order along the face flips too.
+      const flip = f.run.axis === 'v' ? dir === 'RL' : dir === 'BT'
+      const [a, b] = [
+        requireGridCoord(f.edge.from),
+        requireGridCoord(f.edge.to),
+      ]
+      const back = horizontal ? a.x > b.x : a.y > b.y
+      const rank = e.order * 4 + (back ? 1 : 0)
+      /* v8 ignore next */
+      return { ...f, rank: flip ? -rank : rank }
+    })
+    if (list.length < 2 || ranked.some((r) => r === undefined)) continue
+    if (list.some((f) => labelledBentPair(graph, f.edge))) continue
+    out.set(k, ranked as FaceEnd[])
+  }
+  return out
+}
 
 /**
  * The one record of which cells of each node face are taken (#2025, #2028,
@@ -985,6 +1061,34 @@ function allocateFaces(
           new Set(e.path.map((p) => `${p.x},${p.y}`)).size === e.path.length)),
   )
   const faceOf = (run: PortRun): string => `${run.node.index}|${run.side}`
+  // #2645: faces ELK orders are placed first, in its order, one cell per end.
+  const ranked = hintedFaces(graph)
+  const taken = new Set<string>()
+  const fixed = new Map<AsciiEdge, number>()
+  // The fullest face first: it needs the closest spacing, and a straight edge
+  // then carries its cell over to the other face (a face of two would spread
+  // its pair a stroke spacing apart and leave no cell for a third end beside).
+  const byFill = [...ranked].sort((a, b) => b[1].length - a[1].length)
+  for (const [face, list] of byFill) {
+    const offs = placeFace(graph, list, [], fixed, false)
+    if (!offs) continue
+    list.forEach((f, i) => {
+      if (!runsOf(f.edge)?.straight) return
+      fixed.set(f.edge, offs[i]!)
+      // A straight edge is one stroke: its other end moves with this one, unless
+      // that face is ordered too, where `fixed` holds it to this cell.
+      const [run, role] = endsOf(f.edge).find(([r, w]) => r && w !== f.role)!
+      if (run && !ranked.has(faceOf(run)))
+        applyOffsets(
+          result,
+          [{ edge: f.edge, run, role }],
+          [offs[i]!],
+          shiftedRun,
+        )
+    })
+    applyOffsets(result, list, offs, shiftedRun)
+    taken.add(face)
+  }
   const held = new Map<string, Held[]>()
   for (const e of graph.edges) {
     if (e.path.length < 2 || lanes.includes(e)) continue
@@ -1008,7 +1112,7 @@ function allocateFaces(
   )
   for (const edge of byLoop) {
     for (const [run, role] of endsOf(edge)) {
-      if (!run) continue
+      if (!run || taken.has(faceOf(run))) continue
       faces.set(faceOf(run), [
         ...(faces.get(faceOf(run)) ?? []),
         { edge, run, role },
@@ -1017,7 +1121,6 @@ function allocateFaces(
   }
   const placed = new Map<FaceEnd, number>()
   // A straight lane is one run: the face placed first fixes it for both.
-  const fixed = new Map<AsciiEdge, number>()
   for (const [face, list] of faces) {
     const has = held.get(face) ?? []
     const offs =
@@ -1042,8 +1145,43 @@ function allocateFaces(
       )
     }
   }
-  for (const [f, by] of placed) {
-    if (by === 0) continue
+  applyOffsets(
+    result,
+    [...placed.keys()],
+    [...placed.values()],
+    shiftedRun,
+    true,
+  )
+  for (const loop of lanes) {
+    if (loop.from === loop.to) hugLoop(graph, loop, result)
+  }
+}
+
+/** Cells from a diamond's side border in to the slant glyph on the row `by` off the centre. */
+function slantDepth(run: PortRun, by: number): number {
+  const drawing = run.node.drawing!
+  const centreRow = Math.floor(drawing[0]!.length / 2)
+  const step = run.side === 'left' ? 1 : -1
+  let x = run.side === 'left' ? 0 : drawing.length - 1
+  let n = 0
+  while (drawing[x] && drawing[x]![centreRow + by] === ' ') {
+    x += step
+    n++
+  }
+  return n
+}
+
+/** Writes the placed offsets into the shifts; a zero keeps the routed one unless `skipZero` is false. */
+function applyOffsets(
+  result: Map<AsciiEdge, PortShift>,
+  list: readonly FaceEnd[],
+  offs: readonly number[],
+  shiftedRun: (run: PortRun) => ShiftedRun,
+  skipZero = false,
+): void {
+  list.forEach((f, i) => {
+    const by = offs[i]!
+    if (by === 0 && skipZero) return
     const shift = result.get(f.edge) ?? { start: 0, end: 0 }
     if (f.role === 'S') {
       shift.start = by
@@ -1052,11 +1190,18 @@ function allocateFaces(
       shift.end = by
       shift.endRun = shiftedRun(f.run)
     }
+    // A stroke on a diamond's side slant starts on the slant, two cells inside
+    // the border, not a gap away from it.
+    if (f.rank !== undefined && by !== 0 && f.run.node.shape === 'diamond') {
+      const d = slantDepth(f.run, by)
+      if (f.run.axis === 'h' && d > 0) {
+        shift.points ??= f.edge.path.map(() => ({ x: 0, y: 0 }))
+        const at = f.role === 'S' ? 0 : f.edge.path.length - 1
+        shift.points[at]!.x += f.run.side === 'right' ? -d : d
+      }
+    }
     result.set(f.edge, shift)
-  }
-  for (const loop of lanes) {
-    if (loop.from === loop.to) hugLoop(graph, loop, result)
-  }
+  })
 }
 
 /** A self-loop `determinePath` drew as a hook over the top face (#2645). */
@@ -1106,6 +1251,8 @@ function placeFace(
   const run = list[0]!.run
   const geo = portGeometry(graph, run)
   if (!geo) return undefined
+  // ELK's own ends may sit on a diamond's slants (`spreadDiamondFaces`).
+  const ranked = list.every((f) => f.rank !== undefined)
   const centre = geo.centre
   const info = list.map((f) => {
     const shape = shapeOf(f)
@@ -1114,7 +1261,11 @@ function placeFace(
       // Ends that turn the same way at the same depth run on together
       // beyond the stem: they are one route (a fan, or duplicate loops).
       // A dense facing pair (#2645) gives every edge a row of its own.
-      key: `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}|${denseFacingPair(graph, f.edge) ? graph.edges.indexOf(f.edge) : ''}`,
+      key:
+        f.rank === undefined
+          ? `${shape.role}|${shape.heading}|${shape.depth}|${fixed.get(f.edge)}|${denseFacingPair(graph, f.edge) ? graph.edges.indexOf(f.edge) : ''}`
+          : `${graph.edges.indexOf(f.edge)}|${f.role}`,
+      rank: f.rank,
       // A straight lane: the #1284 pair side (down-travelling right).
       push: pushOf(f.run, f.role),
       // A flow-axis face lane stays on its outer side of every stem.
@@ -1126,7 +1277,12 @@ function placeFace(
   const routes = [...new Map(info.map((m) => [m.key, m])).values()]
   routes.sort(
     (a, b) =>
-      a.heading - b.heading ||
+      // ELK's order among ends that head the same way. Ends heading apart keep
+      // the grid's nesting (up before straight before down): the other order
+      // would cross them.
+      (a.rank !== undefined && b.rank !== undefined && a.heading === b.heading
+        ? a.rank - b.rank
+        : a.heading - b.heading) ||
       (a.heading < 0
         ? a.depth - b.depth
         : a.heading > 0
@@ -1135,7 +1291,11 @@ function placeFace(
   )
   const cells: number[] = []
   for (let p = geo.lo; p <= geo.hi; p++) {
-    if (attachesAt(run, p, geo)) cells.push(p)
+    // A diamond's side face has its vertex and the two slants beside it.
+    if (ranked && run.node.shape === 'diamond' && run.axis === 'h') {
+      if (Math.abs(p - centre) > 1) continue
+    }
+    if (attachesAt(run, p, geo, ranked)) cells.push(p)
   }
   for (const gap of share ? [0] : [STROKE_SPACING, 1]) {
     // A cell `r` may take: off other edges' cells (one of its role, if

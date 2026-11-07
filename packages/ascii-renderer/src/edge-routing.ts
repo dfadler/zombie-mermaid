@@ -28,6 +28,7 @@ import {
   dirEquals,
   requireCardinalDirection,
 } from './types.ts'
+import type { AsciiFace } from './layout-hints.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
 import { canBundle, crowdedTopFaceEnds } from './edge-bundling.ts'
 import {
@@ -42,6 +43,7 @@ import {
   buildClusterEntryRoute,
   clusterFaceCapacity,
   clusterFlowGroup,
+  clusterGridBox,
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
@@ -666,7 +668,12 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
 
   const laneGroups: AsciiEdge[][] = []
   for (const group of groups.values()) {
-    if (group.length < 2 || spreadsOnFaces(graph, group)) continue
+    if (
+      group.length < 2 ||
+      spreadsOnFaces(graph, group) ||
+      denseFacingPair(graph, group[0]!, true)
+    )
+      continue
     const usedOffsets = new Set<number>()
     for (let i = 0; i < group.length; i++) {
       group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
@@ -1384,8 +1391,16 @@ export function reserveUnderRow(graph: AsciiGraph, edge: AsciiEdge): void {
  * every one as a stroke of its own between the facing side faces, so the
  * bottom faces stay free; the strokes take a row each (`allocateFaces`).
  * Ceiling: LR without frames, neighbours with nothing between them.
+ *
+ * With ELK's hints (PR 4c) any group of two or more whose every edge ELK draws
+ * between the facing side faces qualifies, labelled (one line) or not;
+ * `hintedOnly` asks for that case alone.
  */
-export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
+export function denseFacingPair(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  hintedOnly = false,
+): boolean {
   if (graph.config.graphDirection !== 'LR' || edge.from === edge.to) {
     return false
   }
@@ -1393,9 +1408,9 @@ export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
   const t = edge.to.gridCoord
   if (!f || !t || f.y !== t.y || graph.subgraphs.length > 0) return false
   // Diamond and circle faces have one port cell, not a run of them.
-  if (edge.from.shape !== 'rectangle' || edge.to.shape !== 'rectangle') {
-    return false
-  }
+  const flat = (n: AsciiNode): boolean =>
+    n.shape === 'rectangle' || n.shape === 'rounded' || n.shape === 'stadium'
+  if (!flat(edge.from) || !flat(edge.to)) return false
   const lo = Math.min(f.x, t.x)
   const hi = Math.max(f.x, t.x)
   if (
@@ -1411,17 +1426,33 @@ export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
       ((o.from === edge.from && o.to === edge.to) ||
         (o.from === edge.to && o.to === edge.from)),
   )
-  return (
-    group.length >= 6 &&
-    group.some((o) => o.from === edge.from) &&
-    group.some((o) => o.to === edge.from) &&
-    group.every(
-      (o) =>
-        o.text.length === 0 &&
-        !o.bundle &&
-        !o.clusterSource &&
-        !o.clusterTarget,
+  const plain = (o: AsciiEdge): boolean =>
+    !o.bundle && !o.clusterSource && !o.clusterTarget
+  // #2645, PR 4c: ELK draws every edge of a side-by-side pair as a stroke of its
+  // own between the facing side faces, so with its hints that is what the
+  // group does, labelled or not.
+  const hinted = group.every((o) => {
+    const h = graph.edgeHints?.get(o)
+    const [s, e] =
+      requireGridCoord(o.from).x < requireGridCoord(o.to).x
+        ? ['R', 'L']
+        : ['L', 'R']
+    return (
+      h?.start.face === s &&
+      h.end.face === e &&
+      plain(o) &&
+      splitLines(o.text).length <= 1
     )
+  })
+  return (
+    (group.length >= 2 && hinted) ||
+    (!hintedOnly &&
+      group.length >= 6 &&
+      edge.from.shape === 'rectangle' &&
+      edge.to.shape === 'rectangle' &&
+      group.some((o) => o.from === edge.from) &&
+      group.some((o) => o.to === edge.from) &&
+      group.every((o) => o.text.length === 0 && plain(o)))
   )
 }
 
@@ -1920,6 +1951,31 @@ export function flowLaneLabel(
   }))
 }
 
+const FACE_DIR: Record<AsciiFace, Direction> = {
+  T: Up,
+  B: Down,
+  L: Left,
+  R: Right,
+}
+
+/** The faces ELK's route leaves and enters by, as grid directions, or undefined without a hint. */
+function hintedFaces(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): [Direction, Direction] | undefined {
+  const h = graph.edgeHints?.get(edge)
+  // A parallel group keeps its lanes together (`assignParallelEdgeLanes`).
+  if (
+    !h ||
+    edge.from === edge.to ||
+    edge.parallelLane ||
+    edge.clusterSource ||
+    edge.clusterTarget
+  )
+    return undefined
+  return [FACE_DIR[h.start.face], FACE_DIR[h.end.face]]
+}
+
 /**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
@@ -2328,6 +2384,72 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     }
   }
 
+  // #2645: with ELK hints, each end takes the face ELK's route uses, which
+  // supersedes the heuristic faces above (the reciprocal and subgraph gates of
+  // `flowFanOut` included).
+  // Only where that route exists, or the plain L between the ports clears every
+  // node; a column that ELK threads past a node the grid cannot pass keeps the
+  // grid's own faces.
+  const hinted = hintedFaces(graph, edge)
+  let hintedPath: GridCoord[] | null = null
+  if (hinted) {
+    const from = gridCoordDirection(requireGridCoord(edge.from), hinted[0])
+    const to = gridCoordDirection(requireGridCoord(edge.to), hinted[1])
+    const found = routeEdge(
+      graph,
+      from,
+      to,
+      requireCardinalDirection(hinted[0]),
+    )
+    const plain = expandDiagonalSegments([from, to])
+    // A re-route (`edge.path` is set: a style conflict blocked a cell) keeps the
+    // faces too: its caller restores the old path when the detour runs through a node.
+    // The plain L can run along the wall of a frame the edge has no end in,
+    // which only the search keeps clear of.
+    const unrelated = graph.subgraphs
+      .filter(
+        (sg) => !sg.nodes.includes(edge.from) && !sg.nodes.includes(edge.to),
+      )
+      .map((sg) => clusterGridBox(sg))
+    const besideFrame = pathCells(plain).some((c) =>
+      unrelated.some(
+        (b) =>
+          b &&
+          c.x >= b.minX - 1 &&
+          c.x <= b.maxX + 1 &&
+          c.y >= b.minY - 1 &&
+          c.y <= b.maxY + 1,
+      ),
+    )
+    hintedPath =
+      found ??
+      (!besideFrame &&
+      (edge.path.length > 0 ||
+        pathCells(plain)
+          .slice(1, -1)
+          .every((c) => !graph.nodes.some((n) => isCellInNodeBlock(n, c))))
+        ? plain
+        : null)
+  }
+  // A labelled reciprocal pair on one route would print its labels over each
+  // other (no jog row of its own yet, #2888): the second keeps the grid's faces.
+  const sameRoute = (o: AsciiEdge): boolean =>
+    o !== edge &&
+    o.from === edge.to &&
+    o.to === edge.from &&
+    o.text !== '' &&
+    edge.text !== '' &&
+    o.path.length === hintedPath!.length &&
+    o.path.every((c, i) => {
+      const r = hintedPath![hintedPath!.length - 1 - i]!
+      return c.x === r.x && c.y === r.y
+    })
+  if (hintedPath && graph.edges.some(sameRoute)) hintedPath = null
+  if (hinted && hintedPath) {
+    ;[preferredDir, alternativeDir] = [hinted[0], hinted[0]]
+    ;[preferredOppositeDir, alternativeOppositeDir] = [hinted[1], hinted[1]]
+  }
+
   // Try preferred path — routeEdge tries an unobstructed direct L-shape
   // before falling back to A* (see routeEdge / tryDirectPath in
   // pathfinder.ts). determineStartAndEndDir only ever produces one of the
@@ -2340,12 +2462,9 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     requireGridCoord(edge.to),
     preferredOppositeDir,
   )
-  const preferredPath = routeEdge(
-    graph,
-    prefFrom,
-    prefTo,
-    requireCardinalDirection(preferredDir),
-  )
+  const preferredPath =
+    hintedPath ??
+    routeEdge(graph, prefFrom, prefTo, requireCardinalDirection(preferredDir))
 
   // Try alternative path
   const altFrom = gridCoordDirection(
@@ -2356,12 +2475,9 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     requireGridCoord(edge.to),
     alternativeOppositeDir,
   )
-  const alternativePath = routeEdge(
-    graph,
-    altFrom,
-    altTo,
-    requireCardinalDirection(alternativeDir),
-  )
+  const alternativePath =
+    hintedPath ??
+    routeEdge(graph, altFrom, altTo, requireCardinalDirection(alternativeDir))
 
   // Case 1: Both paths found — pick the shorter one (routeEdge already merged each)
   if (preferredPath !== null && alternativePath !== null) {

@@ -1,6 +1,6 @@
 # ASCII graph layout takes layer, order and port hints from ELK when available
 
-Status: accepted (PR 1 landed the seam and the measurement; PR 3 reads the hints in flowchart and state placement; ER, ports and cleanup follow)
+Status: accepted (PR 1 landed the seam and the measurement; PR 3 reads the hints in flowchart and state placement; PR 4b reads the edge-end faces and their order; same-pair lane groups, self-loops and cleanup follow)
 
 ## Context
 
@@ -65,10 +65,11 @@ grid when neither exists.
   breaking, and an edge whose endpoints or path ELK did not return has no edge
   hint (the grid chooses). Ties in the cross-axis rank are broken by input
   order.
-- Output with the provider registered is byte-identical to output without it
-  in this PR, since nothing reads the hints. Later PRs change that in steps:
-  ER, then flowchart and state placement, then ports, then cleanup of the
-  heuristics ELK supersedes (plan in the #2645 comment).
+- Output with the provider registered is no longer byte-identical to output
+  without it: PR 3 reads the hints for flowchart and state placement and PR 4b
+  for edge-end faces and their order (ER, ports, then cleanup of the heuristics
+  ELK supersedes follow; plan in the #2645 comment). Without a provider the
+  grid's own output is unchanged.
 - ascii-renderer's bundle budget (`scripts/bundle-size-budget.json`) is the
   constraint on how much hint consumption the grid can carry.
 
@@ -79,3 +80,42 @@ grid when neither exists.
   flowcharts only (no subgraphs, state or ER) and scales the boxes.
 - **Re-implementing ELK's layering in the grid.** The tie-breaks are not
   derivable.
+
+## Edge-end faces (PR 4b)
+
+The grid reads a hinted edge's faces in `determinePath` (after the cluster and
+loop early returns, before the heuristic faces), but only where the route
+exists: when neither the A* search nor the plain L between the two ports clears
+the nodes (a column ELK threads past a node), the grid's own faces stay. The
+order along a face is read in `allocateFaces`/`placeFace` for a face whose every
+end is a plain hinted edge on that face; ends the layout puts at one position
+take the forward end first, and ends that head opposite ways keep the grid's
+nesting (a different order would cross them). RL and BT are mirrored into the
+grid's TD/LR orientation. Not covered, by design of this step: same-pair edge
+groups (duplicates, and reciprocal pairs laid out side by side, which use
+`buildParallelLanePath`), self-loops, cluster-source and cluster-target edges,
+and subgraphs that set their own direction; they keep the grid's faces.
+
+### Same-pair groups (PR 4c)
+
+Hints reach the provider's edge list in layout order, which puts self-loops
+last, so the grid matches an edge to the next unused hint for its own pair of
+nodes rather than by position (by position, every edge declared after a
+self-loop took a neighbour's hint). A side-by-side pair of nodes (LR/RL in the
+grid, nothing between them, flat box shapes) whose every edge ELK draws between
+the facing side faces takes the dense-pair routing of #2645: one straight stroke
+per edge, a row each in ELK's order, one-line labels allowed. Those groups take
+no parallel lane (`assignParallelEdgeLanes` skips them), so each stroke keeps its
+own label placement; a return stroke runs right to left and leaves the cell next
+to its head to the head. A face that holds several ELK-ordered ends is placed
+fullest first, so the straight edges it fixes carry their cell to the emptier
+face, which would otherwise spread its pair a stroke spacing apart and leave no
+cell for a third end. A hinted plain L (used when the search finds no route, or
+on a re-route) is refused when it runs within a cell of a frame the edge has no
+end in, because only the search keeps clear of the wall.
+
+Not done: self-loops (ELK puts them on the top face in LR and on a side face in
+TD; the grid's loop shapes and margin row are tied to its own faces), same-pair
+groups that are not neighbours on one row (duplicates whose route has to go
+round a node, vertical TD groups, labels over one line), a jog row per edge and
+cluster-source and cluster-target edges. They keep the grid's own routing.
