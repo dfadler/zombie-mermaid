@@ -20,6 +20,7 @@
 // `dist/` byte-for-byte.
 // ============================================================================
 
+export * from './c4-metrics.ts'
 export * from './click-directive.ts'
 export * from './back-edges.ts'
 export * from './cluster-edges.ts'
