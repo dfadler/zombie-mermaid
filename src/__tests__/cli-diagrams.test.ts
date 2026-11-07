@@ -59,6 +59,11 @@ const diagrams: Record<string, string> = {
   x-axis Low --> High
   y-axis Cold --> Hot
   Campaign A: [0.3, 0.6]`,
+
+  mindmap: `mindmap
+  root((Plan))
+    Build
+    Ship`,
 }
 
 // ============================================================================

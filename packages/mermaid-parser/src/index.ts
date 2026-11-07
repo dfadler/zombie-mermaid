@@ -60,5 +60,9 @@ export * from './pie/types.ts'
 export * from './quadrant/parser.ts'
 export * from './quadrant/types.ts'
 
+export * from './mindmap/parser.ts'
+export * from './mindmap/types.ts'
+export * from './mindmap/text.ts'
+
 export * from './expanded-shapes.ts'
 export * from './flowchart-parser.ts'

@@ -43,5 +43,6 @@ describe('docs/guides/samples.md sample counts', () => {
     expect(byCategory.get('Architecture')).toBe(3)
     expect(byCategory.get('Pie')).toBe(26)
     expect(byCategory.get('Quadrant')).toBe(7)
+    expect(byCategory.get('Mindmap')).toBe(8)
   })
 })

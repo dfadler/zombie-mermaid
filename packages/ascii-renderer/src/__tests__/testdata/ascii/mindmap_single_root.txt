@@ -1,0 +1,4 @@
+mindmap
+  just the root
+---
+just the root

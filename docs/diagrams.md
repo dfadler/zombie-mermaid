@@ -1064,6 +1064,71 @@ High Engagement │                 6      │                        │
   always below the grid, unlike the SVG's x axis on top of a point-free chart.
 - `accTitle` and `accDescr` are not printed.
 
+## Mindmaps
+
+`mindmap` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/mindmap.html)
+and is checked against mermaid 12.3.0 (12.1.0, 12.2.0 and 12.3.0 render it identically).
+Indentation sets the level, only relative to the line above; the first node is the root.
+
+```
+mindmap
+  root((mindmap))
+    Origins
+      Long history
+      Popularisation
+        British popular psychology author Tony Buzan
+    Research
+      On effectiveness<br/>and features
+    Tools
+      Pen and paper
+      Mermaid
+```
+
+| Syntax                   | Shape                                   |
+| ------------------------ | --------------------------------------- |
+| `text`                   | default (rounded top, underlined)       |
+| `id[text]`               | rectangle                               |
+| `id(text)`               | rounded rectangle                       |
+| `id((text))`             | circle                                  |
+| `id)text(`               | cloud                                   |
+| `id))text((`             | bang                                    |
+| `id{{text}}`             | hexagon                                 |
+
+- Text inside a delimiter runs to the next `)`, `]`, `(` or `}`; quote it (`"..."`
+  or `` "`...`" ``) to include those. A newline or `<br/>` is a line break, and labels
+  are Markdown (`**bold**`, `*italic*`); a label wider than 200px wraps.
+- The id in front of a delimiter is never drawn. `B:::urgent` is a node labelled
+  `B:::urgent`; `:::urgent large` goes on its own line under the node, as does
+  `::icon(fa fa-book)` (Mermaid draws no icon without an icon font, and neither do we).
+- A node needs a parent: a line at or above the root's indentation fails with
+  "There can be only one root", as in Mermaid. `%%` comments are skipped.
+- Each first-level branch takes a colour section (eleven, then they repeat) that its
+  descendants inherit; connector thickness follows the indentation, as in Mermaid (`17 - 3 * (n + 1)` px, 3px once
+  that reaches zero), so deeper indentation draws thinner connectors.
+- Layout is Mermaid's CoSE-Bilkent force layout, ported without dependencies; see
+  [Known differences](known-differences.md#mindmaps) for what differs (colours, font
+  metrics, init config).
+
+### ASCII Mindmaps
+
+Mermaid has no text mode for mindmaps, so the ASCII output is this library's own:
+an indented tree, each label wrapped in its shape's delimiters, `+--` and `` `-- ``
+instead of box-drawing characters in ASCII mode.
+
+```
+((mindmap))
+├── Origins
+│   ├── Long history
+│   └── Popularisation
+│       └── British popular psychology author Tony Buzan
+├── Research
+│   └── On effectiveness
+│       and features
+└── Tools
+    ├── Pen and paper
+    └── Mermaid
+```
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1071,7 +1136,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Type                                                                  | Header                                                                                                          |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
-| Mindmap                                                               | `mindmap`                                                                                                       |
 | Packet                                                                | `packet` / `packet-beta`                                                                                        |
 | Gantt                                                                 | `gantt`                                                                                                         |
 | Timeline                                                              | `timeline`                                                                                                      |

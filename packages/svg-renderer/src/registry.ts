@@ -58,6 +58,7 @@ import {
   architectureToGraph,
   parseC4Diagram,
   parsePieChart,
+  parseMindmap,
   parseQuadrantChart,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -76,6 +77,8 @@ import type {
   PositionedPieChart,
   QuadrantChart,
   PositionedQuadrantChart,
+  Mindmap,
+  PositionedMindmap,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -91,6 +94,8 @@ import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
 import { layoutQuadrantChart } from './quadrant/layout.ts'
 import { renderQuadrantSvg } from './quadrant/renderer.ts'
+import { layoutMindmap } from './mindmap/layout.ts'
+import { renderMindmapSvg } from './mindmap/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -455,6 +460,29 @@ const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
 }
 
 /**
+ * Mindmaps parse from the raw `text` (the grammar is indentation based and a
+ * label may contain `;`), then lay out with Mermaid's CoSE-Bilkent force
+ * layout. No direction or interactivity applies.
+ */
+const mindmapModule: DiagramModule<Mindmap, PositionedMindmap> = {
+  type: 'mindmap',
+  parse: (_lines, text) => parseMindmap(text),
+  layoutForSvg: (chart) => layoutMindmap(chart),
+  renderSvg(positioned, ctx) {
+    return renderMindmapSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -484,4 +512,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   c4: c4Module,
   pie: pieModule,
   quadrant: quadrantModule,
+  mindmap: mindmapModule,
 }
