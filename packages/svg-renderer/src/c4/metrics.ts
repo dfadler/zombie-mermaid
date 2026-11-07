@@ -1,4 +1,7 @@
-import type { PositionedC4Relationship, C4Element } from '@zombie-mermaid/mermaid-parser'
+import type {
+  PositionedC4Relationship,
+  C4Element,
+} from '@zombie-mermaid/mermaid-parser'
 import { c4RelLabelLines } from '@zombie-mermaid/mermaid-parser'
 import { C4, c4TextWidth } from '@zombie-mermaid/core'
 

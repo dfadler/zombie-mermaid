@@ -219,4 +219,3 @@ export function c4ShapeSize(
   }
   return { width, height: boxHeight, textHeight }
 }
-
