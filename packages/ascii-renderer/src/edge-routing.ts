@@ -2520,23 +2520,9 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     const to = gridCoordDirection(requireGridCoord(edge.to), hinted[1])
     // A lane group enters by the gutter cell in front of its end face, so the
     // last leg runs into the face, not along it (as the lane siblings do).
+    // A cardinal direction is (1, 1) plus its step.
     const gate = edge.parallelLane
-      ? {
-          x:
-            to.x +
-            (dirEquals(hinted[1], Right)
-              ? 1
-              : dirEquals(hinted[1], Left)
-                ? -1
-                : 0),
-          y:
-            to.y +
-            (dirEquals(hinted[1], Down)
-              ? 1
-              : dirEquals(hinted[1], Up)
-                ? -1
-                : 0),
-        }
+      ? { x: to.x + hinted[1].x - 1, y: to.y + hinted[1].y - 1 }
       : undefined
     const via = gate
       ? routeEdge(graph, from, gate, requireCardinalDirection(hinted[0]))

@@ -49,3 +49,19 @@ describe('far same-pair group on ELK faces (#2902)', () => {
     expect(text).toContain('e1')
   })
 })
+
+describe('far group in other flows (#2902)', () => {
+  const src = (dir: string): string =>
+    `graph ${dir}\nA --> B\nB --> C\nC --> D\nD -->|p| A\nD -->|q| A`
+  it.each(['TD', 'BT', 'LR', 'RL'])('draws both labels in %s', (dir) => {
+    const text = draw(src(dir))
+    expect(text).toContain('p')
+    expect(text).toContain('q')
+  })
+  it('draws a far group with a branch sharing the face', () => {
+    const text = draw(
+      'graph LR\nA --> B\nA --> C\nB --> D\nC --> D\nD -->|p| A\nD -->|q| A\nD --> A',
+    )
+    expect(text).toContain('p')
+  })
+})
