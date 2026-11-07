@@ -43,6 +43,7 @@ import {
   buildClusterEntryRoute,
   clusterFaceCapacity,
   clusterFlowGroup,
+  clusterGridBox,
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
@@ -2403,12 +2404,30 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     const plain = expandDiagonalSegments([from, to])
     // A re-route (`edge.path` is set: a style conflict blocked a cell) keeps the
     // faces too: its caller restores the old path when the detour runs through a node.
+    // The plain L can run along the wall of a frame the edge has no end in,
+    // which only the search keeps clear of.
+    const unrelated = graph.subgraphs
+      .filter(
+        (sg) => !sg.nodes.includes(edge.from) && !sg.nodes.includes(edge.to),
+      )
+      .map((sg) => clusterGridBox(sg))
+    const besideFrame = pathCells(plain).some((c) =>
+      unrelated.some(
+        (b) =>
+          b &&
+          c.x >= b.minX - 1 &&
+          c.x <= b.maxX + 1 &&
+          c.y >= b.minY - 1 &&
+          c.y <= b.maxY + 1,
+      ),
+    )
     hintedPath =
       found ??
+      (!besideFrame &&
       (edge.path.length > 0 ||
-      pathCells(plain)
-        .slice(1, -1)
-        .every((c) => !graph.nodes.some((n) => isCellInNodeBlock(n, c)))
+        pathCells(plain)
+          .slice(1, -1)
+          .every((c) => !graph.nodes.some((n) => isCellInNodeBlock(n, c))))
         ? plain
         : null)
   }
