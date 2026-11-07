@@ -220,6 +220,46 @@ pins the campaigns numbers). Colours (below) are not compared; empty quadrant la
   SVG puts it on top of a chart with no points), and point labels are in a legend, not
   next to the markers.
 
+## Mindmaps
+
+Checked on mermaid 12.3.0 (npm `latest`, 2026-11-06), 12.2.0 (the pin, mermaid.live) and
+12.1.0 (what GitHub renders, #2184): the three place the sample mindmaps identically
+(node positions equal to the last digit). `pnpm run mindmap:oracle` renders every `Mindmap:`
+sample through real mermaid and compares structure (text, shape, section, classes, parents,
+edge classes) exactly, our shape sizes from mermaid's measured label boxes, and our
+layout and edge paths from mermaid's measured node sizes (0.01px); the weekly layout-oracle
+workflow fails on a drift. The layout is a dependency-free port of the CoSE-Bilkent force
+layout mermaid runs through cytoscape, bit-identical to it for a tree.
+
+Mermaid's layout itself is not reproducible across JavaScript engines for some inputs: V8's
+`Math.pow` changed its last digit between the V8 versions of the two Node releases CI runs, which is enough to rearrange
+`Mindmap: Many Branches` (12 leaves on one root). The port tabulates the one `pow` it needs
+with the newer V8's values (current Chromium's), so it renders the same on every Node version and
+agrees with a current Chromium; a browser with an older V8 can draw such a mindmap
+differently in mermaid itself.
+
+- **Label widths, and so positions.** Mermaid measures labels in "trebuchet ms"; this
+  library uses its own font's metrics. Node sizes differ by the text-width difference and,
+  the layout being a physics simulation, node positions move with them: a gallery sample with
+  similar-sized leaves (`Mindmap: Shapes`) comes out with the same shapes and sections but the
+  leaves arranged around the root in a different order, as it would with another font in
+  mermaid itself. The oracle feeds the layout mermaid's
+  own sizes, so it measures the algorithm, not the font.
+- **Colours.** Sections use the theme accent and its shades mixed into the background (root
+  in the foreground colour), not mermaid's default-theme hsl palette with black or white
+  labels. The underline of the default shape follows its section colour.
+- **Icons.** `::icon()` is parsed and kept on the node; mermaid 12.3.0 draws nothing for
+  it without an icon font (a node with an icon only gets a `labelBkg` class), and neither
+  do we. `:::class` names are added to the node's `class` attribute, but there is no
+  stylesheet to define them.
+- **Not read.** The `mindmap` block of `%%{init}%%` (`padding`, `maxNodeWidth`, `colorBy`),
+  `layout`, `look` and the theme variables. Labels keep bold, italic and line breaks;
+  other HTML tags are dropped.
+- **Empty and header-only.** `mindmap` followed only by blank lines renders nothing in
+  mermaid; here it is a parse error naming the missing node.
+- **ASCII.** Mermaid has no ASCII output. The tree is indented rather than radial, and a
+  node's shape shows as its delimiters.
+
 ## Gantt charts
 
 Checked on mermaid 12.3.0 (npm `latest`; mermaid.live's 12.2.0 renders the same

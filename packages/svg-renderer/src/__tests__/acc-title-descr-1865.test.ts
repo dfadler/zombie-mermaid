@@ -17,6 +17,7 @@ const BODIES: Record<string, string> = {
     'architecture-beta\n  service a(server)[A]\n  service b(server)[B]\n  a:R -- L:b',
   c4: 'C4Context\n  Person(u, "User")\n  System(s, "System")\n  Rel(u, s, "uses")',
   pie: 'pie\n  "Yes" : 70\n  "No" : 30',
+  mindmap: 'mindmap\n  root\n    child',
 }
 
 /** Insert the acc statements right after the header line. */

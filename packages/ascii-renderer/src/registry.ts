@@ -42,6 +42,7 @@ import { renderArchitectureAscii } from './architecture.ts'
 import { renderC4Ascii } from './c4-diagram.ts'
 import { renderPieAscii } from './pie.ts'
 import { renderQuadrantAscii } from './quadrant.ts'
+import { renderMindmapAscii } from './mindmap.ts'
 import { renderGanttAscii } from './gantt.ts'
 import { renderTimelineAscii } from './timeline.ts'
 
@@ -106,6 +107,8 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderPieAscii(text, config, colorMode, theme, extras.honorThemeVariables),
   quadrant: (text, config, colorMode, theme) =>
     renderQuadrantAscii(text, config, colorMode, theme),
+  mindmap: (text, config, colorMode, theme) =>
+    renderMindmapAscii(text, config, colorMode, theme),
   gantt: (text, config, colorMode, theme) =>
     renderGanttAscii(text, config, colorMode, theme),
   timeline: (text, config, colorMode, theme) =>

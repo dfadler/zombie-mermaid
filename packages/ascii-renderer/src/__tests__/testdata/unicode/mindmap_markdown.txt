@@ -1,0 +1,10 @@
+mindmap
+  root
+    **bold** text
+    *it* and <b>b</b> <i>i</i>
+    unpaired * star
+---
+root
+├── bold text
+├── it and b i
+└── unpaired * star

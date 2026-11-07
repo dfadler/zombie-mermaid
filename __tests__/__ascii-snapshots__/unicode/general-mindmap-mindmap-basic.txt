@@ -1,0 +1,11 @@
+((mindmap))
+├── Origins
+│   ├── Long history
+│   └── Popularisation
+│       └── British popular psychology author Tony Buzan
+├── Research
+│   └── On effectiveness
+│       and features
+└── Tools
+    ├── Pen and paper
+    └── Mermaid

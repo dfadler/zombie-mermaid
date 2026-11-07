@@ -185,6 +185,7 @@
     "label:oracle": "tsx scripts/label-position-oracle.ts",
     "sequence:oracle": "tsx scripts/sequence-oracle.ts",
     "quadrant:oracle": "tsx scripts/quadrant-oracle.ts",
+    "mindmap:oracle": "tsx scripts/mindmap-oracle.ts",
     "gantt:oracle": "tsx scripts/gantt-oracle.ts",
     "timeline:oracle": "tsx scripts/timeline-oracle.ts",
     "pie:oracle": "tsx scripts/pie-oracle.ts",

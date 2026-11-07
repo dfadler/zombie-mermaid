@@ -43,6 +43,7 @@ describe('list_diagram_types', () => {
       c4: 'C4Context\nPerson(a, "A")',
       pie: 'pie\n"A" : 1',
       quadrant: 'quadrantChart\nA: [0.5, 0.5]',
+      mindmap: 'mindmap\n  root',
       gantt: 'gantt\nA :a, 2024-01-01, 1d',
       timeline: 'timeline\n2002 : LinkedIn',
     }
