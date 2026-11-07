@@ -59,10 +59,8 @@ describe('destroy (#2778)', () => {
   })
 
   it('starts a destroyed sender arrow outside its footer and stops a destroyed recipient arrow short of it', () => {
-    const arrow = (out: string, label: string): number[] =>
-      new RegExp(
-        `data-label="${label}"[^>]*>\\s*<line x1="([\\d.]+)" y1="[\\d.]+" x2="([\\d.]+)"`,
-      )
+    const arrow = (out: string): number[] =>
+      /data-label="bye"[^>]*>\s*<line x1="([\d.]+)" y1="[\d.]+" x2="([\d.]+)"/
         .exec(out)!
         .slice(1, 3)
         .map(Number)
@@ -70,14 +68,14 @@ describe('destroy (#2778)', () => {
     const sent = svg(
       'participant A\nparticipant B\nA->>B: hi\ndestroy B\nB->>A: bye',
     )
-    const [x1] = arrow(sent, 'bye')
+    const [x1] = arrow(sent)
     expect(x1).toBeCloseTo(210 - 41, 0)
     const recv = svg(
       'participant A\nparticipant B\nA->>B: hi\ndestroy B\nA->>B: bye',
     )
-    const [, x2] = arrow(recv, 'bye')
+    const [, x2] = arrow(recv)
     expect(x2).toBeCloseTo(210 - 48, 0)
     const actor = svg('actor A\nactor B\nA->>B: hi\ndestroy B\nA->>B: bye')
-    expect(arrow(actor, 'bye')[1]).toBeCloseTo(210 - 26, 0)
+    expect(arrow(actor)[1]).toBeCloseTo(210 - 26, 0)
   })
 })
