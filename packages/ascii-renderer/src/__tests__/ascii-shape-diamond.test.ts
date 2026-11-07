@@ -25,8 +25,10 @@ describe('diamondRenderer.render', () => {
     const lines = render('日本語 label', { useAscii: false, padding: 1 }).split(
       '\n',
     )
-    expect(lines[2]).toBe('< 日本語 label >')
-    expect(lines[1]!.replace(/ /g, '')).toBe('╱╲')
+    // Square like mermaid 12.3.0's (#2707): the label sits on the middle row.
+    expect(lines[Math.floor(lines.length / 2)]).toMatch(/^< +日本語 label +>$/)
+    expect(lines[0]!.replace(/ /g, '')).toBe('╱╲')
+    expect(lines.length).toBeGreaterThan(5)
   })
 
   it('grows a tall narrow label wider so every row clears the diagonals', () => {
