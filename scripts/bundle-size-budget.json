@@ -10,25 +10,25 @@
     "dist/cli.js": 15000,
     "packages/core/dist/index.js": 14000,
     "packages/core/dist/index.cjs": 14070,
-    "packages/mermaid-parser/dist/index.js": 21700,
-    "packages/mermaid-parser/dist/index.cjs": 21920,
+    "packages/mermaid-parser/dist/index.js": 21950,
+    "packages/mermaid-parser/dist/index.cjs": 22170,
     "packages/svg-renderer/dist/index.js": 64900,
     "packages/svg-renderer/dist/index.cjs": 65450,
-    "packages/ascii-renderer/dist/index.js": 82650,
-    "packages/ascii-renderer/dist/index.cjs": 82900,
+    "packages/ascii-renderer/dist/index.js": 82750,
+    "packages/ascii-renderer/dist/index.cjs": 83020,
     "packages/mcp/dist/index.js": 4571,
     "packages/mcp/dist/index.cjs": 7690
   },
   "consumerBundles": {
-    "packages/svg-renderer/dist/index.js": 98650,
-    "dist/index.js": 179800
+    "packages/svg-renderer/dist/index.js": 99000,
+    "dist/index.js": 180250
   },
   "unpackedBudgets": {
     "dist": 111000,
     "packages/core/dist": 212685,
     "packages/mermaid-parser/dist": 200559,
     "packages/svg-renderer/dist": 458850,
-    "packages/ascii-renderer/dist": 501600,
+    "packages/ascii-renderer/dist": 502400,
     "packages/mcp/dist": 41310
   }
 }
