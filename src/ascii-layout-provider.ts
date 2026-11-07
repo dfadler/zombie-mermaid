@@ -50,10 +50,10 @@ const faceOf = (
   if (b.diamond) {
     // A slant belongs to the flow-axis face once the point is about half way to
     // that vertex; the grid draws a stroke on a slant, not on a side vertex.
-    const [df, hf, dc, hc] = horizontal
-      ? [p.x - b.cx, b.w / 2, p.y - b.cy, b.h / 2]
-      : [p.y - b.cy, b.h / 2, p.x - b.cx, b.w / 2]
-    if (Math.abs(df) / hf >= 0.49 || Math.abs(dc) / hc < 0.1)
+    const [df, hf, dc] = horizontal
+      ? [p.x - b.cx, b.w / 2, p.y - b.cy]
+      : [p.y - b.cy, b.h / 2, p.x - b.cx]
+    if (Math.abs(df) / hf >= 0.49)
       return horizontal ? (df < 0 ? 'L' : 'R') : df < 0 ? 'T' : 'B'
     return horizontal ? (dc < 0 ? 'T' : 'B') : dc < 0 ? 'L' : 'R'
   }
