@@ -4,7 +4,6 @@
  * entries (#2645). The numbers gate each ASCII placement PR (Q3).
  *
  * Usage: tsx scripts/ascii-topology.ts [--verbose] [--no-hints] [--dir TD|LR|RL|BT]
- * (--no-hints scores the grid's own placement; --dir redraws in that direction).
  */
 import { allForkFixes } from '../demo/fork-fixes-data.ts'
 import { samples } from '../samples/samples-data.ts'
