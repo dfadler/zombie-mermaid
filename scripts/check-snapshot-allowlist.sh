@@ -124,6 +124,8 @@ ALLOWLIST=(
   # Front matter title: SVG + ASCII output per diagram type (#2585); reviewed via
   # the .snap diff.
   "src/__tests__/front-matter-2585.test.ts"
+  # SVG + ASCII goldens for a decision with a duplicated edge (#2780); reviewed via the .snap diff.
+  "src/__tests__/ascii-decision-duplicate-edge-2780.test.ts"
   # ASCII + SVG goldens for opposing edges at a diamond vertex or slanted
   # side (#2492): the repo rule is an SVG and an ASCII snapshot per case.
   # Not a component test; the files under
