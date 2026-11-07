@@ -470,6 +470,8 @@ export interface LabelRect {
 export interface AsciiGraph {
   /** The parsed graph, for the sibling-order rules shared with SVG (#2111). */
   parsed?: MermaidGraph
+  /** Take layer and order from the registered layout provider (flowchart and state only, #2645). */
+  useLayoutHints?: boolean
   /** Edges (by index) that must not take flow-axis face lanes (#2121). */
   faceLaneOff?: ReadonlySet<number>
   /** Planned face lanes that were rejected by this layout (#2121). */
@@ -495,6 +497,8 @@ export interface AsciiGraph {
    * (#1701).
    */
   nodeRects?: LabelRect[]
+  /** Skipped nodes `sidestepSkippedNodes` moved aside, with the end node they sit beside. */
+  sidesteps?: { node: AsciiNode; anchor: AsciiNode }[]
   /** Grid occupancy map — tracks which "x,y" cells are reserved. */
   grid: Grid
   columnWidth: Map<number, number>

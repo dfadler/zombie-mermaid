@@ -410,9 +410,9 @@ describe('renderMermaidSVG – state diagrams', () => {
       Running --> Stopped : stop
       Stopped --> [*]`)
 
-    // Extract all label pill <rect> elements (rx="2" distinguishes them from node rects)
+    // Extract all label background <rect> elements (the first child of each .edge-label group)
     const pillPattern =
-      /<rect x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)" rx="2"/g
+      /<g class="edge-label"[^>]*>\s*<rect x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"/g
     const pills: { x: number; y: number; w: number; h: number }[] = []
     let match: RegExpExecArray | null
     while ((match = pillPattern.exec(svg)) !== null) {

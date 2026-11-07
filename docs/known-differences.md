@@ -194,7 +194,7 @@ Checked on mermaid 12.2.0 (the pin, also npm `latest`). `pnpm run quadrant:oracl
 renders every `Quadrant:` sample through real mermaid and compares rect, line, circle and
 text positions with `layoutQuadrantChart`; they match exactly, and the weekly layout-oracle
 workflow fails on a drift (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` also
-pins the campaigns numbers). Colours and empty labels (below) are not compared.
+pins the campaigns numbers). Colours (below) are not compared; empty quadrant labels are (checked on 12.3.0).
 
 - **Point colour.** Mermaid 12.2.0's default theme emits `fill="hsl(240, 100%, NaN%)"`
   for every point without a `color`, which browsers drop, so mermaid.live and GitHub show
@@ -213,23 +213,64 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
   and border `*StrokeFill` variables are read under any theme, like mermaid, but only
   with `honorThemeVariables` ([themeVariables](diagrams.md#themevariables-opt-in)).
   ASCII ignores both. Mermaid's other theme-derived colours are not computed.
-- **Empty labels.** Mermaid draws an empty `<text>` for a quadrant with no label; this
-  library draws nothing.
+- **Empty labels.** Like mermaid 12.3.0, a quadrant with no label gets an empty `<text>`
+  at the position a label would have; axis, point and title text are dropped when empty,
+  in both.
 - **ASCII.** Mermaid has no ASCII output. The x axis is always below the grid (mermaid's
   SVG puts it on top of a chart with no points), and point labels are in a legend, not
   next to the markers.
+
+## Gantt charts
+
+Checked on mermaid 12.3.0 (npm `latest`; mermaid.live's 12.2.0 renders the same
+figures). `pnpm run gantt:oracle` renders every `Gantt:` sample through real mermaid
+and compares exclude ranges, stripes, bars, task-label rows and classes, axis ticks
+and labels, section labels and the title with `layoutGantt` at the same width; they
+match exactly, and the weekly layout-oracle workflow fails on a drift.
+
+- **Width.** Mermaid sizes the chart to its container (and fills it with
+  `width="100%"`); this library draws a fixed 1200px frame, Mermaid's own fallback.
+  The oracle compares at 1264, the headless page's width.
+- **Time zone.** Mermaid reads and draws dates in the viewer's time zone; this library
+  uses UTC. They differ only for charts spanning a daylight-saving change (a day is
+  then 23 or 25 hours there, shifting bars by a pixel) and for a date `dateFormat`
+  does not match, which is read by `new Date()`.
+- **`topAxis`.** Mermaid 12.3.0 (and 12.2.0) fails on the `topAxis` statement with
+  `TopAxis is not a function` (the grammar calls a method ganttDb does not have),
+  so there is nothing to match; the statement works here, and the `topAxis` config
+  key works in both.
+- **Today line.** Mermaid always draws it; here it is drawn only while today is
+  inside the chart's dates, so a chart in the past or future is byte-stable.
+- **Task labels.** Whether a label sits inside its bar, or to its right or left,
+  depends on its measured width, which differs between this library's font and
+  mermaid's `trebuchet ms`; the oracle reports such a difference as a note, not a
+  mismatch. Labels are trimmed (Mermaid keeps trailing blanks, which SVG collapses).
+- **Palette.** Colours come from the theme (accent bars, foreground-tinted done
+  tasks and grid); the third section keeps Mermaid's yellow stripe and critical tasks
+  keep its red. Mermaid's other theme-derived colours are not computed.
+- **Ids.** Mermaid gives each bar and label an `id` made of the diagram id and the
+  task id, which collide when two diagrams share a page; here they are
+  `data-task` attributes, and exclude ranges carry `data-date`.
+- **Unscheduled tasks.** A task whose `after` chain never resolves (a cycle), or
+  whose first task has no start date, is a parse error here; Mermaid renders a
+  broken chart.
+- **Config.** The `gantt` keys of `%%{init}%%` that change what is drawn are read
+  (see [Gantt Charts](diagrams.md#gantt-charts)); sizes (`barHeight`, `barGap`,
+  `topPadding`, `leftPadding`, `rightPadding`, `fontSize`, `numberSectionStyles`,
+  `useWidth`) are ignored.
+- **`excludes` at the end of a chart.** A run of excluded days still open at the
+  last day is not shaded, as in Mermaid.
+- **ASCII.** Mermaid has no ASCII output; see [ASCII Gantt Charts](diagrams.md#ascii-gantt-charts).
 
 ## XY charts
 
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
 also covered 12.1.0). Unless noted, these are choices, not bugs.
 
-- **SVG styling.** zombie-mermaid draws rounded bars and
-  grouped bar series side by side. Mermaid draws
-  square bars, no legend, and draws the second bar series over the first. Lines are straight
-  segments with no point markers, there is no grid, and each axis has a line and tick marks,
-  as in mermaid (it has no option for curved lines in 12.2.0 or on `develop`); the oracle
-  scores these as `style`.
+- **SVG styling.** Matches mermaid 12.3.0 ([#2857](https://github.com/dfadler/zombie-mermaid/issues/2857)):
+  square bars, no legend, and a second bar series drawn over the first. Lines are straight
+  segments with no point markers, there is no grid, and each axis has a line and tick marks
+  (mermaid has no option for curved lines in 12.2.0, 12.3.0 or on `develop`).
 - **Bar thickness.** Bars follow mermaid 12.2.0's band formula ([#2515](https://github.com/dfadler/zombie-mermaid/issues/2515)):
   95% of the smaller of twice the axis padding and the tick distance. Mermaid pads by
   half the widest category label as it measures it in the browser, on a plot about 660 px
@@ -245,6 +286,7 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   (letters and digits only for titles; categories also allow `+ = * # _ . & -`). A one-word
   `x-axis Foo [a, b]` title works; `x-axis Foo Bar [a, b]` is rejected by mermaid and is
   not special-cased here. Quote a label (`"New Users"`) to keep its spaces.
+- **Rejected input fails with our own error text, not mermaid's** ([#2785](https://github.com/dfadler/zombie-mermaid/issues/2785), checked against mermaid 12.3.0). Both reject the same sources (`x-axis [a;b, c]`, `x-axis [/users, b]`, `x-axis [a, , b]`, `x-axis [a, b`, `bar [1, x, 3]`, `bar [1, 2`, `line [1,,3]`, `title "unclosed`, `y-axis 0 --> x`, `bar 1,2,3`); nothing renders either way. Mermaid's message is its jison lexer/parser text: `Parse error on line N:`, a clipped source excerpt with a caret, and `Expecting 'SQUARE_BRACES_END', 'COMMA', got 'SEMI'` (or `Lexical error on line N. Unrecognized text.`). The expected-token list comes from its LALR tables and the excerpt is not reliable (it runs the header into the first line, `...chart-betax-axis [a;b, c]`), so it is not reproduced. Ours is `Line N: ...` naming the directive or value and what is allowed. Tools that match on mermaid's message text will not match ours. One accept/reject difference is not about text: `x-axis [a, b] extra` is rejected by mermaid (`got 'ALPHA'`) and accepted here, the trailing text ignored.
 - **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
   value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
   correct reading (a known mermaid quirk).
@@ -580,10 +622,8 @@ width apart, as mermaid does), a `classDef`/`style` fill with no `color:` keepin
 default dark text ([#2637](https://github.com/dfadler/zombie-mermaid/issues/2637)), the
 hexagon's angled-side inset (height / 3.5), and the LR/RL parallelogram yes/no routing
 (including the `D --> B` back-edge, which enters the diamond's lower side) all match. The
-one thing that still differs:
-
-- **Edge labels are drawn in a bordered box; mermaid draws a borderless grey background
-  on the line.** Colour palette and chrome, not structure (decision #2617).
+edge-label background matches too: a box the size of the text, no border, no padding
+([#2854](https://github.com/dfadler/zombie-mermaid/issues/2854)); only the fill colour is ours.
 
 ## Flowchart `curve` directive is ignored ([#2729](https://github.com/dfadler/zombie-mermaid/issues/2729))
 
@@ -601,18 +641,11 @@ zombie-mermaid's ER parser (`packages/mermaid-parser/src/er/parser.ts`) is a
 line-oriented parser rather than mermaid.js's grammar, so it is more lenient in
 some places and stricter in others.
 
-**Unquoted labels that start with a keyword.** Everything after `:` is the label here.
-mermaid.js lexes a leading `one`, `many` or `to` as a word-form cardinality keyword
-and rejects the line:
-
-| Label                                                        | mermaid.js 11.17.2 | zombie-mermaid |
-| ------------------------------------------------------------ | ------------------ | -------------- |
-| `one-to-one`, `many-to-many`, `one`, `many`, `to` (unquoted) | parse error        | renders        |
-| `"one-to-one"`, `"many-to-many"` (quoted)                    | parses             | renders        |
-| `opt-to-many` (unquoted)                                     | parses             | renders        |
-
-Quote such labels (`: "one-to-one"`) if the source also has to work in mermaid.js
-tools such as GitHub or the Mermaid Live Editor.
+**Unquoted relationship labels.** Matches mermaid 12.3.0 ([#2853](https://github.com/dfadler/zombie-mermaid/issues/2853)):
+an unquoted label is word tokens, and a word that starts with `one`, `many` or `to`
+(also `only one`, `zero or more`, `many(0)`), a number, or a character such as `,` `(` `<`
+is a parse error in both. Quote the label (`: "one-to-one"`) to keep it. `opt-to-many`,
+`a-to-b`, `has owns` and `"one-to-one"` parse in both.
 
 ## YAML front matter: a subset ([#2585](https://github.com/dfadler/zombie-mermaid/issues/2585))
 
