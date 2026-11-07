@@ -6,8 +6,9 @@
 // faces instead (docs/decisions/ascii-layout-hints-from-elk.md). No ELK code
 // lives in this package: the root entry, the CLI and MCP register a provider
 // that wraps the SVG layout engine. Flowchart and state placement read layer,
-// order and cross-axis centre (grid.ts); without a provider the grid keeps its
-// own placement.
+// order and cross-axis centre (grid.ts), and each edge end's face and its order
+// along that face (edge-routing.ts `determinePath`, port-offsets.ts
+// `hintedFaces`); without a provider the grid keeps its own placement and faces.
 // ============================================================================
 
 import type { MermaidGraph } from '@zombie-mermaid/core'
@@ -29,7 +30,11 @@ export interface AsciiNodeHint {
 
 export interface AsciiEdgeEndHint {
   face: AsciiFace
-  /** Rank among the ends on the same face of the same node, along that face (left to right, top to bottom). */
+  /**
+   * Rank among the ends on the same face of the same node, along that face
+   * (left to right, top to bottom, SVG orientation). Ends the layout puts at one
+   * position (an out/in pair) share a rank; the consumer puts the forward end first.
+   */
   order: number
 }
 

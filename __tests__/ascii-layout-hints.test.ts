@@ -48,6 +48,41 @@ describe('registerAsciiLayout', () => {
   })
 })
 
+describe('buildHints: a diamond end on a slant', () => {
+  // A 100 px diamond at the origin; the end sits on a slant, a quarter or
+  // three quarters of the way to the flow-axis vertex.
+  const face = (flow: 'TD' | 'LR', x: number, y: number) =>
+    buildHints(
+      [
+        { id: 'D', cx: 0, cy: 0, w: 100, h: 100, diamond: true },
+        { id: 'X', cx: 0, cy: 300, w: 40, h: 40 },
+      ],
+      [
+        {
+          from: 'D',
+          to: 'X',
+          points: [
+            { x, y },
+            { x: 0, y: 280 },
+          ],
+        },
+      ],
+      flow,
+    ).edges[0]!.start.face
+  it('belongs to the flow-axis face past half way to its vertex', () => {
+    expect(face('TD', 12, 38)).toBe('B')
+    expect(face('TD', 12, -38)).toBe('T')
+    expect(face('LR', 38, 12)).toBe('R')
+    expect(face('LR', -38, 12)).toBe('L')
+  })
+  it('belongs to the side face nearer the side vertex', () => {
+    expect(face('TD', 38, 12)).toBe('R')
+    expect(face('TD', -38, 12)).toBe('L')
+    expect(face('LR', 12, 38)).toBe('B')
+    expect(face('LR', 12, -38)).toBe('T')
+  })
+})
+
 describe('buildHints', () => {
   it('keeps a taller node in the layer whose top edge it shares (#2780)', () => {
     // ELK aligns tops: an 80-high node's centre sits 30 below a 20-high one's,

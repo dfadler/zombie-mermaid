@@ -95,3 +95,13 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('not a real header')).toBe('flowchart')
   })
 })
+
+describe('detectDiagramType – timeline', () => {
+  it('detects timelines, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('timeline')).toBe('timeline')
+    expect(detectDiagramType('  timeline TD\n 1 : a')).toBe('timeline')
+    expect(detectDiagramType('%% c\ntimeline')).toBe('timeline')
+    expect(detectDiagramType('Timeline')).toBe('flowchart')
+    expect(detectDiagramType('timelines')).toBe('flowchart')
+  })
+})

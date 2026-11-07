@@ -1,0 +1,18 @@
+timeline
+    %% a comment
+    Stone Age : Hand axes
+    Bronze Age : Writing : Cities
+               : Wheel
+    C# Language : dropped
+    Iron Age
+---
+   Stone Age ──●── Hand axes
+               │
+  Bronze Age ──●── Writing
+               │   Cities
+               │   Wheel
+               │
+           C ──●──
+               │
+    Iron Age ──●──
+               ▼

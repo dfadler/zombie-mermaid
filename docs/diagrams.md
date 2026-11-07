@@ -1198,6 +1198,66 @@ Another
 - Not drawn: `excludes` shading and the today line (output must not depend on
   the clock). `accTitle` and `accDescr` are not printed.
 
+## Timelines
+
+`timeline` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/timeline.html)
+and its renderer's layout. `pnpm run timeline:oracle` compares the gallery samples
+box by box with `mermaid@12.3.0`; mermaid 12.2.0 (the pin and mermaid.live today)
+renders the same sources identically.
+
+```mermaid
+timeline
+    title England's History Timeline
+    section 17th Century
+        1603 : Be merged crowns
+        1611 : King James Bible
+    section 18th Century
+        1707 : Act of Union : Great Britain
+        1776 : Loses American colonies
+             : Industrial revolution begins
+```
+
+Supported: `timeline` and `timeline TD` (the axis runs down the page, as in
+Mermaid), `title`, `section`, periods with any number of `: event` parts, extra
+events on continuation lines, `%%` comments, `accTitle` and `accDescr`. As in
+Mermaid, a `#` starts a comment even inside a period (`C# Language` is the
+period `C`), a `:` is a separator only when a space follows it, an event needs a
+period before it, the events after a `section` line join the last period of the
+previous section, and a period written before the first `section` is not drawn
+once sections exist. A bare `timeline` is valid: just the axis.
+
+The SVG uses Mermaid's geometry: periods in columns 200px apart, boxes 190px
+wide with text wrapped at 150px, a running-maximum row height within a section,
+dashed lines running past the tallest event column, an arrowed axis, and a
+12-colour cycle (per period without sections, per section with them). Line
+breaks are found by summing Trebuchet MS advances (Mermaid's first font), not
+by measuring in a browser. Colours come from the theme (the accent and its
+series shades, mixed into `--bg` for the boxes). See
+[Known differences](known-differences.md#timelines).
+
+### ASCII Timelines
+
+Mermaid has no text mode for timelines, and its columns would run off a terminal
+after a few periods, so the ASCII output is this library's own design: a vertical
+spine for both `timeline` and `timeline TD`.
+
+```text
+ History of Social Media Platform
+
+  2002 ──●── LinkedIn
+         │
+  2004 ──●── Facebook
+         │   Google
+         │
+  2005 ──●── YouTube
+         ▼
+```
+
+- Periods are right-aligned beside their `●` (`o` in ASCII mode), in source order,
+  with their events to the right, one per row. Long period labels wrap at 24 columns.
+- A `section` is a `[name]` row; markers and headings use the theme accent.
+- `accTitle` and `accDescr` are not printed.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1207,6 +1267,7 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Use case                                                              | `usecase-beta`                                                                                                  |
 | Packet                                                                | `packet` / `packet-beta`                                                                                        |
 | Timeline                                                              | `timeline`                                                                                                      |
+| Gantt                                                                 | `gantt`                                                                                                         |
 | User journey                                                          | `journey`                                                                                                       |
 | Requirement                                                           | `requirementDiagram`                                                                                            |
 | Git graph                                                             | `gitGraph`                                                                                                      |

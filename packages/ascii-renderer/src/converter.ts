@@ -210,6 +210,7 @@ export function convertToAsciiGraph(
       from,
       to,
       text: mEdge.label ? stripFormattingTags(mEdge.label) : '',
+      parsedIndex: mIndex,
       ...(feedback.has(mIndex) ? { feedback: true } : {}),
       path: [],
       labelLine: [],
