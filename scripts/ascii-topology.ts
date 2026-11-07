@@ -3,8 +3,7 @@
  * ELK layout, over the gallery flowchart/state samples plus the fork-fixes
  * entries (#2645). The numbers gate each ASCII placement PR (Q3).
  *
- * Usage: tsx scripts/ascii-topology.ts [--verbose] [--no-hints]
- * --verbose lists every sample; --no-hints scores the grid's own placement.
+ * Usage: tsx scripts/ascii-topology.ts [--verbose] [--no-hints] [--dir TD|LR|RL|BT]
  */
 import { allForkFixes } from '../demo/fork-fixes-data.ts'
 import { samples } from '../samples/samples-data.ts'
@@ -14,6 +13,7 @@ import {
   emptyCounts,
   isExact,
   measureSample,
+  redirectDirection,
 } from './lib/ascii-topology.ts'
 import type { Counts } from './lib/ascii-topology.ts'
 
@@ -28,10 +28,13 @@ const isGraph = (src: string): boolean =>
 const list = [
   ...samples
     .filter((s) => isGraph(s.source))
-    .map((s) => ({ title: s.title, source: s.source })),
+    .map((s) => ({ title: s.title, source: redirectDirection(s.source) })),
   ...allForkFixes
     .filter((f) => inScope(f.id) && isGraph(f.source))
-    .map((f) => ({ title: `ENTRY ${f.id}`, source: f.source })),
+    .map((f) => ({
+      title: `ENTRY ${f.id}`,
+      source: redirectDirection(f.source),
+    })),
 ]
 const verbose = process.argv.includes('--verbose')
 let total = emptyCounts()

@@ -250,3 +250,17 @@ export const describeSample = (
     ? ` align ${c.alignOk}/${c.layerPairs} faces ${c.faceOk}/${c.faceEnds}`
     : '') +
   `  ${title}`
+
+/** `source` redrawn in the flow direction after `--dir` (none: unchanged); a state diagram gets a `direction` line. */
+export function redirectDirection(source: string): string {
+  const at = process.argv.indexOf('--dir')
+  const dir = at < 0 ? undefined : process.argv[at + 1]
+  if (!dir) return source
+  if (/^\s*stateDiagram/m.test(source)) {
+    return source.replace(
+      /^(\s*stateDiagram[^\n]*\n)(\s*direction \w+\n)?/m,
+      `$1direction ${dir}\n`,
+    )
+  }
+  return source.replace(/^(\s*(?:graph|flowchart))\s+\w+/m, `$1 ${dir}`)
+}
