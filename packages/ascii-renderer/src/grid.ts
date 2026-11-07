@@ -2336,11 +2336,11 @@ function gridEdgeHints(
   graph: AsciiGraph,
   hints: AsciiLayoutHints,
 ): Map<AsciiEdge, AsciiEdgeHint> {
-  const mirror = MIRROR[graph.parsed?.direction ?? '']
+  const mirror = MIRROR[graph.parsed!.direction]
   const byIndex = new Map(hints.edges.map((h) => [h.index, h]))
   const out = new Map<AsciiEdge, AsciiEdgeHint>()
   for (const edge of graph.edges) {
-    const h = byIndex.get(edge.parsedIndex ?? -1)
+    const h = byIndex.get(edge.parsedIndex!)
     if (!h) continue
     const end = (e: AsciiEdgeEndHint): AsciiEdgeEndHint =>
       mirror ? { ...e, face: mirror[e.face] } : e

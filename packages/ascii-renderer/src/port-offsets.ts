@@ -972,6 +972,7 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
   for (const edge of graph.edges) {
     if (edge.path.length < 2) continue
     for (const [run, role] of endsOf(edge)) {
+      /* v8 ignore next */
       if (!run) continue
       const k = `${run.node.index}|${run.side}`
       all.set(k, [...(all.get(k) ?? []), { edge, run, role }])
@@ -1133,11 +1134,11 @@ function allocateFaces(
 /** Cells from a diamond's side border in to the slant glyph on the row `by` off the centre. */
 function slantDepth(run: PortRun, by: number): number {
   const drawing = run.node.drawing!
-  const centreRow = Math.floor((drawing[0]?.length ?? 1) / 2)
+  const centreRow = Math.floor(drawing[0]!.length / 2)
   const step = run.side === 'left' ? 1 : -1
   let x = run.side === 'left' ? 0 : drawing.length - 1
   let n = 0
-  while (drawing[x] && (drawing[x]![centreRow + by] ?? ' ') === ' ') {
+  while (drawing[x] && drawing[x]![centreRow + by] === ' ') {
     x += step
     n++
   }
