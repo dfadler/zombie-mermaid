@@ -60,6 +60,43 @@ describe('plain class links draw no marker', () => {
     }
   })
 
+  it.each(['<|--|>', '<-->', '*--*', 'o--o', '<..>', '<|--', '--|>', '--*'])(
+    'ASCII: %s keeps its markers in every direction',
+    (arrow) => {
+      for (const dir of ['TB', 'BT', 'LR', 'RL']) {
+        const out = renderMermaidASCII(
+          `classDiagram\n direction ${dir}\n A ${arrow} B\n B -- C\n A .. C`,
+        )
+        expect(out).toMatch(/[△▽◁▷◆◇v^<>]/)
+      }
+    },
+  )
+
+  it('ASCII: every marker/plain mix renders without throwing, plain links stay bare', () => {
+    const arrows = [
+      '<|--',
+      '--|>',
+      '*--',
+      '--o',
+      '<--',
+      '-->',
+      '..>',
+      '--',
+      '..',
+    ]
+    let seed = 7
+    const rnd = (n: number) => (seed = (seed * 48271) % 2147483647) % n
+    for (let i = 0; i < 120; i++) {
+      const rels = Array.from({ length: 2 + rnd(5) }, () => {
+        const a = 'ABCDE'[rnd(5)]
+        const b = 'ABCDE'[rnd(5)]
+        return ` ${a} ${arrows[rnd(arrows.length)]} ${b}`
+      })
+      const src = `classDiagram\n direction ${['TB', 'LR'][rnd(2)]}\n${rels.join('\n')}`
+      expect(() => renderMermaidASCII(src)).not.toThrow()
+    }
+  })
+
   it('ASCII: no arrowhead glyph on a plain link', () => {
     const plain = renderMermaidASCII('classDiagram\n A -- B')
     const arrow = renderMermaidASCII('classDiagram\n A --> B')
