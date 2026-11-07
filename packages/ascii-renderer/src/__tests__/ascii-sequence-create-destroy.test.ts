@@ -160,12 +160,26 @@ describe('ASCII sequence diagrams – creating message label (#2281)', () => {
     expect(rows.some((r) => r.includes('┌─┴─┐'))).toBe(true)
   })
 
-  it("puts a destroying self-message's footer box under its loop", () => {
+  it("centres a destroying self-message's footer box on its row, no loop (mermaid 12.3.0)", () => {
     const result = renderMermaidASCII(
       'sequenceDiagram\n  A->>B: hi\n  destroy B\n  B->>B: bye',
       { useAscii: false },
     )
     expect(result).not.toContain('✕')
-    expect(result.match(/│ B │/g)).toHaveLength(2)
+    expect(result).not.toMatch(/[◀├]/)
+    const rows = result.split('\n')
+    const label = rows.findIndex((r) => r.includes('bye'))
+    const mid = rows.findIndex((r, i) => i > label && /│ B │/.test(r))
+    // Label row, box top (┴ joins the lifeline), box middle row
+    expect(rows[label + 1]).toContain('┌─┴─┐')
+    expect(mid).toBe(label + 2)
+  })
+
+  it('draws a destroyed actor footer as a stick figure', () => {
+    const result = renderMermaidASCII(
+      'sequenceDiagram\n  actor A\n  actor B\n  A->>B: hi\n  destroy B\n  B-->>A: bye',
+      { useAscii: false },
+    )
+    expect(result.match(/ O /g)).toHaveLength(4)
   })
 })
