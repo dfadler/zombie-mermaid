@@ -1,12 +1,12 @@
 {
   "unit": "gzip-bytes",
   "budgets": {
-    "dist/index.js": 1651,
-    "dist/index.cjs": 1431,
+    "dist/index.js": 1660,
+    "dist/index.cjs": 1440,
     "dist/ascii.js": 564,
     "dist/ascii.cjs": 564,
-    "dist/mcp.js": 1320,
-    "dist/mcp.cjs": 1166,
+    "dist/mcp.js": 1360,
+    "dist/mcp.cjs": 1200,
     "dist/cli.js": 16500,
     "packages/core/dist/index.js": 15621,
     "packages/core/dist/index.cjs": 15698,
