@@ -681,13 +681,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'er-ascii-crossings-labels',
-    // Parked on a named limit (#2656, #2663): Mermaid 12.3.0 orders ER layers with
-    // ELK for minimum crossings (149 of 150 random layered graphs), and among tied
-    // orders its pick is not derivable (best proxy 107 of 150). Ordering by
-    // crossings here gave Mermaid's order and no junction, but the router, which
-    // left-aligns each row, then drew the `receives` label over another edge's
-    // stem and broke four ER snapshots; see #2663.
-    parked: 'ascii-er',
     title:
       'ER ASCII edges crossed without a junction and labels were ambiguous',
     symptom:

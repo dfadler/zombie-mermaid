@@ -77,9 +77,8 @@ export function parseOfficialQuadrant(svg: string): QuadFigure {
 }
 
 /**
- * Our layout, flattened the same way. Mermaid draws an empty `<text>` for a
- * label-less quadrant and we draw nothing (a documented difference), so empty
- * texts are dropped from both sides.
+ * Our layout, flattened the same way. Both sides draw an empty `<text>` for a
+ * label-less quadrant (mermaid 12.3.0), so empty texts are compared too.
  */
 export function ourQuadrant(source: string): QuadFigure {
   const l = layoutQuadrantChart(parseQuadrantChart(source))
@@ -105,14 +104,12 @@ export function ourQuadrant(source: string): QuadFigure {
   }
 }
 
-/** Official figures with empty texts removed and texts in a canonical order. */
+/** Official figures with texts in a canonical order. */
 export function normalizeQuadrant(f: QuadFigure): QuadFigure {
   const key = (t: QuadText) => `${t.text}\0${t.rotation}\0${t.x}\0${t.y}`
   return {
     ...f,
-    texts: f.texts
-      .filter((t) => t.text !== '')
-      .sort((a, b) => (key(a) < key(b) ? -1 : 1)),
+    texts: [...f.texts].sort((a, b) => (key(a) < key(b) ? -1 : 1)),
   }
 }
 
