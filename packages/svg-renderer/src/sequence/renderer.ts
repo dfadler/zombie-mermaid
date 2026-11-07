@@ -9,6 +9,8 @@ import type {
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
 import {
+  ACTOR_FIGURE_HEIGHT,
+  ACTOR_FIGURE_LABEL_GAP,
   ACTOR_LABEL_OFFSET,
   BLOCK_LINE_STROKE,
   BLOCK_TAB_HEIGHT,
@@ -137,6 +139,12 @@ export function renderSequenceSvg(
     if (!isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 
+  // 3c. Footer actors, before the messages as in Mermaid: a destroying
+  //     self-message's line and label are drawn across its footer box.
+  for (const actor of diagram.footerActors) {
+    parts.push(renderActor(actor, fontSizes, 'actor-footer'))
+  }
+
   // 4. Messages (horizontal arrows with labels)
   for (const message of diagram.messages) {
     parts.push(renderMessage(message, fontSizes))
@@ -151,10 +159,6 @@ export function renderSequenceSvg(
   for (const actor of diagram.actors) {
     parts.push(renderActor(actor, fontSizes))
   }
-  for (const actor of diagram.footerActors) {
-    parts.push(renderActor(actor, fontSizes, 'actor-footer'))
-  }
-
   if (diagram.title) {
     parts.push(
       '<g class="title">' +
@@ -239,10 +243,10 @@ function renderActor(
 
   if (type === 'actor') {
     // Stick figure as Mermaid 12.3.0 draws it (`g.actor-man`): head circle,
-    // torso, arms and two legs, in a 65-unit-tall design scaled to 90% of the
-    // actor box height, with a 2px stroke. The head's fill is the node fill.
-    const k = (height * 0.9) / 65
-    const top = y + (height - 65 * k) / 2
+    // torso, arms and two legs, in a 65-unit-tall design drawn 44px tall from
+    // the top of the slot, with a 2px stroke. The head's fill is the node fill.
+    const k = ACTOR_FIGURE_HEIGHT / 65
+    const top = y
     const X = (dx: number): number => x + dx * k
     const Y = (dy: number): number => top + dy * k
     const st = f`stroke="var(--_line)" stroke-width="2"`
@@ -256,7 +260,7 @@ function renderActor(
         renderMultilineText(
           label,
           x,
-          y + height + ACTOR_LABEL_OFFSET,
+          y + height + ACTOR_FIGURE_LABEL_GAP,
           fontSizes.nodeLabel,
           labelStyle,
         ),
