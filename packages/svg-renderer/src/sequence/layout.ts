@@ -1287,6 +1287,7 @@ export function layoutSequenceDiagram(
           : (messages[destroyedAt]?.y ?? messageY) -
             (mirror ? slotH(i) / 2 : 0),
     }
+    if (destroyedAt !== undefined) lifeline.destroyed = true
     return lifeline
   })
 

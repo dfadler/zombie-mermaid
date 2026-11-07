@@ -4,8 +4,8 @@
 // Builds the hints `@zombie-mermaid/ascii-renderer` can consume (layer, order,
 // edge-end faces) from `layoutFlowchartSync` / `layoutErDiagramSync`, with
 // mermaid's pixel node sizes (decision Q5; the cell-size adapter is #2685).
-// Registered by the root entry, the CLI and MCP. The grid does not read the
-// hints yet, so registering changes no output.
+// Registered by the root entry, the CLI and MCP. Flowchart and state placement
+// read the layer, order and cross-axis centre (grid.ts).
 // ============================================================================
 
 import type { Direction } from '@zombie-mermaid/core'
@@ -80,6 +80,7 @@ export function buildHints(
       layer: reversed ? last - l : l,
       order,
       cross: cross(b),
+      size: horizontal ? b.h : b.w,
     })
   }
   const byId = new Map(boxes.map((b) => [b.id, b]))
