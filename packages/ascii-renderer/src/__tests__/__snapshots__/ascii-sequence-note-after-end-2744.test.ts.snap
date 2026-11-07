@@ -49,13 +49,13 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
   }
 </style>
 <defs>
-  <marker id="zm1ep02c0-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm1vke3oc-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zm1ep02c0-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm1vke3oc-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zm1ep02c0-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zm1vke3oc-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
@@ -67,8 +67,16 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
   <text x="41" y="87" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">opt</text>
   <text x="158.23" y="87" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[x]</text>
 </g>
+<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
+  <rect x="30" y="203" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="70" y="223" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+</g>
+<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
+  <rect x="170" y="203" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="210" y="223" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+</g>
 <g class="message" data-from="A" data-to="B" data-label="go" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="70" y1="144" x2="210" y2="144" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1ep02c0-seq-arrow)" />
+  <line x1="70" y1="144" x2="210" y2="144" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1vke3oc-seq-arrow)" />
   <text x="140" y="134" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">go</text>
 </g>
 <g class="note" data-position="over" data-actors="A,B">
@@ -82,14 +90,6 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
 <g class="actor" data-id="B" data-label="B" data-type="participant">
   <rect x="170" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="210" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
-</g>
-<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
-  <rect x="30" y="203" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="70" y="223" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
-</g>
-<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
-  <rect x="170" y="203" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="210" y="223" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
@@ -145,13 +145,13 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
   }
 </style>
 <defs>
-  <marker id="zmaa71y3-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm14qnlr7-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zmaa71y3-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm14qnlr7-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zmaa71y3-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zm14qnlr7-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
@@ -163,8 +163,16 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
   <text x="187.25" y="87" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">opt</text>
   <text x="241.35" y="87" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[warm up]</text>
 </g>
+<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
+  <rect x="30" y="239" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="70" y="259" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+</g>
+<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
+  <rect x="170" y="239" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="210" y="259" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+</g>
 <g class="message" data-from="B" data-to="B" data-label="rebuild" data-line-style="solid" data-arrow-head="filled" data-self="true" data-bidirectional="false">
-  <path d="M 210,144 C 270,134 270,174 210,164" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmaa71y3-seq-arrow)" />
+  <path d="M 210,144 C 270,134 270,174 210,164" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14qnlr7-seq-arrow)" />
   <text x="210" y="134" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">rebuild</text>
 </g>
 <g class="note" data-position="over" data-actors="A,B">
@@ -178,14 +186,6 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
 <g class="actor" data-id="B" data-label="B" data-type="participant">
   <rect x="170" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="210" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
-</g>
-<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
-  <rect x="30" y="239" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="70" y="259" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
-</g>
-<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
-  <rect x="170" y="239" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="210" y="259" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
@@ -252,13 +252,13 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
   }
 </style>
 <defs>
-  <marker id="zm1amrihw-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zmawljk8-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zm1amrihw-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zmawljk8-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zm1amrihw-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zmawljk8-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
@@ -278,12 +278,20 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
   <line x1="35" y1="248" x2="245" y2="248" stroke="var(--_line)" stroke-width="2" stroke-dasharray="3 3" />
   <text x="140" y="262" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">[bad]</text>
 </g>
+<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
+  <rect x="30" y="389" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="70" y="409" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+</g>
+<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
+  <rect x="170" y="389" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="210" y="409" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+</g>
 <g class="message" data-from="A" data-to="B" data-label="go" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="70" y1="189" x2="210" y2="189" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1amrihw-seq-arrow)" />
+  <line x1="70" y1="189" x2="210" y2="189" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmawljk8-seq-arrow)" />
   <text x="140" y="179" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">go</text>
 </g>
 <g class="message" data-from="B" data-to="A" data-label="back" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="210" y1="314" x2="70" y2="314" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1amrihw-seq-arrow)" />
+  <line x1="210" y1="314" x2="70" y2="314" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmawljk8-seq-arrow)" />
   <text x="140" y="304" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">back</text>
 </g>
 <g class="note" data-position="over" data-actors="A,B">
@@ -301,14 +309,6 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
 <g class="actor" data-id="B" data-label="B" data-type="participant">
   <rect x="170" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="210" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
-</g>
-<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
-  <rect x="30" y="389" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="70" y="409" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
-</g>
-<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
-  <rect x="170" y="389" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="210" y="409" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
@@ -362,13 +362,13 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
   }
 </style>
 <defs>
-  <marker id="zm10vlhy3-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zmlhz13n-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zm10vlhy3-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zmlhz13n-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zm10vlhy3-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zmlhz13n-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
@@ -380,8 +380,16 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
   <text x="65" y="87" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">loop</text>
   <text x="161.37" y="87" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[retry]</text>
 </g>
+<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
+  <rect x="30" y="219" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="70" y="239" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+</g>
+<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
+  <rect x="170" y="219" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="210" y="239" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+</g>
 <g class="message" data-from="A" data-to="B" data-label="fetch" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="70" y1="144" x2="210" y2="144" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm10vlhy3-seq-arrow)" />
+  <line x1="70" y1="144" x2="210" y2="144" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmlhz13n-seq-arrow)" />
   <text x="140" y="134" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">fetch</text>
 </g>
 <g class="note" data-position="right" data-actors="B">
@@ -395,14 +403,6 @@ exports[`ASCII sequence note after a block end (#2744) > snapshots ASCII and SVG
 <g class="actor" data-id="B" data-label="B" data-type="participant">
   <rect x="170" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="210" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
-</g>
-<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
-  <rect x="30" y="219" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="70" y="239" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
-</g>
-<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
-  <rect x="170" y="219" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="210" y="239" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
