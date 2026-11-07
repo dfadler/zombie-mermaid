@@ -28,6 +28,7 @@ import {
   dirEquals,
   requireCardinalDirection,
 } from './types.ts'
+import type { AsciiFace } from './layout-hints.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
 import { canBundle, crowdedTopFaceEnds } from './edge-bundling.ts'
 import {
@@ -1920,6 +1921,31 @@ export function flowLaneLabel(
   }))
 }
 
+const FACE_DIR: Record<AsciiFace, Direction> = {
+  T: Up,
+  B: Down,
+  L: Left,
+  R: Right,
+}
+
+/** The faces ELK's route leaves and enters by, as grid directions, or undefined without a hint. */
+function hintedFaces(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): [Direction, Direction] | undefined {
+  const h = graph.edgeHints?.get(edge)
+  // A parallel group keeps its lanes together (`assignParallelEdgeLanes`).
+  if (
+    !h ||
+    edge.from === edge.to ||
+    edge.parallelLane ||
+    edge.clusterSource ||
+    edge.clusterTarget
+  )
+    return undefined
+  return [FACE_DIR[h.start.face], FACE_DIR[h.end.face]]
+}
+
 /**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
@@ -2328,6 +2354,35 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     }
   }
 
+  // #2645: with ELK hints, each end takes the face ELK's route uses, which
+  // supersedes the heuristic faces above (the reciprocal and subgraph gates of
+  // `flowFanOut` included).
+  // Only where that route exists, or the plain L between the ports clears every
+  // node; a column that ELK threads past a node the grid cannot pass keeps the
+  // grid's own faces.
+  const hinted = hintedFaces(graph, edge)
+  let hintedPath: GridCoord[] | null = null
+  if (hinted) {
+    const from = gridCoordDirection(requireGridCoord(edge.from), hinted[0])
+    const to = gridCoordDirection(requireGridCoord(edge.to), hinted[1])
+    const found = routeEdge(graph, from, to, requireCardinalDirection(hinted[0]))
+    const plain = expandDiagonalSegments([from, to])
+    // A re-route (`edge.path` is set: a style conflict blocked a cell) keeps the
+    // faces too: its caller restores the old path when the detour runs through a node.
+    hintedPath =
+      found ??
+      (edge.path.length > 0 ||
+      pathCells(plain)
+        .slice(1, -1)
+        .every((c) => !graph.nodes.some((n) => isCellInNodeBlock(n, c)))
+        ? plain
+        : null)
+  }
+  if (hinted && hintedPath) {
+    ;[preferredDir, alternativeDir] = [hinted[0], hinted[0]]
+    ;[preferredOppositeDir, alternativeOppositeDir] = [hinted[1], hinted[1]]
+  }
+
   // Try preferred path — routeEdge tries an unobstructed direct L-shape
   // before falling back to A* (see routeEdge / tryDirectPath in
   // pathfinder.ts). determineStartAndEndDir only ever produces one of the
@@ -2340,12 +2395,9 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     requireGridCoord(edge.to),
     preferredOppositeDir,
   )
-  const preferredPath = routeEdge(
-    graph,
-    prefFrom,
-    prefTo,
-    requireCardinalDirection(preferredDir),
-  )
+  const preferredPath =
+    hintedPath ??
+    routeEdge(graph, prefFrom, prefTo, requireCardinalDirection(preferredDir))
 
   // Try alternative path
   const altFrom = gridCoordDirection(
@@ -2356,12 +2408,9 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     requireGridCoord(edge.to),
     alternativeOppositeDir,
   )
-  const alternativePath = routeEdge(
-    graph,
-    altFrom,
-    altTo,
-    requireCardinalDirection(alternativeDir),
-  )
+  const alternativePath =
+    hintedPath ??
+    routeEdge(graph, altFrom, altTo, requireCardinalDirection(alternativeDir))
 
   // Case 1: Both paths found — pick the shorter one (routeEdge already merged each)
   if (preferredPath !== null && alternativePath !== null) {

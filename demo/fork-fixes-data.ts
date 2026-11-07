@@ -561,7 +561,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-longest-path-layering',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII put a node in the row of the parent that placed it first',
     symptom:
       'A node took the level of whichever parent placed it first and was never revisited, so with `A --> D` and `B --> D` it landed beside `B` and `B --> D` ran sideways. Nodes are now ranked by longest path, with back edges ignored, as mermaid does. The same source also fixed edge labels losing the spaces between their words: an edge label drawn over a stroke treated its spaces as transparent, so `long label` printed as `long─label`.',
@@ -571,7 +570,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 1345,
     render: 'ascii',
     lookFor:
-      'Before: `D` sits in the same row as `B`. After: `D` is below `B` and `B --> D` drops straight down.',
+      'Before: `D` sits in the same row as `B` and `A` hangs to the left of its children. After: `A` is centred over `C`, `B` is left of it and `D` right of `C`, and each edge leaves and enters the face mermaid uses: `A`’s bottom takes the six ports in the order `B`, `C`, `D`, forward edge before its return.',
     upstreamIssues: [69],
   },
   {
@@ -640,7 +639,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-feedback-edge-sibling-order',
-    parked: 'ascii-flow-axis-faces',
     title:
       'ASCII subgraph order and feedback edges followed mermaid 11, not 12',
     symptom:
@@ -651,7 +649,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2148,
     render: 'ascii',
     lookFor:
-      'Before: `Fix & Retry` hangs below `QA Approved?`. After: it sits beside `Build Image`, and the QA `No` edge rises into it.',
+      'Before: `Fix & Retry` hangs below `QA Approved?`. After: it sits beside `Build Image`, `Yes` and `No` leave the two lower slants of `Tests Pass?`, the dotted edge re-enters `Push Code` from below, right of the forward stem, and the QA `No` edge rises from the upper-right slant into it.',
   },
   {
     id: 'er-multi-key-attributes',
@@ -759,7 +757,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-opposing-edges-diamond',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII opposing edges merged into one route at a diamond',
     symptom:
       'Two edges between the same pair (`B -->|no| D` and `D --> B`) in a left-to-right chart drew a single merged route when B was a diamond or D a parallelogram, so the loop-back looked like one two-way line.',
@@ -769,7 +766,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2509,
     render: 'ascii',
     lookFor:
-      'Before: one stroke leaves the diamond’s bottom vertex. After: no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
+      'Before: one stroke leaves the diamond’s bottom vertex. After: yes leaves the upper-right slant, no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
   },
   {
     id: 'architecture-junction-group-icons',

@@ -78,7 +78,13 @@ import { displayWidth } from './display-width.ts'
 import { edgeLabelPlacement, labelFit } from './draw-arrows.ts'
 import { withPortShifts } from './port-offsets.ts'
 import { getAsciiLayout } from './layout-hints.ts'
-import type { AsciiLayoutHints, AsciiNodeHint } from './layout-hints.ts'
+import type {
+  AsciiEdgeEndHint,
+  AsciiEdgeHint,
+  AsciiFace,
+  AsciiLayoutHints,
+  AsciiNodeHint,
+} from './layout-hints.ts'
 
 // `requireGridCoord` is defined in types.ts (a pure predicate over
 // AsciiNode with no grid-state dependency) and re-exported here so the two
@@ -2320,6 +2326,29 @@ function layoutHintsFor(graph: AsciiGraph): AsciiLayoutHints | undefined {
   return hints
 }
 
+const MIRROR: Record<string, Record<AsciiFace, AsciiFace>> = {
+  RL: { T: 'T', B: 'B', L: 'R', R: 'L' },
+  BT: { T: 'B', B: 'T', L: 'L', R: 'R' },
+}
+
+/** ELK's edge-end faces per grid edge, mirrored into the grid's TD/LR orientation (RL and BT are flipped after drawing). */
+function gridEdgeHints(
+  graph: AsciiGraph,
+  hints: AsciiLayoutHints,
+): Map<AsciiEdge, AsciiEdgeHint> {
+  const mirror = MIRROR[graph.parsed?.direction ?? '']
+  const byIndex = new Map(hints.edges.map((h) => [h.index, h]))
+  const out = new Map<AsciiEdge, AsciiEdgeHint>()
+  for (const edge of graph.edges) {
+    const h = byIndex.get(edge.parsedIndex ?? -1)
+    if (!h) continue
+    const end = (e: AsciiEdgeEndHint): AsciiEdgeEndHint =>
+      mirror ? { ...e, face: mirror[e.face] } : e
+    out.set(edge, { ...h, start: end(h.start), end: end(h.end) })
+  }
+  return out
+}
+
 /**
  * Mermaid's gap between neighbouring nodes in provider units. One 4-cell slot
  * is the median node's cross-axis size plus this gap, so two siblings ELK puts
@@ -2535,6 +2564,7 @@ export function createMapping(graph: AsciiGraph): void {
   if (slots) {
     for (const [node, at] of slots) reserveSpotInGrid(graph, node, at)
   }
+  graph.edgeHints = slots && hints ? gridEdgeHints(graph, hints) : undefined
 
   // Place external root nodes
   for (const node of slots ? [] : externalRootNodes) {
