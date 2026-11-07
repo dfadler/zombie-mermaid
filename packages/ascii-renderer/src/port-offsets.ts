@@ -1045,7 +1045,11 @@ function allocateFaces(
   const ranked = hintedFaces(graph)
   const taken = new Set<string>()
   const fixed = new Map<AsciiEdge, number>()
-  for (const [face, list] of ranked) {
+  // The fullest face first: it needs the closest spacing, and a straight edge
+  // then carries its cell over to the other face (a face of two would spread
+  // its pair a stroke spacing apart and leave no cell for a third end beside).
+  const byFill = [...ranked].sort((a, b) => b[1].length - a[1].length)
+  for (const [face, list] of byFill) {
     const offs = placeFace(graph, list, [], fixed, false)
     if (!offs) continue
     list.forEach((f, i) => {
