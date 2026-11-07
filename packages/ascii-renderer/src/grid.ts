@@ -471,7 +471,7 @@ function rerouteAroundStyleConflicts(
         ) ??
         // A lane already keeps off other edges' runs (`runTaken`); the stem
         // it shares with a chain partner is split by port-offsets.ts.
-        (edge.parallelLane?.index || edge.faceLane
+        (edge.parallelLane?.index || edge.faceLane || edge.hintedLane
           ? null
           : findUnrelatedOverlap(
               nodeOnlyGrid,

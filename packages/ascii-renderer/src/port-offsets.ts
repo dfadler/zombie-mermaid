@@ -898,6 +898,8 @@ function raiseFlowFanBars(
 /** One Z-shaped edge (out along the flow, across on its bend row, on along the flow) in a gap. */
 export interface Jog {
   edge: AsciiEdge
+  /** Index in the edge's path of the Z's first point. */
+  at: number
   /** Drawn bend row (column for LR) before planning. */
   row: number
   /** Drawn cross-axis position of the leg nearer the gap's first side, and of the other. */
@@ -1001,13 +1003,14 @@ function planJogRows(
   graph: AsciiGraph,
   result: Map<AsciiEdge, PortShift>,
 ): void {
-  // Vertical flows only (ponytail): LR/RL keep the grid's bend column until a follow-up gives them jog columns.
-  if (graph.config.graphDirection === 'LR') return
-  const main = 'y'
-  const cross = 'x'
+  const lr = graph.config.graphDirection === 'LR'
+  const main = lr ? 'x' : 'y'
+  const cross = lr ? 'y' : 'x'
   const gaps = new Map<number, Jog[]>()
   for (const edge of graph.edges) {
-    const p = edge.path
+    // A lane ELK routes between faces (#2902) ends in a Z too: its last four points.
+    const at = edge.hintedLane && edge.path.length === 6 ? 2 : 0
+    const p = edge.path.slice(at)
     if (
       p.length !== 4 ||
       p[0]![cross] !== p[1]![cross] ||
@@ -1022,12 +1025,13 @@ function planJogRows(
       continue
     }
     const shift = result.get(edge)
-    const d = drawnPath(graph, edge, shift)
+    const d = drawnPath(graph, edge, shift).slice(at)
     // Near leg: the one on the side of the gap its grid row lies after.
     const forward = p[0]![main] < p[3]![main]
     const [n, f] = forward ? [d[0]!, d[3]!] : [d[3]!, d[0]!]
     const jog: Jog = {
       edge,
+      at,
       row: d[1]![main],
       near: n[cross],
       far: f[cross],
@@ -1039,7 +1043,7 @@ function planJogRows(
   for (const [g, jogs] of gaps) {
     // A gap with more jogs than this keeps its shared rows: the search is cubic in them.
     if (jogs.length < 2 || jogs.length > MAX_GAP_JOGS) continue
-    const size = graph.rowHeight.get(g) ?? 0
+    const size = (lr ? graph.columnWidth : graph.rowHeight).get(g) ?? 0
     const first =
       lineToDrawing(graph, [{ x: g, y: g }])[0]![main] - Math.floor(size / 2)
     const lo = first + 1
@@ -1063,7 +1067,8 @@ function planJogRows(
     jogs.forEach((jog, i) => {
       const shift = result.get(jog.edge) ?? { start: 0, end: 0 }
       const points = shift.points ?? jog.edge.path.map(() => ({ x: 0, y: 0 }))
-      if (best) for (const k of [1, 2]) points[k]![main] = best[i]! - jog.base
+      if (best)
+        for (const k of [1, 2]) points[jog.at + k]![main] = best[i]! - jog.base
       result.set(jog.edge, {
         ...shift,
         points,

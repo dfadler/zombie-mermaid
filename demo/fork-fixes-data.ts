@@ -798,7 +798,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-label-canvas-edge',
-    parked: 'ascii-layout-details',
     title: 'ASCII edge label cut off at the canvas edge',
     symptom:
       'In a right-to-left state diagram, the label `e1` on an edge running down the outermost column printed as `1`, because its first character fell past the edge of the canvas.',
