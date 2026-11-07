@@ -233,6 +233,11 @@ describe('mindmapLabelLines', () => {
     ])
   })
 
+  it('leaves no tag behind when one is built from the pieces of another', () => {
+    expect(mindmapPlainLines('<<u>script>x')).toEqual(['x'])
+    expect(mindmapPlainLines('a <img src=x onerror=y> b')).toEqual(['a  b'])
+  })
+
   it('gives one empty line for empty text', () => {
     expect(mindmapLabelLines('')).toEqual([[]])
   })

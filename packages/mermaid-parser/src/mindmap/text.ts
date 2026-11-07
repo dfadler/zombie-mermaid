@@ -15,15 +15,24 @@ const ITALIC_ON = ''
 const ITALIC_OFF = ''
 const BREAK = ''
 
+/** Drop every tag but the ones handled below; repeated, so `<<b>x>` cannot leave one behind. */
+function stripTags(text: string): string {
+  let out = text
+  for (let prev = ''; prev !== out;) {
+    prev = out
+    out = out.replace(/<\/?(?!(?:b|strong|i|em|br)\b)[a-z][^>]*>/gi, '')
+  }
+  return out
+}
+
 /** The label split into lines of styled runs (empty text gives one empty line). */
 export function mindmapLabelLines(text: string): MindmapTextRun[][] {
-  const marked = text
+  const marked = stripTags(text)
     .replace(/<br\s*\/?>|\n/gi, BREAK)
     .replace(/<(?:b|strong)>/gi, BOLD_ON)
     .replace(/<\/(?:b|strong)>/gi, BOLD_OFF)
     .replace(/<(?:i|em)>/gi, ITALIC_ON)
     .replace(/<\/(?:i|em)>/gi, ITALIC_OFF)
-    .replace(/<\/?[a-z][^>]*>/gi, '')
     .replace(/\*\*(?=\S)(.+?)\*\*/g, `${BOLD_ON}$1${BOLD_OFF}`)
     .replace(/\*(?=\S)(.+?)\*/g, `${ITALIC_ON}$1${ITALIC_OFF}`)
 

@@ -92,7 +92,7 @@ function renderLabel(n: PositionedMindmapNode): string {
         return cls === '' ? text : `<tspan class="${cls}">${text}</tspan>`
       })
       .join('')
-    return `<text x="0" y="${r(y)}" dy="0.35em" class="mm-label" xml:space="preserve">${spans.trim() === '' ? '' : spans.replace(/^\s+/, '').replace(/\s+$/, '')}</text>`
+    return `<text x="0" y="${r(y)}" dy="0.35em" class="mm-label" xml:space="preserve">${spans.trim()}</text>`
   })
   return lines.join('')
 }
