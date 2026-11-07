@@ -32,7 +32,7 @@ export interface OfficialMindmapNode {
   id: number
   /** Classes after `node mindmap-node`: `section-root section--1`, `section-0 urgent`. */
   classes: string
-  /** circle | rect | rect-rounded | polygon | path-default | path-other */
+  /** Circle | rect | rect-rounded | polygon | path-default | path-other */
   shape: string
   /** Label lines, trimmed. */
   lines: string[]
@@ -115,7 +115,7 @@ export function mindmapMismatches(
     return [`nodes: ${official.nodes.length} official, ${ours.length} ours`]
   }
 
-  // structure
+  // Structure
   const edgeKey = new Set(official.edges.map((e) => `${e.from}_${e.to}`))
   for (const [i, o] of official.nodes.entries()) {
     const u = ours[i]!
@@ -153,7 +153,7 @@ export function mindmapMismatches(
     )
   }
 
-  // shapes, from the official label box
+  // Shapes, from the official label box
   for (const [i, o] of official.nodes.entries()) {
     const s = mindmapShape(ours[i]!.node.shape, o.labelWidth, o.labelHeight)
     if (
@@ -166,7 +166,7 @@ export function mindmapMismatches(
     }
   }
 
-  // layout, from the official node sizes
+  // Layout, from the official node sizes
   const placed = coseBilkentLayout(
     official.nodes.map((o) => ({
       id: String(o.id),
@@ -192,7 +192,7 @@ export function mindmapMismatches(
     }
   }
 
-  // edges: class and the path through the official centres
+  // Edges: class and the path through the official centres
   const byId = new Map(official.nodes.map((o) => [o.id, o]))
   for (const e of official.edges) {
     const u = ours[e.to]!

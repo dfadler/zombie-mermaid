@@ -30,7 +30,7 @@ const lay = (src: string) => layoutMindmap(parseMindmap(src))
 const count = (svg: string, re: RegExp) => (svg.match(re) ?? []).length
 
 describe('mindmap shapes, from mermaid 12.3.0 label boxes', () => {
-  // label box (w x h) -> shape box, measured in mermaid 12.3.0.
+  // Label box (w x h) -> shape box, measured in mermaid 12.3.0.
   it.each([
     ['default', 49.375, 24, 89.375, 34],
     ['rect', 83.265625, 24, 123.265625, 44],
@@ -55,7 +55,7 @@ describe('mindmap shapes, from mermaid 12.3.0 label boxes', () => {
     const bang = shapeFor('bang', 34.234375, 24)
     expect(bang.path).toMatch(/^M-42\.1172 -32 a/)
     expect(bang.height).toBeGreaterThan(40)
-    // a bang is never smaller than the label plus 20
+    // A bang is never smaller than the label plus 20
     expect(shapeFor('bang', 100, 24).width).toBeGreaterThan(120)
   })
 })
@@ -109,7 +109,7 @@ describe('mindmap layout', () => {
     expect(l.nodes[0]!.section).toBeUndefined()
     const sections = l.nodes.slice(1).map((n) => n.section)
     expect(sections.slice(0, 4)).toEqual([0, 0, 1, 1])
-    expect(sections[22]).toBe(0) // b11 wraps to section 0
+    expect(sections[22]).toBe(0) // B11 wraps to section 0
     expect(sections[23]).toBe(0)
   })
 
@@ -239,7 +239,7 @@ describe('mindmap SVG', () => {
     expect(svg).toMatch(/<rect class="mm-shape" x=/)
     expect(svg).toMatch(/<rect class="mm-shape" rx="5"/)
     expect(svg).toContain('<circle class="mm-shape"')
-    // cloud, bang and the default shape
+    // Cloud, bang and the default shape
     expect(count(svg, /<path class="mm-shape"/g)).toBe(3)
     expect(svg).toContain('<polygon class="mm-shape"')
   })
