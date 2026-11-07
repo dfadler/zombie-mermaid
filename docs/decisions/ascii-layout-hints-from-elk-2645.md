@@ -94,3 +94,27 @@ grid's TD/LR orientation. Not covered, by design of this step: same-pair edge
 groups (duplicates, and reciprocal pairs laid out side by side, which use
 `buildParallelLanePath`), self-loops, cluster-source and cluster-target edges,
 and subgraphs that set their own direction; they keep the grid's faces.
+
+### Same-pair groups (PR 4c)
+
+Hints reach the provider's edge list in layout order, which puts self-loops
+last, so the grid matches an edge to the next unused hint for its own pair of
+nodes rather than by position (by position, every edge declared after a
+self-loop took a neighbour's hint). A side-by-side pair of nodes (LR/RL in the
+grid, nothing between them, flat box shapes) whose every edge ELK draws between
+the facing side faces takes the dense-pair routing of #2645: one straight stroke
+per edge, a row each in ELK's order, one-line labels allowed. Those groups take
+no parallel lane (`assignParallelEdgeLanes` skips them), so each stroke keeps its
+own label placement; a return stroke runs right to left and leaves the cell next
+to its head to the head. A face that holds several ELK-ordered ends is placed
+fullest first, so the straight edges it fixes carry their cell to the emptier
+face, which would otherwise spread its pair a stroke spacing apart and leave no
+cell for a third end. A hinted plain L (used when the search finds no route, or
+on a re-route) is refused when it runs within a cell of a frame the edge has no
+end in, because only the search keeps clear of the wall.
+
+Not done: self-loops (ELK puts them on the top face in LR and on a side face in
+TD; the grid's loop shapes and margin row are tied to its own faces), same-pair
+groups that are not neighbours on one row (duplicates whose route has to go
+round a node, vertical TD groups, labels over one line), a jog row per edge and
+cluster-source and cluster-target edges. They keep the grid's own routing.

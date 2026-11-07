@@ -2337,10 +2337,17 @@ function gridEdgeHints(
   hints: AsciiLayoutHints,
 ): Map<AsciiEdge, AsciiEdgeHint> {
   const mirror = MIRROR[graph.parsed!.direction]
-  const byIndex = new Map(hints.edges.map((h) => [h.index, h]))
+  // The provider lists edges in the layout's order, which is not the parsed
+  // order (self-loops come last), so an edge takes the next hint for its own
+  // pair of nodes.
+  const queue = new Map<string, AsciiEdgeHint[]>()
+  for (const h of hints.edges) {
+    const key = `${h.from}\0${h.to}`
+    queue.set(key, [...(queue.get(key) ?? []), h])
+  }
   const out = new Map<AsciiEdge, AsciiEdgeHint>()
   for (const edge of graph.edges) {
-    const h = byIndex.get(edge.parsedIndex!)
+    const h = queue.get(`${edge.from.name}\0${edge.to.name}`)?.shift()
     if (!h) continue
     const end = (e: AsciiEdgeEndHint): AsciiEdgeEndHint =>
       mirror ? { ...e, face: mirror[e.face] } : e

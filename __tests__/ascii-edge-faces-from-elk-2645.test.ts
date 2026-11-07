@@ -11,7 +11,9 @@ import {
 } from '@zombie-mermaid/ascii-renderer'
 import { renderGraphAscii } from '../packages/ascii-renderer/src/flowchart.ts'
 import type { AsciiGraph } from '../packages/ascii-renderer/src/types.ts'
+import { renderMermaidASCII } from '../packages/ascii-renderer/src/index.ts'
 import { allForkFixes } from '../demo/fork-fixes-data.ts'
+import { samples as allSamples } from '../samples/samples-data.ts'
 import { asciiLayoutProvider } from '../src/ascii-layout-provider.ts'
 import { measureSample } from '../scripts/lib/ascii-topology.ts'
 
@@ -31,8 +33,13 @@ function faceOrders(source: string): { hint: number[]; drawn: number[] }[] {
   const out: { hint: number[]; drawn: number[] }[] = []
   const afterDraw = (g: AsciiGraph): void => {
     const groups = new Map<string, { order: number; at: number }[]>()
+    // The provider lists edges in layout order (self-loops last): match by nodes.
+    const left = [...hints.edges]
     g.edges.forEach((e) => {
-      const h = hints.edges.find((x) => x.index === e.parsedIndex)
+      const at = left.findIndex(
+        (x) => x.from === e.from.name && x.to === e.to.name,
+      )
+      const h = at < 0 ? undefined : left.splice(at, 1)[0]
       if (!h || !e.ends || e.from === e.to) return
       for (const [end, hint, node] of [
         [e.ends.start, h.start, e.from],
@@ -119,5 +126,43 @@ describe('ends on a face follow ELK’s order (#2645)', () => {
     const faces = faceOrders(source)
     expect(faces.length).toBeGreaterThan(0)
     for (const f of faces) expect(inOrder(f)).toBe(true)
+  })
+})
+
+describe('same-pair groups and mid-list self-loops take ELK’s faces (#2886)', () => {
+  const PAIR = 'flowchart LR\n  A -->|one| B\n  A -->|two| B\n  B -->|back| A'
+  const LOOP_FIRST =
+    'flowchart LR\n  a\n  b\n  c\n  a --> a\n  b --> a\n  a --> c\n  b --> c\n  c --> a'
+  const RL_STADIUM =
+    'flowchart RL\n  n0["L6rc9iw"]\n  n1(["9B531Zk"])\n  n1 --> n0\n  n0 --> n1\n  n1 --> n0'
+
+  it.each([
+    ['labelled duplicate and reciprocal pair', PAIR],
+    ['reciprocal and duplicate edges in RL, stadium end', RL_STADIUM],
+    ['a self-loop declared before the other edges', LOOP_FIRST],
+    ['dense group with loops', entry('ascii-face-capacity-loops')],
+  ])('%s: every end is on ELK’s face, in ELK’s order', (_name, source) => {
+    const c = measureSample(source)
+    expect(c.faceOk).toBe(c.faceEnds)
+    for (const f of faceOrders(source)) expect(inOrder(f)).toBe(true)
+  })
+
+  it('draws each edge of a side-by-side pair as a stroke of its own with its head and label', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    const out = renderMermaidASCII(PAIR, { layoutHints: true } as never)
+    const rows = out.split('\n').filter((l) => /[►◄]/.test(l))
+    expect(rows).toHaveLength(3)
+    expect(rows[0]).toMatch(/─one─*►/)
+    expect(rows[1]).toMatch(/─two─*►/)
+    expect(rows[2]).toMatch(/◄─*back/)
+  })
+
+  it('keeps the route of an edge past a frame it has no end in off the frame wall', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    const out = renderMermaidASCII(
+      allSamples.find((s) => s.title === 'State: Composite States')!.source,
+      { layoutHints: true } as never,
+    )
+    expect(out).not.toContain('┼')
   })
 })
