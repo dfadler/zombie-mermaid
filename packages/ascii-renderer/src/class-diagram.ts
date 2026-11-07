@@ -125,7 +125,7 @@ function getMarkerShape(
       return useAscii ? 'O' : '○'
     case 'link':
     case 'dashed-link':
-      return '' // unreachable: plain links have markerAt 'none'
+      return '' // Unreachable: plain links have markerAt 'none'
     case 'association':
     case 'dependency':
       // Directional arrow: Mermaid's open V, the same in both charsets.

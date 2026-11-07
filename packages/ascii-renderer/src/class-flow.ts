@@ -60,7 +60,7 @@ const MARKER_OF: Record<ClassRelationship['type'], AsciiEdgeMarker> = {
   association: 'class-arrow',
   dependency: 'class-arrow',
   lollipop: 'class-circle',
-  link: 'class-arrow', // unused: plain links draw no marker
+  link: 'class-arrow', // Unused: plain links draw no marker
   'dashed-link': 'class-arrow',
 }
 

@@ -16,7 +16,7 @@ describe('class edge corners', () => {
   )
   it('draws edges as <path> with a Q fillet, not a <polyline>', () => {
     expect(svg).not.toContain('<polyline class="class-relationship"')
-    // fillet starts 5*sqrt(2) before the corner (the Q control point)
+    // Fillet starts 5*sqrt(2) before the corner (the Q control point)
     const fillets = rel(svg).flatMap((p) =>
       [...p.matchAll(/L ([\d.]+) ([\d.]+) Q ([\d.]+) ([\d.]+),/g)].map((m) =>
         Math.hypot(+m[1]! - +m[3]!, +m[2]! - +m[4]!),
