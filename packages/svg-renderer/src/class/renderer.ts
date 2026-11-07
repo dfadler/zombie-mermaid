@@ -519,6 +519,7 @@ function renderRelationship(rel: PositionedClassRelationship): string {
   if (rel.points.length < 2) return ''
 
   const isDashed =
+    rel.dashed ||
     rel.type === 'dependency' ||
     rel.type === 'realization' ||
     rel.type === 'dashed-link'

@@ -100,8 +100,11 @@ export function convertToAsciiGraph(
   config: AsciiConfig,
 ): AsciiGraph {
   const { graph: parsed, bare } = lowerEmptySubgraphs(original)
-  // An edge's arrowhead would overwrite a letter of a bare title, so an empty
-  // subgraph that is an edge endpoint keeps a box around its title.
+  // An edge's arrowhead would overwrite a letter of a bare title. Mermaid 12.3.0
+  // draws the title as bare text between two arrows (#2784): in a horizontal
+  // layout a pad cell each side takes the arrowheads; in a vertical one the edge
+  // would run through the text row, so that keeps a box around its title.
+  const horizontal = parsed.direction === 'LR' || parsed.direction === 'RL'
   const onEdge = new Set(parsed.edges.flatMap((e) => [e.source, e.target]))
   // Collect subgraph ids (including nested) up front. When a flowchart edge
   // references a subgraph id directly (e.g. `ONE --> TWO` where ONE/TWO are
@@ -138,10 +141,13 @@ export function convertToAsciiGraph(
       // renderer (rendered as styled tspans) but the ASCII renderer has no
       // equivalent concept, so they're stripped here rather than shown
       // literally — see issue #65.
-      displayLabel: stripFormattingTags(mNode.label),
+      displayLabel:
+        bare.has(id) && onEdge.has(id) && horizontal
+          ? ` ${stripFormattingTags(mNode.label)} `
+          : stripFormattingTags(mNode.label),
       // Preserve shape from parser for shape-aware rendering
       shape:
-        bare.has(id) && !onEdge.has(id)
+        bare.has(id) && (horizontal || !onEdge.has(id))
           ? 'class-name'
           : (ASCII_SHAPE[mNode.shape] ?? mNode.shape),
       index,
