@@ -512,6 +512,8 @@ export interface Lifeline {
     actorId: string;
     // (undocumented)
     bottomY: number;
+    // @deprecated
+    destroyed?: boolean;
     // (undocumented)
     topY: number;
     // (undocumented)
