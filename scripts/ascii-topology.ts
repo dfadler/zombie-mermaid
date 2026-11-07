@@ -17,12 +17,9 @@ import {
 } from './lib/ascii-topology.ts'
 import type { Counts } from './lib/ascii-topology.ts'
 
-const FORK_FIXES = [
-  'ascii-longest-path-layering',
-  'subgraph-frame-merge',
-  'ascii-label-canvas-edge',
-  'ascii-feedback-edge-sibling-order',
-]
+/** Every ASCII fork-fix entry plus the subgraph frame merge, flowchart/state only. */
+const inScope = (id: string): boolean =>
+  id.startsWith('ascii-') || id === 'subgraph-frame-merge'
 const isGraph = (src: string): boolean =>
   /^\s*(flowchart|graph|stateDiagram)/m.test(
     src.replace(/^---[\s\S]*?---/, '').trim(),
@@ -33,7 +30,7 @@ const list = [
     .filter((s) => isGraph(s.source))
     .map((s) => ({ title: s.title, source: redirectDirection(s.source) })),
   ...allForkFixes
-    .filter((f) => FORK_FIXES.includes(f.id))
+    .filter((f) => inScope(f.id) && isGraph(f.source))
     .map((f) => ({
       title: `ENTRY ${f.id}`,
       source: redirectDirection(f.source),

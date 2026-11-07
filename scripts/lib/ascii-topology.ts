@@ -153,8 +153,10 @@ export function readGrid(source: string): GridRender & { direction: string } {
       // drawn characters, so a wide box reads as wide.
       const gx = n.gridCoord.x + 1
       const gy = n.gridCoord.y + 1
+      // `main` is the flow-leading edge (ELK aligns a layer on it; centres
+      // drift by half the width difference), `cross` the centre.
       out.spots[n.name] = {
-        main: flip * (horiz ? gx : gy),
+        main: flip * (horiz ? n.gridCoord.x : n.gridCoord.y),
         cross: horiz ? gy : gx,
         size: horiz ? h : w,
       }
@@ -215,18 +217,22 @@ export function measureSample(source: string): Counts {
   const pos = layoutFlowchartSync(parsed)
   const horiz = direction === 'LR' || direction === 'RL'
   // ELK stays in SVG orientation; the grid side was mirrored to match it.
+  // Layers are the provider's hint layers (the grouping `buildHints` uses, which
+  // handles a diamond beside shorter boxes); `main` is spaced so they never fall
+  // within the layer tolerance. The provider failing is a hard error here.
+  const hints = asciiLayoutProvider.graph!(parsed)!
+  const rev = direction === 'RL' || direction === 'BT'
   const elk: Record<string, Spot> = {}
   for (const n of pos.nodes) {
-    const m = horiz ? n.x + n.width / 2 : n.y + n.height / 2
+    const layer = hints.nodes.get(n.id)!.layer
     elk[n.id] = {
-      main: m,
+      main: (rev ? -layer : layer) * 1000,
       cross: horiz ? n.y + n.height / 2 : n.x + n.width / 2,
       size: horiz ? n.height : n.width,
     }
   }
   const c = compareSpots(elk, spots)
-  const hints = asciiLayoutProvider.graph!(parsed)
-  return hints ? addCounts(c, compareFaces(edges, hints)) : c
+  return addCounts(c, compareFaces(edges, hints))
 }
 
 /** A sample is exact when every layer and in-layer-order pair agrees. */
