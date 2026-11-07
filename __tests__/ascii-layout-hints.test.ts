@@ -84,6 +84,23 @@ describe('buildHints: a diamond end on a slant', () => {
 })
 
 describe('buildHints', () => {
+  it('keeps a taller node in the layer whose top edge it shares (#2780)', () => {
+    // ELK aligns tops: an 80-high node's centre sits 30 below a 20-high one's,
+    // which a centre-only tolerance split into two layers.
+    const h = buildHints(
+      [
+        { id: 'a', cx: 20, cy: 10, w: 40, h: 20 },
+        { id: 'tall', cx: 100, cy: 40, w: 40, h: 80 },
+        { id: 'c', cx: 100, cy: 300, w: 40, h: 20 },
+      ],
+      [],
+      'TD',
+    )
+    expect(h.nodes.get('a')!.layer).toBe(0)
+    expect(h.nodes.get('tall')!.layer).toBe(0)
+    expect(h.nodes.get('c')!.layer).toBe(1)
+  })
+
   const paths = [
     {
       from: 'A',
@@ -190,4 +207,28 @@ describe('asciiLayoutProvider', () => {
     })
     expect(() => asciiLayoutProvider.graph!(g)).toThrow('boom')
   })
+})
+
+describe('ELK hints with a decision among shorter nodes (#2780)', () => {
+  it.each(['TD', 'BT', 'LR', 'RL'])(
+    "%s: isolated nodes share the decision's rank, duplicated edge renders",
+    (dir) => {
+      registerAsciiLayoutFromElk()
+      const src = `flowchart ${dir}\n  n0(["n54J9wn"])\n  n1(["m"])\n  n2{"1z"}\n  n3(["5Ux716"])\n  n4("E8Hl7O")\n  n2 --> n0\n  n2 --> n0\n  n2 --> n3\n`
+      const lines = renderMermaidASCII(src, {
+        colorMode: 'none',
+        useAscii: false,
+      }).split('\n')
+      const row = (s: string) => lines.findIndex((l) => l.includes(s))
+      const col = (s: string) => lines.find((l) => l.includes(s))!.indexOf(s)
+      if (dir === 'LR' || dir === 'RL') {
+        // Same column as the decision (centres within a box's slack).
+        expect(Math.abs(col('m') - col('1z'))).toBeLessThanOrEqual(5)
+        expect(Math.abs(col('E8Hl7O') - col('1z'))).toBeLessThanOrEqual(8)
+      } else {
+        expect(row('m')).toBe(row('1z'))
+        expect(row('E8Hl7O')).toBe(row('1z'))
+      }
+    },
+  )
 })

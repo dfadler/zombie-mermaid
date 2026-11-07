@@ -1627,7 +1627,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
             graph.edges.some((r) => r.from === e.to && r.to === node),
         )
       if (reciprocal)
-        markDecisionSplit(node, lr, getChildren(graph, node).length)
+        markDecisionSplit(node, lr, new Set(getChildren(graph, node)).size)
     }
     return
   }
@@ -1644,7 +1644,9 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       continue
     }
     // No self-loops here: `flowsDown` rejected them.
-    const children = getChildren(graph, node)
+    // Parallel edges (`A --> B` twice) are one child: a duplicate would be
+    // slid, freed and placed twice onto the same block (#2780).
+    const children = [...new Set(getChildren(graph, node))]
     if (children.length < 1) continue
     let ok = true
     for (const c of children) {

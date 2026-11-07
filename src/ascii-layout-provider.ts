@@ -78,13 +78,29 @@ export function buildHints(
   const horizontal = flow === 'LR' || flow === 'RL'
   const main = (b: Box): number => (horizontal ? b.cx : b.cy)
   const cross = (b: Box): number => (horizontal ? b.cy : b.cx)
+  // ELK aligns the leading (or trailing) edge of a layer's nodes, not their
+  // centres, so a diamond beside shorter boxes sits further along the flow
+  // axis than they do. A node shares a layer when its centre, leading or
+  // trailing edge is within `LAYER_TOLERANCE` of the layer's first node.
+  const half = (b: Box): number => (horizontal ? b.w : b.h) / 2
   const sorted = [...boxes].sort((a, b) => main(a) - main(b))
   const layerOf = new Map<string, number>()
   let layer = -1
-  let prev = -Infinity
+  let first: Box | undefined
+  const near = (a: number, b: number): boolean =>
+    Math.abs(a - b) <= LAYER_TOLERANCE
   for (const b of sorted) {
-    if (main(b) - prev > LAYER_TOLERANCE) layer++
-    prev = main(b)
+    if (
+      !first ||
+      !(
+        near(main(b), main(first)) ||
+        near(main(b) - half(b), main(first) - half(first)) ||
+        near(main(b) + half(b), main(first) + half(first))
+      )
+    ) {
+      layer++
+      first = b
+    }
     layerOf.set(b.id, layer)
   }
   const last = layer
