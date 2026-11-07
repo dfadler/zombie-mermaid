@@ -215,7 +215,7 @@ describe('parseMermaid – <br> tag normalization', () => {
     it('normalizes <br> in relationship labels', () => {
       const lines = toLines([
         'erDiagram',
-        'CUSTOMER ||--o{ ORDER : places<br>orders',
+        'CUSTOMER ||--o{ ORDER : "places<br>orders"',
       ])
       const diagram = parseErDiagram(lines)
       expect(diagram.relationships[0]!.label).toBe('places\norders')
@@ -483,7 +483,7 @@ describe('renderMermaid – class diagram multi-line', () => {
 describe('renderMermaid – ER diagram multi-line', () => {
   it('renders multi-line relationship labels with tspan elements', async () => {
     const svg = await renderMermaid(`erDiagram
-      CUSTOMER ||--o{ ORDER : places<br>orders
+      CUSTOMER ||--o{ ORDER : "places<br>orders"
     `)
 
     expect(svg).toContain('<tspan')
