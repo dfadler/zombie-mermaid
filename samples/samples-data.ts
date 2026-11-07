@@ -3065,7 +3065,7 @@ pie title Pets adopted by volunteers
     title: 'Gantt: Wide Characters and Empty Sections',
     category: 'Gantt',
     description:
-      'Chinese, Japanese and emoji labels and a section heading with no tasks, which draws no row.',
+      'Chinese, Japanese and emoji text and a section heading with no tasks, which draws no row.',
     source: `gantt
     title プロジェクト計画 📅
     dateFormat YYYY-MM-DD
@@ -3075,7 +3075,7 @@ pie title Pets adopted by volunteers
     設計レビュー :after a, 5d
     section 空
     section 実装
-    コーディング 🚀 :b, 2024-04-10, 20d`,
+    コーディング :b, 2024-04-10, 20d`,
   },
   {
     title: 'Gantt: Top Axis',

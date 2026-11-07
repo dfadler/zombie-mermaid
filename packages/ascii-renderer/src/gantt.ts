@@ -238,8 +238,24 @@ export function renderGanttAscii(
     let last = W - 1
     while (last >= 0 && !cells[last]) last--
     let bar = ''
-    for (let c = 0; c <= last; c++) {
-      bar += cells[c] ? paint(cells[c]!.ch, cells[c]!.hex ?? theme.fg) : ' '
+    // One span per run of the same glyph and colour: a browser mockup draws a
+    // run of full blocks without hairline seams only when it is a single span.
+    for (let c = 0; c <= last;) {
+      const cell = cells[c]
+      if (!cell) {
+        bar += ' '
+        c++
+        continue
+      }
+      let end = c + 1
+      while (
+        end <= last &&
+        cells[end]?.ch === cell.ch &&
+        cells[end]?.hex === cell.hex
+      )
+        end++
+      bar += paint(cell.ch.repeat(end - c), cell.hex ?? theme.fg)
+      c = end
     }
     const label = labels[i]!
     lines.push(
