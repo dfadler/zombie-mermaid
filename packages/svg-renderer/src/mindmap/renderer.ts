@@ -26,6 +26,8 @@ import type {
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
+  paletteClass,
+  withRootClass,
   buildStyleBlock,
   styleOpenTag,
   escapeXml,
@@ -50,7 +52,7 @@ function mindmapStyles(
   chart: PositionedMindmap,
   colors: DiagramColors,
   nonce?: string,
-): string {
+): { css: string; cls: string } {
   const used = new Set<number>()
   for (const n of chart.nodes) if (n.section !== undefined) used.add(n.section)
   const indices = [...used].sort((a, b) => a - b)
@@ -64,7 +66,8 @@ function mindmapStyles(
       `  .mm-s${i} .mm-underline { stroke: var(--mm-color-${i}); }\n` +
       `  .mm-edge.mm-s${i} { stroke: var(--mm-color-${i}); }`,
   )
-  return `${styleOpenTag(nonce)}
+  const cls = paletteClass(vars)
+  const css = `${styleOpenTag(nonce)}
   .mm-edge { fill: none; }
   .mm-shape { stroke: none; }
   .mm-underline { stroke-width: 3px; }
@@ -73,11 +76,12 @@ function mindmapStyles(
   .mm-root .mm-label { fill: var(--bg); }
   .mm-bold { font-weight: 700; }
   .mm-italic { font-style: italic; }
-  svg {
+  .${cls} {
 ${vars.join('\n')}
   }
 ${rules.join('\n')}
 </style>`
+  return { css, cls }
 }
 
 function renderLabel(n: PositionedMindmapNode): string {
@@ -145,24 +149,28 @@ export function renderMindmapSvg(
   emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
+  const { css, cls } = mindmapStyles(chart, colors, emit.nonce)
   parts.push(
     withDataSrc(
-      svgOpenTag(
-        chart.width,
-        chart.height,
-        colors,
-        transparent,
-        title,
-        decorative,
-        undefined,
-        emit.styleAttribute,
-        emit.description,
+      withRootClass(
+        svgOpenTag(
+          chart.width,
+          chart.height,
+          colors,
+          transparent,
+          title,
+          decorative,
+          undefined,
+          emit.styleAttribute,
+          emit.description,
+        ),
+        cls,
       ),
       embedSource,
     ),
   )
   parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
-  parts.push(mindmapStyles(chart, colors, emit.nonce))
+  parts.push(css)
   parts.push(
     `<g transform="translate(${r(-chart.originX)}, ${r(-chart.originY)})">`,
   )

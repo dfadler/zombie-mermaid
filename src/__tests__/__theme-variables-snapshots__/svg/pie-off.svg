@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 557 450" width="557" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<svg class="zm-pal-ml8ock" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 557 450" width="557" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -30,7 +30,7 @@
   .pie-slice-label { fill: var(--_text); font-size: 17px; font-weight: 400; }
   .pie-title { fill: var(--_text); font-size: 25px; font-weight: 400; }
   .pie-legend-text { fill: var(--_text); font-size: 17px; font-weight: 400; }
-  svg {
+  .zm-pal-ml8ock {
     --pie-color-0: var(--accent, #3b82f6);
     --pie-color-1: #0d5ba5;
     --pie-color-2: #5fb4f2;

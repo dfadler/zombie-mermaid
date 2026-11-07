@@ -29,6 +29,8 @@ import type { PositionedPieChart } from '@zombie-mermaid/mermaid-parser'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
+  paletteClass,
+  withRootClass,
   buildStyleBlock,
   styleOpenTag,
   escapeXml,
@@ -59,7 +61,7 @@ function pieStyles(
   chart: PositionedPieChart,
   colors: DiagramColors,
   nonce?: string,
-): string {
+): { css: string; cls: string } {
   const used = new Set<number>()
   for (const s of chart.slices) used.add(s.colorIndex)
   for (const l of chart.legend) used.add(l.colorIndex)
@@ -78,9 +80,11 @@ function pieStyles(
   const highlightRule = chart.slices.some((s) => s.highlighted)
     ? '\n  .pie-slice.pie-highlight { opacity: 1; }'
     : ''
-  const varsBlock = vars.length > 0 ? `\n  svg {\n${vars.join('\n')}\n  }` : ''
+  const cls = paletteClass(vars)
+  const varsBlock =
+    vars.length > 0 ? `\n  .${cls} {\n${vars.join('\n')}\n  }` : ''
 
-  return `${styleOpenTag(nonce)}
+  const css = `${styleOpenTag(nonce)}
   .pie-outer { fill: none; stroke: var(--fg); stroke-width: ${PIE.outerStrokeWidth}px; }
   .pie-slice { stroke: var(--fg); stroke-width: 2px; opacity: 0.7; }${highlightRule}
   .pie-slice-label { fill: var(--_text); font-size: ${PIE.sectionFontSize}px; font-weight: ${PIE.fontWeight}; }
@@ -88,6 +92,7 @@ function pieStyles(
   .pie-legend-text { fill: var(--_text); font-size: ${PIE.legendFontSize}px; font-weight: ${PIE.fontWeight}; }${varsBlock}
 ${rules.join('\n')}
 </style>`
+  return { css, cls }
 }
 
 /**
@@ -109,25 +114,29 @@ export function renderPieSvg(
   emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
+  const { css, cls } = pieStyles(chart, colors, emit.nonce)
 
   parts.push(
     withDataSrc(
-      svgOpenTag(
-        chart.width,
-        chart.height,
-        colors,
-        transparent,
-        title ?? chart.accTitle,
-        decorative,
-        undefined,
-        emit.styleAttribute,
-        chart.accDescr,
+      withRootClass(
+        svgOpenTag(
+          chart.width,
+          chart.height,
+          colors,
+          transparent,
+          title ?? chart.accTitle,
+          decorative,
+          undefined,
+          emit.styleAttribute,
+          chart.accDescr,
+        ),
+        cls,
       ),
       embedSource,
     ),
   )
   parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
-  parts.push(pieStyles(chart, colors, emit.nonce))
+  parts.push(css)
 
   parts.push(
     `<circle cx="${r(chart.cx)}" cy="${r(chart.cy)}" r="${r(chart.outerRadius)}" class="pie-outer"/>`,
