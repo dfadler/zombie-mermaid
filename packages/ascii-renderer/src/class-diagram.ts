@@ -80,8 +80,7 @@ function getRelMarker(
   markerAt: 'from' | 'to' | 'both',
   forceDashed = false,
 ): RelMarker {
-  const dashed =
-    forceDashed || type === 'dependency' || type === 'realization'
+  const dashed = forceDashed || type === 'dependency' || type === 'realization'
   return { type, markerAt, dashed }
 }
 

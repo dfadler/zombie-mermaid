@@ -51,13 +51,20 @@ describe('both-ends and lollipop arrows', () => {
     ['()..', 'from'],
     ['..()', 'to'],
     ['()..()', 'both'],
-  ])('dotted lollipop %s is a dashed lollipop at %s (#2851)', (arrow, markerAt) => {
-    const r = parse(`classDiagram\n  A ${arrow} B`).relationships[0]!
-    expect([r.type, r.markerAt, r.dashed]).toEqual(['lollipop', markerAt, true])
-    expect(parse('classDiagram\n  A ()-- B').relationships[0]!.dashed).toBe(
-      undefined,
-    )
-  })
+  ])(
+    'dotted lollipop %s is a dashed lollipop at %s (#2851)',
+    (arrow, markerAt) => {
+      const r = parse(`classDiagram\n  A ${arrow} B`).relationships[0]!
+      expect([r.type, r.markerAt, r.dashed]).toEqual([
+        'lollipop',
+        markerAt,
+        true,
+      ])
+      expect(parse('classDiagram\n  A ()-- B').relationships[0]!.dashed).toBe(
+        undefined,
+      )
+    },
+  )
 
   it('SVG draws a dotted lollipop with a dashed stem and the circle (#2851)', () => {
     const svg = unscoped(renderMermaidSVG('classDiagram\n  A ..() B'))

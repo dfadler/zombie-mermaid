@@ -648,9 +648,7 @@ function parseRelationship(line: string): ClassRelationship | null {
 }
 
 /** Map arrow syntax to relationship type and marker placement (see {@link ARROWS}). */
-function parseArrow(
-  arrow: string,
-): {
+function parseArrow(arrow: string): {
   type: RelationshipType
   markerAt: 'from' | 'to' | 'both'
   dashed?: true
