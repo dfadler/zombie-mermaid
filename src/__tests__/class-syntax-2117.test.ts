@@ -47,6 +47,42 @@ describe('both-ends and lollipop arrows', () => {
     ])
   })
 
+  it.each([
+    ['()..', 'from'],
+    ['..()', 'to'],
+    ['()..()', 'both'],
+  ])(
+    'dotted lollipop %s is a dashed lollipop at %s (#2851)',
+    (arrow, markerAt) => {
+      const r = parse(`classDiagram\n  A ${arrow} B`).relationships[0]!
+      expect([r.type, r.markerAt, r.dashed]).toEqual([
+        'lollipop',
+        markerAt,
+        true,
+      ])
+      expect(parse('classDiagram\n  A ()-- B').relationships[0]!.dashed).toBe(
+        undefined,
+      )
+    },
+  )
+
+  it('SVG draws a dotted lollipop with a dashed stem and the circle (#2851)', () => {
+    const svg = unscoped(renderMermaidSVG('classDiagram\n  A ..() B'))
+    expect(svg).toMatch(/marker-end="url\(#cls-lollipop\)"/)
+    expect(svg).toContain('stroke-dasharray="6 4"')
+    expect(
+      unscoped(renderMermaidSVG('classDiagram\n  A ()-- B')),
+    ).not.toContain('stroke-dasharray="6 4"')
+  })
+
+  it('ASCII draws a dotted lollipop stem with dashed glyphs (#2851)', () => {
+    const dotted = renderMermaidASCII('classDiagram\n  A ..() B')
+    const solid = renderMermaidASCII('classDiagram\n  A --() B')
+    expect(dotted).toContain('○')
+    expect(dotted).toContain('┊')
+    expect(solid).not.toContain('┊')
+  })
+
   it('SVG puts a marker on both ends of a bidirectional line', () => {
     const svg = unscoped(renderMermaidSVG('classDiagram\n  A <|--|> B'))
     expect(svg).toMatch(/marker-start="url\(#cls-inherit\)"/)
