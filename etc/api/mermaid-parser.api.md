@@ -518,6 +518,9 @@ export function parseQuadrantChart(source: string): QuadrantChart;
 export function parseSequenceDiagram(lines: Statement[], text?: string): SequenceDiagram;
 
 // @public
+export function parseTimeline(text: string): Timeline;
+
+// @public
 export function parseXYChart(lines: Statement[]): XYChart;
 
 // @public
@@ -1092,6 +1095,61 @@ export interface PositionedSequenceDiagram {
     width: number;
 }
 
+// @public
+export interface PositionedTimeline {
+    axis: {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+    };
+    // (undocumented)
+    connectors: PositionedTimelineConnector[];
+    // (undocumented)
+    direction: 'LR' | 'TD';
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    nodes: PositionedTimelineNode[];
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+        fontSize: number;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedTimelineConnector {
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    x2: number;
+    // (undocumented)
+    y1: number;
+    // (undocumented)
+    y2: number;
+}
+
+// @public
+export interface PositionedTimelineNode {
+    colorClass: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    kind: 'section' | 'period' | 'event';
+    lines: string[];
+    padding: number;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
 // @public (undocumented)
 export interface PositionedTitle {
     // (undocumented)
@@ -1170,6 +1228,21 @@ export interface SequenceDiagram {
     mirrorActors?: false;
     notes: Note[];
     title?: string;
+}
+
+// @public
+export interface Timeline {
+    direction: 'LR' | 'TD';
+    periods: TimelinePeriod[];
+    sections: string[];
+    title?: string;
+}
+
+// @public
+export interface TimelinePeriod {
+    events: string[];
+    label: string;
+    section: string;
 }
 
 // @public
