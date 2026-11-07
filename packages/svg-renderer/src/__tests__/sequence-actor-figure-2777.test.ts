@@ -87,7 +87,7 @@ describe('destroy (#2778)', () => {
     expect(out).toMatch(/data-label="bye"[^>]*data-self="true"/)
   })
 
-  it('draws a created-then-destroyed actor's reply arrow leftwards', () => {
+  it('draws the reply arrow of a created-then-destroyed actor leftwards', () => {
     const out = svg(
       'participant A\ncreate actor B\nA->>B: hi\ndestroy B\nB->>A: bye',
     )
