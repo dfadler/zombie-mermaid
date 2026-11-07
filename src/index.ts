@@ -72,6 +72,6 @@ export {
   renderMermaid,
 } from '@zombie-mermaid/svg-renderer'
 
-// ASCII layout hints from the ELK layout (#2645). The grid ignores them for
-// now; elkjs missing at call time falls back to grid placement.
+// ASCII layout hints from the ELK layout (#2645). Flowchart and state placement
+// reads them; elkjs missing at call time falls back to grid placement.
 registerAsciiLayoutFromElk()

@@ -80,3 +80,34 @@ describe('xychart ASCII – flat value series (#2727)', () => {
     expect(axisLabels(mixed)).toHaveLength(1)
   })
 })
+
+describe('xychart ASCII – flat negative series (#2772)', () => {
+  // Mermaid 12.3.0 draws flat -5 like flat 5: bars from the mid-axis tick to the axis start.
+  const strip = (out: string) => out.replace(/-5/g, '5')
+  it.each(['bar', 'line'])('vertical %s [-5, -5] matches [5, 5]', (kind) => {
+    const neg = render(`xychart-beta\n  x-axis [a, b]\n  ${kind} [-5, -5]`)
+    expect(neg).toMatch(/-5[┤+]/)
+    expect(neg.match(/█/g)?.length ?? 0).toBe(
+      render(`xychart-beta\n  x-axis [a, b]\n  ${kind} [5, 5]`).match(/█/g)
+        ?.length ?? 0,
+    )
+    if (kind === 'bar') expect(neg).toContain('█')
+    expect(
+      strip(neg)
+        .split('\n')
+        .map((l) => l.trim()),
+    ).toEqual(
+      render(`xychart-beta\n  x-axis [a, b]\n  ${kind} [5, 5]`)
+        .split('\n')
+        .map((l) => l.trim()),
+    )
+  })
+
+  it('horizontal bar [-5, -5] draws the same bars as [5, 5]', () => {
+    const run = (v: string) =>
+      render(`xychart-beta horizontal\n  x-axis [a, b]\n  bar [${v}, ${v}]`)
+    expect(strip(run('-5')).replace(/ +/g, ' ')).toBe(
+      run('5').replace(/ +/g, ' '),
+    )
+  })
+})

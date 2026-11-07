@@ -77,6 +77,8 @@ import { splitLines } from './multiline-utils.ts'
 import { displayWidth } from './display-width.ts'
 import { edgeLabelPlacement, labelFit } from './draw-arrows.ts'
 import { withPortShifts } from './port-offsets.ts'
+import { getAsciiLayout } from './layout-hints.ts'
+import type { AsciiLayoutHints, AsciiNodeHint } from './layout-hints.ts'
 
 // `requireGridCoord` is defined in types.ts (a pure predicate over
 // AsciiNode with no grid-state dependency) and re-exported here so the two
@@ -1329,10 +1331,9 @@ function shiftCrossAxis(
  * the nodes staying put, see `centerParentsOverChildren`).
  */
 /**
- * Grid units the skipped node steps aside by: two of a node's three, so it
- * overlaps its neighbours' rows by one, as mermaid's roughly half-node offset
- * does (GitHub renders A --> B --> C plus A --> C with B about 0.45 node
- * heights higher, not a whole slot).
+ * Grid units the skipped node steps aside by: two of a node's three, the
+ * most the grid allows without a whole slot (LR then narrows it to mermaid's
+ * offset, see `tightenSidesteps`).
  */
 const OFF = 2
 
@@ -1383,6 +1384,7 @@ function sidestepSkippedNodes(graph: AsciiGraph): void {
       shiftCrossAxis(graph, lr, c - 1, OFF)
     }
     for (const n of moving) {
+      ;(graph.sidesteps ??= []).push({ node: n, anchor: skip.from })
       relocateNode(
         graph,
         n,
@@ -1423,6 +1425,58 @@ function sidestepSkippedNodes(graph: AsciiGraph): void {
       graph.edges.filter((e) => e.from === skip.from).length === 2 &&
       graph.edges.filter((e) => e.to === skip.to).length === 2
     return ok ? found : []
+  }
+}
+
+/**
+ * LR: mermaid offsets the skipped node by 0.46 node heights (checked against
+ * mermaid 12.2.0 and 12.3.0 alike), but the grid only places it a whole slot
+ * aside, 0.8 of a node. Once sizes are known, split the two rows that hold
+ * the first block's box unevenly (same total): the box starts later in its
+ * cell, so the offset shrinks to 2 of its 5 text rows while edge ports (cell
+ * centres) stay on the box centre. Half a box is the smallest this reaches.
+ * TD keeps the slot: mermaid bends the skip edge around the skipped node
+ * there, and a smaller offset would leave the straight edge touching it.
+ */
+function tightenSidesteps(graph: AsciiGraph): void {
+  if (graph.config.graphDirection !== 'LR' || graph.topMargin) return
+  const sizes = graph.rowHeight
+  /* v8 ignore next -- every row of a placed block has a size by now */
+  const size = (i: number): number => sizes.get(i) ?? 0
+  const row = (n: AsciiNode): number => requireGridCoord(n).y
+  for (const { node, anchor } of graph.sidesteps ?? []) {
+    const gap = row(node) - row(anchor)
+    /* v8 ignore next -- defensive: a later sidestep moved this anchor */
+    if (Math.abs(gap) !== OFF) continue
+    // `lead` starts first, `trail` OFF rows on.
+    const lead = gap < 0 ? node : anchor
+    const trail = gap < 0 ? anchor : node
+    const l = row(lead)
+    const box = size(l) + size(l + 1)
+    // Only these blocks (and the anchor's own row) may use the cells.
+    const alone = graph.nodes.every((n) => {
+      if (n === node || n.gridCoord === null || row(n) === row(anchor)) {
+        return true
+      }
+      return row(n) + 2 < l || row(n) > l + OFF + 2
+    })
+    if (!alone) continue
+    const want = Math.min(
+      box - 1,
+      Math.max(Math.ceil(box / 2), Math.round(0.46 * (box + 1))),
+    )
+    const first = 2 * (box - want + Math.floor(size(row(trail)) / 2))
+    /* v8 ignore next -- defensive: needs a trail row taller than the box */
+    if (first > box + 1) continue
+    // The box starts `first / 2` rows into its cell: take them back from the
+    // gap before it, or from the canvas top when it is the first cell.
+    const lost = Math.floor(first / 2)
+    /* v8 ignore next -- defensive: the gap above is always at least `lost` */
+    if (l > 0 && size(l - 1) < lost) continue
+    if (l > 0) sizes.set(l - 1, size(l - 1) - lost)
+    else graph.offsetY -= lost
+    sizes.set(l, first)
+    sizes.set(l + 1, box - first)
   }
 }
 
@@ -2247,6 +2301,73 @@ function separateNonMembersFromFrames(graph: AsciiGraph): void {
   }
 }
 
+// ELK is slow and createMapping reruns for the same parsed graph (top margin,
+// face-lane passes), so ask the provider once per parsed graph.
+const hintCache = new WeakMap<
+  object,
+  { provider: object; hints: AsciiLayoutHints | undefined }
+>()
+
+/** The registered provider's hints for this graph, or `undefined` (grid placement stays). */
+function layoutHintsFor(graph: AsciiGraph): AsciiLayoutHints | undefined {
+  const parsed = graph.parsed
+  const provider = getAsciiLayout()
+  if (!graph.useLayoutHints || !parsed || !provider?.graph) return undefined
+  const hit = hintCache.get(parsed)
+  if (hit?.provider === provider) return hit.hints
+  const hints = provider.graph(parsed)
+  hintCache.set(parsed, { provider, hints })
+  return hints
+}
+
+/**
+ * Mermaid's gap between neighbouring nodes in provider units. One 4-cell slot
+ * is the median node's cross-axis size plus this gap, so two siblings ELK puts
+ * a node and a gap apart sit one slot apart. (A tighter unit of 0.8 x size
+ * scored best on the topology script's alignment measure, which divides by node
+ * size, but it put LR siblings 10 cells apart where Mermaid has 4.)
+ */
+const SLOT_GAP = 40
+
+/**
+ * Grid slot of every node from ELK's layer and cross-axis centre. The flow
+ * coordinate is `layer * 4`. The cross coordinate scales ELK's centre so a
+ * median node plus `SLOT_GAP` is a 4-cell slot, snapped to even cells (a parent
+ * centred between two children lands half a slot over), then pushed along each
+ * layer in ELK's order so nodes never touch. Order and alignment follow ELK
+ * without running it on cell sizes (#2685). `undefined` when a node has no hint.
+ */
+function trackSlots(
+  graph: AsciiGraph,
+  hints: AsciiLayoutHints,
+): Map<AsciiNode, GridCoord> | undefined {
+  const rows: { node: AsciiNode; h: AsciiNodeHint }[] = []
+  for (const node of graph.nodes) {
+    const h = hints.nodes.get(node.name)
+    if (!h) return undefined
+    rows.push({ node, h })
+  }
+  const sizes = rows.map((r) => r.h.size).sort((a, b) => a - b)
+  const unit = sizes[sizes.length >> 1]! + SLOT_GAP
+  const origin = Math.min(...rows.map((r) => r.h.cross))
+  const cell = (r: { h: AsciiNodeHint }): number =>
+    2 * Math.round(((r.h.cross - origin) / unit) * 2)
+  const lr = graph.config.graphDirection === 'LR'
+  const slots = new Map<AsciiNode, GridCoord>()
+  const byLayer = new Map<number, typeof rows>()
+  for (const r of rows)
+    byLayer.set(r.h.layer, [...(byLayer.get(r.h.layer) ?? []), r])
+  for (const [layer, members] of byLayer) {
+    let next = 0
+    for (const r of members.sort((a, b) => a.h.order - b.h.order)) {
+      const at = Math.max(cell(r), next)
+      next = at + 4
+      slots.set(r.node, lr ? { x: layer * 4, y: at } : { x: at, y: layer * 4 })
+    }
+  }
+  return slots
+}
+
 // ============================================================================
 // Main layout orchestrator
 // ============================================================================
@@ -2403,8 +2524,20 @@ export function createMapping(graph: AsciiGraph): void {
     externalRootNodes = groupedRootNodes
   }
 
+  // With ELK hints (flowchart and state), the slots replace every placement
+  // heuristic below. Without them, or when a node has no hint or a subgraph
+  // sets its own direction, the grid places as before.
+  const hints = layoutHintsFor(graph)
+  const slots =
+    hints && graph.subgraphs.every((sg) => !sg.direction)
+      ? trackSlots(graph, hints)
+      : undefined
+  if (slots) {
+    for (const [node, at] of slots) reserveSpotInGrid(graph, node, at)
+  }
+
   // Place external root nodes
-  for (const node of externalRootNodes) {
+  for (const node of slots ? [] : externalRootNodes) {
     const requested: GridCoord =
       dir === 'LR'
         ? { x: 0, y: highestPositionPerLevel[0] ?? 0 }
@@ -2420,7 +2553,7 @@ export function createMapping(graph: AsciiGraph): void {
   }
 
   // Place subgraph root nodes at level 4 (one level in from the edge)
-  if (shouldSeparate && subgraphRootNodes.length > 0) {
+  if (!slots && shouldSeparate && subgraphRootNodes.length > 0) {
     const subgraphLevel = 4
     for (const node of subgraphRootNodes) {
       const requested: GridCoord =
@@ -2446,7 +2579,7 @@ export function createMapping(graph: AsciiGraph): void {
   // resolved above (anchored to a root placed in this same subgraph) —
   // these are the ones whose anchor is itself a non-root, only placed by
   // the reachable-children traversal just above.
-  for (const node of deferredRoots) {
+  for (const node of slots ? [] : deferredRoots) {
     if (resolvedDeferred.has(node)) continue
     const topSg = getTopLevelSubgraph(graph, node)!
     const nodeDir = getEffectiveDirection(graph, node)
@@ -2503,11 +2636,13 @@ export function createMapping(graph: AsciiGraph): void {
   // above since it wasn't on the grid yet — give the traversal another pass.
   placeReachableChildren(graph, highestPositionPerLevel, minLevels)
 
-  sidestepSkippedNodes(graph)
-  centerParentsOverChildren(graph)
-  centerClustersOverExits(graph)
+  if (!slots) {
+    sidestepSkippedNodes(graph)
+    centerParentsOverChildren(graph)
+    centerClustersOverExits(graph)
 
-  separateNonMembersFromFrames(graph)
+    separateNonMembersFromFrames(graph)
+  }
 
   // A loop on a top face (#2100) needs a free grid row above the top nodes:
   // push every node down one row and rebuild the occupancy map.
@@ -2529,6 +2664,7 @@ export function createMapping(graph: AsciiGraph): void {
   if (graph.topMargin && graph.subgraphs.length === 0) {
     graph.rowHeight.set(0, 3)
   }
+  tightenSidesteps(graph)
 
   // Fresh render-wide A* iteration budget for this layout pass. Shared by
   // every getPath call below (both bundled-edge routing and per-edge

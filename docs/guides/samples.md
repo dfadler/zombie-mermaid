@@ -17,7 +17,7 @@ What's there instead:
 
 - **The [Diagrams hub](https://dfadler.github.io/zombie-mermaid/diagrams/)**
   lists Flowchart (including State), Sequence, Class, ER, XY Chart, Architecture, C4 and Pie
-  (Quadrant charts render but have no hub page yet). Each of those has its own detail page
+  (Quadrant and Gantt charts render but have no hub page yet). Each of those has its own detail page
   (`/diagrams/<type>.html`) showing **one** worked example for that type:
   its Mermaid source (syntax-highlighted) next to the rendered SVG, plus a
   live picker across every built-in theme and an "Open in the live editor"

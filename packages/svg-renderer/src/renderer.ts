@@ -391,6 +391,9 @@ function dashAttr(style: Record<string, string> | undefined): string {
 /** Edge of the icon tile in an architecture group's corner, as Mermaid draws it. */
 const ARCH_GROUP_ICON = 30
 
+/** Half of mermaid@12.3.0's 24 px title box: its centre sits this far below its top. */
+const TITLE_ONLY_HALF_LINE = 12
+
 function renderGroup(
   group: PositionedGroup,
   font: string,
@@ -475,7 +478,12 @@ function renderGroup(
         renderMultilineText(
           group.label,
           group.x + group.width / 2,
-          group.y + headerHeight / 2,
+          // #2784: mermaid@12.3.0 hangs an empty subgraph's 24 px title box from
+          // the middle of its slot (the box's top on the centre line), not
+          // centred at the top edge like a framed subgraph's.
+          group.titleOnly
+            ? group.y + group.height / 2 + TITLE_ONLY_HALF_LINE
+            : group.y + headerHeight / 2,
           fontSizes.groupHeader,
           f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
         ),
@@ -629,7 +637,8 @@ function renderEdgeLabel(
   // Use layout-computed label position when available (layout-aware, avoids collisions).
   // Fall back to geometric midpoint of the edge polyline.
   const mid = edge.labelPosition ?? edgeMidpoint(edge.points)
-  const padding = 8
+  // Mermaid 12.3.0: label box = text box, no padding, no border (#2854)
+  const padding = 0
 
   // Measure text (works for both single and multi-line)
   const metrics = measureMultilineText(
@@ -649,8 +658,7 @@ function renderEdgeLabel(
     padding,
     // Use --_text-sec for better contrast (was --_text-muted)
     f`text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
-    // Increased stroke width from 0.5 to 1 for better label separation from edges
-    `rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1"`,
+    `fill="var(--bg)"`,
   )
 
   // Semantic wrapper: links label to its edge via data-from/data-to

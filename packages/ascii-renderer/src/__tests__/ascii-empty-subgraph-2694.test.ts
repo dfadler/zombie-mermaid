@@ -3,7 +3,12 @@
  * Mermaid 12.3.0 (scratch install, headless Chromium) draws it as a cluster
  * rect of height 0 (no visible frame) with its title text laid out like a node
  * in the first rank: above the first node in LR, left of it in TD. So ASCII
- * prints the title only. Exact placement is dagre's and is not asserted here.
+ * prints the title only. #2784 measured where the title goes (user units, the
+ * title box is 24 high): its top sits on the slot's centre line (TD: level with
+ * the first node's centre; as an edge endpoint: on the edge's line, between two
+ * arrows with no box). Pixel positions differ because the layout is ELK's, not
+ * dagre's; the relative placement is asserted below. Not matched: a nested title
+ * in TD sits outside its parent's frame in mermaid (#2784).
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js; the structure (title text, no frame) was measured against mermaid 12.3.0.
 import { describe, it, expect } from 'vitest'
@@ -23,6 +28,7 @@ const SOURCES: [string, string][] = [
   ],
   ['edge-endpoint', 'graph LR\nsubgraph one\nend\nA --> one --> B'],
   ['only-empty', 'graph TD\nsubgraph s\nend'],
+  ['edge-endpoint-td', 'graph TD\nsubgraph one\nend\nA --> one --> B'],
 ]
 
 describe('an empty subgraph prints its title (#2694)', () => {
@@ -61,8 +67,28 @@ describe('an empty subgraph prints its title (#2694)', () => {
     )
   })
 
-  it('an edge endpoint keeps a box so the arrowhead cannot clip the title', () => {
-    expect(renderMermaidASCII(SOURCES[4]![1])).toContain('│ one ├')
+  it('a horizontal edge endpoint is bare text between two arrows, no box (#2784)', () => {
+    const out = renderMermaidASCII(SOURCES[4]![1])
+    expect(out).toMatch(/►\s+one─+►/)
+    expect(out).not.toMatch(/│ one/)
+  })
+
+  it('a vertical edge endpoint keeps a box so the edge cannot run through the title', () => {
+    expect(renderMermaidASCII(SOURCES[6]![1])).toContain('│ one │')
+  })
+
+  it('SVG hangs the title from the slot centre, below the frame-title line (#2784)', () => {
+    const y = (src: string) =>
+      Number(
+        /data-id="one"[^>]*>\s*<text x="[\d.]+" y="([\d.]+)"/.exec(
+          renderMermaidSVG(src),
+        )![1],
+      )
+    // Edge endpoint: the title's top is on the line the edges run along (the
+    // neighbours' centre), so its centre is half a title box (12) below it.
+    const edge = renderMermaidSVG(SOURCES[4]![1])
+    const aMid = Number(/<text x="[\d.]+" y="([\d.]+)"[^>]*>A</.exec(edge)![1])
+    expect(Math.abs(y(SOURCES[4]![1]) - 12 - aMid)).toBeLessThan(1)
   })
 
   it('SVG draws an empty subgraph as its title only, no frame (#2726)', () => {

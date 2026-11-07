@@ -47,11 +47,11 @@ import {
  * draws and which end(s) carry the marker. The single source of truth: the
  * arrow regex below is built from these keys, so an arrow can't be recognized
  * without a meaning. `both` puts the same marker at each end (`<|--|>`,
- * `<-->`, `()--()`), as mermaid does. A bare `--` stays an association.
+ * `<-->`, `()--()`), as mermaid does. A bare `--` / `..` is a plain, markerless link.
  */
 const ARROWS: Record<
   string,
-  { type: RelationshipType; markerAt: 'from' | 'to' | 'both' }
+  { type: RelationshipType; markerAt: 'from' | 'to' | 'both'; dashed?: true }
 > = {
   '<|--': { type: 'inheritance', markerAt: 'from' },
   '--|>': { type: 'inheritance', markerAt: 'to' },
@@ -75,7 +75,14 @@ const ARROWS: Record<
   '()--': { type: 'lollipop', markerAt: 'from' },
   '--()': { type: 'lollipop', markerAt: 'to' },
   '()--()': { type: 'lollipop', markerAt: 'both' },
-  '--': { type: 'association', markerAt: 'to' },
+  // Dotted lollipops: same circle, dashed stem (mermaid 12.3.0)
+  '()..': { type: 'lollipop', markerAt: 'from', dashed: true },
+  '..()': { type: 'lollipop', markerAt: 'to', dashed: true },
+  '()..()': { type: 'lollipop', markerAt: 'both', dashed: true },
+  // Plain links draw no marker at either end (mermaid 12.3.0, #2771); `to`
+  // only fixes which end is the layout source/target.
+  '--': { type: 'link', markerAt: 'to' },
+  '..': { type: 'dashed-link', markerAt: 'to' },
 }
 
 /** A class id token: a backtick-quoted name (may hold spaces) or a bare run of non-space. */
@@ -636,6 +643,7 @@ function parseRelationship(line: string): ClassRelationship | null {
     to,
     type: parsed.type,
     markerAt: parsed.markerAt,
+    ...(parsed.dashed ? { dashed: true } : {}),
     label,
     fromCardinality,
     toCardinality,
@@ -643,8 +651,10 @@ function parseRelationship(line: string): ClassRelationship | null {
 }
 
 /** Map arrow syntax to relationship type and marker placement (see {@link ARROWS}). */
-function parseArrow(
-  arrow: string,
-): { type: RelationshipType; markerAt: 'from' | 'to' | 'both' } | null {
+function parseArrow(arrow: string): {
+  type: RelationshipType
+  markerAt: 'from' | 'to' | 'both'
+  dashed?: true
+} | null {
   return ARROWS[arrow.trim()] ?? null
 }

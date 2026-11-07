@@ -692,7 +692,7 @@ classDiagram-v2
 - `classDiagram-v2` is the same diagram type as `classDiagram`, as in Mermaid.
 - `<|--|>`, `<|..|>`, `<-->`, `<..>`, `*--*` and `o--o` draw the relationship's
   marker at both ends of the line (a mixed pair such as `<|--*` is still an error).
-- `()--`, `--()` and `()--()` end the line in a hollow circle (lollipop interface):
+- `()--`, `--()` and `()--()` (and the dotted `()..`, `..()`, `()..()`, with a dashed stem) end the line in a hollow circle (lollipop interface):
   `○`, or `O` in the `--ascii` charset. A one-ended lollipop draws the interface name with
   the circle above or below its host and no box, in SVG and ASCII, as Mermaid does; a
   class that has members, an annotation, another relationship, a note or a namespace
@@ -744,7 +744,6 @@ classDiagram
 - `class A["Label"]` aliases are not honoured yet.
 - The `$` / `*` classifier after a method's `)` is styled but also left in the
   member text.
-- A dotted lollipop (`()..`, `..()`) is a parse error.
 - `note`/`note for` and `classDef`/`style`/`class`/`:::` styling are
   recognized (see above).
 
@@ -845,7 +844,7 @@ For the original design proposal behind this feature, see [xychart-design.md](xy
 
 The chart renderer follows a clean, minimal design philosophy, originally inspired by Apple's design language and Craft's interface for `beautiful-mermaid`:
 
-- **Rounded bars** — All bar corners are rounded for a modern, polished look
+- **Square bars** — Flat, unstroked bars with square corners and no legend, as mermaid draws them; a second bar series is drawn over the first, not beside it
 - **Straight lines** — Line series join their points with straight segments, as mermaid does (mermaid has no option for curved lines). Points carry no markers unless the chart is interactive
 - **Axis lines and ticks** — Each axis has a line and tick marks, as in mermaid; there is no grid
 - **Drop-shadow lines** — Each line series has a subtle shadow beneath it for depth
@@ -1064,6 +1063,76 @@ High Engagement │                 6      │                        │
   always below the grid, unlike the SVG's x axis on top of a point-free chart.
 - `accTitle` and `accDescr` are not printed.
 
+## Gantt Charts
+
+`gantt` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/gantt.html)
+and its renderer's layout, checked against `mermaid@12.3.0` (npm `latest`;
+mermaid.live runs 12.2.0, which renders the same figures):
+
+```mermaid
+gantt
+    title A Gantt Diagram
+    dateFormat YYYY-MM-DD
+    section Section
+        A task          :a1, 2014-01-01, 30d
+        Another task    :after a1, 20d
+    section Another
+        Task in Another :2014-01-12, 12d
+        another task    :24d
+```
+
+Supported: `title`, `dateFormat` (the dayjs tokens `YYYY YY MMMM MMM MM M DD D Do HH H hh h mm m ss s SSS A a Z ZZ X x`),
+`axisFormat` (d3 time-format directives), `tickInterval` (`1millisecond` to
+`1month`, `week` on the `weekday`), `weekday`, `weekend`, `excludes` /
+`includes` (`weekends`, weekday names, dates), `inclusiveEndDates`,
+`todayMarker` (`off` or a stroke style), `topAxis`, `section`, the task tags
+`active`, `done`, `crit`, `milestone` and `vert`, the one-, two- and
+three-part task forms with `after a b`, `until a` and durations
+(`y M w d h m s ms`), `click ... href` (marks the task as a link; it is not
+clickable in static output, as in Mermaid), `accTitle` and `accDescr`. The
+`gantt` block of `%%{init}%%` and front matter `config:` is read for
+`displayMode` (`compact`), `topAxis`, `axisFormat`, `tickInterval` and
+`weekday`, and front matter `displayMode: compact` works as documented; bar
+sizes and paddings are not read yet.
+
+The SVG uses Mermaid's geometry: a frame 1200px wide (Mermaid uses its
+container's width), 24px rows with 20px bars, 75px side padding, the d3 time
+scale and ticks, shaded `excludes` days, section stripes cycling through four
+styles and a vertical marker through every row for `vert`. Colours come from
+the theme (the accent for bars, the foreground mixed into the background for
+done tasks and the grid), so every theme and live theme switching apply. Dates
+are read and drawn in UTC. See [Known differences](known-differences.md#gantt-charts).
+
+### ASCII Gantt Charts
+
+Mermaid has no text mode for gantt charts, so the ASCII output is this
+library's own design: section headings and task labels on the left, a
+60-column timeline on the right.
+
+```text
+                               A Gantt Diagram
+
+Section
+  A task          ████████████████████████████████████
+  Another task                                        ████████████████████████
+Another
+  Task in Another              ███████████████
+  another task                               ██████████████████████████████
+                  ─────┬───────┬───────┬────────┬───────┬───────┬───────┬─────
+                  2014-01-05      2014-01-19       2014-02-02      2014-02-16
+
+  █ task
+```
+
+- **Bars** use `█` for a task, `▒` active, `░` done and `▓` critical (ASCII
+  mode: `#`, `=`, `.`, `%`); a critical task that is also done or active keeps
+  that glyph and gets ` !` after its label. A milestone is `◆` (`*`) centred on
+  its date and a `vert` marker is a `┆` (`:`) line through every row.
+- **The axis** repeats the SVG's ticks and `axisFormat`, dropping a label that
+  would run into the one before it. A legend below names the glyphs in use.
+- Not drawn: `excludes` shading and the today line (output must not depend on
+  the clock). `accTitle` and `accDescr` are not printed.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1073,7 +1142,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Use case                                                              | `usecase-beta`                                                                                                  |
 | Mindmap                                                               | `mindmap`                                                                                                       |
 | Packet                                                                | `packet` / `packet-beta`                                                                                        |
-| Gantt                                                                 | `gantt`                                                                                                         |
 | Timeline                                                              | `timeline`                                                                                                      |
 | User journey                                                          | `journey`                                                                                                       |
 | Requirement                                                           | `requirementDiagram`                                                                                            |

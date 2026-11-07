@@ -57,6 +57,25 @@ describe('flat data', () => {
   })
 })
 
+describe('flat negative data (#2772)', () => {
+  // Mermaid 12.3.0 draws flat -5, 0 and 5 alike: bars from the mid-axis tick
+  // down to the axis start. Zero is off the plot, so it is not the base.
+  it.each(['-5', '0', '5'])('vertical bar [%s] reaches the axis start', (v) => {
+    const l = layout(`xychart-beta\n x-axis [a, b]\n bar [${v}, ${v}]`)
+    const bar = l.bars[0]!
+    expect(bar.height).toBeGreaterThan(10)
+    expect(bar.y + bar.height).toBe(l.plotArea.y + l.plotArea.height)
+  })
+
+  it.each(['-5', '5'])('horizontal bar [%s] starts at the axis start', (v) => {
+    const l = layout(
+      `xychart-beta horizontal\n x-axis [a, b]\n bar [${v}, ${v}]`,
+    )
+    expect(l.bars[0]!.x).toBe(l.plotArea.x)
+    expect(l.bars[0]!.width).toBeGreaterThan(10)
+  })
+})
+
 describe('x labels', () => {
   it('labels all 20 dense categories', () => {
     const cats = Array.from({ length: 20 }, (_, i) => `W${i + 1}`)

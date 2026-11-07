@@ -575,6 +575,7 @@ function extractClassLayout(
       to: rel.to,
       type: rel.type,
       markerAt: rel.markerAt,
+      ...(rel.dashed ? { dashed: true } : {}),
       label: rel.label,
       fromCardinality: rel.fromCardinality,
       toCardinality: rel.toCardinality,

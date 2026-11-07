@@ -3,12 +3,14 @@
  * ELK layout, over the gallery flowchart/state samples plus the fork-fixes
  * entries (#2645). The numbers gate each ASCII placement PR (Q3).
  *
- * Usage: tsx scripts/ascii-topology.ts [--verbose]
+ * Usage: tsx scripts/ascii-topology.ts [--verbose] [--no-hints]
+ * --verbose lists every sample; --no-hints scores the grid's own placement.
  */
 import { allForkFixes } from '../demo/fork-fixes-data.ts'
 import { samples } from '../samples/samples-data.ts'
 import {
   addCounts,
+  describeSample,
   emptyCounts,
   isExact,
   measureSample,
@@ -34,16 +36,14 @@ const list = [
     .filter((f) => FORK_FIXES.includes(f.id))
     .map((f) => ({ title: `ENTRY ${f.id}`, source: f.source })),
 ]
+const verbose = process.argv.includes('--verbose')
 let total = emptyCounts()
 let exact = 0
 for (const e of list) {
   const c: Counts = measureSample(e.source)
   total = addCounts(total, c)
   if (isExact(c)) exact++
-  else
-    console.log(
-      `layer ${c.layerOk}/${c.layerPairs} order ${c.orderOk}/${c.orderPairs}  ${e.title}`,
-    )
+  if (verbose || !isExact(c)) console.log(describeSample(e.title, c, verbose))
 }
 const pct = (a: number, b: number): string =>
   `${a}/${b} (${b ? ((100 * a) / b).toFixed(1) : '-'}%)`
