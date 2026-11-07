@@ -1,0 +1,9 @@
+((Planet))
++-- Land
+|   `-- Africa
+|       `-- Egypt
+|           `-- Cairo
+|               `-- Old Cairo
+`-- Sea
+    `-- Pacific
+        `-- Mariana Trench

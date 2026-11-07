@@ -1,0 +1,6 @@
+[Root with a second line
+and emphasis]
+├── [The dog in the hog... a very long text that wraps to a new line]
+├── [Regular labels still work]
+└── [Line one
+    line two]
