@@ -267,7 +267,13 @@ export function addDuration(ms: number, n: number, unit: string): number {
   const d = new Date(ms)
   switch (unit) {
     case 'y': {
+      // Like dayjs: day 1 first, then clamp, so Feb 29 + 1y is Feb 28.
+      const day = d.getUTCDate()
+      d.setUTCDate(1)
       d.setUTCFullYear(d.getUTCFullYear() + Math.round(n))
+      d.setUTCDate(
+        Math.min(day, daysInMonth(d.getUTCFullYear(), d.getUTCMonth())),
+      )
       return d.getTime()
     }
     case 'M': {

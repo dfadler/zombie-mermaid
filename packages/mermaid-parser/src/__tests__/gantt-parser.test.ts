@@ -326,6 +326,8 @@ describe('dayjs helpers', () => {
     const t = D('2024-01-31')
     expect(iso(addDuration(t, 1, 'M'))).toBe('2024-02-29T00:00')
     expect(iso(addDuration(t, 1, 'y'))).toBe('2025-01-31T00:00')
+    expect(iso(addDuration(D('2024-02-29'), 1, 'y'))).toBe('2025-02-28T00:00')
+    expect(iso(addDuration(D('2024-02-29'), 4, 'y'))).toBe('2028-02-29T00:00')
     expect(iso(addDuration(t, 1, 'w'))).toBe('2024-02-07T00:00')
     expect(iso(addDuration(t, 1.5, 'd'))).toBe('2024-02-02T00:00')
     expect(iso(addDuration(t, 90, 'm'))).toBe('2024-01-31T01:30')
