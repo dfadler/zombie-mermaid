@@ -214,6 +214,12 @@ export interface Lifeline {
   x: number
   topY: number
   bottomY: number
+  /**
+   * Set when the actor is destroyed mid-diagram (`Actor.destroyedAt`).
+   * @deprecated No renderer reads it any more (a destroyed participant now gets
+   * a footer box instead of a cross). Use `Actor.destroyedAt` instead.
+   */
+  destroyed?: boolean
 }
 
 export interface PositionedMessage {
