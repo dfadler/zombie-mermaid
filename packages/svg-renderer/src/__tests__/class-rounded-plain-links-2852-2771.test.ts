@@ -52,7 +52,10 @@ describe('plain class links draw no marker', () => {
     'classDiagram\n D -- A\n C -- A\n A -- A',
   ])('ASCII: no arrowhead in any routing shape (%#)', (src) => {
     for (const dir of ['TB', 'BT', 'LR', 'RL']) {
-      const out = renderMermaidASCII(src.replace('\n', `\n direction ${dir}\n`))
+      const [head, ...rest] = src.split('\n')
+      const out = renderMermaidASCII(
+        [head, ` direction ${dir}`, ...rest].join('\n'),
+      )
       expect(out).not.toMatch(/[v^<>]/)
     }
   })
