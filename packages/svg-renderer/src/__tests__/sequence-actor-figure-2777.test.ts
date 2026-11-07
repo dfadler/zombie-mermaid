@@ -57,4 +57,27 @@ describe('destroy (#2778)', () => {
     // Slot is 44 tall: its centre is 22 below the head top (cy - r)
     expect(cy - 10.15 + 22).toBeCloseTo(y, 1)
   })
+
+  it('starts a destroyed sender arrow outside its footer and stops a destroyed recipient arrow short of it', () => {
+    const arrow = (out: string, label: string): number[] =>
+      new RegExp(
+        `data-label="${label}"[^>]*>\\s*<line x1="([\\d.]+)" y1="[\\d.]+" x2="([\\d.]+)"`,
+      )
+        .exec(out)!
+        .slice(1, 3)
+        .map(Number)
+    // Participant lifelines sit 140 apart (centres 70 and 210), boxes 80 wide
+    const sent = svg(
+      'participant A\nparticipant B\nA->>B: hi\ndestroy B\nB->>A: bye',
+    )
+    const [x1] = arrow(sent, 'bye')
+    expect(x1).toBeCloseTo(210 - 41, 0)
+    const recv = svg(
+      'participant A\nparticipant B\nA->>B: hi\ndestroy B\nA->>B: bye',
+    )
+    const [, x2] = arrow(recv, 'bye')
+    expect(x2).toBeCloseTo(210 - 48, 0)
+    const actor = svg('actor A\nactor B\nA->>B: hi\ndestroy B\nA->>B: bye')
+    expect(arrow(actor, 'bye')[1]).toBeCloseTo(210 - 26, 0)
+  })
 })

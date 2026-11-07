@@ -139,6 +139,12 @@ export function renderSequenceSvg(
     if (!isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 
+  // 3c. Footer actors, before the messages as in Mermaid: a destroying
+  //     self-message's line and label are drawn across its footer box.
+  for (const actor of diagram.footerActors) {
+    parts.push(renderActor(actor, fontSizes, 'actor-footer'))
+  }
+
   // 4. Messages (horizontal arrows with labels)
   for (const message of diagram.messages) {
     parts.push(renderMessage(message, fontSizes))
@@ -153,10 +159,6 @@ export function renderSequenceSvg(
   for (const actor of diagram.actors) {
     parts.push(renderActor(actor, fontSizes))
   }
-  for (const actor of diagram.footerActors) {
-    parts.push(renderActor(actor, fontSizes, 'actor-footer'))
-  }
-
   if (diagram.title) {
     parts.push(
       '<g class="title">' +

@@ -866,6 +866,7 @@ export function layoutSequenceDiagram(
   // Events before the first message open at the top of the message area.
   applyActivationEvents(-1, messageY)
 
+  const mirror = diagram.mirrorActors !== false
   const msgLabelExtra: number[] = []
   for (let msgIdx = 0; msgIdx < diagram.messages.length; msgIdx++) {
     const msg = diagram.messages[msgIdx]!
@@ -876,7 +877,7 @@ export function layoutSequenceDiagram(
     // lifeline, not as a loop (`senderAdjustment`), on a normal message row.
     const destroysSelf =
       msg.from === msg.to &&
-      diagram.mirrorActors !== false &&
+      mirror &&
       diagram.actors[fromIdx]!.destroyedAt === msgIdx
     const isSelf = msg.from === msg.to && !destroysSelf
 
@@ -909,6 +910,20 @@ export function layoutSequenceDiagram(
     if (createsRecipient) {
       const halfW = actorWidths[toIdx]! / 2
       x2 += x1 < x2 ? -halfW : halfW
+    }
+
+    // A destroying message meets the footer box's near edge, not the lifeline
+    // centre: Mermaid 12.3.0 starts a destroyed sender's arrow just outside the
+    // box (`senderAdjustment`) and stops a destroyed recipient's arrow short of
+    // it by the arrowhead (`receiverAdjustment`).
+    if (!destroysSelf && mirror && fromIdx !== toIdx) {
+      const dir = Math.sign(x2 - x1)
+      const reach = (i: number): number =>
+        hasLabelBelowIcon(diagram.actors[i]!) ? 18 : actorWidths[i]! / 2
+      if (diagram.actors[fromIdx]!.destroyedAt === msgIdx)
+        x1 += dir * (reach(fromIdx) + 1)
+      if (diagram.actors[toIdx]!.destroyedAt === msgIdx)
+        x2 -= dir * (reach(toIdx) + 8)
     }
 
     messages.push({
@@ -1167,7 +1182,6 @@ export function layoutSequenceDiagram(
   // The lifelines end where the mirrored footer actors begin; a stick figure
   // or typed icon keeps its label below the box, so the footer row grows by it.
   const lifelineBottom = messageY
-  const mirror = diagram.mirrorActors !== false
   const footerLabelRoom = Math.max(
     0,
     ...diagram.actors.map((a, i) =>
