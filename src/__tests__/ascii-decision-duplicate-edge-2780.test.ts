@@ -5,7 +5,7 @@
  * and an ASCII golden per direction.
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
-// Mermaid 12.3.0 verdict: DIVERGES. mermaid draws three short direct edges from the decision; these goldens pin our current routing (BT: stem + bus with junction glyphs; LR: the second parallel edge wraps behind the diamond and crosses another). They guard the throw, not the routing.
+// Mermaid 12.3.0 verdict: DIVERGES (closer than before). mermaid draws three short direct edges from the decision. LR now has that shape: upper slant, vertex and lower slant, no crossing and no shared glyphs. BT still runs a stem from the vertex into a bus with ┴/┬ tees (no + junction), with an arrowhead per edge.
 import { describe, expect, it } from 'vitest'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
@@ -31,5 +31,17 @@ describe.each(['BT', 'LR'])(
         renderMermaidASCII(src(dir), { colorMode: 'none' }),
       ).toMatchSnapshot()
     })
+  },
+)
+
+it.each([
+  'flowchart LR\n A{Aaa} --> B[Bbb]\n A --> B\n A --> C[Ccc]',
+  'flowchart LR\n A{Aaa} --> C[Ccc]\n A --> B[Bbb]\n A --> B',
+])(
+  'LR decision duplicates bending to one target nest without crossing (#2780): %s',
+  (text) => {
+    const out = renderMermaidASCII(text, { colorMode: 'none' })
+    expect(out.match(/►/g)).toHaveLength(3)
+    expect(out).not.toMatch(/[┼+┤┬┴├]/)
   },
 )
