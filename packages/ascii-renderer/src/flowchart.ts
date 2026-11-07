@@ -266,10 +266,12 @@ export function renderGraphAscii(
   // A self-loop that wants a top face on the first row gets a free row above
   // the nodes, and the layout is redone (#2100).
   const margin = graph.wantsTopMargin === true
-  if (margin) {
+  const leftMargin = graph.wantsLeftMargin === true
+  if (margin || leftMargin) {
     graph = convert()
     hooks.afterConvert?.(graph)
-    graph.topMargin = true
+    graph.topMargin = margin
+    graph.leftMargin = leftMargin
     createMapping(graph)
   }
   for (let pass = 0; pass < 4 && graph.faceLaneRejected?.size; pass++) {
@@ -278,6 +280,7 @@ export function renderGraphAscii(
     hooks.afterConvert?.(graph)
     graph.faceLaneOff = new Set(off)
     graph.topMargin = margin
+    graph.leftMargin = leftMargin
     createMapping(graph)
   }
   // The canvas is allocated from the finished grid; check its size before

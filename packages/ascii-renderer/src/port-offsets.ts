@@ -31,7 +31,7 @@
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
-import { dirEquals, requireGridCoord, Up } from './types.ts'
+import { dirEquals, Left, requireGridCoord, Up } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 import { clusterLaneEndShift } from './cluster-boundary.ts'
 import { runsAlong, segmentsOf } from './grid-occupancy.ts'
@@ -41,6 +41,7 @@ import {
   flowLaneOf,
   leavesFlowFace,
   leavesRightFace,
+  loopStartsLow,
 } from './edge-routing.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
@@ -1136,7 +1137,18 @@ function allocateFaces(
   // Mermaid draws it (its cells were placed about the grid cell's corner).
   for (const [f, by0] of placed) {
     const geo = portGeometry(graph, f.run)
-    if (geo && isDenseHook(f.edge)) {
+    const hint = graph.edgeHints?.get(f.edge)
+    if (geo && hint && (isDenseHook(f.edge) || isLeftHook(f.edge))) {
+      // ELK's loop: out of the cell its order puts first, back into the other,
+      // as close to the centre as the face allows (a 5-wide box has three cells).
+      const left = loopStartsLow(graph, f.edge) ? -1 : 1
+      const k = Math.min(2, Math.floor((geo.hi - geo.lo) / 2))
+      placed.set(
+        f,
+        Math.round((geo.lo + geo.hi) / 2 - geo.centre) +
+          (f.role === 'S' ? left : -left) * k,
+      )
+    } else if (geo && isDenseHook(f.edge)) {
       placed.set(
         f,
         by0 +
@@ -1211,6 +1223,16 @@ function isDenseHook(e: AsciiEdge): boolean {
     e.path.length === 4 &&
     dirEquals(e.startDir, Up) &&
     dirEquals(e.endDir, Up)
+  )
+}
+
+/** A TD self-loop `determinePath` drew as a hook out of the left face (#2888). */
+function isLeftHook(e: AsciiEdge): boolean {
+  return (
+    e.from === e.to &&
+    e.path.length === 4 &&
+    dirEquals(e.startDir, Left) &&
+    dirEquals(e.endDir, Left)
   )
 }
 
