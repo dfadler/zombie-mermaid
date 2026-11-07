@@ -15,6 +15,7 @@ import {
   DEFAULT_ASCII_THEME,
   type AsciiFace,
   type AsciiLayoutHints,
+  registerAsciiLayout,
 } from '@zombie-mermaid/ascii-renderer'
 import { renderGraphAscii } from '../../packages/ascii-renderer/src/flowchart.ts'
 import type { AsciiGraph } from '../../packages/ascii-renderer/src/types.ts'
@@ -167,6 +168,9 @@ export function readGrid(source: string): GridRender & { direction: string } {
       })
     }
   }
+  registerAsciiLayout(
+    process.argv.includes('--no-hints') ? undefined : asciiLayoutProvider,
+  )
   renderGraphAscii(
     parsed,
     {
@@ -178,7 +182,7 @@ export function readGrid(source: string): GridRender & { direction: string } {
     },
     'none',
     DEFAULT_ASCII_THEME,
-    {},
+    { layoutHints: true },
     { afterDraw },
   )
   return { ...out, direction: dir }
@@ -228,3 +232,15 @@ export function measureSample(source: string): Counts {
 /** A sample is exact when every layer and in-layer-order pair agrees. */
 export const isExact = (c: Counts): boolean =>
   c.layerOk === c.layerPairs && c.orderOk === c.orderPairs
+
+/** One report line: layers and order, plus alignment and faces when `all`. */
+export const describeSample = (
+  title: string,
+  c: Counts,
+  all: boolean,
+): string =>
+  `layer ${c.layerOk}/${c.layerPairs} order ${c.orderOk}/${c.orderPairs}` +
+  (all
+    ? ` align ${c.alignOk}/${c.layerPairs} faces ${c.faceOk}/${c.faceEnds}`
+    : '') +
+  `  ${title}`
