@@ -40,8 +40,9 @@ describe('circleRenderer', () => {
     const lines = render('日本語 label', { useAscii: false, padding: 1 }).split(
       '\n',
     )
-    expect(lines[2]!.startsWith('(')).toBe(true)
-    expect(lines[2]!.endsWith(')')).toBe(true)
-    expect(lines[2]).toContain('日本語 label')
+    const mid = lines[Math.floor(lines.length / 2)]!
+    expect(mid.startsWith('(')).toBe(true)
+    expect(mid.endsWith(')')).toBe(true)
+    expect(mid).toContain('日本語 label')
   })
 })
