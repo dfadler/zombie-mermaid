@@ -580,10 +580,8 @@ width apart, as mermaid does), a `classDef`/`style` fill with no `color:` keepin
 default dark text ([#2637](https://github.com/dfadler/zombie-mermaid/issues/2637)), the
 hexagon's angled-side inset (height / 3.5), and the LR/RL parallelogram yes/no routing
 (including the `D --> B` back-edge, which enters the diamond's lower side) all match. The
-one thing that still differs:
-
-- **Edge labels are drawn in a bordered box; mermaid draws a borderless grey background
-  on the line.** Colour palette and chrome, not structure (decision #2617).
+edge-label background matches too: a box the size of the text, no border, no padding
+([#2854](https://github.com/dfadler/zombie-mermaid/issues/2854)); only the fill colour is ours.
 
 ## Flowchart `curve` directive is ignored ([#2729](https://github.com/dfadler/zombie-mermaid/issues/2729))
 
