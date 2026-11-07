@@ -134,6 +134,13 @@ export { QUADRANT, layoutQuadrantChart } from './quadrant/layout.ts'
 export { renderQuadrantSvg } from './quadrant/renderer.ts'
 export { MINDMAP, layoutMindmap } from './mindmap/layout.ts'
 export { renderMindmapSvg } from './mindmap/renderer.ts'
+export {
+  TIMELINE,
+  layoutTimeline,
+  textWidth as timelineTextWidth,
+  wrapTimelineText,
+} from './timeline/layout.ts'
+export { renderTimelineSvg } from './timeline/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

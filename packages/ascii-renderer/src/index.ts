@@ -14,6 +14,7 @@
 //   - Quadrant charts (quadrantChart) — a four-cell grid with numbered markers (see quadrant.ts)
 //   - Mindmaps (mindmap) — an indented tree with shape delimiters (see mindmap.ts)
 //   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
+//   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'

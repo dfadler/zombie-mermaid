@@ -1,0 +1,10 @@
+   Stone Age --o-- Hand axes
+               |
+  Bronze Age --o-- Writing
+               |   Cities
+               |   Wheel
+               |
+           C --o--
+               |
+    Iron Age --o--
+               v

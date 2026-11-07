@@ -1,0 +1,13 @@
+        Product launches
+
+  [2020s]
+         |
+  2021 --o-- Alpha
+         |
+  2022 --o-- Beta
+         |   Public preview
+         |
+  [Later]
+         |
+  2024 --o-- General availability
+         v

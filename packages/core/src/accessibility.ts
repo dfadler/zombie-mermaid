@@ -31,6 +31,7 @@ const OWN_TITLE: Partial<Record<DiagramType, RegExp>> = {
   xychart: /^[ \t]*title\b/m,
   quadrant: /^[ \t]*title\b/m,
   gantt: /^[ \t]*title\b/m,
+  timeline: /^[ \t]*title\b/m,
   sequence: /^[ \t]*title\b/m,
 }
 const DRAWN_TITLE: DiagramType[] = ['flowchart', 'class', 'er']

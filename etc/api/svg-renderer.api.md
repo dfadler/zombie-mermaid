@@ -32,12 +32,14 @@ import { PositionedNode } from '@zombie-mermaid/core';
 import { PositionedPieChart } from '@zombie-mermaid/mermaid-parser';
 import { PositionedQuadrantChart } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSequenceDiagram } from '@zombie-mermaid/mermaid-parser';
+import { PositionedTimeline } from '@zombie-mermaid/mermaid-parser';
 import { PositionedXYChart } from '@zombie-mermaid/mermaid-parser';
 import { QuadrantChart } from '@zombie-mermaid/mermaid-parser';
 import { RenderOptions } from '@zombie-mermaid/core';
 import { SequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { SequenceRenderOptions } from '@zombie-mermaid/core';
 import { SvgEmitOptions } from '@zombie-mermaid/core';
+import { Timeline } from '@zombie-mermaid/mermaid-parser';
 import { XYChart } from '@zombie-mermaid/mermaid-parser';
 import { XyChartRenderOptions } from '@zombie-mermaid/core';
 
@@ -249,6 +251,9 @@ export function layoutQuadrantChart(chart: QuadrantChart): PositionedQuadrantCha
 export function layoutSequenceDiagram(input: SequenceDiagram, options?: SequenceRenderOptions): PositionedSequenceDiagram;
 
 // @public
+export function layoutTimeline(tl: Timeline): PositionedTimeline;
+
+// @public
 export function layoutXYChart(chart: XYChart, _options?: XyChartRenderOptions): PositionedXYChart;
 
 // @public
@@ -366,6 +371,9 @@ export function renderSequenceSvg(diagram: PositionedSequenceDiagram, colors: Di
 export function renderSvg(graph: PositionedGraph, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, curve?: CurveStyle, embedSource?: string, animationEnabled?: boolean, linksEnabled?: boolean, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
+export function renderTimelineSvg(tl: PositionedTimeline, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderXYChartSvg(chart: PositionedXYChart, colors: DiagramColors, font?: string, transparent?: boolean, interactive?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
@@ -409,10 +417,36 @@ export const TEXT_BASELINE_SHIFT: "0.35em";
 export function themeCssVariables(options?: RenderOptions): string;
 
 // @public
+export const TIMELINE: {
+    readonly fontSize: 16;
+    readonly lineHeight: 17.6;
+    readonly firstLineHeight: 19;
+    readonly textPad: 8.8;
+    readonly nodeWidth: 150;
+    readonly padding: 20;
+    readonly leftMargin: 150;
+    readonly columnWidth: 200;
+    readonly eventGap: 10;
+    readonly periodFloor: 67.8;
+    readonly eventFloor: 50;
+    readonly titleFontSize: 33.4688;
+    readonly titleAscent: 31;
+    readonly titleDescent: 7;
+    readonly viewBoxPadding: 50;
+    readonly colorLimit: 12;
+};
+
+// @public
+export function timelineTextWidth(text: string, size?: number, bold?: boolean): number;
+
+// @public
 export function validateMermaid(text: string): void;
 
 // @public
 export function withDataSrc(svgTag: string, source: string | undefined): string;
+
+// @public
+export function wrapTimelineText(text: string, width: number): string[];
 
 // @public
 export function xLabelStep(labels: string[], bandWidth: number): number;

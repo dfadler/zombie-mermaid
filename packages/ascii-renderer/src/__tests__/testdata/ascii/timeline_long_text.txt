@@ -1,0 +1,26 @@
+timeline
+    title Edge cases
+    section Early
+        A very long period label that wraps across several lines of text : first event
+        Empty period
+        Short : An event with a long description that needs several lines : Second
+    section Late
+        2030 : Single
+---
+                                        Edge cases
+
+  [Early]
+                             |
+  A very long period label --o-- first event
+         that wraps across   |
+     several lines of text   |
+                             |
+              Empty period --o--
+                             |
+                     Short --o-- An event with a long description that needs several lines
+                             |   Second
+                             |
+  [Late]
+                             |
+                      2030 --o-- Single
+                             v
