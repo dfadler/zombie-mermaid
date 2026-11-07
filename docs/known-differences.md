@@ -194,7 +194,7 @@ Checked on mermaid 12.2.0 (the pin, also npm `latest`). `pnpm run quadrant:oracl
 renders every `Quadrant:` sample through real mermaid and compares rect, line, circle and
 text positions with `layoutQuadrantChart`; they match exactly, and the weekly layout-oracle
 workflow fails on a drift (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` also
-pins the campaigns numbers). Colours and empty labels (below) are not compared.
+pins the campaigns numbers). Colours (below) are not compared; empty quadrant labels are (checked on 12.3.0).
 
 - **Point colour.** Mermaid 12.2.0's default theme emits `fill="hsl(240, 100%, NaN%)"`
   for every point without a `color`, which browsers drop, so mermaid.live and GitHub show
@@ -213,8 +213,9 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
   and border `*StrokeFill` variables are read under any theme, like mermaid, but only
   with `honorThemeVariables` ([themeVariables](diagrams.md#themevariables-opt-in)).
   ASCII ignores both. Mermaid's other theme-derived colours are not computed.
-- **Empty labels.** Mermaid draws an empty `<text>` for a quadrant with no label; this
-  library draws nothing.
+- **Empty labels.** Like mermaid 12.3.0, a quadrant with no label gets an empty `<text>`
+  at the position a label would have; axis, point and title text are dropped when empty,
+  in both.
 - **ASCII.** Mermaid has no ASCII output. The x axis is always below the grid (mermaid's
   SVG puts it on top of a chart with no points), and point labels are in a legend, not
   next to the markers.
@@ -224,12 +225,10 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
 also covered 12.1.0). Unless noted, these are choices, not bugs.
 
-- **SVG styling.** zombie-mermaid draws rounded bars and
-  grouped bar series side by side. Mermaid draws
-  square bars, no legend, and draws the second bar series over the first. Lines are straight
-  segments with no point markers, there is no grid, and each axis has a line and tick marks,
-  as in mermaid (it has no option for curved lines in 12.2.0 or on `develop`); the oracle
-  scores these as `style`.
+- **SVG styling.** Matches mermaid 12.3.0 ([#2857](https://github.com/dfadler/zombie-mermaid/issues/2857)):
+  square bars, no legend, and a second bar series drawn over the first. Lines are straight
+  segments with no point markers, there is no grid, and each axis has a line and tick marks
+  (mermaid has no option for curved lines in 12.2.0, 12.3.0 or on `develop`).
 - **Bar thickness.** Bars follow mermaid 12.2.0's band formula ([#2515](https://github.com/dfadler/zombie-mermaid/issues/2515)):
   95% of the smaller of twice the axis padding and the tick distance. Mermaid pads by
   half the widest category label as it measures it in the browser, on a plot about 660 px
@@ -245,6 +244,7 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   (letters and digits only for titles; categories also allow `+ = * # _ . & -`). A one-word
   `x-axis Foo [a, b]` title works; `x-axis Foo Bar [a, b]` is rejected by mermaid and is
   not special-cased here. Quote a label (`"New Users"`) to keep its spaces.
+- **Rejected input fails with our own error text, not mermaid's** ([#2785](https://github.com/dfadler/zombie-mermaid/issues/2785), checked against mermaid 12.3.0). Both reject the same sources (`x-axis [a;b, c]`, `x-axis [/users, b]`, `x-axis [a, , b]`, `x-axis [a, b`, `bar [1, x, 3]`, `bar [1, 2`, `line [1,,3]`, `title "unclosed`, `y-axis 0 --> x`, `bar 1,2,3`); nothing renders either way. Mermaid's message is its jison lexer/parser text: `Parse error on line N:`, a clipped source excerpt with a caret, and `Expecting 'SQUARE_BRACES_END', 'COMMA', got 'SEMI'` (or `Lexical error on line N. Unrecognized text.`). The expected-token list comes from its LALR tables and the excerpt is not reliable (it runs the header into the first line, `...chart-betax-axis [a;b, c]`), so it is not reproduced. Ours is `Line N: ...` naming the directive or value and what is allowed. Tools that match on mermaid's message text will not match ours. One accept/reject difference is not about text: `x-axis [a, b] extra` is rejected by mermaid (`got 'ALPHA'`) and accepted here, the trailing text ignored.
 - **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
   value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
   correct reading (a known mermaid quirk).
@@ -581,10 +581,8 @@ width apart, as mermaid does), a `classDef`/`style` fill with no `color:` keepin
 default dark text ([#2637](https://github.com/dfadler/zombie-mermaid/issues/2637)), the
 hexagon's angled-side inset (height / 3.5), and the LR/RL parallelogram yes/no routing
 (including the `D --> B` back-edge, which enters the diamond's lower side) all match. The
-one thing that still differs:
-
-- **Edge labels are drawn in a bordered box; mermaid draws a borderless grey background
-  on the line.** Colour palette and chrome, not structure (decision #2617).
+edge-label background matches too: a box the size of the text, no border, no padding
+([#2854](https://github.com/dfadler/zombie-mermaid/issues/2854)); only the fill colour is ours.
 
 ## Flowchart `curve` directive is ignored ([#2729](https://github.com/dfadler/zombie-mermaid/issues/2729))
 

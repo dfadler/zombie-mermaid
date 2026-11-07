@@ -60,6 +60,8 @@ const MARKER_OF: Record<ClassRelationship['type'], AsciiEdgeMarker> = {
   association: 'class-arrow',
   dependency: 'class-arrow',
   lollipop: 'class-circle',
+  link: 'class-arrow', // Unused: plain links draw no marker
+  'dashed-link': 'class-arrow',
 }
 
 /** Render a class diagram whose `direction` is LR or RL. */
@@ -111,14 +113,18 @@ export function renderClassFlowAscii(
       })
     }
     const marker = MARKER_OF[rel.type]
-    const start = rel.markerAt !== 'to'
-    const end = rel.markerAt !== 'from'
+    const plain = rel.type === 'link' || rel.type === 'dashed-link'
+    const start = !plain && rel.markerAt !== 'to'
+    const end = !plain && rel.markerAt !== 'from'
     edges.push({
       source: rel.from,
       target: rel.to,
       ...(rel.label ? { label: rel.label } : {}),
       style:
-        rel.dashed || rel.type === 'dependency' || rel.type === 'realization'
+        rel.dashed ||
+        rel.type === 'dependency' ||
+        rel.type === 'realization' ||
+        rel.type === 'dashed-link'
           ? 'dotted'
           : 'solid',
       hasArrowStart: start,

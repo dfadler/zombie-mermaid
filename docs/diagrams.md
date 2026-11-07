@@ -844,7 +844,7 @@ For the original design proposal behind this feature, see [xychart-design.md](xy
 
 The chart renderer follows a clean, minimal design philosophy, originally inspired by Apple's design language and Craft's interface for `beautiful-mermaid`:
 
-- **Rounded bars** — All bar corners are rounded for a modern, polished look
+- **Square bars** — Flat, unstroked bars with square corners and no legend, as mermaid draws them; a second bar series is drawn over the first, not beside it
 - **Straight lines** — Line series join their points with straight segments, as mermaid does (mermaid has no option for curved lines). Points carry no markers unless the chart is interactive
 - **Axis lines and ticks** — Each axis has a line and tick marks, as in mermaid; there is no grid
 - **Drop-shadow lines** — Each line series has a subtle shadow beneath it for depth

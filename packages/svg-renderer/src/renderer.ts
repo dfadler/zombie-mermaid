@@ -629,7 +629,8 @@ function renderEdgeLabel(
   // Use layout-computed label position when available (layout-aware, avoids collisions).
   // Fall back to geometric midpoint of the edge polyline.
   const mid = edge.labelPosition ?? edgeMidpoint(edge.points)
-  const padding = 8
+  // Mermaid 12.3.0: label box = text box, no padding, no border (#2854)
+  const padding = 0
 
   // Measure text (works for both single and multi-line)
   const metrics = measureMultilineText(
@@ -649,8 +650,7 @@ function renderEdgeLabel(
     padding,
     // Use --_text-sec for better contrast (was --_text-muted)
     f`text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
-    // Increased stroke width from 0.5 to 1 for better label separation from edges
-    `rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1"`,
+    `fill="var(--bg)"`,
   )
 
   // Semantic wrapper: links label to its edge via data-from/data-to

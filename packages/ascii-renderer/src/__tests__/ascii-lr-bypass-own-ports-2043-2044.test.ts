@@ -1,7 +1,7 @@
 /**
  * #2043/#2044, then #2739: an LR edge that jumps a node on its row (`A --> C`
  * past `B`) used to share its first segment with `A --> B` and merge with
- * `B --> C` into one arrowhead. Mermaid 12.3.0 steps `B` aside by about half a node (above, since
+ * `B --> C` into one arrowhead. Mermaid 12.2.0 and 12.3.0 step `B` aside by 0.46 node heights (above, since
  * `A --> B` is declared first) and runs `A --> C` straight along the row, each
  * edge leaving A's right face and entering C's or B's left face with its own
  * arrowhead. With less than 3 columns of gap the old route under the row stays.
@@ -20,14 +20,48 @@ describe('LR bypass edge keeps its own ports (#2043, #2044, #2739)', () => {
     expect(rows).toEqual([
       '          ┌───┐',
       '          │   │',
-      '      ┌──►│ B ├──┐',
-      '      │   │   │  │',
-      '┌───┐ │   └───┘  │  ┌───┐',
-      '│   ├─┘          └─►│   │',
-      '│ A │               │ C │',
+      '┌───┐ ┌──►│ B ├──┐  ┌───┐',
+      '│   ├─┘   │   │  └─►│   │',
+      '│ A │     └───┘     │ C │',
       '│   ├──────────────►│   │',
       '└───┘               └───┘',
     ])
+  })
+
+  // Mermaid 12.2.0/12.3.0 (GitHub too): B sits 0.46 node heights off A and C
+  // (22px of 48), so it overlaps their rows by 3 of 5, not by a border row.
+  it('offsets B by 2 text rows when it sits below (mermaid 0.46 node heights)', () => {
+    const below = render('flowchart LR\n  A --> C\n  A --> B\n  B --> C')
+    expect(below.map((r) => r.trimEnd())).toEqual([
+      '┌───┐               ┌───┐',
+      '│   ├──────────────►│   │',
+      '│ A │     ┌───┐     │ C │',
+      '│   ├─┐   │   │  ┌─►│   │',
+      '└───┘ └──►│ B ├──┘  └───┘',
+      '          │   │',
+      '          └───┘',
+    ])
+  })
+
+  it('takes the offset back from the gap above, leaving no extra blank rows', () => {
+    const rows = render(
+      'flowchart LR\n  Z --> Y\n  A --> B\n  A --> C\n  B --> C',
+    ).map((r) => r.trimEnd())
+    // Z's box ends on row 4, then the usual 4 blank rows, then B's top.
+    expect(rows.slice(5, 9)).toEqual(['', '', '', ''])
+    expect(rows[9]).toBe('          ┌───┐')
+  })
+
+  it('keeps the whole-slot offset when another block uses the rows', () => {
+    // Y sits in the rows the tighter offset would hand to A's box.
+    const rows = render(
+      'flowchart LR\n  X --> A\n  A --> B\n  A --> C\n  B --> C\n  X --> Y\n  Y --> Z',
+    )
+    const top = (re: RegExp): number => rows.findIndex((r) => re.test(r))
+    // B's box ends on the row A's box starts: they share only a border row.
+    expect(top(/│ B ├/)).toBe(top(/│ A │/) - 4)
+    expect(rows[top(/│ B ├/) + 2]).toContain('└───┘')
+    expect(rows[top(/│ A │/) - 2]).toContain('┌───┐')
   })
 
   it.each([3, 4, 5])('paddingX %i: three heads, none under a node', (px) => {
@@ -46,11 +80,9 @@ describe('LR bypass edge keeps its own ports (#2043, #2044, #2739)', () => {
     expect(rows).toEqual([
       '        +---+',
       '        |   |',
-      '      +>| B +-+',
-      '      | |   | |',
-      '+---+ | +---+ | +---+',
-      '|   +-+       +>|   |',
-      '| A |           | C |',
+      '+---+ +>| B +-+ +---+',
+      '|   +-+ |   | +>|   |',
+      '| A |   +---+   | C |',
       '|   +---------->|   |',
       '+---+           +---+',
     ])
