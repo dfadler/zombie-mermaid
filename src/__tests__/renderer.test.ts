@@ -390,7 +390,9 @@ describe('renderSvg – edge labels', () => {
     const graph = makeGraph({ edges: [edge] })
     const svg = renderSvg(graph, lightColors)
     expect(svg).toContain('>Yes</text>')
-    expect(svg).toMatch(/<g class="edge-label"[^>]*>\s*<rect [^>]*fill="var\(--bg\)" \/>/)
+    expect(svg).toMatch(
+      /<g class="edge-label"[^>]*>\s*<rect [^>]*fill="var\(--bg\)" \/>/,
+    )
   })
 
   it('does not render label elements for edges without labels', () => {
