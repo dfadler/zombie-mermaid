@@ -561,7 +561,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-longest-path-layering',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII put a node in the row of the parent that placed it first',
     symptom:
       'A node took the level of whichever parent placed it first and was never revisited, so with `A --> D` and `B --> D` it landed beside `B` and `B --> D` ran sideways. Nodes are now ranked by longest path, with back edges ignored, as mermaid does. The same source also fixed edge labels losing the spaces between their words: an edge label drawn over a stroke treated its spaces as transparent, so `long label` printed as `long─label`.',

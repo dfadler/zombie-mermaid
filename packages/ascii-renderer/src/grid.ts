@@ -76,7 +76,7 @@ import { getShapeDimensions } from './shapes/index.ts'
 import { splitLines } from './multiline-utils.ts'
 import { displayWidth } from './display-width.ts'
 import { edgeLabelPlacement, labelFit } from './draw-arrows.ts'
-import { withPortShifts } from './port-offsets.ts'
+import { jogGapSizes, withPortShifts } from './port-offsets.ts'
 import { getAsciiLayout } from './layout-hints.ts'
 import type {
   AsciiEdgeEndHint,
@@ -939,6 +939,28 @@ function widenGapsForCrossingLabels(graph: AsciiGraph): boolean {
     if (!widened) break
   }
   return changed
+}
+
+/**
+ * Widen a gap to the size `planJogRows` asked for, so each of its jogs has a
+ * bend row of its own with a clear row between them (#2888). Only grows a gap.
+ */
+function widenGapsForJogRows(graph: AsciiGraph): void {
+  if (!graph.edgeHints) return
+  const lr = graph.config.graphDirection === 'LR'
+  const sizes = withPortShifts(graph, () => jogGapSizes(graph))
+  const table = lr ? graph.columnWidth : graph.rowHeight
+  let changed = false
+  for (const [line, size] of sizes) {
+    if ((table.get(line) ?? 0) >= size) continue
+    table.set(line, size)
+    changed = true
+  }
+  if (!changed) return
+  for (const node of graph.nodes) {
+    node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+  }
+  calculateSubgraphBoundingBoxes(graph)
 }
 
 /**
@@ -2859,6 +2881,7 @@ export function createMapping(graph: AsciiGraph): void {
   widenGapsForFrameTitles(graph)
   widenGapsForCrossingLabels(graph)
   widenGapsForOffRunLabels(graph)
+  widenGapsForJogRows(graph)
   // A cluster-exit gutter narrower than its cluster's drawn wall (padding,
   // nesting, or LR label widening) is widened here, where the wall is first
   // known. Widening only shifts what lies past the gutter, so node drawing
