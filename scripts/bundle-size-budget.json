@@ -21,7 +21,7 @@
   },
   "consumerBundles": {
     "packages/svg-renderer/dist/index.js": 104520,
-    "dist/index.js": 186480
+    "dist/index.js": 186510
   },
   "unpackedBudgets": {
     "dist": 111000,
