@@ -103,8 +103,9 @@ function textEl(
   t: PositionedQuadrantChart['axisLabels'][number],
   cls: string,
 ): string {
-  // Mermaid draws empty quadrant labels as empty <text>; nothing to say here.
-  if (!t.text) return ''
+  // Mermaid 12.3.0 draws an unlabeled quadrant as an empty <text> (positioned
+  // as if labelled); axis, point and title text are dropped when empty.
+  if (!t.text && cls !== 'quadrant-label') return ''
   return (
     `<text x="0" y="0" class="quadrant-text ${cls}" font-size="${t.fontSize}"` +
     ` dominant-baseline="${t.baseline}" text-anchor="${t.anchor}"` +

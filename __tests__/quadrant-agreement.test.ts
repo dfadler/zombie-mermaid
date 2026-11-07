@@ -58,26 +58,18 @@ describe('quadrant figure agreement', () => {
     ).toEqual([[1, 2, 0]])
   })
 
-  it('reports no mismatch for identical figures, ignoring empty texts and float noise', () => {
+  it('reports no mismatch for identical figures, ignoring float noise', () => {
     const ours = ourQuadrant(SRC)
     expect(quadrantMismatches(ours, ours)).toEqual([])
     const noisy = parseOfficialQuadrant(OFFICIAL)
     noisy.rects = ours.rects
     noisy.lines = ours.lines
     noisy.circles = [[ours.circles[0]![0] + 1e-9, ours.circles[0]![1], 5]]
-    noisy.texts = [
-      ...ours.texts,
-      {
-        text: '',
-        x: 0,
-        y: 0,
-        fontSize: 16,
-        anchor: 'middle',
-        baseline: 'hanging',
-        rotation: 0,
-      },
-    ]
+    noisy.texts = ours.texts
     expect(quadrantMismatches(noisy, ours)).toEqual([])
+    // an empty quadrant label is compared too (mermaid 12.3.0 draws it)
+    noisy.texts = [...ours.texts, { ...ours.texts[0]!, text: '' }]
+    expect(quadrantMismatches(noisy, ours)).not.toEqual([])
   })
 
   it('reports a moved rect, line, circle and text, and a count difference', () => {
