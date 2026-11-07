@@ -42,6 +42,7 @@ import { renderArchitectureAscii } from './architecture.ts'
 import { renderC4Ascii } from './c4-diagram.ts'
 import { renderPieAscii } from './pie.ts'
 import { renderQuadrantAscii } from './quadrant.ts'
+import { renderTimelineAscii } from './timeline.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -104,4 +105,6 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderPieAscii(text, config, colorMode, theme, extras.honorThemeVariables),
   quadrant: (text, config, colorMode, theme) =>
     renderQuadrantAscii(text, config, colorMode, theme),
+  timeline: (text, config, colorMode, theme) =>
+    renderTimelineAscii(text, config, colorMode, theme),
 }
