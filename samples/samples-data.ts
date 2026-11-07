@@ -2941,6 +2941,7 @@ pie title Pets adopted by volunteers
   F@{ shape: join }
   A --> B --> C --> D --> E --> F`,
   },
+
   // ══════════════════════════════════════════════════════════════════════════
   //  Gantt (parity with mermaid 12.3.0, scripts/gantt-oracle.ts)
   //  `todayMarker off` keeps every sample independent of the clock.
@@ -3108,5 +3109,127 @@ pie title Pets adopted by volunteers
   Comparable ()..() Version
   Version ..() Printable
   Cache ().. Store`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  MINDMAP
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Mindmap: Basic',
+    category: 'Mindmap',
+    description:
+      "Mermaid's documentation example: a circle root, three branches taking three colours, and a label that wraps and one broken with <br/>.",
+    source: `mindmap
+  root((mindmap))
+    Origins
+      Long history
+      Popularisation
+        British popular psychology author Tony Buzan
+    Research
+      On effectiveness<br/>and features
+    Tools
+      Pen and paper
+      Mermaid`,
+  },
+  {
+    title: 'Mindmap: Shapes',
+    category: 'Mindmap',
+    description:
+      'Every node shape: default, square, rounded, circle, cloud, bang and hexagon.',
+    source: `mindmap
+  root[Square root]
+    id1(Rounded)
+    id2((Circle))
+    id3))Bang((
+    id4)Cloud(
+    id5{{Hexagon}}
+    Default shape`,
+  },
+  {
+    title: 'Mindmap: Markdown and Line Breaks',
+    category: 'Mindmap',
+    description:
+      'Labels are Markdown: bold and italic, a newline inside a quoted label, and HTML line breaks.',
+    source: `mindmap
+  id1["\`**Root** with a second line
+  and *emphasis*\`"]
+    id2["\`The dog in **the** hog... a *very long text* that wraps to a new line\`"]
+    id3[Regular labels still work]
+    id4[Line one<br/>line two]`,
+  },
+  {
+    title: 'Mindmap: Deep Nesting',
+    category: 'Mindmap',
+    description:
+      'Six levels deep: deeper nodes inherit their branch colour and their connectors thin out.',
+    source: `mindmap
+  root((Planet))
+    Land
+      Africa
+        Egypt
+          Cairo
+            Old Cairo
+    Sea
+      Pacific
+        Mariana Trench`,
+  },
+  {
+    title: 'Mindmap: Many Branches',
+    category: 'Mindmap',
+    description:
+      'Twelve first-level branches: the eleven section colours are used in turn and the twelfth repeats the first.',
+    source: `mindmap
+  root((Months))
+    Jan
+    Feb
+    Mar
+    Apr
+    May
+    Jun
+    Jul
+    Aug
+    Sep
+    Oct
+    Nov
+    Dec`,
+  },
+  {
+    title: 'Mindmap: Uneven Indentation',
+    category: 'Mindmap',
+    description:
+      'Only indentation relative to the line above matters: C is indented less than B but more than A, so it becomes B’s sibling, as in Mermaid.',
+    source: `mindmap
+  Root
+    A
+        B
+      C
+    D`,
+  },
+  {
+    title: 'Mindmap: Icons, Classes and Comments',
+    category: 'Mindmap',
+    description:
+      '::icon() and :::class lines decorate the node above and comments are skipped; Mermaid draws no icon without an icon font.',
+    source: `mindmap
+  Root
+    A
+      ::icon(fa fa-book)
+    %% a comment
+    B(B)
+      :::urgent large
+    C`,
+  },
+  {
+    title: 'Mindmap: Wide Characters',
+    category: 'Mindmap',
+    description: 'CJK and emoji labels size their nodes by display width.',
+    source: `mindmap
+  root((思维导图))
+    起源
+      历史悠久 📜
+    工具
+      纸和笔 ✏️
+      Mermaid`,
   },
 ]
