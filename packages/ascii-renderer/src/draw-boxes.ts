@@ -126,12 +126,17 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     // column in, edges land half the middle one in), so edges meet the glyph.
     const col = (i: number) => graph.columnWidth.get(gc.x + i) ?? 0
     const row = (i: number) => graph.rowHeight.get(gc.y + i) ?? 0
-    const gx = lr
-      ? from.x
-      : col(0) + Math.floor(col(1) / 2) - Math.floor(col(0) / 2)
-    const cy = lr
-      ? row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
-      : from.y
+    // An architecture junction takes edges on any face (#2724), so it sits at
+    // the centre on both axes and bridges the arms that land on its cell edge.
+    const centred = node.shape === 'junction'
+    const gx =
+      lr && !centred
+        ? from.x
+        : col(0) + Math.floor(col(1) / 2) - Math.floor(col(0) / 2)
+    const cy =
+      !lr && !centred
+        ? from.y
+        : row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
     write(box, gx, cy, glyph)
     node.labelRows = { top: cy, bottom: cy }
     return box

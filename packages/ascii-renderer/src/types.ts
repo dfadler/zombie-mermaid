@@ -12,7 +12,7 @@ import type {
   NodeShape,
 } from '@zombie-mermaid/core'
 import type { Grid } from './grid-occupancy.ts'
-import type { AsciiEdgeHint } from './layout-hints.ts'
+import type { AsciiEdgeHint, AsciiLayoutHints } from './layout-hints.ts'
 
 // Re-export NodeShape for convenience
 export type { NodeShape }
@@ -296,6 +296,8 @@ export interface AsciiEdge {
   faceLanePlan?: { slot: number; dep: number; arr: number }
   /** determinePath wanted this self-loop on its top face but the first row has no room above (#2100). */
   loopTopWanted?: boolean
+  /** A TD self-loop ELK hooks out of the left face, on a first column with no room beside it (#2888). */
+  loopLeftWanted?: boolean
   /**
    * Set by determinePath when the edge was routed as planned. Its ports are
    * placed by port-offsets.ts's allocateFaces, like a lane's.
@@ -475,6 +477,8 @@ export interface AsciiGraph {
   parsed?: MermaidGraph
   /** Take layer and order from the registered layout provider (flowchart and state only, #2645). */
   useLayoutHints?: boolean
+  /** Hints the caller computed itself (architecture, #2724); read before the registered provider. */
+  ownHints?: AsciiLayoutHints
   /** ELK's face and order for each edge end, faces mirrored to the grid's own TD/LR orientation, when the grid placed nodes from the same hints (#2645, PR 4b). */
   edgeHints?: Map<AsciiEdge, AsciiEdgeHint>
   /** Edges (by index) that must not take flow-axis face lanes (#2121). */
@@ -485,6 +489,10 @@ export interface AsciiGraph {
   topMargin?: boolean
   /** A self-loop wanted a top face but the first row has no room above it. */
   wantsTopMargin?: boolean
+  /** Layout keeps a free grid column left of the first node column (TD loops on a left face, #2888). */
+  leftMargin?: boolean
+  /** A TD self-loop wanted a left face but the first column has no room beside it. */
+  wantsLeftMargin?: boolean
   nodes: AsciiNode[]
   edges: AsciiEdge[]
   canvas: Canvas

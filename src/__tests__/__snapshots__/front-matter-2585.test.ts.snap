@@ -344,7 +344,7 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
 `;
 
 exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type but C4/architecture) > pie: SVG and ASCII snapshots 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 525 450" width="525" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-1hnw40w" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 525 450" width="525" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -376,7 +376,7 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
   .pie-slice-label { fill: var(--_text); font-size: 17px; font-weight: 400; }
   .pie-title { fill: var(--_text); font-size: 25px; font-weight: 400; }
   .pie-legend-text { fill: var(--_text); font-size: 17px; font-weight: 400; }
-  svg {
+  .zm-pal-1hnw40w {
     --pie-color-0: var(--accent, #3b82f6);
     --pie-color-1: #0d5ba5;
   }

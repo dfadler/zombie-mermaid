@@ -148,7 +148,7 @@ describe('state notes: edge cases', () => {
       edges(
         'stateDiagram-v2\n  note left of A\n    x --> y\n  end note\n  A --> B',
       ),
-    ).toEqual(['A>A----note-1', 'A>B'])
+    ).toEqual(['A----note-1>A', 'A>B'])
   })
 
   it('renders a note in ASCII-only mode', () => {

@@ -69,6 +69,29 @@ export interface SequenceInitLayout {
   bottomMarginAdj?: number
 }
 
+/**
+ * `%%{init: {"class": {...}}}%%` keys, in mermaid's own units (px at 16px
+ * text) and measured against mermaid 12.3.0: `padding` (default 12) pads each
+ * compartment of a class box on every side; `hideEmptyMembersBox` drops the
+ * two empty compartments of a class with no members.
+ */
+export interface ClassInitLayout {
+  padding?: number
+  hideEmptyMembersBox?: boolean
+}
+
+/**
+ * `%%{init: {"er": {...}}}%%` keys, in mermaid's own units. `diagramPadding`
+ * (default 20) pads entity cells horizontally, `entityPadding` (default 15)
+ * pads each row vertically and `minEntityWidth` (default 100) floors an
+ * entity's width. Renderers apply the first two as a delta from the default.
+ */
+export interface ErInitLayout {
+  diagramPadding?: number
+  entityPadding?: number
+  minEntityWidth?: number
+}
+
 const PIE_LEGEND_POSITIONS = new Set([
   'left',
   'right',
@@ -171,6 +194,10 @@ function directiveColor(value: unknown): string | undefined {
     : undefined
 }
 
+function isNonNegative(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0
+}
+
 /** Configuration a diagram can set for itself via `%%{init: ...}%%`. */
 export interface InitConfig {
   theme?: string
@@ -192,6 +219,10 @@ export interface InitConfig {
   sequenceLayout?: SequenceInitLayout
   /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
   timeline?: TimelineInitConfig
+  /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
+  classLayout?: ClassInitLayout
+  /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
+  erLayout?: ErInitLayout
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
@@ -222,6 +253,8 @@ const IGNORED_KEYS: Record<string, string> = {
     'labels are always rendered as SVG text; there is no HTML label mode',
   maxtextsize: 'no text-size limit is enforced',
   startonload: 'not a browser auto-render integration',
+  state:
+    'no `state` key changes mermaid 12.3.0 output beyond `useMaxWidth` (measured: padding, nodeSpacing, rankSpacing, fontSize, forkWidth and the rest render identically)',
   'flowchart.curve':
     'mermaid 12.3.0 ignores it (every flowchart edge is ELK-routed with rounded orthogonal bends); pass the `curve` render option to opt in',
   themevariables:
@@ -409,6 +442,29 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'class' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const layout: ClassInitLayout = {}
+      if (isNonNegative(rec.padding)) layout.padding = rec.padding
+      if (typeof rec.hideEmptyMembersBox === 'boolean')
+        layout.hideEmptyMembersBox = rec.hideEmptyMembersBox
+      config.classLayout = layout
+      continue
+    }
+
+    if (lower === 'er' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const layout: ErInitLayout = {}
+      for (const k of [
+        'diagramPadding',
+        'entityPadding',
+        'minEntityWidth',
+      ] as const)
+        if (isNonNegative(rec[k])) layout[k] = rec[k]
+      config.erLayout = layout
+      continue
+    }
+
     if (lower === 'sequence' && typeof value === 'object' && value !== null) {
       for (const [sk, sv] of Object.entries({ ...value })) {
         const sl = sk.toLowerCase()
@@ -509,6 +565,10 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
+    if (config.classLayout)
+      merged.classLayout = { ...merged.classLayout, ...config.classLayout }
+    if (config.erLayout)
+      merged.erLayout = { ...merged.erLayout, ...config.erLayout }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }
     if (config.themeVariables) {

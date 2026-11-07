@@ -88,24 +88,19 @@ layers. The 12.1.0 comparison is in
   bypass, "Dense Duplicate Edges (LR)", "Self-Loop ... (LR)" and "CI/CD Pipeline"
   samples now score 100%. "Dense Duplicate Edges (TD)" (`c` 18.5 px right of `a`, 30.1 px in
   mermaid, 0.1 px outside the band) and "Self-Loop ... (TD)" (mermaid staggers 48 and 37 px, ours stacks) stay
-  under the default floor, as do and "State: Notes".
+  under the default floor.
   A fixed 15, 25 or 30 px tolerance, or one scaled by node height, only moved the
   cliff or split other samples; marking samples "oracle n/a" would not reach the
   non-ASCII ones (#2155).
 
 ## State diagram notes
 
-zombie-mermaid's parser reads `note left of X` / `note right of X` but ignores the side:
-swapping the keywords gives byte-identical output, and placement comes from the layout
-engine's dotted edge from the state to the note ([#2094](https://github.com/dfadler/zombie-mermaid/issues/2094)).
-mermaid.js does not place notes on the named side either. Checked on mermaid 12.2.0
-(jsDelivr, real Chrome, default config) for the "State: Notes" sample: `note right of
-Active` lands below `Active`, 20 px to its left, and `note left of Idle` lands above
-`Idle`, 20 px to its right. The maintainer-run oracle on 12.1.0 gives the same layout.
-The remaining gap is layout tie-breaks, which is why "State: Notes" scores 83% horizontal
-agreement; the floor in `scripts/lib/layout-agreement.ts` stays at 0.8
-([#1942](https://github.com/dfadler/zombie-mermaid/issues/1942)). Not checked: mermaid.live
-or GitHub for this sample.
+mermaid 12.3.0 joins a note to its state with a dotted, arrowless edge whose direction follows
+the side keyword: `note right of X` is `X -> note`, `note left of X` is `note -> X`. So a
+right note ranks below its state and a left note above it. zombie-mermaid does the same
+([#2829](https://github.com/dfadler/zombie-mermaid/issues/2829)); "State: Notes" scores 100%
+vertical and horizontal agreement on 12.3.0 and has no sample floor. Before that it ignored the
+side (both notes hung below), which scored 83% horizontal. Both renderers share the parse.
 
 ## Sequence SVG: self-message and lifeline spacing ([#2477](https://github.com/dfadler/zombie-mermaid/issues/2477))
 
@@ -179,7 +174,10 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   `themeVariables` section below).
 - **Tall legend.** A legend taller than the 450px frame (about 20 slices or more) is
   clipped at the top and bottom, as in mermaid 12.3.0: the viewBox height stays 450 and
-  the rows outside it are cut off. The ASCII table still lists every slice
+  the rows outside it are cut off. A legend wider than the frame (top, bottom or center
+  with very long labels) is clipped the same way: the viewBox keeps its 490px width
+  ([#2781](https://github.com/dfadler/zombie-mermaid/issues/2781)); left and right grow it.
+  The ASCII table still lists every slice
   ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722)).
 - **Empty pie.** When every slice is zero, zombie-mermaid draws a full outline circle;
   mermaid draws a half arc, which reads as a rendering glitch.
@@ -442,17 +440,17 @@ left and right middle.
 - **Edges.** They still attach at the box faces (middle row on the sides, middle column on
   top and bottom); a side edge starts beside the `(`/`)`/`<`/`>` point instead of replacing it.
 - **Diamond** (`{x}`). A rhombus with `<` `>` at the left and right middle and the top and
-  bottom rows as a point (`╱╲` / `╲╱`, `/\` / `\/` in ASCII). The node keeps its row count
-  (5 at the default padding), so the slope is whatever lands the points on the centre:
-  two columns per row for a short label, shallower and sparser for a wide one. Mermaid's
-  diamond is as tall as it is wide, which a terminal cannot afford, so a wide-label diamond
-  is flatter than mermaid's. Widths are rounded up to an even count so the top point is two
+  bottom rows as a point (`╱╲` / `╲╱`, `/\` / `\/` in ASCII). Mermaid 12.3.0's diamond is as
+  tall as it is wide at every label size, so the node grows rows with its width: about
+  `columns / 2` (a cell is about twice as tall as wide), rounded to an odd count so one middle
+  row carries the `<` `>` and the edges, and never fewer than the box's 5. A short label stays at 5
+  rows; a 24-column diamond is 11 rows (#2707). Widths are rounded up to an even count so the top point is two
   glyphs; when a neighbour makes the width odd the point has a `─` between them. An edge
   leaving the top or bottom starts beside the point glyph rather than replacing it.
 - **Circle** (`((x))`). An ellipse: rounded top and bottom rows, `╱ ╲` on the rows between,
   `(` `)` on the middle row (`.-.` / `'-'`, `/ \` in ASCII). Mermaid's circle is round in
-  pixels; the cell grid makes it about twice as wide as tall, so it is a 7-column,
-  5-row minimum shape, not a true circle. Edges attach as for the stadium.
+  pixels and so is ours: rows grow with the width as for the diamond (#2707), so it is a
+  7-column, 5-row minimum shape, and a 22-column one is 11 rows. Edges attach as for the stadium.
 - **Corner glyphs of the outline.** `╭ ╮ ╰ ╯ . '` and the diagonals are now protected from
   an edge stroke like `( ) < >` are, so a port on a corner column starts beside it.
 - **Cylinder** (`[(x)]`). Mermaid 12.3.0 (neo and classic looks) draws a full ellipse on top
@@ -499,12 +497,12 @@ left and right middle.
   5-row inner circle (5 rows with a 3-row inner pill at `boxBorderPadding: 0`), the rows
   of every node on the same layout row grow with it, and the label rows keep the inner ring a cell clear of the text. Edges
   attach at the outer ring as for the circle. The ring gap is one cell, not mermaid's
-  proportional gap.
+  proportional gap. The outer ring grows rows with its width as for the circle (#2707),
+  so 7 rows is the minimum and a wide label's node is about `columns / 2` rows.
 - **Re-checked against 12.3.0.** Every shape above was rendered again in mermaid 12.3.0
   (`look: neo` and `look: classic`): same silhouette class as 12.2.0, except the
   cylinder's bottom (above). Circle, double circle and diamond are 1:1 in 12.3.0 at every
-  label size; ours keeps the rows of a box, so a wider label is flatter (a square one would
-  need about half as many rows as it has columns: 8 rows for a 16-column diamond).
+  label size, and ours now matches to within one row (#2707).
 - Every shape in the issue is now drawn as a silhouette; the remaining differences are the
   ones listed per shape above (diagonals and curves quantised to cells).
 
@@ -695,6 +693,25 @@ Checked against mermaid 12.3.0. A leading `---` ... `---` block is accepted on e
 - `title:` is drawn as in mermaid 12.3.0: above flowchart, state, class and ER (a 54px band, 18px centred text), and as the chart title of sequence, pie, xychart and quadrant, where the diagram's own `title` wins. C4 and architecture draw nothing, as in mermaid. In ASCII the title is a centred row above the diagram for flowchart, state, class and ER (mermaid has no ASCII output to compare).
 - The YAML is a small indentation-based subset: nested `key: value` maps under `config:`, quoted and bare scalars, numbers, booleans, `#` comments. Flow style (`{a: 1}`), lists and multi-line scalars are skipped silently; mermaid parses full YAML and rejects malformed YAML with an error, we do not.
 - Like mermaid, the opening `---` must be the very first line (a blank line, BOM, spaces or `%%` comment before it is not front matter) and an empty block is not accepted. An unterminated block errors at the opening line.
+
+## Class, ER and state `%%{init}%%` / front-matter config ([#2786](https://github.com/dfadler/zombie-mermaid/issues/2786))
+
+Measured on mermaid 12.3.0 (headless Chromium, each key rendered with and without). Init and front
+matter share one code path. SVG only: ASCII has no pixel padding, so these keys do nothing there.
+
+- **Read: `class.padding`** (default 12), as a delta from the default: box width gains 2 per unit,
+  each compartment gains 2 above and below (mermaid: 6 per unit over three compartments). **`class.hideEmptyMembersBox`**
+  drops both empty compartments of a class with no members (a class with one empty compartment keeps it, as in mermaid).
+- **Read: `er.diagramPadding`** (default 20), **`er.entityPadding`** (default 15) and **`er.minEntityWidth`** (default 100),
+  as deltas from the default on our scale: a bare entity grows 2 wide and 3 tall per unit of `diagramPadding`, each attribute
+  column 1.25 wide; the header and every row grow 1.25 tall per unit of `entityPadding`; `minEntityWidth` floors the width of
+  every entity (ours already floors a table at 140).
+- **Not read, no effect in mermaid 12.3.0:** `class.titleTopMargin`, `dividerMargin`, `textHeight`, `nodeSpacing`, `rankSpacing`,
+  `diagramPadding`; `er.layoutDirection`, `minEntityHeight`, `nodeSpacing`, `rankSpacing`, `stroke`, `fill`, `fontSize`;
+  every `state` key except `useMaxWidth` (`padding`, `nodeSpacing`, `rankSpacing`, `fontSize`, `forkWidth`, `compositTitleSize`,
+  `radius`, ...). The `state` block is reported as ignored.
+- **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
+- **Not yet measured:** `xyChart`, `c4` and `architecture` blocks, tracked in separate issues.
 
 ## Timelines
 
