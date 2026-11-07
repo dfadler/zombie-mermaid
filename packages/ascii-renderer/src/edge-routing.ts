@@ -2431,6 +2431,20 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
         ? plain
         : null)
   }
+  // A labelled reciprocal pair on one route would print its labels over each
+  // other (no jog row of its own yet, #2888): the second keeps the grid's faces.
+  const sameRoute = (o: AsciiEdge): boolean =>
+    o !== edge &&
+    o.from === edge.to &&
+    o.to === edge.from &&
+    o.text !== '' &&
+    edge.text !== '' &&
+    o.path.length === hintedPath!.length &&
+    o.path.every((c, i) => {
+      const r = hintedPath![hintedPath!.length - 1 - i]!
+      return c.x === r.x && c.y === r.y
+    })
+  if (hintedPath && graph.edges.some(sameRoute)) hintedPath = null
   if (hinted && hintedPath) {
     ;[preferredDir, alternativeDir] = [hinted[0], hinted[0]]
     ;[preferredOppositeDir, alternativeOppositeDir] = [hinted[1], hinted[1]]

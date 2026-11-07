@@ -90,12 +90,15 @@ const inOrder = ({ hint, drawn }: { hint: number[]; drawn: number[] }) =>
 
 const FEEDBACK = entry('ascii-feedback-edge-sibling-order')
 const LONGEST = entry('ascii-longest-path-layering')
+// Labelled bent pairs keep the grid's placement (their labels would print over
+// each other), so the order checks use the same edges without labels.
+const LONGEST_PLAIN = LONGEST.replace(/\|[^|]*\|/g, '')
 const DIAMOND = entry('ascii-opposing-edges-diamond')
 
 describe('edge-end faces follow ELK (#2645)', () => {
   it.each([
     ['feedback edge', FEEDBACK],
-    ['longest path', LONGEST],
+    ['longest path, unlabelled', LONGEST_PLAIN],
     ['opposing edges at a diamond', DIAMOND],
   ])('%s: every end is on ELK’s face', (_name, source) => {
     const c = measureSample(source)
@@ -116,8 +119,8 @@ describe('edge-end faces follow ELK (#2645)', () => {
 
 describe('ends on a face follow ELK’s order (#2645)', () => {
   it.each([
-    ['TD', LONGEST],
-    ['BT', LONGEST.replace('graph TD', 'graph BT')],
+    ['TD', LONGEST_PLAIN],
+    ['BT', LONGEST_PLAIN.replace('graph TD', 'graph BT')],
     ['feedback', FEEDBACK],
     ['feedback LR', FEEDBACK.replace('graph TD', 'graph LR')],
     ['feedback RL', FEEDBACK.replace('graph TD', 'graph RL')],

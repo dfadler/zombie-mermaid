@@ -65,10 +65,11 @@ grid when neither exists.
   breaking, and an edge whose endpoints or path ELK did not return has no edge
   hint (the grid chooses). Ties in the cross-axis rank are broken by input
   order.
-- Output with the provider registered is byte-identical to output without it
-  in this PR, since nothing reads the hints. Later PRs change that in steps:
-  ER, then flowchart and state placement, then ports, then cleanup of the
-  heuristics ELK supersedes (plan in the #2645 comment).
+- Output with the provider registered is no longer byte-identical to output
+  without it: PR 3 reads the hints for flowchart and state placement and PR 4b
+  for edge-end faces and their order (ER, ports, then cleanup of the heuristics
+  ELK supersedes follow; plan in the #2645 comment). Without a provider the
+  grid's own output is unchanged.
 - ascii-renderer's bundle budget (`scripts/bundle-size-budget.json`) is the
   constraint on how much hint consumption the grid can carry.
 
