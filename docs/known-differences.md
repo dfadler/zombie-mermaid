@@ -230,6 +230,13 @@ layout and edge paths from mermaid's measured node sizes (0.01px); the weekly la
 workflow fails on a drift. The layout is a dependency-free port of the CoSE-Bilkent force
 layout mermaid runs through cytoscape, bit-identical to it for a tree.
 
+Mermaid's layout itself is not reproducible across JavaScript engines for some inputs: V8's
+`Math.pow` changed its last digit between Node 22 and Node 24, which is enough to rearrange
+`Mindmap: Many Branches` (12 leaves on one root). The port tabulates the one `pow` it needs
+with Node 24 / current Chromium values, so it renders the same on every Node version and
+agrees with a current Chromium; a browser with an older V8 can draw such a mindmap
+differently in mermaid itself.
+
 - **Label widths, and so positions.** Mermaid measures labels in "trebuchet ms"; this
   library uses its own font's metrics. Node sizes differ by the text-width difference and,
   the layout being a physics simulation, node positions move with them: a gallery sample with

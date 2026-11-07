@@ -671,6 +671,29 @@ function calcRepulsionForces(
   }
 }
 
+/**
+ * `Math.pow(cycle, k)` for the cooling schedule, `k = log(100 * (1 - 0.04)) /
+ * log(25)`, tabulated for cycles 1..25 (2500 iterations, a cooling step every
+ * 100). V8's `Math.pow` changed its last digit for cycle 15 between Node 22
+ * and Node 24 (46.52548701922507 against ...506), and this simulation turns a
+ * last-digit difference into a different layout (`Mindmap: Many Branches`), so
+ * the render would depend on the Node version. These are Node 24's, which
+ * match the Chromium that mermaid 12.3.0 was checked in.
+ */
+const COOLING_POW = [
+  1, 2.6721379557162637, 4.74848763464932, 7.140321254379494, 9.797958971132713,
+  12.688614040795791, 15.788627053658772, 19.07992343983501, 22.548134816417495,
+  26.181498055314396, 29.970162105620904, 33.905727183844746, 37.98092508439659,
+  42.189389618730246, 46.52548701922506, 50.984187615743544, 55.56096674434149,
+  60.25172687355656, 65.05273546109957, 69.96057469111715, 74.9721003323884,
+  80.08440770139889, 85.29480323234884, 90.60078052411225, 96.00000000000003,
+]
+
+/** Cooling-schedule power: the table, or `Math.pow` past the 25th cycle (unreachable at 2500 iterations). */
+function coolingPow(cycle: number, exponent: number): number {
+  return COOLING_POW[cycle - 1] ?? Math.pow(cycle, exponent)
+}
+
 /** Returns the total displacement of this step. */
 function moveNodes(nodes: LNode[], coolingFactor: number): number {
   let total = 0
@@ -820,7 +843,7 @@ export function coseBilkentLayout(
       coolingCycle++
       coolingFactor = Math.max(
         initialCoolingFactor -
-          (Math.pow(
+          (coolingPow(
             coolingCycle,
             Math.log(100 * (initialCoolingFactor - finalTemperature)) /
               Math.log(maxCoolingCycle),
