@@ -544,6 +544,44 @@ export interface Message {
     to: string;
 }
 
+// @public
+export interface Mindmap {
+    // (undocumented)
+    root: MindmapNode;
+}
+
+// @public
+export function mindmapLabelLines(text: string): MindmapTextRun[][];
+
+// @public
+export interface MindmapNode {
+    // (undocumented)
+    children: MindmapNode[];
+    className?: string;
+    icon?: string;
+    id: number;
+    level: number;
+    // (undocumented)
+    shape: MindmapShape;
+    text: string;
+}
+
+// @public
+export function mindmapPlainLines(text: string): string[];
+
+// @public
+export type MindmapShape = 'default' | 'rect' | 'rounded' | 'circle' | 'cloud' | 'bang' | 'hexagon';
+
+// @public
+export interface MindmapTextRun {
+    // (undocumented)
+    bold: boolean;
+    // (undocumented)
+    italic: boolean;
+    // (undocumented)
+    text: string;
+}
+
 // @public (undocumented)
 export const MS_DAY = 86400000;
 
@@ -602,6 +640,9 @@ export function parseGenericTypes(input: string): string;
 
 // @public
 export function parseMermaid(text: string): MermaidGraph;
+
+// @public
+export function parseMindmap(text: string): Mindmap;
 
 // @public
 export function parsePieChart(text: string): PieChart;
@@ -1091,6 +1132,64 @@ export interface PositionedMessage {
     // (undocumented)
     x1: number;
     x2: number;
+    y: number;
+}
+
+// @public
+export interface PositionedMindmap {
+    // (undocumented)
+    edges: PositionedMindmapEdge[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    nodes: PositionedMindmapNode[];
+    originX: number;
+    // (undocumented)
+    originY: number;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedMindmapEdge {
+    depth: number;
+    // (undocumented)
+    from: number;
+    // (undocumented)
+    path: string;
+    section: number | undefined;
+    // (undocumented)
+    to: number;
+}
+
+// @public
+export interface PositionedMindmapNode {
+    // (undocumented)
+    boxX: number;
+    // (undocumented)
+    boxY: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    labelHeight: number;
+    labelWidth: number;
+    lines: MindmapTextRun[][];
+    // (undocumented)
+    node: MindmapNode;
+    path?: string;
+    points?: string;
+    radius?: number;
+    rect?: {
+        width: number;
+        height: number;
+        radius: number;
+    };
+    section: number | undefined;
+    underline?: boolean;
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
     y: number;
 }
 
