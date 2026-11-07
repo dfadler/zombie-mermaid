@@ -90,7 +90,7 @@
   {
     "file": "scripts/bench.ts",
     "reason": "benchmark CLI: runs on import, timing output only, no assertable logic",
-    "maxLines": 346,
+    "maxLines": 366,
     "legacy": true
   },
   {

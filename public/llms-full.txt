@@ -1391,18 +1391,18 @@ mindmap
       Mermaid
 ```
 
-| Syntax                   | Shape                                   |
-| ------------------------ | --------------------------------------- |
-| `text`                   | default (rounded top, underlined)       |
-| `id[text]`               | rectangle                               |
-| `id(text)`               | rounded rectangle                       |
-| `id((text))`             | circle                                  |
-| `id)text(`               | cloud                                   |
-| `id))text((`             | bang                                    |
-| `id{{text}}`             | hexagon                                 |
+| Syntax       | Shape                             |
+| ------------ | --------------------------------- |
+| `text`       | default (rounded top, underlined) |
+| `id[text]`   | rectangle                         |
+| `id(text)`   | rounded rectangle                 |
+| `id((text))` | circle                            |
+| `id)text(`   | cloud                             |
+| `id))text((` | bang                              |
+| `id{{text}}` | hexagon                           |
 
 - Text inside a delimiter runs to the next `)`, `]`, `(` or `}`; quote it (`"..."`
-  or `` "`...`" ``) to include those. A newline or `<br/>` is a line break, and labels
+  or ``"`...`"``) to include those. A newline or `<br/>` is a line break, and labels
   are Markdown (`**bold**`, `*italic*`); a label wider than 200px wraps.
 - The id in front of a delimiter is never drawn. `B:::urgent` is a node labelled
   `B:::urgent`; `:::urgent large` goes on its own line under the node, as does
@@ -2078,6 +2078,13 @@ edge classes) exactly, our shape sizes from mermaid's measured label boxes, and 
 layout and edge paths from mermaid's measured node sizes (0.01px); the weekly layout-oracle
 workflow fails on a drift. The layout is a dependency-free port of the CoSE-Bilkent force
 layout mermaid runs through cytoscape, bit-identical to it for a tree.
+
+Mermaid's layout itself is not reproducible across JavaScript engines for some inputs: V8's
+`Math.pow` changed its last digit between the V8 versions of the two Node releases CI runs, which is enough to rearrange
+`Mindmap: Many Branches` (12 leaves on one root). The port tabulates the one `pow` it needs
+with the newer V8's values (current Chromium's), so it renders the same on every Node version and
+agrees with a current Chromium; a browser with an older V8 can draw such a mindmap
+differently in mermaid itself.
 
 - **Label widths, and so positions.** Mermaid measures labels in "trebuchet ms"; this
   library uses its own font's metrics. Node sizes differ by the text-width difference and,

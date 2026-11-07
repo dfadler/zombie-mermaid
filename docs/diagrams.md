@@ -1084,18 +1084,18 @@ mindmap
       Mermaid
 ```
 
-| Syntax                   | Shape                                   |
-| ------------------------ | --------------------------------------- |
-| `text`                   | default (rounded top, underlined)       |
-| `id[text]`               | rectangle                               |
-| `id(text)`               | rounded rectangle                       |
-| `id((text))`             | circle                                  |
-| `id)text(`               | cloud                                   |
-| `id))text((`             | bang                                    |
-| `id{{text}}`             | hexagon                                 |
+| Syntax       | Shape                             |
+| ------------ | --------------------------------- |
+| `text`       | default (rounded top, underlined) |
+| `id[text]`   | rectangle                         |
+| `id(text)`   | rounded rectangle                 |
+| `id((text))` | circle                            |
+| `id)text(`   | cloud                             |
+| `id))text((` | bang                              |
+| `id{{text}}` | hexagon                           |
 
 - Text inside a delimiter runs to the next `)`, `]`, `(` or `}`; quote it (`"..."`
-  or `` "`...`" ``) to include those. A newline or `<br/>` is a line break, and labels
+  or ``"`...`"``) to include those. A newline or `<br/>` is a line break, and labels
   are Markdown (`**bold**`, `*italic*`); a label wider than 200px wraps.
 - The id in front of a delimiter is never drawn. `B:::urgent` is a node labelled
   `B:::urgent`; `:::urgent large` goes on its own line under the node, as does

@@ -61,65 +61,63 @@ interface Token {
 
 type LexState = 'INITIAL' | 'CLASS' | 'ICON' | 'NODE' | 'NSTR' | 'NSTR2'
 
-/** Sticky and case-insensitive, like the jison rules. */
-const r = (source: string): RegExp => new RegExp(source, 'iy')
-
 /**
  * The jison lexer rules per state, in Mermaid's order. Each rule is
- * `[pattern, token kind (null: none), state to push or 'POP']`.
+ * `[pattern, token kind (null: none), state to push or 'POP']`; patterns are sticky
+ * and case-insensitive like the jison ones.
  */
 const RULES: Record<
   LexState,
   [RegExp, TokenKind | null, LexState | 'POP' | undefined][]
 > = {
   INITIAL: [
-    [r('\\s*%%.*'), 'SPACELINE', undefined],
-    [r('mindmap\\b'), 'MINDMAP', undefined],
-    [r(':::'), null, 'CLASS'],
-    [r('::icon\\('), null, 'ICON'],
-    [r('\\s+\\n'), 'SPACELINE', undefined],
-    [r('\\n+'), 'NL', undefined],
-    [r('-\\)'), 'NODE_DSTART', 'NODE'],
-    [r('\\(-'), 'NODE_DSTART', 'NODE'],
-    [r('\\)\\)'), 'NODE_DSTART', 'NODE'],
-    [r('\\)'), 'NODE_DSTART', 'NODE'],
-    [r('\\(\\('), 'NODE_DSTART', 'NODE'],
-    [r('\\{\\{'), 'NODE_DSTART', 'NODE'],
-    [r('\\('), 'NODE_DSTART', 'NODE'],
-    [r('\\['), 'NODE_DSTART', 'NODE'],
-    [r('\\s+'), 'SPACELIST', undefined],
-    [r('[^(\\[\\n){}]+'), 'NODE_ID', undefined],
-    [r('$'), 'EOF', undefined],
+    [/\s*%%.*/iy, 'SPACELINE', undefined],
+    [/mindmap\b/iy, 'MINDMAP', undefined],
+    [/:::/iy, null, 'CLASS'],
+    [/::icon\(/iy, null, 'ICON'],
+    [/\s+\n/iy, 'SPACELINE', undefined],
+    [/\n+/iy, 'NL', undefined],
+    [/-\)/iy, 'NODE_DSTART', 'NODE'],
+    [/\(-/iy, 'NODE_DSTART', 'NODE'],
+    [/\)\)/iy, 'NODE_DSTART', 'NODE'],
+    [/\)/iy, 'NODE_DSTART', 'NODE'],
+    [/\(\(/iy, 'NODE_DSTART', 'NODE'],
+    [/\{\{/iy, 'NODE_DSTART', 'NODE'],
+    [/\(/iy, 'NODE_DSTART', 'NODE'],
+    [/\[/iy, 'NODE_DSTART', 'NODE'],
+    [/\s+/iy, 'SPACELIST', undefined],
+    [/[^(\[\n){}]+/iy, 'NODE_ID', undefined],
+    [/$/iy, 'EOF', undefined],
   ],
   CLASS: [
-    [r('.+'), 'CLASS', 'POP'],
-    [r('\\n'), null, 'POP'],
+    [/.+/iy, 'CLASS', 'POP'],
+    [/\n/iy, null, 'POP'],
   ],
   ICON: [
-    [r('[^)]+'), 'ICON', undefined],
-    [r('\\)'), null, 'POP'],
+    [/[^)]+/iy, 'ICON', undefined],
+    [/\)/iy, null, 'POP'],
   ],
   NODE: [
-    [r('"`'), null, 'NSTR2'],
-    [r('"'), null, 'NSTR'],
-    [r('\\)\\)'), 'NODE_DEND', 'POP'],
-    [r('\\)'), 'NODE_DEND', 'POP'],
-    [r('\\]'), 'NODE_DEND', 'POP'],
-    [r('\\}\\}'), 'NODE_DEND', 'POP'],
-    [r('\\(-'), 'NODE_DEND', 'POP'],
-    [r('-\\)'), 'NODE_DEND', 'POP'],
-    [r('\\(\\('), 'NODE_DEND', 'POP'],
-    [r('\\('), 'NODE_DEND', 'POP'],
-    [r('[^)\\](}]+'), 'NODE_DESCR', undefined],
-    [r('.+(?!\\(\\()'), 'NODE_DESCR', undefined],
+    [/"`/iy, null, 'NSTR2'],
+    [/"/iy, null, 'NSTR'],
+    [/\)\)/iy, 'NODE_DEND', 'POP'],
+    [/\)/iy, 'NODE_DEND', 'POP'],
+    [/\]/iy, 'NODE_DEND', 'POP'],
+    [/\}\}/iy, 'NODE_DEND', 'POP'],
+    [/\(-/iy, 'NODE_DEND', 'POP'],
+    [/-\)/iy, 'NODE_DEND', 'POP'],
+    [/\(\(/iy, 'NODE_DEND', 'POP'],
+    [/\(/iy, 'NODE_DEND', 'POP'],
+    [/[^)\](}]+/iy, 'NODE_DESCR', undefined],
+    [/.+(?!\(\()/iy, 'NODE_DESCR', undefined],
   ],
   NSTR2: [
-    [r('[^`"]+'), 'NODE_DESCR', undefined],
-    [r('`"'), null, 'POP'],
+    [/[^`"]+/iy, 'NODE_DESCR', undefined],
+    [/`"/iy, null, 'POP'],
   ],
   NSTR: [
-    [r('[^"]+'), 'NODE_DESCR', undefined],
-    [r('"'), null, 'POP'],
+    [/[^"]+/iy, 'NODE_DESCR', undefined],
+    [/"/iy, null, 'POP'],
   ],
 }
 
