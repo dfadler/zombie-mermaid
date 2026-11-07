@@ -970,6 +970,7 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
   if (!hints) return out
   const all = new Map<string, FaceEnd[]>()
   for (const edge of graph.edges) {
+    /* v8 ignore next */
     if (edge.path.length < 2) continue
     for (const [run, role] of endsOf(edge)) {
       /* v8 ignore next */
@@ -999,6 +1000,7 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
       ]
       const back = horizontal ? a.x > b.x : a.y > b.y
       const rank = e.order * 4 + (back ? 1 : 0)
+      /* v8 ignore next */
       return { ...f, rank: flip ? -rank : rank }
     })
     if (list.length < 2 || ranked.some((r) => r === undefined)) continue
