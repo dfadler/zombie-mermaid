@@ -95,6 +95,13 @@ describe('self-loops take ELK’s faces (#2888)', () => {
     expect(draw(src)).toBe(draw(src, false))
   })
 
+  it('a first-column loop beside a subgraph is not drawn inside its node (no margin column is made there)', () => {
+    const out = draw(
+      'flowchart TD\n  a --> a\n  a --> b\n  subgraph s\n    b --> c\n  end',
+    )
+    expect(out).toContain('│ a │')
+  })
+
   it('without a provider the output is the grid’s own', () => {
     const src = LOOP('LR')
     registerAsciiLayout(undefined)

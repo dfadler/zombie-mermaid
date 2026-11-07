@@ -1478,7 +1478,8 @@ function hintedLoopFace(
 export function loopStartsLow(graph: AsciiGraph, edge: AsciiEdge): boolean {
   const h = graph.edgeHints!.get(edge)!
   const flipped =
-    graph.parsed?.direction === (h.start.face === 'T' ? 'RL' : 'BT')
+    graph.parsed?.direction ===
+    (h.start.face === 'T' || h.start.face === 'B' ? 'RL' : 'BT')
   return h.start.order <= h.end.order !== flipped
 }
 
@@ -2156,7 +2157,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       ]
       return
     }
-    edge.loopLeftWanted = true
+    // A margin column is only made for a graph without subgraphs.
+    if (graph.subgraphs.length === 0) edge.loopLeftWanted = true
   }
   if (
     effectiveDir === 'LR' &&
