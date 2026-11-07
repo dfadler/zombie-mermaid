@@ -176,7 +176,7 @@ exports[`numeric x-axis range (#1592) > ASCII: ticks short of the end 1`] = `
 `;
 
 exports[`numeric x-axis range (#1592) > SVG: bar and line 2020..2024 1`] = `
-"<svg data-xychart-colors="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-9b67ta" data-xychart-colors="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -210,7 +210,7 @@ exports[`numeric x-axis range (#1592) > SVG: bar and line 2020..2024 1`] = `
   .xychart-label { fill: var(--_text-muted); }
   .xychart-axis-title { fill: var(--_text-sec); }
   .xychart-title { fill: var(--_text); }
-  svg {
+  .zm-pal-9b67ta {
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
     --xychart-color-1: #0d5ba5;
@@ -273,7 +273,7 @@ exports[`numeric x-axis range (#1592) > SVG: bar and line 2020..2024 1`] = `
 `;
 
 exports[`numeric x-axis range (#1592) > SVG: bars 0..100 1`] = `
-"<svg data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-u7qncv" data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -307,7 +307,7 @@ exports[`numeric x-axis range (#1592) > SVG: bars 0..100 1`] = `
   .xychart-label { fill: var(--_text-muted); }
   .xychart-axis-title { fill: var(--_text-sec); }
   .xychart-title { fill: var(--_text); }
-  svg {
+  .zm-pal-u7qncv {
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
@@ -365,7 +365,7 @@ exports[`numeric x-axis range (#1592) > SVG: bars 0..100 1`] = `
 `;
 
 exports[`numeric x-axis range (#1592) > SVG: horizontal bars 0..100 1`] = `
-"<svg data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702 422" width="702" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-u7qncv" data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702 422" width="702" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -399,7 +399,7 @@ exports[`numeric x-axis range (#1592) > SVG: horizontal bars 0..100 1`] = `
   .xychart-label { fill: var(--_text-muted); }
   .xychart-axis-title { fill: var(--_text-sec); }
   .xychart-title { fill: var(--_text); }
-  svg {
+  .zm-pal-u7qncv {
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
@@ -457,7 +457,7 @@ exports[`numeric x-axis range (#1592) > SVG: horizontal bars 0..100 1`] = `
 `;
 
 exports[`numeric x-axis range (#1592) > SVG: horizontal line 0..9 1`] = `
-"<svg data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702 422" width="702" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-u7qncv" data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702 422" width="702" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -491,7 +491,7 @@ exports[`numeric x-axis range (#1592) > SVG: horizontal line 0..9 1`] = `
   .xychart-label { fill: var(--_text-muted); }
   .xychart-axis-title { fill: var(--_text-sec); }
   .xychart-title { fill: var(--_text); }
-  svg {
+  .zm-pal-u7qncv {
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
@@ -556,7 +556,7 @@ exports[`numeric x-axis range (#1592) > SVG: horizontal line 0..9 1`] = `
 `;
 
 exports[`numeric x-axis range (#1592) > SVG: line 0..9 1`] = `
-"<svg data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-u7qncv" data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -590,7 +590,7 @@ exports[`numeric x-axis range (#1592) > SVG: line 0..9 1`] = `
   .xychart-label { fill: var(--_text-muted); }
   .xychart-axis-title { fill: var(--_text-sec); }
   .xychart-title { fill: var(--_text); }
-  svg {
+  .zm-pal-u7qncv {
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
@@ -655,7 +655,7 @@ exports[`numeric x-axis range (#1592) > SVG: line 0..9 1`] = `
 `;
 
 exports[`numeric x-axis range (#1592) > SVG: single point 1`] = `
-"<svg data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-u7qncv" data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -689,7 +689,7 @@ exports[`numeric x-axis range (#1592) > SVG: single point 1`] = `
   .xychart-label { fill: var(--_text-muted); }
   .xychart-axis-title { fill: var(--_text-sec); }
   .xychart-title { fill: var(--_text); }
-  svg {
+  .zm-pal-u7qncv {
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }
@@ -747,7 +747,7 @@ exports[`numeric x-axis range (#1592) > SVG: single point 1`] = `
 `;
 
 exports[`numeric x-axis range (#1592) > SVG: ticks short of the end 1`] = `
-"<svg data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-u7qncv" data-xychart-colors="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 422" width="720" height="422" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -781,7 +781,7 @@ exports[`numeric x-axis range (#1592) > SVG: ticks short of the end 1`] = `
   .xychart-label { fill: var(--_text-muted); }
   .xychart-axis-title { fill: var(--_text-sec); }
   .xychart-title { fill: var(--_text); }
-  svg {
+  .zm-pal-u7qncv {
     --xychart-color-0: var(--accent, #3b82f6);
     --xychart-bar-fill-0: color-mix(in srgb, var(--bg) 75%, var(--xychart-color-0) 25%);
   }

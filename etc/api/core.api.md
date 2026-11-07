@@ -36,6 +36,14 @@ export function checkLimit(limit: keyof RenderLimits, value: number, limits: Ren
 export function checkLineLength(text: string, limits: RenderLimits | undefined): void;
 
 // @public
+export interface ClassInitLayout {
+    // (undocumented)
+    hideEmptyMembersBox?: boolean;
+    // (undocumented)
+    padding?: number;
+}
+
+// @public
 export type ClassRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'fontSizes' | 'interactivity' | 'layoutCache'>;
 
 // @public
@@ -202,6 +210,16 @@ export interface ElkShape extends ElkGraphElement {
 }
 
 // @public
+export interface ErInitLayout {
+    // (undocumented)
+    diagramPadding?: number;
+    // (undocumented)
+    entityPadding?: number;
+    // (undocumented)
+    minEntityWidth?: number;
+}
+
+// @public
 export type ErRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'direction' | 'fontSizes' | 'layoutCache'>;
 
 // @public
@@ -253,6 +271,8 @@ export function hasMeasuredAdvance(char: string): boolean;
 
 // @public
 export interface InitConfig {
+    classLayout?: ClassInitLayout;
+    erLayout?: ErInitLayout;
     ignored: string[];
     pieDonutHole?: number;
     pieHighlightSlice?: string;
@@ -473,6 +493,9 @@ export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circl
 
 // @public
 export function normalizeBrTags(label: string): string;
+
+// @public
+export function paletteClass(declarations: readonly string[]): string;
 
 // @public
 export function parseCssColor(value: string): RgbaColor | null;
@@ -819,6 +842,9 @@ export function withDirectionOverride<T extends {
 
 // @public
 export function withoutOwnClusterEdges(graph: MermaidGraph): MermaidGraph;
+
+// @public
+export function withRootClass(openTag: string, cls: string): string;
 
 // @public
 export type XyChartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'interactivity' | 'interactive'>;

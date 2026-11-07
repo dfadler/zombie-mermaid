@@ -118,6 +118,9 @@ ALLOWLIST=(
   # SVG + ASCII goldens for the architecture junction join and group header
   # icons (#2563, #2564); reviewed via `git diff` (`vitest -u`).
   "src/__tests__/architecture-junction-group-icon-2563-2564.test.ts"
+  # SVG + ASCII goldens for architecture edge side hints (#2724): placement by
+  # port, which is a whole-diagram property.
+  "src/__tests__/architecture-side-hints-2724.test.ts"
   # SVG + ASCII goldens for flowchart cloud/h-cyl/tag-rect/sm-circ/fork shapes
   # (#2552); reviewed via the .snap diff.
   "src/__tests__/flowchart-shapes-2552.test.ts"

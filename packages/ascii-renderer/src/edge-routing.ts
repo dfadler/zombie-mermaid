@@ -1456,6 +1456,36 @@ export function denseFacingPair(
   )
 }
 
+/** A self-loop ELK draws as a hook over the top face, out of it and back into it (#2888). */
+function hintedLoopFace(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): AsciiFace | undefined {
+  const h = graph.edgeHints?.get(edge)
+  // A diamond's apex is one cell, too narrow for a hook's two legs.
+  return edge.from === edge.to &&
+    edge.from.shape !== 'diamond' &&
+    h?.start.face === h?.end.face
+    ? h?.start.face
+    : undefined
+}
+
+/**
+ * Whether a hinted loop's start takes the low cell of its face in the grid
+ * (left on a top face, upper on a left face). ELK's order is in SVG
+ * orientation, and RL and BT are flipped after drawing.
+ */
+export function loopStartsLow(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const h = graph.edgeHints!.get(edge)!
+  const flipped =
+    graph.parsed?.direction ===
+    (h.start.face === 'T' || h.start.face === 'B' ? 'RL' : 'BT')
+  return h.start.order <= h.end.order !== flipped
+}
+
+const hintedTopLoop = (graph: AsciiGraph, edge: AsciiEdge): boolean =>
+  hintedLoopFace(graph, edge) === 'T'
+
 /** A self-loop on a node that ends a `backStraight` pair (#2100). */
 function loopOnTop(graph: AsciiGraph, edge: AsciiEdge): boolean {
   if (edge.from !== edge.to) return false
@@ -2104,7 +2134,36 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // leaves and re-enters the top face, as mermaid draws it. The first row has
   // no room above it: ask for a margin row (the layout is redone with one).
   edge.loopTopWanted = false
-  if (effectiveDir === 'LR' && loopOnTop(graph, edge)) {
+  edge.loopLeftWanted = false
+  // #2888: a TD loop ELK hooks out of the left face and back into it. A first
+  // column has no room beside it: ask for a margin column (the layout is redone).
+  if (
+    effectiveDir === 'TD' &&
+    hintedLoopFace(graph, edge) === 'L' &&
+    !sourceSg
+  ) {
+    const c = requireGridCoord(edge.from)
+    if (graph.leftMargin || c.x > 0) {
+      // ELK's order puts the start on the upper cell and the end on the lower.
+      const [a, b] = loopStartsLow(graph, edge) ? [1, 2] : [2, 1]
+      edge.startDir = Left
+      edge.endDir = Left
+      edge.faceLane = false
+      edge.path = [
+        { x: c.x, y: c.y + a },
+        { x: c.x - 1, y: c.y + a },
+        { x: c.x - 1, y: c.y + b },
+        { x: c.x, y: c.y + b },
+      ]
+      return
+    }
+    // A margin column is only made for a graph without subgraphs.
+    if (graph.subgraphs.length === 0) edge.loopLeftWanted = true
+  }
+  if (
+    effectiveDir === 'LR' &&
+    (loopOnTop(graph, edge) || hintedTopLoop(graph, edge))
+  ) {
     if (graph.topMargin || requireGridCoord(edge.from).y > 0) {
       ;[preferredDir, preferredOppositeDir] = [Right, Up]
       ;[alternativeDir, alternativeOppositeDir] = [Right, Up]
@@ -2188,23 +2247,29 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (
     edge.from === edge.to &&
     effectiveDir === 'LR' &&
-    loopOnTop(graph, edge) &&
     !edge.loopTopWanted &&
-    graph.edges.some(
-      (o) =>
-        denseFacingPair(graph, o) &&
-        (o.from === edge.from || o.to === edge.from),
-    )
+    (hintedTopLoop(graph, edge) ||
+      (loopOnTop(graph, edge) &&
+        graph.edges.some(
+          (o) =>
+            denseFacingPair(graph, o) &&
+            (o.from === edge.from || o.to === edge.from),
+        )))
   ) {
     const c = requireGridCoord(edge.from)
     edge.startDir = Up
     edge.endDir = Up
     edge.faceLane = false
+    // ELK's order puts the start on the left cell and the end on the right (the old shape: right to left).
+    const [a, b] =
+      !graph.edgeHints?.has(edge) || !loopStartsLow(graph, edge)
+        ? [2, 1]
+        : [1, 2]
     edge.path = [
-      { x: c.x + 2, y: c.y },
-      { x: c.x + 2, y: c.y - 1 },
-      { x: c.x + 1, y: c.y - 1 },
-      { x: c.x + 1, y: c.y },
+      { x: c.x + a, y: c.y },
+      { x: c.x + a, y: c.y - 1 },
+      { x: c.x + b, y: c.y - 1 },
+      { x: c.x + b, y: c.y },
     ]
     return
   }

@@ -250,21 +250,40 @@ export function drawCircle(
   }
 }
 
-/** Widen until each label row clears the diagonal (insets from `insetsOf`). */
+/**
+ * Rows of a node `width` columns wide whose silhouette is square in pixels: a
+ * cell is about twice as tall as wide, so `width / 2` rows (mermaid 12.3.0 draws
+ * the diamond, circle and double circle 1:1 at every label size, #2707). Odd,
+ * rounded down, so there is one middle row for edges and the label to sit on;
+ * never fewer than the box's.
+ */
+function squareRows(width: number, minRows: number): number {
+  const rows = Math.ceil(width / 2)
+  return Math.max(minRows, rows % 2 ? rows : rows - 1)
+}
+
+/**
+ * Widen until each label row clears the diagonal (insets from `insetsOf`).
+ * With `square`, the rows grow with the width so the shape stays 1:1; a wider
+ * node is therefore taller and its label rows move to the new middle.
+ */
 function growToClearLabel(
   base: ShapeDimensions,
   widths: readonly number[],
   insetsOf: (w: number, h: number) => number[],
   evenWidth: boolean,
   bothSides = false,
+  square = false,
+  minWidthOf: (rows: number) => number = () => 0,
 ): ShapeDimensions {
-  const rows = base.height
-  const startY =
-    Math.floor((rows - 1) / 2) - Math.floor((widths.length - 1) / 2)
   let width = base.width
   if (evenWidth && width % 2) width++
   const step = evenWidth ? 2 : 1
+  let rows = base.height
   for (let grow = 0; grow < 64; grow++) {
+    rows = square ? squareRows(width, base.height) : base.height
+    const startY =
+      Math.floor((rows - 1) / 2) - Math.floor((widths.length - 1) / 2)
     const ins = insetsOf(width - 1, rows - 1)
     const clear = widths.every((lw, i) => {
       const d = ins[startY + i]!
@@ -273,13 +292,19 @@ function growToClearLabel(
       const right = !bothSides || width - 1 - d >= x0 + lw + HEX_GAP
       return d === 0 || (d <= x0 - 1 - HEX_GAP && right)
     })
-    if (clear) break
+    if (clear && width >= minWidthOf(rows)) break
     width += step
   }
-  return { ...base, width, gridColumns: [1, width - 2, 1] }
+  return {
+    ...base,
+    width,
+    height: rows,
+    gridRows: [1, base.gridRows[1]! + rows - base.height, 1],
+    gridColumns: [1, width - 2, 1],
+  }
 }
 
-/** Diamond grid cell: the box's rows, widened (to an even width) for the label. */
+/** Diamond grid cell: square (width / 2 rows), widened to an even width for the label. */
 export function diamondDimensions(
   label: string,
   options: ShapeRenderOptions,
@@ -290,23 +315,26 @@ export function diamondDimensions(
     widths,
     diamondInsets,
     true,
+    false,
+    true,
   )
 }
 
-/** Circle grid cell: the box's rows, widened so the top arc keeps a dash. */
+/** Circle grid cell: square (width / 2 rows), widened so the top arc keeps a dash. */
 export function circleDimensions(
   label: string,
   options: ShapeRenderOptions,
 ): ShapeDimensions {
   const widths = splitLines(label).map((l) => displayWidth(l))
-  const base = getBoxDimensions(label, options)
   // The arc's two corners need a cell between them at the top and bottom.
-  const minWidth = 2 * Math.max(...circleInsets(1e3, base.height - 1)) + 3
   return growToClearLabel(
-    { ...base, width: Math.max(base.width, minWidth) },
+    getBoxDimensions(label, options),
     widths,
     circleInsets,
     false,
+    false,
+    true,
+    (rows) => 2 * Math.max(...circleInsets(1e3, rows - 1)) + 3,
   )
 }
 
@@ -344,27 +372,29 @@ export function doubleCircleInsets(w: number, h: number): number[] {
   )
 }
 
-/** Double circle grid cell: the circle's, two rows taller and four columns wider. */
+/** Double circle grid cell: the circle's, four columns wider and two rows taller than square. */
 export function doubleCircleDimensions(
   label: string,
   options: ShapeRenderOptions,
 ): ShapeDimensions {
   const widths = splitLines(label).map((l) => displayWidth(l))
   const base = getBoxDimensions(label, options)
-  const height = base.height + 2 * RING_Y
-  const minWidth =
-    2 * Math.max(...circleInsets(1e3, height - 2 * RING_Y - 1)) + 3 + 2 * RING_X
   return growToClearLabel(
     {
       ...base,
-      height,
-      // The layout allocates rows from gridRows, not height.
+      height: base.height + 2 * RING_Y,
       gridRows: [1, base.gridRows[1]! + 2 * RING_Y, 1],
-      width: Math.max(base.width + 2 * RING_X, minWidth),
+      width: base.width + 2 * RING_X,
     },
     widths,
     doubleCircleInsets,
     false,
+    false,
+    true,
+    (rows) =>
+      2 * Math.max(...circleInsets(1e3, rows - 2 * RING_Y - 1)) +
+      3 +
+      2 * RING_X,
   )
 }
 

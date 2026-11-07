@@ -2318,6 +2318,7 @@ const hintCache = new WeakMap<
 
 /** The registered provider's hints for this graph, or `undefined` (grid placement stays). */
 function layoutHintsFor(graph: AsciiGraph): AsciiLayoutHints | undefined {
+  if (graph.ownHints) return graph.ownHints
   const parsed = graph.parsed
   const provider = getAsciiLayout()
   if (!graph.useLayoutHints || !parsed || !provider?.graph) return undefined
@@ -2694,6 +2695,19 @@ export function createMapping(graph: AsciiGraph): void {
     }
   }
 
+  // The same on the left for a TD loop on a left face (#2888).
+  if (graph.leftMargin && graph.subgraphs.length === 0) {
+    graph.grid = createGrid()
+    for (const n of graph.nodes) {
+      const gc = requireGridCoord(n)
+      n.gridCoord = { x: gc.x + 1, y: gc.y }
+      placeBlock(graph.grid, n.gridCoord)
+    }
+    // The column belongs to the loops drawn in it: routed edges keep out.
+    const rows = Math.max(...graph.nodes.map((n) => requireGridCoord(n).y + 3))
+    for (let y = 0; y < rows; y++) graph.grid.add(0, y)
+  }
+
   // Compute column widths and row heights
   const spreads = spreadCandidates(graph)
   for (const node of graph.nodes) {
@@ -2702,6 +2716,9 @@ export function createMapping(graph: AsciiGraph): void {
   // The margin row is only as tall as the loop needs.
   if (graph.topMargin && graph.subgraphs.length === 0) {
     graph.rowHeight.set(0, 3)
+  }
+  if (graph.leftMargin && graph.subgraphs.length === 0) {
+    graph.columnWidth.set(0, 3)
   }
   tightenSidesteps(graph)
 
@@ -2806,6 +2823,7 @@ export function createMapping(graph: AsciiGraph): void {
 
   noteRejectedFaceLanes(graph)
   graph.wantsTopMargin = graph.edges.some((e) => e.loopTopWanted)
+  graph.wantsLeftMargin = graph.edges.some((e) => e.loopLeftWanted)
 
   // A self-loop that runs along another edge's cells gets one more drawn
   // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).

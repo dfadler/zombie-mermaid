@@ -6,6 +6,7 @@
 // ============================================================================
 
 import type {
+  ClassInitLayout,
   Direction,
   NodeInteraction,
   StyleDirectives,
@@ -27,6 +28,8 @@ export interface ClassDiagram extends StyleDirectives {
   namespaces: ClassNamespace[]
   /** Maps class IDs to interactions declared by `click` statements */
   interactions: Map<string, NodeInteraction>
+  /** `%%{init}%%` / front-matter `class` keys (`padding`, `hideEmptyMembersBox`). */
+  layout?: ClassInitLayout
   /** Notes, in source order — `note "text"` and `note for X "text"` */
   notes: ClassNote[]
   /**

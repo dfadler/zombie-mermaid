@@ -29,6 +29,7 @@ import type {
 } from '@zombie-mermaid/core'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
+import type { AsciiLayoutHints } from './layout-hints.ts'
 import { drawGraph } from './draw.ts'
 import {
   canvasToString,
@@ -66,6 +67,8 @@ export interface FlowchartAsciiExtras {
   limits?: RenderLimits
   /** Set by `renderFlowchartAscii`: flowchart and state take layers and order from the layout provider (#2645). Class and architecture leave it off. */
   layoutHints?: boolean
+  /** Layer, order and edge faces supplied by the caller (architecture's port grid, #2724); used instead of the registered provider. */
+  hints?: AsciiLayoutHints
 }
 
 /**
@@ -252,7 +255,8 @@ export function renderGraphAscii(
   checkGraphSize(parsed.nodes.size, parsed.edges.length, extras.limits)
   const convert = (): AsciiGraph => {
     const g = convertToAsciiGraph(parsed, config)
-    g.useLayoutHints = extras.layoutHints
+    g.useLayoutHints = extras.layoutHints || extras.hints !== undefined
+    g.ownHints = extras.hints
     return g
   }
   let graph = convert()
@@ -266,10 +270,12 @@ export function renderGraphAscii(
   // A self-loop that wants a top face on the first row gets a free row above
   // the nodes, and the layout is redone (#2100).
   const margin = graph.wantsTopMargin === true
-  if (margin) {
+  const leftMargin = graph.wantsLeftMargin === true
+  if (margin || leftMargin) {
     graph = convert()
     hooks.afterConvert?.(graph)
-    graph.topMargin = true
+    graph.topMargin = margin
+    graph.leftMargin = leftMargin
     createMapping(graph)
   }
   for (let pass = 0; pass < 4 && graph.faceLaneRejected?.size; pass++) {
@@ -278,6 +284,7 @@ export function renderGraphAscii(
     hooks.afterConvert?.(graph)
     graph.faceLaneOff = new Set(off)
     graph.topMargin = margin
+    graph.leftMargin = leftMargin
     createMapping(graph)
   }
   // The canvas is allocated from the finished grid; check its size before
