@@ -1010,6 +1010,20 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: `message line two` sits on the arrow and `second line` touches the message label. After: the arrow drops below both message lines and the first message clears the frame label, as in mermaid 12.3.0.',
   },
+  {
+    id: 'ascii-xychart-legend-axis',
+    title:
+      'ASCII xychart drew a made-up legend and put the horizontal value axis at the bottom',
+    symptom:
+      'The ASCII xychart added a `Bar 1` / `Line 1` legend that mermaid does not draw, and a horizontal chart put the value axis under the bars instead of above them.',
+    source:
+      'xychart-beta horizontal\n    title "Sprint Velocity"\n    x-axis [Alpha, Beta, Gamma, Delta]\n    y-axis "Story Points" 0 --> 100\n    bar [30, 55, 80, 45]\n    line [20, 50, 70, 60]',
+    fixCommit: 'b52a43db',
+    pr: 2756,
+    render: 'ascii',
+    lookFor:
+      'Before: a `Bar 1` / `Line 1` legend and the value axis under the bars. After: no legend, and `Story Points` with its tick labels and axis line above the bars, as in mermaid 12.3.0.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */

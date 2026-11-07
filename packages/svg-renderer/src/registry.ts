@@ -58,6 +58,7 @@ import {
   architectureToGraph,
   parseC4Diagram,
   parsePieChart,
+  parseMindmap,
   parseQuadrantChart,
   parseGantt,
 } from '@zombie-mermaid/mermaid-parser'
@@ -77,6 +78,8 @@ import type {
   PositionedPieChart,
   QuadrantChart,
   PositionedQuadrantChart,
+  Mindmap,
+  PositionedMindmap,
   GanttChart,
   PositionedGanttChart,
 } from '@zombie-mermaid/mermaid-parser'
@@ -94,6 +97,8 @@ import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
 import { layoutQuadrantChart } from './quadrant/layout.ts'
 import { renderQuadrantSvg } from './quadrant/renderer.ts'
+import { layoutMindmap } from './mindmap/layout.ts'
+import { renderMindmapSvg } from './mindmap/renderer.ts'
 import { layoutGantt } from './gantt/layout.ts'
 import { renderGanttSvg } from './gantt/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -460,6 +465,29 @@ const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
 }
 
 /**
+ * Mindmaps parse from the raw `text` (the grammar is indentation based and a
+ * label may contain `;`), then lay out with Mermaid's CoSE-Bilkent force
+ * layout. No direction or interactivity applies.
+ */
+const mindmapModule: DiagramModule<Mindmap, PositionedMindmap> = {
+  type: 'mindmap',
+  parse: (_lines, text) => parseMindmap(text),
+  layoutForSvg: (chart) => layoutMindmap(chart),
+  renderSvg(positioned, ctx) {
+    return renderMindmapSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * Gantt charts parse from the raw `text` (a task line is `name :data`, which
  * the statement splitter would cut at `;` and `#`) and lay out at Mermaid's
  * fallback width. The `todayMarker` line only appears while today is inside
@@ -513,5 +541,6 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   c4: c4Module,
   pie: pieModule,
   quadrant: quadrantModule,
+  mindmap: mindmapModule,
   gantt: ganttModule,
 }

@@ -60,6 +60,10 @@ const diagrams: Record<string, string> = {
   y-axis Cold --> Hot
   Campaign A: [0.3, 0.6]`,
 
+  mindmap: `mindmap
+  root((Plan))
+    Build
+    Ship`,
   gantt: `gantt
   title Plan
   dateFormat YYYY-MM-DD
