@@ -1,0 +1,21 @@
+gantt
+    dateFormat HH:mm
+    axisFormat %H:%M
+    title Day
+    section Morning
+    Standup :08:00, 30m
+    Deep work :09:00, 3h
+    section Afternoon
+    Review :13:00, 2h
+---
+                                  Day
+
+Morning
+  Standup   #####
+  Deep work         ###########################
+Afternoon
+  Review                                              ##################
+            +---+---+----+---+---+---+----+---+---+---+---+----+---+---+
+            08:00 09:00    10:00   11:00    12:00   13:00    14:00   15:00
+
+  # task

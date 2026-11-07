@@ -41,7 +41,7 @@ describe('ASCII ER self-relationship (issue #2284)', () => {
 
   it('keeps a self loop clear of its left neighbour and its label intact', () => {
     const out = renderMermaidASCII(
-      'erDiagram\n  A ||--o{ B : owns\n  B |o--o| B : reports to',
+      'erDiagram\n  A ||--o{ B : owns\n  B |o--o| B : "reports to"',
     )
     expect(out).toContain('reports to')
     expect(out).toContain('owns')

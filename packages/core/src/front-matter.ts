@@ -81,6 +81,23 @@ export function readFrontMatterTitle(text: string): string | undefined {
   return undefined
 }
 
+/** The top-level scalar `key:` of a leading front matter block, as a string. */
+export function readFrontMatterValue(
+  text: string,
+  key: string,
+): string | undefined {
+  const lines = text.split('\n')
+  const close = blockEnd(lines)
+  if (close === undefined) return undefined
+  for (const line of lines.slice(1, close)) {
+    const m = line.startsWith(key)
+      ? /^[ \t]*:(.*)$/.exec(line.slice(key.length))
+      : null
+    if (m) return String(scalar(m[1]!)).trim() || undefined
+  }
+  return undefined
+}
+
 /**
  * Blank a leading front matter block (line numbers preserved), turning its
  * `config:` into an init directive on the block's first line. Text without

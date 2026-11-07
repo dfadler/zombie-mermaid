@@ -270,6 +270,41 @@ function cardinalityOf(token: string): Cardinality {
   return CARDINALITY_TOKENS.find(([src]) => new RegExp(`^${src}$`).test(t))![1]
 }
 
+// Mermaid 12.3.0's ER lexer reads an unquoted label as whitespace-separated
+// word tokens; a word-form cardinality or `to` keyword at a token start
+// (`one`, `many`, `only one`, `zero or more`, `to`, `optionally to`, ...),
+// a number, or a character outside the word set is a parse error. Quoted
+// strings are always fine. `-one`, `one_x`, `opt-to-many` lex as one word.
+const LABEL_KEYWORD_RE =
+  /(?:one or (?:zero|more|many)|zero or (?:one|more|many)|many|one|only one|to|optionally to)\b|many\([01]\)|[01]\+|[0-9]/iy
+const LABEL_WORD_RE = /(?:[^\x00-\x7F]|\w|-|\*|\.)+/y
+const LABEL_QUOTED_RE = /"[^"]*"/y
+
+/** The reason mermaid.js would reject an unquoted label, or null if it accepts it. */
+function unquotedLabelError(label: string): string | null {
+  let pos = 0
+  while (pos < label.length) {
+    if (/\s/.test(label[pos]!)) {
+      pos++
+      continue
+    }
+    let m: RegExpExecArray | null = null
+    for (const re of [LABEL_QUOTED_RE, LABEL_KEYWORD_RE, LABEL_WORD_RE]) {
+      re.lastIndex = pos
+      m = re.exec(label)
+      if (m) {
+        if (re === LABEL_KEYWORD_RE) {
+          return `unquoted label contains "${m[0]}", which is an ER cardinality/relationship keyword`
+        }
+        break
+      }
+    }
+    if (!m) return `unexpected "${label[pos]}" in unquoted label`
+    pos += m[0].length
+  }
+  return null
+}
+
 /**
  * Parse a relationship line: `ENTITY1 <card> <line> <card> ENTITY2 : label`.
  * Any cardinality token (symbol or word form) is valid on either side; the
@@ -316,6 +351,15 @@ function parseRelationshipLine(
   if (!hasLabel || rawLabel.length === 0) {
     throw new MermaidParseError(
       `Line ${lineNumber}: ER relationship "${entity1} ${cardinalityStr} ${entity2}" is missing a ": label" — expected e.g. "${entity1} ${cardinalityStr} ${entity2} : label".`,
+      { diagramType: 'er' },
+    )
+  }
+
+  const labelError = unquotedLabelError(rawLabel)
+  if (labelError) {
+    throw new MermaidParseError(
+      `Line ${lineNumber}: Parse error: ${labelError} in "${line}". ` +
+        'mermaid.js rejects this; quote the label (e.g. : "one-to-one") to use it.',
       { diagramType: 'er' },
     )
   }

@@ -1,0 +1,22 @@
+gantt
+    title Release
+    dateFormat YYYY-MM-DD
+    section Build
+    Design       :done, des, 2024-01-01, 2024-01-10
+    Implement    :active, imp, after des, 10d
+    Hotfix       :crit, hf, after imp, 5d
+    Crit done    :crit, done, cd, 2024-01-05, 3d
+    Launch       :milestone, m1, after hf, 0d
+---
+                                 Release
+
+Build
+  Design      .......................
+  Implement                         ==========================
+  Hotfix                                                     %%%%%%%%%%%%%
+  Crit done !           ........
+  Launch                                                                 *
+              +----+----+----+----+----+----+---+----+----+----+----+----+
+              2024-01-01     2024-01-09    2024-01-15               2024-01-25
+
+  = active  . done  % crit  * milestone
