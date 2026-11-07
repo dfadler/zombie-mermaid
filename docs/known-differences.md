@@ -716,6 +716,15 @@ drawing size agree on every gallery sample.
   points its lines at `#arrowhead` but defines `#undefined-arrowhead`).
 - **Whitespace after a label.** Mermaid keeps it, which after a single word wider than
   the box adds an invisible last line; this parser trims it. No box size changes.
-- **Not read yet.** `timeline` config in `%%{init}%%` (`leftMargin`, `disableMulticolor`,
-  `padding`), the `neo`/`redux` looks and themes.
+- **Init config.** `%%{init: {"timeline": {...}}}%%` `leftMargin`, `padding` and
+  `disableMulticolor` are read in SVG and match mermaid 12.3.0 (box, viewBox size and colour
+  classes, LR and TD). Other `timeline` keys (`useMaxWidth`, `width`, `height`, `textPlacement`)
+  do not change mermaid's drawing and are ignored. The ASCII output ignores all of them.
+- **`neo` look and theme.** Not drawn: mermaid adds a `data-look="neo"` attribute, a
+  gradient and neo-specific section colours and strokes (palette and stroke styling,
+  excluded per #2617), and moves the title to `box.x * 2 + leftMargin`.
+- **Other renderers.** mermaid.live (mermaid 12.2.0, checked in Chrome 2026-11-07) draws the
+  same three section colour classes as 12.3.0 for the same source. GitHub renders blocks in a
+  sandboxed cross-origin frame, so its mermaid version and `timeline TD` output could not be
+  read; `TD` is checked against the oracle only.
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
