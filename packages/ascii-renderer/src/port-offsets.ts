@@ -94,6 +94,8 @@ export interface PortShift {
   endRun?: ShiftedRun
   /** Extra drawn shift per path point (a fan-in's leg moved to its own row). */
   points?: DrawingCoord[]
+  /** The size this edge's gap needs for every jog in it to have a row of its own (#2888). */
+  jogGap?: { line: number; size: number }
 }
 
 const portKey = (node: AsciiNode, cell: GridCoord): string =>
@@ -850,6 +852,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   }
   allocateFaces(graph, result, shiftedRun)
   spreadFaceLaneRuns(graph, result)
+  if (graph.edgeHints) planJogRows(graph, result)
   return result
 }
 
@@ -888,6 +891,181 @@ function raiseFlowFanBars(
     const points = shift.points ?? p.map(() => ({ x: 0, y: 0 }))
     for (const i of [1, 2]) points[i]![lr ? 'x' : 'y'] = d
     result.set(edge, { ...shift, points })
+  }
+}
+
+/** One Z-shaped edge (out along the flow, across on its bend row, on along the flow) in a gap. */
+interface Jog {
+  edge: AsciiEdge
+  /** Drawn bend row (column for LR) before planning. */
+  row: number
+  /** Drawn cross-axis position of the leg nearer the gap's first side, and of the other. */
+  near: number
+  far: number
+  /** Bend row of the grid path, before any shift. */
+  base: number
+}
+
+const spanOf = (j: Jog): [number, number] => [
+  Math.min(j.near, j.far),
+  Math.max(j.near, j.far),
+]
+
+const sharesTrunk = (a: Jog, b: Jog): boolean =>
+  a.near === b.near || a.far === b.far
+
+/**
+ * The cost of putting each jog of one gap on a row of its own (#2888): two
+ * strokes on one row that overlap, or touch, merge into a shared run; a stroke
+ * whose leg runs through another's bend row crosses it (`┼`).
+ */
+function jogCost(jogs: Jog[], rows: number[], lo: number): number {
+  let cost = 0
+  for (let i = 0; i < jogs.length; i++) {
+    cost += (rows[i]! - lo) * 0.01
+    const [a0, a1] = spanOf(jogs[i]!)
+    for (let j = i + 1; j < jogs.length; j++) {
+      const [b0, b1] = spanOf(jogs[j]!)
+      // Strokes out of one cell, or into one, are a trunk: they stay on one row.
+      if (sharesTrunk(jogs[i]!, jogs[j]!)) {
+        if (rows[i] !== rows[j]) cost += 5
+        continue
+      }
+      if (a0 <= b1 && b0 <= a1) {
+        if (rows[i] === rows[j]) cost += 100
+        else if (Math.abs(rows[i]! - rows[j]!) === 1) cost += 1
+      }
+      for (const [x, y] of [
+        [i, j],
+        [j, i],
+      ] as const) {
+        const [s0, s1] = spanOf(jogs[x]!)
+        const o = jogs[y]!
+        // The other's near leg runs from the gap's first side to its bend row,
+        // its far leg from there to the gap's end.
+        if (rows[x]! < rows[y]! && o.near > s0 && o.near < s1) cost += 10
+        if (rows[x]! > rows[y]! && o.far > s0 && o.far < s1) cost += 10
+      }
+    }
+  }
+  return cost
+}
+
+/** The rows `lo..hi` that cost least for these jogs: exhaustive for the few a gap holds, else coordinate descent. */
+function bestJogRows(jogs: Jog[], lo: number, hi: number): number[] {
+  const n = jogs.length
+  const count = hi - lo + 1
+  let best = jogs.map(() => lo)
+  let bestCost = Infinity
+  if (count ** n <= 20000) {
+    const rows = jogs.map(() => lo)
+    for (let k = 0; k < count ** n; k++) {
+      let rest = k
+      for (let i = 0; i < n; i++) {
+        rows[i] = lo + (rest % count)
+        rest = Math.floor(rest / count)
+      }
+      const c = jogCost(jogs, rows, lo)
+      if (c < bestCost) {
+        bestCost = c
+        best = [...rows]
+      }
+    }
+    return best
+  }
+  for (let pass = 0; pass < 3; pass++) {
+    for (let i = 0; i < n; i++) {
+      for (let r = lo; r <= hi; r++) {
+        const trial = [...best]
+        trial[i] = r
+        const c = jogCost(jogs, trial, lo)
+        if (c < bestCost) {
+          bestCost = c
+          best = trial
+        }
+      }
+    }
+  }
+  return best
+}
+
+/**
+ * Give each Z-shaped edge of a gap its own bend row when strokes that share
+ * one would merge (#2888), as ELK keeps one jog per edge: the legs of a
+ * stroke that runs through another's bend row cross, so the rows are chosen
+ * to cross least, outermost strokes nearest the node they leave.
+ */
+function planJogRows(
+  graph: AsciiGraph,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  // ponytail: vertical flows only; LR/RL keep the grid's bend column until a follow-up gives them jog columns.
+  if (graph.config.graphDirection === 'LR') return
+  const main = 'y'
+  const cross = 'x'
+  const gaps = new Map<number, Jog[]>()
+  for (const edge of graph.edges) {
+    const p = edge.path
+    if (
+      p.length !== 4 ||
+      p[0]![cross] !== p[1]![cross] ||
+      p[1]![main] !== p[2]![main] ||
+      p[2]![cross] !== p[3]![cross] ||
+      p[1]![cross] === p[2]![cross] ||
+      edge.bundle ||
+      edge.faceLane ||
+      edge.from === edge.to ||
+      flowLaneOf(edge)
+    ) {
+      continue
+    }
+    const shift = result.get(edge)
+    const d = drawnPath(graph, edge, shift)
+    // Near leg: the one on the side of the gap its grid row lies after.
+    const forward = p[0]![main] < p[3]![main]
+    const [n, f] = forward ? [d[0]!, d[3]!] : [d[3]!, d[0]!]
+    const jog: Jog = {
+      edge,
+      row: d[1]![main],
+      near: n[cross],
+      far: f[cross],
+      base: lineToDrawing(graph, p)[1]![main],
+    }
+    const g = p[1]![main]
+    gaps.set(g, [...(gaps.get(g) ?? []), jog])
+  }
+  for (const [g, jogs] of gaps) {
+    if (jogs.length < 2) continue
+    const size = graph.rowHeight.get(g) ?? 0
+    const first = lineToDrawing(graph, [{ x: g, y: g }])[0]![main] - Math.floor(size / 2)
+    const lo = first + 1
+    const hi = first + size - 2
+    if (hi < lo) continue
+    const shared = jogs.some((a, i) =>
+      jogs.some((b, j) => {
+        const [a0, a1] = spanOf(a)
+        const [b0, b1] = spanOf(b)
+        return (
+          i < j &&
+          !sharesTrunk(a, b) &&
+          a.row === b.row &&
+          a0 <= b1 &&
+          b0 <= a1
+        )
+      }),
+    )
+    if (!shared) continue
+    const best = bestJogRows(jogs, lo, hi)
+    // Rows for every jog to have its own, with a clear row between and room
+    // for a label and the arrowhead: what the gap is widened to.
+    const own = bestJogRows(jogs, lo, lo + Math.max(hi - lo, 5))
+    const need = 2 * new Set(own).size + 3
+    jogs.forEach((jog, i) => {
+      const shift = result.get(jog.edge) ?? { start: 0, end: 0 }
+      const points = shift.points ?? jog.edge.path.map(() => ({ x: 0, y: 0 }))
+      for (const k of [1, 2]) points[k]![main] = best[i]! - jog.base
+      result.set(jog.edge, { ...shift, points, jogGap: { line: g, size: need } })
+    })
   }
 }
 
@@ -960,8 +1138,9 @@ const SIDE_FACE = { top: 'T', bottom: 'B', left: 'L', right: 'R' } as const
 /**
  * Both edges of a labelled reciprocal pair that bend (not straight strokes) run
  * along one bend row, so their labels land on the same run and print over each
- * other; until each edge has a jog row of its own (#2888) such a pair keeps the
- * grid's placement.
+ * other; a vertical flow gives each edge a jog row of its own (`planJogRows`,
+ * #2888), a horizontal one does not yet, so there such a pair keeps the grid's
+ * placement.
  */
 function labelledBentPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
   const other = graph.edges.find(
@@ -1023,7 +1202,7 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
       return { ...f, rank: flip ? -rank : rank }
     })
     if (list.length < 2 || ranked.some((r) => r === undefined)) continue
-    if (list.some((f) => labelledBentPair(graph, f.edge))) continue
+    if (horizontal && list.some((f) => labelledBentPair(graph, f.edge))) continue
     out.set(k, ranked as FaceEnd[])
   }
   return out
@@ -1760,4 +1939,18 @@ function drawnPath(
     x: dc.x + shifts[i]!.x,
     y: dc.y + shifts[i]!.y,
   }))
+}
+
+/** The gap rows (columns for LR) whose size the jog rows of #2888 need widened, by grid line. */
+export function jogGapSizes(graph: AsciiGraph): Map<number, number> {
+  const out = new Map<number, number>()
+  for (const shift of portShifts(graph).values()) {
+    if (shift.jogGap) {
+      out.set(
+        shift.jogGap.line,
+        Math.max(out.get(shift.jogGap.line) ?? 0, shift.jogGap.size),
+      )
+    }
+  }
+  return out
 }

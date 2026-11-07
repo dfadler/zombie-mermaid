@@ -2391,6 +2391,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // node; a column that ELK threads past a node the grid cannot pass keeps the
   // grid's own faces.
   const hinted = hintedFaces(graph, edge)
+  const lrFlow = graph.config.graphDirection === 'LR'
   let hintedPath: GridCoord[] | null = null
   if (hinted) {
     const from = gridCoordDirection(requireGridCoord(edge.from), hinted[0])
@@ -2431,8 +2432,25 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
         ? plain
         : null)
   }
-  // A labelled reciprocal pair on one route would print its labels over each
-  // other (no jog row of its own yet, #2888): the second keeps the grid's faces.
+  // A reciprocal pair between the same two faces runs one route, each edge on
+  // its own ports (`planJogRows` gives each its own bend row): the second takes
+  // the first's route reversed, which the search would otherwise detour round.
+  const twin =
+    hinted && hintedPath && !lrFlow
+      ? graph.edges.find(
+          (o) =>
+            o !== edge &&
+            o.from === edge.to &&
+            o.to === edge.from &&
+            o.path.length > 2 &&
+            dirEquals(o.startDir, hinted[1]) &&
+            dirEquals(o.endDir, hinted[0]),
+        )
+      : undefined
+  if (twin) hintedPath = [...twin.path].reverse()
+  // A horizontal flow has no jog column per edge yet (#2888): a labelled
+  // reciprocal pair on one route would print its labels over each other, so
+  // the second keeps the grid's faces.
   const sameRoute = (o: AsciiEdge): boolean =>
     o !== edge &&
     o.from === edge.to &&
@@ -2444,7 +2462,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       const r = hintedPath![hintedPath!.length - 1 - i]!
       return c.x === r.x && c.y === r.y
     })
-  if (hintedPath && graph.edges.some(sameRoute)) hintedPath = null
+  if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
   if (hinted && hintedPath) {
     ;[preferredDir, alternativeDir] = [hinted[0], hinted[0]]
     ;[preferredOppositeDir, alternativeOppositeDir] = [hinted[1], hinted[1]]
