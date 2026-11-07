@@ -894,7 +894,11 @@ export function renderSequenceAscii(
     curY += rowGap // Blank row before message
 
     const msg = diagram.messages[m]!
-    const isSelf = msg.from === msg.to
+    // A self-message that destroys its participant (mirrored actors) is a
+    // plain row, not a loop: Mermaid 12.3.0 draws it as a straight line to the
+    // footer box, which is centred on that row.
+    const destroysSelf = mirror && msg.from === msg.to && destroyedByMsg.has(m)
+    const isSelf = msg.from === msg.to && !destroysSelf
 
     // Calculate height needed for multi-line message labels
     const msgLineCount = lineCount(msg.label)
@@ -902,7 +906,7 @@ export function renderSequenceAscii(
     // A self-message can't sensibly create its own recipient (the loop
     // glyphs would sit where the box goes), so that degenerate case keeps
     // the header box instead.
-    const createdIdx = isSelf ? undefined : createdByMsg.get(m)
+    const createdIdx = msg.from === msg.to ? undefined : createdByMsg.get(m)
     const destroyedIdx = destroyedByMsg.get(m)
 
     if (isSelf) {
@@ -926,9 +930,13 @@ export function renderSequenceAscii(
         createdIdx === undefined ? 0 : createdBoxBelow(createdIdx),
         destroyedIdx === undefined ? 0 : createdBoxBelow(destroyedIdx),
       )
-      const above = Math.max(msgLineCount, boxAbove)
+      // A destroying self-message has no arrow to show (the line would sit
+      // inside the footer box), so its label goes above the box instead.
+      const above = destroysSelf
+        ? msgLineCount + boxAbove
+        : Math.max(msgLineCount, boxAbove)
       msgArrowY[m] = curY + above
-      msgLabelY[m] = msgArrowY[m]! - msgLineCount
+      msgLabelY[m] = msgArrowY[m]! - (destroysSelf ? above : msgLineCount)
       curY += above + 1 + boxBelow
       if (createdIdx !== undefined) {
         createdBoxTop.set(
@@ -942,13 +950,6 @@ export function renderSequenceAscii(
           msgArrowY[m]! - createdBoxAbove(destroyedIdx),
         )
       }
-    }
-
-    // A destroying self-message has no arrow row to centre on (the loop sits
-    // beside the lifeline), so its footer box goes just under the loop.
-    if (isSelf && destroyedIdx !== undefined) {
-      destroyBoxTop.set(destroyedIdx, curY)
-      curY += createdBoxH(destroyedIdx)
     }
 
     // Notes after this message; one written after a block's `end` waits for
@@ -1374,7 +1375,8 @@ export function renderSequenceAscii(
     const ti = actorIndexOf(msg.to)
     const fromX = llX[fi]!
     const toX = llX[ti]!
-    const isSelf = fi === ti
+    const destroysSelf = mirror && fi === ti && destroyedByMsg.get(m) === fi
+    const isSelf = fi === ti && !destroysSelf
     const isDashed = msg.lineStyle === 'dashed'
     const isFilled = msg.arrowHead === 'filled'
     // "lost message" (-x/--x): a distinct cross terminator, not the plain
@@ -1386,7 +1388,19 @@ export function renderSequenceAscii(
     // Arrow line character (solid vs dashed)
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
 
-    if (isSelf) {
+    if (destroysSelf) {
+      // Footer box centred below this label row (drawn with the footers):
+      // only the label shows, centred on the lifeline.
+      splitLines(msg.label).forEach((line, k) => {
+        writeTextCells(
+          fromX - Math.floor(displayWidth(line) / 2),
+          msgLabelY[m]! + k,
+          line,
+          'text',
+          totalW,
+        )
+      })
+    } else if (isSelf) {
       // Self-message: the label centred above a 3-row loop to the right of
       // the lifeline, as mermaid.js draws it (issues #1387, #2456)
       //   │ Label        (label rows, one per line)

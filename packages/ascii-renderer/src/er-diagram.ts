@@ -584,6 +584,7 @@ export function renderErAscii(
     let maxRowH = 0
     let rowStartIdx = 0
     let lastGap = 0
+    const gapAfter = new Map<string, number>()
 
     for (let idx = 0; idx < componentEntities.length; idx++) {
       const ent = componentEntities[idx]!
@@ -666,7 +667,69 @@ export function renderErAscii(
 
       currentX += w + gap
       lastGap = gap
+      gapAfter.set(ent.id, gap)
       maxRowH = Math.max(maxRowH, h)
+    }
+
+    // With hints, centre each layer under the entities it connects to (down,
+    // up, down passes, like ELK) instead of leaving every row packed left. A
+    // row keeps its order and its gaps; it only slides right to make room.
+    // ponytail: edges that skip a layer do not pull; ELK's `cross` units are
+    // unused because box widths differ between SVG and cells.
+    if (hinted) {
+      const byLayer = new Map<number, ErEntity[]>()
+      for (const e of componentEntities) {
+        const l = layerOf.get(e.id)!
+        byLayer.set(l, [...(byLayer.get(l) ?? []), e])
+      }
+      const layers = [...byLayer.keys()].sort((a, b) => a - b)
+      const centreOf = (id: string) => {
+        const p = placed.get(id)!
+        return p.x + Math.floor(p.width / 2)
+      }
+      const settle = (l: number, from: number) => {
+        let right = -Infinity
+        let prev: string | undefined
+        for (const e of byLayer.get(l)!) {
+          const p = placed.get(e.id)!
+          const pulls = diagram.relationships
+            .filter((r) => r.entity1 !== r.entity2)
+            .map((r) =>
+              r.entity1 === e.id ? r.entity2 : r.entity2 === e.id ? r.entity1 : '',
+            )
+            .filter((o) => o && layerOf.get(o) === from)
+          const want =
+            pulls.length > 0
+              ? Math.round(
+                  pulls.reduce((s, o) => s + centreOf(o), 0) / pulls.length,
+                ) - Math.floor(p.width / 2)
+              : p.x
+          const room = Math.max(
+            prev === undefined ? 0 : (gapAfter.get(prev) ?? 0),
+            selfReserve.get(e.id) ?? 0,
+          )
+          const x = Math.max(want, prev === undefined ? room : right + room)
+          placed.set(e.id, { ...p, x })
+          right = x + p.width
+          prev = e.id
+        }
+      }
+      for (let n = 0; n < 40; n++) for (const pass of [1, -1]) {
+        const seq = pass === 1 ? layers.slice(1) : layers.slice(0, -1).reverse()
+        for (const l of seq) settle(l, l - pass)
+      }
+      // Slide the component back to the left edge once the passes are done.
+      const slack = Math.min(
+        ...[...byLayer.values()].map(
+          (row) =>
+            placed.get(row[0]!.id)!.x - (selfReserve.get(row[0]!.id) ?? 0),
+        ),
+      )
+      if (slack > 0)
+        for (const e of componentEntities) {
+          const p = placed.get(e.id)!
+          placed.set(e.id, { ...p, x: p.x - slack })
+        }
     }
 
     // Center a lone entity on the component's widest row like dagre, so it
@@ -674,7 +737,7 @@ export function renderErAscii(
     // Aligning the center columns (floor(w / 2), as attachments use) avoids a
     // one-column jog on odd/even width differences. `direction LR`/`RL` keeps
     // its left-aligned row packing.
-    if (!sideBySide) {
+    if (!sideBySide && !hinted) {
       const rows = new Map<number, PlacedEntity[]>()
       for (const e of componentEntities) {
         const p = placed.get(e.id)!
