@@ -55,6 +55,7 @@ export interface AsciiNodeHint {
     cross: number;
     layer: number;
     order: number;
+    size: number;
 }
 
 // @public (undocumented)

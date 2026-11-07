@@ -275,7 +275,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'subgraph-frame-merge',
-    parked: 'ascii-layout-details',
     title: 'An edge-less subgraph member merged two sibling subgraph frames',
     symptom:
       'Root-node placement treated an edge-less node as a shared "root" regardless of which subgraph it belonged to, so one subgraph’s bounding box could balloon out to enclose an unrelated sibling — corrupting both frames and interleaving their titles.',
@@ -760,6 +759,7 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-opposing-edges-diamond',
+    parked: 'ascii-flow-axis-faces',
     title: 'ASCII opposing edges merged into one route at a diamond',
     symptom:
       'Two edges between the same pair (`B -->|no| D` and `D --> B`) in a left-to-right chart drew a single merged route when B was a diamond or D a parallelogram, so the loop-back looked like one two-way line.',
@@ -851,7 +851,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2575,
     render: 'ascii',
     lookFor:
-      'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a compact staircase, S1/S4 in the first column and S2/S3 in the second, as mermaid draws it.',
+      'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a staircase as mermaid 12.3.0 draws it: S4 one layer in (the layer the `e0` label takes), then S1, S3 and S2 each a layer further, stepping up.',
   },
   {
     id: 'flowchart-expanded-shapes-draw',
