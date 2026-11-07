@@ -67,7 +67,7 @@ describe('quadrant figure agreement', () => {
     noisy.circles = [[ours.circles[0]![0] + 1e-9, ours.circles[0]![1], 5]]
     noisy.texts = ours.texts
     expect(quadrantMismatches(noisy, ours)).toEqual([])
-    // an empty quadrant label is compared too (mermaid 12.3.0 draws it)
+    // An empty quadrant label is compared too (mermaid 12.3.0 draws it)
     noisy.texts = [...ours.texts, { ...ours.texts[0]!, text: '' }]
     expect(quadrantMismatches(noisy, ours)).not.toEqual([])
   })

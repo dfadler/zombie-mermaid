@@ -147,14 +147,16 @@ describe('quadrant SVG: structure and styling', () => {
     const one = renderMermaidSVG(`quadrantChart
     quadrant-1 Expand
     A: [0.3, 0.6]`)
-    const labels = [...one.matchAll(/<text [^>]*quadrant-label[^>]*>([^<]*)<\/text>/g)]
+    const labels = [
+      ...one.matchAll(/<text [^>]*quadrant-label[^>]*>([^<]*)<\/text>/g),
+    ]
     expect(labels.map((m) => m[1])).toEqual(['Expand', '', '', ''])
-    // positioned as a labelled one would be: top row of each cell, cell centre
+    // Positioned as a labelled one would be: top row of each cell, cell centre
     expect(one).toContain('translate(127.5, 10) rotate(0)"></text>')
     expect(one).toContain('translate(372.5, 255) rotate(0)"></text>')
-    // axis, title and point text stay dropped when empty
+    // Axis, title and point text stay dropped when empty
     expect(count(one, /quadrant-axis-label|quadrant-title/g)).toBe(0)
-    // no points: centred, still four texts
+    // No points: centred, still four texts
     const none = renderMermaidSVG('quadrantChart\n    quadrant-1 Expand')
     expect(count(none, /class="quadrant-text quadrant-label"/g)).toBe(4)
   })
