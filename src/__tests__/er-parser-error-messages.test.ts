@@ -160,3 +160,54 @@ describe('parseErDiagram – relationship lines are never silently dropped (#174
     ).toThrow(/^Line 3: Invalid ER relationship cardinality/)
   })
 })
+
+// Checked against mermaid 12.3.0 (#2853): an unquoted label is word tokens,
+// and a leading keyword, a number or stray punctuation is a parse error.
+describe('parseErDiagram – unquoted relationship labels (#2853)', () => {
+  it.each([
+    'one',
+    'many',
+    'to',
+    'one-to-one',
+    'many-to-many',
+    'to-do',
+    'has many',
+    'a one',
+    'zero or more',
+    'only one',
+    'many(0)',
+    'Many',
+    '1',
+    '1a',
+    'a,b',
+    'a(b)',
+    'places<br>orders',
+  ])('rejects unquoted "%s"', (label) => {
+    expect(() => parse(`erDiagram\n  A ||--o{ B : ${label}`)).toThrow(
+      /^Line 2: Parse error: .*quote the label/,
+    )
+  })
+
+  it.each([
+    'opt-to-many',
+    'owns',
+    'has owns',
+    'a-to-b',
+    '-one',
+    'one_x',
+    'oneness',
+    'a1',
+    'a.b',
+    '"one"',
+    '"to"',
+    '"one-to-one"',
+    '"a, b"',
+  ])('accepts "%s"', (label) => {
+    expect(() => parse(`erDiagram\n  A ||--o{ B : ${label}`)).not.toThrow()
+  })
+
+  it('keeps the unquoted text of a quoted keyword label', () => {
+    const d = parse('erDiagram\n  A ||--o{ B : "one-to-one"')
+    expect(d.relationships[0]!.label).toBe('one-to-one')
+  })
+})
