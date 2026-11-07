@@ -59,6 +59,7 @@ import {
   parseC4Diagram,
   parsePieChart,
   parseQuadrantChart,
+  parseTimeline,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -76,6 +77,8 @@ import type {
   PositionedPieChart,
   QuadrantChart,
   PositionedQuadrantChart,
+  Timeline,
+  PositionedTimeline,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -91,6 +94,8 @@ import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
 import { layoutQuadrantChart } from './quadrant/layout.ts'
 import { renderQuadrantSvg } from './quadrant/renderer.ts'
+import { layoutTimeline } from './timeline/layout.ts'
+import { renderTimelineSvg } from './timeline/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -455,6 +460,29 @@ const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
 }
 
 /**
+ * Timelines parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator and a label may contain one), then lay out to Mermaid's fixed
+ * geometry. No theme variables or interactivity apply.
+ */
+const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
+  type: 'timeline',
+  parse: (_lines, text) => parseTimeline(text),
+  layoutForSvg: (tl) => layoutTimeline(tl),
+  renderSvg(positioned, ctx) {
+    return renderTimelineSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -484,4 +512,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   c4: c4Module,
   pie: pieModule,
   quadrant: quadrantModule,
+  timeline: timelineModule,
 }

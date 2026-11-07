@@ -132,6 +132,13 @@ export { PIE, layoutPieChart } from './pie/layout.ts'
 export { pieColorValue, renderPieSvg } from './pie/renderer.ts'
 export { QUADRANT, layoutQuadrantChart } from './quadrant/layout.ts'
 export { renderQuadrantSvg } from './quadrant/renderer.ts'
+export {
+  TIMELINE,
+  layoutTimeline,
+  textWidth as timelineTextWidth,
+  wrapTimelineText,
+} from './timeline/layout.ts'
+export { renderTimelineSvg } from './timeline/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {
