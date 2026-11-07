@@ -629,7 +629,7 @@ function renderEdgeLabel(
   // Use layout-computed label position when available (layout-aware, avoids collisions).
   // Fall back to geometric midpoint of the edge polyline.
   const mid = edge.labelPosition ?? edgeMidpoint(edge.points)
-  // mermaid 12.3.0: label box = text box, no padding, no border (#2854)
+  // Mermaid 12.3.0: label box = text box, no padding, no border (#2854)
   const padding = 0
 
   // Measure text (works for both single and multi-line)
