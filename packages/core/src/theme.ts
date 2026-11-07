@@ -677,6 +677,27 @@ export function themeStyleDeclarations(
 }
 
 /**
+ * Class that scopes one diagram's palette custom properties (`--pie-color-N`
+ * and friends) to its own root `<svg>`. A `<style>` block in inline SVG is
+ * document-global, so a bare `svg { --x: … }` rule leaks into every other
+ * SVG on the page (#2884). The name is a hash of the declarations, so output
+ * stays deterministic and two diagrams share a class only when their
+ * palettes are identical.
+ */
+export function paletteClass(declarations: readonly string[]): string {
+  let h = 0x811c9dc5
+  for (const ch of declarations.join('\n')) {
+    h = Math.imul(h ^ ch.codePointAt(0)!, 0x01000193) >>> 0
+  }
+  return `zm-pal-${h.toString(36)}`
+}
+
+/** Add `cls` to a root tag built by `svgOpenTag()`. */
+export function withRootClass(openTag: string, cls: string): string {
+  return openTag.replace('<svg ', `<svg class="${cls}" `)
+}
+
+/**
  * Build the SVG opening tag with CSS variables set as inline styles.
  * Only includes optional variables that are actually provided — unset ones
  * will fall back to the color-mix() derivations in the <style> block.

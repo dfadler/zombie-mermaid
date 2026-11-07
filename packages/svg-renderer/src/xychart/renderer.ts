@@ -1,6 +1,12 @@
 import type { PositionedXYChart } from '@zombie-mermaid/mermaid-parser'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
-import { svgOpenTag, buildStyleBlock, styleOpenTag } from '@zombie-mermaid/core'
+import {
+  svgOpenTag,
+  buildStyleBlock,
+  styleOpenTag,
+  paletteClass,
+  withRootClass,
+} from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
 import { TEXT_BASELINE_SHIFT, estimateTextWidth } from '../styles.ts'
 import {
@@ -86,31 +92,31 @@ export function renderXYChartSvg(
     ...chart.bars.map((b) => b.colorIndex),
     ...chart.lines.map((l) => l.colorIndex),
   )
+  const {
+    style: chartCss,
+    defs: chartDefs,
+    cls,
+  } = chartStyles(chart, interactive, colors.accent, colors.bg, emit.nonce)
   const svgTag = withDataSrc(
-    svgOpenTag(
-      chart.width,
-      chart.height,
-      colors,
-      transparent,
-      title,
-      decorative,
-      undefined,
-      emit.styleAttribute,
-      emit.description,
-    ).replace('<svg ', `<svg data-xychart-colors="${maxColorIdx}" `),
+    withRootClass(
+      svgOpenTag(
+        chart.width,
+        chart.height,
+        colors,
+        transparent,
+        title,
+        decorative,
+        undefined,
+        emit.styleAttribute,
+        emit.description,
+      ).replace('<svg ', `<svg data-xychart-colors="${maxColorIdx}" `),
+      cls,
+    ),
     embedSource,
   )
   parts.push(svgTag)
   parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
 
-  // Chart-specific styles + gradient defs
-  const { style: chartCss, defs: chartDefs } = chartStyles(
-    chart,
-    interactive,
-    colors.accent,
-    colors.bg,
-    emit.nonce,
-  )
   parts.push(chartCss)
   if (chartDefs) parts.push(chartDefs)
 
@@ -337,7 +343,7 @@ function chartStyles(
   themeAccent?: string,
   bgColor?: string,
   nonce?: string,
-): { style: string; defs: string } {
+): { style: string; defs: string; cls: string } {
   const accentHex = themeAccent ?? CHART_ACCENT_FALLBACK
 
   // Collect all unique global color indices from bars + lines
@@ -386,8 +392,11 @@ function chartStyles(
   .xychart-dot-group:hover .xychart-tip { opacity: 1; }`
     : ''
 
+  const cls = paletteClass(colorVarDefs)
   const colorVarsBlock =
-    colorVarDefs.length > 0 ? `\n  svg {\n${colorVarDefs.join('\n')}\n  }` : ''
+    colorVarDefs.length > 0
+      ? `\n  .${cls} {\n${colorVarDefs.join('\n')}\n  }`
+      : ''
 
   const style = `${styleOpenTag(nonce)}
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
@@ -400,7 +409,7 @@ function chartStyles(
 ${seriesRules.join('\n')}${tipRules}
 </style>`
 
-  return { style, defs: '' }
+  return { style, defs: '', cls }
 }
 
 // Horizontal charts plot (value, category) and mermaid draws straight segments

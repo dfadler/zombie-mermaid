@@ -28,6 +28,8 @@ import type {
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
+  paletteClass,
+  withRootClass,
   buildStyleBlock,
   styleOpenTag,
   escapeXml,
@@ -43,7 +45,7 @@ function timelineStyles(
   tl: PositionedTimeline,
   colors: DiagramColors,
   nonce?: string,
-): string {
+): { css: string; cls: string } {
   const used = [...new Set(tl.nodes.map((n) => n.colorClass))].sort(
     (a, b) => a - b,
   )
@@ -56,15 +58,17 @@ function timelineStyles(
       `  .section-${c} path { fill: color-mix(in srgb, var(--timeline-color-${c + 1}) 30%, var(--bg)); }\n` +
       `  .section-${c} line { stroke: var(--timeline-color-${c + 1}); stroke-width: 3; }`,
   )
-  return `${styleOpenTag(nonce)}
+  const cls = paletteClass(vars)
+  const css = `${styleOpenTag(nonce)}
   .timeline-node text { fill: var(--_text); font-size: 16px; }
   .timeline-title { fill: var(--_text); font-weight: bold; }
   .lineWrapper line { stroke: var(--fg); }
   .timeline-arrow { fill: var(--fg); stroke: var(--fg); }${
-    vars.length > 0 ? `\n  svg {\n${vars.join('\n')}\n  }` : ''
+    vars.length > 0 ? `\n  .${cls} {\n${vars.join('\n')}\n  }` : ''
   }
 ${rules.join('\n')}
 </style>`
+  return { css, cls }
 }
 
 function nodeSvg(n: PositionedTimelineNode, wrapper: string): string {
@@ -106,24 +110,28 @@ export function renderTimelineSvg(
   emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
+  const { css, cls } = timelineStyles(tl, colors, emit.nonce)
   parts.push(
     withDataSrc(
-      svgOpenTag(
-        tl.width,
-        tl.height,
-        colors,
-        transparent,
-        title,
-        decorative,
-        undefined,
-        emit.styleAttribute,
-        emit.description,
+      withRootClass(
+        svgOpenTag(
+          tl.width,
+          tl.height,
+          colors,
+          transparent,
+          title,
+          decorative,
+          undefined,
+          emit.styleAttribute,
+          emit.description,
+        ),
+        cls,
       ),
       embedSource,
     ),
   )
   parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
-  parts.push(timelineStyles(tl, colors, emit.nonce))
+  parts.push(css)
   const arrows = tl.direction === 'LR'
   if (arrows) {
     parts.push(

@@ -475,6 +475,9 @@ export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circl
 export function normalizeBrTags(label: string): string;
 
 // @public
+export function paletteClass(declarations: readonly string[]): string;
+
+// @public
 export function parseCssColor(value: string): RgbaColor | null;
 
 // @public
@@ -819,6 +822,9 @@ export function withDirectionOverride<T extends {
 
 // @public
 export function withoutOwnClusterEdges(graph: MermaidGraph): MermaidGraph;
+
+// @public
+export function withRootClass(openTag: string, cls: string): string;
 
 // @public
 export type XyChartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'interactivity' | 'interactive'>;
