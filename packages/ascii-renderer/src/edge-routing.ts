@@ -2579,8 +2579,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       return c.x === r.x && c.y === r.y
     })
   if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
+  if (edge.parallelLane) edge.hintedLane = Boolean(hinted && hintedPath)
   if (hinted && hintedPath) {
-    if (edge.parallelLane) edge.hintedLane = true
     ;[preferredDir, alternativeDir] = [hinted[0], hinted[0]]
     ;[preferredOppositeDir, alternativeOppositeDir] = [hinted[1], hinted[1]]
   }
