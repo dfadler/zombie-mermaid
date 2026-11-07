@@ -138,20 +138,20 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
   }
 </style>
 <defs>
-  <marker id="zm1bl4m90-cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">
+  <marker id="zmz5qc45-cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">
     <polygon points="0 0, 12 5, 0 10" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
-  <marker id="zm1bl4m90-cls-composition" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
+  <marker id="zmz5qc45-cls-composition" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
     <polygon points="9 1.5, 16.5 7, 9 12.5, 1.5 7" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zm1bl4m90-cls-aggregation" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
+  <marker id="zmz5qc45-cls-aggregation" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
     <polygon points="9 1.5, 16.5 7, 9 12.5, 1.5 7" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
-  <marker id="zm1bl4m90-cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">
+  <marker id="zmz5qc45-cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">
     <polyline points="0 0, 8 3, 0 6" fill="none" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
 </defs>
-<polyline class="class-relationship" data-from="A" data-to="B" data-type="inheritance" data-marker-at="from" points="57.07,96 57.07,156" fill="none" stroke="var(--_line)" stroke-width="1" marker-start="url(#zm1bl4m90-cls-inherit)" />
+<path class="class-relationship" data-from="A" data-to="B" data-type="inheritance" data-marker-at="from" d="M 57.07 96 L 57.07 156" fill="none" stroke="var(--_line)" stroke-width="1" marker-start="url(#zmz5qc45-cls-inherit)" />
 <g class="class-node" data-id="A" data-label="A">
   <rect x="40" y="40" width="34.13" height="56" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <rect x="40" y="40" width="34.13" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
