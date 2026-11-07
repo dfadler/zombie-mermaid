@@ -326,6 +326,7 @@ export interface ClassNote {
 
 // @public (undocumented)
 export interface ClassRelationship {
+    dashed?: boolean;
     // (undocumented)
     from: string;
     fromCardinality?: string;
@@ -777,6 +778,7 @@ export interface PositionedClassNote {
 
 // @public (undocumented)
 export interface PositionedClassRelationship {
+    dashed?: boolean;
     // (undocumented)
     from: string;
     // (undocumented)

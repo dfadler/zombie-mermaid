@@ -692,7 +692,7 @@ classDiagram-v2
 - `classDiagram-v2` is the same diagram type as `classDiagram`, as in Mermaid.
 - `<|--|>`, `<|..|>`, `<-->`, `<..>`, `*--*` and `o--o` draw the relationship's
   marker at both ends of the line (a mixed pair such as `<|--*` is still an error).
-- `()--`, `--()` and `()--()` end the line in a hollow circle (lollipop interface):
+- `()--`, `--()` and `()--()` (and the dotted `()..`, `..()`, `()..()`, with a dashed stem) end the line in a hollow circle (lollipop interface):
   `○`, or `O` in the `--ascii` charset. A one-ended lollipop draws the interface name with
   the circle above or below its host and no box, in SVG and ASCII, as Mermaid does; a
   class that has members, an annotation, another relationship, a note or a namespace
@@ -744,7 +744,6 @@ classDiagram
 - `class A["Label"]` aliases are not honoured yet.
 - The `$` / `*` classifier after a method's `)` is styled but also left in the
   member text.
-- A dotted lollipop (`()..`, `..()`) is a parse error.
 - `note`/`note for` and `classDef`/`style`/`class`/`:::` styling are
   recognized (see above).
 

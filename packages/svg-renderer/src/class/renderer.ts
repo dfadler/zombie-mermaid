@@ -518,7 +518,8 @@ function renderRelationship(rel: PositionedClassRelationship): string {
   if (rel.points.length < 2) return ''
 
   const pathData = rel.points.map((p) => f`${p.x},${p.y}`).join(' ')
-  const isDashed = rel.type === 'dependency' || rel.type === 'realization'
+  const isDashed =
+    rel.dashed || rel.type === 'dependency' || rel.type === 'realization'
   const dashArray = isDashed ? ' stroke-dasharray="6 4"' : ''
 
   // Determine markers based on relationship type and which end has the marker

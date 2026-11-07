@@ -51,7 +51,7 @@ import {
  */
 const ARROWS: Record<
   string,
-  { type: RelationshipType; markerAt: 'from' | 'to' | 'both' }
+  { type: RelationshipType; markerAt: 'from' | 'to' | 'both'; dashed?: true }
 > = {
   '<|--': { type: 'inheritance', markerAt: 'from' },
   '--|>': { type: 'inheritance', markerAt: 'to' },
@@ -75,6 +75,10 @@ const ARROWS: Record<
   '()--': { type: 'lollipop', markerAt: 'from' },
   '--()': { type: 'lollipop', markerAt: 'to' },
   '()--()': { type: 'lollipop', markerAt: 'both' },
+  // Dotted lollipops: same circle, dashed stem (mermaid 12.3.0)
+  '()..': { type: 'lollipop', markerAt: 'from', dashed: true },
+  '..()': { type: 'lollipop', markerAt: 'to', dashed: true },
+  '()..()': { type: 'lollipop', markerAt: 'both', dashed: true },
   '--': { type: 'association', markerAt: 'to' },
 }
 
@@ -636,6 +640,7 @@ function parseRelationship(line: string): ClassRelationship | null {
     to,
     type: parsed.type,
     markerAt: parsed.markerAt,
+    ...(parsed.dashed ? { dashed: true } : {}),
     label,
     fromCardinality,
     toCardinality,
@@ -645,6 +650,10 @@ function parseRelationship(line: string): ClassRelationship | null {
 /** Map arrow syntax to relationship type and marker placement (see {@link ARROWS}). */
 function parseArrow(
   arrow: string,
-): { type: RelationshipType; markerAt: 'from' | 'to' | 'both' } | null {
+): {
+  type: RelationshipType
+  markerAt: 'from' | 'to' | 'both'
+  dashed?: true
+} | null {
   return ARROWS[arrow.trim()] ?? null
 }
