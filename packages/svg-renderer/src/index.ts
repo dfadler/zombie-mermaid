@@ -132,6 +132,8 @@ export { PIE, layoutPieChart } from './pie/layout.ts'
 export { pieColorValue, renderPieSvg } from './pie/renderer.ts'
 export { QUADRANT, layoutQuadrantChart } from './quadrant/layout.ts'
 export { renderQuadrantSvg } from './quadrant/renderer.ts'
+export { MINDMAP, layoutMindmap } from './mindmap/layout.ts'
+export { renderMindmapSvg } from './mindmap/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

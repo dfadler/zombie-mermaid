@@ -27,6 +27,7 @@ export const DIAGRAM_TYPES = [
   'c4',
   'pie',
   'quadrant',
+  'mindmap',
   'gantt',
 ] as const
 
@@ -54,6 +55,8 @@ export function detectDiagramType(text: string): DiagramType {
   // Also case-sensitive: Mermaid's detector is `/^\s*quadrantChart/`.
   if (/^quadrantChart(?:\s|$)/.test(header)) return 'quadrant'
 
+  // Mermaid's detector is `/^\s*mindmap/`; the grammar keyword is `mindmap\b`.
+  if (/^mindmap\b/i.test(header)) return 'mindmap'
   // Case-sensitive: Mermaid's detector is `/^\s*gantt/`.
   if (/^gantt(?:\s|$)/.test(header)) return 'gantt'
 
