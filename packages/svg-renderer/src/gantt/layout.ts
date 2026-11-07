@@ -24,6 +24,7 @@
 import {
   formatD3Time,
   isExcludedDate,
+  packGanttSection,
   timeTicks,
   type GanttChart,
   type GanttTask,
@@ -57,30 +58,6 @@ export interface GanttLayoutOptions {
 }
 
 const GAP = GANTT.barHeight + GANTT.barGap
-
-/** Mermaid's getMaxIntersections: pack one section's tasks onto the fewest rows. */
-function packSection(
-  tasks: GanttTask[],
-  offset: number,
-  orders: Map<GanttTask, number>,
-) {
-  const timeline = tasks.map(() => -Infinity)
-  const sorted = [...tasks].sort(
-    (a, b) => a.start - b.start || a.order - b.order,
-  )
-  let max = 0
-  for (const t of sorted) {
-    for (let j = 0; j < timeline.length; j++) {
-      if (t.start >= timeline[j]!) {
-        timeline[j] = t.end
-        orders.set(t, j + offset)
-        if (j > max) max = j
-        break
-      }
-    }
-  }
-  return max
-}
 
 const MS_PER = {
   millisecond: 1,
@@ -117,7 +94,7 @@ export function layoutGantt(
     let offset = 0
     for (const cat of categories) {
       const inCat = rowTasks.filter((t) => t.section === cat)
-      const rows = packSection(inCat, offset, orders) + 1
+      const rows = packGanttSection(inCat, offset, orders) + 1
       offset += rows
       h += rows * GAP
       heights.set(cat, rows)
@@ -129,6 +106,8 @@ export function layoutGantt(
       heights.set(cat, rowTasks.filter((t) => t.section === cat).length)
     }
   }
+  // Rows drawn: one per task, or the packed rows in compact mode.
+  const rowCount = (h - 2 * GANTT.topPadding) / GAP
   const orderOf = (t: GanttTask) => (t.vert ? -1 : (orders.get(t) ?? t.order))
 
   const span = w - GANTT.leftPadding - GANTT.rightPadding
@@ -160,7 +139,7 @@ export function layoutGantt(
     }
     if (t.vert) {
       y = GANTT.gridLineStartPadding
-      height = rowTasks.length * GAP + GANTT.barHeight * 2
+      height = rowCount * GAP + GANTT.barHeight * 2
     }
     const originX = sx + GANTT.leftPadding + 0.5 * (ex - sx)
     const originY = order * GAP + GANTT.topPadding + 0.5 * GANTT.barHeight
@@ -202,7 +181,7 @@ export function layoutGantt(
       }
     }
     const ty = t.vert
-      ? GANTT.gridLineStartPadding + rowTasks.length * GAP + 60
+      ? GANTT.gridLineStartPadding + rowCount * GAP + 60
       : order * GAP +
         GANTT.barHeight / 2 +
         (GANTT.fontSize / 2 - 2) +

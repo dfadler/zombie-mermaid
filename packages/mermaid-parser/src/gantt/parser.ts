@@ -53,6 +53,11 @@ const WEEKDAYS = new Set<string>([
   'saturday',
   'sunday',
 ])
+/** The largest time a JavaScript Date holds, in milliseconds. */
+const MAX_DATE = 8.64e15
+/** Longest task (days) `excludes` is applied to; each day is examined. */
+const MAX_EXCLUDE_SPAN = 36_525
+
 const WEEKEND_START: Record<string, number> = { friday: 5, saturday: 6 }
 
 interface Raw {
@@ -354,6 +359,8 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
       for (const id of idsOf(after[1]!)) {
         const t = byId.get(id)
         if (!t) continue
+        // A referenced task that has no end yet: wait for the next pass.
+        if (t.end === undefined) return undefined
         if (!latest || (t.end ?? NaN) > (latest.end ?? NaN)) latest = t
       }
       return latest ? latest.end : todayStart(now)
@@ -378,6 +385,7 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
       for (const id of idsOf(until[1]!)) {
         const t = byId.get(id)
         if (!t) continue
+        if (t.start === undefined) return undefined
         if (!earliest || (t.start ?? NaN) < (earliest.start ?? NaN))
           earliest = t
       }
@@ -392,6 +400,17 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
   }
 
   const isInvalidDate = (ms: number) => isExcludedDate(chart, ms)
+
+  /** A scheduled time must be a real JavaScript Date (a huge duration is not). */
+  function checkRange(ms: number, label: string): number {
+    if (!Number.isFinite(ms) || Math.abs(ms) > MAX_DATE) {
+      throw new MermaidParseError(
+        `Gantt task "${label}" is scheduled outside the dates JavaScript can represent.`,
+        { diagramType: 'gantt' },
+      )
+    }
+    return ms
+  }
 
   function compile(): boolean {
     let all = true
@@ -408,10 +427,11 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
         raw.start = prev.end
       } else {
         const s = getStart(raw.startSpec.data)
-        if (s) raw.start = s
+        if (s !== undefined) raw.start = checkRange(s, task.label)
       }
-      if (raw.start) {
+      if (raw.start !== undefined) {
         raw.end = getEnd(raw.start, raw.endData)
+        if (raw.end !== undefined) checkRange(raw.end, task.label)
         // `until` an id defined later has no start yet: try again next pass.
         if (raw.end !== undefined) raw.processed = true
         raw.manualEnd = parseDayjs(raw.endData, 'YYYY-MM-DD', now) !== undefined
@@ -421,6 +441,12 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
           !raw.manualEnd
         ) {
           // checkTaskDates / fixTaskDates
+          if (raw.end - raw.start > MAX_EXCLUDE_SPAN * MS_DAY) {
+            throw new MermaidParseError(
+              `Gantt task "${task.label}" spans more than ${MAX_EXCLUDE_SPAN} days, too long to apply \`excludes\` to.`,
+              { diagramType: 'gantt' },
+            )
+          }
           let start = raw.start + MS_DAY
           let end = raw.end
           const maxEnd = end + 10_000 * MS_DAY

@@ -115,6 +115,20 @@ D :d, 2024-01-01, 1d`)
     expect(l.sectionLabels[0]!.y).toBe((2 * 24) / 2 + 50)
   })
 
+  it('sizes a vert marker from the packed rows in compact mode', () => {
+    const l = lay(`%%{init: {"gantt": {"displayMode": "compact"}}}%%
+gantt
+dateFormat YYYY-MM-DD
+A :a, 2024-01-01, 1d
+B :b, 2024-01-03, 1d
+C :c, 2024-01-05, 1d
+V :vert, v, 2024-01-04, 0d`)
+    const v = l.tasks.find((t) => t.id === 'v')!
+    expect(l.height).toBe(100 + 24)
+    expect(v.height).toBe(24 + 40)
+    expect(v.y + v.height).toBeLessThan(l.height)
+  })
+
   it('draws a vert marker through all rows and a milestone as a square', () => {
     const l = lay(`gantt
 dateFormat YYYY-MM-DD

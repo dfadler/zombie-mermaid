@@ -1,7 +1,7 @@
-Initial milestone *
+Initial milestone    *
 Task A                 ###########################
 Task B                                           ##############
-Final milestone                                                    *
+Final milestone                                                         *
                   ---+-----------+------------+------------+------------+-----
                    17:50       17:55        18:00        18:05        18:10
 

@@ -438,3 +438,48 @@ describe('timeTicks', () => {
     ).toBe(2)
   })
 })
+
+describe('gantt parser: review fixes', () => {
+  const fmt = 'dateFormat YYYY-MM-DD\n'
+
+  it('rejects 12-hour values outside 1-12', () => {
+    expect(parseDayjs('2024-01-05 13 PM', 'YYYY-MM-DD hh A')).toBeUndefined()
+    expect(parseDayjs('2024-01-05 00 AM', 'YYYY-MM-DD hh A')).toBeUndefined()
+  })
+
+  it('takes timestamps only as the whole format (no backtracking)', () => {
+    expect(parseDayjs('1700000000', 'XX')).toBeUndefined()
+    expect(parseDayjs(`${'1'.repeat(40)}a`, 'xxxxxxxx')).toBeUndefined()
+  })
+
+  it('accepts epoch-zero starts, explicit and inherited', () => {
+    const c = parse(`${fmt}A :a, 1970-01-01, 1d\nB :1d`)
+    expect(c.tasks[0]!.start).toBe(0)
+    expect(c.tasks[1]!.start).toBe(86_400_000)
+  })
+
+  it('waits for every task an after/until names', () => {
+    const c = parse(`${fmt}A :a, 2024-01-01, 1d
+  C :c, after a b, 1d
+  B :b, 2024-02-01, 2d
+  D :d, 2024-01-01, until b a`)
+    expect(iso(c.tasks[1]!.start)).toBe('2024-02-03T00:00')
+  })
+
+  it('rejects dates outside the JavaScript range and absurd exclude spans', () => {
+    expect(() => parse(`${fmt}A :a, 2024-01-01, ${'9'.repeat(30)}d`)).toThrow(
+      /outside the dates/,
+    )
+    expect(() =>
+      parse(`${fmt}excludes 2000-01-01\nA :a, 2024-01-01, 10000000d`),
+    ).toThrow(/too long/)
+    expect(() => parse('dateFormat X\nA :a, 99999999999999999, 1d')).toThrow(
+      /outside the dates/,
+    )
+  })
+
+  it('keeps custom ticks across a long range', () => {
+    const t = timeTicks(0, 365 * 86_400_000, { every: 60, unit: 'minute' })
+    expect(t.at(-1)!).toBeGreaterThan(300 * 86_400_000)
+  })
+})

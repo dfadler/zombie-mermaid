@@ -149,3 +149,58 @@ describe('gantt ASCII: colour', () => {
     ).toContain('\x1b[')
   })
 })
+
+describe('gantt ASCII: review fixes', () => {
+  it('draws active over done, as the SVG does', () => {
+    const out = render(head + '  A :done, active, 2024-01-01, 2d')
+    expect(out).toContain('▒')
+    expect(out).not.toContain('░')
+  })
+
+  it('gives a section name that comes back its own heading and rows', () => {
+    const out = render(
+      head +
+        'section S\nA :2024-01-01, 1d\nsection T\nB :2024-01-02, 1d\nsection S\nC :2024-01-03, 1d',
+    )
+    expect(out.match(/^S$/gm)).toHaveLength(2)
+    expect(out.match(/^ {2}[ABC] /gm)).toHaveLength(3)
+  })
+
+  it('shares rows between non-overlapping tasks in compact mode', () => {
+    const out = render(
+      `%%{init: {"gantt": {"displayMode": "compact"}}}%%\ngantt\ndateFormat YYYY-MM-DD\nA :2024-01-01, 2d\nB :2024-01-03, 2d\nC :2024-01-01, 3d`,
+    )
+    expect(out).toContain('A, B ')
+    expect(out).toMatch(/^C /m)
+  })
+
+  it('puts a vert marker outside the task range on its own date', () => {
+    const out = lines(
+      render(head + 'A :2024-01-01, 10d\nV :vert, v, 2024-01-20, 0d'),
+    )
+    const bar = out.find((l) => l.startsWith('A '))!
+    expect(bar.endsWith('█')).toBe(false)
+    expect(out.find((l) => l.includes('┆ V'))).toBeDefined()
+  })
+
+  it('centres a milestone with a duration on its midpoint', () => {
+    const out = lines(
+      render(head + 'A :2024-01-01, 8d\nM :milestone, m, 2024-01-01, 4d'),
+    )
+    expect(out[1]!.indexOf('◆')).toBeGreaterThan(out[1]!.indexOf('M ') + 12)
+  })
+
+  it('uses the day-of-month axis for dateFormat D, as the SVG does', () => {
+    const out = render('gantt\ndateFormat D\nA :1, 9d')
+    expect(out).toMatch(/\b0[1-9]\b/)
+    expect(out).not.toMatch(/\d{4}-\d\d/)
+  })
+
+  it('escapes and colours the title of a task-less chart in HTML mode', () => {
+    const out = renderMermaidASCII('gantt\ntitle <b>x</b>', {
+      colorMode: 'html',
+    })
+    expect(out).toContain('&lt;b&gt;x&lt;/b&gt;')
+    expect(out).not.toContain('<b>')
+  })
+})

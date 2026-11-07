@@ -25,9 +25,9 @@ async function main(): Promise<number> {
       for (const line of m) console.log(`       ${line}`)
       for (const line of notes[title] ?? []) console.log(`  note ${line}`)
     }
-    if (args.includes('--thresholds') && breaches.length > 0) {
+    if (breaches.length > 0) {
       console.error(`\nMismatches: ${breaches.join(', ')}`)
-      return 1
+      if (args.includes('--thresholds')) return 1
     }
     return 0
   } finally {

@@ -68,8 +68,10 @@ const ENTITIES: Record<string, string> = {
   '&amp;': '&',
   '&lt;': '<',
   '&gt;': '>',
+  '&nbsp;': '\u00a0',
 }
-const decode = (s: string) => s.replace(/&(?:amp|lt|gt);/g, (e) => ENTITIES[e]!)
+const decode = (s: string) =>
+  s.replace(/&(?:amp|lt|gt|nbsp);/g, (e) => ENTITIES[e]!)
 const entityText = (s: string) => decode(s).trim()
 
 /** Official mermaid: read the figure back out of the SVG string. */
@@ -173,7 +175,7 @@ export function ourGantt(
       key: p.id,
       x: p.text.x,
       y: p.text.y,
-      cls: textClassOf(p),
+      cls: norm(textClassOf(p)),
       text: p.text.text,
     })),
     sectionLabels: l.sectionLabels.map((s) => ({

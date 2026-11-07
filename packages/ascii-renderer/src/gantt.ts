@@ -40,6 +40,7 @@
 
 import {
   formatD3Time,
+  packGanttSection,
   parseGantt,
   timeTicks,
 } from '@zombie-mermaid/mermaid-parser'
@@ -94,8 +95,9 @@ interface Cell {
 
 function kindOf(t: GanttTask): Kind {
   if (t.milestone) return 'milestone'
-  if (t.done) return 'done'
+  // As in the SVG, `active` wins over `done`.
   if (t.active) return 'active'
+  if (t.done) return 'done'
   return t.crit ? 'crit' : 'normal'
 }
 
@@ -131,32 +133,37 @@ export function renderGanttAscii(
     tasks: GanttTask[]
   }
   const rows: Row[] = []
-  const sectionNames = chart.sections.includes('')
-    ? chart.sections
-    : ['', ...chart.sections]
-  for (const name of sectionNames) {
-    const inSection = rowTasks.filter((t) => t.section === name)
-    if (inSection.length === 0) continue
+  // Rows in source order: a new heading whenever the section changes (a name
+  // that comes back later gets its own heading and rows), and in compact mode
+  // the tasks of a section packed onto shared rows.
+  let run: GanttTask[] = []
+  const flush = (): void => {
+    if (run.length === 0) return
+    const name = run[0]!.section
     if (name) rows.push({ header: name, tasks: [] })
+    const orders = new Map<GanttTask, number>()
+    if (chart.displayMode === 'compact') packGanttSection(run, 0, orders)
     const byOrder = new Map<number, GanttTask[]>()
-    for (const t of inSection) {
-      const k = byOrder.get(t.order) ?? []
-      k.push(t)
-      byOrder.set(t.order, k)
+    for (const t of run) {
+      const key = orders.get(t) ?? t.order
+      byOrder.set(key, [...(byOrder.get(key) ?? []), t])
     }
     for (const k of [...byOrder.keys()].sort((a, b) => a - b)) {
       rows.push({ tasks: byOrder.get(k)! })
     }
+    run = []
   }
+  for (const t of rowTasks) {
+    if (run.length > 0 && run[0]!.section !== t.section) flush()
+    run.push(t)
+  }
+  flush()
 
-  const span = (ts: GanttTask[]): [number, number] => [
-    Math.min(...ts.map((t) => t.start)),
-    Math.max(...ts.map((t) => t.renderEnd ?? t.end)),
-  ]
-  const basis = rowTasks.length > 0 ? rowTasks : verts
+  // The time scale spans every task, `vert` markers included, as in the SVG.
   const title = chart.title
-  if (basis.length === 0) return title ?? ''
-  const [t0, t1] = span(basis)
+  if (chart.tasks.length === 0) return title ? paint(title, theme.fg) : ''
+  const t0 = Math.min(...chart.tasks.map((t) => t.start))
+  const t1 = Math.max(...chart.tasks.map((t) => t.end))
   const frac = (t: number): number =>
     t1 > t0 ? Math.min(1, Math.max(0, (t - t0) / (t1 - t0))) : 0
   const W = TIMELINE_WIDTH
@@ -191,7 +198,10 @@ export function renderGanttAscii(
     : []
   const starts = new Map<number, string>()
   for (const i of order) {
-    const s = formatD3Time(ticks[i]!, chart.axisFormat || '%Y-%m-%d')
+    const s = formatD3Time(
+      ticks[i]!,
+      chart.axisFormat || (chart.dateFormat === 'D' ? '%d' : '%Y-%m-%d'),
+    )
     const w = displayWidth(s)
     const from = Math.max(0, tickCols[i]! - Math.floor(w / 2))
     if (placed.some(([a, b]) => from < b + 1 && from + w > a - 1)) continue
@@ -225,7 +235,7 @@ export function renderGanttAscii(
       used.add(kind)
       const hex = kind === 'done' ? theme.line : accent
       if (kind === 'milestone') {
-        cells[pointCol(t.start)] = { ch: g.milestone, hex }
+        cells[pointCol((t.start + t.end) / 2)] = { ch: g.milestone, hex }
         continue
       }
       const a = Math.min(W - 1, Math.floor(frac(t.start) * W))

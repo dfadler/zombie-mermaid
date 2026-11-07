@@ -186,8 +186,10 @@ function compile(fmt: string) {
     else if (m[2]) re += escapeLit(m[2])
     else {
       const f = FIELD[m[3]!]
-      if (!f) supported = false
-      else {
+      // Timestamps are the whole value: two `\d+` groups side by side backtrack.
+      if (!f || ((m[3] === 'X' || m[3] === 'x') && fmt !== m[3])) {
+        supported = false
+      } else {
         re += f.re
         keys.push(f.key)
       }
@@ -237,6 +239,7 @@ export function parseDayjs(
 
   let hour = v.H ? Number(v.H) : 0
   if (v.h) {
+    if (Number(v.h) < 1 || Number(v.h) > 12) return undefined
     hour = Number(v.h) % 12
     if (v.ap?.toLowerCase() === 'pm') hour += 12
   } else if (v.H && v.ap?.toLowerCase() === 'pm' && hour < 12) hour += 12
@@ -529,7 +532,9 @@ function rangeEvery(
   let t = iv.floor(start)
   if (t < start) t = iv.offset(t, 1)
   const step = (x: number) => iv.floor(iv.offset(x, 1))
-  for (let guard = 0; t < stop && guard < 200_000; guard++) {
+  // Bounded by the ticks kept, not the boundaries skipped, so a wide filter
+  // (`60minute` over a year) still covers the whole range.
+  for (let n = 0; t < stop && out.length < 20_000 && n < 5_000_000; n++) {
     if (pass(t)) out.push(t)
     t = step(t)
   }
