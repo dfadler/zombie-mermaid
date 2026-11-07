@@ -1,0 +1,11 @@
+mindmap
+  root
+    A
+    ::icon(fa fa-book)
+    :::urgent large
+    B
+    :::cls
+---
+root
+├── A
+└── B

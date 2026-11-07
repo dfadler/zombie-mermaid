@@ -1,0 +1,14 @@
+mindmap
+  %% a comment
+  root
+
+    A
+    %% another
+
+    B
+      C
+---
+root
++-- A
+`-- B
+    `-- C

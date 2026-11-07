@@ -1,0 +1,18 @@
+mindmap
+  root((circle))
+    plain
+    [rect]
+    (rounded)
+    ))bang((
+    )cloud(
+    {{hexagon}}
+      id1[nested rect]
+---
+((circle))
+├── plain
+├── [rect]
+├── (rounded)
+├── ))bang((
+├── )cloud(
+└── {{hexagon}}
+    └── [nested rect]
