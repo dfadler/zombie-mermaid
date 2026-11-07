@@ -78,4 +78,24 @@ describe('destroy (#2778)', () => {
     const actor = svg('actor A\nactor B\nA->>B: hi\ndestroy B\nA->>B: bye')
     expect(arrow(actor)[1]).toBeCloseTo(210 - 26, 0)
   })
+
+  it('keeps the loop and plain arrows without mirrored footers', () => {
+    const out = renderMermaidSVG(
+      '%%{init: {"sequence": {"mirrorActors": false}}}%%\nsequenceDiagram\nactor A\nA->>A: hi\ndestroy A\nA->>A: bye',
+    )
+    expect(out).not.toContain('actor-footer')
+    expect(out).toMatch(/data-label="bye"[^>]*data-self="true"/)
+  })
+
+  it('draws a created-then-destroyed actor's reply arrow leftwards', () => {
+    const out = svg(
+      'participant A\ncreate actor B\nA->>B: hi\ndestroy B\nB->>A: bye',
+    )
+    const m =
+      /data-label="bye"[^>]*>\s*<line x1="([\d.]+)" y1="[\d.]+" x2="([\d.]+)"/.exec(
+        out,
+      )!
+    expect(Number(m[1]) - Number(m[2])).toBeGreaterThan(0)
+    expect(out).toContain('data-type="actor"')
+  })
 })
