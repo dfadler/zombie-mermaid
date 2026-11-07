@@ -54,7 +54,7 @@ describe('EditorFeatureStrip', () => {
   it('claims a diagram-type count matching DIAGRAM_TYPES (plus State, detected as a flowchart)', () => {
     const { container } = render(createElement(EditorFeatureStrip))
     const words = ['one', 'two', 'three', 'four', 'five', 'six', 'seven']
-    words.push('eight', 'nine', 'ten', 'eleven', 'twelve')
+    words.push('eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen')
     const expected = words[DIAGRAM_TYPES.length]
     expect(container.textContent).toContain(
       `across all ${expected} diagram types`,
