@@ -30,10 +30,12 @@ const provide = (nodes: Record<string, AsciiNodeHint>) =>
   })
 /** Row and column of the box labelled `text` (the first row holding its label). */
 const at = (art: string, text: string) => {
-  const re = new RegExp(`│\\s+${text}\\s`)
   const rows = art.split('\n')
-  const row = rows.findIndex((r) => re.test(r))
-  return { row, col: rows[row]!.search(re) }
+  const find = (r: string) =>
+    r.split(/\s+/).indexOf(text) >= 0 && r.includes('│')
+  const row = rows.findIndex(find)
+  const r = rows[row]!
+  return { row, col: r.indexOf(text) }
 }
 
 describe('layout hints drive flowchart placement', () => {
