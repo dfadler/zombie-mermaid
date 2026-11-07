@@ -219,26 +219,20 @@ export function measureSample(source: string): Counts {
   // ELK stays in SVG orientation; the grid side was mirrored to match it.
   // Layers are the provider's hint layers (the grouping `buildHints` uses, which
   // handles a diamond beside shorter boxes); `main` is spaced so they never fall
-  // within the layer tolerance. Without hints, fall back to the leading edge.
-  const hints = asciiLayoutProvider.graph!(parsed)
+  // within the layer tolerance. The provider failing is a hard error here.
+  const hints = asciiLayoutProvider.graph!(parsed)!
   const rev = direction === 'RL' || direction === 'BT'
   const elk: Record<string, Spot> = {}
   for (const n of pos.nodes) {
-    const layer = hints?.nodes.get(n.id)?.layer
-    const [lo, len] = horiz ? [n.x, n.width] : [n.y, n.height]
+    const layer = hints.nodes.get(n.id)!.layer
     elk[n.id] = {
-      main:
-        layer !== undefined
-          ? (rev ? -layer : layer) * 1000
-          : rev
-            ? lo + len
-            : lo,
+      main: (rev ? -layer : layer) * 1000,
       cross: horiz ? n.y + n.height / 2 : n.x + n.width / 2,
       size: horiz ? n.height : n.width,
     }
   }
   const c = compareSpots(elk, spots)
-  return hints ? addCounts(c, compareFaces(edges, hints)) : c
+  return addCounts(c, compareFaces(edges, hints))
 }
 
 /** A sample is exact when every layer and in-layer-order pair agrees. */
