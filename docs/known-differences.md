@@ -694,6 +694,25 @@ Checked against mermaid 12.3.0. A leading `---` ... `---` block is accepted on e
 - The YAML is a small indentation-based subset: nested `key: value` maps under `config:`, quoted and bare scalars, numbers, booleans, `#` comments. Flow style (`{a: 1}`), lists and multi-line scalars are skipped silently; mermaid parses full YAML and rejects malformed YAML with an error, we do not.
 - Like mermaid, the opening `---` must be the very first line (a blank line, BOM, spaces or `%%` comment before it is not front matter) and an empty block is not accepted. An unterminated block errors at the opening line.
 
+## Class, ER and state `%%{init}%%` / front-matter config ([#2786](https://github.com/dfadler/zombie-mermaid/issues/2786))
+
+Measured on mermaid 12.3.0 (headless Chromium, each key rendered with and without). Init and front
+matter share one code path. SVG only: ASCII has no pixel padding, so these keys do nothing there.
+
+- **Read: `class.padding`** (default 12), as a delta from the default: box width gains 2 per unit,
+  each compartment gains 2 above and below (mermaid: 6 per unit over three compartments). **`class.hideEmptyMembersBox`**
+  drops both empty compartments of a class with no members (a class with one empty compartment keeps it, as in mermaid).
+- **Read: `er.diagramPadding`** (default 20), **`er.entityPadding`** (default 15) and **`er.minEntityWidth`** (default 100),
+  as deltas from the default on our scale: a bare entity grows 2 wide and 3 tall per unit of `diagramPadding`, each attribute
+  column 1.25 wide; the header and every row grow 1.25 tall per unit of `entityPadding`; `minEntityWidth` floors the width of
+  every entity (ours already floors a table at 140).
+- **Not read, no effect in mermaid 12.3.0:** `class.titleTopMargin`, `dividerMargin`, `textHeight`, `nodeSpacing`, `rankSpacing`,
+  `diagramPadding`; `er.layoutDirection`, `minEntityHeight`, `nodeSpacing`, `rankSpacing`, `stroke`, `fill`, `fontSize`;
+  every `state` key except `useMaxWidth` (`padding`, `nodeSpacing`, `rankSpacing`, `fontSize`, `forkWidth`, `compositTitleSize`,
+  `radius`, ...). The `state` block is reported as ignored.
+- **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
+- **Not yet measured:** `xyChart`, `c4` and `architecture` blocks, tracked in separate issues.
+
 ## Timelines
 
 Checked against mermaid 12.3.0 with `pnpm run timeline:oracle` (12.2.0, the pin, renders

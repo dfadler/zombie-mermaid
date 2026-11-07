@@ -4,7 +4,9 @@
 
 ```ts
 
+import { ClassInitLayout } from '@zombie-mermaid/core';
 import { Direction } from '@zombie-mermaid/core';
+import { ErInitLayout } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
 import { NodeInteraction } from '@zombie-mermaid/core';
 import { NodeShape } from '@zombie-mermaid/core';
@@ -285,6 +287,7 @@ export interface ClassDiagram extends StyleDirectives {
     classes: ClassNode[];
     direction?: Direction;
     interactions: Map<string, NodeInteraction>;
+    layout?: ClassInitLayout;
     namespaces: ClassNamespace[];
     notes: ClassNote[];
     relationships: ClassRelationship[];
@@ -354,6 +357,7 @@ export interface ErAttribute {
 export interface ErDiagram extends StyleDirectives {
     direction?: Direction;
     entities: ErEntity[];
+    layout?: ErInitLayout;
     relationships: ErRelationship[];
 }
 
