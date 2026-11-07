@@ -2941,4 +2941,162 @@ pie title Pets adopted by volunteers
   F@{ shape: join }
   A --> B --> C --> D --> E --> F`,
   },
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Gantt (parity with mermaid 12.3.0, scripts/gantt-oracle.ts)
+  //  `todayMarker off` keeps every sample independent of the clock.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Gantt: Basic',
+    category: 'Gantt',
+    gallery: true,
+    description:
+      'Two sections of tasks, one starting after another; the axis ticks come from the date range.',
+    source: `gantt
+    title A Gantt Diagram
+    dateFormat YYYY-MM-DD
+    todayMarker off
+    section Section
+        A task          :a1, 2014-01-01, 30d
+        Another task    :after a1, 20d
+    section Another
+        Task in Another :2014-01-12, 12d
+        another task    :24d`,
+  },
+  {
+    title: 'Gantt: Statuses, Milestone and Weekends',
+    category: 'Gantt',
+    gallery: true,
+    description:
+      'Done, active and critical tasks, an `until` end and a milestone; `excludes weekends` shades Saturdays and Sundays and stretches tasks across them.',
+    source: `gantt
+    dateFormat  YYYY-MM-DD
+    title       Adding GANTT diagram functionality to mermaid
+    excludes    weekends
+    todayMarker off
+    section A section
+    Completed task            :done,    des1, 2014-01-06,2014-01-08
+    Active task               :active,  des2, 2014-01-09, 3d
+    Future task               :         des3, after des2, 5d
+    Future task2              :         des4, after des3, 5d
+    section Critical tasks
+    Completed task in the critical line :crit, done, 2014-01-06,24h
+    Implement parser and jison          :crit, done, after des1, 2d
+    Create tests for parser             :crit, active, 3d
+    Future task in critical line        :crit, 5d
+    Create tests for renderer           :2d
+    Add to mermaid                      :until isadded
+    Functionality added                 :milestone, isadded, 2014-01-25, 0d`,
+  },
+  {
+    title: 'Gantt: Hourly Axis',
+    category: 'Gantt',
+    description:
+      'Times instead of dates: `dateFormat HH:mm` with `axisFormat %H:%M`, and milestones at both ends.',
+    source: `gantt
+    dateFormat  HH:mm
+    axisFormat  %H:%M
+    todayMarker off
+    Initial milestone : milestone, m1, 17:49, 2m
+    Task A : 10m
+    Task B : 5m
+    Final milestone : milestone, m2, 18:08, 4m`,
+  },
+  {
+    title: 'Gantt: Vertical Marker and Tick Interval',
+    category: 'Gantt',
+    gallery: true,
+    description:
+      'A `vert` marker across all rows, weekly ticks from `tickInterval 1week` and a `%m/%d` axis format.',
+    source: `gantt
+    title Release
+    dateFormat YYYY-MM-DD
+    axisFormat %m/%d
+    tickInterval 1week
+    todayMarker off
+    section Dev
+    Code :a, 2024-06-03, 10d
+    Test :b, after a, 5d
+    section Ship
+    Docs :c, 2024-06-07, 12d
+    Launch :vert, v1, 2024-06-24, 0d`,
+  },
+  {
+    title: 'Gantt: Weekday Excludes and Click',
+    category: 'Gantt',
+    description:
+      'A named weekday excluded, a date included back in, and `click` marking a task as a link.',
+    source: `gantt
+    title Sprint
+    dateFormat YYYY-MM-DD
+    excludes monday
+    includes 2024-05-13
+    todayMarker off
+    section Build
+    Spec :s1, 2024-05-06, 6d
+    Implement :s2, after s1, 8d
+    section Review
+    Review :s3, after s2, 4d
+    Release notes :s4, 2024-05-20, 3d
+    click s3 href "https://example.com/review"`,
+  },
+  {
+    title: 'Gantt: Many Sections',
+    category: 'Gantt',
+    description:
+      'Five sections cycle through four row styles; the third carries Mermaid\'s yellow stripe. Tasks without a section sit above the first heading.',
+    source: `gantt
+    dateFormat YYYY-MM-DD
+    axisFormat %b %d
+    todayMarker off
+    Kick-off :k, 2024-01-02, 1d
+    section One
+    Plan :p1, 2024-01-03, 5d
+    section Two
+    Build :p2, after p1, 7d
+    section Three
+    Test :p3, after p2, 4d
+    section Four
+    Ship :p4, after p3, 2d
+    section Five
+    Retro :p5, after p4, 1d`,
+  },
+  {
+    title: 'Gantt: Wide Characters and Empty Sections',
+    category: 'Gantt',
+    description:
+      'Chinese, Japanese and emoji text and a section heading with no tasks, which draws no row.',
+    source: `gantt
+    title プロジェクト計画 📅
+    dateFormat YYYY-MM-DD
+    todayMarker off
+    section 設計
+    要件定義 :a, 2024-04-01, 10d
+    設計レビュー :after a, 5d
+    section 空
+    section 実装
+    コーディング :b, 2024-04-10, 20d`,
+  },
+  {
+    title: 'Gantt: Top Axis',
+    category: 'Gantt',
+    description:
+      'The `topAxis` statement repeats the axis above the chart. Mermaid 12.3.0 fails on this statement (`TopAxis is not a function`), so there is no reference render; see docs/known-differences.md.',
+    source: `gantt
+    title Top axis
+    dateFormat YYYY-MM-DD
+    topAxis
+    todayMarker off
+    section Work
+    Draft :d, 2024-02-01, 6d
+    Edit :after d, 4d`,
+  },
+  {
+    title: 'Gantt: Title Only',
+    category: 'Gantt',
+    description:
+      'A gantt with a title and no tasks draws just the title and an empty frame.',
+    source: `gantt
+    title Nothing planned yet`,
+  },
 ]

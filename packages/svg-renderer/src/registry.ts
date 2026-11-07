@@ -59,6 +59,7 @@ import {
   parseC4Diagram,
   parsePieChart,
   parseQuadrantChart,
+  parseGantt,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -76,6 +77,8 @@ import type {
   PositionedPieChart,
   QuadrantChart,
   PositionedQuadrantChart,
+  GanttChart,
+  PositionedGanttChart,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -91,6 +94,8 @@ import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
 import { layoutQuadrantChart } from './quadrant/layout.ts'
 import { renderQuadrantSvg } from './quadrant/renderer.ts'
+import { layoutGantt } from './gantt/layout.ts'
+import { renderGanttSvg } from './gantt/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -455,6 +460,30 @@ const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
 }
 
 /**
+ * Gantt charts parse from the raw `text` (a task line is `name :data`, which
+ * the statement splitter would cut at `;` and `#`) and lay out at Mermaid's
+ * fallback width. The `todayMarker` line only appears while today is inside
+ * the chart's date range.
+ */
+const ganttModule: DiagramModule<GanttChart, PositionedGanttChart> = {
+  type: 'gantt',
+  parse: (_lines, text) => parseGantt(text),
+  layoutForSvg: (chart) => layoutGantt(chart),
+  renderSvg(positioned, ctx) {
+    return renderGanttSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -484,4 +513,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   c4: c4Module,
   pie: pieModule,
   quadrant: quadrantModule,
+  gantt: ganttModule,
 }
