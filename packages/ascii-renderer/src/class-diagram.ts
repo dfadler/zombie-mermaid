@@ -123,11 +123,11 @@ function getMarkerShape(
     case 'lollipop':
       // Hollow circle (interface) - omnidirectional shape
       return useAscii ? 'O' : '○'
-    case 'link':
-    case 'dashed-link':
-      return '' // Unreachable: plain links have markerAt 'none'
     case 'association':
     case 'dependency':
+    // Plain links have markerAt 'none', so only these two ever get here.
+    case 'link':
+    case 'dashed-link':
       // Directional arrow: Mermaid's open V, the same in both charsets.
       return { up: '^', down: 'v', left: '<', right: '>' }[direction]
   }

@@ -44,6 +44,19 @@ describe('plain class links draw no marker', () => {
     expect(rel(svg).every((p) => p.includes('marker-end'))).toBe(true)
   })
 
+  it.each([
+    'classDiagram\n A -- B\n B -- C\n C -- A',
+    'classDiagram\n B -- A\n A -- C\n C .. B',
+    'classDiagram\n A -- B\n A -- C\n A -- D\n B .. D\n C -- D',
+    'classDiagram\n A -- B\n B -- C\n C -- D\n D -- A\n A .. C',
+    'classDiagram\n D -- A\n C -- A\n A -- A',
+  ])('ASCII: no arrowhead in any routing shape (%#)', (src) => {
+    for (const dir of ['TB', 'BT', 'LR', 'RL']) {
+      const out = renderMermaidASCII(src.replace('\n', `\n direction ${dir}\n`))
+      expect(out).not.toMatch(/[v^<>]/)
+    }
+  })
+
   it('ASCII: no arrowhead glyph on a plain link', () => {
     const plain = renderMermaidASCII('classDiagram\n A -- B')
     const arrow = renderMermaidASCII('classDiagram\n A --> B')
