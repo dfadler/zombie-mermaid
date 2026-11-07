@@ -87,6 +87,8 @@ export type RelationshipType =
   | 'dependency' // A ..> B    (dashed line, open arrow)
   | 'realization' // A ..|> B   (dashed line, hollow triangle)
   | 'lollipop' // A ()-- B   (solid line, circle: interface)
+  | 'link' // A -- B     (solid line, no marker)
+  | 'dashed-link' // A .. B     (dashed line, no marker)
 
 export interface ClassRelationship {
   from: string

@@ -43,7 +43,7 @@ describe('class cycle with a sibling beside the up edge (#2705)', () => {
       const svg = renderMermaidSVG(source)
       for (const id of ['B', 'C', 'D', 'X']) expect(svg).toContain(`>${id}<`)
       expect(
-        (svg.match(/<polyline class="class-relationship"/g) ?? []).length,
+        (svg.match(/<path class="class-relationship"/g) ?? []).length,
       ).toBe(4)
     })
   }

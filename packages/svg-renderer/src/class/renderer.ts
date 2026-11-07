@@ -19,6 +19,7 @@ import {
   safeHref,
   f,
 } from '@zombie-mermaid/core'
+import { MERMAID_CORNER_RADIUS, roundedPath } from '../edge-curves.ts'
 import { withDataSrc } from '../renderer.ts'
 import {
   buildSvgStyleBlock,
@@ -517,8 +518,10 @@ function renderNoteLink(note: PositionedClassNote): string {
 function renderRelationship(rel: PositionedClassRelationship): string {
   if (rel.points.length < 2) return ''
 
-  const pathData = rel.points.map((p) => f`${p.x},${p.y}`).join(' ')
-  const isDashed = rel.type === 'dependency' || rel.type === 'realization'
+  const isDashed =
+    rel.type === 'dependency' ||
+    rel.type === 'realization' ||
+    rel.type === 'dashed-link'
   const dashArray = isDashed ? ' stroke-dasharray="6 4"' : ''
 
   // Determine markers based on relationship type and which end has the marker
@@ -551,7 +554,7 @@ function renderRelationship(rel: PositionedClassRelationship): string {
   }
 
   return (
-    f`<polyline ${dataAttrs.join(' ')} points="${pathData}" fill="none" stroke="var(--_line)" ` +
+    f`<path ${dataAttrs.join(' ')} d="${roundedPath(rel.points, MERMAID_CORNER_RADIUS)}" fill="none" stroke="var(--_line)" ` +
     f`stroke-width="${STROKE_WIDTHS.connector}"${dashArray}${markers} />`
   )
 }

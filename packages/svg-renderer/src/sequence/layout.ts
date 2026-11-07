@@ -128,6 +128,29 @@ export function boxLabelHeight(labelFontSize: number): number {
 export const ACTOR_LABEL_OFFSET = 14
 
 /**
+ * Mermaid 12.3.0 draws the `actor` stick figure 44px tall regardless of the
+ * participant box height (head radius 10.15, label centre 15px beneath the
+ * figure). Typed icons (`boundary`, `control`, ...) keep the box height.
+ */
+export const ACTOR_FIGURE_HEIGHT = 44
+export const ACTOR_FIGURE_LABEL_GAP = 15
+
+/** Height of an actor's header/footer slot: the figure for `actor`, else the box. */
+export function actorSlotHeight(
+  a: { type: 'participant' | 'actor' },
+  boxHeight: number,
+): number {
+  return a.type === 'actor'
+    ? Math.max(ACTOR_FIGURE_HEIGHT, boxHeight)
+    : boxHeight
+}
+
+/** Centre of the label beneath an icon, measured from the bottom of its slot. */
+export function actorLabelOffset(a: { type: 'participant' | 'actor' }): number {
+  return a.type === 'actor' ? ACTOR_FIGURE_LABEL_GAP : ACTOR_LABEL_OFFSET
+}
+
+/**
  * `participant X@{ "type": ... }` kinds drawn as a free-standing icon with the
  * label beneath it, like a stick-figure `actor`. `collections` and `queue`
  * keep the label inside a box-shaped glyph, so they are not listed here.
@@ -156,14 +179,12 @@ const ACTOR_LABEL_CLEARANCE = 4
  * the icon; a `participant` box holds its label inside.
  */
 function actorLabelBottom(
+  offset: number,
   label: string,
   fontSize: number,
   fontWeight: number,
 ): number {
-  return (
-    ACTOR_LABEL_OFFSET +
-    measureMultilineText(label, fontSize, fontWeight).height / 2
-  )
+  return offset + measureMultilineText(label, fontSize, fontWeight).height / 2
 }
 
 /** Resolved sequence-layout config — same shape as {@link SEQ} but mutable numbers. */
@@ -543,8 +564,14 @@ export function layoutSequenceDiagram(
     x: actorCenterX[i]!,
     y: actorY,
     width: actorWidths[i]!,
-    height: seq.actorHeight,
+    height: actorSlotHeight(a, seq.actorHeight),
   }))
+  const slotH = (i: number): number => actors[i]!.height
+  const headerH = Math.max(
+    ...diagram.actors.map((a, i) => (a.createdAt === undefined ? slotH(i) : 0)),
+    seq.actorHeight,
+  )
+  const footerH = Math.max(...actors.map((a) => a.height), seq.actorHeight)
 
   // Box backgrounds span from the outermost member's left edge to the
   // outermost member's right edge (plus padding) — any participant declared
@@ -574,7 +601,12 @@ export function layoutSequenceDiagram(
   //    instead, so they don't take part in the header.
   const actorLabelBottoms = diagram.actors.map((a) =>
     hasLabelBelowIcon(a)
-      ? actorLabelBottom(a.label, fontSizes.nodeLabel, FONT_WEIGHTS.nodeLabel)
+      ? actorLabelBottom(
+          actorLabelOffset(a),
+          a.label,
+          fontSizes.nodeLabel,
+          FONT_WEIGHTS.nodeLabel,
+        )
       : 0,
   )
   const headerLabelBottom = Math.max(
@@ -586,7 +618,7 @@ export function layoutSequenceDiagram(
   const firstMessageLabelRoom = fontSizes.edgeLabel + 12
   let messageY =
     actorY +
-    seq.actorHeight +
+    headerH +
     Math.max(
       seq.headerGap,
       headerLabelBottom > 0
@@ -834,12 +866,20 @@ export function layoutSequenceDiagram(
   // Events before the first message open at the top of the message area.
   applyActivationEvents(-1, messageY)
 
+  const mirror = diagram.mirrorActors !== false
   const msgLabelExtra: number[] = []
   for (let msgIdx = 0; msgIdx < diagram.messages.length; msgIdx++) {
     const msg = diagram.messages[msgIdx]!
     const fromIdx = actorIndex.get(msg.from) ?? 0
     const toIdx = actorIndex.get(msg.to) ?? 0
-    const isSelf = msg.from === msg.to
+    // Mermaid 12.3.0 draws a self-message that destroys its participant (with
+    // mirrored actors) as a straight line from the footer's near edge to the
+    // lifeline, not as a loop (`senderAdjustment`), on a normal message row.
+    const destroysSelf =
+      msg.from === msg.to &&
+      mirror &&
+      diagram.actors[fromIdx]!.destroyedAt === msgIdx
+    const isSelf = msg.from === msg.to && !destroysSelf
 
     // Add extra vertical space if this message sits below a block header or divider
     messageY +=
@@ -852,8 +892,13 @@ export function layoutSequenceDiagram(
     messageY += labelExtra
     msgLabelExtra[msgIdx] = labelExtra
 
-    const x1 = actorCenterX[fromIdx]!
+    let x1 = actorCenterX[fromIdx]!
     let x2 = actorCenterX[toIdx]!
+    if (destroysSelf) {
+      x1 -= hasLabelBelowIcon(diagram.actors[fromIdx]!)
+        ? 18 // mermaid's ACTOR_TYPE_WIDTH / 2
+        : actorWidths[fromIdx]! / 2
+    }
 
     // A `create participant` message ends at the near edge of the box it
     // creates rather than at the lifeline centre — the box sits on this row
@@ -865,6 +910,20 @@ export function layoutSequenceDiagram(
     if (createsRecipient) {
       const halfW = actorWidths[toIdx]! / 2
       x2 += x1 < x2 ? -halfW : halfW
+    }
+
+    // A destroying message meets the footer box's near edge, not the lifeline
+    // centre: Mermaid 12.3.0 starts a destroyed sender's arrow just outside the
+    // box (`senderAdjustment`) and stops a destroyed recipient's arrow short of
+    // it by the arrowhead (`receiverAdjustment`).
+    if (!destroysSelf && mirror && fromIdx !== toIdx) {
+      const dir = Math.sign(x2 - x1)
+      const reach = (i: number): number =>
+        hasLabelBelowIcon(diagram.actors[i]!) ? 18 : actorWidths[i]! / 2
+      if (diagram.actors[fromIdx]!.destroyedAt === msgIdx)
+        x1 += dir * (reach(fromIdx) + 1)
+      if (diagram.actors[toIdx]!.destroyedAt === msgIdx)
+        x2 -= dir * (reach(toIdx) + 8)
     }
 
     messages.push({
@@ -900,7 +959,7 @@ export function layoutSequenceDiagram(
     // The created box is centred on this row, so its lower half hangs
     // below the arrow — give the next row room to clear it (Mermaid bumps
     // by the same half-height after a creating message).
-    if (createsRecipient) messageY += seq.actorHeight / 2
+    if (createsRecipient) messageY += slotH(toIdx) / 2
 
     // Close a block ending at this message so it holds its last message (and
     // a self-message loop), its notes and its nested blocks, then keep the
@@ -1123,7 +1182,6 @@ export function layoutSequenceDiagram(
   // The lifelines end where the mirrored footer actors begin; a stick figure
   // or typed icon keeps its label below the box, so the footer row grows by it.
   const lifelineBottom = messageY
-  const mirror = diagram.mirrorActors !== false
   const footerLabelRoom = Math.max(
     0,
     ...diagram.actors.map((a, i) =>
@@ -1134,7 +1192,7 @@ export function layoutSequenceDiagram(
   )
   const diagramBottom =
     lifelineBottom +
-    (mirror ? seq.actorHeight + footerLabelRoom : 0) +
+    (mirror ? footerH + footerLabelRoom : 0) +
     seq.paddingY +
     seq.bottomAdj
 
@@ -1205,7 +1263,7 @@ export function layoutSequenceDiagram(
   for (let i = 0; i < diagram.actors.length; i++) {
     const createdAt = diagram.actors[i]!.createdAt
     if (createdAt !== undefined) {
-      actors[i]!.y = (messages[createdAt]?.y ?? messageY) - seq.actorHeight / 2
+      actors[i]!.y = (messages[createdAt]?.y ?? messageY) - slotH(i) / 2
     }
   }
 
@@ -1219,7 +1277,7 @@ export function layoutSequenceDiagram(
       // the icon, so the line starts under it rather than through it.
       topY:
         actors[i]!.y +
-        seq.actorHeight +
+        slotH(i) +
         (actorLabelBottoms[i]! > 0
           ? actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE
           : 0),
@@ -1227,7 +1285,7 @@ export function layoutSequenceDiagram(
         destroyedAt === undefined
           ? lifelineBottom
           : (messages[destroyedAt]?.y ?? messageY) -
-            (mirror ? seq.actorHeight / 2 : 0),
+            (mirror ? slotH(i) / 2 : 0),
     }
     if (destroyedAt !== undefined) lifeline.destroyed = true
     return lifeline
