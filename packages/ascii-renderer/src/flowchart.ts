@@ -29,6 +29,7 @@ import type {
 } from '@zombie-mermaid/core'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
+import type { AsciiLayoutHints } from './layout-hints.ts'
 import { drawGraph } from './draw.ts'
 import {
   canvasToString,
@@ -66,6 +67,8 @@ export interface FlowchartAsciiExtras {
   limits?: RenderLimits
   /** Set by `renderFlowchartAscii`: flowchart and state take layers and order from the layout provider (#2645). Class and architecture leave it off. */
   layoutHints?: boolean
+  /** Layer, order and edge faces supplied by the caller (architecture's port grid, #2724); used instead of the registered provider. */
+  hints?: AsciiLayoutHints
 }
 
 /**
@@ -252,7 +255,8 @@ export function renderGraphAscii(
   checkGraphSize(parsed.nodes.size, parsed.edges.length, extras.limits)
   const convert = (): AsciiGraph => {
     const g = convertToAsciiGraph(parsed, config)
-    g.useLayoutHints = extras.layoutHints
+    g.useLayoutHints = extras.layoutHints || extras.hints !== undefined
+    g.ownHints = extras.hints
     return g
   }
   let graph = convert()

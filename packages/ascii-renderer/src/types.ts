@@ -12,7 +12,7 @@ import type {
   NodeShape,
 } from '@zombie-mermaid/core'
 import type { Grid } from './grid-occupancy.ts'
-import type { AsciiEdgeHint } from './layout-hints.ts'
+import type { AsciiEdgeHint, AsciiLayoutHints } from './layout-hints.ts'
 
 // Re-export NodeShape for convenience
 export type { NodeShape }
@@ -477,6 +477,8 @@ export interface AsciiGraph {
   parsed?: MermaidGraph
   /** Take layer and order from the registered layout provider (flowchart and state only, #2645). */
   useLayoutHints?: boolean
+  /** Hints the caller computed itself (architecture, #2724); read before the registered provider. */
+  ownHints?: AsciiLayoutHints
   /** ELK's face and order for each edge end, faces mirrored to the grid's own TD/LR orientation, when the grid placed nodes from the same hints (#2645, PR 4b). */
   edgeHints?: Map<AsciiEdge, AsciiEdgeHint>
   /** Edges (by index) that must not take flow-axis face lanes (#2121). */
