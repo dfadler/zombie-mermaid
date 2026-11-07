@@ -52,6 +52,18 @@ describe('LR bypass edge keeps its own ports (#2043, #2044, #2739)', () => {
     expect(rows[9]).toBe('          ┌───┐')
   })
 
+  it('keeps the whole-slot offset when another block uses the rows', () => {
+    // Y sits in the rows the tighter offset would hand to A's box.
+    const rows = render(
+      'flowchart LR\n  X --> A\n  A --> B\n  A --> C\n  B --> C\n  X --> Y\n  Y --> Z',
+    )
+    const top = (re: RegExp): number => rows.findIndex((r) => re.test(r))
+    // B's box ends on the row A's box starts: they share only a border row.
+    expect(top(/│ B ├/)).toBe(top(/│ A │/) - 4)
+    expect(rows[top(/│ B ├/) + 2]).toContain('└───┘')
+    expect(rows[top(/│ A │/) - 2]).toContain('┌───┐')
+  })
+
   it.each([3, 4, 5])('paddingX %i: three heads, none under a node', (px) => {
     const out = render(SRC, { paddingX: px }).join('\n')
     expect(out.match(/►/g)).toHaveLength(3) // A->B, B->C, A->C

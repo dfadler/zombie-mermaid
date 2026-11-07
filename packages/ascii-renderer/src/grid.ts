@@ -1439,10 +1439,12 @@ function sidestepSkippedNodes(graph: AsciiGraph): void {
 function tightenSidesteps(graph: AsciiGraph): void {
   if (graph.config.graphDirection !== 'LR' || graph.topMargin) return
   const sizes = graph.rowHeight
+  /* v8 ignore next -- every row of a placed block has a size by now */
   const size = (i: number): number => sizes.get(i) ?? 0
   const row = (n: AsciiNode): number => requireGridCoord(n).y
   for (const { node, anchor } of graph.sidesteps ?? []) {
     const gap = row(node) - row(anchor)
+    /* v8 ignore next -- defensive: a later sidestep moved this anchor */
     if (Math.abs(gap) !== OFF) continue
     // `lead` starts first, `trail` OFF rows on.
     const lead = gap < 0 ? node : anchor
@@ -1462,10 +1464,12 @@ function tightenSidesteps(graph: AsciiGraph): void {
       Math.max(Math.ceil(box / 2), Math.round(0.46 * (box + 1))),
     )
     const first = 2 * (box - want + Math.floor(size(row(trail)) / 2))
+    /* v8 ignore next -- defensive: needs a trail row taller than the box */
     if (first > box + 1) continue
     // The box starts `first / 2` rows into its cell: take them back from the
     // gap before it, or from the canvas top when it is the first cell.
     const lost = Math.floor(first / 2)
+    /* v8 ignore next -- defensive: the gap above is always at least `lost` */
     if (l > 0 && size(l - 1) < lost) continue
     if (l > 0) sizes.set(l - 1, size(l - 1) - lost)
     else graph.offsetY -= lost
