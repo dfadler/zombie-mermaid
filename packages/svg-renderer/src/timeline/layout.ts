@@ -110,9 +110,7 @@ export function spannedLines(lines: string[]): number {
 /** Height Mermaid computes for `n` spanned lines, padding included. */
 function rawHeight(n: number, padding: number = TIMELINE.padding): number {
   return (
-    (n === 0
-      ? 0
-      : TIMELINE.firstLineHeight + (n - 1) * TIMELINE.lineHeight) +
+    (n === 0 ? 0 : TIMELINE.firstLineHeight + (n - 1) * TIMELINE.lineHeight) +
     TIMELINE.textPad +
     padding
   )
@@ -138,7 +136,13 @@ interface Bounds {
   y2: number
 }
 
-function grow(b: Bounds | undefined, x1: number, y1: number, x2: number, y2: number): Bounds {
+function grow(
+  b: Bounds | undefined,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): Bounds {
   if (!b) return { x1, y1, x2, y2 }
   return {
     x1: Math.min(b.x1, x1),
@@ -181,7 +185,13 @@ function layoutLR(tl: Timeline): PositionedTimeline {
     // Text wider than its box (one long word) sticks out of it.
     for (const l of n.lines) {
       const w = textWidth(l)
-      content = grow(content, n.x + anchorW / 2 - w / 2, n.y, n.x + anchorW / 2 + w / 2, n.y)
+      content = grow(
+        content,
+        n.x + anchorW / 2 - w / 2,
+        n.y,
+        n.x + anchorW / 2 + w / 2,
+        n.y,
+      )
     }
   }
 
@@ -300,7 +310,13 @@ function finish(
     b = grow(b, n.x, n.y, n.x + n.width, n.y + n.height)
     for (const l of n.lines) {
       const w = textWidth(l)
-      b = grow(b, n.x + n.width / 2 - w / 2, n.y, n.x + n.width / 2 + w / 2, n.y)
+      b = grow(
+        b,
+        n.x + n.width / 2 - w / 2,
+        n.y,
+        n.x + n.width / 2 + w / 2,
+        n.y,
+      )
     }
   }
   for (const c of connectors) b = grow(b, c.x1, c.y1, c.x2, c.y2)
@@ -426,7 +442,12 @@ function layoutTD(tl: Timeline): PositionedTimeline {
           colorClass: colorClass(color),
           padding: TD.padding,
         })
-        connectors.push({ x1: timelineX, y1: ey + eh / 2, x2: ex, y2: ey + eh / 2 })
+        connectors.push({
+          x1: timelineX,
+          y1: ey + eh / 2,
+          x2: ex,
+          y2: ey + eh / 2,
+        })
         ey += eh + TD.eventGap
       }
       y += taskSpacing
@@ -469,7 +490,13 @@ function layoutTD(tl: Timeline): PositionedTimeline {
     content = grow(content, n.x, n.y, n.x + n.width, n.y + n.height)
     for (const l of n.lines) {
       const w = textWidth(l)
-      content = grow(content, n.x + n.width / 2 - w / 2, n.y, n.x + n.width / 2 + w / 2, n.y)
+      content = grow(
+        content,
+        n.x + n.width / 2 - w / 2,
+        n.y,
+        n.x + n.width / 2 + w / 2,
+        n.y,
+      )
     }
   }
   for (const c of connectors) content = grow(content, c.x1, c.y1, c.x2, c.y2)

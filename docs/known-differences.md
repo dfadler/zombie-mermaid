@@ -621,3 +621,27 @@ Checked against mermaid 12.3.0. A leading `---` ... `---` block is accepted on e
 - `title:` is drawn as in mermaid 12.3.0: above flowchart, state, class and ER (a 54px band, 18px centred text), and as the chart title of sequence, pie, xychart and quadrant, where the diagram's own `title` wins. C4 and architecture draw nothing, as in mermaid. In ASCII the title is a centred row above the diagram for flowchart, state, class and ER (mermaid has no ASCII output to compare).
 - The YAML is a small indentation-based subset: nested `key: value` maps under `config:`, quoted and bare scalars, numbers, booleans, `#` comments. Flow style (`{a: 1}`), lists and multi-line scalars are skipped silently; mermaid parses full YAML and rejects malformed YAML with an error, we do not.
 - Like mermaid, the opening `---` must be the very first line (a blank line, BOM, spaces or `%%` comment before it is not front matter) and an empty block is not accepted. An unterminated block errors at the opening line.
+
+## Timelines
+
+Checked against mermaid 12.3.0 with `pnpm run timeline:oracle` (12.2.0, the pin, renders
+the samples identically): box positions, heights, wrapped lines, dashed lines and the
+drawing size agree on every gallery sample.
+
+- **Line breaks.** Mermaid wraps in the browser with whatever `trebuchet ms`, `verdana`,
+  `arial` resolves to on that machine; this library sums Trebuchet MS advances (measured
+  on macOS), so a label within a few pixels of 150px can break differently on a machine
+  without Trebuchet. Characters outside printable ASCII are estimated (a full em for CJK).
+- **Title width.** The title (33.47px bold) is measured the same way; it only moves the
+  drawing's edges when it is wider than the content.
+- **Font.** Text is drawn in the render's font (Inter by default) inside Mermaid's
+  Trebuchet-sized boxes; it can look a little wider.
+- **Palette.** Box fills are the theme accent and its series shades mixed 30% into the
+  background; mermaid uses its `cScale` hues.
+- **`timeline TD` arrowheads.** None are drawn, as in Mermaid (its vertical renderer
+  points its lines at `#arrowhead` but defines `#undefined-arrowhead`).
+- **Whitespace after a label.** Mermaid keeps it, which after a single word wider than
+  the box adds an invisible last line; this parser trims it. No box size changes.
+- **Not read yet.** `timeline` config in `%%{init}%%` (`leftMargin`, `disableMulticolor`,
+  `padding`), the `neo`/`redux` looks and themes.
+- **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.

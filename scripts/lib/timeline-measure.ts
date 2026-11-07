@@ -34,12 +34,18 @@ export async function scoreTimeline(
       .filter((s) => /^\s*timeline\b/.test(s.source))
       .map((s) => [s.title, s.source] as const),
     ...Object.entries(extra),
-  ].filter(([title]) => !filter || title.toLowerCase().includes(filter.toLowerCase()))
+  ].filter(
+    ([title]) => !filter || title.toLowerCase().includes(filter.toLowerCase()),
+  )
   const results: Record<string, TimelineAgreement> = {}
   const errored: string[] = []
   for (const [i, [title, source]] of wanted.entries()) {
     try {
-      const official = await renderRealMermaidSvg(session, `timeline_${i}`, source)
+      const official = await renderRealMermaidSvg(
+        session,
+        `timeline_${i}`,
+        source,
+      )
       results[title] = timelineAgreement(
         parseTimelineSvg(official),
         parseTimelineSvg(renderMermaidSVG(source)),
@@ -54,5 +60,10 @@ export async function scoreTimeline(
     commit,
     mermaid: pinnedMermaidVersion(),
   })
-  return { results, errored, entry, breaches: timelineBreaches(results, errored) }
+  return {
+    results,
+    errored,
+    entry,
+    breaches: timelineBreaches(results, errored),
+  }
 }

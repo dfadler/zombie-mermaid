@@ -76,6 +76,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   pie: 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85',
   quadrant:
     'quadrantChart\n  title Reach\n  x-axis Low --> High\n  A: [0.3, 0.6]',
+  timeline: 'timeline\n  title History\n  2002 : LinkedIn',
 }
 
 /**

@@ -93,18 +93,25 @@ export function renderTimelineAscii(
   const spine = ' '.repeat(spineCol) + paint(g.spine, theme.line)
 
   const rows: string[] = []
+  // Widest row in columns, tracked apart from the text: colour modes wrap it in escapes or HTML.
+  let width = spineCol + 1
+  const wide = (n: number) => {
+    width = Math.max(width, n)
+  }
   const gap = () => {
     if (rows.length > 0) rows.push(spine)
   }
   for (const grp of groups) {
     if (grp.heading !== undefined) {
       gap()
+      wide(indent + displayWidth(grp.heading) + 2)
       rows.push(' '.repeat(indent) + paint(`[${grp.heading}]`, accent))
     }
     for (const p of grp.periods) {
       gap()
       const [head = '', ...rest] = wrapped.get(p) ?? []
       const first = p.events[0]
+      wide(spineCol + 4 + displayWidth(first ?? ''))
       rows.push(
         ' '.repeat(indent) +
           ' '.repeat(labelWidth - displayWidth(head)) +
@@ -120,6 +127,7 @@ export function renderTimelineAscii(
       for (let i = 0; i < extra; i++) {
         const l = rest[i]
         const e = p.events[i + 1]
+        wide(spineCol + 4 + displayWidth(e ?? ''))
         rows.push(
           ' '.repeat(indent) +
             (l === undefined
@@ -137,12 +145,8 @@ export function renderTimelineAscii(
 
   const out: string[] = []
   if (tl.title) {
-    const width = Math.max(...rows.map((r) => displayWidth(stripAnsi(r))))
     const pad = Math.max(0, Math.floor((width - displayWidth(tl.title)) / 2))
     out.push(' '.repeat(pad) + paint(tl.title, theme.fg), '')
   }
   return [...out, ...rows].join('\n')
 }
-
-// eslint-disable-next-line no-control-regex
-const stripAnsi = (s: string): string => s.replace(/\u001b\[[0-9;]*m/g, '')
