@@ -57,6 +57,15 @@ const MERMAID_TEXT_SCALE = 0.8
  * `pad` inside the axis line, `inner / (n - 1)` apart (`n` ticks).
  * `labelHalf` is half the widest label along the axis.
  */
+/**
+ * Whether bars run to the axis start: a range at or above zero, or a collapsed
+ * flat range (any sign, #2772) where zero is off the plot. Mermaid 12.3.0 draws
+ * flat -5, 0 and 5 series alike: one mid-axis tick, bars down to the axis start.
+ */
+function atEdge(range: { min: number; max: number }): boolean {
+  return range.min >= 0 || range.min === range.max
+}
+
 function barPad(extent: number, n: number, labelHalf: number) {
   const p0 = Math.min(labelHalf, 0.2 * extent)
   const tick0 = (extent - 2 * p0) / n
@@ -269,7 +278,7 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     cat.bar,
     // Mermaid draws every bar down to the bottom of the plot; only a range
     // that dips below zero keeps the zero line as the base.
-    va.range.min >= 0 ? top + plotH : yScale(0),
+    atEdge(va.range) ? top + plotH : yScale(0),
     catLabels,
     colorMap,
   )
@@ -475,7 +484,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
         const groupTop = cy - groupH / 2
         const by = groupTop
         const valX = valueScale(Math.max(s.data[i]!, va.range.min))
-        const baseX = va.range.min >= 0 ? left : valueScale(0)
+        const baseX = atEdge(va.range) ? left : valueScale(0)
         bars.push({
           x: Math.min(baseX, valX),
           y: by,

@@ -160,7 +160,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "gantt"];
 
 // @public
 export interface DiagramColors {
@@ -678,6 +678,9 @@ export type QuadrantConfig = Partial<Record<(typeof QUADRANT_NUMBER_KEYS)[number
 
 // @public
 export function readFrontMatterTitle(text: string): string | undefined;
+
+// @public
+export function readFrontMatterValue(text: string, key: string): string | undefined;
 
 // @public (undocumented)
 export interface RenderLimits {

@@ -27,6 +27,7 @@ export const DIAGRAM_TYPES = [
   'c4',
   'pie',
   'quadrant',
+  'gantt',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -52,6 +53,9 @@ export function detectDiagramType(text: string): DiagramType {
   if (/^pie(?:\s|$)/.test(header)) return 'pie'
   // Also case-sensitive: Mermaid's detector is `/^\s*quadrantChart/`.
   if (/^quadrantChart(?:\s|$)/.test(header)) return 'quadrant'
+
+  // Case-sensitive: Mermaid's detector is `/^\s*gantt/`.
+  if (/^gantt(?:\s|$)/.test(header)) return 'gantt'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'
