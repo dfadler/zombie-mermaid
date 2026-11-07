@@ -1,6 +1,6 @@
 # ASCII graph layout takes layer, order and port hints from ELK when available
 
-Status: accepted (PR 1 landed the seam and the measurement; PR 3 reads the hints in flowchart and state placement; ER, ports and cleanup follow)
+Status: accepted (PR 1 landed the seam and the measurement; PR 3 reads the hints in flowchart and state placement; PR 4b reads the edge-end faces and their order; same-pair lane groups, self-loops and cleanup follow)
 
 ## Context
 
@@ -79,3 +79,19 @@ grid when neither exists.
   flowcharts only (no subgraphs, state or ER) and scales the boxes.
 - **Re-implementing ELK's layering in the grid.** The tie-breaks are not
   derivable.
+
+## Edge-end faces (PR 4b)
+
+The grid reads a hinted edge's faces in `determinePath` (after the cluster and
+loop early returns, before the heuristic faces), but only where the route
+exists: when neither the A* search nor the plain L between the two ports clears
+the nodes (a column ELK threads past a node), the grid's own faces stay. The
+order along a face is read in `allocateFaces`/`placeFace` for a face whose every
+end is a plain hinted edge on that face; ends the layout puts at one position
+take the forward end first, and ends that head opposite ways keep the grid's
+nesting (a different order would cross them). RL and BT are mirrored into the
+grid's TD/LR orientation. Not covered, by design of this step: same-pair edge
+groups (duplicates, and reciprocal pairs laid out side by side, which use
+`buildParallelLanePath`), self-loops, cluster-source and cluster-target edges,
+and subgraphs that set their own direction; they keep the grid's faces.
+
