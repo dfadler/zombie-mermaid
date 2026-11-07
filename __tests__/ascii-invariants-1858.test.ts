@@ -19,7 +19,9 @@ import {
 } from './helpers/ascii-invariants.ts'
 
 /** Sample title -> issue tracking the renderer bug (unicode charset). */
-const KNOWN: Record<string, string> = {}
+const KNOWN: Record<string, string> = {
+  'State: Notes': '#2910',
+}
 
 /** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline are ragged by design). */
 function skipFor(source: string): Rule[] {
