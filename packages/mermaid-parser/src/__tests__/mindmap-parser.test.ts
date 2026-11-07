@@ -194,6 +194,7 @@ describe('parseMindmap: errors, as Mermaid 12.3.0', () => {
   it('refuses an unterminated string', () => {
     bad('mindmap\n  r["`open', /Unexpected/)
     bad('mindmap\n  r["open', /Unexpected/)
+    bad('mindmap\n  r["`a`b`"]', /Unexpected "`"/)
   })
 
   it('names the line and carries the diagram type', () => {

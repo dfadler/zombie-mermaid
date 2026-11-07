@@ -200,6 +200,20 @@ describe('coseBilkentLayout: trees of every shape', () => {
     }
   })
 
+  it('refuses an edge to an unknown node and ignores repeats and self loops', () => {
+    const n = ['a', 'b'].map((id) => ({ id, width: 40, height: 24 }))
+    expect(() =>
+      coseBilkentLayout(n, [{ source: 'a', target: 'zzz' }]),
+    ).toThrow(/unknown node/)
+    const once = coseBilkentLayout(n, [{ source: 'a', target: 'b' }])
+    const noisy = coseBilkentLayout(n, [
+      { source: 'a', target: 'b' },
+      { source: 'b', target: 'a' },
+      { source: 'a', target: 'a' },
+    ])
+    expect(noisy).toEqual(once)
+  })
+
   it('places a lone node and refuses a cycle', () => {
     expect(
       coseBilkentLayout([{ id: 'a', width: 10, height: 10 }], []).size,

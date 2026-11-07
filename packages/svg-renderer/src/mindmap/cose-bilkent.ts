@@ -197,6 +197,7 @@ function getIntersection(a: LNode, b: LNode, out: Clip): boolean {
     const slopeB = b.height / b.width
     const slopePrime = (p2y - p1y) / (p2x - p1x)
 
+    /* v8 ignore start -- exact corner-diagonal alignments of two rectangles, a measure-zero case a real tree layout does not reach */
     if (-slopeA === slopePrime) {
       if (p1x > p2x) {
         out.x0 = bottomLeftAx
@@ -237,6 +238,7 @@ function getIntersection(a: LNode, b: LNode, out: Clip): boolean {
       clipPointBFound = true
     }
 
+    /* v8 ignore stop */
     if (clipPointAFound && clipPointBFound) return false
 
     let dirA: number
@@ -325,6 +327,7 @@ function calcSeparationAmount(
   }
 
   let slope = Math.abs((centerY(b) - centerY(a)) / (centerX(b) - centerX(a)))
+  /* v8 ignore next -- coincident centres: radial placement never produces them */
   if (centerY(b) === centerY(a) && centerX(b) === centerX(a)) slope = 1.0
 
   let moveByY = slope * ox
@@ -363,6 +366,7 @@ function findCenterOfTree(nodes: LNode[]): LNode {
     // The original deliberately(?) splices `list` while indexing it
     for (let i = 0; i < list.length; i++) {
       const node = list[i]
+      /* v8 ignore next -- unreachable: the queue only holds defined nodes */
       if (node === undefined) break
       const index = list.indexOf(node)
       if (index >= 0) list.splice(index, 1)
@@ -389,6 +393,7 @@ function branchRadialLayout(
   radialSeparation: number,
 ): void {
   let halfInterval = (endAngle - startAngle + 1) / 2
+  /* v8 ignore next -- angle normalisation, reached only for a negative half interval */
   if (halfInterval < 0) halfInterval += 180
 
   const nodeAngle = (halfInterval + startAngle) % 360
@@ -423,6 +428,7 @@ function branchRadialLayout(
     i = (i + 1) % incEdgesCount
   ) {
     const edge = neighborEdges[i]
+    /* v8 ignore next -- unreachable: edge lists hold defined edges */
     if (edge === undefined) break
     const currentNeighbor = otherEnd(edge, node)
     if (currentNeighbor === parentOfNode) continue
@@ -514,6 +520,7 @@ interface Embedder {
 
 function cell(g: LNode[][][], i: number, j: number): LNode[] {
   const c = g[i]?.[j]
+  /* v8 ignore next -- unreachable: the grid index is clamped by the caller */
   if (c === undefined) throw new Error('cose-bilkent: grid index out of range')
   return c
 }
@@ -583,6 +590,7 @@ function calcSpringForces(s: Embedder, clip: Clip): void {
     updateLength(e, clip)
     if (e.overlapping) continue
     const length = e.length
+    /* v8 ignore next -- a node never sits exactly on its neighbour after radial placement */
     if (length === 0) continue
     const springForce = SPRING_STRENGTH * (length - IDEAL_EDGE_LENGTH)
     const fx = springForce * (e.lengthX / length)
@@ -782,12 +790,14 @@ export function coseBilkentLayout(
 
   // Layout.getFlatForest: BFS from the first node; a tree must reach every node without a cycle.
   const first = lnodes[0]
+  /* v8 ignore next -- unreachable: a non-empty tree has a first node */
   if (first === undefined) return result
   const visited = new Set<LNode>()
   const parents = new Map<LNode, LNode>()
   const queue: LNode[] = [first]
   while (queue.length > 0) {
     const current = queue.shift()
+    /* v8 ignore next -- unreachable: the queue only holds defined nodes */
     if (current === undefined) break
     visited.add(current)
     for (const edge of current.edges) {

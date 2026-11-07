@@ -328,12 +328,8 @@ export function parseMindmap(text: string): Mindmap {
       indent = t.text.length
       i++
       const after = peek()
-      if (
-        after.kind === 'NL' ||
-        after.kind === 'SPACELINE' ||
-        after.kind === 'EOF'
-      )
-        continue
+      // A comment takes its leading whitespace, so SPACELIST never precedes SPACELINE.
+      if (after.kind === 'NL' || after.kind === 'EOF') continue
     }
     const head = peek()
     if (head.kind === 'ICON' || head.kind === 'CLASS') {
