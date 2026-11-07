@@ -44,6 +44,7 @@ describe('list_diagram_types', () => {
       pie: 'pie\n"A" : 1',
       quadrant: 'quadrantChart\nA: [0.5, 0.5]',
       mindmap: 'mindmap\n  root',
+      gantt: 'gantt\nA :a, 2024-01-01, 1d',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

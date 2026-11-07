@@ -66,3 +66,8 @@ export * from './mindmap/text.ts'
 
 export * from './expanded-shapes.ts'
 export * from './flowchart-parser.ts'
+
+export * from './gantt/dates.ts'
+export * from './gantt/parser.ts'
+export * from './gantt/types.ts'
+export * from './gantt/rows.ts'

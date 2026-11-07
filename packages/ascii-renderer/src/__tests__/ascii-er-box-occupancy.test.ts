@@ -77,7 +77,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('3 entities, adjacent-only chain (smoke case)', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   B ||--o{ C : two`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectNoBoxOverlap(ascii, ['A', 'B', 'C'])
@@ -85,7 +85,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('3 entities same row, A-C skipping B (direct issue #350 shape)', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   A ||--o| C : skips_b`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectNoBoxOverlap(ascii, ['A', 'B', 'C'])
@@ -94,7 +94,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('3 entities, A-C skip B, long multi-word label', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   A ||--o| C : a_very_long_descriptive_relationship_name`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectNoBoxOverlap(ascii, ['A', 'B', 'C'])
@@ -107,7 +107,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('3 entities, A-C skip B, long names', () => {
     const src = `erDiagram
-  ALPHA_ENTITY ||--o{ BRAVO_ENTITY : one
+  ALPHA_ENTITY ||--o{ BRAVO_ENTITY : "one"
   ALPHA_ENTITY ||--o| CHARLIE_ENTITY : skips_b`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectNoBoxOverlap(ascii, [
@@ -119,7 +119,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('5 entities, 3-per-row layout, A-C skip B in row 1', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   A ||--o| C : skips_b
   A ||--o{ D : two
   A ||--o{ E : three`
@@ -129,7 +129,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('5 entities, two same-row obstructed pairs sharing the row-gap band', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   A ||--o| C : first_skip
   D ||--o{ E : two
   A ||--o{ D : bridge
@@ -146,7 +146,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('5 entities, vertical relationship whose row-mate is taller', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   A {
     string id
     string a1
@@ -205,7 +205,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('6 entities, 2 disconnected components, each with same-row obstruction', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   A ||--o| C : skip_1
 
   D ||--o{ E : two
@@ -216,7 +216,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('3 entities, A-C skip B, B has zero attributes (short box)', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   A ||--o| C : skip_short_b`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectNoBoxOverlap(ascii, ['A', 'B', 'C'])
@@ -224,7 +224,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('3 entities, A-C skip B, B has 8 attributes (tall box)', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   B {
     string id
     string b1
@@ -242,7 +242,7 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
 
   it('4 entities in one row, A-D skipping 2 (B and C)', () => {
     const src = `erDiagram
-  A ||--o{ B : one
+  A ||--o{ B : "one"
   B ||--o{ C : two
   A ||--o| D : skip_two`
     const ascii = renderMermaidASCII(src, { useAscii: true })

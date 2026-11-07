@@ -28,6 +28,7 @@ export const DIAGRAM_TYPES = [
   'pie',
   'quadrant',
   'mindmap',
+  'gantt',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -56,6 +57,8 @@ export function detectDiagramType(text: string): DiagramType {
 
   // Mermaid's detector is `/^\s*mindmap/`; the grammar keyword is `mindmap\b`.
   if (/^mindmap\b/i.test(header)) return 'mindmap'
+  // Case-sensitive: Mermaid's detector is `/^\s*gantt/`.
+  if (/^gantt(?:\s|$)/.test(header)) return 'gantt'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'

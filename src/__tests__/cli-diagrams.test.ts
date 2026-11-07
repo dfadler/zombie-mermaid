@@ -64,6 +64,11 @@ const diagrams: Record<string, string> = {
   root((Plan))
     Build
     Ship`,
+  gantt: `gantt
+  title Plan
+  dateFormat YYYY-MM-DD
+  todayMarker off
+  Build :a, 2024-01-01, 5d`,
 }
 
 // ============================================================================

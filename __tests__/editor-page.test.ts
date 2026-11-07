@@ -73,6 +73,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   pie: 'Pie',
   quadrant: 'Quadrant',
   mindmap: 'Mindmap',
+  gantt: 'Gantt',
 }
 
 describe('EditorPage meta description', () => {

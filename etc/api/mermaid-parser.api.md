@@ -79,6 +79,9 @@ export interface Actor {
     type: 'participant' | 'actor';
 }
 
+// @public
+export function addDuration(ms: number, n: number, unit: string): number;
+
 // @public (undocumented)
 export interface ArchitectureDiagram {
     // (undocumented)
@@ -398,6 +401,65 @@ export function fixActivationBalance(sourceDiagram: string): ActivationFixResult
 export function formatClassMember(m: ClassMember): string;
 
 // @public
+export function formatD3Time(ms: number, fmt: string): string;
+
+// @public
+export function formatDayjs(ms: number, fmt: string): string;
+
+// @public
+export interface GanttChart {
+    axisFormat: string;
+    dateFormat: string;
+    displayMode: '' | 'compact';
+    // (undocumented)
+    excludes: string[];
+    // (undocumented)
+    includes: string[];
+    // (undocumented)
+    inclusiveEndDates: boolean;
+    sections: string[];
+    tasks: GanttTask[];
+    tickInterval?: TickInterval;
+    // (undocumented)
+    title?: string;
+    todayMarker: string;
+    // (undocumented)
+    topAxis: boolean;
+    // (undocumented)
+    weekday: GanttWeekday;
+    // (undocumented)
+    weekend: 'friday' | 'saturday';
+}
+
+// @public
+export interface GanttTask {
+    // (undocumented)
+    active: boolean;
+    classes: string[];
+    // (undocumented)
+    crit: boolean;
+    // (undocumented)
+    done: boolean;
+    end: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    link?: string;
+    // (undocumented)
+    milestone: boolean;
+    order: number;
+    renderEnd: number | null;
+    section: string;
+    // (undocumented)
+    start: number;
+    vert: boolean;
+}
+
+// @public (undocumented)
+export type GanttWeekday = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+// @public
 export function getSeriesColor(index: number, accentColor: string, bgColor?: string): string;
 
 // @public (undocumented)
@@ -420,6 +482,12 @@ export function isCssColor(value: string): boolean;
 
 // @public
 export function isDarkBackground(bgHex: string): boolean;
+
+// @public
+export function isExcludedDate(chart: Pick<GanttChart, 'includes' | 'excludes' | 'weekend' | 'dateFormat'>, ms: number): boolean;
+
+// @public
+export function isoWeekday(ms: number): number;
 
 // @public
 export function isValidHex(color: string): boolean;
@@ -512,12 +580,30 @@ export interface MindmapTextRun {
 }
 
 // @public (undocumented)
+export const MS_DAY = 86400000;
+
+// @public (undocumented)
+export const MS_HOUR = 3600000;
+
+// @public (undocumented)
+export const MS_MINUTE = 60000;
+
+// @public (undocumented)
+export const MS_SECOND = 1000;
+
+// @public (undocumented)
+export const MS_WEEK: number;
+
+// @public (undocumented)
 export interface Note {
     actorIds: string[];
     afterIndex: number;
     position: 'left' | 'right' | 'over';
     text: string;
 }
+
+// @public
+export function packGanttSection(tasks: GanttTask[], offset: number, orders: Map<GanttTask, number>): number;
 
 // @public
 export function parseArchitecture(lines: Statement[]): ArchitectureDiagram;
@@ -535,10 +621,16 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram;
 export function parseClassDiagram(lines: Statement[]): ClassDiagram;
 
 // @public
+export function parseDayjs(str: string, fmt: string, now?: Date): number | undefined;
+
+// @public
 export function parseErDiagram(lines: Statement[]): ErDiagram;
 
 // @public
 export function parseExpandedMeta(body: string): ExpandedNodeMeta;
+
+// @public
+export function parseGantt(source: string, now?: Date): GanttChart;
 
 // @public
 export function parseGenericTypes(input: string): string;
@@ -907,6 +999,103 @@ export interface PositionedErRelationship {
 }
 
 // @public (undocumented)
+export interface PositionedGanttAxis {
+    // (undocumented)
+    position: 'top' | 'bottom';
+    // (undocumented)
+    rangeEnd: number;
+    // (undocumented)
+    ticks: PositionedGanttTick[];
+    tickSize: number;
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface PositionedGanttChart {
+    // (undocumented)
+    axes: PositionedGanttAxis[];
+    excludeRanges: {
+        id: string;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    }[];
+    // (undocumented)
+    height: number;
+    rows: {
+        y: number;
+        width: number;
+        height: number;
+        sectionStyle: number;
+    }[];
+    // (undocumented)
+    sectionLabels: {
+        lines: string[];
+        y: number;
+        sectionStyle: number;
+    }[];
+    tasks: PositionedGanttTask[];
+    // (undocumented)
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    today?: {
+        x: number;
+        y1: number;
+        y2: number;
+        style: string;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public (undocumented)
+export interface PositionedGanttTask {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    originX: number;
+    // (undocumented)
+    originY: number;
+    sectionStyle: number;
+    // (undocumented)
+    task: GanttTask;
+    // (undocumented)
+    text: PositionedGanttText;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface PositionedGanttText {
+    anchor: 'start' | 'middle' | 'end';
+    outside: 'left' | 'right' | null;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface PositionedGanttTick {
+    // (undocumented)
+    label: string;
+    x: number;
+}
+
+// @public (undocumented)
 export interface PositionedLine {
     colorIndex: number;
     points: Array<{
@@ -1253,7 +1442,7 @@ export interface QuadrantPointStyle {
 }
 
 // @public
-export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization' | 'lollipop';
+export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization' | 'lollipop' | 'link' | 'dashed-link';
 
 // @public
 export function resolveShapeName(name: string): NodeShape | undefined;
@@ -1271,10 +1460,24 @@ export interface SequenceDiagram {
     title?: string;
 }
 
+// @public (undocumented)
+export interface TickInterval {
+    // (undocumented)
+    every: number;
+    // (undocumented)
+    unit: string;
+}
+
+// @public
+export function timeTicks(t0: number, t1: number, custom?: TickInterval, weekday?: string): number[];
+
 // @public
 export function toBlockType(value: string): Block['type'];
 
 export { toDirection }
+
+// @public
+export function weekdayName(ms: number): string;
 
 // @public
 export function wrapC4Text(text: string, width: number): string[];
