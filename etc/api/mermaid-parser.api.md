@@ -565,6 +565,9 @@ export interface Note {
 }
 
 // @public
+export function packGanttSection(tasks: GanttTask[], offset: number, orders: Map<GanttTask, number>): number;
+
+// @public
 export function parseArchitecture(lines: Statement[]): ArchitectureDiagram;
 
 // @public
