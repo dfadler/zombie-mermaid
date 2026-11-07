@@ -1,34 +1,34 @@
 {
   "unit": "gzip-bytes",
   "budgets": {
-    "dist/index.js": 1500,
-    "dist/index.cjs": 1300,
-    "dist/ascii.js": 512,
-    "dist/ascii.cjs": 512,
-    "dist/mcp.js": 1200,
-    "dist/mcp.cjs": 1060,
-    "dist/cli.js": 15000,
-    "packages/core/dist/index.js": 14200,
-    "packages/core/dist/index.cjs": 14270,
-    "packages/mermaid-parser/dist/index.js": 29520,
-    "packages/mermaid-parser/dist/index.cjs": 29740,
-    "packages/svg-renderer/dist/index.js": 72780,
-    "packages/svg-renderer/dist/index.cjs": 73470,
-    "packages/ascii-renderer/dist/index.js": 85510,
-    "packages/ascii-renderer/dist/index.cjs": 85780,
-    "packages/mcp/dist/index.js": 4571,
-    "packages/mcp/dist/index.cjs": 7690
+    "dist/index.js": 1651,
+    "dist/index.cjs": 1431,
+    "dist/ascii.js": 564,
+    "dist/ascii.cjs": 564,
+    "dist/mcp.js": 1320,
+    "dist/mcp.cjs": 1166,
+    "dist/cli.js": 16500,
+    "packages/core/dist/index.js": 15621,
+    "packages/core/dist/index.cjs": 15698,
+    "packages/mermaid-parser/dist/index.js": 32473,
+    "packages/mermaid-parser/dist/index.cjs": 32715,
+    "packages/svg-renderer/dist/index.js": 80058,
+    "packages/svg-renderer/dist/index.cjs": 80817,
+    "packages/ascii-renderer/dist/index.js": 94062,
+    "packages/ascii-renderer/dist/index.cjs": 94359,
+    "packages/mcp/dist/index.js": 5029,
+    "packages/mcp/dist/index.cjs": 8459
   },
   "consumerBundles": {
-    "packages/svg-renderer/dist/index.js": 114190,
-    "dist/index.js": 198500
+    "packages/svg-renderer/dist/index.js": 125610,
+    "dist/index.js": 218351
   },
   "unpackedBudgets": {
-    "dist": 111000,
-    "packages/core/dist": 212685,
-    "packages/mermaid-parser/dist": 228850,
-    "packages/svg-renderer/dist": 501120,
-    "packages/ascii-renderer/dist": 510770,
-    "packages/mcp/dist": 41310
+    "dist": 122101,
+    "packages/core/dist": 233954,
+    "packages/mermaid-parser/dist": 251736,
+    "packages/svg-renderer/dist": 551232,
+    "packages/ascii-renderer/dist": 561847,
+    "packages/mcp/dist": 45442
   }
 }
