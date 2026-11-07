@@ -1445,7 +1445,20 @@ export function renderErAscii(
           const labelMinX = startX + labelInset
           const labelMaxX = endX - labelInset
           const labelRows = splitLines(rel.label).length
-          const maxLabelY = lineY + 1 + Math.max(vGap - 1, 1)
+          // With hints the search also covers the rows the pair's other labels
+          // take, so a tall label drawn first cannot crowd this one out.
+          const pairRows = useHints
+            ? diagram.relationships
+                .filter(
+                  (r) =>
+                    r !== rel &&
+                    r.label &&
+                    [r.entity1, r.entity2].sort().join('|') ===
+                      [rel.entity1, rel.entity2].sort().join('|'),
+                )
+                .reduce((n, r) => n + splitLines(r.label).length, 0)
+            : 0
+          const maxLabelY = lineY + 1 + Math.max(vGap - 1, 1) + pairRows
           while (
             labelBaseY < maxLabelY &&
             !regionClear(

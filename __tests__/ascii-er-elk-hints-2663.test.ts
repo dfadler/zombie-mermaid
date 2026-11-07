@@ -187,6 +187,12 @@ describe('ER ASCII with ELK layout hints', () => {
   B ||--|| A : lost
   A ||--|| B : "aaaa<br>bbbb<br>cccc<br>dddd"`)
     expect(out).toContain('lost')
+    registerAsciiLayout({ er: () => hints })
+    const reversed = render(`erDiagram
+  A ||--|| B : "aaaa<br>bbbb<br>cccc<br>dddd"
+  B ||--|| A : lost`)
+    expect(reversed).toContain('lost')
+    expect(reversed).toContain('dddd')
   })
 
   it('draws no stray junction when a bypass column is the stem’s own (no provider)', () => {
