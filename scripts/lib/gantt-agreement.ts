@@ -52,8 +52,10 @@ export interface GanttFigure {
 }
 
 const attr = (tag: string, name: string): string => {
-  const m = new RegExp(`\\s${name}="([^"]*)"`).exec(tag)
-  return m ? m[1]! : ''
+  const from = tag.indexOf(` ${name}="`)
+  if (from === -1) return ''
+  const start = from + name.length + 3
+  return tag.slice(start, tag.indexOf('"', start))
 }
 const num = (tag: string, name: string) => Number(attr(tag, name))
 const norm = (cls: string) =>

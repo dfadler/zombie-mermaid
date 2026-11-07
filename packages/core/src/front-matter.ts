@@ -90,7 +90,9 @@ export function readFrontMatterValue(
   const close = blockEnd(lines)
   if (close === undefined) return undefined
   for (const line of lines.slice(1, close)) {
-    const m = new RegExp(`^${key}[ \\t]*:(.*)$`).exec(line)
+    const m = line.startsWith(key)
+      ? /^[ \t]*:(.*)$/.exec(line.slice(key.length))
+      : null
     if (m) return String(scalar(m[1]!)).trim() || undefined
   }
   return undefined

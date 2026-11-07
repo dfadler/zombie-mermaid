@@ -257,7 +257,7 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
       for (let more = true; more;) {
         more = false
         for (const t of TAGS) {
-          if (new RegExp(`^\\s*${t}\\s*$`).test(parts[0] ?? '')) {
+          if ((parts[0] ?? '').trim() === t) {
             task[t] = true
             parts.shift()
             more = true
