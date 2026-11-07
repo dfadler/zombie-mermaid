@@ -19,6 +19,7 @@ import { FlowchartRenderOptions } from '@zombie-mermaid/core';
 import { LayoutCache } from '@zombie-mermaid/core';
 import { LayoutOptions } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
+import { Mindmap } from '@zombie-mermaid/mermaid-parser';
 import { MonoFontEmbed } from '@zombie-mermaid/core';
 import { niceTickValues } from '@zombie-mermaid/core';
 import { PieChart } from '@zombie-mermaid/mermaid-parser';
@@ -26,6 +27,7 @@ import { Point } from '@zombie-mermaid/core';
 import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGraph } from '@zombie-mermaid/core';
+import { PositionedMindmap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedNode } from '@zombie-mermaid/core';
 import { PositionedPieChart } from '@zombie-mermaid/mermaid-parser';
 import { PositionedQuadrantChart } from '@zombie-mermaid/mermaid-parser';
@@ -235,6 +237,9 @@ export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartR
 export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartRenderOptions): PositionedGraph;
 
 // @public
+export function layoutMindmap(mindmap: Mindmap): PositionedMindmap;
+
+// @public
 export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedPieChart;
 
 // @public (undocumented)
@@ -248,6 +253,17 @@ export function layoutXYChart(chart: XYChart, _options?: XyChartRenderOptions): 
 
 // @public
 export function loadEmbeddedFont(): Promise<void>;
+
+// @public
+export const MINDMAP: {
+    readonly padding: 10;
+    readonly maxNodeWidth: 200;
+    readonly fontSize: 16;
+    readonly lineHeight: 24;
+    readonly sections: 11;
+    readonly edgeInset: 15;
+    readonly cornerRadius: 5;
+};
 
 // @public
 export const MONO_FONT: "'JetBrains Mono'";
@@ -333,6 +349,9 @@ export function renderMermaidSVGAsync(text: string, options?: RenderOptions): Pr
 
 // @public @deprecated (undocumented)
 export const renderMermaidSync: typeof renderMermaidSVG;
+
+// @public
+export function renderMindmapSvg(chart: PositionedMindmap, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderPieSvg(chart: PositionedPieChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;

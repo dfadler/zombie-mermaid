@@ -1,0 +1,14 @@
+mindmap
+  root[first line
+second line]
+    Child<br>with break
+      Grand<br/>child
+    Last one
+---
+[first line
+second line]
++-- Child
+|   with break
+|   `-- Grand
+|       child
+`-- Last one
