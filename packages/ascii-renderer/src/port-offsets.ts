@@ -911,6 +911,7 @@ const spanOf = (j: Jog): [number, number] => [
   Math.max(j.near, j.far),
 ]
 
+const MAX_GAP_JOGS = 12
 const sharesTrunk = (a: Jog, b: Jog): boolean =>
   a.near === b.near || a.far === b.far
 
@@ -1035,13 +1036,13 @@ function planJogRows(
     gaps.set(g, [...(gaps.get(g) ?? []), jog])
   }
   for (const [g, jogs] of gaps) {
-    if (jogs.length < 2) continue
+    // A gap with more jogs than this keeps its shared rows: the search is cubic in them.
+    if (jogs.length < 2 || jogs.length > MAX_GAP_JOGS) continue
     const size = graph.rowHeight.get(g) ?? 0
     const first =
       lineToDrawing(graph, [{ x: g, y: g }])[0]![main] - Math.floor(size / 2)
     const lo = first + 1
     const hi = first + size - 2
-    if (hi < lo) continue
     const shared = jogs.some((a, i) =>
       jogs.some((b, j) => {
         const [a0, a1] = spanOf(a)
@@ -1052,15 +1053,16 @@ function planJogRows(
       }),
     )
     if (!shared) continue
-    const best = bestJogRows(jogs, lo, hi)
     // Rows for every jog to have its own, with a clear row between and room
-    // for a label and the arrowhead: what the gap is widened to.
-    const own = bestJogRows(jogs, lo, lo + Math.max(hi - lo, 5))
+    // for a label and the arrowhead: what the gap is widened to (also when it
+    // has no usable row yet).
+    const own = bestJogRows(jogs, lo, lo + Math.max(hi - lo, jogs.length - 1))
     const need = 2 * new Set(own).size + 3
+    const best = hi < lo ? undefined : bestJogRows(jogs, lo, hi)
     jogs.forEach((jog, i) => {
       const shift = result.get(jog.edge) ?? { start: 0, end: 0 }
       const points = shift.points ?? jog.edge.path.map(() => ({ x: 0, y: 0 }))
-      for (const k of [1, 2]) points[k]![main] = best[i]! - jog.base
+      if (best) for (const k of [1, 2]) points[k]![main] = best[i]! - jog.base
       result.set(jog.edge, {
         ...shift,
         points,

@@ -2442,7 +2442,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
             o !== edge &&
             o.from === edge.to &&
             o.to === edge.from &&
-            o.path.length > 2 &&
+            o.path.length === 4 &&
             dirEquals(o.startDir, hinted[1]) &&
             dirEquals(o.endDir, hinted[0]),
         )

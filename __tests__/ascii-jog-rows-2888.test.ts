@@ -58,6 +58,21 @@ describe('jog row per edge (#2888)', () => {
     }
   })
 
+  it('leaves a gap with more than 12 jogs, and a gap too small for a row, drawn', () => {
+    const kids = ['B', 'C', 'D', 'E', 'F', 'G', 'H']
+    const src = [
+      'graph TD',
+      ...kids.flatMap((k) => [`A -->|a${k}| ${k}`, `${k} -->|b${k}| A`]),
+    ].join('\n')
+    for (const k of kids) expect(draw(src)).toContain(`a${k}`)
+    const small = renderMermaidASCII(LONGEST, {
+      colorMode: 'none',
+      layoutHints: true,
+      paddingY: 1,
+    })
+    expect(small).toContain('long label')
+  })
+
   it('keeps a trunk of strokes out of one cell on one row', () => {
     const text = draw('graph TD\nA -->|yes| B\nA -->|no| C\nB --> D\nC --> D')
     expect(text).toContain('yes')
