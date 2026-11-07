@@ -2318,6 +2318,7 @@ const hintCache = new WeakMap<
 
 /** The registered provider's hints for this graph, or `undefined` (grid placement stays). */
 function layoutHintsFor(graph: AsciiGraph): AsciiLayoutHints | undefined {
+  if (graph.ownHints) return graph.ownHints
   const parsed = graph.parsed
   const provider = getAsciiLayout()
   if (!graph.useLayoutHints || !parsed || !provider?.graph) return undefined
