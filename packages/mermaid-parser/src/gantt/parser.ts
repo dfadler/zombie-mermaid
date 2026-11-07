@@ -110,6 +110,29 @@ export function isExcludedDate(
   return excludes.includes(formatted) || excludes.includes(dateOnly)
 }
 
+/** The bodies of `%%{init: ...}%%` directives, found by scanning (no backtracking). */
+function* initDirectives(source: string): Generator<string> {
+  for (let i = source.indexOf('%%{'); i !== -1; i = source.indexOf('%%{', i)) {
+    const end = source.indexOf('}%%', i + 3)
+    if (end === -1) return
+    const head = /^\s*(?:initialize|init)\s*:/.exec(source.slice(i + 3, i + 40))
+    if (head) yield source.slice(i + 3 + head[0].length, end)
+    i = end + 3
+  }
+}
+
+/** A line without its `%%` comment: from the first `%%` at the start or after a blank. */
+function stripComment(line: string): string {
+  for (let h = line.indexOf('%%'); h !== -1; h = line.indexOf('%%', h + 2)) {
+    if (h === 0 || /\s/.test(line[h - 1]!)) {
+      return line.slice(0, h).trimEnd() === ''
+        ? ''
+        : line.slice(0, h - (h > 0 ? 1 : 0))
+    }
+  }
+  return line
+}
+
 /** Parse a Mermaid `gantt` chart from raw source text. */
 export function parseGantt(source: string, now: Date = new Date()): GanttChart {
   const chart: GanttChart = {
@@ -141,11 +164,9 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
 
   // `%%{init: {"gantt": {...}}}%%` (and front matter `config:`): the keys that
   // change what is drawn. Sizes (`barHeight`, ...) are not read.
-  for (const [, body] of source.matchAll(
-    /%%\{\s*(?:init|initialize)\s*:([\s\S]*?)\}%%/g,
-  )) {
+  for (const body of initDirectives(source)) {
     try {
-      const cfg = JSON.parse(body!.replace(/'/g, '"')) as {
+      const cfg = JSON.parse(body.replace(/'/g, '"')) as {
         gantt?: Record<string, unknown>
       }
       const g = cfg.gantt
@@ -172,7 +193,7 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
       if (!full.includes('}%%')) multiline = 'init'
       return
     }
-    const noComment = full.replace(/^\s*%%.*$/, '').replace(/\s%%.*$/, '')
+    const noComment = stripComment(full)
     const line = noComment.trim()
     if (!line) return
 

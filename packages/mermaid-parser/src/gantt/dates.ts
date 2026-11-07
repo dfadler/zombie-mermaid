@@ -196,8 +196,8 @@ function compile(fmt: string) {
   re += escapeLit(fmt.slice(last))
   // The pattern is escaped literals and fixed-width digit groups, so it cannot
   // backtrack catastrophically whatever `dateFormat` says.
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp
-  hit = supported ? { re: new RegExp(`^${re}$`), keys } : null
+  const matcher = new RegExp(`^${re}$`) // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp
+  hit = supported ? { re: matcher, keys } : null
   compiled.set(fmt, hit)
   return hit
 }

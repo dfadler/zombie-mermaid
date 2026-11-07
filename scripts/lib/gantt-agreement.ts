@@ -64,8 +64,12 @@ const norm = (cls: string) =>
     .filter((c) => c && !c.startsWith('width-'))
     .sort()
     .join(' ')
-const decode = (s: string) =>
-  s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+const ENTITIES: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+}
+const decode = (s: string) => s.replace(/&(?:amp|lt|gt);/g, (e) => ENTITIES[e]!)
 const entityText = (s: string) => decode(s).trim()
 
 /** Official mermaid: read the figure back out of the SVG string. */
@@ -115,7 +119,11 @@ export function parseOfficialGantt(svg: string, renderId: string): GanttFigure {
     } else if (cls.startsWith('sectionTitle')) {
       fig.sectionLabels.push({
         y: num(a, 'y'),
-        text: entityText(m[2]!.replace(/<[^>]+>/g, '')),
+        text: entityText(
+          [...m[2]!.matchAll(/<tspan[^>]*>([^<]*)<\/tspan>/g)]
+            .map((t) => t[1])
+            .join(''),
+        ),
         cls,
       })
     } else if (cls === 'titleText') {
