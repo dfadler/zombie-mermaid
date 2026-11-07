@@ -72,6 +72,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   c4: 'C4',
   pie: 'Pie',
   quadrant: 'Quadrant',
+  gantt: 'Gantt',
   timeline: 'Timeline',
 }
 

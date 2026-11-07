@@ -82,6 +82,14 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('quadrantChartX')).toBe('flowchart')
   })
 
+  it('detects gantt charts, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('gantt')).toBe('gantt')
+    expect(detectDiagramType('  gantt\n  title X')).toBe('gantt')
+    expect(detectDiagramType('%% c\ngantt title X')).toBe('gantt')
+    expect(detectDiagramType('Gantt')).toBe('flowchart')
+    expect(detectDiagramType('ganttChart')).toBe('flowchart')
+  })
+
   it('falls back to flowchart for unrecognized input', () => {
     expect(detectDiagramType('')).toBe('flowchart')
     expect(detectDiagramType('not a real header')).toBe('flowchart')

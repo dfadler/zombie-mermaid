@@ -27,6 +27,7 @@ export const DIAGRAM_TYPES = [
   'c4',
   'pie',
   'quadrant',
+  'gantt',
   'timeline',
 ] as const
 
@@ -54,6 +55,8 @@ export function detectDiagramType(text: string): DiagramType {
   // Also case-sensitive: Mermaid's detector is `/^\s*quadrantChart/`.
   if (/^quadrantChart(?:\s|$)/.test(header)) return 'quadrant'
 
+  // Case-sensitive: Mermaid's detector is `/^\s*gantt/`.
+  if (/^gantt(?:\s|$)/.test(header)) return 'gantt'
   // Also case-sensitive: Mermaid's detector is `/^\s*timeline/`.
   if (/^timeline(?:\s|$)/.test(header)) return 'timeline'
 

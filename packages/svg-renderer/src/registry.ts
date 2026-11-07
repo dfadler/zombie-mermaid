@@ -59,6 +59,7 @@ import {
   parseC4Diagram,
   parsePieChart,
   parseQuadrantChart,
+  parseGantt,
   parseTimeline,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -77,6 +78,8 @@ import type {
   PositionedPieChart,
   QuadrantChart,
   PositionedQuadrantChart,
+  GanttChart,
+  PositionedGanttChart,
   Timeline,
   PositionedTimeline,
 } from '@zombie-mermaid/mermaid-parser'
@@ -94,6 +97,8 @@ import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
 import { layoutQuadrantChart } from './quadrant/layout.ts'
 import { renderQuadrantSvg } from './quadrant/renderer.ts'
+import { layoutGantt } from './gantt/layout.ts'
+import { renderGanttSvg } from './gantt/renderer.ts'
 import { layoutTimeline } from './timeline/layout.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -460,6 +465,30 @@ const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
 }
 
 /**
+ * Gantt charts parse from the raw `text` (a task line is `name :data`, which
+ * the statement splitter would cut at `;` and `#`) and lay out at Mermaid's
+ * fallback width. The `todayMarker` line only appears while today is inside
+ * the chart's date range.
+ */
+const ganttModule: DiagramModule<GanttChart, PositionedGanttChart> = {
+  type: 'gantt',
+  parse: (_lines, text) => parseGantt(text),
+  layoutForSvg: (chart) => layoutGantt(chart),
+  renderSvg(positioned, ctx) {
+    return renderGanttSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * Timelines parse from the raw `text` (Mermaid's lexer has no `;` statement
  * separator and a label may contain one), then lay out to Mermaid's fixed
  * geometry. No theme variables or interactivity apply.
@@ -512,5 +541,6 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   c4: c4Module,
   pie: pieModule,
   quadrant: quadrantModule,
+  gantt: ganttModule,
   timeline: timelineModule,
 }

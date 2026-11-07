@@ -12,6 +12,7 @@
 //   - ER diagrams (erDiagram) — grid layout with crow's foot notation
 //   - Pie charts (pie) — one stacked bar plus a table (see pie.ts)
 //   - Quadrant charts (quadrantChart) — a four-cell grid with numbered markers (see quadrant.ts)
+//   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
 //   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
 //
 // Usage:

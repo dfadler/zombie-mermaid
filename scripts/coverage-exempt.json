@@ -240,6 +240,16 @@
     "maxLines": 60
   },
   {
+    "file": "scripts/gantt-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/gantt-agreement.ts",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/lib/gantt-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the gantt-oracle and layout-oracle CLIs",
+    "maxLines": 80
+  },
+  {
     "file": "scripts/timeline-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/timeline-agreement.ts",
     "maxLines": 60

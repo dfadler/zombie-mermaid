@@ -4,7 +4,11 @@
 // `accDescr: text` on one line, or `accDescr { … }` over several. Pie parses
 // its own copy (its grammar is token-based), so it is passed through as-is.
 import { detectDiagramType, type DiagramType } from './diagram-type.ts'
-import { readFrontMatterTitle, stripFrontMatter } from './front-matter.ts'
+import {
+  readFrontMatterTitle,
+  readFrontMatterValue,
+  stripFrontMatter,
+} from './front-matter.ts'
 
 const ACC = /^[ \t]*acc(Title|Descr)[ \t]*(?::([^\n]*)|\{([^}]*)\})/gm
 
@@ -26,6 +30,7 @@ const OWN_TITLE: Partial<Record<DiagramType, RegExp>> = {
   pie: /^[ \t]*pie\b[^\n"]*\btitle\b|^[ \t]*title\b/m,
   xychart: /^[ \t]*title\b/m,
   quadrant: /^[ \t]*title\b/m,
+  gantt: /^[ \t]*title\b/m,
   timeline: /^[ \t]*title\b/m,
   sequence: /^[ \t]*title\b/m,
 }
@@ -48,6 +53,14 @@ export function extractAccessibility(source: string): AccessibleText {
       if (!own.test(text))
         text += `\ntitle ${kind === 'xychart' ? `"${title.replace(/"/g, "'")}"` : title}`
     }
+  }
+  // Gantt's documented `displayMode: compact` front matter key: hand it to the
+  // parser as the init directive it is equivalent to.
+  if (
+    kind === 'gantt' &&
+    readFrontMatterValue(source, 'displayMode') === 'compact'
+  ) {
+    text += '\n%%{init: {"gantt": {"displayMode": "compact"}}}%%'
   }
   const out: AccessibleText = { text }
   if (title && DRAWN_TITLE.includes(kind)) out.frontMatterTitle = title
