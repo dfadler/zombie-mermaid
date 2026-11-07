@@ -153,8 +153,10 @@ export function readGrid(source: string): GridRender & { direction: string } {
       // drawn characters, so a wide box reads as wide.
       const gx = n.gridCoord.x + 1
       const gy = n.gridCoord.y + 1
+      // `main` is the flow-leading edge (ELK aligns a layer on it; centres
+      // drift by half the width difference), `cross` the centre.
       out.spots[n.name] = {
-        main: flip * (horiz ? gx : gy),
+        main: flip * (horiz ? n.gridCoord.x : n.gridCoord.y),
         cross: horiz ? gy : gx,
         size: horiz ? h : w,
       }
@@ -217,9 +219,11 @@ export function measureSample(source: string): Counts {
   // ELK stays in SVG orientation; the grid side was mirrored to match it.
   const elk: Record<string, Spot> = {}
   for (const n of pos.nodes) {
-    const m = horiz ? n.x + n.width / 2 : n.y + n.height / 2
+    // Flow-leading edge: min side for LR/TB, max side for RL/BT (matches the grid).
+    const rev = direction === 'RL' || direction === 'BT'
+    const [lo, len] = horiz ? [n.x, n.width] : [n.y, n.height]
     elk[n.id] = {
-      main: m,
+      main: rev ? lo + len : lo,
       cross: horiz ? n.y + n.height / 2 : n.x + n.width / 2,
       size: horiz ? n.height : n.width,
     }

@@ -108,6 +108,16 @@ describe('readGrid and measureSample', () => {
     }
   })
 
+  it('aligns layers on the flow-leading edge, so unequal widths stay one layer', () => {
+    // ELK centres of User Service and Cache differ by >20 px; their leading edges match.
+    for (const dir of ['LR', 'RL', 'TD', 'BT']) {
+      const c = measureSample(
+        `graph ${dir}\n  C(Mobile App) --> B(API Gateway)\n  B --> E(User Service)\n  B -.-> F(Cache)\n  B ==> G(Queue)`,
+      )
+      expect(c.layerOk).toBe(c.layerPairs)
+    }
+  })
+
   it('sums counts', () => {
     const a = measureSample('graph TD\n  A --> B')
     expect(addCounts(a, emptyCounts())).toEqual(a)
