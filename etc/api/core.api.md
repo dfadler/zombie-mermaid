@@ -266,6 +266,7 @@ export interface InitConfig {
     // (undocumented)
     theme?: string;
     themeVariables?: ThemeVariables;
+    timeline?: TimelineInitConfig;
 }
 
 // @public
@@ -795,6 +796,16 @@ export interface ThemeVariables {
     primaryColor?: string;
     primaryTextColor?: string;
     quadrant?: Partial<Record<QuadrantColorVariable, string>>;
+}
+
+// @public
+export interface TimelineInitConfig {
+    // (undocumented)
+    disableMulticolor?: boolean;
+    // (undocumented)
+    leftMargin?: number;
+    // (undocumented)
+    padding?: number;
 }
 
 // @public
