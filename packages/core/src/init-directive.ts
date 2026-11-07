@@ -28,6 +28,13 @@ export type CurveStyle =
   | 'stepBefore'
   | 'stepAfter'
 
+/** The `timeline.*` init keys that change mermaid's output. */
+export interface TimelineInitConfig {
+  leftMargin?: number
+  padding?: number
+  disableMulticolor?: boolean
+}
+
 /** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
 const SEQUENCE_NUMBER_KEYS = new Set<string>([
   'width',
@@ -183,6 +190,8 @@ export interface InitConfig {
   sequenceHideUnused?: boolean
   /** Other `sequence.*` layout keys (numbers >= 0, `wrap`, `noteAlign`, `messageAlign`). */
   sequenceLayout?: SequenceInitLayout
+  /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
+  timeline?: TimelineInitConfig
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
@@ -421,6 +430,19 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'timeline' && typeof value === 'object' && value !== null) {
+      const t: TimelineInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of ['leftMargin', 'padding'] as const) {
+        const v = rec[k]
+        if (typeof v === 'number' && Number.isFinite(v)) t[k] = v
+      }
+      if (typeof rec.disableMulticolor === 'boolean')
+        t.disableMulticolor = rec.disableMulticolor
+      config.timeline = t
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -485,6 +507,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
         ...config.sequenceLayout,
       }
     }
+    if (config.timeline)
+      merged.timeline = { ...merged.timeline, ...config.timeline }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }
     if (config.themeVariables) {
