@@ -1037,6 +1037,16 @@ describe('sequence layout – create/destroy', () => {
     const aLine = result.lifelines.find((l) => l.actorId === 'A')!
     expect(aLine.bottomY).toBeGreaterThan(result.messages[2]!.y)
   })
+
+  it('still flags a destroyed lifeline with the deprecated `destroyed` field (#2803)', () => {
+    const result = layout(source)
+    expect(result.lifelines.find((l) => l.actorId === 'B')!.destroyed).toBe(
+      true,
+    )
+    expect(
+      result.lifelines.find((l) => l.actorId === 'A')!.destroyed,
+    ).toBeUndefined()
+  })
 })
 
 // ============================================================================

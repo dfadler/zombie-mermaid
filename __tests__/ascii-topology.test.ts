@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import {
+  describeSample,
   addCounts,
   compareFaces,
   compareSpots,
@@ -111,5 +112,22 @@ describe('readGrid and measureSample', () => {
     const a = measureSample('graph TD\n  A --> B')
     expect(addCounts(a, emptyCounts())).toEqual(a)
     expect(parseMermaid('graph TD\n  A --> B').nodes.size).toBe(2)
+  })
+})
+
+describe('describeSample', () => {
+  it('prints layers and order, and alignment and faces when asked', () => {
+    const c = {
+      ...emptyCounts(),
+      layerPairs: 3,
+      layerOk: 3,
+      alignOk: 2,
+      faceEnds: 4,
+      faceOk: 1,
+    }
+    expect(describeSample('T', c, false)).toBe('layer 3/3 order 0/0  T')
+    expect(describeSample('T', c, true)).toBe(
+      'layer 3/3 order 0/0 align 2/3 faces 1/4  T',
+    )
   })
 })

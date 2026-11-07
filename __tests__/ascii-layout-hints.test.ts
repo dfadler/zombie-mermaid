@@ -40,8 +40,8 @@ describe('registerAsciiLayout', () => {
     expect(getAsciiLayout()).toBeUndefined()
   })
 
-  it('does not change ASCII output (the grid ignores the hints in PR 1)', () => {
-    const src = 'graph TD\n  A --> B\n  A --> C\n  C --> A'
+  it('leaves a chain, where the grid already agrees with ELK, unchanged', () => {
+    const src = 'graph TD\n  A --> B --> C'
     const without = renderMermaidASCII(src)
     registerAsciiLayoutFromElk()
     expect(renderMermaidASCII(src)).toBe(without)

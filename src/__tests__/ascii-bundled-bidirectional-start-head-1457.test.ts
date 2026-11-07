@@ -31,8 +31,9 @@ describe('bundled bidirectional start heads (#1457)', () => {
 
   it('LR/RL fan-in and fan-out: heads outside the source border', () => {
     const lr = renderMermaidASCII(`graph LR\n${fanIn}`)
-    expect(lr).toContain('│ B │◄─┐')
-    expect(lr).toContain('│ C │◄─┼─►│ A │')
+    // ELK puts A on C's row, so B and D reach A over its top and bottom faces.
+    expect(lr).toContain('│ B │◄')
+    expect(lr).toContain('│ C │◄───►│ A │')
     const rl = renderMermaidASCII(`graph RL\n${fanOut}`)
     // A's three edges leave its left face on a row each (as in Mermaid),
     // with the head one cell outside each target's border.
