@@ -5,7 +5,7 @@
  * and an ASCII golden per direction.
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
-// Mermaid 12.3.0 verdict: structure only (one rank for the decision and the isolated nodes, both parallel edges drawn); geometry not compared.
+// Mermaid 12.3.0 verdict: DIVERGES. mermaid draws three short direct edges from the decision; these goldens pin our current routing (BT: stem + bus with junction glyphs; LR: the second parallel edge wraps behind the diamond and crosses another). They guard the throw, not the routing.
 import { describe, expect, it } from 'vitest'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
