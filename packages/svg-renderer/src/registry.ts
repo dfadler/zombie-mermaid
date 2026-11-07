@@ -47,7 +47,7 @@ import type {
   Statement,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from './styles.ts'
-import { withDirectionOverride } from '@zombie-mermaid/core'
+import { extractInitConfig, withDirectionOverride } from '@zombie-mermaid/core'
 
 import {
   parseXYChart,
@@ -252,7 +252,10 @@ function resolveAnimationEnabled(options: RenderOptions): boolean {
 
 const classModule: DiagramModule<ClassDiagram, PositionedClassDiagram> = {
   type: 'class',
-  parse: parseClassDiagram,
+  parse(lines, text) {
+    const layout = extractInitConfig(text.split(/\r\n?|\n/)).classLayout
+    return { ...parseClassDiagram(lines), ...(layout && { layout }) }
+  },
   layoutForSvg: layoutClassDiagramSync,
   renderSvg(positioned, ctx, options) {
     return renderClassSvg(
@@ -272,7 +275,10 @@ const classModule: DiagramModule<ClassDiagram, PositionedClassDiagram> = {
 
 const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
   type: 'er',
-  parse: parseErDiagram,
+  parse(lines, text) {
+    const layout = extractInitConfig(text.split(/\r\n?|\n/)).erLayout
+    return { ...parseErDiagram(lines), ...(layout && { layout }) }
+  },
   // `options.direction` replaces the diagram's own top-level `direction`
   // line, if any, before layout — same order as the umbrella's original
   // 'er' case: parse, then withDirectionOverride, then layout.

@@ -143,6 +143,11 @@ export function erCells(a: ErAttribute): [string, string, string, string] {
   ]
 }
 
+/** Extra height per header/row from `er.entityPadding` (default 15), floored so rows stay legible. */
+function erRowGrow(diagram: ErDiagram): number {
+  return Math.max(-10, ((diagram.layout?.entityPadding ?? 15) - 15) * 1.25)
+}
+
 type EntitySizeMap = Map<string, { width: number; height: number }>
 
 /** Build ELK graph and size map from an ER diagram. */
@@ -171,6 +176,15 @@ function buildErElkGraph(
   const entitySizes: EntitySizeMap = new Map()
   const fontSizes = resolveFontSizes(options.fontSizes)
 
+  // `er.diagramPadding` / `er.entityPadding` as deltas from mermaid's defaults
+  // (20 / 15), applied to our scale. Measured against mermaid 12.3.0: a bare
+  // entity grows 2 wide and 3 tall per unit of diagramPadding, each attribute
+  // column 1.25 wide; the header and every row grow 1.25 tall per unit of
+  // entityPadding.
+  const dPad = (diagram.layout?.diagramPadding ?? 20) - 20
+  const rowGrow = erRowGrow(diagram)
+  const minEntityWidth = diagram.layout?.minEntityWidth ?? 0
+
   for (const entity of diagram.entities) {
     const headerTextW = estimateTextWidth(
       entity.label,
@@ -178,12 +192,20 @@ function buildErElkGraph(
       FONT_WEIGHTS.nodeLabel,
     )
     const bare = entity.attributes.length === 0
-    const tableW = erColumns(entity).reduce((sum, c) => sum + c.width, 0)
-    const headerW = headerTextW + ER.boxPadX * 2
-    const width = bare ? headerW : Math.max(ER.minWidth, headerW, tableW)
+    const columns = erColumns(entity)
+    const tableW =
+      columns.reduce((sum, c) => sum + c.width, 0) +
+      columns.length * dPad * 1.25
+    const headerW = headerTextW + ER.boxPadX * 2 + dPad * 2
+    const width = Math.max(
+      minEntityWidth,
+      bare ? headerW : Math.max(ER.minWidth, headerW, tableW),
+    )
     const height = bare
-      ? ER.bareHeight
-      : ER.headerHeight + entity.attributes.length * ER.rowHeight
+      ? Math.max(20, ER.bareHeight + dPad * 3)
+      : ER.headerHeight +
+        rowGrow +
+        entity.attributes.length * (ER.rowHeight + rowGrow)
     entitySizes.set(entity.id, { width, height })
   }
 
@@ -256,6 +278,7 @@ function extractErLayout(
   entitySizes: EntitySizeMap,
   options: ErRenderOptions,
 ): PositionedErDiagram {
+  const rowGrow = erRowGrow(diagram)
   const entityLookup = new Map<string, ErEntity>()
   for (const entity of diagram.entities) entityLookup.set(entity.id, entity)
 
@@ -279,8 +302,10 @@ function extractErLayout(
         width: child.width ?? size.width,
         height: child.height ?? size.height,
         headerHeight:
-          entity.attributes.length === 0 ? size.height : ER.headerHeight,
-        rowHeight: ER.rowHeight,
+          entity.attributes.length === 0
+            ? size.height
+            : ER.headerHeight + rowGrow,
+        rowHeight: ER.rowHeight + rowGrow,
         // Same cascade flowcharts and class diagrams use: classDef default →
         // assigned class → `style`. Invalid colours are dropped there.
         inlineStyle: resolveNodeStyle(entity.id, diagram),
