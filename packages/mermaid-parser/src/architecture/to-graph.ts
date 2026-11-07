@@ -25,12 +25,11 @@ import type {
 //   edge           -> edge; `<`/`>` become arrowheads
 //   `{group}` end  -> the edge attaches to the service's enclosing group
 //
-// What is not carried over: Mermaid places services on a grid from the edge
-// ports, so `a:R -- L:b` means "b is right of a". Here ports only choose the
-// flow direction (majority axis) and which way each edge points in the
-// layout; exact placement is the flowchart layout's. The SVG renderer draws
-// an icon tile per service (`icon`, #2518); ASCII only has the shape. `align`
-// is ignored.
+// Placement: Mermaid puts services on a grid from the edge ports (`a:R -- L:b`
+// means "b is right of a"). `gridLayer` / `gridOrder` carry those cells; SVG
+// places by them (`layoutArchitectureGrid`) and ASCII turns them and the
+// ports into layout hints. The SVG renderer draws an icon tile per service
+// (`icon`, #2518); ASCII only has the shape. `align` is ignored.
 // ============================================================================
 
 /** Built-in Mermaid icons that have a distinct flowchart shape. */

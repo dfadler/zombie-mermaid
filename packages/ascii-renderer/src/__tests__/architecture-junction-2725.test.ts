@@ -26,7 +26,8 @@ describe('architecture junction (#2725)', () => {
     const arm = lines[row]!.search(/─[┬┴├┤┼]/) + 1
     expect(arm).toBeGreaterThan(0)
     const col = (r: number) => lines[r]?.[arm]
-    expect(col(row - 1)).toBe('│')
+    // `j:B --> T:c` puts C below the join (#2724): one arm down, none up
+    expect(col(row - 1)).toBe(' ')
     expect(col(row + 1)).toBe('│')
   })
 
