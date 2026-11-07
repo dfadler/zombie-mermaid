@@ -344,32 +344,39 @@ function renderClassBox(
       ),
   )
 
-  // Divider line between header and attributes
+  // Divider line between header and attributes (none when the compartments
+  // are hidden by `class.hideEmptyMembersBox`)
   const attrTop = y + headerHeight
-  parts.push(
-    f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
-      f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
-  )
+  if (attrHeight > 0)
+    parts.push(
+      f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
+        f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+    )
 
   // Attributes
   const memberRowH = 20
+  // Space above the first member: 4 by default, more under `class.padding`.
+  const attrPad = (attrHeight - cls.attributes.length * memberRowH) / 2
+  const methodPad =
+    (height - headerHeight - attrHeight - cls.methods.length * memberRowH) / 2
   for (let i = 0; i < cls.attributes.length; i++) {
     const member = cls.attributes[i]!
-    const memberY = attrTop + 4 + i * memberRowH + memberRowH / 2
+    const memberY = attrTop + attrPad + i * memberRowH + memberRowH / 2
     parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY, textColor))
   }
 
   // Divider line between attributes and methods
   const methodTop = attrTop + attrHeight
-  parts.push(
-    f`  <line x1="${x}" y1="${methodTop}" x2="${x + width}" y2="${methodTop}" ` +
-      f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
-  )
+  if (height - headerHeight - attrHeight > 0)
+    parts.push(
+      f`  <line x1="${x}" y1="${methodTop}" x2="${x + width}" y2="${methodTop}" ` +
+        f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+    )
 
   // Methods
   for (let i = 0; i < cls.methods.length; i++) {
     const member = cls.methods[i]!
-    const memberY = methodTop + 4 + i * memberRowH + memberRowH / 2
+    const memberY = methodTop + methodPad + i * memberRowH + memberRowH / 2
     parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY, textColor))
   }
 

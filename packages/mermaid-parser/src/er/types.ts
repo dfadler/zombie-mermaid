@@ -5,7 +5,11 @@
 // ER diagrams show database entities, their attributes, and relationships.
 // ============================================================================
 
-import type { Direction, StyleDirectives } from '@zombie-mermaid/core'
+import type {
+  Direction,
+  ErInitLayout,
+  StyleDirectives,
+} from '@zombie-mermaid/core'
 
 /**
  * Parsed ER diagram — logical structure from mermaid text.
@@ -25,6 +29,8 @@ export interface ErDiagram extends StyleDirectives {
    * doesn't specify one, in which case the layout falls back to its default.
    */
   direction?: Direction
+  /** `%%{init}%%` / front-matter `er` keys (`diagramPadding`, `entityPadding`, `minEntityWidth`). */
+  layout?: ErInitLayout
 }
 
 export interface ErEntity {
