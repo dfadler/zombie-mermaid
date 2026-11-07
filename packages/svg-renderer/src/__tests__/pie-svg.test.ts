@@ -332,10 +332,23 @@ describe('pie SVG: init legendPosition', () => {
     )
   })
 
-  it('grows the viewBox for a top legend wider than the frame instead of clipping it', () => {
-    const g = geo(renderMermaidSVG(src('"top"', `"${'W'.repeat(80)}" : 1`)))
-    expect(g.rects[0]!.x).toBeGreaterThanOrEqual(0)
-    expect(g.w).toBeGreaterThan(490)
+  it.each(['top', 'bottom', 'center'])(
+    'clips a %s legend wider than the frame instead of growing the viewBox (mermaid 12.3.0)',
+    (pos) => {
+      const g = geo(
+        renderMermaidSVG(src(`"${pos}"`, `"${'W'.repeat(80)}" : 1`)),
+      )
+      expect(g.w).toBe(490)
+    },
+  )
+
+  it('still grows the viewBox for a left or right legend', () => {
+    for (const pos of ['left', 'right']) {
+      const g = geo(
+        renderMermaidSVG(src(`"${pos}"`, `"${'W'.repeat(80)}" : 1`)),
+      )
+      expect(g.w).toBeGreaterThan(490)
+    }
   })
 
   it('does nothing for a chart with no slices', () => {

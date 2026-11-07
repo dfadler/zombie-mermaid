@@ -23,15 +23,14 @@
 //     and bottom stack the legend above or below (the pie shifts down for top)
 //     and make the frame taller; center draws it over the pie. The title stays
 //     centred on the frame in every case, as in Mermaid.
+//   - A legend wider or taller than the frame (top, bottom or centre with a
+//     very long label, or many rows) is clipped, not grown: the viewBox keeps
+//     Mermaid 12.3.0's size and rows outside it are cut (#2722, #2781).
 //   - `pie.highlightSlice`: the named slice grows 5% about the pie centre and
 //     is drawn fully opaque (`hover` has no static meaning and is ignored).
 //
-// Two places differ from Mermaid on purpose, both where Mermaid's output is
-// broken rather than a style choice:
-//   - A legend wider than the frame (top, bottom or centre with a very long
-//     label) grows the viewBox instead of being clipped at the sides.
-//     (A legend taller than the 450px frame is clipped top and bottom, as in
-//     Mermaid 12.3.0: the viewBox height stays 450, rows outside it are cut.)
+// One place differs from Mermaid on purpose, where Mermaid's output is broken
+// rather than a style choice:
 //   - A chart with no slices keeps the pie's own width. Mermaid's width
 //     formula takes Math.max() of an empty list there (-Infinity), which
 //     leaves a viewBox that crops the circle in half.
@@ -204,16 +203,9 @@ export function layoutPieChart(
   const titleRight = cx0 + titleWidth / 2
 
   // Mermaid sizes the box from the pie, legend column and title only, so a
-  // legend that sticks out (see the header) is clipped there; grow instead.
-  const legendLeft = legendOrigin.x
-  const legendRight = legendOrigin.x + sideWidth
-  const minX = Math.min(0, titleLeft, rowCount > 0 ? legendLeft : 0)
-  const maxX = Math.max(
-    chartAndLegendWidth,
-    titleRight,
-    rowCount > 0 ? legendRight : 0,
-  )
-  // Vertically the box is Mermaid's own: a tall legend is clipped, not grown.
+  // legend that sticks out is clipped there (12.3.0), as vertically below.
+  const minX = Math.min(0, titleLeft)
+  const maxX = Math.max(chartAndLegendWidth, titleRight)
   const minY = 0
   const maxY = chartAndLegendHeight
 
