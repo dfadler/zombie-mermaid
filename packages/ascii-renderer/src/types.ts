@@ -497,6 +497,8 @@ export interface AsciiGraph {
    * (#1701).
    */
   nodeRects?: LabelRect[]
+  /** Skipped nodes `sidestepSkippedNodes` moved aside, with the end node they sit beside. */
+  sidesteps?: { node: AsciiNode; anchor: AsciiNode }[]
   /** Grid occupancy map — tracks which "x,y" cells are reserved. */
   grid: Grid
   columnWidth: Map<number, number>
