@@ -2,4 +2,4 @@
 'zombie-mermaid': patch
 ---
 
-Test-only: SVG and ASCII goldens for a decision with a duplicated edge in BT and LR, which used to throw "Grid block already occupied" (#2780).
+Output change: a decision's duplicated edge in LR now leaves its own slant of the diamond and enters the target beside the first edge, as in Mermaid 12.3.0, instead of leaving the bottom vertex, wrapping round the back and crossing another edge. In BT the stem into the shared bus no longer draws a `+` junction. Adds SVG and ASCII goldens for the case (#2780).
