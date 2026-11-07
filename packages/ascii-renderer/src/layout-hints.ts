@@ -5,8 +5,9 @@
 // provider registered here can hand it ELK's layer, in-layer order and edge-end
 // faces instead (docs/decisions/ascii-layout-hints-from-elk.md). No ELK code
 // lives in this package: the root entry, the CLI and MCP register a provider
-// that wraps the SVG layout engine. Nothing reads the hints yet (PR 2+), so
-// with or without a provider the output is byte-identical.
+// that wraps the SVG layout engine. Flowchart and state placement read layer,
+// order and cross-axis centre (grid.ts); without a provider the grid keeps its
+// own placement.
 // ============================================================================
 
 import type { MermaidGraph } from '@zombie-mermaid/core'
@@ -22,6 +23,8 @@ export interface AsciiNodeHint {
   order: number
   /** Cross-axis centre in the provider's units, so a consumer can show alignment between layers. */
   cross: number
+  /** Cross-axis extent of the node in the same units, so a consumer can turn centres into cell offsets. */
+  size: number
 }
 
 export interface AsciiEdgeEndHint {
