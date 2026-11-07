@@ -895,7 +895,7 @@ function raiseFlowFanBars(
 }
 
 /** One Z-shaped edge (out along the flow, across on its bend row, on along the flow) in a gap. */
-interface Jog {
+export interface Jog {
   edge: AsciiEdge
   /** Drawn bend row (column for LR) before planning. */
   row: number
@@ -952,7 +952,7 @@ function jogCost(jogs: Jog[], rows: number[], lo: number): number {
 }
 
 /** The rows `lo..hi` that cost least for these jogs: exhaustive for the few a gap holds, else coordinate descent. */
-function bestJogRows(jogs: Jog[], lo: number, hi: number): number[] {
+export function bestJogRows(jogs: Jog[], lo: number, hi: number): number[] {
   const n = jogs.length
   const count = hi - lo + 1
   let best = jogs.map(() => lo)
@@ -999,7 +999,7 @@ function planJogRows(
   graph: AsciiGraph,
   result: Map<AsciiEdge, PortShift>,
 ): void {
-  // ponytail: vertical flows only; LR/RL keep the grid's bend column until a follow-up gives them jog columns.
+  // Vertical flows only (ponytail): LR/RL keep the grid's bend column until a follow-up gives them jog columns.
   if (graph.config.graphDirection === 'LR') return
   const main = 'y'
   const cross = 'x'
@@ -1037,7 +1037,8 @@ function planJogRows(
   for (const [g, jogs] of gaps) {
     if (jogs.length < 2) continue
     const size = graph.rowHeight.get(g) ?? 0
-    const first = lineToDrawing(graph, [{ x: g, y: g }])[0]![main] - Math.floor(size / 2)
+    const first =
+      lineToDrawing(graph, [{ x: g, y: g }])[0]![main] - Math.floor(size / 2)
     const lo = first + 1
     const hi = first + size - 2
     if (hi < lo) continue
@@ -1046,11 +1047,7 @@ function planJogRows(
         const [a0, a1] = spanOf(a)
         const [b0, b1] = spanOf(b)
         return (
-          i < j &&
-          !sharesTrunk(a, b) &&
-          a.row === b.row &&
-          a0 <= b1 &&
-          b0 <= a1
+          i < j && !sharesTrunk(a, b) && a.row === b.row && a0 <= b1 && b0 <= a1
         )
       }),
     )
@@ -1064,7 +1061,11 @@ function planJogRows(
       const shift = result.get(jog.edge) ?? { start: 0, end: 0 }
       const points = shift.points ?? jog.edge.path.map(() => ({ x: 0, y: 0 }))
       for (const k of [1, 2]) points[k]![main] = best[i]! - jog.base
-      result.set(jog.edge, { ...shift, points, jogGap: { line: g, size: need } })
+      result.set(jog.edge, {
+        ...shift,
+        points,
+        jogGap: { line: g, size: need },
+      })
     })
   }
 }
@@ -1202,7 +1203,8 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
       return { ...f, rank: flip ? -rank : rank }
     })
     if (list.length < 2 || ranked.some((r) => r === undefined)) continue
-    if (horizontal && list.some((f) => labelledBentPair(graph, f.edge))) continue
+    if (horizontal && list.some((f) => labelledBentPair(graph, f.edge)))
+      continue
     out.set(k, ranked as FaceEnd[])
   }
   return out

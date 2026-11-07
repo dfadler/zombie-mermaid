@@ -35,7 +35,10 @@ const list = [
     .map((s) => ({ title: s.title, source: redirectDirection(s.source) })),
   ...allForkFixes
     .filter((f) => FORK_FIXES.includes(f.id))
-    .map((f) => ({ title: `ENTRY ${f.id}`, source: redirectDirection(f.source) })),
+    .map((f) => ({
+      title: `ENTRY ${f.id}`,
+      source: redirectDirection(f.source),
+    })),
 ]
 const verbose = process.argv.includes('--verbose')
 let total = emptyCounts()
