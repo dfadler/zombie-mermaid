@@ -2495,18 +2495,11 @@ zombie-mermaid's ER parser (`packages/mermaid-parser/src/er/parser.ts`) is a
 line-oriented parser rather than mermaid.js's grammar, so it is more lenient in
 some places and stricter in others.
 
-**Unquoted labels that start with a keyword.** Everything after `:` is the label here.
-mermaid.js lexes a leading `one`, `many` or `to` as a word-form cardinality keyword
-and rejects the line:
-
-| Label                                                        | mermaid.js 11.17.2 | zombie-mermaid |
-| ------------------------------------------------------------ | ------------------ | -------------- |
-| `one-to-one`, `many-to-many`, `one`, `many`, `to` (unquoted) | parse error        | renders        |
-| `"one-to-one"`, `"many-to-many"` (quoted)                    | parses             | renders        |
-| `opt-to-many` (unquoted)                                     | parses             | renders        |
-
-Quote such labels (`: "one-to-one"`) if the source also has to work in mermaid.js
-tools such as GitHub or the Mermaid Live Editor.
+**Unquoted relationship labels.** Matches mermaid 12.3.0 ([#2853](https://github.com/dfadler/zombie-mermaid/issues/2853)):
+an unquoted label is word tokens, and a word that starts with `one`, `many` or `to`
+(also `only one`, `zero or more`, `many(0)`), a number, or a character such as `,` `(` `<`
+is a parse error in both. Quote the label (`: "one-to-one"`) to keep it. `opt-to-many`,
+`a-to-b`, `has owns` and `"one-to-one"` parse in both.
 
 ## YAML front matter: a subset ([#2585](https://github.com/dfadler/zombie-mermaid/issues/2585))
 

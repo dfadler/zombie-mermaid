@@ -66,7 +66,7 @@ interface RelMarker {
   /** Relationship type (determines marker shape) */
   type: RelationshipType
   /** Which end the marker is placed at */
-  markerAt: 'from' | 'to' | 'both'
+  markerAt: 'from' | 'to' | 'both' | 'none'
   /** Whether the line is dashed */
   dashed: boolean
 }
@@ -79,8 +79,11 @@ function getRelMarker(
   type: RelationshipType,
   markerAt: 'from' | 'to' | 'both',
 ): RelMarker {
-  const dashed = type === 'dependency' || type === 'realization'
-  return { type, markerAt, dashed }
+  const dashed =
+    type === 'dependency' || type === 'realization' || type === 'dashed-link'
+  // Plain links (`--`, `..`) draw no marker at either end.
+  const plain = type === 'link' || type === 'dashed-link'
+  return { type, markerAt: plain ? 'none' : markerAt, dashed }
 }
 
 /**
@@ -122,6 +125,9 @@ function getMarkerShape(
       return useAscii ? 'O' : '○'
     case 'association':
     case 'dependency':
+    // Plain links have markerAt 'none', so only these two ever get here.
+    case 'link':
+    case 'dashed-link':
       // Directional arrow: Mermaid's open V, the same in both charsets.
       return { up: '^', down: 'v', left: '<', right: '>' }[direction]
   }
@@ -2000,7 +2006,7 @@ export function renderClassAscii(
           }
 
           // Markers for detour case
-          if (marker.markerAt !== 'from') {
+          if (marker.markerAt === 'to' || marker.markerAt === 'both') {
             // Target sits below this point — the arrowhead must point down
             // into it. Hierarchical markers (inheritance/realization) rotate
             // opposite to directional ones (association/dependency): passing
@@ -2017,7 +2023,7 @@ export function renderClassAscii(
             )
             setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
           }
-          if (marker.markerAt !== 'to') {
+          if (marker.markerAt === 'from' || marker.markerAt === 'both') {
             const markerChar = getFromMarkerShape(marker.type, useAscii, 'down')
             setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
           }
@@ -2086,7 +2092,7 @@ export function renderClassAscii(
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 
         // Markers for no-collision case
-        if (marker.markerAt !== 'from') {
+        if (marker.markerAt === 'to' || marker.markerAt === 'both') {
           // Same rotation compensation as the detour case above — target is
           // below this point, so hierarchical markers need 'up' to point
           // down into it.
@@ -2103,7 +2109,7 @@ export function renderClassAscii(
             'arrow',
           )
         }
-        if (marker.markerAt !== 'to') {
+        if (marker.markerAt === 'from' || marker.markerAt === 'both') {
           setCGuarded(
             fromAnchorX,
             fromBY + 1,
@@ -2160,7 +2166,7 @@ export function renderClassAscii(
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - arrows point in the direction of the vertical segment (upward)
-      if (marker.markerAt !== 'to') {
+      if (marker.markerAt === 'from' || marker.markerAt === 'both') {
         const markerChar = getFromMarkerShape(marker.type, useAscii, 'up')
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
@@ -2172,7 +2178,7 @@ export function renderClassAscii(
           )
         }
       }
-      if (marker.markerAt !== 'from') {
+      if (marker.markerAt === 'to' || marker.markerAt === 'both') {
         const isHierarchical =
           marker.type === 'inheritance' || marker.type === 'realization'
         const markerDir = isHierarchical ? 'down' : 'up'
@@ -2245,7 +2251,7 @@ export function renderClassAscii(
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - same-level routing uses vertical segments at both ends
-      if (marker.markerAt !== 'to') {
+      if (marker.markerAt === 'from' || marker.markerAt === 'both') {
         const markerChar = getFromMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
@@ -2257,7 +2263,7 @@ export function renderClassAscii(
           )
         }
       }
-      if (marker.markerAt !== 'from') {
+      if (marker.markerAt === 'to' || marker.markerAt === 'both') {
         // Target sits above this point (line detours below both boxes then
         // comes back up) — mirrors the "target is above source" branch's
         // compensation above.
