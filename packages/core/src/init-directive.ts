@@ -491,7 +491,13 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const rec: Record<string, unknown> = { ...value }
       for (const k of ['leftMargin', 'padding'] as const) {
         const v = rec[k]
-        if (typeof v === 'number' && Number.isFinite(v)) t[k] = v
+        // Bounded so the layout stays finite; a negative padding would collapse the viewBox.
+        if (
+          typeof v === 'number' &&
+          Math.abs(v) <= 1e5 &&
+          (k === 'leftMargin' || v >= 0)
+        )
+          t[k] = v
       }
       if (typeof rec.disableMulticolor === 'boolean')
         t.disableMulticolor = rec.disableMulticolor
