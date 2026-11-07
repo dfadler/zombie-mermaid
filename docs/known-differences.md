@@ -194,7 +194,7 @@ Checked on mermaid 12.2.0 (the pin, also npm `latest`). `pnpm run quadrant:oracl
 renders every `Quadrant:` sample through real mermaid and compares rect, line, circle and
 text positions with `layoutQuadrantChart`; they match exactly, and the weekly layout-oracle
 workflow fails on a drift (`packages/svg-renderer/src/__tests__/quadrant-svg.test.ts` also
-pins the campaigns numbers). Colours and empty labels (below) are not compared.
+pins the campaigns numbers). Colours (below) are not compared; empty quadrant labels are (checked on 12.3.0).
 
 - **Point colour.** Mermaid 12.2.0's default theme emits `fill="hsl(240, 100%, NaN%)"`
   for every point without a `color`, which browsers drop, so mermaid.live and GitHub show
@@ -213,8 +213,9 @@ pins the campaigns numbers). Colours and empty labels (below) are not compared.
   and border `*StrokeFill` variables are read under any theme, like mermaid, but only
   with `honorThemeVariables` ([themeVariables](diagrams.md#themevariables-opt-in)).
   ASCII ignores both. Mermaid's other theme-derived colours are not computed.
-- **Empty labels.** Mermaid draws an empty `<text>` for a quadrant with no label; this
-  library draws nothing.
+- **Empty labels.** Like mermaid 12.3.0, a quadrant with no label gets an empty `<text>`
+  at the position a label would have; axis, point and title text are dropped when empty,
+  in both.
 - **ASCII.** Mermaid has no ASCII output. The x axis is always below the grid (mermaid's
   SVG puts it on top of a chart with no points), and point labels are in a legend, not
   next to the markers.
