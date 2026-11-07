@@ -125,6 +125,11 @@ function heightOf(
   return rawHeight(spannedLines(wrapTimelineText(text, width)), padding)
 }
 
+/** A config number the layout can use: finite and within 0..1e5 (callers other than the init parser can pass anything). */
+function valid(n: number | undefined): number | undefined {
+  return n !== undefined && n >= 0 && n <= 1e5 ? n : undefined
+}
+
 function colorClass(sectionColor: number): number {
   return (sectionColor % TIMELINE.colorLimit) - 1
 }
@@ -157,8 +162,8 @@ function layoutLR(tl: Timeline): PositionedTimeline {
   const { periods, sections } = tl
   const T = {
     ...TIMELINE,
-    leftMargin: tl.config?.leftMargin ?? TIMELINE.leftMargin,
-    viewBoxPadding: tl.config?.padding ?? TIMELINE.viewBoxPadding,
+    leftMargin: valid(tl.config?.leftMargin) ?? TIMELINE.leftMargin,
+    viewBoxPadding: valid(tl.config?.padding) ?? TIMELINE.viewBoxPadding,
   }
   const colored = !tl.config?.disableMulticolor
   const hasSections = sections.length > 0
@@ -311,8 +316,8 @@ function finish(
 ): PositionedTimeline {
   const T = {
     ...TIMELINE,
-    leftMargin: tl.config?.leftMargin ?? TIMELINE.leftMargin,
-    viewBoxPadding: tl.config?.padding ?? TIMELINE.viewBoxPadding,
+    leftMargin: valid(tl.config?.leftMargin) ?? TIMELINE.leftMargin,
+    viewBoxPadding: valid(tl.config?.padding) ?? TIMELINE.viewBoxPadding,
   }
   let b: Bounds | undefined
   for (const n of nodes) {
@@ -384,8 +389,8 @@ function layoutTD(tl: Timeline): PositionedTimeline {
   const { periods, sections } = tl
   const T = {
     ...TIMELINE,
-    leftMargin: tl.config?.leftMargin ?? TIMELINE.leftMargin,
-    viewBoxPadding: tl.config?.padding ?? TIMELINE.viewBoxPadding,
+    leftMargin: valid(tl.config?.leftMargin) ?? TIMELINE.leftMargin,
+    viewBoxPadding: valid(tl.config?.padding) ?? TIMELINE.viewBoxPadding,
   }
   const colored = !tl.config?.disableMulticolor
   const nodes: PositionedTimelineNode[] = []

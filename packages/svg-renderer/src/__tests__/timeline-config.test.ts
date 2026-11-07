@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { parseTimeline } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../index.ts'
+import { layoutTimeline } from '../timeline/layout.ts'
 
 const src = (init: string) =>
   `%%{init: ${init}}%%\ntimeline\n  title T\n  2002 : a\n  2003 : b\n  2004 : c`
@@ -36,6 +38,14 @@ describe('timeline init config', () => {
       ),
     )
     expect(viewBox(bad)).toBe(viewBox(renderMermaidSVG(src('{}'))))
+  })
+
+  it('layoutTimeline ignores out-of-range config passed directly', () => {
+    const tl = parseTimeline('timeline\n  2002 : a')
+    const base = layoutTimeline(tl)
+    for (const config of [{ leftMargin: -100000 }, { padding: -500 }]) {
+      expect(layoutTimeline({ ...tl, config })).toEqual(base)
+    }
   })
 
   it('drops bad values', () => {
