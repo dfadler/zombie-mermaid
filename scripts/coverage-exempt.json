@@ -240,6 +240,16 @@
     "maxLines": 60
   },
   {
+    "file": "scripts/gantt-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/gantt-agreement.ts",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/lib/gantt-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the gantt-oracle and layout-oracle CLIs",
+    "maxLines": 80
+  },
+  {
     "file": "scripts/quadrant-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/quadrant-agreement.ts",
     "maxLines": 60
@@ -282,7 +292,7 @@
   {
     "file": "scripts/lib/separate-scores.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid renders), only reachable from the layout-oracle CLI; each figure is unit-tested in its own *-agreement.ts",
-    "maxLines": 34
+    "maxLines": 36
   },
   {
     "file": "scripts/lib/xychart-measure.ts",

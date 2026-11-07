@@ -1,0 +1,22 @@
+gantt
+    title A Gantt Diagram
+    dateFormat YYYY-MM-DD
+    section Section
+        A task          :a1, 2014-01-01, 30d
+        Another task    :after a1, 20d
+    section Another
+        Task in Another :2014-01-12, 12d
+        another task    :24d
+---
+                               A Gantt Diagram
+
+Section
+  A task          ████████████████████████████████████
+  Another task                                        ████████████████████████
+Another
+  Task in Another              ███████████████
+  another task                               ██████████████████████████████
+                  ─────┬───────┬───────┬────────┬───────┬───────┬───────┬─────
+                  2014-01-05      2014-01-19       2014-02-02      2014-02-16
+
+  █ task
