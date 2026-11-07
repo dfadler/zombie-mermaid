@@ -40,6 +40,7 @@ import {
 import { pseudoStateGlyph } from './draw-boxes.ts'
 import { blankLayer, copyCanvas, drawText, write } from './canvas.ts'
 import {
+  denseFacingPair,
   determineDirection,
   dirEquals,
   flowLaneLabel,
@@ -1386,7 +1387,7 @@ function centredLabelPlacement(
   // here would land on that same row, so `done` and `fail` would read as one
   // run (`done────fail`). Pulled down, each label sits on its own segment.
   const pullTowardTarget =
-    hasReciprocalPartner(graph, edge) ||
+    (hasReciprocalPartner(graph, edge) && !denseFacingPair(graph, edge)) ||
     (graph.config.graphDirection !== 'LR' &&
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
@@ -1407,7 +1408,12 @@ function centredLabelPlacement(
             edge.text,
             isUpwardEdge,
             pullTowardTarget,
-            edge.hasArrowStart && edge.hasArrowEnd,
+            (edge.hasArrowStart && edge.hasArrowEnd) ||
+              // A dense pair's return stroke runs right to left with its head
+              // at the near end: leave that cell to the head.
+              (edge.hasArrowEnd &&
+                drawingLine[0]!.x > drawingLine[1]!.x &&
+                denseFacingPair(graph, edge)),
           ),
           drawingLine[0]?.x === drawingLine[1]?.x
             ? drawingLine[0]?.x

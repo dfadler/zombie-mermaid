@@ -667,7 +667,12 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
 
   const laneGroups: AsciiEdge[][] = []
   for (const group of groups.values()) {
-    if (group.length < 2 || spreadsOnFaces(graph, group)) continue
+    if (
+      group.length < 2 ||
+      spreadsOnFaces(graph, group) ||
+      denseFacingPair(graph, group[0]!, true)
+    )
+      continue
     const usedOffsets = new Set<number>()
     for (let i = 0; i < group.length; i++) {
       group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
@@ -1385,8 +1390,16 @@ export function reserveUnderRow(graph: AsciiGraph, edge: AsciiEdge): void {
  * every one as a stroke of its own between the facing side faces, so the
  * bottom faces stay free; the strokes take a row each (`allocateFaces`).
  * Ceiling: LR without frames, neighbours with nothing between them.
+ *
+ * With ELK's hints (PR 4c) any group of two or more whose every edge ELK draws
+ * between the facing side faces qualifies, labelled (one line) or not;
+ * `hintedOnly` asks for that case alone.
  */
-export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
+export function denseFacingPair(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  hintedOnly = false,
+): boolean {
   if (graph.config.graphDirection !== 'LR' || edge.from === edge.to) {
     return false
   }
@@ -1394,9 +1407,9 @@ export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
   const t = edge.to.gridCoord
   if (!f || !t || f.y !== t.y || graph.subgraphs.length > 0) return false
   // Diamond and circle faces have one port cell, not a run of them.
-  if (edge.from.shape !== 'rectangle' || edge.to.shape !== 'rectangle') {
-    return false
-  }
+  const flat = (n: AsciiNode): boolean =>
+    n.shape === 'rectangle' || n.shape === 'rounded' || n.shape === 'stadium'
+  if (!flat(edge.from) || !flat(edge.to)) return false
   const lo = Math.min(f.x, t.x)
   const hi = Math.max(f.x, t.x)
   if (
@@ -1412,17 +1425,33 @@ export function denseFacingPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
       ((o.from === edge.from && o.to === edge.to) ||
         (o.from === edge.to && o.to === edge.from)),
   )
-  return (
-    group.length >= 6 &&
-    group.some((o) => o.from === edge.from) &&
-    group.some((o) => o.to === edge.from) &&
-    group.every(
-      (o) =>
-        o.text.length === 0 &&
-        !o.bundle &&
-        !o.clusterSource &&
-        !o.clusterTarget,
+  const plain = (o: AsciiEdge): boolean =>
+    !o.bundle && !o.clusterSource && !o.clusterTarget
+  // #2645, PR 4c: ELK draws every edge of a side-by-side pair as a stroke of its
+  // own between the facing side faces, so with its hints that is what the
+  // group does, labelled or not.
+  const hinted = group.every((o) => {
+    const h = graph.edgeHints?.get(o)
+    const [s, e] =
+      requireGridCoord(o.from).x < requireGridCoord(o.to).x
+        ? ['R', 'L']
+        : ['L', 'R']
+    return (
+      h?.start.face === s &&
+      h.end.face === e &&
+      plain(o) &&
+      splitLines(o.text).length <= 1
     )
+  })
+  return (
+    (group.length >= 2 && hinted) ||
+    (!hintedOnly &&
+      group.length >= 6 &&
+      edge.from.shape === 'rectangle' &&
+      edge.to.shape === 'rectangle' &&
+      group.some((o) => o.from === edge.from) &&
+      group.some((o) => o.to === edge.from) &&
+      group.every((o) => o.text.length === 0 && plain(o)))
   )
 }
 
