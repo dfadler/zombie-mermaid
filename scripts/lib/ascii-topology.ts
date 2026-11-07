@@ -217,19 +217,27 @@ export function measureSample(source: string): Counts {
   const pos = layoutFlowchartSync(parsed)
   const horiz = direction === 'LR' || direction === 'RL'
   // ELK stays in SVG orientation; the grid side was mirrored to match it.
+  // Layers are the provider's hint layers (the grouping `buildHints` uses, which
+  // handles a diamond beside shorter boxes); `main` is spaced so they never fall
+  // within the layer tolerance. Without hints, fall back to the leading edge.
+  const hints = asciiLayoutProvider.graph!(parsed)
+  const rev = direction === 'RL' || direction === 'BT'
   const elk: Record<string, Spot> = {}
   for (const n of pos.nodes) {
-    // Flow-leading edge: min side for LR/TB, max side for RL/BT (matches the grid).
-    const rev = direction === 'RL' || direction === 'BT'
+    const layer = hints?.nodes.get(n.id)?.layer
     const [lo, len] = horiz ? [n.x, n.width] : [n.y, n.height]
     elk[n.id] = {
-      main: rev ? lo + len : lo,
+      main:
+        layer !== undefined
+          ? (rev ? -layer : layer) * 1000
+          : rev
+            ? lo + len
+            : lo,
       cross: horiz ? n.y + n.height / 2 : n.x + n.width / 2,
       size: horiz ? n.height : n.width,
     }
   }
   const c = compareSpots(elk, spots)
-  const hints = asciiLayoutProvider.graph!(parsed)
   return hints ? addCounts(c, compareFaces(edges, hints)) : c
 }
 

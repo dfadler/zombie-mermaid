@@ -118,6 +118,16 @@ describe('readGrid and measureSample', () => {
     }
   })
 
+  it('keeps a diamond and shorter boxes in one layer in every direction', () => {
+    for (const dir of ['LR', 'RL', 'TD', 'BT']) {
+      const c = measureSample(
+        // #2780: isolated nodes sit beside a taller decision.
+        `flowchart ${dir}\n  n0(["n54J9wn"])\n  n1(["m"])\n  n2{"1z"}\n  n3(["5Ux716"])\n  n4("E8Hl7O")\n  n2 --> n0\n  n2 --> n0\n  n2 --> n3\n`,
+      )
+      expect(c.layerOk, dir).toBe(c.layerPairs)
+    }
+  })
+
   it('sums counts', () => {
     const a = measureSample('graph TD\n  A --> B')
     expect(addCounts(a, emptyCounts())).toEqual(a)
