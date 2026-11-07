@@ -88,24 +88,19 @@ layers. The 12.1.0 comparison is in
   bypass, "Dense Duplicate Edges (LR)", "Self-Loop ... (LR)" and "CI/CD Pipeline"
   samples now score 100%. "Dense Duplicate Edges (TD)" (`c` 18.5 px right of `a`, 30.1 px in
   mermaid, 0.1 px outside the band) and "Self-Loop ... (TD)" (mermaid staggers 48 and 37 px, ours stacks) stay
-  under the default floor, as do and "State: Notes".
+  under the default floor.
   A fixed 15, 25 or 30 px tolerance, or one scaled by node height, only moved the
   cliff or split other samples; marking samples "oracle n/a" would not reach the
   non-ASCII ones (#2155).
 
 ## State diagram notes
 
-zombie-mermaid's parser reads `note left of X` / `note right of X` but ignores the side:
-swapping the keywords gives byte-identical output, and placement comes from the layout
-engine's dotted edge from the state to the note ([#2094](https://github.com/dfadler/zombie-mermaid/issues/2094)).
-mermaid.js does not place notes on the named side either. Checked on mermaid 12.2.0
-(jsDelivr, real Chrome, default config) for the "State: Notes" sample: `note right of
-Active` lands below `Active`, 20 px to its left, and `note left of Idle` lands above
-`Idle`, 20 px to its right. The maintainer-run oracle on 12.1.0 gives the same layout.
-The remaining gap is layout tie-breaks, which is why "State: Notes" scores 83% horizontal
-agreement; the floor in `scripts/lib/layout-agreement.ts` stays at 0.8
-([#1942](https://github.com/dfadler/zombie-mermaid/issues/1942)). Not checked: mermaid.live
-or GitHub for this sample.
+mermaid 12.3.0 joins a note to its state with a dotted, arrowless edge whose direction follows
+the side keyword: `note right of X` is `X -> note`, `note left of X` is `note -> X`. So a
+right note ranks below its state and a left note above it. zombie-mermaid does the same
+([#2829](https://github.com/dfadler/zombie-mermaid/issues/2829)); "State: Notes" scores 100%
+vertical and horizontal agreement on 12.3.0 and has no sample floor. Before that it ignored the
+side (both notes hung below), which scored 83% horizontal. Both renderers share the parse.
 
 ## Sequence SVG: self-message and lifeline spacing ([#2477](https://github.com/dfadler/zombie-mermaid/issues/2477))
 

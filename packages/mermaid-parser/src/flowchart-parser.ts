@@ -421,24 +421,47 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
 
   // An open `note right of X` ... `end note` block: its target and the text
   // lines gathered so far.
-  let noteBlock: { target: string; lines: string[] } | null = null
+  let noteBlock: { target: string; left: boolean; lines: string[] } | null =
+    null
   let noteCount = 0
-  const addNote = (target: string, text: string): void => {
+  const addNote = (target: string, left: boolean, text: string): void => {
     if (!compositeStateIds.has(target)) {
       ensureStateNode(graph, compositeStack, target)
     }
     noteCount++
     // Mermaid names the note node `<state>----note-<n>` and joins it to the
-    // state with a dotted, arrowless link.
+    // state with a dotted, arrowless link: state -> note for `right of`,
+    // note -> state for `left of` (mermaid 12.3.0), so a left note ranks above.
     const noteId = `${target}----note-${noteCount}`
     registerStateNode(graph, compositeStack, {
       id: noteId,
       label: normalizeBrTags(text),
       shape: 'note',
     })
+    if (left) {
+      // ELK's MODEL_ORDER cycle breaking reverses an edge whose target comes
+      // first in node order, which would drop the note below its state; list
+      // the note first so note -> state keeps the note on the upper rank.
+      const moveBefore = <T>(ids: T[], id: T, before: T): void => {
+        const at = ids.indexOf(before)
+        if (at >= 0 && ids.indexOf(id) > at) {
+          ids.splice(ids.indexOf(id), 1)
+          ids.splice(at, 0, id)
+        }
+      }
+      const order = [...graph.nodes]
+      const noteEntry = order.find(([k]) => k === noteId)!
+      moveBefore(
+        order,
+        noteEntry,
+        order.find(([k]) => k === target)!,
+      )
+      graph.nodes = new Map(order)
+      for (const sg of compositeStack) moveBefore(sg.nodeIds, noteId, target)
+    }
     graph.edges.push({
-      source: target,
-      target: noteId,
+      source: left ? noteId : target,
+      target: left ? target : noteId,
       style: 'dotted',
       hasArrowStart: false,
       hasArrowEnd: false,
@@ -452,7 +475,7 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
     // --- note: `note right of X : text`, or a block closed by `end note` ---
     if (noteBlock) {
       if (/^end\s+note$/i.test(line)) {
-        addNote(noteBlock.target, noteBlock.lines.join('\n'))
+        addNote(noteBlock.target, noteBlock.left, noteBlock.lines.join('\n'))
         noteBlock = null
       } else {
         noteBlock.lines.push(line)
@@ -460,12 +483,13 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
       continue
     }
     const noteMatch = line.match(
-      /^note\s+(?:left|right)\s+of\s+([\w\p{L}-]+)\s*(?::\s*(.*))?$/iu,
+      /^note\s+(left|right)\s+of\s+([\w\p{L}-]+)\s*(?::\s*(.*))?$/iu,
     )
     if (noteMatch) {
-      if (noteMatch[2] !== undefined)
-        addNote(noteMatch[1]!, noteMatch[2].trim())
-      else noteBlock = { target: noteMatch[1]!, lines: [] }
+      const left = noteMatch[1]!.toLowerCase() === 'left'
+      if (noteMatch[3] !== undefined)
+        addNote(noteMatch[2]!, left, noteMatch[3].trim())
+      else noteBlock = { target: noteMatch[2]!, left, lines: [] }
       continue
     }
 
