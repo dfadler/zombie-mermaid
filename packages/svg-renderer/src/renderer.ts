@@ -391,6 +391,9 @@ function dashAttr(style: Record<string, string> | undefined): string {
 /** Edge of the icon tile in an architecture group's corner, as Mermaid draws it. */
 const ARCH_GROUP_ICON = 30
 
+/** Half of mermaid@12.3.0's 24 px title box: its centre sits this far below its top. */
+const TITLE_ONLY_HALF_LINE = 12
+
 function renderGroup(
   group: PositionedGroup,
   font: string,
@@ -475,7 +478,12 @@ function renderGroup(
         renderMultilineText(
           group.label,
           group.x + group.width / 2,
-          group.y + headerHeight / 2,
+          // #2784: mermaid@12.3.0 hangs an empty subgraph's 24 px title box from
+          // the middle of its slot (the box's top on the centre line), not
+          // centred at the top edge like a framed subgraph's.
+          group.titleOnly
+            ? group.y + group.height / 2 + TITLE_ONLY_HALF_LINE
+            : group.y + headerHeight / 2,
           fontSizes.groupHeader,
           f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
         ),
