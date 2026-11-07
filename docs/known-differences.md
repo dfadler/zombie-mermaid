@@ -440,17 +440,17 @@ left and right middle.
 - **Edges.** They still attach at the box faces (middle row on the sides, middle column on
   top and bottom); a side edge starts beside the `(`/`)`/`<`/`>` point instead of replacing it.
 - **Diamond** (`{x}`). A rhombus with `<` `>` at the left and right middle and the top and
-  bottom rows as a point (`╱╲` / `╲╱`, `/\` / `\/` in ASCII). The node keeps its row count
-  (5 at the default padding), so the slope is whatever lands the points on the centre:
-  two columns per row for a short label, shallower and sparser for a wide one. Mermaid's
-  diamond is as tall as it is wide, which a terminal cannot afford, so a wide-label diamond
-  is flatter than mermaid's. Widths are rounded up to an even count so the top point is two
+  bottom rows as a point (`╱╲` / `╲╱`, `/\` / `\/` in ASCII). Mermaid 12.3.0's diamond is as
+  tall as it is wide at every label size, so the node grows rows with its width: about
+  `columns / 2` (a cell is about twice as tall as wide), rounded to an odd count so one middle
+  row carries the `<` `>` and the edges, and never fewer than the box's 5. A short label stays at 5
+  rows; a 24-column diamond is 11 rows (#2707). Widths are rounded up to an even count so the top point is two
   glyphs; when a neighbour makes the width odd the point has a `─` between them. An edge
   leaving the top or bottom starts beside the point glyph rather than replacing it.
 - **Circle** (`((x))`). An ellipse: rounded top and bottom rows, `╱ ╲` on the rows between,
   `(` `)` on the middle row (`.-.` / `'-'`, `/ \` in ASCII). Mermaid's circle is round in
-  pixels; the cell grid makes it about twice as wide as tall, so it is a 7-column,
-  5-row minimum shape, not a true circle. Edges attach as for the stadium.
+  pixels and so is ours: rows grow with the width as for the diamond (#2707), so it is a
+  7-column, 5-row minimum shape, and a 22-column one is 11 rows. Edges attach as for the stadium.
 - **Corner glyphs of the outline.** `╭ ╮ ╰ ╯ . '` and the diagonals are now protected from
   an edge stroke like `( ) < >` are, so a port on a corner column starts beside it.
 - **Cylinder** (`[(x)]`). Mermaid 12.3.0 (neo and classic looks) draws a full ellipse on top
@@ -497,12 +497,12 @@ left and right middle.
   5-row inner circle (5 rows with a 3-row inner pill at `boxBorderPadding: 0`), the rows
   of every node on the same layout row grow with it, and the label rows keep the inner ring a cell clear of the text. Edges
   attach at the outer ring as for the circle. The ring gap is one cell, not mermaid's
-  proportional gap.
+  proportional gap. The outer ring grows rows with its width as for the circle (#2707),
+  so 7 rows is the minimum and a wide label's node is about `columns / 2` rows.
 - **Re-checked against 12.3.0.** Every shape above was rendered again in mermaid 12.3.0
   (`look: neo` and `look: classic`): same silhouette class as 12.2.0, except the
   cylinder's bottom (above). Circle, double circle and diamond are 1:1 in 12.3.0 at every
-  label size; ours keeps the rows of a box, so a wider label is flatter (a square one would
-  need about half as many rows as it has columns: 8 rows for a 16-column diamond).
+  label size, and ours now matches to within one row (#2707).
 - Every shape in the issue is now drawn as a silhouette; the remaining differences are the
   ones listed per shape above (diagonals and curves quantised to cells).
 
