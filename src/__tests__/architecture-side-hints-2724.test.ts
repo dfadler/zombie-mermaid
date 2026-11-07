@@ -77,4 +77,18 @@ describe('architecture side hints (#2724)', () => {
     expect(at(v, 'A')[0]).toBeLessThan(at(v, 'B')[0])
     expect(at(v, 'B')[0]).toBeLessThan(at(v, 'C')[0])
   })
+
+  it('puts the source right of the target for `a:L -- R:b`', () => {
+    const v = renderMermaidASCII(
+      'architecture-beta\n  service a[A]\n  service b[B]\n  a:L -- R:b',
+    )
+    expect(at(v, 'A')[1]).toBeGreaterThan(at(v, 'B')[1])
+  })
+
+  it('attaches a `{group}` end to the enclosing group', () => {
+    const v = renderMermaidASCII(
+      'architecture-beta\n  group g[G]\n  service a[A] in g\n  service b[B]\n  a{group}:R -- L:b',
+    )
+    expect(at(v, 'B')[1]).toBeGreaterThan(at(v, 'A')[1])
+  })
 })

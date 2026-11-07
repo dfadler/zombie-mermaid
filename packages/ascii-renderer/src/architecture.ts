@@ -54,14 +54,13 @@ const ORDER_PITCH = 140
 function portHints(
   diagram: ArchitectureDiagram,
   graph: MermaidGraph,
-): AsciiLayoutHints | undefined {
+): AsciiLayoutHints {
   const nodes = new Map<string, AsciiNodeHint>()
   for (const n of graph.nodes.values()) {
-    if (n.gridLayer === undefined || n.gridOrder === undefined) return undefined
     nodes.set(n.id, {
-      layer: n.gridLayer,
-      order: n.gridOrder,
-      cross: n.gridOrder * ORDER_PITCH,
+      layer: n.gridLayer!,
+      order: n.gridOrder!,
+      cross: n.gridOrder! * ORDER_PITCH,
       size: 100,
     })
   }
@@ -81,7 +80,7 @@ function portHints(
     const own = [...diagram.services, ...diagram.junctions].find(
       (n) => n.id === e.source,
     )
-    const forward = g.source === (e.sourceGroup ? own?.parent : e.source)
+    const forward = g.source === (e.sourceGroup ? own!.parent : e.source)
     const [a, aPort, b, bPort] = forward
       ? [g.source, e.sourcePort, g.target, e.targetPort]
       : [g.source, e.targetPort, g.target, e.sourcePort]
