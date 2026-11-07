@@ -14,8 +14,8 @@
     "packages/mermaid-parser/dist/index.cjs": 21920,
     "packages/svg-renderer/dist/index.js": 64900,
     "packages/svg-renderer/dist/index.cjs": 65450,
-    "packages/ascii-renderer/dist/index.js": 81750,
-    "packages/ascii-renderer/dist/index.cjs": 82050,
+    "packages/ascii-renderer/dist/index.js": 82000,
+    "packages/ascii-renderer/dist/index.cjs": 82200,
     "packages/mcp/dist/index.js": 4571,
     "packages/mcp/dist/index.cjs": 7690
   },
