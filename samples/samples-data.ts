@@ -2738,89 +2738,6 @@ pie title Pets adopted by volunteers
   },
 
   // ══════════════════════════════════════════════════════════════════════════
-  //  TIMELINES
-  //  Each source has an ASCII golden of the same shape under
-  //  packages/ascii-renderer/src/__tests__/testdata/*/timeline_*.txt.
-  // ══════════════════════════════════════════════════════════════════════════
-
-  {
-    title: 'Timeline: Basic',
-    category: 'Timeline',
-    description:
-      'Periods in columns along an arrowed axis, each with its events hanging below on a dashed line; every period gets its own colour without sections.',
-    source: `timeline
-    title History of Social Media Platform
-    2002 : LinkedIn
-    2004 : Facebook : Google
-    2005 : YouTube
-    2006 : Twitter`,
-  },
-  {
-    title: 'Timeline: Sections',
-    category: 'Timeline',
-    gallery: true,
-    description:
-      'Sections group periods under a heading that spans their columns; all periods of a section share one colour.',
-    source: `timeline
-    title England's History Timeline
-    section 17th Century
-        1603 : Be merged crowns
-        1611 : King James Bible
-    section 18th Century
-        1707 : Act of Union : Great Britain
-        1776 : Loses American colonies
-             : Industrial revolution begins`,
-  },
-  {
-    title: 'Timeline: Long Text',
-    category: 'Timeline',
-    description:
-      'Text wraps at 150px: a long period label makes its row taller for every later period in the section, and a long event makes the dashed lines longer.',
-    source: `timeline
-    title Edge cases
-    section Early
-        A very long period label that wraps across several lines of text : first event
-        Empty period
-        Short : An event with a long description that needs several lines : Second
-    section Late
-        2030 : Single`,
-  },
-  {
-    title: 'Timeline: Comments And Gaps',
-    category: 'Timeline',
-    description:
-      'A `#` starts a comment even inside a period label (`C# Language` is the period `C`), periods may have no events, and extra `:` lines add events to the last period.',
-    source: `timeline
-    %% a comment
-    Stone Age : Hand axes
-    Bronze Age : Writing : Cities
-               : Wheel
-    C# Language : dropped
-    Iron Age`,
-  },
-  {
-    title: 'Timeline: Vertical',
-    category: 'Timeline',
-    gallery: true,
-    description:
-      '`timeline TD` runs the axis down the page with periods on its left and events on its right, as Mermaid draws it.',
-    source: `timeline TD
-    title Product launches
-    section 2020s
-        2021 : Alpha
-        2022 : Beta : Public preview
-    section Later
-        2024 : General availability`,
-  },
-  {
-    title: 'Timeline: Empty',
-    category: 'Timeline',
-    description:
-      'A bare `timeline` is valid: just the arrowed axis.',
-    source: `timeline`,
-  },
-
-  // ══════════════════════════════════════════════════════════════════════════
   //  QUADRANT CHARTS
   //  Each source has an ASCII golden of the same shape under
   //  packages/ascii-renderer/src/__tests__/testdata/*/quadrant_*.txt.
@@ -3023,5 +2940,88 @@ pie title Pets adopted by volunteers
   E@{ shape: fork }
   F@{ shape: join }
   A --> B --> C --> D --> E --> F`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  TIMELINES
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/timeline_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Timeline: Basic',
+    category: 'Timeline',
+    description:
+      'Periods in columns along an arrowed axis, each with its events hanging below on a dashed line; every period gets its own colour without sections.',
+    source: `timeline
+    title History of Social Media Platform
+    2002 : LinkedIn
+    2004 : Facebook : Google
+    2005 : YouTube
+    2006 : Twitter`,
+  },
+  {
+    title: 'Timeline: Sections',
+    category: 'Timeline',
+    gallery: true,
+    description:
+      'Sections group periods under a heading that spans their columns; all periods of a section share one colour.',
+    source: `timeline
+    title England's History Timeline
+    section 17th Century
+        1603 : Be merged crowns
+        1611 : King James Bible
+    section 18th Century
+        1707 : Act of Union : Great Britain
+        1776 : Loses American colonies
+             : Industrial revolution begins`,
+  },
+  {
+    title: 'Timeline: Long Text',
+    category: 'Timeline',
+    description:
+      'Text wraps at 150px: a long period label makes its row taller for every later period in the section, and a long event makes the dashed lines longer.',
+    source: `timeline
+    title Edge cases
+    section Early
+        A very long period label that wraps across several lines of text : first event
+        Empty period
+        Short : An event with a long description that needs several lines : Second
+    section Late
+        2030 : Single`,
+  },
+  {
+    title: 'Timeline: Comments And Gaps',
+    category: 'Timeline',
+    description:
+      'A `#` starts a comment even inside a period label (`C# Language` is the period `C`), periods may have no events, and extra `:` lines add events to the last period.',
+    source: `timeline
+    %% a comment
+    Stone Age : Hand axes
+    Bronze Age : Writing : Cities
+               : Wheel
+    C# Language : dropped
+    Iron Age`,
+  },
+  {
+    title: 'Timeline: Vertical',
+    category: 'Timeline',
+    gallery: true,
+    description:
+      '`timeline TD` runs the axis down the page with periods on its left and events on its right, as Mermaid draws it.',
+    source: `timeline TD
+    title Product launches
+    section 2020s
+        2021 : Alpha
+        2022 : Beta : Public preview
+    section Later
+        2024 : General availability`,
+  },
+  {
+    title: 'Timeline: Empty',
+    category: 'Timeline',
+    description:
+      'A bare `timeline` is valid: just the arrowed axis.',
+    source: `timeline`,
   },
 ]
