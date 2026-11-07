@@ -695,7 +695,11 @@ export function renderErAscii(
           const pulls = diagram.relationships
             .filter((r) => r.entity1 !== r.entity2)
             .map((r) =>
-              r.entity1 === e.id ? r.entity2 : r.entity2 === e.id ? r.entity1 : '',
+              r.entity1 === e.id
+                ? r.entity2
+                : r.entity2 === e.id
+                  ? r.entity1
+                  : '',
             )
             .filter((o) => o && layerOf.get(o) === from)
           const want =
@@ -714,10 +718,12 @@ export function renderErAscii(
           prev = e.id
         }
       }
-      for (let n = 0; n < 40; n++) for (const pass of [1, -1]) {
-        const seq = pass === 1 ? layers.slice(1) : layers.slice(0, -1).reverse()
-        for (const l of seq) settle(l, l - pass)
-      }
+      for (let n = 0; n < 40; n++)
+        for (const pass of [1, -1]) {
+          const seq =
+            pass === 1 ? layers.slice(1) : layers.slice(0, -1).reverse()
+          for (const l of seq) settle(l, l - pass)
+        }
       // Slide the component back to the left edge once the passes are done.
       const slack = Math.min(
         ...[...byLayer.values()].map(
