@@ -1154,7 +1154,7 @@ export interface QuadrantPointStyle {
 }
 
 // @public
-export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization' | 'lollipop';
+export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization' | 'lollipop' | 'link' | 'dashed-link';
 
 // @public
 export function resolveShapeName(name: string): NodeShape | undefined;
