@@ -706,27 +706,26 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   }
   // #2902: a group routed between ELK's faces needs a cell for every end ELK
   // puts on those faces, so lengthen the nodes' side faces to hold them.
-  for (const e of graph.edges) {
-    if (!e.parallelLane || e.parallelLane.index > 0 || !farGroup(graph, e)) {
-      continue
-    }
-    const lr = graph.config.graphDirection === 'LR'
+  const hints = graph.edgeHints
+  const lr = graph.config.graphDirection === 'LR'
+  const table = lr ? graph.rowHeight : graph.columnWidth
+  for (const e of hints ? graph.edges : []) {
+    if (e.parallelLane?.index !== 0 || !farGroup(graph, e)) continue
+    const h = hints!.get(e)!
     for (const [node, end] of [
-      [e.from, graph.edgeHints?.get(e)?.start],
-      [e.to, graph.edgeHints?.get(e)?.end],
+      [e.from, h.start],
+      [e.to, h.end],
     ] as const) {
-      if (!end) continue
       const ends = graph.edges.reduce((n, o) => {
-        const h = graph.edgeHints?.get(o)
+        const oh = hints!.get(o)
         return (
           n +
-          (o.from === node && h?.start.face === end.face ? 1 : 0) +
-          (o.to === node && h?.end.face === end.face ? 1 : 0)
+          Number(o.from === node && oh?.start.face === end.face) +
+          Number(o.to === node && oh?.end.face === end.face)
         )
       }, 0)
       const at = requireGridCoord(node)[lr ? 'y' : 'x'] + 1
-      const table = lr ? graph.rowHeight : graph.columnWidth
-      table.set(at, Math.max(table.get(at) ?? 0, ends + 1))
+      table.set(at, Math.max(table.get(at)!, ends + 1))
     }
   }
   const need = new Map<number, { siblings: number; pairs: Set<string> }>()
@@ -2430,17 +2429,6 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     const degenerateFace = dirEquals(preferredDir, preferredOppositeDir)
     // ELK's faces for the group (#2902): the lanes run between those faces.
     const hf = hintedFaces(graph, edge)
-    if (process.env.DBG && hf)
-      console.error(
-        'LANE',
-        edge.from.name,
-        edge.to.name,
-        edge.parallelLane!.index,
-        edge.text,
-        JSON.stringify(requireGridCoord(edge.from)),
-        JSON.stringify(requireGridCoord(edge.to)),
-        JSON.stringify(hf),
-      )
     edge.hintedLane = hf !== undefined
     const laneDir = hf ? hf[0] : degenerateFace ? alternativeDir : preferredDir
     const laneOppositeDir = hf
