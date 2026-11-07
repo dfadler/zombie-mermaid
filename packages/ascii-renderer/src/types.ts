@@ -296,6 +296,8 @@ export interface AsciiEdge {
   faceLanePlan?: { slot: number; dep: number; arr: number }
   /** determinePath wanted this self-loop on its top face but the first row has no room above (#2100). */
   loopTopWanted?: boolean
+  /** A TD self-loop ELK hooks out of the left face, on a first column with no room beside it (#2888). */
+  loopLeftWanted?: boolean
   /**
    * Set by determinePath when the edge was routed as planned. Its ports are
    * placed by port-offsets.ts's allocateFaces, like a lane's.
@@ -485,6 +487,10 @@ export interface AsciiGraph {
   topMargin?: boolean
   /** A self-loop wanted a top face but the first row has no room above it. */
   wantsTopMargin?: boolean
+  /** Layout keeps a free grid column left of the first node column (TD loops on a left face, #2888). */
+  leftMargin?: boolean
+  /** A TD self-loop wanted a left face but the first column has no room beside it. */
+  wantsLeftMargin?: boolean
   nodes: AsciiNode[]
   edges: AsciiEdge[]
   canvas: Canvas
