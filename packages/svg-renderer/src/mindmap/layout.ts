@@ -68,33 +68,36 @@ function lineWidth(line: readonly MindmapTextRun[]): number {
   return line.reduce((sum, run) => sum + runWidth(run), 0)
 }
 
-/** Greedy word wrap of one line of runs into `max` px lines. */
+/** Greedy word wrap of one line of runs into `max` px lines; a word split across styled runs stays whole. */
 function wrapLine(
   line: readonly MindmapTextRun[],
   max: number,
 ): MindmapTextRun[][] {
+  const tokens = line.flatMap((run) =>
+    (run.text.match(/\s+|\S+/g) ?? []).map((text) => ({ ...run, text })),
+  )
+  const isSpace = (t: MindmapTextRun) => /^\s/.test(t.text)
   const out: MindmapTextRun[][] = [[]]
   let width = 0
-  for (const run of line) {
-    // Keep the spaces with the words they follow: split before each word.
-    for (const word of run.text.match(/\s*\S+\s*|\s+/g) ?? []) {
-      const w = runWidth({ ...run, text: word })
-      const current = out[out.length - 1]!
-      if (width + w - trailingSpace(word, run) > max && current.length > 0) {
-        out.push([])
-        width = 0
-      }
-      out[out.length - 1]!.push({ ...run, text: word })
-      width += w
+  for (let i = 0; i < tokens.length;) {
+    if (isSpace(tokens[i]!)) {
+      out[out.length - 1]!.push(tokens[i]!)
+      width += runWidth(tokens[i]!)
+      i++
+      continue
     }
+    const word: MindmapTextRun[] = []
+    while (i < tokens.length && !isSpace(tokens[i]!)) word.push(tokens[i++]!)
+    const w = lineWidth(word)
+    const current = out[out.length - 1]!
+    if (width + w > max && current.some((t) => !isSpace(t))) {
+      out.push([])
+      width = 0
+    }
+    out[out.length - 1]!.push(...word)
+    width += w
   }
   return out
-}
-
-/** Width of trailing whitespace, which does not count toward fitting a line. */
-function trailingSpace(word: string, run: MindmapTextRun): number {
-  const space = /\s+$/.exec(word)?.[0]
-  return space === undefined ? 0 : runWidth({ ...run, text: space })
 }
 
 /** Label lines and box: wrap at 200px when the longest line reaches it. */

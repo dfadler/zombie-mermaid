@@ -57,6 +57,14 @@ describe('mindmap oracle agreement', () => {
     expect(out).toMatch(/edge 1_2: classes/)
   })
 
+  it('compares path commands as well as numbers', () => {
+    const o = clone()
+    o.edges[0]!.d = o.edges[0]!.d.replace('L', 'l')
+    expect(mindmapMismatches(basic.source, o).join('\n')).toMatch(
+      /edge 0_1: path differs/,
+    )
+  })
+
   it('reports a shorter path as infinitely far', () => {
     const o = clone()
     o.edges[0]!.d = 'M0,0L1,1'

@@ -80,6 +80,21 @@ describe('mindmap ASCII: colour', () => {
   it('wraps text in spans for the html colour mode', () => {
     expect(renderMermaidASCII(src, { colorMode: 'html' })).toContain('<span')
   })
+
+  it('escapes markup in the html colour mode', () => {
+    expect(
+      renderMermaidASCII('mindmap\n  root\n    A & B', { colorMode: 'html' }),
+    ).toContain('&amp;')
+  })
+
+  it('leaves no trailing connector padding before an empty label line', () => {
+    const out = renderMermaidASCII('mindmap\n  root\n    a<br/><br/>b', {
+      colorMode: 'truecolor',
+      theme,
+    })
+    // The connector rail of the blank line ends the line; no padding follows its colour.
+    for (const line of out.split('\n')) expect(line).toBe(line.trimEnd())
+  })
 })
 
 describe('mindmap ASCII: goldens', () => {

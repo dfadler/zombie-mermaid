@@ -70,8 +70,11 @@ export function renderMindmapAscii(
       const lead = i === 0 ? first : rest
       out.push(
         (
-          colorizeText(lead, theme.line, colorMode) +
-          colorizeText(line, hex, colorMode)
+          colorizeText(
+            line === '' ? lead.trimEnd() : lead,
+            theme.line,
+            colorMode,
+          ) + colorizeText(line, hex, colorMode)
         ).trimEnd(),
       )
     })

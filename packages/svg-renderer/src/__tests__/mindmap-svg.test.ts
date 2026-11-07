@@ -77,6 +77,14 @@ describe('mindmap labels', () => {
     expect(l.height).toBe(l.lines.length * 24)
   })
 
+  it('keeps a word that crosses a style boundary on one line', () => {
+    const filler = 'word '.repeat(7)
+    const l = layoutLabel(`${filler}**bo**ld tail`)
+    const lineText = l.lines.map((runs) => runs.map((r) => r.text).join(''))
+    expect(lineText.some((t) => /\bbold\b/.test(t))).toBe(true)
+    expect(lineText.every((t) => !/(^|\s)(bo|ld)(\s|$)/.test(t))).toBe(true)
+  })
+
   it('wraps a long line made of several styled runs', () => {
     const l = layoutLabel(
       '**bold words here** and *italic words here too* and plain words after them',

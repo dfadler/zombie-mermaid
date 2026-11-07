@@ -207,6 +207,14 @@ describe('parseMindmap: errors, as Mermaid 12.3.0', () => {
   })
 })
 
+describe('parseMindmap: header', () => {
+  it('accepts an indented header, as Mermaid does', () => {
+    expect(parseMindmap('  mindmap\n  root\n    a').root.children).toHaveLength(
+      1,
+    )
+  })
+})
+
 describe('mindmapLabelLines', () => {
   it('splits on newlines and <br> in any spelling', () => {
     expect(mindmapPlainLines('a<br>b<BR/>c<br />d\ne')).toEqual([
@@ -237,6 +245,28 @@ describe('mindmapLabelLines', () => {
   it('leaves no tag behind when one is built from the pieces of another', () => {
     expect(mindmapPlainLines('<<u>script>x')).toEqual(['x'])
     expect(mindmapPlainLines('a <img src=x onerror=y> b')).toEqual(['a  b'])
+  })
+
+  it('reads underscore emphasis at word boundaries and backslash escapes, as Mermaid does', () => {
+    const runs = mindmapLabelLines(
+      '_it_ and __bd__ and snake_case_word and \\*esc\\* and a_b',
+    )[0]!
+    expect(runs.map((r) => [r.text, r.bold, r.italic])).toEqual([
+      ['it', false, true],
+      [' and ', false, false],
+      ['bd', true, false],
+      [' and snake_case_word and *esc* and a_b', false, false],
+    ])
+  })
+
+  it('ignores attributes on emphasis tags', () => {
+    expect(
+      mindmapLabelLines('<b class="x">bold</b> <i style="color:red">it</i>')[0],
+    ).toEqual([
+      { text: 'bold', bold: true, italic: false },
+      { text: ' ', bold: false, italic: false },
+      { text: 'it', bold: false, italic: true },
+    ])
   })
 
   it('gives one empty line for empty text', () => {

@@ -156,6 +156,7 @@ export function renderMindmapSvg(
         decorative,
         undefined,
         emit.styleAttribute,
+        emit.description,
       ),
       embedSource,
     ),

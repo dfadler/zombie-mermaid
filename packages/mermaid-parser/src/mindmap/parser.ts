@@ -221,7 +221,13 @@ export function parseMindmap(text: string): Mindmap {
         : `Unexpected "${token.text.trim() || token.kind}", expected ${expected}`,
     )
 
-  while (peek().kind === 'SPACELINE' || peek().kind === 'NL') i++
+  // Mermaid accepts an indented header (its detector is `^\\s*mindmap`).
+  while (
+    peek().kind === 'SPACELINE' ||
+    peek().kind === 'NL' ||
+    peek().kind === 'SPACELIST'
+  )
+    i++
   if (peek().kind !== 'MINDMAP') throw fail(peek(), 'the "mindmap" header')
   i++
 

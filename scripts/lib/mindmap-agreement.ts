@@ -217,12 +217,16 @@ export function mindmapMismatches(
       b.x - ((b.x - a.x) / len) * MINDMAP.edgeInset,
       b.y - ((b.y - a.y) / len) * MINDMAP.edgeInset,
     ]
-    const ours_d = numbers(
-      basisPath([p0, [(p0[0] + p2[0]) / 2, (p0[1] + p2[1]) / 2], p2]),
-    )
+    const ourPath = basisPath([
+      p0,
+      [(p0[0] + p2[0]) / 2, (p0[1] + p2[1]) / 2],
+      p2,
+    ])
+    const ours_d = numbers(ourPath)
     const theirs = numbers(e.d)
+    const commands = (d: string) => d.replace(/[^A-Za-z]/g, '')
     const worst =
-      ours_d.length === theirs.length
+      ours_d.length === theirs.length && commands(ourPath) === commands(e.d)
         ? Math.max(...ours_d.map((v, k) => Math.abs(v - theirs[k]!)))
         : Infinity
     if (worst > PATH_TOL) {
