@@ -1,7 +1,7 @@
 {
   "unit": "gzip-bytes",
   "budgets": {
-    "dist/index.js": 218351,
+    "dist/index.js": 1651,
     "dist/index.cjs": 1431,
     "dist/ascii.js": 564,
     "dist/ascii.cjs": 564,
@@ -12,12 +12,18 @@
     "packages/core/dist/index.cjs": 15698,
     "packages/mermaid-parser/dist/index.js": 32473,
     "packages/mermaid-parser/dist/index.cjs": 32715,
-    "packages/svg-renderer/dist/index.js": 125610,
+    "packages/svg-renderer/dist/index.js": 80058,
     "packages/svg-renderer/dist/index.cjs": 80817,
     "packages/ascii-renderer/dist/index.js": 94062,
     "packages/ascii-renderer/dist/index.cjs": 94359,
     "packages/mcp/dist/index.js": 5029,
-    "packages/mcp/dist/index.cjs": 8459,
+    "packages/mcp/dist/index.cjs": 8459
+  },
+  "consumerBundles": {
+    "packages/svg-renderer/dist/index.js": 125610,
+    "dist/index.js": 218351
+  },
+  "unpackedBudgets": {
     "dist": 122101,
     "packages/core/dist": 233954,
     "packages/mermaid-parser/dist": 251736,
