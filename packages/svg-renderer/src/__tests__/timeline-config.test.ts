@@ -31,7 +31,7 @@ describe('timeline init config', () => {
 
   it('drops negative padding and absurd margins', () => {
     const bad = renderMermaidSVG(
-      src('{"timeline":{"leftMargin":1e300,"padding":-500}}'),
+      src('{"timeline":{"leftMargin":100000000000000000000000000000,"padding":-500}}'),
     )
     expect(viewBox(bad)).toBe(viewBox(renderMermaidSVG(src('{}'))))
   })
