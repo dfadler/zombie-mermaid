@@ -78,9 +78,13 @@ interface RelMarker {
 function getRelMarker(
   type: RelationshipType,
   markerAt: 'from' | 'to' | 'both',
+  forceDashed = false,
 ): RelMarker {
   const dashed =
-    type === 'dependency' || type === 'realization' || type === 'dashed-link'
+    forceDashed ||
+    type === 'dependency' ||
+    type === 'realization' ||
+    type === 'dashed-link'
   // Plain links (`--`, `..`) draw no marker at either end.
   const plain = type === 'link' || type === 'dashed-link'
   return { type, markerAt: plain ? 'none' : markerAt, dashed }
@@ -1874,7 +1878,7 @@ export function renderClassAscii(
     const toP = placed.get(rel.to)
     if (!fromP || !toP) return
 
-    const marker = getRelMarker(rel.type, rel.markerAt)
+    const marker = getRelMarker(rel.type, rel.markerAt, rel.dashed)
     const lineH = marker.dashed ? dashH : H
     const lineV = marker.dashed ? dashV : V
 

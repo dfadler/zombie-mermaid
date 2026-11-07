@@ -542,7 +542,8 @@ members, an annotation, another relationship, a note or a namespace, in both SVG
 as mermaid.js does (12.1.0 and 12.2.0 agree). `()--()` is an ordinary boxed line with a
 circle at both ends, in mermaid and here.
 
-Dotted lollipops (`()..`, `..()`), which mermaid accepts, are a parse error here.
+Dotted lollipops (`()..`, `..()`, `()..()`) parse and draw a dashed stem, as in mermaid
+12.3.0.
 
 ## Class: edge corners in SVG
 

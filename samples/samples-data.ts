@@ -3100,6 +3100,16 @@ pie title Pets adopted by volunteers
     source: `gantt
     title Nothing planned yet`,
   },
+  {
+    title: 'Class: Dotted Lollipop Interface',
+    category: 'Class',
+    description:
+      '`..()` and `()..` draw the lollipop circle on a dashed stem (#2851), as mermaid 12.3.0 does.',
+    source: `classDiagram
+  Comparable ()..() Version
+  Version ..() Printable
+  Cache ().. Store`,
+  },
 
   // ══════════════════════════════════════════════════════════════════════════
   //  MINDMAP

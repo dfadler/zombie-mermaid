@@ -121,6 +121,7 @@ export function renderClassFlowAscii(
       target: rel.to,
       ...(rel.label ? { label: rel.label } : {}),
       style:
+        rel.dashed ||
         rel.type === 'dependency' ||
         rel.type === 'realization' ||
         rel.type === 'dashed-link'
