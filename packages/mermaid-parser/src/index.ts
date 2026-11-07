@@ -62,3 +62,7 @@ export * from './quadrant/types.ts'
 
 export * from './expanded-shapes.ts'
 export * from './flowchart-parser.ts'
+
+export * from './gantt/dates.ts'
+export * from './gantt/parser.ts'
+export * from './gantt/types.ts'
