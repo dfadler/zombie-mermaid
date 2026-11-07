@@ -94,4 +94,3 @@ grid's TD/LR orientation. Not covered, by design of this step: same-pair edge
 groups (duplicates, and reciprocal pairs laid out side by side, which use
 `buildParallelLanePath`), self-loops, cluster-source and cluster-target edges,
 and subgraphs that set their own direction; they keep the grid's faces.
-

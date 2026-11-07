@@ -8,7 +8,6 @@ import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import {
   DEFAULT_ASCII_THEME,
   registerAsciiLayout,
-  type AsciiFace,
 } from '@zombie-mermaid/ascii-renderer'
 import { renderGraphAscii } from '../packages/ascii-renderer/src/flowchart.ts'
 import type { AsciiGraph } from '../packages/ascii-renderer/src/types.ts'
@@ -80,9 +79,7 @@ function faceOrders(source: string): { hint: number[]; drawn: number[] }[] {
 
 /** Of two ends on a face, the one ELK ranks first is drawn first; equal ranks (a pair) are not compared. */
 const inOrder = ({ hint, drawn }: { hint: number[]; drawn: number[] }) =>
-  hint.every((a, i) =>
-    hint.every((b, j) => a >= b || drawn[i]! < drawn[j]!),
-  )
+  hint.every((a, i) => hint.every((b, j) => a >= b || drawn[i]! < drawn[j]!))
 
 const FEEDBACK = entry('ascii-feedback-edge-sibling-order')
 const LONGEST = entry('ascii-longest-path-layering')

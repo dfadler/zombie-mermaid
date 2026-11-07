@@ -992,7 +992,10 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
       if (!e || !plain || e.face !== SIDE_FACE[f.run.side]) return undefined
       // RL and BT are flipped after drawing: the order along the face flips too.
       const flip = f.run.axis === 'v' ? dir === 'RL' : dir === 'BT'
-      const [a, b] = [requireGridCoord(f.edge.from), requireGridCoord(f.edge.to)]
+      const [a, b] = [
+        requireGridCoord(f.edge.from),
+        requireGridCoord(f.edge.to),
+      ]
       const back = horizontal ? a.x > b.x : a.y > b.y
       const rank = e.order * 4 + (back ? 1 : 0)
       return { ...f, rank: flip ? -rank : rank }
@@ -1049,7 +1052,12 @@ function allocateFaces(
       // that face is ordered too, where `fixed` holds it to this cell.
       const [run, role] = endsOf(f.edge).find(([r, w]) => r && w !== f.role)!
       if (run && !ranked.has(faceOf(run)))
-        applyOffsets(result, [{ edge: f.edge, run, role }], [offs[i]!], shiftedRun)
+        applyOffsets(
+          result,
+          [{ edge: f.edge, run, role }],
+          [offs[i]!],
+          shiftedRun,
+        )
     })
     applyOffsets(result, list, offs, shiftedRun)
     taken.add(face)

@@ -2365,7 +2365,12 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (hinted) {
     const from = gridCoordDirection(requireGridCoord(edge.from), hinted[0])
     const to = gridCoordDirection(requireGridCoord(edge.to), hinted[1])
-    const found = routeEdge(graph, from, to, requireCardinalDirection(hinted[0]))
+    const found = routeEdge(
+      graph,
+      from,
+      to,
+      requireCardinalDirection(hinted[0]),
+    )
     const plain = expandDiagonalSegments([from, to])
     // A re-route (`edge.path` is set: a style conflict blocked a cell) keeps the
     // faces too: its caller restores the old path when the detour runs through a node.
