@@ -171,13 +171,6 @@ export function mkRoleCanvas(x: number, y: number): RoleCanvas {
   return roleCanvas
 }
 
-/** Create a blank role canvas with the same dimensions as the given role canvas. */
-export function copyRoleCanvas(source: RoleCanvas): RoleCanvas {
-  const maxX = source.length - 1
-  const maxY = (source[0]?.length ?? 1) - 1
-  return mkRoleCanvas(maxX, maxY)
-}
-
 /**
  * Grow the role canvas to fit at least (newX, newY), preserving existing roles.
  * Mutates the role canvas in place and returns it.
@@ -219,53 +212,6 @@ export function setRole(
     increaseRoleCanvasSize(roleCanvas, x, y)
   }
   roleCanvas[x]![y] = role
-}
-
-/**
- * Merge role canvases — same logic as mergeCanvases but for roles.
- * Non-null roles in overlays overwrite null roles in base.
- */
-export function mergeRoleCanvases(
-  base: RoleCanvas,
-  offset: DrawingCoord,
-  ...overlays: RoleCanvas[]
-): RoleCanvas {
-  let maxX = base.length - 1
-  let maxY = (base[0]?.length ?? 1) - 1
-
-  for (const overlay of overlays) {
-    const oX = overlay.length - 1
-    const oY = (overlay[0]?.length ?? 1) - 1
-    maxX = Math.max(maxX, oX + offset.x)
-    maxY = Math.max(maxY, oY + offset.y)
-  }
-
-  const merged = mkRoleCanvas(maxX, maxY)
-
-  // Copy base
-  for (let x = 0; x <= maxX; x++) {
-    for (let y = 0; y <= maxY; y++) {
-      if (x < base.length && y < (base[0]?.length ?? 0)) {
-        merged[x]![y] = base[x]![y]!
-      }
-    }
-  }
-
-  // Apply overlays
-  for (const overlay of overlays) {
-    for (let x = 0; x < overlay.length; x++) {
-      for (let y = 0; y < (overlay[0]?.length ?? 0); y++) {
-        const role = overlay[x]?.[y]
-        if (role !== null && role !== undefined) {
-          const mx = x + offset.x
-          const my = y + offset.y
-          merged[mx]![my] = role
-        }
-      }
-    }
-  }
-
-  return merged
 }
 
 /** Returns [maxX, maxY] — the highest valid indices in each dimension. */
