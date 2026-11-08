@@ -179,8 +179,9 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   ([#2781](https://github.com/dfadler/zombie-mermaid/issues/2781)); left and right grow it.
   The ASCII table still lists every slice
   ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722)).
-- **Empty pie.** When every slice is zero, zombie-mermaid draws a full outline circle;
-  mermaid draws a half arc, which reads as a rendering glitch.
+- **Empty pie.** When every slice is zero, zombie-mermaid draws no slice paths and one
+  outline circle, matching mermaid 12.3.0 (0 paths, 1 circle; only the legend width differs
+  by a few pixels, [#2826](https://github.com/dfadler/zombie-mermaid/issues/2826)).
 - **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
   share of the whole total, including slices that get no bar cell (under 1%, or past the
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`

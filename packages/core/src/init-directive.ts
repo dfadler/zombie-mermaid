@@ -321,6 +321,17 @@ function normalizeRelaxedJson(text: string): string {
       continue
     }
 
+    // A whole number token, exponent included, so `1e2` is not split into
+    // `1` and a bare word `e2`.
+    if (/[-\d]/.test(ch)) {
+      const num = /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(text.slice(i))
+      if (num) {
+        out += num[0]
+        i += num[0].length - 1
+        continue
+      }
+    }
+
     // Bare key: an identifier run followed (after spaces) by a colon.
     if (/[A-Za-z_$]/.test(ch)) {
       let j = i
