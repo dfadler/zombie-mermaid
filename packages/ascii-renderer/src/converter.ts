@@ -146,10 +146,13 @@ export function convertToAsciiGraph(
           ? ` ${stripFormattingTags(mNode.label)} `
           : stripFormattingTags(mNode.label),
       // Preserve shape from parser for shape-aware rendering
-      shape:
-        bare.has(id) && (horizontal || !onEdge.has(id))
-          ? 'class-name'
-          : (ASCII_SHAPE[mNode.shape] ?? mNode.shape),
+      shape: bare.has(id)
+        ? 'class-name'
+        : (ASCII_SHAPE[mNode.shape] ?? mNode.shape),
+      // Mermaid centres a title on its node's column (#2784).
+      ...(bare.has(id) &&
+        !(onEdge.has(id) && horizontal) && { textAlign: 'center' as const }),
+      ...(bare.has(id) && onEdge.has(id) && !horizontal && { titleOnly: true }),
       index,
       gridCoord: null,
       drawingCoord: null,

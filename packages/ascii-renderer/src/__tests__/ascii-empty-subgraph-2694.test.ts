@@ -73,8 +73,15 @@ describe('an empty subgraph prints its title (#2694)', () => {
     expect(out).not.toMatch(/│ one/)
   })
 
-  it('a vertical edge endpoint keeps a box so the edge cannot run through the title', () => {
-    expect(renderMermaidASCII(SOURCES[6]![1])).toContain('│ one │')
+  it('a vertical edge endpoint is bare text on the edge line, no box (#2784)', () => {
+    const out = renderMermaidASCII(SOURCES[6]![1])
+    expect(out).toMatch(/▼\s*\n\s*one\s*\n\s*│/)
+    expect(out).not.toMatch(/│ one │/)
+  })
+
+  it("a title with no edge is centred on its neighbour's column (#2784)", () => {
+    const lines = renderMermaidASCII(SOURCES[0]![1]).split('\n')
+    expect(lines[0]).toBe(' one' + ' '.repeat(lines[0]!.length - 4))
   })
 
   it('SVG hangs the title from the slot centre, below the frame-title line (#2784)', () => {
