@@ -456,6 +456,7 @@ function rerouteAroundStyleConflicts(
     startDir: edge.startDir,
     endDir: edge.endDir,
     labelLine: edge.labelLine,
+    hintedLane: edge.hintedLane,
   }
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
@@ -471,7 +472,7 @@ function rerouteAroundStyleConflicts(
         ) ??
         // A lane already keeps off other edges' runs (`runTaken`); the stem
         // it shares with a chain partner is split by port-offsets.ts.
-        (edge.parallelLane?.index || edge.faceLane
+        (edge.parallelLane?.index || edge.faceLane || edge.hintedLane
           ? null
           : findUnrelatedOverlap(
               nodeOnlyGrid,
@@ -487,7 +488,7 @@ function rerouteAroundStyleConflicts(
       if (!conflict) return
       graph.grid.add(conflict.x, conflict.y)
       temporarilyBlocked.push(conflict)
-      const { path, startDir, endDir, labelLine } = edge
+      const { path, startDir, endDir, labelLine, hintedLane } = edge
       determinePath(graph, edge)
       // With the conflict cell blocked, no clear route may remain, and
       // determinePath then falls back to a straight line that ignores
@@ -511,7 +512,7 @@ function rerouteAroundStyleConflicts(
           nodeOnlyGrid,
         )
       ) {
-        Object.assign(edge, { path, startDir, endDir, labelLine })
+        Object.assign(edge, { path, startDir, endDir, labelLine, hintedLane })
         return
       }
     }

@@ -287,6 +287,8 @@ export interface AsciiEdge {
    * its chosen offset here and skips any offset a sibling already claimed,
    * keeping every lane in the group on a genuinely distinct path.
    */
+  /** determinePath routed this lane-group edge between ELK's faces, so port-offsets.ts places its ports (#2902). */
+  hintedLane?: boolean
   parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
   /**
    * Flow-axis face lane plan (#2121, `assignFaceLanes`): the gutter lane slot

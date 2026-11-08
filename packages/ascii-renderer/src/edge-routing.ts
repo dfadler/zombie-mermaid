@@ -727,6 +727,30 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
     const at = requireGridCoord(e.from).y + 1
     graph.rowHeight.set(at, Math.max(graph.rowHeight.get(at) ?? 0, n + 1))
   }
+  // #2902: a group routed between ELK's faces needs a cell for every end ELK
+  // puts on those faces, so lengthen the nodes' side faces to hold them.
+  const hints = graph.edgeHints
+  const lr = graph.config.graphDirection === 'LR'
+  const table = lr ? graph.rowHeight : graph.columnWidth
+  for (const e of hints ? graph.edges : []) {
+    if (e.parallelLane?.index !== 0 || !farGroup(graph, e)) continue
+    const h = hints!.get(e)!
+    for (const [node, end] of [
+      [e.from, h.start],
+      [e.to, h.end],
+    ] as const) {
+      const ends = graph.edges.reduce((n, o) => {
+        const oh = hints!.get(o)
+        return (
+          n +
+          Number(o.from === node && oh?.start.face === end.face) +
+          Number(o.to === node && oh?.end.face === end.face)
+        )
+      }, 0)
+      const at = requireGridCoord(node)[lr ? 'y' : 'x'] + 1
+      table.set(at, Math.max(table.get(at)!, ends + 1))
+    }
+  }
   const need = new Map<number, { siblings: number; pairs: Set<string> }>()
   for (const group of laneGroups) {
     const to = group[0]!.to
@@ -996,6 +1020,7 @@ function buildParallelLanePath(
   preferredOppositeDir: Direction,
   laneIndex: number,
   avoidRuns: boolean,
+  keepFaces = false,
 ): ParallelLaneRoute {
   let others: ReturnType<typeof otherSegments> | undefined
   const clear = (path: GridCoord[]): boolean =>
@@ -1077,7 +1102,7 @@ function buildParallelLanePath(
     // vertical ones), so this lane gets its own arrowhead instead of backing
     // into the first edge's run, where the first edge's label hides the
     // junction cell.
-    {
+    if (!keepFaces) {
       const sideDir = horizontalDeparture ? Down : Right
       const fromSide = gridCoordDirection(requireGridCoord(edge.from), sideDir)
       const toSide = gridCoordDirection(requireGridCoord(edge.to), sideDir)
@@ -2011,17 +2036,31 @@ const FACE_DIR: Record<AsciiFace, Direction> = {
   R: Right,
 }
 
+/**
+ * A same-pair group running back over more than a layer (#2902): ELK
+ * gives each edge its own faces, where a neighbour group keeps its lanes
+ * together (`assignParallelEdgeLanes`).
+ */
+function farGroup(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const axis = graph.config.graphDirection === 'LR' ? 'x' : 'y'
+  return (
+    requireGridCoord(edge.from)[axis] - requireGridCoord(edge.to)[axis] > 4 &&
+    // A diamond's side face is a slant: the lanes' ports there are not drawn yet.
+    edge.from.shape !== 'diamond' &&
+    edge.to.shape !== 'diamond'
+  )
+}
+
 /** The faces ELK's route leaves and enters by, as grid directions, or undefined without a hint. */
 function hintedFaces(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): [Direction, Direction] | undefined {
   const h = graph.edgeHints?.get(edge)
-  // A parallel group keeps its lanes together (`assignParallelEdgeLanes`).
   if (
     !h ||
     edge.from === edge.to ||
-    edge.parallelLane ||
+    (edge.parallelLane && !farGroup(graph, edge)) ||
     edge.clusterSource ||
     edge.clusterTarget
   )
@@ -2411,10 +2450,15 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     // determineStartAndEndDir's default branch), so this never changes how an
     // existing same-direction group routes.
     const degenerateFace = dirEquals(preferredDir, preferredOppositeDir)
-    const laneDir = degenerateFace ? alternativeDir : preferredDir
-    const laneOppositeDir = degenerateFace
-      ? alternativeOppositeDir
-      : preferredOppositeDir
+    // ELK's faces for the group (#2902): the lanes run between those faces.
+    const hf = hintedFaces(graph, edge)
+    edge.hintedLane = hf !== undefined
+    const laneDir = hf ? hf[0] : degenerateFace ? alternativeDir : preferredDir
+    const laneOppositeDir = hf
+      ? hf[1]
+      : degenerateFace
+        ? alternativeOppositeDir
+        : preferredOppositeDir
     edge.startDir = laneDir
     edge.endDir = laneOppositeDir
     const lane = (avoid: boolean): ParallelLaneRoute =>
@@ -2425,6 +2469,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
         laneOppositeDir,
         edge.parallelLane!.index,
         avoid,
+        hf !== undefined,
       )
     // Keeping off other edges' runs is a preference: with no such offset,
     // share a run rather than fall back to the placeholder.
@@ -2484,12 +2529,18 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (hinted) {
     const from = gridCoordDirection(requireGridCoord(edge.from), hinted[0])
     const to = gridCoordDirection(requireGridCoord(edge.to), hinted[1])
-    const found = routeEdge(
-      graph,
-      from,
-      to,
-      requireCardinalDirection(hinted[0]),
-    )
+    // A lane group enters by the gutter cell in front of its end face, so the
+    // last leg runs into the face, not along it (as the lane siblings do).
+    // A cardinal direction is (1, 1) plus its step.
+    const gate = edge.parallelLane
+      ? { x: to.x + hinted[1].x - 1, y: to.y + hinted[1].y - 1 }
+      : undefined
+    const via = gate
+      ? routeEdge(graph, from, gate, requireCardinalDirection(hinted[0]))
+      : null
+    const found =
+      (via && mergePath([...via, to])) ??
+      routeEdge(graph, from, to, requireCardinalDirection(hinted[0]))
     const plain = expandDiagonalSegments([from, to])
     // A re-route (`edge.path` is set: a style conflict blocked a cell) keeps the
     // faces too: its caller restores the old path when the detour runs through a node.
@@ -2551,6 +2602,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       return c.x === r.x && c.y === r.y
     })
   if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
+  if (edge.parallelLane) edge.hintedLane = Boolean(hinted && hintedPath)
   if (hinted && hintedPath) {
     ;[preferredDir, alternativeDir] = [hinted[0], hinted[0]]
     ;[preferredOppositeDir, alternativeOppositeDir] = [hinted[1], hinted[1]]
@@ -2889,9 +2941,27 @@ export function determineLabelLine(
   // (the first, often shared between edges from the same source node; and
   // the last, which is the box-start connector straight into the target —
   // see isTerminalSegment above).
-  const suitableSegments = segments.filter(
+  let suitableSegments = segments.filter(
     (s) => s.width >= lenLabel && !isTerminalSegment(s) && clearOfNodes(s.line),
   )
+  // #2902: ELK puts a horizontal-flow label on a long horizontal run, not on the
+  // vertical between two short ones. A first or last run with room for the
+  // label and its stroke ends qualifies, where no horizontal run did.
+  if (
+    graph.config.graphDirection === 'LR' &&
+    graph.edgeHints?.has(edge) &&
+    // A diamond's slant leaves no room beside its tip for a label.
+    edge.from.shape !== 'diamond' &&
+    edge.to.shape !== 'diamond' &&
+    !suitableSegments.some((s) => !s.isVertical)
+  ) {
+    const long = segments.filter(
+      (s) => !s.isVertical && s.width >= lenLabel + 4 && clearOfNodes(s.line),
+    )
+    if (long.length > 0) {
+      suitableSegments = [long.reduce((a, b) => (b.width > a.width ? b : a))]
+    }
+  }
 
   // Segments a label would sit on, best first: not already holding another
   // edge's label, then running along as few cells of other edges as possible.
