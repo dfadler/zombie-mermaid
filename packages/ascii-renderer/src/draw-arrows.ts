@@ -724,8 +724,17 @@ function drawBoxStart(
       )
     }
     const boxWidth = drawing.length
-    const x = dirEquals(dir, Left) ? dc.x : dc.x + boxWidth - 1
+    const left = dirEquals(dir, Left)
+    let x = left ? dc.x : dc.x + boxWidth - 1
     const y = from.y
+    // A slanted face (a diamond's) is blank at the border column off its
+    // vertex: start beside the slant glyph instead, so the branch touches it.
+    const row = drawing.map((col) => col[y - dc.y] ?? ' ')
+    if (row[x - dc.x] === ' ' && row.some((c) => c !== ' ')) {
+      const step = left ? 1 : -1
+      while (row[x - dc.x] === ' ') x += step
+      x -= step
+    }
     const existing = existingOnBox(x, y)
     const hasBorder =
       existing !== undefined && VERTICAL_BORDER_CHARS.has(existing)

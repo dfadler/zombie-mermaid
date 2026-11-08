@@ -625,6 +625,28 @@ function spreadsOnFaces(
 }
 
 /**
+ * Unlabeled duplicate edges out of a decision leave from separate cells of its
+ * slanted face (`hintedFaces`) as Mermaid draws them, not from offset lanes.
+ */
+function decisionDuplicates(
+  graph: AsciiGraph,
+  group: readonly AsciiEdge[],
+): boolean {
+  const { from, to } = group[0]!
+  // Only a plain decision: its branches are all it has, at most the slant's
+  // three cells of them (no loop, no edge into it). A diamond target has no
+  // straight face for them to land on side by side: it keeps the lanes.
+  const touching = graph.edges.filter((e) => e.from === from || e.to === from)
+  return (
+    from.shape === 'diamond' &&
+    to.shape !== 'diamond' &&
+    touching.length <= 3 &&
+    touching.every((e) => e.from === from && e.to !== from) &&
+    group.every((e) => e.from === from && e.to === to && !e.text)
+  )
+}
+
+/**
  * Group edges that connect the same pair of nodes — two edges in the same
  * direction (`A -->|One| B` and `A -->|Two| B`), or, when the two nodes are
  * laid out side by side, an edge and its reverse-direction partner
@@ -671,7 +693,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
     if (
       group.length < 2 ||
       spreadsOnFaces(graph, group) ||
-      denseFacingPair(graph, group[0]!, true)
+      denseFacingPair(graph, group[0]!, true) ||
+      decisionDuplicates(graph, group)
     )
       continue
     const usedOffsets = new Set<number>()

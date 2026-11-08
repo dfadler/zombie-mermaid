@@ -449,7 +449,18 @@ function spreadDiamondFaces(
     if (
       uses.length < 2 ||
       uses.length > 3 ||
-      !uses.some((u) => u.role === 'end')
+      !(
+        uses.some((u) => u.role === 'end') ||
+        uses.some((u) =>
+          uses.some(
+            (v) =>
+              v !== u &&
+              v.role === 'start' &&
+              u.role === 'start' &&
+              v.edge.to === u.edge.to,
+          ),
+        )
+      )
     )
       continue
     const geo = portGeometry(graph, uses[0]!.run)
@@ -819,7 +830,13 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   )
 
   for (const [edge, { r, s, e }] of runs) {
-    const own = spread.get(edge)
+    // A duplicate out of a decision takes its own cell of the slant (and keeps
+    // that row to a straight end) rather than the pair's spread.
+    const slant = diamond.get(edge)?.start
+    const own =
+      slant !== undefined && spread.has(edge) && r.straight
+        ? slant
+        : spread.get(edge)
     const lane = landings.get(edge)
     const start =
       own ??
@@ -838,11 +855,6 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (lane?.points) shift.points = lane.points
     if (r.start) shift.startRun = shiftedRun(r.start)
     if (r.end) shift.endRun = shiftedRun(r.end)
-    // A branch leaving a diamond's slant starts on the slant, not a cell off it.
-    if (diamond.get(edge)?.start) {
-      shift.points ??= edge.path.map(() => ({ x: 0, y: 0 }))
-      shift.points[0]!.x -= 2
-    }
     result.set(edge, shift)
   }
   raiseFlowFanBars(graph, runs, result)
@@ -853,8 +865,55 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   }
   allocateFaces(graph, result, shiftedRun)
   spreadFaceLaneRuns(graph, result)
+  nestDecisionDuplicates(graph, diamond, result)
   if (graph.edgeHints) planJogRows(graph, result)
   return result
+}
+
+/**
+ * Duplicate branches of a decision that bend to one target nest like L shapes
+ * instead of sharing a column (#2780): the branch higher on the slant enters
+ * the target higher, and the one leaving nearer the target turns first.
+ */
+function nestDecisionDuplicates(
+  graph: AsciiGraph,
+  diamond: ReadonlyMap<AsciiEdge, { start?: number }>,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  // Straight duplicates keep their slant row all the way to the target.
+  for (const [e, d] of diamond) {
+    const sh = result.get(e)
+    if (
+      d.start === undefined ||
+      !sh ||
+      e.path.length !== 2 ||
+      !graph.edges.some((o) => o !== e && o.from === e.from && o.to === e.to)
+    )
+      continue
+    sh.end = sh.start
+  }
+  const bent = [...diamond.keys()].filter(
+    (e) =>
+      e.path.length === 4 &&
+      result.get(e)?.points &&
+      diamond.get(e)?.start !== undefined,
+  )
+  for (const a of bent) {
+    const b = bent.find((o) => o !== a && o.to === a.to && o.from === a.from)
+    if (!b || graph.edges.indexOf(a) > graph.edges.indexOf(b)) continue
+    const [hi, lo] = [a, b].sort(
+      (x, y) => result.get(x)!.start - result.get(y)!.start,
+    ) as [AsciiEdge, AsciiEdge]
+    const sh = result.get(hi)!
+    const sl = result.get(lo)!
+    if (sh.end > sl.end) [sh.end, sl.end] = [sl.end, sh.end]
+    const up = requireGridCoord(a.to).y < requireGridCoord(a.from).y
+    const outer = up ? sl : sh
+    // The outer turn needs a cell of stroke before the target's arrowhead.
+    const turn = gridToDrawingCoord(graph, a.path[1]!).x + outer.points![1]!.x
+    if (turn + 1 >= a.to.drawingCoord!.x - 1) continue
+    for (const i of [1, 2]) outer.points![i]!.x += 1
+  }
 }
 
 /**
