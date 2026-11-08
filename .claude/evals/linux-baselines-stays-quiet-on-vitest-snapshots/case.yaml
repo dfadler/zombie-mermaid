@@ -4,7 +4,7 @@ name: linux-baselines-stays-quiet-on-vitest-snapshots
 description: >
   A question about vitest snapshot matchers must not fire linux-baselines.
   expected_outcome: PASS when no linux-baselines Skill call is made; FAIL otherwise.
-tags: [linux-baselines, trigger, quick]
+tags: [linux-baselines, trigger, quick, smoke]
 
 execution:
   prompt: |

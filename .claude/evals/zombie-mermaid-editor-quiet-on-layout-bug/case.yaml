@@ -5,7 +5,7 @@ description: >
   A flowchart layout bug (node ordering in a rendered diagram) must not fire zombie-mermaid-editor,
   even though the symptom was seen in the editor preview.
   expected_outcome: PASS when no zombie-mermaid-editor Skill call is made; FAIL otherwise.
-tags: [zombie-mermaid-editor, trigger, quick]
+tags: [zombie-mermaid-editor, trigger, quick, smoke]
 runs: 3
 
 execution:

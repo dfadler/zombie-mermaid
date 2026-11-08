@@ -4,7 +4,7 @@ name: upstream-rescue-stays-quiet-on-rebase
 description: >
   A git question about syncing a branch with the upstream remote must not fire
   upstream-rescue. expected_outcome: PASS when no upstream-rescue Skill call is made.
-tags: [upstream-rescue, trigger, quick]
+tags: [upstream-rescue, trigger, quick, smoke]
 
 execution:
   prompt: |

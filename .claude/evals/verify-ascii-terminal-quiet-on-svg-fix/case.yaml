@@ -4,7 +4,7 @@ name: verify-ascii-terminal-quiet-on-svg-fix
 description: >
   An SVG-only edge-label overlap fix must not fire verify-ascii-terminal.
   expected_outcome: PASS when no verify-ascii-terminal Skill call is made; FAIL otherwise.
-tags: [verify-ascii-terminal, trigger, quick]
+tags: [verify-ascii-terminal, trigger, quick, smoke]
 runs: 3
 
 execution:
