@@ -29,4 +29,8 @@ describe('init directive exponent numbers (#2922)', () => {
       )?.timeline,
     ).toEqual({ padding: 10 })
   })
+
+  it('ignores a lone minus sign without throwing', () => {
+    expect(parseInitDirective('%%{init: {"theme": -}}%%')).toBeUndefined()
+  })
 })
