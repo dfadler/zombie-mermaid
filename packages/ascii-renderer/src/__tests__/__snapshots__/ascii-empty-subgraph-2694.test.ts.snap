@@ -68,31 +68,26 @@ exports[`an empty subgraph prints its title (#2694) > edge-endpoint: ASCII and S
 `;
 
 exports[`an empty subgraph prints its title (#2694) > edge-endpoint-td: ASCII and SVG snapshots > ascii 1`] = `
-"+-----+
-|     |
-|  A  |
-|     |
-+--+--+
-   |   
-   |   
-   |   
-   |   
-   v   
-+-----+
-|     |
-| one |
-|     |
-+--+--+
-   |   
-   |   
-   |   
-   |   
-   v   
-+-----+
-|     |
-|  B  |
-|     |
-+-----+"
+"+---+
+|   |
+| A |
+|   |
++-+-+
+  |  
+  |  
+  |  
+  |  
+  v  
+ one 
+  |  
+  |  
+  |  
+  v  
++---+
+|   |
+| B |
+|   |
++---+"
 `;
 
 exports[`an empty subgraph prints its title (#2694) > edge-endpoint-td: ASCII and SVG snapshots > svg 1`] = `
@@ -147,35 +142,30 @@ exports[`an empty subgraph prints its title (#2694) > edge-endpoint-td: ASCII an
 `;
 
 exports[`an empty subgraph prints its title (#2694) > edge-endpoint-td: ASCII and SVG snapshots > unicode 1`] = `
-"┌─────┐
-│     │
-│  A  │
-│     │
-└──┬──┘
-   │   
-   │   
-   │   
-   │   
-   ▼   
-┌─────┐
-│     │
-│ one │
-│     │
-└──┬──┘
-   │   
-   │   
-   │   
-   │   
-   ▼   
-┌─────┐
-│     │
-│  B  │
-│     │
-└─────┘"
+"┌───┐
+│   │
+│ A │
+│   │
+└─┬─┘
+  │  
+  │  
+  │  
+  │  
+  ▼  
+ one 
+  │  
+  │  
+  │  
+  ▼  
+┌───┐
+│   │
+│ B │
+│   │
+└───┘"
 `;
 
 exports[`an empty subgraph prints its title (#2694) > lr: ASCII and SVG snapshots > ascii 1`] = `
-"one            
+" one           
                
                
                
@@ -237,7 +227,7 @@ exports[`an empty subgraph prints its title (#2694) > lr: ASCII and SVG snapshot
 `;
 
 exports[`an empty subgraph prints its title (#2694) > lr: ASCII and SVG snapshots > unicode 1`] = `
-"one            
+" one           
                
                
                

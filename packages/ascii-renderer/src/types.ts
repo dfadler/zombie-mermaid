@@ -183,7 +183,12 @@ export interface AsciiNode {
    * `class-name` nodes only: which end of its cell the text hugs, so it
    * sits next to the circle its edge ends in (see class-flow.ts).
    */
-  textAlign?: 'start' | 'end'
+  textAlign?: 'start' | 'center' | 'end'
+  /**
+   * An empty flowchart subgraph's bare title on a vertical edge: the edge runs
+   * through its row, and the text is drawn over the stroke, as in mermaid (#2784).
+   */
+  titleOnly?: boolean
   styleClassName: string
   styleClass: AsciiStyleClass
 }
