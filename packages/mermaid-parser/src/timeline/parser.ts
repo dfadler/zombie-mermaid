@@ -1,4 +1,4 @@
-import { MermaidParseError } from '@zombie-mermaid/core'
+import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
 import type { Timeline, TimelinePeriod } from './types.ts'
 
 // ============================================================================
@@ -163,5 +163,7 @@ export function parseTimeline(text: string): Timeline {
       diagramType: 'timeline',
     })
   }
+  const init = extractInitConfig(text.split(/\r\n?|\n/))
+  if (init.timeline) timeline.config = init.timeline
   return timeline
 }

@@ -27,6 +27,12 @@ export interface Timeline {
   sections: string[]
   /** Periods in source order. */
   periods: TimelinePeriod[]
+  /** `%%{init: {"timeline": {...}}}%%` keys mermaid reads. */
+  config?: {
+    leftMargin?: number
+    padding?: number
+    disableMulticolor?: boolean
+  }
 }
 
 /** A box on the timeline: a section heading, a period or an event. */

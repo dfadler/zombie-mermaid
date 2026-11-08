@@ -1536,6 +1536,11 @@ export interface TickInterval {
 
 // @public
 export interface Timeline {
+    config?: {
+        leftMargin?: number;
+        padding?: number;
+        disableMulticolor?: boolean;
+    };
     direction: 'LR' | 'TD';
     periods: TimelinePeriod[];
     sections: string[];

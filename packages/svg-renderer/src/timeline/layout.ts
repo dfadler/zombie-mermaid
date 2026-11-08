@@ -125,6 +125,11 @@ function heightOf(
   return rawHeight(spannedLines(wrapTimelineText(text, width)), padding)
 }
 
+/** A config number the layout can use: finite and within 0..1e5 (callers other than the init parser can pass anything). */
+function valid(n: number | undefined): number | undefined {
+  return n !== undefined && n >= 0 && n <= 1e5 ? n : undefined
+}
+
 function colorClass(sectionColor: number): number {
   return (sectionColor % TIMELINE.colorLimit) - 1
 }
@@ -155,7 +160,12 @@ function grow(
 /** Lay out a left-to-right timeline (Mermaid's default direction). */
 function layoutLR(tl: Timeline): PositionedTimeline {
   const { periods, sections } = tl
-  const T = TIMELINE
+  const T = {
+    ...TIMELINE,
+    leftMargin: valid(tl.config?.leftMargin) ?? TIMELINE.leftMargin,
+    viewBoxPadding: valid(tl.config?.padding) ?? TIMELINE.viewBoxPadding,
+  }
+  const colored = !tl.config?.disableMulticolor
   const hasSections = sections.length > 0
   const nodes: PositionedTimelineNode[] = []
   const connectors: PositionedTimelineConnector[] = []
@@ -280,7 +290,7 @@ function layoutLR(tl: Timeline): PositionedTimeline {
       x += T.columnWidth * n
     })
   } else {
-    drawPeriods(periods, masterX, 50, 0, true)
+    drawPeriods(periods, masterX, 50, 0, colored)
   }
 
   const boxWidth = content ? content.x2 - content.x1 : 0
@@ -304,7 +314,11 @@ function finish(
   axis: PositionedTimeline['axis'],
   boxWidth: number,
 ): PositionedTimeline {
-  const T = TIMELINE
+  const T = {
+    ...TIMELINE,
+    leftMargin: valid(tl.config?.leftMargin) ?? TIMELINE.leftMargin,
+    viewBoxPadding: valid(tl.config?.padding) ?? TIMELINE.viewBoxPadding,
+  }
   let b: Bounds | undefined
   for (const n of nodes) {
     b = grow(b, n.x, n.y, n.x + n.width, n.y + n.height)
@@ -373,7 +387,12 @@ const TD = {
 /** Lay out a top-to-bottom timeline (`timeline TD`). */
 function layoutTD(tl: Timeline): PositionedTimeline {
   const { periods, sections } = tl
-  const T = TIMELINE
+  const T = {
+    ...TIMELINE,
+    leftMargin: valid(tl.config?.leftMargin) ?? TIMELINE.leftMargin,
+    viewBoxPadding: valid(tl.config?.padding) ?? TIMELINE.viewBoxPadding,
+  }
+  const colored = !tl.config?.disableMulticolor
   const nodes: PositionedTimelineNode[] = []
   const connectors: PositionedTimelineConnector[] = []
   const hasSections = sections.length > 0
@@ -482,7 +501,7 @@ function layoutTD(tl: Timeline): PositionedTimeline {
         (own.length > 0 ? TD.taskVerticalGap * 2 : 0)
     })
   } else {
-    drawPeriods(periods, masterY, 0, true)
+    drawPeriods(periods, masterY, 0, colored)
   }
 
   let content: Bounds | undefined
