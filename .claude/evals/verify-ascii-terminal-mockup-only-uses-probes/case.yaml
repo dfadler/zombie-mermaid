@@ -24,7 +24,7 @@ graders:
     flags: i
   - name: labels_mockup
     type: regex
-    pattern: 'mockup'
+    pattern: '(?:label|caption)\w*[^.]{0,40}mockup'
     flags: i
   - name: no_capture_command
     type: regex
