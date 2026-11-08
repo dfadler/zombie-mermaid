@@ -346,6 +346,51 @@ function edgeLabelStyle(opts: { fontSizes: FontSizes }): ElkEdgeLabelStyle {
 // ============================================================================
 
 const STATE_MIN_WIDTH = 136
+
+/**
+ * Mermaid's flowchart label box is never narrower than `flowchart.minNodeWidth`
+ * (120px; `labelHelper` sets `minLabelWidth = node.minWidth`), so a short label
+ * still gets a 120px box and every shape is sized around that box (#2717).
+ * Circles and double circles are the exception: they size to the label's text.
+ */
+const FLOWCHART_MIN_LABEL_WIDTH = 120
+
+/**
+ * Node width minus the label box, for each shape, measured on mermaid@12.3.0
+ * (mermaid@12.2.0 gives the same) with a one-line label. Diamonds, triangles,
+ * clouds and tagged rectangles depend on the label height and are computed in
+ * `estimateNodeSize`.
+ */
+const FLOWCHART_SHAPE_EXTRA_WIDTH: Partial<Record<string, number>> = {
+  rectangle: 32,
+  rounded: 30,
+  stadium: 52,
+  subroutine: 44,
+  cylinder: 24,
+  'horizontal-cylinder': 28.8,
+  hexagon: 85.7,
+  asymmetric: 54,
+  parallelogram: 69,
+  'parallelogram-alt': 69,
+  trapezoid: 69,
+  'trapezoid-alt': 114,
+  document: 32,
+  'stacked-document': 52,
+  'stacked-process': 52,
+  card: 56,
+  'lined-process': 40,
+  'divided-process': 16,
+  'window-pane': 42,
+  flag: 32,
+  'bow-tie-rectangle': 37.6,
+  'half-rounded-rectangle': 38.4,
+  brace: 31.8,
+  'brace-right': 46,
+  braces: 48.5,
+  'notched-pentagon': 32,
+  'sloped-rectangle': 32,
+  text: 15,
+}
 const STATE_MIN_HEIGHT = 40
 
 export function estimateNodeSize(
@@ -356,6 +401,7 @@ export function estimateNodeSize(
   icon?: string,
   direction?: string,
   stateDiagram = false,
+  legacyNodeSizes = false,
 ): { width: number; height: number } {
   // An architecture icon tile is Mermaid's fixed 80px square; its label hangs below.
   if (icon !== undefined) return { width: TILE, height: TILE }
@@ -406,7 +452,10 @@ export function estimateNodeSize(
   // Mermaid's cloud path spans 1.25w by h + 0.48w, for a label box w by h
   // (w kept at least 2.5h so the bumps stay inside that span).
   if (shape === 'cloud') {
-    const w = Math.max(width, height * 2.5)
+    const w =
+      stateDiagram || legacyNodeSizes
+        ? Math.max(width, height * 2.5)
+        : Math.max(metrics.width, FLOWCHART_MIN_LABEL_WIDTH) + 15
     return { width: w * 1.25, height: height + w * 0.48 }
   }
 
@@ -432,6 +481,22 @@ export function estimateNodeSize(
   // mermaid.js's sizes: a 28px diamond and a 70x10 bar.
   if (label === '' && shape === 'diamond') return { width: 28, height: 28 }
   if (label === '' && shape === 'fork-join') return { width: 70, height: 10 }
+
+  if (!stateDiagram && !legacyNodeSizes) {
+    const labelWidth = Math.max(metrics.width, FLOWCHART_MIN_LABEL_WIDTH)
+    const extra = FLOWCHART_SHAPE_EXTRA_WIDTH[shape]
+    if (extra !== undefined) width = labelWidth + extra
+    else if (shape === 'tagged-rectangle')
+      width = labelWidth + 32 + 0.2 * height
+    else if (
+      shape === 'diamond' ||
+      shape === 'triangle' ||
+      shape === 'flipped-triangle'
+    ) {
+      width = labelWidth + metrics.height + 30
+      height = width
+    }
+  }
 
   // mermaid@12.3.0's state boxes are never narrower than 136px nor shorter
   // than 40px.
@@ -509,7 +574,7 @@ export function mermaidToElk(
   graph: MermaidGraph,
   givenOpts: Required<
     Pick<RenderOptions, 'font' | 'padding' | 'nodeSpacing' | 'layerSpacing'>
-  > & { fontSizes: FontSizes },
+  > & { fontSizes: FontSizes; legacyNodeSizes?: boolean },
 ): ElkGraphNode {
   const opts = givenOpts
   // Collect all node IDs that belong to subgraphs
@@ -625,12 +690,21 @@ export function mermaidToElk(
     ...(usesMermaidElkPipeline(graph)
       ? { 'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST' }
       : {}),
-    // 50 under mermaid@12.3.0's pipeline: its wider edge-label boxes need more
+    // 70 under mermaid@12.3.0's pipeline (50 before nodes had the 120px minimum width, #2717): its wider edge-label boxes need more
     // room for the parallel runs than 12.2.0's did (Five, Six and Nine Cluster
-    // Exit Siblings all match 12.3.0 at 50; Six does not at 40).
-    ...(hasLabelledParallelRun(graph)
+    // Exit Siblings all match 12.3.0 at 70; 60 fails Five and Six).
+    // Flowcharts without subgraphs need none of this once nodes have mermaid's
+    // 120px minimum width (#2717): the target already sits ~14px off the source.
+    ...(hasLabelledParallelRun(graph) &&
+    (usesMermaidElkPipeline(graph) ||
+      isStateGraph(graph) ||
+      opts.legacyNodeSizes)
       ? {
-          'elk.spacing.edgeEdge': usesMermaidElkPipeline(graph) ? '50' : '40',
+          'elk.spacing.edgeEdge': usesMermaidElkPipeline(graph)
+            ? opts.legacyNodeSizes
+              ? '50'
+              : '70'
+            : '40',
         }
       : {}),
     ...(isStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
@@ -742,6 +816,7 @@ export function mermaidToElk(
         node.icon,
         graph.direction,
         isStateGraph(graph),
+        opts.legacyNodeSizes,
       )
       const leaf = buildElkLeafNode(id, size, node.label)
       // A top-level start `[*]` marks where reading starts: pin it to the
@@ -916,7 +991,7 @@ function subgraphToElk(
   graph: MermaidGraph,
   opts: Required<
     Pick<RenderOptions, 'font' | 'padding' | 'nodeSpacing' | 'layerSpacing'>
-  > & { fontSizes: FontSizes },
+  > & { fontSizes: FontSizes; legacyNodeSizes?: boolean },
   edgesBySubgraph: Map<
     string | null,
     Array<{ index: number; edge: MermaidEdge }>
@@ -1009,6 +1084,7 @@ function subgraphToElk(
         node.icon,
         graph.direction,
         isStateGraph(graph),
+        opts.legacyNodeSizes,
       )
       const leaf = buildElkLeafNode(nodeId, size, node.label)
       children.push(leaf)

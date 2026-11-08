@@ -121,7 +121,7 @@ export const CLS: {
 };
 
 // @public
-export function convertToElkFormat(graph: MermaidGraph, options?: FlowchartRenderOptions): ElkNode;
+export function convertToElkFormat(graph: MermaidGraph, options?: FlowchartLayoutOptions): ElkNode;
 
 // @public
 export function createLayoutCache(maxSize?: number): LayoutCache;
@@ -233,10 +233,10 @@ export function layoutClassDiagramSync(diagram: ClassDiagram, options?: ClassRen
 export function layoutErDiagramSync(diagram: ErDiagram, options?: ErRenderOptions): PositionedErDiagram;
 
 // @public
-export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartRenderOptions): PositionedGraph;
+export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
 
 // @public
-export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartRenderOptions): PositionedGraph;
+export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
 
 // @public
 export function layoutMindmap(mindmap: Mindmap): PositionedMindmap;

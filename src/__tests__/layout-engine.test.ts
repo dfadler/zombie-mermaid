@@ -45,7 +45,7 @@ describe('convertToElkFormat', () => {
 
   it('resolves custom fontSizes into node sizing', () => {
     const graph = parseMermaid(`graph TD
-      A[Node] --> B[Node]`)
+      A[A label wider than the 120px minimum] --> B[Node]`)
 
     const defaultSized = convertToElkFormat(graph)
     const largeFontSized = convertToElkFormat(graph, {
