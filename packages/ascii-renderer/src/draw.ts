@@ -531,6 +531,23 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
     if (rect) labelRects.push(rect)
   }
 
+  // A bare title on a vertical edge sits on the stroke: the text wins (#2784).
+  for (const node of graph.nodes) {
+    if (!node.titleOnly || !node.drawingCoord || !node.drawing) continue
+    graph.canvas = mergeCanvases(
+      graph.canvas,
+      node.drawingCoord,
+      useAscii,
+      node.drawing,
+    )
+    fillRolesForNodeBox(
+      graph.roleCanvas,
+      node.drawing,
+      node.drawingCoord,
+      false,
+    )
+  }
+
   // Draw subgraph labels last (on top)
   for (const sg of graph.subgraphs) {
     if (sg.nodes.length === 0) continue

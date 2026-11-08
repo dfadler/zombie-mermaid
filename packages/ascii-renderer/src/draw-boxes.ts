@@ -149,7 +149,13 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     const row = (i: number) => graph.rowHeight.get(gc.y + i) ?? 0
     const cy = row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
     const cells = toDisplayCells(node.displayLabel)
-    const x0 = node.textAlign === 'end' ? to.x + 1 - cells.length : from.x
+    const x0 =
+      node.textAlign === 'end'
+        ? to.x + 1 - cells.length
+        : node.textAlign === 'center'
+          ? from.x +
+            Math.max(0, Math.floor((to.x - from.x + 1 - cells.length) / 2))
+          : from.x
     for (const [i, cell] of cells.entries()) write(box, x0 + i, cy, cell)
     node.labelRows = { top: cy, bottom: cy }
     return box
