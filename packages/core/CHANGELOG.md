@@ -1,5 +1,11 @@
 # @zombie-mermaid/core
 
+## 5.15.1
+
+### Patch Changes
+
+- [#2927](https://github.com/dfadler/zombie-mermaid/pull/2927) [`168bded`](https://github.com/dfadler/zombie-mermaid/commit/168bded9b0cac7127166ca7723e8d4f89f1fc599) Thanks [@dfadler](https://github.com/dfadler)! - Fix `%%{init}%%` directives dropping entirely when they contain an exponent-form number such as `1e2` ([#2922](https://github.com/dfadler/zombie-mermaid/issues/2922)).
+
 ## 5.15.0
 
 ### Minor Changes
