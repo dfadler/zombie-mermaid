@@ -2049,8 +2049,9 @@ Supported: `source,target,value` rows (a field may be quoted to hold commas, wit
 quotes), the header must be alone on its line, a row has exactly three
 non-empty fields, a node linked back to itself (directly or through others) is
 a "circular link" error, and a repeated pair stays two links. `accTitle` and
-`accDescr` lines are accepted and not printed (Mermaid's sankey grammar has no
-such lines and rejects them).
+`accDescr` lines are accepted (as the SVG's name and description) and not printed;
+Mermaid's sankey grammar rejects them. See Known differences for colours and values
+that cannot be drawn.
 
 The SVG uses d3-sankey's layout ported to TypeScript (same iteration, same
 numbers) and Mermaid's drawing: bars, labels beside them with the value on the
@@ -3241,9 +3242,16 @@ labels, custom sizes), measured with a throwaway script, not yet a checked-in or
   Trebuchet. A label that overhangs the bars (outlined labels left of the first column, or right of
   the last) widens the viewBox by a 12% allowance on its Trebuchet width so it is not cut off; mermaid's
   own viewBox is a few px narrower there. Diagrams whose labels sit inside the 600px frame are unaffected.
-- **Text values.** Mermaid draws `A,B,abc` with `NaN` geometry; here it is a parse error.
-- **`accTitle` / `accDescr`.** Accepted and used for the SVG's accessible name like every
-  type; mermaid's sankey grammar rejects the lines.
+- **Values that cannot be drawn.** Mermaid draws `NaN` geometry for a text value (`A,B,abc`), for a
+  diagram whose flows are all zero, and for a node whose flows add up past the largest double; here
+  each is an error.
+- **Colours.** `linkColor`, besides `gradient`, `source` and `target`, and `nodeColors` take a keyword,
+  hex or colour function (`rgb()`, `hsl()`, `oklch()`...); anything else, notably `url(...)` (which an
+  inline SVG would fetch), is ignored. Mermaid passes any string through. `prefix` and `suffix` lose control
+  characters. Several `%%{init}%%` directives merge their `nodeColors` per node.
+- **`accTitle` / `accDescr`.** Accepted like every type: `accTitle` is the SVG's accessible name and
+  `accDescr` its description (a diagram with only `accDescr` has a description but no name, as for every
+  type). Mermaid's sankey grammar rejects both lines.
 - **Sizing.** `useMaxWidth` is ignored: the SVG carries a fixed `width` and `height`.
 - **HTML in names.** Mermaid runs names through its HTML sanitiser (`<script>…</script>` is removed, `<img onerror>` loses its handler);
   names are drawn as plain text here.

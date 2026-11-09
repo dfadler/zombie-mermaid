@@ -163,6 +163,15 @@ describe('renderMermaidSVG sankey', () => {
     expect(svg).not.toContain('NaN')
   })
 
+  it('ignores inherited properties when a caller passes a plain nodeColors object', () => {
+    const p = layoutSankey({
+      nodes: ['constructor', 'B'],
+      links: [{ source: 'constructor', target: 'B', value: 1 }],
+      config: { nodeColors: { B: 'red' } },
+    })
+    expect(p.nodes.map((n) => n.color)).toEqual([undefined, 'red'])
+  })
+
   it('draws an empty graph for nodes without links, and formats huge values', () => {
     const p = layoutSankey({ nodes: ['A'], links: [] })
     expect(Number.isFinite(p.width) && Number.isFinite(p.height)).toBe(true)
