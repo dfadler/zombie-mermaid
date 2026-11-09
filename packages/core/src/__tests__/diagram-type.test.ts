@@ -96,6 +96,17 @@ describe('detectDiagramType', () => {
   })
 })
 
+describe('detectDiagramType – requirement', () => {
+  it('detects requirement diagrams, case-sensitively', () => {
+    expect(detectDiagramType('requirementDiagram')).toBe('requirement')
+    expect(
+      detectDiagramType('%% c\n  requirementDiagram\n  requirement r {\n}'),
+    ).toBe('requirement')
+    expect(detectDiagramType('requirementdiagram')).toBe('flowchart')
+    expect(detectDiagramType('requirementDiagrams')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – timeline', () => {
   it('detects timelines, case-sensitively and as a whole word', () => {
     expect(detectDiagramType('timeline')).toBe('timeline')
@@ -103,5 +114,15 @@ describe('detectDiagramType – timeline', () => {
     expect(detectDiagramType('%% c\ntimeline')).toBe('timeline')
     expect(detectDiagramType('Timeline')).toBe('flowchart')
     expect(detectDiagramType('timelines')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – kanban', () => {
+  it('detects kanban boards, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('kanban')).toBe('kanban')
+    expect(detectDiagramType('  kanban\n  Todo')).toBe('kanban')
+    expect(detectDiagramType('%% c\nkanban')).toBe('kanban')
+    expect(detectDiagramType('Kanban')).toBe('flowchart')
+    expect(detectDiagramType('kanbans')).toBe('flowchart')
   })
 })

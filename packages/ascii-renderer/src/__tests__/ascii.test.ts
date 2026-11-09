@@ -5,7 +5,7 @@
  * Each .txt file contains mermaid input above a `---` separator
  * and the expected ASCII/Unicode output below it.
  *
- * Provenance (#2679): of testdata/ascii + unicode + markdown, 108 files (66 + 41 + 1) came in
+ * Provenance (#2679): of testdata/ascii + unicode + markdown, 97 files (60 + 37; `git show --name-only 3185b9b6`, listed in docs/golden-provenance.json) came in
  * with the beautiful-mermaid v0.1.0 import, itself a port of mermaid-ascii's cases (class c);
  * the rest were added here, expected output being this renderer's own, accepted once (class b).
  * None was taken from mermaid.js, so a golden asserts "unchanged", not "matches mermaid".

@@ -1,0 +1,24 @@
++---------------------------+                     +---------------------------------+
+|                           |                     |                                 |
+|                           |                     |         <<Requirement>>         |
+|        <<Element>>        |                     |             checkout            |
+|      payment_service      |    <<satisfies>>    |                                 |
+|                           +..........+.........>| ID: R1                          |
+| Type: service             |          :          | Text: Customers can pay by card |
+| Doc Ref: docs/payments.md |          :          | Risk: High                      |
+|                           |          :          | Verification: Test              |
+|                           |          :          |                                 |
++---------------------------+          :          +---------------------------------+
+                                       :                                             
+                                 <<verifies>>                                        
+                                       :                                             
+                                       :                                             
++---------------------------+          :                                             
+|                           |          :                                             
+|                           |          :                                             
+|        <<Element>>        |          :                                             
+|         e2e_suite         +..........+                                             
+|                           |                                                        
+|    Type: browser suite    |                                                        
+|                           |                                                        
++---------------------------+                                                        

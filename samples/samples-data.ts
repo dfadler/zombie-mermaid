@@ -2903,14 +2903,16 @@ pie title Pets adopted by volunteers
     title: 'Sequence: Long Block Tab And Divider Labels',
     category: 'Sequence',
     description:
-      'Long block and divider labels over adjacent participants: the labels wrap onto several lines and the gap between the participants stays as it is.',
+      'Long block and divider labels over adjacent participants: the labels wrap onto several lines and the gap between the participants stays as it is. A word wider than the frame is split with a hyphen (#2773); `wrap:` wraps one message or note and `nowrap:` keeps one whole, and the prefix is not drawn (#2783).',
     source: `sequenceDiagram
   participant A
   participant B
   par a branch with a long descriptive title
-    A->>B: x
-  and another branch with an equally long title
+    A->>B: wrap: alpha beta gamma delta epsilon zeta eta theta iota kappa
+    B->>A: nowrap: ok
+  and Antidisestablishmentarianism_pneumonoultramicroscopicsilicovolcanoconiosis_extra
     B->>A: y
+    Note over A: wrap: alpha beta gamma delta epsilon zeta eta theta
   end`,
   },
   {
@@ -3329,5 +3331,217 @@ pie title Reports by team
   "Platform infrastructure and reliability engineering" : 40
   "Customer facing web applications and mobile clients" : 35
   "Data" : 25`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  REQUIREMENT DIAGRAMS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Requirement: Basic',
+    category: 'Requirement',
+    gallery: true,
+    description:
+      'A requirement box (type, name, then its ID, text, risk and verification under a divider) satisfied by an element over a dashed, arrowed relationship.',
+    source: `requirementDiagram
+
+    requirement test_req {
+    id: 1
+    text: the test text.
+    risk: high
+    verifymethod: test
+    }
+
+    element test_entity {
+    type: simulation
+    }
+
+    test_entity - satisfies -> test_req`,
+  },
+  {
+    title: 'Requirement: Kinds And Relationships',
+    category: 'Requirement',
+    description:
+      'All six requirement kinds and the relationship types: `contains` is a solid line with a circle-plus at the container, every other type a dashed arrow.',
+    source: `requirementDiagram
+
+    functionalRequirement fr {
+    id: 1.1
+    text: The system shall start
+    risk: low
+    verifymethod: inspection
+    }
+    interfaceRequirement ir {
+    id: 1.2
+    text: Expose a REST API
+    risk: medium
+    verifymethod: analysis
+    }
+    performanceRequirement pr {
+    id: 1.3
+    text: Respond in 200ms
+    risk: high
+    verifymethod: demonstration
+    }
+    physicalRequirement phr {
+    id: 1.4
+    text: Fit in a 1U rack
+    risk: low
+    verifymethod: test
+    }
+    designConstraint dc {
+    id: 1.5
+    text: Use TLS 1.3
+    risk: medium
+    verifymethod: test
+    }
+
+    fr - contains -> ir
+    fr - contains -> pr
+    pr - copies -> phr
+    phr - derives -> dc`,
+  },
+  {
+    title: 'Requirement: Direction And Traceability',
+    category: 'Requirement',
+    gallery: true,
+    description:
+      '`direction LR` runs the diagram left to right; `<-` writes a relationship from the other end, and elements show their type and document reference.',
+    source: `requirementDiagram
+    direction LR
+
+    requirement checkout {
+    id: R1
+    text: Customers can pay by card
+    risk: high
+    verifymethod: test
+    }
+    element payment_service {
+    type: service
+    docref: docs/payments.md
+    }
+    element e2e_suite {
+    type: browser suite
+    }
+
+    payment_service - satisfies -> checkout
+    checkout <- verifies - e2e_suite`,
+  },
+  {
+    title: 'Requirement: Styling',
+    category: 'Requirement',
+    description:
+      '`classDef`, `class`, `:::` and `style` recolour boxes, as in Mermaid.',
+    source: `requirementDiagram
+
+    requirement a {
+    id: 1
+    text: styled by class
+    risk: low
+    verifymethod: test
+    }
+    requirement b:::urgent {
+    id: 2
+    text: styled inline
+    risk: medium
+    verifymethod: analysis
+    }
+    a - traces -> b
+
+    classDef urgent fill:#fde,stroke:#c33,stroke-width:2px
+    class a urgent
+    style b fill:#eef,stroke:#339`,
+  },
+  {
+    title: 'Requirement: Bare Boxes',
+    category: 'Requirement',
+    description:
+      'A requirement or element with no properties is just the type and name, and the divider is not drawn.',
+    source: `requirementDiagram
+
+    requirement bare {
+    }
+    element thing {
+    }
+    thing - satisfies -> bare`,
+  },
+  {
+    title: 'Requirement: Empty',
+    category: 'Requirement',
+    description: 'A bare `requirementDiagram` is valid: an empty drawing.',
+    source: `requirementDiagram`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  KANBAN BOARDS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/kanban_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Kanban: Basic',
+    category: 'Kanban',
+    gallery: true,
+    description:
+      'Columns side by side, each with its cards stacked below; a card can carry a ticket, an assignee and a priority bar on its left edge.',
+    source: `kanban
+  Todo
+    [Create Documentation]
+    docs[Create Blog about the new diagram]
+  id7[In progress]
+    id6[Create renderer so that it works in all cases. We also add some extra text here for testing purposes. And some more just for the extra flare.]
+  id9[Ready for deploy]
+    id8[Design grammar]@{ assigned: 'knsv' }
+  id10[Ready for test]
+    id4[Create parsing tests]@{ ticket: MC-2038, assigned: 'K.Sveidqvist', priority: 'High' }
+    id66[last item]@{ priority: 'Very Low', assigned: 'knsv' }
+  id11[Done]
+    id5[define getData]
+    id2[Title of diagram is more than 100 chars when user duplicates diagram with 100 char]@{ ticket: MC-2036, priority: 'Very High'}
+    id3[Update DB function]@{ ticket: MC-2037, assigned: knsv, priority: 'High' }
+  id12[Can't reproduce]
+    id3[Weird flickering in Firefox]`,
+  },
+  {
+    title: 'Kanban: Priorities',
+    category: 'Kanban',
+    description:
+      'Every priority: Very High is red, High orange, Low blue and Very Low light blue; Medium and unknown names draw a bar with no colour.',
+    source: `kanban
+  Backlog
+    a[Very High]@{ priority: 'Very High' }
+    b[High]@{ priority: 'High' }
+    c[Medium]@{ priority: 'Medium' }
+    d[Low]@{ priority: 'Low' }
+    e[Very Low]@{ priority: 'Very Low' }
+    f[Ticket and assignee]@{ ticket: ABC-1, assigned: bob }`,
+  },
+  {
+    title: 'Kanban: Ticket Links And Width',
+    category: 'Kanban',
+    description:
+      '`kanban.ticketBaseUrl` turns each ticket into a link (`#TICKET#` is replaced) and `kanban.sectionWidth` widens the columns and their cards.',
+    source: `---
+config:
+  kanban:
+    ticketBaseUrl: 'https://example.test/browse/#TICKET#'
+    sectionWidth: 260
+---
+kanban
+  Todo
+    a[Write the spec]@{ ticket: T-1 }
+  Done
+    b[Ship it]@{ ticket: T-2, assigned: sam }`,
+  },
+  {
+    title: 'Kanban: Empty Columns And Markdown',
+    category: 'Kanban',
+    description:
+      'Columns need no cards; card text is Markdown (**bold**, *italic*) and `<br>` breaks a line.',
+    source: `kanban
+  Ideas
+    i1[**Bold** and *italic*<br>on two lines]
+  Doing
+  Done`,
   },
 ]

@@ -62,6 +62,8 @@ import {
   parseQuadrantChart,
   parseGantt,
   parseTimeline,
+  parseKanban,
+  parseRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -85,6 +87,10 @@ import type {
   PositionedGanttChart,
   Timeline,
   PositionedTimeline,
+  Kanban,
+  PositionedKanban,
+  RequirementDiagram,
+  PositionedRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -106,6 +112,10 @@ import { layoutGantt } from './gantt/layout.ts'
 import { renderGanttSvg } from './gantt/renderer.ts'
 import { layoutTimeline } from './timeline/layout.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutKanban } from './kanban/layout.ts'
+import { renderKanbanSvg } from './kanban/renderer.ts'
+import { layoutRequirementDiagramSync } from './requirement/layout.ts'
+import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -545,6 +555,53 @@ const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
   },
 }
 
+/** Kanban boards parse from the raw `text`, then lay out to Mermaid's fixed geometry. */
+const kanbanModule: DiagramModule<Kanban, PositionedKanban> = {
+  type: 'kanban',
+  parse: (_lines, text) => parseKanban(text),
+  layoutForSvg: (kb) => layoutKanban(kb),
+  renderSvg(positioned, ctx) {
+    return renderKanbanSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Requirement diagrams parse from the raw `text` (a value may hold `;` or
+ * `'`), then lay out with ELK like ER. `options.direction` replaces the
+ * diagram's own `direction` statement.
+ */
+const requirementModule: DiagramModule<
+  RequirementDiagram,
+  PositionedRequirementDiagram
+> = {
+  type: 'requirement',
+  parse: (_lines, text) => parseRequirementDiagram(text),
+  layoutForSvg: (diagram, options) =>
+    layoutRequirementDiagramSync(diagram, options),
+  renderSvg(positioned, ctx) {
+    return renderRequirementSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
 /**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
@@ -578,4 +635,6 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   mindmap: mindmapModule,
   gantt: ganttModule,
   timeline: timelineModule,
+  kanban: kanbanModule,
+  requirement: requirementModule,
 }
