@@ -146,7 +146,8 @@ function layoutFlowchartUnmarked(
     )
   }
   const laidOut = layoutGraphSync(graph, options)
-  if (usesMermaidElkPipeline(graph)) {    // ELK can run a trunk along a subgraph's side; keep it off the border.
+  if (usesMermaidElkPipeline(graph)) {
+    // ELK can run a trunk along a subgraph's side; keep it off the border.
     const groups = (
       list: PositionedGraph['groups'],
     ): PositionedGraph['groups'] =>
