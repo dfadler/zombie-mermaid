@@ -244,6 +244,8 @@ function attachesAt(
   geo: Geometry,
   /** A diamond's slanted face takes a stroke too (`spreadDiamondFaces`). */
   diamond = false,
+  /** A stroke beside a diamond's two-cell vertex leans on the slant (#2918). */
+  beside = false,
 ): boolean {
   if (pos < geo.lo || pos > geo.hi) return false
   const dc = run.node.drawingCoord!
@@ -259,9 +261,7 @@ function attachesAt(
       ch === '-' ||
       ch === '╲' ||
       ch === '╱' ||
-      (diamond &&
-        run.node.shape === 'diamond' &&
-        (near === '╲' || near === '╱'))
+      (beside && (near === '╲' || near === '╱'))
     )
   }
   // A slanted side (parallelogram, #2492) leaves blanks between the border
@@ -492,7 +492,8 @@ function spreadDiamondFaces(
     if (
       !geo ||
       !rows.every(
-        (o) => o === 0 || attachesAt(uses[0]!.run, geo.centre + o, geo, true),
+        (o) =>
+          o === 0 || attachesAt(uses[0]!.run, geo.centre + o, geo, true, true),
       )
     )
       continue
