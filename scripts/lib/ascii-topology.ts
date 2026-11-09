@@ -285,7 +285,10 @@ export function measureSample(source: string): Counts {
   if (isEr(source)) return measureEr(source)
   const parsed = parseMermaid(source)
   const { spots, edges, direction } = readGrid(source)
-  const pos = layoutFlowchartSync(parsed)
+  // The layout the ASCII provider takes its hints from (see `asciiLayoutProvider`).
+  const pos = layoutFlowchartSync(parseMermaid(source), {
+    legacyNodeSizes: true,
+  })
   const horiz = direction === 'LR' || direction === 'RL'
   // ELK stays in SVG orientation; the grid side was mirrored to match it.
   // Layers are the provider's hint layers (the grouping `buildHints` uses, which
