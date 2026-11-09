@@ -92,30 +92,6 @@ function boxSize(
   }
 }
 
-function midpoint(points: Array<{ x: number; y: number }>): {
-  x: number
-  y: number
-} {
-  let total = 0
-  for (let i = 1; i < points.length; i++)
-    total += Math.hypot(
-      points[i]!.x - points[i - 1]!.x,
-      points[i]!.y - points[i - 1]!.y,
-    )
-  let walked = 0
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1]!
-    const b = points[i]!
-    const seg = Math.hypot(b.x - a.x, b.y - a.y)
-    if (seg > 0 && walked + seg >= total / 2) {
-      const t = (total / 2 - walked) / seg
-      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
-    }
-    walked += seg
-  }
-  return points[0]!
-}
-
 /** The point of a polyline closest to `p`. */
 function nearestOnPolyline(
   points: Array<{ x: number; y: number }>,
@@ -253,17 +229,14 @@ export function layoutRequirementDiagramSync(
         const points = extractEdgePoints(elkEdge)
         // ELK reserves the label's own slot beside the line; Mermaid draws the
         // label on the line, so take the line's point nearest that slot.
-        const slot = elkEdge.labels?.[0]
+        const slot = elkEdge.labels![0]!
         return {
           ...base,
           points,
-          labelPoint:
-            slot?.x !== undefined && slot.y !== undefined
-              ? nearestOnPolyline(points, {
-                  x: slot.x + (slot.width ?? labelWidth) / 2,
-                  y: slot.y + (slot.height ?? REQUIREMENT.rowHeight) / 2,
-                })
-              : midpoint(points),
+          labelPoint: nearestOnPolyline(points, {
+            x: slot.x! + slot.width! / 2,
+            y: slot.y! + slot.height! / 2,
+          }),
         }
       }
       // A self-relationship: a loop out of the box's left side, label beyond it,
