@@ -81,7 +81,7 @@ describe('state concurrency regions (#1715)', () => {
     expect(svg.match(/stroke-dasharray="6 4"/g)).toHaveLength(2)
   })
 
-  // mermaid 12.3.0 (#2899): regions in written order, two across, the third
+  // Mermaid 12.3.0 (#2899): regions in written order, two across, the third
   // wrapped under the first.
   it.each([3, 4, 5])('%i regions wrap two across in written order', (n) => {
     const ids = 'ABCDE'.slice(0, n).split('')
