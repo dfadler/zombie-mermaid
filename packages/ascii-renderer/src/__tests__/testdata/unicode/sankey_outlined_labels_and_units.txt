@@ -1,15 +1,14 @@
 %%{init: {"sankey": {"labelStyle": "outlined", "prefix": "$", "suffix": "k"}}}%%
 sankey-beta
-Budget,Engineering,120
-Budget,Design,45
-Budget,Operations,80
-Engineering,Salaries,100
-Engineering,Tools,20
+Coal,Power,30
+Gas,Power,50
+Power,Homes,60
+Power,Industry,20
 ---
-Budget  $245k
-  ├─▶ Engineering  ████████████████████   $120k
-  ├─▶ Design       ███████▏                $45k
-  └─▶ Operations   █████████████           $80k
-Engineering  $120k
-  ├─▶ Salaries     ████████████████▏      $100k
-  └─▶ Tools        ███                     $20k
+Coal  $30k
+  └─▶ Power     ██████████             $30k
+Power  $80k
+  ├─▶ Homes     ████████████████████   $60k
+  └─▶ Industry  ██████▏                $20k
+Gas  $50k
+  └─▶ Power     ████████████████▏      $50k

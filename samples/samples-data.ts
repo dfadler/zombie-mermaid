@@ -3382,11 +3382,10 @@ A,D,3`,
       '`labelStyle: outlined` puts labels left of the nodes before the widest column and right of it after, with a halo; `prefix` and `suffix` decorate the values.',
     source: `%%{init: {"sankey": {"labelStyle": "outlined", "prefix": "$", "suffix": "k"}}}%%
 sankey-beta
-Budget,Engineering,120
-Budget,Design,45
-Budget,Operations,80
-Engineering,Salaries,100
-Engineering,Tools,20`,
+Coal,Power,30
+Gas,Power,50
+Power,Homes,60
+Power,Industry,20`,
   },
   {
     title: 'Sankey: Quoted Names',

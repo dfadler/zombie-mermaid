@@ -726,6 +726,9 @@ labels, custom sizes), measured with a throwaway script, not yet a checked-in or
 - **Label measurement.** The viewBox grows to fit the labels, whose width is a sum of Trebuchet
   MS advances (as for timelines) with the 14px line box mermaid's `getBBox` reports there (13
   above the baseline, 3 below). On a machine without Trebuchet mermaid's own width differs a few px.
+- **Font.** Labels are drawn in the render's font (Inter by default) but the viewBox is sized
+  from Trebuchet advances, so a label at the left or right edge can be clipped by a few px
+  (see the outlined sample's baseline); `overflow: visible` on the `<svg>` shows it in a page.
 - **Text values.** Mermaid draws `A,B,abc` with `NaN` geometry; here it is a parse error.
 - **`accTitle` / `accDescr`.** Accepted and used for the SVG's accessible name like every
   type; mermaid's sankey grammar rejects the lines.
