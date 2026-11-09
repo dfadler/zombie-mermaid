@@ -401,12 +401,12 @@ const architectureModule: DiagramModule<
   type: 'architecture',
   parse: parseArchitecture,
   layoutForSvg(diagram, options) {
-    const graph = withDirectionOverride(
-      architectureToGraph(diagram),
-      options.direction,
-    )
+    // No direction override: ports place every service (#2912).
     return {
-      graph: layoutArchitectureGrid(graph, options.padding),
+      graph: layoutArchitectureGrid(
+        architectureToGraph(diagram),
+        options.padding,
+      ),
       curve: 'linear',
     }
   },

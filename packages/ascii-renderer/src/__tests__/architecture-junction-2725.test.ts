@@ -48,3 +48,15 @@ describe('architecture junction (#2725)', () => {
     expect(out).not.toMatch(/[●┼*]/)
   })
 })
+
+describe('architecture direction override (#2912)', () => {
+  const src = head + '  a:R -- L:b\n  b:B -- T:c'
+  it.each(['TD', 'BT', 'LR', 'RL'] as const)(
+    'ignores direction %s: ports place the services',
+    (direction) => {
+      expect(renderMermaidASCII(src, { direction })).toBe(
+        renderMermaidASCII(src),
+      )
+    },
+  )
+})

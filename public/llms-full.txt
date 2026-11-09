@@ -152,7 +152,7 @@ Two more advanced options exist — `fontSizes` (per-element font size overrides
 
 **`accTitle` / `accDescr`:** every diagram type reads Mermaid's `accTitle:` and `accDescr:` statements. The `title` option names the SVG for assistive tech and wins over the source's `accTitle:`; `accDescr:` becomes the `<desc>`. ASCII output ignores them.
 
-**C4 and architecture diagrams:** C4 uses the theme colours and `font` but no layout options (see above); the source `title` is its fallback accessible name when neither the `title` option nor `accTitle:` is given. Architecture diagrams take every flowchart option, including `direction` and `curve`, and are named by the `title` option or `accTitle:`.
+**C4 and architecture diagrams:** C4 uses the theme colours and `font` but no layout options (see above); the source `title` is its fallback accessible name when neither the `title` option nor `accTitle:` is given. Architecture diagrams take the flowchart layout options but ignore `direction` and `curve` (mermaid@12.3.0 places services by their ports), and are named by the `title` option or `accTitle:`.
 
 ## Size limits (`options.limits`)
 

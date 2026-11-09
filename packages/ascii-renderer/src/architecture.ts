@@ -5,7 +5,7 @@
 // and reuses the flowchart grid layout + drawing pipeline.
 // ============================================================================
 
-import { splitStatements, withDirectionOverride } from '@zombie-mermaid/core'
+import { splitStatements } from '@zombie-mermaid/core'
 import {
   parseArchitecture,
   architectureToGraph,
@@ -33,14 +33,13 @@ export function renderArchitectureAscii(
 ): string {
   const diagram = parseArchitecture(splitStatements(text))
   const graph = architectureToGraph(diagram)
-  return renderGraphAscii(
-    withDirectionOverride(graph, extras.direction),
-    config,
-    colorMode,
-    theme,
-    // A direction override changes the axes the cells were laid out on.
-    extras.direction ? extras : { ...extras, hints: portHints(diagram, graph) },
-  )
+  // mermaid@12.3.0 has no direction for architecture-beta: the ports alone
+  // place every service, so a direction override is ignored (#2912).
+  return renderGraphAscii(graph, config, colorMode, theme, {
+    ...extras,
+    direction: undefined,
+    hints: portHints(diagram, graph),
+  })
 }
 
 /** Cross-axis units per grid order step: with `size` 100 the grid's 4-cell slot is `100 + SLOT_GAP`. */
