@@ -63,6 +63,7 @@ import {
   parseGantt,
   parseTimeline,
   parseRadar,
+  parseRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -88,6 +89,8 @@ import type {
   PositionedTimeline,
   Radar,
   PositionedRadar,
+  RequirementDiagram,
+  PositionedRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -111,6 +114,8 @@ import { layoutTimeline } from './timeline/layout.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
 import { layoutRadar } from './radar/layout.ts'
 import { renderRadarSvg } from './radar/renderer.ts'
+import { layoutRequirementDiagramSync } from './requirement/layout.ts'
+import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -575,6 +580,34 @@ const radarModule: DiagramModule<Radar, PositionedRadar> = {
 }
 
 /**
+ * Requirement diagrams parse from the raw `text` (a value may hold `;` or
+ * `'`), then lay out with ELK like ER. `options.direction` replaces the
+ * diagram's own `direction` statement.
+ */
+const requirementModule: DiagramModule<
+  RequirementDiagram,
+  PositionedRequirementDiagram
+> = {
+  type: 'requirement',
+  parse: (_lines, text) => parseRequirementDiagram(text),
+  layoutForSvg: (diagram, options) =>
+    layoutRequirementDiagramSync(diagram, options),
+  renderSvg(positioned, ctx) {
+    return renderRequirementSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -608,4 +641,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   gantt: ganttModule,
   timeline: timelineModule,
   radar: radarModule,
+  requirement: requirementModule,
 }

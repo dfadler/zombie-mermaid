@@ -1,0 +1,25 @@
+┌──────────────────────┐
+│                      │
+│                      │
+│     <<Element>>      │
+│     test_entity      │
+│                      │
+│   Type: simulation   │
+│                      │
+└───────────┬──────────┘
+            ┆           
+            ┆           
+      <<satisfies>>     
+            ┆           
+            ▼           
+┌──────────────────────┐
+│                      │
+│   <<Requirement>>    │
+│       test_req       │
+│                      │
+│ ID: 1                │
+│ Text: the test text. │
+│ Risk: High           │
+│ Verification: Test   │
+│                      │
+└──────────────────────┘
