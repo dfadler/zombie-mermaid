@@ -26,6 +26,21 @@ describe('sequence wrap:/nowrap: prefixes (#2783)', () => {
   })
 })
 
+describe('note wrap prefixes (#2783)', () => {
+  it('nowrap: keeps one note whole under init wrap, wrap: wraps one without it', () => {
+    const rows = (src: string) => renderMermaidASCII(src).split('\n')
+    const init = '%%{init: {"sequence": {"wrap": true}}}%%\n'
+    const a = rows(
+      `${init}sequenceDiagram\n A->>B: x\n Note over A: nowrap: ${L}\n Note over B: ${L}`,
+    )
+    expect(a.filter((r) => r.includes(L))).toHaveLength(1)
+    const b = rows(
+      `sequenceDiagram\n A->>B: x\n Note over A: ${L}\n Note over B: wrap: ${L}`,
+    )
+    expect(b.filter((r) => r.includes(L))).toHaveLength(1)
+  })
+})
+
 describe('block label words wider than the frame split mid-word (#2773)', () => {
   it('breaks with a trailing hyphen like mermaid breakString', () => {
     const out = renderMermaidASCII(

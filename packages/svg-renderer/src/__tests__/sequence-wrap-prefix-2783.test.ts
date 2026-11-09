@@ -27,6 +27,20 @@ describe('sequence wrap:/nowrap: prefixes (#2783)', () => {
   })
 })
 
+describe('note wrap prefixes (#2783)', () => {
+  const init = '%%{init: {"sequence": {"wrap": true}}}%%\n'
+  it('nowrap: keeps one note whole under init wrap, wrap: wraps one without it', () => {
+    const a = renderMermaidSVG(
+      `${init}sequenceDiagram\n A->>B: x\n Note over A: nowrap: ${L}\n Note over B: ${L}`,
+    )
+    expect(count(a, L)).toBe(1)
+    const b = renderMermaidSVG(
+      `sequenceDiagram\n A->>B: x\n Note over A: ${L}\n Note over B: wrap: ${L}`,
+    )
+    expect(count(b, L)).toBe(1)
+  })
+})
+
 describe('long block label word (#2773)', () => {
   it('splits mid-word with a hyphen like mermaid 12.3.0', () => {
     const svg = renderMermaidSVG(
