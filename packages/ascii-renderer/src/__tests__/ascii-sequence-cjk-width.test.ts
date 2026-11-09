@@ -174,18 +174,10 @@ describe('ASCII sequence diagrams — CJK/wide-char box alignment (issue #334)',
     expect(ascii).toContain('条件が真の場合')
   })
 
-  it('widens the wall to fit an oversized CJK block header instead of clipping it (#352/#387)', () => {
-    // A block's wall now widens to fit its header/divider label (#352,
-    // extended by #387 to also keep the widened wall clear of any
-    // participant it doesn't enclose) rather than clipping a label longer
-    // than the messages' own lifeline span. `writeTextCells`' `exclusiveMaxX`
-    // clip (added here for #334) is still a defensive backstop — exercised
-    // by the other display-width-vs-clip-bound cases in this file — but a
-    // block header specifically no longer reaches it: `maxBlockLabelWidth`
-    // measures the label with the same CJK-aware `displayWidth` this file's
-    // other tests check, so the wall grows enough that the clip never
-    // engages. This asserts the full label renders, uncorrupted, with the
-    // wall closing immediately after it.
+  it('splits an oversized CJK block header word like mermaid instead of clipping it (#352/#2773)', () => {
+    // Mermaid's wrapLabel breaks on spaces only, so a CJK label is one word:
+    // wider than the frame it is split with a trailing `-` (breakString), and
+    // the wall no longer widens to fit it. Every character still renders.
     const mermaid =
       'sequenceDiagram\n  participant A as ア\n  participant B as ボ\n  alt 非常に長い条件のラベルがここに続きますよずっと\n    A->>B: x\n  end'
     const ascii = renderMermaidASCII(mermaid, { colorMode: 'none' })
@@ -193,14 +185,10 @@ describe('ASCII sequence diagrams — CJK/wide-char box alignment (issue #334)',
     const lines = ascii.split('\n')
     const headerLine = lines.find((l) => l.includes('alt ─'))!
     expect(headerLine).toBeDefined()
-    // Full label present, not clipped.
-    expect(headerLine).toContain(
-      '非常に長い条件のラベルがここに続きますよずっと',
-    )
-    // The wall's right corner must close immediately after the label,
-    // well-formed — proves the wall grew to fit rather than the label
-    // merely being drawn past a wall that didn't move.
+    expect(headerLine).toContain('[非常に長い条件のラベル-')
     expect(headerLine!.endsWith('┐')).toBe(true)
+    const body = lines.join('')
+    expect(body).toContain('ずっと-')
   })
 
   it('handles a CJK divider label inside an alt block', () => {
