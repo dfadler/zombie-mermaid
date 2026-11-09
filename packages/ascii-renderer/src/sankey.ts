@@ -81,18 +81,22 @@ export function renderSankeyAscii(
     out.forEach((l, i) => {
       const cells = maxFlow > 0 ? (l.value / maxFlow) * BAR : 0
       const whole = Math.floor(cells)
+      // Solid blocks are their own run: html mode gives a pure run of them a
+      // background, so adjacent cells join at fractional zoom (ascii-seams).
+      const thin = l.value > 0 && (cells - whole >= 0.5 || whole === 0)
+      const used = (l.value > 0 ? whole : 0) + (thin ? 1 : 0)
       const bar =
-        l.value > 0
-          ? g.bar.repeat(whole) +
-            (cells - whole >= 0.5 || whole === 0 ? g.thin : '')
-          : ''
+        paint(g.bar.repeat(l.value > 0 ? whole : 0), accent) +
+        (thin ? paint(g.thin, accent) : '')
+      const gap = showValues ? ' '.repeat(BAR + 1 - used) : ''
       rows.push(
         '  ' +
           paint(i === out.length - 1 ? g.last : g.mid, theme.arrow) +
           ' ' +
           paint(pad(l.target, targetWidth), theme.fg) +
           '  ' +
-          paint(showValues ? pad(bar, BAR + 1) : bar, accent) +
+          bar +
+          gap +
           (showValues
             ? '  ' + paint(padStart(fmt(l.value), valueWidth), theme.fg)
             : ''),
