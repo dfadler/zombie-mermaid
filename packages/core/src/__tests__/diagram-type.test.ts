@@ -105,3 +105,13 @@ describe('detectDiagramType – timeline', () => {
     expect(detectDiagramType('timelines')).toBe('flowchart')
   })
 })
+
+describe('detectDiagramType – journey', () => {
+  it('detects journeys, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('journey')).toBe('journey')
+    expect(detectDiagramType('  journey\n title T')).toBe('journey')
+    expect(detectDiagramType('%% c\njourney')).toBe('journey')
+    expect(detectDiagramType('Journey')).toBe('flowchart')
+    expect(detectDiagramType('journeys')).toBe('flowchart')
+  })
+})

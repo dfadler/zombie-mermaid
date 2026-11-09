@@ -1,0 +1,13 @@
+journey
+    Task one: 5: Me
+    Task two: 1
+    section S
+      Task three: 3: Me
+---
+  Actors: Me
+
+    :)  5  Task one    Me
+    :(  1  Task two
+
+  [S]
+    :|  3  Task three  Me

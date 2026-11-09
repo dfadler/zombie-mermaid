@@ -141,6 +141,13 @@ export {
   wrapTimelineText,
 } from './timeline/layout.ts'
 export { renderTimelineSvg } from './timeline/renderer.ts'
+export {
+  JOURNEY,
+  layoutJourney,
+  wrapLegendLabel,
+  wrapTaskLabel,
+} from './journey/layout.ts'
+export { renderJourneySvg } from './journey/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {
