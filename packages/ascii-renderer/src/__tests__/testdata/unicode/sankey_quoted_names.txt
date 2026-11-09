@@ -1,0 +1,11 @@
+%%{init: {"sankey": {"showValues": false}}}%%
+sankey-beta
+"Sales, EMEA","Region ""North""",30
+"Sales, EMEA",Other,10
+"Region ""North""",Total,30
+---
+Sales, EMEA
+  ├─▶ Region "North"  ████████████████████
+  └─▶ Other           ██████▏
+Region "North"
+  └─▶ Total           ████████████████████

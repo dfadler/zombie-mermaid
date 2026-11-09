@@ -3317,6 +3317,7 @@ pie title Pets adopted by volunteers
       'A bare `timeline` is valid: just the arrowed axis.',
     source: `timeline`,
   },
+
   {
     title: 'Pie: Wide Legend',
     category: 'Pie',
@@ -3970,5 +3971,90 @@ gitGraph
     description:
       'A bare `gitGraph` is valid: just the label of the main branch and its line.',
     source: `gitGraph`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  SANKEY DIAGRAMS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/sankey_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Sankey: Basic',
+    category: 'Sankey',
+    gallery: true,
+    description:
+      'Rows of `source,target,value` become bars joined by ribbons as wide as the flow, shaded from the source colour to the target colour.',
+    source: `sankey-beta
+
+Agricultural 'waste',Bio-conversion,124.729
+Bio-conversion,Liquid,0.597
+Bio-conversion,Solid,26.862
+Bio-conversion,Gas,280.322
+Bio-conversion,Losses,3`,
+  },
+  {
+    title: 'Sankey: Multiple Stages',
+    category: 'Sankey',
+    description:
+      'Flows that skip a stage, merge and split again; the default `justify` alignment pushes nodes with no outgoing flow to the last column.',
+    source: `sankey-beta
+Revenue,Costs,60
+Revenue,Profit,40
+Costs,Salaries,35
+Costs,Hosting,15
+Costs,Marketing,10
+Profit,Reinvested,25
+Profit,Dividends,15
+Reinvested,Hosting,5`,
+  },
+  {
+    title: 'Sankey: Link Colour Source',
+    category: 'Sankey',
+    description:
+      '`linkColor: source` paints every ribbon in its source node colour instead of a gradient.',
+    source: `%%{init: {"sankey": {"linkColor": "source"}}}%%
+sankey-beta
+Visits,Signed up,40
+Visits,Left,60
+Signed up,Paid,12
+Signed up,Free,28`,
+  },
+  {
+    title: 'Sankey: Node Alignment Left',
+    category: 'Sankey',
+    description:
+      '`nodeAlignment: left` keeps each node in the column of its depth, so a sink stays beside its source rather than moving to the end.',
+    source: `%%{init: {"sankey": {"nodeAlignment": "left"}}}%%
+sankey-beta
+A,B,10
+B,C,5
+A,C,2
+A,D,3`,
+  },
+  {
+    title: 'Sankey: Outlined Labels And Units',
+    category: 'Sankey',
+    description:
+      '`labelStyle: outlined` puts labels left of the nodes before the widest column and right of it after, with a halo; `prefix` and `suffix` decorate the values.',
+    source: `%%{init: {"sankey": {"labelStyle": "outlined", "prefix": "$", "suffix": "k"}}}%%
+sankey-beta
+Coal,Power,30
+Gas,Power,50
+Power,Homes,60
+Power,Industry,20`,
+  },
+  {
+    title: 'Sankey: Quoted Names',
+    category: 'Sankey',
+    description:
+      'A field in double quotes may hold commas, and a doubled quote stands for one quote; `showValues: false` leaves the numbers off the labels.',
+    source: `%%{init: {"sankey": {"showValues": false}}}%%
+sankey-beta
+"Sales, EMEA","Region ""North""",30
+"Sales, EMEA",Other,10
+"Region ""North""",Total,30`,
   },
 ]

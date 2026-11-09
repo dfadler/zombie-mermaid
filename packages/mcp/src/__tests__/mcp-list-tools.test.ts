@@ -51,6 +51,7 @@ describe('list_diagram_types', () => {
       radar: 'radar-beta\naxis a, b\ncurve c{1, 2}',
       journey: 'journey\nA: 3: Me',
       kanban: 'kanban\n  A\n    b',
+      sankey: 'sankey-beta\nA,B,1',
       requirement: 'requirementDiagram\nrequirement r {\n}',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())

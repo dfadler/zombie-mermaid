@@ -13,6 +13,7 @@ import { NodeShape } from '@zombie-mermaid/core';
 import { PacketInitConfig } from '@zombie-mermaid/core';
 import { Point } from '@zombie-mermaid/core';
 import { QuadrantConfig } from '@zombie-mermaid/core';
+import { SankeyInitConfig } from '@zombie-mermaid/core';
 import { SequenceInitLayout } from '@zombie-mermaid/core';
 import { Statement } from '@zombie-mermaid/core';
 import { StyleDirectives } from '@zombie-mermaid/core';
@@ -820,6 +821,9 @@ export function parseRadar(text: string): Radar;
 
 // @public
 export function parseRequirementDiagram(text: string): RequirementDiagram;
+
+// @public
+export function parseSankey(text: string): Sankey;
 
 // @public
 export function parseSequenceDiagram(lines: Statement[], text?: string): SequenceDiagram;
@@ -1957,6 +1961,65 @@ export interface PositionedRequirementNode {
     y: number;
 }
 
+// @public
+export interface PositionedSankey {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    links: PositionedSankeyLink[];
+    // (undocumented)
+    nodes: PositionedSankeyNode[];
+    options: {
+        linkColor: string;
+        labelStyle: 'legacy' | 'outlined';
+        showValues: boolean;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedSankeyLink {
+    source: number;
+    // (undocumented)
+    target: number;
+    // (undocumented)
+    value: number;
+    width: number;
+    x0: number;
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    y0: number;
+    // (undocumented)
+    y1: number;
+}
+
+// @public
+export interface PositionedSankeyNode {
+    color?: string;
+    // (undocumented)
+    id: string;
+    index: number;
+    // (undocumented)
+    label: {
+        text: string;
+        x: number;
+        y: number;
+        anchor: 'start' | 'end';
+    };
+    layer: number;
+    value: number;
+    // (undocumented)
+    x0: number;
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    y0: number;
+    // (undocumented)
+    y1: number;
+}
+
 // @public (undocumented)
 export interface PositionedSequenceDiagram {
     // (undocumented)
@@ -2185,6 +2248,23 @@ export function resolvePacketConfig(config?: PacketInitConfig): PacketConfig;
 
 // @public
 export function resolveShapeName(name: string): NodeShape | undefined;
+
+// @public
+export interface Sankey {
+    config?: SankeyInitConfig;
+    links: SankeyLink[];
+    nodes: string[];
+}
+
+// @public
+export interface SankeyLink {
+    // (undocumented)
+    source: string;
+    // (undocumented)
+    target: string;
+    // (undocumented)
+    value: number;
+}
 
 // @public
 export interface SequenceDiagram {

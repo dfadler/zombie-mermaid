@@ -154,6 +154,8 @@ export { RADAR, layoutRadar } from './radar/layout.ts'
 export { renderRadarSvg } from './radar/renderer.ts'
 export { KANBAN, layoutKanban } from './kanban/layout.ts'
 export { renderKanbanSvg } from './kanban/renderer.ts'
+export { SANKEY, layoutSankey } from './sankey/layout.ts'
+export { renderSankeySvg } from './sankey/renderer.ts'
 export {
   JOURNEY,
   layoutJourney,

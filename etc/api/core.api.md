@@ -168,7 +168,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "requirement"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "sankey", "requirement"];
 
 // @public
 export interface DiagramColors {
@@ -382,6 +382,7 @@ export interface InitConfig {
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
     pieTextPosition?: number;
     quadrant?: QuadrantConfig;
+    sankey?: SankeyInitConfig;
     sequenceHideUnused?: boolean;
     sequenceLayout?: SequenceInitLayout;
     sequenceMirrorActors?: boolean;
@@ -835,6 +836,30 @@ export function safeHref(href: string | undefined): string | undefined;
 
 // @public
 export function sanitizeClassName(className: string | undefined): string | undefined;
+
+// @public
+export interface SankeyInitConfig {
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    labelStyle?: 'legacy' | 'outlined';
+    linkColor?: string;
+    // (undocumented)
+    nodeAlignment?: 'left' | 'right' | 'center' | 'justify';
+    nodeColors?: Record<string, string>;
+    // (undocumented)
+    nodePadding?: number;
+    // (undocumented)
+    nodeWidth?: number;
+    // (undocumented)
+    prefix?: string;
+    // (undocumented)
+    showValues?: boolean;
+    // (undocumented)
+    suffix?: string;
+    // (undocumented)
+    width?: number;
+}
 
 // @public
 export interface SequenceInitLayout {

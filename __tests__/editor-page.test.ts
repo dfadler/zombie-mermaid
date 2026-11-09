@@ -80,6 +80,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   radar: 'Radar',
   journey: 'User Journey',
   kanban: 'Kanban',
+  sankey: 'Sankey',
   requirement: 'Requirement',
 }
 

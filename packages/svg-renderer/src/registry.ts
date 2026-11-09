@@ -67,6 +67,7 @@ import {
   parseRadar,
   parseJourney,
   parseKanban,
+  parseSankey,
   parseRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -100,6 +101,8 @@ import type {
   PositionedJourney,
   Kanban,
   PositionedKanban,
+  Sankey,
+  PositionedSankey,
   RequirementDiagram,
   PositionedRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
@@ -134,6 +137,8 @@ import { layoutRadar } from './radar/layout.ts'
 import { renderRadarSvg } from './radar/renderer.ts'
 import { layoutKanban } from './kanban/layout.ts'
 import { renderKanbanSvg } from './kanban/renderer.ts'
+import { layoutSankey } from './sankey/layout.ts'
+import { renderSankeySvg } from './sankey/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -712,6 +717,29 @@ const gitgraphModule: DiagramModule<GitGraph, PositionedGitGraph> = {
 }
 
 /**
+ * Sankeys parse from the raw `text` (a CSV body: `;` is not a separator and
+ * a quoted field may span lines), then lay out with a port of d3-sankey.
+ * No theme variables or interactivity apply.
+ */
+const sankeyModule: DiagramModule<Sankey, PositionedSankey> = {
+  type: 'sankey',
+  parse: (_lines, text) => parseSankey(text),
+  layoutForSvg: (sk) => layoutSankey(sk),
+  renderSvg(positioned, ctx) {
+    return renderSankeySvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -748,6 +776,7 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   radar: radarModule,
   journey: journeyModule,
   kanban: kanbanModule,
+  sankey: sankeyModule,
   requirement: requirementModule,
   gitgraph: gitgraphModule,
 }

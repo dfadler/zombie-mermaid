@@ -75,6 +75,8 @@ export * from './radar/parser.ts'
 export * from './radar/types.ts'
 export * from './journey/parser.ts'
 export * from './journey/types.ts'
+export * from './sankey/parser.ts'
+export * from './sankey/types.ts'
 
 export * from './requirement/parser.ts'
 export * from './requirement/types.ts'

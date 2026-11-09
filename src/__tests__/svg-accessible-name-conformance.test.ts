@@ -84,6 +84,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   radar: 'radar-beta\n  title Skills\n  axis a, b, c\n  curve x{1, 2, 3}',
   journey: 'journey\n  title Day\n  section S\n    Tea: 5: Me',
   kanban: 'kanban\n  Todo\n    a[One]',
+  sankey: 'sankey-beta\n  A,B,1',
   requirement:
     'requirementDiagram\n  requirement r {\n    id: 1\n  }\n  element e {\n  }\n  e - satisfies -> r',
 }

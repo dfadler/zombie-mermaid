@@ -735,6 +735,39 @@ the values, markup in labels).
 - **Other renderers.** Not checked on GitHub or mermaid.live.
 - **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
 
+## Sankey diagrams
+
+Checked against mermaid 12.3.0 (12.2.0, the pin, lays the samples out identically):
+node and ribbon positions and label positions agree to 0.01px, and so does the viewBox when no label overhangs the bars, on the gallery
+samples and the edge cases (zero and negative flows, duplicates, every alignment, outlined
+labels, custom sizes), measured with a throwaway script, not yet a checked-in oracle.
+
+- **Palette.** Nodes use the theme accent and its series shades; mermaid uses d3's Tableau10
+  (and its `nodeColors` and a literal `linkColor` are used as given here too).
+- **Label measurement.** The viewBox grows to fit the labels, whose width is a sum of Trebuchet
+  MS advances (as for timelines) with the 14px line box mermaid's `getBBox` reports there (13
+  above the baseline, 3 below). On a machine without Trebuchet mermaid's own width differs a few px.
+- **Font.** Labels are drawn in the render's font (Inter by default), about 10% wider than
+  Trebuchet. A label that overhangs the bars (outlined labels left of the first column, or right of
+  the last) widens the viewBox by a 12% allowance on its Trebuchet width so it is not cut off; mermaid's
+  own viewBox is a few px narrower there. Diagrams whose labels sit inside the 600px frame are unaffected.
+- **Values that cannot be drawn.** Mermaid draws `NaN` geometry for a text value (`A,B,abc`), for a
+  diagram whose flows are all zero, and for a node whose flows add up past the largest double; here
+  each is an error.
+- **Colours.** `linkColor`, besides `gradient`, `source` and `target`, and `nodeColors` take a keyword,
+  hex or colour function (`rgb()`, `hsl()`, `oklch()`...); anything else, notably `url(...)` (which an
+  inline SVG would fetch), is ignored. Mermaid passes any string through. `prefix` and `suffix` lose control
+  characters. Several `%%{init}%%` directives merge their `nodeColors` per node.
+- **`accTitle` / `accDescr`.** Accepted like every type: `accTitle` is the SVG's accessible name and
+  `accDescr` its description (a diagram with only `accDescr` has a description but no name, as for every
+  type). Mermaid's sankey grammar rejects both lines.
+- **Sizing.** `useMaxWidth` is ignored: the SVG carries a fixed `width` and `height`.
+- **HTML in names.** Mermaid runs names through its HTML sanitiser (`<script>…</script>` is removed, `<img onerror>` loses its handler);
+  names are drawn as plain text here.
+- **Other renderers.** mermaid.live and GitHub: not checked on this run (no signed-in browser tool
+  connected); only the headless mermaid builds above were compared.
+- **ASCII.** Mermaid has no ASCII output; the flow list above is this library's own.
+
 ## Timelines
 
 Checked against mermaid 12.3.0 with `pnpm run timeline:oracle` (12.2.0, the pin, renders

@@ -1,0 +1,12 @@
+Revenue  100
+  +-> Costs       ####################   60
+  `-> Profit      #############          40
+Costs  60
+  +-> Salaries    ###########|           35
+  +-> Hosting     #####                  15
+  `-> Marketing   ###                    10
+Profit  40
+  +-> Reinvested  ########               25
+  `-> Dividends   #####                  15
+Reinvested  25
+  `-> Hosting     #|                      5

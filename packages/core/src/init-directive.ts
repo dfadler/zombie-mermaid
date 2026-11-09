@@ -62,6 +62,42 @@ export interface PacketInitConfig {
   bitOrder?: 'ascending' | 'descending'
 }
 
+/** The `sankey.*` init keys that change mermaid's output (a bad value is dropped). */
+export interface SankeyInitConfig {
+  width?: number
+  height?: number
+  nodeWidth?: number
+  nodePadding?: number
+  nodeAlignment?: 'left' | 'right' | 'center' | 'justify'
+  /** `gradient`, `source`, `target` or any CSS colour. */
+  linkColor?: string
+  showValues?: boolean
+  prefix?: string
+  suffix?: string
+  labelStyle?: 'legacy' | 'outlined'
+  /** Node id -> CSS colour. */
+  nodeColors?: Record<string, string>
+}
+
+/** Drop C0/C1 control characters (and DEL): they would reach a terminal or an XML parser. */
+function stripControls(s: string): string {
+  return s.replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
+}
+
+/**
+ * A CSS colour a sankey may paint with: a keyword, hex, or a colour function.
+ * Anything else (notably `url(...)`, which would fetch a resource from an
+ * inline SVG) is dropped.
+ */
+function isSafeCssColor(v: unknown): v is string {
+  return (
+    typeof v === 'string' &&
+    /^(?:#[0-9a-f]{3,8}|[a-z]+|(?:rgb|hsl|hwb|lab|lch|oklab|oklch|color)a?\([^()]*\))$/i.test(
+      v.trim(),
+    )
+  )
+}
+
 /** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
 const SEQUENCE_NUMBER_KEYS = new Set<string>([
   'width',
@@ -252,6 +288,8 @@ export interface InitConfig {
   kanban?: KanbanInitConfig
   /** `packet.*` layout keys (numbers 0..1e5, `bitsPerRow` an integer >= 1), `showBits` and `bitOrder`; other keys and bad values are dropped. */
   packet?: PacketInitConfig
+  /** The `sankey` block (see {@link SankeyInitConfig}). */
+  sankey?: SankeyInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -601,6 +639,49 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'sankey' && typeof value === 'object' && value !== null) {
+      const t: SankeyInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'width',
+        'height',
+        'nodeWidth',
+        'nodePadding',
+      ] as const) {
+        const v = rec[k]
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
+      }
+      const align = rec.nodeAlignment
+      if (
+        align === 'left' ||
+        align === 'right' ||
+        align === 'center' ||
+        align === 'justify'
+      )
+        t.nodeAlignment = align
+      if (
+        rec.linkColor === 'gradient' ||
+        rec.linkColor === 'source' ||
+        rec.linkColor === 'target' ||
+        isSafeCssColor(rec.linkColor)
+      )
+        t.linkColor = rec.linkColor
+      if (typeof rec.showValues === 'boolean') t.showValues = rec.showValues
+      if (typeof rec.prefix === 'string') t.prefix = stripControls(rec.prefix)
+      if (typeof rec.suffix === 'string') t.suffix = stripControls(rec.suffix)
+      if (rec.labelStyle === 'legacy' || rec.labelStyle === 'outlined')
+        t.labelStyle = rec.labelStyle
+      if (typeof rec.nodeColors === 'object' && rec.nodeColors !== null) {
+        // No prototype: a node named `constructor` must not find a function.
+        const colors: Record<string, string> = Object.create(null)
+        for (const [id, c] of Object.entries({ ...rec.nodeColors }))
+          if (isSafeCssColor(c)) colors[id] = c
+        t.nodeColors = colors
+      }
+      config.sankey = t
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -671,6 +752,18 @@ export function extractInitConfig(lines: string[]): InitConfig {
       merged.timeline = { ...merged.timeline, ...config.timeline }
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
     if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
+    if (config.sankey) {
+      const earlier = merged.sankey?.nodeColors
+      merged.sankey = { ...merged.sankey, ...config.sankey }
+      if (config.sankey.nodeColors) {
+        // Directives add to each other's node colours, later ones winning per node.
+        merged.sankey.nodeColors = Object.assign(
+          Object.create(null),
+          earlier,
+          config.sankey.nodeColors,
+        )
+      }
+    }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)

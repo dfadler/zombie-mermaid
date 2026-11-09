@@ -50,6 +50,7 @@ import { renderPacketAscii } from './packet.ts'
 import { renderRadarAscii } from './radar.ts'
 import { renderJourneyAscii } from './journey.ts'
 import { renderKanbanAscii } from './kanban.ts'
+import { renderSankeyAscii } from './sankey.ts'
 import { renderRequirementAscii } from './requirement.ts'
 
 /**
@@ -129,6 +130,8 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderJourneyAscii(text, config, colorMode, theme),
   kanban: (text, config, colorMode, theme) =>
     renderKanbanAscii(text, config, colorMode, theme),
+  sankey: (text, config, colorMode, theme) =>
+    renderSankeyAscii(text, config, colorMode, theme),
   requirement: (text, config, colorMode, theme, extras) =>
     renderRequirementAscii(text, config, colorMode, theme, extras),
 }
