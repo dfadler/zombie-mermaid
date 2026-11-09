@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseRadar } from '@zombie-mermaid/mermaid-parser'
+import { RADAR_PARSER_SOURCES } from '../scripts/lib/radar-parser-sources.ts'
 
 // What mermaid 12.3.0's own radar parser and database make of each source in
 // scripts/lib/radar-parser-sources.ts (scripts/radar-parser-fixture.ts).
@@ -18,6 +19,15 @@ describe('radar parser agreement with mermaid 12.3.0', () => {
       else expect(parseRadar(source)).toEqual(radar)
     })
   }
+
+  it('records every source in scripts/lib/radar-parser-sources.ts', () => {
+    // Re-run `pnpm run radar:parser-fixture` after adding a source.
+    expect(
+      Object.fromEntries(
+        Object.entries(FIXTURE).map(([name, c]) => [name, c.source]),
+      ),
+    ).toEqual(RADAR_PARSER_SOURCES)
+  })
 
   it('has accepted and rejected cases', () => {
     const cases = Object.values(FIXTURE)

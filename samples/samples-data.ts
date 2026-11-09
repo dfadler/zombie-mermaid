@@ -3411,11 +3411,11 @@ pie title Reports by team
   {
     title: 'Radar: Wide Characters',
     category: 'Radar',
-    description: 'CJK and emoji labels line up by display width in the text output.',
+    description: 'CJK labels and an emoji title line up by display width in the text output.',
     source: `radar-beta
   title 能力 📊
-  axis a["速度"], b["力量 💪"], c["Range"]
+  axis a["速度"], b["力量"], c["Range"]
   curve x["甲"]{3, 4, 5}
-  curve y["乙 🚀"]{5, 2, 4}`,
+  curve y["乙"]{5, 2, 4}`,
   },
 ]
