@@ -10,9 +10,7 @@ const render = (text: string, useAscii = false) =>
 
 describe('journey ASCII', () => {
   it('lists actors, sections and tasks with faces by score', () => {
-    expect(
-      render('journey\nsection S\nA: 5: Me\nB: 3: Me, Cat\nC: 1'),
-    ).toBe(
+    expect(render('journey\nsection S\nA: 5: Me\nB: 3: Me, Cat\nC: 1')).toBe(
       [
         '  Actors: Cat, Me',
         '',

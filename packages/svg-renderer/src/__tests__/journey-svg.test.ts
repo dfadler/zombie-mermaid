@@ -50,7 +50,9 @@ describe('layoutJourney', () => {
     expect(l.tasks.map((t) => t.num)).toEqual([0, 0])
     const many = layout(
       'journey\n' +
-        Array.from({ length: 9 }, (_, i) => `section S${i}\nT${i}: 3`).join('\n'),
+        Array.from({ length: 9 }, (_, i) => `section S${i}\nT${i}: 3`).join(
+          '\n',
+        ),
     )
     expect(many.sections.map((s) => s.num)).toEqual([0, 1, 2, 3, 4, 5, 6, 0, 1])
   })
@@ -64,10 +66,14 @@ describe('layoutJourney', () => {
       'A Very Long Actor Name That Wraps Around The',
       'Legend Because It Is Longer Than Others',
     ])
-    expect(wrapLegendLabel('x'.repeat(80)).every((l) => l.length < 80)).toBe(true)
+    expect(wrapLegendLabel('x'.repeat(80)).every((l) => l.length < 80)).toBe(
+      true,
+    )
     expect(wrapTaskLabel('Make tea')).toEqual(['Make tea'])
     expect(wrapTaskLabel('one<br>two')).toEqual(['one', 'two'])
-    expect(wrapTaskLabel('A task with a very long description that wraps')).toHaveLength(3)
+    expect(
+      wrapTaskLabel('A task with a very long description that wraps'),
+    ).toHaveLength(3)
   })
 
   it('leaves room for a wide legend label', () => {
@@ -99,7 +105,9 @@ describe('renderMermaidSVG – journey', () => {
   })
 
   it('escapes text', () => {
-    expect(renderMermaidSVG('journey\n<b>&: 3: <i>')).toContain('&lt;b&gt;&amp;')
+    expect(renderMermaidSVG('journey\n<b>&: 3: <i>')).toContain(
+      '&lt;b&gt;&amp;',
+    )
   })
 
   it('treats a NaN score as a straight mouth at a finite position', () => {

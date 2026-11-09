@@ -39,7 +39,9 @@ describe('parseJourney', () => {
   })
 
   it('treats # as a comment, case-insensitive keywords, and %% lines', () => {
-    const j = parseJourney('JOURNEY\n%% note\nTITLE T # c\nSECTION S\nA: 2: B # c')
+    const j = parseJourney(
+      'JOURNEY\n%% note\nTITLE T # c\nSECTION S\nA: 2: B # c',
+    )
     expect(j.title).toBe('T')
     expect(j.sections).toEqual(['S'])
     expect(j.tasks[0]).toMatchObject({ name: 'A', score: 2, actors: ['B'] })
@@ -51,7 +53,9 @@ describe('parseJourney', () => {
   })
 
   it('removes %%{init}%% directives', () => {
-    expect(parseJourney('%%{init: {"theme":"dark"}}%%\njourney\nA: 1').tasks).toHaveLength(1)
+    expect(
+      parseJourney('%%{init: {"theme":"dark"}}%%\njourney\nA: 1').tasks,
+    ).toHaveLength(1)
   })
 
   it('sorts actors with Array.sort order', () => {

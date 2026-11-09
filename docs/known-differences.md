@@ -746,3 +746,21 @@ drawing size agree on every gallery sample.
   sandboxed cross-origin frame, so its mermaid version and `timeline TD` output could not be
   read; `TD` is checked against the oracle only.
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
+
+## User journeys
+
+Checked against mermaid 12.3.0 (`mermaid.render` in headless Chromium): viewBox, section
+bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gallery samples.
+
+- **Text wrapping.** Mermaid puts task and section text in an HTML `foreignObject`, so the
+  browser wraps it at the box width with whatever `trebuchet ms`/`Open Sans` resolves to;
+  this library sums Trebuchet MS advances (the timeline table) and draws `<text>` lines.
+  The legend width, which moves `leftMargin`, is measured the same way, so a very wide
+  actor name can shift the drawing by a few pixels (3% on the test machine's fallback font).
+- **Palette.** Section bars and actor dots use the theme accent and its series shades
+  (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
+- **Not read yet.** `journey` config in `%%{init}%%` (`leftMargin`, `width`, `taskMargin`,
+  `maxLabelWidth`, `actorColours`, `sectionFills`, ...) and the themes' `fillType0-7`.
+- **Non-numeric score.** Mermaid emits a `NaN` attribute (the browser reads it as 0, so the
+  face sits at y=0); this library does the same.
+- **ASCII.** Mermaid has no ASCII output; the row listing above is this library's own.

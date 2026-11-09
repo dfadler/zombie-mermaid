@@ -143,7 +143,10 @@ export function parseJourney(text: string): Journey {
         break
       case 'TASK_DATA': {
         if (!pendingName) {
-          fail(line, `Unexpected "${value.trim()}" — a score follows a task name`)
+          fail(
+            line,
+            `Unexpected "${value.trim()}" — a score follows a task name`,
+          )
         }
         const pieces = value.slice(1).split(':')
         journey.tasks.push({
@@ -151,7 +154,9 @@ export function parseJourney(text: string): Journey {
           name: pendingName!.name,
           score: Number(pieces[0]),
           actors:
-            pieces.length === 1 ? [] : pieces[1]!.split(',').map((s) => s.trim()),
+            pieces.length === 1
+              ? []
+              : pieces[1]!.split(',').map((s) => s.trim()),
         })
         pendingName = undefined
         break

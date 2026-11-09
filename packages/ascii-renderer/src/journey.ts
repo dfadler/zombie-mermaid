@@ -73,7 +73,10 @@ export function renderJourneyAscii(
       section = t.section
       if (section !== '') {
         if (rows.length > 0 && rows[rows.length - 1] !== '') rows.push('')
-        push(`${indent}[${section}]`, `${indent}${paint(`[${section}]`, accent)}`)
+        push(
+          `${indent}[${section}]`,
+          `${indent}${paint(`[${section}]`, accent)}`,
+        )
       }
     }
     const score = Number.isNaN(t.score) ? '?' : String(t.score)

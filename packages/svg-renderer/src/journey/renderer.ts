@@ -37,8 +37,7 @@ function r(n: number): string {
   return String(Number.isFinite(n) ? Math.round(n * 100) / 100 : 0)
 }
 
-const SMILE =
-  'M7.5,0A7.5,7.5,0,1,1,-7.5,0L-6.818,0A6.818,6.818,0,1,0,6.818,0Z'
+const SMILE = 'M7.5,0A7.5,7.5,0,1,1,-7.5,0L-6.818,0A6.818,6.818,0,1,0,6.818,0Z'
 const SAD = 'M-7.5,0A7.5,7.5,0,1,1,7.5,0L6.818,0A6.818,6.818,0,1,0,-6.818,0Z'
 
 function journeyStyles(
@@ -94,12 +93,7 @@ ${rules.join('\n')}
 }
 
 /** Centered multi-line text, as Mermaid's `byTspan`: lines stacked 14px apart around the box middle. */
-function labelText(
-  lines: string[],
-  x: number,
-  y: number,
-  cls: string,
-): string {
+function labelText(lines: string[], x: number, y: number, cls: string): string {
   const tspans = lines
     .map((l, i) => {
       const dy = i * 14 - (14 * (lines.length - 1)) / 2
@@ -184,7 +178,12 @@ export function renderJourneySvg(
   for (const s of j.sections) {
     parts.push(
       `<g><rect x="${r(s.x)}" y="${r(s.y)}" width="${r(s.width)}" height="${r(s.height)}" rx="3" ry="3" class="journey-section section-type-${s.num}"/>` +
-        labelText(s.text.split(/<br\s*\/?>/i), s.x + s.width / 2, s.y + s.height / 2, '') +
+        labelText(
+          s.text.split(/<br\s*\/?>/i),
+          s.x + s.width / 2,
+          s.y + s.height / 2,
+          '',
+        ) +
         '</g>',
     )
   }
