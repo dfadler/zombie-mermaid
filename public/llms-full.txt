@@ -1605,7 +1605,7 @@ and its label centred under them. A box is 2 columns per bit (3 for a long
 label if the row still fits in 120 columns); a label wider than its box ends in
 `…` (`~` in ASCII mode), and a number that does not fit is dropped.
 
-```text
+````text
                                            TCP Packet
 ┌───────────────────────────────────────────────┬───────────────────────────────────────────────┐
 │0                                            15│16                                           31│
@@ -1637,7 +1637,7 @@ requirementDiagram
     }
 
     test_entity - satisfies -> test_req
-```
+````
 
 Supported: the six requirement kinds (`requirement`, `functionalRequirement`,
 `interfaceRequirement`, `performanceRequirement`, `physicalRequirement`,
