@@ -1314,7 +1314,6 @@ column, stacked, with boxed cards.
 - Cards share one width (the widest content, up to 40 columns; longer text wraps).
 - `priority` is named in the card's top border; `ticket` and `assigned` share a row.
 
-
 ## Requirement Diagrams
 
 `requirementDiagram` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/requirementDiagram.html)
