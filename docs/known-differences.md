@@ -715,7 +715,31 @@ matter share one code path. SVG only: ASCII has no pixel padding, so these keys 
   every `state` key except `useMaxWidth` (`padding`, `nodeSpacing`, `rankSpacing`, `fontSize`, `forkWidth`, `compositTitleSize`,
   `radius`, ...). The `state` block is reported as ignored.
 - **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
-- **Not yet measured:** `xyChart`, `c4` and `architecture` blocks, tracked in separate issues.
+- **Not yet measured:** `xyChart` and `c4` blocks, tracked in separate issues. The `architecture` block is below.
+
+## Architecture `%%{init}%%` / front-matter config ([#2907](https://github.com/dfadler/zombie-mermaid/issues/2907))
+
+Measured on mermaid 12.3.0 (headless Chromium, each key rendered with and without; its layout is
+deterministic, two default renders agree exactly). Init and front matter share one code path. SVG only: ASCII
+has no pixel units, so these keys do nothing there.
+
+- **Read: `architecture.padding`** (default 40) pads the page and every group: the canvas grows 4 per unit on each
+  axis, a group's border sits `padding + 2.5` from the services it holds. The `padding` render option still sets
+  the page margin when the caller passes it; the group padding always follows the config.
+- **Read: `architecture.iconSize`** (default 80) is the tile edge. The icon glyph and the empty-service box scale with it,
+  a label wraps at 1.5 tiles and the group icon stays 30px.
+- **Read: `architecture.fontSize`** (default 16) only sets the room under a label: a group's bottom edge sits `fontSize + 1`
+  below the tile, and the label is measured at that size. The text is still drawn at the same size, as in mermaid.
+- **Read: `architecture.idealEdgeLengthMultiplier`** (default 1.5, values 0.1 to 100) puts neighbouring cells
+  `iconSize * (1 + multiplier)` apart. Across a group border the gap is fcose's own separation (about 77 between boxes at
+  the default tile), which follows `padding` and `iconSize`; we fit it to tiles 20 to 120 and it is within 8px, not exact.
+- **Differences left:** below a multiplier of 1.5 mermaid's force layout compresses the pitch a little (up to 6px at
+  0.1 to 1). Label widths come from our font metrics, so a label wider than its tile (`iconSize: 40`, `fontSize: 24`) can
+  differ by a few pixels. A word wider than the wrap width stays whole, where mermaid cuts it mid-word.
+- **Not read, no effect on mermaid 12.3.0 output:** `nodeSeparation`, `seed`, `randomize` (under 0.2px) and `useMaxWidth`
+  (only the `<svg>` sizing). **`edgeElasticity`** and **`numIter`** only move the force layout's resting positions by a
+  few pixels (`edgeElasticity` 0.1 shifts the rows about 2px; `numIter` 50 shifts the columns about 15px), which needs
+  fcose itself to reproduce, so they are not read.
 
 ## Radar charts
 

@@ -24,6 +24,18 @@ export function applyClickStatement(line: string, interactions: Map<string, Node
 export function applyThemeVariables(options: RenderOptions, config: InitConfig | undefined): RenderOptions;
 
 // @public
+export interface ArchitectureInitLayout {
+    // (undocumented)
+    fontSize?: number;
+    // (undocumented)
+    iconSize?: number;
+    // (undocumented)
+    idealEdgeLengthMultiplier?: number;
+    // (undocumented)
+    padding?: number;
+}
+
+// @public
 export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string, body?: MonoFontEmbed): string;
 
 // @public (undocumented)
@@ -371,6 +383,7 @@ export function hasMeasuredAdvance(char: string): boolean;
 
 // @public
 export interface InitConfig {
+    architectureLayout?: ArchitectureInitLayout;
     classLayout?: ClassInitLayout;
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;

@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { extractInitConfig } from '@zombie-mermaid/core'
-import { renderMermaidASCII, renderMermaidSVG } from '../../../../src/index.ts'
+import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
 const group = `architecture-beta
   group api(cloud)[API]
@@ -75,7 +75,7 @@ describe('architecture init keys (#2907)', () => {
     ).toBe(base)
   })
 
-  // mermaid 12.3.0, db:L -- R:server in a group: 445.7 x 262 by default.
+  // Mermaid 12.3.0, db:L -- R:server in a group: 445.7 x 262 by default.
   it.each([
     [{ padding: 0 }, 285.7, 106.7],
     [{ padding: 20 }, 365.7, 182],
@@ -89,7 +89,7 @@ describe('architecture init keys (#2907)', () => {
     expect(Math.abs(oh - h)).toBeLessThan(1)
   })
 
-  // mermaid 12.3.0, a:R -- L:b, b:B -- T:c: pitch is iconSize * (1 + multiplier).
+  // Mermaid 12.3.0, a:R -- L:b, b:B -- T:c: pitch is iconSize * (1 + multiplier).
   it.each([
     [{ idealEdgeLengthMultiplier: 2 }, 400.5, 424.7],
     [{ idealEdgeLengthMultiplier: 3 }, 480.2, 504.4],
@@ -118,7 +118,7 @@ describe('architecture init keys (#2907)', () => {
   service a(server)[A] in g1
   service b(server)[B] in g2
   a:R -- L:b`
-    // mermaid 12.3.0 viewBox widths: 488.2 default, 365.4 at padding 20, 727.6 at 80.
+    // Mermaid 12.3.0 viewBox widths: 488.2 default, 365.4 at padding 20, 727.6 at 80.
     for (const [cfg, w] of [
       [{}, 488.2],
       [{ padding: 20 }, 365.4],
