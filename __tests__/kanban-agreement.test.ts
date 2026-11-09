@@ -74,3 +74,22 @@ describe('kanbanBreaches', () => {
     ])
   })
 })
+
+describe('parseKanbanSvg on sparse markup', () => {
+  it('treats a missing viewBox, transform and attributes as zero', () => {
+    const svg =
+      '<svg><g class="cluster"><rect></rect></g><g class="node"><rect class="basic"></rect></g></svg>'
+    expect(parseKanbanSvg(svg)).toEqual({
+      columns: [{ x: 0, y: 0, width: 0, height: 0 }],
+      cards: [{ x: 0, y: 0, width: 0, height: 0 }],
+      bars: [''],
+      size: { width: 0, height: 0 },
+    })
+  })
+
+  it('reads a bar with no stroke as "-"', () => {
+    const svg =
+      '<svg viewBox="0 0 1 1"><g class="node" transform="translate(1, 2)"><rect class="basic" x="0" y="0" width="1" height="1"></rect><line stroke-width="4"></line></g></svg>'
+    expect(parseKanbanSvg(svg).bars).toEqual(['-'])
+  })
+})

@@ -100,4 +100,47 @@ describe('parseKanban', () => {
     expect(() => parseKanban('kanban')).toThrow(/Line 1/)
     expect(() => parseKanban('kanban\n  A\n    [a')).toThrow(/Line 3/)
   })
+
+  it('reads bare booleans, null, numbers, quoted quotes and ignores non-text keys', () => {
+    const card = (data: string) =>
+      parseKanban(`kanban\n  A\n    a[x]@{ ${data} }`).columns[0]!.cards[0]!
+    expect(card('ticket: true, assigned: false')).toMatchObject({
+      ticket: 'true',
+    })
+    expect(card('ticket: false').ticket).toBeUndefined()
+    expect(card('ticket: null').ticket).toBeUndefined()
+    expect(card('ticket: 1e3, priority: 2.5')).toMatchObject({
+      ticket: '1000',
+      priority: '2.5',
+    })
+    expect(card(`assigned: 'it''s, ok'`).assigned).toBe("it's, ok")
+    expect(card('assigned: "say \\"hi\\""').assigned).toBe('say "hi"')
+    expect(card('1: x, icon: fa-x')).toMatchObject({ icon: 'fa-x' })
+    expect(card('shape: rect').text).toBe('x')
+    expect(card(`'ticket': "A: b"`).ticket).toBe('A: b')
+  })
+
+  it('says what it expected when a line is malformed', () => {
+    expect(() => parseKanban('kanban\n  A\n    a[x] b')).toThrow(
+      /end of the line/,
+    )
+    expect(() => parseKanban('kanban\n  A\n    a[]')).toThrow(/node text/)
+    expect(() => parseKanban('kanban\n  A\n    mail@x.com')).toThrow(
+      /Unexpected "@"/,
+    )
+    expect(() => parseKanban('kanban\n  @{ a: b }')).toThrow(/a node/)
+    expect(() => parseKanban('kanban\n  A\n    a[x')).toThrow(/closing bracket/)
+    expect(() => parseKanban('kanban\n  :::hot')).toThrow(/class needs a node/)
+    expect(() => parseKanban('kanban\n  ::icon(x)')).toThrow(
+      /icon needs a node/,
+    )
+    expect(() => parseKanban('kanban\n  A\n    )')).toThrow(/Line 3/)
+  })
+
+  it('ignores an icon on a column and blank indented lines', () => {
+    const k = parseKanban('kanban\n  A\n  ::icon(fa)\n    \n  :::c\n    a')
+    expect(k.columns[0]).not.toHaveProperty('icon')
+    expect(k.columns[0]!.className).toBe('c')
+    expect(k.columns[0]!.cards).toHaveLength(1)
+  })
 })

@@ -54,6 +54,45 @@ describe('kanban layout (Mermaid 12.3.0 figures)', () => {
   })
 })
 
+describe('kanban line breaking (as Chrome breaks a 175px break-spaces box)', () => {
+  const lines = (text: string) =>
+    layout(`kanban\n  A\n    a[${text}]`).columns[0]!.cards[0]!.title.lines.map(
+      (l) => l.map((r) => r.text).join(''),
+    )
+
+  it('breaks after a hyphen between letters, not before a digit', () => {
+    expect(lines('aaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb')).toEqual([
+      'aaaaaaaaaaaaaa-',
+      'bbbbbbbbbbbbbbbb',
+    ])
+    expect(lines('aaaaaaaaaaaaaa-1111111111111111')).toHaveLength(1)
+  })
+
+  it('breaks after a hyphen that ends a bold run', () => {
+    expect(lines('**aaaaaaaaaaaaaa-**bbbbbbbbbbbbbbbb')).toHaveLength(2)
+    expect(lines('aaaaaa**aaaaaaaa-**bbbbbbbbbbbbbbbb')).toHaveLength(2)
+  })
+
+  it('breaks between ideographs and widens the box for an unbreakable word', () => {
+    const cjk = layout(
+      `kanban\n  列\n    a[${'一二三四五六七八九十'.repeat(2)}]`,
+    )
+    expect(cjk.columns[0]!.cards[0]!.title.lines).toHaveLength(2)
+    const long = layout(`kanban\n  A\n    a[${'W'.repeat(30)} x]`)
+    expect(long.columns[0]!.cards[0]!.title.width).toBeGreaterThan(175)
+    expect(long.viewBox.width).toBeGreaterThan(220)
+  })
+
+  it('breaks between a Latin word and an ideograph that does not fit after it', () => {
+    expect(lines(`${'W'.repeat(12)}一二`)[0]).toBe('W'.repeat(12))
+  })
+
+  it('moves a space that no longer fits to the next line', () => {
+    const one = lines('aaaaaaaaaaaaaaaaaaaa bbb')
+    expect(one.join('')).toContain('aaaaaaaaaaaaaaaaaaaa')
+  })
+})
+
 describe('kanban SVG', () => {
   const svg = renderMermaidSVG(
     'kanban\n  Todo\n    a[One]@{ ticket: T-1, assigned: bob, priority: High }\n  Done\n    b[Two]',
@@ -79,5 +118,21 @@ describe('kanban SVG', () => {
     expect(renderMermaidSVG('kanban\n  A\n    [a &lt;b> "c"]')).not.toContain(
       '<b>',
     )
+  })
+
+  it('keeps safe user classes, draws bars and Markdown runs, and an empty board', () => {
+    const out = renderMermaidSVG(
+      'kanban\n  A\n  :::hot bad;class\n    a[**b** *i* ***both***]@{ priority: Medium }\n    :::cool\n    b',
+    )
+    expect(out).toContain('cluster section-1 hot"')
+    expect(out).toContain('class="node cool"')
+    expect(out).toContain('<line')
+    expect(out).not.toContain('stroke="undefined"')
+    expect(out).toContain('kb-bold')
+    expect(out).toContain('kb-italic')
+    const empty = layout('kanban\n')
+    expect(empty.columns).toEqual([])
+    expect(empty.viewBox.width).toBe(20)
+    expect(renderMermaidSVG('kanban\n')).toContain('<svg')
   })
 })

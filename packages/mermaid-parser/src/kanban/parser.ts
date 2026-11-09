@@ -267,8 +267,7 @@ function parseShapeData(data: string): Record<string, Scalar> {
     if (e === '') continue
     // A bare `key` is a key with a null value in a YAML flow mapping.
     const colon = keyEnd(e)
-    const key = scalar(colon === -1 ? e : e.slice(0, colon))
-    if (typeof key !== 'string') continue
+    const key = String(scalar(colon === -1 ? e : e.slice(0, colon)))
     doc[key] = colon === -1 ? null : scalar(e.slice(colon + 1))
   }
   return doc
@@ -323,7 +322,7 @@ export function parseKanban(text: string): Kanban {
     token: Token,
   ) => {
     const node: KanbanCard = {
-      id: id.trim() === '' ? `kbn${entries.length}` : id,
+      id,
       text: decodeMermaidEntities(descr),
     }
     if (data !== undefined) {
@@ -404,8 +403,8 @@ export function parseKanban(text: string): Kanban {
     }
     let descr: string
     if (peek().kind !== 'NODE_DSTART') {
-      if (id === undefined) throw fail(first, 'a node')
-      id = id.trimEnd()
+      // The caller only gets here for a NODE_ID or NODE_DSTART, so a bare node has an id.
+      id = id!.trimEnd()
       descr = id
     } else {
       i++
