@@ -46,6 +46,7 @@ describe('list_diagram_types', () => {
       mindmap: 'mindmap\n  root',
       gantt: 'gantt\nA :a, 2024-01-01, 1d',
       timeline: 'timeline\n2002 : LinkedIn',
+      journey: 'journey\nA: 3: Me',
       kanban: 'kanban\n  A\n    b',
       sankey: 'sankey-beta\nA,B,1',
       requirement: 'requirementDiagram\nrequirement r {\n}',

@@ -16,6 +16,7 @@ import { ElkNode } from '@zombie-mermaid/core';
 import { ErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ErRenderOptions } from '@zombie-mermaid/core';
 import { FlowchartRenderOptions } from '@zombie-mermaid/core';
+import { Journey } from '@zombie-mermaid/mermaid-parser';
 import { Kanban } from '@zombie-mermaid/mermaid-parser';
 import { LayoutCache } from '@zombie-mermaid/core';
 import { LayoutOptions } from '@zombie-mermaid/core';
@@ -28,6 +29,7 @@ import { Point } from '@zombie-mermaid/core';
 import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGraph } from '@zombie-mermaid/core';
+import { PositionedJourney } from '@zombie-mermaid/mermaid-parser';
 import { PositionedKanban } from '@zombie-mermaid/mermaid-parser';
 import { PositionedMindmap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedNode } from '@zombie-mermaid/core';
@@ -231,6 +233,24 @@ export function hasLabelBelowIcon(a: {
 // @public
 export const INLINE_CENTERED_EDGE_LABEL: LayoutOptions;
 
+// @public (undocumented)
+export const JOURNEY: {
+    readonly width: 150;
+    readonly height: 50;
+    readonly diagramMarginX: 50;
+    readonly diagramMarginY: 10;
+    readonly leftMargin: 150;
+    readonly maxLabelWidth: 360;
+    readonly taskMargin: 50;
+    readonly legendTop: 60;
+    readonly sectionY: 50;
+    readonly taskTop: 110;
+    readonly lineEnd: 450;
+    readonly sections: 7;
+    readonly actors: 6;
+    readonly originY: 25;
+};
+
 // @public
 export const KANBAN: {
     readonly sectionWidth: 200;
@@ -256,6 +276,9 @@ export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartL
 
 // @public
 export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
+
+// @public (undocumented)
+export function layoutJourney(journey: Journey): PositionedJourney;
 
 // @public
 export function layoutKanban(kanban: Kanban): PositionedKanban;
@@ -370,6 +393,9 @@ export function renderClassSvg(diagram: PositionedClassDiagram, colors: DiagramC
 
 // @public
 export function renderErSvg(diagram: PositionedErDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderJourneySvg(j: PositionedJourney, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderKanbanSvg(board: PositionedKanban, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
@@ -511,6 +537,12 @@ export function validateMermaid(text: string): void;
 
 // @public
 export function withDataSrc(svgTag: string, source: string | undefined): string;
+
+// @public
+export function wrapLegendLabel(person: string): string[];
+
+// @public
+export function wrapTaskLabel(label: string): string[];
 
 // @public
 export function wrapTimelineText(text: string, width: number): string[];

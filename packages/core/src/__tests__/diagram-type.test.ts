@@ -127,6 +127,17 @@ describe('detectDiagramType – timeline', () => {
   })
 })
 
+describe('detectDiagramType – journey', () => {
+  it('detects journeys, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('journey')).toBe('journey')
+    expect(detectDiagramType('  journey\n title T')).toBe('journey')
+    expect(detectDiagramType('%% c\njourney')).toBe('journey')
+    expect(detectDiagramType('Journey')).toBe('flowchart')
+    expect(detectDiagramType('journeys')).toBe('flowchart')
+    expect(detectDiagramType('journey#c\nA: 1')).toBe('journey')
+  })
+})
+
 describe('detectDiagramType – kanban', () => {
   it('detects kanban boards, case-sensitively and as a whole word', () => {
     expect(detectDiagramType('kanban')).toBe('kanban')

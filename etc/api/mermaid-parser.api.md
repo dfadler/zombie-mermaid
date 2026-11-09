@@ -499,6 +499,22 @@ export function isoWeekday(ms: number): number;
 export function isValidHex(color: string): boolean;
 
 // @public
+export interface Journey {
+    actors: string[];
+    sections: string[];
+    tasks: JourneyTask[];
+    title?: string;
+}
+
+// @public
+export interface JourneyTask {
+    actors: string[];
+    name: string;
+    score: number;
+    section: string;
+}
+
+// @public
 export interface Kanban {
     // (undocumented)
     columns: KanbanColumn[];
@@ -676,6 +692,9 @@ export function parseGantt(source: string, now?: Date): GanttChart;
 
 // @public
 export function parseGenericTypes(input: string): string;
+
+// @public
+export function parseJourney(text: string): Journey;
 
 // @public
 export function parseKanban(text: string): Kanban;
@@ -1148,6 +1167,88 @@ export interface PositionedGanttTick {
     // (undocumented)
     label: string;
     x: number;
+}
+
+// @public
+export interface PositionedJourney {
+    // (undocumented)
+    axis: {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+    };
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    legend: PositionedJourneyLegendRow[];
+    // (undocumented)
+    sections: PositionedJourneySection[];
+    // (undocumented)
+    tasks: PositionedJourneyTask[];
+    // (undocumented)
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedJourneyLegendRow {
+    // (undocumented)
+    cx: number;
+    // (undocumented)
+    cy: number;
+    lines: {
+        text: string;
+        x: number;
+        y: number;
+    }[];
+    // (undocumented)
+    pos: number;
+}
+
+// @public
+export interface PositionedJourneySection {
+    // (undocumented)
+    height: number;
+    num: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedJourneyTask {
+    dots: {
+        cx: number;
+        cy: number;
+        actor: string;
+        pos: number;
+    }[];
+    faceY: number;
+    // (undocumented)
+    height: number;
+    lineEndY: number;
+    lines: string[];
+    // (undocumented)
+    num: number;
+    // (undocumented)
+    score: number;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
 }
 
 // @public

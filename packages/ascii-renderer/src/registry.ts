@@ -45,6 +45,7 @@ import { renderQuadrantAscii } from './quadrant.ts'
 import { renderMindmapAscii } from './mindmap.ts'
 import { renderGanttAscii } from './gantt.ts'
 import { renderTimelineAscii } from './timeline.ts'
+import { renderJourneyAscii } from './journey.ts'
 import { renderKanbanAscii } from './kanban.ts'
 import { renderSankeyAscii } from './sankey.ts'
 import { renderRequirementAscii } from './requirement.ts'
@@ -116,6 +117,8 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderGanttAscii(text, config, colorMode, theme),
   timeline: (text, config, colorMode, theme) =>
     renderTimelineAscii(text, config, colorMode, theme),
+  journey: (text, config, colorMode, theme) =>
+    renderJourneyAscii(text, config, colorMode, theme),
   kanban: (text, config, colorMode, theme) =>
     renderKanbanAscii(text, config, colorMode, theme),
   sankey: (text, config, colorMode, theme) =>

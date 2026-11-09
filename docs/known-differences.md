@@ -794,6 +794,25 @@ wrapped line counts, priority bars and the drawing size agree on every gallery s
 - **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
 - **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
 
+## User journeys
+
+Checked against mermaid 12.3.0 (`mermaid.render` in headless Chromium): viewBox, section
+bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gallery samples.
+
+- **Text wrapping.** Mermaid puts task and section text in an HTML `foreignObject`, so the
+  browser wraps it at the box width with whatever `trebuchet ms`/`Open Sans` resolves to;
+  this library sums Trebuchet MS advances plus its kerning pairs (both measured on macOS in
+  Chromium) and draws `<text>` lines. The legend width, which moves `leftMargin`, agrees
+  with mermaid 12.3.0 to the pixel on the gallery samples; on a machine without Trebuchet
+  mermaid's own widths change (its fallback is Verdana or Arial), and so would the layout there.
+- **Palette.** Section bars and actor dots use the theme accent and its series shades
+  (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
+- **Not read yet.** `journey` config in `%%{init}%%` (`leftMargin`, `width`, `taskMargin`,
+  `maxLabelWidth`, `actorColours`, `sectionFills`, ...) and the themes' `fillType0-7`.
+- **Non-numeric score.** Mermaid emits `NaN` face coordinates (browsers draw them at 0);
+  this library emits `0` so the SVG stays valid.
+- **ASCII.** Mermaid has no ASCII output; the row listing above is this library's own.
+
 ## Requirement diagrams
 
 Checked against mermaid 12.3.0 with `pnpm run requirement:oracle` (12.2.0, the pin,

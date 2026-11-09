@@ -79,6 +79,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   mindmap: 'mindmap\n  root((Plan))\n    Build\n    Ship',
   gantt: 'gantt\n  title Plan\n  dateFormat YYYY-MM-DD\n  A :a, 2024-01-01, 3d',
   timeline: 'timeline\n  title History\n  2002 : LinkedIn',
+  journey: 'journey\n  title Day\n  section S\n    Tea: 5: Me',
   kanban: 'kanban\n  Todo\n    a[One]',
   sankey: 'sankey-beta\n  A,B,1',
   requirement:

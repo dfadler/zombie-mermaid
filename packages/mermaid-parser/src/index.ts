@@ -67,6 +67,8 @@ export * from './kanban/parser.ts'
 export * from './kanban/types.ts'
 export * from './timeline/parser.ts'
 export * from './timeline/types.ts'
+export * from './journey/parser.ts'
+export * from './journey/types.ts'
 export * from './sankey/parser.ts'
 export * from './sankey/types.ts'
 
