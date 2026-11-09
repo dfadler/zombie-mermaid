@@ -141,6 +141,8 @@ export {
   wrapTimelineText,
 } from './timeline/layout.ts'
 export { renderTimelineSvg } from './timeline/renderer.ts'
+export { layoutGitGraph } from './gitgraph/layout.ts'
+export { renderGitGraphSvg } from './gitgraph/renderer.ts'
 export { PACKET, layoutPacket } from './packet/layout.ts'
 export type {
   PositionedPacket,

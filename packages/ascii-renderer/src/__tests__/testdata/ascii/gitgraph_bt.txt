@@ -1,0 +1,13 @@
+gitGraph BT:
+   commit id: "one"
+   branch feature
+   commit id: "two" tag: "v0.1"
+   checkout main
+   commit id: "three"
+   merge feature id: "four"
+---
+@-----+   four
+*     |   three
++-----*   two  [v0.1]
+*     :   one
+main  feature

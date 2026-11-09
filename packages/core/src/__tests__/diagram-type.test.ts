@@ -127,6 +127,17 @@ describe('detectDiagramType – timeline', () => {
   })
 })
 
+describe('detectDiagramType – gitGraph', () => {
+  it('detects gitGraph headers, case-sensitively, as Mermaid does', () => {
+    expect(detectDiagramType('gitGraph')).toBe('gitgraph')
+    expect(detectDiagramType('gitGraph LR:\n commit')).toBe('gitgraph')
+    expect(detectDiagramType('  gitGraph:\n commit')).toBe('gitgraph')
+    expect(detectDiagramType('%% c\ngitGraph TB:')).toBe('gitgraph')
+    expect(detectDiagramType('gitgraph\n commit')).toBe('flowchart')
+    expect(detectDiagramType('GitGraph\n commit')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – packet', () => {
   it('detects packet and packet-beta, case-sensitively and as a whole word', () => {
     expect(detectDiagramType('packet')).toBe('packet')

@@ -79,6 +79,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   mindmap: 'mindmap\n  root((Plan))\n    Build\n    Ship',
   gantt: 'gantt\n  title Plan\n  dateFormat YYYY-MM-DD\n  A :a, 2024-01-01, 3d',
   timeline: 'timeline\n  title History\n  2002 : LinkedIn',
+  gitgraph: 'gitGraph\n  title History\n  commit id: "a"',
   packet: 'packet\n  title Header\n  0-7: "a"',
   radar: 'radar-beta\n  title Skills\n  axis a, b, c\n  curve x{1, 2, 3}',
   journey: 'journey\n  title Day\n  section S\n    Tea: 5: Me',

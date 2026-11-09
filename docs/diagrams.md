@@ -1458,6 +1458,76 @@ blank row where the SVG has a divider, relationships dotted with an arrowhead an
 └──────────────────────┘
 ```
 
+## Git graphs
+
+`gitGraph` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/gitgraph.html)
+and its renderer's geometry. `pnpm run gitgraph:oracle` compares the gallery samples
+with `mermaid@12.3.0` (branch lines and label boxes, arrow routes, commit symbols,
+commit labels, tags and the drawing size); 12.2.0 (the pin and mermaid.live today)
+scores the same on every sample.
+
+```mermaid
+gitGraph
+   commit id: "init"
+   commit id: "docs"
+   branch develop
+   checkout develop
+   commit id: "feature-a"
+   commit id: "feature-b"
+   checkout main
+   merge develop id: "release-1"
+   commit id: "hotfix"
+```
+
+Supported: `gitGraph`, `gitGraph LR:` (the default), `gitGraph TB:` and `gitGraph BT:`;
+`commit` with `id:`, `msg:` (or a bare string), any number of `tag:` and
+`type: NORMAL | REVERSE | HIGHLIGHT` in any order; `branch <name> [order: N]` (a name may
+contain `/`, `.` and `-`, or be a quoted string); `checkout` / `switch`; `merge` with
+`id:`, `tag:` and `type:`; `cherry-pick id: "…" [tag: "…"] [parent: "…"]`; `title`,
+`accTitle`, `accDescr` and `%%` comments. The `gitGraph` config block of `%%{init}%%`
+and front matter is read for `mainBranchName`, `mainBranchOrder`, `showCommitLabel`,
+`showBranches`, `rotateCommitLabel` and `parallelCommits`. The errors are Mermaid's:
+a branch that exists, a `checkout` of one that does not, a `merge` of a branch into
+itself, with no commits, with the same head or reusing an id, and a `cherry-pick` of a
+commit on the current branch or of a merge without `parent:`.
+
+The SVG ports Mermaid's renderer: commits 50px apart (40 plus 10), branches 90px apart
+with rotated labels (50 without), the same arrow routes and rerouting lanes, the same
+symbols (a ring for a merge, a cross for `REVERSE`, a square for `HIGHLIGHT`, the
+cherry for a pick) and the same tag boxes. Text widths are summed Trebuchet MS
+advances, not measured in a browser. Colours come from the theme (the accent and its
+series shades), eight to a cycle as in Mermaid. See
+[Known differences](known-differences.md#git-graphs).
+
+### ASCII Git graphs
+
+Mermaid has no text mode for git graphs, and its commit labels would run off a terminal
+after a dozen commits, so the ASCII output is this library's own design: the layout of
+`git log --graph`, one row per commit and one column per branch, for all three
+orientations.
+
+```text
+main  develop
+●     ┆   init
+●     ┆   docs
+├─────●   feature-a
+│     ●   feature-b
+◎─────╯   release-1
+●     ┆   hotfix
+```
+
+- Columns follow Mermaid's branch order (`order:`, then creation); the name is written
+  over its column (under it in `BT`). A branch is dotted (`┆`) before its first
+  commit and `showBranches: false` removes the names and the dotted lines.
+- A commit is `●` (`*` in ASCII mode), `✕` reverse, `◆` highlight, `◎` merge or
+  `○` cherry-pick. A branch's first commit joins the commit it forked from with
+  `├──`; a merge or pick joins the commit it took from with `──╯`.
+- The row's text is the commit id (none with `showCommitLabel: false`; a merge has one
+  only when it was given an `id:`, a pick never) then the tags in brackets.
+- `LR` and `TB` read downward, oldest first. `BT` reads upward, newest first as `git log`
+  prints it. `parallelCommits` is not drawn: every commit has its own row.
+- Lanes are painted in the SVG palette; the title is centred over the graph.
+
 ## Radar charts
 
 `radar-beta` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/radar.html)
@@ -1715,7 +1785,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Use case                                                              | `usecase-beta`                                                                                                  |
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
-| Git graph                                                             | `gitGraph`                                                                                                      |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 | Block                                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)                              |

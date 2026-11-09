@@ -1,0 +1,5 @@
+main  feature
+*     :   one
++-----*   two  [v0.1]
+*     |   three
+@-----+   four

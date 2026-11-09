@@ -5,6 +5,7 @@ import { scoreMindmap } from './mindmap-measure.ts'
 import { scoreGantt } from './gantt-measure.ts'
 import { scorePie } from './pie-measure.ts'
 import { scoreTimeline } from './timeline-measure.ts'
+import { scoreGitGraph } from './gitgraph-measure.ts'
 import { scoreRequirement } from './requirement-measure.ts'
 import { scoreC4 } from './c4-measure.ts'
 import { scoreXyChart } from './xychart-measure.ts'
@@ -21,6 +22,7 @@ export async function scoreSeparately(
   const mind = await scoreMindmap(session)
   const gantt = await scoreGantt(session)
   const timeline = await scoreTimeline(session, commit)
+  const gitgraph = await scoreGitGraph(session, commit)
   const requirement = await scoreRequirement(session, commit)
   const pie = await scorePie(session, commit)
   const c4 = await scoreC4(session, commit)
@@ -42,6 +44,7 @@ export async function scoreSeparately(
           gantt,
           timeline,
           requirement,
+          gitgraph,
           pie,
           c4,
           xy,

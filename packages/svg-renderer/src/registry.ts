@@ -62,6 +62,7 @@ import {
   parseQuadrantChart,
   parseGantt,
   parseTimeline,
+  parseGitGraph,
   parsePacket,
   parseRadar,
   parseJourney,
@@ -91,6 +92,8 @@ import type {
   PositionedGanttChart,
   Timeline,
   PositionedTimeline,
+  GitGraph,
+  PositionedGitGraph,
   Packet,
   Radar,
   PositionedRadar,
@@ -125,6 +128,8 @@ import { layoutTimeline } from './timeline/layout.ts'
 import { layoutJourney } from './journey/layout.ts'
 import { renderJourneySvg } from './journey/renderer.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutGitGraph } from './gitgraph/layout.ts'
+import { renderGitGraphSvg } from './gitgraph/renderer.ts'
 import { layoutPacket } from './packet/layout.ts'
 import type { PositionedPacket } from './packet/layout.ts'
 import { renderPacketSvg } from './packet/renderer.ts'
@@ -689,6 +694,29 @@ const packetModule: DiagramModule<Packet, PositionedPacket> = {
 }
 
 /**
+ * GitGraphs parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator), then lay out with Mermaid's own constants. Colours are this
+ * library's palette; no interactivity applies.
+ */
+const gitgraphModule: DiagramModule<GitGraph, PositionedGitGraph> = {
+  type: 'gitgraph',
+  parse: (_lines, text) => parseGitGraph(text),
+  layoutForSvg: (gg) => layoutGitGraph(gg),
+  renderSvg(positioned, ctx) {
+    return renderGitGraphSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * Sankeys parse from the raw `text` (a CSV body: `;` is not a separator and
  * a quoted field may span lines), then lay out with a port of d3-sankey.
  * No theme variables or interactivity apply.
@@ -750,4 +778,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   kanban: kanbanModule,
   sankey: sankeyModule,
   requirement: requirementModule,
+  gitgraph: gitgraphModule,
 }

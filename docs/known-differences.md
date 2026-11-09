@@ -912,3 +912,34 @@ labels and dashes, box positions and the drawing size agree on every gallery sam
   source order, so a `style` line written before a `class` line for the same box
   loses to it there and wins here.
 - **No wrapping.** A long `text:` stays on one line, as in Mermaid.
+
+## Git graphs
+
+Checked against mermaid 12.3.0 with `pnpm run gitgraph:oracle` (12.2.0, the pin, scores the
+same): branch lines and label boxes, arrow routes, commit symbols,
+labels, tags and the drawing size agree on every gallery sample and on a sweep of other
+graphs in all three orientations, with and without `parallelCommits` and
+`rotateCommitLabel`.
+
+- **Generated ids.** A commit with no `id:` is `<seq>-<7 hex>`; Mermaid picks the hex at
+  random on every render, so no two renders of it agree. Here it is a hash of the commit,
+  so output is stable. The oracle samples give every commit an id.
+- **Text widths.** Labels, tags and branch names are measured by summing Trebuchet MS
+  advances (macOS) and a line is `round(0.939 em) + round(0.222 em)` tall; Mermaid measures in
+  the browser with whatever `trebuchet ms`, `verdana`, `arial` resolves to, so a label's
+  box or the drawing size can differ by a pixel or two on a machine without Trebuchet.
+  Characters outside printable ASCII are estimated.
+- **Font.** Text is drawn in the render's font (Inter by default) inside Trebuchet-sized boxes, so a long tag or label can overhang its box and the viewBox by a few pixels.
+- **Palette.** Branch colours are the theme accent and its series shades, eight to a
+  cycle; mermaid uses its `git0`..`git7` hues. A cherry-pick's bullet is the text colour
+  (Mermaid leaves it unstyled, so it is black). The highlight outline uses the text colour.
+- **Looks and themes.** The `neo` and `redux` looks and themes, which change the geometry,
+  are not read.
+- **Names.** Mermaid sanitises ids, tags and names with DOMPurify; here they are escaped
+  when written, so markup in them shows as text.
+- **Config keys.** `gitGraph.titleTopMargin`, `diagramPadding` and `useMaxWidth` are not
+  read (25, 8 and the library's own sizing).
+- **ASCII.** Mermaid has no ASCII output; the `git log --graph` layout above is this
+  library's own, and `parallelCommits` does not change it.
+- **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
+  session (no browser with those pages was available).
