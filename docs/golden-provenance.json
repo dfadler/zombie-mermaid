@@ -1,0 +1,327 @@
+{
+  "classes": {
+    "a": "taken from real mermaid",
+    "b": "this project's own output, accepted once",
+    "c": "ported from another project"
+  },
+  "entries": [
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/ampersand_lhs.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/ampersand_lhs_and_rhs.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/ampersand_rhs.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/ampersand_without_edge.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/back_reference_from_child.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/backlink_from_bottom.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/backlink_from_top.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/backlink_with_short_y_padding.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/cls_all_relationships.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/cls_annotation.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/cls_association.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/cls_basic.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/cls_dependency.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/cls_inheritance.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/cls_methods.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/comments.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/custom_padding.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/duplicate_labels.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/er_attributes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/er_basic.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/er_identifying.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/flowchart_tb_simple.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/graph_bt_direction.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/graph_tb_direction.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/nested_subgraphs_with_labels.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/preserve_order_of_definition.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/self_reference.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/self_reference_with_edge.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/seq_basic.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/seq_multiple_messages.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/seq_self_message.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/single_node.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/single_node_longer_name.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_complex_mixed.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_complex_nested.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_empty.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_mixed_nodes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_mixed_nodes_td.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_multiple_edges.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_multiple_nodes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_nested.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_nested_with_external.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_node_outside_lr.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_single_node.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_td_direction.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_td_multiple.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_td_multiple_paddingy.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_three_levels_nested.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_three_separate.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_two_separate.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/subgraph_with_labels.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/three_nodes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/three_nodes_single_line.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/two_layer_single_graph.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/two_layer_single_graph_longer_names.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/two_nodes_linked.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/two_nodes_longer_names.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/two_root_nodes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/two_root_nodes_longer_names.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/two_single_root_nodes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/ampersand_lhs.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/ampersand_lhs_and_rhs.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/ampersand_rhs.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/ampersand_without_edge.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/back_reference_from_child.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/backlink_from_bottom.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/backlink_from_top.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/cls_all_relationships.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/cls_annotation.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/cls_association.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/cls_basic.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/cls_dependency.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/cls_inheritance.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/cls_methods.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/comments.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/duplicate_labels.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/er_attributes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/er_basic.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/er_identifying.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/graph_bt_direction.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/preserve_order_of_definition.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/self_reference.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/self_reference_with_edge.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/seq_basic.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/seq_multiple_messages.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/seq_self_message.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/single_node.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/single_node_longer_name.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/three_nodes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/three_nodes_single_line.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/two_layer_single_graph.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/two_layer_single_graph_longer_names.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/two_nodes_linked.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/two_nodes_longer_names.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/two_root_nodes.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/two_root_nodes_longer_names.txt",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/two_single_root_nodes.txt"
+      ],
+      "class": "c",
+      "source": "ported from AlexanderGrooff/mermaid-ascii via the beautiful-mermaid v0.1.0 import (3185b9b6); the 97 files of ascii/ and unicode/ still present from that commit",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii.test.ts"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/testdata/ascii/",
+        "packages/ascii-renderer/src/__tests__/testdata/unicode/",
+        "packages/ascii-renderer/src/__tests__/testdata/markdown/"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii.test.ts"
+    },
+    {
+      "paths": ["packages/ascii-renderer/src/__tests__/testdata/color/"],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written; mermaid.js has no terminal colour output",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-color-goldens.test.ts"
+    },
+    {
+      "paths": ["__tests__/__ascii-snapshots__/"],
+      "class": "b",
+      "source": "our ASCII output for every gallery sample (#1708), accepted once; guards drift only",
+      "owner": "__tests__/ascii-text-snapshots.test.ts"
+    },
+    {
+      "paths": ["__tests__/__fork-fixes-snapshots__/"],
+      "class": "b",
+      "source": "our After output for the fork-fixes page; guards drift only",
+      "owner": "__tests__/fork-fixes-ascii-snapshots.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "sources audited against 12.3.0 in the #2606 map (per the test header); the snapshots themselves are not compared"
+    },
+    {
+      "paths": ["src/__tests__/__theme-variables-snapshots__/"],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written; the themeVariables mapping rules were measured on mermaid 12.1.0 and 12.2.0 (test header)",
+      "owner": "src/__tests__/theme-variables-2108.test.ts"
+    },
+    {
+      "paths": ["packages/ascii-layout/__tests__/fixtures/"],
+      "class": "b",
+      "source": "the rasterizer's own output, accepted once; only the layout under it is checked against mermaid (elk-layout oracle)",
+      "owner": "packages/ascii-layout/__tests__/rasterize.test.ts"
+    },
+    {
+      "paths": [
+        "packages/elk-layout/__tests__/fixtures/d1.expected.json",
+        "packages/elk-layout/__tests__/fixtures/d2.expected.json",
+        "packages/elk-layout/__tests__/fixtures/d3.expected.json"
+      ],
+      "class": "b",
+      "source": "the elk-layout package's own output, made to agree with the pinned mermaid",
+      "owner": "packages/elk-layout/__tests__/layout.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "DRIFTS: nodes identical; edges within 1px 7/12, 6/12, 2/10 (pin 12.2.0: all). Not regenerated before the pin moves (#2708; packages/elk-layout/README.md)"
+    },
+    {
+      "paths": ["packages/elk-layout/__tests__/fixtures/"],
+      "class": "b",
+      "source": "the elk-layout package's own output; checked by `pnpm run elk-layout:oracle` against the pinned mermaid (12.2.0)",
+      "owner": "packages/elk-layout/__tests__/layout.test.ts"
+    },
+    {
+      "paths": [
+        "packages/svg-renderer/src/__tests__/fixtures/c4-mermaid-reference.json"
+      ],
+      "class": "a",
+      "source": "read back from real mermaid (made with 11.17.2)",
+      "owner": "packages/svg-renderer/src/__tests__/c4-mermaid-reference.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: 91 shape anchors and 21 boundary rects identical, 58 relationship line ends within 0.5px, all 32 diagram sizes within 0.1px (#2752)"
+    },
+    {
+      "paths": ["__tests__/fixtures/mindmap-official-12.3.0.json"],
+      "class": "a",
+      "source": "read back from real mermaid 12.3.0 by scripts/lib/mindmap-measure.ts (readOfficialMindmap)",
+      "owner": "__tests__/mindmap-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: re-rendered with mermaid@12.3.0, 8 of 8 samples deep-equal the fixture (2026-11-08)"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-lr-compact-labeled-fanout-2561.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-lr-compact-labeled-fanout-2561.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "matches at label level; topology and geometry not compared (#2752)"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-opposing-edges-diamond-2492.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-opposing-edges-diamond-2492.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "matches at label level; edge route and geometry not compared (#2752)"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-sequence-block-notes-2514.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-sequence-block-notes-2514.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "matches at label level; geometry not compared (#2752)"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-sequence-note-before-first-message-2531.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-sequence-note-before-first-message-2531.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "matches at label level; note placement and geometry not compared (#2752)"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-tall-slanted-shapes-2164.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-tall-slanted-shapes-2164.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "matches at label level; the glyph silhouette is an ASCII design choice (docs/known-differences.md)"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-sequence-note-after-end-2744.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-sequence-note-after-end-2744.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "note placement checked against 12.3.0 (#2744, per the test header)"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-empty-subgraph-2694.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-empty-subgraph-2694.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "structure (title text, no frame) measured against 12.3.0 (per the test header); does not claim to match"
+    },
+    {
+      "paths": [
+        "src/__tests__/__snapshots__/ascii-decision-duplicate-edge-2780.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/ascii-decision-duplicate-edge-2780.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "DIVERGES (closer than before): see the verdict comment in the test"
+    },
+    {
+      "paths": [
+        "src/__tests__/__snapshots__/architecture-icon-tiles-2518.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/architecture-icon-tiles-2518.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "matches at label level; SVG viewBox within 5px (#2752)"
+    },
+    {
+      "paths": [
+        "src/__tests__/__snapshots__/architecture-junction-group-icon-2563-2564.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/architecture-junction-group-icon-2563-2564.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "matches at label level; SVG viewBox within 26px (#2752)"
+    },
+    {
+      "paths": [
+        "src/__tests__/__snapshots__/architecture-side-hints-2724.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/architecture-side-hints-2724.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "placement checked against 12.3.0, gallery general-94 (per the test header)"
+    },
+    {
+      "paths": [
+        "src/__tests__/__snapshots__/flowchart-shapes-2552.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/flowchart-shapes-2552.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "matches at label level; SVG viewBox differs, geometry left to #2678 (#2752)"
+    },
+    {
+      "paths": [
+        "src/__tests__/__snapshots__/xychart-numeric-axis-1592.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/xychart-numeric-axis-1592.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "SVG labels match; ASCII tick labels not comparable (#2310); viewBox differs (#2752)"
+    },
+    {
+      "paths": ["src/__tests__/__snapshots__/front-matter-2585.test.ts.snap"],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/front-matter-2585.test.ts"
+    }
+  ]
+}
