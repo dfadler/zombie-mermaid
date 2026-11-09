@@ -249,8 +249,20 @@ function attachesAt(
   const dc = run.node.drawingCoord!
   const drawing = run.node.drawing!
   if (run.axis === 'v') {
-    const ch = drawing[pos - dc.x]?.[geo.border]
-    return ch === '─' || ch === '-' || ch === '╲' || ch === '╱'
+    const col = drawing[pos - dc.x]
+    const ch = col?.[geo.border]
+    // A diamond's vertex is two cells wide: a stroke beside it leans on the
+    // slant one row in.
+    const near = col?.[geo.border + (run.side === 'top' ? 1 : -1)]
+    return (
+      ch === '─' ||
+      ch === '-' ||
+      ch === '╲' ||
+      ch === '╱' ||
+      (diamond &&
+        run.node.shape === 'diamond' &&
+        (near === '╲' || near === '╱'))
+    )
   }
   // A slanted side (parallelogram, #2492) leaves blanks between the border
   // column and its glyph: take the first glyph met walking inward.
@@ -420,7 +432,18 @@ function spreadDiamondFaces(
   runs: ReadonlyMap<AsciiEdge, RunEntry>,
 ): Map<AsciiEdge, { start?: number; end?: number }> {
   const out = new Map<AsciiEdge, { start?: number; end?: number }>()
-  if (graph.config.graphDirection !== 'LR') return out
+  const dir = graph.config.graphDirection
+  const flowSide =
+    dir === 'LR'
+      ? 'right'
+      : dir === 'TD'
+        ? 'bottom'
+        : dir === 'BT'
+          ? 'top'
+          : undefined
+  if (!flowSide) return out
+  const crossOf = (n: AsciiNode): number =>
+    dir === 'LR' ? requireGridCoord(n).y : requireGridCoord(n).x
   interface Use {
     edge: AsciiEdge
     role: 'start' | 'end'
@@ -429,19 +452,19 @@ function spreadDiamondFaces(
   }
   const faces = new Map<AsciiNode, Use[]>()
   const add = (run: PortRun | undefined, u: Omit<Use, 'run'>): void => {
-    if (!run || run.node.shape !== 'diamond' || run.side !== 'right') return
+    if (!run || run.node.shape !== 'diamond' || run.side !== flowSide) return
     faces.set(run.node, [...(faces.get(run.node) ?? []), { ...u, run }])
   }
   for (const [edge, { r }] of runs) {
     add(r.start, {
       edge,
       role: 'start',
-      y: requireGridCoord(edge.to).y,
+      y: crossOf(edge.to),
     })
     add(r.end, {
       edge,
       role: 'end',
-      y: requireGridCoord(edge.from).y,
+      y: crossOf(edge.from),
     })
   }
   for (const uses of faces.values()) {
@@ -450,7 +473,8 @@ function spreadDiamondFaces(
       uses.length < 2 ||
       uses.length > 3 ||
       !(
-        uses.some((u) => u.role === 'end') ||
+        // A return edge into a vertical-flow vertex keeps its own routing (#1284).
+        (dir === 'LR' && uses.some((u) => u.role === 'end')) ||
         uses.some((u) =>
           uses.some(
             (v) =>
@@ -834,7 +858,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     // that row to a straight end) rather than the pair's spread.
     const slant = diamond.get(edge)?.start
     const own =
-      slant !== undefined && spread.has(edge) && r.straight
+      slant !== undefined &&
+      spread.has(edge) &&
+      (r.straight || graph.config.graphDirection !== 'LR')
         ? slant
         : spread.get(edge)
     const lane = landings.get(edge)
@@ -850,7 +876,8 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
       diamond.get(edge)?.end ??
       split.get(edge) ??
       (e ? (offsets.get(find(e)) ?? 0) : 0)
-    if (start === 0 && end === 0 && !lane?.points) continue
+    if (start === 0 && end === 0 && !lane?.points && !diamond.has(edge))
+      continue
     const shift: PortShift = { start, end }
     if (lane?.points) shift.points = lane.points
     if (r.start) shift.startRun = shiftedRun(r.start)
@@ -864,6 +891,17 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (flowLaneOf(e)) result.set(e, { start: 0, end: 0 })
   }
   allocateFaces(graph, result, shiftedRun)
+  // A straight duplicate out of a decision keeps its own cell of the vertex to
+  // the target, so the pair arrives side by side (#2918).
+  if (graph.config.graphDirection !== 'LR') {
+    for (const [e, d] of diamond) {
+      const sh = result.get(e)
+      if (sh && d.start !== undefined && runs.get(e)?.r.straight) {
+        sh.start = d.start
+        sh.end = d.start
+      }
+    }
+  }
   spreadFaceLaneRuns(graph, result)
   nestDecisionDuplicates(graph, diamond, result)
   if (graph.edgeHints) planJogRows(graph, result)
