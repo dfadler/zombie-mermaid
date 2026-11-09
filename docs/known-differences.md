@@ -750,6 +750,54 @@ drawing size agree on every gallery sample.
   read; `TD` is checked against the oracle only.
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
 
+## Kanban boards
+
+Checked against mermaid 12.3.0 with `pnpm run kanban:oracle`: column and card rectangles,
+wrapped line counts, priority bars and the drawing size agree on every gallery sample.
+
+- **Line breaks.** Mermaid wraps HTML labels in the browser with whatever `trebuchet ms`,
+  `verdana`, `arial` resolves to; this library sums Trebuchet MS advances (measured on
+  macOS) and models `break-spaces` and hyphen breaks, so a label within a pixel or two of
+  175px can break differently on a machine without Trebuchet. Characters outside printable
+  ASCII are estimated.
+- **Palette.** Column fills are the theme accent and its series shades mixed into the
+  background; mermaid uses its `cScale` hues. Priority bar colours are mermaid's.
+- **Font.** Text is drawn in the render's font (Inter by default) inside Mermaid's
+  Trebuchet-sized boxes.
+- **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
+- **Repeated spaces** inside a wrapped label are collapsed (Mermaid keeps them).
+- **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
+- **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
+
+## Requirement diagrams
+
+Checked against mermaid 12.3.0 with `pnpm run requirement:oracle` (12.2.0, the pin,
+reads the same sources the same way): box sizes and text, relationship order,
+labels and dashes, box positions and the drawing size agree on every gallery sample.
+
+- **Layout.** Mermaid places boxes with dagre, this library with ELK, so boxes agree
+  only where both put them in the same ranks. Checked against mermaid 12.3.0, they
+  agree on chains, trees, `direction BT | LR | RL`, disconnected boxes and a
+  self-relationship; they can differ by tens of pixels where two relationships join
+  the same pair of boxes or a box is shared by two parents (a diamond shape), and
+  on cycles. Box sizes and text always agree. Tracked in
+  [#2966](https://github.com/dfadler/zombie-mermaid/issues/2966).
+- **Line routes.** Lines are straight runs with right-angle bends where ELK routes
+  them; Mermaid curves its corners ([#2967](https://github.com/dfadler/zombie-mermaid/issues/2967)). The arrow and the circle-plus sit at the same
+  ends.
+- **Font and kerning.** Text is drawn in the render's font (Inter by default) inside
+  boxes sized for Trebuchet MS, as Mermaid sizes them. The kerning table was
+  measured in Chromium on macOS; a machine without Trebuchet MS sizes boxes from
+  another face in Mermaid, which this library cannot follow. Characters outside
+  printable ASCII are estimated (a full em for CJK).
+- **Palette.** Box fills are the theme's node colours; Mermaid's default look has a
+  purple border and `#ECECFF` fill, and its `neo` look a drop shadow.
+- **Styling order.** `classDef`, `class` and `style` resolve in the library's usual
+  cascade (class definition, assigned class, then `style`); Mermaid appends them in
+  source order, so a `style` line written before a `class` line for the same box
+  loses to it there and wins here.
+- **No wrapping.** A long `text:` stays on one line, as in Mermaid.
+
 ## Packet Diagrams
 
 Checked against mermaid 12.3.0 (`__tests__/fixtures/packet-official-12.3.0.json`, 18

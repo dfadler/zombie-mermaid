@@ -16,6 +16,7 @@
 //   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
 //   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
 //   - Packets (packet) — bit-field boxes in rows of bits (see packet.ts)
+//   - Kanban boards (kanban) — stacked column blocks of boxed cards (see kanban.ts)
 //   - Requirement diagrams (requirementDiagram) — boxes and labelled lines (see requirement.ts)
 //
 // Usage:

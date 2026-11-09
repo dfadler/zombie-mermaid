@@ -1260,6 +1260,146 @@ spine for both `timeline` and `timeline TD`.
 - A `section` is a `[name]` row; markers and headings use the theme accent.
 - `accTitle` and `accDescr` are not printed.
 
+## Kanban Boards
+
+`kanban` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/kanban.html)
+and its renderer's layout. `pnpm run kanban:oracle` compares the gallery samples card by
+card with `mermaid@12.3.0`.
+
+```mermaid
+kanban
+  Todo
+    [Create Documentation]
+    docs[Create Blog about the new diagram]
+  id10[Ready for test]
+    id4[Create parsing tests]@{ ticket: MC-2038, assigned: 'K.Sveidqvist', priority: 'High' }
+    id66[last item]@{ priority: 'Very Low', assigned: 'knsv' }
+  id11[Done]
+    id5[define getData]
+```
+
+Supported: a column is a line at the first line's indentation, a card is any more
+indented line under it; text is bare or `id[text]` (the other bracket shapes parse but, as
+in Mermaid, are not drawn differently). `@{ ... }` after a card sets `ticket`, `assigned`,
+`priority` (`Very High` red, `High` orange, `Low` blue, `Very Low` light blue; `Medium` and
+other names draw no colour), `label` and `icon`, in flow style on one line or as `key: value`
+lines. `kanban.sectionWidth` and `kanban.ticketBaseUrl` (`#TICKET#` is replaced; the ticket
+becomes a link) come from front matter or `%%{init}%%`. As in Mermaid, a line indented less
+than the first column is "Items without section detected", a `shape` key must be lowercase,
+and `::icon(...)` and `:::class` are recorded but not drawn.
+
+The SVG uses Mermaid's geometry: columns 205px apart (200px wide), cards 185px wide with
+text wrapped at 175px, 24px per text line, 5px between cards. Line breaks are found by
+summing Trebuchet MS advances (Mermaid's first font), including `white-space: break-spaces`
+behaviour, not by measuring in a browser. Colours come from the theme. See
+[Known differences](known-differences.md#kanban-boards).
+
+### ASCII Kanban Boards
+
+Mermaid has no text mode for kanban boards, and its columns would run off a terminal after
+three or four, so the ASCII output is this library's own design: one framed block per
+column, stacked, with boxed cards.
+
+```text
+┌──────────────────────────────┐
+│        Ready for test        │
+├──────────────────────────────┤
+│ ┌─ High ───────────────────┐ │
+│ │ Create parsing tests     │ │
+│ │ MC-2038     K.Sveidqvist │ │
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
+```
+
+- Cards share one width (the widest content, up to 40 columns; longer text wraps).
+- `priority` is named in the card's top border; `ticket` and `assigned` share a row.
+
+## Requirement Diagrams
+
+`requirementDiagram` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/requirementDiagram.html)
+and its renderer's layout. `pnpm run requirement:oracle` compares the gallery samples
+box by box with `mermaid@12.3.0`; mermaid 12.2.0 (the pin and mermaid.live today)
+reads the same sources the same way.
+
+```mermaid
+requirementDiagram
+
+    requirement test_req {
+    id: 1
+    text: the test text.
+    risk: high
+    verifymethod: test
+    }
+
+    element test_entity {
+    type: simulation
+    }
+
+    test_entity - satisfies -> test_req
+```
+
+Supported: the six requirement kinds (`requirement`, `functionalRequirement`,
+`interfaceRequirement`, `performanceRequirement`, `physicalRequirement`,
+`designConstraint`) with `id`, `text`, `risk` (`low`, `medium`, `high`) and
+`verifymethod` (`analysis`, `demonstration`, `inspection`, `test`); `element`
+with `type` and `docref`; the seven relationships (`contains`, `copies`,
+`derives`, `satisfies`, `verifies`, `refines`, `traces`) written `a - r -> b` or
+`b <- r - a`; `direction TB | BT | LR | RL`; `classDef`, `class`, `style` and
+`:::`; `%%` comments, `accTitle`, `accDescr` and a front matter `title`.
+
+The grammar is stricter than it looks, and this parser is as strict as
+`mermaid@12.3.0`: a `{` ends its line and every property sits on its own line, an
+unquoted name or value stops at `: , { < > - =` (so `text: a-b` and `text: a, b`
+are errors; quote them), an unquoted name or value that starts with a keyword
+(`text: test suite`, `requirement element`) is an error, and a relationship to a
+name that was never declared is an error. A name written twice keeps its first
+definition.
+
+The SVG uses Mermaid's box geometry: a `<<Type>>` row, the bold name, a divider
+20px lower and then the `ID:`, `Text:`, `Risk:` and `Verification:` rows (an
+element's `Type:` and `Doc Ref:`), 24px per row with 10px of padding, boxes sized
+from the text with Trebuchet MS advances and kerning, `contains` as a solid line
+with a circle-plus at the container and every other relationship as a dashed
+arrow with its `<<label>>`. Layout is ELK (`registerElk`, as for ER and class
+diagrams); with the default look it agrees with Mermaid's box positions and
+drawing size on the gallery samples. Colours come from the theme. See
+[Known differences](known-differences.md#requirement-diagrams).
+
+### ASCII Requirement Diagrams
+
+Mermaid has no text mode for requirement diagrams, so the ASCII output is this
+library's own: the same boxes and labelled lines on the flowchart grid, with a
+blank row where the SVG has a divider, relationships dotted with an arrowhead and
+`contains` solid with a `●` (`o` in ASCII mode) at the container.
+
+```text
+┌──────────────────────┐
+│                      │
+│                      │
+│     <<Element>>      │
+│     test_entity      │
+│                      │
+│   Type: simulation   │
+│                      │
+└───────────┬──────────┘
+            ┆
+            ┆
+      <<satisfies>>
+            ┆
+            ▼
+┌──────────────────────┐
+│                      │
+│   <<Requirement>>    │
+│       test_req       │
+│                      │
+│ ID: 1                │
+│ Text: the test text. │
+│ Risk: High           │
+│ Verification: Test   │
+│                      │
+└──────────────────────┘
+```
+
 ## Packet Diagrams
 
 `packet` (and its older header `packet-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/packet.html)
@@ -1405,7 +1545,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Gantt                                                                 | `gantt`                                                                                                         |
 | User journey                                                          | `journey`                                                                                                       |
 | Git graph                                                             | `gitGraph`                                                                                                      |
-| Kanban                                                                | `kanban`                                                                                                        |
 | Radar                                                                 | `radar-beta`                                                                                                    |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |

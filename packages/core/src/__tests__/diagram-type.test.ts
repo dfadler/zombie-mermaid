@@ -127,3 +127,13 @@ describe('detectDiagramType – packet', () => {
     expect(detectDiagramType('packet-alpha')).toBe('flowchart')
   })
 })
+
+describe('detectDiagramType – kanban', () => {
+  it('detects kanban boards, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('kanban')).toBe('kanban')
+    expect(detectDiagramType('  kanban\n  Todo')).toBe('kanban')
+    expect(detectDiagramType('%% c\nkanban')).toBe('kanban')
+    expect(detectDiagramType('Kanban')).toBe('flowchart')
+    expect(detectDiagramType('kanbans')).toBe('flowchart')
+  })
+})

@@ -35,6 +35,12 @@ export interface TimelineInitConfig {
   disableMulticolor?: boolean
 }
 
+/** The `kanban.*` init keys that change mermaid's output. */
+export interface KanbanInitConfig {
+  sectionWidth?: number
+  ticketBaseUrl?: string
+}
+
 /** The `packet.*` init keys that change mermaid's output. */
 export interface PacketInitConfig {
   rowHeight?: number
@@ -230,6 +236,8 @@ export interface InitConfig {
   sequenceLayout?: SequenceInitLayout
   /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
   timeline?: TimelineInitConfig
+  /** `kanban.sectionWidth` (a number in 1..1e5) and `kanban.ticketBaseUrl`; other keys and bad values are dropped. */
+  kanban?: KanbanInitConfig
   /** `packet.*` layout keys (numbers 0..1e5, `bitsPerRow` an integer >= 1), `showBits` and `bitOrder`; other keys and bad values are dropped. */
   packet?: PacketInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
@@ -524,6 +532,17 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'kanban' && typeof value === 'object' && value !== null) {
+      const k: KanbanInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      const w = rec.sectionWidth
+      if (typeof w === 'number' && w > 0 && w <= 1e5) k.sectionWidth = w
+      if (typeof rec.ticketBaseUrl === 'string')
+        k.ticketBaseUrl = rec.ticketBaseUrl
+      config.kanban = k
+      continue
+    }
+
     if (lower === 'packet' && typeof value === 'object' && value !== null) {
       const p: PacketInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
@@ -618,6 +637,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
+    if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
     if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
