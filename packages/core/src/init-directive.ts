@@ -35,6 +35,16 @@ export interface TimelineInitConfig {
   disableMulticolor?: boolean
 }
 
+/** The `gitGraph.*` init keys that change mermaid's output. */
+export interface GitGraphInitConfig {
+  mainBranchName?: string
+  mainBranchOrder?: number
+  showCommitLabel?: boolean
+  showBranches?: boolean
+  rotateCommitLabel?: boolean
+  parallelCommits?: boolean
+}
+
 /** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
 const SEQUENCE_NUMBER_KEYS = new Set<string>([
   'width',
@@ -219,6 +229,8 @@ export interface InitConfig {
   sequenceLayout?: SequenceInitLayout
   /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
   timeline?: TimelineInitConfig
+  /** The `gitGraph` block (see {@link GitGraphInitConfig}); a bad value is dropped. */
+  gitGraph?: GitGraphInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -497,6 +509,24 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'gitgraph' && typeof value === 'object' && value !== null) {
+      const g: GitGraphInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      if (typeof rec.mainBranchName === 'string' && rec.mainBranchName !== '')
+        g.mainBranchName = rec.mainBranchName
+      if (typeof rec.mainBranchOrder === 'number' && rec.mainBranchOrder >= 0)
+        g.mainBranchOrder = rec.mainBranchOrder
+      for (const k of [
+        'showCommitLabel',
+        'showBranches',
+        'rotateCommitLabel',
+        'parallelCommits',
+      ] as const)
+        if (typeof rec[k] === 'boolean') g[k] = rec[k]
+      config.gitGraph = g
+      continue
+    }
+
     if (lower === 'timeline' && typeof value === 'object' && value !== null) {
       const t: TimelineInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
@@ -575,6 +605,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
         ...config.sequenceLayout,
       }
     }
+    if (config.gitGraph)
+      merged.gitGraph = { ...merged.gitGraph, ...config.gitGraph }
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
     if (config.classLayout)

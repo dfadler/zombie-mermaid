@@ -30,6 +30,7 @@ export const DIAGRAM_TYPES = [
   'mindmap',
   'gantt',
   'timeline',
+  'gitgraph',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -62,6 +63,8 @@ export function detectDiagramType(text: string): DiagramType {
   if (/^gantt(?:\s|$)/.test(header)) return 'gantt'
   // Also case-sensitive: Mermaid's detector is `/^\s*timeline/`.
   if (/^timeline(?:\s|$)/.test(header)) return 'timeline'
+  // Case-sensitive: Mermaid's detector is `/^\s*gitGraph/`.
+  if (/^gitGraph/.test(header)) return 'gitgraph'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'

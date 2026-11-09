@@ -1,0 +1,25 @@
+---
+title: Parallel commits
+config:
+  gitGraph:
+    parallelCommits: true
+---
+gitGraph
+   commit id: "a"
+   branch develop
+   commit id: "b"
+   checkout main
+   commit id: "c"
+   checkout develop
+   commit id: "d"
+   checkout main
+   merge develop id: "e"
+---
+Parallel commits
+
+main  develop
+●     ┆   a
+├─────●   b
+●     │   c
+│     ●   d
+◎─────╯   e

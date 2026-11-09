@@ -1,0 +1,13 @@
+%%{init: {"gitGraph": {"showBranches": false, "showCommitLabel": false}}}%%
+gitGraph
+   commit id: "a"
+   branch topic
+   commit id: "b"
+   checkout main
+   commit id: "c" tag: "v2"
+   merge topic id: "d"
+---
+*
++--*
+*  |   [v2]
+@--/

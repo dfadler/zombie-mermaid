@@ -62,6 +62,7 @@ import {
   parseQuadrantChart,
   parseGantt,
   parseTimeline,
+  parseGitGraph,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -85,6 +86,8 @@ import type {
   PositionedGanttChart,
   Timeline,
   PositionedTimeline,
+  GitGraph,
+  PositionedGitGraph,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -106,6 +109,8 @@ import { layoutGantt } from './gantt/layout.ts'
 import { renderGanttSvg } from './gantt/renderer.ts'
 import { layoutTimeline } from './timeline/layout.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutGitGraph } from './gitgraph/layout.ts'
+import { renderGitGraphSvg } from './gitgraph/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -546,6 +551,29 @@ const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
 }
 
 /**
+ * GitGraphs parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator), then lay out with Mermaid's own constants. Colours are this
+ * library's palette; no interactivity applies.
+ */
+const gitgraphModule: DiagramModule<GitGraph, PositionedGitGraph> = {
+  type: 'gitgraph',
+  parse: (_lines, text) => parseGitGraph(text),
+  layoutForSvg: (gg) => layoutGitGraph(gg),
+  renderSvg(positioned, ctx) {
+    return renderGitGraphSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -578,4 +606,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   mindmap: mindmapModule,
   gantt: ganttModule,
   timeline: timelineModule,
+  gitgraph: gitgraphModule,
 }

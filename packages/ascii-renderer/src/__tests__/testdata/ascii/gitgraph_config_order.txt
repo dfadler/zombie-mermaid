@@ -1,0 +1,19 @@
+%%{init: {"gitGraph": {"mainBranchName": "trunk", "showCommitLabel": true, "rotateCommitLabel": false}}}%%
+gitGraph
+   commit id: "a"
+   branch hotfix order: 2
+   branch feature order: 1
+   checkout feature
+   commit id: "b"
+   checkout hotfix
+   commit id: "c"
+   checkout trunk
+   merge feature id: "m1"
+   merge hotfix id: "m2"
+---
+trunk  feature  hotfix
+*      :        :   a
++------*        :   b
++------+--------*   c
+@------/        |   m1
+@------+--------/   m2

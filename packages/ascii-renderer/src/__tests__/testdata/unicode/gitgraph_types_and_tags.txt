@@ -1,0 +1,15 @@
+gitGraph
+   commit id: "start"
+   commit id: "bad-idea" type: REVERSE
+   commit id: "milestone" type: HIGHLIGHT tag: "v1.0"
+   branch feature
+   commit id: "wip" tag: "draft" tag: "review"
+   checkout main
+   merge feature id: "merged" type: HIGHLIGHT tag: "v1.1"
+---
+main  feature
+●     ┆   start
+⊗     ┆   bad-idea
+◆     ┆   milestone  [v1.0]
+├─────●   wip  [draft] [review]
+◆─────╯   merged  [v1.1]

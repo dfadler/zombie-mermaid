@@ -1,0 +1,23 @@
+gitGraph
+   commit id: "ZERO"
+   branch develop
+   commit id: "A"
+   checkout main
+   commit id: "ONE"
+   checkout develop
+   commit id: "B"
+   checkout main
+   merge develop id: "MERGE"
+   branch release
+   checkout release
+   cherry-pick id: "MERGE" parent: "B"
+   cherry-pick id: "A"
+---
+main  develop  release
+●     ┆        ┆   ZERO
+├─────●        ┆   A
+●     │        ┆   ONE
+│     ●        ┆   B
+◎─────╯        ┆   MERGE
+├─────┼────────○   [cherry-pick:MERGE|parent:B]
+┆     ╰────────○   [cherry-pick:A]

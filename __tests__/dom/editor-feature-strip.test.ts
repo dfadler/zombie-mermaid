@@ -55,6 +55,7 @@ describe('EditorFeatureStrip', () => {
     const { container } = render(createElement(EditorFeatureStrip))
     const words = ['one', 'two', 'three', 'four', 'five', 'six', 'seven']
     words.push('eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen')
+    words.push('fourteen')
     const expected = words[DIAGRAM_TYPES.length]
     expect(container.textContent).toContain(
       `across all ${expected} diagram types`,

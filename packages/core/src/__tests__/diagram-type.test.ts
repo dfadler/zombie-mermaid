@@ -105,3 +105,14 @@ describe('detectDiagramType – timeline', () => {
     expect(detectDiagramType('timelines')).toBe('flowchart')
   })
 })
+
+describe('detectDiagramType – gitGraph', () => {
+  it('detects gitGraph headers, case-sensitively, as Mermaid does', () => {
+    expect(detectDiagramType('gitGraph')).toBe('gitgraph')
+    expect(detectDiagramType('gitGraph LR:\n commit')).toBe('gitgraph')
+    expect(detectDiagramType('  gitGraph:\n commit')).toBe('gitgraph')
+    expect(detectDiagramType('%% c\ngitGraph TB:')).toBe('gitgraph')
+    expect(detectDiagramType('gitgraph\n commit')).toBe('flowchart')
+    expect(detectDiagramType('GitGraph\n commit')).toBe('flowchart')
+  })
+})
