@@ -114,8 +114,10 @@ export function renderRadarAscii(
     axes.forEach((axis, i) => {
       if (i > 0 && drawn.length > 1) rows.push('')
       const bars = drawn.map(({ curve, index }, k) => {
-        const v = Math.min(Math.max(curve.entries[i] as number, min), max)
-        const filled = Math.round((BAR_WIDTH * (v - min)) / (max - min))
+        // Clipped to [min, max] by the clamp; `|| 0` covers min == max.
+        const filled = Math.round(
+          (BAR_WIDTH * ((curve.entries[i] as number) - min)) / (max - min),
+        )
         const n = Math.min(BAR_WIDTH, Math.max(0, filled || 0))
         const fill = g.fills[index % g.fills.length] as string
         return (

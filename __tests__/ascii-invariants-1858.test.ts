@@ -25,7 +25,11 @@ const KNOWN: Record<string, string> = {
 
 /** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline are ragged by design). */
 function skipFor(source: string): Rule[] {
-  if (/^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|radar-beta)/m.test(source))
+  if (
+    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|radar-beta)/m.test(
+      source,
+    )
+  )
     return ['equal-width', 'arms']
   if (/^\s*sequenceDiagram/m.test(source)) return ['arms'] // lifelines/frames
   if (/^\s*erDiagram/m.test(source)) return ['arms'] // Crow's-foot `│` marks
