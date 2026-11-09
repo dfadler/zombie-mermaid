@@ -1,5 +1,14 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.15.1
+
+### Patch Changes
+
+- [#2928](https://github.com/dfadler/zombie-mermaid/pull/2928) [`5eaa786`](https://github.com/dfadler/zombie-mermaid/commit/5eaa786366045faf9bd6afaf566cf454e857d2f8) Thanks [@dfadler](https://github.com/dfadler)! - Output change: an empty flowchart subgraph's title is centred on its neighbour's column, as in Mermaid 12.3.0, and as an endpoint of a top-down or bottom-up edge it is bare text on the edge line (the arrowhead on the row above, the edge leaving below), not a boxed node. Left-to-right edge endpoints were already bare text. Refs [#2784](https://github.com/dfadler/zombie-mermaid/issues/2784).
+- Updated dependencies [[`168bded`](https://github.com/dfadler/zombie-mermaid/commit/168bded9b0cac7127166ca7723e8d4f89f1fc599)]:
+  - @zombie-mermaid/core@5.15.1
+  - @zombie-mermaid/mermaid-parser@5.15.1
+
 ## 5.15.0
 
 ### Minor Changes
