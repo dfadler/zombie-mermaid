@@ -80,6 +80,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   gantt: 'gantt\n  title Plan\n  dateFormat YYYY-MM-DD\n  A :a, 2024-01-01, 3d',
   timeline: 'timeline\n  title History\n  2002 : LinkedIn',
   packet: 'packet\n  title Header\n  0-7: "a"',
+  journey: 'journey\n  title Day\n  section S\n    Tea: 5: Me',
   kanban: 'kanban\n  Todo\n    a[One]',
   requirement:
     'requirementDiagram\n  requirement r {\n    id: 1\n  }\n  element e {\n  }\n  e - satisfies -> r',

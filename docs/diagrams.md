@@ -2,7 +2,7 @@
 
 ## Statement separators
 
-Newlines and semicolons both separate statements, for every diagram type:
+Newlines and semicolons both separate statements, for every diagram type except `journey` and `timeline`, whose Mermaid lexers have no `;` separator (in a journey it is a syntax error):
 
 ```
 flowchart TD;A-->B;B-->C
@@ -1314,6 +1314,64 @@ column, stacked, with boxed cards.
 - Cards share one width (the widest content, up to 40 columns; longer text wraps).
 - `priority` is named in the card's top border; `ticket` and `assigned` share a row.
 
+## User journeys
+
+`journey` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/userJourney.html)
+and its renderer's geometry, read from `mermaid@12.3.0`.
+
+```mermaid
+journey
+    title My working day
+    section Go to work
+      Make tea: 5: Me
+      Go upstairs: 3: Me
+      Do work: 1: Me, Cat
+    section Go home
+      Go downstairs: 5: Me
+      Sit down: 5: Me
+```
+
+Supported: `title`, `section`, tasks written `Name: score: Actor, Actor` (the
+actors are optional), `%%` comments, `accTitle` and `accDescr`. As in Mermaid, a
+`#` starts a comment, `;` is not a separator (it is a syntax error), a task
+needs its `: score` on the same line, the score is `Number()` of the text
+(so `0`, `6` and `7.5` are drawn off the 1-5 scale, and a non-numeric score
+draws a straight mouth), actors are listed sorted, and tasks written before the
+first `section` get no section bar. A bare `journey` is valid: just the axis.
+
+The SVG uses Mermaid's geometry: tasks 200px apart in 150x50 boxes, section bars
+spanning their tasks, a dashed line per task down to y=450 with a face at
+`300 + (5 - score) * 30` (smile above 3, straight at 3, sad below), a dot per
+actor on the box, an actor legend whose labels wrap at 360px, and seven
+section colours that cycle. Colours come from the theme, not Mermaid's fixed
+palette. See [Known differences](known-differences.md#user-journeys).
+
+### ASCII User journeys
+
+Mermaid has no text mode for journeys, and its score-height columns would run
+off a terminal, so the ASCII output is this library's own: the same content
+listed row by row.
+
+```text
+         My working day
+
+  Actors: Cat, Me
+
+  [Go to work]
+    :)  5  Make tea       Me
+    :|  3  Go upstairs    Me
+    :(  1  Do work        Me, Cat
+
+  [Go home]
+    :)  5  Go downstairs  Me
+    :)  5  Sit down       Me
+```
+
+- Each task shows a face (`:)` above 3, `:|` at 3, `:(` below 3), its score, its
+  name and its actors. A `section` is a `[name]` row; headings and faces use the
+  theme accent.
+- `accTitle` and `accDescr` are not printed.
+
 ## Requirement Diagrams
 
 `requirementDiagram` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/requirementDiagram.html)
@@ -1543,7 +1601,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Use case                                                              | `usecase-beta`                                                                                                  |
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
-| User journey                                                          | `journey`                                                                                                       |
 | Git graph                                                             | `gitGraph`                                                                                                      |
 | Radar                                                                 | `radar-beta`                                                                                                    |
 | Treemap                                                               | `treemap-beta`                                                                                                  |

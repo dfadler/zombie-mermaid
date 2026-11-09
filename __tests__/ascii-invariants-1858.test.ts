@@ -23,13 +23,13 @@ const KNOWN: Record<string, string> = {
   'State: Notes': '#2910',
 }
 
-/** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline/kanban/packet are ragged by design). */
+/** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline/kanban/journey/packet are ragged by design). */
 function skipFor(source: string): Rule[] {
   // A packet is a table of boxes sharing borders: the graph rules for connectors
   // beside node text do not apply.
   if (/^\s*packet/m.test(source)) return ['equal-width', 'arms', 'node-text']
   if (
-    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban)/m.test(
+    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey)/m.test(
       source,
     )
   )

@@ -151,6 +151,13 @@ export { renderPacketSvg } from './packet/renderer.ts'
 export { KANBAN, layoutKanban } from './kanban/layout.ts'
 export { renderKanbanSvg } from './kanban/renderer.ts'
 export {
+  JOURNEY,
+  layoutJourney,
+  wrapLegendLabel,
+  wrapTaskLabel,
+} from './journey/layout.ts'
+export { renderJourneySvg } from './journey/renderer.ts'
+export {
   REQUIREMENT,
   layoutRequirementDiagramSync,
 } from './requirement/layout.ts'

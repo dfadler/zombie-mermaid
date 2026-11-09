@@ -309,7 +309,7 @@ Also exported from the package root:
 
 ## Statement separators
 
-Newlines and semicolons both separate statements, for every diagram type:
+Newlines and semicolons both separate statements, for every diagram type except `journey` and `timeline`, whose Mermaid lexers have no `;` separator (in a journey it is a syntax error):
 
 ```
 flowchart TD;A-->B;B-->C
@@ -1621,6 +1621,64 @@ column, stacked, with boxed cards.
 - Cards share one width (the widest content, up to 40 columns; longer text wraps).
 - `priority` is named in the card's top border; `ticket` and `assigned` share a row.
 
+## User journeys
+
+`journey` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/userJourney.html)
+and its renderer's geometry, read from `mermaid@12.3.0`.
+
+```mermaid
+journey
+    title My working day
+    section Go to work
+      Make tea: 5: Me
+      Go upstairs: 3: Me
+      Do work: 1: Me, Cat
+    section Go home
+      Go downstairs: 5: Me
+      Sit down: 5: Me
+```
+
+Supported: `title`, `section`, tasks written `Name: score: Actor, Actor` (the
+actors are optional), `%%` comments, `accTitle` and `accDescr`. As in Mermaid, a
+`#` starts a comment, `;` is not a separator (it is a syntax error), a task
+needs its `: score` on the same line, the score is `Number()` of the text
+(so `0`, `6` and `7.5` are drawn off the 1-5 scale, and a non-numeric score
+draws a straight mouth), actors are listed sorted, and tasks written before the
+first `section` get no section bar. A bare `journey` is valid: just the axis.
+
+The SVG uses Mermaid's geometry: tasks 200px apart in 150x50 boxes, section bars
+spanning their tasks, a dashed line per task down to y=450 with a face at
+`300 + (5 - score) * 30` (smile above 3, straight at 3, sad below), a dot per
+actor on the box, an actor legend whose labels wrap at 360px, and seven
+section colours that cycle. Colours come from the theme, not Mermaid's fixed
+palette. See [Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#user-journeys).
+
+### ASCII User journeys
+
+Mermaid has no text mode for journeys, and its score-height columns would run
+off a terminal, so the ASCII output is this library's own: the same content
+listed row by row.
+
+```text
+         My working day
+
+  Actors: Cat, Me
+
+  [Go to work]
+    :)  5  Make tea       Me
+    :|  3  Go upstairs    Me
+    :(  1  Do work        Me, Cat
+
+  [Go home]
+    :)  5  Go downstairs  Me
+    :)  5  Sit down       Me
+```
+
+- Each task shows a face (`:)` above 3, `:|` at 3, `:(` below 3), its score, its
+  name and its actors. A `section` is a `[name]` row; headings and faces use the
+  theme accent.
+- `accTitle` and `accDescr` are not printed.
+
 ## Requirement Diagrams
 
 `requirementDiagram` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/requirementDiagram.html)
@@ -1850,7 +1908,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Use case                                                              | `usecase-beta`                                                                                                  |
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
-| User journey                                                          | `journey`                                                                                                       |
 | Git graph                                                             | `gitGraph`                                                                                                      |
 | Radar                                                                 | `radar-beta`                                                                                                    |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
@@ -3019,6 +3076,25 @@ wrapped line counts, priority bars and the drawing size agree on every gallery s
 - **Repeated spaces** inside a wrapped label are collapsed (Mermaid keeps them).
 - **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
 - **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
+
+## User journeys
+
+Checked against mermaid 12.3.0 (`mermaid.render` in headless Chromium): viewBox, section
+bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gallery samples.
+
+- **Text wrapping.** Mermaid puts task and section text in an HTML `foreignObject`, so the
+  browser wraps it at the box width with whatever `trebuchet ms`/`Open Sans` resolves to;
+  this library sums Trebuchet MS advances plus its kerning pairs (both measured on macOS in
+  Chromium) and draws `<text>` lines. The legend width, which moves `leftMargin`, agrees
+  with mermaid 12.3.0 to the pixel on the gallery samples; on a machine without Trebuchet
+  mermaid's own widths change (its fallback is Verdana or Arial), and so would the layout there.
+- **Palette.** Section bars and actor dots use the theme accent and its series shades
+  (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
+- **Not read yet.** `journey` config in `%%{init}%%` (`leftMargin`, `width`, `taskMargin`,
+  `maxLabelWidth`, `actorColours`, `sectionFills`, ...) and the themes' `fillType0-7`.
+- **Non-numeric score.** Mermaid emits `NaN` face coordinates (browsers draw them at 0);
+  this library emits `0` so the SVG stays valid.
+- **ASCII.** Mermaid has no ASCII output; the row listing above is this library's own.
 
 ## Requirement diagrams
 

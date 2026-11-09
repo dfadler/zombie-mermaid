@@ -63,6 +63,7 @@ import {
   parseGantt,
   parseTimeline,
   parsePacket,
+  parseJourney,
   parseKanban,
   parseRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
@@ -89,6 +90,8 @@ import type {
   Timeline,
   PositionedTimeline,
   Packet,
+  Journey,
+  PositionedJourney,
   Kanban,
   PositionedKanban,
   RequirementDiagram,
@@ -113,6 +116,8 @@ import { renderMindmapSvg } from './mindmap/renderer.ts'
 import { layoutGantt } from './gantt/layout.ts'
 import { renderGanttSvg } from './gantt/renderer.ts'
 import { layoutTimeline } from './timeline/layout.ts'
+import { layoutJourney } from './journey/layout.ts'
+import { renderJourneySvg } from './journey/renderer.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
 import { layoutPacket } from './packet/layout.ts'
 import type { PositionedPacket } from './packet/layout.ts'
@@ -537,6 +542,25 @@ const ganttModule: DiagramModule<GanttChart, PositionedGanttChart> = {
   },
 }
 
+/** Journeys parse from the raw `text` (`;` is not a separator there), then lay out to Mermaid's fixed geometry. */
+const journeyModule: DiagramModule<Journey, PositionedJourney> = {
+  type: 'journey',
+  parse: (_lines, text) => parseJourney(text),
+  layoutForSvg: (j) => layoutJourney(j),
+  renderSvg(positioned, ctx) {
+    return renderJourneySvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
 /**
  * Timelines parse from the raw `text` (Mermaid's lexer has no `;` statement
  * separator and a label may contain one), then lay out to Mermaid's fixed
@@ -664,6 +688,7 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   gantt: ganttModule,
   timeline: timelineModule,
   packet: packetModule,
+  journey: journeyModule,
   kanban: kanbanModule,
   requirement: requirementModule,
 }
