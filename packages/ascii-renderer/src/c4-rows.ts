@@ -3,7 +3,7 @@
 //
 // Mermaid does not rank C4 shapes by their relationships. It places them in
 // rows in declaration order: four shapes to a row (`c4ShapeInRow`; the 1440px
-// width limit always wraps first at 216px a shape), boundaries two to a row,
+// width limit wraps first, sooner for shapes wider than 216px), boundaries two to a row,
 // a boundary's own shapes above its child boundaries. `Rel_U/D/L/R` and the render direction do not move
 // anything. This ports the x-axis half of that algorithm
 // (packages/svg-renderer/src/c4/layout.ts, from c4Renderer.ts in mermaid
@@ -11,21 +11,47 @@
 // rows in characters.
 // ============================================================================
 
+import { c4TypeLine } from '@zombie-mermaid/mermaid-parser'
 import type {
   C4Boundary,
   C4Diagram,
   C4Element,
 } from '@zombie-mermaid/mermaid-parser'
+import {
+  C4,
+  C4_TEXT_WIDTH,
+  c4ShapeSize,
+  c4TextWidth,
+  wrapToWidth,
+} from '@zombie-mermaid/core'
 
 // Mermaid's default `c4` config, as in the SVG renderer's metrics.
 const MARGIN_X = 50
 const SHAPE_MARGIN = 50
 const BOUNDARY_IN_ROW = 2
 const SCREEN_WIDTH = 1440
-/** Every shape is `c4.width` (216px) wide unless its text is wider. */
-// ponytail: wide text or a db/queue cap can push a shape past 216px in the SVG
-// layout; this ignores that, so a row may break one shape earlier or later.
-const SHAPE_WIDTH = 216
+
+/**
+ * A shape's width in mermaid's pixels: `c4.width` (216), or its text plus
+ * padding when wider, and a queue adds its caps. The same rule as the SVG
+ * layout (both use `c4ShapeSize`), so a wide name or description moves a row
+ * break here exactly as it does in mermaid.
+ */
+function shapeWidth(el: C4Element): number {
+  const nameLines = wrapToWidth(el.label, C4_TEXT_WIDTH, C4.nameSize)
+  const descriptionLines = el.description
+    ? wrapToWidth(el.description, C4_TEXT_WIDTH, C4.descrSize)
+    : []
+  const textWidth = Math.max(
+    // Regular weight: mermaid sizes the layout slot from the wrapped text
+    // before drawing the name in bold, so a bold name can overflow the slot.
+    ...nameLines.map((l) => c4TextWidth(l, C4.nameSize, 400)),
+    c4TextWidth(c4TypeLine(el), C4.typeSize, 400),
+    ...descriptionLines.map((l) => c4TextWidth(l, C4.descrSize, 400)),
+  )
+  return c4ShapeSize(el, nameLines.length, descriptionLines.length, textWidth)
+    .width
+}
 
 export interface C4Frame {
   /** The boundary this frame draws, or undefined for the unnamed root. */
@@ -49,16 +75,16 @@ const reset = (b: Bounds, x: number) => {
 }
 
 /** Mermaid's `Bounds.insert`, x only: returns true when the shape starts a row. */
-function insert(b: Bounds): boolean {
+function insert(b: Bounds, width: number): boolean {
   let startx =
     b.nextStartx === b.nextStopx
       ? b.nextStopx + SHAPE_MARGIN
       : b.nextStopx + SHAPE_MARGIN * 2
-  let stopx = startx + SHAPE_WIDTH
+  let stopx = startx + width
   let wrapped = false
   if (startx >= b.limit || stopx >= b.limit) {
     startx = b.nextStartx + SHAPE_MARGIN
-    b.nextStopx = stopx = startx + SHAPE_WIDTH
+    b.nextStopx = stopx = startx + width
     wrapped = true
   }
   b.startx = Math.min(b.startx, startx)
@@ -123,7 +149,7 @@ function inside(
       boundaryRows: [],
     }
     for (const el of src.elements) {
-      if (insert(bounds) || frame.shapeRows.length === 0) {
+      if (insert(bounds, shapeWidth(el)) || frame.shapeRows.length === 0) {
         frame.shapeRows.push([])
       }
       frame.shapeRows.at(-1)!.push(el)
@@ -138,7 +164,7 @@ function inside(
       }
     }
     if (src.boundary && bounds.stopx - bounds.startx === 0) {
-      bounds.stopx = bounds.startx + SHAPE_WIDTH
+      bounds.stopx = bounds.startx + C4.width
     }
     parent.stopx = Math.max(bounds.stopx + SHAPE_MARGIN, parent.stopx)
     rowFrames.push(frame)

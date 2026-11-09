@@ -141,6 +141,8 @@ export {
   wrapTimelineText,
 } from './timeline/layout.ts'
 export { renderTimelineSvg } from './timeline/renderer.ts'
+export { KANBAN, layoutKanban } from './kanban/layout.ts'
+export { renderKanbanSvg } from './kanban/renderer.ts'
 export {
   REQUIREMENT,
   layoutRequirementDiagramSync,

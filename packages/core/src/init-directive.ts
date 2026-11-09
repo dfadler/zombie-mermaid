@@ -35,6 +35,12 @@ export interface TimelineInitConfig {
   disableMulticolor?: boolean
 }
 
+/** The `kanban.*` init keys that change mermaid's output. */
+export interface KanbanInitConfig {
+  sectionWidth?: number
+  ticketBaseUrl?: string
+}
+
 /** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
 const SEQUENCE_NUMBER_KEYS = new Set<string>([
   'width',
@@ -219,6 +225,8 @@ export interface InitConfig {
   sequenceLayout?: SequenceInitLayout
   /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
   timeline?: TimelineInitConfig
+  /** `kanban.sectionWidth` (a number in 1..1e5) and `kanban.ticketBaseUrl`; other keys and bad values are dropped. */
+  kanban?: KanbanInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -511,6 +519,17 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'kanban' && typeof value === 'object' && value !== null) {
+      const k: KanbanInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      const w = rec.sectionWidth
+      if (typeof w === 'number' && w > 0 && w <= 1e5) k.sectionWidth = w
+      if (typeof rec.ticketBaseUrl === 'string')
+        k.ticketBaseUrl = rec.ticketBaseUrl
+      config.kanban = k
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -577,6 +596,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
+    if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)
