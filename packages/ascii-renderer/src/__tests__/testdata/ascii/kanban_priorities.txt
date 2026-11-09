@@ -1,0 +1,32 @@
+kanban
+  Backlog
+    a[Very High]@{ priority: 'Very High' }
+    b[High]@{ priority: 'High' }
+    c[Medium]@{ priority: 'Medium' }
+    d[Low]@{ priority: 'Low' }
+    e[Very Low]@{ priority: 'Very Low' }
+    f[Ticket and assignee]@{ ticket: ABC-1, assigned: bob }
+---
++-------------------------+
+|         Backlog         |
++-------------------------+
+| +- Very High ---------+ |
+| | Very High           | |
+| +---------------------+ |
+| +- High --------------+ |
+| | High                | |
+| +---------------------+ |
+| +- Medium ------------+ |
+| | Medium              | |
+| +---------------------+ |
+| +- Low ---------------+ |
+| | Low                 | |
+| +---------------------+ |
+| +- Very Low ----------+ |
+| | Very Low            | |
+| +---------------------+ |
+| +---------------------+ |
+| | Ticket and assignee | |
+| | ABC-1           bob | |
+| +---------------------+ |
++-------------------------+

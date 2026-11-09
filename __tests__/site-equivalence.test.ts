@@ -113,7 +113,7 @@ describe('index.ts → index.html', () => {
         .querySelector('meta[name="description"]')
         ?.getAttribute('content'),
     ).toBe(
-      'Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, Pie, Quadrant, Gantt, Mindmap, Timeline, Requirement, and Sankey diagrams.',
+      'Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, Pie, Quadrant, Gantt, Mindmap, Timeline, Requirement, Kanban, and Sankey diagrams.',
     )
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
