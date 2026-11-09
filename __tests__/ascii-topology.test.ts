@@ -6,7 +6,9 @@ import {
   compareFaces,
   compareSpots,
   emptyCounts,
+  inScope,
   isExact,
+  isGraph,
   measureEr,
   measureSample,
   readErText,
@@ -152,6 +154,17 @@ describe('describeSample', () => {
     expect(describeSample('T', c, true)).toBe(
       'layer 3/3 order 0/0 align 2/3 faces 1/4  T',
     )
+  })
+})
+
+describe('sample scope', () => {
+  it('takes ascii and ER fork-fixes, and flowchart, state and ER sources', () => {
+    expect(inScope('ascii-x')).toBe(true)
+    expect(inScope('er-ascii-x')).toBe(true)
+    expect(inScope('class-x')).toBe(false)
+    expect(isGraph('erDiagram\n A ||--o{ B : x')).toBe(true)
+    expect(isGraph('stateDiagram-v2\n A --> B')).toBe(true)
+    expect(isGraph('sequenceDiagram\n A->>B: hi')).toBe(false)
   })
 })
 

@@ -215,6 +215,17 @@ const ER_RE = /^\s*erDiagram/m
 export const isEr = (src: string): boolean =>
   ER_RE.test(src.replace(/^---[\s\S]*?---/, '').trim())
 
+/** Every ASCII fork-fix entry plus the subgraph frame merge, flowchart/state/ER. */
+export const inScope = (id: string): boolean =>
+  id.startsWith('ascii-') ||
+  id.startsWith('er-ascii-') ||
+  id === 'subgraph-frame-merge'
+export const isGraph = (src: string): boolean =>
+  isEr(src) ||
+  /^\s*(flowchart|graph|stateDiagram)/m.test(
+    src.replace(/^---[\s\S]*?---/, '').trim(),
+  )
+
 /** Entity boxes read off drawn ER text: a `┌──┐` top border over a row holding the entity's label. */
 export function readErText(
   text: string,

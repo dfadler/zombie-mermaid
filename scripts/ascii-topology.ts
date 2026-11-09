@@ -11,23 +11,13 @@ import {
   addCounts,
   describeSample,
   emptyCounts,
-  isEr,
+  inScope,
   isExact,
+  isGraph,
   measureSample,
   redirectDirection,
 } from './lib/ascii-topology.ts'
 import type { Counts } from './lib/ascii-topology.ts'
-
-/** Every ASCII fork-fix entry plus the subgraph frame merge, flowchart/state/ER. */
-const inScope = (id: string): boolean =>
-  id.startsWith('ascii-') ||
-  id.startsWith('er-ascii-') ||
-  id === 'subgraph-frame-merge'
-const isGraph = (src: string): boolean =>
-  isEr(src) ||
-  /^\s*(flowchart|graph|stateDiagram)/m.test(
-    src.replace(/^---[\s\S]*?---/, '').trim(),
-  )
 
 const list = [
   ...samples
