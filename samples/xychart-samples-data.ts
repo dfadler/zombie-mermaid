@@ -1015,4 +1015,30 @@ export const xychartSamples: Sample[] = [
     bar [12, 15, 18, 22, 20, 25, 28, 24, 30, 32, 35, 38]
     line [12, 15, 18, 22, 20, 25, 28, 24, 30, 32, 35, 38]`,
   },
+  {
+    title: 'Init Config: Horizontal, No Titles',
+    category: 'Init Config',
+    description:
+      '`xyChart` init block: chartOrientation horizontal, showTitle false, y-axis showTitle false (mermaid 12.3.0).',
+    source: `%%{init: {"xyChart": {"chartOrientation": "horizontal", "showTitle": false, "yAxis": {"showTitle": false}}}}%%
+xychart-beta
+    title "Hidden title"
+    x-axis "Month" [jan, feb, mar, apr]
+    y-axis "Revenue" 0 --> 100
+    bar [20, 50, 80, 40]
+    line [30, 45, 70, 60]`,
+  },
+  {
+    title: 'Init Config: Size and Bare Axes',
+    category: 'Init Config',
+    description:
+      '`xyChart` init block: width 900, height 400, x-axis without labels, y-axis without ticks and axis line (mermaid 12.3.0).',
+    source: `%%{init: {"xyChart": {"width": 900, "height": 400, "xAxis": {"showLabel": false}, "yAxis": {"showTick": false, "showAxisLine": false}}}}%%
+xychart-beta
+    title "Sales"
+    x-axis "Month" [jan, feb, mar, apr]
+    y-axis "Revenue" 0 --> 100
+    bar [20, 50, 80, 40]
+    line [30, 45, 70, 60]`,
+  },
 ]

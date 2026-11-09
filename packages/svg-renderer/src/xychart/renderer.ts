@@ -120,16 +120,38 @@ export function renderXYChartSvg(
   parts.push(chartCss)
   if (chartDefs) parts.push(chartDefs)
 
-  // 1. Axis lines and tick marks
+  // 1. Axis lines and tick marks. `xyChart.xAxis` is mermaid's category axis
+  // whatever the orientation; horizontal charts hold it in `yAxis`.
+  const cfg = chart.config
+  const catCfg = cfg?.xAxis
+  const valCfg = cfg?.yAxis
+  const [leftCfg, topBottomCfg] = chart.horizontal
+    ? [catCfg, valCfg]
+    : [valCfg, catCfg]
+  const showLeft = leftCfg?.showAxisLine !== false
+  const showFar = topBottomCfg?.showAxisLine !== false
   const { plotArea } = chart
   const axisY = plotArea.y + plotArea.height
   // Horizontal charts put the value axis along the top, as mermaid does.
-  parts.push(
-    chart.horizontal
-      ? `<path d="M${r(plotArea.x)},${r(axisY)} V${r(plotArea.y)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`
-      : `<path d="M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`,
-  )
-  for (const t of [...chart.xAxis.ticks, ...chart.yAxis.ticks]) {
+  const right = plotArea.x + plotArea.width
+  const farY = chart.horizontal ? plotArea.y : axisY
+  const axisD =
+    showLeft && showFar
+      ? chart.horizontal
+        ? `M${r(plotArea.x)},${r(axisY)} V${r(plotArea.y)} H${r(right)}`
+        : `M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(right)}`
+      : showLeft
+        ? `M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)}`
+        : showFar
+          ? `M${r(plotArea.x)},${r(farY)} H${r(right)}`
+          : ''
+  if (axisD) parts.push(`<path d="${axisD}" class="xychart-axis"/>`)
+  const xTickCfg = chart.horizontal ? valCfg : catCfg
+  const yTickCfg = chart.horizontal ? catCfg : valCfg
+  for (const t of [
+    ...(xTickCfg?.showTick === false ? [] : chart.xAxis.ticks),
+    ...(yTickCfg?.showTick === false ? [] : chart.yAxis.ticks),
+  ]) {
     parts.push(
       `<path d="M${r(t.x)},${r(t.y)} L${r(t.tx)},${r(t.ty)}" class="xychart-axis"/>`,
     )
@@ -276,7 +298,7 @@ export function renderXYChartSvg(
   }
 
   // 5. Axis labels
-  for (const tick of chart.xAxis.ticks) {
+  for (const tick of xTickCfg?.showLabel === false ? [] : chart.xAxis.ticks) {
     if (tick.label === '') continue // Dropped by the layout's overlap step
     parts.push(
       `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
@@ -284,7 +306,7 @@ export function renderXYChartSvg(
         `dy="${TEXT_BASELINE_SHIFT}" class="xychart-label">${escapeXml(tick.label)}</text>`,
     )
   }
-  for (const tick of chart.yAxis.ticks) {
+  for (const tick of yTickCfg?.showLabel === false ? [] : chart.yAxis.ticks) {
     parts.push(
       `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
         `font-size="${CHART_FONT.labelSize}" font-weight="${CHART_FONT.labelWeight}" ` +

@@ -156,6 +156,44 @@ export interface ErInitLayout {
   minEntityWidth?: number
 }
 
+/** The per-axis `xyChart.xAxis` / `xyChart.yAxis` keys that change mermaid 12.3.0's output and that are honoured. */
+export interface XyChartAxisInitConfig {
+  showLabel?: boolean
+  showTitle?: boolean
+  showTick?: boolean
+  showAxisLine?: boolean
+}
+
+/**
+ * `%%{init: {"xyChart": {...}}}%%` keys honoured, measured against mermaid
+ * 12.3.0 (`width` 700 and `height` 500 are mermaid's defaults; renderers
+ * apply them as a delta). `xAxis` is mermaid's category-or-x axis and `yAxis`
+ * its value axis, whatever the orientation. Every other key is reported in
+ * `ignored`.
+ */
+export interface XyChartInitConfig {
+  width?: number
+  height?: number
+  showTitle?: boolean
+  chartOrientation?: 'vertical' | 'horizontal'
+  xAxis?: XyChartAxisInitConfig
+  yAxis?: XyChartAxisInitConfig
+}
+
+const XY_AXIS_BOOLEAN_KEYS = [
+  'showLabel',
+  'showTitle',
+  'showTick',
+  'showAxisLine',
+] as const
+
+const XY_HONOURED = new Set([
+  'width',
+  'height',
+  'showTitle',
+  'chartOrientation',
+])
+
 const PIE_LEGEND_POSITIONS = new Set([
   'left',
   'right',
@@ -297,6 +335,8 @@ export interface InitConfig {
   erLayout?: ErInitLayout
   /** The `c4` block (see {@link C4InitLayout}); a bad value is dropped. */
   c4Layout?: C4InitLayout
+  /** The `xyChart` block (see {@link XyChartInitConfig}); a bad value is dropped. */
+  xyChart?: XyChartInitConfig
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
@@ -524,6 +564,36 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const y = rec.yAxisPosition
       if (y === 'left' || y === 'right') q.yAxisPosition = y
       config.quadrant = q
+      continue
+    }
+
+    if (lower === 'xychart' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const xy: XyChartInitConfig = {}
+      for (const k of ['width', 'height'] as const)
+        if (typeof rec[k] === 'number' && rec[k] >= 50 && rec[k] <= 1e5)
+          xy[k] = rec[k]
+      if (typeof rec.showTitle === 'boolean') xy.showTitle = rec.showTitle
+      const o = rec.chartOrientation
+      if (o === 'vertical' || o === 'horizontal') xy.chartOrientation = o
+      for (const ax of ['xAxis', 'yAxis'] as const) {
+        const a = rec[ax]
+        if (typeof a !== 'object' || a === null) continue
+        const ar: Record<string, unknown> = { ...a }
+        const out: XyChartAxisInitConfig = {}
+        for (const k of XY_AXIS_BOOLEAN_KEYS)
+          if (typeof ar[k] === 'boolean') out[k] = ar[k]
+        xy[ax] = out
+      }
+      config.xyChart = xy
+      for (const [k, v] of Object.entries(rec)) {
+        if (k === 'xAxis' || k === 'yAxis') {
+          if (typeof v === 'object' && v !== null)
+            for (const ak of Object.keys(v))
+              if (!(XY_AXIS_BOOLEAN_KEYS as readonly string[]).includes(ak))
+                config.ignored.push(`xyChart.${k}.${ak}`)
+        } else if (!XY_HONOURED.has(k)) config.ignored.push(`xyChart.${k}`)
+      }
       continue
     }
 
@@ -791,6 +861,13 @@ export function extractInitConfig(lines: string[]): InitConfig {
       merged.erLayout = { ...merged.erLayout, ...config.erLayout }
     if (config.c4Layout)
       merged.c4Layout = { ...merged.c4Layout, ...config.c4Layout }
+    if (config.xyChart) {
+      const { xAxis, yAxis, ...rest } = config.xyChart
+      const m = (merged.xyChart ??= {})
+      Object.assign(m, rest)
+      if (xAxis) m.xAxis = { ...m.xAxis, ...xAxis }
+      if (yAxis) m.yAxis = { ...m.yAxis, ...yAxis }
+    }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }
     if (config.themeVariables) {

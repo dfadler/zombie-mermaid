@@ -180,8 +180,11 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   the rows outside it are cut off. A legend wider than the frame (top, bottom or center
   with very long labels) is clipped the same way: the viewBox keeps its 490px width
   ([#2781](https://github.com/dfadler/zombie-mermaid/issues/2781)); left and right grow it.
-  The ASCII table still lists every slice
-  ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722)).
+  The ASCII table deliberately still lists every slice: it has no frame to overflow, and
+  it is the only place that shows slices under 1% or past the bar's 50-cell budget, so
+  cutting rows would drop data
+  ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722),
+  [#2782](https://github.com/dfadler/zombie-mermaid/issues/2782)).
 - **Empty pie.** When every slice is zero, zombie-mermaid draws no slice paths and one
   outline circle, matching mermaid 12.3.0 (0 paths, 1 circle; only the legend width differs
   by a few pixels, [#2826](https://github.com/dfadler/zombie-mermaid/issues/2826)).
@@ -715,7 +718,27 @@ matter share one code path. SVG only: ASCII has no pixel padding, so these keys 
   every `state` key except `useMaxWidth` (`padding`, `nodeSpacing`, `rankSpacing`, `fontSize`, `forkWidth`, `compositTitleSize`,
   `radius`, ...). The `state` block is reported as ignored.
 - **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
-- **Not yet measured:** `xyChart` and `architecture` blocks, tracked in separate issues. The `c4` block is below.
+- **Not yet measured:** `architecture` block, tracked in a separate issue.
+
+## xyChart `%%{init}%%` / front-matter config ([#2905](https://github.com/dfadler/zombie-mermaid/issues/2905))
+
+Measured on mermaid 12.3.0 (headless Chromium, each key of the `xyChart` block rendered with and without,
+normalised SVG compared): every key changes mermaid's output except `showLegend`, `legendFontSize`,
+`legendPadding` (no legend is drawn), `useMaxWidth` (only the `<svg>` sizing attributes) and `yAxis.labelRotation`.
+Init and front matter share one code path.
+
+- **Read, SVG and ASCII:** `chartOrientation` (`horizontal` overrides the header), `showTitle`, and `xAxis.showTitle` /
+  `yAxis.showTitle` (drop the chart or axis title). `xAxis` is mermaid's category-or-x axis and `yAxis` its value axis,
+  whatever the orientation.
+- **Read, SVG only:** `width` and `height` (mermaid default 700 x 500) move the plot by the same delta on our scale
+  (plot minimum 50px), so the canvas grows or shrinks by that amount; and per axis `showLabel`, `showTick` and
+  `showAxisLine`. ASCII has no pixel sizes, labels, ticks or lines to switch.
+  **Known gap:** mermaid keeps the canvas at `width` x `height` and gives the room a hidden title, label or axis title took back
+  to the plot; ours leaves that margin empty (or, for a hidden title, shrinks the canvas), tracked in a separate issue.
+- **Not read** (reported as ignored; mermaid lays the plot out from these and our plot is a fixed size plus the
+  `width`/`height` delta): `titleFontSize`, `titlePadding`, `showDataLabel`, `showDataLabelOutsideBar` (data labels are
+  not drawn), `plotReservedSpacePercent`, and per axis `labelFontSize`, `labelPadding`, `titleFontSize`,
+  `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth`, `labelRotation`.
 
 ## C4 `%%{init}%%` / front-matter config ([#2906](https://github.com/dfadler/zombie-mermaid/issues/2906))
 
