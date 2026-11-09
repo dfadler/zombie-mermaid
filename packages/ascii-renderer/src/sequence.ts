@@ -80,22 +80,33 @@ function wrapBudget(span: number): number {
   return Math.max(Math.floor(2.6 * span) - 3, 10)
 }
 
-// Break a block label (shown as `[label]`) at spaces, mermaid's wrapLabel
-// rule: break once the line so far plus the next word and its trailing space
-// reaches `avail`. A word wider than that stays whole. Explicit newlines kept.
+// Break a block label (shown as `[label]`) like mermaid's wrapLabel: at spaces
+// once the line so far plus the next word and its trailing space reaches
+// `avail`; a word that alone is wider than that is split mid-word with a
+// trailing `-` (breakString). Explicit newlines kept.
 function wrapBracketed(label: string, avail: number): string[] {
   const out: string[] = []
   for (const line of `[${label}]`.split('\n')) {
     let cur = ''
     for (const word of line.split(' ')) {
-      if (cur && displayWidth(cur) + displayWidth(word) + 1 >= avail) {
+      if (displayWidth(word) + 1 > avail) {
+        const chars = [...word]
+        out.push(cur)
+        cur = ''
+        chars.forEach((ch, i) => {
+          if (displayWidth(cur + ch) >= avail) {
+            out.push(i === chars.length - 1 ? cur + ch : `${cur + ch}-`)
+            cur = ''
+          } else cur += ch
+        })
+      } else if (cur && displayWidth(cur) + displayWidth(word) + 1 >= avail) {
         out.push(cur)
         cur = word
       } else cur = cur ? `${cur} ${word}` : word
     }
     out.push(cur)
   }
-  return out
+  return out.filter(Boolean)
 }
 
 // Horizontal clearance between a block's (loop/alt/opt/par/etc.) side wall
@@ -153,30 +164,38 @@ function selfExtent(msg: Message): number {
  */
 /** `sequence.wrap`: notes wrap at `width` (150px), messages at `width + actorMargin`, at 8px a column. */
 function wrapDiagramText(d: SequenceDiagram): SequenceDiagram {
-  const l = d.layout!
-  const wrap = (text: string, px: number) =>
-    splitLines(text)
-      .map((line) =>
-        line
-          .split(/\s+/)
-          .filter(Boolean)
-          .reduce<string[]>((rows, w) => {
-            const last = rows[rows.length - 1]
-            if (last !== undefined && displayWidth(`${last} ${w}`) <= px / 8)
-              rows[rows.length - 1] = `${last} ${w}`
-            else rows.push(w)
-            return rows
-          }, [])
-          .join('\n'),
-      )
-      .join('\n')
+  const l = d.layout ?? {}
+  const wrap = (text: string, px: number, on = l.wrap) =>
+    !on
+      ? text
+      : splitLines(text)
+          .map((line) =>
+            line
+              .split(/\s+/)
+              .filter(Boolean)
+              .reduce<string[]>((rows, w) => {
+                const last = rows[rows.length - 1]
+                if (
+                  last !== undefined &&
+                  displayWidth(`${last} ${w}`) <= px / 8
+                )
+                  rows[rows.length - 1] = `${last} ${w}`
+                else rows.push(w)
+                return rows
+              }, [])
+              .join('\n'),
+          )
+          .join('\n')
   const w = l.width ?? 150
   return {
     ...d,
-    notes: d.notes.map((n) => ({ ...n, text: wrap(n.text, w) })),
+    notes: d.notes.map((n) => ({
+      ...n,
+      text: wrap(n.text, w, n.wrap ?? l.wrap),
+    })),
     messages: d.messages.map((m) => ({
       ...m,
-      label: wrap(m.label, w + (l.actorMargin ?? 50)),
+      label: wrap(m.label, w + (l.actorMargin ?? 50), m.wrap ?? l.wrap),
     })),
   }
 }
@@ -189,7 +208,12 @@ export function renderSequenceAscii(
 ): string {
   const lines = splitStatements(text)
   const parsed = parseSequenceDiagram(lines, text)
-  const diagram = parsed.layout?.wrap ? wrapDiagramText(parsed) : parsed
+  const diagram =
+    parsed.layout?.wrap ||
+    parsed.messages.some((m) => m.wrap) ||
+    parsed.notes.some((n) => n.wrap)
+      ? wrapDiagramText(parsed)
+      : parsed
   const noteAlign = parsed.layout?.noteAlign
   const messageAlign = parsed.layout?.messageAlign
   const mirror = diagram.mirrorActors !== false
