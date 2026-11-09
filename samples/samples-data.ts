@@ -3471,4 +3471,77 @@ pie title Reports by team
     description: 'A bare `requirementDiagram` is valid: an empty drawing.',
     source: `requirementDiagram`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  KANBAN BOARDS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/kanban_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Kanban: Basic',
+    category: 'Kanban',
+    gallery: true,
+    description:
+      'Columns side by side, each with its cards stacked below; a card can carry a ticket, an assignee and a priority bar on its left edge.',
+    source: `kanban
+  Todo
+    [Create Documentation]
+    docs[Create Blog about the new diagram]
+  id7[In progress]
+    id6[Create renderer so that it works in all cases. We also add some extra text here for testing purposes. And some more just for the extra flare.]
+  id9[Ready for deploy]
+    id8[Design grammar]@{ assigned: 'knsv' }
+  id10[Ready for test]
+    id4[Create parsing tests]@{ ticket: MC-2038, assigned: 'K.Sveidqvist', priority: 'High' }
+    id66[last item]@{ priority: 'Very Low', assigned: 'knsv' }
+  id11[Done]
+    id5[define getData]
+    id2[Title of diagram is more than 100 chars when user duplicates diagram with 100 char]@{ ticket: MC-2036, priority: 'Very High'}
+    id3[Update DB function]@{ ticket: MC-2037, assigned: knsv, priority: 'High' }
+  id12[Can't reproduce]
+    id3[Weird flickering in Firefox]`,
+  },
+  {
+    title: 'Kanban: Priorities',
+    category: 'Kanban',
+    description:
+      'Every priority: Very High is red, High orange, Low blue and Very Low light blue; Medium and unknown names draw a bar with no colour.',
+    source: `kanban
+  Backlog
+    a[Very High]@{ priority: 'Very High' }
+    b[High]@{ priority: 'High' }
+    c[Medium]@{ priority: 'Medium' }
+    d[Low]@{ priority: 'Low' }
+    e[Very Low]@{ priority: 'Very Low' }
+    f[Ticket and assignee]@{ ticket: ABC-1, assigned: bob }`,
+  },
+  {
+    title: 'Kanban: Ticket Links And Width',
+    category: 'Kanban',
+    description:
+      '`kanban.ticketBaseUrl` turns each ticket into a link (`#TICKET#` is replaced) and `kanban.sectionWidth` widens the columns and their cards.',
+    source: `---
+config:
+  kanban:
+    ticketBaseUrl: 'https://example.test/browse/#TICKET#'
+    sectionWidth: 260
+---
+kanban
+  Todo
+    a[Write the spec]@{ ticket: T-1 }
+  Done
+    b[Ship it]@{ ticket: T-2, assigned: sam }`,
+  },
+  {
+    title: 'Kanban: Empty Columns And Markdown',
+    category: 'Kanban',
+    description:
+      'Columns need no cards; card text is Markdown (**bold**, *italic*) and `<br>` breaks a line.',
+    source: `kanban
+  Ideas
+    i1[**Bold** and *italic*<br>on two lines]
+  Doing
+  Done`,
+  },
 ]
