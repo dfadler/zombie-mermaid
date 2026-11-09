@@ -308,7 +308,7 @@ export function blockTabWidth(
  * Wrap a block header or divider label (shown as `[label]`) onto lines of at
  * most `avail` px, breaking at spaces. Mermaid wraps these to the frame
  * instead of widening the participant gap (#2745). A word wider than `avail`
- * stays whole (mermaid would split it mid-word).
+ * is split mid-word with a trailing `-`, as mermaid's breakString does (#2773).
  */
 function wrapBracketed(label: string, avail: number, fontSize: number): string {
   const text = `[${label}]`
@@ -318,7 +318,17 @@ function wrapBracketed(label: string, avail: number, fontSize: number): string {
     for (const word of line.split(' ')) {
       // mermaid's wrapLabel: break once the line so far plus the next word
       // (with its trailing space) reaches the limit.
-      if (
+      if (labelWidth(`${word} `, fontSize) > avail) {
+        const chars = [...word]
+        out.push(cur)
+        cur = ''
+        chars.forEach((ch, i) => {
+          if (labelWidth(cur + ch, fontSize) >= avail) {
+            out.push(i === chars.length - 1 ? cur + ch : `${cur + ch}-`)
+            cur = ''
+          } else cur += ch
+        })
+      } else if (
         cur &&
         labelWidth(cur, fontSize) + labelWidth(`${word} `, fontSize) >= avail
       ) {
@@ -328,7 +338,7 @@ function wrapBracketed(label: string, avail: number, fontSize: number): string {
     }
     out.push(cur)
   }
-  return out.join('\n').slice(1, -1)
+  return out.filter(Boolean).join('\n').slice(1, -1)
 }
 
 /** Extra height a multi-line label takes over a single line. */
@@ -452,7 +462,7 @@ function wrapDiagramText(
   diagram: SequenceDiagram,
   fontSize: number,
 ): SequenceDiagram {
-  const l = diagram.layout!
+  const l = diagram.layout ?? {}
   const k = fontSize / 16
   const w = l.width ?? 150
   const noteW = w * k
@@ -461,11 +471,11 @@ function wrapDiagramText(
     ...diagram,
     notes: diagram.notes.map((n) => ({
       ...n,
-      text: wrapLabel(n.text, noteW, fontSize),
+      text: (n.wrap ?? l.wrap) ? wrapLabel(n.text, noteW, fontSize) : n.text,
     })),
     messages: diagram.messages.map((m) => ({
       ...m,
-      label: wrapLabel(m.label, msgW, fontSize),
+      label: (m.wrap ?? l.wrap) ? wrapLabel(m.label, msgW, fontSize) : m.label,
     })),
   }
 }
@@ -474,9 +484,12 @@ export function layoutSequenceDiagram(
   input: SequenceDiagram,
   options: SequenceRenderOptions = {},
 ): PositionedSequenceDiagram {
-  const diagram = input.layout?.wrap
-    ? wrapDiagramText(input, resolveFontSizes(options.fontSizes).edgeLabel)
-    : input
+  const diagram =
+    input.layout?.wrap ||
+    input.messages.some((m) => m.wrap) ||
+    input.notes.some((n) => n.wrap)
+      ? wrapDiagramText(input, resolveFontSizes(options.fontSizes).edgeLabel)
+      : input
   if (diagram.actors.length === 0) {
     return {
       width: 0,
