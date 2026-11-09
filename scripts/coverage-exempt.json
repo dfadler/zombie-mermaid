@@ -235,6 +235,16 @@
     "maxLines": 62
   },
   {
+    "file": "scripts/requirement-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/requirement-agreement.ts",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/lib/requirement-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the requirement-oracle and layout-oracle CLIs",
+    "maxLines": 72
+  },
+  {
     "file": "scripts/sequence-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/sequence-agreement.ts",
     "maxLines": 60
@@ -322,7 +332,7 @@
   {
     "file": "scripts/lib/separate-scores.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid renders), only reachable from the layout-oracle CLI; each figure is unit-tested in its own *-agreement.ts",
-    "maxLines": 44
+    "maxLines": 53
   },
   {
     "file": "scripts/lib/xychart-measure.ts",

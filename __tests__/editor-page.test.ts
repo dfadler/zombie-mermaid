@@ -76,6 +76,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   gantt: 'Gantt',
   timeline: 'Timeline',
   gitgraph: 'GitGraph',
+  requirement: 'Requirement',
 }
 
 describe('EditorPage meta description', () => {

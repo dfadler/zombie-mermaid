@@ -35,7 +35,7 @@ const OWN_TITLE: Partial<Record<DiagramType, RegExp>> = {
   gitgraph: /^[ \t]*title\b/m,
   sequence: /^[ \t]*title\b/m,
 }
-const DRAWN_TITLE: DiagramType[] = ['flowchart', 'class', 'er']
+const DRAWN_TITLE: DiagramType[] = ['flowchart', 'class', 'er', 'requirement']
 
 /**
  * Strip `accTitle` / `accDescr` statements from `text` and return their
