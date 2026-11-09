@@ -143,6 +143,8 @@ export {
 export { renderTimelineSvg } from './timeline/renderer.ts'
 export { layoutGitGraph } from './gitgraph/layout.ts'
 export { renderGitGraphSvg } from './gitgraph/renderer.ts'
+export { RADAR, layoutRadar } from './radar/layout.ts'
+export { renderRadarSvg } from './radar/renderer.ts'
 export { KANBAN, layoutKanban } from './kanban/layout.ts'
 export { renderKanbanSvg } from './kanban/renderer.ts'
 export {

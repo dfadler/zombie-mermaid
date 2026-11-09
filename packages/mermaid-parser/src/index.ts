@@ -69,6 +69,8 @@ export * from './timeline/parser.ts'
 export * from './timeline/types.ts'
 export * from './gitgraph/parser.ts'
 export * from './gitgraph/types.ts'
+export * from './radar/parser.ts'
+export * from './radar/types.ts'
 export * from './journey/parser.ts'
 export * from './journey/types.ts'
 

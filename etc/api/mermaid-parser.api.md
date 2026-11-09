@@ -766,6 +766,9 @@ export function parsePieChart(text: string): PieChart;
 export function parseQuadrantChart(source: string): QuadrantChart;
 
 // @public
+export function parseRadar(text: string): Radar;
+
+// @public
 export function parseRequirementDiagram(text: string): RequirementDiagram;
 
 // @public
@@ -1768,6 +1771,82 @@ export interface PositionedQuadrantText {
     y: number;
 }
 
+// @public
+export interface PositionedRadar {
+    // (undocumented)
+    axes: PositionedRadarAxis[];
+    centerX: number;
+    // (undocumented)
+    centerY: number;
+    // (undocumented)
+    curves: PositionedRadarCurve[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    legend: PositionedRadarLegendItem[];
+    // (undocumented)
+    rings: PositionedRadarRing[];
+    title: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedRadarAxis {
+    // (undocumented)
+    anchor: 'start' | 'middle' | 'end';
+    // (undocumented)
+    baseline: 'hanging' | 'auto' | 'central';
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    labelX: number;
+    // (undocumented)
+    labelY: number;
+    x2: number;
+    // (undocumented)
+    y2: number;
+}
+
+// @public
+export interface PositionedRadarCurve {
+    d?: string;
+    index: number;
+    kind: 'path' | 'polygon';
+    points?: Array<{
+        x: number;
+        y: number;
+    }>;
+}
+
+// @public
+export interface PositionedRadarLegendItem {
+    // (undocumented)
+    index: number;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export type PositionedRadarRing = {
+    kind: 'circle';
+    r: number;
+} | {
+    kind: 'polygon';
+    points: Array<{
+        x: number;
+        y: number;
+    }>;
+};
+
 // @public (undocumented)
 export interface PositionedRequirementDiagram {
     // (undocumented)
@@ -1968,6 +2047,42 @@ export interface QuadrantPointStyle {
     radius?: number;
     strokeColor?: string;
     strokeWidth?: string;
+}
+
+// @public
+export interface Radar {
+    // (undocumented)
+    axes: RadarAxis[];
+    // (undocumented)
+    curves: RadarCurve[];
+    // (undocumented)
+    options: RadarOptions;
+    title?: string;
+}
+
+// @public
+export interface RadarAxis {
+    label: string;
+    name: string;
+}
+
+// @public
+export interface RadarCurve {
+    entries: number[];
+    label: string;
+    // (undocumented)
+    name: string;
+}
+
+// @public
+export interface RadarOptions {
+    // (undocumented)
+    graticule: 'circle' | 'polygon';
+    max: number | null;
+    min: number;
+    // (undocumented)
+    showLegend: boolean;
+    ticks: number;
 }
 
 // @public

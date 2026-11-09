@@ -185,7 +185,7 @@ describe('stateDiagram-v2 rendering (integration)', () => {
     expect(out).toContain('◉')
   })
 
-  it('renders multiple distinct start/end pseudostates with unique ids', () => {
+  it('draws one start and one end pseudostate however many [*] a scope uses (mermaid 12.3.0)', () => {
     const out = renderMermaidASCII(
       `stateDiagram-v2
   [*] --> A
@@ -198,8 +198,8 @@ describe('stateDiagram-v2 rendering (integration)', () => {
     expect(out).toContain('B')
     const startGlyphCount = (out.match(/●/g) ?? []).length
     const endGlyphCount = (out.match(/◉/g) ?? []).length
-    expect(startGlyphCount).toBe(2)
-    expect(endGlyphCount).toBe(2)
+    expect(startGlyphCount).toBe(1)
+    expect(endGlyphCount).toBe(1)
   })
 })
 

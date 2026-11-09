@@ -75,7 +75,7 @@ describe('flat state diagrams read top to bottom (#1240)', () => {
     expect(start.y + start.height).toBeLessThanOrEqual(closed.y)
   })
 
-  it('an end marker reached from an early state sits just below it, not last', () => {
+  it('every [*] target in a scope shares one end marker, below the last state (mermaid 12.3.0 root_end)', () => {
     const g = layout(`stateDiagram-v2
   [*] --> A
   A --> B
@@ -83,12 +83,9 @@ describe('flat state diagrams read top to bottom (#1240)', () => {
   C --> D
   A --> [*] : abort
   D --> [*]`)
-    const a = node(g, 'A')
-    const early = g.nodes.filter(
-      (n) => n.shape === 'state-end' && n.y < node(g, 'D').y,
-    )
-    expect(early).toHaveLength(1)
-    expect(early[0]!.y).toBeGreaterThan(a.y + a.height)
+    const ends = g.nodes.filter((n) => n.shape === 'state-end')
+    expect(ends).toHaveLength(1)
+    expect(ends[0]!.y).toBeGreaterThan(node(g, 'D').y + node(g, 'D').height)
   })
 
   it('every edge ends with a vertical run, so arrowheads point straight into the node', () => {

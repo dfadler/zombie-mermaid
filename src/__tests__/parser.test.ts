@@ -1387,13 +1387,30 @@ describe('parseMermaid – state diagrams', () => {
     expect(g.edges[0]!.target).toBe('_end')
   })
 
-  it('assigns unique IDs to multiple [*] pseudostates', () => {
+  it('shares one start and one end node per scope (mermaid 12.3.0 root_start / root_end)', () => {
     const g = parseMermaid(`stateDiagram-v2
       [*] --> A
-      [*] --> B`)
-    // First [*] source → _start, second → _start2
-    expect(g.nodes.has('_start')).toBe(true)
-    expect(g.nodes.has('_start2')).toBe(true)
+      [*] --> B
+      A --> [*]
+      B --> [*]`)
+    expect([...g.nodes.keys()].sort()).toEqual(['A', 'B', '_end', '_start'])
+  })
+
+  it('gives each composite and each concurrent region its own start and end node', () => {
+    const g = parseMermaid(`stateDiagram-v2
+      [*] --> W
+      state W {
+        [*] --> a
+        a --> [*]
+        --
+        [*] --> b
+        b --> [*]
+        [*] --> c
+      }
+      W --> [*]`)
+    const ids = [...g.nodes.keys()]
+    expect(ids.filter((i) => i.startsWith('_start'))).toHaveLength(3)
+    expect(ids.filter((i) => i.startsWith('_end'))).toHaveLength(3)
   })
 
   it('parses state description: s1 : Description', () => {

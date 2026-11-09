@@ -91,6 +91,7 @@ const DIAGRAM_KEYWORDS = new Set([
   'gitGraph',
   'mindmap',
   'timeline',
+  'radar-beta',
   'requirementDiagram',
   'quadrantChart',
   'xychart-beta',
