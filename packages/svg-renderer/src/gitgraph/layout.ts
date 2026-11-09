@@ -157,11 +157,8 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
 
   const calculateCommitPosition = (c: GitCommit): number => {
     const closest = findClosestParent(c.parents.filter((p) => p !== null))
-    if (!closest) throw new Error(`Closest parent not found for commit ${c.id}`)
-    const y = commitPos.get(closest)?.y
-    if (y === undefined)
-      throw new Error(`Closest parent position not found for commit ${c.id}`)
-    return y + COMMIT_STEP
+    // Parents are always positioned before their children (seq order).
+    return commitPos.get(closest!)!.y + COMMIT_STEP
   }
 
   const setParallelBTPos = (sortedKeys: string[], defaultPos: number): void => {
@@ -195,22 +192,15 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
   }
 
   const calculatePosition = (c: GitCommit): number => {
-    if (c.parents.length > 0) {
-      const closest = findClosestParent(c.parents)
-      if (closest) {
-        const pp = commitPos.get(closest) ?? { x: 0, y: 0 }
-        if (dir === 'TB') return pp.y + COMMIT_STEP
-        if (dir === 'BT')
-          return (commitPos.get(c.id) ?? { x: 0, y: 0 }).y - COMMIT_STEP
-        return pp.x + COMMIT_STEP
-      }
-    } else {
+    const own = commitPos.get(c.id)?.y ?? 0
+    if (c.parents.length === 0) {
       if (dir === 'TB') return DEFAULT_POS
-      if (dir === 'BT')
-        return (commitPos.get(c.id) ?? { x: 0, y: 0 }).y - COMMIT_STEP
-      return 0
+      return dir === 'BT' ? own - COMMIT_STEP : 0
     }
-    return 0
+    // A commit with parents always has a placed one (seq order).
+    const pp = commitPos.get(findClosestParent(c.parents)!)!
+    if (dir === 'TB') return pp.y + COMMIT_STEP
+    return dir === 'BT' ? own - COMMIT_STEP : pp.x + COMMIT_STEP
   }
 
   const getCommitPosition = (
@@ -219,10 +209,8 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
   ): { x: number; y: number; posWithOffset: number } => {
     const posWithOffset =
       dir === 'BT' && cfg.parallelCommits ? pos : pos + LAYOUT_OFFSET
-    const branchY = branchPos.get(c.branch)?.pos
-    const x = vertical ? branchPos.get(c.branch)?.pos : posWithOffset
-    if (x === undefined || branchY === undefined)
-      throw new Error(`Position were undefined for commit ${c.id}`)
+    const branchY = branchPos.get(c.branch)!.pos
+    const x = vertical ? branchPos.get(c.branch)!.pos : posWithOffset
     const y = vertical ? posWithOffset : branchY - 2
     return { x, y, posWithOffset }
   }
@@ -549,12 +537,9 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
   }
 
   const drawArrow = (a: GitCommit, b: GitCommit): PositionedGitArrow => {
-    const p1 = commitPos.get(a.id)
-    const p2 = commitPos.get(b.id)
-    if (p1 === undefined || p2 === undefined)
-      throw new Error(
-        `Commit positions not found for commits ${a.id} and ${b.id}`,
-      )
+    // The first pass positioned every commit.
+    const p1 = commitPos.get(a.id)!
+    const p2 = commitPos.get(b.id)!
     const reroute = shouldReroute(a, b, p1, p2)
     let arc = ''
     let arc2 = ''

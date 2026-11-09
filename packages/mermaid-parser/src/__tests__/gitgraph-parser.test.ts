@@ -239,8 +239,8 @@ describe('parseGitGraph merge', () => {
     ['a missing branch', 'gitGraph\n commit\n merge nope', /does not exist/],
     [
       'a branch with no commits',
-      'gitGraph\n commit\n branch a\n checkout main\n branch b\n checkout main\n merge a',
-      /same head|has no commits/,
+      'gitGraph\n branch a\n checkout main\n commit id: "x"\n merge a',
+      /has no commits/,
     ],
     [
       'two branches on the same head',

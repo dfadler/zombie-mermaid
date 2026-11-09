@@ -153,6 +153,15 @@ describe('renderMermaidSVG – gitGraph', () => {
     expect(svg).toContain('class="commit-label"')
   })
 
+  it('draws a cherry-pick as a circle with two dots and two strokes', () => {
+    const out = renderMermaidSVG(
+      'gitGraph\n commit id: "a"\n branch d\n commit id: "b"\n checkout main\n cherry-pick id: "b"',
+    )
+    expect(out.match(/<line [^>]*stroke="#fff"/g)).toHaveLength(2)
+    expect(out.match(/<circle [^>]*fill="#fff"/g)).toHaveLength(2)
+    expect(out).toContain('commit-cherry-pick')
+  })
+
   it('escapes ids, tags and branch names', () => {
     const out = renderMermaidSVG(
       'gitGraph\n commit id: "<b>&" tag: "<i>"\n branch "a<br>b"',
@@ -215,6 +224,9 @@ describe('gitGraph sweep', () => {
   const bodies = [
     'commit id: "a"\nbranch b1\ncommit id: "b"\ncheckout main\ncommit id: "c"\ncommit id: "d"\nbranch b2\ncommit id: "e"\ncheckout b1\ncommit id: "f"\ncheckout main\nmerge b1 id: "m1"\ncheckout b2\ncommit id: "g"\nmerge main id: "m2"\ncherry-pick id: "f"',
     'commit id: "a"\nbranch x order: 3\nbranch y order: 1\ncheckout y\ncommit id: "y1" tag: "t1" tag: "t2"\ncheckout x\ncommit id: "x1" type: REVERSE\ncheckout main\nmerge x id: "mx" type: REVERSE\nmerge y id: "my" type: NORMAL',
+    // The first commit of x skips two on main: its arrow is rerouted (main below x when ordered last).
+    'commit id: "a"\nbranch x\ncheckout main\ncommit id: "c"\ncommit id: "d"\ncheckout x\ncommit id: "x1"\ncheckout main\nmerge x id: "m"',
+    '%%{init: {"gitGraph": {"mainBranchOrder": 5}}}%%\ncommit id: "a"\nbranch x\ncheckout main\ncommit id: "c"\ncommit id: "d"\ncheckout x\ncommit id: "x1"\ncheckout main\nmerge x id: "m"',
   ]
   for (const dir of ['', ' LR:', ' TB:', ' BT:'])
     for (const par of [false, true])
@@ -224,7 +236,7 @@ describe('gitGraph sweep', () => {
             const src = `%%{init: {"gitGraph": {"parallelCommits": ${par}, "rotateCommitLabel": ${rot}}}}%%\ngitGraph${dir}\n${body}`
             const l = layout(src)
             expect(Number.isFinite(l.viewBox.width)).toBe(true)
-            expect(l.arrows.length).toBeGreaterThan(5)
+            expect(l.arrows.length).toBeGreaterThan(2)
             expect(renderMermaidSVG(src)).toContain('commit-arrows')
           }
         })
