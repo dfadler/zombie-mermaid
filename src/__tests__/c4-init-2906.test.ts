@@ -64,7 +64,7 @@ describe('c4 init keys (#2906)', () => {
     expect(c.c4Layout).toEqual({ width: 250, wrap: false })
   })
 
-  // mermaid 12.3.0: [width, height] of the viewBox with each key set.
+  // Mermaid 12.3.0: [width, height] of the viewBox with each key set.
   it.each([
     ['diagramMarginX', { diagramMarginX: 80 }, 1368, 1084.54],
     ['diagramMarginY', { diagramMarginY: 40 }, 1564, 1204.54],
