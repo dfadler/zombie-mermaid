@@ -13,6 +13,11 @@
 //   4. Route: every relationship is an orthogonal path found by A* over the
 //      character grid, avoiding element boxes; labels (name, then the
 //      `[technology]` line) are placed beside the longest free segment.
+//      Grid limit: mermaid 12.3.0 draws each relationship centre to centre,
+//      the first as a straight `<line>` and the rest as a `Q` curve, so a line
+//      between non-adjacent shapes crosses the shapes between them. A character
+//      cell holds one glyph, so a route cannot cross a box and bends around it
+//      instead (#2790).
 //
 // The direction does not change the layout, as in Mermaid.
 // ============================================================================

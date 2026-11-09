@@ -96,6 +96,17 @@ describe('detectDiagramType', () => {
   })
 })
 
+describe('detectDiagramType – requirement', () => {
+  it('detects requirement diagrams, case-sensitively', () => {
+    expect(detectDiagramType('requirementDiagram')).toBe('requirement')
+    expect(
+      detectDiagramType('%% c\n  requirementDiagram\n  requirement r {\n}'),
+    ).toBe('requirement')
+    expect(detectDiagramType('requirementdiagram')).toBe('flowchart')
+    expect(detectDiagramType('requirementDiagrams')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – timeline', () => {
   it('detects timelines, case-sensitively and as a whole word', () => {
     expect(detectDiagramType('timeline')).toBe('timeline')

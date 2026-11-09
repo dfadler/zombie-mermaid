@@ -74,6 +74,7 @@ export const ELK_DIRECTION_FALLBACK = {
   state: 'DOWN',
   class: 'DOWN',
   er: 'DOWN',
+  requirement: 'DOWN',
   c4: 'DOWN',
 } as const satisfies Record<string, ElkDirection>
 

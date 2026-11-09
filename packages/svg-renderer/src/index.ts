@@ -148,6 +148,11 @@ export {
   wrapTaskLabel,
 } from './journey/layout.ts'
 export { renderJourneySvg } from './journey/renderer.ts'
+export {
+  REQUIREMENT,
+  layoutRequirementDiagramSync,
+} from './requirement/layout.ts'
+export { renderRequirementSvg } from './requirement/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

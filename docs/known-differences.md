@@ -146,7 +146,10 @@ absent, changes nothing.
 
 Nothing to honour: mermaid 12.3.0 itself ignores `actorFontSize`, `messageFontSize`,
 `noteFontSize` (text stays 16 px) and `messageMargin` (rows do not move), so we match by
-ignoring them. Not applied: `wrap` on participant names and per-message `wrap:`/`nowrap:` prefixes (#2783).
+ignoring them. Per-message and per-note `wrap:` / `nowrap:` prefixes are honoured (they override
+`wrap`, and are not drawn); on a participant name the prefix is dropped but the name is not wrapped
+(#2783). A block tab or divider label word wider than the frame splits mid-word with a `-`, as
+mermaid's `breakString` does (#2773).
 
 `link` / `links` (participant menus): measured on mermaid 12.3.0, the menu is a
 `display="none"` `actorPopupMenu` group with `<a xlink:href>` entries that only a click in a
@@ -765,3 +768,32 @@ bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gall
 - **Non-numeric score.** Mermaid emits a `NaN` attribute (the browser reads it as 0, so the
   face sits at y=0); this library does the same.
 - **ASCII.** Mermaid has no ASCII output; the row listing above is this library's own.
+
+## Requirement diagrams
+
+Checked against mermaid 12.3.0 with `pnpm run requirement:oracle` (12.2.0, the pin,
+reads the same sources the same way): box sizes and text, relationship order,
+labels and dashes, box positions and the drawing size agree on every gallery sample.
+
+- **Layout.** Mermaid places boxes with dagre, this library with ELK, so boxes agree
+  only where both put them in the same ranks. Checked against mermaid 12.3.0, they
+  agree on chains, trees, `direction BT | LR | RL`, disconnected boxes and a
+  self-relationship; they can differ by tens of pixels where two relationships join
+  the same pair of boxes or a box is shared by two parents (a diamond shape), and
+  on cycles. Box sizes and text always agree. Tracked in
+  [#2966](https://github.com/dfadler/zombie-mermaid/issues/2966).
+- **Line routes.** Lines are straight runs with right-angle bends where ELK routes
+  them; Mermaid curves its corners ([#2967](https://github.com/dfadler/zombie-mermaid/issues/2967)). The arrow and the circle-plus sit at the same
+  ends.
+- **Font and kerning.** Text is drawn in the render's font (Inter by default) inside
+  boxes sized for Trebuchet MS, as Mermaid sizes them. The kerning table was
+  measured in Chromium on macOS; a machine without Trebuchet MS sizes boxes from
+  another face in Mermaid, which this library cannot follow. Characters outside
+  printable ASCII are estimated (a full em for CJK).
+- **Palette.** Box fills are the theme's node colours; Mermaid's default look has a
+  purple border and `#ECECFF` fill, and its `neo` look a drop shadow.
+- **Styling order.** `classDef`, `class` and `style` resolve in the library's usual
+  cascade (class definition, assigned class, then `style`); Mermaid appends them in
+  source order, so a `style` line written before a `class` line for the same box
+  loses to it there and wins here.
+- **No wrapping.** A long `text:` stays on one line, as in Mermaid.

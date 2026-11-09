@@ -26,6 +26,90 @@ export function applyThemeVariables(options: RenderOptions, config: InitConfig |
 // @public
 export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string, body?: MonoFontEmbed): string;
 
+// @public (undocumented)
+export const C4: {
+    readonly width: 216;
+    readonly diagramMarginX: 50;
+    readonly diagramMarginY: 10;
+    readonly shapeMargin: 50;
+    readonly shapePadding: 20;
+    readonly shapeInRow: 4;
+    readonly boundaryInRow: 2;
+    readonly nextLinePaddingX: 0;
+    readonly screenWidth: 1440;
+    readonly nameSize: 14;
+    readonly typeSize: 10.5;
+    readonly descrSize: 11.5;
+    readonly messageSize: 12;
+    readonly boundarySize: 14;
+    readonly nameLine: 15.35;
+    readonly typeLine: 15.72;
+    readonly descrLine: 17.1;
+    readonly descrExtraLine: 12.48;
+    readonly textScale: 0.922;
+    readonly boundaryLabelHeight: 18;
+    readonly boundaryTypeHeight: 16.1;
+    readonly boundaryDescrHeight: 14.4;
+    readonly rootHeadingHeight: 47;
+    readonly titleExtra: 60;
+    readonly cornerRadius: 12;
+    readonly strokeWidth: 2;
+    readonly personRx: 0.177;
+    readonly personRxMaxOfHeight: 0.45;
+    readonly personHeadRatio: 0.23;
+    readonly personHeadMin: 16;
+    readonly personHeadMax: 56;
+    readonly personHeadOverlap: 0.27;
+    readonly dbTrim: 3.91;
+    readonly queueExtra: 10;
+};
+
+// @public
+export const C4_TEXT_WIDTH: number;
+
+// @public
+export function c4CylinderCap(width: number): {
+    rx: number;
+    ry: number;
+};
+
+// @public
+export function c4DescriptionHeight(lines: number): number;
+
+// @public
+export function c4PersonGeometry(width: number, height?: number): {
+    rx: number;
+    headRadius: number;
+    pillTop: number;
+};
+
+// @public
+export function c4QueueCap(height: number): {
+    rx: number;
+    ry: number;
+};
+
+// @public (undocumented)
+export interface C4ShapeSize {
+    // (undocumented)
+    height: number;
+    textHeight: number;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export function c4ShapeSize(el: {
+    kind: string;
+    shape?: string;
+}, nameLines: number, descriptionLines: number, textWidth: number): C4ShapeSize;
+
+// @public
+export function c4TextBlockHeight(nameLines: number, descriptionLines: number): number;
+
+// @public
+export function c4TextWidth(text: string, fontSize: number, weight: number): number;
+
 // @public
 export function checkGraphSize(nodes: number, edges: number, limits: RenderLimits | undefined): void;
 
@@ -84,7 +168,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "timeline", "journey"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "timeline", "journey", "requirement"];
 
 // @public
 export interface DiagramColors {
@@ -856,6 +940,9 @@ export function withoutOwnClusterEdges(graph: MermaidGraph): MermaidGraph;
 
 // @public
 export function withRootClass(openTag: string, cls: string): string;
+
+// @public
+export function wrapToWidth(text: string, maxWidth: number, fontSize: number): string[];
 
 // @public
 export type XyChartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'interactivity' | 'interactive'>;

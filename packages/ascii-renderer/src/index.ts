@@ -16,6 +16,7 @@
 //   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
 //   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
 //   - User journeys (journey) — tasks as score-height columns (see journey.ts)
+//   - Requirement diagrams (requirementDiagram) — boxes and labelled lines (see requirement.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'
