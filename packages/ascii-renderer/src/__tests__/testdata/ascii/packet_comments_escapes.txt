@@ -1,0 +1,12 @@
+packet
+%% a comment
+0-3: 'single quotes' %% trailing comment
+4-7: "say \"hi\""
+title Escapes
+8-15: "日本語"
+---
+                                             Escapes
++-----------+-----------+-----------------------+
+|0         3|4         7|8                    15|
+|single quo~| say "hi"  |        日本語         |
++-----------+-----------+-----------------------+

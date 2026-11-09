@@ -46,6 +46,7 @@ import { renderMindmapAscii } from './mindmap.ts'
 import { renderGanttAscii } from './gantt.ts'
 import { renderTimelineAscii } from './timeline.ts'
 import { renderGitGraphAscii } from './gitgraph.ts'
+import { renderPacketAscii } from './packet.ts'
 import { renderRadarAscii } from './radar.ts'
 import { renderJourneyAscii } from './journey.ts'
 import { renderKanbanAscii } from './kanban.ts'
@@ -120,6 +121,8 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderTimelineAscii(text, config, colorMode, theme),
   gitgraph: (text, config, colorMode, theme) =>
     renderGitGraphAscii(text, config, colorMode, theme),
+  packet: (text, config, colorMode, theme) =>
+    renderPacketAscii(text, config, colorMode, theme),
   radar: (text, config, colorMode, theme) =>
     renderRadarAscii(text, config, colorMode, theme),
   journey: (text, config, colorMode, theme) =>

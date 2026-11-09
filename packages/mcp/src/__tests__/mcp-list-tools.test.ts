@@ -47,6 +47,7 @@ describe('list_diagram_types', () => {
       gantt: 'gantt\nA :a, 2024-01-01, 1d',
       timeline: 'timeline\n2002 : LinkedIn',
       gitgraph: 'gitGraph\ncommit',
+      packet: 'packet\n0-7: "a"',
       radar: 'radar-beta\naxis a, b\ncurve c{1, 2}',
       journey: 'journey\nA: 3: Me',
       kanban: 'kanban\n  A\n    b',

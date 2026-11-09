@@ -128,6 +128,17 @@ describe('detectDiagramType – gitGraph', () => {
   })
 })
 
+describe('detectDiagramType – packet', () => {
+  it('detects packet and packet-beta, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('packet')).toBe('packet')
+    expect(detectDiagramType('  packet-beta\n0: "a"')).toBe('packet')
+    expect(detectDiagramType('%% c\npacket')).toBe('packet')
+    expect(detectDiagramType('Packet')).toBe('flowchart')
+    expect(detectDiagramType('packets')).toBe('flowchart')
+    expect(detectDiagramType('packet-alpha')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – journey', () => {
   it('detects journeys, case-sensitively and as a whole word', () => {
     expect(detectDiagramType('journey')).toBe('journey')

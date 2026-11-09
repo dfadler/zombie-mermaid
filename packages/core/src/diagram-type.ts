@@ -32,6 +32,7 @@ export const DIAGRAM_TYPES = [
   'kanban',
   'timeline',
   'gitgraph',
+  'packet',
   'radar',
   'journey',
   'requirement',
@@ -71,6 +72,8 @@ export function detectDiagramType(text: string): DiagramType {
   if (/^timeline(?:\s|$)/.test(header)) return 'timeline'
   // Case-sensitive: Mermaid's detector is `/^\s*gitGraph/`.
   if (/^gitGraph/.test(header)) return 'gitgraph'
+  // Case-sensitive: Mermaid's detector is `/^\s*packet(-beta)?/`.
+  if (/^packet(?:-beta)?(?:\s|$)/.test(header)) return 'packet'
   // Case-sensitive: Mermaid's detector is `/^\s*radar-beta/`.
   if (/^radar-beta/.test(header)) return 'radar'
   // Case-sensitive too: Mermaid's detector is `/^\s*journey/`.

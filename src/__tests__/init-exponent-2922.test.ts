@@ -34,3 +34,30 @@ describe('init directive exponent numbers (#2922)', () => {
     expect(parseInitDirective('%%{init: {"theme": -}}%%')).toBeUndefined()
   })
 })
+
+describe('packet init config', () => {
+  const packet = (body: string) =>
+    parseInitDirective(`%%{init: {"packet": ${body}}}%%`)?.packet
+
+  it('keeps valid keys and drops bad values', () => {
+    expect(
+      packet(
+        '{"bitsPerRow": 16, "bitWidth": 10, "rowHeight": 0, "paddingX": 2, "paddingY": 3, "showBits": false, "bitOrder": "descending"}',
+      ),
+    ).toEqual({
+      bitsPerRow: 16,
+      bitWidth: 10,
+      rowHeight: 0,
+      paddingX: 2,
+      paddingY: 3,
+      showBits: false,
+      bitOrder: 'descending',
+    })
+    expect(
+      packet(
+        '{"bitsPerRow": 0, "bitWidth": -1, "rowHeight": 1e9, "showBits": "no", "bitOrder": "sideways", "paddingX": "5"}',
+      ),
+    ).toEqual({})
+    expect(packet('{"bitsPerRow": 2.5}')).toEqual({})
+  })
+})

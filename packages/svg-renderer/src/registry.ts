@@ -63,6 +63,7 @@ import {
   parseGantt,
   parseTimeline,
   parseGitGraph,
+  parsePacket,
   parseRadar,
   parseJourney,
   parseKanban,
@@ -92,6 +93,7 @@ import type {
   PositionedTimeline,
   GitGraph,
   PositionedGitGraph,
+  Packet,
   Radar,
   PositionedRadar,
   Journey,
@@ -125,6 +127,9 @@ import { renderJourneySvg } from './journey/renderer.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
 import { layoutGitGraph } from './gitgraph/layout.ts'
 import { renderGitGraphSvg } from './gitgraph/renderer.ts'
+import { layoutPacket } from './packet/layout.ts'
+import type { PositionedPacket } from './packet/layout.ts'
+import { renderPacketSvg } from './packet/renderer.ts'
 import { layoutRadar } from './radar/layout.ts'
 import { renderRadarSvg } from './radar/renderer.ts'
 import { layoutKanban } from './kanban/layout.ts'
@@ -671,6 +676,16 @@ const gitgraphModule: DiagramModule<GitGraph, PositionedGitGraph> = {
   layoutForSvg: (gg) => layoutGitGraph(gg),
   renderSvg(positioned, ctx) {
     return renderGitGraphSvg(
+ * Packets parse from the raw `text` (`;` is not a statement separator and a
+ * label may contain one), then lay out to Mermaid's fixed geometry. No theme
+ * variables or interactivity apply.
+ */
+const packetModule: DiagramModule<Packet, PositionedPacket> = {
+  type: 'packet',
+  parse: (_lines, text) => parsePacket(text),
+  layoutForSvg: (packet) => layoutPacket(packet),
+  renderSvg(positioned, ctx) {
+    return renderPacketSvg(
       positioned,
       ctx.colors,
       ctx.font,
@@ -716,6 +731,7 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   mindmap: mindmapModule,
   gantt: ganttModule,
   timeline: timelineModule,
+  packet: packetModule,
   radar: radarModule,
   journey: journeyModule,
   kanban: kanbanModule,
