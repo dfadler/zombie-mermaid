@@ -104,6 +104,16 @@ describe('renderMermaidSVG – journey', () => {
     expect(svg.match(/stroke-dasharray="4 2"/g)).toHaveLength(5)
   })
 
+  it('puts the smile boundary between 3 and 4 and the sad one between 2 and 3', () => {
+    const mouth = (n: number) =>
+      renderMermaidSVG(`journey\nA: ${n}`).match(
+        /class="(mouth|mouth-line)" (?:d="(M-?7\.5)|x1)/,
+      )
+    expect(mouth(4)![2]).toBe('M7.5')
+    expect(mouth(3)![1]).toBe('mouth-line')
+    expect(mouth(2)![2]).toBe('M-7.5')
+  })
+
   it('escapes text', () => {
     expect(renderMermaidSVG('journey\n<b>&: 3: <i>')).toContain(
       '&lt;b&gt;&amp;',

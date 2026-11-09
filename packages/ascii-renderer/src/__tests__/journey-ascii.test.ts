@@ -22,6 +22,12 @@ describe('journey ASCII', () => {
     )
   })
 
+  it('puts the face boundaries between 2/3 and 3/4', () => {
+    expect(render('journey\nA: 4')).toContain(':)  4')
+    expect(render('journey\nA: 2')).toContain(':(  2')
+    expect(render('journey\nA: 3')).toContain(':|  3')
+  })
+
   it('centres the title and skips the bar for tasks before a section', () => {
     const out = render('journey\ntitle T\nA: 3: X').split('\n')
     expect(out[0]!.trim()).toBe('T')
