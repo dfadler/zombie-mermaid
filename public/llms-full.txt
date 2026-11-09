@@ -3209,7 +3209,7 @@ matter share one code path. SVG only: ASCII has no pixel padding, so these keys 
   every `state` key except `useMaxWidth` (`padding`, `nodeSpacing`, `rankSpacing`, `fontSize`, `forkWidth`, `compositTitleSize`,
   `radius`, ...). The `state` block is reported as ignored.
 - **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
-- **Not yet measured:** the `c4` block, tracked in a separate issue. The `architecture` block is [below](#architecture-init--front-matter-config-2907) and `xyChart` after it.
+- **Not yet measured:** the `c4` block, tracked in a separate issue. The `architecture` block is in the next section and `xyChart` after it.
 
 ## Architecture `%%{init}%%` / front-matter config ([#2907](https://github.com/dfadler/zombie-mermaid/issues/2907))
 
