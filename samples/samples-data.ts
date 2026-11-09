@@ -3419,7 +3419,7 @@ packet
 0-3: 'single quotes' %% trailing comment
 4-7: "say \\"hi\\""
 title Escapes
-8-15: "日本語 😀"`,
+8-15: "日本語"`,
   },
   {
     title: 'Packet: Empty',
