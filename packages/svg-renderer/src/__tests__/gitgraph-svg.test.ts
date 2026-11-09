@@ -206,3 +206,26 @@ describe('renderMermaidSVG – gitGraph', () => {
     )
   })
 })
+
+// These graphs were scored 100% against mermaid@12.3.0 and 12.2.0 in every
+// orientation, with and without parallelCommits and rotateCommitLabel (the
+// sweep behind docs/known-differences.md#git-graphs); here they pin that the
+// rerouted, merged and tagged arrows all lay out and draw.
+describe('gitGraph sweep', () => {
+  const bodies = [
+    'commit id: "a"\nbranch b1\ncommit id: "b"\ncheckout main\ncommit id: "c"\ncommit id: "d"\nbranch b2\ncommit id: "e"\ncheckout b1\ncommit id: "f"\ncheckout main\nmerge b1 id: "m1"\ncheckout b2\ncommit id: "g"\nmerge main id: "m2"\ncherry-pick id: "f"',
+    'commit id: "a"\nbranch x order: 3\nbranch y order: 1\ncheckout y\ncommit id: "y1" tag: "t1" tag: "t2"\ncheckout x\ncommit id: "x1" type: REVERSE\ncheckout main\nmerge x id: "mx" type: REVERSE\nmerge y id: "my" type: NORMAL',
+  ]
+  for (const dir of ['', ' LR:', ' TB:', ' BT:'])
+    for (const par of [false, true])
+      for (const rot of [true, false])
+        it(`lays out and draws${dir || ' default'} parallel=${par} rotate=${rot}`, () => {
+          for (const body of bodies) {
+            const src = `%%{init: {"gitGraph": {"parallelCommits": ${par}, "rotateCommitLabel": ${rot}}}}%%\ngitGraph${dir}\n${body}`
+            const l = layout(src)
+            expect(Number.isFinite(l.viewBox.width)).toBe(true)
+            expect(l.arrows.length).toBeGreaterThan(5)
+            expect(renderMermaidSVG(src)).toContain('commit-arrows')
+          }
+        })
+})
