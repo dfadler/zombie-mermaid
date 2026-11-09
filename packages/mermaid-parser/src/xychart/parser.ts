@@ -1,3 +1,4 @@
+import type { XyChartInitConfig } from '@zombie-mermaid/core'
 import type { XYChart, XYAxis, XYChartSeries } from './types.ts'
 import {
   decodeMermaidEntities,
@@ -26,7 +27,10 @@ import {
  * Parse a Mermaid xychart-beta diagram from preprocessed lines.
  * Lines should already be trimmed and comment-stripped.
  */
-export function parseXYChart(lines: Statement[]): XYChart {
+export function parseXYChart(
+  lines: Statement[],
+  config?: XyChartInitConfig,
+): XYChart {
   const xAxis: XYAxis = {}
   const yAxis: XYAxis = {}
   const series: XYChartSeries[] = []
@@ -168,7 +172,14 @@ export function parseXYChart(lines: Statement[]): XYChart {
     yAxis.range = { min: 0, max: 100 }
   }
 
-  return { title, horizontal, xAxis, yAxis, series }
+  // The init block overrides the header: mermaid's config is merged in after
+  // the diagram text sets `orientation` (12.3.0).
+  if (config?.chartOrientation)
+    horizontal = config.chartOrientation === 'horizontal'
+  if (config?.showTitle === false) title = undefined
+  if (config?.xAxis?.showTitle === false) delete xAxis.title
+  if (config?.yAxis?.showTitle === false) delete yAxis.title
+  return { title, horizontal, xAxis, yAxis, series, ...(config && { config }) }
 }
 
 /**
