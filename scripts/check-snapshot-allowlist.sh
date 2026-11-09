@@ -89,6 +89,10 @@ cd "$REPO_ROOT"
 # a mistake. See docs/testing-conventions.md's "when a literal-value
 # assertion is still correct" section before adding to this list.
 ALLOWLIST=(
+  # SVG and ASCII goldens of a configured C4 diagram (#2906): the `c4` init
+  # keys are a renderer-output contract, not demo/editor UI. Reviewed via
+  # `git diff` on src/__tests__/__snapshots__/c4-init-2906.{svg,txt}.
+  "src/__tests__/c4-init-2906.test.ts"
   # Golden-DOM regression tests for the five site-generator pages moved
   # from template-literal HTML to React (#589). The checked-in, normalized
   # HTML fixtures under __tests__/__fixtures__/ are reviewed via `git diff`

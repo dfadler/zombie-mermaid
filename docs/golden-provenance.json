@@ -332,6 +332,15 @@
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written",
       "owner": "src/__tests__/front-matter-2585.test.ts"
+    },
+    {
+      "paths": [
+        "src/__tests__/__snapshots__/c4-init-2906.svg",
+        "src/__tests__/__snapshots__/c4-init-2906.txt"
+      ],
+      "class": "b",
+      "source": "this renderer's own output for a diagram with c4 init keys, accepted once; the key effects are asserted against mermaid 12.3.0 measurements in the test",
+      "owner": "src/__tests__/c4-init-2906.test.ts"
     }
   ]
 }

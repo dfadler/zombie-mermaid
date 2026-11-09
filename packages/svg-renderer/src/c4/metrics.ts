@@ -11,6 +11,7 @@ import { C4, c4TextWidth } from '@zombie-mermaid/core'
 export {
   C4,
   C4_TEXT_WIDTH,
+  c4Config,
   wrapToWidth,
   c4PersonGeometry,
   c4TextBlockHeight,

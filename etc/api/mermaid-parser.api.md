@@ -5,6 +5,7 @@
 ```ts
 
 import { ArchitectureInitLayout } from '@zombie-mermaid/core';
+import { C4InitLayout } from '@zombie-mermaid/core';
 import { ClassInitLayout } from '@zombie-mermaid/core';
 import { Direction } from '@zombie-mermaid/core';
 import { ErInitLayout } from '@zombie-mermaid/core';
@@ -205,6 +206,7 @@ export interface C4Diagram {
     boundaries: C4Boundary[];
     direction?: Direction;
     elements: C4Element[];
+    layout?: C4InitLayout;
     // (undocumented)
     relationships: C4Relationship[];
     // (undocumented)
@@ -980,6 +982,7 @@ export interface PositionedC4Diagram {
     elements: PositionedC4Element[];
     // (undocumented)
     height: number;
+    layout?: C4InitLayout;
     // (undocumented)
     relationships: PositionedC4Relationship[];
     // (undocumented)
