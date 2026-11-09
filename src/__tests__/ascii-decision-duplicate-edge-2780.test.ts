@@ -5,7 +5,7 @@
  * and an ASCII golden per direction.
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
-// Mermaid 12.3.0 verdict: DIVERGES (closer than before). mermaid draws three short direct edges from the decision. LR now has that shape: upper slant, vertex and lower slant, no crossing and no shared glyphs. BT still runs a stem from the vertex into a bus with ┴/┬ tees (no + junction), with an arrowhead per edge.
+// Mermaid 12.3.0 verdict: matches in structure (#2918). mermaid draws three direct edges from the decision, the parallel pair side by side and the third bending to its own target. LR, TD and BT all route that way now: no shared stem, no bus tees, no crossing, an arrowhead per edge.
 import { describe, expect, it } from 'vitest'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
@@ -43,5 +43,17 @@ it.each([
     const out = renderMermaidASCII(text, { colorMode: 'none' })
     expect(out.match(/►/g)).toHaveLength(3)
     expect(out).not.toMatch(/[┼+┤┬┴├]/)
+  },
+)
+
+it.each(['LR', 'TD', 'BT'])(
+  'decision with a parallel pair plus a third branch keeps three direct edges (#2918) %s',
+  (dir) => {
+    const text = `flowchart ${dir}\n A{Aaa} --> B\n A --> B\n A --> C[Ccc]`
+    expect(renderMermaidSVG(text)).toMatchSnapshot()
+    const out = renderMermaidASCII(text, { colorMode: 'none' })
+    expect(out.match(/[►◄▼▲]/g)).toHaveLength(3)
+    expect(out).not.toMatch(/[┼+┤┬┴├┘┐]{2}|┬|┴|\+/)
+    expect(out).toMatchSnapshot()
   },
 )

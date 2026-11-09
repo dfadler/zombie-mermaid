@@ -216,7 +216,8 @@ export interface DiagramModule<TDiagram = unknown, TPositioned = unknown> {
 
 const xychartModule: DiagramModule<XYChart, PositionedXYChart> = {
   type: 'xychart',
-  parse: parseXYChart,
+  parse: (lines, text) =>
+    parseXYChart(lines, extractInitConfig(text.split(/\r\n?|\n/)).xyChart),
   layoutForSvg: layoutXYChart,
   renderSvg(positioned, ctx, options) {
     // Mirrors resolveXYChartInteractive() in the umbrella's src/index.ts

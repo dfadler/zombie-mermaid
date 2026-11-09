@@ -20,6 +20,7 @@ import { Statement } from '@zombie-mermaid/core';
 import { StyleDirectives } from '@zombie-mermaid/core';
 import { ThemeVariables } from '@zombie-mermaid/core';
 import { toDirection } from '@zombie-mermaid/core';
+import { XyChartInitConfig } from '@zombie-mermaid/core';
 
 // @public
 export interface Activation {
@@ -834,7 +835,7 @@ export function parseSequenceDiagram(lines: Statement[], text?: string): Sequenc
 export function parseTimeline(text: string): Timeline;
 
 // @public
-export function parseXYChart(lines: Statement[]): XYChart;
+export function parseXYChart(lines: Statement[], config?: XyChartInitConfig): XYChart;
 
 // @public
 export interface ParticipantBox {
@@ -2116,6 +2117,7 @@ export interface PositionedTitle {
 // @public (undocumented)
 export interface PositionedXYChart {
     bars: PositionedBar[];
+    config?: XyChartInitConfig;
     gridLines: GridLine[];
     // (undocumented)
     height: number;
@@ -2335,6 +2337,7 @@ export interface XYAxis {
 
 // @public
 export interface XYChart {
+    config?: XyChartInitConfig;
     horizontal: boolean;
     series: XYChartSeries[];
     title?: string;
