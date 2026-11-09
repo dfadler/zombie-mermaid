@@ -1,0 +1,27 @@
+┌────────────────────────┐
+│                        │
+│    <<Requirement>>     │
+│           a            │
+│                        │
+│ ID: 1                  │
+│ Text: styled by class  │
+│ Risk: Low              │
+│ Verification: Test     │
+│                        │
+└────────────┬───────────┘
+             ┆            
+             ┆            
+        <<traces>>        
+             ┆            
+             ▼            
+┌────────────────────────┐
+│                        │
+│    <<Requirement>>     │
+│           b            │
+│                        │
+│ ID: 2                  │
+│ Text: styled inline    │
+│ Risk: Medium           │
+│ Verification: Analysis │
+│                        │
+└────────────────────────┘

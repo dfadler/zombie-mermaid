@@ -63,6 +63,7 @@ import {
   parseGantt,
   parseTimeline,
   parsePacket,
+  parseRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -87,6 +88,8 @@ import type {
   Timeline,
   PositionedTimeline,
   Packet,
+  RequirementDiagram,
+  PositionedRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -111,6 +114,8 @@ import { renderTimelineSvg } from './timeline/renderer.ts'
 import { layoutPacket } from './packet/layout.ts'
 import type { PositionedPacket } from './packet/layout.ts'
 import { renderPacketSvg } from './packet/renderer.ts'
+import { layoutRequirementDiagramSync } from './requirement/layout.ts'
+import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -551,6 +556,34 @@ const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
 }
 
 /**
+ * Requirement diagrams parse from the raw `text` (a value may hold `;` or
+ * `'`), then lay out with ELK like ER. `options.direction` replaces the
+ * diagram's own `direction` statement.
+ */
+const requirementModule: DiagramModule<
+  RequirementDiagram,
+  PositionedRequirementDiagram
+> = {
+  type: 'requirement',
+  parse: (_lines, text) => parseRequirementDiagram(text),
+  layoutForSvg: (diagram, options) =>
+    layoutRequirementDiagramSync(diagram, options),
+  renderSvg(positioned, ctx) {
+    return renderRequirementSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * Packets parse from the raw `text` (`;` is not a statement separator and a
  * label may contain one), then lay out to Mermaid's fixed geometry. No theme
  * variables or interactivity apply.
@@ -607,4 +640,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   gantt: ganttModule,
   timeline: timelineModule,
   packet: packetModule,
+  requirement: requirementModule,
 }

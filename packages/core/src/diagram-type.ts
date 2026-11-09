@@ -31,6 +31,7 @@ export const DIAGRAM_TYPES = [
   'gantt',
   'timeline',
   'packet',
+  'requirement',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -65,6 +66,10 @@ export function detectDiagramType(text: string): DiagramType {
   if (/^timeline(?:\s|$)/.test(header)) return 'timeline'
   // Case-sensitive: Mermaid's detector is `/^\s*packet(-beta)?/`.
   if (/^packet(?:-beta)?(?:\s|$)/.test(header)) return 'packet'
+
+  // Case-sensitive: Mermaid's detector is `/^\s*requirement(Diagram)?/`, its
+  // grammar keyword `requirementDiagram\b`.
+  if (/^requirementDiagram(?:\s|$)/.test(header)) return 'requirement'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'

@@ -84,7 +84,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "timeline", "packet"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "timeline", "requirement"];
 
 // @public
 export interface DiagramColors {
@@ -274,7 +274,6 @@ export interface InitConfig {
     classLayout?: ClassInitLayout;
     erLayout?: ErInitLayout;
     ignored: string[];
-    packet?: PacketInitConfig;
     pieDonutHole?: number;
     pieHighlightSlice?: string;
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
@@ -495,24 +494,6 @@ export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circl
 
 // @public
 export function normalizeBrTags(label: string): string;
-
-// @public
-export interface PacketInitConfig {
-    // (undocumented)
-    bitOrder?: 'ascending' | 'descending';
-    // (undocumented)
-    bitsPerRow?: number;
-    // (undocumented)
-    bitWidth?: number;
-    // (undocumented)
-    paddingX?: number;
-    // (undocumented)
-    paddingY?: number;
-    // (undocumented)
-    rowHeight?: number;
-    // (undocumented)
-    showBits?: boolean;
-}
 
 // @public
 export function paletteClass(declarations: readonly string[]): string;

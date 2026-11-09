@@ -1567,53 +1567,90 @@ spine for both `timeline` and `timeline TD`.
 - A `section` is a `[name]` row; markers and headings use the theme accent.
 - `accTitle` and `accDescr` are not printed.
 
-## Packet Diagrams
+## Requirement Diagrams
 
-`packet` (and its older header `packet-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/packet.html)
-and its renderer's geometry. The SVG output agrees element by element with
-`mermaid@12.3.0` (`__tests__/packet-agreement.test.ts` replays 18 renders of it).
+`requirementDiagram` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/requirementDiagram.html)
+and its renderer's layout. `pnpm run requirement:oracle` compares the gallery samples
+box by box with `mermaid@12.3.0`; mermaid 12.2.0 (the pin and mermaid.live today)
+reads the same sources the same way.
 
 ```mermaid
-packet
-title TCP Packet
-0-15: "Source Port"
-16-31: "Destination Port"
-32-63: "Sequence Number"
+requirementDiagram
+
+    requirement test_req {
+    id: 1
+    text: the test text.
+    risk: high
+    verifymethod: test
+    }
+
+    element test_entity {
+    type: simulation
+    }
+
+    test_entity - satisfies -> test_req
 ```
 
-Supported: `0-15: "label"` ranges, `106: "label"` single bits, `+8: "label"` bit
-counts, `title`, `%%` comments, `accTitle` and `accDescr`, and the `packet`
-config keys `rowHeight`, `bitWidth`, `bitsPerRow`, `paddingX`, `paddingY`,
-`showBits` and `bitOrder` (`descending` mirrors each row so the highest bit is
-on the left, new in Mermaid 12.3.0), set through `%%{init}%%` or front matter.
-As in Mermaid, fields must be contiguous from bit 0 and each one ends its line,
-labels are quoted (single or double quotes, backslash escapes), a field may
-follow the header on its line, a zero-width `+0` or `end < start` is an error,
-a field crossing a row is cut at the boundary and repeated (label included) on
-each row, and at most 10000 rows are kept. A bare `packet` is valid.
+Supported: the six requirement kinds (`requirement`, `functionalRequirement`,
+`interfaceRequirement`, `performanceRequirement`, `physicalRequirement`,
+`designConstraint`) with `id`, `text`, `risk` (`low`, `medium`, `high`) and
+`verifymethod` (`analysis`, `demonstration`, `inspection`, `test`); `element`
+with `type` and `docref`; the seven relationships (`contains`, `copies`,
+`derives`, `satisfies`, `verifies`, `refines`, `traces`) written `a - r -> b` or
+`b <- r - a`; `direction TB | BT | LR | RL`; `classDef`, `class`, `style` and
+`:::`; `%%` comments, `accTitle`, `accDescr` and a front matter `title`.
 
-The SVG uses Mermaid's geometry (rows `rowHeight + paddingY` apart, boxes
-`bits * bitWidth - paddingX` wide, 10px bit numbers above the boxes, the title
-under the last row) and the theme's colours. See
-[Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#packet-diagrams).
+The grammar is stricter than it looks, and this parser is as strict as
+`mermaid@12.3.0`: a `{` ends its line and every property sits on its own line, an
+unquoted name or value stops at `: , { < > - =` (so `text: a-b` and `text: a, b`
+are errors; quote them), an unquoted name or value that starts with a keyword
+(`text: test suite`, `requirement element`) is an error, and a relationship to a
+name that was never declared is an error. A name written twice keeps its first
+definition.
 
-### ASCII Packet Diagrams
+The SVG uses Mermaid's box geometry: a `<<Type>>` row, the bold name, a divider
+20px lower and then the `ID:`, `Text:`, `Risk:` and `Verification:` rows (an
+element's `Type:` and `Doc Ref:`), 24px per row with 10px of padding, boxes sized
+from the text with Trebuchet MS advances and kerning, `contains` as a solid line
+with a circle-plus at the container and every other relationship as a dashed
+arrow with its `<<label>>`. Layout is ELK (`registerElk`, as for ER and class
+diagrams); with the default look it agrees with Mermaid's box positions and
+drawing size on the gallery samples. Colours come from the theme. See
+[Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#requirement-diagrams).
 
-Mermaid has no text output for packets, so this is this library's own drawing:
-each field is a box with shared borders, its first and last bit on the top line
-and its label centred under them. A box is 2 columns per bit (3 for a long
-label if the row still fits in 120 columns); a label wider than its box ends in
-`…` (`~` in ASCII mode), and a number that does not fit is dropped.
+### ASCII Requirement Diagrams
+
+Mermaid has no text mode for requirement diagrams, so the ASCII output is this
+library's own: the same boxes and labelled lines on the flowchart grid, with a
+blank row where the SVG has a divider, relationships dotted with an arrowhead and
+`contains` solid with a `●` (`o` in ASCII mode) at the container.
 
 ```text
-                                           TCP Packet
-┌───────────────────────────────────────────────┬───────────────────────────────────────────────┐
-│0                                            15│16                                           31│
-│                  Source Port                  │               Destination Port                │
-├───────────────────────────────────────────────┴───────────────────────────────────────────────┤
-│32                                                                                           63│
-│                                        Sequence Number                                        │
-└───────────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────┐
+│                      │
+│                      │
+│     <<Element>>      │
+│     test_entity      │
+│                      │
+│   Type: simulation   │
+│                      │
+└───────────┬──────────┘
+            ┆
+            ┆
+      <<satisfies>>
+            ┆
+            ▼
+┌──────────────────────┐
+│                      │
+│   <<Requirement>>    │
+│       test_req       │
+│                      │
+│ ID: 1                │
+│ Text: the test text. │
+│ Risk: High           │
+│ Verification: Test   │
+│                      │
+└──────────────────────┘
 ```
 
 ## Unsupported upstream diagram types
@@ -1623,10 +1660,10 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Type                                                                  | Header                                                                                                          |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
+| Packet                                                                | `packet` / `packet-beta`                                                                                        |
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
 | User journey                                                          | `journey`                                                                                                       |
-| Requirement                                                           | `requirementDiagram`                                                                                            |
 | Git graph                                                             | `gitGraph`                                                                                                      |
 | Kanban                                                                | `kanban`                                                                                                        |
 | Radar                                                                 | `radar-beta`                                                                                                    |
@@ -2174,7 +2211,10 @@ absent, changes nothing.
 
 Nothing to honour: mermaid 12.3.0 itself ignores `actorFontSize`, `messageFontSize`,
 `noteFontSize` (text stays 16 px) and `messageMargin` (rows do not move), so we match by
-ignoring them. Not applied: `wrap` on participant names and per-message `wrap:`/`nowrap:` prefixes (#2783).
+ignoring them. Per-message and per-note `wrap:` / `nowrap:` prefixes are honoured (they override
+`wrap`, and are not drawn); on a participant name the prefix is dropped but the name is not wrapped
+(#2783). A block tab or divider label word wider than the frame splits mid-word with a `-`, as
+mermaid's `breakString` does (#2773).
 
 `link` / `links` (participant menus): measured on mermaid 12.3.0, the menu is a
 `display="none"` `actorPopupMenu` group with `<a xlink:href>` entries that only a click in a
@@ -2775,28 +2815,34 @@ drawing size agree on every gallery sample.
   read; `TD` is checked against the oracle only.
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
 
-## Packet Diagrams
+## Requirement diagrams
 
-Checked against mermaid 12.3.0 (`__tests__/fixtures/packet-official-12.3.0.json`, 18
-renders): viewBox, every box, label and bit number match to the pixel. mermaid 12.2.0
-(the pin) has no `bitOrder` key; every other key and the geometry are the same.
+Checked against mermaid 12.3.0 with `pnpm run requirement:oracle` (12.2.0, the pin,
+reads the same sources the same way): box sizes and text, relationship order,
+labels and dashes, box positions and the drawing size agree on every gallery sample.
 
-- **Colours.** Mermaid draws `#efefef` boxes with black text and strokes; this library
-  uses the theme's node fill, stroke and text colours.
-- **Empty title element.** Mermaid always emits an empty `packetTitle` `<text>`; this
-  library emits it only when there is a title.
-- **Title markup.** Mermaid HTML-sanitizes the title (`&` shows as `&amp;`, tags are
-  kept as text); this library shows the title as written.
-- **Init config values.** Mermaid draws garbage for a negative size, a zero or fractional
-  `bitsPerRow` (NaN coordinates, an endless row count) and coerces strings by
-  arithmetic (`"bitWidth": "20"` works, `"showBits": "no"` is true). Here a number
-  outside 0..1e5 (`bitsPerRow`: an integer 1..10000), a string or a wrong-typed
-  value is ignored and the default stays.
-- **ASCII.** Mermaid has no text mode for packets, so there is nothing to match; the
-  drawing is described in [Diagrams](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#ascii-packet-diagrams).
-- **GitHub and mermaid.live.** Not checked (no browser session with GitHub or
-  mermaid.live available; the renders compared are the real `mermaid@12.3.0` npm
-  build in headless Chromium).
+- **Layout.** Mermaid places boxes with dagre, this library with ELK, so boxes agree
+  only where both put them in the same ranks. Checked against mermaid 12.3.0, they
+  agree on chains, trees, `direction BT | LR | RL`, disconnected boxes and a
+  self-relationship; they can differ by tens of pixels where two relationships join
+  the same pair of boxes or a box is shared by two parents (a diamond shape), and
+  on cycles. Box sizes and text always agree. Tracked in
+  [#2966](https://github.com/dfadler/zombie-mermaid/issues/2966).
+- **Line routes.** Lines are straight runs with right-angle bends where ELK routes
+  them; Mermaid curves its corners ([#2967](https://github.com/dfadler/zombie-mermaid/issues/2967)). The arrow and the circle-plus sit at the same
+  ends.
+- **Font and kerning.** Text is drawn in the render's font (Inter by default) inside
+  boxes sized for Trebuchet MS, as Mermaid sizes them. The kerning table was
+  measured in Chromium on macOS; a machine without Trebuchet MS sizes boxes from
+  another face in Mermaid, which this library cannot follow. Characters outside
+  printable ASCII are estimated (a full em for CJK).
+- **Palette.** Box fills are the theme's node colours; Mermaid's default look has a
+  purple border and `#ECECFF` fill, and its `neo` look a drop shadow.
+- **Styling order.** `classDef`, `class` and `style` resolve in the library's usual
+  cascade (class definition, assigned class, then `style`); Mermaid appends them in
+  source order, so a `style` line written before a `class` line for the same box
+  loses to it there and wins here.
+- **No wrapping.** A long `text:` stays on one line, as in Mermaid.
 
 ---
 

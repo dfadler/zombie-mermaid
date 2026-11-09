@@ -68,6 +68,9 @@ export * from './timeline/types.ts'
 export * from './packet/parser.ts'
 export * from './packet/types.ts'
 
+export * from './requirement/parser.ts'
+export * from './requirement/types.ts'
+
 export * from './expanded-shapes.ts'
 export * from './flowchart-parser.ts'
 
