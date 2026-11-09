@@ -498,6 +498,38 @@ export function isoWeekday(ms: number): number;
 export function isValidHex(color: string): boolean;
 
 // @public
+export interface Kanban {
+    // (undocumented)
+    columns: KanbanColumn[];
+    config?: {
+        sectionWidth?: number;
+        ticketBaseUrl?: string;
+    };
+}
+
+// @public
+export interface KanbanCard {
+    assigned?: string;
+    className?: string;
+    icon?: string;
+    id: string;
+    priority?: string;
+    text: string;
+    ticket?: string;
+}
+
+// @public
+export interface KanbanColumn {
+    // (undocumented)
+    cards: KanbanCard[];
+    className?: string;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    text: string;
+}
+
+// @public
 export function knownShapeNames(): string[];
 
 // @public (undocumented)
@@ -546,6 +578,7 @@ export interface Message {
     seqNumber?: number;
     // (undocumented)
     to: string;
+    wrap?: boolean;
 }
 
 // @public
@@ -607,6 +640,7 @@ export interface Note {
     afterIndex: number;
     position: 'left' | 'right' | 'over';
     text: string;
+    wrap?: boolean;
 }
 
 // @public
@@ -643,6 +677,9 @@ export function parseGantt(source: string, now?: Date): GanttChart;
 export function parseGenericTypes(input: string): string;
 
 // @public
+export function parseKanban(text: string): Kanban;
+
+// @public
 export function parseMermaid(text: string): MermaidGraph;
 
 // @public
@@ -653,6 +690,9 @@ export function parsePieChart(text: string): PieChart;
 
 // @public
 export function parseQuadrantChart(source: string): QuadrantChart;
+
+// @public
+export function parseRequirementDiagram(text: string): RequirementDiagram;
 
 // @public
 export function parseSequenceDiagram(lines: Statement[], text?: string): SequenceDiagram;
@@ -1106,6 +1146,71 @@ export interface PositionedGanttTick {
     x: number;
 }
 
+// @public
+export interface PositionedKanban {
+    // (undocumented)
+    columns: PositionedKanbanColumn[];
+    // (undocumented)
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedKanbanCard {
+    // (undocumented)
+    assigned?: PositionedKanbanText;
+    // (undocumented)
+    className?: string;
+    cx: number;
+    // (undocumented)
+    cy: number;
+    // (undocumented)
+    height: number;
+    priorityColor?: string;
+    // (undocumented)
+    ticket?: PositionedKanbanText;
+    ticketUrl?: string;
+    // (undocumented)
+    title: PositionedKanbanText;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedKanbanColumn {
+    // (undocumented)
+    cards: PositionedKanbanCard[];
+    // (undocumented)
+    className?: string;
+    colorClass: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    label: PositionedKanbanText;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedKanbanText {
+    // (undocumented)
+    height: number;
+    lines: MindmapTextRun[][];
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    y: number;
+}
+
 // @public (undocumented)
 export interface PositionedLine {
     colorIndex: number;
@@ -1366,6 +1471,66 @@ export interface PositionedQuadrantText {
 }
 
 // @public (undocumented)
+export interface PositionedRequirementDiagram {
+    // (undocumented)
+    edges: PositionedRequirementEdge[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    nodes: PositionedRequirementNode[];
+    // (undocumented)
+    width: number;
+}
+
+// @public (undocumented)
+export interface PositionedRequirementEdge {
+    // (undocumented)
+    dst: string;
+    label: string;
+    // (undocumented)
+    labelHeight: number;
+    // (undocumented)
+    labelPoint: {
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    labelWidth: number;
+    points: Array<{
+        x: number;
+        y: number;
+    }>;
+    // (undocumented)
+    src: string;
+    // (undocumented)
+    type: RequirementRelationType;
+}
+
+// @public (undocumented)
+export interface PositionedRequirementNode {
+    // (undocumented)
+    className?: string;
+    dividerY?: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    inlineStyle?: Record<string, string>;
+    // (undocumented)
+    kind: 'requirement' | 'element';
+    name: string;
+    rows: string[];
+    typeText: string;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
 export interface PositionedSequenceDiagram {
     // (undocumented)
     activations: Activation[];
@@ -1509,6 +1674,48 @@ export interface QuadrantPointStyle {
 
 // @public
 export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization' | 'lollipop' | 'link' | 'dashed-link';
+
+// @public
+export function requirementBodyRows(node: RequirementNode): string[];
+
+// @public
+export interface RequirementDiagram extends StyleDirectives {
+    direction?: 'TB' | 'BT' | 'LR' | 'RL';
+    nodes: RequirementNode[];
+    // (undocumented)
+    relationships: RequirementRelationship[];
+}
+
+// @public
+export type RequirementKind = 'requirement' | 'functionalRequirement' | 'interfaceRequirement' | 'performanceRequirement' | 'physicalRequirement' | 'designConstraint';
+
+// @public
+export interface RequirementNode {
+    // (undocumented)
+    docRef: string;
+    // (undocumented)
+    elementType: string;
+    id: string;
+    kind: 'requirement' | 'element';
+    // (undocumented)
+    requirementId: string;
+    risk: string;
+    // (undocumented)
+    text: string;
+    typeLabel: string;
+    verifyMethod: string;
+}
+
+// @public (undocumented)
+export interface RequirementRelationship {
+    dst: string;
+    src: string;
+    // (undocumented)
+    type: RequirementRelationType;
+}
+
+// @public
+export type RequirementRelationType = 'contains' | 'copies' | 'derives' | 'satisfies' | 'verifies' | 'refines' | 'traces';
 
 // @public
 export function resolveShapeName(name: string): NodeShape | undefined;
