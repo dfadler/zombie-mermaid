@@ -54,8 +54,8 @@ describe('destroy (#2778)', () => {
       out,
     )![1]!
     const cy = num(/<circle[^>]* cy="([\d.]+)"/, g)
-    // Slot is 44 tall: its centre is 22 below the head top (cy - r)
-    expect(cy - 10.15 + 22).toBeCloseTo(y, 1)
+    // Mermaid 12.3.0: head top (cy - r) is 31 above the destroying message
+    expect(cy - 10.15 + 31).toBeCloseTo(y, 1)
   })
 
   it('starts a destroyed sender arrow outside its footer and stops a destroyed recipient arrow short of it', () => {

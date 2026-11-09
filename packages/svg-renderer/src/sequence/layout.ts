@@ -1298,7 +1298,9 @@ export function layoutSequenceDiagram(
         destroyedAt === undefined
           ? lifelineBottom
           : (messages[destroyedAt]?.y ?? messageY) -
-            (mirror ? slotH(i) / 2 : 0),
+            // Mermaid 12.3.0 centres a box footer on the message; a stick
+            // figure's head top sits 31px above it (its 74px slot centred).
+            (mirror ? (actorLabelBottoms[i]! > 0 ? 31 : slotH(i) / 2) : 0),
     }
     if (destroyedAt !== undefined) lifeline.destroyed = true
     return lifeline
