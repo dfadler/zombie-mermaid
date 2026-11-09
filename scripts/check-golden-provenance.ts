@@ -4,6 +4,9 @@
 // First matching entry wins; a path ending in '/' matches by prefix. PNG baselines are out of scope.
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+const ROOT = join(import.meta.dirname, '..')
 
 const GOLDEN =
   /(\.snap$|\/__[a-z-]*snapshots__\/|\/testdata\/|elk-layout\/__tests__\/fixtures\/.*\.expected\.json$|ascii-layout\/__tests__\/fixtures\/.*\.ascii\.txt$|c4-mermaid-reference\.json$|mindmap-official-.*\.json$)/
@@ -24,7 +27,7 @@ export interface Manifest {
 export function checkGoldens(
   files: string[],
   manifest: Manifest,
-  exists: (p: string) => boolean = existsSync,
+  exists: (p: string) => boolean = (p) => existsSync(join(ROOT, p)),
 ): string[] {
   const errs: string[] = []
   const hit = (e: Entry, f: string) =>
@@ -49,11 +52,14 @@ export function checkGoldens(
 }
 
 export function main(): number {
-  const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
+  const files = execFileSync('git', ['ls-files'], {
+    encoding: 'utf8',
+    cwd: ROOT,
+  })
     .split('\n')
     .filter((f) => GOLDEN.test('/' + f))
   const manifest = JSON.parse(
-    readFileSync('docs/golden-provenance.json', 'utf8'),
+    readFileSync(join(ROOT, 'docs/golden-provenance.json'), 'utf8'),
   ) as Manifest
   const errs = checkGoldens(files, manifest)
   if (errs.length) {

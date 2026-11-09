@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   checkGoldens,
+  main,
   type Manifest,
 } from '../scripts/check-golden-provenance.ts'
 
@@ -16,6 +17,9 @@ const m = (...entries: object[]): Manifest =>
 const ok = () => true
 
 describe('check-golden-provenance', () => {
+  it('covers every golden tracked in this checkout', () => {
+    expect(main()).toBe(0)
+  })
   it('passes a covered file, prefix entries included', () => {
     expect(checkGoldens(['a/x.snap'], m(e({})), ok)).toEqual([])
     expect(checkGoldens(['d/y.txt'], m(e({ paths: ['d/'] })), ok)).toEqual([])
