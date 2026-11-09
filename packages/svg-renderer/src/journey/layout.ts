@@ -3,7 +3,13 @@ import type {
   PositionedJourney,
   PositionedJourneyTask,
 } from '@zombie-mermaid/mermaid-parser'
-import { textWidth } from '../timeline/layout.ts'
+import { textWidth as advanceWidth } from '../timeline/layout.ts'
+import { trebuchetKerning } from './trebuchet-kerning.ts'
+
+/** Width at 16px with kerning, as the browser measures it for Mermaid. */
+function textWidth(text: string): number {
+  return advanceWidth(text) + trebuchetKerning(text) * 16
+}
 
 // ============================================================================
 // Journey layout

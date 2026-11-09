@@ -754,9 +754,10 @@ bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gall
 
 - **Text wrapping.** Mermaid puts task and section text in an HTML `foreignObject`, so the
   browser wraps it at the box width with whatever `trebuchet ms`/`Open Sans` resolves to;
-  this library sums Trebuchet MS advances (the timeline table) and draws `<text>` lines.
-  The legend width, which moves `leftMargin`, is measured the same way, so a very wide
-  actor name can shift the drawing by a few pixels (3% on the test machine's fallback font).
+  this library sums Trebuchet MS advances plus its kerning pairs (both measured on macOS in
+  Chromium) and draws `<text>` lines. The legend width, which moves `leftMargin`, agrees
+  with mermaid 12.3.0 to the pixel on the gallery samples; on a machine without Trebuchet
+  mermaid's own widths change (its fallback is Verdana or Arial), and so would the layout there.
 - **Palette.** Section bars and actor dots use the theme accent and its series shades
   (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
 - **Not read yet.** `journey` config in `%%{init}%%` (`leftMargin`, `width`, `taskMargin`,

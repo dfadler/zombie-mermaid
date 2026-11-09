@@ -76,6 +76,16 @@ describe('layoutJourney', () => {
     ).toHaveLength(3)
   })
 
+  it('sizes the legend with kerning, as mermaid@12.3.0 does (viewBox width 1383.1875)', () => {
+    const l = layout(
+      `journey
+    title A very long title for the journey diagram that goes on
+    section A section with a fairly long name here
+      A task: 3: A Very Long Actor Name That Wraps Around The Legend Because It Is Longer Than Others, Short`,
+    )
+    expect(l.tasks[0]!.x).toBeCloseTo(491.59375, 1)
+  })
+
   it('leaves room for a wide legend label', () => {
     const l = layout(
       'journey\nA: 3: A Very Long Actor Name That Wraps Around The Legend',
