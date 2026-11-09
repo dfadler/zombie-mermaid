@@ -2954,7 +2954,7 @@ matter share one code path. SVG only: ASCII has no pixel padding, so these keys 
 ## Sankey diagrams
 
 Checked against mermaid 12.3.0 (12.2.0, the pin, lays the samples out identically):
-node and ribbon positions, label positions and the viewBox agree to 0.01px on the gallery
+node and ribbon positions and label positions agree to 0.01px, and so does the viewBox when no label overhangs the bars, on the gallery
 samples and the edge cases (zero and negative flows, duplicates, every alignment, outlined
 labels, custom sizes), measured with a throwaway script, not yet a checked-in oracle.
 
@@ -2963,9 +2963,10 @@ labels, custom sizes), measured with a throwaway script, not yet a checked-in or
 - **Label measurement.** The viewBox grows to fit the labels, whose width is a sum of Trebuchet
   MS advances (as for timelines) with the 14px line box mermaid's `getBBox` reports there (13
   above the baseline, 3 below). On a machine without Trebuchet mermaid's own width differs a few px.
-- **Font.** Labels are drawn in the render's font (Inter by default) but the viewBox is sized
-  from Trebuchet advances, so a label at the left or right edge can be clipped by a few px
-  (see the outlined sample's baseline); `overflow: visible` on the `<svg>` shows it in a page.
+- **Font.** Labels are drawn in the render's font (Inter by default), about 10% wider than
+  Trebuchet. A label that overhangs the bars (outlined labels left of the first column, or right of
+  the last) widens the viewBox by a 12% allowance on its Trebuchet width so it is not cut off; mermaid's
+  own viewBox is a few px narrower there. Diagrams whose labels sit inside the 600px frame are unaffected.
 - **Text values.** Mermaid draws `A,B,abc` with `NaN` geometry; here it is a parse error.
 - **`accTitle` / `accDescr`.** Accepted and used for the SVG's accessible name like every
   type; mermaid's sankey grammar rejects the lines.

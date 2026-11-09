@@ -15,7 +15,8 @@
 // (+15 with `showValues`, which is on), alignment `justify`, labels 14px,
 // 6px beside the bar. The viewBox is the bounding box of everything drawn
 // (`setupGraphViewbox`), which is why long labels widen it. Text is measured
-// by summing Trebuchet MS advances, the one input Mermaid takes from a browser.
+// by summing Trebuchet MS advances (the one input Mermaid takes from a
+// browser) plus a 12% allowance for the font labels are really drawn in.
 // ============================================================================
 
 import type {
@@ -40,6 +41,12 @@ export const SANKEY = {
   ascent: 13,
   descent: 3,
   iterations: 6,
+  /**
+   * Labels are drawn in Inter, about 10% wider than the Trebuchet advances
+   * the box is sized from; widening the overhang keeps edge labels from
+   * being cut off. Only a label that reaches past the bars changes the size.
+   */
+  labelFit: 1.12,
 } as const
 
 interface N {
@@ -455,7 +462,7 @@ export function layoutSankey(sk: Sankey): PositionedSankey {
   for (const n of positionedNodes) {
     // An empty rect (a zero or negative flow) adds nothing to `getBBox`.
     if (n.y1 > n.y0) grow(n.x0, n.y0, n.x1, n.y1)
-    const w = textWidth(n.label.text, SANKEY.fontSize)
+    const w = textWidth(n.label.text, SANKEY.fontSize) * SANKEY.labelFit
     const base = n.label.y + (showValues ? 0 : 0.35 * SANKEY.fontSize)
     const x = n.label.anchor === 'start' ? n.label.x : n.label.x - w
     grow(x, base - SANKEY.ascent, x + w, base + SANKEY.descent)
