@@ -80,6 +80,17 @@ export const C4: {
 export const C4_TEXT_WIDTH: number;
 
 // @public
+export type C4Config = {
+    -readonly [K in keyof typeof C4]: number;
+} & {
+    wrap: boolean;
+    textWidth: number;
+};
+
+// @public
+export function c4Config(layout?: C4InitLayout): C4Config;
+
+// @public
 export function c4CylinderCap(width: number): {
     rx: number;
     ry: number;
@@ -87,6 +98,24 @@ export function c4CylinderCap(width: number): {
 
 // @public
 export function c4DescriptionHeight(lines: number): number;
+
+// @public
+export interface C4InitLayout {
+    // (undocumented)
+    diagramMarginX?: number;
+    // (undocumented)
+    diagramMarginY?: number;
+    // (undocumented)
+    nextLinePaddingX?: number;
+    // (undocumented)
+    shapeMargin?: number;
+    // (undocumented)
+    shapePadding?: number;
+    // (undocumented)
+    width?: number;
+    // (undocumented)
+    wrap?: boolean;
+}
 
 // @public
 export function c4PersonGeometry(width: number, height?: number): {
@@ -114,7 +143,7 @@ export interface C4ShapeSize {
 export function c4ShapeSize(el: {
     kind: string;
     shape?: string;
-}, nameLines: number, descriptionLines: number, textWidth: number): C4ShapeSize;
+}, nameLines: number, descriptionLines: number, textWidth: number, cfg?: C4Config): C4ShapeSize;
 
 // @public
 export function c4TextBlockHeight(nameLines: number, descriptionLines: number): number;
@@ -384,6 +413,7 @@ export function hasMeasuredAdvance(char: string): boolean;
 // @public
 export interface InitConfig {
     architectureLayout?: ArchitectureInitLayout;
+    c4Layout?: C4InitLayout;
     classLayout?: ClassInitLayout;
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;
