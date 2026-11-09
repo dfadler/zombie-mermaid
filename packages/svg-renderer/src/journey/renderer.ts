@@ -92,15 +92,14 @@ ${rules.join('\n')}
   return { css, cls }
 }
 
-/** Centered multi-line text, as Mermaid's `byTspan`: lines stacked 14px apart around the box middle. */
-function labelText(lines: string[], x: number, y: number, cls: string): string {
-  const tspans = lines
+/** Centered multi-line text as Mermaid's `byTspan` draws it: one `<text>` per line, stacked 14px apart around the box middle. */
+function labelText(lines: string[], x: number, y: number): string {
+  return lines
     .map((l, i) => {
       const dy = i * 14 - (14 * (lines.length - 1)) / 2
-      return `<tspan x="${r(x)}" dy="${r(dy)}">${escapeXml(l)}</tspan>`
+      return `<text x="${r(x)}" y="${r(y)}" dominant-baseline="central" alignment-baseline="central" text-anchor="middle" class="journey-label"><tspan x="${r(x)}" dy="${r(dy)}">${escapeXml(l)}</tspan></text>`
     })
     .join('')
-  return `<text x="${r(x)}" y="${r(y)}" dominant-baseline="central" alignment-baseline="central" text-anchor="middle" class="journey-label ${cls}">${tspans}</text>`
 }
 
 function faceSvg(t: PositionedJourneyTask): string {
@@ -182,7 +181,6 @@ export function renderJourneySvg(
           s.text.split(/<br\s*\/?>/i),
           s.x + s.width / 2,
           s.y + s.height / 2,
-          '',
         ) +
         '</g>',
     )
@@ -200,7 +198,7 @@ export function renderJourneySvg(
         faceSvg(t) +
         `<rect x="${r(t.x)}" y="${r(t.y)}" width="${r(t.width)}" height="${r(t.height)}" rx="3" ry="3" class="task task-type-${t.num} section-type-${t.num}"/>` +
         dots +
-        labelText(t.lines, cx, t.y + t.height / 2, '') +
+        labelText(t.lines, cx, t.y + t.height / 2) +
         '</g>',
     )
   })

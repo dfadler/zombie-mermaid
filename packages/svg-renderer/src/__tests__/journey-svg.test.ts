@@ -114,6 +114,17 @@ describe('renderMermaidSVG – journey', () => {
     expect(mouth(2)![2]).toBe('M-7.5')
   })
 
+  it('draws each line of a wrapped label as its own <text>, stacked around the box middle', () => {
+    const out = renderMermaidSVG(
+      'journey\nA task with a very long description that wraps: 3',
+    )
+    const dys = [...out.matchAll(/<tspan x="[\d.]+" dy="(-?[\d.]+)">/g)].map(
+      (m) => m[1],
+    )
+    expect(dys).toEqual(['-14', '0', '14'])
+    expect(out.match(/<text [^>]*class="journey-label"/g)).toHaveLength(3)
+  })
+
   it('escapes text', () => {
     expect(renderMermaidSVG('journey\n<b>&: 3: <i>')).toContain(
       '&lt;b&gt;&amp;',
