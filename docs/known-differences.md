@@ -768,6 +768,25 @@ drawing size agree on every gallery sample.
   read; `TD` is checked against the oracle only.
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
 
+## Kanban boards
+
+Checked against mermaid 12.3.0 with `pnpm run kanban:oracle`: column and card rectangles,
+wrapped line counts, priority bars and the drawing size agree on every gallery sample.
+
+- **Line breaks.** Mermaid wraps HTML labels in the browser with whatever `trebuchet ms`,
+  `verdana`, `arial` resolves to; this library sums Trebuchet MS advances (measured on
+  macOS) and models `break-spaces` and hyphen breaks, so a label within a pixel or two of
+  175px can break differently on a machine without Trebuchet. Characters outside printable
+  ASCII are estimated.
+- **Palette.** Column fills are the theme accent and its series shades mixed into the
+  background; mermaid uses its `cScale` hues. Priority bar colours are mermaid's.
+- **Font.** Text is drawn in the render's font (Inter by default) inside Mermaid's
+  Trebuchet-sized boxes.
+- **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
+- **Repeated spaces** inside a wrapped label are collapsed (Mermaid keeps them).
+- **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
+- **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
+
 ## Requirement diagrams
 
 Checked against mermaid 12.3.0 with `pnpm run requirement:oracle` (12.2.0, the pin,

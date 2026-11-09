@@ -63,6 +63,7 @@ import {
   parseGantt,
   parseTimeline,
   parseRadar,
+  parseKanban,
   parseRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -89,6 +90,8 @@ import type {
   PositionedTimeline,
   Radar,
   PositionedRadar,
+  Kanban,
+  PositionedKanban,
   RequirementDiagram,
   PositionedRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
@@ -114,6 +117,8 @@ import { layoutTimeline } from './timeline/layout.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
 import { layoutRadar } from './radar/layout.ts'
 import { renderRadarSvg } from './radar/renderer.ts'
+import { layoutKanban } from './kanban/layout.ts'
+import { renderKanbanSvg } from './kanban/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -555,6 +560,25 @@ const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
   },
 }
 
+/** Kanban boards parse from the raw `text`, then lay out to Mermaid's fixed geometry. */
+const kanbanModule: DiagramModule<Kanban, PositionedKanban> = {
+  type: 'kanban',
+  parse: (_lines, text) => parseKanban(text),
+  layoutForSvg: (kb) => layoutKanban(kb),
+  renderSvg(positioned, ctx) {
+    return renderKanbanSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
 /**
  * Radar charts parse from the raw `text` (Mermaid's grammar has no `;`
  * statement separator and a label may contain one), then lay out to
@@ -641,5 +665,6 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   gantt: ganttModule,
   timeline: timelineModule,
   radar: radarModule,
+  kanban: kanbanModule,
   requirement: requirementModule,
 }

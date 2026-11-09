@@ -23,10 +23,10 @@ const KNOWN: Record<string, string> = {
   'State: Notes': '#2910',
 }
 
-/** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline are ragged by design). */
+/** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline/kanban are ragged by design). */
 function skipFor(source: string): Rule[] {
   if (
-    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|radar-beta)/m.test(
+    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|radar-beta)/m.test(
       source,
     )
   )

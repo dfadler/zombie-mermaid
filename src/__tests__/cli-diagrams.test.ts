@@ -60,6 +60,12 @@ const diagrams: Record<string, string> = {
   y-axis Cold --> Hot
   Campaign A: [0.3, 0.6]`,
 
+  kanban: `kanban
+  Todo
+    a[Build it]@{ ticket: T-1, priority: 'High' }
+  Done
+    b[Ship it]`,
+
   mindmap: `mindmap
   root((Plan))
     Build

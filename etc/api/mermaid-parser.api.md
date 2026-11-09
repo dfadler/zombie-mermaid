@@ -498,6 +498,38 @@ export function isoWeekday(ms: number): number;
 export function isValidHex(color: string): boolean;
 
 // @public
+export interface Kanban {
+    // (undocumented)
+    columns: KanbanColumn[];
+    config?: {
+        sectionWidth?: number;
+        ticketBaseUrl?: string;
+    };
+}
+
+// @public
+export interface KanbanCard {
+    assigned?: string;
+    className?: string;
+    icon?: string;
+    id: string;
+    priority?: string;
+    text: string;
+    ticket?: string;
+}
+
+// @public
+export interface KanbanColumn {
+    // (undocumented)
+    cards: KanbanCard[];
+    className?: string;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    text: string;
+}
+
+// @public
 export function knownShapeNames(): string[];
 
 // @public (undocumented)
@@ -643,6 +675,9 @@ export function parseGantt(source: string, now?: Date): GanttChart;
 
 // @public
 export function parseGenericTypes(input: string): string;
+
+// @public
+export function parseKanban(text: string): Kanban;
 
 // @public
 export function parseMermaid(text: string): MermaidGraph;
@@ -1112,6 +1147,71 @@ export interface PositionedGanttTick {
     // (undocumented)
     label: string;
     x: number;
+}
+
+// @public
+export interface PositionedKanban {
+    // (undocumented)
+    columns: PositionedKanbanColumn[];
+    // (undocumented)
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedKanbanCard {
+    // (undocumented)
+    assigned?: PositionedKanbanText;
+    // (undocumented)
+    className?: string;
+    cx: number;
+    // (undocumented)
+    cy: number;
+    // (undocumented)
+    height: number;
+    priorityColor?: string;
+    // (undocumented)
+    ticket?: PositionedKanbanText;
+    ticketUrl?: string;
+    // (undocumented)
+    title: PositionedKanbanText;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedKanbanColumn {
+    // (undocumented)
+    cards: PositionedKanbanCard[];
+    // (undocumented)
+    className?: string;
+    colorClass: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    label: PositionedKanbanText;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedKanbanText {
+    // (undocumented)
+    height: number;
+    lines: MindmapTextRun[][];
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    y: number;
 }
 
 // @public (undocumented)

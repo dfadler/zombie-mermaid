@@ -47,6 +47,7 @@ describe('list_diagram_types', () => {
       gantt: 'gantt\nA :a, 2024-01-01, 1d',
       timeline: 'timeline\n2002 : LinkedIn',
       radar: 'radar-beta\naxis a, b\ncurve c{1, 2}',
+      kanban: 'kanban\n  A\n    b',
       requirement: 'requirementDiagram\nrequirement r {\n}',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
