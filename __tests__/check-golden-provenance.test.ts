@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   checkGoldens,
   main,
@@ -19,6 +19,12 @@ const ok = () => true
 describe('check-golden-provenance', () => {
   it('covers every golden tracked in this checkout', () => {
     expect(main()).toBe(0)
+  })
+  it('exits 1 and reports a golden that has no entry', () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(main(['pkg/__snapshots__/new.snap'])).toBe(1)
+    expect(err.mock.calls[0]![0]).toMatch(/new\.snap: no entry.*\n\d+ golden/)
+    err.mockRestore()
   })
   it('passes a covered file, prefix entries included', () => {
     expect(checkGoldens(['a/x.snap'], m(e({})), ok)).toEqual([])

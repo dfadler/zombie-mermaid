@@ -51,13 +51,12 @@ export function checkGoldens(
   return errs
 }
 
-export function main(): number {
-  const files = execFileSync('git', ['ls-files'], {
-    encoding: 'utf8',
-    cwd: ROOT,
-  })
+const tracked = () =>
+  execFileSync('git', ['ls-files'], { encoding: 'utf8', cwd: ROOT })
     .split('\n')
     .filter((f) => GOLDEN.test('/' + f))
+
+export function main(files: string[] = tracked()): number {
   const manifest = JSON.parse(
     readFileSync(join(ROOT, 'docs/golden-provenance.json'), 'utf8'),
   ) as Manifest
