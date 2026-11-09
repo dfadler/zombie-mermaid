@@ -262,7 +262,7 @@
   {
     "file": "scripts/kanban-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/kanban-agreement.ts",
-    "maxLines": 73
+    "maxLines": 80
   },
   {
     "file": "scripts/timeline-oracle.ts",

@@ -39,8 +39,13 @@ export const TOLERANCE = 0.5
 export const SIZE_TOLERANCE = 1
 
 const num = (s: string | undefined): number => Number(s ?? 0)
-const attr = (tag: string, name: string): string | undefined =>
-  new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1]
+/** The value of attribute `name` in a tag (a plain scan, no dynamic regex). */
+const attr = (tag: string, name: string): string | undefined => {
+  const at = tag.indexOf(` ${name}="`)
+  if (at === -1) return undefined
+  const from = at + name.length + 3
+  return tag.slice(from, tag.indexOf('"', from))
+}
 
 function rectOf(tag: string, dx: number, dy: number): KanbanRect {
   return {
