@@ -71,6 +71,37 @@ export const C4 = {
 } as const
 
 /**
+ * `%%{init: {"c4": {...}}}%%` keys that change mermaid 12.3.0's output, in its
+ * own units: `diagramMarginX/Y`, `c4ShapeMargin` (as `shapeMargin`),
+ * `c4ShapePadding` (as `shapePadding`), `width` (a shape's minimum width),
+ * `nextLinePaddingX` and `wrap` (false stops names, descriptions and
+ * relationship labels from wrapping).
+ */
+export interface C4InitLayout {
+  diagramMarginX?: number
+  diagramMarginY?: number
+  shapeMargin?: number
+  shapePadding?: number
+  width?: number
+  nextLinePaddingX?: number
+  wrap?: boolean
+}
+
+/** {@link C4} with a diagram's `c4` init keys applied. */
+export type C4Config = { -readonly [K in keyof typeof C4]: number } & {
+  wrap: boolean
+  /** Width element text wraps to: `width` less the padding both sides. */
+  textWidth: number
+}
+
+/** The C4 geometry for a diagram: the defaults, then its init keys. */
+export function c4Config(layout?: C4InitLayout): C4Config {
+  const cfg = { ...C4, wrap: true, ...layout } as C4Config
+  cfg.textWidth = cfg.width - 2 * cfg.shapePadding
+  return cfg
+}
+
+/**
  * Width the text of an element wraps to: the shape's width less its padding
  * on both sides (Mermaid's `c4LabelHelper`).
  */
@@ -196,10 +227,11 @@ export function c4ShapeSize(
   nameLines: number,
   descriptionLines: number,
   textWidth: number,
+  cfg: C4Config = c4Config(),
 ): C4ShapeSize {
   const textHeight = c4TextBlockHeight(nameLines, descriptionLines)
-  const boxHeight = textHeight + 2 * C4.shapePadding
-  const width = Math.max(C4.width, textWidth + 2 * C4.shapePadding)
+  const boxHeight = textHeight + 2 * cfg.shapePadding
+  const width = Math.max(cfg.width, textWidth + 2 * cfg.shapePadding)
   if (el.kind === 'person') {
     return {
       width,
@@ -210,10 +242,14 @@ export function c4ShapeSize(
   }
   if (el.shape === 'db') {
     const { ry } = c4CylinderCap(width)
-    return { width, height: boxHeight + 2 * ry - C4.dbTrim, textHeight }
+    // Measured in mermaid 12.3.0: a db grows by 1px per px of padding (not 2),
+    // and a queue by half a px, so each is scaled against the default.
+    const height = textHeight + cfg.shapePadding + 20 + 2 * ry - C4.dbTrim
+    return { width, height, textHeight }
   }
   if (el.shape === 'queue') {
-    const height = textHeight + C4.queueExtra
+    const height =
+      textHeight + C4.queueExtra + (cfg.shapePadding - C4.shapePadding) / 2
     const { rx } = c4QueueCap(height)
     return { width: width + 3 * rx, height, textHeight }
   }

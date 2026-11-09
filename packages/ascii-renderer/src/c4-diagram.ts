@@ -35,7 +35,11 @@ import {
   c4TypeLine,
   wrapC4Text,
 } from '@zombie-mermaid/mermaid-parser'
-import { splitStatements, withDirectionOverride } from '@zombie-mermaid/core'
+import {
+  extractInitConfig,
+  splitStatements,
+  withDirectionOverride,
+} from '@zombie-mermaid/core'
 import type { AsciiConfig, AsciiTheme, CharRole, ColorMode } from './types.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 import { mkCanvas, mkRoleCanvas, canvasToString, write } from './canvas.ts'
@@ -121,6 +125,7 @@ export function renderC4Ascii(
     parseC4Diagram(splitStatements(text)),
     extras.direction,
   )
+  diagram.layout = extractInitConfig(text.split(/\r\n?|\n/)).c4Layout
   // Mermaid 12.3.0 draws accTitle in the title slot, over any `title`.
   diagram.title = extras.accTitle?.replace(/\s+/g, ' ') || diagram.title
   if (

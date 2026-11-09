@@ -715,7 +715,24 @@ matter share one code path. SVG only: ASCII has no pixel padding, so these keys 
   every `state` key except `useMaxWidth` (`padding`, `nodeSpacing`, `rankSpacing`, `fontSize`, `forkWidth`, `compositTitleSize`,
   `radius`, ...). The `state` block is reported as ignored.
 - **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
-- **Not yet measured:** `xyChart`, `c4` and `architecture` blocks, tracked in separate issues.
+- **Not yet measured:** `xyChart` and `architecture` blocks, tracked in separate issues. The `c4` block is below.
+
+## C4 `%%{init}%%` / front-matter config ([#2906](https://github.com/dfadler/zombie-mermaid/issues/2906))
+
+Measured on mermaid 12.3.0 (headless Chromium, each `c4` key rendered with and without it; a
+container diagram with a boundary, a db, a queue and wrapped labels). Init and front matter share
+one code path. Row wrapping is the width-limit rule of [#2790](https://github.com/dfadler/zombie-mermaid/issues/2790).
+
+- **Read, SVG and ASCII row wrapping:** `diagramMarginX`, `diagramMarginY`, `c4ShapeMargin`, `c4ShapePadding`,
+  `width` (minimum shape width, and the width text wraps to less twice the padding), `nextLinePaddingX` and
+  `wrap: false` (names, descriptions and relationship labels are not wrapped, so a shape widens to its longest line).
+  `c4ShapePadding` grows a rectangle 2 per unit, a database 1 and a queue 0.5, as mermaid does. In ASCII only the
+  row-breaking effect applies (shape widths, margins), since a character grid has no pixel padding.
+- **Not read, no effect in mermaid 12.3.0:** `c4ShapeInRow` and `c4BoundaryInRow` (only the `UpdateLayoutConfig` statement
+  changes them), `height`, `boxMargin`, `wrapPadding`, and `systemFontSize` and its siblings for kinds the diagram does not use.
+- **Not read:** the per-kind `*FontSize`, `*FontFamily` and `*FontWeight` keys (they change mermaid's text measurement; ours uses
+  its own Arial advance table, set with the `font` option), the `*_bg_color` / `*_border_color` colours (palette, [#2617](https://github.com/dfadler/zombie-mermaid/issues/2617))
+  and `useMaxWidth` (only the `<svg>` sizing attributes).
 
 ## Radar charts
 

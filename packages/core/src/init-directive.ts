@@ -17,6 +17,7 @@
 // ============================================================================
 
 import { isValidCssColor } from './css-color.ts'
+import type { C4InitLayout } from './c4-metrics.ts'
 import type { RenderOptions } from './types.ts'
 
 /** How an edge path is interpolated between its routed points. */
@@ -294,6 +295,8 @@ export interface InitConfig {
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
   erLayout?: ErInitLayout
+  /** The `c4` block (see {@link C4InitLayout}); a bad value is dropped. */
+  c4Layout?: C4InitLayout
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
@@ -547,6 +550,24 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'c4' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const layout: C4InitLayout = {}
+      for (const [from, to] of [
+        ['diagramMarginX', 'diagramMarginX'],
+        ['diagramMarginY', 'diagramMarginY'],
+        ['c4ShapeMargin', 'shapeMargin'],
+        ['c4ShapePadding', 'shapePadding'],
+        ['nextLinePaddingX', 'nextLinePaddingX'],
+      ] as const)
+        if (isNonNegative(rec[from]) && rec[from] <= 1e5) layout[to] = rec[from]
+      if (isNonNegative(rec.width) && rec.width > 0 && rec.width <= 1e5)
+        layout.width = rec.width
+      if (typeof rec.wrap === 'boolean') layout.wrap = rec.wrap
+      config.c4Layout = layout
+      continue
+    }
+
     if (lower === 'sequence' && typeof value === 'object' && value !== null) {
       for (const [sk, sv] of Object.entries({ ...value })) {
         const sl = sk.toLowerCase()
@@ -768,6 +789,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)
       merged.erLayout = { ...merged.erLayout, ...config.erLayout }
+    if (config.c4Layout)
+      merged.c4Layout = { ...merged.c4Layout, ...config.c4Layout }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }
     if (config.themeVariables) {

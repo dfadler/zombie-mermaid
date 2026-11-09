@@ -1,4 +1,4 @@
-import type { Direction, Point } from '@zombie-mermaid/core'
+import type { C4InitLayout, Direction, Point } from '@zombie-mermaid/core'
 
 // ============================================================================
 // C4 diagram model (C4Context / C4Container / C4Component / C4Dynamic /
@@ -79,6 +79,8 @@ export interface C4Diagram {
   /** Top-level boundaries; elements outside any boundary are not listed. */
   boundaries: C4Boundary[]
   relationships: C4Relationship[]
+  /** The `c4` block of `%%{init}%%` / front matter, when it sets a key that applies. */
+  layout?: C4InitLayout
 }
 
 // ----------------------------------------------------------------------------
@@ -142,4 +144,6 @@ export interface PositionedC4Diagram {
   /** Outer boundaries first, so inner ones paint on top. */
   boundaries: PositionedC4Boundary[]
   relationships: PositionedC4Relationship[]
+  /** Carried from the diagram so the renderer pads shapes the way layout did. */
+  layout?: C4InitLayout
 }

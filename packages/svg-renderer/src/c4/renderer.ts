@@ -82,7 +82,10 @@ export function renderC4Svg(
   }
 
   for (const b of diagram.boundaries) parts.push(renderBoundary(b))
-  for (const el of diagram.elements) parts.push(renderElement(el))
+  for (const el of diagram.elements)
+    parts.push(
+      renderElement(el, diagram.layout?.shapePadding ?? C4.shapePadding),
+    )
   // Every line first, so a label's plate sits over all of them.
   for (const r of diagram.relationships) parts.push(renderRelationshipLine(r))
   for (const r of diagram.relationships) parts.push(renderRelationshipLabel(r))
@@ -166,7 +169,7 @@ function renderBoundary(b: PositionedC4Boundary): string {
 // Elements
 // ---------------------------------------------------------------------------
 
-function renderElement(el: PositionedC4Element): string {
+function renderElement(el: PositionedC4Element, pad: number): string {
   const pal = c4Palette(el)
   const { x, y, width: w, height: h } = el
   const cx = x + w / 2
@@ -186,7 +189,7 @@ function renderElement(el: PositionedC4Element): string {
   if (el.kind === 'person') {
     parts.push(...personShape(el, pal))
     const g = c4PersonGeometry(w)
-    top = y + g.pillTop + C4.shapePadding
+    top = y + g.pillTop + pad
   } else if (el.shape === 'db') {
     parts.push(...cylinderShape(el, pal))
     const { ry } = c4CylinderCap(w)
@@ -203,7 +206,7 @@ function renderElement(el: PositionedC4Element): string {
       f`  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${C4.cornerRadius}" ry="${C4.cornerRadius}" ` +
         f`fill="${pal.fill}" stroke="${pal.stroke}" stroke-width="${C4.strokeWidth}" />`,
     )
-    top = y + C4.shapePadding
+    top = y + pad
   }
 
   let cursor = top
