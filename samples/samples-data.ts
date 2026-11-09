@@ -3330,4 +3330,143 @@ pie title Reports by team
   "Customer facing web applications and mobile clients" : 35
   "Data" : 25`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  REQUIREMENT DIAGRAMS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Requirement: Basic',
+    category: 'Requirement',
+    gallery: true,
+    description:
+      'A requirement box (type, name, then its ID, text, risk and verification under a divider) satisfied by an element over a dashed, arrowed relationship.',
+    source: `requirementDiagram
+
+    requirement test_req {
+    id: 1
+    text: the test text.
+    risk: high
+    verifymethod: test
+    }
+
+    element test_entity {
+    type: simulation
+    }
+
+    test_entity - satisfies -> test_req`,
+  },
+  {
+    title: 'Requirement: Kinds And Relationships',
+    category: 'Requirement',
+    description:
+      'All six requirement kinds and the relationship types: `contains` is a solid line with a circle-plus at the container, every other type a dashed arrow.',
+    source: `requirementDiagram
+
+    functionalRequirement fr {
+    id: 1.1
+    text: The system shall start
+    risk: low
+    verifymethod: inspection
+    }
+    interfaceRequirement ir {
+    id: 1.2
+    text: Expose a REST API
+    risk: medium
+    verifymethod: analysis
+    }
+    performanceRequirement pr {
+    id: 1.3
+    text: Respond in 200ms
+    risk: high
+    verifymethod: demonstration
+    }
+    physicalRequirement phr {
+    id: 1.4
+    text: Fit in a 1U rack
+    risk: low
+    verifymethod: test
+    }
+    designConstraint dc {
+    id: 1.5
+    text: Use TLS 1.3
+    risk: medium
+    verifymethod: test
+    }
+
+    fr - contains -> ir
+    fr - contains -> pr
+    pr - copies -> phr
+    phr - derives -> dc`,
+  },
+  {
+    title: 'Requirement: Direction And Traceability',
+    category: 'Requirement',
+    gallery: true,
+    description:
+      '`direction LR` runs the diagram left to right; `<-` writes a relationship from the other end, and elements show their type and document reference.',
+    source: `requirementDiagram
+    direction LR
+
+    requirement checkout {
+    id: R1
+    text: Customers can pay by card
+    risk: high
+    verifymethod: test
+    }
+    element payment_service {
+    type: service
+    docref: docs/payments.md
+    }
+    element e2e_suite {
+    type: browser suite
+    }
+
+    payment_service - satisfies -> checkout
+    checkout <- verifies - e2e_suite`,
+  },
+  {
+    title: 'Requirement: Styling',
+    category: 'Requirement',
+    description:
+      '`classDef`, `class`, `:::` and `style` recolour boxes, as in Mermaid.',
+    source: `requirementDiagram
+
+    requirement a {
+    id: 1
+    text: styled by class
+    risk: low
+    verifymethod: test
+    }
+    requirement b:::urgent {
+    id: 2
+    text: styled inline
+    risk: medium
+    verifymethod: analysis
+    }
+    a - traces -> b
+
+    classDef urgent fill:#fde,stroke:#c33,stroke-width:2px
+    class a urgent
+    style b fill:#eef,stroke:#339`,
+  },
+  {
+    title: 'Requirement: Bare Boxes',
+    category: 'Requirement',
+    description:
+      'A requirement or element with no properties is just the type and name, and the divider is not drawn.',
+    source: `requirementDiagram
+
+    requirement bare {
+    }
+    element thing {
+    }
+    thing - satisfies -> bare`,
+  },
+  {
+    title: 'Requirement: Empty',
+    category: 'Requirement',
+    description: 'A bare `requirementDiagram` is valid: an empty drawing.',
+    source: `requirementDiagram`,
+  },
 ]
