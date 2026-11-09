@@ -8,26 +8,28 @@
 // does: one row per commit, one column per branch, oldest first.
 //
 //     main  develop
-//     ┆     ┆
-//     ●     ┆      init
-//     ●     ┆      docs
-//     ├──●  ┆      feature-a
-//     │  ●         feature-b
-//     ◎──╯         release-1  [v1]
-//     ●            hotfix
+//     ●     ┆   init
+//     ●     ┆   docs
+//     ├─────●   feature-a
+//     │     ●   feature-b
+//     ◎─────╯   release-1
+//     ●     ┆   hotfix
 //
 //   - Branches are columns in Mermaid's order (`order:` then creation); the
 //     name is written over its column, and `showBranches: false` drops the
-//     names. Before its first commit a branch is dotted (`┆`).
+//     names and the dotted lines. A branch is dotted (`┆`) outside the span
+//     from its first commit to its last (or the last that takes from it).
 //   - A commit is a symbol on its branch: `●` normal, `✕` reverse, `◆`
-//     highlight, `◎` merge, `○` cherry-pick. A branch's first commit joins
-//     the commit it forked from with `├──`; a merge or cherry-pick joins the
-//     commit it took from with `──╯` (`──╮` in `BT`).
+//     highlight, `◎` merge, `○` cherry-pick (`*`, `X`, `#`, `@`, `o` in ASCII
+//     mode). A branch's first commit joins the commit it forked from with
+//     `├──`; a merge or cherry-pick joins the commit it took from with `──╯`
+//     (`──╮` in `BT`).
 //   - The row's text is the commit id (unless `showCommitLabel: false`; a
 //     merge has one only when it was given an `id:`, a cherry-pick never)
 //     followed by its tags in brackets.
 //   - `LR` and `TB` read downward, oldest first; `BT` upward, newest at the
 //     top as `git log` prints it, with the names under the columns.
+//   - `parallelCommits` is not drawn: every commit has its own row.
 //   - Colours: a column is painted in the series colour of its branch. The
 //     diagram title, when there is one, is centred over the graph.
 //

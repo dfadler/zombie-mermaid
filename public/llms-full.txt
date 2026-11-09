@@ -1628,7 +1628,7 @@ main  develop
 - Columns follow Mermaid's branch order (`order:`, then creation); the name is written
   over its column (under it in `BT`). A branch is dotted (`┆`) before its first
   commit and `showBranches: false` removes the names and the dotted lines.
-- A commit is `●` (`*` in ASCII mode), `⊗` reverse, `◆` highlight, `◎` merge or
+- A commit is `●` (`*` in ASCII mode), `✕` reverse, `◆` highlight, `◎` merge or
   `○` cherry-pick. A branch's first commit joins the commit it forked from with
   `├──`; a merge or pick joins the commit it took from with `──╯`.
 - The row's text is the commit id (none with `showCommitLabel: false`; a merge has one
