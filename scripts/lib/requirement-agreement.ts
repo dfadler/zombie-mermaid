@@ -164,8 +164,12 @@ export function parseOurRequirementSvg(svg: string): RequirementLayout {
   const edges: RequirementLine[] = [
     ...svg.matchAll(/<polyline class="requirement-relationship"([^>]*)>/g),
   ].map((m) => {
-    const a = (name: string) =>
-      new RegExp(` ${name}="([^"]*)"`).exec(m[1]!)?.[1]
+    const a = (name: 'data-type' | 'data-src' | 'data-dst') =>
+      ({
+        'data-type': /data-type="([^"]*)"/,
+        'data-src': /data-src="([^"]*)"/,
+        'data-dst': /data-dst="([^"]*)"/,
+      })[name].exec(m[1]!)?.[1]
     return {
       type: a('data-type') ?? '',
       dashed: /stroke-dasharray/.test(m[1]!),

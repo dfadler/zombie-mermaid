@@ -242,7 +242,7 @@
   {
     "file": "scripts/lib/requirement-measure.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the requirement-oracle and layout-oracle CLIs",
-    "maxLines": 70
+    "maxLines": 72
   },
   {
     "file": "scripts/sequence-oracle.ts",

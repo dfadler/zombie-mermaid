@@ -2824,7 +2824,7 @@ labels and dashes, box positions and the drawing size agree on every gallery sam
   self-relationship; they can differ by tens of pixels where two relationships join
   the same pair of boxes or a box is shared by two parents (a diamond shape), and
   on cycles. Box sizes and text always agree. Tracked in
-  [#2815](https://github.com/dfadler/zombie-mermaid/issues/2815).
+  [#2966](https://github.com/dfadler/zombie-mermaid/issues/2966).
 - **Line routes.** Lines are straight runs with right-angle bends where ELK routes
   them; Mermaid curves its corners. The arrow and the circle-plus sit at the same
   ends.
