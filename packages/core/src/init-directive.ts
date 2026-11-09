@@ -35,6 +35,17 @@ export interface TimelineInitConfig {
   disableMulticolor?: boolean
 }
 
+/** The `packet.*` init keys that change mermaid's output. */
+export interface PacketInitConfig {
+  rowHeight?: number
+  bitWidth?: number
+  bitsPerRow?: number
+  paddingX?: number
+  paddingY?: number
+  showBits?: boolean
+  bitOrder?: 'ascending' | 'descending'
+}
+
 /** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
 const SEQUENCE_NUMBER_KEYS = new Set<string>([
   'width',
@@ -219,6 +230,8 @@ export interface InitConfig {
   sequenceLayout?: SequenceInitLayout
   /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
   timeline?: TimelineInitConfig
+  /** `packet.*` layout keys (numbers 0..1e5, `bitsPerRow` an integer >= 1), `showBits` and `bitOrder`; other keys and bad values are dropped. */
+  packet?: PacketInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -511,6 +524,34 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'packet' && typeof value === 'object' && value !== null) {
+      const p: PacketInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'rowHeight',
+        'bitWidth',
+        'paddingX',
+        'paddingY',
+      ] as const) {
+        const v = rec[k]
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) p[k] = v
+      }
+      // At least one bit per row, or the row loop in mermaid never ends.
+      const bpr = rec.bitsPerRow
+      if (
+        typeof bpr === 'number' &&
+        Number.isInteger(bpr) &&
+        bpr >= 1 &&
+        bpr <= 1e4
+      )
+        p.bitsPerRow = bpr
+      if (typeof rec.showBits === 'boolean') p.showBits = rec.showBits
+      if (rec.bitOrder === 'ascending' || rec.bitOrder === 'descending')
+        p.bitOrder = rec.bitOrder
+      config.packet = p
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -577,6 +618,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
+    if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)

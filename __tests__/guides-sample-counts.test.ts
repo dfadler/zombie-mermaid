@@ -46,5 +46,6 @@ describe('docs/guides/samples.md sample counts', () => {
     expect(byCategory.get('Mindmap')).toBe(8)
     expect(byCategory.get('Gantt')).toBe(9)
     expect(byCategory.get('Timeline')).toBe(6)
+    expect(byCategory.get('Packet')).toBe(7)
   })
 })
