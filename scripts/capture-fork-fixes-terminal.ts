@@ -290,6 +290,7 @@ async function main() {
       if (plain === undefined || plain.trim() === '') continue
       await captureSide(fix.id, side, indexPath, fix.source)
       // Same text the snapshot test renders; the stale-screenshot guard compares it.
+      // Empty renders were skipped above, so only a captured entry gets a hash.
       if (side === 'after' && !fix.excerpt)
         recordHash(
           fix.id,

@@ -10,6 +10,7 @@
  */
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import { forkFixes } from '../demo/fork-fixes-data.ts'
 import {
@@ -20,12 +21,12 @@ import {
 import { renderMermaidASCII } from '../src/index.ts'
 
 const asciiEntries = forkFixes.filter((f) => f.render === 'ascii' && !f.excerpt)
-const current = Object.fromEntries(
-  asciiEntries.map((f) => [
-    f.id,
-    renderMermaidASCII(f.source, { colorMode: 'none' }),
-  ]),
+// The capture script skips an empty render (the page shows an empty state), so it has no screenshot to check.
+const rendered = asciiEntries.map(
+  (f) => [f.id, renderMermaidASCII(f.source, { colorMode: 'none' })] as const,
 )
+const shown = rendered.filter(([, text]) => text.trim() !== '')
+const current = Object.fromEntries(shown)
 
 describe('fork-fixes screenshots match their After render', () => {
   test('every shown ASCII entry has a screenshot captured from its current render', () => {
@@ -44,15 +45,15 @@ describe('fork-fixes screenshots match their After render', () => {
       'public',
       'fork-fixes-screenshots',
     )
-    const missing = asciiEntries
-      .filter((f) => !existsSync(join(dir, `${f.id}-after.png`)))
-      .map((f) => f.id)
+    const missing = shown
+      .filter(([id]) => !existsSync(join(dir, `${id}-after.png`)))
+      .map(([id]) => id)
     expect(missing).toEqual([])
   })
 
   test('staleIds flags a changed or unrecorded render, and recordHash round-trips', () => {
-    const path = new URL(
-      `file://${join(import.meta.dirname, '..', 'node_modules', '.tmp-hash-test.json')}`,
+    const path = pathToFileURL(
+      join(import.meta.dirname, '..', 'node_modules', '.tmp-hash-test.json'),
     )
     recordHash('a', 'one', path)
     recordHash('b', 'two', path)
