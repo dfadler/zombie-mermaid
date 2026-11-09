@@ -32,6 +32,12 @@ const PARTICIPANT_TYPES = [
 const DECL_CONFIG_RE =
   /^((?:create\s+)?(?:participant|actor)\s+[^\s@]+)\s*@\{([^}]*)\}(.*)$/
 
+/** mermaid's `extractWrap`: a leading `wrap:` / `nowrap:` (colon before optional) sets that label's wrap and is not drawn. */
+function extractWrap(t: string): { text: string; wrap?: boolean } {
+  const m = /^:?(no)?wrap:/.exec(t)
+  return m ? { text: t.slice(m[0].length).trim(), wrap: !m[1] } : { text: t }
+}
+
 /**
  * Split a `participant X@{ "type": "database" }` config off a declaration
  * (mermaid 12, https://mermaid.js.org/syntax/sequenceDiagram.html#participants).
@@ -287,7 +293,9 @@ export function parseSequenceDiagram(
       actorIds.add(id)
       diagram.actors.push({
         id,
-        label: normalizeBrTags(createMatch[3]?.trim() ?? decl.alias ?? id),
+        label: normalizeBrTags(
+          extractWrap(createMatch[3]?.trim() ?? decl.alias ?? id).text,
+        ),
         type,
         ...(decl.type && { participantType: decl.type }),
       })
@@ -343,7 +351,7 @@ export function parseSequenceDiagram(
         actorMatch[1] === 'actor' ? 'actor' : 'participant'
       const id = actorMatch[2]!
       const rawLabel = actorMatch[3]?.trim() ?? decl.alias ?? id
-      const label = normalizeBrTags(rawLabel)
+      const label = normalizeBrTags(extractWrap(rawLabel).text)
       if (!actorIds.has(id)) {
         actorIds.add(id)
         diagram.actors.push({
@@ -367,7 +375,10 @@ export function parseSequenceDiagram(
     if (noteMatch) {
       const posStr = noteMatch[1]!.toLowerCase()
       const actorsStr = noteMatch[2]!.trim()
-      const text = normalizeBrTags(noteMatch[3]!.trim())
+      const { text: rawNote, wrap: noteWrap } = extractWrap(
+        noteMatch[3]!.trim(),
+      )
+      const text = normalizeBrTags(rawNote)
       const noteActorIds = actorsStr.split(',').map((s) => s.trim())
 
       // Ensure actors exist
@@ -384,6 +395,7 @@ export function parseSequenceDiagram(
         text,
         position,
         afterIndex: diagram.messages.length - 1,
+        ...(noteWrap !== undefined ? { wrap: noteWrap } : {}),
       })
       continue
     }
@@ -401,7 +413,9 @@ export function parseSequenceDiagram(
       const isRect = blockType === 'rect'
       const color =
         isRect && isCssColor(rawBlockLabel) ? rawBlockLabel : undefined
-      const label = isRect ? '' : normalizeBrTags(rawBlockLabel)
+      const label = isRect
+        ? ''
+        : normalizeBrTags(extractWrap(rawBlockLabel).text)
       blockStack.push({
         type: blockType,
         label,
@@ -420,7 +434,7 @@ export function parseSequenceDiagram(
     if (open && m && (m[1] !== 'option' || open.type === 'critical')) {
       open.dividers.push({
         index: diagram.messages.length,
-        label: normalizeBrTags(m[2]!.trim()),
+        label: normalizeBrTags(extractWrap(m[2]!.trim()).text),
       })
       continue
     }
@@ -710,13 +724,15 @@ function pushMessage(
   // forms.
   const isLost = arrow.includes('x')
 
+  const { text: msgText, wrap: msgWrap } = extractWrap(rawLabel.trim())
   const msg: Message = {
     from,
     to,
-    label: normalizeBrTags(rawLabel.trim()),
+    label: normalizeBrTags(msgText),
     lineStyle,
     arrowHead,
   }
+  if (msgWrap !== undefined) msg.wrap = msgWrap
   if (isLost) msg.isLost = true
   if (bidirectional) msg.bidirectional = true
   if (activationMark === '+') msg.activate = true

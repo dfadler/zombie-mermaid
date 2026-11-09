@@ -31,12 +31,14 @@ import { PositionedMindmap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedNode } from '@zombie-mermaid/core';
 import { PositionedPieChart } from '@zombie-mermaid/mermaid-parser';
 import { PositionedQuadrantChart } from '@zombie-mermaid/mermaid-parser';
+import { PositionedRequirementDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSankey } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedTimeline } from '@zombie-mermaid/mermaid-parser';
 import { PositionedXYChart } from '@zombie-mermaid/mermaid-parser';
 import { QuadrantChart } from '@zombie-mermaid/mermaid-parser';
 import { RenderOptions } from '@zombie-mermaid/core';
+import { RequirementDiagram } from '@zombie-mermaid/mermaid-parser';
 import { Sankey } from '@zombie-mermaid/mermaid-parser';
 import { SequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { SequenceRenderOptions } from '@zombie-mermaid/core';
@@ -137,6 +139,7 @@ export const ELK_DIRECTION_FALLBACK: {
     readonly state: "DOWN";
     readonly class: "DOWN";
     readonly er: "DOWN";
+    readonly requirement: "DOWN";
     readonly c4: "DOWN";
 };
 
@@ -248,6 +251,9 @@ export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedP
 
 // @public (undocumented)
 export function layoutQuadrantChart(chart: QuadrantChart): PositionedQuadrantChart;
+
+// @public
+export function layoutRequirementDiagramSync(diagram: RequirementDiagram, options?: RequirementRenderOptions): PositionedRequirementDiagram;
 
 // @public
 export function layoutSankey(sk: Sankey): PositionedSankey;
@@ -370,6 +376,9 @@ export function renderPieSvg(chart: PositionedPieChart, colors: DiagramColors, f
 export function renderQuadrantSvg(chart: PositionedQuadrantChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
+export function renderRequirementSvg(diagram: PositionedRequirementDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderSankeySvg(sk: PositionedSankey, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
@@ -383,6 +392,22 @@ export function renderTimelineSvg(tl: PositionedTimeline, colors: DiagramColors,
 
 // @public
 export function renderXYChartSvg(chart: PositionedXYChart, colors: DiagramColors, font?: string, transparent?: boolean, interactive?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public (undocumented)
+export const REQUIREMENT: {
+    readonly fontSize: 16;
+    readonly rowHeight: 24;
+    readonly bodyGap: 20;
+    readonly boxPad: 20;
+    readonly textTop: 8;
+    readonly rowInset: 10;
+    readonly margin: 8;
+    readonly nodeSpacing: 40;
+    readonly layerSpacing: 40;
+    readonly loopOut: 20;
+    readonly loopLabelGap: 4;
+    readonly loopHalf: 12;
+};
 
 // @public
 export function resolveCssColors(svg: string, colors: DiagramColors): string;

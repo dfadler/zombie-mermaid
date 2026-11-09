@@ -2037,14 +2037,16 @@ const FACE_DIR: Record<AsciiFace, Direction> = {
 }
 
 /**
- * A same-pair group running back over more than a layer (#2902): ELK
- * gives each edge its own faces, where a neighbour group keeps its lanes
- * together (`assignParallelEdgeLanes`).
+ * A same-pair group running over more than a layer, back (#2902) or
+ * forward (#2919): ELK gives each edge its own faces, where a neighbour group
+ * keeps its lanes together (`assignParallelEdgeLanes`).
  */
 function farGroup(graph: AsciiGraph, edge: AsciiEdge): boolean {
   const axis = graph.config.graphDirection === 'LR' ? 'x' : 'y'
   return (
-    requireGridCoord(edge.from)[axis] - requireGridCoord(edge.to)[axis] > 4 &&
+    Math.abs(
+      requireGridCoord(edge.from)[axis] - requireGridCoord(edge.to)[axis],
+    ) > 4 &&
     // A diamond's side face is a slant: the lanes' ports there are not drawn yet.
     edge.from.shape !== 'diamond' &&
     edge.to.shape !== 'diamond'

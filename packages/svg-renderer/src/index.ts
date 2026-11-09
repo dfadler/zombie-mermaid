@@ -143,6 +143,11 @@ export {
 export { renderTimelineSvg } from './timeline/renderer.ts'
 export { SANKEY, layoutSankey } from './sankey/layout.ts'
 export { renderSankeySvg } from './sankey/renderer.ts'
+export {
+  REQUIREMENT,
+  layoutRequirementDiagramSync,
+} from './requirement/layout.ts'
+export { renderRequirementSvg } from './requirement/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {
