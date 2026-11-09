@@ -141,6 +141,13 @@ export {
   wrapTimelineText,
 } from './timeline/layout.ts'
 export { renderTimelineSvg } from './timeline/renderer.ts'
+export { PACKET, layoutPacket } from './packet/layout.ts'
+export type {
+  PositionedPacket,
+  PositionedPacketBlock,
+  PositionedPacketBit,
+} from './packet/layout.ts'
+export { renderPacketSvg } from './packet/renderer.ts'
 export { RADAR, layoutRadar } from './radar/layout.ts'
 export { renderRadarSvg } from './radar/renderer.ts'
 export { KANBAN, layoutKanban } from './kanban/layout.ts'

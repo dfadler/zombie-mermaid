@@ -41,6 +41,17 @@ export interface KanbanInitConfig {
   ticketBaseUrl?: string
 }
 
+/** The `packet.*` init keys that change mermaid's output. */
+export interface PacketInitConfig {
+  rowHeight?: number
+  bitWidth?: number
+  bitsPerRow?: number
+  paddingX?: number
+  paddingY?: number
+  showBits?: boolean
+  bitOrder?: 'ascending' | 'descending'
+}
+
 /** The `sankey.*` init keys that change mermaid's output (a bad value is dropped). */
 export interface SankeyInitConfig {
   width?: number
@@ -244,6 +255,8 @@ export interface InitConfig {
   timeline?: TimelineInitConfig
   /** `kanban.sectionWidth` (a number in 1..1e5) and `kanban.ticketBaseUrl`; other keys and bad values are dropped. */
   kanban?: KanbanInitConfig
+  /** `packet.*` layout keys (numbers 0..1e5, `bitsPerRow` an integer >= 1), `showBits` and `bitOrder`; other keys and bad values are dropped. */
+  packet?: PacketInitConfig
   /** The `sankey` block (see {@link SankeyInitConfig}). */
   sankey?: SankeyInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
@@ -549,6 +562,34 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'packet' && typeof value === 'object' && value !== null) {
+      const p: PacketInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'rowHeight',
+        'bitWidth',
+        'paddingX',
+        'paddingY',
+      ] as const) {
+        const v = rec[k]
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) p[k] = v
+      }
+      // At least one bit per row, or the row loop in mermaid never ends.
+      const bpr = rec.bitsPerRow
+      if (
+        typeof bpr === 'number' &&
+        Number.isInteger(bpr) &&
+        bpr >= 1 &&
+        bpr <= 1e4
+      )
+        p.bitsPerRow = bpr
+      if (typeof rec.showBits === 'boolean') p.showBits = rec.showBits
+      if (rec.bitOrder === 'ascending' || rec.bitOrder === 'descending')
+        p.bitOrder = rec.bitOrder
+      config.packet = p
+      continue
+    }
+
     if (lower === 'sankey' && typeof value === 'object' && value !== null) {
       const t: SankeyInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
@@ -652,6 +693,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
+    if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
     if (config.sankey) merged.sankey = { ...merged.sankey, ...config.sankey }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }

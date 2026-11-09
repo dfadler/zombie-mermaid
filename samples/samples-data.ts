@@ -3728,6 +3728,105 @@ kanban
   },
 
   // ══════════════════════════════════════════════════════════════════════════
+  //  PACKETS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/packet_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Packet: Basic',
+    category: 'Packet',
+    gallery: true,
+    description:
+      'A TCP header: fields in rows of 32 bits, each box labelled with its name and numbered from its first to its last bit; a longer field takes a whole row.',
+    source: `packet
+title TCP Packet
+0-15: "Source Port"
+16-31: "Destination Port"
+32-63: "Sequence Number"
+64-95: "Acknowledgment Number"
+96-99: "Data Offset"
+100-105: "Reserved"
+106: "URG"
+107: "ACK"
+108-111: "Flags"
+112-127: "Window"
+128-159: "Payload"`,
+  },
+  {
+    title: 'Packet: Bit Counts',
+    category: 'Packet',
+    description:
+      '`packet-beta` is the same diagram under its old header, and `+N` sizes a field by its bit count instead of its range.',
+    source: `packet-beta
++8: "Version"
++8: "Type"
++16: "Length"
++1: "F"
++31: "Flags"`,
+  },
+  {
+    title: 'Packet: Fields Across Rows',
+    category: 'Packet',
+    description:
+      'A field that crosses a row boundary is cut at the boundary and repeated, with its label, on every row it touches.',
+    source: `packet
+title Spanning
+0-7: "Header"
+8-39: "Payload that runs across rows"
+40-47: "Checksum"`,
+  },
+  {
+    title: 'Packet: Descending Bit Order',
+    category: 'Packet',
+    gallery: true,
+    description:
+      'The `bitOrder: descending` option (new in Mermaid 12.3.0) mirrors every row to read from its highest bit down to its lowest, the convention for hardware registers; fields keep their width.',
+    source: `%%{init: {"packet": {"bitOrder": "descending", "bitsPerRow": 16}}}%%
+packet
+title Control register
+0: "EN"
+1: "IE"
+2-3: "MODE"
+4-7: "PRESCALE"
+8-15: "RESERVED"
+16-31: "COUNT"`,
+  },
+  {
+    title: 'Packet: Narrow Rows Without Bit Numbers',
+    category: 'Packet',
+    description:
+      'The `bitsPerRow`, `bitWidth`, `rowHeight` and padding options resize the grid, and `showBits: false` drops the numbers over the boxes.',
+    source: `%%{init: {"packet": {"bitsPerRow": 8, "bitWidth": 40, "showBits": false}}}%%
+packet
+0-3: "Nibble"
+4-5: "AB"
+6: "C"
+7: "D"
+8-23: "Two bytes"`,
+  },
+  {
+    title: 'Packet: Comments And Escapes',
+    category: 'Packet',
+    description:
+      'Labels are quoted with either quote mark and take backslash escapes; `%%` starts a comment and `title` may sit between fields.',
+    source: `packet
+%% a comment
+0-3: 'single quotes' %% trailing comment
+4-7: "say \\"hi\\""
+title Escapes
+8-15: "日本語"`,
+  },
+  {
+    title: 'Packet: Empty',
+    category: 'Packet',
+    description:
+      'A bare `packet` is valid and draws nothing; a title alone draws just the title.',
+    source: `packet
+title Nothing yet`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
   //  SANKEY DIAGRAMS
   //  Each source has an ASCII golden of the same shape under
   //  packages/ascii-renderer/src/__tests__/testdata/*/sankey_*.txt.

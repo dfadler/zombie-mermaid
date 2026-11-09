@@ -1513,6 +1513,140 @@ one bar for each curve, under a ruler with a mark for every ring.
 - Curve names are shown unless `showLegend false`; both graticules look the same.
 - `accTitle` and `accDescr` are not printed.
 
+## Packet Diagrams
+
+`packet` (and its older header `packet-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/packet.html)
+and its renderer's geometry. The SVG output agrees element by element with
+`mermaid@12.3.0` (`__tests__/packet-agreement.test.ts` replays 18 renders of it).
+
+```mermaid
+packet
+title TCP Packet
+0-15: "Source Port"
+16-31: "Destination Port"
+32-63: "Sequence Number"
+```
+
+Supported: `0-15: "label"` ranges, `106: "label"` single bits, `+8: "label"` bit
+counts, `title`, `%%` comments, `accTitle` and `accDescr`, and the `packet`
+config keys `rowHeight`, `bitWidth`, `bitsPerRow`, `paddingX`, `paddingY`,
+`showBits` and `bitOrder` (`descending` mirrors each row so the highest bit is
+on the left, new in Mermaid 12.3.0), set through `%%{init}%%` or front matter.
+As in Mermaid, fields must be contiguous from bit 0 and each one ends its line,
+labels are quoted (single or double quotes, backslash escapes), a field may
+follow the header on its line, a zero-width `+0` or `end < start` is an error,
+a field crossing a row is cut at the boundary and repeated (label included) on
+each row, and at most 10000 rows are kept. A bare `packet` is valid.
+
+The SVG uses Mermaid's geometry (rows `rowHeight + paddingY` apart, boxes
+`bits * bitWidth - paddingX` wide, 10px bit numbers above the boxes, the title
+under the last row) and the theme's colours. See
+[Known differences](known-differences.md#packet-diagrams).
+
+### ASCII Packet Diagrams
+
+Mermaid has no text output for packets, so this is this library's own drawing:
+each field is a box with shared borders, its first and last bit on the top line
+and its label centred under them. A box is 2 columns per bit (3 for a long
+label if the row still fits in 120 columns); a label wider than its box ends in
+`…` (`~` in ASCII mode), and a number that does not fit is dropped.
+
+````text
+                                           TCP Packet
+┌───────────────────────────────────────────────┬───────────────────────────────────────────────┐
+│0                                            15│16                                           31│
+│                  Source Port                  │               Destination Port                │
+├───────────────────────────────────────────────┴───────────────────────────────────────────────┤
+│32                                                                                           63│
+│                                        Sequence Number                                        │
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
+
+## Requirement Diagrams
+
+`requirementDiagram` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/requirementDiagram.html)
+and its renderer's layout. `pnpm run requirement:oracle` compares the gallery samples
+box by box with `mermaid@12.3.0`; mermaid 12.2.0 (the pin and mermaid.live today)
+reads the same sources the same way.
+
+```mermaid
+requirementDiagram
+
+    requirement test_req {
+    id: 1
+    text: the test text.
+    risk: high
+    verifymethod: test
+    }
+
+    element test_entity {
+    type: simulation
+    }
+
+    test_entity - satisfies -> test_req
+````
+
+Supported: the six requirement kinds (`requirement`, `functionalRequirement`,
+`interfaceRequirement`, `performanceRequirement`, `physicalRequirement`,
+`designConstraint`) with `id`, `text`, `risk` (`low`, `medium`, `high`) and
+`verifymethod` (`analysis`, `demonstration`, `inspection`, `test`); `element`
+with `type` and `docref`; the seven relationships (`contains`, `copies`,
+`derives`, `satisfies`, `verifies`, `refines`, `traces`) written `a - r -> b` or
+`b <- r - a`; `direction TB | BT | LR | RL`; `classDef`, `class`, `style` and
+`:::`; `%%` comments, `accTitle`, `accDescr` and a front matter `title`.
+
+The grammar is stricter than it looks, and this parser is as strict as
+`mermaid@12.3.0`: a `{` ends its line and every property sits on its own line, an
+unquoted name or value stops at `: , { < > - =` (so `text: a-b` and `text: a, b`
+are errors; quote them), an unquoted name or value that starts with a keyword
+(`text: test suite`, `requirement element`) is an error, and a relationship to a
+name that was never declared is an error. A name written twice keeps its first
+definition.
+
+The SVG uses Mermaid's box geometry: a `<<Type>>` row, the bold name, a divider
+20px lower and then the `ID:`, `Text:`, `Risk:` and `Verification:` rows (an
+element's `Type:` and `Doc Ref:`), 24px per row with 10px of padding, boxes sized
+from the text with Trebuchet MS advances and kerning, `contains` as a solid line
+with a circle-plus at the container and every other relationship as a dashed
+arrow with its `<<label>>`. Layout is ELK (`registerElk`, as for ER and class
+diagrams); with the default look it agrees with Mermaid's box positions and
+drawing size on the gallery samples. Colours come from the theme. See
+[Known differences](known-differences.md#requirement-diagrams).
+
+### ASCII Requirement Diagrams
+
+Mermaid has no text mode for requirement diagrams, so the ASCII output is this
+library's own: the same boxes and labelled lines on the flowchart grid, with a
+blank row where the SVG has a divider, relationships dotted with an arrowhead and
+`contains` solid with a `●` (`o` in ASCII mode) at the container.
+
+```text
+┌──────────────────────┐
+│                      │
+│                      │
+│     <<Element>>      │
+│     test_entity      │
+│                      │
+│   Type: simulation   │
+│                      │
+└───────────┬──────────┘
+            ┆
+            ┆
+      <<satisfies>>
+            ┆
+            ▼
+┌──────────────────────┐
+│                      │
+│   <<Requirement>>    │
+│       test_req       │
+│                      │
+│ ID: 1                │
+│ Text: the test text. │
+│ Risk: High           │
+│ Verification: Test   │
+│                      │
+└──────────────────────┘
+```
+
 ## Sankey diagrams
 
 `sankey-beta` (or `sankey`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/sankey.html)
@@ -1579,7 +1713,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Type                                                                  | Header                                                                                                          |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
-| Packet                                                                | `packet` / `packet-beta`                                                                                        |
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
 | Git graph                                                             | `gitGraph`                                                                                                      |
