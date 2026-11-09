@@ -168,7 +168,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "timeline", "gitgraph", "requirement"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "requirement"];
 
 // @public
 export interface DiagramColors {
@@ -375,6 +375,7 @@ export interface InitConfig {
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;
     ignored: string[];
+    kanban?: KanbanInitConfig;
     pieDonutHole?: number;
     pieHighlightSlice?: string;
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
@@ -410,6 +411,14 @@ export function isValidCssColor(value: string): boolean;
 
 // @public
 export function isWideChar(char: string): boolean;
+
+// @public
+export interface KanbanInitConfig {
+    // (undocumented)
+    sectionWidth?: number;
+    // (undocumented)
+    ticketBaseUrl?: string;
+}
 
 // @public
 export interface LayoutCache {

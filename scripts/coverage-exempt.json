@@ -278,6 +278,9 @@
     "file": "scripts/lib/gitgraph-measure.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the gitgraph-oracle and layout-oracle CLIs",
     "maxLines": 70
+    "file": "scripts/kanban-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/kanban-agreement.ts",
+    "maxLines": 80
   },
   {
     "file": "scripts/timeline-oracle.ts",

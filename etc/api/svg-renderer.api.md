@@ -17,6 +17,7 @@ import { ErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ErRenderOptions } from '@zombie-mermaid/core';
 import { FlowchartRenderOptions } from '@zombie-mermaid/core';
 import { GitGraph } from '@zombie-mermaid/mermaid-parser';
+import { Kanban } from '@zombie-mermaid/mermaid-parser';
 import { LayoutCache } from '@zombie-mermaid/core';
 import { LayoutOptions } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
@@ -29,6 +30,7 @@ import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGitGraph } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGraph } from '@zombie-mermaid/core';
+import { PositionedKanban } from '@zombie-mermaid/mermaid-parser';
 import { PositionedMindmap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedNode } from '@zombie-mermaid/core';
 import { PositionedPieChart } from '@zombie-mermaid/mermaid-parser';
@@ -229,6 +231,18 @@ export function hasLabelBelowIcon(a: {
 // @public
 export const INLINE_CENTERED_EDGE_LABEL: LayoutOptions;
 
+// @public
+export const KANBAN: {
+    readonly sectionWidth: 200;
+    readonly padding: 10;
+    readonly lineHeight: 24;
+    readonly cardPadding: 20;
+    readonly minHeading: 25;
+    readonly minColumn: 50;
+    readonly viewBoxPadding: 10;
+    readonly cornerRadius: 5;
+};
+
 export { LayoutCache }
 
 // @public
@@ -245,6 +259,9 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph;
 
 // @public
 export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
+
+// @public
+export function layoutKanban(kanban: Kanban): PositionedKanban;
 
 // @public
 export function layoutMindmap(mindmap: Mindmap): PositionedMindmap;
@@ -356,6 +373,9 @@ export function renderErSvg(diagram: PositionedErDiagram, colors: DiagramColors,
 
 // @public
 export function renderGitGraphSvg(gg: PositionedGitGraph, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderKanbanSvg(board: PositionedKanban, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public @deprecated (undocumented)
 export const renderMermaid: typeof renderMermaidSVGAsync;
