@@ -76,8 +76,12 @@ const unescape = (s: string): string =>
     .replace(/&amp;/g, '&')
 
 const attrOf = (tag: string, name: string): string | undefined => {
-  const m = new RegExp(`\\s${name}="([^"]*)"`).exec(tag)
-  return m?.[1]
+  // A plain scan: attribute names are fixed here, and the tag is untrusted markup.
+  const key = ` ${name}="`
+  const at = tag.indexOf(key)
+  if (at < 0) return undefined
+  const from = at + key.length
+  return tag.slice(from, tag.indexOf('"', from))
 }
 
 const numbersOf = (tag: string): number[] => {
