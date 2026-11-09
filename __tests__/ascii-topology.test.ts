@@ -182,6 +182,13 @@ describe('ER measure', () => {
     expect(s.B!.cross).toBeGreaterThan(s.A!.cross)
   })
 
+  it('ignores a border with no row under it and a repeated label', () => {
+    const text = '┌───┐ ┌───┐\n│ A │ │ A │\n└───┘ └───┘\n┌───┐'
+    const s = readErText(text, { A: 'A' })
+    expect(Object.keys(s)).toEqual(['A'])
+    expect(s.A!.cross).toBeLessThan(5)
+  })
+
   it('scores a fan-out as exact, with layers and order counted', () => {
     const c = measureSample(src)
     expect(isExact(c)).toBe(true)

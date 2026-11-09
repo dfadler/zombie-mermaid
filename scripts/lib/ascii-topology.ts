@@ -263,12 +263,12 @@ export function measureEr(
     | undefined
   registerAsciiLayout({
     er: (d) => {
-      const hints = asciiLayoutProvider.er!(d)
+      const hints = asciiLayoutProvider.er!(d)!
       seen = {
         labels: Object.fromEntries(d.entities.map((e) => [e.id, e.label])),
         hints,
       }
-      return hints && feed(hints)
+      return feed(hints)
     },
   })
   const text = renderMermaidASCII(source)
