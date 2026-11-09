@@ -46,6 +46,7 @@ describe('list_diagram_types', () => {
       mindmap: 'mindmap\n  root',
       gantt: 'gantt\nA :a, 2024-01-01, 1d',
       timeline: 'timeline\n2002 : LinkedIn',
+      sankey: 'sankey-beta\nA,B,1',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

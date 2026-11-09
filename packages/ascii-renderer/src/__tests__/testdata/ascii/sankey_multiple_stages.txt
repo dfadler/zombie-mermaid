@@ -1,0 +1,22 @@
+sankey-beta
+Revenue,Costs,60
+Revenue,Profit,40
+Costs,Salaries,35
+Costs,Hosting,15
+Costs,Marketing,10
+Profit,Reinvested,25
+Profit,Dividends,15
+Reinvested,Hosting,5
+---
+Revenue  100
+  +-> Costs       ####################   60
+  `-> Profit      #############          40
+Costs  60
+  +-> Salaries    ###########|           35
+  +-> Hosting     #####                  15
+  `-> Marketing   ###                    10
+Profit  40
+  +-> Reinvested  ########               25
+  `-> Dividends   #####                  15
+Reinvested  25
+  `-> Hosting     #|                      5

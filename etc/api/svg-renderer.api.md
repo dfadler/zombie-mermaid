@@ -31,11 +31,13 @@ import { PositionedMindmap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedNode } from '@zombie-mermaid/core';
 import { PositionedPieChart } from '@zombie-mermaid/mermaid-parser';
 import { PositionedQuadrantChart } from '@zombie-mermaid/mermaid-parser';
+import { PositionedSankey } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedTimeline } from '@zombie-mermaid/mermaid-parser';
 import { PositionedXYChart } from '@zombie-mermaid/mermaid-parser';
 import { QuadrantChart } from '@zombie-mermaid/mermaid-parser';
 import { RenderOptions } from '@zombie-mermaid/core';
+import { Sankey } from '@zombie-mermaid/mermaid-parser';
 import { SequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { SequenceRenderOptions } from '@zombie-mermaid/core';
 import { SvgEmitOptions } from '@zombie-mermaid/core';
@@ -247,6 +249,9 @@ export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedP
 // @public (undocumented)
 export function layoutQuadrantChart(chart: QuadrantChart): PositionedQuadrantChart;
 
+// @public
+export function layoutSankey(sk: Sankey): PositionedSankey;
+
 // @public (undocumented)
 export function layoutSequenceDiagram(input: SequenceDiagram, options?: SequenceRenderOptions): PositionedSequenceDiagram;
 
@@ -365,6 +370,9 @@ export function renderPieSvg(chart: PositionedPieChart, colors: DiagramColors, f
 export function renderQuadrantSvg(chart: PositionedQuadrantChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
+export function renderSankeySvg(sk: PositionedSankey, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderSequenceSvg(diagram: PositionedSequenceDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
@@ -381,6 +389,20 @@ export function resolveCssColors(svg: string, colors: DiagramColors): string;
 
 // @public
 export function resolveFontSizes(overrides?: FontSizeOptions): FontSizes;
+
+// @public (undocumented)
+export const SANKEY: {
+    readonly width: 600;
+    readonly height: 400;
+    readonly nodeWidth: 10;
+    readonly nodePadding: 12;
+    readonly valuePadding: 15;
+    readonly fontSize: 14;
+    readonly labelGap: 6;
+    readonly ascent: 13;
+    readonly descent: 3;
+    readonly iterations: 6;
+};
 
 // @public
 export const SELF_LOOP_CONTROL = 60;

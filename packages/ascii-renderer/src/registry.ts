@@ -45,6 +45,7 @@ import { renderQuadrantAscii } from './quadrant.ts'
 import { renderMindmapAscii } from './mindmap.ts'
 import { renderGanttAscii } from './gantt.ts'
 import { renderTimelineAscii } from './timeline.ts'
+import { renderSankeyAscii } from './sankey.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -113,4 +114,6 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderGanttAscii(text, config, colorMode, theme),
   timeline: (text, config, colorMode, theme) =>
     renderTimelineAscii(text, config, colorMode, theme),
+  sankey: (text, config, colorMode, theme) =>
+    renderSankeyAscii(text, config, colorMode, theme),
 }

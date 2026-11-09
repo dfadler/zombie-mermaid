@@ -714,6 +714,28 @@ matter share one code path. SVG only: ASCII has no pixel padding, so these keys 
 - **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
 - **Not yet measured:** `xyChart`, `c4` and `architecture` blocks, tracked in separate issues.
 
+## Sankey diagrams
+
+Checked against mermaid 12.3.0 (12.2.0, the pin, lays the samples out identically):
+node and ribbon positions, label positions and the viewBox agree to 0.01px on the gallery
+samples and the edge cases (zero and negative flows, duplicates, every alignment, outlined
+labels, custom sizes), measured with a throwaway script, not yet a checked-in oracle.
+
+- **Palette.** Nodes use the theme accent and its series shades; mermaid uses d3's Tableau10
+  (and its `nodeColors` and a literal `linkColor` are used as given here too).
+- **Label measurement.** The viewBox grows to fit the labels, whose width is a sum of Trebuchet
+  MS advances (as for timelines) with the 14px line box mermaid's `getBBox` reports there (13
+  above the baseline, 3 below). On a machine without Trebuchet mermaid's own width differs a few px.
+- **Text values.** Mermaid draws `A,B,abc` with `NaN` geometry; here it is a parse error.
+- **`accTitle` / `accDescr`.** Accepted and used for the SVG's accessible name like every
+  type; mermaid's sankey grammar rejects the lines.
+- **Sizing.** `useMaxWidth` is ignored: the SVG carries a fixed `width` and `height`.
+- **HTML in names.** Mermaid runs names through its HTML sanitiser (`<script>…</script>` is removed, `<img onerror>` loses its handler);
+  names are drawn as plain text here.
+- **Other renderers.** mermaid.live and GitHub: not checked on this run (no signed-in browser tool
+  connected); only the headless mermaid builds above were compared.
+- **ASCII.** Mermaid has no ASCII output; the flow list above is this library's own.
+
 ## Timelines
 
 Checked against mermaid 12.3.0 with `pnpm run timeline:oracle` (12.2.0, the pin, renders

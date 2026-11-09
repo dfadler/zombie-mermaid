@@ -1260,6 +1260,65 @@ spine for both `timeline` and `timeline TD`.
 - A `section` is a `[name]` row; markers and headings use the theme accent.
 - `accTitle` and `accDescr` are not printed.
 
+## Sankey diagrams
+
+`sankey-beta` (or `sankey`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/sankey.html)
+and its renderer's layout, which is [d3-sankey](https://github.com/d3/d3-sankey)'s. Checked
+against `mermaid@12.3.0` (the pin, 12.2.0, lays the same sources out identically).
+
+```mermaid
+sankey-beta
+
+Agricultural 'waste',Bio-conversion,124.729
+Bio-conversion,Liquid,0.597
+Bio-conversion,Solid,26.862
+Bio-conversion,Gas,280.322
+Bio-conversion,Losses,3
+```
+
+Supported: `source,target,value` rows (a field may be quoted to hold commas, with
+`""` for a quote), `%%` comments, and the `sankey` init keys `linkColor`
+(`gradient`, `source`, `target` or a CSS colour), `nodeAlignment` (`justify`,
+`left`, `right`, `center`), `showValues`, `prefix`, `suffix`, `labelStyle`
+(`legacy`, `outlined`), `width`, `height`, `nodeWidth`, `nodePadding` and
+`nodeColors`. As in Mermaid, names are printable ASCII only (even inside
+quotes), the header must be alone on its line, a row has exactly three
+non-empty fields, a node linked back to itself (directly or through others) is
+a "circular link" error, and a repeated pair stays two links. `accTitle` and
+`accDescr` lines are accepted and not printed (Mermaid's sankey grammar has no
+such lines and rejects them).
+
+The SVG uses d3-sankey's layout ported to TypeScript (same iteration, same
+numbers) and Mermaid's drawing: bars, labels beside them with the value on the
+same line, then the ribbons, each a stroked cubic path as wide as its flow
+(never under 1px). The viewBox is the bounding box of the drawing, so long
+labels widen it, as there. Colours come from the theme (the accent and its
+series shades, one per node) instead of Mermaid's Tableau palette. See
+[Known differences](known-differences.md#sankey-diagrams).
+
+### ASCII sankey diagrams
+
+Mermaid has no text mode for sankey diagrams and ribbons do not survive a
+character grid, so the ASCII output is this library's own design: each source
+node once, with a row per outgoing flow whose bar is that flow's share of the
+largest one.
+
+```text
+Agricultural 'waste'  124.73
+  └─▶ Bio-conversion  ████████▏              124.73
+Bio-conversion  310.78
+  ├─▶ Liquid          ▏                         0.6
+  ├─▶ Solid           █▏                      26.86
+  ├─▶ Gas             ████████████████████   280.32
+  └─▶ Losses          ▏                           3
+```
+
+- Node values are the larger of the incoming and outgoing totals, as in the
+  SVG, written with `prefix` and `suffix`; `showValues: false` leaves all
+  numbers out. A positive flow always gets at least a thin bar (`▏`, `|` in
+  ASCII mode).
+- Bars use the theme accent. A cycle throws "circular link", as the SVG does.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1277,7 +1336,7 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Radar                                                                 | `radar-beta`                                                                                                    |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
-| Sankey, Block                                                         | `sankey-beta`, `block-beta` (12.2.0 rejects them with an empty body; header names per upstream docs)            |
+| Block                                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)                              |
 
 ## Accessibility
 

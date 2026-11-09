@@ -35,6 +35,23 @@ export interface TimelineInitConfig {
   disableMulticolor?: boolean
 }
 
+/** The `sankey.*` init keys that change mermaid's output (a bad value is dropped). */
+export interface SankeyInitConfig {
+  width?: number
+  height?: number
+  nodeWidth?: number
+  nodePadding?: number
+  nodeAlignment?: 'left' | 'right' | 'center' | 'justify'
+  /** `gradient`, `source`, `target` or any CSS colour. */
+  linkColor?: string
+  showValues?: boolean
+  prefix?: string
+  suffix?: string
+  labelStyle?: 'legacy' | 'outlined'
+  /** Node id -> CSS colour. */
+  nodeColors?: Record<string, string>
+}
+
 /** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
 const SEQUENCE_NUMBER_KEYS = new Set<string>([
   'width',
@@ -219,6 +236,8 @@ export interface InitConfig {
   sequenceLayout?: SequenceInitLayout
   /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
   timeline?: TimelineInitConfig
+  /** The `sankey` block (see {@link SankeyInitConfig}). */
+  sankey?: SankeyInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -511,6 +530,42 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'sankey' && typeof value === 'object' && value !== null) {
+      const t: SankeyInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'width',
+        'height',
+        'nodeWidth',
+        'nodePadding',
+      ] as const) {
+        const v = rec[k]
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
+      }
+      const align = rec.nodeAlignment
+      if (
+        align === 'left' ||
+        align === 'right' ||
+        align === 'center' ||
+        align === 'justify'
+      )
+        t.nodeAlignment = align
+      if (typeof rec.linkColor === 'string') t.linkColor = rec.linkColor
+      if (typeof rec.showValues === 'boolean') t.showValues = rec.showValues
+      if (typeof rec.prefix === 'string') t.prefix = rec.prefix
+      if (typeof rec.suffix === 'string') t.suffix = rec.suffix
+      if (rec.labelStyle === 'legacy' || rec.labelStyle === 'outlined')
+        t.labelStyle = rec.labelStyle
+      if (typeof rec.nodeColors === 'object' && rec.nodeColors !== null) {
+        const colors: Record<string, string> = {}
+        for (const [id, c] of Object.entries({ ...rec.nodeColors }))
+          if (typeof c === 'string') colors[id] = c
+        t.nodeColors = colors
+      }
+      config.sankey = t
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -577,6 +632,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
+    if (config.sankey) merged.sankey = { ...merged.sankey, ...config.sankey }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)

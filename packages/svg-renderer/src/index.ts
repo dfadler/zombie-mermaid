@@ -141,6 +141,8 @@ export {
   wrapTimelineText,
 } from './timeline/layout.ts'
 export { renderTimelineSvg } from './timeline/renderer.ts'
+export { SANKEY, layoutSankey } from './sankey/layout.ts'
+export { renderSankeySvg } from './sankey/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

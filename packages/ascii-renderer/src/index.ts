@@ -15,6 +15,7 @@
 //   - Mindmaps (mindmap) — an indented tree with shape delimiters (see mindmap.ts)
 //   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
 //   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
+//   - Sankey diagrams (sankey-beta) — each source with a bar per outgoing flow (see sankey.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'

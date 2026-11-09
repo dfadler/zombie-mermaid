@@ -1,0 +1,7 @@
+Budget  $245k
+  ├─▶ Engineering  ████████████████████   $120k
+  ├─▶ Design       ███████▏                $45k
+  └─▶ Operations   █████████████           $80k
+Engineering  $120k
+  ├─▶ Salaries     ████████████████▏      $100k
+  └─▶ Tools        ███                     $20k
