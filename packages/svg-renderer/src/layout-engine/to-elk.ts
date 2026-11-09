@@ -1051,6 +1051,13 @@ function subgraphToElk(
       : `(${titleWidth}, 0)`
   }
 
+  if (sg.children.some((c) => c.region)) {
+    // Mermaid 12.3.0 lays concurrent regions out two across in written order,
+    // wrapping the third under the first (#2899); ELK's layered packing puts
+    // them in one row in shuffled order.
+    layoutOptions['elk.algorithm'] = 'org.eclipse.elk.rectpacking'
+  }
+
   if (usesMermaidElkPipeline(graph)) {
     layoutOptions['elk.layered.cycleBreaking.strategy'] = 'DEPTH_FIRST'
     layoutOptions['elk.spacing.portsSurrounding'] = PORTS_SURROUNDING

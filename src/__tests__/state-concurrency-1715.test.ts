@@ -6,6 +6,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid, renderMermaidASCII, renderMermaidSVG } from '../index.ts'
+import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
 
 const SRC = `stateDiagram-v2
     state Work {
@@ -78,5 +79,26 @@ describe('state concurrency regions (#1715)', () => {
     for (const id of ['A1', 'A2', 'B1', 'B2']) expect(svg).toContain(`>${id}<`)
     expect(svg.match(/class="subgraph subgraph-region"/g)).toHaveLength(2)
     expect(svg.match(/stroke-dasharray="6 4"/g)).toHaveLength(2)
+  })
+
+  // mermaid 12.3.0 (#2899): regions in written order, two across, the third
+  // wrapped under the first.
+  it.each([3, 4, 5])('%i regions wrap two across in written order', (n) => {
+    const ids = 'ABCDE'.slice(0, n).split('')
+    const src = `stateDiagram-v2
+  state W {
+${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
+  }`
+    const g = layoutGraphSync(parseMermaid(src))
+    const at = (id: string) => g.nodes.find((x) => x.id === id)!
+    ids.forEach((id, i) => {
+      const col = i % 2
+      const row = Math.floor(i / 2)
+      const a = at(ids[col]!)
+      expect(at(id).x).toBeCloseTo(a.x, 0)
+      expect(at(id).y).toBeCloseTo(at(ids[row * 2]!).y, 0)
+      if (col === 1) expect(at(id).x).toBeGreaterThan(at(ids[0]!).x)
+      if (row > 0) expect(at(id).y).toBeGreaterThan(at(ids[0]!).y)
+    })
   })
 })
