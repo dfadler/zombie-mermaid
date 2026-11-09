@@ -155,6 +155,21 @@ export interface ErInitLayout {
   minEntityWidth?: number
 }
 
+/**
+ * `%%{init: {"architecture": {...}}}%%` keys, in mermaid's own units:
+ * `padding` (default 40) pads the page and every group, `iconSize` (default
+ * 80) is a service tile's edge and sets the label wrap, `fontSize` (default
+ * 16) sets the room a label takes below its tile, and
+ * `idealEdgeLengthMultiplier` (default 1.5) sets the cell pitch to
+ * `iconSize * (1 + multiplier)`.
+ */
+export interface ArchitectureInitLayout {
+  padding?: number
+  iconSize?: number
+  fontSize?: number
+  idealEdgeLengthMultiplier?: number
+}
+
 const PIE_LEGEND_POSITIONS = new Set([
   'left',
   'right',
@@ -294,6 +309,8 @@ export interface InitConfig {
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
   erLayout?: ErInitLayout
+  /** The `architecture` block: `padding` (0..1e4), `iconSize` and `fontSize` (1..1e4) and `idealEdgeLengthMultiplier` (0.1..100); a bad value is dropped. */
+  architectureLayout?: ArchitectureInitLayout
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
@@ -547,6 +564,24 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (
+      lower === 'architecture' &&
+      typeof value === 'object' &&
+      value !== null
+    ) {
+      const rec: Record<string, unknown> = { ...value }
+      const layout: ArchitectureInitLayout = {}
+      const inRange = (v: unknown, lo: number, hi = 1e4): v is number =>
+        typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi
+      if (inRange(rec.padding, 0)) layout.padding = rec.padding
+      if (inRange(rec.iconSize, 1)) layout.iconSize = rec.iconSize
+      if (inRange(rec.fontSize, 1)) layout.fontSize = rec.fontSize
+      if (inRange(rec.idealEdgeLengthMultiplier, 0.1, 100))
+        layout.idealEdgeLengthMultiplier = rec.idealEdgeLengthMultiplier
+      config.architectureLayout = layout
+      continue
+    }
+
     if (lower === 'sequence' && typeof value === 'object' && value !== null) {
       for (const [sk, sv] of Object.entries({ ...value })) {
         const sl = sk.toLowerCase()
@@ -768,6 +803,11 @@ export function extractInitConfig(lines: string[]): InitConfig {
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)
       merged.erLayout = { ...merged.erLayout, ...config.erLayout }
+    if (config.architectureLayout)
+      merged.architectureLayout = {
+        ...merged.architectureLayout,
+        ...config.architectureLayout,
+      }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }
     if (config.themeVariables) {

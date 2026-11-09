@@ -818,8 +818,17 @@ const ARCH_GROUP_DASH = 8
  * An architecture service as Mermaid draws it (#2518): an 80px tile with its
  * icon glyph, or a dashed empty box when the service names no icon.
  */
-function renderServiceTile(x: number, y: number, icon: string): string {
-  const at = f`transform="translate(${x} ${y})"`
+function renderServiceTile(
+  x: number,
+  y: number,
+  icon: string,
+  size: number = TILE,
+): string {
+  // `architecture.iconSize` scales the 80-unit tile and its glyph together.
+  const at =
+    size === TILE
+      ? f`transform="translate(${x} ${y})"`
+      : f`transform="translate(${x} ${y}) scale(${size / TILE})"`
   if (icon === '') {
     return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`
   }
@@ -843,7 +852,8 @@ function renderNodeShapeBase(
   stateDiagram: boolean,
 ): string {
   const { x, y, width, height, shape } = node
-  if (node.icon !== undefined) return renderServiceTile(x, y, node.icon)
+  if (node.icon !== undefined)
+    return renderServiceTile(x, y, node.icon, node.width)
   // mermaid@12.3.0 (and 12.2.0) draw `sm-circ` in the default node colours whatever
   // `style` or `classDef` says, so the dot never reads the inline style.
   const inlineStyle = shape === 'small-circle' ? undefined : node.inlineStyle

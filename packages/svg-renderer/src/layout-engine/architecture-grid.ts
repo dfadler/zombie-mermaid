@@ -10,6 +10,7 @@
  */
 
 import type {
+  ArchitectureInitLayout,
   MermaidGraph,
   MermaidSubgraph,
   Point,
@@ -23,36 +24,76 @@ import { TILE } from '../architecture-icons.ts'
 import { FONT_SIZES, FONT_WEIGHTS } from '../styles.ts'
 import { DEFAULTS } from './constants.ts'
 
-/** Centre-to-centre distance between neighbouring cells (a gap of 120 between tiles). */
-const PITCH = 200
-/**
- * Space a group leaves between its border and the services it holds, measured
- * on mermaid@12.3.0 (a lone service in a group: 165 x 182 around an 80px tile).
- * The bottom also holds the label (`LABEL_DROP`).
- */
-const GROUP_PADDING = 42.5
-/** Space an outer group leaves around the groups it holds (mermaid@12.3.0: 248 around 165, 331 around 248). */
-const NESTED_PADDING = 41.5
-/** A service label hangs this far below its tile (182 - 42.5 - 80 - 42.5 = 17). */
-const LABEL_DROP = 17
-/** The label's own bottom edge below its tile, which sizes the canvas (mermaid@12.3.0 viewBox: 24.5 + 40 page padding). */
-const LABEL_REACH = 24.5
-/** Mermaid wraps a service label at 1.5 tiles (`iconSize * 1.5`). */
-const LABEL_WRAP = TILE * 1.5
+/** mermaid@12.3.0 defaults for `architecture.padding` / `iconSize` / `fontSize`. */
+const DEFAULT_PADDING = 40
+const DEFAULT_FONT_SIZE = 16
+const DEFAULT_EDGE_MULTIPLIER = 1.5
 /** Mermaid draws an architecture edge 3px wide (`archEdgeWidth`). */
 const EDGE_WIDTH = '3'
 
-const labelWidth = (text: string): number =>
-  measureTextWidth(text, FONT_SIZES.nodeLabel, FONT_WEIGHTS.nodeLabel)
+/**
+ * Every length that follows the `architecture` init keys, from mermaid@12.3.0
+ * measured with each key swept (defaults in brackets):
+ * - `pitch(e)`: centre-to-centre distance of neighbouring cells with `e` group
+ *   borders between them. Free cells sit `iconSize * (1 + idealEdgeLengthMultiplier)`
+ *   apart [200]. Across borders mermaid's force layout instead keeps a gap
+ *   between boxes, about 77 at the default tile and 0.55 more per px of tile
+ *   (fitted to tiles 20..120, within 8px), so the pitch is the tile, the gap and
+ *   the group paddings crossed [one border 200, two 241.5, three 283], unless
+ *   `multiplier * iconSize` is longer. It is no longer pinned to the free pitch:
+ *   `padding: 10` gives 172 for one border. Below a multiplier of 1.5 the
+ *   force layout also compresses the free pitch a little (up to 6px in 0.1..1).
+ * - `groupPad`: a group border's distance from the services it holds, `padding`
+ *   + 2.5 [42.5]; `nestedPad` around inner groups, `padding` + 1.5 [41.5].
+ * - `labelDrop`: the bottom of a group below a service tile, `fontSize` + 1 [17];
+ *   `labelReach` the label's bottom edge below its tile, `fontSize` + 8.5 [24.5].
+ * - `labelWrap`: a service label wraps at 1.5 tiles.
+ */
+function metrics(layout: ArchitectureInitLayout | undefined) {
+  const pad = layout?.padding ?? DEFAULT_PADDING
+  const tile = layout?.iconSize ?? TILE
+  const fontSize = layout?.fontSize ?? DEFAULT_FONT_SIZE
+  const groupPad = pad + 2.5
+  const nestedPad = pad + 1.5
+  const multiplier =
+    layout?.idealEdgeLengthMultiplier ?? DEFAULT_EDGE_MULTIPLIER
+  const pitch = (borders: number): number => {
+    if (borders === 0) return tile * (1 + multiplier)
+    const gap = (borders === 1 ? 77.5 : 76.5) + 0.552 * (tile - TILE)
+    const crossed =
+      groupPad * Math.min(borders, 2) + nestedPad * Math.max(0, borders - 2)
+    return Math.max(tile + gap + crossed, multiplier * tile)
+  }
+  return {
+    pad,
+    tile,
+    fontSize,
+    groupPad,
+    nestedPad,
+    pitch,
+    labelDrop: fontSize + 1,
+    labelReach: fontSize + 8.5,
+    labelWrap: tile * 1.5,
+  }
+}
+type Metrics = ReturnType<typeof metrics>
 
-/** Break a label into lines no wider than `LABEL_WRAP`; a longer single word stays whole. */
-function wrapLabel(label: string): string[] {
+/** A label's width, scaled with `architecture.fontSize` from the default (16) the sizes below were measured at. */
+const labelWidth = (text: string, fontSize: number): number =>
+  measureTextWidth(
+    text,
+    FONT_SIZES.nodeLabel * (fontSize / DEFAULT_FONT_SIZE),
+    FONT_WEIGHTS.nodeLabel,
+  )
+
+/** Break a label into lines no wider than `labelWrap`; a longer single word stays whole. */
+function wrapLabel(label: string, m: Metrics): string[] {
   const lines: string[] = []
   for (const para of label.split('\n')) {
     let line = ''
     for (const word of para.split(/\s+/).filter(Boolean)) {
       const next = line ? `${line} ${word}` : word
-      if (line && labelWidth(next) > LABEL_WRAP) {
+      if (line && labelWidth(next, m.fontSize) > m.labelWrap) {
         lines.push(line)
         line = word
       } else line = next
@@ -121,9 +162,9 @@ function ancestors(sgs: MermaidSubgraph[], id: string): string[] {
 }
 
 /**
- * Coordinate of each index on one axis: `PITCH` apart, plus
- * `NESTED_PADDING` for every group border between two neighbours beyond the
- * first. Mermaid's fcose keeps 120px between the tiles of neighbours and 75px
+ * Coordinate of each index on one axis: `pitch` apart, plus
+ * `firstBorder` for the second group border between two neighbours and
+ * `nestedPad` for each one beyond. Mermaid's fcose keeps 120px between the tiles of neighbours and 75px
  * (`nodeSeparation`) between a border and the next box, so one border (a service
  * next to a group) costs nothing, two (group beside group) +43 and three +80,
  * measured on mermaid@12.3.0.
@@ -132,6 +173,7 @@ function axisCoords(
   spans: Map<string, [number, number]>,
   lo: number,
   hi: number,
+  m: Metrics,
 ): number[] {
   const at = [0]
   for (let i = lo; i < hi; i++) {
@@ -139,17 +181,19 @@ function axisCoords(
     for (const [from, to] of spans.values()) {
       if (from <= i !== from <= i + 1 || to >= i !== to >= i + 1) edges++
     }
-    at.push(
-      at[at.length - 1]! + PITCH + NESTED_PADDING * Math.max(0, edges - 1),
-    )
+    at.push(at[at.length - 1]! + m.pitch(edges))
   }
   return at
 }
 
 export function layoutArchitectureGrid(
   graph: MermaidGraph,
-  padding: number = DEFAULTS.padding,
+  /** The caller's page padding; unset, `architecture.padding` (as in mermaid), then 40. */
+  pagePadding?: number,
+  layout?: ArchitectureInitLayout,
 ): PositionedGraph {
+  const m = metrics(layout)
+  const padding = pagePadding ?? layout?.padding ?? DEFAULTS.padding
   const horizontal = graph.direction === 'LR' || graph.direction === 'RL'
   const cell = new Map<string, [number, number]>()
   for (const [id, n] of graph.nodes) {
@@ -174,39 +218,39 @@ export function layoutArchitectureGrid(
   const ys = [...cell.values()].map((c) => c[1])
   const x0 = Math.min(...xs)
   const y0 = Math.min(...ys)
-  const colX = axisCoords(spanX, x0, Math.max(...xs))
-  const rowY = axisCoords(spanY, y0, Math.max(...ys))
+  const colX = axisCoords(spanX, x0, Math.max(...xs), m)
+  const rowY = axisCoords(spanY, y0, Math.max(...ys), m)
 
   const nodes: PositionedNode[] = []
   const reach = new Map<string, Box>() // What each node occupies, label included.
   const body = new Map<string, Box>() // What an edge attaches to.
   for (const [id, n] of graph.nodes) {
     const [cx, cy] = cell.get(id)!
-    const size = n.shape === 'junction' ? 2 : TILE
+    const size = n.shape === 'junction' ? 2 : m.tile
     const x = colX[cx - x0]! - size / 2
     const y = rowY[cy - y0]! - size / 2
     const box = { x, y, width: size, height: size }
     body.set(id, box)
     // A service's label hangs below its tile, wrapped, and may be wider than it.
-    const lines = n.icon === undefined ? [] : wrapLabel(n.label)
-    const textW = Math.max(0, ...lines.map(labelWidth))
+    const lines = n.icon === undefined ? [] : wrapLabel(n.label, m)
+    const textW = Math.max(0, ...lines.map((l) => labelWidth(l, m.fontSize)))
     const spread = Math.max(0, (textW - size) / 2)
     reach.set(
       id,
       n.shape === 'junction'
         ? // Mermaid lays a junction out as a full tile, so groups pad around that.
           {
-            x: x + size / 2 - TILE / 2,
-            y: y + size / 2 - TILE / 2,
-            width: TILE,
-            height: TILE,
+            x: x + size / 2 - m.tile / 2,
+            y: y + size / 2 - m.tile / 2,
+            width: m.tile,
+            height: m.tile,
           }
         : {
             x: x - spread,
             y,
             width: size + spread * 2,
             // Wrapped lines do not grow the box: Mermaid's padding holds them.
-            height: size + LABEL_DROP,
+            height: size + m.labelDrop,
           },
     )
     nodes.push({
@@ -234,17 +278,17 @@ export function layoutArchitectureGrid(
     let inner: Box | undefined
     for (const c of children) inner = union(inner, c)
     const parts = [
-      ...(held ? [pad(held, GROUP_PADDING)] : []),
-      ...(inner ? [pad(inner, NESTED_PADDING)] : []),
+      ...(held ? [pad(held, m.groupPad)] : []),
+      ...(inner ? [pad(inner, m.nestedPad)] : []),
     ]
     const box = parts.reduce<Box | undefined>(
       (u, p) => union(u, p),
       undefined,
     ) ?? {
-      x: -GROUP_PADDING,
-      y: -GROUP_PADDING,
-      width: GROUP_PADDING * 2,
-      height: GROUP_PADDING * 2,
+      x: -m.groupPad,
+      y: -m.groupPad,
+      width: m.groupPad * 2,
+      height: m.groupPad * 2,
     }
     body.set(sg.id, box)
     return {
@@ -286,7 +330,7 @@ export function layoutArchitectureGrid(
   }
   for (const n of nodes) {
     if (n.icon !== undefined)
-      maxY = Math.max(maxY, n.y + n.height + LABEL_REACH)
+      maxY = Math.max(maxY, n.y + n.height + m.labelReach)
   }
   for (const b of body.values()) {
     minX = Math.min(minX, b.x)

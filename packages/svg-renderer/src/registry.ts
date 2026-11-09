@@ -434,13 +434,17 @@ const architectureModule: DiagramModule<
   PositionedFlowchart
 > = {
   type: 'architecture',
-  parse: parseArchitecture,
+  parse(lines, text) {
+    const layout = extractInitConfig(text.split(/\r\n?|\n/)).architectureLayout
+    return { ...parseArchitecture(lines), ...(layout && { layout }) }
+  },
   layoutForSvg(diagram, options) {
     // No direction override: ports place every service (#2912).
     return {
       graph: layoutArchitectureGrid(
         architectureToGraph(diagram),
         options.padding,
+        diagram.layout,
       ),
       curve: 'linear',
     }
