@@ -20,6 +20,18 @@ describe('check-golden-provenance', () => {
   it('covers every golden tracked in this checkout', () => {
     expect(main()).toBe(0)
   })
+  it('runs main() and sets the exit code when invoked as the script', async () => {
+    const [argv1, code] = [process.argv[1], process.exitCode]
+    process.argv[1] = 'scripts/check-golden-provenance.ts'
+    process.exitCode = 7
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.resetModules()
+    await import('../scripts/check-golden-provenance.ts?as-script')
+    expect(process.exitCode).toBe(0)
+    log.mockRestore()
+    process.argv[1] = argv1!
+    process.exitCode = code
+  })
   it('exits 1 and reports a golden that has no entry', () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(main(['pkg/__snapshots__/new.snap'])).toBe(1)
