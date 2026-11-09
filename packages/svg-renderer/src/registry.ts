@@ -62,6 +62,7 @@ import {
   parseQuadrantChart,
   parseGantt,
   parseTimeline,
+  parseRadar,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -85,6 +86,8 @@ import type {
   PositionedGanttChart,
   Timeline,
   PositionedTimeline,
+  Radar,
+  PositionedRadar,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -106,6 +109,8 @@ import { layoutGantt } from './gantt/layout.ts'
 import { renderGanttSvg } from './gantt/renderer.ts'
 import { layoutTimeline } from './timeline/layout.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutRadar } from './radar/layout.ts'
+import { renderRadarSvg } from './radar/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -546,6 +551,30 @@ const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
 }
 
 /**
+ * Radar charts parse from the raw `text` (Mermaid's grammar has no `;`
+ * statement separator and a label may contain one), then lay out to
+ * Mermaid's fixed 700 x 700 geometry. No theme variables or interactivity
+ * apply.
+ */
+const radarModule: DiagramModule<Radar, PositionedRadar> = {
+  type: 'radar',
+  parse: (_lines, text) => parseRadar(text),
+  layoutForSvg: (radar) => layoutRadar(radar),
+  renderSvg(positioned, ctx) {
+    return renderRadarSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -578,4 +607,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   mindmap: mindmapModule,
   gantt: ganttModule,
   timeline: timelineModule,
+  radar: radarModule,
 }

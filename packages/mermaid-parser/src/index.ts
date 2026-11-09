@@ -65,6 +65,8 @@ export * from './mindmap/types.ts'
 export * from './mindmap/text.ts'
 export * from './timeline/parser.ts'
 export * from './timeline/types.ts'
+export * from './radar/parser.ts'
+export * from './radar/types.ts'
 
 export * from './expanded-shapes.ts'
 export * from './flowchart-parser.ts'

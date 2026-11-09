@@ -15,6 +15,7 @@
 //   - Mindmaps (mindmap) — an indented tree with shape delimiters (see mindmap.ts)
 //   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
 //   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
+//   - Radar charts (radar-beta) — a group of bars per axis on a ruler (see radar.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'

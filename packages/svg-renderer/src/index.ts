@@ -141,6 +141,8 @@ export {
   wrapTimelineText,
 } from './timeline/layout.ts'
 export { renderTimelineSvg } from './timeline/renderer.ts'
+export { RADAR, layoutRadar } from './radar/layout.ts'
+export { renderRadarSvg } from './radar/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

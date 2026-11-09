@@ -14,6 +14,7 @@ const SOURCES: Record<string, string> = {
   pie: 'pie\n  "a" : 1\n  "b" : 2',
   xychart: 'xychart-beta\n  x-axis [a, b]\n  bar [1, 2]\n  line [2, 1]',
   timeline: 'timeline\n  2020 : a\n  2021 : b',
+  radar: 'radar-beta\n  axis a, b, c\n  curve x{1, 2, 3}',
 }
 
 /** Root class and the declarations the page's cascade gives that diagram. */
