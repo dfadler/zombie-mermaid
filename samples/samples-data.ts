@@ -3471,6 +3471,9 @@ pie title Reports by team
     category: 'Requirement',
     description: 'A bare `requirementDiagram` is valid: an empty drawing.',
     source: `requirementDiagram`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
   //  SANKEY DIAGRAMS
   //  Each source has an ASCII golden of the same shape under
   //  packages/ascii-renderer/src/__tests__/testdata/*/sankey_*.txt.
