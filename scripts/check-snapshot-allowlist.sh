@@ -125,6 +125,10 @@ ALLOWLIST=(
   # SVG + ASCII goldens for architecture edge side hints (#2724): placement by
   # port, which is a whole-diagram property.
   "src/__tests__/architecture-side-hints-2724.test.ts"
+  # SVG + ASCII goldens for the architecture init/front-matter keys (#2907):
+  # one SVG per key that moves mermaid's output and the ASCII text they leave
+  # unchanged; reviewed via the .snap diff.
+  "src/__tests__/architecture-init-2907.test.ts"
   # SVG + ASCII goldens for flowchart cloud/h-cyl/tag-rect/sm-circ/fork shapes
   # (#2552); reviewed via the .snap diff.
   "src/__tests__/flowchart-shapes-2552.test.ts"

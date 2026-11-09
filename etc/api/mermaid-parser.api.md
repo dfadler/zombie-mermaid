@@ -4,6 +4,7 @@
 
 ```ts
 
+import { ArchitectureInitLayout } from '@zombie-mermaid/core';
 import { C4InitLayout } from '@zombie-mermaid/core';
 import { ClassInitLayout } from '@zombie-mermaid/core';
 import { Direction } from '@zombie-mermaid/core';
@@ -96,6 +97,7 @@ export interface ArchitectureDiagram {
     groups: ArchitectureGroup[];
     // (undocumented)
     junctions: ArchitectureJunction[];
+    layout?: ArchitectureInitLayout;
     // (undocumented)
     services: ArchitectureService[];
 }
