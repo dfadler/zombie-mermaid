@@ -1567,6 +1567,60 @@ spine for both `timeline` and `timeline TD`.
 - A `section` is a `[name]` row; markers and headings use the theme accent.
 - `accTitle` and `accDescr` are not printed.
 
+## Kanban Boards
+
+`kanban` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/kanban.html)
+and its renderer's layout. `pnpm run kanban:oracle` compares the gallery samples card by
+card with `mermaid@12.3.0`.
+
+```mermaid
+kanban
+  Todo
+    [Create Documentation]
+    docs[Create Blog about the new diagram]
+  id10[Ready for test]
+    id4[Create parsing tests]@{ ticket: MC-2038, assigned: 'K.Sveidqvist', priority: 'High' }
+    id66[last item]@{ priority: 'Very Low', assigned: 'knsv' }
+  id11[Done]
+    id5[define getData]
+```
+
+Supported: a column is a line at the first line's indentation, a card is any more
+indented line under it; text is bare or `id[text]` (the other bracket shapes parse but, as
+in Mermaid, are not drawn differently). `@{ ... }` after a card sets `ticket`, `assigned`,
+`priority` (`Very High` red, `High` orange, `Low` blue, `Very Low` light blue; `Medium` and
+other names draw no colour), `label` and `icon`, in flow style on one line or as `key: value`
+lines. `kanban.sectionWidth` and `kanban.ticketBaseUrl` (`#TICKET#` is replaced; the ticket
+becomes a link) come from front matter or `%%{init}%%`. As in Mermaid, a line indented less
+than the first column is "Items without section detected", a `shape` key must be lowercase,
+and `::icon(...)` and `:::class` are recorded but not drawn.
+
+The SVG uses Mermaid's geometry: columns 205px apart (200px wide), cards 185px wide with
+text wrapped at 175px, 24px per text line, 5px between cards. Line breaks are found by
+summing Trebuchet MS advances (Mermaid's first font), including `white-space: break-spaces`
+behaviour, not by measuring in a browser. Colours come from the theme. See
+[Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#kanban-boards).
+
+### ASCII Kanban Boards
+
+Mermaid has no text mode for kanban boards, and its columns would run off a terminal after
+three or four, so the ASCII output is this library's own design: one framed block per
+column, stacked, with boxed cards.
+
+```text
+┌──────────────────────────────┐
+│        Ready for test        │
+├──────────────────────────────┤
+│ ┌─ High ───────────────────┐ │
+│ │ Create parsing tests     │ │
+│ │ MC-2038     K.Sveidqvist │ │
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
+```
+
+- Cards share one width (the widest content, up to 40 columns; longer text wraps).
+- `priority` is named in the card's top border; `ticket` and `assigned` share a row.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1580,7 +1634,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | User journey                                                          | `journey`                                                                                                       |
 | Requirement                                                           | `requirementDiagram`                                                                                            |
 | Git graph                                                             | `gitGraph`                                                                                                      |
-| Kanban                                                                | `kanban`                                                                                                        |
 | Radar                                                                 | `radar-beta`                                                                                                    |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
@@ -2726,6 +2779,25 @@ drawing size agree on every gallery sample.
   sandboxed cross-origin frame, so its mermaid version and `timeline TD` output could not be
   read; `TD` is checked against the oracle only.
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
+
+## Kanban boards
+
+Checked against mermaid 12.3.0 with `pnpm run kanban:oracle`: column and card rectangles,
+wrapped line counts, priority bars and the drawing size agree on every gallery sample.
+
+- **Line breaks.** Mermaid wraps HTML labels in the browser with whatever `trebuchet ms`,
+  `verdana`, `arial` resolves to; this library sums Trebuchet MS advances (measured on
+  macOS) and models `break-spaces` and hyphen breaks, so a label within a pixel or two of
+  175px can break differently on a machine without Trebuchet. Characters outside printable
+  ASCII are estimated.
+- **Palette.** Column fills are the theme accent and its series shades mixed into the
+  background; mermaid uses its `cScale` hues. Priority bar colours are mermaid's.
+- **Font.** Text is drawn in the render's font (Inter by default) inside Mermaid's
+  Trebuchet-sized boxes.
+- **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
+- **Repeated spaces** inside a wrapped label are collapsed (Mermaid keeps them).
+- **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
+- **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
 
 ---
 

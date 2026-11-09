@@ -15,6 +15,7 @@
 //   - Mindmaps (mindmap) — an indented tree with shape delimiters (see mindmap.ts)
 //   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
 //   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
+//   - Kanban boards (kanban) — stacked column blocks of boxed cards (see kanban.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'
