@@ -3640,6 +3640,94 @@ kanban
   },
 
   // ══════════════════════════════════════════════════════════════════════════
+  //  RADAR (parity with mermaid 12.3.0, #2814)
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/radar_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Radar: Basic',
+    category: 'Radar',
+    gallery: true,
+    description:
+      'Two curves over six axes with a circular graticule, a legend in the top right and a fixed 0 to 100 scale.',
+    source: `radar-beta
+  title Grades
+  axis m["Math"], s["Science"], e["English"], h["History"], g["Geography"], a["Art"]
+  curve a["Alice"]{85, 90, 80, 70, 75, 90}
+  curve b["Bob"]{70, 75, 85, 80, 90, 85}
+  max 100
+  min 0`,
+  },
+  {
+    title: 'Radar: Polygon Graticule',
+    category: 'Radar',
+    description:
+      'graticule polygon draws the rings and the curves with straight edges; showLegend false drops the legend.',
+    source: `radar-beta
+  title Skills
+  axis a["Design"], b["Code"], c["Test"], d["Ops"]
+  curve x["Team X"]{4, 5, 3, 2}
+  curve y["Team Y"]{2, 3, 5, 4}
+  graticule polygon
+  ticks 4
+  showLegend false`,
+  },
+  {
+    title: 'Radar: Detailed Entries',
+    category: 'Radar',
+    description:
+      'Entries written as axis: value in any order take their place by axis; an axis name that is not declared is ignored.',
+    source: `radar-beta
+  axis speed, power, range
+  curve one["One"]{range: 3, speed: 8, power: 5}
+  curve two["Two"]{
+    speed: 4,
+    power: 9,
+    range: 6
+  }`,
+  },
+  {
+    title: 'Radar: Min, Max and Ticks',
+    category: 'Radar',
+    description:
+      'Values outside min and max are clipped to the outer ring or the centre; ticks sets the number of rings.',
+    source: `radar-beta:
+  axis a, b, c, d, e
+  curve c1["Clipped"]{0, 20, 150, 60, 100}
+  curve c2["Inside"]{10, 30, 50, 70, 90}
+  min 10
+  max 100
+  ticks 3`,
+  },
+  {
+    title: 'Radar: Many Curves',
+    category: 'Radar',
+    description:
+      'Seven curves cycle through the series colours; a curve with the wrong number of values is listed but not drawn.',
+    source: `radar-beta
+  title Benchmarks
+  axis p["Parse"], l["Layout"], r["Render"], m["Memory"], s["Startup"]
+  curve a{5, 4, 3, 2, 1}
+  curve b{1, 2, 3, 4, 5}
+  curve c{3, 3, 3, 3, 3}
+  curve d{5, 1, 5, 1, 5}
+  curve e{2, 5, 2, 5, 2}
+  curve f{4, 4, 1, 1, 4}
+  curve g["Short"]{1, 2}`,
+  },
+  {
+    title: 'Radar: Wide Characters',
+    category: 'Radar',
+    description: 'CJK labels and an emoji title line up by display width in the text output.',
+    source: `radar-beta
+  title 能力 📊
+  axis a["速度"], b["力量"], c["Range"]
+  curve x["甲"]{3, 4, 5}
+  curve y["乙"]{5, 2, 4}`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
   //  SANKEY DIAGRAMS
   //  Each source has an ASCII golden of the same shape under
   //  packages/ascii-renderer/src/__tests__/testdata/*/sankey_*.txt.

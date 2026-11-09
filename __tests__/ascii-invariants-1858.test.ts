@@ -26,7 +26,7 @@ const KNOWN: Record<string, string> = {
 /** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline/kanban/journey/sankey are ragged by design). */
 function skipFor(source: string): Rule[] {
   if (
-    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|sankey)/m.test(
+    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|radar-beta|sankey)/m.test(
       source,
     )
   )

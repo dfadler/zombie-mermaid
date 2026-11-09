@@ -717,6 +717,24 @@ matter share one code path. SVG only: ASCII has no pixel padding, so these keys 
 - **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
 - **Not yet measured:** `xyChart`, `c4` and `architecture` blocks, tracked in separate issues.
 
+## Radar charts
+
+Checked against mermaid 12.3.0 with `pnpm run radar:oracle` (the pin, 12.2.0, has the same radar
+code): the viewBox, rings, spokes, labels, curves, legend rows and title agree to 0.01px on every
+gallery sample and eight edge cases (one axis, two axes, fractional and zero ticks, a minimum above
+the values, markup in labels).
+
+- **Palette.** Curve and legend colours are the theme accent and its series shades; mermaid uses
+  its `cScale` hues. Axis and graticule colours come from the theme too.
+- **Rounding.** Coordinates are written to two decimals; mermaid writes the full float (`1.8e-14`
+  for a coordinate that is zero).
+- **Config.** `%%{init}%%` and front matter `radar` keys (`width`, `height`, margins,
+  `axisScaleFactor`, `axisLabelFactor`, `curveTension`) and the `radar` theme variables are not
+  read yet; the defaults are drawn.
+- **Title element.** Written even when empty, as mermaid does.
+- **Other renderers.** Not checked on GitHub or mermaid.live.
+- **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
+
 ## Sankey diagrams
 
 Checked against mermaid 12.3.0 (12.2.0, the pin, lays the samples out identically):

@@ -147,3 +147,13 @@ describe('detectDiagramType – kanban', () => {
     expect(detectDiagramType('kanbans')).toBe('flowchart')
   })
 })
+
+describe('detectDiagramType – radar', () => {
+  it('detects radar-beta, case-sensitively as Mermaid’s detector does', () => {
+    expect(detectDiagramType('radar-beta')).toBe('radar')
+    expect(detectDiagramType('  radar-beta:\n axis a')).toBe('radar')
+    expect(detectDiagramType('%% c\nradar-beta')).toBe('radar')
+    expect(detectDiagramType('Radar-beta')).toBe('flowchart')
+    expect(detectDiagramType('radar')).toBe('flowchart')
+  })
+})
