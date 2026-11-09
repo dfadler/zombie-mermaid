@@ -1,34 +1,34 @@
 {
   "unit": "gzip-bytes",
   "budgets": {
-    "dist/index.js": 1700,
-    "dist/index.cjs": 1480,
-    "dist/ascii.js": 564,
-    "dist/ascii.cjs": 564,
-    "dist/mcp.js": 1400,
-    "dist/mcp.cjs": 1240,
-    "dist/cli.js": 16500,
-    "packages/core/dist/index.js": 16487,
-    "packages/core/dist/index.cjs": 16567,
-    "packages/mermaid-parser/dist/index.js": 38789,
-    "packages/mermaid-parser/dist/index.cjs": 38887,
-    "packages/svg-renderer/dist/index.js": 91413,
-    "packages/svg-renderer/dist/index.cjs": 92195,
-    "packages/ascii-renderer/dist/index.js": 94062,
-    "packages/ascii-renderer/dist/index.cjs": 94359,
-    "packages/mcp/dist/index.js": 5029,
-    "packages/mcp/dist/index.cjs": 8459
+    "dist/index.js": 2125,
+    "dist/index.cjs": 1850,
+    "dist/ascii.js": 705,
+    "dist/ascii.cjs": 705,
+    "dist/mcp.js": 1750,
+    "dist/mcp.cjs": 1550,
+    "dist/cli.js": 20625,
+    "packages/core/dist/index.js": 20470,
+    "packages/core/dist/index.cjs": 20570,
+    "packages/mermaid-parser/dist/index.js": 48487,
+    "packages/mermaid-parser/dist/index.cjs": 48609,
+    "packages/svg-renderer/dist/index.js": 113904,
+    "packages/svg-renderer/dist/index.cjs": 114908,
+    "packages/ascii-renderer/dist/index.js": 117578,
+    "packages/ascii-renderer/dist/index.cjs": 117949,
+    "packages/mcp/dist/index.js": 6287,
+    "packages/mcp/dist/index.cjs": 10574
   },
   "consumerBundles": {
-    "packages/svg-renderer/dist/index.js": 143502,
-    "dist/index.js": 234899
+    "packages/svg-renderer/dist/index.js": 178875,
+    "dist/index.js": 293132
   },
   "unpackedBudgets": {
-    "dist": 122101,
-    "packages/core/dist": 233954,
-    "packages/mermaid-parser/dist": 312665,
-    "packages/svg-renderer/dist": 627011,
-    "packages/ascii-renderer/dist": 561847,
-    "packages/mcp/dist": 45442
+    "dist": 152627,
+    "packages/core/dist": 292443,
+    "packages/mermaid-parser/dist": 390583,
+    "packages/svg-renderer/dist": 781952,
+    "packages/ascii-renderer/dist": 702309,
+    "packages/mcp/dist": 56803
   }
 }
