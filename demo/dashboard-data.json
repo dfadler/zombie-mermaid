@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-11-02T22:30:29.230Z",
+  "generatedAt": "2026-11-09T23:11:57.759Z",
   "fork": {
     "owner": "dfadler",
     "name": "zombie-mermaid",
     "url": "https://github.com/dfadler/zombie-mermaid",
-    "lastPushedAt": "2026-11-02T22:25:04Z",
-    "openIssues": 68,
-    "openPRs": 10,
-    "mergedPRs": 1363,
+    "lastPushedAt": "2026-11-09T22:52:41Z",
+    "openIssues": 174,
+    "openPRs": 9,
+    "mergedPRs": 1560,
     "releaseCount": 30,
     "latestRelease": {
-      "tag": "zombie-mermaid@5.14.1",
-      "publishedAt": "2026-10-31T22:05:36Z"
+      "tag": "zombie-mermaid@5.15.0",
+      "publishedAt": "2026-11-08T03:07:56Z"
     }
   },
   "upstream": {
@@ -20,7 +20,7 @@
     "url": "https://github.com/lukilabs/beautiful-mermaid",
     "lastPushedAt": "2026-05-06T10:53:19Z",
     "openIssues": 52,
-    "openPRs": 45,
+    "openPRs": 46,
     "mergedPRs": 13,
     "releaseCount": 6,
     "latestRelease": {
@@ -29,10 +29,10 @@
     }
   },
   "rescued": {
-    "totalFixes": 59,
-    "upstreamIssuesReferenced": 33,
-    "upstreamIssuesStillOpen": 26,
-    "upstreamIssuesClosedIndependently": 7,
+    "totalFixes": 70,
+    "upstreamIssuesReferenced": 30,
+    "upstreamIssuesStillOpen": 24,
+    "upstreamIssuesClosedIndependently": 6,
     "issues": [
       {
         "number": 12,
@@ -60,13 +60,6 @@
         "state": "closed",
         "fixId": "text-embedded-edge-labels",
         "fixTitle": "Text-embedded edge labels (`-- Yes -->`) were not parsed",
-        "forkPr": 49
-      },
-      {
-        "number": 43,
-        "state": "closed",
-        "fixId": "cjk-state-names",
-        "fixTitle": "CJK state names failed to parse in state diagrams",
         "forkPr": 49
       },
       {
@@ -168,13 +161,6 @@
         "forkPr": 89
       },
       {
-        "number": 115,
-        "state": "open",
-        "fixId": "node-text-contrast-on-custom-fill",
-        "fixTitle": "Node text was unreadable on a dark classDef/style fill",
-        "forkPr": 76
-      },
-      {
         "number": 119,
         "state": "open",
         "fixId": "cjk-box-width",
@@ -184,9 +170,9 @@
       {
         "number": 121,
         "state": "open",
-        "fixId": "er-label-truncation",
-        "fixTitle": "Long ER relationship labels were truncated in ASCII output",
-        "forkPr": 88
+        "fixId": "decision-label-stray-tee",
+        "fixTitle": "A decision node’s edge label could land on a stray tee character",
+        "forkPr": 95
       },
       {
         "number": 122,
@@ -252,13 +238,6 @@
         "forkPr": 206
       },
       {
-        "number": 154,
-        "state": "open",
-        "fixId": "ascii-vertical-label-beside-stroke",
-        "fixTitle": "ASCII vertical edge labels were printed over the edge line",
-        "forkPr": 1332
-      },
-      {
         "number": 155,
         "state": "open",
         "fixId": "edge-label-space-before-pipe",
@@ -269,7 +248,7 @@
   },
   "responseTime": {
     "sampleSize": 20,
-    "medianHours": 7,
+    "medianHours": 0.4,
     "note": "Median time from issue open to first comment, over the most recently commented issues. zombie-mermaid is a low-traffic, solo-maintained fork — treat this as directional, not an SLA."
   }
 }
