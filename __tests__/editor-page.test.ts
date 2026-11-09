@@ -75,6 +75,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   mindmap: 'Mindmap',
   gantt: 'Gantt',
   timeline: 'Timeline',
+  requirement: 'Requirement',
 }
 
 describe('EditorPage meta description', () => {
