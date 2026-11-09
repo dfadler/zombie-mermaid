@@ -9,7 +9,7 @@ exports[`flowchart expanded shapes (#2552) > ASCII snapshot 1`] = `
 `;
 
 exports[`flowchart expanded shapes (#2552) > SVG snapshot 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 830.93 181.7" width="830.93" height="181.7" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 790.93 181.7" width="790.93" height="181.7" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -36,43 +36,43 @@ exports[`flowchart expanded shapes (#2552) > SVG snapshot 1`] = `
   }
 </style>
 <defs>
-  <marker id="zm1uiawlr-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1gk9doc-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1uiawlr-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1gk9doc-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 208.75 90.85 L 256.75 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1uiawlr-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 405.55 90.85 L 453.55 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1uiawlr-arrowhead)" />
-<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 612.93 90.85 L 660.93 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1uiawlr-arrowhead)" />
-<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 674.93 90.85 L 722.93 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1uiawlr-arrowhead)" />
-<path class="edge" data-from="E" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 732.93 90.85 L 780.93 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1uiawlr-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 208.75 90.85 L 248.75 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1gk9doc-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 397.55 90.85 L 437.55 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1gk9doc-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 596.93 90.85 L 636.93 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1gk9doc-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 650.93 90.85 L 690.93 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1gk9doc-arrowhead)" />
+<path class="edge" data-from="E" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 700.93 90.85 L 740.93 90.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1gk9doc-arrowhead)" />
 <g class="node" data-id="A" data-label="cloud" data-shape="cloud">
   <path transform="translate(53.5 70.38)" d="M0 0 a20.25,20.25 0 0,1 33.75,-13.5 a47.25,47.25 1 0,1 54,-13.5 a33.75,33.75 1 0,1 47.25,27 a20.25,20.25 1 0,1 20.25,12.92 a27,27 1 0,1 -20.25,23.99 a33.75,20.25 1 0,1 -33.75,20.25 a47.25,47.25 1 0,1 -67.5,0 a20.25,20.25 1 0,1 -33.75,-20.25 a20.25,20.25 1 0,1 -13.5,-12.92 a27,27 1 0,1 13.5,-23.99 H0 V0 Z" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="124.38" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">cloud</text>
 </g>
 <g class="node" data-id="B" data-label="h-cyl" data-shape="horizontal-cylinder">
-  <path d="M262.45,109.3 a5.7,18.45 0,0,1 0,-36.9 l137.4,0 a5.7,18.45 0,0,1 0,36.9 l-137.4,0 Z" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <path d="M399.85,72.4 a5.7,18.45 0,0,0 0,36.9" fill="none" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="331.15" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">h-cyl</text>
+  <path d="M254.45,109.3 a5.7,18.45 0,0,1 0,-36.9 l137.4,0 a5.7,18.45 0,0,1 0,36.9 l-137.4,0 Z" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <path d="M391.85,72.4 a5.7,18.45 0,0,0 0,36.9" fill="none" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="323.15" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">h-cyl</text>
 </g>
 <g class="node" data-id="C" data-label="tag" data-shape="tagged-rectangle">
-  <rect x="453.55" y="72.4" width="159.38" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <polygon points="605.55,109.3 612.93,109.3 612.93,101.92" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="533.24" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">tag</text>
+  <rect x="437.55" y="72.4" width="159.38" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="589.55,109.3 596.93,109.3 596.93,101.92" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="517.24" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">tag</text>
 </g>
 <g class="node" data-id="D" data-label="" data-shape="small-circle">
-  <circle cx="667.93" cy="90.85" r="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="667.93" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+  <circle cx="643.93" cy="90.85" r="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="643.93" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
 </g>
 <g class="node" data-id="E" data-label="" data-shape="fork-bar">
-  <rect x="722.93" y="55.85" width="10" height="70" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="727.93" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+  <rect x="690.93" y="55.85" width="10" height="70" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="695.93" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
 </g>
 <g class="node" data-id="F" data-label="" data-shape="fork-bar">
-  <rect x="780.93" y="55.85" width="10" height="70" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="785.93" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+  <rect x="740.93" y="55.85" width="10" height="70" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="745.93" y="90.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
 </g>
 </svg>"
 `;

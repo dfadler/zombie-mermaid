@@ -882,8 +882,8 @@ layout, so it is not positioned on Mermaid's port grid:
   `b` right of `a` and `a:B -- T:b` puts `b` below it, and ASCII leaves and
   enters each node by the face the port names. The flow direction (left to
   right unless more edges use top/bottom ports) only sets which axis is the
-  layer axis. `RenderOptions.direction` on ASCII falls back to the flowchart
-  layout.
+  layer axis. `RenderOptions.direction` is ignored, in SVG and ASCII:
+  mermaid@12.3.0 has no direction for `architecture-beta` (#2912).
 - Icons are not drawn. `database` and `disk` give a cylinder, `cloud` a
   stadium, `internet` a circle; any other icon (including custom `"pack:name"`
   icons) gives a rectangle.
@@ -1458,6 +1458,61 @@ blank row where the SVG has a divider, relationships dotted with an arrowhead an
 └──────────────────────┘
 ```
 
+## Radar charts
+
+`radar-beta` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/radar.html)
+and its renderer's geometry. `pnpm run radar:oracle` compares the gallery samples and
+some edge cases with `mermaid@12.3.0`: the frame, every ring, spoke, label, curve, legend
+row and the title agree to 0.01px. The parser is checked against Mermaid's own on 87
+sources (`pnpm run radar:parser-fixture` rebuilds the record).
+
+```mermaid
+radar-beta
+  title Grades
+  axis m["Math"], s["Science"], e["English"], h["History"], g["Geography"], a["Art"]
+  curve a["Alice"]{85, 90, 80, 70, 75, 90}
+  curve b["Bob"]{70, 75, 85, 80, 90, 85}
+  max 100
+  min 0
+```
+
+Supported: `radar-beta` and `radar-beta:`, `title`, `axis` lists with optional `["label"]`s,
+`curve` lists written as plain values or as `axis: value` entries (in any order, one per
+axis), the options `showLegend`, `ticks` (at most 32), `max`, `min` and `graticule`
+(`circle` or `polygon`), `%%` comments, `accTitle` and `accDescr`. As in Mermaid,
+`axis a,` followed by a newline is an error, a value is `12` or `1.5` (no sign,
+exponent or leading zero), an identifier cannot be a keyword or start with `true`,
+`false`, `circle`, `polygon` or `title`, a curve with the wrong number of values is
+not drawn (but is listed in the legend), `max` defaults to the largest value of any
+curve, and values outside `min` and `max` are clipped to the ring or the centre.
+
+The SVG uses Mermaid's geometry: a 600px chart in 50px margins (a 700 x 700 viewBox),
+axis 0 pointing up and the rest clockwise, labels 1.05 radii out, circular curves drawn as
+closed bezier curves with tension 0.17 and polygonal ones with straight edges, and a
+legend of 12px swatches in the top right. Colours come from the theme (the accent and its
+series shades). See [Known differences](known-differences.md#radar-charts).
+
+### ASCII Radar charts
+
+Mermaid has no text mode for radar charts and a polar grid cannot be drawn legibly in a
+character grid, so the ASCII output is this library's own design: a group of bars per axis,
+one bar for each curve, under a ruler with a mark for every ring.
+
+```text
+                           Grades
+
+                0                                    100
+                ├───────┬───────┬───────┬───────┬───────┤
+  Math      Alice ██████████████████████████████████······  85
+            Bob   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓············  70
+```
+
+- Bars use the same mapping as the SVG radius (clipped to `min` .. `max`), and the value
+  written is printed after the bar. A curve keeps its fill and colour by position in the
+  source, as `radarCurve-N` does.
+- Curve names are shown unless `showLegend false`; both graticules look the same.
+- `accTitle` and `accDescr` are not printed.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1469,7 +1524,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
 | Git graph                                                             | `gitGraph`                                                                                                      |
-| Radar                                                                 | `radar-beta`                                                                                                    |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 | Sankey, Block                                                         | `sankey-beta`, `block-beta` (12.2.0 rejects them with an empty body; header names per upstream docs)            |

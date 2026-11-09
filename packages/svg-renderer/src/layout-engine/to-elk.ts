@@ -155,14 +155,27 @@ function hasLabelledParallelRun(graph: MermaidGraph): boolean {
   return false
 }
 
+/** Subgraph-free graphs the ASCII layout provider lays out; see `keepLegacyPipeline`. */
+const legacyPipelineGraphs = new WeakSet<MermaidGraph>()
+
 /**
- * Flowcharts with subgraphs are laid out the way mermaid@12.3.0 does it: one
- * ELK pass over the whole hierarchy (`INCLUDE_CHILDREN`) with ELK's own
- * `DEPTH_FIRST` cycle breaking. State diagrams and flowcharts without
- * subgraphs keep the settings tuned for them.
+ * Keep a subgraph-free flowchart on the settings from before #2672 so the
+ * ASCII hints taken from its layout do not move (ASCII follows in #2933).
+ */
+export function keepLegacyPipeline(graph: MermaidGraph): void {
+  legacyPipelineGraphs.add(graph)
+}
+
+/**
+ * Flowcharts are laid out the way mermaid@12.3.0 does it: one ELK pass over
+ * the whole hierarchy (`INCLUDE_CHILDREN`) with ELK's own `DEPTH_FIRST` cycle
+ * breaking. State diagrams keep the settings tuned for them.
  */
 export function usesMermaidElkPipeline(graph: MermaidGraph): boolean {
-  return graph.subgraphs.length > 0 && !isStateGraph(graph)
+  return (
+    !isStateGraph(graph) &&
+    (graph.subgraphs.length > 0 || !legacyPipelineGraphs.has(graph))
+  )
 }
 
 /**
@@ -696,7 +709,7 @@ export function mermaidToElk(
     // Flowcharts without subgraphs need none of this once nodes have mermaid's
     // 120px minimum width (#2717): the target already sits ~14px off the source.
     ...(hasLabelledParallelRun(graph) &&
-    (usesMermaidElkPipeline(graph) ||
+    ((usesMermaidElkPipeline(graph) && graph.subgraphs.length > 0) ||
       isStateGraph(graph) ||
       opts.legacyNodeSizes)
       ? {

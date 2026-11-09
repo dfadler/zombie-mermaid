@@ -11,7 +11,7 @@ exports[`taller slanted shapes keep their slant (#2164) > alt: ASCII and SVG sna
 `;
 
 exports[`taller slanted shapes keep their slant (#2164) > alt: ASCII and SVG snapshots > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 693 174" width="693" height="174" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 677 174" width="677" height="174" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -38,27 +38,27 @@ exports[`taller slanted shapes keep their slant (#2164) > alt: ASCII and SVG sna
   }
 </style>
 <defs>
-  <marker id="zmzmkb1g-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1axhfzr-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmzmkb1g-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1axhfzr-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 229 87 L 277 87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmzmkb1g-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 371 87 L 419 87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmzmkb1g-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 229 87 L 269 87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1axhfzr-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 363 87 L 403 87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1axhfzr-arrowhead)" />
 <g class="node" data-id="A" data-label="Para" data-shape="parallelogram-alt">
   <polygon points="40,68.55 200.65,68.55 229,105.45 68.35,105.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="134.5" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Para</text>
 </g>
 <g class="node" data-id="B" data-label="Dbl" data-shape="doublecircle">
-  <circle cx="324" cy="87" r="47" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <circle cx="324" cy="87" r="42" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="324" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Dbl</text>
+  <circle cx="316" cy="87" r="47" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <circle cx="316" cy="87" r="42" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="316" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Dbl</text>
 </g>
 <g class="node" data-id="C" data-label="Trap" data-shape="trapezoid-alt">
-  <polygon points="419,68.55 653,68.55 617.9,105.45 454.1,105.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="536" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Trap</text>
+  <polygon points="403,68.55 637,68.55 601.9,105.45 438.1,105.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="520" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Trap</text>
 </g>
 </svg>"
 `;
@@ -84,7 +84,7 @@ exports[`taller slanted shapes keep their slant (#2164) > para-trap: ASCII and S
 `;
 
 exports[`taller slanted shapes keep their slant (#2164) > para-trap: ASCII and SVG snapshots > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 648 174" width="648" height="174" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 632 174" width="632" height="174" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -111,27 +111,27 @@ exports[`taller slanted shapes keep their slant (#2164) > para-trap: ASCII and S
   }
 </style>
 <defs>
-  <marker id="zm5hsk2a-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1c62wk-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm5hsk2a-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1c62wk-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 229 87 L 277 87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5hsk2a-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 371 87 L 419 87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5hsk2a-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 229 87 L 269 87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1c62wk-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 363 87 L 403 87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1c62wk-arrowhead)" />
 <g class="node" data-id="A" data-label="Para" data-shape="parallelogram">
   <polygon points="68.35,68.55 229,68.55 200.65,105.45 40,105.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="134.5" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Para</text>
 </g>
 <g class="node" data-id="B" data-label="Dbl" data-shape="doublecircle">
-  <circle cx="324" cy="87" r="47" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <circle cx="324" cy="87" r="42" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="324" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Dbl</text>
+  <circle cx="316" cy="87" r="47" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <circle cx="316" cy="87" r="42" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="316" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Dbl</text>
 </g>
 <g class="node" data-id="C" data-label="Trap" data-shape="trapezoid">
-  <polygon points="447.35,68.55 579.65,68.55 608,105.45 419,105.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="513.5" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Trap</text>
+  <polygon points="431.35,68.55 563.65,68.55 592,105.45 403,105.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="497.5" y="87" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Trap</text>
 </g>
 </svg>"
 `;
