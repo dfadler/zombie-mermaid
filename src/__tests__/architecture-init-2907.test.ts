@@ -111,6 +111,24 @@ describe('architecture init keys (#2907)', () => {
     ).toContain('scale(0.5)')
   })
 
+  // Mermaid 12.3.0 draws a group's corner icon at 0.75 of `padding` (30, 15, 60, none at 0)
+  // and starts the title 4px after it.
+  it.each([
+    [{}, 'scale(0.38)', 74],
+    [{ padding: 20 }, 'scale(0.19)', 39],
+    [{ padding: 80 }, 'scale(0.75)', 144],
+  ])('%j scales the group icon with padding', (cfg, scale, textX) => {
+    const svg = renderMermaidSVG(wrap(cfg, group))
+    expect(svg).toContain(scale)
+    expect(svg).toContain(`<text x="${textX}" y=`)
+  })
+
+  it('padding 0 draws no group icon and keeps the title 4px in', () => {
+    const svg = renderMermaidSVG(wrap({ padding: 0 }, group))
+    expect(svg).not.toContain('scale(0')
+    expect(svg).toContain('<text x="4" y=')
+  })
+
   it('a group beside a group costs the gap between their boxes', () => {
     const two = `architecture-beta
   group g1(cloud)[One]

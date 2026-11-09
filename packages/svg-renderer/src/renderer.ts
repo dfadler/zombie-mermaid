@@ -419,20 +419,23 @@ function renderGroup(
   // Architecture group (#2619): Mermaid draws a dashed, unfilled box with the
   // icon tile in its top-left corner and the title beside it, no header band.
   if (group.architecture) {
-    const glyph = group.icon && (ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH)
+    // Mermaid draws the corner icon at 0.75 of `architecture.padding`.
+    const iconSize = group.iconSize ?? ARCH_GROUP_ICON
+    const glyph =
+      iconSize > 0 && group.icon && (ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH)
     parts.push(
       f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
       f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`,
     )
     if (glyph)
       parts.push(
-        f`  <g transform="translate(${group.x + 1} ${group.y + 1}) scale(${ARCH_GROUP_ICON / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
+        f`  <g transform="translate(${group.x + 1} ${group.y + 1}) scale(${iconSize / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
       )
     parts.push(
       '  ' +
         renderMultilineText(
           group.label,
-          group.x + (glyph ? ARCH_GROUP_ICON + 4 : 6),
+          group.x + (group.icon ? iconSize + 4 : 6),
           group.y + 1 + ARCH_GROUP_ICON / 2,
           fontSizes.groupHeader,
           f`font-size="${fontSizes.groupHeader}" font-weight="400" fill="var(--_text)"`,

@@ -727,7 +727,7 @@ has no pixel units, so these keys do nothing there.
   axis, a group's border sits `padding + 2.5` from the services it holds. The `padding` render option still sets
   the page margin when the caller passes it; the group padding always follows the config.
 - **Read: `architecture.iconSize`** (default 80) is the tile edge. The icon glyph and the empty-service box scale with it,
-  a label wraps at 1.5 tiles and the group icon stays 30px.
+  a label wraps at 1.5 tiles. The group's corner icon is not tied to it: it is `padding * 0.75` (30 by default).
 - **Read: `architecture.fontSize`** (default 16) only sets the room under a label: a group's bottom edge sits `fontSize + 1`
   below the tile, and the label is measured at that size. The text is still drawn at the same size, as in mermaid.
 - **Read: `architecture.idealEdgeLengthMultiplier`** (default 1.5, values 0.1 to 100) puts neighbouring cells

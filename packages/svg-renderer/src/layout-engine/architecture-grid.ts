@@ -297,7 +297,9 @@ export function layoutArchitectureGrid(
       ...box,
       children,
       ...(sg.icon !== undefined ? { icon: sg.icon } : {}),
-      ...(sg.architecture ? { architecture: true } : {}),
+      ...(sg.architecture
+        ? { architecture: true, iconSize: m.pad * 0.75 }
+        : {}),
     }
   }
   const groups = graph.subgraphs.map(groupBox)

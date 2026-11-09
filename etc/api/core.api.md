@@ -713,6 +713,7 @@ export interface PositionedGroup {
     // (undocumented)
     height: number;
     icon?: string;
+    iconSize?: number;
     // (undocumented)
     id: string;
     inlineStyle?: Record<string, string>;
