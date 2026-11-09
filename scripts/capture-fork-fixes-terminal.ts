@@ -54,6 +54,8 @@ import { promisify } from 'node:util'
 import { forkFixes } from '../demo/fork-fixes-data.ts'
 import { UPSTREAM_COMMIT } from '../packages/site/ssr/fork-fixes-before.ts'
 import { displayWidth } from '../packages/ascii-renderer/src/display-width.ts'
+import { renderMermaidASCII } from '../src/index.ts'
+import { recordHash } from './lib/fork-fixes-screenshot-hashes.ts'
 
 const exec = promisify(execFile)
 
@@ -287,6 +289,13 @@ async function main() {
       const plain = plainBySide.get(side)
       if (plain === undefined || plain.trim() === '') continue
       await captureSide(fix.id, side, indexPath, fix.source)
+      // Same text the snapshot test renders; the stale-screenshot guard compares it.
+      // Empty renders were skipped above, so only a captured entry gets a hash.
+      if (side === 'after' && !fix.excerpt)
+        recordHash(
+          fix.id,
+          renderMermaidASCII(fix.source, { colorMode: 'none' }),
+        )
       written++
     }
     console.log('ok')
