@@ -36,14 +36,14 @@ export interface RequirementNode {
   kind: 'requirement' | 'element'
   /** Mermaid's display type: `Functional Requirement`, `Element`, ... */
   typeLabel: string
-  // Requirement fields; '' when not given.
+  // Requirement fields; empty when not given.
   requirementId: string
   text: string
   /** `Low` / `Medium` / `High`, or ''. */
   risk: string
   /** `Analysis` / `Demonstration` / `Inspection` / `Test`, or ''. */
   verifyMethod: string
-  // Element fields; '' when not given.
+  // Element fields; empty when not given.
   elementType: string
   docRef: string
 }
@@ -82,7 +82,7 @@ export interface PositionedRequirementNode {
   y: number
   width: number
   height: number
-  /** y of the divider, absolute; absent without body rows. */
+  /** The divider's y, absolute; absent without body rows. */
   dividerY?: number
   inlineStyle?: Record<string, string>
   className?: string

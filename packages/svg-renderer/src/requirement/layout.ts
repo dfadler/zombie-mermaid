@@ -130,7 +130,13 @@ function nearestOnPolyline(
     const t =
       len2 === 0
         ? 0
-        : Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / len2))
+        : Math.max(
+            0,
+            Math.min(
+              1,
+              ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / len2,
+            ),
+          )
     const q = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
     const d = Math.hypot(q.x - p.x, q.y - p.y)
     if (d < bestDist) {
@@ -195,7 +201,9 @@ export function layoutRequirementDiagramSync(
       'elk.separateConnectedComponents': 'false',
       'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
     },
-    children: diagram.nodes.map((n) => buildElkLeafNode(n.id, sizes.get(n.id)!)),
+    children: diagram.nodes.map((n) =>
+      buildElkLeafNode(n.id, sizes.get(n.id)!),
+    ),
     edges,
   }
   const result = elkLayoutSync(elkGraph, options.layoutCache)
@@ -272,7 +280,10 @@ export function layoutRequirementDiagramSync(
           { x: lx, y: cy + half },
           { x: box.x, y: cy + half },
         ],
-        labelPoint: { x: lx - REQUIREMENT.loopLabelGap - labelWidth / 2, y: cy },
+        labelPoint: {
+          x: lx - REQUIREMENT.loopLabelGap - labelWidth / 2,
+          y: cy,
+        },
       }
     },
   )

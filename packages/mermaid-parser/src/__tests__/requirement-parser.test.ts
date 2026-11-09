@@ -10,7 +10,11 @@ describe('parseRequirementDiagram', () => {
   it('parses a requirement, an element and a relationship', () => {
     const d = parseRequirementDiagram(
       H +
-        req('id: 1\ntext: the test text.\nrisk: high\nverifymethod: test', 'requirement', 'test_req') +
+        req(
+          'id: 1\ntext: the test text.\nrisk: high\nverifymethod: test',
+          'requirement',
+          'test_req',
+        ) +
         req('type: simulation\ndocref: a/b', 'element', 'test_entity') +
         'test_entity - satisfies -> test_req',
     )
@@ -116,14 +120,17 @@ describe('parseRequirementDiagram', () => {
         '"my-req" - verifies -> my e',
     )
     expect(d.nodes.map((n) => n.id)).toEqual(['my-req', 'my e'])
-    expect(d.nodes[0]).toMatchObject({ requirementId: 'R-1', text: 'a, b: c - d' })
+    expect(d.nodes[0]).toMatchObject({
+      requirementId: 'R-1',
+      text: 'a, b: c - d',
+    })
     expect(d.relationships).toHaveLength(1)
   })
 
   it('keeps a trailing semicolon in an unquoted value, as Mermaid does', () => {
-    expect(parseRequirementDiagram(H + req('id: 1;')).nodes[0]!.requirementId).toBe(
-      '1;',
-    )
+    expect(
+      parseRequirementDiagram(H + req('id: 1;')).nodes[0]!.requirementId,
+    ).toBe('1;')
   })
 
   it('rejects what Mermaid 12.3.0 rejects', () => {
@@ -138,10 +145,14 @@ describe('parseRequirementDiagram', () => {
       'a body on the opening line': H + 'requirement r { id: 1 }\n',
       'an element property on a requirement': H + req('type: x'),
       'a requirement property on an element': H + req('id: 1', 'element'),
-      'an unknown relationship type': H + req('', 'element', 'e') + req('') + 'e - foo -> r',
-      'a relationship to an unknown name': H + req('') + 'r - satisfies -> nope',
+      'an unknown relationship type':
+        H + req('', 'element', 'e') + req('') + 'e - foo -> r',
+      'a relationship to an unknown name':
+        H + req('') + 'r - satisfies -> nope',
       'a bare title': H + 'title foo\n' + req(''),
       'direction TD': H + 'direction TD\n',
+      'a keyword-leading value': H + req('text: test suite'),
+      'a keyword-leading name': H + 'requirement element {\n}\n',
       'a missing header': req(''),
       'an unclosed block': H + 'requirement r {\nid: 1\n',
       'a stray word': H + 'banana\n',
@@ -204,16 +215,17 @@ describe('parseRequirementDiagram', () => {
   it('accepts a bare header and CRLF line ends', () => {
     expect(parseRequirementDiagram('requirementDiagram').nodes).toEqual([])
     expect(
-      parseRequirementDiagram('requirementDiagram\r\nrequirement r {\r\nid: 1\r\n}\r\n')
-        .nodes[0]!.requirementId,
+      parseRequirementDiagram(
+        'requirementDiagram\r\nrequirement r {\r\nid: 1\r\n}\r\n',
+      ).nodes[0]!.requirementId,
     ).toBe('1')
   })
 
   it('shows only the rows that are set', () => {
     const d = parseRequirementDiagram(H + req('text: only'))
     expect(requirementBodyRows(d.nodes[0]!)).toEqual(['Text: only'])
-    expect(requirementBodyRows(parseRequirementDiagram(H + req('')).nodes[0]!)).toEqual(
-      [],
-    )
+    expect(
+      requirementBodyRows(parseRequirementDiagram(H + req('')).nodes[0]!),
+    ).toEqual([])
   })
 })

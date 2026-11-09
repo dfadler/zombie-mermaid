@@ -67,7 +67,12 @@ describe('requirement ASCII', () => {
     const rows = (t: string) => t.split('\n').length
     const tb = rows(render(BASIC))
     const lr = rows(
-      render(BASIC.replace('requirementDiagram\n', 'requirementDiagram\ndirection LR\n')),
+      render(
+        BASIC.replace(
+          'requirementDiagram\n',
+          'requirementDiagram\ndirection LR\n',
+        ),
+      ),
     )
     expect(lr).toBeLessThan(tb)
     expect(rows(render(BASIC, false, 'LR'))).toBe(lr)

@@ -35,7 +35,10 @@ function parse(table: string): Map<string, number> {
   const map = new Map<string, number>()
   for (const entry of table.split('|').filter(Boolean)) {
     // Two characters, then the value; the pair itself may contain `-`.
-    map.set(entry.slice(0, 2).replace('\u2423', ' '), Number(entry.slice(2)) / 64)
+    map.set(
+      entry.slice(0, 2).replace('\u2423', ' '),
+      Number(entry.slice(2)) / 64,
+    )
   }
   return map
 }

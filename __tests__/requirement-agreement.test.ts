@@ -69,7 +69,13 @@ describe('parseOurRequirementSvg', () => {
 describe('requirementAgreement', () => {
   it('is 1 for identical layouts, and our basic render matches the official one', () => {
     const a = requirementAgreement(base(), base())
-    expect(a).toMatchObject({ boxes: 1, edges: 1, positions: 1, frame: 1, nodes: 2 })
+    expect(a).toMatchObject({
+      boxes: 1,
+      edges: 1,
+      positions: 1,
+      frame: 1,
+      nodes: 2,
+    })
     expect(worstRequirement(a)).toBe(1)
     const ours = parseOurRequirementSvg(
       renderMermaidSVG(

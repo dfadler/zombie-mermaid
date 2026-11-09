@@ -90,7 +90,9 @@ function renderNode(node: PositionedRequirementNode, fontSizes: FontSizes) {
     ? escapeAttr(inlineStyle.color)
     : undefined
   const safeClassName = sanitizeClassName(node.className)
-  const cls = safeClassName ? f`requirement-node ${safeClassName}` : 'requirement-node'
+  const cls = safeClassName
+    ? f`requirement-node ${safeClassName}`
+    : 'requirement-node'
   const parts: string[] = [
     f`<g class="${cls}" data-id="${escapeAttr(node.id)}" data-kind="${node.kind}">`,
     f`  <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="0" ry="0" ` +
@@ -115,7 +117,13 @@ function renderNode(node: PositionedRequirementNode, fontSizes: FontSizes) {
       f`${attrs} font-size="${fontSizes.nodeLabel}" fill="${textColor ?? tone}"`,
     )
   parts.push(
-    text(node.typeText, cx, top + rowH / 2, 'text-anchor="middle"', 'var(--_text-sec)'),
+    text(
+      node.typeText,
+      cx,
+      top + rowH / 2,
+      'text-anchor="middle"',
+      'var(--_text-sec)',
+    ),
     text(
       node.name,
       cx,
@@ -150,7 +158,9 @@ type Pt = { x: number; y: number }
 /** Unit vector from `a` to `b` (zero when they coincide). */
 function unit(a: Pt, b: Pt): Pt {
   const len = Math.hypot(b.x - a.x, b.y - a.y)
-  return len === 0 ? { x: 0, y: 0 } : { x: (b.x - a.x) / len, y: (b.y - a.y) / len }
+  return len === 0
+    ? { x: 0, y: 0 }
+    : { x: (b.x - a.x) / len, y: (b.y - a.y) / len }
 }
 
 function renderEdge(edge: PositionedRequirementEdge): string {

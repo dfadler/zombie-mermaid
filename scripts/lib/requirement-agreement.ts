@@ -84,10 +84,7 @@ function boxAt(
 /** Read the viewBox: origin and size. */
 function viewBox(svg: string): number[] {
   return (
-    /viewBox="([^"]*)"/
-      .exec(svg)?.[1]
-      ?.split(/\s+/)
-      .map(Number) ?? [0, 0, 0, 0]
+    /viewBox="([^"]*)"/.exec(svg)?.[1]?.split(/\s+/).map(Number) ?? [0, 0, 0, 0]
   )
 }
 
@@ -115,7 +112,11 @@ export function parseOfficialRequirementSvg(svg: string): RequirementLayout {
     })
   }
   const edges: RequirementLine[] = []
-  const paths = [...svg.matchAll(/<path d="[^"]*" id="[^"]*" class="([^"]*)"[^>]*?data-points="([^"]*)"/g)]
+  const paths = [
+    ...svg.matchAll(
+      /<path d="[^"]*" id="[^"]*" class="([^"]*)"[^>]*?data-points="([^"]*)"/g,
+    ),
+  ]
   const labels = [
     ...svg.matchAll(/<g class="edgeLabel"[\s\S]*?<p>([\s\S]*?)<\/p>/g),
   ]
@@ -234,9 +235,7 @@ export function worstRequirement(
   a: RequirementAgreement,
   figures: RequirementFigure[] = ['boxes', 'edges', 'positions', 'frame'],
 ): number | null {
-  const v = figures
-    .map((f) => a[f])
-    .filter((x): x is number => x !== null)
+  const v = figures.map((f) => a[f]).filter((x): x is number => x !== null)
   return v.length > 0 ? Math.min(...v) : null
 }
 

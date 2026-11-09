@@ -35,9 +35,18 @@ export async function scoreSeparately(
       typeof arch.entry,
     ],
     breaches: thresholds
-      ? [seq, quad, mind, gantt, timeline, requirement, pie, c4, xy, arch].flatMap(
-          (s) => s.breaches,
-        )
+      ? [
+          seq,
+          quad,
+          mind,
+          gantt,
+          timeline,
+          requirement,
+          pie,
+          c4,
+          xy,
+          arch,
+        ].flatMap((s) => s.breaches)
       : [],
   }
 }

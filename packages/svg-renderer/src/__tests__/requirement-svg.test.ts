@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { parseRequirementDiagram } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../../../../src/index.ts'
-import { layoutRequirementDiagramSync, REQUIREMENT } from '../requirement/layout.ts'
+import {
+  layoutRequirementDiagramSync,
+  REQUIREMENT,
+} from '../requirement/layout.ts'
 import { trebuchetKerning } from '../requirement/kerning.ts'
 
 const BASIC = `requirementDiagram
@@ -100,7 +103,9 @@ describe('requirement SVG', () => {
     expect(svg).toContain('Type: simulation')
     expect(svg).toContain('&lt;&lt;satisfies&gt;&gt;')
     // One divider (the element has a body too: two).
-    expect(svg.match(/stroke-width="[\d.]+" \/>\n<\/g>|<line x1/g)).not.toBeNull()
+    expect(
+      svg.match(/stroke-width="[\d.]+" \/>\n<\/g>|<line x1/g),
+    ).not.toBeNull()
     expect(svg.match(/<line /g)).toHaveLength(2)
     expect(svg).toContain('stroke-dasharray="10 7"')
     expect(svg).toContain('data-type="satisfies"')
@@ -142,13 +147,17 @@ describe('requirement SVG', () => {
   })
 
   it('names the root for assistive tech from accTitle', () => {
-    const svg = renderMermaidSVG('requirementDiagram\naccTitle: Reqs\nrequirement a {\n}')
+    const svg = renderMermaidSVG(
+      'requirementDiagram\naccTitle: Reqs\nrequirement a {\n}',
+    )
     expect(svg).toContain('Reqs')
   })
 
   it('throws a parse error for a relationship to nothing', () => {
     expect(() =>
-      renderMermaidSVG('requirementDiagram\nrequirement a {\n}\na - traces -> z'),
+      renderMermaidSVG(
+        'requirementDiagram\nrequirement a {\n}\na - traces -> z',
+      ),
     ).toThrow(/unknown "z"/)
   })
 })

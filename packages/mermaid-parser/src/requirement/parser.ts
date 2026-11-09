@@ -55,10 +55,7 @@ const KINDS: Record<string, [RequirementKind, string]> = {
   requirement: ['requirement', 'Requirement'],
   functionalrequirement: ['functionalRequirement', 'Functional Requirement'],
   interfacerequirement: ['interfaceRequirement', 'Interface Requirement'],
-  performancerequirement: [
-    'performanceRequirement',
-    'Performance Requirement',
-  ],
+  performancerequirement: ['performanceRequirement', 'Performance Requirement'],
   physicalrequirement: ['physicalRequirement', 'Physical Requirement'],
   designconstraint: ['designConstraint', 'Design Constraint'],
 }

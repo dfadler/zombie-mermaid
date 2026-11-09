@@ -14,7 +14,11 @@
 // ============================================================================
 
 import { withDirectionOverride } from '@zombie-mermaid/core'
-import type { MermaidEdge, MermaidGraph, MermaidNode } from '@zombie-mermaid/core'
+import type {
+  MermaidEdge,
+  MermaidGraph,
+  MermaidNode,
+} from '@zombie-mermaid/core'
 import {
   parseRequirementDiagram,
   requirementBodyRows,
@@ -31,7 +35,11 @@ function boxLabel(diagram: RequirementDiagram, id: string): string {
   const rows = requirementBodyRows(node)
   const width = Math.max(0, ...rows.map((r) => displayWidth(r)))
   const body = rows.map((r) => r + ' '.repeat(width - displayWidth(r)))
-  return [`<<${node.typeLabel}>>`, node.id, ...(body.length > 0 ? ['', ...body] : [])].join('\n')
+  return [
+    `<<${node.typeLabel}>>`,
+    node.id,
+    ...(body.length > 0 ? ['', ...body] : []),
+  ].join('\n')
 }
 
 /** Lower a requirement diagram to the flowchart model. */
