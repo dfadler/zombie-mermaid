@@ -78,6 +78,12 @@ describe('parseSankey', () => {
     ['two fields', 'sankey-beta\nA,B', /Expected "," after the field/],
     ['a missing value at the end', 'sankey-beta\nA,B,', /Expected a field/],
     ['a text value', 'sankey-beta\nA,B,abc', /not a number/],
+    ['only zero flows', 'sankey-beta\nA,B,0', /positive flow/],
+    [
+      'a total that overflows',
+      'sankey-beta\nA,B,1e308\nA,C,1e308',
+      /more than a number/,
+    ],
     ['an unclosed quote', 'sankey-beta\n"A,B,1', /Unclosed quote/],
     ['a non-ASCII name', 'sankey-beta\nÉcole,B,1', /Unexpected "É"/],
     ['a non-ASCII name in quotes', 'sankey-beta\n"École",B,1', /quoted field/],
@@ -85,6 +91,44 @@ describe('parseSankey', () => {
     ['an accTitle line', 'sankey-beta\naccTitle: T\nA,B,1', /Expected ","/],
   ])('rejects %s, as Mermaid does', (_n, src, re) => {
     expect(() => parseSankey(src)).toThrow(re)
+  })
+
+  it("reports errors on the row of the caller's source, past blank lines", () => {
+    expect(() => parseSankey('sankey-beta\n\nA,B,1\n\nC,D')).toThrow(/Line 5/)
+    expect(() => parseSankey('sankey-beta\n\n\nA,B,x')).toThrow(/Line 4/)
+  })
+
+  it('keeps long chains cheap to check', () => {
+    const rows = Array.from({ length: 7000 }, (_, i) => `n${i},n${i + 1},1`)
+    const t = performance.now()
+    parseSankey(`sankey-beta\n${rows.join('\n')}`)
+    expect(performance.now() - t).toBeLessThan(1000)
+  })
+
+  it('drops unsafe colours and control characters from the init config', () => {
+    const sk = parseSankey(
+      '%%{init: {"sankey": {"linkColor": "url(/x.svg#p)", "prefix": "\\u001b[2J$", "suffix": "k\\u0007", "nodeColors": {"A": "url(/y#z)", "B": "#abc", "C": "rgb(1, 2, 3)", "D": "red"}}}}%%\nsankey-beta\nA,B,1',
+    )
+    expect(sk.config?.linkColor).toBeUndefined()
+    expect(sk.config?.prefix).toBe('[2J$')
+    expect(sk.config?.suffix).toBe('k')
+    expect({ ...sk.config?.nodeColors }).toEqual({
+      B: '#abc',
+      C: 'rgb(1, 2, 3)',
+      D: 'red',
+    })
+    expect(
+      parseSankey(
+        '%%{init: {"sankey": {"linkColor": "#0f0"}}}%%\nsankey-beta\nA,B,1',
+      ).config?.linkColor,
+    ).toBe('#0f0')
+  })
+
+  it('merges nodeColors of several directives per node', () => {
+    const sk = parseSankey(
+      '%%{init: {"sankey": {"nodeColors": {"A": "red", "B": "blue"}}}}%%\n%%{init: {"sankey": {"nodeColors": {"B": "green"}}}}%%\nsankey-beta\nA,B,1',
+    )
+    expect({ ...sk.config?.nodeColors }).toEqual({ A: 'red', B: 'green' })
   })
 
   it('numbers the line of an error', () => {

@@ -64,7 +64,23 @@ export function parseSankey(text: string): Sankey {
   if (!rest.startsWith('\n')) {
     fail(headerLine, 'The "sankey-beta" header must be followed by a new line')
   }
-  const body = rest.replace(/\n+/g, '\n').trim()
+  // Collapse runs of newlines, remembering each kept character's line in the
+  // caller's source so errors point at the real row.
+  const restLine = headerLine
+  let collapsed = ''
+  const lineAt: number[] = []
+  let cur = restLine
+  for (const ch of rest) {
+    if (ch === '\n') {
+      cur++
+      if (collapsed.endsWith('\n')) continue
+    }
+    collapsed += ch
+    lineAt.push(ch === '\n' ? cur - 1 : cur)
+  }
+  const lead2 = collapsed.length - collapsed.trimStart().length
+  const body = collapsed.trim()
+  lineAt.splice(0, lead2)
   if (body === '') {
     fail(headerLine, 'Expected rows of "source,target,value" after the header')
   }
@@ -81,7 +97,8 @@ export function parseSankey(text: string): Sankey {
   }
 
   let pos = 0
-  let line = headerLine + 1
+  const ln = (): number =>
+    lineAt[Math.min(pos, lineAt.length - 1)] ?? headerLine
   const field = (): string => {
     const start = pos
     if (body[pos] === '"') {
@@ -89,7 +106,7 @@ export function parseSankey(text: string): Sankey {
       let out = ''
       for (;;) {
         const ch = body[pos]
-        if (ch === undefined) fail(line, 'Unclosed quote')
+        if (ch === undefined) fail(ln(), 'Unclosed quote')
         if (ch === '"') {
           if (body[pos + 1] === '"') {
             out += '"'
@@ -100,21 +117,20 @@ export function parseSankey(text: string): Sankey {
           break
         }
         if (ch === ',' || ch === '\n' || PLAIN_CHAR.test(ch)) {
-          if (ch === '\n') line++
           out += ch
           pos++
           continue
         }
-        fail(line, `Unexpected "${ch}" in a quoted field`)
+        fail(ln(), `Unexpected "${ch}" in a quoted field`)
       }
-      if (out === '') fail(line, 'Empty field')
+      if (out === '') fail(ln(), 'Empty field')
       return out.trim()
     }
     while (pos < body.length && PLAIN_CHAR.test(body[pos]!)) pos++
     if (pos === start) {
       const ch = body[pos]
       fail(
-        line,
+        ln(),
         ch === undefined
           ? 'Expected a field'
           : ch === ','
@@ -131,7 +147,7 @@ export function parseSankey(text: string): Sankey {
     }
     const found = body[pos]
     fail(
-      line,
+      ln(),
       `Expected ${ch === ',' ? '","' : 'the end of the row'} after the field${
         found === undefined ? '' : `, found "${found}"`
       } (a row is source,target,value)`,
@@ -146,16 +162,14 @@ export function parseSankey(text: string): Sankey {
     const raw = field()
     const value = parseFloat(raw)
     if (!Number.isFinite(value)) {
-      fail(line, `The value "${raw}" is not a number`)
+      fail(ln(), `The value "${raw}" is not a number`)
     }
     links.push({ source: node(s), target: node(t), value })
-    if (pos < body.length) {
-      expect('\n')
-      line++
-    }
+    if (pos < body.length) expect('\n')
   }
 
   assertAcyclic(nodes, links)
+  assertDrawable(nodes, links)
 
   const sankey: Sankey = { nodes, links }
   const init = extractInitConfig(text.split(/\r\n?|\n/))
@@ -165,21 +179,52 @@ export function parseSankey(text: string): Sankey {
 
 /** D3-sankey throws "circular link" when a node's depth passes the node count. */
 function assertAcyclic(nodes: string[], links: SankeyLink[]): void {
+  const out = new Map<string, string[]>(nodes.map((n) => [n, []]))
   const indegree = new Map<string, number>(nodes.map((n) => [n, 0]))
-  for (const l of links) indegree.set(l.target, indegree.get(l.target)! + 1)
+  for (const l of links) {
+    out.get(l.source)!.push(l.target)
+    indegree.set(l.target, indegree.get(l.target)! + 1)
+  }
   const queue = nodes.filter((n) => indegree.get(n) === 0)
   let visited = 0
   while (queue.length > 0) {
     const n = queue.pop()!
     visited++
-    for (const l of links) {
-      if (l.source !== n) continue
-      const d = indegree.get(l.target)! - 1
-      indegree.set(l.target, d)
-      if (d === 0) queue.push(l.target)
+    for (const t of out.get(n)!) {
+      const d = indegree.get(t)! - 1
+      indegree.set(t, d)
+      if (d === 0) queue.push(t)
     }
   }
   if (visited < nodes.length) {
     throw new MermaidParseError('circular link', { diagramType: 'sankey' })
+  }
+}
+
+/**
+ * Mermaid draws `NaN` geometry when every flow is zero or a node's total
+ * overflows to Infinity; both are errors here.
+ */
+function assertDrawable(nodes: string[], links: SankeyLink[]): void {
+  if (!links.some((l) => l.value > 0)) {
+    throw new MermaidParseError('A sankey needs at least one positive flow', {
+      diagramType: 'sankey',
+    })
+  }
+  const into = new Map<string, number>(nodes.map((n) => [n, 0]))
+  const from = new Map<string, number>(nodes.map((n) => [n, 0]))
+  for (const l of links) {
+    from.set(l.source, from.get(l.source)! + l.value)
+    into.set(l.target, into.get(l.target)! + l.value)
+  }
+  for (const n of nodes) {
+    if (!Number.isFinite(from.get(n)!) || !Number.isFinite(into.get(n)!)) {
+      throw new MermaidParseError(
+        `The flows of "${n}" add up to more than a number can hold`,
+        {
+          diagramType: 'sankey',
+        },
+      )
+    }
   }
 }

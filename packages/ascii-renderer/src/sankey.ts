@@ -54,8 +54,14 @@ export function renderSankeyAscii(
     colorizeText(s, hex, colorMode)
   const accent = theme.accent ?? theme.fg
   const showValues = sk.config?.showValues ?? true
+  const round = (v: number): number => {
+    const r = Math.round(v * 100) / 100
+    return Number.isFinite(r) ? r : v
+  }
   const fmt = (v: number): string =>
-    `${sk.config?.prefix ?? ''}${Math.round(v * 100) / 100}${sk.config?.suffix ?? ''}`
+    `${sk.config?.prefix ?? ''}${round(v)}${sk.config?.suffix ?? ''}`
+  // A quoted name may span lines; a flow row stays on one.
+  const one = (name: string): string => name.replace(/\s*\n\s*/g, ' ')
 
   const total = new Map<string, { out: number; in: number }>()
   for (const id of sk.nodes) total.set(id, { out: 0, in: 0 })
@@ -65,7 +71,9 @@ export function renderSankeyAscii(
   }
   const sources = sk.nodes.filter((id) => sk.links.some((l) => l.source === id))
   const maxFlow = Math.max(...sk.links.map((l) => l.value))
-  const targetWidth = Math.max(...sk.links.map((l) => displayWidth(l.target)))
+  const targetWidth = Math.max(
+    ...sk.links.map((l) => displayWidth(one(l.target))),
+  )
   const valueWidth = showValues
     ? Math.max(...sk.links.map((l) => displayWidth(fmt(l.value))))
     : 0
@@ -74,7 +82,7 @@ export function renderSankeyAscii(
   for (const id of sources) {
     const t = total.get(id)!
     rows.push(
-      paint(id, theme.fg) +
+      paint(one(id), theme.fg) +
         (showValues ? '  ' + paint(fmt(Math.max(t.in, t.out)), theme.fg) : ''),
     )
     const out = sk.links.filter((l) => l.source === id)
@@ -93,7 +101,7 @@ export function renderSankeyAscii(
         '  ' +
           paint(i === out.length - 1 ? g.last : g.mid, theme.arrow) +
           ' ' +
-          paint(pad(l.target, targetWidth), theme.fg) +
+          paint(pad(one(l.target), targetWidth), theme.fg) +
           '  ' +
           bar +
           gap +

@@ -751,9 +751,16 @@ labels, custom sizes), measured with a throwaway script, not yet a checked-in or
   Trebuchet. A label that overhangs the bars (outlined labels left of the first column, or right of
   the last) widens the viewBox by a 12% allowance on its Trebuchet width so it is not cut off; mermaid's
   own viewBox is a few px narrower there. Diagrams whose labels sit inside the 600px frame are unaffected.
-- **Text values.** Mermaid draws `A,B,abc` with `NaN` geometry; here it is a parse error.
-- **`accTitle` / `accDescr`.** Accepted and used for the SVG's accessible name like every
-  type; mermaid's sankey grammar rejects the lines.
+- **Values that cannot be drawn.** Mermaid draws `NaN` geometry for a text value (`A,B,abc`), for a
+  diagram whose flows are all zero, and for a node whose flows add up past the largest double; here
+  each is an error.
+- **Colours.** `linkColor`, besides `gradient`, `source` and `target`, and `nodeColors` take a keyword,
+  hex or colour function (`rgb()`, `hsl()`, `oklch()`...); anything else, notably `url(...)` (which an
+  inline SVG would fetch), is ignored. Mermaid passes any string through. `prefix` and `suffix` lose control
+  characters. Several `%%{init}%%` directives merge their `nodeColors` per node.
+- **`accTitle` / `accDescr`.** Accepted like every type: `accTitle` is the SVG's accessible name and
+  `accDescr` its description (a diagram with only `accDescr` has a description but no name, as for every
+  type). Mermaid's sankey grammar rejects both lines.
 - **Sizing.** `useMaxWidth` is ignored: the SVG carries a fixed `width` and `height`.
 - **HTML in names.** Mermaid runs names through its HTML sanitiser (`<script>…</script>` is removed, `<img onerror>` loses its handler);
   names are drawn as plain text here.

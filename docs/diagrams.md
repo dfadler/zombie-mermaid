@@ -1742,8 +1742,9 @@ Supported: `source,target,value` rows (a field may be quoted to hold commas, wit
 quotes), the header must be alone on its line, a row has exactly three
 non-empty fields, a node linked back to itself (directly or through others) is
 a "circular link" error, and a repeated pair stays two links. `accTitle` and
-`accDescr` lines are accepted and not printed (Mermaid's sankey grammar has no
-such lines and rejects them).
+`accDescr` lines are accepted (as the SVG's name and description) and not printed;
+Mermaid's sankey grammar rejects them. See Known differences for colours and values
+that cannot be drawn.
 
 The SVG uses d3-sankey's layout ported to TypeScript (same iteration, same
 numbers) and Mermaid's drawing: bars, labels beside them with the value on the

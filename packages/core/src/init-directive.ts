@@ -79,6 +79,26 @@ export interface SankeyInitConfig {
   nodeColors?: Record<string, string>
 }
 
+/** Drop C0/C1 control characters (and DEL): they would reach a terminal or an XML parser. */
+function stripControls(s: string): string {
+  // eslint-disable-next-line no-control-regex
+  return s.replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
+}
+
+/**
+ * A CSS colour a sankey may paint with: a keyword, hex, or a colour function.
+ * Anything else (notably `url(...)`, which would fetch a resource from an
+ * inline SVG) is dropped.
+ */
+function isSafeCssColor(v: unknown): v is string {
+  return (
+    typeof v === 'string' &&
+    /^(?:#[0-9a-f]{3,8}|[a-z]+|(?:rgb|hsl|hwb|lab|lch|oklab|oklch|color)a?\([^()]*\))$/i.test(
+      v.trim(),
+    )
+  )
+}
+
 /** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
 const SEQUENCE_NUMBER_KEYS = new Set<string>([
   'width',
@@ -640,16 +660,23 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         align === 'justify'
       )
         t.nodeAlignment = align
-      if (typeof rec.linkColor === 'string') t.linkColor = rec.linkColor
+      if (
+        rec.linkColor === 'gradient' ||
+        rec.linkColor === 'source' ||
+        rec.linkColor === 'target' ||
+        isSafeCssColor(rec.linkColor)
+      )
+        t.linkColor = rec.linkColor
       if (typeof rec.showValues === 'boolean') t.showValues = rec.showValues
-      if (typeof rec.prefix === 'string') t.prefix = rec.prefix
-      if (typeof rec.suffix === 'string') t.suffix = rec.suffix
+      if (typeof rec.prefix === 'string') t.prefix = stripControls(rec.prefix)
+      if (typeof rec.suffix === 'string') t.suffix = stripControls(rec.suffix)
       if (rec.labelStyle === 'legacy' || rec.labelStyle === 'outlined')
         t.labelStyle = rec.labelStyle
       if (typeof rec.nodeColors === 'object' && rec.nodeColors !== null) {
-        const colors: Record<string, string> = {}
+        // No prototype: a node named `constructor` must not find a function.
+        const colors: Record<string, string> = Object.create(null)
         for (const [id, c] of Object.entries({ ...rec.nodeColors }))
-          if (typeof c === 'string') colors[id] = c
+          if (isSafeCssColor(c)) colors[id] = c
         t.nodeColors = colors
       }
       config.sankey = t
@@ -726,7 +753,18 @@ export function extractInitConfig(lines: string[]): InitConfig {
       merged.timeline = { ...merged.timeline, ...config.timeline }
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
     if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
-    if (config.sankey) merged.sankey = { ...merged.sankey, ...config.sankey }
+    if (config.sankey) {
+      const earlier = merged.sankey?.nodeColors
+      merged.sankey = { ...merged.sankey, ...config.sankey }
+      if (config.sankey.nodeColors) {
+        // Directives add to each other's node colours, later ones winning per node.
+        merged.sankey.nodeColors = Object.assign(
+          Object.create(null),
+          earlier,
+          config.sankey.nodeColors,
+        )
+      }
+    }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)

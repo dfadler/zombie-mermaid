@@ -113,7 +113,7 @@ describe('renderMermaidSVG sankey', () => {
     expect(svg).toContain('class="nodes"')
     expect(svg).toContain('class="node-labels" font-size="14"')
     expect(svg).toContain('Agricultural &#39;waste&#39; 124.73')
-    expect(svg).toMatch(/stroke="url\(#[^"]*sankey-link-0\)"/)
+    expect(svg).toMatch(/stroke="url\(#[^"]*sankey-[a-z0-9]+-link-0\)"/)
     expect(svg).toMatch(/stroke-width="128\.03"/)
     // The thinnest ribbon is at least one pixel wide.
     expect(svg).toContain('stroke-width="1"')
@@ -130,13 +130,13 @@ describe('renderMermaidSVG sankey', () => {
     expect(run('#00ff00')).toContain('stroke="#00ff00"')
   })
 
-  it('uses nodeColors as given and escapes them', () => {
+  it('uses nodeColors as given and ignores ones that could fetch a resource', () => {
     const svg = renderMermaidSVG(
-      '%%{init: {"sankey": {"nodeColors": {"A": "red", "B": "x\\"y"}}}}%%\nsankey-beta\nA,B,1',
+      '%%{init: {"sankey": {"nodeColors": {"A": "red", "B": "url(/x.svg#p)"}}}}%%\nsankey-beta\nA,B,1',
     )
     expect(svg).toContain('fill="red"')
     expect(svg).toContain('stop-color="red"')
-    expect(svg).toContain('fill="x&quot;y"')
+    expect(svg).not.toContain('url(/x.svg')
   })
 
   it('draws outlined labels twice, as halo and text', () => {
@@ -152,6 +152,29 @@ describe('renderMermaidSVG sankey', () => {
       '%%{init: {"sankey": {"showValues": false}}}%%\nsankey-beta\nA,B,1',
     )
     expect(svg).toContain('dy="0.35em"')
+  })
+
+  it('does not mistake node names such as `constructor` for configured colours', () => {
+    const svg = renderMermaidSVG(
+      '%%{init: {"sankey": {"nodeColors": {"A": "red"}}}}%%\nsankey-beta\nconstructor,toString,1\nA,constructor,1',
+    )
+    expect(svg).toContain('fill="red"')
+    expect(svg).not.toContain('function')
+    expect(svg).not.toContain('NaN')
+  })
+
+  it('draws an empty graph for nodes without links, and formats huge values', () => {
+    const p = layoutSankey({ nodes: ['A'], links: [] })
+    expect(Number.isFinite(p.width) && Number.isFinite(p.height)).toBe(true)
+    expect(layout('sankey-beta\nA,B,1e307').nodes[0]!.label.text).toBe(
+      'A 1e+307',
+    )
+  })
+
+  it('scopes gradient ids to the diagram', () => {
+    const id = (src: string) =>
+      /linearGradient id="([^"]+)"/.exec(renderMermaidSVG(src))![1]
+    expect(id('sankey-beta\nA,B,1')).not.toBe(id('sankey-beta\nA,B,2'))
   })
 
   it('throws "circular link" for a cycle', () => {

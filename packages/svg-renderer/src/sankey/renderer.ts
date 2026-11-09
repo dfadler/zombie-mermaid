@@ -42,6 +42,14 @@ function r(n: number): string {
   return String(Math.round(n * 100) / 100)
 }
 
+/** Short stable hash, so two sankeys inlined in one page do not share gradient ids. */
+function hash(s: string): string {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++)
+    h = Math.imul(h ^ s.charCodeAt(i), 16777619)
+  return (h >>> 0).toString(36)
+}
+
 function sankeyStyles(
   sk: PositionedSankey,
   colors: DiagramColors,
@@ -152,6 +160,7 @@ export function renderSankeySvg(
   parts.push('</g>')
 
   const mode = sk.options.linkColor
+  const scope = `sankey-${hash(JSON.stringify([sk.links, sk.nodes.map((n) => n.id)]))}`
   parts.push('<g class="links" fill="none" stroke-opacity="0.5">')
   sk.links.forEach((l, i) => {
     const s = sk.nodes[l.source]!
@@ -161,7 +170,7 @@ export function renderSankeySvg(
     let stroke: string
     let defs = ''
     if (mode === 'gradient') {
-      const id = `sankey-link-${i}`
+      const id = `${scope}-link-${i}`
       defs =
         `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${r(l.x0)}" x2="${r(l.x1)}">` +
         `<stop offset="0%"${paint(s, 't', 'stop-color')}/>` +

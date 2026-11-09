@@ -339,6 +339,12 @@ function sankey(
   }
 }
 
+/** Two decimals, without overflowing for values near the double limit. */
+function roundValue(v: number): number {
+  const r = Math.round(v * 100) / 100
+  return Number.isFinite(r) ? r : v
+}
+
 const num = (n: number): number => Math.round(n * 1e6) / 1e6
 
 /** Lay a parsed {@link Sankey} out; throws `circular link` for a cycle, as Mermaid does. */
@@ -380,7 +386,7 @@ export function layoutSankey(sk: Sankey): PositionedSankey {
     y0: 0,
     y1: 0,
   }))
-  if (nodes.length === 0) {
+  if (nodes.length === 0 || links.length === 0) {
     return {
       width,
       height,
@@ -414,7 +420,7 @@ export function layoutSankey(sk: Sankey): PositionedSankey {
     const start =
       labelStyle === 'outlined' ? n.layer >= central : n.x0 < width / 2
     const text = showValues
-      ? `${n.id} ${prefix}${Math.round(n.value * 100) / 100}${suffix}`
+      ? `${n.id} ${prefix}${roundValue(n.value)}${suffix}`
       : n.id
     const node: PositionedSankeyNode = {
       id: n.id,
@@ -432,8 +438,8 @@ export function layoutSankey(sk: Sankey): PositionedSankey {
         anchor: start ? 'start' : 'end',
       },
     }
-    const color = c.nodeColors?.[n.id]
-    if (color !== undefined) node.color = color
+    const colors = c.nodeColors
+    if (colors && Object.hasOwn(colors, n.id)) node.color = colors[n.id]
     return node
   })
   const positionedLinks: PositionedSankeyLink[] = links.map((l) => ({

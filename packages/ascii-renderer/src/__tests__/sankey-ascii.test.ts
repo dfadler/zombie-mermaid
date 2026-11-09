@@ -48,6 +48,21 @@ describe('sankey ASCII', () => {
     expect(hidden).toBe('A\n  └─▶ B  ████████████████████')
   })
 
+  it('keeps a multi-line name on one row and shows huge values', () => {
+    const out = render('sankey-beta\n"two\nlines",B,1e307')
+    expect(out).toContain('two lines')
+    expect(out).toContain('1e+307')
+    expect(out).not.toContain('Infinity')
+    expect(out.split('\n')).toHaveLength(2)
+  })
+
+  it('drops terminal controls from prefix and suffix', () => {
+    const out = render(
+      '%%{init: {"sankey": {"prefix": "\\u001b[2J$"}}}%%\nsankey-beta\nA,B,1',
+    )
+    expect(out).not.toContain('\u001b')
+  })
+
   it('paints bars in colour modes', () => {
     const out = renderMermaidASCII('sankey-beta\nA,B,1', {
       colorMode: 'truecolor',
