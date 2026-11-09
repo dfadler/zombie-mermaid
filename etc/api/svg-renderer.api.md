@@ -25,6 +25,7 @@ import { MermaidGraph } from '@zombie-mermaid/core';
 import { Mindmap } from '@zombie-mermaid/mermaid-parser';
 import { MonoFontEmbed } from '@zombie-mermaid/core';
 import { niceTickValues } from '@zombie-mermaid/core';
+import { Packet } from '@zombie-mermaid/mermaid-parser';
 import { PieChart } from '@zombie-mermaid/mermaid-parser';
 import { Point } from '@zombie-mermaid/core';
 import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
@@ -292,6 +293,9 @@ export function layoutKanban(kanban: Kanban): PositionedKanban;
 export function layoutMindmap(mindmap: Mindmap): PositionedMindmap;
 
 // @public
+export function layoutPacket(packet: Packet): PositionedPacket;
+
+// @public
 export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedPieChart;
 
 // @public (undocumented)
@@ -342,6 +346,13 @@ export const NODE_PADDING: {
 };
 
 // @public
+export const PACKET: {
+    readonly labelFontSize: 12;
+    readonly byteFontSize: 10;
+    readonly titleFontSize: 14;
+};
+
+// @public
 export const PIE: {
     readonly height: 450;
     readonly margin: 40;
@@ -363,6 +374,53 @@ export function pieColorValue(index: number, accent: string | undefined, bg: str
 
 // @public
 export function pointsToPath(points: Point[], curve?: CurveStyle): string;
+
+// @public (undocumented)
+export interface PositionedPacket {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    rows: PositionedPacketBlock[][];
+    // (undocumented)
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedPacketBit {
+    // (undocumented)
+    anchor: 'start' | 'middle' | 'end';
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedPacketBlock {
+    bits?: PositionedPacketBit[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    labelX: number;
+    // (undocumented)
+    labelY: number;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
 
 // @public
 export const QUADRANT: {
@@ -437,6 +495,9 @@ export const renderMermaidSync: typeof renderMermaidSVG;
 
 // @public
 export function renderMindmapSvg(chart: PositionedMindmap, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderPacketSvg(p: PositionedPacket, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderPieSvg(chart: PositionedPieChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;

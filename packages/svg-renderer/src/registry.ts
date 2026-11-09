@@ -666,16 +666,6 @@ const requirementModule: DiagramModule<
 }
 
 /**
- * GitGraphs parse from the raw `text` (Mermaid's lexer has no `;` statement
- * separator), then lay out with Mermaid's own constants. Colours are this
- * library's palette; no interactivity applies.
- */
-const gitgraphModule: DiagramModule<GitGraph, PositionedGitGraph> = {
-  type: 'gitgraph',
-  parse: (_lines, text) => parseGitGraph(text),
-  layoutForSvg: (gg) => layoutGitGraph(gg),
-  renderSvg(positioned, ctx) {
-    return renderGitGraphSvg(
  * Packets parse from the raw `text` (`;` is not a statement separator and a
  * label may contain one), then lay out to Mermaid's fixed geometry. No theme
  * variables or interactivity apply.
@@ -686,6 +676,29 @@ const packetModule: DiagramModule<Packet, PositionedPacket> = {
   layoutForSvg: (packet) => layoutPacket(packet),
   renderSvg(positioned, ctx) {
     return renderPacketSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * GitGraphs parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator), then lay out with Mermaid's own constants. Colours are this
+ * library's palette; no interactivity applies.
+ */
+const gitgraphModule: DiagramModule<GitGraph, PositionedGitGraph> = {
+  type: 'gitgraph',
+  parse: (_lines, text) => parseGitGraph(text),
+  layoutForSvg: (gg) => layoutGitGraph(gg),
+  renderSvg(positioned, ctx) {
+    return renderGitGraphSvg(
       positioned,
       ctx.colors,
       ctx.font,
