@@ -3315,6 +3315,22 @@ pie title Pets adopted by volunteers
       'A bare `timeline` is valid: just the arrowed axis.',
     source: `timeline`,
   },
+  {
+    title: 'Pie: Wide Legend',
+    category: 'Pie',
+    description:
+      'A centred legend with labels wider than the frame: the viewBox stays 490px wide and the overhang is clipped, as in mermaid 12.3.0.',
+    source: `---
+config:
+  pie:
+    legendPosition: center
+---
+pie title Reports by team
+  "Platform infrastructure and reliability engineering" : 40
+  "Customer facing web applications and mobile clients" : 35
+  "Data" : 25`,
+  },
+
   // ══════════════════════════════════════════════════════════════════════════
   //  KANBAN BOARDS
   //  Each source has an ASCII golden of the same shape under
@@ -3386,20 +3402,5 @@ kanban
     i1[**Bold** and *italic*<br>on two lines]
   Doing
   Done`,
-  },
-  {
-    title: 'Pie: Wide Legend',
-    category: 'Pie',
-    description:
-      'A centred legend with labels wider than the frame: the viewBox stays 490px wide and the overhang is clipped, as in mermaid 12.3.0.',
-    source: `---
-config:
-  pie:
-    legendPosition: center
----
-pie title Reports by team
-  "Platform infrastructure and reliability engineering" : 40
-  "Customer facing web applications and mobile clients" : 35
-  "Data" : 25`,
   },
 ]
