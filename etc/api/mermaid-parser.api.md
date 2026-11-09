@@ -546,6 +546,7 @@ export interface Message {
     seqNumber?: number;
     // (undocumented)
     to: string;
+    wrap?: boolean;
 }
 
 // @public
@@ -607,6 +608,7 @@ export interface Note {
     afterIndex: number;
     position: 'left' | 'right' | 'over';
     text: string;
+    wrap?: boolean;
 }
 
 // @public

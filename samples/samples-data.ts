@@ -2903,14 +2903,16 @@ pie title Pets adopted by volunteers
     title: 'Sequence: Long Block Tab And Divider Labels',
     category: 'Sequence',
     description:
-      'Long block and divider labels over adjacent participants: the labels wrap onto several lines and the gap between the participants stays as it is.',
+      'Long block and divider labels over adjacent participants: the labels wrap onto several lines and the gap between the participants stays as it is. A word wider than the frame is split with a hyphen (#2773); `wrap:` wraps one message or note and `nowrap:` keeps one whole, and the prefix is not drawn (#2783).',
     source: `sequenceDiagram
   participant A
   participant B
   par a branch with a long descriptive title
-    A->>B: x
-  and another branch with an equally long title
+    A->>B: wrap: alpha beta gamma delta epsilon zeta eta theta iota kappa
+    B->>A: nowrap: ok
+  and Antidisestablishmentarianism_pneumonoultramicroscopicsilicovolcanoconiosis_extra
     B->>A: y
+    Note over A: wrap: alpha beta gamma delta epsilon zeta eta theta
   end`,
   },
   {

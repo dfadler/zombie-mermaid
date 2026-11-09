@@ -123,6 +123,8 @@ export interface Message {
   bidirectional?: boolean
   /** Sequence number to display next to this arrow when `autonumber` is active */
   seqNumber?: number
+  /** `wrap:` (true) / `nowrap:` (false) prefix; overrides the init `sequence.wrap` */
+  wrap?: boolean
 }
 
 export interface Block {
@@ -157,6 +159,8 @@ export interface Note {
   position: 'left' | 'right' | 'over'
   /** Message index after which this note appears */
   afterIndex: number
+  /** `wrap:` / `nowrap:` prefix; overrides the init `sequence.wrap` */
+  wrap?: boolean
 }
 
 // ============================================================================
