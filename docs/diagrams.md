@@ -1260,6 +1260,55 @@ spine for both `timeline` and `timeline TD`.
 - A `section` is a `[name]` row; markers and headings use the theme accent.
 - `accTitle` and `accDescr` are not printed.
 
+## Packet Diagrams
+
+`packet` (and its older header `packet-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/packet.html)
+and its renderer's geometry. The SVG output agrees element by element with
+`mermaid@12.3.0` (`__tests__/packet-agreement.test.ts` replays 18 renders of it).
+
+```mermaid
+packet
+title TCP Packet
+0-15: "Source Port"
+16-31: "Destination Port"
+32-63: "Sequence Number"
+```
+
+Supported: `0-15: "label"` ranges, `106: "label"` single bits, `+8: "label"` bit
+counts, `title`, `%%` comments, `accTitle` and `accDescr`, and the `packet`
+config keys `rowHeight`, `bitWidth`, `bitsPerRow`, `paddingX`, `paddingY`,
+`showBits` and `bitOrder` (`descending` mirrors each row so the highest bit is
+on the left, new in Mermaid 12.3.0), set through `%%{init}%%` or front matter.
+As in Mermaid, fields must be contiguous from bit 0 and each one ends its line,
+labels are quoted (single or double quotes, backslash escapes), a field may
+follow the header on its line, a zero-width `+0` or `end < start` is an error,
+a field crossing a row is cut at the boundary and repeated (label included) on
+each row, and at most 10000 rows are kept. A bare `packet` is valid.
+
+The SVG uses Mermaid's geometry (rows `rowHeight + paddingY` apart, boxes
+`bits * bitWidth - paddingX` wide, 10px bit numbers above the boxes, the title
+under the last row) and the theme's colours. See
+[Known differences](known-differences.md#packet-diagrams).
+
+### ASCII Packet Diagrams
+
+Mermaid has no text output for packets, so this is this library's own drawing:
+each field is a box with shared borders, its first and last bit on the top line
+and its label centred under them. A box is 2 columns per bit (3 for a long
+label if the row still fits in 120 columns); a label wider than its box ends in
+`…` (`~` in ASCII mode), and a number that does not fit is dropped.
+
+```text
+                                           TCP Packet
+┌───────────────────────────────────────────────┬───────────────────────────────────────────────┐
+│0                                            15│16                                           31│
+│                  Source Port                  │               Destination Port                │
+├───────────────────────────────────────────────┴───────────────────────────────────────────────┤
+│32                                                                                           63│
+│                                        Sequence Number                                        │
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1267,7 +1316,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Type                                                                  | Header                                                                                                          |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
-| Packet                                                                | `packet` / `packet-beta`                                                                                        |
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
 | User journey                                                          | `journey`                                                                                                       |

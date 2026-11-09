@@ -1567,6 +1567,55 @@ spine for both `timeline` and `timeline TD`.
 - A `section` is a `[name]` row; markers and headings use the theme accent.
 - `accTitle` and `accDescr` are not printed.
 
+## Packet Diagrams
+
+`packet` (and its older header `packet-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/packet.html)
+and its renderer's geometry. The SVG output agrees element by element with
+`mermaid@12.3.0` (`__tests__/packet-agreement.test.ts` replays 18 renders of it).
+
+```mermaid
+packet
+title TCP Packet
+0-15: "Source Port"
+16-31: "Destination Port"
+32-63: "Sequence Number"
+```
+
+Supported: `0-15: "label"` ranges, `106: "label"` single bits, `+8: "label"` bit
+counts, `title`, `%%` comments, `accTitle` and `accDescr`, and the `packet`
+config keys `rowHeight`, `bitWidth`, `bitsPerRow`, `paddingX`, `paddingY`,
+`showBits` and `bitOrder` (`descending` mirrors each row so the highest bit is
+on the left, new in Mermaid 12.3.0), set through `%%{init}%%` or front matter.
+As in Mermaid, fields must be contiguous from bit 0 and each one ends its line,
+labels are quoted (single or double quotes, backslash escapes), a field may
+follow the header on its line, a zero-width `+0` or `end < start` is an error,
+a field crossing a row is cut at the boundary and repeated (label included) on
+each row, and at most 10000 rows are kept. A bare `packet` is valid.
+
+The SVG uses Mermaid's geometry (rows `rowHeight + paddingY` apart, boxes
+`bits * bitWidth - paddingX` wide, 10px bit numbers above the boxes, the title
+under the last row) and the theme's colours. See
+[Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#packet-diagrams).
+
+### ASCII Packet Diagrams
+
+Mermaid has no text output for packets, so this is this library's own drawing:
+each field is a box with shared borders, its first and last bit on the top line
+and its label centred under them. A box is 2 columns per bit (3 for a long
+label if the row still fits in 120 columns); a label wider than its box ends in
+`…` (`~` in ASCII mode), and a number that does not fit is dropped.
+
+```text
+                                           TCP Packet
+┌───────────────────────────────────────────────┬───────────────────────────────────────────────┐
+│0                                            15│16                                           31│
+│                  Source Port                  │               Destination Port                │
+├───────────────────────────────────────────────┴───────────────────────────────────────────────┤
+│32                                                                                           63│
+│                                        Sequence Number                                        │
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1574,7 +1623,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Type                                                                  | Header                                                                                                          |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
-| Packet                                                                | `packet` / `packet-beta`                                                                                        |
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
 | User journey                                                          | `journey`                                                                                                       |
@@ -2726,6 +2774,29 @@ drawing size agree on every gallery sample.
   sandboxed cross-origin frame, so its mermaid version and `timeline TD` output could not be
   read; `TD` is checked against the oracle only.
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
+
+## Packet Diagrams
+
+Checked against mermaid 12.3.0 (`__tests__/fixtures/packet-official-12.3.0.json`, 18
+renders): viewBox, every box, label and bit number match to the pixel. mermaid 12.2.0
+(the pin) has no `bitOrder` key; every other key and the geometry are the same.
+
+- **Colours.** Mermaid draws `#efefef` boxes with black text and strokes; this library
+  uses the theme's node fill, stroke and text colours.
+- **Empty title element.** Mermaid always emits an empty `packetTitle` `<text>`; this
+  library emits it only when there is a title.
+- **Title markup.** Mermaid HTML-sanitizes the title (`&` shows as `&amp;`, tags are
+  kept as text); this library shows the title as written.
+- **Init config values.** Mermaid draws garbage for a negative size, a zero or fractional
+  `bitsPerRow` (NaN coordinates, an endless row count) and coerces strings by
+  arithmetic (`"bitWidth": "20"` works, `"showBits": "no"` is true). Here a number
+  outside 0..1e5 (`bitsPerRow`: an integer 1..10000), a string or a wrong-typed
+  value is ignored and the default stays.
+- **ASCII.** Mermaid has no text mode for packets, so there is nothing to match; the
+  drawing is described in [Diagrams](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#ascii-packet-diagrams).
+- **GitHub and mermaid.live.** Not checked (no browser session with GitHub or
+  mermaid.live available; the renders compared are the real `mermaid@12.3.0` npm
+  build in headless Chromium).
 
 ---
 
