@@ -433,15 +433,8 @@ function spreadDiamondFaces(
 ): Map<AsciiEdge, { start?: number; end?: number }> {
   const out = new Map<AsciiEdge, { start?: number; end?: number }>()
   const dir = graph.config.graphDirection
-  const flowSide =
-    dir === 'LR'
-      ? 'right'
-      : dir === 'TD'
-        ? 'bottom'
-        : dir === 'BT'
-          ? 'top'
-          : undefined
-  if (!flowSide) return out
+  // BT is TD drawn flipped: its flow face is the bottom one here too.
+  const flowSide = dir === 'LR' ? 'right' : 'bottom'
   const crossOf = (n: AsciiNode): number =>
     dir === 'LR' ? requireGridCoord(n).y : requireGridCoord(n).x
   interface Use {
