@@ -60,18 +60,66 @@ export const MINDMAP = {
 
 const num = (n: number): string => String(Math.round(n * 1e4) / 1e4)
 
-function runWidth(run: MindmapTextRun): number {
-  return estimateTextWidth(run.text, MINDMAP.fontSize, run.bold ? 700 : 400)
+/** Width in px of one styled run of a label. */
+export type RunMeasure = (run: MindmapTextRun) => number
+
+const estimateRun: RunMeasure = (run) =>
+  estimateTextWidth(run.text, MINDMAP.fontSize, run.bold ? 700 : 400)
+
+function lineWidth(
+  line: readonly MindmapTextRun[],
+  measure: RunMeasure = estimateRun,
+): number {
+  return line.reduce((sum, run) => sum + measure(run), 0)
 }
 
-function lineWidth(line: readonly MindmapTextRun[]): number {
-  return line.reduce((sum, run) => sum + runWidth(run), 0)
+const CJK = '\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}'
+/** Break after a hyphen before a letter (`edge-case`), and between ideographs and kana. */
+const CUTS = new RegExp(
+  `(?<=[\\p{L}\\p{N}]-)(?=\\p{L})|(?<=[${CJK}])(?![，。！？、；：）」』】])(?=\\S)|(?<=\\S)(?<![（「『【])(?=[${CJK}])`,
+  'gu',
+)
+
+/** Chrome's break opportunities inside a word: `edge-case` is two pieces (`T-1` is one). */
+function wordPieces(word: MindmapTextRun[]): MindmapTextRun[][] {
+  const text = word.map((r) => r.text).join('')
+  const cuts = new Set([...text.matchAll(CUTS)].map((m) => m.index))
+  const pieces: MindmapTextRun[][] = [[]]
+  let at = 0
+  for (const run of word) {
+    let from = 0
+    for (let k = 1; k < run.text.length; k++) {
+      if (!cuts.has(at + k)) continue
+      pieces[pieces.length - 1]!.push({ ...run, text: run.text.slice(from, k) })
+      pieces.push([])
+      from = k
+    }
+    pieces[pieces.length - 1]!.push({ ...run, text: run.text.slice(from) })
+    // A cut exactly at a run boundary starts the next piece there.
+    at += run.text.length
+    if (cuts.has(at)) pieces.push([])
+  }
+  return pieces.filter((p) => p.length > 0)
+}
+
+/** The runs of a line without the spaces at either end. */
+function trimRuns(line: readonly MindmapTextRun[]): MindmapTextRun[] {
+  const runs = line.map((r) => ({ ...r }))
+  while (runs.length > 0 && runs[0]!.text.trimStart() === '') runs.shift()
+  while (runs.length > 0 && runs.at(-1)!.text.trimEnd() === '') runs.pop()
+  if (runs.length > 0) {
+    runs[0]!.text = runs[0]!.text.trimStart()
+    runs.at(-1)!.text = runs.at(-1)!.text.trimEnd()
+  }
+  return runs
 }
 
 /** Greedy word wrap of one line of runs into `max` px lines; a word split across styled runs stays whole. */
 function wrapLine(
   line: readonly MindmapTextRun[],
   max: number,
+  measure: RunMeasure,
+  breakSpaces: boolean,
 ): MindmapTextRun[][] {
   const tokens = line.flatMap((run) =>
     (run.text.match(/\s+|\S+/g) ?? []).map((text) => ({ ...run, text })),
@@ -82,43 +130,66 @@ function wrapLine(
   for (let i = 0; i < tokens.length;) {
     if (isSpace(tokens[i]!)) {
       out[out.length - 1]!.push(tokens[i]!)
-      width += runWidth(tokens[i]!)
+      width += measure(tokens[i]!)
       i++
       continue
     }
     const word: MindmapTextRun[] = []
     while (i < tokens.length && !isSpace(tokens[i]!)) word.push(tokens[i++]!)
-    const w = lineWidth(word)
-    const current = out[out.length - 1]!
-    if (width + w > max && current.some((t) => !isSpace(t))) {
-      out.push([])
-      width = 0
-    }
-    out[out.length - 1]!.push(...word)
-    width += w
+    const pieces = breakSpaces ? wordPieces(word) : [word]
+    pieces.forEach((piece, k) => {
+      const w = lineWidth(piece, measure)
+      // `white-space: break-spaces` keeps the space after a word on its line,
+      // so the word fits only together with it.
+      const last = k === pieces.length - 1
+      const fit =
+        w + (breakSpaces && last && i < tokens.length ? measure(tokens[i]!) : 0)
+      const current = out[out.length - 1]!
+      if (width + fit > max && current.some((t) => !isSpace(t))) {
+        out.push([])
+        width = 0
+      }
+      out[out.length - 1]!.push(...piece)
+      width += w
+    })
   }
   return out
 }
 
-/** Label lines and box: wrap at 200px when the longest line reaches it. */
-export function layoutLabel(text: string): {
+/**
+ * Label lines and box: wrap at `max` px (200, or the caller's box) when the
+ * longest line reaches it; `measure` defaults to this library's font metrics.
+ * `breakSpaces` is Chrome's `white-space: break-spaces` wrapping, kanban's.
+ */
+export function layoutLabel(
+  text: string,
+  max: number = MINDMAP.maxNodeWidth,
+  measure: RunMeasure = estimateRun,
+  breakSpaces = false,
+): {
   lines: MindmapTextRun[][]
   width: number
   height: number
 } {
   const natural = mindmapLabelLines(text)
-  const widest = Math.max(...natural.map(lineWidth))
-  if (widest < MINDMAP.maxNodeWidth) {
+  const widest = Math.max(...natural.map((l) => lineWidth(l, measure)))
+  if (widest < max) {
     return {
       lines: natural,
       width: widest,
       height: natural.length * MINDMAP.lineHeight,
     }
   }
-  const lines = natural.flatMap((line) => wrapLine(line, MINDMAP.maxNodeWidth))
+  const lines = natural.flatMap((line) =>
+    wrapLine(line, max, measure, breakSpaces),
+  )
+  // An unbreakable word wider than the box widens it (Chrome's table layout).
+  const overflow = breakSpaces
+    ? Math.max(...lines.map((l) => lineWidth(trimRuns(l), measure)))
+    : 0
   return {
     lines,
-    width: MINDMAP.maxNodeWidth,
+    width: Math.max(max, overflow),
     height: lines.length * MINDMAP.lineHeight,
   }
 }

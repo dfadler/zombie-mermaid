@@ -63,6 +63,7 @@ import {
   parseGantt,
   parseTimeline,
   parseJourney,
+  parseKanban,
   parseRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -89,6 +90,8 @@ import type {
   PositionedTimeline,
   Journey,
   PositionedJourney,
+  Kanban,
+  PositionedKanban,
   RequirementDiagram,
   PositionedRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
@@ -114,6 +117,8 @@ import { layoutTimeline } from './timeline/layout.ts'
 import { layoutJourney } from './journey/layout.ts'
 import { renderJourneySvg } from './journey/renderer.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutKanban } from './kanban/layout.ts'
+import { renderKanbanSvg } from './kanban/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -574,6 +579,25 @@ const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
   },
 }
 
+/** Kanban boards parse from the raw `text`, then lay out to Mermaid's fixed geometry. */
+const kanbanModule: DiagramModule<Kanban, PositionedKanban> = {
+  type: 'kanban',
+  parse: (_lines, text) => parseKanban(text),
+  layoutForSvg: (kb) => layoutKanban(kb),
+  renderSvg(positioned, ctx) {
+    return renderKanbanSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
 /**
  * Requirement diagrams parse from the raw `text` (a value may hold `;` or
  * `'`), then lay out with ELK like ER. `options.direction` replaces the
@@ -636,5 +660,6 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   gantt: ganttModule,
   timeline: timelineModule,
   journey: journeyModule,
+  kanban: kanbanModule,
   requirement: requirementModule,
 }
