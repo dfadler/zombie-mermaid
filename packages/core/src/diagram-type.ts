@@ -31,6 +31,7 @@ export const DIAGRAM_TYPES = [
   'gantt',
   'kanban',
   'timeline',
+  'radar',
   'journey',
   'requirement',
 ] as const
@@ -67,6 +68,8 @@ export function detectDiagramType(text: string): DiagramType {
   if (/^kanban(?:\s|$)/.test(header)) return 'kanban'
   // Also case-sensitive: Mermaid's detector is `/^\s*timeline/`.
   if (/^timeline(?:\s|$)/.test(header)) return 'timeline'
+  // Case-sensitive: Mermaid's detector is `/^\s*radar-beta/`.
+  if (/^radar-beta/.test(header)) return 'radar'
   // Case-sensitive too: Mermaid's detector is `/^\s*journey/`.
   // A `#` ends the keyword too (`journey#c`): the grammar's `journey\b`.
   if (/^journey(?:\s|#|$)/.test(header)) return 'journey'
