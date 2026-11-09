@@ -834,3 +834,55 @@ labels and dashes, box positions and the drawing size agree on every gallery sam
   source order, so a `style` line written before a `class` line for the same box
   loses to it there and wins here.
 - **No wrapping.** A long `text:` stays on one line, as in Mermaid.
+
+## Packet Diagrams
+
+Checked against mermaid 12.3.0 (`__tests__/fixtures/packet-official-12.3.0.json`, 18
+renders): viewBox, every box, label and bit number match to the pixel. mermaid 12.2.0
+(the pin) has no `bitOrder` key; every other key and the geometry are the same.
+
+- **Colours.** Mermaid draws `#efefef` boxes with black text and strokes; this library
+  uses the theme's node fill, stroke and text colours.
+- **Empty title element.** Mermaid always emits an empty `packetTitle` `<text>`; this
+  library emits it only when there is a title.
+- **Title markup.** Mermaid HTML-sanitizes the title (`&` shows as `&amp;`, tags are
+  kept as text); this library shows the title as written.
+- **Init config values.** Mermaid draws garbage for a negative size, a zero or fractional
+  `bitsPerRow` (NaN coordinates, an endless row count) and coerces strings by
+  arithmetic (`"bitWidth": "20"` works, `"showBits": "no"` is true). Here a number
+  outside 0..1e5 (`bitsPerRow`: an integer 1..10000), a string or a wrong-typed
+  value is ignored and the default stays.
+- **ASCII.** Mermaid has no text mode for packets, so there is nothing to match; the
+  drawing is described in [Diagrams](diagrams.md#ascii-packet-diagrams).
+- **GitHub and mermaid.live.** Not checked (no browser session with GitHub or
+  mermaid.live available; the renders compared are the real `mermaid@12.3.0` npm
+  build in headless Chromium).
+
+## Requirement diagrams
+
+Checked against mermaid 12.3.0 with `pnpm run requirement:oracle` (12.2.0, the pin,
+reads the same sources the same way): box sizes and text, relationship order,
+labels and dashes, box positions and the drawing size agree on every gallery sample.
+
+- **Layout.** Mermaid places boxes with dagre, this library with ELK, so boxes agree
+  only where both put them in the same ranks. Checked against mermaid 12.3.0, they
+  agree on chains, trees, `direction BT | LR | RL`, disconnected boxes and a
+  self-relationship; they can differ by tens of pixels where two relationships join
+  the same pair of boxes or a box is shared by two parents (a diamond shape), and
+  on cycles. Box sizes and text always agree. Tracked in
+  [#2966](https://github.com/dfadler/zombie-mermaid/issues/2966).
+- **Line routes.** Lines are straight runs with right-angle bends where ELK routes
+  them; Mermaid curves its corners ([#2967](https://github.com/dfadler/zombie-mermaid/issues/2967)). The arrow and the circle-plus sit at the same
+  ends.
+- **Font and kerning.** Text is drawn in the render's font (Inter by default) inside
+  boxes sized for Trebuchet MS, as Mermaid sizes them. The kerning table was
+  measured in Chromium on macOS; a machine without Trebuchet MS sizes boxes from
+  another face in Mermaid, which this library cannot follow. Characters outside
+  printable ASCII are estimated (a full em for CJK).
+- **Palette.** Box fills are the theme's node colours; Mermaid's default look has a
+  purple border and `#ECECFF` fill, and its `neo` look a drop shadow.
+- **Styling order.** `classDef`, `class` and `style` resolve in the library's usual
+  cascade (class definition, assigned class, then `style`); Mermaid appends them in
+  source order, so a `style` line written before a `class` line for the same box
+  loses to it there and wins here.
+- **No wrapping.** A long `text:` stays on one line, as in Mermaid.

@@ -62,6 +62,7 @@ import {
   parseQuadrantChart,
   parseGantt,
   parseTimeline,
+  parsePacket,
   parseRadar,
   parseJourney,
   parseKanban,
@@ -89,6 +90,7 @@ import type {
   PositionedGanttChart,
   Timeline,
   PositionedTimeline,
+  Packet,
   Radar,
   PositionedRadar,
   Journey,
@@ -120,6 +122,9 @@ import { layoutTimeline } from './timeline/layout.ts'
 import { layoutJourney } from './journey/layout.ts'
 import { renderJourneySvg } from './journey/renderer.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutPacket } from './packet/layout.ts'
+import type { PositionedPacket } from './packet/layout.ts'
+import { renderPacketSvg } from './packet/renderer.ts'
 import { layoutRadar } from './radar/layout.ts'
 import { renderRadarSvg } from './radar/renderer.ts'
 import { layoutKanban } from './kanban/layout.ts'
@@ -656,6 +661,29 @@ const requirementModule: DiagramModule<
 }
 
 /**
+ * Packets parse from the raw `text` (`;` is not a statement separator and a
+ * label may contain one), then lay out to Mermaid's fixed geometry. No theme
+ * variables or interactivity apply.
+ */
+const packetModule: DiagramModule<Packet, PositionedPacket> = {
+  type: 'packet',
+  parse: (_lines, text) => parsePacket(text),
+  layoutForSvg: (packet) => layoutPacket(packet),
+  renderSvg(positioned, ctx) {
+    return renderPacketSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -688,6 +716,7 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   mindmap: mindmapModule,
   gantt: ganttModule,
   timeline: timelineModule,
+  packet: packetModule,
   radar: radarModule,
   journey: journeyModule,
   kanban: kanbanModule,

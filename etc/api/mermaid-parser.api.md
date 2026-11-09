@@ -10,6 +10,7 @@ import { ErInitLayout } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
 import { NodeInteraction } from '@zombie-mermaid/core';
 import { NodeShape } from '@zombie-mermaid/core';
+import { PacketInitConfig } from '@zombie-mermaid/core';
 import { Point } from '@zombie-mermaid/core';
 import { QuadrantConfig } from '@zombie-mermaid/core';
 import { SequenceInitLayout } from '@zombie-mermaid/core';
@@ -660,6 +661,52 @@ export interface Note {
 }
 
 // @public
+export interface Packet {
+    blocks: PacketBlock[];
+    config?: PacketInitConfig;
+    title?: string;
+    words: PacketBlock[][];
+}
+
+// @public
+export const PACKET_DEFAULTS: {
+    readonly rowHeight: 32;
+    readonly bitWidth: 32;
+    readonly bitsPerRow: 32;
+    readonly showBits: true;
+    readonly bitOrder: "ascending";
+    readonly paddingX: 5;
+    readonly paddingY: 5;
+};
+
+// @public
+export interface PacketBlock {
+    // (undocumented)
+    end: number;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    start: number;
+}
+
+// @public
+export interface PacketConfig {
+    // (undocumented)
+    bitOrder: 'ascending' | 'descending';
+    // (undocumented)
+    bitsPerRow: number;
+    // (undocumented)
+    bitWidth: number;
+    // (undocumented)
+    paddingX: number;
+    paddingY: number;
+    // (undocumented)
+    rowHeight: number;
+    // (undocumented)
+    showBits: boolean;
+}
+
+// @public
 export function packGanttSection(tasks: GanttTask[], offset: number, orders: Map<GanttTask, number>): number;
 
 // @public
@@ -703,6 +750,9 @@ export function parseMermaid(text: string): MermaidGraph;
 
 // @public
 export function parseMindmap(text: string): Mindmap;
+
+// @public
+export function parsePacket(text: string): Packet;
 
 // @public
 export function parsePieChart(text: string): PieChart;
@@ -1932,6 +1982,9 @@ export interface RequirementRelationship {
 
 // @public
 export type RequirementRelationType = 'contains' | 'copies' | 'derives' | 'satisfies' | 'verifies' | 'refines' | 'traces';
+
+// @public
+export function resolvePacketConfig(config?: PacketInitConfig): PacketConfig;
 
 // @public
 export function resolveShapeName(name: string): NodeShape | undefined;
