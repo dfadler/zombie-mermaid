@@ -1,3 +1,5 @@
+import type { ArchitectureInitLayout } from '@zombie-mermaid/core'
+
 // ============================================================================
 // Architecture diagram types (Mermaid `architecture-beta`)
 // ============================================================================
@@ -46,4 +48,6 @@ export interface ArchitectureDiagram {
   services: ArchitectureService[]
   junctions: ArchitectureJunction[]
   edges: ArchitectureEdge[]
+  /** `%%{init}%%` / front-matter `architecture` keys (`padding`, `iconSize`, `fontSize`). */
+  layout?: ArchitectureInitLayout
 }

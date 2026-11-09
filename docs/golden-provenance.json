@@ -299,6 +299,16 @@
     },
     {
       "paths": [
+        "src/__tests__/__snapshots__/architecture-init-2907.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/architecture-init-2907.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "viewBox checked against 12.3.0 for each key in the test body (within 2px for padding, iconSize and the multiplier; labels wider than a tile within 7px)"
+    },
+    {
+      "paths": [
         "src/__tests__/__snapshots__/flowchart-shapes-2552.test.ts.snap"
       ],
       "class": "b",

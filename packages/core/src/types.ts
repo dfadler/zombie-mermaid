@@ -323,6 +323,8 @@ export interface PositionedGroup {
   icon?: string
   /** See `MermaidSubgraph.architecture`. */
   architecture?: boolean
+  /** Edge of an architecture group's corner icon in px: `architecture.padding * 0.75` (30 by default; none is drawn at 0). */
+  iconSize?: number
 }
 
 // ============================================================================
