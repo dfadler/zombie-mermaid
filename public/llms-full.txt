@@ -2812,6 +2812,7 @@ graphs in all three orientations, with and without `parallelCommits` and
   the browser with whatever `trebuchet ms`, `verdana`, `arial` resolves to, so a label's
   box or the drawing size can differ by a pixel or two on a machine without Trebuchet.
   Characters outside printable ASCII are estimated.
+- **Font.** Text is drawn in the render's font (Inter by default) inside Trebuchet-sized boxes, so a long tag or label can overhang its box and the viewBox by a few pixels.
 - **Palette.** Branch colours are the theme accent and its series shades, eight to a
   cycle; mermaid uses its `git0`..`git7` hues. A cherry-pick's bullet is the text colour
   (Mermaid leaves it unstyled, so it is black). The highlight outline uses the text colour.

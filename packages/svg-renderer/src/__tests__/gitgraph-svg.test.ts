@@ -100,11 +100,11 @@ describe('layoutGitGraph – left to right', () => {
 })
 
 describe('layoutGitGraph – orientations', () => {
-  const src =
-    'gitGraph$\n commit id: "a"\n branch f\n commit id: "b"\n checkout main\n merge f id: "m"'
+  const src = (dir: string) =>
+    `gitGraph${dir}\n commit id: "a"\n branch f\n commit id: "b"\n checkout main\n merge f id: "m"`
 
   it('runs time down for TB with branches as columns', () => {
-    const l = layout(src.replace('$', ' TB:'))
+    const l = layout(src(' TB:'))
     expect(l.branches[0]!.line.x1).toBe(0)
     expect(l.branches[0]!.line.y1).toBe(30)
     expect(l.branches[1]!.line.x1).toBeGreaterThan(90)
@@ -112,7 +112,7 @@ describe('layoutGitGraph – orientations', () => {
   })
 
   it('runs time up for BT, with branch labels under the lines', () => {
-    const l = layout(src.replace('$', ' BT:'))
+    const l = layout(src(' BT:'))
     const b = l.branches[0]!
     expect(b.line.y1).toBeGreaterThan(b.line.y2)
     expect(b.bkg.y).toBe(b.line.y1)

@@ -165,6 +165,8 @@ export function renderGitGraphAscii(
   }
 
   const rows: string[] = []
+  // Visible width of each row: colour modes wrap rows in escapes or HTML.
+  const rowWidths: number[] = []
   for (const c of gg.commits) {
     const col = lane.get(c.branch)!
     // cells[i] is the glyph at lane i; `fill` are the horizontal join cells between lanes.
@@ -230,6 +232,9 @@ export function renderGitGraphAscii(
         : ''
     const tags = c.tags.map((t) => `[${t}]`).join(' ')
     const caption = [label, tags].filter(Boolean).join('  ')
+    rowWidths.push(
+      graphWidth + (caption === '' ? 0 : 2 + displayWidth(caption)),
+    )
     rows.push(
       caption === ''
         ? line.replace(/\s+$/, '')
@@ -251,12 +256,7 @@ export function renderGitGraphAscii(
   const body = up ? [...rows].reverse() : rows
   const out: string[] = []
   if (gg.title) {
-    const width = Math.max(
-      graphWidth,
-      ...rows.map((r) =>
-        displayWidth(r.replace(/\u001b\[[\d;]*m|<[^>]*>/g, '')),
-      ),
-    )
+    const width = Math.max(graphWidth, ...rowWidths)
     const pad = Math.max(0, Math.floor((width - displayWidth(gg.title)) / 2))
     out.push(' '.repeat(pad) + paint(gg.title, theme.fg), '')
   }
