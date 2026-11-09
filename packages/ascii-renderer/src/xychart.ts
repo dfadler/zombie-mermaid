@@ -29,6 +29,7 @@ import { colorizeText } from './ansi.ts'
 import { mkCanvas, mkRoleCanvas, write } from './canvas.ts'
 import {
   collapseFlatRange,
+  extractInitConfig,
   niceTickValues,
   splitStatements,
 } from '@zombie-mermaid/core'
@@ -117,7 +118,10 @@ export function renderXYChartAscii(
   theme: AsciiTheme,
 ): string {
   const lines = splitStatements(text)
-  const chart = parseXYChart(lines)
+  const chart = parseXYChart(
+    lines,
+    extractInitConfig(text.split(/\r\n?|\n/)).xyChart,
+  )
   const ch = config.useAscii ? ASC : UNI
 
   if (chart.horizontal) {

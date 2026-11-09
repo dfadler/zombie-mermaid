@@ -171,15 +171,24 @@ export function layoutXYChart(
   chart: XYChart,
   _options: XyChartRenderOptions = {},
 ): PositionedXYChart {
-  if (chart.horizontal) return layoutHorizontal(chart)
-  return layoutVertical(chart)
+  // `xyChart.width` / `height` (mermaid default 700 x 500) move the plot by the
+  // same delta on our scale; the plot never shrinks below 50px.
+  const pw = Math.max(50, XY.plotWidth + (chart.config?.width ?? 700) - 700)
+  const ph = Math.max(50, XY.plotHeight + (chart.config?.height ?? 500) - 500)
+  return chart.horizontal
+    ? layoutHorizontal(chart, pw, ph)
+    : layoutVertical(chart, pw, ph)
 }
 
 // ============================================================================
 // Vertical layout (default)
 // ============================================================================
 
-function layoutVertical(chart: XYChart): PositionedXYChart {
+function layoutVertical(
+  chart: XYChart,
+  pw: number,
+  ph: number,
+): PositionedXYChart {
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
@@ -196,7 +205,7 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
-  const va = valueAxis(chart, XY.plotHeight, () => XY.axisLabelHeight)
+  const va = valueAxis(chart, ph, () => XY.axisLabelHeight)
   const yTicks = va.ticks
   const yLabels = va.labels
   const maxYLabelWidth = Math.max(
@@ -217,8 +226,8 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     (hasYTitle ? XY.axisTitlePad : 0)
   const right = XY.padding
 
-  const plotW = XY.plotWidth
-  const plotH = XY.plotHeight
+  const plotW = pw
+  const plotH = ph
   const totalW = left + plotW + right
   const totalH = top + plotH + bottom
 
@@ -342,6 +351,7 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     lines,
     gridLines,
     legend,
+    ...(chart.config && { config: chart.config }),
   }
 }
 
@@ -349,7 +359,11 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
 // Horizontal layout
 // ============================================================================
 
-function layoutHorizontal(chart: XYChart): PositionedXYChart {
+function layoutHorizontal(
+  chart: XYChart,
+  pw: number,
+  ph: number,
+): PositionedXYChart {
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
@@ -366,7 +380,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   }
   const va = valueAxis(
     chart,
-    XY.plotWidth,
+    pw,
     (labels) =>
       MERMAID_TEXT_SCALE *
       Math.max(
@@ -381,7 +395,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   // Compute category label widths for left margin
   const dataCount = getDataCount(chart)
   const catLabels = getCategoryLabels(chart, dataCount)
-  const cat = buildCatAxis(chart, XY.plotHeight, true)
+  const cat = buildCatAxis(chart, ph, true)
   const maxCatLabelWidth = Math.max(
     ...cat.ticks.map(({ label: l }) =>
       estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
@@ -414,8 +428,8 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
       4,
   )
 
-  const plotW = XY.plotWidth
-  const plotH = XY.plotHeight
+  const plotW = pw
+  const plotH = ph
   const totalW = left + plotW + right
   const totalH = top + plotH + bottom
 
@@ -586,6 +600,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     lines,
     gridLines,
     legend,
+    ...(chart.config && { config: chart.config }),
   }
 }
 

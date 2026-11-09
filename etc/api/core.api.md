@@ -391,6 +391,7 @@ export interface InitConfig {
     theme?: string;
     themeVariables?: ThemeVariables;
     timeline?: TimelineInitConfig;
+    xyChart?: XyChartInitConfig;
 }
 
 // @public
@@ -1013,6 +1014,34 @@ export function withRootClass(openTag: string, cls: string): string;
 
 // @public
 export function wrapToWidth(text: string, maxWidth: number, fontSize: number): string[];
+
+// @public
+export interface XyChartAxisInitConfig {
+    // (undocumented)
+    showAxisLine?: boolean;
+    // (undocumented)
+    showLabel?: boolean;
+    // (undocumented)
+    showTick?: boolean;
+    // (undocumented)
+    showTitle?: boolean;
+}
+
+// @public
+export interface XyChartInitConfig {
+    // (undocumented)
+    chartOrientation?: 'vertical' | 'horizontal';
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    showTitle?: boolean;
+    // (undocumented)
+    width?: number;
+    // (undocumented)
+    xAxis?: XyChartAxisInitConfig;
+    // (undocumented)
+    yAxis?: XyChartAxisInitConfig;
+}
 
 // @public
 export type XyChartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'interactivity' | 'interactive'>;
