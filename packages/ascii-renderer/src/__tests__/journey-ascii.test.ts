@@ -48,6 +48,29 @@ describe('journey ASCII', () => {
     expect(render('journey\ntitle Only')).toBe('Only')
   })
 
+  it('drops control characters from source text, keeping its own colour codes', () => {
+    const out = render(
+      'journey\ntitle T\u001b[2Jx\nsection S\u001b[2J\nA\u001b[2J: 3: Me\u001b[2J',
+    )
+    expect(out).not.toContain('\u001b')
+    expect(out).toContain('T[2Jx')
+  })
+
+  it('names empty actors in task rows as in the legend, and aligns wide scores', () => {
+    const out = render('journey\nA: 3: Me, \nB: 100: Me')
+    expect(out).toContain('Actors: (unnamed), Me')
+    expect(out).toContain(':|   3  A  Me, (unnamed)')
+    expect(out).toContain(':) 100  B  Me')
+  })
+
+  it('lets an upper-case TITLE beat the front-matter title', () => {
+    const out = render(
+      '---\ntitle: Fallback\n---\njourney\nTITLE Actual\nA: 3: Me',
+    )
+    expect(out).toContain('Actual')
+    expect(out).not.toContain('Fallback')
+  })
+
   it('paints faces in colour modes', () => {
     expect(
       renderMermaidASCII('journey\nA: 4: X', { colorMode: 'truecolor' }),

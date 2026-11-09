@@ -68,7 +68,8 @@ export function detectDiagramType(text: string): DiagramType {
   // Also case-sensitive: Mermaid's detector is `/^\s*timeline/`.
   if (/^timeline(?:\s|$)/.test(header)) return 'timeline'
   // Case-sensitive too: Mermaid's detector is `/^\s*journey/`.
-  if (/^journey(?:\s|$)/.test(header)) return 'journey'
+  // A `#` ends the keyword too (`journey#c`): the grammar's `journey\b`.
+  if (/^journey(?:\s|#|$)/.test(header)) return 'journey'
 
   // Case-sensitive: Mermaid's detector is `/^\s*requirement(Diagram)?/`, its
   // grammar keyword `requirementDiagram\b`.

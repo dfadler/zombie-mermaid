@@ -2,7 +2,7 @@
 
 ## Statement separators
 
-Newlines and semicolons both separate statements, for every diagram type:
+Newlines and semicolons both separate statements, for every diagram type except `journey` and `timeline`, whose Mermaid lexers have no `;` separator (in a journey it is a syntax error):
 
 ```
 flowchart TD;A-->B;B-->C
@@ -1353,7 +1353,7 @@ off a terminal, so the ASCII output is this library's own: the same content
 listed row by row.
 
 ```text
-      My working day
+         My working day
 
   Actors: Cat, Me
 
@@ -1361,6 +1361,10 @@ listed row by row.
     :)  5  Make tea       Me
     :|  3  Go upstairs    Me
     :(  1  Do work        Me, Cat
+
+  [Go home]
+    :)  5  Go downstairs  Me
+    :)  5  Sit down       Me
 ```
 
 - Each task shows a face (`:)` above 3, `:|` at 3, `:(` below 3), its score, its

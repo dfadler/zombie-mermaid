@@ -74,6 +74,12 @@ describe('parseJourney', () => {
     expect(() => parseJourney(src)).toThrow(MermaidParseError)
   })
 
+  it('numbers lines across comments, directives and blank lines', () => {
+    expect(() =>
+      parseJourney('%%{init: {\n}}%%\njourney\n# c\n\nsection S\nA'),
+    ).toThrow(/Line 7/)
+  })
+
   it('reports the line of a task missing its score', () => {
     expect(() => parseJourney('journey\n\nA')).toThrow(/Line 3/)
   })

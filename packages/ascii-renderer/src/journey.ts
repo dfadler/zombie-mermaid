@@ -31,6 +31,12 @@ import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { displayWidth } from './display-width.ts'
 
+const UNNAMED = '(unnamed)'
+
+function scoreText(score: number): string {
+  return Number.isNaN(score) ? '?' : String(score)
+}
+
 function face(score: number): string {
   return score > 3 ? ':)' : score < 3 ? ':(' : ':|'
 }
@@ -47,11 +53,17 @@ export function renderJourneyAscii(
   const accent = theme.accent ?? theme.line
   const indent = '  '
 
-  const label = (n: string): string => n.replace(/<br\s*\/?>/gi, ' ')
-  const nameWidth = Math.max(
-    0,
-    ...j.tasks.map((t) => displayWidth(label(t.name))),
-  )
+  // Source text goes to the terminal as typed, so control characters (an
+  // escape sequence in a title would clear the screen) are dropped first.
+  const clean = (n: string): string =>
+    n.replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
+  const label = (n: string): string => clean(n.replace(/<br\s*\/?>/gi, ' '))
+  let nameWidth = 0
+  let scoreWidth = 2
+  for (const t of j.tasks) {
+    nameWidth = Math.max(nameWidth, displayWidth(label(t.name)))
+    scoreWidth = Math.max(scoreWidth, scoreText(t.score).length)
+  }
   const rows: string[] = []
   let width = 0
   const push = (plain: string, painted: string) => {
@@ -60,7 +72,7 @@ export function renderJourneyAscii(
   }
 
   if (j.actors.length > 0) {
-    const list = j.actors.map((a) => a || '(unnamed)').join(', ')
+    const list = j.actors.map((a) => clean(a) || UNNAMED).join(', ')
     push(
       `${indent}Actors: ${list}`,
       `${indent}${paint('Actors:', theme.fg)} ${paint(list, theme.fg)}`,
@@ -74,27 +86,28 @@ export function renderJourneyAscii(
       if (section !== '') {
         if (rows.length > 0 && rows[rows.length - 1] !== '') rows.push('')
         push(
-          `${indent}[${section}]`,
-          `${indent}${paint(`[${section}]`, accent)}`,
+          `${indent}[${clean(section)}]`,
+          `${indent}${paint(`[${clean(section)}]`, accent)}`,
         )
       }
     }
-    const score = Number.isNaN(t.score) ? '?' : String(t.score)
-    const actors = t.actors.filter(Boolean).join(', ')
+    const score = scoreText(t.score).padStart(scoreWidth)
+    const actors = t.actors.map((a) => clean(a) || UNNAMED).join(', ')
     const name = label(t.name)
     const pad = actors ? ' '.repeat(nameWidth - displayWidth(name)) : ''
-    const plain = `${indent}${indent}${face(t.score)} ${score.padStart(2)}  ${name}${pad}${actors ? '  ' + actors : ''}`
+    const plain = `${indent}${indent}${face(t.score)} ${score}  ${name}${pad}${actors ? '  ' + actors : ''}`
     push(
       plain,
-      `${indent}${indent}${paint(face(t.score), accent)} ${paint(score.padStart(2), theme.fg)}  ${paint(name, theme.fg)}${pad}${actors ? '  ' + paint(actors, theme.fg) : ''}`,
+      `${indent}${indent}${paint(face(t.score), accent)} ${paint(score, theme.fg)}  ${paint(name, theme.fg)}${pad}${actors ? '  ' + paint(actors, theme.fg) : ''}`,
     )
   }
   while (rows.length > 0 && rows[rows.length - 1] === '') rows.pop()
 
   const out: string[] = []
   if (j.title) {
-    const pad = Math.max(0, Math.floor((width - displayWidth(j.title)) / 2))
-    out.push(' '.repeat(pad) + paint(j.title, theme.fg), '')
+    const title = clean(j.title)
+    const pad = Math.max(0, Math.floor((width - displayWidth(title)) / 2))
+    out.push(' '.repeat(pad) + paint(title, theme.fg), '')
   }
   return [...out, ...rows].join('\n').trimEnd()
 }

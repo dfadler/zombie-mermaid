@@ -309,7 +309,7 @@ Also exported from the package root:
 
 ## Statement separators
 
-Newlines and semicolons both separate statements, for every diagram type:
+Newlines and semicolons both separate statements, for every diagram type except `journey` and `timeline`, whose Mermaid lexers have no `;` separator (in a journey it is a syntax error):
 
 ```
 flowchart TD;A-->B;B-->C
@@ -1660,7 +1660,7 @@ off a terminal, so the ASCII output is this library's own: the same content
 listed row by row.
 
 ```text
-      My working day
+         My working day
 
   Actors: Cat, Me
 
@@ -1668,6 +1668,10 @@ listed row by row.
     :)  5  Make tea       Me
     :|  3  Go upstairs    Me
     :(  1  Do work        Me, Cat
+
+  [Go home]
+    :)  5  Go downstairs  Me
+    :)  5  Sit down       Me
 ```
 
 - Each task shows a face (`:)` above 3, `:|` at 3, `:(` below 3), its score, its
@@ -2955,8 +2959,8 @@ bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gall
   (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
 - **Not read yet.** `journey` config in `%%{init}%%` (`leftMargin`, `width`, `taskMargin`,
   `maxLabelWidth`, `actorColours`, `sectionFills`, ...) and the themes' `fillType0-7`.
-- **Non-numeric score.** Mermaid emits a `NaN` attribute (the browser reads it as 0, so the
-  face sits at y=0); this library does the same.
+- **Non-numeric score.** Mermaid emits `NaN` face coordinates (browsers draw them at 0);
+  this library emits `0` so the SVG stays valid.
 - **ASCII.** Mermaid has no ASCII output; the row listing above is this library's own.
 
 ## Requirement diagrams

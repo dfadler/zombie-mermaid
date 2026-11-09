@@ -58,12 +58,6 @@ const RULES: ReadonlyArray<readonly [TokenKind, RegExp]> = [
 
 const DIRECTIVE = /%%\{[\s\S]*?\}%%/g
 
-function lineOf(text: string, pos: number): number {
-  let line = 1
-  for (let i = 0; i < pos; i++) if (text.charCodeAt(i) === 10) line++
-  return line
-}
-
 /** Parse Mermaid `journey` source into a typed {@link Journey}. */
 export function parseJourney(text: string): Journey {
   const source = text
@@ -77,6 +71,7 @@ export function parseJourney(text: string): Journey {
   let sawHeader = false
   let pendingName: { name: string; line: number } | undefined
   let pos = 0
+  let tokenLine = 1
 
   const fail = (line: number, msg: string): never => {
     throw new MermaidParseError(`Line ${line}: ${msg}`, {
@@ -96,7 +91,11 @@ export function parseJourney(text: string): Journey {
         break
       }
     }
-    const at = pos
+    // Count the newlines this token spans as it is consumed, so a token's
+    // line is known without rescanning the source from the start.
+    const line = tokenLine
+    for (let i = 0; i < value.length; i++)
+      if (value.charCodeAt(i) === 10) tokenLine++
     pos += value.length
     if (kind === 'SKIP' || kind === 'ACC') continue
     if (kind === 'NEWLINE') {
@@ -110,7 +109,6 @@ export function parseJourney(text: string): Journey {
       continue
     }
 
-    const line = lineOf(source, at)
     if (!sawHeader) {
       if (kind === 'HEADER') {
         sawHeader = true

@@ -784,8 +784,8 @@ bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gall
   (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
 - **Not read yet.** `journey` config in `%%{init}%%` (`leftMargin`, `width`, `taskMargin`,
   `maxLabelWidth`, `actorColours`, `sectionFills`, ...) and the themes' `fillType0-7`.
-- **Non-numeric score.** Mermaid emits a `NaN` attribute (the browser reads it as 0, so the
-  face sits at y=0); this library does the same.
+- **Non-numeric score.** Mermaid emits `NaN` face coordinates (browsers draw them at 0);
+  this library emits `0` so the SVG stays valid.
 - **ASCII.** Mermaid has no ASCII output; the row listing above is this library's own.
 
 ## Requirement diagrams

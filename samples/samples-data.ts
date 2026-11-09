@@ -3619,7 +3619,7 @@ kanban
     title: 'Journey: Repeated Sections',
     category: 'Journey',
     description:
-      'A section name written twice gets two bars (and two colours); a section with no tasks draws nothing.',
+      'A section name written twice gets two bars (and two colours) when another section comes between them (adjacent runs merge into one bar); a section with no tasks draws nothing.',
     source: `journey
     section A
       t1: 1: X

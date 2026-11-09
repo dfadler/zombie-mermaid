@@ -124,6 +124,7 @@ describe('detectDiagramType – journey', () => {
     expect(detectDiagramType('%% c\njourney')).toBe('journey')
     expect(detectDiagramType('Journey')).toBe('flowchart')
     expect(detectDiagramType('journeys')).toBe('flowchart')
+    expect(detectDiagramType('journey#c\nA: 1')).toBe('journey')
   })
 })
 
