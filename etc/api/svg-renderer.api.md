@@ -16,6 +16,7 @@ import { ElkNode } from '@zombie-mermaid/core';
 import { ErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ErRenderOptions } from '@zombie-mermaid/core';
 import { FlowchartRenderOptions } from '@zombie-mermaid/core';
+import { GitGraph } from '@zombie-mermaid/mermaid-parser';
 import { Journey } from '@zombie-mermaid/mermaid-parser';
 import { Kanban } from '@zombie-mermaid/mermaid-parser';
 import { LayoutCache } from '@zombie-mermaid/core';
@@ -29,6 +30,7 @@ import { PieChart } from '@zombie-mermaid/mermaid-parser';
 import { Point } from '@zombie-mermaid/core';
 import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
+import { PositionedGitGraph } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGraph } from '@zombie-mermaid/core';
 import { PositionedJourney } from '@zombie-mermaid/mermaid-parser';
 import { PositionedKanban } from '@zombie-mermaid/mermaid-parser';
@@ -275,6 +277,9 @@ export function layoutErDiagramSync(diagram: ErDiagram, options?: ErRenderOption
 // @public
 export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
 
+// @public (undocumented)
+export function layoutGitGraph(g: GitGraph): PositionedGitGraph;
+
 // @public
 export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
 
@@ -466,6 +471,9 @@ export function renderClassSvg(diagram: PositionedClassDiagram, colors: DiagramC
 
 // @public
 export function renderErSvg(diagram: PositionedErDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderGitGraphSvg(gg: PositionedGitGraph, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderJourneySvg(j: PositionedJourney, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;

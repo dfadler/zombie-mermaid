@@ -1,0 +1,13 @@
+gitGraph TB:
+   commit id: "one"
+   branch feature
+   commit id: "two" tag: "v0.1"
+   checkout main
+   commit id: "three"
+   merge feature id: "four"
+---
+main  feature
+●     ┆   one
+├─────●   two  [v0.1]
+●     │   three
+◎─────╯   four

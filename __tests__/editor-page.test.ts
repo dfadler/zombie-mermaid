@@ -75,6 +75,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   mindmap: 'Mindmap',
   gantt: 'Gantt',
   timeline: 'Timeline',
+  gitgraph: 'GitGraph',
   packet: 'Packet',
   radar: 'Radar',
   journey: 'User Journey',

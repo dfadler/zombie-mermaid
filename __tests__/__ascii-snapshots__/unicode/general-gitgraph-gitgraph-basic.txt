@@ -1,0 +1,7 @@
+main  develop
+●     ┆   init
+●     ┆   docs
+├─────●   feature-a
+│     ●   feature-b
+◎─────╯   release-1
+●     ┆   hotfix

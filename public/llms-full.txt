@@ -1765,6 +1765,76 @@ blank row where the SVG has a divider, relationships dotted with an arrowhead an
 └──────────────────────┘
 ```
 
+## Git graphs
+
+`gitGraph` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/gitgraph.html)
+and its renderer's geometry. `pnpm run gitgraph:oracle` compares the gallery samples
+with `mermaid@12.3.0` (branch lines and label boxes, arrow routes, commit symbols,
+commit labels, tags and the drawing size); 12.2.0 (the pin and mermaid.live today)
+scores the same on every sample.
+
+```mermaid
+gitGraph
+   commit id: "init"
+   commit id: "docs"
+   branch develop
+   checkout develop
+   commit id: "feature-a"
+   commit id: "feature-b"
+   checkout main
+   merge develop id: "release-1"
+   commit id: "hotfix"
+```
+
+Supported: `gitGraph`, `gitGraph LR:` (the default), `gitGraph TB:` and `gitGraph BT:`;
+`commit` with `id:`, `msg:` (or a bare string), any number of `tag:` and
+`type: NORMAL | REVERSE | HIGHLIGHT` in any order; `branch <name> [order: N]` (a name may
+contain `/`, `.` and `-`, or be a quoted string); `checkout` / `switch`; `merge` with
+`id:`, `tag:` and `type:`; `cherry-pick id: "…" [tag: "…"] [parent: "…"]`; `title`,
+`accTitle`, `accDescr` and `%%` comments. The `gitGraph` config block of `%%{init}%%`
+and front matter is read for `mainBranchName`, `mainBranchOrder`, `showCommitLabel`,
+`showBranches`, `rotateCommitLabel` and `parallelCommits`. The errors are Mermaid's:
+a branch that exists, a `checkout` of one that does not, a `merge` of a branch into
+itself, with no commits, with the same head or reusing an id, and a `cherry-pick` of a
+commit on the current branch or of a merge without `parent:`.
+
+The SVG ports Mermaid's renderer: commits 50px apart (40 plus 10), branches 90px apart
+with rotated labels (50 without), the same arrow routes and rerouting lanes, the same
+symbols (a ring for a merge, a cross for `REVERSE`, a square for `HIGHLIGHT`, the
+cherry for a pick) and the same tag boxes. Text widths are summed Trebuchet MS
+advances, not measured in a browser. Colours come from the theme (the accent and its
+series shades), eight to a cycle as in Mermaid. See
+[Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#git-graphs).
+
+### ASCII Git graphs
+
+Mermaid has no text mode for git graphs, and its commit labels would run off a terminal
+after a dozen commits, so the ASCII output is this library's own design: the layout of
+`git log --graph`, one row per commit and one column per branch, for all three
+orientations.
+
+```text
+main  develop
+●     ┆   init
+●     ┆   docs
+├─────●   feature-a
+│     ●   feature-b
+◎─────╯   release-1
+●     ┆   hotfix
+```
+
+- Columns follow Mermaid's branch order (`order:`, then creation); the name is written
+  over its column (under it in `BT`). A branch is dotted (`┆`) before its first
+  commit and `showBranches: false` removes the names and the dotted lines.
+- A commit is `●` (`*` in ASCII mode), `✕` reverse, `◆` highlight, `◎` merge or
+  `○` cherry-pick. A branch's first commit joins the commit it forked from with
+  `├──`; a merge or pick joins the commit it took from with `──╯`.
+- The row's text is the commit id (none with `showCommitLabel: false`; a merge has one
+  only when it was given an `id:`, a pick never) then the tags in brackets.
+- `LR` and `TB` read downward, oldest first. `BT` reads upward, newest first as `git log`
+  prints it. `parallelCommits` is not drawn: every commit has its own row.
+- Lanes are painted in the SVG palette; the title is centred over the graph.
+
 ## Radar charts
 
 `radar-beta` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/radar.html)
@@ -1963,7 +2033,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Use case                                                              | `usecase-beta`                                                                                                  |
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
-| Git graph                                                             | `gitGraph`                                                                                                      |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 | Sankey, Block                                                         | `sankey-beta`, `block-beta` (12.2.0 rejects them with an empty body; header names per upstream docs)            |
@@ -3248,6 +3317,37 @@ labels and dashes, box positions and the drawing size agree on every gallery sam
   source order, so a `style` line written before a `class` line for the same box
   loses to it there and wins here.
 - **No wrapping.** A long `text:` stays on one line, as in Mermaid.
+
+## Git graphs
+
+Checked against mermaid 12.3.0 with `pnpm run gitgraph:oracle` (12.2.0, the pin, scores the
+same): branch lines and label boxes, arrow routes, commit symbols,
+labels, tags and the drawing size agree on every gallery sample and on a sweep of other
+graphs in all three orientations, with and without `parallelCommits` and
+`rotateCommitLabel`.
+
+- **Generated ids.** A commit with no `id:` is `<seq>-<7 hex>`; Mermaid picks the hex at
+  random on every render, so no two renders of it agree. Here it is a hash of the commit,
+  so output is stable. The oracle samples give every commit an id.
+- **Text widths.** Labels, tags and branch names are measured by summing Trebuchet MS
+  advances (macOS) and a line is `round(0.939 em) + round(0.222 em)` tall; Mermaid measures in
+  the browser with whatever `trebuchet ms`, `verdana`, `arial` resolves to, so a label's
+  box or the drawing size can differ by a pixel or two on a machine without Trebuchet.
+  Characters outside printable ASCII are estimated.
+- **Font.** Text is drawn in the render's font (Inter by default) inside Trebuchet-sized boxes, so a long tag or label can overhang its box and the viewBox by a few pixels.
+- **Palette.** Branch colours are the theme accent and its series shades, eight to a
+  cycle; mermaid uses its `git0`..`git7` hues. A cherry-pick's bullet is the text colour
+  (Mermaid leaves it unstyled, so it is black). The highlight outline uses the text colour.
+- **Looks and themes.** The `neo` and `redux` looks and themes, which change the geometry,
+  are not read.
+- **Names.** Mermaid sanitises ids, tags and names with DOMPurify; here they are escaped
+  when written, so markup in them shows as text.
+- **Config keys.** `gitGraph.titleTopMargin`, `diagramPadding` and `useMaxWidth` are not
+  read (25, 8 and the library's own sizing).
+- **ASCII.** Mermaid has no ASCII output; the `git log --graph` layout above is this
+  library's own, and `parallelCommits` does not change it.
+- **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
+  session (no browser with those pages was available).
 
 ---
 

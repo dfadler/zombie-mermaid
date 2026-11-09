@@ -168,7 +168,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "packet", "radar", "journey", "requirement"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "requirement"];
 
 // @public
 export interface DiagramColors {
@@ -346,6 +346,22 @@ export function getCharWidth(char: string): number;
 export function getReadableTextColor(fill: string | undefined, fallback: string): string;
 
 // @public
+export interface GitGraphInitConfig {
+    // (undocumented)
+    mainBranchName?: string;
+    // (undocumented)
+    mainBranchOrder?: number;
+    // (undocumented)
+    parallelCommits?: boolean;
+    // (undocumented)
+    rotateCommitLabel?: boolean;
+    // (undocumented)
+    showBranches?: boolean;
+    // (undocumented)
+    showCommitLabel?: boolean;
+}
+
+// @public
 export function groupStyle(id: string, directives: StyleDirectives): {
     inlineStyle?: Record<string, string>;
 };
@@ -357,6 +373,7 @@ export function hasMeasuredAdvance(char: string): boolean;
 export interface InitConfig {
     classLayout?: ClassInitLayout;
     erLayout?: ErInitLayout;
+    gitGraph?: GitGraphInitConfig;
     ignored: string[];
     kanban?: KanbanInitConfig;
     packet?: PacketInitConfig;

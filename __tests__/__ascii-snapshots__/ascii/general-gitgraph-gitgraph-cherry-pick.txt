@@ -1,0 +1,8 @@
+main  develop  release
+*     :        :   ZERO
++-----*        :   A
+*     |        :   ONE
+|     *        :   B
+@-----+        :   MERGE
++-----+--------o   [cherry-pick:MERGE|parent:B]
+:     +--------o   [cherry-pick:A]

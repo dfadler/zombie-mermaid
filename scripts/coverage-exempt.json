@@ -270,6 +270,16 @@
     "maxLines": 80
   },
   {
+    "file": "scripts/gitgraph-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/gitgraph-agreement.ts",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/lib/gitgraph-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the gitgraph-oracle and layout-oracle CLIs",
+    "maxLines": 70
+  },
+  {
     "file": "scripts/kanban-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/kanban-agreement.ts",
     "maxLines": 80
@@ -337,7 +347,7 @@
   {
     "file": "scripts/lib/separate-scores.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid renders), only reachable from the layout-oracle CLI; each figure is unit-tested in its own *-agreement.ts",
-    "maxLines": 53
+    "maxLines": 56
   },
   {
     "file": "scripts/lib/xychart-measure.ts",

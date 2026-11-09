@@ -3824,4 +3824,151 @@ title Escapes
     source: `packet
 title Nothing yet`,
   },
+  // ══════════════════════════════════════════════════════════════════════════
+  //  GITGRAPHS
+  //  Every commit has an `id:` because Mermaid draws random ids otherwise
+  //  (the oracle compares label widths). Each source has an ASCII golden of
+  //  the same shape under packages/ascii-renderer/src/__tests__/testdata/*/gitgraph_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'GitGraph: Basic',
+    category: 'GitGraph',
+    gallery: true,
+    description:
+      'Commits, a branch, a checkout and a merge: branches are rows (left to right), arrows run from each commit to its children and the merge commit is a ringed bullet.',
+    source: `gitGraph
+   commit id: "init"
+   commit id: "docs"
+   branch develop
+   checkout develop
+   commit id: "feature-a"
+   commit id: "feature-b"
+   checkout main
+   merge develop id: "release-1"
+   commit id: "hotfix"`,
+  },
+  {
+    title: 'GitGraph: Commit Types And Tags',
+    category: 'GitGraph',
+    description:
+      'NORMAL, REVERSE (crossed) and HIGHLIGHT (square) commits, tags stacked above a commit, and `type:` on a merge changing its symbol.',
+    source: `gitGraph
+   commit id: "start"
+   commit id: "bad-idea" type: REVERSE
+   commit id: "milestone" type: HIGHLIGHT tag: "v1.0"
+   branch feature
+   commit id: "wip" tag: "draft" tag: "review"
+   checkout main
+   merge feature id: "merged" type: HIGHLIGHT tag: "v1.1"`,
+  },
+  {
+    title: 'GitGraph: Cherry Pick',
+    category: 'GitGraph',
+    gallery: true,
+    description:
+      'A cherry-pick copies a commit from another branch onto the current one and tags it `cherry-pick:<id>`; picking a merge commit needs `parent:`.',
+    source: `gitGraph
+   commit id: "ZERO"
+   branch develop
+   commit id: "A"
+   checkout main
+   commit id: "ONE"
+   checkout develop
+   commit id: "B"
+   checkout main
+   merge develop id: "MERGE"
+   branch release
+   checkout release
+   cherry-pick id: "MERGE" parent: "B"
+   cherry-pick id: "A"`,
+  },
+  {
+    title: 'GitGraph: Top To Bottom',
+    category: 'GitGraph',
+    gallery: true,
+    description:
+      '`gitGraph TB:` turns branches into columns and time into rows, with rotated labels left of the line and tags to its right.',
+    source: `gitGraph TB:
+   commit id: "one"
+   branch feature
+   commit id: "two" tag: "v0.1"
+   checkout main
+   commit id: "three"
+   merge feature id: "four"`,
+  },
+  {
+    title: 'GitGraph: Bottom To Top',
+    category: 'GitGraph',
+    description:
+      '`gitGraph BT:` runs time upward, so the first commit is at the bottom and branch labels sit under the lines.',
+    source: `gitGraph BT:
+   commit id: "one"
+   branch feature
+   commit id: "two" tag: "v0.1"
+   checkout main
+   commit id: "three"
+   merge feature id: "four"`,
+  },
+  {
+    title: 'GitGraph: Config And Branch Order',
+    category: 'GitGraph',
+    description:
+      'The `gitGraph` config block: `mainBranchName`, `showCommitLabel`, `rotateCommitLabel`, and `order:` placing branches by number instead of creation order.',
+    source: `%%{init: {"gitGraph": {"mainBranchName": "trunk", "showCommitLabel": true, "rotateCommitLabel": false}}}%%
+gitGraph
+   commit id: "a"
+   branch hotfix order: 2
+   branch feature order: 1
+   checkout feature
+   commit id: "b"
+   checkout hotfix
+   commit id: "c"
+   checkout trunk
+   merge feature id: "m1"
+   merge hotfix id: "m2"`,
+  },
+  {
+    title: 'GitGraph: Parallel Commits',
+    category: 'GitGraph',
+    description:
+      '`parallelCommits: true` positions each commit one step after its closest parent instead of after the previous commit, so commits on different branches line up.',
+    source: `---
+title: Parallel commits
+config:
+  gitGraph:
+    parallelCommits: true
+---
+gitGraph
+   commit id: "a"
+   branch develop
+   commit id: "b"
+   checkout main
+   commit id: "c"
+   checkout develop
+   commit id: "d"
+   checkout main
+   merge develop id: "e"`,
+  },
+  {
+    title: 'GitGraph: Hidden Branches And Labels',
+    category: 'GitGraph',
+    description:
+      '`showBranches: false` drops the branch lines and names; `showCommitLabel: false` drops the commit ids.',
+    source: `%%{init: {"gitGraph": {"showBranches": false, "showCommitLabel": false}}}%%
+gitGraph
+   commit id: "a"
+   branch topic
+   commit id: "b"
+   checkout main
+   commit id: "c" tag: "v2"
+   merge topic id: "d"`,
+  },
+  {
+    title: 'GitGraph: Empty',
+    category: 'GitGraph',
+    description:
+      'A bare `gitGraph` is valid: just the label of the main branch and its line.',
+    source: `gitGraph`,
+  },
 ]

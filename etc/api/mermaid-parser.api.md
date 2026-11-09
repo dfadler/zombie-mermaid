@@ -468,6 +468,58 @@ export type GanttWeekday = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'fr
 // @public
 export function getSeriesColor(index: number, accentColor: string, bgColor?: string): string;
 
+// @public
+export const GIT_GRAPH_DEFAULTS: GitGraphConfig;
+
+// @public
+export interface GitCommit {
+    // (undocumented)
+    branch: string;
+    customId?: boolean;
+    customType?: GitCommitType;
+    id: string;
+    message: string;
+    parents: string[];
+    // (undocumented)
+    seq: number;
+    // (undocumented)
+    tags: string[];
+    // (undocumented)
+    type: GitCommitType;
+}
+
+// @public
+export type GitCommitType = 'NORMAL' | 'REVERSE' | 'HIGHLIGHT' | 'MERGE' | 'CHERRY_PICK';
+
+// @public
+export interface GitGraph {
+    branches: string[];
+    commits: GitCommit[];
+    // (undocumented)
+    config: GitGraphConfig;
+    direction: GitGraphDirection;
+    title?: string;
+}
+
+// @public
+export interface GitGraphConfig {
+    // (undocumented)
+    mainBranchName: string;
+    // (undocumented)
+    mainBranchOrder: number;
+    // (undocumented)
+    parallelCommits: boolean;
+    // (undocumented)
+    rotateCommitLabel: boolean;
+    // (undocumented)
+    showBranches: boolean;
+    // (undocumented)
+    showCommitLabel: boolean;
+}
+
+// @public (undocumented)
+export type GitGraphDirection = 'LR' | 'TB' | 'BT';
+
 // @public (undocumented)
 export interface GridLine {
     // (undocumented)
@@ -738,6 +790,9 @@ export function parseGantt(source: string, now?: Date): GanttChart;
 
 // @public
 export function parseGenericTypes(input: string): string;
+
+// @public
+export function parseGitGraph(text: string): GitGraph;
 
 // @public
 export function parseJourney(text: string): Journey;
@@ -1216,6 +1271,148 @@ export interface PositionedGanttTick {
     // (undocumented)
     label: string;
     x: number;
+}
+
+// @public (undocumented)
+export interface PositionedGitArrow {
+    // (undocumented)
+    colorIndex: number;
+    // (undocumented)
+    d: string;
+}
+
+// @public (undocumented)
+export interface PositionedGitBranch {
+    bkg: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        tx?: number;
+        ty?: number;
+    };
+    colorIndex: number;
+    label: {
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    line: {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+    };
+    // (undocumented)
+    name: string;
+}
+
+// @public (undocumented)
+export interface PositionedGitCommit {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label?: PositionedGitCommitLabel;
+    // (undocumented)
+    shapes: PositionedGitShape[];
+    // (undocumented)
+    tags: PositionedGitTag[];
+}
+
+// @public (undocumented)
+export interface PositionedGitCommitLabel {
+    groupTransform?: string;
+    // (undocumented)
+    rect: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+    };
+    rotate?: string;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    textPos: {
+        x: number;
+        y: number;
+    };
+}
+
+// @public
+export interface PositionedGitGraph {
+    // (undocumented)
+    arrows: PositionedGitArrow[];
+    // (undocumented)
+    branches: PositionedGitBranch[];
+    // (undocumented)
+    commits: PositionedGitCommit[];
+    // (undocumented)
+    direction: GitGraphDirection;
+    // (undocumented)
+    showBranches: boolean;
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export type PositionedGitShape = {
+    kind: 'circle';
+    cx: number;
+    cy: number;
+    r: number;
+    cls: string;
+    fill?: string;
+} | {
+    kind: 'rect';
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    cls: string;
+} | {
+    kind: 'path';
+    d: string;
+    cls: string;
+} | {
+    kind: 'line';
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    cls: string;
+    stroke?: string;
+};
+
+// @public (undocumented)
+export interface PositionedGitTag {
+    // (undocumented)
+    hole: {
+        cx: number;
+        cy: number;
+    };
+    // (undocumented)
+    holeTransform?: string;
+    points: string;
+    polygonTransform?: string;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    textPos: {
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    textTransform?: string;
 }
 
 // @public
