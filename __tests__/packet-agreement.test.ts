@@ -26,11 +26,11 @@ function shape(svg: string): Shape {
   for (const m of svg.matchAll(
     /<(rect|text)\b([^>]*?)\/?>(?:([^<]*)<\/text>)?/g,
   )) {
-    const attrs = ATTRS.map((a) => {
-      const v = new RegExp(`(?:^|\\s)${a}="([^"]*)"`).exec(m[2]!)?.[1]
-      return v === undefined ? '' : `${a}=${v}`
-    })
-      .filter(Boolean)
+    const found = new Map<string, string>()
+    for (const a of m[2]!.matchAll(/([\w-]+)="([^"]*)"/g))
+      found.set(a[1]!, a[2]!)
+    const attrs = ATTRS.filter((a) => found.has(a))
+      .map((a) => `${a}=${found.get(a)}`)
       .join(' ')
     const text = (m[3] ?? '')
       .replace(/&lt;/g, '<')
