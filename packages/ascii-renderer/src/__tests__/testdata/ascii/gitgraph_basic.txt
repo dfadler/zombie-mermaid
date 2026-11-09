@@ -14,5 +14,5 @@ main  develop
 *     :   docs
 +-----*   feature-a
 |     *   feature-b
-@-----/   release-1
+@-----+   release-1
 *     :   hotfix

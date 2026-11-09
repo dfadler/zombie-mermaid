@@ -386,13 +386,7 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
       }
     }
     box.rect(label.rect.x, label.rect.y, label.rect.w, label.rect.h, t)
-    box.rect(
-      label.textPos.x,
-      label.textPos.y - ascent(10),
-      w,
-      h,
-      t,
-    )
+    box.rect(label.textPos.x, label.textPos.y - ascent(10), w, h, t)
     return label
   }
 
@@ -541,7 +535,12 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
     return findLane(y1, y2 - diff / 5, depth + 1)
   }
 
-  const shouldReroute = (a: GitCommit, b: GitCommit, p1: Pt, p2: Pt): boolean => {
+  const shouldReroute = (
+    a: GitCommit,
+    b: GitCommit,
+    p1: Pt,
+    p2: Pt,
+  ): boolean => {
     const bIsFurthest = vertical ? p1.x < p2.x : p1.y < p2.y
     const branch = bIsFurthest ? b.branch : a.branch
     return [...commits.values()].some(
@@ -553,7 +552,9 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
     const p1 = commitPos.get(a.id)
     const p2 = commitPos.get(b.id)
     if (p1 === undefined || p2 === undefined)
-      throw new Error(`Commit positions not found for commits ${a.id} and ${b.id}`)
+      throw new Error(
+        `Commit positions not found for commits ${a.id} and ${b.id}`,
+      )
     const reroute = shouldReroute(a, b, p1, p2)
     let arc = ''
     let arc2 = ''
@@ -635,7 +636,9 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
     }
     if (d === undefined) throw new Error('Line definition not found')
     // Every vertex of the path (the arcs are quarter circles inside their corner box).
-    for (const m of d.matchAll(/[ML] (-?[\d.e+-]+) (-?[\d.e+-]+)|, 0, 0, [01], (-?[\d.e+-]+) (-?[\d.e+-]+)/g)) {
+    for (const m of d.matchAll(
+      /[ML] (-?[\d.e+-]+) (-?[\d.e+-]+)|, 0, 0, [01], (-?[\d.e+-]+) (-?[\d.e+-]+)/g,
+    )) {
       box.add(Number(m[1] ?? m[3]), Number(m[2] ?? m[4]))
     }
     return { d, colorIndex: (colorIdx ?? 0) % THEME_COLOR_LIMIT }
@@ -686,7 +689,8 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
 
   const arrows: PositionedGitArrow[] = []
   for (const c of commits.values())
-    for (const parent of c.parents) arrows.push(drawArrow(commits.get(parent)!, c))
+    for (const parent of c.parents)
+      arrows.push(drawArrow(commits.get(parent)!, c))
 
   const drawn = drawCommits(true)
 

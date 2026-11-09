@@ -30,12 +30,14 @@ describe('gitGraph ASCII', () => {
       '*     :   a',
       '+-----*   b',
       '*     |   c',
-      '@-----/   m  [v1]',
+      '@-----+   m  [v1]',
     ])
   })
 
   it('reads upward for BT, with the names under the columns', () => {
-    expect(render(FORK.replace('gitGraph', 'gitGraph BT:')).split('\n')).toEqual([
+    expect(
+      render(FORK.replace('gitGraph', 'gitGraph BT:')).split('\n'),
+    ).toEqual([
       '◎─────╮   m  [v1]',
       '●     │   c',
       '├─────●   b',
@@ -53,7 +55,7 @@ describe('gitGraph ASCII', () => {
     const out = render(
       'gitGraph\n commit id: "n"\n commit id: "r" type: REVERSE\n commit id: "h" type: HIGHLIGHT\n branch d\n commit id: "x"\n checkout main\n merge d id: "m"\n cherry-pick id: "x"',
     )
-    expect(out).toContain('⊗')
+    expect(out).toContain('✕')
     expect(out).toContain('◆')
     expect(out).toContain('◎')
     expect(out).toContain('○')
@@ -106,8 +108,8 @@ describe('gitGraph ASCII', () => {
   })
 
   it('paints lanes in colour modes', () => {
-    expect(
-      renderMermaidASCII(FORK, { colorMode: 'truecolor' }),
-    ).toContain('\u001b[')
+    expect(renderMermaidASCII(FORK, { colorMode: 'truecolor' })).toContain(
+      '\u001b[',
+    )
   })
 })

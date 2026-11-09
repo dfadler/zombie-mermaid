@@ -19,7 +19,7 @@
 //   - Branches are columns in Mermaid's order (`order:` then creation); the
 //     name is written over its column, and `showBranches: false` drops the
 //     names. Before its first commit a branch is dotted (`┆`).
-//   - A commit is a symbol on its branch: `●` normal, `⊗` reverse, `◆`
+//   - A commit is a symbol on its branch: `●` normal, `✕` reverse, `◆`
 //     highlight, `◎` merge, `○` cherry-pick. A branch's first commit joins
 //     the commit it forked from with `├──`; a merge or cherry-pick joins the
 //     commit it took from with `──╯` (`──╮` in `BT`).
@@ -75,7 +75,7 @@ const UNI: Glyphs = {
   joinDownLeft: '╮',
   joinDownRight: '╭',
   normal: '●',
-  reverse: '⊗',
+  reverse: '✕',
   highlight: '◆',
   merge: '◎',
   cherry: '○',
@@ -87,10 +87,11 @@ const ASC: Glyphs = {
   cross: '+',
   forkRight: '+',
   forkLeft: '+',
-  joinUpLeft: '/',
-  joinUpRight: '\\',
-  joinDownLeft: '\\',
-  joinDownRight: '/',
+  // Not `/` and `\`: ASCII output never has diagonals (ascii.test.ts).
+  joinUpLeft: '+',
+  joinUpRight: '+',
+  joinDownLeft: '+',
+  joinDownRight: '+',
   normal: '*',
   reverse: 'X',
   highlight: '#',
@@ -119,7 +120,10 @@ export function renderGitGraphAscii(
   let cursor = 0
   gg.branches.forEach((_, i) => {
     x.push(cursor)
-    cursor += Math.max(3, gg.config.showBranches ? displayWidth(names[i]!) + 2 : 3)
+    cursor += Math.max(
+      3,
+      gg.config.showBranches ? displayWidth(names[i]!) + 2 : 3,
+    )
   })
   const lane = new Map(gg.branches.map((b, i) => [b, i] as const))
   const lanes = gg.branches.length
@@ -176,7 +180,8 @@ export function renderGitGraphAscii(
 
     // The commit this one grows out of on another lane, or the one it takes.
     const first = commits.get(c.parents[0] ?? '')
-    const other = c.parents[1] !== undefined ? commits.get(c.parents[1]) : undefined
+    const other =
+      c.parents[1] !== undefined ? commits.get(c.parents[1]) : undefined
     const joins: { from: number; fork: boolean }[] = []
     if (first && first.branch !== c.branch)
       joins.push({ from: lane.get(first.branch)!, fork: true })
@@ -246,7 +251,9 @@ export function renderGitGraphAscii(
   if (gg.title) {
     const width = Math.max(
       graphWidth,
-      ...rows.map((r) => displayWidth(r.replace(/\u001b\[[\d;]*m|<[^>]*>/g, ''))),
+      ...rows.map((r) =>
+        displayWidth(r.replace(/\u001b\[[\d;]*m|<[^>]*>/g, '')),
+      ),
     )
     const pad = Math.max(0, Math.floor((width - displayWidth(gg.title)) / 2))
     out.push(' '.repeat(pad) + paint(gg.title, theme.fg), '')

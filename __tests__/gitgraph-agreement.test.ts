@@ -27,11 +27,11 @@ describe('parseGitGraphSvg', () => {
     expect(l.arrows).toEqual([{ nums: [10, -2, 60, -2] }])
     expect(l.commits).toEqual([{ nums: [10, -2, 10] }])
     expect(l.labels.map((x) => x.text ?? x.nums.length)).toEqual([
-      5, // the rotated group's transform
-      4, // the label rect
+      5, // The rotated group's transform
+      4, // The label rect
       'a',
-      4, // the tag polygon's points
-      3, // the tag hole
+      4, // The tag polygon's points
+      3, // The tag hole
       't',
     ])
     expect(l.title).toEqual({ nums: [52, -25], text: 'T' })
@@ -40,7 +40,9 @@ describe('parseGitGraphSvg', () => {
 
   it('reads our own markup', () => {
     const o = parseGitGraphSvg(
-      renderMermaidSVG('gitGraph\n commit id: "a" tag: "t"\n branch d\n commit id: "b"'),
+      renderMermaidSVG(
+        'gitGraph\n commit id: "a" tag: "t"\n branch d\n commit id: "b"',
+      ),
     )
     expect(o.arrows).toHaveLength(1)
     expect(o.commits).toHaveLength(2)
@@ -106,14 +108,27 @@ describe('gitGraphAgreement', () => {
 
 describe('gitGraphBreaches', () => {
   it('lists samples under the floor and errored ones', () => {
-    const ok = { branches: 1, arrows: 1, commits: 1, labels: 1, frame: 1, items: 4 }
+    const ok = {
+      branches: 1,
+      arrows: 1,
+      commits: 1,
+      labels: 1,
+      frame: 1,
+      items: 4,
+    }
     expect(gitGraphBreaches({ a: ok })).toEqual([])
-    expect(gitGraphBreaches({ a: ok, b: { ...ok, arrows: 0.5 } }, ['c'])).toEqual([
-      'c (error)',
-      'b (50% < 100%)',
-    ])
     expect(
-      worstGitGraph({ branches: null, arrows: null, commits: null, labels: null, frame: null, items: 0 }),
+      gitGraphBreaches({ a: ok, b: { ...ok, arrows: 0.5 } }, ['c']),
+    ).toEqual(['c (error)', 'b (50% < 100%)'])
+    expect(
+      worstGitGraph({
+        branches: null,
+        arrows: null,
+        commits: null,
+        labels: null,
+        frame: null,
+        items: 0,
+      }),
     ).toBeNull()
   })
 })

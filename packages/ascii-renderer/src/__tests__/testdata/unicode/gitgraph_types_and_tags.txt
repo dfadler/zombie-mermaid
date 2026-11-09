@@ -9,7 +9,7 @@ gitGraph
 ---
 main  feature
 ●     ┆   start
-⊗     ┆   bad-idea
+✕     ┆   bad-idea
 ◆     ┆   milestone  [v1.0]
 ├─────●   wip  [draft] [review]
 ◆─────╯   merged  [v1.1]

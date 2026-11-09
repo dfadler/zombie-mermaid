@@ -3,4 +3,4 @@ main  feature
 X     :   bad-idea
 #     :   milestone  [v1.0]
 +-----*   wip  [draft] [review]
-#-----/   merged  [v1.1]
+#-----+   merged  [v1.1]

@@ -1,9 +1,4 @@
----
-title: Parallel commits
-config:
-  gitGraph:
-    parallelCommits: true
----
+%%{init: {"gitGraph": {"parallelCommits": true}}}%%
 gitGraph
    commit id: "a"
    branch develop
@@ -15,8 +10,6 @@ gitGraph
    checkout main
    merge develop id: "e"
 ---
-Parallel commits
-
 main  develop
 ●     ┆   a
 ├─────●   b

@@ -49,7 +49,8 @@ function gitStyles(
 ): { css: string; cls: string } {
   const vars = Array.from(
     { length: COLORS },
-    (_, i) => `    --git-color-${i}: ${pieColorValue(i, colors.accent, colors.bg)};`,
+    (_, i) =>
+      `    --git-color-${i}: ${pieColorValue(i, colors.accent, colors.bg)};`,
   )
   const per = Array.from(
     { length: COLORS },

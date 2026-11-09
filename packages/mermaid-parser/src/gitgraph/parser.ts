@@ -204,7 +204,8 @@ export function parseGitGraph(text: string): GitGraph {
     }
     const acc = /^[\t ]*acc(?:Title[\t ]*:|Descr[\t ]*(?::|(\{)))/.exec(line)
     if (acc) {
-      inAccBlock = acc[1] !== undefined && line.indexOf('}', acc[0].length) === -1
+      inAccBlock =
+        acc[1] !== undefined && line.indexOf('}', acc[0].length) === -1
       continue
     }
 
@@ -232,13 +233,7 @@ export function parseGitGraph(text: string): GitGraph {
 
     switch (kw.v) {
       case 'commit': {
-        const o = readOptions(
-          toks,
-          1,
-          ['id', 'msg', 'tag', 'type'],
-          fail,
-          true,
-        )
+        const o = readOptions(toks, 1, ['id', 'msg', 'tag', 'type'], fail, true)
         const message = o.msg ?? ''
         const id =
           o.id ||
@@ -320,7 +315,9 @@ export function parseGitGraph(text: string): GitGraph {
             `Incorrect usage of "merge". Commit with id:${o.id} already exists, use different custom id`,
           )
         const m: GitCommit = {
-          id: o.id || `${seq}-${hashId(`${seq}|${current}|${other}|${head?.id}`)}`,
+          id:
+            o.id ||
+            `${seq}-${hashId(`${seq}|${current}|${other}|${head?.id}`)}`,
           message: `merged branch ${other} into ${current}`,
           seq: seq++,
           parents: head ? [head.id, otherId!] : [],

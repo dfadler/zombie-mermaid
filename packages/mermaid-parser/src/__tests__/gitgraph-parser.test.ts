@@ -31,9 +31,9 @@ describe('parseGitGraph header', () => {
   })
 
   it('reads the last title, without a trailing comment', () => {
-    expect(parseGitGraph('gitGraph\n title One\n title Two words %% c').title).toBe(
-      'Two words',
-    )
+    expect(
+      parseGitGraph('gitGraph\n title One\n title Two words %% c').title,
+    ).toBe('Two words')
     expect(parseGitGraph('gitGraph\n title\n').title).toBeUndefined()
   })
 })
@@ -81,7 +81,9 @@ describe('parseGitGraph commit', () => {
   })
 
   it('keeps the later of two commits with the same id', () => {
-    const g = parseGitGraph('gitGraph\n commit id: "s" "one"\n commit id: "s" "two"')
+    const g = parseGitGraph(
+      'gitGraph\n commit id: "s" "one"\n commit id: "s" "two"',
+    )
     expect(g.commits).toHaveLength(1)
     expect(g.commits[0]!.message).toBe('two')
   })
@@ -161,7 +163,7 @@ describe('parseGitGraph branches', () => {
     })
   })
 
-  it('uses Mermaid\'s defaults without config', () => {
+  it("uses Mermaid's defaults without config", () => {
     expect(parseGitGraph('gitGraph').config).toEqual({
       mainBranchName: 'main',
       mainBranchOrder: 0,
@@ -172,7 +174,7 @@ describe('parseGitGraph branches', () => {
     })
   })
 
-  it('throws Mermaid\'s messages for a repeated or unknown branch', () => {
+  it("throws Mermaid's messages for a repeated or unknown branch", () => {
     expect(() => parseGitGraph('gitGraph\n branch main')).toThrow(
       /Trying to create an existing branch/,
     )
@@ -234,11 +236,7 @@ describe('parseGitGraph merge', () => {
       'gitGraph\n branch a\n branch b\n checkout a\n merge b',
       /has no commits/,
     ],
-    [
-      'a missing branch',
-      'gitGraph\n commit\n merge nope',
-      /does not exist/,
-    ],
+    ['a missing branch', 'gitGraph\n commit\n merge nope', /does not exist/],
     [
       'a branch with no commits',
       'gitGraph\n commit\n branch a\n checkout main\n branch b\n checkout main\n merge a',
@@ -295,15 +293,19 @@ describe('parseGitGraph cherry-pick', () => {
       /merge commit, an immediate parent/,
     )
     // M is on main; pick it onto b with its first parent.
-    const c = parseGitGraph(`${src} cherry-pick id: "M" parent: "s"`).commits.at(
-      -1,
-    )!
+    const c = parseGitGraph(
+      `${src} cherry-pick id: "M" parent: "s"`,
+    ).commits.at(-1)!
     expect(c.tags).toEqual(['cherry-pick:M|parent:s'])
   })
 
   it.each([
     ['no id', 'cherry-pick tag: "x"', /Source commit id should exist/],
-    ['an unknown id', 'cherry-pick id: "nope"', /Source commit id should exist/],
+    [
+      'an unknown id',
+      'cherry-pick id: "nope"',
+      /Source commit id should exist/,
+    ],
     [
       'a commit on the current branch',
       'cherry-pick id: "s"',
@@ -318,7 +320,9 @@ describe('parseGitGraph cherry-pick', () => {
       parseGitGraph(`${base} cherry-pick id: "z" parent: "nope"`),
     ).toThrow(/not an immediate parent/)
     expect(() =>
-      parseGitGraph('gitGraph\n commit id: "s"\n branch a\n branch b\n cherry-pick id: "s"'),
+      parseGitGraph(
+        'gitGraph\n commit id: "s"\n branch a\n branch b\n cherry-pick id: "s"',
+      ),
     ).not.toThrow()
     expect(() =>
       parseGitGraph(

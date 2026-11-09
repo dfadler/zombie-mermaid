@@ -6,7 +6,7 @@ gitGraph BT:
    commit id: "three"
    merge feature id: "four"
 ---
-@-----\   four
+@-----+   four
 *     |   three
 +-----*   two  [v0.1]
 *     :   one

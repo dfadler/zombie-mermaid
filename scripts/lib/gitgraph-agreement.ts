@@ -129,7 +129,10 @@ export function parseGitGraphSvg(svg: string): GitGraphLayout {
       layout.branches.push({ nums: numbersOf(tag) })
     else if (name === 'path' && /^arrow /.test(cls)) layout.arrows.push(item)
     else if (
-      (name === 'circle' || name === 'rect' || name === 'path' || name === 'line') &&
+      (name === 'circle' ||
+        name === 'rect' ||
+        name === 'path' ||
+        name === 'line') &&
       /^commit /.test(cls)
     )
       layout.commits.push(item)
@@ -143,7 +146,9 @@ export function parseGitGraphSvg(svg: string): GitGraphLayout {
       layout.title = item
   }
   // The text a branch label holds (its tspans) for the branch text check.
-  const rows = [...body.matchAll(/<tspan[^>]*class="row"[^>]*>([^<]*)<\/tspan>/g)]
+  const rows = [
+    ...body.matchAll(/<tspan[^>]*class="row"[^>]*>([^<]*)<\/tspan>/g),
+  ]
   layout.branches.push(
     ...rows.map((r) => ({ nums: [], text: unescape(r[1]!).trim() })),
   )

@@ -18,6 +18,6 @@ main  develop  release
 +-----*        :   A
 *     |        :   ONE
 |     *        :   B
-@-----/        :   MERGE
+@-----+        :   MERGE
 +-----+--------o   [cherry-pick:MERGE|parent:B]
-:     \--------o   [cherry-pick:A]
+:     +--------o   [cherry-pick:A]

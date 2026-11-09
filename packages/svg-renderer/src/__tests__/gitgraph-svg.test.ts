@@ -62,14 +62,24 @@ describe('layoutGitGraph – left to right', () => {
     const src =
       'gitGraph\n commit id: "a"\n branch d\n commit id: "b"\n checkout main\n merge d\n cherry-pick id: "b"'
     const l = layout(src)
-    expect(l.commits.map((c) => c.label?.text)).toEqual(['a', 'b', undefined, undefined])
+    expect(l.commits.map((c) => c.label?.text)).toEqual([
+      'a',
+      'b',
+      undefined,
+      undefined,
+    ])
     const m = layout(src.replace('merge d', 'merge d id: "M"'))
-    expect(m.commits.map((c) => c.label?.text)).toEqual(['a', 'b', 'M', undefined])
+    expect(m.commits.map((c) => c.label?.text)).toEqual([
+      'a',
+      'b',
+      'M',
+      undefined,
+    ])
   })
 
   it('stacks tags upward, the last written nearest the commit', () => {
-    const t = layout('gitGraph\n commit id: "a" tag: "one" tag: "two"').commits[0]!
-      .tags
+    const t = layout('gitGraph\n commit id: "a" tag: "one" tag: "two"')
+      .commits[0]!.tags
     expect(t.map((x) => x.text)).toEqual(['two', 'one'])
     expect(t[1]!.textPos.y).toBe(t[0]!.textPos.y - 20)
   })
@@ -79,18 +89,19 @@ describe('layoutGitGraph – left to right', () => {
       'gitGraph\n commit id: "n"\n commit id: "r" type: REVERSE\n commit id: "h" type: HIGHLIGHT\n branch d\n commit id: "x"\n checkout main\n merge d id: "m"\n cherry-pick id: "x"',
     )
     expect(l.commits.map((c) => c.shapes.map((x) => x.kind))).toEqual([
-      ['circle'], // normal
-      ['circle', 'path'], // reverse: a cross over the circle
-      ['rect', 'rect'], // highlight: outer and inner square
+      ['circle'], // Normal
+      ['circle', 'path'], // Reverse: a cross over the circle
+      ['rect', 'rect'], // Highlight: outer and inner square
       ['circle'],
-      ['circle', 'circle'], // merge: a ring
-      ['circle', 'circle', 'circle', 'line', 'line'], // cherry-pick
+      ['circle', 'circle'], // Merge: a ring
+      ['circle', 'circle', 'circle', 'line', 'line'], // Cherry-pick
     ])
   })
 })
 
 describe('layoutGitGraph – orientations', () => {
-  const src = 'gitGraph$\n commit id: "a"\n branch f\n commit id: "b"\n checkout main\n merge f id: "m"'
+  const src =
+    'gitGraph$\n commit id: "a"\n branch f\n commit id: "b"\n checkout main\n merge f id: "m"'
 
   it('runs time down for TB with branches as columns', () => {
     const l = layout(src.replace('$', ' TB:'))
@@ -116,8 +127,10 @@ describe('layoutGitGraph – orientations', () => {
       const s = c.shapes[0]!
       return s.kind === 'circle' ? s.cx : NaN
     })
-    expect(cy[1]).toBe(cy[2]) // b and c both follow a
-    const bt = layout(`${par}gitGraph BT:\n commit id: "a"\n branch d\n commit id: "b"`)
+    expect(cy[1]).toBe(cy[2]) // B and c both follow a
+    const bt = layout(
+      `${par}gitGraph BT:\n commit id: "a"\n branch d\n commit id: "b"`,
+    )
     expect(bt.commits).toHaveLength(2)
   })
 
@@ -151,7 +164,9 @@ describe('renderMermaidSVG – gitGraph', () => {
   })
 
   it('draws the title above the graph', () => {
-    const out = renderMermaidSVG('gitGraph\n title Release flow\n commit id: "a"')
+    const out = renderMermaidSVG(
+      'gitGraph\n title Release flow\n commit id: "a"',
+    )
     expect(out).toMatch(/<text [^>]*class="gitTitleText">Release flow<\/text>/)
   })
 
@@ -164,9 +179,10 @@ describe('renderMermaidSVG – gitGraph', () => {
   })
 
   it('moves the viewBox origin to 0,0 and sizes the svg to it', () => {
-    const m = /viewBox="0 0 ([\d.]+) ([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(
-      svg,
-    )!
+    const m =
+      /viewBox="0 0 ([\d.]+) ([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(
+        svg,
+      )!
     expect(m[1]).toBe(m[3])
     expect(m[2]).toBe(m[4])
   })
@@ -179,12 +195,12 @@ describe('renderMermaidSVG – gitGraph', () => {
   it('renders a bare gitGraph and the three orientations', () => {
     expect(renderMermaidSVG('gitGraph')).toContain('branch-label0')
     for (const d of ['LR', 'TB', 'BT'])
-      expect(renderMermaidSVG(`gitGraph ${d}:\n commit id: "a"\n commit id: "b"`)).toContain(
-        'commit-bullets',
-      )
+      expect(
+        renderMermaidSVG(`gitGraph ${d}:\n commit id: "a"\n commit id: "b"`),
+      ).toContain('commit-bullets')
   })
 
-  it('throws Mermaid\'s database errors for a bad graph', () => {
+  it("throws Mermaid's database errors for a bad graph", () => {
     expect(() => renderMermaidSVG('gitGraph\n branch main')).toThrow(
       /existing branch/,
     )
