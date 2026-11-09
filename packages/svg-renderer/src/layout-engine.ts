@@ -38,6 +38,7 @@ import {
   isStateGraph,
   mermaidToElk,
   usesMermaidElkPipeline,
+  keepLegacyPipeline,
 } from './layout-engine/to-elk.ts'
 import { elkToPositioned } from './layout-engine/from-elk.ts'
 import { clearBorders } from './layout-engine/clear-borders.ts'
@@ -124,7 +125,12 @@ function layoutFlowchartUnmarked(
 ): PositionedGraph {
   // Real mermaid.js draws no line for an edge between a node and a subgraph
   // containing it (#1310), so it is not laid out or rendered here either.
-  const graph = withoutOwnClusterEdges(rawGraph)
+  let graph = withoutOwnClusterEdges(rawGraph)
+  if (options.legacyNodeSizes && graph.subgraphs.length === 0) {
+    // A copy, so the caller's graph stays on mermaid's pipeline for later calls.
+    graph = { ...graph }
+    keepLegacyPipeline(graph)
+  }
   // Opt-in built-in layout that needs no elkjs (#1685); never a fallback.
   // State diagrams share this entry point and still need ELK (see `isStateGraph`).
   if (options.layout === 'simple' && !isStateGraph(graph)) {
@@ -140,8 +146,7 @@ function layoutFlowchartUnmarked(
     )
   }
   const laidOut = layoutGraphSync(graph, options)
-  if (usesMermaidElkPipeline(graph)) {
-    // ELK can run a trunk along a subgraph's side; keep it off the border.
+  if (usesMermaidElkPipeline(graph)) {    // ELK can run a trunk along a subgraph's side; keep it off the border.
     const groups = (
       list: PositionedGraph['groups'],
     ): PositionedGraph['groups'] =>
