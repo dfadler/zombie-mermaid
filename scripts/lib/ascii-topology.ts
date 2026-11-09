@@ -17,6 +17,7 @@ import {
   type AsciiLayoutHints,
   registerAsciiLayout,
 } from '@zombie-mermaid/ascii-renderer'
+import { renderMermaidASCII } from '../../src/index.ts'
 import { renderGraphAscii } from '../../packages/ascii-renderer/src/flowchart.ts'
 import type { AsciiGraph } from '../../packages/ascii-renderer/src/types.ts'
 import {
@@ -210,8 +211,67 @@ export function compareFaces(
   return c
 }
 
-/** Full measure for one flowchart/state source: grid versus ELK. */
+const ER_RE = /^\s*erDiagram/m
+export const isEr = (src: string): boolean =>
+  ER_RE.test(src.replace(/^---[\s\S]*?---/, '').trim())
+
+/** Entity boxes read off drawn ER text: a `┌──┐` top border over a row holding the entity's label. */
+export function readErText(
+  text: string,
+  labels: Record<string, string>,
+): Record<string, Spot> {
+  const rows = text.split('\n').map((l) => Array.from(l))
+  const out: Record<string, Spot> = {}
+  rows.forEach((row, y) => {
+    for (const m of row.join('').matchAll(/┌─+┐/g)) {
+      const a = Array.from(row.join('').slice(0, m.index)).length
+      const w = Array.from(m[0]).length
+      const name = (rows[y + 1] ?? [])
+        .slice(a + 1, a + w - 1)
+        .join('')
+        .trim()
+      const id = Object.keys(labels).find((k) => labels[k] === name)
+      if (id && !out[id]) out[id] = { main: y, cross: a + w / 2, size: w }
+    }
+  })
+  return out
+}
+
+/**
+ * ER measure: entities as nodes, the provider's ER hints (ELK layer, order,
+ * centre) as the reference, the drawn box rows and centres as the grid. Only
+ * the top-down stacking has layers: `direction LR/RL` packs one row, no hints.
+ */
+export function measureEr(
+  source: string,
+  /** Test seam: what the grid is fed instead of the true hints (the reference stays true). */
+  feed: (h: AsciiLayoutHints) => AsciiLayoutHints = (h) => h,
+): Counts {
+  let seen:
+    | { labels: Record<string, string>; hints?: AsciiLayoutHints }
+    | undefined
+  registerAsciiLayout({
+    er: (d) => {
+      const hints = asciiLayoutProvider.er!(d)
+      seen = {
+        labels: Object.fromEntries(d.entities.map((e) => [e.id, e.label])),
+        hints,
+      }
+      return hints && feed(hints)
+    },
+  })
+  const text = renderMermaidASCII(source)
+  if (!seen?.hints) return emptyCounts()
+  const grid = readErText(text, seen.labels)
+  const elk: Record<string, Spot> = {}
+  for (const [id, h] of seen.hints.nodes)
+    elk[id] = { main: h.layer * 1000, cross: h.cross, size: h.size }
+  return compareSpots(elk, grid)
+}
+
+/** Full measure for one flowchart/state/ER source: grid versus ELK. */
 export function measureSample(source: string): Counts {
+  if (isEr(source)) return measureEr(source)
   const parsed = parseMermaid(source)
   const { spots, edges, direction } = readGrid(source)
   const pos = layoutFlowchartSync(parsed)

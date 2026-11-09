@@ -7,9 +7,12 @@ import {
   compareSpots,
   emptyCounts,
   isExact,
+  measureEr,
   measureSample,
+  readErText,
   readGrid,
 } from '../scripts/lib/ascii-topology.ts'
+import type { AsciiLayoutHints } from '@zombie-mermaid/ascii-renderer'
 import type { Spot } from '../scripts/lib/ascii-topology.ts'
 
 const spot = (main: number, cross: number, size = 10): Spot => ({
@@ -149,5 +152,46 @@ describe('describeSample', () => {
     expect(describeSample('T', c, true)).toBe(
       'layer 3/3 order 0/0 align 2/3 faces 1/4  T',
     )
+  })
+})
+
+describe('ER measure', () => {
+  const src = `erDiagram
+  A ||--o{ B : x
+  A ||--o{ C : y
+  A ||--o{ D : z`
+
+  it('reads entity boxes off drawn text by label', () => {
+    const text = '┌───┐ ┌───┐\n│ A │ │ B │\n└───┘ └───┘'
+    const s = readErText(text, { A: 'A', B: 'B', Z: 'Z' })
+    expect(Object.keys(s)).toEqual(['A', 'B'])
+    expect(s.A!.main).toBe(0)
+    expect(s.B!.cross).toBeGreaterThan(s.A!.cross)
+  })
+
+  it('scores a fan-out as exact, with layers and order counted', () => {
+    const c = measureSample(src)
+    expect(isExact(c)).toBe(true)
+    expect(c.layerPairs).toBe(6)
+    expect(c.orderPairs).toBe(3)
+  })
+
+  it('fails when the grid is fed an ER order swapped against ELK', () => {
+    const swap = (h: AsciiLayoutHints): AsciiLayoutHints => {
+      const nodes = new Map(h.nodes)
+      for (const [id, n] of h.nodes)
+        nodes.set(id, { ...n, order: -n.order, cross: -n.cross })
+      return { ...h, nodes }
+    }
+    const c = measureEr(src, swap)
+    expect(c.layerOk).toBe(c.layerPairs)
+    expect(c.orderOk).toBeLessThan(c.orderPairs)
+    expect(isExact(c)).toBe(false)
+  })
+
+  it('measures nothing for a side-by-side direction', () => {
+    expect(
+      measureEr(src.replace('erDiagram', 'erDiagram\n  direction LR')),
+    ).toEqual(emptyCounts())
   })
 })
