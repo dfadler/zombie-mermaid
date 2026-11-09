@@ -3,24 +3,24 @@
 Places where zombie-mermaid renders or parses differently from mermaid.js and the
 difference is either intentional or not yet fixed. The reference is the pinned
 `mermaid` devDependency (12.2.0), rendered headless through
-`scripts/lib/real-mermaid.ts`; GitHub renders 12.1.0 and mermaid.live 12.2.0 (see the
-table below). The pin matches mermaid.live, not GitHub.
+`scripts/lib/real-mermaid.ts`; GitHub and mermaid.live both render 12.2.0 (see the
+table below). The pin matches both; GitHub was inferred to be on 12.1.0 on 2026-10-22.
 The pin moved from 11.17.2 in the bump that added this note, and entries not
 listed below as re-checked were measured on 11.17.2: other versions may differ.
 The "Labeled Fan-In (LR)" mirrored-order entry that used to sit under layout
 tie-breaks was removed after a re-check: on 12.1.0 mermaid and zombie-mermaid agree
 (100% / 100%, it was 17% on 11.17.2).
 
-## Which mermaid each surface renders (checked 2026-10-22, #2184)
+## Which mermaid each surface renders (checked 2026-10-22, #2184; GitHub re-read 2026-11-09, #2914)
 
-| Surface                        | mermaid | Default layout | Evidence                                                                                                                   |
-| ------------------------------ | ------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Pinned oracle (`package.json`) | 12.2.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                  |
-| GitHub ` ```mermaid ` blocks   | 12.1.0  | ELK (config)   | Renderer bundle `viewscreen.githubusercontent.com/static/assets/mermaidMarkdown-*.js` matches 12.1.0, not 12.0.0 or 12.2.0 |
-| mermaid.live                   | 12.2.0  | ELK            | The editor shows `v12.2.0`; node positions equal the headless ELK render                                                   |
+| Surface                        | mermaid | Default layout | Evidence                                                                                                                                      |
+| ------------------------------ | ------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pinned oracle (`package.json`) | 12.2.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                                     |
+| GitHub ` ```mermaid ` blocks   | 12.2.0  | ELK (config)   | Renderer bundle `viewscreen.githubusercontent.com/static/assets/mermaidMarkdown-*.js` calls `renderer.draw(e, t, "12.2.0")` (read 2026-11-09) |
+| mermaid.live                   | 12.2.0  | ELK            | The editor shows `v12.2.0`; node positions equal the headless ELK render                                                                      |
 
-GitHub's bundle reports `version:"0.0.0"` and its renderer sits in a cross-origin
-iframe, so its version is inferred, not read: it contains identifiers added in 12.1.0
+On 2026-10-22 GitHub's bundle reported `version:"0.0.0"` and its renderer sits in a cross-origin
+iframe, so its version was inferred, not read: it contained identifiers added in 12.1.0
 (`orientFeedbackEdges`, `applyOverride`) and none of the 12.2.0 additions
 (`upperCaseDirection`, `isUnconnected`, `colorBy`). 12.1.0 and 12.2.0 place the dense
 samples identically (gallery "Dense Duplicate Edges" TD and LR, and the #2160 sample 3
@@ -644,7 +644,7 @@ Opt-in only: without the flag the output is byte-identical to before.
   repo's oracle pin is now 12.2.0, and `pnpm run elk-layout:oracle` on 12.2.0 differs from
   12.1.0 in three gallery samples (circle and double-circle node sizes in "Original Node
   Shapes" and "Subroutine and Hexagon Shapes", one edge path in "Labeled Fan-In (LR)"); the module still
-  matches 12.1.0, which is what GitHub renders. The module is not yet updated to 12.2.0.
+  matches 12.1.0, which GitHub was inferred to render on 2026-10-22 (it renders 12.2.0 as of 2026-11-09). The module is not yet updated to 12.2.0.
 - **Dependency.** `elkjs-0.9.3` (`npm:elkjs@0.9.3`) is an optional peer dependency of
   `zombie-mermaid`, kept separate from the `elkjs` 0.11/0.12 the SVG renderer uses. The layout
   code is bundled into lazy chunks that load only when the option is used. The MCP tool does not
@@ -861,8 +861,9 @@ drawing size agree on every gallery sample.
   excluded per #2617), and moves the title to `box.x * 2 + leftMargin`.
 - **Other renderers.** mermaid.live (mermaid 12.2.0, checked in Chrome 2026-11-07) draws the
   same three section colour classes as 12.3.0 for the same source. GitHub renders blocks in a
-  sandboxed cross-origin frame, so its mermaid version and `timeline TD` output could not be
-  read; `TD` is checked against the oracle only.
+  sandboxed cross-origin frame that a script cannot read; read through headless Chromium on
+  2026-11-09, it runs mermaid 12.2.0 (the pin), and its 14 timeline blocks, `timeline TD`
+  included, match 12.2.0 and 12.3.0 in box, line, connector and drawing-size agreement (#2914).
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
 
 ## Kanban boards
