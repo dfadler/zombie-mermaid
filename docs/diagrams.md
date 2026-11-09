@@ -882,8 +882,8 @@ layout, so it is not positioned on Mermaid's port grid:
   `b` right of `a` and `a:B -- T:b` puts `b` below it, and ASCII leaves and
   enters each node by the face the port names. The flow direction (left to
   right unless more edges use top/bottom ports) only sets which axis is the
-  layer axis. `RenderOptions.direction` on ASCII falls back to the flowchart
-  layout.
+  layer axis. `RenderOptions.direction` is ignored, in SVG and ASCII:
+  mermaid@12.3.0 has no direction for `architecture-beta` (#2912).
 - Icons are not drawn. `database` and `disk` give a cylinder, `cloud` a
   stadium, `internet` a circle; any other icon (including custom `"pack:name"`
   icons) gives a rectangle.
