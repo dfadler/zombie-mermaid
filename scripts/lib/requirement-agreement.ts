@@ -157,7 +157,7 @@ export function parseOurRequirementSvg(svg: string): RequirementLayout {
       width: num(rect?.[3]),
       height: num(rect?.[4]),
       rows: [...m[2]!.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((t) =>
-        unescape(t[1]!.replace(/<[^>]+>/g, '')),
+        unescape(t[1]!.replace(/<\/?tspan\b[^>]*>/g, '')),
       ),
     })
   }
