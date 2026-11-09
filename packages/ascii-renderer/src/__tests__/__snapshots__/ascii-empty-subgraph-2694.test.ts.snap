@@ -9,7 +9,7 @@ exports[`an empty subgraph prints its title (#2694) > edge-endpoint: ASCII and S
 `;
 
 exports[`an empty subgraph prints its title (#2694) > edge-endpoint: ASCII and SVG snapshots > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 329.44 116.9" width="329.44" height="116.9" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 513.44 116.9" width="513.44" height="116.9" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -36,25 +36,25 @@ exports[`an empty subgraph prints its title (#2694) > edge-endpoint: ASCII and S
   }
 </style>
 <defs>
-  <marker id="zmxnyh31-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1fvljpz-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmxnyh31-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1fvljpz-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
-  <text x="164.72" y="70.45" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
+  <text x="256.72" y="70.45" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="one" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 58.45 L 140 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmxnyh31-arrowhead)" />
-<path class="edge" data-from="one" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 189.44 58.45 L 229.44 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmxnyh31-arrowhead)" />
+<path class="edge" data-from="A" data-to="one" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 58.45 L 232 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fvljpz-arrowhead)" />
+<path class="edge" data-from="one" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 281.44 58.45 L 321.44 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fvljpz-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
-  <rect x="40" y="40" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="40" y="40" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rectangle">
-  <rect x="229.44" y="40" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="259.44" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="321.44" y="40" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="397.44" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
@@ -91,7 +91,7 @@ exports[`an empty subgraph prints its title (#2694) > edge-endpoint-td: ASCII an
 `;
 
 exports[`an empty subgraph prints its title (#2694) > edge-endpoint-td: ASCII and SVG snapshots > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 283.24" width="140" height="283.24" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 283.24" width="232" height="283.24" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -118,25 +118,25 @@ exports[`an empty subgraph prints its title (#2694) > edge-endpoint-td: ASCII an
   }
 </style>
 <defs>
-  <marker id="zm1tjpjs9-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1fcuimy-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1tjpjs9-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1fcuimy-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
-  <text x="70" y="153.62" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
+  <text x="116" y="153.62" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="one" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 70 76.9 L 70 116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1tjpjs9-arrowhead)" />
-<path class="edge" data-from="one" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 70 166.34 L 70 206.34" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1tjpjs9-arrowhead)" />
+<path class="edge" data-from="A" data-to="one" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 76.9 L 116 116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fcuimy-arrowhead)" />
+<path class="edge" data-from="one" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 166.34 L 116 206.34" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fcuimy-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
-  <rect x="40" y="40" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="40" y="40" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rectangle">
-  <rect x="40" y="206.34" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="224.79" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="40" y="206.34" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="224.79" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
@@ -177,7 +177,7 @@ exports[`an empty subgraph prints its title (#2694) > lr: ASCII and SVG snapshot
 `;
 
 exports[`an empty subgraph prints its title (#2694) > lr: ASCII and SVG snapshots > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 176.9" width="240" height="176.9" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 176.9" width="424" height="176.9" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -204,24 +204,24 @@ exports[`an empty subgraph prints its title (#2694) > lr: ASCII and SVG snapshot
   }
 </style>
 <defs>
-  <marker id="zm50ddwm-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm9o61nu-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm50ddwm-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm9o61nu-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
-  <text x="70" y="62" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
+  <text x="116" y="62" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 118.45 L 140 118.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm50ddwm-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 118.45 L 232 118.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9o61nu-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
-  <rect x="40" y="100" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="118.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="40" y="100" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="118.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rectangle">
-  <rect x="140" y="100" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="170" y="118.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="232" y="100" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="118.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
@@ -258,7 +258,7 @@ exports[`an empty subgraph prints its title (#2694) > nested-in-filled: ASCII an
 `;
 
 exports[`an empty subgraph prints its title (#2694) > nested-in-filled: ASCII and SVG snapshots > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 298 261.9" width="298" height="261.9" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 482 261.9" width="482" height="261.9" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -285,28 +285,28 @@ exports[`an empty subgraph prints its title (#2694) > nested-in-filled: ASCII an
   }
 </style>
 <defs>
-  <marker id="zm1598fdu-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm11k3dlm-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1598fdu-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm11k3dlm-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="outer" data-label="outer">
-  <rect x="150" y="40" width="108" height="181.9" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="204" y="54" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">outer</text>
+  <rect x="242" y="40" width="200" height="181.9" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="342" y="54" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">outer</text>
 <g class="subgraph" data-id="inner" data-label="inner">
-  <text x="204" y="113" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">inner</text>
+  <text x="342" y="113" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">inner</text>
 </g>
 </g>
-<path class="edge" data-from="A" data-to="X" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 179.45 L 174 179.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1598fdu-arrowhead)" />
+<path class="edge" data-from="A" data-to="X" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 179.45 L 266 179.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm11k3dlm-arrowhead)" />
 <g class="node" data-id="X" data-label="X" data-shape="rectangle">
-  <rect x="174" y="161" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="204" y="179.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">X</text>
+  <rect x="266" y="161" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="342" y="179.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">X</text>
 </g>
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
-  <rect x="40" y="161" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="179.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="40" y="161" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="179.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 </svg>"
 `;
@@ -394,7 +394,7 @@ one    | A |
 `;
 
 exports[`an empty subgraph prints its title (#2694) > td: ASCII and SVG snapshots > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 206.34" width="200" height="206.34" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 292 206.34" width="292" height="206.34" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -421,24 +421,24 @@ exports[`an empty subgraph prints its title (#2694) > td: ASCII and SVG snapshot
   }
 </style>
 <defs>
-  <marker id="zmigrlbz-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1gigw7b-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmigrlbz-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1gigw7b-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
   <text x="50" y="76.72" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 130 89.44 L 130 129.44" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmigrlbz-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 176 89.44 L 176 129.44" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1gigw7b-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
-  <rect x="100" y="52.54" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="130" y="70.99" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="100" y="52.54" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="176" y="70.99" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rectangle">
-  <rect x="100" y="129.44" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="130" y="147.89" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="100" y="129.44" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="176" y="147.89" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
@@ -480,7 +480,7 @@ one    | A |
 `;
 
 exports[`an empty subgraph prints its title (#2694) > td-direction-override: ASCII and SVG snapshots > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 253.8" width="140" height="253.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 253.8" width="232" height="253.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -507,24 +507,24 @@ exports[`an empty subgraph prints its title (#2694) > td-direction-override: ASC
   }
 </style>
 <defs>
-  <marker id="zmqc3dys-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmvyp5q8-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmqc3dys-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmvyp5q8-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
 <g class="subgraph" data-id="one" data-label="one">
   <text x="64.72" y="62" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">one</text>
 </g>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 70 136.9 L 70 176.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmqc3dys-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 136.9 L 116 176.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmvyp5q8-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
-  <rect x="40" y="100" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="118.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="40" y="100" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="118.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rectangle">
-  <rect x="40" y="176.9" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="195.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="40" y="176.9" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="195.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;

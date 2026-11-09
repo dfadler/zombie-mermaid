@@ -48,12 +48,21 @@ import { layoutSimple } from './layout-engine/simple-layout.ts'
 // ============================================================================
 
 /**
+ * `FlowchartRenderOptions` plus an internal switch for the ASCII layout
+ * provider: `legacyNodeSizes` keeps the node sizes and edge spacing from before
+ * mermaid's 120px minimum node width (#2717), so ASCII hints do not move.
+ */
+export type FlowchartLayoutOptions = FlowchartRenderOptions & {
+  legacyNodeSizes?: boolean
+}
+
+/**
  * Lay out a parsed MermaidGraph using ELK.js (synchronous).
  * Returns a fully positioned graph ready for rendering.
  */
 export function layoutGraphSync(
   graph: MermaidGraph,
-  options: FlowchartRenderOptions = {},
+  options: FlowchartLayoutOptions = {},
 ): PositionedGraph {
   const opts = {
     ...DEFAULTS,
@@ -79,7 +88,7 @@ export function layoutGraphSync(
  */
 export function layoutFlowchartSync(
   rawGraph: MermaidGraph,
-  options: FlowchartRenderOptions = {},
+  options: FlowchartLayoutOptions = {},
 ): PositionedGraph {
   const positioned = layoutFlowchartUnmarked(rawGraph, options)
   // mermaid@12.3.0 draws a flowchart subgraph with a centred title and no
@@ -111,7 +120,7 @@ export function layoutFlowchartSync(
 
 function layoutFlowchartUnmarked(
   rawGraph: MermaidGraph,
-  options: FlowchartRenderOptions,
+  options: FlowchartLayoutOptions,
 ): PositionedGraph {
   // Real mermaid.js draws no line for an edge between a node and a subgraph
   // containing it (#1310), so it is not laid out or rendered here either.
@@ -152,7 +161,7 @@ function layoutFlowchartUnmarked(
  */
 export function convertToElkFormat(
   graph: MermaidGraph,
-  options: FlowchartRenderOptions = {},
+  options: FlowchartLayoutOptions = {},
 ): ElkNode {
   const opts = {
     ...DEFAULTS,

@@ -33,7 +33,7 @@ exports[`LR labelled fan-out stays compact (#2561) > snapshots ASCII and SVG > a
 `;
 
 exports[`LR labelled fan-out stays compact (#2561) > snapshots ASCII and SVG > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 572 202.03" width="572" height="202.03" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1032 202.03" width="1032" height="202.03" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -60,44 +60,44 @@ exports[`LR labelled fan-out stays compact (#2561) > snapshots ASCII and SVG > s
   }
 </style>
 <defs>
-  <marker id="zm17ttnk0-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm2x8i9t-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm17ttnk0-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm2x8i9t-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="S0" data-to="S1" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="e0" d="M 100 109.05 L 106 109.05 Q 112 109.05, 112 103.05 L 112 93.9 Q 112 86.83, 119.07 86.83 L 256 86.83" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17ttnk0-arrowhead)" />
-<path class="edge" data-from="S1" data-to="S2" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="e1" d="M 316 80.68 L 322 80.68 Q 328 80.68, 328 74.68 L 328 65.52 Q 328 58.45, 335.07 58.45 L 472 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17ttnk0-arrowhead)" />
-<path class="edge" data-from="S1" data-to="S3" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 316 92.98 L 322 92.98 Q 328 92.98, 328 98.98 L 328 108.13 Q 328 115.2, 335.07 115.2 L 364 115.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17ttnk0-arrowhead)" />
-<path class="edge" data-from="S0" data-to="S4" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 121.35 L 106 121.35 Q 112 121.35, 112 127.35 L 112 136.5 Q 112 143.58, 119.07 143.58 L 148 143.58" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17ttnk0-arrowhead)" />
+<path class="edge" data-from="S0" data-to="S1" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="e0" d="M 192 109.05 L 198 109.05 Q 204 109.05, 204 103.05 L 204 93.9 Q 204 86.83, 211.07 86.83 L 440 86.83" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm2x8i9t-arrowhead)" />
+<path class="edge" data-from="S1" data-to="S2" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="e1" d="M 592 80.68 L 598 80.68 Q 604 80.68, 604 74.68 L 604 65.52 Q 604 58.45, 611.07 58.45 L 840 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm2x8i9t-arrowhead)" />
+<path class="edge" data-from="S1" data-to="S3" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 592 92.98 L 598 92.98 Q 604 92.98, 604 98.98 L 604 108.13 Q 604 115.2, 611.07 115.2 L 640 115.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm2x8i9t-arrowhead)" />
+<path class="edge" data-from="S0" data-to="S4" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 121.35 L 198 121.35 Q 204 121.35, 204 127.35 L 204 136.5 Q 204 143.58, 211.07 143.58 L 240 143.58" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm2x8i9t-arrowhead)" />
 <g class="edge-label" data-from="S0" data-to="S1" data-label="e0">
-  <rect x="170.5" y="78.83" width="15" height="14.3" fill="var(--bg)" />
-  <text x="178" y="85.98" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">e0</text>
+  <rect x="308.5" y="78.83" width="15" height="14.3" fill="var(--bg)" />
+  <text x="316" y="85.98" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">e0</text>
 </g>
 <g class="edge-label" data-from="S1" data-to="S2" data-label="e1">
-  <rect x="387.73" y="50.45" width="12.54" height="14.3" fill="var(--bg)" />
-  <text x="394" y="57.6" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">e1</text>
+  <rect x="709.73" y="50.45" width="12.54" height="14.3" fill="var(--bg)" />
+  <text x="716" y="57.6" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">e1</text>
 </g>
 <g class="node" data-id="S0" data-label="S0" data-shape="rectangle">
-  <rect x="40" y="96.75" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="70" y="115.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S0</text>
+  <rect x="40" y="96.75" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="115.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S0</text>
 </g>
 <g class="node" data-id="S1" data-label="S1" data-shape="rectangle">
-  <rect x="256" y="68.38" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="286" y="86.83" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S1</text>
+  <rect x="440" y="68.38" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="516" y="86.83" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S1</text>
 </g>
 <g class="node" data-id="S2" data-label="S2" data-shape="rectangle">
-  <rect x="472" y="40" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="502" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S2</text>
+  <rect x="840" y="40" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="916" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S2</text>
 </g>
 <g class="node" data-id="S3" data-label="S3" data-shape="rectangle">
-  <rect x="364" y="96.75" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="394" y="115.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S3</text>
+  <rect x="640" y="96.75" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="716" y="115.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S3</text>
 </g>
 <g class="node" data-id="S4" data-label="S4" data-shape="rectangle">
-  <rect x="148" y="125.13" width="60" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="178" y="143.57" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S4</text>
+  <rect x="240" y="125.13" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="316" y="143.57" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">S4</text>
 </g>
 </svg>"
 `;

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 278.09 116.9" width="278.09" height="116.9" role="img" style="--bg:#FFFFFF;--fg:#333333;--line:#111111;--surface:#eeeeee;--border:#222222;background:var(--bg)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 432 116.9" width="432" height="116.9" role="img" style="--bg:#FFFFFF;--fg:#333333;--line:#111111;--surface:#eeeeee;--border:#222222;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -25,20 +25,20 @@
   }
 </style>
 <defs>
-  <marker id="zmx4l9jz-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm9g35ec-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmx4l9jz-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm9g35ec-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 118.96 58.45 L 166.96 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmx4l9jz-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 58.45 L 240 58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9g35ec-arrowhead)" />
 <g class="node" data-id="A" data-label="Alpha" data-shape="rectangle">
-  <rect x="40" y="40" width="78.96" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="79.48" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Alpha</text>
+  <rect x="40" y="40" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Alpha</text>
 </g>
 <g class="node" data-id="B" data-label="Beta" data-shape="rectangle">
-  <rect x="166.96" y="40" width="71.13" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="202.53" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Beta</text>
+  <rect x="240" y="40" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="316" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Beta</text>
 </g>
 </svg>

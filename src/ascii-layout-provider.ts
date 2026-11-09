@@ -179,7 +179,7 @@ const attempt = (f: () => AsciiLayoutHints): AsciiLayoutHints | undefined => {
 export const asciiLayoutProvider: AsciiLayoutProvider = {
   graph: (graph) =>
     attempt(() => {
-      const pos = layoutFlowchartSync(graph)
+      const pos = layoutFlowchartSync(graph, { legacyNodeSizes: true })
       return buildHints(
         pos.nodes.map((n) => ({
           id: n.id,
