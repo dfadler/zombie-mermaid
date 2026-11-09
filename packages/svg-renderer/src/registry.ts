@@ -63,6 +63,7 @@ import {
   parseGantt,
   parseTimeline,
   parsePacket,
+  parseRadar,
   parseJourney,
   parseKanban,
   parseRequirementDiagram,
@@ -90,6 +91,8 @@ import type {
   Timeline,
   PositionedTimeline,
   Packet,
+  Radar,
+  PositionedRadar,
   Journey,
   PositionedJourney,
   Kanban,
@@ -122,6 +125,8 @@ import { renderTimelineSvg } from './timeline/renderer.ts'
 import { layoutPacket } from './packet/layout.ts'
 import type { PositionedPacket } from './packet/layout.ts'
 import { renderPacketSvg } from './packet/renderer.ts'
+import { layoutRadar } from './radar/layout.ts'
+import { renderRadarSvg } from './radar/renderer.ts'
 import { layoutKanban } from './kanban/layout.ts'
 import { renderKanbanSvg } from './kanban/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
@@ -421,12 +426,12 @@ const architectureModule: DiagramModule<
   type: 'architecture',
   parse: parseArchitecture,
   layoutForSvg(diagram, options) {
-    const graph = withDirectionOverride(
-      architectureToGraph(diagram),
-      options.direction,
-    )
+    // No direction override: ports place every service (#2912).
     return {
-      graph: layoutArchitectureGrid(graph, options.padding),
+      graph: layoutArchitectureGrid(
+        architectureToGraph(diagram),
+        options.padding,
+      ),
       curve: 'linear',
     }
   },
@@ -604,6 +609,30 @@ const kanbanModule: DiagramModule<Kanban, PositionedKanban> = {
 }
 
 /**
+ * Radar charts parse from the raw `text` (Mermaid's grammar has no `;`
+ * statement separator and a label may contain one), then lay out to
+ * Mermaid's fixed 700 x 700 geometry. No theme variables or interactivity
+ * apply.
+ */
+const radarModule: DiagramModule<Radar, PositionedRadar> = {
+  type: 'radar',
+  parse: (_lines, text) => parseRadar(text),
+  layoutForSvg: (radar) => layoutRadar(radar),
+  renderSvg(positioned, ctx) {
+    return renderRadarSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * Requirement diagrams parse from the raw `text` (a value may hold `;` or
  * `'`), then lay out with ELK like ER. `options.direction` replaces the
  * diagram's own `direction` statement.
@@ -688,6 +717,7 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   gantt: ganttModule,
   timeline: timelineModule,
   packet: packetModule,
+  radar: radarModule,
   journey: journeyModule,
   kanban: kanbanModule,
   requirement: requirementModule,

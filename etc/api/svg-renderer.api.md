@@ -36,11 +36,13 @@ import { PositionedMindmap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedNode } from '@zombie-mermaid/core';
 import { PositionedPieChart } from '@zombie-mermaid/mermaid-parser';
 import { PositionedQuadrantChart } from '@zombie-mermaid/mermaid-parser';
+import { PositionedRadar } from '@zombie-mermaid/mermaid-parser';
 import { PositionedRequirementDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedTimeline } from '@zombie-mermaid/mermaid-parser';
 import { PositionedXYChart } from '@zombie-mermaid/mermaid-parser';
 import { QuadrantChart } from '@zombie-mermaid/mermaid-parser';
+import { Radar } from '@zombie-mermaid/mermaid-parser';
 import { RenderOptions } from '@zombie-mermaid/core';
 import { RequirementDiagram } from '@zombie-mermaid/mermaid-parser';
 import { SequenceDiagram } from '@zombie-mermaid/mermaid-parser';
@@ -295,6 +297,9 @@ export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedP
 export function layoutQuadrantChart(chart: QuadrantChart): PositionedQuadrantChart;
 
 // @public
+export function layoutRadar(radar: Radar): PositionedRadar;
+
+// @public
 export function layoutRequirementDiagramSync(diagram: RequirementDiagram, options?: RequirementRenderOptions): PositionedRequirementDiagram;
 
 // @public (undocumented)
@@ -439,6 +444,21 @@ export const QUADRANT: {
 };
 
 // @public
+export const RADAR: {
+    readonly width: 600;
+    readonly height: 600;
+    readonly marginTop: 50;
+    readonly marginRight: 50;
+    readonly marginBottom: 50;
+    readonly marginLeft: 50;
+    readonly axisScaleFactor: 1;
+    readonly axisLabelFactor: 1.05;
+    readonly curveTension: 0.17;
+    readonly labelPad: 4;
+    readonly legendLineHeight: 20;
+};
+
+// @public
 export function registerElk(ctor: ElkConstructor): void;
 
 // @public
@@ -476,6 +496,9 @@ export function renderPieSvg(chart: PositionedPieChart, colors: DiagramColors, f
 
 // @public
 export function renderQuadrantSvg(chart: PositionedQuadrantChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderRadarSvg(radar: PositionedRadar, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderRequirementSvg(diagram: PositionedRequirementDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;

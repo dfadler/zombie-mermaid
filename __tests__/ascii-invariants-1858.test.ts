@@ -29,7 +29,7 @@ function skipFor(source: string): Rule[] {
   // beside node text do not apply.
   if (/^\s*packet/m.test(source)) return ['equal-width', 'arms', 'node-text']
   if (
-    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey)/m.test(
+    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|radar-beta)/m.test(
       source,
     )
   )

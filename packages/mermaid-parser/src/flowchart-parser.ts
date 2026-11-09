@@ -412,9 +412,31 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   const compositeStack: MermaidSubgraph[] = []
   // Track all composite state IDs to avoid creating duplicate nodes
   const compositeStateIds = new Set<string>()
-  // Counter for unique [*] pseudostate IDs
+  // Counters for unique [*] pseudostate IDs, one id per kind per scope
   let startCount = 0
   let endCount = 0
+  // Mermaid 12.3.0 draws one start and one end node per scope (`root_start`,
+  // `<Composite>_end`, ...), however many `[*]` the scope uses. A scope is the
+  // innermost composite or region (`null` at the top level).
+  const pseudoNodes = new Map<
+    MermaidSubgraph | null,
+    { start?: string; end?: string }
+  >()
+  const pseudoNode = (kind: 'start' | 'end'): string => {
+    const scope = compositeStack[compositeStack.length - 1] ?? null
+    const ids = pseudoNodes.get(scope) ?? {}
+    pseudoNodes.set(scope, ids)
+    if (ids[kind] === undefined) {
+      const n = kind === 'start' ? ++startCount : ++endCount
+      ids[kind] = `_${kind}${n > 1 ? n : ''}`
+      registerStateNode(graph, compositeStack, {
+        id: ids[kind],
+        label: '',
+        shape: kind === 'start' ? 'state-start' : 'state-end',
+      })
+    }
+    return ids[kind]
+  }
 
   // `state x <<choice|fork|join>>` declarations, applied once parsing is done.
   const pseudoStates = new Map<string, NodeShape>()
@@ -575,6 +597,10 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
         top = compositeStack[compositeStack.length - 1]!
       } else {
         const first = makeRegion(top, 1)
+        // Its `[*]` nodes now belong to region 1.
+        const ids = pseudoNodes.get(top)
+        if (ids) pseudoNodes.set(first, ids)
+        pseudoNodes.delete(top)
         first.nodeIds = top.nodeIds
         first.children = top.children
         top.nodeIds = []
@@ -651,28 +677,16 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
         ? normalizeBrTags(rawTransitionLabel)
         : undefined
 
-      // Handle [*] pseudostates — each occurrence gets a unique ID
+      // Handle [*] pseudostates — one node per kind per scope
       if (sourceId === '[*]') {
-        startCount++
-        sourceId = `_start${startCount > 1 ? startCount : ''}`
-        registerStateNode(graph, compositeStack, {
-          id: sourceId,
-          label: '',
-          shape: 'state-start',
-        })
+        sourceId = pseudoNode('start')
       } else if (!compositeStateIds.has(sourceId)) {
         // Only create a node if this isn't a composite state
         ensureStateNode(graph, compositeStack, sourceId)
       }
 
       if (targetId === '[*]') {
-        endCount++
-        targetId = `_end${endCount > 1 ? endCount : ''}`
-        registerStateNode(graph, compositeStack, {
-          id: targetId,
-          label: '',
-          shape: 'state-end',
-        })
+        targetId = pseudoNode('end')
       } else if (!compositeStateIds.has(targetId)) {
         // Only create a node if this isn't a composite state
         ensureStateNode(graph, compositeStack, targetId)

@@ -95,9 +95,9 @@ Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 | `embedFont`           | `false \| 'subset'`                    | `false`    | `'subset'` inlines a base64 Inter subset (Basic Latin, weights 400-700, ~14.7 KB per SVG, SIL OFL 1.1) instead of the Google Fonts `@import`, so the font also loads when the SVG is used as an `<img>`. Only with `font: 'Inter'` (the default). `renderMermaidSVGAsync()` loads the data itself; call `await loadEmbeddedFont()` once before the sync `renderMermaidSVG()`. Not in the default bundle |
 | `transparent`         | `boolean`                              | `false`    | Render with transparent background                                                                                                                                                                                                                                                                                                                                                                      |
 | `padding`             | `number`                               | `40`       | Canvas padding in px (flowchart, state and architecture; see below)                                                                                                                                                                                                                                                                                                                                     |
-| `nodeSpacing`         | `number`                               | `28`       | Horizontal spacing between sibling nodes (flowchart, state and architecture; see below)                                                                                                                                                                                                                                                                                                                 |
-| `layerSpacing`        | `number`                               | `48`       | Vertical spacing between layers (flowchart, state and architecture; see below)                                                                                                                                                                                                                                                                                                                          |
-| `mergeEdges`          | `boolean`                              | `false`    | Bundle overlapping fan-out/fan-in edges into shared trunks (flowchart, state and architecture; see below)                                                                                                                                                                                                                                                                                               |
+| `nodeSpacing`         | `number`                               | `28`       | Horizontal spacing between sibling nodes (flowchart, state and architecture ASCII; see below)                                                                                                                                                                                                                                                                                                           |
+| `layerSpacing`        | `number`                               | `48`       | Vertical spacing between layers (flowchart, state and architecture ASCII; see below)                                                                                                                                                                                                                                                                                                                    |
+| `mergeEdges`          | `boolean`                              | `false`    | Bundle overlapping fan-out/fan-in edges into shared trunks (flowchart, state and architecture ASCII; see below)                                                                                                                                                                                                                                                                                         |
 | `layout`              | `'elk' \| 'simple'`                    | `'elk'`    | Layout engine for flowcharts. `'simple'` is a built-in layered layout that needs no `elkjs` (flowchart only; see below)                                                                                                                                                                                                                                                                                 |
 | `direction`           | `'TD' \| 'TB' \| 'BT' \| 'LR' \| 'RL'` | —          | Override the diagram's layout direction (its `graph LR` header or top-level `direction` line) at render time — see below. Flowchart, state, and ER diagrams only; sequence/class/xychart ignore it                                                                                                                                                                                                      |
 | `interactivity`       | `'none' \| 'static' \| 'full'`         | `'static'` | Render-target-scoped interactivity level — see below                                                                                                                                                                                                                                                                                                                                                    |
@@ -112,7 +112,7 @@ Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 
 **`layout: 'simple'`** lays a flowchart (`graph` / `flowchart`) out without ELK, so `renderMermaidSVG` works with no `elkjs` registered or installed. It is opt-in and never a fallback: unset, or `'elk'`, keeps the existing output exactly. It supports every direction, subgraphs (nested, inside-out), edge labels, self-loops, multi-edges, cycles and disconnected components. It ignores `mergeEdges`, `layoutCache` and a subgraph's own `direction`, and draws edges as plain orthogonal polylines. State, class and ER diagrams ignore it and still need `elkjs`; a state diagram with no `[*]` marker is parsed as a flowchart and gets the simple layout. An unknown value throws. Measured placement quality against mermaid 12.1.0: [docs/decisions/simple-layout-1685.md](https://github.com/dfadler/zombie-mermaid/blob/main/docs/decisions/simple-layout-1685.md).
 
-**Which diagram types honor the layout options.** `padding`, `nodeSpacing`, `layerSpacing`, and `mergeEdges` apply to flowchart, state and architecture diagrams (architecture is lowered to the flowchart layout). Class, ER, sequence and xychart use their own fixed internal spacing and ignore them. C4 (`c4/layout.ts`) and pie lay themselves out to Mermaid's geometry and ignore every layout option, including `direction`.
+**Which diagram types honor the layout options.** `padding`, `nodeSpacing`, `layerSpacing`, and `mergeEdges` apply to flowchart, state and ASCII architecture diagrams (SVG architecture uses only `padding`). Class, ER, sequence and xychart use their own fixed internal spacing and ignore them. C4 (`c4/layout.ts`) and pie lay themselves out to Mermaid's geometry and ignore every layout option, including `direction`.
 
 **`direction`:** replaces only the diagram's _top-level_ direction, after parsing and before layout — the source text is never rewritten, and `parseMermaid()` output is unaffected. It behaves exactly as if that direction had been written in the source header, and nothing more: a nested subgraph's or composite state's own `direction` line still applies on top of it, the same way it applies on top of the diagram's own header. Unset (the default) keeps the source's direction. Useful for re-laying a wide `LR` diagram out top-down for a narrow viewport without editing the source. Values are checked at compile time via the `Direction` type; an unrecognized string at runtime is ignored (the source direction stands), matching how other options treat unexpected values. See [issue #276](https://github.com/dfadler/zombie-mermaid/issues/276).
 
@@ -152,7 +152,7 @@ Two more advanced options exist — `fontSizes` (per-element font size overrides
 
 **`accTitle` / `accDescr`:** every diagram type reads Mermaid's `accTitle:` and `accDescr:` statements. The `title` option names the SVG for assistive tech and wins over the source's `accTitle:`; `accDescr:` becomes the `<desc>`. ASCII output ignores them.
 
-**C4 and architecture diagrams:** C4 uses the theme colours and `font` but no layout options (see above); the source `title` is its fallback accessible name when neither the `title` option nor `accTitle:` is given. Architecture diagrams take every flowchart option, including `direction` and `curve`, and are named by the `title` option or `accTitle:`.
+**C4 and architecture diagrams:** C4 uses the theme colours and `font` but no layout options (see above); the source `title` is its fallback accessible name when neither the `title` option nor `accTitle:` is given. Architecture diagrams place services by their ports (mermaid@12.3.0): `direction` and `curve` are ignored, and the SVG grid uses `padding` but not `nodeSpacing`, `layerSpacing` or `mergeEdges`, and are named by the `title` option or `accTitle:`.
 
 ## Size limits (`options.limits`)
 
@@ -1189,8 +1189,8 @@ layout, so it is not positioned on Mermaid's port grid:
   `b` right of `a` and `a:B -- T:b` puts `b` below it, and ASCII leaves and
   enters each node by the face the port names. The flow direction (left to
   right unless more edges use top/bottom ports) only sets which axis is the
-  layer axis. `RenderOptions.direction` on ASCII falls back to the flowchart
-  layout.
+  layer axis. `RenderOptions.direction` is ignored, in SVG and ASCII:
+  mermaid@12.3.0 has no direction for `architecture-beta` (#2912).
 - Icons are not drawn. `database` and `disk` give a cylinder, `cloud` a
   stadium, `internet` a circle; any other icon (including custom `"pack:name"`
   icons) gives a rectangle.
@@ -1765,6 +1765,61 @@ blank row where the SVG has a divider, relationships dotted with an arrowhead an
 └──────────────────────┘
 ```
 
+## Radar charts
+
+`radar-beta` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/radar.html)
+and its renderer's geometry. `pnpm run radar:oracle` compares the gallery samples and
+some edge cases with `mermaid@12.3.0`: the frame, every ring, spoke, label, curve, legend
+row and the title agree to 0.01px. The parser is checked against Mermaid's own on 87
+sources (`pnpm run radar:parser-fixture` rebuilds the record).
+
+```mermaid
+radar-beta
+  title Grades
+  axis m["Math"], s["Science"], e["English"], h["History"], g["Geography"], a["Art"]
+  curve a["Alice"]{85, 90, 80, 70, 75, 90}
+  curve b["Bob"]{70, 75, 85, 80, 90, 85}
+  max 100
+  min 0
+```
+
+Supported: `radar-beta` and `radar-beta:`, `title`, `axis` lists with optional `["label"]`s,
+`curve` lists written as plain values or as `axis: value` entries (in any order, one per
+axis), the options `showLegend`, `ticks` (at most 32), `max`, `min` and `graticule`
+(`circle` or `polygon`), `%%` comments, `accTitle` and `accDescr`. As in Mermaid,
+`axis a,` followed by a newline is an error, a value is `12` or `1.5` (no sign,
+exponent or leading zero), an identifier cannot be a keyword or start with `true`,
+`false`, `circle`, `polygon` or `title`, a curve with the wrong number of values is
+not drawn (but is listed in the legend), `max` defaults to the largest value of any
+curve, and values outside `min` and `max` are clipped to the ring or the centre.
+
+The SVG uses Mermaid's geometry: a 600px chart in 50px margins (a 700 x 700 viewBox),
+axis 0 pointing up and the rest clockwise, labels 1.05 radii out, circular curves drawn as
+closed bezier curves with tension 0.17 and polygonal ones with straight edges, and a
+legend of 12px swatches in the top right. Colours come from the theme (the accent and its
+series shades). See [Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#radar-charts).
+
+### ASCII Radar charts
+
+Mermaid has no text mode for radar charts and a polar grid cannot be drawn legibly in a
+character grid, so the ASCII output is this library's own design: a group of bars per axis,
+one bar for each curve, under a ruler with a mark for every ring.
+
+```text
+                           Grades
+
+                0                                    100
+                ├───────┬───────┬───────┬───────┬───────┤
+  Math      Alice ██████████████████████████████████······  85
+            Bob   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓············  70
+```
+
+- Bars use the same mapping as the SVG radius (clipped to `min` .. `max`), and the value
+  written is printed after the bar. A curve keeps its fill and colour by position in the
+  source, as `radarCurve-N` does.
+- Curve names are shown unless `showLegend false`; both graticules look the same.
+- `accTitle` and `accDescr` are not printed.
+
 ## Packet Diagrams
 
 `packet` (and its older header `packet-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/packet.html)
@@ -1909,7 +1964,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Timeline                                                              | `timeline`                                                                                                      |
 | Gantt                                                                 | `gantt`                                                                                                         |
 | Git graph                                                             | `gitGraph`                                                                                                      |
-| Radar                                                                 | `radar-beta`                                                                                                    |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 | Sankey, Block                                                         | `sankey-beta`, `block-beta` (12.2.0 rejects them with an empty body; header names per upstream docs)            |
@@ -3024,6 +3078,24 @@ matter share one code path. SVG only: ASCII has no pixel padding, so these keys 
   `radius`, ...). The `state` block is reported as ignored.
 - **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
 - **Not yet measured:** `xyChart`, `c4` and `architecture` blocks, tracked in separate issues.
+
+## Radar charts
+
+Checked against mermaid 12.3.0 with `pnpm run radar:oracle` (the pin, 12.2.0, has the same radar
+code): the viewBox, rings, spokes, labels, curves, legend rows and title agree to 0.01px on every
+gallery sample and eight edge cases (one axis, two axes, fractional and zero ticks, a minimum above
+the values, markup in labels).
+
+- **Palette.** Curve and legend colours are the theme accent and its series shades; mermaid uses
+  its `cScale` hues. Axis and graticule colours come from the theme too.
+- **Rounding.** Coordinates are written to two decimals; mermaid writes the full float (`1.8e-14`
+  for a coordinate that is zero).
+- **Config.** `%%{init}%%` and front matter `radar` keys (`width`, `height`, margins,
+  `axisScaleFactor`, `axisLabelFactor`, `curveTension`) and the `radar` theme variables are not
+  read yet; the defaults are drawn.
+- **Title element.** Written even when empty, as mermaid does.
+- **Other renderers.** Not checked on GitHub or mermaid.live.
+- **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
 
 ## Timelines
 

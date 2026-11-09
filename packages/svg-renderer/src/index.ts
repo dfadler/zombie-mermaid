@@ -148,6 +148,8 @@ export type {
   PositionedPacketBit,
 } from './packet/layout.ts'
 export { renderPacketSvg } from './packet/renderer.ts'
+export { RADAR, layoutRadar } from './radar/layout.ts'
+export { renderRadarSvg } from './radar/renderer.ts'
 export { KANBAN, layoutKanban } from './kanban/layout.ts'
 export { renderKanbanSvg } from './kanban/renderer.ts'
 export {
