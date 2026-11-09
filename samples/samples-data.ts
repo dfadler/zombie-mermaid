@@ -3332,7 +3332,6 @@ pie title Reports by team
   "Customer facing web applications and mobile clients" : 35
   "Data" : 25`,
   },
-
   // ══════════════════════════════════════════════════════════════════════════
   //  REQUIREMENT DIAGRAMS
   // ══════════════════════════════════════════════════════════════════════════
@@ -3543,6 +3542,100 @@ kanban
     i1[**Bold** and *italic*<br>on two lines]
   Doing
   Done`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  USER JOURNEYS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/journey_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Journey: Basic',
+    category: 'Journey',
+    gallery: true,
+    description:
+      'Tasks in columns under section bars, each with a face at a height set by its score (1-5) and a dot per actor; the legend lists the actors.',
+    source: `journey
+    title My working day
+    section Go to work
+      Make tea: 5: Me
+      Go upstairs: 3: Me
+      Do work: 1: Me, Cat
+    section Go home
+      Go downstairs: 5: Me
+      Sit down: 5: Me`,
+  },
+  {
+    title: 'Journey: Many Actors',
+    category: 'Journey',
+    description:
+      'Actors are listed once, sorted, and keep their colour across tasks; a task shows one dot per actor.',
+    source: `journey
+    title Onboarding
+    section Sign up
+      Visit site: 4: Alice, Bob, Carol
+      Create account: 2: Alice
+    section Use
+      First project: 5: Alice, Bob
+      Invite team: 3: Bob, Dave, Eve, Frank, Grace`,
+  },
+  {
+    title: 'Journey: Long Text',
+    category: 'Journey',
+    description:
+      'A long actor name wraps in the legend at 360px and pushes the diagram right; `<br>` breaks a task label.',
+    source: `journey
+    title A very long title for the journey diagram that goes on
+    section A section with a fairly long name here
+      A task with a very long description that wraps over lines: 3: A Very Long Actor Name That Wraps Around The Legend Because It Is Longer Than Others, Short
+      Line<br>break: 4: Me`,
+  },
+  {
+    title: 'Journey: No Section',
+    category: 'Journey',
+    description:
+      'Tasks written before the first section get no section bar; a task with no actors is valid.',
+    source: `journey
+    Task one: 5: Me
+    Task two: 1
+    section S
+      Task three: 3: Me`,
+  },
+  {
+    title: 'Journey: Scores',
+    category: 'Journey',
+    description:
+      'The face is a smile above 3, sad below 3 and straight at 3; scores outside 1-5 move the face off the scale, and a non-numeric score draws a straight mouth.',
+    source: `journey
+    section S
+      zero: 0: Me
+      three: 3: Me
+      five: 5: Me
+      six: 6: Me
+      text: x: Me`,
+  },
+  {
+    title: 'Journey: Repeated Sections',
+    category: 'Journey',
+    description:
+      'A section name written twice gets two bars (and two colours) when another section comes between them (adjacent runs merge into one bar); a section with no tasks draws nothing.',
+    source: `journey
+    section A
+      t1: 1: X
+    section B
+      t2: 2: Y
+    section A
+      t3: 3: X
+    section C
+    section D
+      t4: 4: Z`,
+  },
+  {
+    title: 'Journey: Empty',
+    category: 'Journey',
+    description: 'A bare `journey` is valid: just the arrowed axis.',
+    source: `journey`,
   },
   // ══════════════════════════════════════════════════════════════════════════
   //  GITGRAPHS

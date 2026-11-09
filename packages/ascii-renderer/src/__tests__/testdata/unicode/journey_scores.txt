@@ -1,0 +1,16 @@
+journey
+    section S
+      zero: 0: Me
+      three: 3: Me
+      five: 5: Me
+      six: 6: Me
+      text: x: Me
+---
+  Actors: Me
+
+  [S]
+    :(  0  zero   Me
+    :|  3  three  Me
+    :)  5  five   Me
+    :)  6  six    Me
+    :|  ?  text   Me

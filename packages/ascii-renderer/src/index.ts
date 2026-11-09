@@ -16,6 +16,7 @@
 //   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
 //   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
 //   - GitGraphs (gitGraph) — one row per commit, one column per branch (see gitgraph.ts)
+//   - User journeys (journey) — tasks as score-height columns (see journey.ts)
 //   - Kanban boards (kanban) — stacked column blocks of boxed cards (see kanban.ts)
 //   - Requirement diagrams (requirementDiagram) — boxes and labelled lines (see requirement.ts)
 //

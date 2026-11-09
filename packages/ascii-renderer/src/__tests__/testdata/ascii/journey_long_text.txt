@@ -1,0 +1,13 @@
+journey
+    title A very long title for the journey diagram that goes on
+    section A section with a fairly long name here
+      A task with a very long description that wraps over lines: 3: A Very Long Actor Name That Wraps Around The Legend Because It Is Longer Than Others, Short
+      Line<br>break: 4: Me
+---
+                                                     A very long title for the journey diagram that goes on
+
+  Actors: A Very Long Actor Name That Wraps Around The Legend Because It Is Longer Than Others, Me, Short
+
+  [A section with a fairly long name here]
+    :|  3  A task with a very long description that wraps over lines  A Very Long Actor Name That Wraps Around The Legend Because It Is Longer Than Others, Short
+    :)  4  Line break                                                 Me

@@ -47,6 +47,7 @@ describe('list_diagram_types', () => {
       gantt: 'gantt\nA :a, 2024-01-01, 1d',
       timeline: 'timeline\n2002 : LinkedIn',
       gitgraph: 'gitGraph\ncommit',
+      journey: 'journey\nA: 3: Me',
       kanban: 'kanban\n  A\n    b',
       requirement: 'requirementDiagram\nrequirement r {\n}',
     }
