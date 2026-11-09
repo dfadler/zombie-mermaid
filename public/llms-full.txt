@@ -3352,8 +3352,9 @@ drawing size agree on every gallery sample.
   excluded per #2617), and moves the title to `box.x * 2 + leftMargin`.
 - **Other renderers.** mermaid.live (mermaid 12.2.0, checked in Chrome 2026-11-07) draws the
   same three section colour classes as 12.3.0 for the same source. GitHub renders blocks in a
-  sandboxed cross-origin frame, so its mermaid version and `timeline TD` output could not be
-  read; `TD` is checked against the oracle only.
+  sandboxed cross-origin frame that a script cannot read; read through headless Chromium on
+  2026-11-09, it runs mermaid 12.2.0 (the pin), and its 14 timeline blocks, `timeline TD`
+  included, match 12.2.0 and 12.3.0 in box, line, connector and drawing-size agreement (#2914).
 - **ASCII.** Mermaid has no ASCII output; the spine layout above is this library's own.
 
 ## Kanban boards
