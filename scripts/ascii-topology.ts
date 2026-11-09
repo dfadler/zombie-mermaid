@@ -1,6 +1,6 @@
 /**
  * Scores how closely the ASCII grid's node placement and edge faces follow the
- * ELK layout, over the gallery flowchart/state samples plus the fork-fixes
+ * ELK layout, over the gallery flowchart/state/ER samples plus the fork-fixes
  * entries (#2645). The numbers gate each ASCII placement PR (Q3).
  *
  * Usage: tsx scripts/ascii-topology.ts [--verbose] [--no-hints] [--dir TD|LR|RL|BT]
@@ -11,19 +11,13 @@ import {
   addCounts,
   describeSample,
   emptyCounts,
+  inScope,
   isExact,
+  isGraph,
   measureSample,
   redirectDirection,
 } from './lib/ascii-topology.ts'
 import type { Counts } from './lib/ascii-topology.ts'
-
-/** Every ASCII fork-fix entry plus the subgraph frame merge, flowchart/state only. */
-const inScope = (id: string): boolean =>
-  id.startsWith('ascii-') || id === 'subgraph-frame-merge'
-const isGraph = (src: string): boolean =>
-  /^\s*(flowchart|graph|stateDiagram)/m.test(
-    src.replace(/^---[\s\S]*?---/, '').trim(),
-  )
 
 const list = [
   ...samples

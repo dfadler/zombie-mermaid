@@ -1,0 +1,12 @@
+         My working day
+
+  Actors: Cat, Me
+
+  [Go to work]
+    :)  5  Make tea       Me
+    :|  3  Go upstairs    Me
+    :(  1  Do work        Me, Cat
+
+  [Go home]
+    :)  5  Go downstairs  Me
+    :)  5  Sit down       Me

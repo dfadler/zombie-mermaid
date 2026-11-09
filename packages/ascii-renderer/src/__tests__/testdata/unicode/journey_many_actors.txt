@@ -1,0 +1,20 @@
+journey
+    title Onboarding
+    section Sign up
+      Visit site: 4: Alice, Bob, Carol
+      Create account: 2: Alice
+    section Use
+      First project: 5: Alice, Bob
+      Invite team: 3: Bob, Dave, Eve, Frank, Grace
+---
+                      Onboarding
+
+  Actors: Alice, Bob, Carol, Dave, Eve, Frank, Grace
+
+  [Sign up]
+    :)  4  Visit site      Alice, Bob, Carol
+    :(  2  Create account  Alice
+
+  [Use]
+    :)  5  First project   Alice, Bob
+    :|  3  Invite team     Bob, Dave, Eve, Frank, Grace

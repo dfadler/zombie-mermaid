@@ -32,6 +32,8 @@ const OWN_TITLE: Partial<Record<DiagramType, RegExp>> = {
   quadrant: /^[ \t]*title\b/m,
   gantt: /^[ \t]*title\b/m,
   timeline: /^[ \t]*title\b/m,
+  // Mermaid's journey keywords are case-insensitive (`TITLE T` is a title).
+  journey: /^[ \t]*title\b/im,
   sequence: /^[ \t]*title\b/m,
 }
 const DRAWN_TITLE: DiagramType[] = ['flowchart', 'class', 'er', 'requirement']
