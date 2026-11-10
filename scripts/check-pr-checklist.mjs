@@ -4,11 +4,28 @@
 // the job needs no pnpm install.
 import { pathToFileURL } from 'node:url'
 
+// One left-to-right pass, like the renderer: a comment runs from `<!--` to the next
+// `-->`, and text before it is never rescanned, so nested input such as
+// `<!<!-- a -->--` cannot rebuild a marker (looping a regex strip could, and would hide
+// a box GitHub shows). An unterminated `<!--` is kept, which counts more boxes, not fewer.
+function stripHtmlComments(s) {
+  let out = ''
+  let i = 0
+  for (;;) {
+    const open = s.indexOf('<!--', i)
+    const close = open < 0 ? -1 : s.indexOf('-->', open + 4)
+    if (close < 0) return out + s.slice(i)
+    out += s.slice(i, open)
+    i = close + 3
+  }
+}
+
 /** Unchecked task-list items in a PR body, ignoring HTML comments and code fences. */
 export function uncheckedItems(body) {
-  const visible = String(body ?? '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/^[ \t]*(`{3,}|~{3,})[\s\S]*?^[ \t]*\1[^\n]*$/gm, '')
+  const visible = stripHtmlComments(String(body ?? '')).replace(
+    /^[ \t]*(`{3,}|~{3,})[\s\S]*?^[ \t]*\1[^\n]*$/gm,
+    '',
+  )
   return [...visible.matchAll(/^[ \t]*[-*+][ \t]+\[ \][ \t]+(.*)$/gm)].map(
     (m) => m[1].trim(),
   )

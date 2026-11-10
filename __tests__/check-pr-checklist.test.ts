@@ -28,6 +28,12 @@ describe('check-pr-checklist', () => {
     expect(uncheckedItems(body)).toEqual(['real one'])
   })
 
+  it('does not let nested comment markers hide a box GitHub shows', () => {
+    expect(uncheckedItems('<!<!-- a -->--\n- [ ] still visible\n-->')).toEqual([
+      'still visible',
+    ])
+  })
+
   it('handles indented (nested) items and ignores plain brackets', () => {
     expect(
       uncheckedItems('  - [ ] nested\n- [] not a box\n- [ ]no space'),
