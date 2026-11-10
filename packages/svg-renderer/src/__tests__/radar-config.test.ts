@@ -43,6 +43,13 @@ describe('radar init config', () => {
     expect(l.width).toBe(550)
   })
 
+  it('reads front matter config passed straight to parseRadar', () => {
+    expect(
+      parseRadar('---\nconfig:\n  radar:\n    width: 450\n---\n' + BODY)
+        .config,
+    ).toEqual({ width: 450 })
+  })
+
   it('drops bad values', () => {
     expect(
       lay('%%{init: {"radar": {"width": "x", "marginTop": -1}}}%%\n').width,
