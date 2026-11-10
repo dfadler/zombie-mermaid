@@ -210,6 +210,14 @@ describe('pie layout: canvas width matches mermaid 12.3.0', () => {
   })
 })
 
+describe('pie layout: non-ASCII text in the default font', () => {
+  it('measures a character outside the Trebuchet table with the Inter estimate, so the canvas still grows', () => {
+    const ascii = layout('pie title Nothing yet').width
+    const wide = layout('pie title Nothing yet 日本語日本語').width
+    expect(wide).toBeGreaterThan(ascii + 50)
+  })
+})
+
 describe('pie layout: empty chart', () => {
   it('draws only the circle and title for a bare `pie`', () => {
     const p = layout('pie title Nothing yet')

@@ -111,6 +111,13 @@ describe('pie SVG: styling and theme', () => {
     expect(own).toContain("text { font-family: 'Georgia'")
   })
 
+  it('keeps Inter when the embedded Inter subset is requested', async () => {
+    const { renderMermaidSVGAsync } = await import('../../../../src/index.ts')
+    const svg = await renderMermaidSVGAsync(BASIC, { embedFont: 'subset' })
+    expect(svg).not.toContain('trebuchet')
+    expect(svg).toContain("text { font-family: 'Inter'")
+  })
+
   it('fills slot 0 with the live theme accent and later slots with series shades', () => {
     const svg = renderMermaidSVG(BASIC, {
       bg: '#ffffff',
