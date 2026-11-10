@@ -1,7 +1,7 @@
 /**
  * Measure the layout-faithful rasterizer over every flat, supported flowchart in the gallery
  * (plus any .mmd passed as an argument). Prints one row per case and a summary.
- *   pnpm exec tsx scripts/ascii-layout-table.ts [--show] [--policy=grow-only] [file.mmd ...]
+ *   pnpm exec tsx scripts/ascii-layout-table.ts [--show] [--policy=merge-then-grow] [file.mmd ...]
  */
 import { readFileSync } from 'node:fs'
 import { UnsupportedFlowchartError } from '../packages/elk-layout/src/index.ts'

@@ -42,6 +42,12 @@ for (const [i, s] of samples.entries())
   if (/^\s*(flowchart|graph)\b/.test(s.source))
     await build(`sample ${i}`, s.source, galleryCases)
 
+const mergeOpts = { facePolicy: 'merge-then-grow' } as const
+const mergeCase = (c: Case): Case => ({
+  ...c,
+  r: rasterizeLayout(c.layout, mergeOpts),
+})
+
 const rowsOf = (r: RasterResult) => r.text.split('\n')
 const cell = (rows: string[], x: number, y: number) => rows[y]?.[x] ?? ' '
 const inBox = (boxes: RasterBox[], x: number, y: number) =>
@@ -146,6 +152,13 @@ const maxBoxError = ({ layout, r }: Case) =>
 
 // Provenance (#2679): the .ascii.txt goldens are this rasterizer's own output, accepted once
 // (class b); only the layout under them is checked against mermaid (elk-layout oracle).
+const goldenNames = [
+  'd1.mmd',
+  'd2.mmd',
+  'd3.mmd',
+  'gallery-dense-duplicate-edges.mmd',
+  'gallery-labeled-fan-in-lr.mmd',
+]
 describe('ascii-layout: goldens', () => {
   it('covers d1-d3', () =>
     expect(fixtures).toEqual(
@@ -191,22 +204,38 @@ describe.each([
   )
 })
 
-describe('ascii-layout: box proportions', () => {
-  it.each(cases.map((c) => [c.name, c] as const))(
+// Box proportions are the merge-then-grow trade-off; the default (grow-only) trades them for edges.
+describe('ascii-layout: box proportions (merge-then-grow)', () => {
+  it.each(cases.map((c) => [c.name, mergeCase(c)] as const))(
     '%s: box error under 15%',
     (_n, c) => expect(maxBoxError(c)).toBeLessThan(0.15),
   )
   it('gallery: at most 4 boxes beyond 15% (sample 24, label-driven growth)', () => {
-    const over = galleryCases.filter((c) => maxBoxError(c) >= 0.15)
+    const over = galleryCases
+      .map(mergeCase)
+      .filter((c) => maxBoxError(c) >= 0.15)
     expect(over.map((c) => c.name)).toEqual(['sample 24'])
     expect(over[0]!.r.stats.boxesOver15Pct).toBe(4)
   })
 })
 
-describe('ascii-layout: face policy (merge-then-grow)', () => {
-  const find = (n: string) => cases.find((c) => c.name === n)!
+describe('ascii-layout: face policy (merge-then-grow, opt-in)', () => {
+  const mergedCases = cases.map(mergeCase)
+  const find = (n: string) => mergedCases.find((c) => c.name === n)!
+  it.each(
+    mergedCases
+      .filter((c) => goldenNames.includes(c.name))
+      .map((c) => [c.name, c] as const),
+  )('%s matches its merge-then-grow golden', (name, c) => {
+    const golden = new URL(
+      name.replace(/\.mmd$/, '.merge-then-grow.ascii.txt'),
+      GOLDENS,
+    )
+    if (process.env.UPDATE_ASCII_LAYOUT) writeFileSync(golden, c.r.text + '\n')
+    expect(c.r.text + '\n').toBe(readFileSync(golden, 'utf8'))
+  })
   it('merges only identical parallel edges, and reports them', () => {
-    for (const c of [...cases, ...galleryCases])
+    for (const c of [...mergedCases, ...galleryCases.map(mergeCase)])
       for (const g of c.r.mergedGroups) {
         const es = g.map((id) => c.layout.edges.find((e) => e.id === id)!)
         expect(new Set(es.map((e) => `${e.from}>${e.to}`)).size).toBe(1)
@@ -226,7 +255,7 @@ describe('ascii-layout: face policy (merge-then-grow)', () => {
     const layout = await layoutFlowchart(
       'flowchart TD\n  A["A"]\n  B["B"]\n  A --> B\n  B --> A',
     )
-    const r = rasterizeLayout(layout)
+    const r = rasterizeLayout(layout, mergeOpts)
     expect(r.mergedGroups).toEqual([])
     expect(r.stats.lines).toBe(2)
     expect(r.text.match(/[▲▼]/g)).toHaveLength(2)
@@ -259,7 +288,7 @@ describe('ascii-layout: face policy (merge-then-grow)', () => {
         ] as [number, number][],
       })),
     }
-    const r = rasterizeLayout(layout)
+    const r = rasterizeLayout(layout, mergeOpts)
     expect(r.stats.lines).toBe(5)
     const b = r.boxes.find((q) => q.id === 'B')!
     expect(b.c1 - b.c0 - 1).toBeGreaterThanOrEqual(5)
@@ -270,7 +299,7 @@ describe('ascii-layout: face policy (merge-then-grow)', () => {
     const layout = await layoutFlowchart(
       ['flowchart LR', '  S["S"]', ...edges].join('\n'),
     )
-    const r = rasterizeLayout(layout)
+    const r = rasterizeLayout(layout, mergeOpts)
     expect(r.stats.lines).toBe(8)
     const s = r.boxes.find((b) => b.id === 'S')!
     expect(s.r1 - s.r0 - 1).toBeGreaterThanOrEqual(8) // One interior cell per lane
@@ -341,37 +370,20 @@ describe('ascii-layout: column cap (compress gaps, never boxes)', () => {
   })
 })
 
-describe('ascii-layout: face policy (grow-only, show every edge)', () => {
+describe('ascii-layout: face policy (grow-only, the default: show every edge)', () => {
   const grow = (c: Case): Case => ({
     ...c,
     r: rasterizeLayout(c.layout, { facePolicy: 'grow-only' }),
   })
-  const all = [...cases, ...galleryCases]
-  const growAll = all.map(grow)
-  const goldenNames = [
-    'd1.mmd',
-    'd2.mmd',
-    'd3.mmd',
-    'gallery-dense-duplicate-edges.mmd',
-    'gallery-labeled-fan-in-lr.mmd',
-  ]
+  const all = [...cases, ...galleryCases].map(mergeCase)
+  const growAll = [...cases, ...galleryCases].map(grow)
 
-  it.each(
-    growAll
-      .filter((c) => goldenNames.includes(c.name))
-      .map((c) => [c.name, c] as const),
-  )('%s matches its grow-only golden', (name, c) => {
-    const golden = new URL(
-      name.replace(/\.mmd$/, '.grow-only.ascii.txt'),
-      GOLDENS,
-    )
-    if (process.env.UPDATE_ASCII_LAYOUT) writeFileSync(golden, c.r.text + '\n')
-    expect(c.r.text + '\n').toBe(readFileSync(golden, 'utf8'))
-  })
-  it('is opt-in: the default policy is still merge-then-grow', () => {
+  it('is the default: mermaid@12.3.0 draws all 8 n0<->n1 edges of d3, so none is merged', () => {
     const d3 = cases.find((c) => c.name === 'd3.mmd')!
-    expect(d3.r.stats.merged).toBe(6)
-    expect(grow(d3).r.stats.merged).toBe(0)
+    expect(d3.r.stats).toMatchObject({ edges: 10, lines: 10, merged: 0 })
+    expect(d3.r.text).toBe(grow(d3).r.text)
+    expect(d3.r.text.match(/[►◄]/g)).toHaveLength(8)
+    expect(mergeCase(d3).r.stats.merged).toBe(6)
   })
   it.each(growAll.map((c) => [c.name, c] as const))(
     '%s: every edge is its own distinct line',
