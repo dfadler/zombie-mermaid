@@ -27,6 +27,14 @@ export const RADAR_EXTRA_SOURCES: Record<string, string> = {
     'radar-beta\naxis a, b, c\ncurve c{1, 2, 3}\nmin 5\nmax 10',
   'Radar edge: many ticks':
     'radar-beta\naxis a, b, c\ncurve c{1, 2, 3}\nticks 40',
+  'Radar init: size and margins':
+    '%%{init: {"radar": {"width": 400, "height": 300, "marginTop": 80, "marginRight": 20, "marginBottom": 10, "marginLeft": 60}}}%%\nradar-beta\ntitle T\naxis a, b, c\ncurve c{1, 2, 3}\ncurve d{3, 2, 1}',
+  'Radar init: factors and tension':
+    '%%{init: {"radar": {"axisScaleFactor": 0.8, "axisLabelFactor": 1.3, "curveTension": 0.4}}}%%\nradar-beta\naxis a, b, c, d\ncurve c{1, 2, 3, 4}',
+  'Radar init: polygon with margins':
+    '%%{init: {"radar": {"width": 500, "marginLeft": 120}}}%%\nradar-beta\naxis a, b, c\ncurve c{1, 2, 3}\ngraticule polygon',
+  'Radar front matter: config':
+    '---\nconfig:\n  radar:\n    width: 450\n    marginTop: 90\n---\nradar-beta\ntitle F\naxis a, b, c\ncurve c{1, 2, 3}',
   'Radar edge: markup in labels':
     'radar-beta\ntitle A & B\naxis a["<x> & y"], b, c\ncurve c["1 < 2"]{1, 2, 3}',
 }

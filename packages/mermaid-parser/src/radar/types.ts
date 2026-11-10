@@ -1,3 +1,5 @@
+import type { RadarInitConfig, RadarStyleConfig } from '@zombie-mermaid/core'
+
 // ============================================================================
 // Radar types
 //
@@ -43,6 +45,10 @@ export interface Radar {
   axes: RadarAxis[]
   curves: RadarCurve[]
   options: RadarOptions
+  /** `%%{init}%%` / front matter `radar` geometry keys. */
+  config?: RadarInitConfig
+  /** `themeVariables.radar` sizes and opacities. */
+  style?: RadarStyleConfig
 }
 
 /** A ring of the graticule: a circle, or a polygon with one corner per axis. */
@@ -95,4 +101,6 @@ export interface PositionedRadar {
   legend: PositionedRadarLegendItem[]
   /** Mermaid always writes the title element, empty when there is no title. */
   title: { text: string; x: number; y: number }
+  /** Sizes and opacities from `themeVariables.radar`; unset keys keep mermaid's CSS defaults. */
+  style?: RadarStyleConfig
 }

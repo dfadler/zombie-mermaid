@@ -1,4 +1,8 @@
-import { MermaidParseError } from '@zombie-mermaid/core'
+import {
+  extractInitConfig,
+  MermaidParseError,
+  stripFrontMatter,
+} from '@zombie-mermaid/core'
 import type { Radar, RadarAxis, RadarCurve, RadarOptions } from './types.ts'
 
 // ============================================================================
@@ -187,7 +191,10 @@ const MAX_TICKS = 32
 
 /** Parse Mermaid `radar-beta` source into a typed {@link Radar}. */
 export function parseRadar(text: string): Radar {
-  const tokens = tokenize(text.replace(/\r\n?/g, '\n'))
+  // Front matter `config:` becomes an init directive so it reaches
+  // `extractInitConfig` below when callers pass the original input.
+  const source = stripFrontMatter(text.replace(/\r\n?/g, '\n'))
+  const tokens = tokenize(source)
   let i = 0
   const peek = (): Token | undefined => tokens[i]
   const fail = (found: Token | undefined, expected: string): never => {
@@ -325,6 +332,9 @@ export function parseRadar(text: string): Radar {
   }
 
   const radar: Radar = { axes: radarAxes, curves, options }
+  const init = extractInitConfig(source.split(/\r\n?|\n/))
+  if (init.radar) radar.config = init.radar
+  if (init.radarTheme) radar.style = init.radarTheme
   if (title !== undefined) radar.title = title
   return radar
 }

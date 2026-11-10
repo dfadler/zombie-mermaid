@@ -47,6 +47,66 @@ export interface JourneyInitConfig {
   maxLabelWidth?: number
 }
 
+/** Radar sizes and opacities (CSS in mermaid@12.3.0), read from `themeVariables.radar` only: mermaid 12.3.0 ignores them under `radar`. */
+export interface RadarStyleConfig {
+  axisStrokeWidth?: number
+  axisLabelFontSize?: number
+  curveOpacity?: number
+  curveStrokeWidth?: number
+  graticuleOpacity?: number
+  graticuleStrokeWidth?: number
+  legendFontSize?: number
+}
+
+/** The `radar.*` geometry keys mermaid@12.3.0 reads, ; `legendBoxSize` is unused by mermaid and colours are palette. */
+export interface RadarInitConfig {
+  width?: number
+  height?: number
+  marginTop?: number
+  marginRight?: number
+  marginBottom?: number
+  marginLeft?: number
+  axisScaleFactor?: number
+  axisLabelFactor?: number
+  curveTension?: number
+  /** Only changes the root `width`/`max-width`, which this renderer always sizes by its viewBox. */
+  useMaxWidth?: boolean
+}
+
+const RADAR_GEOMETRY_KEYS = [
+  'width',
+  'height',
+  'marginTop',
+  'marginRight',
+  'marginBottom',
+  'marginLeft',
+  'axisScaleFactor',
+  'axisLabelFactor',
+  'curveTension',
+] as const
+const RADAR_STYLE_KEYS = [
+  'axisStrokeWidth',
+  'axisLabelFontSize',
+  'curveOpacity',
+  'curveStrokeWidth',
+  'graticuleOpacity',
+  'graticuleStrokeWidth',
+  'legendFontSize',
+] as const
+
+/** The numeric `keys` of `rec` in 0..1e5, which keeps the layout finite. */
+function radarNumbers(
+  rec: Record<string, unknown>,
+  keys: readonly (keyof RadarInitConfig | keyof RadarStyleConfig)[],
+): RadarInitConfig & RadarStyleConfig {
+  const out: Record<string, number> = {}
+  for (const k of keys) {
+    const v = rec[k]
+    if (typeof v === 'number' && v >= 0 && v <= 1e5) out[k] = v
+  }
+  return out
+}
+
 /** The `gitGraph.*` init keys that change mermaid's output. */
 export interface GitGraphInitConfig {
   mainBranchName?: string
@@ -349,6 +409,10 @@ export interface InitConfig {
   sequenceLayout?: SequenceInitLayout
   /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
   timeline?: TimelineInitConfig
+  /** `radar.*` keys ({@link RadarInitConfig}); other keys and bad values are dropped. */
+  radar?: RadarInitConfig
+  /** `themeVariables.radar` sizes and opacities ({@link RadarStyleConfig}); 0 is kept, as mermaid does. */
+  radarTheme?: RadarStyleConfig
   /** `journey.*` geometry keys ({@link JourneyInitConfig}); other keys and bad values are dropped. */
   journey?: JourneyInitConfig
   /** The `gitGraph` block (see {@link GitGraphInitConfig}); a bad value is dropped. */
@@ -548,6 +612,11 @@ export function parseInitDirective(line: string): InitConfig | undefined {
     if (lower === 'themevariables' && typeof value === 'object' && value) {
       const tv: ThemeVariables = {}
       for (const [vk, vv] of Object.entries({ ...value })) {
+        if (vk === 'radar' && typeof vv === 'object' && vv !== null) {
+          // The colour keys are palette, not read.
+          config.radarTheme = radarNumbers({ ...vv }, RADAR_STYLE_KEYS)
+          continue
+        }
         const color = directiveColor(vv)
         if ((QUADRANT_COLOR_VARIABLES as readonly string[]).includes(vk)) {
           if (color) (tv.quadrant ??= {})[vk as QuadrantColorVariable] = color
@@ -748,6 +817,14 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'radar' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const r = radarNumbers(rec, RADAR_GEOMETRY_KEYS)
+      if (typeof rec.useMaxWidth === 'boolean') r.useMaxWidth = rec.useMaxWidth
+      config.radar = r
+      continue
+    }
+
     if (lower === 'journey' && typeof value === 'object' && value !== null) {
       const j: JourneyInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
@@ -925,6 +1002,9 @@ export function extractInitConfig(lines: string[]): InitConfig {
       merged.gitGraph = { ...merged.gitGraph, ...config.gitGraph }
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
+    if (config.radar) merged.radar = { ...merged.radar, ...config.radar }
+    if (config.radarTheme)
+      merged.radarTheme = { ...merged.radarTheme, ...config.radarTheme }
     if (config.journey)
       merged.journey = { ...merged.journey, ...config.journey }
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }

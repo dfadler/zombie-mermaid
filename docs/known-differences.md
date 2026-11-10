@@ -789,16 +789,23 @@ one code path. Row wrapping is the width-limit rule of [#2790](https://github.co
 
 Checked against mermaid 12.3.0 with `pnpm run radar:oracle` (the pin, 12.2.0, has the same radar
 code): the viewBox, rings, spokes, labels, curves, legend rows and title agree to 0.01px on every
-gallery sample and eight edge cases (one axis, two axes, fractional and zero ticks, a minimum above
+gallery sample, eight edge cases and four init/front matter samples (one axis, two axes, fractional and zero ticks, a minimum above
 the values, markup in labels).
 
 - **Palette.** Curve and legend colours are the theme accent and its series shades; mermaid uses
   its `cScale` hues. Axis and graticule colours come from the theme too.
 - **Rounding.** Coordinates are written to two decimals; mermaid writes the full float (`1.8e-14`
   for a coordinate that is zero).
-- **Config.** `%%{init}%%` and front matter `radar` keys (`width`, `height`, margins,
-  `axisScaleFactor`, `axisLabelFactor`, `curveTension`) and the `radar` theme variables are not
-  read yet; the defaults are drawn.
+- **Config.** `%%{init}%%` and front matter `radar` geometry keys (`width`, `height`, the four
+  margins, `axisScaleFactor`, `axisLabelFactor`, `curveTension`) move the viewBox, rings, spokes,
+  labels, curves, legend and title as in mermaid 12.3.0 (checked by `radar:oracle`). The
+  `themeVariables.radar` sizes and opacities (`axisStrokeWidth`, `axisLabelFontSize`,
+  `curveOpacity`, `curveStrokeWidth`, `graticuleOpacity`, `graticuleStrokeWidth`,
+  `legendFontSize`) reach the CSS; mermaid 12.3.0 ignores those same keys under `radar`, so
+  this library does too. A number outside 0..100000 or a string is dropped. `legendBoxSize`
+  changes nothing in mermaid 12.3.0 (the box is always 12px). `useMaxWidth` only sets the
+  `<svg>` sizing attributes. Colours (`axisColor`, `graticuleColor`) are palette, not read.
+  ASCII ignores the config (no text mode).
 - **Title element.** Written even when empty, as mermaid does.
 - **Other renderers.** Not checked on GitHub or mermaid.live.
 - **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
