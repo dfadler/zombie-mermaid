@@ -87,7 +87,7 @@ export function pinFreshness(
  * the page cannot be queried from a script.
  */
 export const SURFACE_VERSIONS = {
-  'GitHub ```mermaid blocks': '12.1.0 (bundle fingerprint)',
+  'GitHub ```mermaid blocks': '12.2.0 (renderer.draw literal)',
   'mermaid.live': '12.2.0 (version label)',
 } as const
 
