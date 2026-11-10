@@ -732,6 +732,14 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
       registerStateDescription(graph, compositeStack, id, label)
       continue
     }
+
+    // --- bare state id: `s1` alone on a line declares the state (mermaid
+    // creates it on first reference, #2962) ---
+    const bareStateMatch = line.match(/^([\w\p{L}]+(?:-[\w\p{L}]+)*)$/u)
+    if (bareStateMatch && !compositeStateIds.has(bareStateMatch[1]!)) {
+      ensureStateNode(graph, compositeStack, bareStateMatch[1]!)
+      continue
+    }
   }
 
   // `class S2 foo` on a state that no transition mentions still declares it

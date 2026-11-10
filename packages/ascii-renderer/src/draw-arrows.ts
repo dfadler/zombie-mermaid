@@ -296,7 +296,9 @@ function exitLandings(
     if (unit) unit.push(edge)
     else units.set(key, [edge])
   }
-  if (units.size < 2) return landings
+  // A composite with regions engages on one exit (#3013): its stand-in sits in
+  // a region, not at the target's column, so the exit still lands at the target.
+  if (units.size < 2 && !sg.children.some((c) => c.region)) return landings
 
   const ranked = [...units.values()]
     .map((edges) => {
