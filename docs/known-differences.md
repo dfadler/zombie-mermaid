@@ -19,10 +19,10 @@ tie-breaks was removed after a re-check: on 12.1.0 mermaid and zombie-mermaid ag
 | GitHub ` ```mermaid ` blocks   | 12.2.0  | ELK (config)   | Renderer bundle `viewscreen.githubusercontent.com/static/assets/mermaidMarkdown-*.js` calls `renderer.draw(e, t, "12.2.0")` (read 2026-11-09) |
 | mermaid.live                   | 12.2.0  | ELK            | The editor shows `v12.2.0`; node positions equal the headless ELK render                                                                      |
 
-On 2026-10-22 GitHub's bundle reported `version:"0.0.0"` and its renderer sits in a cross-origin
-iframe, so its version was inferred, not read: it contained identifiers added in 12.1.0
-(`orientFeedbackEdges`, `applyOverride`) and none of the 12.2.0 additions
-(`upperCaseDirection`, `isUnconnected`, `colorBy`). 12.1.0 and 12.2.0 place the dense
+GitHub's renderer sits in a cross-origin iframe and its bundle reports `version:"0.0.0"`, so read
+the version literal passed to `renderer.draw`. Identifier fingerprints (`upperCaseDirection`,
+`isUnconnected`) are not version markers: an earlier check used them, found them absent, and
+wrongly concluded 12.1.0 (#2976). 12.1.0 and 12.2.0 place the dense
 samples identically (gallery "Dense Duplicate Edges" TD and LR, and the #2160 sample 3
 with and without `n0["n0"]`/`n1["n1"]` declarations), so either version is a valid target on
 both surfaces; `layout: dagre` places them differently. Re-run the check when the pin
