@@ -45,8 +45,7 @@ describe('radar init config', () => {
 
   it('reads front matter config passed straight to parseRadar', () => {
     expect(
-      parseRadar('---\nconfig:\n  radar:\n    width: 450\n---\n' + BODY)
-        .config,
+      parseRadar('---\nconfig:\n  radar:\n    width: 450\n---\n' + BODY).config,
     ).toEqual({ width: 450 })
   })
 

@@ -193,8 +193,8 @@ const MAX_TICKS = 32
 export function parseRadar(text: string): Radar {
   // Front matter `config:` becomes an init directive so it reaches
   // `extractInitConfig` below when callers pass the original input.
-  text = stripFrontMatter(text.replace(/\r\n?/g, '\n'))
-  const tokens = tokenize(text)
+  const source = stripFrontMatter(text.replace(/\r\n?/g, '\n'))
+  const tokens = tokenize(source)
   let i = 0
   const peek = (): Token | undefined => tokens[i]
   const fail = (found: Token | undefined, expected: string): never => {
@@ -332,7 +332,7 @@ export function parseRadar(text: string): Radar {
   }
 
   const radar: Radar = { axes: radarAxes, curves, options }
-  const init = extractInitConfig(text.split(/\r\n?|\n/))
+  const init = extractInitConfig(source.split(/\r\n?|\n/))
   if (init.radar) radar.config = init.radar
   if (init.radarTheme) radar.style = init.radarTheme
   if (title !== undefined) radar.title = title
