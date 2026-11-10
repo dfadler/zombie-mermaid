@@ -36,30 +36,33 @@ export function liveChunkPaths(html: string): string[] {
   return [...new Set(html.match(/\/_app\/immutable\/[^"'\s)]+\.js/g) ?? [])]
 }
 
-const text = async (url: string): Promise<string> => {
-  const r = await fetch(url, { signal: AbortSignal.timeout(30_000) })
+export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>
+
+const text = async (get: Fetcher, url: string): Promise<string> => {
+  const r = await get(url, { signal: AbortSignal.timeout(30_000) })
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`)
   return r.text()
 }
 
-export async function githubVersion(): Promise<{
-  version: string
-  bundle: string
-}> {
-  const path = githubBundlePath(await text(GITHUB_IFRAME))
+export async function githubVersion(
+  get: Fetcher = fetch,
+): Promise<{ version: string; bundle: string }> {
+  const path = githubBundlePath(await text(get, GITHUB_IFRAME))
   if (!path)
     throw new Error('GitHub: no mermaidMarkdown-*.js in the iframe HTML')
-  const version = drawVersion(await text(new URL(path, GITHUB_IFRAME).href))
+  const version = drawVersion(
+    await text(get, new URL(path, GITHUB_IFRAME).href),
+  )
   if (!version)
     throw new Error(`GitHub: no renderer.draw version literal in ${path}`)
   return { version, bundle: path }
 }
 
-export async function liveVersion(): Promise<string> {
-  const chunks = liveChunkPaths(await text(LIVE))
+export async function liveVersion(get: Fetcher = fetch): Promise<string> {
+  const chunks = liveChunkPaths(await text(get, LIVE))
   const found = await Promise.all(
     chunks.map((p) =>
-      text(new URL(p, LIVE).href).then(drawVersion, () => undefined),
+      text(get, new URL(p, LIVE).href).then(drawVersion, () => undefined),
     ),
   )
   const v = found.find((x) => x !== undefined)
@@ -70,36 +73,46 @@ export async function liveVersion(): Promise<string> {
   return v
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const recorded = (k: keyof typeof SURFACE_VERSIONS) =>
-    SURFACE_VERSIONS[k].split(' ')[0]
+/** Compare the live versions with `recorded`; `code` is 1 when moved or unreadable. */
+export async function run(
+  get: Fetcher = fetch,
+  recorded: Record<string, string> = {
+    GitHub: SURFACE_VERSIONS['GitHub ```mermaid blocks'].split(' ')[0]!,
+    'mermaid.live': SURFACE_VERSIONS['mermaid.live'].split(' ')[0]!,
+  },
+  pin: string = pinnedMermaidVersion(),
+): Promise<{ lines: string[]; code: number }> {
   try {
-    const [gh, live] = await Promise.all([githubVersion(), liveVersion()])
-    const rows = [
-      ['GitHub', gh.version, recorded('GitHub ```mermaid blocks'), gh.bundle],
-      ['mermaid.live', live, recorded('mermaid.live'), ''],
-    ] as const
+    const [gh, live] = await Promise.all([githubVersion(get), liveVersion(get)])
+    const rows: [string, string, string][] = [
+      ['GitHub', gh.version, gh.bundle],
+      ['mermaid.live', live, ''],
+    ]
+    const lines: string[] = []
     let moved = false
-    for (const [name, now, was, extra] of rows) {
+    for (const [name, now, extra] of rows) {
+      const was = recorded[name]
       const same = now === was
       moved ||= !same
-      console.log(
+      lines.push(
         `${same ? 'ok   ' : 'MOVED'} ${name} ${now}${same ? '' : ` (recorded ${was})`} ${extra}`.trimEnd(),
       )
     }
-    console.log(`pin   ${pinnedMermaidVersion()}`)
-    if (moved) {
-      console.log(
+    lines.push(`pin   ${pin}`)
+    if (moved)
+      lines.push(
         'A surface moved: update SURFACE_VERSIONS and the table in docs/known-differences.md, then re-verify parity claims that name the old version (docs/known-differences.md, "Re-verifying").',
       )
-      process.exit(1)
-    }
+    return { lines, code: moved ? 1 : 0 }
   } catch (e) {
     if (e instanceof TypeError)
-      console.log(`renderer versions: offline? (${e.message})`)
-    else {
-      console.error(`renderer versions: ${(e as Error).message}`)
-      process.exit(1)
-    }
+      return { lines: [`renderer versions: offline? (${e.message})`], code: 0 }
+    return { lines: [`renderer versions: ${(e as Error).message}`], code: 1 }
   }
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const { lines, code } = await run()
+  console.log(lines.join('\n'))
+  process.exit(code)
 }
