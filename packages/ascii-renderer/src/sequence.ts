@@ -378,6 +378,35 @@ export function renderSequenceAscii(
     if (a.createdAt !== undefined) createdByMsg.set(a.createdAt, i)
     if (a.destroyedAt !== undefined) destroyedByMsg.set(a.destroyedAt, i)
   })
+  // A self-message that destroys its participant (mirrored actors): mermaid
+  // 12.2.0/12.3.0 draw it as a straight line from the footer box's left edge
+  // to the lifeline centre, label above it, all inside the box (rect
+  // y=129..203, line y=166 = the box's vertical centre, label centred over
+  // the line, x=201..276). So the footer box grows to enclose them: `half`
+  // columns either side of the lifeline, `above`/`below` rows around the
+  // arrow row, the arrowhead `hx` columns left of the lifeline (just before
+  // the name / figure).
+  const selfDestroy = new Map<
+    number,
+    { half: number; above: number; below: number; hx: number }
+  >()
+  diagram.messages.forEach((msg, m) => {
+    const i = actorIndexOf(msg.from)
+    if (!mirror || msg.from !== msg.to || destroyedByMsg.get(m) !== i) return
+    const a = diagram.actors[i]!
+    const hx = Math.floor(actorContentWidth(a) / 2) + 1
+    const half = Math.max(
+      Math.floor(actorBoxWidths[i]! / 2),
+      hx + Math.max(maxLineWidth(msg.label) + 2, 3),
+    )
+    const above = Math.max(createdBoxAbove(i), lineCount(msg.label) + 1)
+    const figure = actorGlyphLines(a).length > 0
+    const below = Math.max(
+      above,
+      figure ? createdBoxH(i) - 1 - above : createdBoxH(i) - 2,
+    )
+    selfDestroy.set(m, { half, above, below, hx })
+  })
   // Filled in by the vertical layout pass: actor index → top row of its
   // created box / top row of its destroyed footer box.
   const createdBoxTop = new Map<number, number>()
@@ -435,6 +464,15 @@ export function renderSequenceAscii(
     const fi = actorIndexOf(msg.from)
     const ti = actorIndexOf(msg.to)
     if (fi === ti) {
+      const sd = selfDestroy.get(mi)
+      if (sd !== undefined) {
+        // The footer box must clear both neighbouring lifelines.
+        if (fi < adjMaxWidth.length)
+          adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, sd.half)
+        if (fi > 0)
+          adjMaxWidth[fi - 1] = Math.max(adjMaxWidth[fi - 1]!, sd.half)
+        continue
+      }
       // A self-message's label sits above its loop and must clear the next
       // lifeline by one blank column, or it overwrites that lifeline
       // (issue #1387). The last actor has no right neighbour; the
@@ -631,7 +669,7 @@ export function renderSequenceAscii(
       // block's left wall (column 0) by one blank column.
       ...diagram.messages.map((m, mi) =>
         m.from === m.to && actorIndexOf(m.from) === 0
-          ? selfLeft(m) +
+          ? (selfDestroy.get(mi)?.half ?? selfLeft(m)) +
             (diagram.blocks.some((b) => mi >= b.startIndex && mi <= b.endIndex)
               ? 2
               : 0)
@@ -919,9 +957,9 @@ export function renderSequenceAscii(
 
     const msg = diagram.messages[m]!
     // A self-message that destroys its participant (mirrored actors) is a
-    // plain row, not a loop: Mermaid 12.3.0 draws it as a straight line to the
-    // footer box, which is centred on that row.
-    const destroysSelf = mirror && msg.from === msg.to && destroyedByMsg.has(m)
+    // straight line inside the enlarged footer box, not a loop (`selfDestroy`).
+    const sd = selfDestroy.get(m)
+    const destroysSelf = sd !== undefined
     const isSelf = msg.from === msg.to && !destroysSelf
 
     // Calculate height needed for multi-line message labels
@@ -954,14 +992,12 @@ export function renderSequenceAscii(
         createdIdx === undefined ? 0 : createdBoxBelow(createdIdx),
         destroyedIdx === undefined ? 0 : createdBoxBelow(destroyedIdx),
       )
-      // A destroying self-message has no arrow to show (the line would sit
-      // inside the footer box), so its label goes above the box instead.
-      const above = destroysSelf
-        ? msgLineCount + boxAbove
-        : Math.max(msgLineCount, boxAbove)
+      // A destroying self-message's label and arrow sit inside its footer box:
+      // the label on the rows under the top border, the arrow row below them.
+      const above = sd?.above ?? Math.max(msgLineCount, boxAbove)
       msgArrowY[m] = curY + above
-      msgLabelY[m] = msgArrowY[m]! - (destroysSelf ? above : msgLineCount)
-      curY += above + 1 + boxBelow
+      msgLabelY[m] = sd === undefined ? msgArrowY[m]! - msgLineCount : curY + 1
+      curY += above + 1 + (sd?.below ?? boxBelow)
       if (createdIdx !== undefined) {
         createdBoxTop.set(
           createdIdx,
@@ -971,7 +1007,7 @@ export function renderSequenceAscii(
       if (destroyedIdx !== undefined) {
         destroyBoxTop.set(
           destroyedIdx,
-          msgArrowY[m]! - createdBoxAbove(destroyedIdx),
+          msgArrowY[m]! - (sd?.above ?? createdBoxAbove(destroyedIdx)),
         )
       }
     }
@@ -1045,7 +1081,8 @@ export function renderSequenceAscii(
     const msg = diagram.messages[m]!
     if (msg.from === msg.to) {
       const fi = actorIndexOf(msg.from)
-      const selfRight = llX[fi]! + selfExtent(msg) + 2
+      const selfRight =
+        llX[fi]! + (selfDestroy.get(m)?.half ?? selfExtent(msg)) + 2
       totalW = Math.max(totalW, selfRight + 1)
     }
   }
@@ -1161,13 +1198,16 @@ export function renderSequenceAscii(
     label: string,
     glyphLines: readonly string[],
     boxH: number,
+    // A destroying self-message's footer box: `half` columns each side of the
+    // lifeline, content starting `contentTop` rows under the top border.
+    enlarged?: { half: number; contentTop: number },
   ): void {
     const lines = [...glyphLines, ...splitLines(label)]
     const maxW = Math.max(
       maxLineWidth(label),
       maxLineWidth(glyphLines.join('\n')),
     )
-    const w = maxW + 2 * boxPad + 2
+    const w = enlarged ? 2 * enlarged.half + 1 : maxW + 2 * boxPad + 2
     const h = boxH
     const contentRows = h - 2
     const left = cx - Math.floor(w / 2)
@@ -1184,15 +1224,17 @@ export function renderSequenceAscii(
       const row = topY + 1 + i
       setC(left, row, V, 'border')
       setC(left + w - 1, row, V, 'border')
-      const line = lines[i]
-      if (line === undefined) continue
+      const line = lines[i - (enlarged?.contentTop ?? 0)]
+      if (line === undefined || i < (enlarged?.contentTop ?? 0)) continue
       // Center this line within the box. Centering offset and cell-writing
       // both use display width (terminal columns), not `.length` (JS
       // code units) — a code-unit-based offset would under-center CJK
       // labels, and writing one grid cell per code unit (rather than per
       // terminal column) would under-reserve columns for wide glyphs,
       // both contributing to issue #334's border/content misalignment.
-      const ls = left + 1 + boxPad + Math.floor((maxW - displayWidth(line)) / 2)
+      const ls = enlarged
+        ? cx - Math.floor(displayWidth(line) / 2)
+        : left + 1 + boxPad + Math.floor((maxW - displayWidth(line)) / 2)
       writeTextCells(ls, row, line, 'text')
     }
 
@@ -1373,7 +1415,14 @@ export function renderSequenceAscii(
       headerH,
     )
     const footerTop = destroyedTop ?? footerBoxTop
-    const footerH = destroyedTop === undefined ? actorBoxH : createdBoxH(i)
+    // A destroying self-message's footer box is enlarged to enclose its arrow.
+    const sd = [...selfDestroy].find(([m]) => destroyedByMsg.get(m) === i)?.[1]
+    const footerH =
+      destroyedTop === undefined
+        ? actorBoxH
+        : sd === undefined
+          ? createdBoxH(i)
+          : sd.above + 1 + sd.below
     if (mirror) {
       drawActorBox(
         llX[i]!,
@@ -1381,6 +1430,11 @@ export function renderSequenceAscii(
         actor.label,
         actorGlyphLines(actor),
         footerH,
+        sd && {
+          half: sd.half,
+          // A plain box's name sits on the arrow row; a figure's rows stay put.
+          contentTop: actorGlyphLines(actor).length > 0 ? 0 : sd.above - 1,
+        },
       )
     }
 
@@ -1413,23 +1467,23 @@ export function renderSequenceAscii(
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
 
     if (destroysSelf) {
-      // Footer box centred below this label row (drawn with the footers):
-      // only the label shows, centred on the lifeline.
+      // Inside the footer box (drawn with the footers): the label centred
+      // over the arrow, which runs from the box's left interior to just
+      // before the name / figure at the lifeline centre.
+      const { half, hx } = selfDestroy.get(m)!
+      const headX = fromX - hx
+      const start = fromX - half + 1
+      const mid = Math.floor((start + headX) / 2)
       splitLines(msg.label).forEach((line, k) => {
         writeTextCells(
-          fromX - Math.floor(displayWidth(line) / 2),
+          mid - Math.floor(displayWidth(line) / 2),
           msgLabelY[m]! + k,
           line,
           'text',
           totalW,
         )
       })
-      // Mermaid 12.3.0 draws the message as a straight line into the lifeline
-      // centre, under the box. ASCII cannot overlay the box, so the arrow
-      // runs in from the left on the box's middle row and stops at its edge.
-      const headX = actorBoxLeft(fi, fromX) - 1
-      const prevX = fi > 0 ? llX[fi - 1]! : -1
-      for (let x = Math.max(prevX + 1, headX - 3); x < headX; x++)
+      for (let x = start; x < headX; x++)
         setC(x, msgArrowY[m]!, lineChar, 'line')
       setC(
         headX,

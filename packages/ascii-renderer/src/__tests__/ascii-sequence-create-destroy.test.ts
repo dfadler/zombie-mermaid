@@ -160,41 +160,72 @@ describe('ASCII sequence diagrams – creating message label (#2281)', () => {
     expect(rows.some((r) => r.includes('┌─┴─┐'))).toBe(true)
   })
 
-  it("centres a destroying self-message's footer box on its row, no loop (mermaid 12.3.0)", () => {
-    const result = renderMermaidASCII(
-      'sequenceDiagram\n  A->>B: hi\n  destroy B\n  B->>B: bye',
-      { useAscii: false },
-    )
-    expect(result).not.toContain('✕')
-    expect(result).not.toMatch(/[◀├]/)
-    const rows = result.split('\n')
-    const label = rows.findIndex((r) => r.includes('bye'))
-    const mid = rows.findIndex((r, i) => i > label && /│ B │/.test(r))
-    // Label row, box top (┴ joins the lifeline), box middle row
-    expect(rows[label + 1]).toContain('┌─┴─┐')
-    expect(mid).toBe(label + 2)
+  // Mermaid 12.2.0 and 12.3.0 (headless) and mermaid.live draw a destroying
+  // self-message as a straight line inside B's footer box: box rect y=129..203
+  // with the line at y=166 (the box's vertical centre), from the box's left
+  // edge (x=201) to the lifeline centre (x=276), the label centred over that
+  // span at y=135. The ASCII footer box grows to enclose them (#2981).
+  const destroySelf = (head: string, useAscii: boolean, kind = 'participant') =>
+    renderMermaidASCII(
+      `sequenceDiagram\n  ${kind} A\n  ${kind} B\n  A->>B: hi\n  destroy B\n  B${head}B: bye`,
+      { useAscii },
+    ).split('\n')
+
+  it("encloses a destroying self-message's label and arrow in B's footer box (#2981)", () => {
+    expect(destroySelf('->>', false).slice(7, 13)).toEqual([
+      '   │   ┌─────┴─────┐   ',
+      '   │   │ bye       │   ',
+      '   │   │────▶B     │   ',
+      '   │   │           │   ',
+      '   │   └───────────┘   ',
+      '   │                   ',
+    ])
   })
 
-  it("draws the destroying self-message's arrow into the footer box edge (#2981, mermaid 12.3.0)", () => {
-    const src = 'sequenceDiagram\n  A->>B: hi\n  destroy B\n  B->>B: bye'
-    const rows = renderMermaidASCII(src, { useAscii: false }).split('\n')
-    expect(rows.some((r) => /───▶│ B │/.test(r))).toBe(true)
-    const ascii = renderMermaidASCII(src, { useAscii: true }).split('\n')
-    expect(ascii.some((r) => /--->\| B \|/.test(r))).toBe(true)
+  it('does the same in plain-ASCII mode', () => {
+    expect(destroySelf('->>', true).slice(7, 13)).toEqual([
+      '   |   +-----------+   ',
+      '   |   | bye       |   ',
+      '   |   |---->B     |   ',
+      '   |   |           |   ',
+      '   |   +-----------+   ',
+      '   |                   ',
+    ])
   })
 
-  it("keeps a first participant's destroying self-message arrow inside the canvas, and honours open/lost heads (#2981)", () => {
-    const head = (arrow: string, useAscii = false): string =>
+  it('keeps the stick figure on its rows and the arrow on the figure middle row (actor)', () => {
+    expect(destroySelf('->>', false, 'actor').slice(10, 18)).toEqual([
+      '    │  ┌──────┴──────┐   ',
+      '    │  │ bye  O      │   ',
+      '    │  │────▶/|\\     │   ',
+      '    │  │     / \\     │   ',
+      '    │  │      B      │   ',
+      '    │  └─────────────┘   ',
+      '    │                    ',
+      ' ┌──┴──┐                 ',
+    ])
+    expect(destroySelf('->>', true, 'actor').slice(11, 13)).toEqual([
+      '    |  | bye  O      |   ',
+      '    |  |---->/|\\     |   ',
+    ])
+  })
+
+  it("keeps a first participant's enlarged footer box on the canvas, and honours open/lost heads", () => {
+    const first = (head: string, useAscii = false): string[] =>
       renderMermaidASCII(
-        `sequenceDiagram\n  A->>B: hi\n  destroy A\n  A${arrow}A: bye`,
+        `sequenceDiagram\n  A->>B: hi\n  destroy A\n  A${head}A: bye`,
         { useAscii },
-      )
-        .split('\n')
-        .find((r) => /[▶▷✕>x]│ A │|[▶▷✕>x]\| A \|/.test(r))!
-    expect(head('->>')).toMatch(/^▶│ A │/)
-    expect(head('->')).toMatch(/^▷│ A │/)
-    expect(head('-x')).toMatch(/^✕│ A │/)
-    expect(head('->>', true)).toMatch(/^>\| A \|/)
+      ).split('\n')
+    expect(first('->>').slice(7, 12)).toEqual([
+      '┌─────┴─────┐   │     ',
+      '│ bye       │   │     ',
+      '│────▶A     │   │     ',
+      '│           │   │     ',
+      '└───────────┘   │     ',
+    ])
+    expect(first('->')[9]).toBe('│────▷A     │   │     ')
+    expect(first('-x')[9]).toBe('│────✕A     │   │     ')
+    expect(first('->>', true)[9]).toBe('|---->A     |   |     ')
   })
 
   it('draws a destroyed actor footer as a stick figure', () => {
