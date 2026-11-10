@@ -1,4 +1,5 @@
 import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
+import { sanitizeTitle } from './sanitize-title.ts'
 import { resolvePacketConfig } from './types.ts'
 import type { Packet, PacketBlock } from './types.ts'
 
@@ -191,7 +192,7 @@ export function parsePacket(text: string): Packet {
       endOfLine()
       // Everything after `title`, up to a `%%` comment; runs of blanks collapse.
       const body = t.value.replace(/^[\t ]*title/, '').trim()
-      const title = body.replace(/[\t ]{2,}/g, ' ')
+      const title = sanitizeTitle(body.replace(/[\t ]{2,}/g, ' '))
       if (title) packet.title = title
       else delete packet.title
       continue
