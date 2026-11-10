@@ -1,13 +1,14 @@
 /**
- * Reproduces mermaid 12.2's DEFAULT flowchart layout (ELK, not dagre) in plain Node, no
+ * Reproduces mermaid 12.3's DEFAULT flowchart layout (ELK, not dagre) in plain Node, no
  * browser: rendering-util/layout-algorithms/elk/render.ts for flat graphs (no subgraphs): root
  * options, edge construction, and the edge-point post-processing (cutter2 endpoint attach,
  * marker-segment trimming, terminal-jog straightening).
  *
- * Must run on elkjs 0.9.3 (mermaid's own dependency): 0.11/0.12 lay the dense samples out
- * differently. This package pins it exactly and resolves it package-locally.
+ * Must run on elkjs 0.12.0 (mermaid 12.3.0's own dependency; 0.9.3 routes repeated edges between two
+ * nodes differently). This package pins it exactly and resolves it package-locally.
  */
-import ELK from 'elkjs-0.9.3/lib/elk.bundled.js'
+import ELK from 'elkjs-0.12.0/lib/elk.bundled.js'
+import type { ElkExtendedEdge } from 'elkjs-0.12.0/lib/elk-api.js'
 import { buildModel, inside, type MNode, type Model, type Pt } from './model.ts'
 
 export interface LayoutNode {
@@ -303,7 +304,7 @@ export async function layoutFlowchart(src: string): Promise<FlowchartLayout> {
     byId.set(c.id, { n, b: { x: x + w / 2, y: y + h / 2, w, h } })
   }
   const edgeBy = new Map(m.edges.map((e) => [e.id, e]))
-  const laidOut = res.edges!
+  const laidOut = res.edges as ElkExtendedEdge[]
   const routes = laidOut.map((re) => {
     const e = edgeBy.get(re.id)!
     const s = byId.get(e.from)!

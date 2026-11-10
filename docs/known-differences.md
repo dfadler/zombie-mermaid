@@ -628,7 +628,7 @@ instead draws mermaid's own ELK layout (`packages/elk-layout`, `packages/ascii-l
 Opt-in only: without the flag the output is byte-identical to before.
 
 - **Fallback, never silent.** Subgraphs, shapes the layout does not model, non-flowchart
-  diagrams, a layout error, or a missing `elkjs-0.9.3` make it use the standard renderer; the
+  diagrams, a layout error, or a missing `elkjs-0.12.0` make it use the standard renderer; the
   CLI prints `layout-faithful: <reason>; used standard renderer` on stderr and the API returns
   `path: 'standard'` plus `fallbackReason`. On success stderr says `layout-faithful: used
   mermaid's ELK layout` and the result carries a `note`.
@@ -643,13 +643,11 @@ Opt-in only: without the flag the output is byte-identical to before.
   `A --> B` look like one).
 - **Plain drawing at a fixed scale.** `-x/-y/-p`, `--coords`, `--theme` colors, `--hyperlinks`
   and `--max-width` compaction (it is the column cap instead) do not apply to it (they apply to a fallback render).
-- **Pinned to mermaid 12.1.0 + elkjs 0.9.3.** The layout is only faithful to that pair. The
-  repo's oracle pin is now 12.2.0, and `pnpm run elk-layout:oracle` on 12.2.0 differs from
-  12.1.0 in three gallery samples (circle and double-circle node sizes in "Original Node
-  Shapes" and "Subroutine and Hexagon Shapes", one edge path in "Labeled Fan-In (LR)"); the module still
-  matches 12.1.0, which GitHub was inferred to render on 2026-10-22 (it renders 12.2.0 as of 2026-11-09). The module is not yet updated to 12.2.0.
-- **Dependency.** `elkjs-0.9.3` (`npm:elkjs@0.9.3`) is an optional peer dependency of
-  `zombie-mermaid`, kept separate from the `elkjs` 0.11/0.12 the SVG renderer uses. The layout
+- **Pinned to mermaid 12.3.0 + elkjs 0.12.0.** The layout is only faithful to that pair, which
+  matches the repo's oracle pin (`pnpm run elk-layout:oracle`; the flat gallery differences that
+  remain are listed in `packages/elk-layout/README.md`, "Known gaps").
+- **Dependency.** `elkjs-0.12.0` (`npm:elkjs@0.12.0`) is an optional peer dependency of
+  `zombie-mermaid`, kept separate from the `elkjs` the SVG renderer uses. The layout
   code is bundled into lazy chunks that load only when the option is used. The MCP tool does not
   expose it.
 

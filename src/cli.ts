@@ -187,8 +187,8 @@ Options:
                        one ran. --layout mermaid-wide drops the cap and always
                        draws the (possibly wide) layout-faithful text. Merged
                        parallel edges hide edge multiplicity. Depends on
-                       mermaid 12.1.0 + elkjs 0.9.3: install the optional peer
-                       with \`pnpm add elkjs-0.9.3@npm:elkjs@0.9.3\`. -x/-y/-p
+                       mermaid 12.3.0 + elkjs 0.12.0: install the optional peer
+                       with \`pnpm add elkjs-0.12.0@npm:elkjs@0.12.0\`. -x/-y/-p
                        and --coords do not apply to the layout-faithful drawing.
   --port <n>           Port for the 'web' command (default: 3000)
   -h, --help           Show help

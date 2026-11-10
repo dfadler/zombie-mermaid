@@ -4,7 +4,7 @@
 // Draws a flowchart from mermaid's own (ELK) layout instead of the grid
 // renderer. The default ASCII path is untouched; this is a separate async
 // entry that falls back to `renderMermaidASCII` and always reports which path
-// produced the text. The private layout packages and elkjs 0.9.3 are loaded
+// produced the text. The private layout packages and elkjs 0.12.0 are loaded
 // with a dynamic import, so they cost nothing unless this function is called.
 // ============================================================================
 
@@ -29,7 +29,7 @@ export interface AsciiLayoutResult {
  * Render ASCII, optionally from mermaid's ELK layout (`layout: 'mermaid'`).
  *
  * Layout-faithful covers flat flowcharts only; anything else (subgraphs, unmodelled shapes,
- * other diagram types, a layout failure, elkjs 0.9.3 not installed) falls back to the standard
+ * other diagram types, a layout failure, elkjs 0.12.0 not installed) falls back to the standard
  * renderer and says so in `fallbackReason`. Layout-faithful output is plain text drawn on its
  * own grid, so spacing/color/profile options apply only to the fallback. A drawing that cannot
  * fit the width cap (`maxCols`, default 120) also falls back; pass `maxCols: Infinity` to get the
@@ -69,7 +69,7 @@ export async function renderMermaidASCIIWithLayout(
     ])
   } catch {
     return standard(
-      'elkjs 0.9.3 is not installed (pnpm add elkjs-0.9.3@npm:elkjs@0.9.3)',
+      'elkjs 0.12.0 is not installed (pnpm add elkjs-0.12.0@npm:elkjs@0.12.0)',
     )
   }
   try {
