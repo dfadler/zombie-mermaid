@@ -1,0 +1,34 @@
+# target sentence: "N/A needs a reason ... write `N/A: <one-line reason tied to this diff>` on the same line"
+# good-reply: - [x] Before/after screenshot of real-terminal ASCII output attached. N/A: change is only demo/styles.css, no ASCII renderer output changed
+# bad-reply: - [x] Before/after screenshot of real-terminal ASCII output attached
+schema_version: '1.1'
+name: pr-checklist-na-needs-reason
+description: >
+  An item that does not apply to the diff is checked with a stated, diff-specific reason, not
+  ticked bare or skipped silently. expected_outcome: PASS when the screenshot item is marked N/A
+  with a reason naming the CSS-only change; FAIL if ticked bare or claimed done.
+tags: [pr-checklist, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    My PR only edits one CSS file, demo/styles.css (button padding). Here are the checklist
+    items from the template; fill in the ones that don't apply and tell me what's left.
+
+    - [ ] Before/after screenshot of real-terminal ASCII output attached
+    - [ ] Changeset added
+    - [ ] Linked issue: #
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-checklist"'
+  # The reason must sit on the same line as N/A and name the CSS-only scope.
+  - name: na_with_reason
+    type: regex
+    pattern: 'N/A[^\n]*(?:CSS|styles\.css|padding|no ASCII)'
+    flags: i

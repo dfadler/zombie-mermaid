@@ -1,0 +1,24 @@
+# target sentence: description's trigger list ("open, edit, or update a PR body ... fix the `PR checklist` CI check"); this asks for a generic PR-check design, not to act on a PR body.
+schema_version: '1.1'
+name: pr-checklist-quiet-on-ci-workflow-explainer
+description: >
+  A general question about how a GitHub PR check that scans the body works must not fire
+  pr-checklist. Trigger-boundary negative: plugin arm only, no delta.
+tags: [pr-checklist, trigger-boundary, 'pair:pr-checklist-draft-body-unchecked']
+runs: 3
+
+execution:
+  prompt: |
+    In general, how would I write a GitHub Actions job that fails a pull request when the PR
+    description contains an unchecked "- [ ]" box? Just sketch the approach, in a few lines.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: pr_checklist_not_invoked
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-checklist"'
+    min: 0
+    max: 0
