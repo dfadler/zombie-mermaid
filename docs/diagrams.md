@@ -965,8 +965,8 @@ Known differences from Mermaid:
   else draws the default). `left` and `top` shift the pie to make room, `top`
   and `bottom` make the frame taller, and `center` draws the legend over the
   pie. As in Mermaid, the title stays centred on the frame, not on a shifted
-  pie. The ASCII output always puts the legend beside the bars, so it ignores
-  it.
+  pie. The ASCII output prints the table above the bar for `top` and below it
+  for every other value.
 - `%%{init: {"pie": {"highlightSlice": "Cats"}}}%%` draws the slice with that
   exact label 5% larger and fully opaque, as Mermaid 12.1.0 does (it scales the
   slice about the pie centre; it does not pull it out). `"hover"` only

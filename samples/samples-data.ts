@@ -2206,7 +2206,7 @@ pie title Pets adopted by volunteers
     title: 'Pie: Legend Top',
     category: 'Pie',
     description:
-      '`%%{init: {"pie": {"legendPosition": "top"}}}%%` stacks the legend above the pie and makes the frame taller. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+      '`%%{init: {"pie": {"legendPosition": "top"}}}%%` stacks the legend above the pie and makes the frame taller. The ASCII output prints the table above the bar.',
     source: `%%{init: {"pie": {"legendPosition": "top"}}}%%
 pie title Pets adopted by volunteers
   "Dogs" : 386

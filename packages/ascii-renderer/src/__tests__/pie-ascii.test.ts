@@ -494,14 +494,32 @@ describe('pie ASCII – colour modes', () => {
 })
 
 describe('pie ASCII – init legendPosition / highlightSlice', () => {
-  it.each(['left', 'top', 'bottom', 'center'])(
-    'ignores legendPosition %s (the legend is always beside the bars)',
+  it.each(['left', 'right', 'bottom', 'center', 'bogus'])(
+    'legendPosition %s keeps the table below the bar',
     (pos) => {
       expect(
         render(`%%{init: {"pie": {"legendPosition": "${pos}"}}}%%\n${PETS}`),
       ).toBe(render(PETS))
     },
   )
+
+  it('legendPosition top prints title, table, then the bar', () => {
+    const below = render(PETS).split('\n')
+    // Title, '', bar, '', 3 rows.
+    const [title, , bar, , ...rows] = below
+    expect(
+      render(`%%{init: {"pie": {"legendPosition": "top"}}}%%\n${PETS}`).split(
+        '\n',
+      ),
+    ).toEqual([title, '', ...rows, '', bar])
+  })
+
+  it('legendPosition top with no slices has no table to move', () => {
+    const src = 'pie title Empty'
+    expect(
+      render(`%%{init: {"pie": {"legendPosition": "top"}}}%%\n${src}`),
+    ).toBe(render(src))
+  })
 
   it('ignores highlightSlice (no hover, no emphasis in text)', () => {
     expect(
