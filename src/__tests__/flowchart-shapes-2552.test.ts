@@ -74,6 +74,39 @@ describe('flowchart expanded shapes (#2552)', () => {
     expect(tb).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="70" height="10"/)
   })
 
+  // #2850: mermaid@12.3.0 label box is 120 wide and 24 per line; padding is
+  // 15 for the cloud, 12 for the h-cyl, 24 for the tag-rect (headless oracle
+  // and GitHub/mermaid.live agree: 168.8x103.9, 148.8x36, 161.6x48).
+  it('sizes cloud, h-cyl and tag-rect like mermaid (#2850)', () => {
+    const size = (shape: string, label: string) =>
+      estimateNodeSize('A', label, shape, 16)
+    const round = (s: { width: number; height: number }) => [
+      Math.round(s.width * 10) / 10,
+      Math.round(s.height * 10) / 10,
+    ]
+    expect(round(size('cloud', 'cloud'))).toEqual([168.8, 103.8])
+    expect(round(size('horizontal-cylinder', 'h-cyl'))).toEqual([148.8, 36])
+    expect(round(size('tagged-rectangle', 'tag'))).toEqual([161.6, 48])
+    // multi-line: 24px per line
+    expect(round(size('cloud', 'a\nb\nc'))[1]).toBe(151.8)
+    expect(round(size('horizontal-cylinder', 'a\nb'))[1]).toBe(60)
+    expect(round(size('tagged-rectangle', 'a\nb\nc'))[1]).toBe(96)
+  })
+
+  const EDGE = `flowchart LR
+A@{ shape: cloud, label: "line one<br/>line two" }
+B@{ shape: h-cyl, label: "line one<br/>line two<br/>line three" }
+C@{ shape: tag-rect, label: "a label wider than the 120px minimum box" }
+A --> B --> C`
+
+  it('multi-line and wide labels: SVG snapshot (#2850)', () => {
+    expect(renderMermaidSVG(EDGE)).toMatchSnapshot()
+  })
+
+  it('multi-line and wide labels: ASCII snapshot (#2850)', () => {
+    expect(renderMermaidASCII(EDGE)).toMatchSnapshot()
+  })
+
   it('fills the bar from style and classDef, but ignores them on the small circle (#2680)', () => {
     const svg = renderMermaidSVG(
       'flowchart LR\nD@{ shape: sm-circ }\nE@{ shape: fork }\nclassDef hot fill:#f00,stroke:#00f\nclass D,E hot\nstyle D stroke-width:4px,stroke-dasharray:5 5\nD --> E',

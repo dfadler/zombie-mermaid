@@ -467,9 +467,17 @@ export function estimateNodeSize(
     height += 14
   }
 
+  // mermaid@12.3.0's horizontal cylinder pads the label box by 12, so a
+  // one-line node is 36px tall, not the rectangle's 48 (#2850).
+  if (shape === 'horizontal-cylinder' && mermaidBox)
+    height = metrics.height + 12
+
   // Mermaid's cloud path spans 1.25w by h + 0.48w, for a label box w by h
   // (w kept at least 2.5h so the bumps stay inside that span).
   if (shape === 'cloud') {
+    // mermaid@12.3.0 pads the cloud's label box by 15 (`halfPadding * 2`), not
+    // the 24 a rectangle gets, in both directions (#2850).
+    if (mermaidBox) height = metrics.height + 15
     const w =
       stateDiagram || legacyNodeSizes
         ? Math.max(width, height * 2.5)
