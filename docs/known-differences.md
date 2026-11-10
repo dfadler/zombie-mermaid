@@ -185,9 +185,12 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   cutting rows would drop data
   ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722),
   [#2782](https://github.com/dfadler/zombie-mermaid/issues/2782)).
-- **Empty pie.** When every slice is zero, zombie-mermaid draws no slice paths and one
+- **Empty pie.** When every slice is zero (general-105), zombie-mermaid draws no slice paths and one
   outline circle, matching mermaid 12.3.0 (0 paths, 1 circle; only the legend width differs
   by a few pixels, [#2826](https://github.com/dfadler/zombie-mermaid/issues/2826)).
+  A title-only pie (general-104, no slices at all) also draws the one outline circle, and its
+  canvas is as wide as the title alone, as in 12.3.0 (checked against mermaid 12.3.0; the few
+  pixels left are title text metrics).
 - **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
   share of the whole total, including slices that get no bar cell (under 1%, or past the
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
