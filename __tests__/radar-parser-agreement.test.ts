@@ -16,7 +16,11 @@ describe('radar parser agreement with mermaid 12.3.0', () => {
   for (const [name, { source, radar, error }] of Object.entries(FIXTURE)) {
     it(name, () => {
       if (error) expect(() => parseRadar(source)).toThrow()
-      else expect(parseRadar(source)).toEqual(radar)
+      else {
+        // The fixture is mermaid's db model; `config`/`style` are our init-config echo (layout.ts reads them).
+        const { config: _c, style: _s, ...parsed } = parseRadar(source)
+        expect(parsed).toEqual(radar)
+      }
     })
   }
 
