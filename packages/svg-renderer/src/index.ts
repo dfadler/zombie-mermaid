@@ -192,6 +192,8 @@ import {
 } from '@zombie-mermaid/core'
 import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
+import { isStateGraph } from './layout-engine/to-elk.ts'
+import type { MermaidGraph } from '@zombie-mermaid/core'
 import { loadEmbeddedFont, resolveBodyFont } from './embedded-font.ts'
 import { diagramRegistry } from './registry.ts'
 import { addFrontMatterTitle } from './front-matter-title.ts'
@@ -388,7 +390,7 @@ function renderMermaidSVGRaw(
   // Box sizing depends on the metrics model, so pick it before any layout runs.
   setMonospaceMetrics(isMonospaceFont(font))
   const transparent = options.transparent ?? false
-  const fontSizes = resolveFontSizes(options.fontSizes)
+  let fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType: DiagramType = detectDiagramType(decoded)
   const embedSource = options.embedSource ? text : undefined
   const title = options.title ?? acc.accTitle
@@ -413,7 +415,17 @@ function renderMermaidSVGRaw(
   if (g.nodes instanceof Map && Array.isArray(g.edges)) {
     checkGraphSize(g.nodes.size, g.edges.length, options.limits)
   }
-  const positioned = registered.layoutForSvg(diagram, options)
+  let layoutOptions = options
+  // mermaid@12.3.0 draws flowchart node labels at 16px (state keeps 13px) (#2931).
+  if (
+    diagramType === 'flowchart' &&
+    options.fontSizes?.nodeLabel === undefined &&
+    !isStateGraph(diagram as MermaidGraph)
+  ) {
+    fontSizes = resolveFontSizes({ ...options.fontSizes, nodeLabel: 16 })
+    layoutOptions = { ...options, fontSizes }
+  }
+  const positioned = registered.layoutForSvg(diagram, layoutOptions)
   // Opt-in: the diagram's own `themeVariables` fill colours the caller left
   // unset (only flowchart/state carry an `initConfig`; pie reads its own).
   const colors = buildColors(
