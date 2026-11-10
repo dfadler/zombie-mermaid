@@ -16,9 +16,9 @@ describe('asymmetric shape notch (#2285)', () => {
   for (const dir of ['LR', 'TD', 'RL', 'BT']) {
     it(`${dir}: notch tip points inward and the label is centred in the body`, () => {
       const src = `flowchart ${dir}\n  B --> A>Flag shape]`
-      const n = layoutFlowchartSync(parseMermaid(src)).nodes.find(
-        (x) => x.id === 'A',
-      )!
+      const n = layoutFlowchartSync(parseMermaid(src), {
+        fontSizes: { nodeLabel: 16 },
+      }).nodes.find((x) => x.id === 'A')!
       const svg = renderMermaidSVG(src)
       const poly = svg.match(
         /data-shape="asymmetric">\s*<polygon points="([^"]+)"/,
