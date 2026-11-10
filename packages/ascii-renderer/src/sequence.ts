@@ -1424,6 +1424,19 @@ export function renderSequenceAscii(
           totalW,
         )
       })
+      // Mermaid 12.3.0 draws the message as a straight line into the lifeline
+      // centre, under the box. ASCII cannot overlay the box, so the arrow
+      // runs in from the left on the box's middle row and stops at its edge.
+      const headX = actorBoxLeft(fi, fromX) - 1
+      const prevX = fi > 0 ? llX[fi - 1]! : -1
+      for (let x = Math.max(prevX + 1, headX - 3); x < headX; x++)
+        setC(x, msgArrowY[m]!, lineChar, 'line')
+      setC(
+        headX,
+        msgArrowY[m]!,
+        isLost ? lostChar : useAscii ? '>' : isFilled ? '▶' : '▷',
+        'arrow',
+      )
     } else if (isSelf) {
       // Self-message: the label centred above a 3-row loop to the right of
       // the lifeline, as mermaid.js draws it (issues #1387, #2456)

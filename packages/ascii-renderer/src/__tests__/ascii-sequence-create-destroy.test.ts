@@ -175,6 +175,14 @@ describe('ASCII sequence diagrams – creating message label (#2281)', () => {
     expect(mid).toBe(label + 2)
   })
 
+  it("draws the destroying self-message's arrow into the footer box edge (#2981, mermaid 12.3.0)", () => {
+    const src = 'sequenceDiagram\n  A->>B: hi\n  destroy B\n  B->>B: bye'
+    const rows = renderMermaidASCII(src, { useAscii: false }).split('\n')
+    expect(rows.some((r) => /───▶│ B │/.test(r))).toBe(true)
+    const ascii = renderMermaidASCII(src, { useAscii: true }).split('\n')
+    expect(ascii.some((r) => /--->\| B \|/.test(r))).toBe(true)
+  })
+
   it('draws a destroyed actor footer as a stick figure', () => {
     const result = renderMermaidASCII(
       'sequenceDiagram\n  actor A\n  actor B\n  A->>B: hi\n  destroy B\n  B-->>A: bye',
