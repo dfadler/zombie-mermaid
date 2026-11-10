@@ -3245,13 +3245,14 @@ Init and front matter share one code path.
 - **Read, SVG and ASCII:** `chartOrientation` (`horizontal` overrides the header), `showTitle`, and `xAxis.showTitle` /
   `yAxis.showTitle` (drop the chart or axis title). `xAxis` is mermaid's category-or-x axis and `yAxis` its value axis,
   whatever the orientation.
-- **Read, SVG only:** `width` and `height` (mermaid default 700 x 500) move the plot by the same delta on our scale
-  (plot minimum 50px), so the canvas grows or shrinks by that amount; and per axis `showLabel`, `showTick` and
-  `showAxisLine`. ASCII has no pixel sizes, labels, ticks or lines to switch.
-  **Known gap:** mermaid keeps the canvas at `width` x `height` and gives the room a hidden title, label or axis title took back
-  to the plot; ours leaves that margin empty (or, for a hidden title, shrinks the canvas), tracked in a separate issue.
-- **Not read** (reported as ignored; mermaid lays the plot out from these and our plot is a fixed size plus the
-  `width`/`height` delta): `titleFontSize`, `titlePadding`, `showDataLabel`, `showDataLabelOutsideBar` (data labels are
+- **Read, SVG only:** `width` and `height` (mermaid default 700 x 500): the canvas is exactly `width` x `height`, as in
+  mermaid 12.3.0 (viewBox checked for every combination of hidden chart title, axis titles and axis labels, both
+  orientations), and the plot takes the room the margins leave (minimum 50px), so a hidden title, label or axis title
+  widens or heightens it. Per axis `showLabel`, `showTick` and `showAxisLine` are read too. ASCII has no pixel sizes,
+  labels, ticks or lines to switch. The margins are our own (the plot rectangle is not mermaid's to the pixel; tick
+  and data positions as fractions of each axis match, `pnpm run xychart:oracle`).
+- **Not read** (reported as ignored; mermaid lays the plot out from these and our margins are fixed sizes, see
+  [#3010](https://github.com/dfadler/zombie-mermaid/issues/3010)): `titleFontSize`, `titlePadding`, `showDataLabel`, `showDataLabelOutsideBar` (data labels are
   not drawn), `plotReservedSpacePercent`, and per axis `labelFontSize`, `labelPadding`, `titleFontSize`,
   `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth`, `labelRotation`.
 

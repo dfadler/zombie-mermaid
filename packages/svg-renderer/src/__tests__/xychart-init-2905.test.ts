@@ -49,6 +49,25 @@ describe('xyChart init config (#2905)', () => {
     expect([w2 - w, h2 - h]).toEqual([200, -200])
   })
 
+  it('the canvas is width x height for every combination of hidden parts (#2982)', () => {
+    const hide = { showLabel: false, showTitle: false }
+    const combos: object[] = [
+      {},
+      { showTitle: false },
+      { xAxis: hide },
+      { yAxis: hide },
+      { showTitle: false, xAxis: hide, yAxis: hide },
+    ]
+    for (const orient of ['vertical', 'horizontal'] as const)
+      for (const c of combos) {
+        const svg = renderMermaidSVG(
+          init({ chartOrientation: orient, width: 900, height: 420, ...c }),
+        )
+        expect(vb(svg)).toEqual([900, 420])
+      }
+    expect(vb(base)).toEqual([700, 500])
+  })
+
   it('front matter reads the same keys as init', () => {
     const fm = `---\nconfig:\n  xyChart:\n    width: 900\n---\n${BODY}`
     expect(renderMermaidSVG(fm)).toBe(renderMermaidSVG(init({ width: 900 })))
