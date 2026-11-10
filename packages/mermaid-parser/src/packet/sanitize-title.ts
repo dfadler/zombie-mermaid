@@ -123,8 +123,9 @@ function purify(src: string): string {
       continue
     }
     if (DROPPED.test(name)) {
-      const end = new RegExp(`</${name}\\s*>`, 'i').exec(src.slice(i))
-      i = end ? i + end.index + end[0].length : src.length
+      const end = src.toLowerCase().indexOf(`</${name}`, i)
+      const gt = end < 0 ? -1 : src.indexOf('>', end)
+      i = gt < 0 ? src.length : gt + 1
       continue
     }
     if (!TAGS.has(name)) continue
