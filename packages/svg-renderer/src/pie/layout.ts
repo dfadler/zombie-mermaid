@@ -29,11 +29,9 @@
 //   - `pie.highlightSlice`: the named slice grows 5% about the pie centre and
 //     is drawn fully opaque (`hover` has no static meaning and is ignored).
 //
-// One place differs from Mermaid on purpose, where Mermaid's output is broken
-// rather than a style choice:
-//   - A chart with no slices keeps the pie's own width. Mermaid's width
-//     formula takes Math.max() of an empty list there (-Infinity), which
-//     leaves a viewBox that crops the circle in half.
+//   - A chart with no legend rows is as wide as its title alone (a bare `pie`
+//     is 225 wide and crops the circle in half), as in Mermaid 12.3.0, whose
+//     width formula takes Math.max() of an empty list there (-Infinity).
 //
 // Lengths are kept from Mermaid as-is. Text widths come from this library's
 // own metrics for its own font, not Mermaid's "trebuchet ms".
@@ -186,9 +184,11 @@ export function layoutPieChart(
 
   const sideWidth = swatchAndGap + longestText
   const chartAndLegendWidth =
-    rowCount > 0 && (legendPosition === 'left' || legendPosition === 'right')
-      ? pieWidth + PIE.margin + sideWidth
-      : pieWidth + PIE.margin
+    rowCount === 0
+      ? -Infinity
+      : legendPosition === 'left' || legendPosition === 'right'
+        ? pieWidth + PIE.margin + sideWidth
+        : pieWidth + PIE.margin
   const chartAndLegendHeight =
     legendPosition === 'top' || legendPosition === 'bottom'
       ? height + legendBlockHeight

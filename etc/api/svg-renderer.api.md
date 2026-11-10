@@ -632,10 +632,10 @@ export function validateMermaid(text: string): void;
 export function withDataSrc(svgTag: string, source: string | undefined): string;
 
 // @public
-export function wrapLegendLabel(person: string): string[];
+export function wrapLegendLabel(person: string, max?: number): string[];
 
 // @public
-export function wrapTaskLabel(label: string): string[];
+export function wrapTaskLabel(label: string, boxWidth?: number): string[];
 
 // @public
 export function wrapTimelineText(text: string, width: number): string[];

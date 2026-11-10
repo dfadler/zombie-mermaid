@@ -1,4 +1,4 @@
-import { MermaidParseError } from '@zombie-mermaid/core'
+import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
 import type { Journey } from './types.ts'
 
 // ============================================================================
@@ -179,5 +179,7 @@ export function parseJourney(text: string): Journey {
     )
   }
   journey.actors = [...new Set(journey.tasks.flatMap((t) => t.actors))].sort()
+  const init = extractInitConfig(text.split(/\r\n?|\n/))
+  if (init.journey) journey.config = init.journey
   return journey
 }
