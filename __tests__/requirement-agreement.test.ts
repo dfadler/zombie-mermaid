@@ -9,6 +9,7 @@ import {
   worstRequirement,
   type RequirementLayout,
 } from '../scripts/lib/requirement-agreement.ts'
+import { REQUIREMENT_PROBES } from '../scripts/lib/requirement-probes.ts'
 
 // Trimmed from mermaid 12.3.0's render of the "Requirement: Basic" sample.
 const OFFICIAL = `<svg viewBox="4 4 173.734375 416"><g><g class="root"><g class="edges edgePaths"><path d="M90.8671875,124L90.8671875,228" id="r0-test_entity-test_req-0" class="edge-thickness-normal edge-pattern-dashed relationshipLine" style="" data-edge="true" data-points="${btoa(
@@ -147,4 +148,15 @@ describe('summaries', () => {
     ])
     expect(requirementBreaches({ a: ok })).toEqual([])
   })
+})
+
+describe('REQUIREMENT_PROBES (#2966)', () => {
+  it.each(Object.entries(REQUIREMENT_PROBES))(
+    '%s renders boxes and relationships',
+    (_title, source) => {
+      const parsed = parseOurRequirementSvg(renderMermaidSVG(source))
+      expect(parsed.boxes.length).toBeGreaterThan(1)
+      expect(parsed.edges.length).toBeGreaterThan(1)
+    },
+  )
 })
