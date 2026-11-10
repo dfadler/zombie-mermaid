@@ -203,6 +203,11 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   share of the whole total, including slices that get no bar cell (under 1%, or past the
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
   ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
+  `pie.legendPosition: top` prints the table above the bar (title, table, bar), as
+  mermaid 12.3.0 puts the legend above the pie
+  ([#2974](https://github.com/dfadler/zombie-mermaid/issues/2974)); `bottom` and `center`
+  keep it below. `left` and `right` also keep it below: the bar is a single row, so
+  there is no beside to put the table in.
 
 ## Quadrant charts
 

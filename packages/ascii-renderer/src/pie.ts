@@ -14,7 +14,9 @@
 //     ▓ Cats   17%
 //     ▒ Rats    3%
 //
-//   - The title, when there is one, is centred over the bar.
+//   - The title, when there is one, is centred over the bar. With
+//     `pie.legendPosition: top` the table is printed above the bar instead
+//     (title, table, bar); every other value leaves it below.
 //   - The bar is BAR_WIDTH cells wide. Like the SVG pie, it holds only the
 //     slices at or above 1% of the total, in source order, and those slices
 //     share the whole bar between them. Cells are handed out by largest
@@ -264,10 +266,10 @@ export function renderPieAscii(
     used += row.cells
   }
   bar += ' '.repeat(Math.max(0, layout.barWidth - used))
-  lines.push(paint('[', theme.border) + bar + paint(']', theme.border))
+  const barLine = paint('[', theme.border) + bar + paint(']', theme.border)
 
+  const table: string[] = []
   if (layout.rows.length > 0) {
-    lines.push('')
     const labelWidth = Math.max(...layout.rows.map((r) => displayWidth(r.text)))
     for (const row of layout.rows) {
       const swatch = paint(fill(row), slot(row.colorIndex))
@@ -279,8 +281,18 @@ export function renderPieAscii(
         row.percentText.length > 0
           ? `${TABLE_INDENT}${swatch} ${label}${TABLE_GAP}${pct}`
           : `${TABLE_INDENT}${swatch} ${paint(row.text, theme.fg)}`
-      lines.push(line)
+      table.push(line)
     }
+  }
+
+  // `legendPosition: top` puts the table above the bar, as the SVG and
+  // Mermaid put the legend above the pie. Every other value keeps it below
+  // (the bar is one row, so left/right/center have no beside to use).
+  if (chart.legendPosition === 'top' && table.length > 0) {
+    lines.push(...table, '', barLine)
+  } else {
+    lines.push(barLine)
+    if (table.length > 0) lines.push('', ...table)
   }
 
   return lines.join('\n')
