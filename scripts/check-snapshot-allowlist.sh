@@ -163,6 +163,10 @@ ALLOWLIST=(
   # SVG + ASCII goldens for an empty subgraph (#2694): the repo rule is an SVG
   # and an ASCII snapshot per case; reviewed via `git diff` (`vitest -u`).
   "packages/ascii-renderer/src/__tests__/ascii-empty-subgraph-2694.test.ts"
+  # SVG + ASCII goldens for a cluster-boundary cycle in both declaration orders
+  # (#2802): the repo rule is an SVG and an ASCII snapshot per case; reviewed
+  # via `git diff` (`vitest -u`).
+  "packages/ascii-renderer/src/__tests__/ascii-cluster-cycle-rank-2802.test.ts"
   # SVG + ASCII goldens for numeric x-axis ranges on an xychart (#1592): the
   # repo rule is an SVG and an ASCII snapshot per case. Not a component test;
   # the files under src/__tests__/__snapshots__/ are reviewed via `git diff`
