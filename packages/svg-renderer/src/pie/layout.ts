@@ -33,8 +33,10 @@
 //     is 225 wide and crops the circle in half), as in Mermaid 12.3.0, whose
 //     width formula takes Math.max() of an empty list there (-Infinity).
 //
-// Lengths are kept from Mermaid as-is. Text widths come from this library's
-// own metrics for its own font, not Mermaid's "trebuchet ms".
+// Lengths are kept from Mermaid as-is. With no `font` option the text is drawn
+// in Mermaid's own stack (PIE_FONT_STACK) and measured with Trebuchet MS
+// advances, so the canvas matches 12.3.0 to the pixel; an explicit `font` is
+// drawn and measured with this library's metrics for that font, as elsewhere.
 // ============================================================================
 
 import type {
@@ -44,6 +46,7 @@ import type {
   PositionedPieSlice,
 } from '@zombie-mermaid/mermaid-parser'
 import { estimateTextWidth } from '../styles.ts'
+import { trebuchetAdvance } from './trebuchet-metrics.ts'
 
 /** Mermaid pieRenderer.ts constants (default config and default theme). */
 export const PIE = {
@@ -71,7 +74,26 @@ export const PIE = {
   minPercent: 1,
 } as const
 
+/** Mermaid's default pie font stack (`fontFamily` in its default theme). */
+export const PIE_FONT_STACK = '"trebuchet ms", verdana, arial, sans-serif'
+
 const TAU = Math.PI * 2
+
+/**
+ * Width of `text` in px: Trebuchet MS advances in Mermaid's default font, this
+ * library's estimate for an explicit `font` (and for non-ASCII characters,
+ * which the Trebuchet table does not cover).
+ */
+function textWidth(text: string, size: number, font: string | undefined) {
+  if (font !== undefined) return estimateTextWidth(text, size, PIE.fontWeight)
+  let width = 0
+  for (const ch of text) {
+    width +=
+      trebuchetAdvance(ch, size) ??
+      estimateTextWidth(ch, size, PIE.fontWeight) - size * 0.15
+  }
+  return width
+}
 
 /** Round to two decimals for compact path data. */
 function r(n: number): string {
@@ -124,10 +146,10 @@ function legendText(label: string, value: number, showData: boolean): string {
   return showData ? `${label} [${String(value)}]` : label
 }
 
-/** Lay out a parsed pie chart. Options are accepted for registry parity; none apply. */
+/** Lay out a parsed pie chart. Only `options.font` applies: unset, text is sized as Mermaid's default font. */
 export function layoutPieChart(
   chart: PieChart,
-  _options: unknown = {},
+  options: { font?: string } = {},
 ): PositionedPieChart {
   const height = PIE.height
   const pieWidth = height
@@ -160,9 +182,7 @@ export function layoutPieChart(
   )
   const longestText = Math.max(
     0,
-    ...legendTexts.map((t) =>
-      estimateTextWidth(t, PIE.legendFontSize, PIE.fontWeight),
-    ),
+    ...legendTexts.map((t) => textWidth(t, PIE.legendFontSize, options.font)),
   )
   const swatchAndGap = PIE.legendRectSize + PIE.legendSpacing
   const legendBlockHeight = rowHeight * rowCount
@@ -197,7 +217,7 @@ export function layoutPieChart(
   const titleText = chart.title ?? ''
   const titleWidth =
     titleText.length > 0
-      ? estimateTextWidth(titleText, PIE.titleFontSize, PIE.fontWeight)
+      ? textWidth(titleText, PIE.titleFontSize, options.font)
       : 0
   const titleLeft = cx0 - titleWidth / 2
   const titleRight = cx0 + titleWidth / 2

@@ -298,7 +298,9 @@ export function layoutMindmap(mindmap: Mindmap): PositionedMindmap;
 export function layoutPacket(packet: Packet): PositionedPacket;
 
 // @public
-export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedPieChart;
+export function layoutPieChart(chart: PieChart, options?: {
+    font?: string;
+}): PositionedPieChart;
 
 // @public (undocumented)
 export function layoutQuadrantChart(chart: QuadrantChart): PositionedQuadrantChart;
