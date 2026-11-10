@@ -3,8 +3,9 @@ name: PR hygiene
 # Split out of ci.yml (#2713): the check reads the PR body from the event
 # payload, so it must re-run when the body is edited. Adding `edited` to ci.yml
 # would re-run the whole CI on every body edit; this workflow runs only the
-# hygiene check. Not a required check (required: test, Build site generator
-# check, Semgrep SAST scan, Changeset present).
+# hygiene check. `PR hygiene` is not a required check (required: test, Build
+# site generator check, Semgrep SAST scan, Changeset present); `PR checklist`
+# is meant to be one.
 on:
   pull_request:
     branches: [main]
@@ -18,6 +19,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Blocks merge while the PR body has an unchecked `- [ ]` box. Separate job so
+  # it can be a required check on its own; add "PR checklist" to the branch
+  # protection required checks (a repo setting, not part of this file).
+  pr-checklist:
+    name: PR checklist
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # only checks out the script
+    if: >-
+      github.repository == 'dfadler/zombie-mermaid' &&
+      !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The PR body goes through env, never interpolated into the script.
+      - name: All PR checklist boxes are checked
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/check-pr-checklist.mjs
+
   pr-hygiene:
     name: PR hygiene
     runs-on: ubuntu-latest
