@@ -63,7 +63,7 @@ describe('layout-faithful ASCII opt-in (#2182)', () => {
   it('CLI --layout mermaid reports the path on stderr, never silently', async () => {
     const ok = await cli(FLAT, '--layout', 'mermaid')
     expect(ok.err).toMatch(/^layout-faithful: used mermaid's ELK layout/)
-    expect(ok.err).toContain('elkjs 0.9.3')
+    expect(ok.err).toContain('elkjs 0.12.0')
     expect(ok.out).not.toBe(
       renderMermaidASCII(FLAT, { colorMode: 'none' }) + '\n',
     )
@@ -149,14 +149,14 @@ describe('layout-faithful ASCII opt-in (#2182)', () => {
   it('falls back with a reason when the layout packages cannot be imported', async () => {
     vi.resetModules()
     vi.doMock('@zombie-mermaid/elk-layout', () => {
-      throw new Error('Cannot find package elkjs-0.9.3')
+      throw new Error('Cannot find package elkjs-0.12.0')
     })
     try {
       const { renderMermaidASCIIWithLayout: fresh } =
         await import('../src/ascii-layout.ts')
       const r = await fresh(FLAT, { layout: 'mermaid' })
       expect(r.path).toBe('standard')
-      expect(r.fallbackReason).toMatch(/elkjs 0\.9\.3 is not installed/)
+      expect(r.fallbackReason).toMatch(/elkjs 0\.12\.0 is not installed/)
       expect(r.text).toBe(renderMermaidASCII(FLAT))
     } finally {
       vi.doUnmock('@zombie-mermaid/elk-layout')
@@ -204,7 +204,7 @@ describe('layout-faithful ASCII opt-in (#2182)', () => {
     [
       'layout-faithful without a note',
       { text: 'X', path: 'layout-faithful' },
-      "layout-faithful: used mermaid's ELK layout (mermaid 12.1.0 + elkjs 0.9.3).\n",
+      "layout-faithful: used mermaid's ELK layout (mermaid 12.3.0 + elkjs 0.12.0).\n",
     ],
     [
       'standard without a reason',

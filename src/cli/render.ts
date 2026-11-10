@@ -214,7 +214,7 @@ async function renderText(
       // Never differ silently: one stderr line says which renderer ran.
       err.write(
         layoutFaithful
-          ? `layout-faithful: used mermaid's ELK layout (mermaid 12.1.0 + elkjs 0.9.3). ${r.note ?? ''}`.trimEnd() +
+          ? `layout-faithful: used mermaid's ELK layout (mermaid 12.3.0 + elkjs 0.12.0). ${r.note ?? ''}`.trimEnd() +
               '\n'
           : `layout-faithful: ${r.fallbackReason ?? 'unavailable'}; used standard renderer\n`,
       )

@@ -105,7 +105,7 @@ const DIST = resolve(ROOT, 'dist')
 // A prefix-matching function closes that gap for any current or future
 // subpath import.
 //
-// `elkjs-0.9.3` is the npm alias for elkjs 0.9.3, the pin the opt-in layout-faithful ASCII mode
+// `elkjs-0.12.0` is the npm alias for elkjs 0.12.0, the pin the opt-in layout-faithful ASCII mode
 // (src/ascii-layout.ts, #2182) needs; an OPTIONAL peer, only imported from a lazy chunk.
 //
 // `@modelcontextprotocol/sdk` and `zod` are only needed by the `mcp` entry
@@ -136,8 +136,8 @@ function isExternal(id: string): boolean {
   return (
     id === 'elkjs' ||
     id.startsWith('elkjs/') ||
-    id === 'elkjs-0.9.3' ||
-    id.startsWith('elkjs-0.9.3/') ||
+    id === 'elkjs-0.12.0' ||
+    id.startsWith('elkjs-0.12.0/') ||
     id === 'entities' ||
     id.startsWith('entities/') ||
     id === '@modelcontextprotocol/sdk' ||
@@ -327,7 +327,7 @@ export default defineConfig({
       },
     },
     // Opt-in layout-faithful ASCII (#2182): its own entry so the private layout packages and
-    // the optional elkjs-0.9.3 peer never enter `index`/`ascii` (a bundler resolving the
+    // the optional elkjs-0.12.0 peer never enter `index`/`ascii` (a bundler resolving the
     // browser-oriented entries would otherwise have to resolve them). They load through a
     // dynamic import inside `src/ascii-layout.ts`, so even this entry stays small until called.
     asciiLayout: {

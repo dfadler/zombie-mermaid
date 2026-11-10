@@ -29,11 +29,11 @@ const normalise = (l: Awaited<ReturnType<typeof layoutFlowchart>>) => ({
 })
 
 describe('elk-layout', () => {
-  it('resolves its own exact elkjs 0.9.3 (the root also carries a newer elkjs)', () => {
-    const v = createRequire(import.meta.url)('elkjs-0.9.3/package.json') as {
+  it('resolves its own exact elkjs 0.12.0 (the root elkjs is a caret range)', () => {
+    const v = createRequire(import.meta.url)('elkjs-0.12.0/package.json') as {
       version: string
     }
-    expect(v.version).toBe('0.9.3')
+    expect(v.version).toBe('0.12.0')
   })
 
   const sources = readdirSync(FIXTURES).filter((f) => f.endsWith('.mmd'))
