@@ -183,6 +183,20 @@ describe('ASCII sequence diagrams – creating message label (#2281)', () => {
     expect(ascii.some((r) => /--->\| B \|/.test(r))).toBe(true)
   })
 
+  it("keeps a first participant's destroying self-message arrow inside the canvas, and honours open/lost heads (#2981)", () => {
+    const head = (arrow: string, useAscii = false): string =>
+      renderMermaidASCII(
+        `sequenceDiagram\n  A->>B: hi\n  destroy A\n  A${arrow}A: bye`,
+        { useAscii },
+      )
+        .split('\n')
+        .find((r) => /[▶▷✕>x]│ A │|[▶▷✕>x]\| A \|/.test(r))!
+    expect(head('->>')).toMatch(/^▶│ A │/)
+    expect(head('->')).toMatch(/^▷│ A │/)
+    expect(head('-x')).toMatch(/^✕│ A │/)
+    expect(head('->>', true)).toMatch(/^>\| A \|/)
+  })
+
   it('draws a destroyed actor footer as a stick figure', () => {
     const result = renderMermaidASCII(
       'sequenceDiagram\n  actor A\n  actor B\n  A->>B: hi\n  destroy B\n  B-->>A: bye',
