@@ -320,6 +320,10 @@ export function setColumnWidth(
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
       const subgraphOverhead = 4
       basePadding += subgraphOverhead
+      // A concurrency region is a second frame inside its composite's (#3013).
+      if (subgraphChain(graph, node).some((sg) => sg.region)) {
+        basePadding += subgraphOverhead
+      }
     }
     // #1716: each label of a spread group takes a row of the gap, with a
     // plain stroke row-pair clear at the tail and three at the arrowhead.
@@ -2352,6 +2356,63 @@ function layoutHintsFor(graph: AsciiGraph): AsciiLayoutHints | undefined {
   return hints
 }
 
+/**
+ * An edge addressed to a composite that holds concurrent regions (`[*] --> W`,
+ * `W --> Z`) is redirected by the converter to a member picked from the parsed
+ * graph alone, which can sit in any region. Pick it again from ELK's layers:
+ * an entry stands on the member nearest the flow's start and an exit on the one
+ * nearest its end, ties going to the member nearest the composite's centre, so
+ * the line runs straight into or out of the frame (#3013).
+ */
+function nodesOf(sg: AsciiSubgraph): AsciiNode[] {
+  return [...new Set([...sg.nodes, ...sg.children.flatMap(nodesOf)])]
+}
+
+function retargetRegionClusterEdges(
+  graph: AsciiGraph,
+  hints: AsciiLayoutHints,
+): void {
+  const pick = (
+    sg: AsciiSubgraph,
+    end: 'entry' | 'exit',
+    current: AsciiNode,
+  ): AsciiNode => {
+    const members = nodesOf(sg)
+    const inside = new Set(members)
+    const open = members.filter(
+      (m) =>
+        hints.nodes.has(m.name) &&
+        !graph.edges.some((e) =>
+          end === 'entry'
+            ? e.to === m && inside.has(e.from)
+            : e.from === m && inside.has(e.to),
+        ),
+    )
+    if (open.length === 0) return current
+    const h = (m: AsciiNode): AsciiNodeHint => hints.nodes.get(m.name)!
+    const centre = open.reduce((s, m) => s + h(m).cross, 0) / open.length
+    const flow = (m: AsciiNode): number =>
+      end === 'entry' ? h(m).layer : -h(m).layer
+    return open.reduce((best, m) =>
+      flow(m) < flow(best) ||
+      (flow(m) === flow(best) &&
+        Math.abs(h(m).cross - centre) < Math.abs(h(best).cross - centre))
+        ? m
+        : best,
+    )
+  }
+  const hasRegions = (sg: AsciiSubgraph): boolean =>
+    sg.children.some((c) => c.region)
+  for (const edge of graph.edges) {
+    if (edge.clusterSource && hasRegions(edge.clusterSource)) {
+      edge.from = pick(edge.clusterSource, 'exit', edge.from)
+    }
+    if (edge.clusterTarget && hasRegions(edge.clusterTarget)) {
+      edge.to = pick(edge.clusterTarget, 'entry', edge.to)
+    }
+  }
+}
+
 const MIRROR: Record<string, Record<AsciiFace, AsciiFace>> = {
   RL: { T: 'T', B: 'B', L: 'R', R: 'L' },
   BT: { T: 'B', B: 'T', L: 'L', R: 'R' },
@@ -2421,10 +2482,11 @@ function trackSlots(
     byLayer.set(r.h.layer, [...(byLayer.get(r.h.layer) ?? []), r])
   for (const [layer, members] of byLayer) {
     let next = 0
+    const flow = layer * 4
     for (const r of members.sort((a, b) => a.h.order - b.h.order)) {
       const at = Math.max(cell(r), next)
       next = at + 4
-      slots.set(r.node, lr ? { x: layer * 4, y: at } : { x: at, y: layer * 4 })
+      slots.set(r.node, lr ? { x: flow, y: at } : { x: at, y: flow })
     }
   }
   return slots
@@ -2590,6 +2652,7 @@ export function createMapping(graph: AsciiGraph): void {
   // heuristic below. Without them, or when a node has no hint or a subgraph
   // sets its own direction, the grid places as before.
   const hints = layoutHintsFor(graph)
+  if (hints) retargetRegionClusterEdges(graph, hints)
   const slots =
     hints && graph.subgraphs.every((sg) => !sg.direction)
       ? trackSlots(graph, hints)

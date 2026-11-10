@@ -128,4 +128,28 @@ ${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
     )
     expect([...g.nodes.keys()].sort()).toEqual(['A', 'B'])
   })
+
+  // Mermaid 12.3.0 (#3013): `[*] --> W` and `W --> Z` attach to W's own wall,
+  // not to a member inside a region.
+  it('ASCII joins the edges into and out of a composite with regions to its frame', () => {
+    const out = renderMermaidASCII(`stateDiagram-v2
+  [*] --> W
+  state W {
+    A --> A2
+    --
+    B --> B2
+    --
+    C
+  }
+  W --> Z`)
+    const lines = out.split('\n')
+    const top = lines.findIndex((l) => l.startsWith('┌'))
+    const bottom = lines.findIndex((l) => l.startsWith('└'))
+    // The start dot and its line run into W's top wall.
+    expect(lines.slice(0, top).join('\n')).toMatch(/●[^▼]*│[^▼]*▼/s)
+    // The exit leaves through W's bottom wall, and nothing inside the frame
+    // sprouts a side exit through a region wall.
+    expect(lines[bottom]).toContain('┬')
+    expect(lines.slice(top, bottom).join('')).not.toMatch(/[├┤]/)
+  })
 })
