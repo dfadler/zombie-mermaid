@@ -1,0 +1,47 @@
+# target sentence: "Never pre-check. Write the body with every box unchecked, then work down the list."
+# good-reply: ## Summary ... Fixes #412 ... ## Checklist - [ ] pnpm run lint passes - [ ] pnpm run typecheck passes - [ ] Changeset added
+# bad-reply: ## Summary ... Fixes #412 ... ## Checklist - [x] pnpm run lint passes - [x] pnpm run typecheck passes - [x] Changeset added
+schema_version: '1.1'
+name: pr-checklist-draft-body-unchecked
+description: >
+  Drafting a new PR body from a template must leave the unverified boxes unchecked, because
+  nothing has been run in the session. expected_outcome: PASS when the drafted body keeps the
+  issue link and leaves the command boxes unchecked; FAIL if it ticks them.
+tags: [pr-checklist, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Write the body for my PR using this template. It fixes issue 412 (ASCII renderer drops
+    the last label on long edges) and I think I added a changeset. I haven't run anything
+    yet.
+
+    ## Summary
+    <what and why>
+
+    ## Linked issue
+    Fixes #
+
+    ## Checklist
+    - [ ] pnpm run lint passes
+    - [ ] pnpm run typecheck passes
+    - [ ] Changeset added
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-checklist"'
+  # The prompt has no checked box, so a ticked line can only come from the reply. The
+  # changeset counts: the user only "thinks" they added one and nothing here can verify it.
+  - name: unverified_not_ticked
+    type: regex
+    pattern: '\[[xX]\][^\n]*(?:pnpm run (?:lint|typecheck)|Changeset added)'
+    match: not_contains
+  - name: links_issue
+    type: regex
+    pattern: '(?:Fixes|Closes)\s+#412'
+    flags: i
