@@ -456,6 +456,11 @@ const architectureModule: DiagramModule<
   renderSvg: flowchartModule.renderSvg,
 }
 
+// `undefined` selects Mermaid's own font (see ./pie/layout.ts). Asking for the
+// embedded Inter subset is asking for Inter, so that stays the font then.
+const pieFont = (options: RenderOptions): string | undefined =>
+  options.font ?? (options.embedFont === 'subset' ? 'Inter' : undefined)
+
 /**
  * Pie charts parse from the raw `text` rather than `lines` (see
  * `parsePieChart`'s doc: `splitStatements` would split `title A; B` and
@@ -471,13 +476,13 @@ const pieModule: DiagramModule<PieChart, PositionedPieChart> = {
       options.honorThemeVariables
         ? chart
         : { ...chart, sliceColors: undefined },
-      options,
+      { font: pieFont(options) },
     ),
-  renderSvg(positioned, ctx) {
+  renderSvg(positioned, ctx, options) {
     return renderPieSvg(
       positioned,
       ctx.colors,
-      ctx.font,
+      pieFont(options),
       ctx.transparent,
       ctx.embedSource,
       ctx.title,

@@ -41,7 +41,7 @@ import {
   CHART_ACCENT_FALLBACK,
 } from '@zombie-mermaid/mermaid-parser'
 import { withDataSrc } from '../renderer.ts'
-import { PIE } from './layout.ts'
+import { PIE, PIE_FONT_STACK } from './layout.ts'
 
 function r(n: number): string {
   return String(Math.round(n * 100) / 100)
@@ -61,6 +61,7 @@ function pieStyles(
   chart: PositionedPieChart,
   colors: DiagramColors,
   nonce?: string,
+  fontStack?: string,
 ): { css: string; cls: string } {
   const used = new Set<number>()
   for (const s of chart.slices) used.add(s.colorIndex)
@@ -84,12 +85,15 @@ function pieStyles(
   const varsBlock =
     vars.length > 0 ? `\n  .${cls} {\n${vars.join('\n')}\n  }` : ''
 
+  // Mermaid's default font applies to the chart's text only; an explicit
+  // `font` keeps the shared `text` rule.
+  const family = fontStack ? ` font-family: ${fontStack};` : ''
   const css = `${styleOpenTag(nonce)}
   .pie-outer { fill: none; stroke: var(--fg); stroke-width: ${PIE.outerStrokeWidth}px; }
   .pie-slice { stroke: var(--fg); stroke-width: 2px; opacity: 0.7; }${highlightRule}
-  .pie-slice-label { fill: var(--_text); font-size: ${PIE.sectionFontSize}px; font-weight: ${PIE.fontWeight}; }
-  .pie-title { fill: var(--_text); font-size: ${PIE.titleFontSize}px; font-weight: ${PIE.fontWeight}; }
-  .pie-legend-text { fill: var(--_text); font-size: ${PIE.legendFontSize}px; font-weight: ${PIE.fontWeight}; }${varsBlock}
+  .pie-slice-label { fill: var(--_text);${family} font-size: ${PIE.sectionFontSize}px; font-weight: ${PIE.fontWeight}; }
+  .pie-title { fill: var(--_text);${family} font-size: ${PIE.titleFontSize}px; font-weight: ${PIE.fontWeight}; }
+  .pie-legend-text { fill: var(--_text);${family} font-size: ${PIE.legendFontSize}px; font-weight: ${PIE.fontWeight}; }${varsBlock}
 ${rules.join('\n')}
 </style>`
   return { css, cls }
@@ -106,7 +110,7 @@ ${rules.join('\n')}
 export function renderPieSvg(
   chart: PositionedPieChart,
   colors: DiagramColors,
-  font: string = 'Inter',
+  font?: string,
   transparent: boolean = false,
   embedSource?: string,
   title?: string,
@@ -114,7 +118,12 @@ export function renderPieSvg(
   emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
-  const { css, cls } = pieStyles(chart, colors, emit.nonce)
+  const { css, cls } = pieStyles(
+    chart,
+    colors,
+    emit.nonce,
+    font === undefined ? PIE_FONT_STACK : undefined,
+  )
 
   parts.push(
     withDataSrc(
@@ -135,7 +144,9 @@ export function renderPieSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
+  parts.push(
+    buildStyleBlock(font ?? 'sans-serif', false, emit.nonce, emit.bodyFont),
+  )
   parts.push(css)
 
   parts.push(

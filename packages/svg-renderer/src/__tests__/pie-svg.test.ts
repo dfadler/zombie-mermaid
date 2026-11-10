@@ -99,6 +99,25 @@ describe('pie SVG: styling and theme', () => {
     expect(svg).toMatch(/\.pie-legend-text \{[^}]*font-size: 17px/)
   })
 
+  it("draws in mermaid's default font stack, with no font import, unless `font` is given", () => {
+    const stack = 'font-family: "trebuchet ms", verdana, arial, sans-serif;'
+    const svg = renderMermaidSVG(BASIC)
+    for (const cls of ['pie-title', 'pie-slice-label', 'pie-legend-text']) {
+      expect(svg).toMatch(new RegExp(`\\.${cls} \\{[^}]*${stack}`))
+    }
+    expect(svg).not.toContain('fonts.googleapis.com')
+    const own = renderMermaidSVG(BASIC, { font: 'Georgia' })
+    expect(own).not.toContain('trebuchet')
+    expect(own).toContain("text { font-family: 'Georgia'")
+  })
+
+  it('keeps Inter when the embedded Inter subset is requested', async () => {
+    const { renderMermaidSVGAsync } = await import('../../../../src/index.ts')
+    const svg = await renderMermaidSVGAsync(BASIC, { embedFont: 'subset' })
+    expect(svg).not.toContain('trebuchet')
+    expect(svg).toContain("text { font-family: 'Inter'")
+  })
+
   it('fills slot 0 with the live theme accent and later slots with series shades', () => {
     const svg = renderMermaidSVG(BASIC, {
       bg: '#ffffff',
