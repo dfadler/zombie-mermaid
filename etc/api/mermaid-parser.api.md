@@ -513,6 +513,8 @@ export interface GitGraph {
 // @public
 export interface GitGraphConfig {
     // (undocumented)
+    diagramPadding: number;
+    // (undocumented)
     mainBranchName: string;
     // (undocumented)
     mainBranchOrder: number;
@@ -524,6 +526,8 @@ export interface GitGraphConfig {
     showBranches: boolean;
     // (undocumented)
     showCommitLabel: boolean;
+    // (undocumented)
+    titleTopMargin: number;
 }
 
 // @public (undocumented)

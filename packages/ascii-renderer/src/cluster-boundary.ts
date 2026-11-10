@@ -33,6 +33,7 @@
 import type {
   AsciiEdge,
   AsciiGraph,
+  AsciiNode,
   AsciiSubgraph,
   ClusterExitPlan,
   ClusterGridBox,
@@ -292,6 +293,11 @@ export function planClusterExits(graph: AsciiGraph): void {
   }
 }
 
+/** Whether `node` is a member of `sg`, directly or through a nested subgraph or region. */
+function inCluster(sg: AsciiSubgraph, node: AsciiNode): boolean {
+  return sg.nodes.includes(node) || sg.children.some((c) => inCluster(c, node))
+}
+
 /** Safety bound on gutter-track insertions per layout. */
 const MAX_TRACK_INSERTIONS = 16
 
@@ -351,9 +357,7 @@ function planOne(
     if (edge.bundle || edge.from === edge.to) return false
     // The stand-in must really sit inside this cluster's box, and the
     // target outside it.
-    if (!sg.nodes.includes(edge.from) || sg.nodes.includes(edge.to)) {
-      return false
-    }
+    if (!inCluster(sg, edge.from) || inCluster(sg, edge.to)) return false
     // Strictly past the gutter, not merely past the wall: backward and
     // sideways targets keep today's routing.
     return vertical ? to.y > box.maxY + 1 : to.x > box.maxX + 1
@@ -437,8 +441,13 @@ function planOne(
   // first two, the siblings need side faces of the target, which only the
   // plan routes (ordinary routing merges them on one face).
   const [only] = eligible
+  // A composite with concurrent regions engages on a single exit: the stand-in
+  // can sit in any region, so ordinary routing would leave through a region's
+  // side wall instead of the composite's flow-side wall (#3013).
+  const regions = sg.children.some((c) => c.region)
   if (
     exits.size < 2 &&
+    !regions &&
     !(exits.size === 1 && (only!.parallelLane?.total ?? 0) >= 3)
   )
     return null

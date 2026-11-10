@@ -115,6 +115,8 @@ export interface GitGraphInitConfig {
   showBranches?: boolean
   rotateCommitLabel?: boolean
   parallelCommits?: boolean
+  titleTopMargin?: number
+  diagramPadding?: number
 }
 
 /** The `kanban.*` init keys that change mermaid's output. */
@@ -790,6 +792,13 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         'parallelCommits',
       ] as const)
         if (typeof rec[k] === 'boolean') g[k] = rec[k]
+      // Mermaid coerces numeric strings ("60") and lets a negative number through.
+      for (const k of ['titleTopMargin', 'diagramPadding'] as const) {
+        const n = rec[k]
+        const v =
+          typeof n === 'string' && n.trim() !== '' ? Number(n) : (n as unknown)
+        if (typeof v === 'number' && Number.isFinite(v)) g[k] = v
+      }
       config.gitGraph = g
       continue
     }

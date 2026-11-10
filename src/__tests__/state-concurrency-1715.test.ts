@@ -101,4 +101,64 @@ ${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
       if (row > 0) expect(at(id).y).toBeGreaterThan(at(ids[0]!).y)
     })
   })
+
+  // Mermaid 12.3.0 (#2962): unequal regions are packed smallest first, ties in
+  // written order. Probed positions: C top-left, A top-right, B under C.
+  it('packs unequal-height regions smallest first', () => {
+    const g = layoutGraphSync(
+      parseMermaid(`stateDiagram-v2
+  state W {
+    A --> A2
+    --
+    B --> B2
+    --
+    C
+  }`),
+    )
+    const at = (id: string) => g.nodes.find((x) => x.id === id)!
+    expect(at('A').x).toBeGreaterThan(at('C').x)
+    expect(at('A').y).toBeCloseTo(at('C').y, 0)
+    expect(at('B').x).toBeCloseTo(at('C').x, 0)
+    expect(at('B').y).toBeGreaterThan(at('C').y)
+  })
+
+  it('declares a bare state id inside a region', () => {
+    const g = parseMermaid(
+      'stateDiagram-v2\n  state W {\n    A\n    --\n    B\n  }',
+    )
+    expect([...g.nodes.keys()].sort()).toEqual(['A', 'B'])
+  })
+
+  // Mermaid 12.3.0 (#3013): `[*] --> W` and `W --> Z` attach to W's own wall,
+  // not to a member inside a region.
+  it('ASCII joins the edges into and out of a composite with regions to its frame', () => {
+    const out = renderMermaidASCII(`stateDiagram-v2
+  [*] --> W
+  state W {
+    A --> A2
+    --
+    B --> B2
+    --
+    C
+  }
+  W --> Z`)
+    const lines = out.split('\n')
+    const top = lines.findIndex((l) => l.startsWith('┌'))
+    const bottom = lines.findIndex((l) => l.startsWith('└'))
+    // The start dot and its line run into W's top wall.
+    expect(lines.slice(0, top).join('\n')).toMatch(/●[^▼]*│[^▼]*▼/s)
+    // The exit leaves through W's bottom wall, and nothing inside the frame
+    // sprouts a side exit through a region wall.
+    expect(lines[bottom]).toContain('┬')
+    expect(lines.slice(top, bottom).join('')).not.toMatch(/[├┤]/)
+    // ...and runs straight down to Z: one column from the wall to the arrowhead
+    // (mermaid 12.3.0 draws it vertically at W's centre, over Z).
+    const col = lines[bottom]!.indexOf('┬')
+    const arrow = lines.findIndex((l, i) => i > bottom && l.includes('▼'))
+    expect(arrow).toBeGreaterThan(bottom)
+    for (const l of lines.slice(bottom + 1, arrow + 1)) {
+      expect(l.trim()).toHaveLength(1)
+      expect(l.indexOf(l.trim())).toBe(col)
+    }
+  })
 })

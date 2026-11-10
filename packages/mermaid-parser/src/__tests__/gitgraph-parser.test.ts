@@ -171,6 +171,8 @@ describe('parseGitGraph branches', () => {
       showBranches: true,
       rotateCommitLabel: true,
       parallelCommits: false,
+      titleTopMargin: 25,
+      diagramPadding: 8,
     })
   })
 

@@ -39,6 +39,63 @@ describe('requirement layout', () => {
     expect(req.dividerY).toBe(req.y + 68)
   })
 
+  // Box centres (viewBox origin at 0,0, so minus the 4px margin) read from
+  // mermaid@12.3.0, which lays requirement diagrams out with ELK (#2966).
+  const BOX = (id: string) =>
+    `requirement ${id} {\nid: ${id}\ntext: t${id}\nrisk: low\nverifymethod: test\n}`
+  const centres = (rels: string[], ids: string[]) => {
+    const d = layout(
+      `requirementDiagram\n${ids.map(BOX).join('\n')}\n${rels.join('\n')}`,
+    )
+    return {
+      d,
+      at: (id: string) => {
+        const n = d.nodes.find((x) => x.id === id)!
+        return [n.x + n.width / 2, n.y + n.height / 2] as const
+      },
+    }
+  }
+
+  it.each([
+    [
+      'shared targets (a diamond)',
+      [
+        'a - contains -> b',
+        'a - contains -> c',
+        'd - satisfies -> b',
+        'd - satisfies -> c',
+      ],
+      ['a', 'b', 'c', 'd'],
+      { a: [111.7, 100], b: [167.8, 408], c: [353.1, 408], d: [409.2, 100] },
+      [518.51, 508],
+    ],
+    [
+      'two relationships between one pair',
+      ['a - contains -> b', 'a - contains -> b'],
+      ['a', 'b'],
+      { a: [111.7, 100], b: [111.7, 388] },
+      [222.69, 488],
+    ],
+    [
+      'a cycle',
+      ['a - contains -> b', 'b - contains -> a'],
+      ['a', 'b'],
+      { a: [111.7, 100], b: [111.7, 388] },
+      [222.69, 488],
+    ],
+  ] as const)(
+    'puts boxes where Mermaid does: %s',
+    (_n, rels, ids, want, size) => {
+      const { d, at } = centres([...rels], [...ids])
+      for (const [id, [x, y]] of Object.entries(want)) {
+        expect(at(id)[0]).toBeCloseTo(x, 0)
+        expect(at(id)[1]).toBeCloseTo(y, 0)
+      }
+      expect(d.width).toBeCloseTo(size[0], 0)
+      expect(d.height).toBeCloseTo(size[1], 0)
+    },
+  )
+
   it('draws a box with no properties as just its two rows, with no divider', () => {
     const d = layout('requirementDiagram\nrequirement r {\n}')
     expect(d.nodes[0]).toMatchObject({ height: 68, rows: [] })

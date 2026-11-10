@@ -241,3 +241,27 @@ describe('gitGraph sweep', () => {
           }
         })
 })
+
+describe('layoutGitGraph – titleTopMargin and diagramPadding', () => {
+  // Sizes measured from mermaid@12.3.0 (viewBox width x height, title y) for this source.
+  const body =
+    'gitGraph\n title Hi\n commit id: "a"\n branch dev\n commit id: "b"\n checkout main\n merge dev'
+  const cfg = (c: string) => `%%{init: {"gitGraph": ${c}}}%%\n${body}`
+  it.each([
+    ['{}', 254, 174.36, -25],
+    ['{"titleTopMargin": 60}', 254, 209.36, -60],
+    ['{"titleTopMargin": 0}', 254, 149.36, 0],
+    ['{"titleTopMargin": -20}', 254, 145.86, 20],
+    ['{"titleTopMargin": "60"}', 254, 209.36, -60],
+    ['{"titleTopMargin": "abc"}', 254, 174.36, -25],
+    ['{"diagramPadding": 30}', 298, 218.36, -25],
+    ['{"diagramPadding": 0}', 238, 158.36, -25],
+    ['{"diagramPadding": -10}', 218, 138.36, -25],
+    ['{"titleTopMargin": 60, "diagramPadding": 30}', 298, 253.36, -60],
+  ])('%s', (c, w, h, titleY) => {
+    const l = layout(cfg(c))
+    expect(l.viewBox.width).toBeCloseTo(w, 0)
+    expect(l.viewBox.height).toBeCloseTo(h, 0)
+    expect(l.title?.y).toBeCloseTo(titleY, 5)
+  })
+})

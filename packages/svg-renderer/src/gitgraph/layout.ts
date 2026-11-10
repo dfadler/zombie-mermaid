@@ -33,8 +33,6 @@ const PX = 4
 const PY = 2
 const THEME_COLOR_LIMIT = 8
 const DEFAULT_POS = 30
-const DIAGRAM_PADDING = 8
-const TITLE_TOP_MARGIN = 25
 
 interface Pt {
   x: number
@@ -692,19 +690,19 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
   if (g.title) {
     const cx = box.minX + (box.maxX - box.minX) / 2
     const tw = textWidth(g.title, 18)
-    out.title = { text: g.title, x: cx, y: -TITLE_TOP_MARGIN }
+    out.title = { text: g.title, x: cx, y: -cfg.titleTopMargin }
     box.rect(
       cx - tw / 2,
-      -TITLE_TOP_MARGIN - ascent(18),
+      -cfg.titleTopMargin - ascent(18),
       tw,
       ascent(18) + descent(18),
     )
   }
   out.viewBox = {
-    x: box.minX - DIAGRAM_PADDING,
-    y: box.minY - DIAGRAM_PADDING,
-    width: box.maxX - box.minX + 2 * DIAGRAM_PADDING,
-    height: box.maxY - box.minY + 2 * DIAGRAM_PADDING,
+    x: box.minX - cfg.diagramPadding,
+    y: box.minY - cfg.diagramPadding,
+    width: box.maxX - box.minX + 2 * cfg.diagramPadding,
+    height: box.maxY - box.minY + 2 * cfg.diagramPadding,
   }
   return out
 }

@@ -15,6 +15,7 @@ import {
   renderRealMermaidSvg,
   type RealMermaidSession,
 } from './real-mermaid.ts'
+import { REQUIREMENT_PROBES } from './requirement-probes.ts'
 
 export interface RequirementRun {
   results: Record<string, RequirementAgreement>
@@ -27,8 +28,8 @@ export async function scoreRequirement(
   session: RealMermaidSession,
   commit: string,
   filter?: string,
-  /** Extra sources to score alongside the gallery samples: title -> source. */
-  extra: Record<string, string> = {},
+  /** Extra sources to score alongside the gallery samples: title -> source (default: the probes). */
+  extra: Record<string, string> = REQUIREMENT_PROBES,
 ): Promise<RequirementRun> {
   const wanted = [
     ...samples
