@@ -1023,6 +1023,18 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: a `Bar 1` / `Line 1` legend and the value axis under the bars. After: no legend, and `Story Points` with its tick labels and axis line above the bars, as in mermaid 12.3.0.',
   },
+  {
+    id: 'flowchart-node-box',
+    title: 'Flowchart nodes were shorter than mermaid draws them',
+    symptom:
+      'A one-line flowchart node was 36.9px high with 13px text, where mermaid@12.3.0 draws 48px with 16px text. Diamond, triangle and tagged-rect widths, which depend on the label height, were off by the same difference.',
+    source: 'flowchart TD\n  A[ab] --> B{ab}',
+    fixCommit: 'f367d175',
+    pr: 3003,
+    render: 'svg',
+    lookFor:
+      'Before: a 36.9px rect with 13px text and a 167px diamond. After: a 48px rect with 16px text and a 174px diamond, as in mermaid.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */

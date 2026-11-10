@@ -418,6 +418,7 @@ export interface InitConfig {
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;
     ignored: string[];
+    journey?: JourneyInitConfig;
     kanban?: KanbanInitConfig;
     packet?: PacketInitConfig;
     pieDonutHole?: number;
@@ -457,6 +458,24 @@ export function isValidCssColor(value: string): boolean;
 
 // @public
 export function isWideChar(char: string): boolean;
+
+// @public
+export interface JourneyInitConfig {
+    // (undocumented)
+    diagramMarginX?: number;
+    // (undocumented)
+    diagramMarginY?: number;
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    leftMargin?: number;
+    // (undocumented)
+    maxLabelWidth?: number;
+    // (undocumented)
+    taskMargin?: number;
+    // (undocumented)
+    width?: number;
+}
 
 // @public
 export interface KanbanInitConfig {

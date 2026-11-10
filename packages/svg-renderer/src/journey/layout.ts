@@ -15,12 +15,12 @@ function textWidth(text: string): number {
 // Journey layout
 //
 // A port of Mermaid's user-journey renderer (journeyRenderer.ts, svgDraw.js,
-// mermaid@12.3.0) with its default `journey` config. All geometry is fixed:
+// mermaid@12.3.0) with its `journey` config (defaults below, overridden by `%%{init}%%`):
 //
 //   - the actor legend sits at x=20, rows 20px apart from y=60; its labels
 //     wrap at `maxLabelWidth` (360), and the widest line over 75px pushes
 //     `leftMargin` (150) right
-//   - task `i` is a 150x50 box at x = leftMargin + i * 200, y = 110; its
+//   - task `i` is a 150x50 box at x = leftMargin + i * 200, y = 2 * height + diagramMarginY (110); its
 //     section bar (y = 50) spans the section's tasks
 //   - a dashed line runs from each task down to y = 450 with a face on it at
 //     y = 300 + (5 - score) * 30
@@ -51,8 +51,10 @@ export const JOURNEY = {
 } as const
 
 /** Break an actor name into legend lines as Mermaid's `drawActorLegend` does. */
-export function wrapLegendLabel(person: string): string[] {
-  const max = JOURNEY.maxLabelWidth
+export function wrapLegendLabel(
+  person: string,
+  max: number = JOURNEY.maxLabelWidth,
+): string[] {
   if (textWidth(person) <= max) return [person]
   const lines: string[] = []
   let current = ''
@@ -79,13 +81,16 @@ export function wrapLegendLabel(person: string): string[] {
 }
 
 /** Wrap a task label to the 150px box (the browser wraps Mermaid's HTML label); `<br>` breaks. */
-export function wrapTaskLabel(label: string): string[] {
+export function wrapTaskLabel(
+  label: string,
+  boxWidth: number = JOURNEY.width,
+): string[] {
   const lines: string[] = []
   for (const part of label.split(/<br\s*\/?>/i)) {
     let cur = ''
     for (const word of part.split(/\s+/).filter(Boolean)) {
       const next = cur ? `${cur} ${word}` : word
-      if (cur && textWidth(next) > JOURNEY.width) {
+      if (cur && textWidth(next) > boxWidth) {
         lines.push(cur)
         cur = word
       } else cur = next
@@ -96,15 +101,17 @@ export function wrapTaskLabel(label: string): string[] {
 }
 
 export function layoutJourney(journey: Journey): PositionedJourney {
-  const J = JOURNEY
+  // `%%{init}%%` `journey` geometry keys override mermaid's defaults.
+  const J = { ...JOURNEY, ...journey.config }
   const y0 = J.originY
+  const taskTop = 2 * J.height + J.diagramMarginY
 
   // Legend
   const legend: PositionedJourney['legend'] = []
   let maxWidth = 0
   let yPos = J.legendTop
   journey.actors.forEach((actor, pos) => {
-    const lines = wrapLegendLabel(actor).map((text, i) => {
+    const lines = wrapLegendLabel(actor, J.maxLabelWidth).map((text, i) => {
       const w = textWidth(text)
       if (w > maxWidth && w > J.leftMargin - w) maxWidth = w
       return { text, x: 50, y: yPos + 7 + i * 20 + y0 }
@@ -145,16 +152,16 @@ export function layoutJourney(journey: Journey): PositionedJourney {
     }
     const dots = task.actors.map((actor, k) => ({
       cx: x + 14 + k * 10,
-      cy: J.taskTop + y0,
+      cy: taskTop + y0,
       actor,
       pos: journey.actors.indexOf(actor) % J.actors,
     }))
     tasks.push({
       x,
-      y: J.taskTop + y0,
+      y: taskTop + y0,
       width: J.width,
       height: J.height,
-      lines: wrapTaskLabel(task.name),
+      lines: wrapTaskLabel(task.name, J.width),
       score: task.score,
       num,
       faceY: 300 + (5 - task.score) * 30 + y0,

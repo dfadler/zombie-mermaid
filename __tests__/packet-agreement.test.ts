@@ -36,6 +36,7 @@ function shape(svg: string): Shape {
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
       .replace(/&amp;/g, '&')
     // Mermaid always emits the title element, empty without a title.
     if (m[1] === 'text' && text === '' && attrs.includes('packetTitle'))
