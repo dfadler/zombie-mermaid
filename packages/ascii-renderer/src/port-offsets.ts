@@ -1456,15 +1456,14 @@ function allocateFaces(
   )
   // A diamond hook's start sits on its slant glyph, its arrowhead on the blank
   // cell before it.
+  // Hooks are on the top or left face (RL and BT are flipped after drawing), so
+  // the glyph is always `blanks` cells in from the low edge.
   for (const [f, blanks] of slantStops) {
-    const shift = result.get(f.edge)
-    if (!shift) continue
-    const d = blanks
+    const shift = result.get(f.edge)!
     shift.points ??= f.edge.path.map(() => ({ x: 0, y: 0 }))
     const p = shift.points[f.role === 'S' ? 0 : f.edge.path.length - 1]!
-    const sign = f.run.side === 'right' || f.run.side === 'bottom' ? -1 : 1
-    if (f.run.axis === 'h') p.x += sign * d
-    else p.y += sign * d
+    if (f.run.axis === 'h') p.x += blanks
+    else p.y += blanks
   }
   for (const loop of lanes) {
     if (loop.from === loop.to) hugLoop(graph, loop, result)
@@ -1479,11 +1478,9 @@ function slantGlyphs(run: PortRun): [number, number] {
   const d = run.node.drawing!
   const h = run.axis === 'h'
   const len = h ? d.length : d[0]!.length
-  const fromEnd = run.side === 'right' || run.side === 'bottom'
-  for (let n = 0; n < len; n++) {
-    const i = fromEnd ? len - 1 - n : n
+  for (let i = 0; i < len; i++) {
     const at = (h ? d[i]! : d.map((c) => c[i]!)).flatMap((c, k) =>
-      c === '╱' || c === '╲' ? [k] : [],
+      c === '╱' || c === '╲' || c === '/' || c === '\\' ? [k] : [],
     )
     if (at.length) return [at[0]!, at[at.length - 1]!]
   }
@@ -1495,14 +1492,8 @@ function slantGlyphs(run: PortRun): [number, number] {
 function slantBlanks(run: PortRun, at: number): number {
   const d = run.node.drawing!
   const h = run.axis === 'h'
-  const len = h ? d.length : d[0]!.length
-  const fromEnd = run.side === 'right' || run.side === 'bottom'
   let n = 0
-  while (n < len) {
-    const i = fromEnd ? len - 1 - n : n
-    if ((h ? d[i]?.[at] : d[at]?.[i]) !== ' ') break
-    n++
-  }
+  while ((h ? d[n]?.[at] : d[at]?.[n]) === ' ') n++
   return n
 }
 
