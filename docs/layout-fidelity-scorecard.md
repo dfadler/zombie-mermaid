@@ -10,15 +10,15 @@ floor for its lowest figure (default 85%, lower overrides in
 `SAMPLE_FLOORS`); `--thresholds` exits 1 on a breach. Floors guard against
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
-Reference: mermaid 12.2.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-11-09 at
-cf76b06 with `pnpm run layout:scorecard`, tolerance 20px.
+Reference: mermaid 12.3.0. Since mermaid 12.0.0 its default layout engine for
+these diagram types is ELK (it was dagre before). Generated 2026-11-10 at
+8736bef with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
 | Type      | Samples | Vertical | Horizontal | Containment |
 | --------- | ------- | -------- | ---------- | ----------- |
-| Flowchart | 57      | 99%      | 98%        | 100%        |
+| Flowchart | 57      | 100%     | 100%       | 100%        |
 | State     | 7       | 100%     | 100%       | 100%        |
 | Class     | 30      | 100%     | 100%       | 100%        |
 | ER        | 20      | 100%     | 100%       | -           |
@@ -31,10 +31,6 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-30 | 151f853 | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
-| 2026-10-30 | 151f853 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-30 | 151f853 | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
-| 2026-10-30 | 151f853 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
 | 2026-10-31 | ac52e8a | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
 | 2026-10-31 | ac52e8a | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-31 | ac52e8a | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
@@ -51,6 +47,10 @@ across that change.
 | 2026-11-09 | cf76b06 | 12.2.0  | State     | 7       | 100%     | 100%       | 100%        |
 | 2026-11-09 | cf76b06 | 12.2.0  | Class     | 30      | 100%     | 100%       | 100%        |
 | 2026-11-09 | cf76b06 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-11-10 | 8736bef | 12.3.0  | Flowchart | 57      | 100%     | 100%       | 100%        |
+| 2026-11-10 | 8736bef | 12.3.0  | State     | 7       | 100%     | 100%       | 100%        |
+| 2026-11-10 | 8736bef | 12.3.0  | Class     | 30      | 100%     | 100%       | 100%        |
+| 2026-11-10 | 8736bef | 12.3.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Edge labels (ASCII)
 
@@ -71,6 +71,7 @@ between the two renderers. Descriptive only, no floor.
 | 2026-10-31 | 67dd7ff | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 | 2026-11-02 | ae439b3 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 | 2026-11-09 | cf76b06 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-11-10 | 8736bef | 12.3.0  | 4     | 0.50     | 0.53  | 0.06  |
 
 ## Sequence diagrams (order)
 
@@ -92,6 +93,7 @@ says nothing about pixel positions or spacing.
 | 2026-10-31 | 67dd7ff | 12.2.0  | 21      | 100%         | 100%     | 100%      |
 | 2026-11-02 | ae439b3 | 12.2.0  | 24      | 100%         | 100%     | 100%      |
 | 2026-11-09 | cf76b06 | 12.2.0  | 24      | 100%         | 100%     | 100%      |
+| 2026-11-10 | 8736bef | 12.3.0  | 24      | 100%         | 100%     | 100%      |
 
 ## Pie charts (angles)
 
@@ -112,6 +114,7 @@ exits 1 otherwise). It says nothing about radius, centre or fonts.
 | 2026-10-31 | 67dd7ff | 12.2.0  | 19      | 100%   | 100%   | 100%   |
 | 2026-11-02 | ae439b3 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
 | 2026-11-09 | cf76b06 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-11-10 | 8736bef | 12.3.0  | 19      | 100%   | 100%   | 100%   |
 
 ## C4 diagrams (placement)
 
@@ -131,6 +134,7 @@ otherwise). It says nothing about box sizes or fonts.
 | 2026-10-31 | 67dd7ff | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
 | 2026-11-02 | ae439b3 | 12.2.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
 | 2026-11-09 | cf76b06 | 12.2.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
+| 2026-11-10 | 8736bef | 12.3.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
 
 ## XY charts (axes and data)
 
@@ -154,6 +158,7 @@ says nothing about colors or fonts.
 | 2026-10-31 | 67dd7ff | 12.2.0  | 10      | 100%   | 100%  | 90%  | -     | -      |
 | 2026-11-02 | ae439b3 | 12.2.0  | 10      | 100%   | 100%  | 100% | -     | -      |
 | 2026-11-09 | cf76b06 | 12.2.0  | 120     | 100%   | 100%  | 100% | 100%  | 100%   |
+| 2026-11-10 | 8736bef | 12.3.0  | 120     | 100%   | 100%  | 100% | 100%  | 100%   |
 
 ## Architecture diagrams (placement)
 
@@ -176,6 +181,7 @@ parity claim. It says nothing about distances or edge routes.
 | 2026-11-05 | 7efe1d2 | 12.2.0  | 3       | 100%     | 100%       | 100%        |
 | 2026-11-05 | 7efe1d2 | 12.3.0  | 3       | 100%     | 100%       | 100%        |
 | 2026-11-09 | cf76b06 | 12.2.0  | 3       | 100%     | 100%       | 100%        |
+| 2026-11-10 | 8736bef | 12.3.0  | 3       | 100%     | 100%       | 100%        |
 
 ## Per sample
 
@@ -183,10 +189,6 @@ parity claim. It says nothing about distances or edge routes.
 
 | Sample                                                   | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | -------------------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
-| Nested Subgraphs                                         | 100%     | 20%        | 100%        | 5     | 95%   | fail   |
-| Direction: Right-Left (RL)                               | 67%      | 100%       | -           | 4     | 85%   | fail   |
-| Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 67%        | -           | 3     | 65%   | pass   |
-| Git Branching Workflow                                   | 95%      | 100%       | -           | 7     | 85%   | pass   |
 | System Architecture                                      | 96%      | 100%       | 100%        | 10    | 85%   | pass   |
 | Simple Flow                                              | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Original Node Shapes                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
@@ -204,14 +206,17 @@ parity claim. It says nothing about distances or edge routes.
 | Direction: Left-Right (LR)                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Direction: Bottom-Top (BT)                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Subgraphs                                                | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Nested Subgraphs                                         | 100%     | 100%       | 100%        | 5     | 95%   | pass   |
 | Subgraph Direction Override                              | 100%     | 100%       | 100%        | 6     | 85%   | pass   |
 | ::: Class Shorthand                                      | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Inline Style Overrides                                   | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | CI/CD Pipeline                                           | 100%     | 100%       | 100%        | 7     | 85%   | pass   |
 | Decision Tree                                            | 100%     | 100%       | -           | 7     | 85%   | pass   |
+| Git Branching Workflow                                   | 100%     | 100%       | -           | 7     | 85%   | pass   |
 | Interactivity: Links and Tooltips                        | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Interactivity: Animated Edge                             | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Labeled Fan-In (LR)                                      | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Direction: Right-Left (RL)                               | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Nested Subgraphs (RL)                                    | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Nested Subgraphs (BT)                                    | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Edges Into and Out of Subgraphs                          | 100%     | 100%       | 100%        | 8     | 85%   | pass   |
@@ -234,6 +239,7 @@ parity claim. It says nothing about distances or edge routes.
 | Flowchart: Nine Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 | Flowchart: Self-Loop with In and Out Neighbours (TD)     | 100%     | 100%       | -           | 3     | 30%   | pass   |
 | Flowchart: Self-Loop with In and Out Neighbours (LR)     | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 100%       | -           | 3     | 65%   | pass   |
 | Flowchart: Dense Duplicate Edges (LR)                    | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Parallelogram Shapes (LR)                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Parallelogram Shapes (RL)                                | 100%     | 100%       | -           | 4     | 85%   | pass   |

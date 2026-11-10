@@ -69,10 +69,10 @@ d1 are identical on both versions. So the change is the routing of repeated and 
 between two different nodes, not node layout. The cause (a different elkjs or ELK option in
 12.3.0, against this package's elkjs 0.9.3) was not investigated.
 
-The fixtures stay as they are until the `mermaid` pin moves to 12.3.0 (a separate decision).
-Regeneration records this package's own output, which still routes like 12.2.0, so on its own
-it would make the unit test pass while the oracle still reports 7/12, 6/12 and 2/10. The edge
-routing has to be brought to 12.3.0 first (or the drift accepted and listed here). Commands:
+The `mermaid` pin is now 12.3.0 (#2710), so `pnpm run elk-layout:oracle` reports d1 to d3 at
+7/12, 6/12 and 2/10 and exits 1. The fixtures are unchanged: regenerating them records this
+package's own output, which still routes like 12.2.0, so the unit test would pass while the oracle
+still fails. The edge routing has to be brought to 12.3.0 first (#2708). Commands:
 
 ```sh
 # regenerate (rewrites every *.expected.json in fixtures/: keep unrelated diffs out)

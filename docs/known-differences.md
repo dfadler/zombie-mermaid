@@ -2,9 +2,9 @@
 
 Places where zombie-mermaid renders or parses differently from mermaid.js and the
 difference is either intentional or not yet fixed. The reference is the pinned
-`mermaid` devDependency (12.2.0), rendered headless through
+`mermaid` devDependency (12.3.0), rendered headless through
 `scripts/lib/real-mermaid.ts`; GitHub and mermaid.live both render 12.2.0 (see the
-table below). The pin matches both; GitHub was inferred to be on 12.1.0 on 2026-10-22.
+table below). The pin (12.3.0, the maintainer's target since #2710) is ahead of both, as of their last check; re-read them by hand, the page cannot be queried from a script.
 The pin moved from 11.17.2 in the bump that added this note, and entries not
 listed below as re-checked were measured on 11.17.2: other versions may differ.
 The "Labeled Fan-In (LR)" mirrored-order entry that used to sit under layout
@@ -15,7 +15,7 @@ tie-breaks was removed after a re-check: on 12.1.0 mermaid and zombie-mermaid ag
 
 | Surface                        | mermaid | Default layout | Evidence                                                                                                                                      |
 | ------------------------------ | ------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pinned oracle (`package.json`) | 12.2.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                                     |
+| Pinned oracle (`package.json`) | 12.3.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                                     |
 | GitHub ` ```mermaid ` blocks   | 12.2.0  | ELK (config)   | Renderer bundle `viewscreen.githubusercontent.com/static/assets/mermaidMarkdown-*.js` calls `renderer.draw(e, t, "12.2.0")` (read 2026-11-09) |
 | mermaid.live                   | 12.2.0  | ELK            | The editor shows `v12.2.0`; node positions equal the headless ELK render                                                                      |
 
