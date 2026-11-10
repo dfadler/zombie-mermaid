@@ -39,7 +39,9 @@ afterEach(() => registerAsciiLayout(undefined))
 
 // Row of the box line that carries the label.
 const rowOf = (out: string, label: string): number =>
-  out.split('\n').findIndex((l) => new RegExp(`│\\s+${label}\\s+│`).test(l))
+  out
+    .split('\n')
+    .findIndex((l) => l.split('│').some((cell) => cell.trim() === label))
 
 const xBesideTAboveA = (out: string): void => {
   const [x, t, a] = ['X', 'T', 'A'].map((l) => rowOf(out, l)) as number[]

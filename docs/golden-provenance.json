@@ -341,6 +341,16 @@
       "class": "b",
       "source": "this renderer's own output for a diagram with c4 init keys, accepted once; the key effects are asserted against mermaid 12.3.0 measurements in the test",
       "owner": "src/__tests__/c4-init-2906.test.ts"
+    },
+    {
+      "paths": [
+        "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-cluster-cycle-rank-2802.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-cluster-cycle-rank-2802.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "X ranks match mermaid for both orders with ELK hints and for T,R on the plain grid; plain-grid R,T differs (#3001)"
     }
   ]
 }
