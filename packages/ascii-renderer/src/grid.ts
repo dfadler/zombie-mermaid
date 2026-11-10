@@ -2652,11 +2652,13 @@ export function createMapping(graph: AsciiGraph): void {
   // heuristic below. Without them, or when a node has no hint or a subgraph
   // sets its own direction, the grid places as before.
   const hints = layoutHintsFor(graph)
-  if (hints) retargetRegionClusterEdges(graph, hints)
   const slots =
     hints && graph.subgraphs.every((sg) => !sg.direction)
       ? trackSlots(graph, hints)
       : undefined
+  // Only when the grid places by the hints: otherwise the retargeted member
+  // would sit where the heuristic put it, not where ELK's layers say.
+  if (hints && slots) retargetRegionClusterEdges(graph, hints)
   if (slots) {
     for (const [node, at] of slots) reserveSpotInGrid(graph, node, at)
   }

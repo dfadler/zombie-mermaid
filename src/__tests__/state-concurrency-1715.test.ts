@@ -151,5 +151,14 @@ ${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
     // sprouts a side exit through a region wall.
     expect(lines[bottom]).toContain('┬')
     expect(lines.slice(top, bottom).join('')).not.toMatch(/[├┤]/)
+    // ...and runs straight down to Z: one column from the wall to the arrowhead
+    // (mermaid 12.3.0 draws it vertically at W's centre, over Z).
+    const col = lines[bottom]!.indexOf('┬')
+    const arrow = lines.findIndex((l, i) => i > bottom && l.includes('▼'))
+    expect(arrow).toBeGreaterThan(bottom)
+    for (const l of lines.slice(bottom + 1, arrow + 1)) {
+      expect(l.trim()).toHaveLength(1)
+      expect(l.indexOf(l.trim())).toBe(col)
+    }
   })
 })
