@@ -1793,7 +1793,8 @@ contain `/`, `.` and `-`, or be a quoted string); `checkout` / `switch`; `merge`
 `id:`, `tag:` and `type:`; `cherry-pick id: "…" [tag: "…"] [parent: "…"]`; `title`,
 `accTitle`, `accDescr` and `%%` comments. The `gitGraph` config block of `%%{init}%%`
 and front matter is read for `mainBranchName`, `mainBranchOrder`, `showCommitLabel`,
-`showBranches`, `rotateCommitLabel` and `parallelCommits`. The errors are Mermaid's:
+`showBranches`, `rotateCommitLabel`, `parallelCommits`, `titleTopMargin` and
+`diagramPadding`. The errors are Mermaid's:
 a branch that exists, a `checkout` of one that does not, a `merge` of a branch into
 itself, with no commits, with the same head or reusing an id, and a `cherry-pick` of a
 commit on the current branch or of a merge without `parent:`.
@@ -3515,8 +3516,9 @@ graphs in all three orientations, with and without `parallelCommits` and
   are not read.
 - **Names.** Mermaid sanitises ids, tags and names with DOMPurify; here they are escaped
   when written, so markup in them shows as text.
-- **Config keys.** `gitGraph.titleTopMargin`, `diagramPadding` and `useMaxWidth` are not
-  read (25, 8 and the library's own sizing).
+- **Config keys.** `titleTopMargin` and `diagramPadding` are read (numbers, numeric strings
+  and negatives as Mermaid takes them; anything else keeps 25 and 8) and move the title and
+  the viewBox as in 12.3.0. `useMaxWidth` is not read (only the `<svg>` sizing attributes).
 - **ASCII.** Mermaid has no ASCII output; the `git log --graph` layout above is this
   library's own, and `parallelCommits` does not change it.
 - **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this

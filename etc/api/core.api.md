@@ -389,6 +389,8 @@ export function getReadableTextColor(fill: string | undefined, fallback: string)
 // @public
 export interface GitGraphInitConfig {
     // (undocumented)
+    diagramPadding?: number;
+    // (undocumented)
     mainBranchName?: string;
     // (undocumented)
     mainBranchOrder?: number;
@@ -400,6 +402,8 @@ export interface GitGraphInitConfig {
     showBranches?: boolean;
     // (undocumented)
     showCommitLabel?: boolean;
+    // (undocumented)
+    titleTopMargin?: number;
 }
 
 // @public

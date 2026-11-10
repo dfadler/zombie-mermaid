@@ -1024,8 +1024,9 @@ graphs in all three orientations, with and without `parallelCommits` and
   are not read.
 - **Names.** Mermaid sanitises ids, tags and names with DOMPurify; here they are escaped
   when written, so markup in them shows as text.
-- **Config keys.** `gitGraph.titleTopMargin`, `diagramPadding` and `useMaxWidth` are not
-  read (25, 8 and the library's own sizing).
+- **Config keys.** `titleTopMargin` and `diagramPadding` are read (numbers, numeric strings
+  and negatives as Mermaid takes them; anything else keeps 25 and 8) and move the title and
+  the viewBox as in 12.3.0. `useMaxWidth` is not read (only the `<svg>` sizing attributes).
 - **ASCII.** Mermaid has no ASCII output; the `git log --graph` layout above is this
   library's own, and `parallelCommits` does not change it.
 - **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
