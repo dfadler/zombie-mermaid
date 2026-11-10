@@ -1,3 +1,5 @@
+import type { JourneyInitConfig } from '@zombie-mermaid/core'
+
 // ============================================================================
 // User journey types
 //
@@ -32,6 +34,8 @@ export interface Journey {
   tasks: JourneyTask[]
   /** Every actor, de-duplicated and sorted as Mermaid sorts them (`Array.sort()`). */
   actors: string[]
+  /** `%%{init: {"journey": {...}}}%%` geometry keys mermaid@12.3.0 reads. */
+  config?: JourneyInitConfig
 }
 
 /** A section heading bar. */

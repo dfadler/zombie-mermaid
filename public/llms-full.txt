@@ -2676,9 +2676,12 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   cutting rows would drop data
   ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722),
   [#2782](https://github.com/dfadler/zombie-mermaid/issues/2782)).
-- **Empty pie.** When every slice is zero, zombie-mermaid draws no slice paths and one
+- **Empty pie.** When every slice is zero (general-105), zombie-mermaid draws no slice paths and one
   outline circle, matching mermaid 12.3.0 (0 paths, 1 circle; only the legend width differs
   by a few pixels, [#2826](https://github.com/dfadler/zombie-mermaid/issues/2826)).
+  A title-only pie (general-104, no slices at all) also draws the one outline circle, and its
+  canvas is as wide as the title alone, as in 12.3.0 (checked against mermaid 12.3.0; the few
+  pixels left are title text metrics).
 - **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
   share of the whole total, including slices that get no bar cell (under 1%, or past the
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
@@ -3389,8 +3392,12 @@ bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gall
   mermaid's own widths change (its fallback is Verdana or Arial), and so would the layout there.
 - **Palette.** Section bars and actor dots use the theme accent and its series shades
   (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
-- **Not read yet.** `journey` config in `%%{init}%%` (`leftMargin`, `width`, `taskMargin`,
-  `maxLabelWidth`, `actorColours`, `sectionFills`, ...) and the themes' `fillType0-7`.
+- **Init config.** `%%{init: {"journey": {...}}}%%` geometry keys (`width`, `height`,
+  `taskMargin`, `diagramMarginX`, `diagramMarginY`, `leftMargin`, `maxLabelWidth`) are read in
+  SVG and match mermaid 12.3.0 (viewBox, boxes, bars, lines, axis, legend wrapping). A number
+  outside 0..100000 (or a string) is dropped. `actorColours`, `sectionFills`,
+  `sectionColours` and the themes' `fillType0-7` are palette, not read: this library colours
+  from the theme (in mermaid 12.3.0 they change no geometry or class names). ASCII ignores the config (no text mode).
 - **Non-numeric score.** Mermaid emits `NaN` face coordinates (browsers draw them at 0);
   this library emits `0` so the SVG stays valid.
 - **ASCII.** Mermaid has no ASCII output; the row listing above is this library's own.
@@ -3434,13 +3441,21 @@ renders): viewBox, every box, label and bit number match to the pixel. mermaid 1
   uses the theme's node fill, stroke and text colours.
 - **Empty title element.** Mermaid always emits an empty `packetTitle` `<text>`; this
   library emits it only when there is a title.
-- **Title markup.** Mermaid HTML-sanitizes the title (`&` shows as `&amp;`, tags are
-  kept as text); this library shows the title as written.
-- **Init config values.** Mermaid draws garbage for a negative size, a zero or fractional
-  `bitsPerRow` (NaN coordinates, an endless row count) and coerces strings by
-  arithmetic (`"bitWidth": "20"` works, `"showBits": "no"` is true). Here a number
-  outside 0..1e5 (`bitsPerRow`: an integer 1..10000), a string or a wrong-typed
-  value is ignored and the default stays.
+- **Title markup.** Matches: a title with a `<` is HTML-sanitized as mermaid's DOMPurify
+  does (`&` shows as `&amp;`, kept tags show as text, scripts, event handlers and unknown
+  tags are dropped), and mermaid's `#65;` form is decoded. The sanitizer here is a
+  DOM-free stand-in: it knows the common DOMPurify tag and attribute lists, the common
+  named entities (`&amp; &lt; &gt; &quot; &apos; &nbsp; &copy; &reg; &hellip; &mdash;
+  &ndash; &trade;`) and a few HTML parser rules (void tags, unclosed tags, `<p>`, `<tr>`),
+  so unusual markup can still differ.
+- **Init config values.** Numeric strings (`"bitWidth": "20"`) and `true` are read as the
+  number they coerce to, `showBits` by truthiness (`"no"` is on, `0` and `""` off), and
+  any `bitOrder` but `descending` draws ascending, as in mermaid. Mermaid draws garbage
+  for a negative size, a zero or fractional `bitsPerRow` (NaN coordinates, an endless row
+  count), and for a string `rowHeight` or `paddingY` it concatenates (`"40" + 5` is
+  `"405"`). Here a number outside 0..1e5 (`bitsPerRow`: an integer 1..10000) or a
+  wrong-typed value is ignored and the default stays, and a numeric string `rowHeight` or
+  `paddingY` counts as the number.
 - **ASCII.** Mermaid has no text mode for packets, so there is nothing to match; the
   drawing is described in [Diagrams](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#ascii-packet-diagrams).
 - **GitHub and mermaid.live.** Not checked (no browser session with GitHub or

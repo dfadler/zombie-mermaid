@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parsePieChart } from '@zombie-mermaid/mermaid-parser'
 import type { PositionedPieChart } from '@zombie-mermaid/mermaid-parser'
-import { layoutPieChart, PIE } from '../pie/layout.ts'
+import { layoutPieChart } from '../pie/layout.ts'
 import { estimateTextWidth } from '../styles.ts'
 
 // Geometry follows Mermaid's pieRenderer.ts (default config): a 450px frame,
@@ -196,8 +196,18 @@ describe('pie layout: empty chart', () => {
     expect(p.legend).toEqual([])
     expect(p.title?.text).toBe('Nothing yet')
     expect(p.height).toBe(450)
-    // No legend: the pie and its right margin only, not a cropped half.
-    expect(p.width).toBe(PIE.height + PIE.margin)
+    // No legend rows: as wide as the title alone, as in mermaid 12.3.0.
+    expect(p.width).toBe(296)
+  })
+
+  it('sizes the gallery title-only pie to its title (mermaid 12.3.0: 337px)', () => {
+    // 9px wider than mermaid's 336.9 only because this library measures the
+    // title with its own font metrics (#2826), not because of the formula.
+    expect(layout('pie title Nothing to show yet').width).toBe(346)
+  })
+
+  it('is 225 wide with neither title nor slices (mermaid 12.3.0)', () => {
+    expect(layout('pie').width).toBe(225)
   })
 })
 

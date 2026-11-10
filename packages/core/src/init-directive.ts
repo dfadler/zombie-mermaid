@@ -36,6 +36,17 @@ export interface TimelineInitConfig {
   disableMulticolor?: boolean
 }
 
+/** The `journey.*` geometry keys mermaid@12.3.0 reads; colour keys (`actorColours`, `sectionFills`, `sectionColours`) are palette, not structure. */
+export interface JourneyInitConfig {
+  width?: number
+  height?: number
+  taskMargin?: number
+  diagramMarginX?: number
+  diagramMarginY?: number
+  leftMargin?: number
+  maxLabelWidth?: number
+}
+
 /** The `gitGraph.*` init keys that change mermaid's output. */
 export interface GitGraphInitConfig {
   mainBranchName?: string
@@ -336,11 +347,13 @@ export interface InitConfig {
   sequenceLayout?: SequenceInitLayout
   /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
   timeline?: TimelineInitConfig
+  /** `journey.*` geometry keys ({@link JourneyInitConfig}); other keys and bad values are dropped. */
+  journey?: JourneyInitConfig
   /** The `gitGraph` block (see {@link GitGraphInitConfig}); a bad value is dropped. */
   gitGraph?: GitGraphInitConfig
   /** `kanban.sectionWidth` (a number in 1..1e5) and `kanban.ticketBaseUrl`; other keys and bad values are dropped. */
   kanban?: KanbanInitConfig
-  /** `packet.*` layout keys (numbers 0..1e5, `bitsPerRow` an integer >= 1), `showBits` and `bitOrder`; other keys and bad values are dropped. */
+  /** `packet.*` layout keys (numbers or numeric strings 0..1e5, `bitsPerRow` an integer >= 1), `showBits` (by truthiness) and `bitOrder` (anything but `descending` is ascending); other keys and bad values are dropped. */
   packet?: PacketInitConfig
   /** The `sankey` block (see {@link SankeyInitConfig}). */
   sankey?: SankeyInitConfig
@@ -726,6 +739,26 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'journey' && typeof value === 'object' && value !== null) {
+      const j: JourneyInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'width',
+        'height',
+        'taskMargin',
+        'diagramMarginX',
+        'diagramMarginY',
+        'leftMargin',
+        'maxLabelWidth',
+      ] as const) {
+        const v = rec[k]
+        // 0..1e5 keeps the layout finite and the viewBox valid.
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) j[k] = v
+      }
+      config.journey = j
+      continue
+    }
+
     if (lower === 'kanban' && typeof value === 'object' && value !== null) {
       const k: KanbanInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
@@ -740,17 +773,21 @@ export function parseInitDirective(line: string): InitConfig | undefined {
     if (lower === 'packet' && typeof value === 'object' && value !== null) {
       const p: PacketInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
+      // Mermaid uses the values in plain arithmetic, so a numeric string or
+      // `true` works as the number it coerces to.
+      const num = (v: unknown) =>
+        typeof v === 'string' || typeof v === 'boolean' ? Number(v) : v
       for (const k of [
         'rowHeight',
         'bitWidth',
         'paddingX',
         'paddingY',
       ] as const) {
-        const v = rec[k]
+        const v = num(rec[k])
         if (typeof v === 'number' && v >= 0 && v <= 1e5) p[k] = v
       }
       // At least one bit per row, or the row loop in mermaid never ends.
-      const bpr = rec.bitsPerRow
+      const bpr = num(rec.bitsPerRow)
       if (
         typeof bpr === 'number' &&
         Number.isInteger(bpr) &&
@@ -758,9 +795,12 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         bpr <= 1e4
       )
         p.bitsPerRow = bpr
-      if (typeof rec.showBits === 'boolean') p.showBits = rec.showBits
-      if (rec.bitOrder === 'ascending' || rec.bitOrder === 'descending')
-        p.bitOrder = rec.bitOrder
+      // JavaScript truthiness, as mermaid's `if (showBits)`; null keeps the default.
+      if (rec.showBits !== undefined && rec.showBits !== null)
+        p.showBits = Boolean(rec.showBits)
+      // Mermaid compares with `=== 'descending'`, so any other value draws ascending.
+      if (rec.bitOrder !== undefined && rec.bitOrder !== null)
+        p.bitOrder = rec.bitOrder === 'descending' ? 'descending' : 'ascending'
       config.packet = p
       continue
     }
@@ -876,6 +916,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
       merged.gitGraph = { ...merged.gitGraph, ...config.gitGraph }
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
+    if (config.journey)
+      merged.journey = { ...merged.journey, ...config.journey }
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
     if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
     if (config.sankey) {

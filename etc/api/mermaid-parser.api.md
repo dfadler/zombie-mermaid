@@ -9,6 +9,7 @@ import { C4InitLayout } from '@zombie-mermaid/core';
 import { ClassInitLayout } from '@zombie-mermaid/core';
 import { Direction } from '@zombie-mermaid/core';
 import { ErInitLayout } from '@zombie-mermaid/core';
+import { JourneyInitConfig } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
 import { NodeInteraction } from '@zombie-mermaid/core';
 import { NodeShape } from '@zombie-mermaid/core';
@@ -559,6 +560,7 @@ export function isValidHex(color: string): boolean;
 // @public
 export interface Journey {
     actors: string[];
+    config?: JourneyInitConfig;
     sections: string[];
     tasks: JourneyTask[];
     title?: string;
