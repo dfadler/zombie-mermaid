@@ -3,21 +3,21 @@
 Places where zombie-mermaid renders or parses differently from mermaid.js and the
 difference is either intentional or not yet fixed. The reference is the pinned
 `mermaid` devDependency (12.3.0), rendered headless through
-`scripts/lib/real-mermaid.ts`; GitHub and mermaid.live both render 12.2.0 (see the
-table below). The pin (12.3.0, the maintainer's target since #2710) is ahead of both, as of their last check; re-read them by hand, the page cannot be queried from a script.
+`scripts/lib/real-mermaid.ts`; GitHub renders 12.2.0 and mermaid.live 12.3.0 (see the
+table below; `tsx scripts/lib/renderer-versions.ts` re-reads both).
 The pin moved from 11.17.2 in the bump that added this note, and entries not
 listed below as re-checked were measured on 11.17.2: other versions may differ.
 The "Labeled Fan-In (LR)" mirrored-order entry that used to sit under layout
 tie-breaks was removed after a re-check: on 12.1.0 mermaid and zombie-mermaid agree
 (100% / 100%, it was 17% on 11.17.2).
 
-## Which mermaid each surface renders (checked 2026-10-22, #2184; GitHub re-read 2026-11-09, #2914)
+## Which mermaid each surface renders (re-read 2026-11-10, #2830)
 
 | Surface                        | mermaid | Default layout | Evidence                                                                                                                                      |
 | ------------------------------ | ------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pinned oracle (`package.json`) | 12.3.0  | ELK            | `mermaid.mermaidAPI.getConfig().layout` is `elk` headless                                                                                     |
 | GitHub ` ```mermaid ` blocks   | 12.2.0  | ELK (config)   | Renderer bundle `viewscreen.githubusercontent.com/static/assets/mermaidMarkdown-*.js` calls `renderer.draw(e, t, "12.2.0")` (read 2026-11-09) |
-| mermaid.live                   | 12.2.0  | ELK            | The editor shows `v12.2.0`; node positions equal the headless ELK render                                                                      |
+| mermaid.live                   | 12.3.0  | ELK            | Its `/_app/immutable` chunk calls `renderer.draw(n, e, \`12.3.0\`, y)` (read 2026-11-10); it was 12.2.0 on 2026-11-08                         |
 
 GitHub's renderer sits in a cross-origin iframe and its bundle reports `version:"0.0.0"`, so read
 the version literal passed to `renderer.draw`. Identifier fingerprints (`upperCaseDirection`,
@@ -27,6 +27,15 @@ samples identically (gallery "Dense Duplicate Edges" TD and LR, and the #2160 sa
 with and without `n0["n0"]`/`n1["n1"]` declarations), so either version is a valid target on
 both surfaces; `layout: dagre` places them differently. Re-run the check when the pin
 moves; `tsx scripts/lib/mermaid-pin-freshness.ts` prints the last versions seen.
+
+### Re-verifying
+
+`pnpm run doctor` runs `scripts/lib/renderer-versions.ts`, which fetches both bundles and
+warns when either version differs from `SURFACE_VERSIONS` in
+`scripts/lib/mermaid-pin-freshness.ts` (exit 1 when it moved or the `renderer.draw` literal
+can no longer be found). When it warns: update `SURFACE_VERSIONS` and the table above, then
+re-render any open parity claim that names the old version on the new one. A parity issue or
+PR names the GitHub, mermaid.live and pin versions.
 
 ## Subgraph inner direction
 

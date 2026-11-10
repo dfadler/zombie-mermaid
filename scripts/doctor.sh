@@ -33,4 +33,6 @@ else
 fi
 # Informational: a stale mermaid pin makes parity checks measure an old mermaid.
 if out=$(pnpm exec tsx scripts/lib/mermaid-pin-freshness.ts 2>/dev/null); then echo "$out"; fi
+# Informational: GitHub / mermaid.live moved since the versions recorded in SURFACE_VERSIONS (#2830).
+rv=$(pnpm exec tsx scripts/lib/renderer-versions.ts 2>&1) && echo "$rv" || echo "$rv" | sed 's/^/WARN /'
 exit "$bad"
