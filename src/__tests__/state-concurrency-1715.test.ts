@@ -101,4 +101,31 @@ ${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
       if (row > 0) expect(at(id).y).toBeGreaterThan(at(ids[0]!).y)
     })
   })
+
+  // Mermaid 12.3.0 (#2962): unequal regions are packed smallest first, ties in
+  // written order. Probed positions: C top-left, A top-right, B under C.
+  it('packs unequal-height regions smallest first', () => {
+    const g = layoutGraphSync(
+      parseMermaid(`stateDiagram-v2
+  state W {
+    A --> A2
+    --
+    B --> B2
+    --
+    C
+  }`),
+    )
+    const at = (id: string) => g.nodes.find((x) => x.id === id)!
+    expect(at('A').x).toBeGreaterThan(at('C').x)
+    expect(at('A').y).toBeCloseTo(at('C').y, 0)
+    expect(at('B').x).toBeCloseTo(at('C').x, 0)
+    expect(at('B').y).toBeGreaterThan(at('C').y)
+  })
+
+  it('declares a bare state id inside a region', () => {
+    const g = parseMermaid(
+      'stateDiagram-v2\n  state W {\n    A\n    --\n    B\n  }',
+    )
+    expect([...g.nodes.keys()].sort()).toEqual(['A', 'B'])
+  })
 })
