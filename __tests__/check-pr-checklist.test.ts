@@ -34,6 +34,75 @@ describe('check-pr-checklist', () => {
     ])
   })
 
+  describe('fences follow the CommonMark closing rules', () => {
+    it('a fence with trailing text does not close the block', () => {
+      const body = ['```', '```js', '- [ ] example', '```', '- [ ] real'].join(
+        '\n',
+      )
+      // "```js" is content; the bare ``` on line 4 closes, so only the last box counts.
+      expect(uncheckedItems(body)).toEqual(['real'])
+    })
+
+    it('a different fence character does not close the block', () => {
+      const body = ['```', '~~~', '- [ ] example', '```', '- [ ] real'].join(
+        '\n',
+      )
+      expect(uncheckedItems(body)).toEqual(['real'])
+    })
+
+    it('a shorter closing run does not close the block', () => {
+      const body = ['````', '```', '- [ ] example', '````', '- [ ] real'].join(
+        '\n',
+      )
+      expect(uncheckedItems(body)).toEqual(['real'])
+    })
+
+    it('a longer closing run does close it', () => {
+      const body = ['```', '- [ ] example', '`````', '- [ ] real'].join('\n')
+      expect(uncheckedItems(body)).toEqual(['real'])
+    })
+
+    it('an unclosed fence does not hide boxes after it', () => {
+      expect(uncheckedItems('```\n- [ ] after a stray fence')).toEqual([
+        'after a stray fence',
+      ])
+    })
+
+    it('a backtick fence with a backtick in its info string is not a fence', () => {
+      expect(uncheckedItems('``` `x`\n- [ ] visible')).toEqual(['visible'])
+    })
+  })
+
+  describe('comments and fences do not hide each other', () => {
+    it('a comment opener inside a fence cannot swallow a box after the fence', () => {
+      const body = ['```', '<!--', '```', '- [ ] visible', '-->'].join('\n')
+      expect(uncheckedItems(body)).toEqual(['visible'])
+    })
+
+    it('a fence inside a comment does not start a block', () => {
+      const body = ['<!--', '```', '-->', '- [ ] visible'].join('\n')
+      expect(uncheckedItems(body)).toEqual(['visible'])
+    })
+
+    it('an unterminated comment stays visible', () => {
+      expect(uncheckedItems('<!-- never closed\n- [ ] visible')).toEqual([
+        'visible',
+      ])
+    })
+
+    it('a box between two comments still counts', () => {
+      expect(uncheckedItems('<!-- one -->\n- [ ] a\n<!-- two -->')).toEqual([
+        'a',
+      ])
+    })
+  })
+
+  it('handles CRLF line endings', () => {
+    expect(
+      uncheckedItems('- [x] a\r\n- [ ] b\r\n```\r\n- [ ] c\r\n```'),
+    ).toEqual(['b'])
+  })
+
   it('handles indented (nested) items and ignores plain brackets', () => {
     expect(
       uncheckedItems('  - [ ] nested\n- [] not a box\n- [ ]no space'),

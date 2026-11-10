@@ -19,9 +19,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Blocks merge while the PR body has an unchecked `- [ ]` box. Separate job so
-  # it can be a required check on its own; add "PR checklist" to the branch
-  # protection required checks (a repo setting, not part of this file).
+  # Fails while the PR body has an unchecked `- [ ]` box. It blocks merge only once
+  # "PR checklist" is added to the branch protection required checks (a repo
+  # setting, not part of this file); it is a separate job so it can be required on
+  # its own.
   pr-checklist:
     name: PR checklist
     runs-on: ubuntu-latest

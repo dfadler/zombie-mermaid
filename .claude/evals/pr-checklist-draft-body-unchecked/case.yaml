@@ -35,10 +35,11 @@ graders:
     type: tool_used
     tool: Skill
     input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-checklist"'
-  # The prompt has no checked box, so a ticked lint/typecheck line can only come from the reply.
-  - name: lint_typecheck_not_ticked
+  # The prompt has no checked box, so a ticked line can only come from the reply. The
+  # changeset counts: the user only "thinks" they added one and nothing here can verify it.
+  - name: unverified_not_ticked
     type: regex
-    pattern: '\[[xX]\][^\n]*pnpm run (?:lint|typecheck)'
+    pattern: '\[[xX]\][^\n]*(?:pnpm run (?:lint|typecheck)|Changeset added)'
     match: not_contains
   - name: links_issue
     type: regex

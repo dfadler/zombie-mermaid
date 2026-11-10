@@ -147,8 +147,8 @@ distinct modules, not a fixed 20).
 
 ## PR checklist boxes: check only what you did
 
-`PR checklist` (CI) fails while the PR body has an unchecked `- [ ]`. Never tick a box to
-pass it: run the `pr-checklist` skill when writing or editing any PR body. A box is checked
+`PR checklist` (CI) fails while the PR body has an unchecked `- [ ]` task-list item outside
+HTML comments and fenced code blocks. Never tick a box to pass it: run the `pr-checklist` skill when writing or editing any PR body. A box is checked
 only after the task was done and verified this session, or marked `N/A: <reason>`.
 
 ## Decision docs: run the self-review checklist before opening the PR

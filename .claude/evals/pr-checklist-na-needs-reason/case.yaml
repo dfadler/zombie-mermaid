@@ -27,8 +27,9 @@ graders:
     type: tool_used
     tool: Skill
     input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-checklist"'
-  # The reason must sit on the same line as N/A and name the CSS-only scope.
+  # A CHECKED screenshot line (the prompt's boxes are all unchecked) that carries N/A and
+  # a reason naming the CSS-only scope, so "leave it unchecked; N/A for CSS" cannot pass.
   - name: na_with_reason
     type: regex
-    pattern: 'N/A[^\n]*(?:CSS|styles\.css|padding|no ASCII)'
+    pattern: '\[[xX]\](?=[^\n]*screenshot)[^\n]*N/A[^\n]*(?:CSS|styles\.css|padding|no ASCII)'
     flags: i
