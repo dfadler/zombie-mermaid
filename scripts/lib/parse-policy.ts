@@ -8,7 +8,7 @@ export function parsePolicy(
   exit: (code: number) => never = process.exit,
 ): FacePolicy {
   const arg = argv.find((a) => a.startsWith('--policy='))?.slice(9)
-  const policy = (arg ?? 'merge-then-grow') as FacePolicy
+  const policy = (arg ?? 'grow-only') as FacePolicy
   if (!POLICIES.includes(policy)) {
     console.error(
       `Invalid --policy=${JSON.stringify(arg)}; supported values: ${POLICIES.join(', ')}`,

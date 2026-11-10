@@ -6,12 +6,14 @@ const exit = (code: number): never => {
 }
 
 describe('parsePolicy (#2207)', () => {
-  it('defaults to merge-then-grow', () => {
-    expect(parsePolicy(['--show'], exit)).toBe('merge-then-grow')
+  it('defaults to grow-only (the rasterizer default)', () => {
+    expect(parsePolicy(['--show'], exit)).toBe('grow-only')
   })
 
-  it('accepts grow-only', () => {
-    expect(parsePolicy(['--policy=grow-only'], exit)).toBe('grow-only')
+  it('accepts merge-then-grow', () => {
+    expect(parsePolicy(['--policy=merge-then-grow'], exit)).toBe(
+      'merge-then-grow',
+    )
   })
 
   it.each(['--policy=grow-onli', '--policy='])('rejects %s', (arg) => {

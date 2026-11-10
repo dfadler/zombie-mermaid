@@ -639,8 +639,10 @@ Opt-in only: without the flag the output is byte-identical to before.
   columns, over the 120-column cap; used standard renderer` on stderr (API: `fallbackReason`).
   To get the wide layout-faithful text anyway, use `--layout mermaid-wide` (API:
   `maxCols: Infinity`).
-- **Merged lines hide edge multiplicity.** Identical parallel edges draw as one line (three
-  `A --> B` look like one).
+- **Crowded faces grow the box.** Every parallel edge is drawn (mermaid@12.3.0 draws them all),
+  one per character row or column, so a node with many edges on one face is taller or wider than
+  mermaid's box: a character cell holds one line, so eight lanes need eight rows. The older
+  merged drawing is opt-in (`facePolicy: 'merge-then-grow'` in `@zombie-mermaid/ascii-layout`).
 - **Plain drawing at a fixed scale.** `-x/-y/-p`, `--coords`, `--theme` colors, `--hyperlinks`
   and `--max-width` compaction (it is the column cap instead) do not apply to it (they apply to a fallback render).
 - **Pinned to mermaid 12.3.0 + elkjs 0.12.0.** The layout is only faithful to that pair, which
