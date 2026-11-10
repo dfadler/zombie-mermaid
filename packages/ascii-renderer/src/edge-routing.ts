@@ -1511,9 +1511,7 @@ function hintedLoopFace(
 ): AsciiFace | undefined {
   const h = graph.edgeHints?.get(edge)
   // A diamond's apex is one cell, too narrow for a hook's two legs.
-  return edge.from === edge.to &&
-    edge.from.shape !== 'diamond' &&
-    h?.start.face === h?.end.face
+  return edge.from === edge.to && h?.start.face === h?.end.face
     ? h?.start.face
     : undefined
 }

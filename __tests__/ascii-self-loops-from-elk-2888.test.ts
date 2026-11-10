@@ -85,10 +85,35 @@ describe('self-loops take ELK’s faces (#2888)', () => {
     expect(col(out, '►')).toBeLessThan(col(out, '┐'))
   })
 
-  it('a loop on a diamond keeps its own routing (the apex is one cell)', () => {
-    const src = 'flowchart LR\n  n0{"d"}\n  n0 --> n0'
-    expect(draw(src)).toBe(draw(src, false))
-  })
+  // #2913: a diamond's apex is one cell, so the hook's two legs sit on the
+  // slants either side of it (mermaid@12.3.0 hooks from the slant, ELK's end).
+  it.each(['LR', 'RL', 'TD', 'BT'])(
+    '%s: a loop on a diamond is a hook on its slants, connected at both ends',
+    (dir) => {
+      const out = draw(
+        `flowchart ${dir}\n  a --> n0{"decide"}\n  n0 --> n0\n  n0 --> b`,
+      )
+      const lines = out.split('\n')
+      if (dir === 'LR' || dir === 'RL') {
+        // Both legs end on the cells right above the slant glyphs
+        const apex = lines.findIndex((l) => l.includes('╱╲'))
+        const at = lines[apex]!.indexOf('╱╲')
+        expect(lines[apex - 1]!.slice(at, at + 2)).toMatch(/[│▼]{2}/)
+        expect(lines[apex - 2]!.slice(at, at + 2)).toBe('┌┐')
+      } else {
+        // The stub leaves the upper slant, the head lands beside the lower one
+        expect(lines.some((l) => /─[╱╲]/.test(l))).toBe(true)
+        expect(out).toMatch(/►[╱╲]/)
+      }
+      // The same loop in the grid's own routing is not this shape
+      expect(out).not.toBe(
+        draw(
+          `flowchart ${dir}\n  a --> n0{"decide"}\n  n0 --> n0\n  n0 --> b`,
+          false,
+        ),
+      )
+    },
+  )
 
   it('a loop inside a subgraph keeps its own routing in TD', () => {
     const src = 'flowchart TD\n  subgraph s\n    a --> a\n  end'

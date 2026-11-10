@@ -74,6 +74,11 @@ export function buildHints(
   boxes: Box[],
   paths: Path[],
   flow: Direction,
+  /**
+   * Subgraph frames. Only edge ends on them get hints (an edge drawn from or to a
+   * subgraph id); they are not nodes, so layers and order ignore them.
+   */
+  groups: Box[] = [],
 ): AsciiLayoutHints {
   const horizontal = flow === 'LR' || flow === 'RL'
   const main = (b: Box): number => (horizontal ? b.cx : b.cy)
@@ -118,7 +123,7 @@ export function buildHints(
       size: horizontal ? b.h : b.w,
     })
   }
-  const byId = new Map(boxes.map((b) => [b.id, b]))
+  const byId = new Map([...groups, ...boxes].map((b) => [b.id, b]))
   // Order along a face: by the end point's cross-axis coordinate.
   type End = { edge: number; start: boolean; face: AsciiFace; at: number }
   const ends = new Map<string, End[]>()
@@ -195,6 +200,13 @@ export const asciiLayoutProvider: AsciiLayoutProvider = {
           points: e.points,
         })),
         graph.direction,
+        pos.groups.map((g) => ({
+          id: g.id,
+          cx: g.x + g.width / 2,
+          cy: g.y + g.height / 2,
+          w: g.width,
+          h: g.height,
+        })),
       )
     }),
   er: (diagram) =>

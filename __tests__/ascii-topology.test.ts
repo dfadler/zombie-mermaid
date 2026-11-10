@@ -90,6 +90,21 @@ describe('compareFaces', () => {
   })
 })
 
+describe('cluster-edge ends (#2913)', () => {
+  const SRC =
+    'flowchart TD\n  subgraph S\n    a --> b\n  end\n  S --> x\n  b --> y'
+
+  it('reads an edge addressed from a subgraph id under the id, as the hints carry it', () => {
+    const { edges } = readGrid(SRC)
+    expect(edges.map((e) => `${e.from}>${e.to}`)).toContain('S>x')
+  })
+
+  it('scores the cluster edge’s ends: 2 more ends than the member edges alone', () => {
+    // Three edges (a>b, S>x, b>y), six ends
+    expect(measureSample(SRC).faceEnds).toBe(6)
+  })
+})
+
 describe('readGrid and measureSample', () => {
   it('reads spots and un-mirrored faces for every direction', () => {
     for (const dir of ['TD', 'BT', 'LR', 'RL']) {

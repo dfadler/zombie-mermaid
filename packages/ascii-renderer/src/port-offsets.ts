@@ -1414,6 +1414,7 @@ function allocateFaces(
   }
   // #2645: a dense pair's loop is a hook centred over the top face, as
   // Mermaid draws it (its cells were placed about the grid cell's corner).
+  const slantStops = new Map<FaceEnd, number>()
   for (const [f, by0] of placed) {
     const geo = portGeometry(graph, f.run)
     const hint = graph.edgeHints?.get(f.edge)
@@ -1422,6 +1423,16 @@ function allocateFaces(
       // as close to the centre as the face allows (a 5-wide box has three cells).
       const left = loopStartsLow(graph, f.edge) ? -1 : 1
       const k = Math.min(2, Math.floor((geo.hi - geo.lo) / 2))
+      const dc = f.run.node.drawingCoord
+      if (f.run.node.shape === 'diamond' && dc) {
+        // A diamond's hook flanks its vertex, on the two slants beside it (a
+        // face of one or two cells has no room for a hook's legs).
+        const [lo, hi] = slantGlyphs(f.run)
+        const at = (f.role === 'S') === left < 0 ? lo : hi
+        placed.set(f, (f.run.axis === 'h' ? dc.y : dc.x) + at - geo.centre)
+        slantStops.set(f, slantBlanks(f.run, at))
+        continue
+      }
       placed.set(
         f,
         Math.round((geo.lo + geo.hi) / 2 - geo.centre) +
@@ -1443,9 +1454,56 @@ function allocateFaces(
     shiftedRun,
     true,
   )
+  // A diamond hook's start sits on its slant glyph, its arrowhead on the blank
+  // cell before it.
+  for (const [f, blanks] of slantStops) {
+    const shift = result.get(f.edge)
+    if (!shift) continue
+    const d = blanks
+    shift.points ??= f.edge.path.map(() => ({ x: 0, y: 0 }))
+    const p = shift.points[f.role === 'S' ? 0 : f.edge.path.length - 1]!
+    const sign = f.run.side === 'right' || f.run.side === 'bottom' ? -1 : 1
+    if (f.run.axis === 'h') p.x += sign * d
+    else p.y += sign * d
+  }
   for (const loop of lanes) {
     if (loop.from === loop.to) hugLoop(graph, loop, result)
   }
+}
+
+/**
+ * The two slant glyphs beside a diamond's vertex on a face, as positions along
+ * it: the slant glyphs on the first line in from the face's border that has any.
+ */
+function slantGlyphs(run: PortRun): [number, number] {
+  const d = run.node.drawing!
+  const h = run.axis === 'h'
+  const len = h ? d.length : d[0]!.length
+  const fromEnd = run.side === 'right' || run.side === 'bottom'
+  for (let n = 0; n < len; n++) {
+    const i = fromEnd ? len - 1 - n : n
+    const at = (h ? d[i]! : d.map((c) => c[i]!)).flatMap((c, k) =>
+      c === '╱' || c === '╲' ? [k] : [],
+    )
+    if (at.length) return [at[0]!, at[at.length - 1]!]
+  }
+  /* v8 ignore next */
+  return [0, 0]
+}
+
+/** Blank cells from a diamond's border in to its slant glyph, on the row (column) `at` of its drawing. */
+function slantBlanks(run: PortRun, at: number): number {
+  const d = run.node.drawing!
+  const h = run.axis === 'h'
+  const len = h ? d.length : d[0]!.length
+  const fromEnd = run.side === 'right' || run.side === 'bottom'
+  let n = 0
+  while (n < len) {
+    const i = fromEnd ? len - 1 - n : n
+    if ((h ? d[i]?.[at] : d[at]?.[i]) !== ' ') break
+    n++
+  }
+  return n
 }
 
 /** Cells from a diamond's side border in to the slant glyph on the row `by` off the centre. */
