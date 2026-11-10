@@ -426,6 +426,8 @@ export interface InitConfig {
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
     pieTextPosition?: number;
     quadrant?: QuadrantConfig;
+    radar?: RadarInitConfig;
+    radarTheme?: RadarStyleConfig;
     sankey?: SankeyInitConfig;
     sequenceHideUnused?: boolean;
     sequenceLayout?: SequenceInitLayout;
@@ -809,6 +811,47 @@ export type QuadrantConfig = Partial<Record<(typeof QUADRANT_NUMBER_KEYS)[number
     xAxisPosition?: 'top' | 'bottom';
     yAxisPosition?: 'left' | 'right';
 };
+
+// @public
+export interface RadarInitConfig {
+    // (undocumented)
+    axisLabelFactor?: number;
+    // (undocumented)
+    axisScaleFactor?: number;
+    // (undocumented)
+    curveTension?: number;
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    marginBottom?: number;
+    // (undocumented)
+    marginLeft?: number;
+    // (undocumented)
+    marginRight?: number;
+    // (undocumented)
+    marginTop?: number;
+    useMaxWidth?: boolean;
+    // (undocumented)
+    width?: number;
+}
+
+// @public
+export interface RadarStyleConfig {
+    // (undocumented)
+    axisLabelFontSize?: number;
+    // (undocumented)
+    axisStrokeWidth?: number;
+    // (undocumented)
+    curveOpacity?: number;
+    // (undocumented)
+    curveStrokeWidth?: number;
+    // (undocumented)
+    graticuleOpacity?: number;
+    // (undocumented)
+    graticuleStrokeWidth?: number;
+    // (undocumented)
+    legendFontSize?: number;
+}
 
 // @public
 export function readFrontMatterTitle(text: string): string | undefined;

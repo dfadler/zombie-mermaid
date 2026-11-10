@@ -61,7 +61,8 @@ function closedRoundCurve(points: Point[], tension: number): string {
 
 /** Lay a parsed radar out to Mermaid's geometry. */
 export function layoutRadar(radar: Radar): PositionedRadar {
-  const c = RADAR
+  // `%%{init}%%` `radar` geometry keys override mermaid's defaults.
+  const c = { ...RADAR, ...radar.config }
   const { axes, curves, options } = radar
   const n = axes.length
   const radius = Math.min(c.width, c.height) / 2
@@ -145,5 +146,6 @@ export function layoutRadar(radar: Radar): PositionedRadar {
       x: 0,
       y: -c.height / 2 - c.marginTop,
     },
+    style: radar.style,
   }
 }

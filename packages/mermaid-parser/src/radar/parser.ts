@@ -1,4 +1,4 @@
-import { MermaidParseError } from '@zombie-mermaid/core'
+import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
 import type { Radar, RadarAxis, RadarCurve, RadarOptions } from './types.ts'
 
 // ============================================================================
@@ -325,6 +325,9 @@ export function parseRadar(text: string): Radar {
   }
 
   const radar: Radar = { axes: radarAxes, curves, options }
+  const init = extractInitConfig(text.split(/\r\n?|\n/))
+  if (init.radar) radar.config = init.radar
+  if (init.radarTheme) radar.style = init.radarTheme
   if (title !== undefined) radar.title = title
   return radar
 }

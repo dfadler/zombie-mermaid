@@ -33,14 +33,23 @@ import {
 import { withDataSrc } from '../renderer.ts'
 import { pieColorValue } from '../pie/renderer.ts'
 
-/** Mermaid's `curveOpacity` and `curveStrokeWidth` theme defaults. */
-const CURVE_OPACITY = 0.5
+/** Mermaid's radar theme defaults for the sizes and opacities `%%{init}%%` can set. */
+const STYLE = {
+  axisStrokeWidth: 2,
+  axisLabelFontSize: 12,
+  curveOpacity: 0.5,
+  curveStrokeWidth: 2,
+  graticuleOpacity: 0.3,
+  graticuleStrokeWidth: 1,
+  legendFontSize: 12,
+} as const
 
 function radarStyles(
   radar: PositionedRadar,
   colors: DiagramColors,
   nonce?: string,
 ): { css: string; cls: string } {
+  const st = { ...STYLE, ...radar.style }
   const used = [
     ...new Set([
       ...radar.curves.map((c) => c.index),
@@ -53,16 +62,16 @@ function radarStyles(
   )
   const rules = used.map(
     (i) =>
-      `  .radarCurve-${i} { fill: var(--radar-color-${i}); fill-opacity: ${CURVE_OPACITY}; stroke: var(--radar-color-${i}); stroke-width: 2; }\n` +
-      `  .radarLegendBox-${i} { fill: var(--radar-color-${i}); fill-opacity: ${CURVE_OPACITY}; stroke: var(--radar-color-${i}); }`,
+      `  .radarCurve-${i} { fill: var(--radar-color-${i}); fill-opacity: ${st.curveOpacity}; stroke: var(--radar-color-${i}); stroke-width: ${st.curveStrokeWidth}; }\n` +
+      `  .radarLegendBox-${i} { fill: var(--radar-color-${i}); fill-opacity: ${st.curveOpacity}; stroke: var(--radar-color-${i}); }`,
   )
   const cls = paletteClass(vars)
   const css = `${styleOpenTag(nonce)}
   .radarTitle { fill: var(--_text); font-size: 16px; dominant-baseline: hanging; text-anchor: middle; }
-  .radarAxisLine { stroke: var(--fg); stroke-width: 2; }
-  .radarAxisLabel { fill: var(--_text); font-size: 12px; }
-  .radarGraticule { fill: var(--_line); fill-opacity: 0.3; stroke: var(--_line); stroke-width: 1; }
-  .radarLegendText { fill: var(--_text); text-anchor: start; font-size: 12px; dominant-baseline: hanging; }${
+  .radarAxisLine { stroke: var(--fg); stroke-width: ${st.axisStrokeWidth}; }
+  .radarAxisLabel { fill: var(--_text); font-size: ${st.axisLabelFontSize}px; }
+  .radarGraticule { fill: var(--_line); fill-opacity: ${st.graticuleOpacity}; stroke: var(--_line); stroke-width: ${st.graticuleStrokeWidth}; }
+  .radarLegendText { fill: var(--_text); text-anchor: start; font-size: ${st.legendFontSize}px; dominant-baseline: hanging; }${
     vars.length > 0 ? `\n  .${cls} {\n${vars.join('\n')}\n  }` : ''
   }
 ${rules.join('\n')}

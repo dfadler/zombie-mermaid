@@ -16,6 +16,8 @@ import { NodeShape } from '@zombie-mermaid/core';
 import { PacketInitConfig } from '@zombie-mermaid/core';
 import { Point } from '@zombie-mermaid/core';
 import { QuadrantConfig } from '@zombie-mermaid/core';
+import { RadarInitConfig } from '@zombie-mermaid/core';
+import { RadarStyleConfig } from '@zombie-mermaid/core';
 import { SankeyInitConfig } from '@zombie-mermaid/core';
 import { SequenceInitLayout } from '@zombie-mermaid/core';
 import { Statement } from '@zombie-mermaid/core';
@@ -1848,6 +1850,7 @@ export interface PositionedRadar {
     legend: PositionedRadarLegendItem[];
     // (undocumented)
     rings: PositionedRadarRing[];
+    style?: RadarStyleConfig;
     title: {
         text: string;
         x: number;
@@ -2175,10 +2178,12 @@ export interface QuadrantPointStyle {
 export interface Radar {
     // (undocumented)
     axes: RadarAxis[];
+    config?: RadarInitConfig;
     // (undocumented)
     curves: RadarCurve[];
     // (undocumented)
     options: RadarOptions;
+    style?: RadarStyleConfig;
     title?: string;
 }
 
