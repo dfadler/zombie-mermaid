@@ -10,8 +10,10 @@
 //   - the box is the text's bounding box plus 20px each way
 //   - an edge label is `<<relationship>>`, 24px high
 // Text is measured with Trebuchet MS advances (Mermaid's first font), as the
-// timeline layout does. Only the line routing differs from Mermaid (dagre
-// there, ELK here); the canvas is the boxes plus 8px each way.
+// timeline layout does. Mermaid 12.3.0 lays requirement diagrams out with ELK
+// (its default `layout`, not dagre), so the ELK options below are the ones its
+// `elk` layout sets (#2966); only the line routing differs. The canvas is the
+// boxes plus 8px each way.
 // ============================================================================
 
 import type { ElkNode } from '@zombie-mermaid/core'
@@ -30,6 +32,7 @@ import {
   ELK_DIRECTION_FALLBACK,
   baseElkLayoutOptions,
   buildElkLeafNode,
+  INLINE_CENTERED_EDGE_LABEL,
   directionToElk,
 } from '../layout-engine/elk-graph-builder.ts'
 import { textWidth as advanceWidth } from '../timeline/layout.ts'
@@ -150,6 +153,7 @@ export function layoutRequirementDiagramSync(
             targets: [rel.dst],
             labels: [
               {
+                layoutOptions: INLINE_CENTERED_EDGE_LABEL,
                 text: relationLabel(rel.type),
                 width: textWidth(relationLabel(rel.type)),
                 height: REQUIREMENT.rowHeight,
@@ -170,12 +174,14 @@ export function layoutRequirementDiagramSync(
         layerSpacing: REQUIREMENT.layerSpacing,
         padding: m,
       }),
-      'elk.edgeLabels.placement': 'CENTER',
-      // Declaration order breaks ties and disconnected parts keep it, as in
-      // Mermaid's own layouts.
-      'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-      'elk.separateConnectedComponents': 'false',
+      // Mermaid's own ELK options (mermaid@12.3.0 elk layout, default preset).
+      // The base value scales every spacing we leave unset (edge-to-edge, edge-
+      // to-node), and with INCLUDE_CHILDREN no disconnected parts are split off.
+      'spacing.baseValue': '40',
+      'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+      'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
       'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+      'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     },
     children: diagram.nodes.map((n) =>
       buildElkLeafNode(n.id, sizes.get(n.id)!),

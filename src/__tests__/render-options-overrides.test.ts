@@ -26,9 +26,9 @@ describe('RenderOptions.fontSizes – flowchart', () => {
     expect(svg).not.toContain('font-size="13"')
   })
 
-  it('default render uses font-size 13 for node labels', () => {
+  it('default render uses font-size 16 for node labels (mermaid@12.3.0, #2931)', () => {
     const svg = renderMermaidSVG('graph TD\n  A[Hello] --> B[World]')
-    expect(svg).toContain('font-size="13"')
+    expect(svg).toContain('font-size="16"')
   })
 
   it('overriding only nodeLabel leaves edgeLabel/groupHeader at their defaults', () => {
@@ -253,5 +253,14 @@ describe('RenderOptions – no-options-specified non-regression', () => {
     const svg1 = renderMermaidSVG(text)
     const svg2 = renderMermaidSVG(text, {})
     expect(svg1).toBe(svg2)
+  })
+})
+
+describe('flowchart node box (mermaid@12.3.0, #2931)', () => {
+  it('a one-line rect is 48px high; a state diagram keeps 13px labels', () => {
+    expect(renderMermaidSVG('graph TD\n  A[ab]')).toMatch(/height="48"/)
+    expect(renderMermaidSVG('stateDiagram-v2\n  [*] --> A')).toContain(
+      'font-size="13"',
+    )
   })
 })

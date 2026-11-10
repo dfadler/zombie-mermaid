@@ -424,8 +424,13 @@ export function estimateNodeSize(
     FONT_WEIGHTS.nodeLabel,
   )
 
+  // mermaid@12.3.0 flowchart labels take a 1.5 line height (24px at 16px) and
+  // 12px of vertical padding, so a one-line rect is 48px (#2931).
+  const mermaidBox = !stateDiagram && !legacyNodeSizes
+  if (mermaidBox)
+    metrics.height = metrics.lines.length * nodeLabelFontSize * 1.5
   let width = metrics.width + NODE_PADDING.horizontal * 2
-  let height = metrics.height + NODE_PADDING.vertical * 2
+  let height = metrics.height + (mermaidBox ? 24 : NODE_PADDING.vertical * 2)
 
   if (shape === 'diamond') {
     const side = Math.max(width, height) + NODE_PADDING.diamondExtra

@@ -129,13 +129,25 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     // An architecture junction takes edges on any face (#2724), so it sits at
     // the centre on both axes and bridges the arms that land on its cell edge.
     const centred = node.shape === 'junction'
+    // A start marker only has outgoing edges, which leave the cell's far face
+    // (gc + 2), so it sits there; a taller source sharing its layer would
+    // otherwise leave it on the near face with no stem (#2910).
+    const start = node.shape === 'state-start'
+    const farX =
+      col(0) - Math.floor(col(0) / 2) + col(1) + Math.floor(col(2) / 2)
+    const farY =
+      row(0) - Math.floor(row(0) / 2) + row(1) + Math.floor(row(2) / 2)
     const gx =
       lr && !centred
-        ? from.x
+        ? start
+          ? farX
+          : from.x
         : col(0) + Math.floor(col(1) / 2) - Math.floor(col(0) / 2)
     const cy =
       !lr && !centred
-        ? from.y
+        ? start
+          ? farY
+          : from.y
         : row(0) + Math.floor(row(1) / 2) - Math.floor(row(0) / 2)
     write(box, gx, cy, glyph)
     node.labelRows = { top: cy, bottom: cy }

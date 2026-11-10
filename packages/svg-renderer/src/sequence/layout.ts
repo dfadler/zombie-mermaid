@@ -134,6 +134,10 @@ export const ACTOR_LABEL_OFFSET = 14
  */
 export const ACTOR_FIGURE_HEIGHT = 44
 export const ACTOR_FIGURE_LABEL_GAP = 15
+/** Mermaid 12.3.0: a stick-figure lifeline starts 74px below the head top. */
+const ACTOR_LIFELINE_START = 74
+/** Mermaid 12.3.0: a stick-figure footer's head top sits 6px below its lifeline end. */
+export const ACTOR_FOOTER_GAP = 6
 
 /** Height of an actor's header/footer slot: the figure for `actor`, else the box. */
 export function actorSlotHeight(
@@ -1290,10 +1294,15 @@ export function layoutSequenceDiagram(
       // the icon, so the line starts under it rather than through it.
       topY:
         actors[i]!.y +
-        slotH(i) +
-        (actorLabelBottoms[i]! > 0
-          ? actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE
-          : 0),
+        (a.type === 'actor'
+          ? Math.max(
+              ACTOR_LIFELINE_START,
+              slotH(i) + actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE,
+            )
+          : slotH(i) +
+            (actorLabelBottoms[i]! > 0
+              ? actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE
+              : 0)),
       bottomY:
         destroyedAt === undefined
           ? lifelineBottom
@@ -1314,7 +1323,10 @@ export function layoutSequenceDiagram(
     .map((a, i) => {
       const destroyedAt = diagram.actors[i]!.destroyedAt
       return destroyedAt === undefined
-        ? { ...a, y: lifelineBottom }
+        ? {
+            ...a,
+            y: lifelineBottom + (a.type === 'actor' ? ACTOR_FOOTER_GAP : 0),
+          }
         : { ...a, y: lifelines[i]!.bottomY }
     })
     .filter(() => mirror)

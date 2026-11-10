@@ -2676,9 +2676,12 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   cutting rows would drop data
   ([#2722](https://github.com/dfadler/zombie-mermaid/issues/2722),
   [#2782](https://github.com/dfadler/zombie-mermaid/issues/2782)).
-- **Empty pie.** When every slice is zero, zombie-mermaid draws no slice paths and one
+- **Empty pie.** When every slice is zero (general-105), zombie-mermaid draws no slice paths and one
   outline circle, matching mermaid 12.3.0 (0 paths, 1 circle; only the legend width differs
   by a few pixels, [#2826](https://github.com/dfadler/zombie-mermaid/issues/2826)).
+  A title-only pie (general-104, no slices at all) also draws the one outline circle, and its
+  canvas is as wide as the title alone, as in 12.3.0 (checked against mermaid 12.3.0; the few
+  pixels left are title text metrics).
 - **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
   share of the whole total, including slices that get no bar cell (under 1%, or past the
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
@@ -3245,13 +3248,14 @@ Init and front matter share one code path.
 - **Read, SVG and ASCII:** `chartOrientation` (`horizontal` overrides the header), `showTitle`, and `xAxis.showTitle` /
   `yAxis.showTitle` (drop the chart or axis title). `xAxis` is mermaid's category-or-x axis and `yAxis` its value axis,
   whatever the orientation.
-- **Read, SVG only:** `width` and `height` (mermaid default 700 x 500) move the plot by the same delta on our scale
-  (plot minimum 50px), so the canvas grows or shrinks by that amount; and per axis `showLabel`, `showTick` and
-  `showAxisLine`. ASCII has no pixel sizes, labels, ticks or lines to switch.
-  **Known gap:** mermaid keeps the canvas at `width` x `height` and gives the room a hidden title, label or axis title took back
-  to the plot; ours leaves that margin empty (or, for a hidden title, shrinks the canvas), tracked in a separate issue.
-- **Not read** (reported as ignored; mermaid lays the plot out from these and our plot is a fixed size plus the
-  `width`/`height` delta): `titleFontSize`, `titlePadding`, `showDataLabel`, `showDataLabelOutsideBar` (data labels are
+- **Read, SVG only:** `width` and `height` (mermaid default 700 x 500): the canvas is exactly `width` x `height`, as in
+  mermaid 12.3.0 (viewBox checked for every combination of hidden chart title, axis titles and axis labels, both
+  orientations), and the plot takes the room the margins leave (minimum 50px), so a hidden title, label or axis title
+  widens or heightens it. Per axis `showLabel`, `showTick` and `showAxisLine` are read too. ASCII has no pixel sizes,
+  labels, ticks or lines to switch. The margins are our own (the plot rectangle is not mermaid's to the pixel; tick
+  and data positions as fractions of each axis match, `pnpm run xychart:oracle`).
+- **Not read** (reported as ignored; mermaid lays the plot out from these and our margins are fixed sizes, see
+  [#3010](https://github.com/dfadler/zombie-mermaid/issues/3010)): `titleFontSize`, `titlePadding`, `showDataLabel`, `showDataLabelOutsideBar` (data labels are
   not drawn), `plotReservedSpacePercent`, and per axis `labelFontSize`, `labelPadding`, `titleFontSize`,
   `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth`, `labelRotation`.
 
@@ -3438,13 +3442,21 @@ renders): viewBox, every box, label and bit number match to the pixel. mermaid 1
   uses the theme's node fill, stroke and text colours.
 - **Empty title element.** Mermaid always emits an empty `packetTitle` `<text>`; this
   library emits it only when there is a title.
-- **Title markup.** Mermaid HTML-sanitizes the title (`&` shows as `&amp;`, tags are
-  kept as text); this library shows the title as written.
-- **Init config values.** Mermaid draws garbage for a negative size, a zero or fractional
-  `bitsPerRow` (NaN coordinates, an endless row count) and coerces strings by
-  arithmetic (`"bitWidth": "20"` works, `"showBits": "no"` is true). Here a number
-  outside 0..1e5 (`bitsPerRow`: an integer 1..10000), a string or a wrong-typed
-  value is ignored and the default stays.
+- **Title markup.** Matches: a title with a `<` is HTML-sanitized as mermaid's DOMPurify
+  does (`&` shows as `&amp;`, kept tags show as text, scripts, event handlers and unknown
+  tags are dropped), and mermaid's `#65;` form is decoded. The sanitizer here is a
+  DOM-free stand-in: it knows the common DOMPurify tag and attribute lists, the common
+  named entities (`&amp; &lt; &gt; &quot; &apos; &nbsp; &copy; &reg; &hellip; &mdash;
+  &ndash; &trade;`) and a few HTML parser rules (void tags, unclosed tags, `<p>`, `<tr>`),
+  so unusual markup can still differ.
+- **Init config values.** Numeric strings (`"bitWidth": "20"`) and `true` are read as the
+  number they coerce to, `showBits` by truthiness (`"no"` is on, `0` and `""` off), and
+  any `bitOrder` but `descending` draws ascending, as in mermaid. Mermaid draws garbage
+  for a negative size, a zero or fractional `bitsPerRow` (NaN coordinates, an endless row
+  count), and for a string `rowHeight` or `paddingY` it concatenates (`"40" + 5` is
+  `"405"`). Here a number outside 0..1e5 (`bitsPerRow`: an integer 1..10000) or a
+  wrong-typed value is ignored and the default stays, and a numeric string `rowHeight` or
+  `paddingY` counts as the number.
 - **ASCII.** Mermaid has no text mode for packets, so there is nothing to match; the
   drawing is described in [Diagrams](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#ascii-packet-diagrams).
 - **GitHub and mermaid.live.** Not checked (no browser session with GitHub or

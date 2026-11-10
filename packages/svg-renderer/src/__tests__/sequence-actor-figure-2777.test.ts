@@ -99,3 +99,22 @@ describe('destroy (#2778)', () => {
     expect(out).toContain('data-type="actor"')
   })
 })
+
+describe('actor lifeline offsets (#2978, mermaid 12.3.0)', () => {
+  it('starts 74px under the head top and ends 6px above the footer head top', () => {
+    const out = svg('actor A\nactor B\nA->>B: hi\nB-->>A: bye')
+    const line =
+      /<line class="lifeline" data-actor="A" [^>]*y1="([\d.]+)" [^>]*y2="([\d.]+)"/.exec(
+        out,
+      )!
+    const heads = [...out.matchAll(/<circle[^>]* cy="([\d.]+)" r="([\d.]+)"/g)]
+    const top = (i: number): number =>
+      Number(heads[i]![1]) - Number(heads[i]![2])
+    const [headerTop, footerTop] = [
+      Math.min(top(0), top(2)),
+      Math.max(top(0), top(2)),
+    ]
+    expect(Number(line[1]) - headerTop).toBeCloseTo(74, 1)
+    expect(footerTop - Number(line[2])).toBeCloseTo(6, 1)
+  })
+})
