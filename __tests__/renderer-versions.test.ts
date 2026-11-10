@@ -61,6 +61,11 @@ describe('run (#2830)', () => {
     expect(await liveVersion(fake(null, '12.3.0'))).toBe('12.3.0')
   })
 
+  it('fails when the GitHub iframe has no bundle', async () => {
+    const get = async () => new Response('<html>')
+    await expect(githubVersion(get)).rejects.toThrow(/no mermaidMarkdown/)
+  })
+
   it('exits 0 when nothing moved', async () => {
     const r = await run(fake('12.2.0', '12.3.0'), rec, '12.3.0')
     expect(r.code).toBe(0)

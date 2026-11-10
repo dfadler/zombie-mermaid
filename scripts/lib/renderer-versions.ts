@@ -111,8 +111,10 @@ export async function run(
   }
 }
 
+/* v8 ignore start -- CLI entry; run() is what the tests cover */
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { lines, code } = await run()
   console.log(lines.join('\n'))
   process.exit(code)
 }
+/* v8 ignore stop */
