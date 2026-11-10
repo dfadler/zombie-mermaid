@@ -947,13 +947,21 @@ renders): viewBox, every box, label and bit number match to the pixel. mermaid 1
   uses the theme's node fill, stroke and text colours.
 - **Empty title element.** Mermaid always emits an empty `packetTitle` `<text>`; this
   library emits it only when there is a title.
-- **Title markup.** Mermaid HTML-sanitizes the title (`&` shows as `&amp;`, tags are
-  kept as text); this library shows the title as written.
-- **Init config values.** Mermaid draws garbage for a negative size, a zero or fractional
-  `bitsPerRow` (NaN coordinates, an endless row count) and coerces strings by
-  arithmetic (`"bitWidth": "20"` works, `"showBits": "no"` is true). Here a number
-  outside 0..1e5 (`bitsPerRow`: an integer 1..10000), a string or a wrong-typed
-  value is ignored and the default stays.
+- **Title markup.** Matches: a title with a `<` is HTML-sanitized as mermaid's DOMPurify
+  does (`&` shows as `&amp;`, kept tags show as text, scripts, event handlers and unknown
+  tags are dropped), and mermaid's `#65;` form is decoded. The sanitizer here is a
+  DOM-free stand-in: it knows the common DOMPurify tag and attribute lists, the common
+  named entities (`&amp; &lt; &gt; &quot; &apos; &nbsp; &copy; &reg; &hellip; &mdash;
+  &ndash; &trade;`) and a few HTML parser rules (void tags, unclosed tags, `<p>`, `<tr>`),
+  so unusual markup can still differ.
+- **Init config values.** Numeric strings (`"bitWidth": "20"`) and `true` are read as the
+  number they coerce to, `showBits` by truthiness (`"no"` is on, `0` and `""` off), and
+  any `bitOrder` but `descending` draws ascending, as in mermaid. Mermaid draws garbage
+  for a negative size, a zero or fractional `bitsPerRow` (NaN coordinates, an endless row
+  count), and for a string `rowHeight` or `paddingY` it concatenates (`"40" + 5` is
+  `"405"`). Here a number outside 0..1e5 (`bitsPerRow`: an integer 1..10000) or a
+  wrong-typed value is ignored and the default stays, and a numeric string `rowHeight` or
+  `paddingY` counts as the number.
 - **ASCII.** Mermaid has no text mode for packets, so there is nothing to match; the
   drawing is described in [Diagrams](diagrams.md#ascii-packet-diagrams).
 - **GitHub and mermaid.live.** Not checked (no browser session with GitHub or
