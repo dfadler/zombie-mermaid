@@ -2678,9 +2678,17 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
 - **Empty pie.** When every slice is zero (general-105), zombie-mermaid draws no slice paths and one
   outline circle, matching mermaid 12.3.0 (0 paths, 1 circle; only the legend width differs
   by a few pixels, [#2826](https://github.com/dfadler/zombie-mermaid/issues/2826)).
-  A title-only pie (general-104, no slices at all) also draws the one outline circle, and its
-  canvas is as wide as the title alone, as in 12.3.0 (checked against mermaid 12.3.0; the few
-  pixels left are title text metrics).
+  A title-only pie (general-104, no slices at all) also draws the one outline circle (a full
+  circle, not the half arc of the all-zero case), and its canvas is as wide as the title alone:
+  337px, as in 12.3.0
+  ([#2975](https://github.com/dfadler/zombie-mermaid/issues/2975)).
+- **Pie font (default changed).** With no `font` option a pie is drawn and sized in mermaid
+  12.3.0's stack (`"trebuchet ms", verdana, arial, sans-serif`, Trebuchet MS widths), not
+  Inter, so canvas widths match 12.3.0 within a pixel (title + legend 547, showData 592,
+  all-zero 523 against 12.3.0's 546.97, 591.33, 522.03). An explicit `font` is used for both
+  drawing and sizing; a `themeVariables` or init `fontFamily` is still not read (use `font`).
+  What is left is that the browser measures hinted glyphs at the drawn size while the table
+  holds the font's design advances, and the viewBox width is rounded up to a whole pixel.
 - **ASCII legend.** Mermaid has no ASCII output. The table lists every slice with its
   share of the whole total, including slices that get no bar cell (under 1%, or past the
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
