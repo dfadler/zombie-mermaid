@@ -1486,7 +1486,8 @@ contain `/`, `.` and `-`, or be a quoted string); `checkout` / `switch`; `merge`
 `id:`, `tag:` and `type:`; `cherry-pick id: "…" [tag: "…"] [parent: "…"]`; `title`,
 `accTitle`, `accDescr` and `%%` comments. The `gitGraph` config block of `%%{init}%%`
 and front matter is read for `mainBranchName`, `mainBranchOrder`, `showCommitLabel`,
-`showBranches`, `rotateCommitLabel` and `parallelCommits`. The errors are Mermaid's:
+`showBranches`, `rotateCommitLabel`, `parallelCommits`, `titleTopMargin` and
+`diagramPadding`. The errors are Mermaid's:
 a branch that exists, a `checkout` of one that does not, a `merge` of a branch into
 itself, with no commits, with the same head or reusing an id, and a `cherry-pick` of a
 commit on the current branch or of a merge without `parent:`.

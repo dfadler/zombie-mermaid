@@ -44,6 +44,8 @@ export interface GitGraphConfig {
   showBranches: boolean
   rotateCommitLabel: boolean
   parallelCommits: boolean
+  titleTopMargin: number
+  diagramPadding: number
 }
 
 /** Mermaid's defaults for {@link GitGraphConfig} (`defaultConfig.gitGraph`, 12.3.0). */
@@ -54,6 +56,8 @@ export const GIT_GRAPH_DEFAULTS: GitGraphConfig = {
   showBranches: true,
   rotateCommitLabel: true,
   parallelCommits: false,
+  titleTopMargin: 25,
+  diagramPadding: 8,
 }
 
 /** A parsed Mermaid gitGraph. */
