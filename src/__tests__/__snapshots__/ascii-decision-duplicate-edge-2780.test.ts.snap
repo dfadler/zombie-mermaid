@@ -21,7 +21,7 @@ exports[`decision with a duplicated edge (#2780) BT > ASCII snapshot 1`] = `
 `;
 
 exports[`decision with a duplicated edge (#2780) BT > SVG snapshot 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 648.9 323.8" width="648.9" height="323.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 656 342" width="656" height="342" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -48,35 +48,35 @@ exports[`decision with a duplicated edge (#2780) BT > SVG snapshot 1`] = `
   }
 </style>
 <defs>
-  <marker id="zm1nfit0b-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmtr3dol-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1nfit0b-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmtr3dol-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 293.73 158.63 L 293.73 103.97 Q 293.73 96.9, 286.65 96.9 L 285.19 96.9 Q 278.12 96.9, 278.12 89.83 L 278.12 76.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1nfit0b-arrowhead)" />
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 335.45 116.9 L 335.45 76.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1nfit0b-arrowhead)" />
-<path class="edge" data-from="n2" data-to="n3" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 377.18 158.63 L 377.18 103.97 Q 377.18 96.9, 384.25 96.9 L 511.71 96.9 Q 518.78 96.9, 518.78 89.83 L 518.78 76.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1nfit0b-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 295.5 171.5 L 295.5 114.92 Q 295.5 108, 288.58 108 L 288.58 108 Q 281.67 108, 281.67 101.08 L 281.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmtr3dol-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 339 128 L 339 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmtr3dol-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n3" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 382.5 171.5 L 382.5 115.07 Q 382.5 108, 389.57 108 L 515.26 108 Q 522.33 108, 522.33 100.93 L 522.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmtr3dol-arrowhead)" />
 <g class="node" data-id="n0" data-label="n54J9wn" data-shape="stadium">
-  <rect x="220.78" y="40" width="172" height="36.9" rx="18.45" ry="18.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="306.78" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">n54J9wn</text>
+  <rect x="224.33" y="40" width="172" height="48" rx="24" ry="24" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="310.33" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">n54J9wn</text>
 </g>
 <g class="node" data-id="n1" data-label="m" data-shape="stadium">
-  <rect x="40" y="181.9" width="172" height="36.9" rx="18.45" ry="18.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="126" y="200.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">m</text>
+  <rect x="40" y="191" width="172" height="48" rx="24" ry="24" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="126" y="215" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">m</text>
 </g>
 <g class="node" data-id="n2" data-label="1z" data-shape="diamond">
-  <polygon points="335.45,116.9 418.9,200.35 335.45,283.8 252,200.35" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="335.45" y="200.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">1z</text>
+  <polygon points="339,128 426,215 339,302 252,215" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="339" y="215" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">1z</text>
 </g>
 <g class="node" data-id="n3" data-label="5Ux716" data-shape="stadium">
-  <rect x="432.78" y="40" width="172" height="36.9" rx="18.45" ry="18.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="518.78" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">5Ux716</text>
+  <rect x="436.33" y="40" width="172" height="48" rx="24" ry="24" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="522.33" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">5Ux716</text>
 </g>
 <g class="node" data-id="n4" data-label="E8Hl7O" data-shape="rounded">
-  <rect x="458.9" y="181.9" width="150" height="36.9" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="533.9" y="200.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">E8Hl7O</text>
+  <rect x="466" y="191" width="150" height="48" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="541" y="215" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">E8Hl7O</text>
 </g>
 </svg>"
 `;
@@ -108,7 +108,7 @@ exports[`decision with a duplicated edge (#2780) LR > ASCII snapshot 1`] = `
 `;
 
 exports[`decision with a duplicated edge (#2780) LR > SVG snapshot 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464 400.7" width="464" height="400.7" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 466 430" width="466" height="430" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -135,41 +135,41 @@ exports[`decision with a duplicated edge (#2780) LR > SVG snapshot 1`] = `
   }
 </style>
 <defs>
-  <marker id="zm1mbotl1-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmatpuda-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1mbotl1-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmatpuda-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 170.27 158.63 L 224.93 158.63 Q 232 158.63, 232 165.7 L 232 166.47 Q 232 173.54, 239.07 173.54 L 252 173.54" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mbotl1-arrowhead)" />
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 200.35 L 224.93 200.35 Q 232 200.35, 232 193.28 L 232 192.91 Q 232 185.84, 239.07 185.84 L 252 185.84" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mbotl1-arrowhead)" />
-<path class="edge" data-from="n2" data-to="n3" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 170.27 242.08 L 224.93 242.08 Q 232 242.08, 232 249.15 L 232 249.52 Q 232 256.59, 239.07 256.59 L 252 256.59" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mbotl1-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 176.5 171.5 L 227.13 171.5 Q 234 171.5, 234 178.38 L 234 178.38 Q 234 185.25, 240.88 185.25 L 254 185.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmatpuda-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 220 215 L 227.13 215 Q 234 215, 234 208.13 L 234 208.13 Q 234 201.25, 240.88 201.25 L 254 201.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmatpuda-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n3" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 176.5 258.5 L 226.93 258.5 Q 234 258.5, 234 265.57 L 234 274.18 Q 234 281.25, 241.07 281.25 L 254 281.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmatpuda-arrowhead)" />
 <g class="node" data-id="n0" data-label="n54J9wn" data-shape="stadium">
-  <rect x="252" y="161.24" width="172" height="36.9" rx="18.45" ry="18.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="338" y="179.69" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">n54J9wn</text>
+  <rect x="254" y="169.25" width="172" height="48" rx="24" ry="24" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="340" y="193.25" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">n54J9wn</text>
 </g>
 <g class="node" data-id="n1" data-label="m" data-shape="stadium">
-  <rect x="45.5" y="40" width="172" height="36.9" rx="18.45" ry="18.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="131.5" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">m</text>
+  <rect x="46" y="40" width="172" height="48" rx="24" ry="24" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="132" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">m</text>
 </g>
 <g class="node" data-id="n2" data-label="1z" data-shape="diamond">
-  <polygon points="128.55,116.9 212,200.35 128.55,283.8 45.1,200.35" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="128.55" y="200.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">1z</text>
+  <polygon points="133,128 220,215 133,302 46,215" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="133" y="215" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">1z</text>
 </g>
 <g class="node" data-id="n3" data-label="5Ux716" data-shape="stadium">
-  <rect x="252" y="238.14" width="172" height="36.9" rx="18.45" ry="18.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="338" y="256.59" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">5Ux716</text>
+  <rect x="254" y="257.25" width="172" height="48" rx="24" ry="24" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="340" y="281.25" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">5Ux716</text>
 </g>
 <g class="node" data-id="n4" data-label="E8Hl7O" data-shape="rounded">
-  <rect x="45.5" y="323.8" width="150" height="36.9" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="120.5" y="342.25" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">E8Hl7O</text>
+  <rect x="46" y="342" width="150" height="48" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="121" y="366" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">E8Hl7O</text>
 </g>
 </svg>"
 `;
 
 exports[`decision with a parallel pair plus a third branch keeps three direct edges (#2918) BT 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 323.8" width="424" height="323.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 342" width="424" height="342" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -196,27 +196,27 @@ exports[`decision with a parallel pair plus a third branch keeps three direct ed
   }
 </style>
 <defs>
-  <marker id="zm1mgm9dc-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm31bga4-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1mgm9dc-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm31bga4-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 99.61 158.63 L 99.61 101.37 Q 99.61 96.9, 95.14 96.9 L 95.14 96.9 Q 90.67 96.9, 90.67 92.43 L 90.67 76.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mgm9dc-arrowhead)" />
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 141.33 116.9 L 141.33 76.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mgm9dc-arrowhead)" />
-<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 183.06 158.63 L 183.06 103.97 Q 183.06 96.9, 190.13 96.9 L 300.93 96.9 Q 308 96.9, 308 89.83 L 308 76.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mgm9dc-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 97.83 171.5 L 97.83 111.58 Q 97.83 108, 94.25 108 L 94.25 108 Q 90.67 108, 90.67 104.42 L 90.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm31bga4-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 141.33 128 L 141.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm31bga4-arrowhead)" />
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 184.83 171.5 L 184.83 115.07 Q 184.83 108, 191.9 108 L 300.93 108 Q 308 108, 308 100.93 L 308 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm31bga4-arrowhead)" />
 <g class="node" data-id="A" data-label="Aaa" data-shape="diamond">
-  <polygon points="141.33,116.9 224.78,200.35 141.33,283.8 57.88,200.35" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="141.33" y="200.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Aaa</text>
+  <polygon points="141.33,128 228.33,215 141.33,302 54.33,215" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="141.33" y="215" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Aaa</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rectangle">
-  <rect x="40" y="40" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="116" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
 </g>
 <g class="node" data-id="C" data-label="Ccc" data-shape="rectangle">
-  <rect x="232" y="40" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="308" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Ccc</text>
+  <rect x="232" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Ccc</text>
 </g>
 </svg>"
 `;
@@ -240,7 +240,7 @@ exports[`decision with a parallel pair plus a third branch keeps three direct ed
 `;
 
 exports[`decision with a parallel pair plus a third branch keeps three direct edges (#2918) LR 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 438.9 246.9" width="438.9" height="246.9" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 446 254" width="446" height="254" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -267,27 +267,27 @@ exports[`decision with a parallel pair plus a third branch keeps three direct ed
   }
 </style>
 <defs>
-  <marker id="zm1br5p2r-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmslkngd-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1br5p2r-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmslkngd-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 165.18 81.72 L 220.88 81.72 Q 226.9 81.72, 226.9 87.74 L 226.9 87.74 Q 226.9 93.76, 232.92 93.76 L 246.9 93.76" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1br5p2r-arrowhead)" />
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 206.9 123.45 L 219.83 123.45 Q 226.9 123.45, 226.9 116.38 L 226.9 113.13 Q 226.9 106.06, 233.97 106.06 L 246.9 106.06" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1br5p2r-arrowhead)" />
-<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 165.18 165.18 L 221.08 165.18 Q 226.9 165.18, 226.9 170.99 L 226.9 170.99 Q 226.9 176.81, 232.72 176.81 L 246.9 176.81" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1br5p2r-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 170.5 83.5 L 231.38 83.5 Q 234 83.5, 234 86.13 L 234 86.13 Q 234 88.75, 236.63 88.75 L 254 88.75" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmslkngd-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 214 127 L 226.93 127 Q 234 127, 234 119.93 L 234 111.82 Q 234 104.75, 241.07 104.75 L 254 104.75" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmslkngd-arrowhead)" />
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 170.5 170.5 L 226.93 170.5 Q 234 170.5, 234 177.57 L 234 177.68 Q 234 184.75, 241.07 184.75 L 254 184.75" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmslkngd-arrowhead)" />
 <g class="node" data-id="A" data-label="Aaa" data-shape="diamond">
-  <polygon points="123.45,40 206.9,123.45 123.45,206.9 40,123.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="123.45" y="123.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Aaa</text>
+  <polygon points="127,40 214,127 127,214 40,127" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="127" y="127" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Aaa</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rectangle">
-  <rect x="246.9" y="81.46" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="322.9" y="99.91" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="254" y="72.75" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="330" y="96.75" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
 </g>
 <g class="node" data-id="C" data-label="Ccc" data-shape="rectangle">
-  <rect x="246.9" y="158.36" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="322.9" y="176.81" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Ccc</text>
+  <rect x="254" y="160.75" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="330" y="184.75" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Ccc</text>
 </g>
 </svg>"
 `;
@@ -309,7 +309,7 @@ exports[`decision with a parallel pair plus a third branch keeps three direct ed
 `;
 
 exports[`decision with a parallel pair plus a third branch keeps three direct edges (#2918) TD 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 323.8" width="424" height="323.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 342" width="424" height="342" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -336,27 +336,27 @@ exports[`decision with a parallel pair plus a third branch keeps three direct ed
   }
 </style>
 <defs>
-  <marker id="zmccsl0r-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmku84yg-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmccsl0r-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmku84yg-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 99.61 165.18 L 99.61 222.43 Q 99.61 226.9, 95.14 226.9 L 95.14 226.9 Q 90.67 226.9, 90.67 231.37 L 90.67 246.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmccsl0r-arrowhead)" />
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 141.33 206.9 L 141.33 246.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmccsl0r-arrowhead)" />
-<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 183.06 165.18 L 183.06 219.83 Q 183.06 226.9, 190.13 226.9 L 300.93 226.9 Q 308 226.9, 308 233.97 L 308 246.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmccsl0r-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 97.83 170.5 L 97.83 230.42 Q 97.83 234, 94.25 234 L 94.25 234 Q 90.67 234, 90.67 237.58 L 90.67 254" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmku84yg-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 141.33 214 L 141.33 254" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmku84yg-arrowhead)" />
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 184.83 170.5 L 184.83 226.93 Q 184.83 234, 191.9 234 L 300.93 234 Q 308 234, 308 241.07 L 308 254" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmku84yg-arrowhead)" />
 <g class="node" data-id="A" data-label="Aaa" data-shape="diamond">
-  <polygon points="141.33,40 224.78,123.45 141.33,206.9 57.88,123.45" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="141.33" y="123.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Aaa</text>
+  <polygon points="141.33,40 228.33,127 141.33,214 54.33,127" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="141.33" y="127" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Aaa</text>
 </g>
 <g class="node" data-id="B" data-label="B" data-shape="rectangle">
-  <rect x="40" y="246.9" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="116" y="265.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="40" y="254" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="278" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
 </g>
 <g class="node" data-id="C" data-label="Ccc" data-shape="rectangle">
-  <rect x="232" y="246.9" width="152" height="36.9" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="308" y="265.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Ccc</text>
+  <rect x="232" y="254" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="278" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Ccc</text>
 </g>
 </svg>"
 `;

@@ -57,7 +57,9 @@ describe('packet init config', () => {
       packet(
         '{"bitsPerRow": 0, "bitWidth": -1, "rowHeight": 1e9, "showBits": "no", "bitOrder": "sideways", "paddingX": "5"}',
       ),
-    ).toEqual({})
+      // Bad sizes are dropped; the string and the flag are read as mermaid 12.3.0
+      // does (numeric string, truthy `showBits`, non-`descending` is ascending).
+    ).toEqual({ paddingX: 5, showBits: true, bitOrder: 'ascending' })
     expect(packet('{"bitsPerRow": 2.5}')).toEqual({})
   })
 })

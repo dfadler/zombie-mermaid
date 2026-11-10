@@ -135,6 +135,34 @@ describe('packet rows', () => {
     expect(p.config).toEqual({ bitsPerRow: 8 })
   })
 
+  it('coerces numeric strings like mermaid, and reads showBits and bitOrder by truthiness', () => {
+    const cfg = (o: string) =>
+      parsePacket(`%%{init: {"packet": ${o}}}%%\npacket\n0: "a"`).config
+    expect(
+      cfg(
+        '{"bitsPerRow": "8", "bitWidth": " 20 ", "paddingX": "5", "rowHeight": "40", "paddingY": true}',
+      ),
+    ).toEqual({
+      bitsPerRow: 8,
+      bitWidth: 20,
+      paddingX: 5,
+      rowHeight: 40,
+      paddingY: 1,
+    })
+    // Not numbers (or not whole rows) stay ignored.
+    expect(
+      cfg('{"bitWidth": "x", "bitsPerRow": "8.5", "rowHeight": []}'),
+    ).toEqual({})
+    expect(cfg('{"showBits": "no"}')).toEqual({ showBits: true })
+    expect(cfg('{"showBits": 0}')).toEqual({ showBits: false })
+    expect(cfg('{"showBits": ""}')).toEqual({ showBits: false })
+    expect(cfg('{"showBits": null}')).toEqual({})
+    expect(cfg('{"bitOrder": "weird"}')).toEqual({ bitOrder: 'ascending' })
+    expect(cfg('{"bitOrder": "descending"}')).toEqual({
+      bitOrder: 'descending',
+    })
+  })
+
   it('keeps at most 10000 rows', () => {
     const p = parsePacket(
       '%%{init: {"packet": {"bitsPerRow": 1}}}%%\npacket\n0-99999: "x"',
@@ -156,6 +184,50 @@ describe('resolvePacketConfig', () => {
     })
     expect(resolvePacketConfig({ showBits: false, paddingY: 7 }).paddingY).toBe(
       7,
+    )
+  })
+})
+
+describe('packet title (sanitized as mermaid 12.3.0 does)', () => {
+  const title = (t: string) => parsePacket(`packet\ntitle ${t}\n0: "a"`).title
+  it('keeps a title without a "<" as written', () => {
+    expect(title('A & B &copy;')).toBe('A & B &copy;')
+  })
+  it('escapes & < > and keeps allowed tags as markup text', () => {
+    expect(title('A & B <b>x</b> 1 < 2 > 0')).toBe(
+      'A &amp; B <b>x</b> 1 &lt; 2 &gt; 0',
+    )
+  })
+  it('drops scripts, unknown tags, comments, event handlers and javascript: links', () => {
+    expect(title('<script>x</script>a<foo>b</foo><!-- c -->')).toBe('ab')
+    expect(title('<div onclick="x()" class=c>d</div>')).toBe(
+      '<div class="c">d</div>',
+    )
+    expect(title('<a href="javascript:x()">l</a>')).toBe('<a>l</a>')
+    expect(title("<img src=x alt='y'>z<br/>")).toBe(
+      '<img src="x" alt="y">z<br>',
+    )
+  })
+  it('closes open tags, drops stray end tags and unterminated tags', () => {
+    expect(title('<b>x</i>y<u>z')).toBe('<b>xy<u>z</u></b>')
+    expect(title('<p>1<p>2')).toBe('<p>1</p><p>2</p>')
+    expect(title('<table><tr><td>t</td></tr></table>')).toBe(
+      '<table><tbody><tr><td>t</td></tr></tbody></table>',
+    )
+    expect(title('a<b')).toBe('a')
+    expect(title('a <!-- open')).toBe('a ')
+    expect(title('<style>p{}')).toBeUndefined()
+    expect(title('<svg><circle/></svg>')).toBe('<svg><circle></circle></svg>')
+  })
+  it("decodes entities once a tag is present, and mermaid's #N; form always", () => {
+    expect(title('<i>&copy; &amp; &#65; &nbsp; &foo; &#9999999;</i>')).toBe(
+      '<i>© &amp; A &nbsp; &amp;foo; �</i>',
+    )
+    expect(title('#65; #amp; #foo; #9999999;')).toBe('A & &foo; �')
+  })
+  it('drops a title that sanitizes to nothing', () => {
+    expect(parsePacket('packet\ntitle <script>x</script>\n0: "a"').title).toBe(
+      undefined,
     )
   })
 })
