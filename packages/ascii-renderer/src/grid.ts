@@ -491,6 +491,8 @@ function rerouteAroundStyleConflicts(
     endDir: edge.endDir,
     labelLine: edge.labelLine,
     hintedLane: edge.hintedLane,
+    hintedFaces: edge.hintedFaces,
+    gutterBack: edge.gutterBack,
   }
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
@@ -522,7 +524,15 @@ function rerouteAroundStyleConflicts(
       if (!conflict) return
       graph.grid.add(conflict.x, conflict.y)
       temporarilyBlocked.push(conflict)
-      const { path, startDir, endDir, labelLine, hintedLane } = edge
+      const {
+        path,
+        startDir,
+        endDir,
+        labelLine,
+        hintedLane,
+        hintedFaces,
+        gutterBack,
+      } = edge
       determinePath(graph, edge)
       // With the conflict cell blocked, no clear route may remain, and
       // determinePath then falls back to a straight line that ignores
@@ -546,7 +556,15 @@ function rerouteAroundStyleConflicts(
           nodeOnlyGrid,
         )
       ) {
-        Object.assign(edge, { path, startDir, endDir, labelLine, hintedLane })
+        Object.assign(edge, {
+          path,
+          startDir,
+          endDir,
+          labelLine,
+          hintedLane,
+          hintedFaces,
+          gutterBack,
+        })
         return
       }
     }

@@ -2628,7 +2628,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
         (sg) => !sg.nodes.includes(edge.from) && !sg.nodes.includes(edge.to),
       )
       .map((sg) => clusterGridBox(sg))
-    const besideFrame = (cells: GridCoord[], margin = 1): boolean =>
+    const nearFrame = (cells: GridCoord[], margin = 1): boolean =>
       pathCells(cells).some((c) =>
         unrelated.some(
           (b) =>
@@ -2647,32 +2647,25 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       !lrFlow && !gate && dirEquals(hinted[1], Down)
         ? { x: to.x, y: to.y + 1 }
         : undefined
-    const gatedVia = gated
-      ? routeEdge(graph, from, gated, requireCardinalDirection(hinted[0]))
-      : null
-    const search = routeEdge(
-      graph,
-      from,
-      to,
-      requireCardinalDirection(hinted[0]),
-    )
     const viaGate = via && mergePath([...via, to])
-    detour =
-      !viaGate &&
-      search &&
-      besideFrame(search, 0) &&
-      gatedVia &&
-      !besideFrame(gatedVia, 0)
-        ? mergePath([...gatedVia, to])
+    const search = viaGate
+      ? null
+      : routeEdge(graph, from, to, requireCardinalDirection(hinted[0]))
+    const gatedVia =
+      gated && search && nearFrame(search, 0)
+        ? routeEdge(graph, from, gated, requireCardinalDirection(hinted[0]))
         : null
+    // `gatedVia` is only searched when the ordinary route runs beside a frame.
+    detour =
+      gatedVia && !nearFrame(gatedVia, 0) ? mergePath([...gatedVia, to]) : null
     const found = viaGate ?? detour ?? search
     const plain = expandDiagonalSegments([from, to])
     // A re-route (`edge.path` is set: a style conflict blocked a cell) keeps the
     // faces too: its caller restores the old path when the detour runs through a node.
-    const plainBesideFrame = besideFrame(plain)
+    const besideFrame = nearFrame(plain)
     hintedPath =
       found ??
-      (!plainBesideFrame &&
+      (!besideFrame &&
       (edge.path.length > 0 ||
         pathCells(plain)
           .slice(1, -1)

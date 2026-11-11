@@ -59,6 +59,12 @@ describe('a decision’s slant start is measured where it is drawn (#2919)', () 
     expect(starts[3]).toBe('R')
   })
 
+  it('keeps a start on the tip as Right', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    const [e] = readGrid('flowchart LR\n  A{d} --> B').edges
+    expect(e!.start).toEqual(['R'])
+  })
+
   it('draws the T and B starts off the slants, not the tip', () => {
     const lines = draw(source).split('\n')
     const tip = lines.findIndex((l) => l.startsWith('< gSQ21Q >'))

@@ -154,7 +154,7 @@ function diamondStartDir(
     e.startDir.y !== 1
   )
     return undefined
-  const mid = n.drawingCoord.y + ((n.drawing[0]?.length ?? 1) - 1) / 2
+  const mid = n.drawingCoord.y + (n.drawing[0]!.length - 1) / 2
   return at.y < mid ? { x: 2, y: 0 } : at.y > mid ? { x: 2, y: 2 } : undefined
 }
 
