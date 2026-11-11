@@ -17,7 +17,12 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import type { ErRenderOptions } from '@zombie-mermaid/core'
 import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
-import { FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
+import {
+  FONT_WEIGHTS,
+  resolveFontSizes,
+  estimateTextWidth,
+  estimateMonoTextWidth,
+} from '../styles.ts'
 import {
   mermaidSansTextWidth,
   mermaidTextWidth,
@@ -48,6 +53,8 @@ export const ER = {
   rowHeight: 42.75,
   /** One line of text in a header or row; a `<br>` comment adds one per break. */
   textLineHeight: 24,
+  /** Clear space kept around the label we draw, beyond its estimated width. */
+  drawnLabelMargin: 8,
   /** Narrowest bare entity (`er.minEntityWidth`'s default). */
   minWidth: 100,
   attrFontSize: 11,
@@ -134,7 +141,14 @@ export function erColumns(entity: {
       width:
         Math.max(
           ...rows.flatMap((r) =>
-            r[cell]!.split('\n').map((line) => mermaidTextWidth(line, false)),
+            r[cell]!.split('\n')
+              // Never narrower than the monospace text we draw.
+              .map((line) =>
+                Math.max(
+                  mermaidTextWidth(line, false),
+                  estimateMonoTextWidth(line, ER.attrFontSize),
+                ),
+              ),
           ),
         ) +
         ER.cellPadX * 2,
@@ -195,7 +209,15 @@ function buildErElkGraph(
 
   for (const entity of diagram.entities) {
     // Mermaid measures the name at 16px Trebuchet MS, regular weight.
+    // Mermaid measures the name at 16px Trebuchet MS, regular weight.
     const headerTextW = mermaidTextWidth(entity.label, false)
+    // The bold label we draw, at the configured size, must still fit with room to spare.
+    const drawnLabelW =
+      estimateTextWidth(
+        entity.label,
+        fontSizes.nodeLabel,
+        FONT_WEIGHTS.nodeLabel,
+      ) + ER.drawnLabelMargin
     const bare = entity.attributes.length === 0
     const columns = erColumns(entity)
     const tableW =
@@ -203,6 +225,7 @@ function buildErElkGraph(
       columns.length * dPad * 1.25
     const width = Math.max(
       minEntityWidth,
+      drawnLabelW,
       bare
         ? Math.max(
             // Mermaid's minimum applies when the name, measured in sans-serif

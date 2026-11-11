@@ -49,4 +49,26 @@ describe('class and ER box size matches mermaid 12.3.0', () => {
     // Mermaid 12.3.0: 116.25. Without kerning the box is about 4px wider.
     expect(Math.abs(w - 116.25)).toBeLessThanOrEqual(0.5)
   })
+
+  it('never draws ER text wider than its box (narrow glyphs, large label font)', () => {
+    const rect = (svg: string) =>
+      /<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"/.exec(svg)!
+    // 20 narrow glyphs: the monospace cell text is wider than mermaid's measure.
+    const narrow = renderMermaidSVG(
+      'erDiagram\n  E {\n    int iiiiiiiiiiiiiiiiiiii\n  }',
+    )
+    const dividers = [
+      ...narrow.matchAll(/<line x1="([\d.]+)" y1="[\d.]+" x2="\1"/g),
+    ]
+    const nameCol =
+      Number(rect(narrow)[2]) -
+      Number(dividers[0]![1]) +
+      Number(rect(narrow)[1])
+    expect(nameCol).toBeGreaterThanOrEqual(20 * 6.6 + 25)
+    // A 32px label must fit its bare entity.
+    const big = renderMermaidSVG('erDiagram\n  ABCDEFGH {\n  }', {
+      fontSizes: { nodeLabel: 32 },
+    })
+    expect(Number(rect(big)[2])).toBeGreaterThan(32 * 0.6 * 8)
+  })
 })

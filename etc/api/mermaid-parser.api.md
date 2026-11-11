@@ -1162,7 +1162,7 @@ export interface PositionedErEntity {
     // (undocumented)
     label: string;
     rowHeight: number;
-    rowHeights: number[];
+    rowHeights?: number[];
     // (undocumented)
     width: number;
     // (undocumented)

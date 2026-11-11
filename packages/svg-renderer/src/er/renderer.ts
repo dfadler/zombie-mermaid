@@ -146,7 +146,7 @@ function renderEntityBox(
     width,
     height,
     headerHeight,
-    rowHeights,
+    rowHeight,
     label,
     attributes,
     inlineStyle,
@@ -216,6 +216,7 @@ function renderEntityBox(
     for (const c of cols) xs.push(xs[xs.length - 1]! + c.width + extra)
 
     // Where each row starts.
+    const rowHeights = entity.rowHeights ?? attributes.map(() => rowHeight)
     const rowTops: number[] = []
     let top = attrTop
     for (const h of rowHeights) {
