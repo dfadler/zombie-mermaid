@@ -242,7 +242,7 @@ describe('xychart ASCII – every mermaid tick and axis title (#2310, #2678)', (
       '10',
       '0',
     ])
-    // the 10-bar (first point) is on the 0 row at the bottom, the 50-bar on the 100 row
+    // The 10-bar (first point) is on the 0 row at the bottom, the 50-bar on the 100 row
     const bar = (l: string) => l.match(/█+/)?.[0].length ?? 0
     expect(bar(lines.find((l) => /^\s*0[┤│]/.test(l))!)).toBeLessThan(
       bar(lines.find((l) => /^\s*100[┤│]/.test(l))!),
