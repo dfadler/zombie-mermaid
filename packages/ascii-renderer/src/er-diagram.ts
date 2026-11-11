@@ -565,7 +565,10 @@ export function renderErAscii(
     const componentEntities: ErEntity[] = []
     const rowStarts = new Set<string>()
     const slot = new Map<string, number>() // Index in componentEntities
-    for (let l = 0; componentEntities.length < declared.length; l++) {
+    // Visit the distinct layers in order: a merged component (#2968) or sparse
+    // hints can skip layer numbers, and counting up would never reach them.
+    const layers = [...new Set(layerOf.values())].sort((a, b) => a - b)
+    for (const l of layers) {
       // Order a layer by its earliest-placed parent so children sit under
       // their parents; declaration order breaks ties.
       const parentSlot = (e: ErEntity): number =>
