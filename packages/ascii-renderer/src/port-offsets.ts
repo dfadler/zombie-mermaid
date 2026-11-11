@@ -1345,6 +1345,67 @@ function allocateFaces(
   const ranked = hintedFaces(graph)
   const taken = new Set<string>()
   const fixed = new Map<AsciiEdge, number>()
+  // #2913: a decision with four or more ends on its flow face gives each its
+  // own slant row, ordered by where its other end lies, so no two share a stem
+  // and none crosses another (as mermaid spreads the ports).
+  if (graph.edgeHints && graph.config.graphDirection === 'LR') {
+    const byFace = new Map<string, (FaceEnd & { y: number })[]>()
+    for (const edge of graph.edges) {
+      if (edge.from === edge.to || edge.path.length < 2) continue
+      for (const [run, role] of endsOf(edge)) {
+        if (!run || run.node.shape !== 'diamond' || run.side !== 'right')
+          continue
+        const other = role === 'S' ? edge.to : edge.from
+        const k = faceOf(run)
+        byFace.set(k, [
+          ...(byFace.get(k) ?? []),
+          { edge, run, role, y: requireGridCoord(other).y },
+        ])
+      }
+    }
+    for (const [face, ends] of byFace) {
+      const geo = portGeometry(graph, ends[0]!.run)
+      const n = ends.length
+      if (n < 4 || !geo) continue
+      ends.sort(
+        (a, b) =>
+          a.y - b.y ||
+          (a.role === b.role ? 0 : a.role === 'S' ? -1 : 1) ||
+          graph.edges.indexOf(a.edge) - graph.edges.indexOf(b.edge),
+      )
+      // Adjacent slant rows, the vertex row too when the count is odd.
+      const offs = ends.map((_, i) =>
+        n % 2 ? i - (n - 1) / 2 : i - n / 2 + (i < n / 2 ? 0 : 1),
+      )
+      if (
+        !offs.every(
+          (o) =>
+            o === 0 ||
+            attachesAt(ends[0]!.run, geo.centre + o, geo, true, true),
+        )
+      )
+        continue
+      ends.forEach((f, i) => {
+        f.rank = i
+        if (!runsOf(f.edge)?.straight) return
+        fixed.set(f.edge, offs[i]!)
+        // The stroke's far end follows on its own face, which then keeps these
+        // rows whatever order ELK ranked it in.
+        const [run, role] = endsOf(f.edge).find(([r, w]) => r && w !== f.role)!
+        if (!run) return
+        applyOffsets(
+          result,
+          [{ edge: f.edge, run, role }],
+          [offs[i]!],
+          shiftedRun,
+        )
+        ranked.delete(faceOf(run))
+      })
+      applyOffsets(result, ends, offs, shiftedRun)
+      ranked.delete(face)
+      taken.add(face)
+    }
+  }
   // The fullest face first: it needs the closest spacing, and a straight edge
   // then carries its cell over to the other face (a face of two would spread
   // its pair a stroke spacing apart and leave no cell for a third end beside).
@@ -1414,6 +1475,7 @@ function allocateFaces(
   }
   // #2645: a dense pair's loop is a hook centred over the top face, as
   // Mermaid draws it (its cells were placed about the grid cell's corner).
+  const slantStops = new Map<FaceEnd, number>()
   for (const [f, by0] of placed) {
     const geo = portGeometry(graph, f.run)
     const hint = graph.edgeHints?.get(f.edge)
@@ -1422,6 +1484,16 @@ function allocateFaces(
       // as close to the centre as the face allows (a 5-wide box has three cells).
       const left = loopStartsLow(graph, f.edge) ? -1 : 1
       const k = Math.min(2, Math.floor((geo.hi - geo.lo) / 2))
+      const dc = f.run.node.drawingCoord
+      if (f.run.node.shape === 'diamond' && dc) {
+        // A diamond's hook flanks its vertex, on the two slants beside it (a
+        // face of one or two cells has no room for a hook's legs).
+        const [lo, hi] = slantGlyphs(f.run)
+        const at = (f.role === 'S') === left < 0 ? lo : hi
+        placed.set(f, (f.run.axis === 'h' ? dc.y : dc.x) + at - geo.centre)
+        slantStops.set(f, slantBlanks(f.run, at))
+        continue
+      }
       placed.set(
         f,
         Math.round((geo.lo + geo.hi) / 2 - geo.centre) +
@@ -1443,9 +1515,47 @@ function allocateFaces(
     shiftedRun,
     true,
   )
+  // A diamond hook's start sits on its slant glyph, its arrowhead on the blank
+  // cell before it.
+  // Hooks are on the top or left face (RL and BT are flipped after drawing), so
+  // the glyph is always `blanks` cells in from the low edge.
+  for (const [f, blanks] of slantStops) {
+    const shift = result.get(f.edge)!
+    shift.points ??= f.edge.path.map(() => ({ x: 0, y: 0 }))
+    const p = shift.points[f.role === 'S' ? 0 : f.edge.path.length - 1]!
+    if (f.run.axis === 'h') p.x += blanks
+    else p.y += blanks
+  }
   for (const loop of lanes) {
     if (loop.from === loop.to) hugLoop(graph, loop, result)
   }
+}
+
+/**
+ * The two slant glyphs beside a diamond's vertex on a face, as positions along
+ * it: the slant glyphs on the first line in from the face's border that has any.
+ */
+function slantGlyphs(run: PortRun): [number, number] {
+  const d = run.node.drawing!
+  const h = run.axis === 'h'
+  const len = h ? d.length : d[0]!.length
+  for (let i = 0; i < len; i++) {
+    const at = (h ? d[i]! : d.map((c) => c[i]!)).flatMap((c, k) =>
+      c === '╱' || c === '╲' || c === '/' || c === '\\' ? [k] : [],
+    )
+    if (at.length) return [at[0]!, at[at.length - 1]!]
+  }
+  /* v8 ignore next */
+  return [0, 0]
+}
+
+/** Blank cells from a diamond's border in to its slant glyph, on the row (column) `at` of its drawing. */
+function slantBlanks(run: PortRun, at: number): number {
+  const d = run.node.drawing!
+  const h = run.axis === 'h'
+  let n = 0
+  while ((h ? d[n]?.[at] : d[at]?.[n]) === ' ') n++
+  return n
 }
 
 /** Cells from a diamond's side border in to the slant glyph on the row `by` off the centre. */
@@ -1593,7 +1703,8 @@ function placeFace(
   const cells: number[] = []
   for (let p = geo.lo; p <= geo.hi; p++) {
     // A diamond's side face has its vertex and the two slants beside it.
-    if (ranked && run.node.shape === 'diamond' && run.axis === 'h') {
+    const diamond = run.node.shape === 'diamond' && run.axis === 'h'
+    if (ranked && diamond) {
       if (Math.abs(p - centre) > 1) continue
     }
     if (attachesAt(run, p, geo, ranked)) cells.push(p)

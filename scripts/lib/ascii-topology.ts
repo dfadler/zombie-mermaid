@@ -164,8 +164,10 @@ export function readGrid(source: string): GridRender & { direction: string } {
     }
     for (const e of g.edges) {
       out.edges.push({
-        from: e.from.name,
-        to: e.to.name,
+        // An edge addressed from or to a subgraph id is routed from a member node;
+        // ELK's hint is on the frame, so match it by the subgraph's id.
+        from: e.clusterSource?.source?.id ?? e.from.name,
+        to: e.clusterTarget?.source?.id ?? e.to.name,
         start: facesOf(e.startDir, dir),
         end: facesOf(e.endDir, dir),
       })

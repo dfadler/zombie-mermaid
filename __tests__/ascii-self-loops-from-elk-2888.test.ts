@@ -85,10 +85,64 @@ describe('self-loops take ELK’s faces (#2888)', () => {
     expect(col(out, '►')).toBeLessThan(col(out, '┐'))
   })
 
-  it('a loop on a diamond keeps its own routing (the apex is one cell)', () => {
-    const src = 'flowchart LR\n  n0{"d"}\n  n0 --> n0'
-    expect(draw(src)).toBe(draw(src, false))
-  })
+  // #2913: a diamond's apex is one cell, so the hook's two legs sit on the
+  // slants either side of it (mermaid@12.3.0 hooks from the slant, ELK's end).
+  it.each(['LR', 'RL', 'TD', 'BT'])(
+    '%s: a loop on a diamond is a hook on its slants, connected at both ends',
+    (dir) => {
+      const out = draw(
+        `flowchart ${dir}\n  a --> n0{"decide"}\n  n0 --> n0\n  n0 --> b`,
+      )
+      const lines = out.split('\n')
+      if (dir === 'LR' || dir === 'RL') {
+        // Both legs end on the cells right above the slant glyphs
+        const apex = lines.findIndex((l) => l.includes('╱╲'))
+        const at = lines[apex]!.indexOf('╱╲')
+        expect(lines[apex - 1]!.slice(at, at + 2)).toMatch(/[│▼]{2}/)
+        expect(lines[apex - 2]!.slice(at, at + 2)).toBe('┌┐')
+      } else {
+        // The stub leaves the upper slant, the head lands beside the lower one
+        // Top corner, wall and bottom corner share a column; one end meets a
+        // slant with no gap, the other lands on the cell beside the opposite slant
+        // (BT is TD flipped: the head is on the top row.)
+        const [topRe, botRe] =
+          dir === 'TD' ? [/┌─+[╱╲]/, /└─+►[╱╲]/] : [/┌─+►[╱╲]/, /└─+[╱╲]/]
+        const top = lines.findIndex((l) => topRe.test(l))
+        expect(top).toBeGreaterThanOrEqual(0)
+        const corner = lines[top]!.indexOf('┌')
+        expect(lines[top + 1]!.charAt(corner)).toBe('│')
+        expect(lines[top + 2]!.charAt(corner)).toBe('└')
+        expect(lines[top + 2]).toMatch(botRe)
+      }
+      // The same loop in the grid's own routing is not this shape
+      expect(out).not.toBe(
+        draw(
+          `flowchart ${dir}\n  a --> n0{"decide"}\n  n0 --> n0\n  n0 --> b`,
+          false,
+        ),
+      )
+    },
+  )
+
+  it.each(['LR', 'TD'])(
+    '%s: a diamond hook works with ASCII borders too (the slants are / and \\)',
+    (dir) => {
+      registerAsciiLayout(asciiLayoutProvider)
+      try {
+        const out = renderMermaidASCII(
+          `flowchart ${dir}\n  a --> n0{"decide"}\n  n0 --> n0\n  n0 --> b`,
+          { layoutHints: true, useAscii: true } as never,
+        )
+        // Start and head sit on different slants: the hook's legs do not collapse
+        expect(out).toMatch(
+          dir === 'LR' ? /\+\+ *\n *\|v/ : /\+---\/[ \\]+\n\s*\| </,
+        )
+        expect(out).toMatch(dir === 'LR' ? /\|v *\n.*\/\\/ : /\+-->\\/)
+      } finally {
+        registerAsciiLayout(undefined)
+      }
+    },
+  )
 
   it('a loop inside a subgraph keeps its own routing in TD', () => {
     const src = 'flowchart TD\n  subgraph s\n    a --> a\n  end'
