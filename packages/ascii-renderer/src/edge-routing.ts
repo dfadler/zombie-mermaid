@@ -2095,6 +2095,20 @@ function farGroup(graph: AsciiGraph, edge: AsciiEdge): boolean {
   )
 }
 
+/**
+ * A decision with four or more edges besides its loops gives each of them a cell
+ * of its slants, so its neighbour groups take ELK's faces too (#2919); a lone
+ * pair keeps its shared stem.
+ */
+function crowdedDecision(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  return [edge.from, edge.to].some(
+    (n) =>
+      n.shape === 'diamond' &&
+      graph.edges.filter((e) => e.from !== e.to && (e.from === n || e.to === n))
+        .length >= 4,
+  )
+}
+
 /** The faces ELK's route leaves and enters by, as grid directions, or undefined without a hint. */
 function hintedFaces(
   graph: AsciiGraph,
@@ -2105,7 +2119,9 @@ function hintedFaces(
   if (
     !h ||
     edge.from === edge.to ||
-    (edge.parallelLane && !farGroup(graph, edge)) ||
+    (edge.parallelLane &&
+      !farGroup(graph, edge) &&
+      !crowdedDecision(graph, edge)) ||
     edge.clusterSource ||
     edge.clusterTarget
   )
@@ -2116,7 +2132,16 @@ function hintedFaces(
     lr &&
     edge.from.shape === 'diamond' &&
     (h.start.face === 'T' || h.start.face === 'B')
-  return [slant ? Right : FACE_DIR[h.start.face], FACE_DIR[h.end.face]]
+  // In TD and BT ELK's left or right start on a decision is its lower slant: the
+  // bottom face, on a cell of its own (#2919).
+  const side =
+    !lr &&
+    edge.from.shape === 'diamond' &&
+    (h.start.face === 'L' || h.start.face === 'R')
+  return [
+    slant ? Right : side ? Down : FACE_DIR[h.start.face],
+    FACE_DIR[h.end.face],
+  ]
 }
 
 /**
