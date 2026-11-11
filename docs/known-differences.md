@@ -782,7 +782,7 @@ fork-fix architecture sources; not checked on GitHub (renders 12.2.0) or mermaid
   make Backend L-shaped, which swallowed Storage). The group is stacked on its last layer and the foreign service steps
   one layer past it, which is the column mermaid draws. Group positions in ASCII follow the ports, not fcose, so a
   group's exact slot can differ (#2682, SVG layout, is decided separately).
-- **Left:** an edge with no arrowhead that ends at a group (`api:B -- T:db{group}`) is drawn only as a stub on the source
+- **Left ([#3043](https://github.com/dfadler/zombie-mermaid/issues/3043)):** an edge with no arrowhead that ends at a group (`api:B -- T:db{group}`) is drawn only as a stub on the source
   group's wall. The same happens for `A --- Sub` in a flowchart, so it is the edge router's cluster-entry shape, not the
   architecture lowering. C4's text order differs from mermaid's only in DOM order; every label is present and reads in
   the same places.
