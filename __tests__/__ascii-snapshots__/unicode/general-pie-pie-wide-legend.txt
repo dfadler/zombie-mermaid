@@ -1,7 +1,6 @@
-                  Reports by team
-
-[████████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒]
+                       Reports by team
 
   █ Platform infrastructure and reliability engineering    40%
   ▓ Customer facing web applications and mobile clients    35%
+     [████████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒]
   ▒ Data                                                   25%

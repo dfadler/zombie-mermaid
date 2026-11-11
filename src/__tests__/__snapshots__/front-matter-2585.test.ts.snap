@@ -398,10 +398,8 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
 exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type but C4/architecture) > pie: SVG and ASCII snapshots 2`] = `
 "                      FM Title
 
-[█████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓]
-
-  █ a    33%
-  ▓ b    67%"
+[█████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓]     █ a    33%
+                                                         ▓ b    67%"
 `;
 
 exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type but C4/architecture) > sequence: SVG and ASCII snapshots 1`] = `

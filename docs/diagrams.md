@@ -1951,17 +1951,17 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 ### ASCII Pie Charts
 
 Mermaid has no text mode for pie charts, so the ASCII output is this
-library's own design: one stacked bar, 50 cells wide, and a table below it.
+library's own design: one stacked bar, 50 cells wide, and a table beside it. `pie.legendPosition` puts the table
+where mermaid 12.3.0 puts the legend (`right` by default, `left`, `top`,
+`bottom`, or `center` on the bar's columns).
 The numbers are the SVG renderer's.
 
 ```text
              Pets adopted by volunteers
 
-[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]
-
-  █ Dogs    79%
-  ▓ Cats    17%
-  ▒ Rats     3%
+                                                         █ Dogs    79%
+[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]     ▓ Cats    17%
+                                                         ▒ Rats     3%
 ```
 
 - **The bar** holds the slices at or above 1% of the total, in source order,
