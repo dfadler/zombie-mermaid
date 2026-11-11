@@ -789,6 +789,31 @@ export function renderErAscii(
     currentY += maxRowH + componentGap
   }
 
+  // A one-line label sits centred on its vertical edge, as mermaid draws it
+  // (#2253), but the canvas has no columns left of x=1. With hints, shift the
+  // layout right by the room the widest such label needs beyond its edge, so a
+  // label wider than its box is not pushed off centre (#2968).
+  // ponytail: the edge column is estimated as the box centre.
+  if (useHints) {
+    let shift = 0
+    for (const rel of diagram.relationships) {
+      const a = placed.get(rel.entity1)
+      const b = placed.get(rel.entity2)
+      if (!rel.label || !a || !b || a.y === b.y) continue
+      const edgeX = Math.min(
+        a.x + Math.floor(a.width / 2),
+        b.x + Math.floor(b.width / 2),
+      )
+      shift = Math.max(
+        shift,
+        Math.floor((maxLineWidth(rel.label) - 1) / 2) + 1 - edgeX,
+      )
+    }
+    if (shift > 0) {
+      for (const [id, p] of placed) placed.set(id, { ...p, x: p.x + shift })
+    }
+  }
+
   // --- Create canvas ---
   let totalW = 0
   let totalH = 0
