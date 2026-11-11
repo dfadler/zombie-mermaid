@@ -640,7 +640,8 @@ function decisionDuplicates(
   // With ELK's hints a busier decision (a return edge, a loop) spreads them too:
   // each end has a slant of its own (`allocateFaces`).
   const plain =
-    graph.edgeHints !== undefined && graph.config.graphDirection === 'LR'
+    graph.config.graphDirection === 'LR' &&
+    group.every((e) => graph.edgeHints?.has(e))
   return (
     from.shape === 'diamond' &&
     to.shape !== 'diamond' &&

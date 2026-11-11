@@ -63,7 +63,7 @@ describe('a decision’s edges each take their own slant (#2913)', () => {
     // its bottom or right side
     const into = lines.filter((l) => /►\(/.test(l))
     expect(into).toHaveLength(2)
-    expect(lines.some((l) => /\)\s*$/.test(l) && l.includes('◄'))).toBe(false)
+    expect(lines.some((l) => /\)◄/.test(l))).toBe(false)
     expect(lines.some((l) => /▲/.test(l))).toBe(false)
   })
 
@@ -74,6 +74,25 @@ describe('a decision’s edges each take their own slant (#2913)', () => {
     // Each arrow has a row of its own: none shares a stem with another
     expect(out.split('\n').filter((l) => l.includes('►'))).toHaveLength(5)
     expect(out).not.toMatch(/[┬┴┼]/u)
+  })
+
+  it('a provider with node hints but no edge hints keeps the duplicates’ lanes', () => {
+    registerAsciiLayout({
+      graph: (g) => {
+        const h = asciiLayoutProvider.graph!(g)!
+        return { nodes: h.nodes, edges: [] }
+      },
+    })
+    let out: string
+    try {
+      out = renderMermaidASCII(SAMPLE, { layoutHints: true } as never)
+    } finally {
+      registerAsciiLayout(undefined)
+    }
+    // Without edge hints the two edges to OkfK stay lanes: one into its left
+    // side, the other round into its right side (not a shared bent route)
+    expect(out.split('\n').filter((l) => /►\(/.test(l))).toHaveLength(1)
+    expect(out).toMatch(/\)◄/)
   })
 
   it('a pair of edges keeps the shared-stem routing', () => {
