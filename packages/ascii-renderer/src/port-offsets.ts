@@ -273,7 +273,11 @@ function attachesAt(
   const slant =
     run.node.shape.startsWith('parallelogram') ||
     (diamond && run.node.shape === 'diamond')
-  return ch === '│' || ch === '|' || (slant && (ch === '╱' || ch === '╲'))
+  // A stadium's sides are parentheses (#2913).
+  const round = run.node.shape === 'stadium' && (ch === '(' || ch === ')')
+  return (
+    ch === '│' || ch === '|' || round || (slant && (ch === '╱' || ch === '╲'))
+  )
 }
 
 /**

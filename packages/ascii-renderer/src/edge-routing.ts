@@ -637,11 +637,17 @@ function decisionDuplicates(
   // three cells of them (no loop, no edge into it). A diamond target has no
   // straight face for them to land on side by side: it keeps the lanes.
   const touching = graph.edges.filter((e) => e.from === from || e.to === from)
+  // With ELK's hints a busier decision (a return edge, a loop) spreads them too:
+  // each end has a slant of its own (`allocateFaces`).
+  const plain =
+    graph.config.graphDirection === 'LR' &&
+    group.every((e) => graph.edgeHints?.has(e))
   return (
     from.shape === 'diamond' &&
     to.shape !== 'diamond' &&
-    touching.length <= 3 &&
-    touching.every((e) => e.from === from && e.to !== from) &&
+    (plain ||
+      (touching.length <= 3 &&
+        touching.every((e) => e.from === from && e.to !== from))) &&
     group.every((e) => e.from === from && e.to === to && !e.text)
   )
 }
@@ -2095,6 +2101,7 @@ function hintedFaces(
   edge: AsciiEdge,
 ): [Direction, Direction] | undefined {
   const h = graph.edgeHints?.get(edge)
+  const lr = graph.config.graphDirection === 'LR'
   if (
     !h ||
     edge.from === edge.to ||
@@ -2103,7 +2110,13 @@ function hintedFaces(
     edge.clusterTarget
   )
     return undefined
-  return [FACE_DIR[h.start.face], FACE_DIR[h.end.face]]
+  // ELK's top or bottom start on an LR decision is a slant: its right face, one
+  // cell of its own (#2913).
+  const slant =
+    lr &&
+    edge.from.shape === 'diamond' &&
+    (h.start.face === 'T' || h.start.face === 'B')
+  return [slant ? Right : FACE_DIR[h.start.face], FACE_DIR[h.end.face]]
 }
 
 /**
