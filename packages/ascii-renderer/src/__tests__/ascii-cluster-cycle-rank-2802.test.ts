@@ -6,10 +6,10 @@
  *   R, T:  R 36  T 124  X 124  A 273  B 381   X beside T, above A
  *   T, R:  T 36  A 185  B 293  R 317  X 405   X below B
  *
- * The two orders are not meant to rank alike. With ELK hints (what the CLI and
- * root entry use) both match. The plain grid matches only T, R: for R, T it
- * puts X between A and B, because mermaid ranks T beside X though no edge
- * pushes it down, and `computeMinLevels` has no rule that says so (#2802).
+ * The two orders are not meant to rank alike. Both match with ELK hints (what
+ * the CLI and root entry use) and on the plain grid. For R, T mermaid breaks the
+ * cycle at `S --> X`, so X ranks above the cluster and T, a source with only
+ * that cluster below it, sits beside X; `computeMinLevels` does the same (#3001).
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { registerAsciiLayout } from '@zombie-mermaid/ascii-renderer'
@@ -64,8 +64,7 @@ describe('cluster-boundary cycle ranks as mermaid@12.3.0 (#2802)', () => {
   it('T, R on the grid: X below B', () => {
     xBelowB(draw(TR, false))
   })
-  // Known gap (#2802): flips to a failure the day the grid matches; then use `it`.
-  it.fails('R, T on the grid: X beside T, above A', () => {
+  it('R, T on the grid: X beside T, above A', () => {
     xBesideTAboveA(draw(RT, false))
   })
 
