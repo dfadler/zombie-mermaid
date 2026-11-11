@@ -11,6 +11,11 @@
 import { describe, expect, it } from 'vitest'
 import { registerAsciiLayout } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidASCII } from '../packages/ascii-renderer/src/index.ts'
+import { nestedSides } from '../packages/ascii-renderer/src/port-offsets.ts'
+import type {
+  PortRun,
+  Slot,
+} from '../packages/ascii-renderer/src/port-offsets.ts'
 import { samples } from '../samples/samples-data.ts'
 import { asciiLayoutProvider } from '../src/ascii-layout-provider.ts'
 import {
@@ -111,5 +116,90 @@ describe('a back edge reaches the bottom face by the gutter beside a composite (
     const text = renderMermaidASCII(source)
     expect(text).toContain('retry')
     expect(text).toMatch(/Error ├/)
+  })
+})
+
+describe('nestedSides guards (#2919)', () => {
+  const slot = (
+    role: 'S' | 'E',
+    turn: -1 | 0 | 1,
+    extent: number,
+    over: Partial<Slot> & { axis?: 'v' | 'h'; side?: PortRun['side'] } = {},
+  ): Slot => ({
+    run: {
+      axis: over.axis ?? 'v',
+      line: 0,
+      from: 0,
+      to: 1,
+      side: over.side ?? 'bottom',
+      node: {} as never,
+      cell: { x: 0, y: 0 },
+      turn,
+    },
+    role,
+    fixed: false,
+    elbow: false,
+    extent,
+    far: 0,
+    down: 1,
+    gutter: over.gutter ?? true,
+  })
+  const port = (): string => 'p'
+
+  it('does nothing for an edge off the gutter, a side run, or no bend', () => {
+    const mate = slot('S', -1, 2)
+    const off = new Map([
+      ['a', slot('E', 1, 5, { gutter: false })],
+      ['b', mate],
+    ])
+    expect(nestedSides(off, 'a', port)).toBeUndefined()
+    const side = new Map([
+      ['a', slot('E', 1, 5, { axis: 'h' })],
+      ['b', mate],
+    ])
+    expect(nestedSides(side, 'a', port)).toBeUndefined()
+    const straight = new Map([
+      ['a', slot('E', 0, 5)],
+      ['b', mate],
+    ])
+    expect(nestedSides(straight, 'a', port)).toBeUndefined()
+  })
+
+  it('does nothing without a partner on the same face going the other way', () => {
+    expect(
+      nestedSides(new Map([['a', slot('E', 1, 5)]]), 'a', port),
+    ).toBeUndefined()
+    for (const mate of [
+      slot('E', 1, 2),
+      slot('S', 1, 2, { axis: 'h' }),
+      slot('S', 1, 2, { side: 'top' }),
+      slot('S', 0, 2),
+    ]) {
+      const m = new Map([
+        ['a', slot('E', 1, 5)],
+        ['b', mate],
+      ])
+      expect(nestedSides(m, 'a', port)).toBeUndefined()
+    }
+  })
+
+  it('puts an end on the side its leg comes from when the legs head opposite ways', () => {
+    // E from the right (turn -1 -> side +1), S heading left (side -1)
+    const m = new Map([
+      ['a', slot('E', -1, 5)],
+      ['b', slot('S', -1, 2)],
+    ])
+    expect(nestedSides(m, 'a', port)).toBe(-1 * -1)
+  })
+
+  it('nests same-side bends: nearer inside, farther outside, a tie left alone', () => {
+    const near = (e: number) =>
+      new Map([
+        ['a', slot('S', -1, e)],
+        ['b', slot('E', 1, 5)],
+      ])
+    expect(nestedSides(near(2), 'a', port)).toBe(-1)
+    expect(nestedSides(near(9), 'a', port)).toBe(1)
+    expect(nestedSides(near(5), 'a', port)).toBeUndefined()
   })
 })
