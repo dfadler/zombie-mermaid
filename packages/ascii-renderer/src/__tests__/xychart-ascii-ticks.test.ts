@@ -13,7 +13,7 @@ describe('xychart ASCII – narrow-range value-axis labels', () => {
     const result = render(`xychart-beta
       x-axis [A, B, C, D]
       bar [100, 102, 99, 101]`)
-    // Mermaid-matching ticks (d3 ticks(…, 10)): 0.2 steps over 99..102, thinned to every 2nd tick (#2310)
+    // Mermaid-matching ticks (d3 ticks(…, 10)): 0.2 steps over 99..102, every tick labelled (#2310)
     expect(result).toContain('99.4')
     expect(result).toContain('100.2')
   })
@@ -108,6 +108,144 @@ describe('xychart ASCII – flat negative series (#2772)', () => {
       render(`xychart-beta horizontal\n  x-axis [a, b]\n  bar [${v}, ${v}]`)
     expect(strip(run('-5')).replace(/ +/g, ' ')).toBe(
       run('5').replace(/ +/g, ' '),
+    )
+  })
+})
+
+describe('xychart ASCII – every mermaid tick and axis title (#2310, #2678)', () => {
+  const yLabels = (out: string) =>
+    out.split('\n').flatMap((l) => l.match(/^\s*(-?[\d.]+)[┤┼]/)?.[1] ?? [])
+
+  it('labels all 11 ticks of 0..1000, as mermaid 12.3.0 does', () => {
+    const out = render(`xychart-beta
+      x-axis [a, b]
+      y-axis 0 --> 1000
+      bar [100, 900]`)
+    expect(yLabels(out)).toEqual([
+      '1000',
+      '900',
+      '800',
+      '700',
+      '600',
+      '500',
+      '400',
+      '300',
+      '200',
+      '100',
+      '0',
+    ])
+  })
+
+  it('gives each y tick label its own row with a blank row after it', () => {
+    const lines = render(`xychart-beta
+      x-axis [a, b]
+      y-axis 0 --> 1000
+      bar [100, 900]`).split('\n')
+    const rows = lines.flatMap((l, i) => (/^\s*\d+[┤┼]/.test(l) ? [i] : []))
+    expect(rows).toHaveLength(11)
+    expect(Math.min(...rows.slice(1).map((r, i) => r - rows[i]!))).toBe(2)
+  })
+
+  it('widens a vertical numeric x range until every tick label shows', () => {
+    const out = render(`xychart-beta
+      x-axis 2020 --> 2024
+      bar [3, 5, 2]`)
+    const labelRow = out.split('\n').at(-1)!.trim().split(/\s+/)
+    expect(labelRow).toEqual([
+      '2020',
+      '2020.5',
+      '2021',
+      '2021.5',
+      '2022',
+      '2022.5',
+      '2023',
+      '2023.5',
+      '2024',
+    ])
+  })
+
+  it('labels every value tick of a wide horizontal range on one row', () => {
+    const out = render(`xychart-beta horizontal
+      x-axis [a, b]
+      y-axis 0 --> 220000
+      bar [60000, 220000]`)
+    const first = out.split('\n')[0]!.trim().split(/\s+/)
+    expect(first).toEqual([
+      '0',
+      '20000',
+      '40000',
+      '60000',
+      '80000',
+      '100000',
+      '120000',
+      '140000',
+      '160000',
+      '180000',
+      '200000',
+      '220000',
+    ])
+  })
+
+  it('draws the category axis title of a horizontal chart, rotated down the left edge', () => {
+    const out = render(`xychart-beta horizontal
+      x-axis "Month" [jan, feb, mar, apr]
+      y-axis "Revenue" 0 --> 100
+      bar [20, 50, 80, 40]`)
+    const col0 = out
+      .split('\n')
+      .map((l) => l[0] ?? ' ')
+      .join('')
+      .replaceAll(' ', '')
+    expect(col0).toBe('Month')
+  })
+
+  it.each([
+    ['both titles', 'x-axis "Month" [a, b]\n y-axis "Rev" 0 --> 10'],
+    ['x title only', 'x-axis "Month" [a, b]'],
+    ['y title only', 'y-axis "Rev" 0 --> 10\n x-axis [a, b]'],
+    ['no titles', 'x-axis [a, b]'],
+  ])('vertical and horizontal charts draw %s', (_n, axes) => {
+    const x = /x-axis "Month"/.test(axes)
+    const y = /y-axis "Rev"/.test(axes)
+    for (const dir of ['', ' horizontal']) {
+      const out = render(`xychart-beta${dir}\n ${axes}\n bar [3, 7]`)
+      const col0 = out
+        .split('\n')
+        .map((l) => l[0] ?? ' ')
+        .join('')
+      expect(
+        col0.includes('Month') ||
+          col0.replaceAll(' ', '').includes('Month') ||
+          out.includes('Month'),
+      ).toBe(x)
+      expect(
+        out.includes('Rev') || col0.replaceAll(' ', '').includes('Rev'),
+      ).toBe(y)
+    }
+  })
+
+  it('runs a horizontal numeric x range up the left edge, first point at the bottom', () => {
+    const lines = render(`xychart-beta horizontal
+      x-axis 0 --> 100
+      bar [10, 20, 30, 40, 50]`).split('\n')
+    const labels = lines.flatMap((l) => l.match(/^\s*(\d+)[┤│]/)?.[1] ?? [])
+    expect(labels).toEqual([
+      '100',
+      '90',
+      '80',
+      '70',
+      '60',
+      '50',
+      '40',
+      '30',
+      '20',
+      '10',
+      '0',
+    ])
+    // the 10-bar (first point) is on the 0 row at the bottom, the 50-bar on the 100 row
+    const bar = (l: string) => l.match(/█+/)?.[0].length ?? 0
+    expect(bar(lines.find((l) => /^\s*0[┤│]/.test(l))!)).toBeLessThan(
+      bar(lines.find((l) => /^\s*100[┤│]/.test(l))!),
     )
   })
 })
