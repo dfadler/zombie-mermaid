@@ -294,6 +294,10 @@ export interface AsciiEdge {
    */
   /** determinePath routed this lane-group edge between ELK's faces, so port-offsets.ts places its ports (#2902). */
   hintedLane?: boolean
+  /** Routed between ELK's faces (the hint held), not the grid's own. */
+  hintedFaces?: boolean
+  /** A back edge that enters by the gutter cell below its target's bottom face, clear of a frame. */
+  gutterBack?: boolean
   parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
   /**
    * Flow-axis face lane plan (#2121, `assignFaceLanes`): the gutter lane slot

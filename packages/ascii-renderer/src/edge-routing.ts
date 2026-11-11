@@ -2223,6 +2223,8 @@ function flowFanOut(
 
 export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   exhaustedLaneEdges.delete(edge)
+  edge.hintedFaces = false
+  edge.gutterBack = false
   // A planned same-pair flow-face lane (assignFlowLanes): a straight stem
   // between the facing faces; the Z is drawn from the plan (flowLanePolyline).
   if (flowLanes.has(edge)) {
@@ -2606,6 +2608,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   const hinted = hintedFaces(graph, edge)
   const lrFlow = graph.config.graphDirection === 'LR'
   let hintedPath: GridCoord[] | null = null
+  let detour: GridCoord[] | null = null
   if (hinted) {
     const from = gridCoordDirection(requireGridCoord(edge.from), hinted[0])
     const to = gridCoordDirection(requireGridCoord(edge.to), hinted[1])
@@ -2618,12 +2621,6 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     const via = gate
       ? routeEdge(graph, from, gate, requireCardinalDirection(hinted[0]))
       : null
-    const found =
-      (via && mergePath([...via, to])) ??
-      routeEdge(graph, from, to, requireCardinalDirection(hinted[0]))
-    const plain = expandDiagonalSegments([from, to])
-    // A re-route (`edge.path` is set: a style conflict blocked a cell) keeps the
-    // faces too: its caller restores the old path when the detour runs through a node.
     // The plain L can run along the wall of a frame the edge has no end in,
     // which only the search keeps clear of.
     const unrelated = graph.subgraphs
@@ -2631,16 +2628,41 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
         (sg) => !sg.nodes.includes(edge.from) && !sg.nodes.includes(edge.to),
       )
       .map((sg) => clusterGridBox(sg))
-    const besideFrame = pathCells(plain).some((c) =>
-      unrelated.some(
-        (b) =>
-          b &&
-          c.x >= b.minX - 1 &&
-          c.x <= b.maxX + 1 &&
-          c.y >= b.minY - 1 &&
-          c.y <= b.maxY + 1,
-      ),
-    )
+    const nearFrame = (cells: GridCoord[], margin = 1): boolean =>
+      pathCells(cells).some((c) =>
+        unrelated.some(
+          (b) =>
+            b &&
+            c.x >= b.minX - 1 &&
+            c.x <= b.maxX + 1 &&
+            c.y >= b.minY - margin &&
+            c.y <= b.maxY + margin,
+        ),
+      )
+    // A back edge into a node's bottom face in a vertical flow: the search may
+    // climb the gutter along an unrelated frame's wall and bend beside it (a
+    // retry arrow into a state above a composite). Entering by the gutter cell
+    // below the face bends clear of the frame instead.
+    const gated =
+      !lrFlow && !gate && dirEquals(hinted[1], Down)
+        ? { x: to.x, y: to.y + 1 }
+        : undefined
+    const viaGate = via && mergePath([...via, to])
+    const search = viaGate
+      ? null
+      : routeEdge(graph, from, to, requireCardinalDirection(hinted[0]))
+    const gatedVia =
+      gated && search && nearFrame(search, 0)
+        ? routeEdge(graph, from, gated, requireCardinalDirection(hinted[0]))
+        : null
+    // `gatedVia` is only searched when the ordinary route runs beside a frame.
+    detour =
+      gatedVia && !nearFrame(gatedVia, 0) ? mergePath([...gatedVia, to]) : null
+    const found = viaGate ?? detour ?? search
+    const plain = expandDiagonalSegments([from, to])
+    // A re-route (`edge.path` is set: a style conflict blocked a cell) keeps the
+    // faces too: its caller restores the old path when the detour runs through a node.
+    const besideFrame = nearFrame(plain)
     hintedPath =
       found ??
       (!besideFrame &&
@@ -2683,6 +2705,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     })
   if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
   if (edge.parallelLane) edge.hintedLane = Boolean(hinted && hintedPath)
+  edge.hintedFaces = Boolean(hinted && hintedPath)
+  edge.gutterBack = detour !== null && hintedPath === detour
   if (hinted && hintedPath) {
     ;[preferredDir, alternativeDir] = [hinted[0], hinted[0]]
     ;[preferredOppositeDir, alternativeOppositeDir] = [hinted[1], hinted[1]]

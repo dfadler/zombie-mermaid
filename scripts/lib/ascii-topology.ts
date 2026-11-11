@@ -132,6 +132,32 @@ const facesOf = (d: { x: number; y: number }, dir: string): AsciiFace[] =>
     dir === 'RL' ? MIRROR_H[f] : dir === 'BT' ? MIRROR_V[f] : f,
   )
 
+/**
+ * The end direction of a decision's right-leaving start, read off the drawn
+ * first stroke cell: above the diamond's middle row is its upper slant (T or R, as `ADJ`
+ * reads a diagonal end), below it the lower one (B or R), on it the right tip (R). The grid's own start
+ * direction is Right for all three, so the face comes from the drawing.
+ */
+function diamondStartDir(
+  e: AsciiGraph['edges'][number],
+  dir: string,
+): { x: number; y: number } | undefined {
+  const at = e.ends?.start
+  const n = e.from
+  if (
+    n.shape !== 'diamond' ||
+    !n.drawingCoord ||
+    !n.drawing ||
+    !at ||
+    (dir !== 'LR' && dir !== 'RL') ||
+    e.startDir.x !== 2 ||
+    e.startDir.y !== 1
+  )
+    return undefined
+  const mid = n.drawingCoord.y + (n.drawing[0]!.length - 1) / 2
+  return at.y < mid ? { x: 2, y: 0 } : at.y > mid ? { x: 2, y: 2 } : undefined
+}
+
 export interface GridRender {
   spots: Record<string, Spot>
   /** Grid edge ends as faces (already un-mirrored to the SVG side), in graph edge order. */
@@ -168,7 +194,7 @@ export function readGrid(source: string): GridRender & { direction: string } {
         // ELK's hint is on the frame, so match it by the subgraph's id.
         from: e.clusterSource?.source?.id ?? e.from.name,
         to: e.clusterTarget?.source?.id ?? e.to.name,
-        start: facesOf(e.startDir, dir),
+        start: facesOf(diamondStartDir(e, dir) ?? e.startDir, dir),
         end: facesOf(e.endDir, dir),
       })
     }

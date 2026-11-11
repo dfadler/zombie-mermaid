@@ -541,6 +541,8 @@ export interface Slot {
   lane?: number
   /** +1 when the edge's left-to-right pair runs downward, -1 upward. */
   down: number
+  /** The edge enters by a gutter cell below its target (`gutterBack`). */
+  gutter?: boolean
 }
 
 /** The lane an `h` run turns onto: the column of the vertical run beside it. */
@@ -600,6 +602,37 @@ export function nestedRow(
   )?.[1]
   if (!other) return undefined
   return (me.lane < other.lane! ? me.down : -me.down) as 1 | -1
+}
+
+/**
+ * A port used both ways by two edges whose legs run to a side (a stem leaving
+ * a decision's bottom to the left, a back edge arriving from the right) crosses
+ * unless each takes the cell on the side its leg heads for. When both heads the
+ * same way they nest: the nearer bend takes that side and the farther one the
+ * other, so the farther climb does not cut across the nearer leg.
+ */
+export function nestedSides(
+  slots: ReadonlyMap<string, Slot>,
+  key: string,
+  portOf: (key: string) => string,
+): 1 | -1 | undefined {
+  const me = slots.get(key)!
+  if (!me.gutter || me.run.axis !== 'v' || me.run.turn === 0) return undefined
+  const side = (s: Slot): 1 | -1 =>
+    (s.role === 'S' ? s.run.turn : -s.run.turn) as 1 | -1
+  const other = [...slots].find(
+    ([k, o]) =>
+      k !== key &&
+      portOf(k) === portOf(key) &&
+      o.role !== me.role &&
+      o.run.axis === 'v' &&
+      o.run.side === me.run.side &&
+      o.run.turn !== 0,
+  )?.[1]
+  if (!other) return undefined
+  if (side(other) !== side(me)) return side(me)
+  if (other.extent === me.extent) return undefined
+  return me.extent < other.extent ? side(me) : (-side(me) as 1 | -1)
 }
 
 /** The row the far end of an L edge takes, from its own `pushOf`. */
@@ -729,6 +762,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
         far: farPush(edge, role),
         lane: laneOf(edge, run, role),
         down: downOf(edge),
+        gutter: edge.gutterBack === true,
       })
     }
     const roles = rolesAt.get(port) ?? new Set<'S' | 'E'>()
@@ -826,6 +860,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     const push =
       nestedPush(slots, keys[0]!, portOf) ??
       nestedRow(slots, keys[0]!, portOf) ??
+      nestedSides(slots, keys[0]!, portOf) ??
       pushOf(members[0]!.run, members[0]!.role)
     // A port that also fans out keeps the narrow split: `staggerFanOuts`
     // spaces its stems from this offset (#1308).
