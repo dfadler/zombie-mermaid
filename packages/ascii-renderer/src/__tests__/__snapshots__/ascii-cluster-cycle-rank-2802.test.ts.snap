@@ -1,11 +1,11 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`cluster-boundary cycle ranks as mermaid@12.3.0 (#2802) > snapshots SVG and ASCII (grid and ELK hints) for R, T > ascii-grid 1`] = `
-"  ┌───────┐          
-  │       │          
-  │   R   ├───────┐  
-  │       │       │  
-  └───────┘       │  
+"                ┌───┐
+                │   │
+                │ R │
+                │   │
+                └─┬─┘
                   │  
                   │  
                   │  

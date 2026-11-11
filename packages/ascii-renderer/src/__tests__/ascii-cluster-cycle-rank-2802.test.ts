@@ -43,6 +43,18 @@ const rowOf = (out: string, label: string): number =>
     .split('\n')
     .findIndex((l) => l.split('│').some((cell) => cell.trim() === label))
 
+// Column of the box line that carries the label.
+const colOf = (out: string, label: string): number => {
+  const line = out.split('\n')[rowOf(out, label)]!
+  return line.indexOf(label)
+}
+
+// mermaid@12.3.0 (node x): T 112, R 304, X 304, so T is left of R, X under R.
+const rUnderXTLeft = (out: string): void => {
+  expect(colOf(out, 'R')).toBe(colOf(out, 'X'))
+  expect(colOf(out, 'T')).toBeLessThan(colOf(out, 'R'))
+}
+
 const xBesideTAboveA = (out: string): void => {
   const [x, t, a] = ['X', 'T', 'A'].map((l) => rowOf(out, l)) as number[]
   expect(x).toBeGreaterThanOrEqual(0)
@@ -73,6 +85,10 @@ describe('cluster-boundary cycle ranks as mermaid@12.3.0 (#2802)', () => {
     const out = draw(`${RT}\n  Z`, false)
     expect(out.split('\n')[2]).toMatch(/R.*Z/)
     xBesideTAboveA(out)
+  })
+
+  it('R, T on the grid: R above X, T to their left', () => {
+    rUnderXTLeft(draw(RT, false))
   })
 
   it.each([

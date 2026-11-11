@@ -2702,14 +2702,21 @@ export function createMapping(graph: AsciiGraph): void {
   graph.edgeHints = slots && hints ? gridEdgeHints(graph, hints) : undefined
 
   // Place external root nodes
-  for (const node of slots ? [] : externalRootNodes) {
+  // A source lowered beside its child (#3001) goes first, and the level-0
+  // roots start past it, so each sits over its own child as mermaid draws it.
+  const byLevel = [...externalRootNodes].sort(
+    (a, b) => minLevels.get(b)! - minLevels.get(a)!,
+  )
+  for (const node of slots ? [] : byLevel) {
     const lvl = minLevels.get(node)!
+    const at =
+      lvl === 0
+        ? Math.max(0, ...Object.values(highestPositionPerLevel))
+        : (highestPositionPerLevel[lvl] ?? 0)
     const requested: GridCoord =
-      dir === 'LR'
-        ? { x: lvl, y: highestPositionPerLevel[lvl] ?? 0 }
-        : { x: highestPositionPerLevel[lvl] ?? 0, y: lvl }
+      dir === 'LR' ? { x: lvl, y: at } : { x: at, y: lvl }
     reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
-    highestPositionPerLevel[lvl] = (highestPositionPerLevel[lvl] ?? 0) + 4
+    highestPositionPerLevel[lvl] = at + 4
     placeDeferredSiblingsNextToRoot(
       graph,
       node,
