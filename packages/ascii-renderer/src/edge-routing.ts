@@ -1595,6 +1595,33 @@ function loopEntersTop(
 }
 
 /**
+ * Whether `edge` is the forward half of a cluster-boundary cycle (#3034):
+ * `X --> B` with `B` inside `S` and `S --> X` leaving the cluster for a target
+ * above it (mermaid reverses that edge to break the cycle). Both would take the
+ * same two faces and the same cells, so the reroute detours the cycle edge up
+ * through the cluster. Mermaid has the forward edge leave `X`'s flow face and
+ * enter `B`'s, and the cycle edge go round the cluster's side, so the forward
+ * edge keeps the flow faces and leaves the side face of `B` to the cycle edge.
+ */
+function pairedWithClusterBackEdge(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+): boolean {
+  if (effectiveDir === 'LR' || edge.clusterSource || edge.clusterTarget) {
+    return false
+  }
+  if (requireGridCoord(edge.from).y >= requireGridCoord(edge.to).y) return false
+  return graph.edges.some(
+    (o) =>
+      o.clusterSource !== undefined &&
+      o.from === edge.to &&
+      o.to === edge.from &&
+      !graph.clusterExitPlans?.get(o.clusterSource)?.edges.has(o),
+  )
+}
+
+/**
  * Flow-axis face lanes (#2121). Mermaid draws an edge that runs along the
  * flow between nodes in one column (row, in LR) but not between neighbouring
  * levels on the flow-axis faces: out of the source's face, one gutter cell on,
@@ -2210,6 +2237,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   const rightFan = leavesRightFace(graph, edge, effectiveDir)
   if (rightFan) {
     ;[preferredDir, preferredOppositeDir] = [Right, Left]
+  }
+  if (pairedWithClusterBackEdge(graph, edge, effectiveDir)) {
+    ;[preferredDir, preferredOppositeDir] = [Down, Up]
+    ;[alternativeDir, alternativeOppositeDir] = [Down, Up]
   }
   if (loopEntersTop(graph, edge, effectiveDir)) {
     ;[preferredDir, preferredOppositeDir] = [Right, Up]

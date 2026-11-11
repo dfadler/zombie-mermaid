@@ -91,6 +91,22 @@ describe('cluster-boundary cycle ranks as mermaid@12.3.0 (#2802)', () => {
     rUnderXTLeft(draw(RT, false))
   })
 
+  // mermaid@12.3.0 draws `S --> X` from the cluster's bottom, round its right
+  // side, into X's bottom, and `X --> B` into B's top (#3034). The ELK-hints
+  // output draws exactly that, so the grid must equal it.
+  it('R, T on the grid: S --> X goes round the cluster, as the ELK hints draw it', () => {
+    const out = draw(RT, false)
+    expect(out).toBe(draw(RT, true))
+    // B's right face starts the edge; X's bottom face receives it.
+    expect(out).toMatch(/│ +B +├/)
+    expect(out.split('\n')[rowOf(out, 'X') + 3]).toMatch(/▲/)
+  })
+
+  it('R, T on the grid with an isolated node: S --> X still goes round the cluster', () => {
+    const out = draw(`${RT}\n  Z`, false)
+    expect(out).toMatch(/│ +B +├/)
+  })
+
   it.each([
     ['R, T', RT],
     ['T, R', TR],
