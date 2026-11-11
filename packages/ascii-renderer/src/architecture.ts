@@ -70,8 +70,7 @@ function members(sg: MermaidSubgraph): string[] {
 function separateGroups(
   subgraphs: MermaidSubgraph[],
   nodes: Map<string, AsciiNodeHint>,
-): Set<string> {
-  const moved = new Set<string>()
+): void {
   const all: MermaidSubgraph[] = []
   const ancestors = new Map<MermaidSubgraph, string[]>()
   const owner = new Map<string, string>()
@@ -103,15 +102,9 @@ function separateGroups(
     )
     if (foreign.length === 0) continue
     const last = Math.max(...hs.map((m) => m.layer))
-    for (const id of own) if (nodes.get(id)!.layer !== last) moved.add(id)
     for (const h of hs) h.layer = last
-    for (const [id, h] of foreign) {
-      if (h.layer < last) continue
-      h.layer = last + 1
-      moved.add(id)
-    }
+    for (const [, h] of foreign) if (h.layer >= last) h.layer = last + 1
   }
-  return moved
 }
 
 /** Cross-axis units per grid order step: with `size` 100 the grid's 4-cell slot is `100 + SLOT_GAP`. */
@@ -135,8 +128,7 @@ function portHints(
       size: 100,
     })
   }
-  const moved = separateGroups(graph.subgraphs, nodes)
-  const vertical = graph.direction === 'TB'
+  separateGroups(graph.subgraphs, nodes)
   const minLayer = Math.min(...[...nodes.values()].map((h) => h.layer))
   for (const h of nodes.values()) h.layer -= minLayer
   const used = new Map<string, number>()
@@ -155,21 +147,9 @@ function portHints(
     )
     const forward = g.source === (e.sourceGroup ? own!.parent : e.source)
     const [a, b] = [g.source, g.target]
-    let [aPort, bPort] = forward
+    const [aPort, bPort] = forward
       ? [e.sourcePort, e.targetPort]
       : [e.targetPort, e.sourcePort]
-    // A moved service no longer sits where its port says: leave and enter by
-    // the faces that face the flow instead.
-    if (moved.has(e.source) || moved.has(e.target)) {
-      const [from, to] = forward ? [e.source, e.target] : [e.target, e.source]
-      const d = nodes.get(to)!.layer - nodes.get(from)!.layer
-      if (d !== 0) {
-        const [lo, hi]: [AsciiFace, AsciiFace] = vertical
-          ? ['B', 'T']
-          : ['R', 'L']
-        ;[aPort, bPort] = d > 0 ? [lo, hi] : [hi, lo]
-      }
-    }
     return {
       index,
       from: a,
