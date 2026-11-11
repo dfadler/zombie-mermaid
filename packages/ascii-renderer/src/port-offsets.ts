@@ -1200,7 +1200,14 @@ function planJogRows(
     const size = (lr ? graph.columnWidth : graph.rowHeight).get(g) ?? 0
     const first =
       lineToDrawing(graph, [{ x: g, y: g }])[0]![main] - Math.floor(size / 2)
-    const lo = first + 1
+    // A stroke leaving a frame bends past its wall, never on it.
+    const wall = Math.max(
+      first,
+      ...jogs.map((j) =>
+        j.edge.clusterSource ? j.edge.clusterSource.maxY : first,
+      ),
+    )
+    const lo = wall + 1
     const hi = first + size - 2
     const shared = jogs.some((a, i) =>
       jogs.some((b, j) => {
@@ -1216,7 +1223,7 @@ function planJogRows(
     // for a label and the arrowhead: what the gap is widened to (also when it
     // has no usable row yet).
     const own = bestJogRows(jogs, lo, lo + Math.max(hi - lo, jogs.length - 1))
-    const need = 2 * new Set(own).size + 3
+    const need = 2 * new Set(own).size + 3 + (lo - first - 1)
     const best = hi < lo ? undefined : bestJogRows(jogs, lo, hi)
     jogs.forEach((jog, i) => {
       const shift = result.get(jog.edge) ?? { start: 0, end: 0 }
@@ -1349,7 +1356,7 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
       const plain =
         f.edge.from !== f.edge.to &&
         f.edge.bundle === undefined &&
-        !f.edge.clusterSource &&
+        (!f.edge.clusterSource || f.edge.hintedLane || f.edge.hintedFaces) &&
         !f.edge.clusterTarget &&
         f.edge.style !== 'invisible'
       if (!e || !plain || e.face !== SIDE_FACE[f.run.side]) return undefined
@@ -1398,7 +1405,7 @@ function allocateFaces(
         e.ownPorts === true ||
         (e.parallelLane !== undefined &&
           !e.bundle &&
-          !e.clusterSource &&
+          (!e.clusterSource || e.hintedLane) &&
           !e.clusterTarget &&
           // A spike lane (#329) folds back on its stem: keep it there.
           new Set(e.path.map((p) => `${p.x},${p.y}`)).size === e.path.length)),
