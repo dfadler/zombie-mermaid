@@ -54,6 +54,60 @@ describe('ER ASCII with ELK layout hints', () => {
     expect(out.match(/┼/g)).toHaveLength(4)
   })
 
+  // #2968: mermaid@12.3.0 (dagre) puts disconnected components in shared
+  // layers, side by side (A,C,E,G at y=54 and B,D,F,H at y=239 for this sample).
+  const PAIRS = `erDiagram
+  A ||--|| B : "one-to-one"
+  C ||--o{ D : "one-to-many"
+  E |o--|{ F : opt-to-many
+  G }|--o{ H : "many-to-many"`
+
+  it('places disconnected components side by side in shared layers (#2968)', () => {
+    registerAsciiLayoutFromElk()
+    expect(render(PAIRS)).toBe(
+      [
+        '   ┌───┐             ┌───┐              ┌───┐              ┌───┐',
+        '   │ A │             │ C │              │ E │              │ G │',
+        '   └───┘             └───┘              └───┘              └───┘',
+        '     ┼                 ┼                  ┼                  ╤',
+        '     │                 │                  ○                  │',
+        '     │                 │                  │                  │',
+        '     │                 │                  │                  │',
+        ' one-to-one       one-to-many        opt-to-many        many-to-many',
+        '     │                 │                  │                  │',
+        '     │                 │                  │                  │',
+        '     │                 ○                  │                  ○',
+        '     ┼                 ╧                  ╧                  ╧',
+        '   ┌───┐             ┌───┐              ┌───┐              ┌───┐',
+        '   │ B │             │ D │              │ F │              │ H │',
+        '   └───┘             └───┘              └───┘              └───┘',
+      ].join('\n'),
+    )
+  })
+
+  it('shares layers across components of different depth, and in the ASCII charset (#2968)', () => {
+    registerAsciiLayoutFromElk()
+    const out = render(
+      `erDiagram
+  A ||--o{ B : x
+  B ||--o{ C : y
+  D ||--o{ E : z`,
+      true,
+    )
+    const rows = out.split('\n')
+    // D sits on A's row (layer 0) and E on B's row (layer 1), not below C.
+    const rowOf = (n: string) => rows.findIndex((l) => l.includes(`| ${n} |`))
+    expect(rowOf('D')).toBe(rowOf('A'))
+    expect(rowOf('E')).toBe(rowOf('B'))
+    expect(rowOf('C')).toBeGreaterThan(rowOf('B'))
+  })
+
+  it('keeps disconnected components stacked without a provider (#2968)', () => {
+    const rows = render(PAIRS).split('\n')
+    const rowOf = (n: string) => rows.findIndex((l) => l.includes(`│ ${n} │`))
+    expect(rowOf('C')).toBeGreaterThan(rowOf('B'))
+  })
+
   it('keeps the grid placement without a provider', () => {
     expect(render(SAMPLE)).toBe(
       [
@@ -83,20 +137,20 @@ describe('ER ASCII with ELK layout hints', () => {
   A ||--o{ E : label2`)
     expect(out).toBe(
       [
-        '┌───┐         ┌───┐',
-        '│ C │         │ A │',
-        '└───┘         └───┘',
-        ' ┼ ┼            ┼',
-        ' ┊ ┊            │',
-        ' ┊ ┊ label1     │',
-        ' ┊ label0───────┘',
-        ' ┊ │ label2',
-        ' ┊┌│',
-        ' ○○○',
-        ' ╧╧╧',
-        '┌───┐',
-        '│ E │',
-        '└───┘',
+        ' ┌───┐         ┌───┐',
+        ' │ C │         │ A │',
+        ' └───┘         └───┘',
+        '  ┼ ┼            ┼',
+        '  ┊ ┊            │',
+        '  ┊ ┊ label1     │',
+        '  ┊ label0───────┘',
+        '  ┊ │ label2',
+        '  ┊┌│',
+        '  ○○○',
+        '  ╧╧╧',
+        ' ┌───┐',
+        ' │ E │',
+        ' └───┘',
       ].join('\n'),
     )
     for (const l of ['label0', 'label1', 'label2']) expect(out).toContain(l)

@@ -511,7 +511,7 @@ export function renderErAscii(
   }
 
   // --- Find connected components ---
-  const components = findConnectedComponents(diagram)
+  let components = findConnectedComponents(diagram)
   // ELK's layer and in-layer order, when a layout provider is registered
   // (#2645, #2663). Without one, or for LR/RL, the placement below is the
   // grid's own, unchanged.
@@ -529,6 +529,12 @@ export function renderErAscii(
     diagram.entities.every((e) =>
       Number.isInteger(hints.nodes.get(e.id)?.layer),
     )
+
+  // ELK shares layers across disconnected components (mermaid.js lays them
+  // side by side), so with hints the whole diagram is one component.
+  if (useHints && components.length > 1) {
+    components = [new Set(diagram.entities.map((e) => e.id))]
+  }
 
   // --- Layout: place each component, then stack components vertically ---
   const placed = new Map<string, PlacedEntity>()
@@ -559,7 +565,10 @@ export function renderErAscii(
     const componentEntities: ErEntity[] = []
     const rowStarts = new Set<string>()
     const slot = new Map<string, number>() // Index in componentEntities
-    for (let l = 0; componentEntities.length < declared.length; l++) {
+    // Visit the distinct layers in order: a merged component (#2968) or sparse
+    // hints can skip layer numbers, and counting up would never reach them.
+    const layers = [...new Set(layerOf.values())].sort((a, b) => a - b)
+    for (const l of layers) {
       // Order a layer by its earliest-placed parent so children sit under
       // their parents; declaration order breaks ties.
       const parentSlot = (e: ErEntity): number =>
@@ -778,6 +787,31 @@ export function renderErAscii(
 
     // Move to next component row (add gap between components)
     currentY += maxRowH + componentGap
+  }
+
+  // A one-line label sits centred on its vertical edge, as mermaid draws it
+  // (#2253), but the canvas has no columns left of x=1. With hints, shift the
+  // layout right by the room the widest such label needs beyond its edge, so a
+  // label wider than its box is not pushed off centre (#2968).
+  // ponytail: the edge column is estimated as the box centre.
+  if (useHints) {
+    let shift = 0
+    for (const rel of diagram.relationships) {
+      const a = placed.get(rel.entity1)
+      const b = placed.get(rel.entity2)
+      if (!rel.label || !a || !b || a.y === b.y) continue
+      const edgeX = Math.min(
+        a.x + Math.floor(a.width / 2),
+        b.x + Math.floor(b.width / 2),
+      )
+      shift = Math.max(
+        shift,
+        Math.floor((maxLineWidth(rel.label) - 1) / 2) + 1 - edgeX,
+      )
+    }
+    if (shift > 0) {
+      for (const [id, p] of placed) placed.set(id, { ...p, x: p.x + shift })
+    }
   }
 
   // --- Create canvas ---
