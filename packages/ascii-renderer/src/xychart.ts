@@ -543,7 +543,6 @@ function renderHorizontal(
     const startRow =
       plotTop + Math.max(0, Math.floor((plotH - title.length) / 2))
     for (let i = 0; i < title.length; i++) {
-      if (startRow + i >= plotTop + plotH) break
       set(canvas, roles, startRow + i, 0, title[i]!, 'text')
     }
   }

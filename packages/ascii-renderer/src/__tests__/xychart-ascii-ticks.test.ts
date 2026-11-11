@@ -248,4 +248,28 @@ describe('xychart ASCII – every mermaid tick and axis title (#2310, #2678)', (
       bar(lines.find((l) => /^\s*100[┤│]/.test(l))!),
     )
   })
+  it('clips a category title longer than the plot to the plot rows', () => {
+    const title = 'A'.repeat(30)
+    const out = render(`xychart-beta horizontal
+      x-axis "${title}" [a, b]
+      bar [3, 7]`)
+    const col0 = out.split('\n').filter((l) => l[0] === 'A').length
+    expect(col0).toBe(20)
+  })
+
+  it('labels the single tick of an empty horizontal numeric x range', () => {
+    const out = render(`xychart-beta horizontal
+      x-axis 5 --> 5
+      bar [4, 6]`)
+    expect(out.split('\n').some((l) => /^\s*5[┤│]/.test(l))).toBe(true)
+  })
+
+  it.each([
+    ['one point', 'x-axis 0 --> 10\n bar [4]'],
+    ['flat values', 'x-axis 0 --> 10\n bar [4, 4]'],
+  ])('draws a horizontal numeric x range with %s', (_n, body) => {
+    const out = render(`xychart-beta horizontal\n ${body}`)
+    expect(out).toContain('█')
+    expect(out.split('\n').some((l) => /^\s*(\d+)[┤│]/.test(l))).toBe(true)
+  })
 })
