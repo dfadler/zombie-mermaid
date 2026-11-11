@@ -67,6 +67,15 @@ describe('a decision’s edges each take their own slant (#2913)', () => {
     expect(lines.some((l) => /▲/.test(l))).toBe(false)
   })
 
+  it('four edges arriving at a decision from its left take a row each', () => {
+    const out = draw(
+      'flowchart LR\n  a --> d{"decide"}\n  a --> d\n  a --> d\n  a --> d\n  d --> b',
+    )
+    // Each arrow has a row of its own: none shares a stem with another
+    expect(out.split('\n').filter((l) => l.includes('►'))).toHaveLength(5)
+    expect(out).not.toMatch(/[┬┴┼]/u)
+  })
+
   it('a pair of edges keeps the shared-stem routing', () => {
     const src = 'flowchart LR\n  d{"d"} --> a\n  a --> d'
     expect(draw(src)).toBe(

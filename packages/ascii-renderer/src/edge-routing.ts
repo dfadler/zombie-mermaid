@@ -2082,18 +2082,13 @@ function hintedFaces(
     edge.clusterTarget
   )
     return undefined
-  // ELK's top or bottom end on an LR decision is a slant: its side face towards
-  // the other end, one cell of its own (#2913).
-  const face = (n: AsciiNode, f: AsciiFace, other: AsciiNode): Direction =>
-    lr && n.shape === 'diamond' && (f === 'T' || f === 'B')
-      ? requireGridCoord(other).x >= requireGridCoord(n).x
-        ? Right
-        : Left
-      : FACE_DIR[f]
-  return [
-    face(edge.from, h.start.face, edge.to),
-    face(edge.to, h.end.face, edge.from),
-  ]
+  // ELK's top or bottom start on an LR decision is a slant: its right face, one
+  // cell of its own (#2913).
+  const slant =
+    lr &&
+    edge.from.shape === 'diamond' &&
+    (h.start.face === 'T' || h.start.face === 'B')
+  return [slant ? Right : FACE_DIR[h.start.face], FACE_DIR[h.end.face]]
 }
 
 /**
