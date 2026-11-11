@@ -2208,6 +2208,15 @@ function computeMinLevels(
 ): Map<AsciiNode, number> {
   const forward = new Map<AsciiNode, AsciiNode[]>()
   const state = new Map<AsciiNode, 'open' | 'done'>()
+  let reversed = false
+  const reaches = (from: AsciiNode, targets: AsciiNode[]): boolean => {
+    const seen = new Set<AsciiNode>()
+    const walk = (n: AsciiNode): boolean =>
+      targets.includes(n) ||
+      (!seen.has(n) &&
+        (seen.add(n), (forward.get(n) ?? []).some((c) => walk(c))))
+    return walk(from)
+  }
   const dfs = (node: AsciiNode): void => {
     state.set(node, 'open')
     const out: AsciiNode[] = []
@@ -2227,8 +2236,22 @@ function computeMinLevels(
     for (const sg of subgraphChain(graph, node)) {
       const members = collectSubgraphMembers(sg)
       for (const e of graph.edges) {
-        if (!e.feedback && members.includes(e.from) && !members.includes(e.to))
+        if (
+          !e.feedback &&
+          members.includes(e.from) &&
+          !members.includes(e.to)
+        ) {
+          // A target already ranked from outside that leads back into the
+          // cluster closes a cycle through its boundary; DFS order decides
+          // which side is the back edge, as in dagre (#3001).
+          if (state.get(e.to) === 'done' && reaches(e.to, members)) {
+            reversed = true
+            const out = forward.get(e.to)!
+            for (const m of members) if (!out.includes(m)) out.push(m)
+            continue
+          }
           rankChildren.push(e.to)
+        }
       }
     }
     for (const child of rankChildren) {
@@ -2246,13 +2269,27 @@ function computeMinLevels(
   const levels = new Map<AsciiNode, number>()
   const order = [...forward.keys()].reverse()
   for (const node of order) levels.set(node, 0)
-  for (const node of order) {
-    /* v8 ignore next -- every node in `order` was seeded to 0 above */
-    const next = (levels.get(node) ?? 0) + 4
-    /* v8 ignore next -- every forward node has an entry */
-    for (const child of forward.get(node) ?? []) {
-      levels.set(child, Math.max(levels.get(child) ?? 0, next))
+  // Repeat until stable: a reversed cluster edge (#3001) is not in post-order.
+  for (let changed = true, pass = 0; changed && pass <= order.length; pass++) {
+    changed = false
+    for (const node of order) {
+      /* v8 ignore next -- every node in `order` was seeded to 0 above */
+      const next = (levels.get(node) ?? 0) + 4
+      /* v8 ignore next -- every forward node has an entry */
+      for (const child of forward.get(node) ?? []) {
+        if (next > (levels.get(child) ?? 0)) {
+          levels.set(child, next)
+          changed = true
+        }
+      }
     }
+  }
+  // A source with no parent sits just above its shallowest child, as the
+  // network-simplex ranker tightens it, not at the root level (#3001).
+  const hasParent = new Set([...forward.values()].flat())
+  for (const [node, kids] of forward) {
+    if (!reversed || hasParent.has(node) || kids.length === 0) continue
+    levels.set(node, Math.min(...kids.map((k) => levels.get(k)!)) - 4)
   }
   return levels
 }
@@ -2695,13 +2732,21 @@ export function createMapping(graph: AsciiGraph): void {
   graph.edgeHints = slots && hints ? gridEdgeHints(graph, hints) : undefined
 
   // Place external root nodes
-  for (const node of slots ? [] : externalRootNodes) {
+  // A source lowered beside its child (#3001) goes first, and the level-0
+  // roots start past it, so each sits over its own child as mermaid draws it.
+  const byLevel = [...externalRootNodes].sort(
+    (a, b) => minLevels.get(b)! - minLevels.get(a)!,
+  )
+  for (const node of slots ? [] : byLevel) {
+    const lvl = minLevels.get(node)!
+    const at =
+      lvl === 0
+        ? Math.max(0, ...Object.values(highestPositionPerLevel))
+        : (highestPositionPerLevel[lvl] ?? 0)
     const requested: GridCoord =
-      dir === 'LR'
-        ? { x: 0, y: highestPositionPerLevel[0] ?? 0 }
-        : { x: highestPositionPerLevel[0] ?? 0, y: 0 }
+      dir === 'LR' ? { x: lvl, y: at } : { x: at, y: lvl }
     reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
-    highestPositionPerLevel[0] = (highestPositionPerLevel[0] ?? 0) + 4
+    highestPositionPerLevel[lvl] = at + 4
     placeDeferredSiblingsNextToRoot(
       graph,
       node,

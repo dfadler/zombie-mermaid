@@ -6,10 +6,10 @@
  *   R, T:  R 36  T 124  X 124  A 273  B 381   X beside T, above A
  *   T, R:  T 36  A 185  B 293  R 317  X 405   X below B
  *
- * The two orders are not meant to rank alike. With ELK hints (what the CLI and
- * root entry use) both match. The plain grid matches only T, R: for R, T it
- * puts X between A and B, because mermaid ranks T beside X though no edge
- * pushes it down, and `computeMinLevels` has no rule that says so (#2802).
+ * The two orders are not meant to rank alike. Both match with ELK hints (what
+ * the CLI and root entry use) and on the plain grid. For R, T mermaid breaks the
+ * cycle at `S --> X`, so X ranks above the cluster and T, a source with only
+ * that cluster below it, sits beside X; `computeMinLevels` does the same (#3001).
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { registerAsciiLayout } from '@zombie-mermaid/ascii-renderer'
@@ -43,6 +43,18 @@ const rowOf = (out: string, label: string): number =>
     .split('\n')
     .findIndex((l) => l.split('│').some((cell) => cell.trim() === label))
 
+// Column of the box line that carries the label.
+const colOf = (out: string, label: string): number => {
+  const line = out.split('\n')[rowOf(out, label)]!
+  return line.indexOf(label)
+}
+
+// mermaid@12.3.0 (node x): T 112, R 304, X 304, so T is left of R, X under R.
+const rUnderXTLeft = (out: string): void => {
+  expect(colOf(out, 'R')).toBe(colOf(out, 'X'))
+  expect(colOf(out, 'T')).toBeLessThan(colOf(out, 'R'))
+}
+
 const xBesideTAboveA = (out: string): void => {
   const [x, t, a] = ['X', 'T', 'A'].map((l) => rowOf(out, l)) as number[]
   expect(x).toBeGreaterThanOrEqual(0)
@@ -64,9 +76,19 @@ describe('cluster-boundary cycle ranks as mermaid@12.3.0 (#2802)', () => {
   it('T, R on the grid: X below B', () => {
     xBelowB(draw(TR, false))
   })
-  // Known gap (#2802): flips to a failure the day the grid matches; then use `it`.
-  it.fails('R, T on the grid: X beside T, above A', () => {
+  it('R, T on the grid: X beside T, above A', () => {
     xBesideTAboveA(draw(RT, false))
+  })
+
+  // An isolated node has no child to sit above, so it stays on the first row.
+  it('R, T on the grid with an isolated node: Z stays on the first row', () => {
+    const out = draw(`${RT}\n  Z`, false)
+    expect(out.split('\n')[2]).toMatch(/R.*Z/)
+    xBesideTAboveA(out)
+  })
+
+  it('R, T on the grid: R above X, T to their left', () => {
+    rUnderXTLeft(draw(RT, false))
   })
 
   it.each([
