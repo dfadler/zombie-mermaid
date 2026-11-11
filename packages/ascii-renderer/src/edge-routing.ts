@@ -637,11 +637,16 @@ function decisionDuplicates(
   // three cells of them (no loop, no edge into it). A diamond target has no
   // straight face for them to land on side by side: it keeps the lanes.
   const touching = graph.edges.filter((e) => e.from === from || e.to === from)
+  // With ELK's hints a busier decision (a return edge, a loop) spreads them too:
+  // each end has a slant of its own (`allocateFaces`).
+  const plain =
+    graph.edgeHints !== undefined && graph.config.graphDirection === 'LR'
   return (
     from.shape === 'diamond' &&
     to.shape !== 'diamond' &&
-    touching.length <= 3 &&
-    touching.every((e) => e.from === from && e.to !== from) &&
+    (plain ||
+      (touching.length <= 3 &&
+        touching.every((e) => e.from === from && e.to !== from))) &&
     group.every((e) => e.from === from && e.to === to && !e.text)
   )
 }
@@ -2068,6 +2073,7 @@ function hintedFaces(
   edge: AsciiEdge,
 ): [Direction, Direction] | undefined {
   const h = graph.edgeHints?.get(edge)
+  const lr = graph.config.graphDirection === 'LR'
   if (
     !h ||
     edge.from === edge.to ||
@@ -2076,7 +2082,18 @@ function hintedFaces(
     edge.clusterTarget
   )
     return undefined
-  return [FACE_DIR[h.start.face], FACE_DIR[h.end.face]]
+  // ELK's top or bottom end on an LR decision is a slant: its side face towards
+  // the other end, one cell of its own (#2913).
+  const face = (n: AsciiNode, f: AsciiFace, other: AsciiNode): Direction =>
+    lr && n.shape === 'diamond' && (f === 'T' || f === 'B')
+      ? requireGridCoord(other).x >= requireGridCoord(n).x
+        ? Right
+        : Left
+      : FACE_DIR[f]
+  return [
+    face(edge.from, h.start.face, edge.to),
+    face(edge.to, h.end.face, edge.from),
+  ]
 }
 
 /**

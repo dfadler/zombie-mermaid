@@ -57,6 +57,16 @@ describe('a decision’s edges each take their own slant (#2913)', () => {
     ).toBeGreaterThanOrEqual(2)
   })
 
+  it('both edges to OkfK enter its left face on rows of their own (ELK’s face)', () => {
+    const lines = draw(SAMPLE).split('\n')
+    // Two arrows into the stadium's left side, one row apart or more, none into
+    // its bottom or right side
+    const into = lines.filter((l) => /►\(/.test(l))
+    expect(into).toHaveLength(2)
+    expect(lines.some((l) => /\)\s*$/.test(l) && l.includes('◄'))).toBe(false)
+    expect(lines.some((l) => /▲/.test(l))).toBe(false)
+  })
+
   it('a pair of edges keeps the shared-stem routing', () => {
     const src = 'flowchart LR\n  d{"d"} --> a\n  a --> d'
     expect(draw(src)).toBe(
