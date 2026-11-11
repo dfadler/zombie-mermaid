@@ -16,7 +16,7 @@ import {
   f,
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
-import { ER, commentLines, erCells, erColumns } from './layout.ts'
+import { ER, commentLines, erCells, erColumns, erRowLines } from './layout.ts'
 import {
   buildSvgStyleBlock,
   FONT_SIZES,
@@ -146,7 +146,7 @@ function renderEntityBox(
     width,
     height,
     headerHeight,
-    rowHeight,
+    rowHeights,
     label,
     attributes,
     inlineStyle,
@@ -215,10 +215,17 @@ function renderEntityBox(
     const xs = [x]
     for (const c of cols) xs.push(xs[xs.length - 1]! + c.width + extra)
 
+    // Where each row starts.
+    const rowTops: number[] = []
+    let top = attrTop
+    for (const h of rowHeights) {
+      rowTops.push(top)
+      top += h
+    }
     // A custom fill paints the whole box; a tint over it could hide the text.
     for (let i = 1; !inlineStyle?.fill && i < attributes.length; i += 2) {
       parts.push(
-        f`  <rect x="${x}" y="${attrTop + i * rowHeight}" width="${width}" height="${rowHeight}" ` +
+        f`  <rect x="${x}" y="${rowTops[i]}" width="${width}" height="${rowHeights[i]}" ` +
           f`fill="var(--_key-badge)" />`,
       )
     }
@@ -226,14 +233,18 @@ function renderEntityBox(
       f`  <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${innerWidth}" />`
     parts.push(line(x, attrTop, x + width, attrTop))
     for (let i = 1; i < attributes.length; i++) {
-      const ry = attrTop + i * rowHeight
-      parts.push(line(x, ry, x + width, ry))
+      parts.push(line(x, rowTops[i]!, x + width, rowTops[i]!))
     }
     for (let c = 1; c < cols.length; c++) {
       parts.push(line(xs[c]!, attrTop, xs[c]!, bottom))
     }
     for (let i = 0; i < attributes.length; i++) {
-      const rowY = attrTop + i * rowHeight + rowHeight / 2
+      // Text lines are 24 apart, the block centred in the row.
+      const lines = erRowLines(attributes[i]!)
+      const rowY =
+        rowTops[i]! +
+        (rowHeights[i]! - lines * ER.textLineHeight) / 2 +
+        ER.textLineHeight / 2
       const cells = erCells(attributes[i]!)
       parts.push(
         '  ' +
@@ -274,11 +285,13 @@ function renderAttribute(
     if (!cell.text) return
     // Name stays the strongest text, type and keys sit back, as before.
     const tone = i === 1 ? '--_text-sec' : '--_text-muted'
-    parts.push(
-      f`<text x="${cell.x}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
-        f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
-        f`<tspan fill="${textColor ?? `var(${tone})`}">${escapeXml(cell.text)}</tspan></text>`,
-    )
+    cell.text.split('\n').forEach((text, line) => {
+      parts.push(
+        f`<text x="${cell.x}" y="${y + line * ER.textLineHeight}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
+          f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
+          f`<tspan fill="${textColor ?? `var(${tone})`}">${escapeXml(text)}</tspan></text>`,
+      )
+    })
   })
   if (attr.comment && attr.comment.length > 0) parts.push('</g>')
   return parts.join('\n')

@@ -321,15 +321,16 @@ function renderClassBox(
   )
 
   // Annotation (<<interface>>, <<abstract>>, etc.), drawn as «name» like mermaid.js
-  let nameY = y + headerHeight / 2
+  // Header rows are 24 high with `pad` above and below (12 by default).
+  const pad = (headerHeight - 24 - (cls.annotation ? 24 : 0)) / 2
+  const nameY = y + headerHeight - pad - 12
   if (cls.annotation) {
-    const annotY = y + 12
+    const annotY = y + pad + 12
     parts.push(
       f`  <text x="${x + width / 2}" y="${annotY}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
         f`font-size="${CLS_FONT.annotationSize}" font-weight="${CLS_FONT.annotationWeight}" ` +
         f`font-style="italic" fill="${textColor ?? 'var(--_text-muted)'}">«${escapeXml(cls.annotation)}»</text>`,
     )
-    nameY = y + headerHeight / 2 + 6
   }
 
   // Class name (supports multi-line via <br> tags)
@@ -354,11 +355,12 @@ function renderClassBox(
     )
 
   // Attributes
-  const memberRowH = 20
-  // Space above the first member: 4 by default, more under `class.padding`.
+  const memberRowH = CLS.memberRowHeight
+  // Space above the first member: 12 by default, more under `class.padding`.
   const attrPad = (attrHeight - cls.attributes.length * memberRowH) / 2
   const methodPad =
-    (height - headerHeight - attrHeight - cls.methods.length * memberRowH) / 2
+    (height - headerHeight - attrHeight - cls.methods.length * memberRowH) / 2 +
+    (cls.attributes.length === 0 ? CLS.methodsAfterEmptyExtra / 2 : 0)
   for (let i = 0; i < cls.attributes.length; i++) {
     const member = cls.attributes[i]!
     const memberY = attrTop + attrPad + i * memberRowH + memberRowH / 2

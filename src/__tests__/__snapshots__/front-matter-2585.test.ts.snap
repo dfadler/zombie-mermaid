@@ -102,7 +102,7 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
 `;
 
 exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type but C4/architecture) > class: SVG and ASCII snapshots 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -54 114.13 306" width="114.13" height="306" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -54 114.13 362" width="114.13" height="362" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   @font-face {
@@ -138,33 +138,33 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
   }
 </style>
 <defs>
-  <marker id="zmz5qc45-cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">
+  <marker id="zm5uoaez-cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">
     <polygon points="0 0, 12 5, 0 10" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
-  <marker id="zmz5qc45-cls-composition" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
+  <marker id="zm5uoaez-cls-composition" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
     <polygon points="9 1.5, 16.5 7, 9 12.5, 1.5 7" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zmz5qc45-cls-aggregation" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
+  <marker id="zm5uoaez-cls-aggregation" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">
     <polygon points="9 1.5, 16.5 7, 9 12.5, 1.5 7" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
-  <marker id="zmz5qc45-cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">
+  <marker id="zm5uoaez-cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">
     <polyline points="0 0, 8 3, 0 6" fill="none" stroke="var(--_arrow)" stroke-width="1.5" />
   </marker>
 </defs>
-<path class="class-relationship" data-from="A" data-to="B" data-type="inheritance" data-marker-at="from" d="M 57.07 96 L 57.07 156" fill="none" stroke="var(--_line)" stroke-width="1" marker-start="url(#zmz5qc45-cls-inherit)" />
+<path class="class-relationship" data-from="A" data-to="B" data-type="inheritance" data-marker-at="from" d="M 57.07 124 L 57.07 184" fill="none" stroke="var(--_line)" stroke-width="1" marker-start="url(#zm5uoaez-cls-inherit)" />
 <g class="class-node" data-id="A" data-label="A">
-  <rect x="40" y="40" width="34.13" height="56" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="40" y="40" width="34.13" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="57.07" y="56" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">A</text>
-  <line x1="40" y1="72" x2="74.13" y2="72" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <line x1="40" y1="84" x2="74.13" y2="84" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="40" y="40" width="34.13" height="84" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="40" width="34.13" height="48" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="57.07" y="64" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">A</text>
+  <line x1="40" y1="88" x2="74.13" y2="88" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="40" y1="106" x2="74.13" y2="106" stroke="var(--_node-stroke)" stroke-width="0.75" />
 </g>
 <g class="class-node" data-id="B" data-label="B">
-  <rect x="40.3" y="156" width="33.52" height="56" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="40.3" y="156" width="33.52" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="57.07" y="172" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">B</text>
-  <line x1="40.3" y1="188" x2="73.83" y2="188" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <line x1="40.3" y1="200" x2="73.83" y2="200" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="40.3" y="184" width="33.52" height="84" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40.3" y="184" width="33.52" height="48" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="57.07" y="208" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">B</text>
+  <line x1="40.3" y1="232" x2="73.83" y2="232" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="40.3" y1="250" x2="73.83" y2="250" stroke="var(--_node-stroke)" stroke-width="0.75" />
 </g>
 
 <text x="57.065" y="-25" text-anchor="middle" font-size="18" fill="var(--_text)" class="front-matter-title">FM Title</text>
@@ -196,7 +196,7 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
 `;
 
 exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type but C4/architecture) > er: SVG and ASCII snapshots 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -54 129.85 470.3" width="129.85" height="470.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -54 180 502.3" width="180" height="502.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   @font-face {
@@ -233,26 +233,26 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
 </style>
 <defs>
 </defs>
-<polyline class="er-relationship" data-entity1="A" data-entity2="B" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="has" points="70.14,108 70.14,308.3" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="A" data-entity2="B" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="has" points="90,124 90,324.3" fill="none" stroke="var(--_line)" stroke-width="1" />
 <g class="entity" data-id="A" data-label="A">
-  <rect x="50.43" y="40" width="39.42" height="68" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="50.43" y="40" width="39.42" height="68" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="70.14" y="74" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="40" y="40" width="100" height="84" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="40" width="100" height="84" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="90" y="82" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="entity" data-id="B" data-label="B">
-  <rect x="50.67" y="308.3" width="38.93" height="68" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="50.67" y="308.3" width="38.93" height="68" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="70.14" y="342.3" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="40" y="324.3" width="100" height="84" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="324.3" width="100" height="84" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="90" y="366.3" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">B</text>
 </g>
-<line x1="76.14" y1="112" x2="64.14" y2="112" stroke="var(--_line)" stroke-width="1.25" />
-<line x1="76.14" y1="116" x2="64.14" y2="116" stroke="var(--_line)" stroke-width="1.25" />
-<line x1="63.14" y1="304.3" x2="70.14" y2="292.3" stroke="var(--_line)" stroke-width="1.25" />
-<line x1="70.14" y1="304.3" x2="70.14" y2="292.3" stroke="var(--_line)" stroke-width="1.25" />
-<line x1="77.14" y1="304.3" x2="70.14" y2="292.3" stroke="var(--_line)" stroke-width="1.25" />
-<circle cx="70.14" cy="288.3" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
-<rect x="56.07" y="198" width="28.14" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
-<text x="70.14" y="208.15" text-anchor="middle" font-size="11" font-weight="400" fill="color-mix(in srgb, var(--fg) 70%, var(--bg))" dy="3.85">has</text>
-<text x="64.925" y="-25" text-anchor="middle" font-size="18" fill="var(--_text)" class="front-matter-title">FM Title</text>
+<line x1="96" y1="128" x2="84" y2="128" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="96" y1="132" x2="84" y2="132" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="83" y1="320.3" x2="90" y2="308.3" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="90" y1="320.3" x2="90" y2="308.3" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="97" y1="320.3" x2="90" y2="308.3" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="90" cy="304.3" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<rect x="75.93" y="214" width="28.14" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="90" y="224.15" text-anchor="middle" font-size="11" font-weight="400" fill="color-mix(in srgb, var(--fg) 70%, var(--bg))" dy="3.85">has</text>
+<text x="90" y="-25" text-anchor="middle" font-size="18" fill="var(--_text)" class="front-matter-title">FM Title</text>
 </svg>"
 `;
 
