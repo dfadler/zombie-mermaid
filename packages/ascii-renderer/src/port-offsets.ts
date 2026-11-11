@@ -246,6 +246,8 @@ function attachesAt(
   diamond = false,
   /** A stroke beside a diamond's two-cell vertex leans on the slant (#2918). */
   beside = false,
+  /** Four or more strokes share a decision's face: the outer ones sit beside its slant glyphs (#2919). */
+  wide = false,
 ): boolean {
   if (pos < geo.lo || pos > geo.hi) return false
   const dc = run.node.drawingCoord!
@@ -256,11 +258,18 @@ function attachesAt(
     // A diamond's vertex is two cells wide: a stroke beside it leans on the
     // slant one row in.
     const near = col?.[geo.border + (run.side === 'top' ? 1 : -1)]
+    // A stroke beside a decision's vertex reads as leaving the slant glyph next to it.
+    const next = [
+      drawing[pos - dc.x - 1]?.[geo.border],
+      drawing[pos - dc.x + 1]?.[geo.border],
+    ]
+    const inner = next.find((c) => c === '╲' || c === '╱')
     return (
       ch === '─' ||
       ch === '-' ||
       ch === '╲' ||
       ch === '╱' ||
+      (wide && inner !== undefined) ||
       (beside && (near === '╲' || near === '╱'))
     )
   }
@@ -468,10 +477,12 @@ function spreadDiamondFaces(
     // A decision with no return keeps its branches on the shared stem.
     if (
       uses.length < 2 ||
-      uses.length > 3 ||
+      uses.length > 5 ||
       !(
         // A return edge into a vertical-flow vertex keeps its own routing (#1284).
         (dir === 'LR' && uses.some((u) => u.role === 'end')) ||
+        // Four or more strokes on a hinted decision's flow face (#2919).
+        (dir !== 'LR' && uses.length >= 4 && graph.edgeHints !== undefined) ||
         uses.some((u) =>
           uses.some(
             (v) =>
@@ -485,12 +496,25 @@ function spreadDiamondFaces(
     )
       continue
     const geo = portGeometry(graph, uses[0]!.run)
-    const rows = uses.length === 2 ? [-1, 1] : [-1, 0, 1]
+    const rows = [
+      [-1, 1],
+      [-1, 0, 1],
+      [-2, -1, 1, 2],
+      [-2, -1, 0, 1, 2],
+    ][uses.length - 2]!
     if (
       !geo ||
       !rows.every(
         (o) =>
-          o === 0 || attachesAt(uses[0]!.run, geo.centre + o, geo, true, true),
+          o === 0 ||
+          attachesAt(
+            uses[0]!.run,
+            geo.centre + o,
+            geo,
+            true,
+            true,
+            uses.length >= 4,
+          ),
       )
     )
       continue
