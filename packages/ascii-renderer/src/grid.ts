@@ -2216,8 +2216,8 @@ function computeMinLevels(
           // which side is the back edge, as in dagre (#3001).
           if (state.get(e.to) === 'done' && reaches(e.to, members)) {
             reversed = true
-            const out = forward.get(e.to)
-            if (out) for (const m of members) if (!out.includes(m)) out.push(m)
+            const out = forward.get(e.to)!
+            for (const m of members) if (!out.includes(m)) out.push(m)
             continue
           }
           rankChildren.push(e.to)
@@ -2259,7 +2259,7 @@ function computeMinLevels(
   const hasParent = new Set([...forward.values()].flat())
   for (const [node, kids] of forward) {
     if (!reversed || hasParent.has(node) || kids.length === 0) continue
-    levels.set(node, Math.min(...kids.map((k) => levels.get(k) ?? 0)) - 4)
+    levels.set(node, Math.min(...kids.map((k) => levels.get(k)!)) - 4)
   }
   return levels
 }
@@ -2703,7 +2703,7 @@ export function createMapping(graph: AsciiGraph): void {
 
   // Place external root nodes
   for (const node of slots ? [] : externalRootNodes) {
-    const lvl = minLevels.get(node) ?? 0
+    const lvl = minLevels.get(node)!
     const requested: GridCoord =
       dir === 'LR'
         ? { x: lvl, y: highestPositionPerLevel[lvl] ?? 0 }

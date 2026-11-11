@@ -68,6 +68,13 @@ describe('cluster-boundary cycle ranks as mermaid@12.3.0 (#2802)', () => {
     xBesideTAboveA(draw(RT, false))
   })
 
+  // An isolated node has no child to sit above, so it stays on the first row.
+  it('R, T on the grid with an isolated node: Z stays on the first row', () => {
+    const out = draw(`${RT}\n  Z`, false)
+    expect(out.split('\n')[2]).toMatch(/R.*Z/)
+    xBesideTAboveA(out)
+  })
+
   it.each([
     ['R, T', RT],
     ['T, R', TR],
