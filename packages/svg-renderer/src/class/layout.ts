@@ -47,17 +47,20 @@ import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
 export const CLS = {
   padding: 40,
   boxPadX: 8,
-  headerBaseHeight: 32,
-  annotationHeight: 16,
-  memberRowHeight: 20,
-  sectionPadY: 8,
+  // Mermaid 12.3.0's class box, row for row (#2678): a 48 header (72 with an
+  // «annotation» line), 24 per member row plus 24 of padding per compartment.
+  headerBaseHeight: 48,
+  annotationHeight: 24,
+  memberRowHeight: 24,
+  sectionPadY: 24,
   /**
-   * Empty compartment height. mermaid 12.3.0 draws 24 (next to a compartment
-   * with members) or 18 (class with no members at all) against a 48 header;
-   * scaled to our 32 header that is 16 / 12 (#2720).
+   * Empty compartment height: 24 next to a compartment with members, 18 for a
+   * class with no members at all (#2720).
    */
-  emptySectionHeight: 16,
-  emptyBareSectionHeight: 12,
+  emptySectionHeight: 24,
+  emptyBareSectionHeight: 18,
+  /** Extra space above the methods when the attribute compartment is empty. */
+  methodsAfterEmptyExtra: 6,
   /** Padding each side of mermaid's class box (`class.padding`), see {@link mermaidClassBoxWidth} */
   mermaidPad: 12,
   memberFontSize: 11,
@@ -294,7 +297,8 @@ function buildClassElkGraph(
     const methodHeight =
       cls.methods.length > 0
         ? cls.methods.length * CLS.memberRowHeight +
-          Math.max(0, CLS.sectionPadY + padDelta * 2)
+          Math.max(0, CLS.sectionPadY + padDelta * 2) +
+          (cls.attributes.length === 0 ? CLS.methodsAfterEmptyExtra : 0)
         : emptyHeight
 
     const headerTextW = estimateTextWidth(

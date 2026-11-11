@@ -95,8 +95,10 @@ export interface PositionedErEntity {
   height: number
   /** Height of the header row */
   headerHeight: number
-  /** Height per attribute row */
+  /** Height of a one-line attribute row */
   rowHeight: number
+  /** Height of each attribute row, in order: a row with a `<br>` comment is taller; each is `rowHeight` when absent */
+  rowHeights?: number[]
   /** Inline styles resolved from classDef + `style` (fill, stroke, stroke-width, color) */
   inlineStyle?: Record<string, string>
   /** Style class assigned via `class A name` or `A:::name` — emitted onto the group's `class` attribute */

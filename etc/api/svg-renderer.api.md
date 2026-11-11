@@ -113,12 +113,13 @@ export function clipEdgeToShape(points: Point[], node: PositionedNode, isStart: 
 export const CLS: {
     readonly padding: 40;
     readonly boxPadX: 8;
-    readonly headerBaseHeight: 32;
-    readonly annotationHeight: 16;
-    readonly memberRowHeight: 20;
-    readonly sectionPadY: 8;
-    readonly emptySectionHeight: 16;
-    readonly emptyBareSectionHeight: 12;
+    readonly headerBaseHeight: 48;
+    readonly annotationHeight: 24;
+    readonly memberRowHeight: 24;
+    readonly sectionPadY: 24;
+    readonly emptySectionHeight: 24;
+    readonly emptyBareSectionHeight: 18;
+    readonly methodsAfterEmptyExtra: 6;
     readonly mermaidPad: 12;
     readonly memberFontSize: 11;
     readonly memberFontWeight: 400;
