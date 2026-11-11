@@ -511,7 +511,7 @@ export function renderErAscii(
   }
 
   // --- Find connected components ---
-  const components = findConnectedComponents(diagram)
+  let components = findConnectedComponents(diagram)
   // ELK's layer and in-layer order, when a layout provider is registered
   // (#2645, #2663). Without one, or for LR/RL, the placement below is the
   // grid's own, unchanged.
@@ -529,6 +529,12 @@ export function renderErAscii(
     diagram.entities.every((e) =>
       Number.isInteger(hints.nodes.get(e.id)?.layer),
     )
+
+  // ELK shares layers across disconnected components (mermaid.js lays them
+  // side by side), so with hints the whole diagram is one component.
+  if (useHints && components.length > 1) {
+    components = [new Set(diagram.entities.map((e) => e.id))]
+  }
 
   // --- Layout: place each component, then stack components vertically ---
   const placed = new Map<string, PlacedEntity>()
