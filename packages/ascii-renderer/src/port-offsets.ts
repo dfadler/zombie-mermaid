@@ -1345,6 +1345,67 @@ function allocateFaces(
   const ranked = hintedFaces(graph)
   const taken = new Set<string>()
   const fixed = new Map<AsciiEdge, number>()
+  // #2913: a decision with four or more ends on its flow face gives each its
+  // own slant row, ordered by where its other end lies, so no two share a stem
+  // and none crosses another (as mermaid spreads the ports).
+  if (graph.edgeHints && graph.config.graphDirection === 'LR') {
+    const byFace = new Map<string, (FaceEnd & { y: number })[]>()
+    for (const edge of graph.edges) {
+      if (edge.from === edge.to || edge.path.length < 2) continue
+      for (const [run, role] of endsOf(edge)) {
+        if (!run || run.node.shape !== 'diamond' || run.side !== 'right')
+          continue
+        const other = role === 'S' ? edge.to : edge.from
+        const k = faceOf(run)
+        byFace.set(k, [
+          ...(byFace.get(k) ?? []),
+          { edge, run, role, y: requireGridCoord(other).y },
+        ])
+      }
+    }
+    for (const [face, ends] of byFace) {
+      const geo = portGeometry(graph, ends[0]!.run)
+      const n = ends.length
+      if (n < 4 || !geo) continue
+      ends.sort(
+        (a, b) =>
+          a.y - b.y ||
+          (a.role === b.role ? 0 : a.role === 'S' ? -1 : 1) ||
+          graph.edges.indexOf(a.edge) - graph.edges.indexOf(b.edge),
+      )
+      // Adjacent slant rows, the vertex row too when the count is odd.
+      const offs = ends.map((_, i) =>
+        n % 2 ? i - (n - 1) / 2 : i - n / 2 + (i < n / 2 ? 0 : 1),
+      )
+      if (
+        !offs.every(
+          (o) =>
+            o === 0 ||
+            attachesAt(ends[0]!.run, geo.centre + o, geo, true, true),
+        )
+      )
+        continue
+      ends.forEach((f, i) => {
+        f.rank = i
+        if (!runsOf(f.edge)?.straight) return
+        fixed.set(f.edge, offs[i]!)
+        // The stroke's far end follows on its own face, which then keeps these
+        // rows whatever order ELK ranked it in.
+        const [run, role] = endsOf(f.edge).find(([r, w]) => r && w !== f.role)!
+        if (!run) return
+        applyOffsets(
+          result,
+          [{ edge: f.edge, run, role }],
+          [offs[i]!],
+          shiftedRun,
+        )
+        ranked.delete(faceOf(run))
+      })
+      applyOffsets(result, ends, offs, shiftedRun)
+      ranked.delete(face)
+      taken.add(face)
+    }
+  }
   // The fullest face first: it needs the closest spacing, and a straight edge
   // then carries its cell over to the other face (a face of two would spread
   // its pair a stroke spacing apart and leave no cell for a third end beside).
@@ -1642,7 +1703,8 @@ function placeFace(
   const cells: number[] = []
   for (let p = geo.lo; p <= geo.hi; p++) {
     // A diamond's side face has its vertex and the two slants beside it.
-    if (ranked && run.node.shape === 'diamond' && run.axis === 'h') {
+    const diamond = run.node.shape === 'diamond' && run.axis === 'h'
+    if (ranked && diamond) {
       if (Math.abs(p - centre) > 1) continue
     }
     if (attachesAt(run, p, geo, ranked)) cells.push(p)

@@ -1455,9 +1455,13 @@ export function denseFacingPair(
   const f = edge.from.gridCoord
   const t = edge.to.gridCoord
   if (!f || !t || f.y !== t.y || graph.subgraphs.length > 0) return false
-  // Diamond and circle faces have one port cell, not a run of them.
+  // A circle's face has one port cell, not a run of them; a diamond's slants
+  // give it a run, which only ELK's hints use (#2913).
   const flat = (n: AsciiNode): boolean =>
-    n.shape === 'rectangle' || n.shape === 'rounded' || n.shape === 'stadium'
+    n.shape === 'rectangle' ||
+    n.shape === 'rounded' ||
+    n.shape === 'stadium' ||
+    (n.shape === 'diamond' && graph.edgeHints !== undefined)
   if (!flat(edge.from) || !flat(edge.to)) return false
   const lo = Math.min(f.x, t.x)
   const hi = Math.max(f.x, t.x)
@@ -1485,15 +1489,22 @@ export function denseFacingPair(
       requireGridCoord(o.from).x < requireGridCoord(o.to).x
         ? ['R', 'L']
         : ['L', 'R']
+    // ELK puts an end on a diamond's upper or lower slant: still its side face.
+    const side = (n: AsciiNode, face: string | undefined, want: string) =>
+      face === want || (n.shape === 'diamond' && (face === 'T' || face === 'B'))
     return (
-      h?.start.face === s &&
-      h.end.face === e &&
+      side(o.from, h?.start.face, s) &&
+      side(o.to, h?.end.face, e) &&
       plain(o) &&
       splitLines(o.text).length <= 1
     )
   })
+  // A decision joined by three or more edges to one neighbour gives each its own
+  // slant (#2913); a pair keeps its shared-stem routing.
+  const diamondPair =
+    edge.from.shape === 'diamond' || edge.to.shape === 'diamond'
   return (
-    (group.length >= 2 && hinted) ||
+    (group.length >= (diamondPair ? 3 : 2) && hinted) ||
     (!hintedOnly &&
       group.length >= 6 &&
       edge.from.shape === 'rectangle' &&

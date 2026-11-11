@@ -231,6 +231,35 @@ function straddlesParent(
 }
 
 /**
+ * Rows an LR diamond needs for ELK's ends on one side face, each on a slant
+ * cell of its own, two apart from the apex rows (#2913): as mermaid spreads the
+ * ports of a decision with many edges, with no stem shared. 0 when it needs no
+ * more than the label gives it.
+ */
+function diamondFaceRows(graph: AsciiGraph, node: AsciiNode): number {
+  if (
+    node.shape !== 'diamond' ||
+    !graph.edgeHints ||
+    graph.config.graphDirection !== 'LR'
+  )
+    return 0
+  let right = 0
+  let left = 0
+  for (const e of graph.edges) {
+    if (e.from === e.to || (e.from !== node && e.to !== node)) continue
+    const other = e.from === node ? e.to : e.from
+    const o = other.gridCoord
+    const n = node.gridCoord
+    if (!o || !n) continue
+    if (o.x > n.x) right++
+    else if (o.x < n.x) left++
+  }
+  // Up to three ends already have a cell each (the vertex and its slants).
+  const most = Math.max(right, left)
+  return most > 3 ? most + 4 : 0
+}
+
+/**
  * Set column widths and row heights for a node's 3x3 grid block.
  * Each node occupies 3 columns (border, content, border) and 3 rows.
  * Uses shape-aware dimensions to properly size non-rectangular shapes.
@@ -271,12 +300,13 @@ export function setColumnWidth(
     graph.columnWidth.set(xCoord, Math.max(current, want))
   }
 
+  const slantRows = diamondFaceRows(graph, node)
   for (let idx = 0; idx < rowHeights.length; idx++) {
     const yCoord = gc.y + idx
     const current = graph.rowHeight.get(yCoord) ?? 0
     const want =
       idx === 1
-        ? Math.max(rowHeights[idx]!, strokeCells(false))
+        ? Math.max(rowHeights[idx]!, strokeCells(false), slantRows)
         : rowHeights[idx]!
     graph.rowHeight.set(yCoord, Math.max(current, want))
   }
