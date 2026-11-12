@@ -2862,14 +2862,21 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   series (`bar [42]`, `[0, 0, 0]`: every value across all series equal, with no explicit
   `y-axis` range) gets one tick in the middle of the axis, as mermaid does, in both SVG and ASCII.
   Differing flat series (`bar [42, 42]` with `line [10, 10]`) and explicit ranges keep several ticks. Every x-axis category is labelled, even when neighbouring labels touch,
-  as mermaid does (the #1243 thinning is gone from SVG). The ASCII renderer has its own layout
-  and is unchanged there: it still thins crowded labels.
+  as mermaid does (the #1243 thinning is gone from SVG). ASCII widens the plot instead (see the
+  ASCII tick entry below).
 - **ASCII category labels widen the chart; they are never cut** ([#2698](https://github.com/dfadler/zombie-mermaid/issues/2698), checked against mermaid 12.3.0). Mermaid prints every category in full on a plot of fixed width and lets neighbours overlap; it does not truncate or rotate (`Engineering`, `ProductManagement`, `CustomerSuccess`, `HumanResources` in the long-label gallery sample). A terminal cannot overlap text, so the ASCII renderer widens every band until no two neighbouring words touch (one blank cell between them). A 60-column plot gives each of up to 10 categories `60 / n` columns, and `6` columns each beyond that; the bands only grow once a word label leaves less than one blank cell to its neighbour, so eight categories fit labels up to 6 characters and `Marketing` makes the whole chart wider. The chart is as wide as its labels need, with no cap. Numbers and dates are still thinned (every n-th shown) rather than widening the chart, where mermaid shows them all. Words in a horizontal chart already get a gutter as wide as the longest label.
-- **ASCII y-axis.** Mermaid has no ASCII output. The plot is 20 rows tall, fewer than
-  mermaid's ~10 d3 ticks need once they round to rows, so the renderer labels every Nth
-  tick (the smallest N that leaves an unlabeled row between labels) rather than putting
-  labels on adjacent rows
-  ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310)).
+- **ASCII value and numeric-axis ticks: every mermaid tick is labelled**
+  ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310), checked on mermaid 12.3.0;
+  not checked on GitHub / mermaid.live). Mermaid has no ASCII output, so the comparison is the
+  list of tick labels and their order. A label needs its own row and a blank row after it, so a
+  vertical chart's plot is `max(20, 2 * (ticks - 1) + 1)` rows tall (21 rows for the usual 11
+  ticks `0, 100 ... 1000`; at most ~41 for d3's largest tick counts) instead of dropping every
+  other tick. A horizontal chart's value axis and a numeric x range are widened the same way
+  until no tick label touches its neighbour. A horizontal chart with a numeric x range
+  (`x-axis 2020 --> 2024`) draws it as mermaid does: a tick at every nice value up the left
+  edge, the first point at the bottom. Horizontal charts also draw the category axis title,
+  rotated down the left edge (`Month` in the init-config sample), which was missing
+  ([#2678](https://github.com/dfadler/zombie-mermaid/issues/2678)).
 
 ## ASCII: LR/RL sibling gap is `paddingY - 1` ([#2350](https://github.com/dfadler/zombie-mermaid/issues/2350))
 

@@ -159,13 +159,12 @@ function renderVertical(
     chart.series.flatMap((s) => s.data),
   )
   const plotW = Math.max(PLOT_WIDTH, dataCount * 6)
-  const plotH = PLOT_HEIGHT
-  const allTicks = niceTickValues(yRange.min, yRange.max)
-  const allLabels = formatTickLabels(allTicks)
-  // The plot has fewer rows than ticks can need (d3 gives ~10 intervals over
-  // plotH rows), so adjacent ticks can round onto neighbouring rows. Keep
-  // every Nth tick, with the smallest N that leaves an unlabeled row between
-  // labels, so they land on evenly spaced rows (#2310).
+  const yTicks = niceTickValues(yRange.min, yRange.max)
+  const yLabels = formatTickLabels(yTicks)
+  // Mermaid labels every tick. A label needs a row and a blank row after it, so
+  // n ticks need 2 * (n - 1) + 1 rows; the plot grows to that instead of
+  // dropping ticks (#2310). d3 gives at most ~21 ticks, so at most ~41 rows.
+  const plotH = Math.max(PLOT_HEIGHT, 2 * (yTicks.length - 1) + 1)
   const valueToRow = (v: number): number => {
     const t =
       yRange.max > yRange.min
@@ -173,22 +172,13 @@ function renderVertical(
         : 0.5
     return Math.round(t * (plotH - 1))
   }
-  const tickRow = valueToRow
-  let tickStride = 1
-  while (
-    allTicks.some(
-      (t, i) =>
-        i >= tickStride && tickRow(t) - tickRow(allTicks[i - tickStride]!) < 2,
-    )
-  ) {
-    tickStride++
-  }
-  const yTicks = allTicks.filter((_, i) => i % tickStride === 0)
-  const yLabels = allLabels.filter((_, i) => i % tickStride === 0)
   const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
 
   const catLabels = getCategoryLabels(chart, dataCount)
-  const bandW = widenBandForLabels(catLabels, Math.floor(plotW / dataCount))
+  const xr = chart.xAxis.categories ? undefined : chart.xAxis.range
+  const xTicks = xr ? niceTickValues(xr.min, xr.max) : undefined
+  const xLabels = xTicks ? formatTickLabels(xTicks) : catLabels
+  const wordBandW = widenBandForLabels(catLabels, Math.floor(plotW / dataCount))
 
   // Canvas dimensions
   const hasTitle = !!chart.title
@@ -201,6 +191,33 @@ function renderVertical(
   // the left edge) plus a 1-column gap before the tick-value gutter.
   const yTitleWidth = hasYTitle ? 2 : 0
   const plotLeft = yTitleWidth + yGutter + 1 // +1 for axis character
+  // Column of the label for each x tick at band width `w`. A numeric x range
+  // is a linear axis (#2553): a tick at every nice value, placed by value across
+  // the points' span, like mermaid and the SVG.
+  const centersOf = (w: number): number[] => {
+    const at = (i: number): number => plotLeft + Math.floor(w * (i + 0.5))
+    if (!xTicks) return catLabels.map((_, i) => at(i))
+    const first = at(0)
+    return xTicks.map(
+      (v) =>
+        first +
+        Math.round(
+          ((v - xr!.min) / (xr!.max - xr!.min || 1)) *
+            (at(dataCount - 1) - first),
+        ),
+    )
+  }
+  // Mermaid prints every x tick; widen the bands until none is thinned (#2310).
+  // Tick spacing grows with every step, so this ends once the labels clear;
+  // one point has a single span of zero width, which no widening can spread.
+  let bandW = wordBandW
+  while (
+    xTicks &&
+    dataCount > 1 &&
+    !thinLabels(xLabels, centersOf(bandW)).every(Boolean)
+  ) {
+    bandW++
+  }
   const totalW = plotLeft + bandW * dataCount + 2
   const xAxisRow = plotTop + plotH
   const xLabelRow = xAxisRow + 1
@@ -264,20 +281,7 @@ function renderVertical(
   }
   // A numeric x range is a linear axis (#2553): a tick at every nice value,
   // placed by value across the points' span, like mermaid and the SVG.
-  const xr = chart.xAxis.categories ? undefined : chart.xAxis.range
-  const xTicks = xr ? niceTickValues(xr.min, xr.max) : undefined
-  const xLabels = xTicks ? formatTickLabels(xTicks) : catLabels
-  const first = bandCenter(0)
-  const catCenters = xTicks
-    ? xTicks.map(
-        (v) =>
-          first +
-          Math.round(
-            ((v - xr!.min) / (xr!.max - xr!.min || 1)) *
-              (bandCenter(dataCount - 1) - first),
-          ),
-      )
-    : catLabels.map((_, i) => bandCenter(i))
+  const catCenters = centersOf(bandW)
   const catShown = thinLabels(xLabels, catCenters)
   for (let i = 0; i < xLabels.length; i++) {
     const cx = catCenters[i]!
@@ -435,20 +439,51 @@ function renderHorizontal(
   )
   const valueTicks = niceTickValues(yRange.min, yRange.max)
   const valueLabels = formatTickLabels(valueTicks)
-  const catLabels = getCategoryLabels(chart, dataCount)
+  // A numeric x range is a linear axis (#2553), as in the vertical chart: a tick
+  // at every nice value, the first point at the bottom (mermaid runs the
+  // numbers up the left edge) and the last at the top.
+  const xr = chart.xAxis.categories ? undefined : chart.xAxis.range
+  const catTicks = xr ? niceTickValues(xr.min, xr.max) : undefined
+  const catLabels = catTicks
+    ? formatTickLabels(catTicks)
+    : getCategoryLabels(chart, dataCount)
   const catGutter = Math.max(...catLabels.map((l) => l.length)) + 1
 
-  const plotW = Math.max(PLOT_WIDTH, 40)
+  // Mermaid prints every value tick: widen the plot until none is thinned
+  // (#2310). Ticks sit (plotW - 1) / (n - 1) columns apart, so this ends.
+  const colOf = (v: number, w: number): number =>
+    Math.round(
+      (yRange.max > yRange.min
+        ? (v - yRange.min) / (yRange.max - yRange.min)
+        : 0.5) *
+        (w - 1),
+    )
+  let plotW = PLOT_WIDTH
+  while (
+    !thinLabels(
+      valueLabels,
+      valueTicks.map((v) => colOf(v, plotW)),
+    ).every(Boolean)
+  ) {
+    plotW++
+  }
   const bandH = Math.max(2, Math.floor(PLOT_HEIGHT / dataCount))
-  const plotH = bandH * dataCount
+  // One row and a blank row per tick, so no tick is dropped (#2310).
+  const plotH = Math.max(
+    bandH * dataCount,
+    2 * ((catTicks?.length ?? 1) - 1) + 1,
+  )
 
   const hasTitle = !!chart.title
   const hasYTitle = !!chart.yAxis.title
+  // The category axis runs down the left, so its title is the rotated one
+  // (one character per row, like the y title of a vertical chart).
+  const catTitleWidth = chart.xAxis.title ? 2 : 0
   // Mermaid puts the value axis above the plot: [axis title], tick labels,
   // then the axis line, then the bars (#2719).
   const xAxisRow = (hasTitle ? 2 : 0) + (hasYTitle ? 1 : 0) + 1
   const plotTop = xAxisRow + 1
-  const plotLeft = catGutter + 1
+  const plotLeft = catTitleWidth + catGutter + 1
   const totalW = plotLeft + plotW + 2
   const totalH = plotTop + plotH
 
@@ -467,7 +502,13 @@ function renderHorizontal(
         : 0.5
     return plotLeft + Math.round(t * (plotW - 1))
   }
-  const bandMid = (i: number): number => plotTop + Math.floor(bandH * (i + 0.5))
+  // Row of a position along the linear category axis (0 = first point, bottom).
+  const rowAt = (frac: number): number =>
+    plotTop + plotH - 1 - Math.round(frac * (plotH - 1))
+  const bandMid = (i: number): number =>
+    catTicks
+      ? rowAt(dataCount > 1 ? i / (dataCount - 1) : 0)
+      : plotTop + Math.floor(bandH * (i + 0.5))
 
   // Title
   if (chart.title) {
@@ -487,11 +528,23 @@ function renderHorizontal(
   }
   set(canvas, roles, xAxisRow, plotLeft - 1, ch.origin, 'border')
 
-  for (let i = 0; i < dataCount; i++) {
-    const my = bandMid(i)
+  for (let i = 0; i < catLabels.length; i++) {
+    const my = catTicks
+      ? rowAt((catTicks[i]! - xr!.min) / (xr!.max - xr!.min || 1))
+      : bandMid(i)
     const label = catLabels[i]!
-    const labelStart = catGutter - label.length
+    const labelStart = catTitleWidth + catGutter - label.length
     writeText(canvas, roles, my, Math.max(0, labelStart), label, 'text')
+  }
+
+  // Category-axis title, rotated down the left edge and centred on the plot.
+  if (chart.xAxis.title) {
+    const title = chart.xAxis.title
+    const startRow =
+      plotTop + Math.max(0, Math.floor((plotH - title.length) / 2))
+    for (let i = 0; i < title.length; i++) {
+      set(canvas, roles, startRow + i, 0, title[i]!, 'text')
+    }
   }
 
   // X-axis (value axis on top)
@@ -781,10 +834,13 @@ function drawHorizontalStaircaseLine(
 ): void {
   if (data.length === 0) return
 
-  const points = data.map((v, i) => ({
-    row: bandMid(i),
-    col: valueToCol(v),
-  }))
+  // Rows must increase along the path; a linear axis runs bottom to top.
+  const points = data
+    .map((v, i) => ({
+      row: bandMid(i),
+      col: valueToCol(v),
+    }))
+    .sort((a, b) => a.row - b.row)
 
   const drawAt = (row: number, col: number, char: string) => {
     if (
