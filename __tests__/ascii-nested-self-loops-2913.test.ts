@@ -137,6 +137,19 @@ describe('duplicate self-loops nest (#2913)', () => {
     )
   })
 
+  it.each(['TD', 'BT'])(
+    '%s: a loop label keeps clear of the node border',
+    (dir) => {
+      const out = draw(
+        `flowchart ${dir}\n  a["a"]\n  a -->|hello| a\n  a -->|two| a`,
+        true,
+      )
+      // The label sits on its own leg, with a blank cell before the box wall.
+      expect(out).toMatch(/hello\s+│/)
+      expect(out).not.toMatch(/hello│/)
+    },
+  )
+
   it('one loop keeps the node’s own size and its single hook', () => {
     const one = draw('flowchart TD\n  n0["a"]\n  n0 --> n0', true)
     expect(one).toBe(

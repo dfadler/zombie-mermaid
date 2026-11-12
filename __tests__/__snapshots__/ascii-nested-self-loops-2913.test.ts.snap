@@ -11,15 +11,15 @@ exports[`duplicate self-loops nest (#2913) > BT: 2 labelled loops: snapshots SVG
 `;
 
 exports[`duplicate self-loops nest (#2913) > BT: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
-"            ┌───┐
-    ┌──────►│   │
-    │       │   │
-    │     ┌►│   │
-   two   one│ a │
-    │     └─┤   │
-    │       │   │
-    └───────┤   │
-            └───┘"
+"              ┌───┐
+    ┌────────►│   │
+    │         │   │
+    │     ┌──►│   │
+   two   one  │ a │
+    │     └───┤   │
+    │         │   │
+    └─────────┤   │
+              └───┘"
 `;
 
 exports[`duplicate self-loops nest (#2913) > BT: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
@@ -1152,15 +1152,15 @@ exports[`duplicate self-loops nest (#2913) > TD: 2 labelled loops: snapshots SVG
 `;
 
 exports[`duplicate self-loops nest (#2913) > TD: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
-"            ┌───┐
-    ┌───────┤   │
-    │       │   │
-    │     ┌─┤   │
-   two   one│ a │
-    │     └►│   │
-    │       │   │
-    └──────►│   │
-            └───┘"
+"              ┌───┐
+    ┌─────────┤   │
+    │         │   │
+    │     ┌───┤   │
+   two   one  │ a │
+    │     └──►│   │
+    │         │   │
+    └────────►│   │
+              └───┘"
 `;
 
 exports[`duplicate self-loops nest (#2913) > TD: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `

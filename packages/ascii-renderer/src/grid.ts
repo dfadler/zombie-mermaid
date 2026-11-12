@@ -288,19 +288,34 @@ function nestedLoops(graph: AsciiGraph, node: AsciiNode): number {
  */
 export function nestStride(graph: AsciiGraph, node: AsciiNode): number {
   if (graph.config.graphDirection !== 'TD') return 2
-  const widest = Math.max(
+  const widest = widestLoopLabel(graph, node)
+  return widest ? 3 + widest : 2
+}
+
+function widestLoopLabel(graph: AsciiGraph, node: AsciiNode): number {
+  return Math.max(
     0,
     ...graph.edges
       .filter((e) => e.from === node && e.to === node)
       .map((e) => Math.max(0, ...splitLines(e.text).map(displayWidth))),
   )
-  return widest ? 3 + widest : 2
+}
+
+/**
+ * Cells from the node's border to its innermost hook's leg (#2913): 2, and in
+ * a TD graph far enough that the widest loop label, centred on the leg, stays
+ * clear of the border.
+ */
+export function nestInset(graph: AsciiGraph, node: AsciiNode): number {
+  if (graph.config.graphDirection !== 'TD') return 2
+  return Math.max(2, Math.ceil(widestLoopLabel(graph, node) / 2) + 2)
 }
 
 /** Cells a gutter holds `nest` hooks of `node` in, from the far leg and the outermost label to the node's border (#2913). */
 function nestGutter(graph: AsciiGraph, node: AsciiNode, nest: number): number {
   const stride = nestStride(graph, node)
-  return stride === 2 ? 2 * nest + 1 : stride * nest
+  const base = stride === 2 ? 2 * nest + 1 : stride * nest
+  return base + nestInset(graph, node) - 2
 }
 
 /**

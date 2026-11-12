@@ -29,7 +29,12 @@
 // ============================================================================
 
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
-import { gridToDrawingCoord, lineToDrawing, nestStride } from './grid.ts'
+import {
+  gridToDrawingCoord,
+  lineToDrawing,
+  nestInset,
+  nestStride,
+} from './grid.ts'
 import type { DrawingCoord } from './types.ts'
 import { dirEquals, Left, requireGridCoord, Up } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
@@ -1609,7 +1614,7 @@ function allocateFaces(
     )!
     const by =
       width -
-      2 -
+      nestInset(graph, f.edge.from) -
       nestStride(graph, f.edge.from) * nest.index -
       Math.floor(width / 2)
     if (by === 0) continue
@@ -1907,11 +1912,17 @@ function hugLoop(
   const drawn = drawnPath(graph, loop, shift)
   const pull = (v: number, lo: number, hi: number): number =>
     v > hi ? -1 : v < lo ? 1 : 0
-  const points = drawn.map((p, i) =>
-    i === 0 || i === drawn.length - 1
-      ? { x: 0, y: 0 }
-      : { x: pull(p.x, box.x0, box.x1), y: pull(p.y, box.y0, box.y1) },
-  )
+  // Keep the shift the loop already has (a nested hook's leg offset, a slant
+  // end) and add the pull to it.
+  const points = drawn.map((p, i) => {
+    const own = shift.points?.[i] ?? { x: 0, y: 0 }
+    return i === 0 || i === drawn.length - 1
+      ? own
+      : {
+          x: own.x + pull(p.x, box.x0, box.x1),
+          y: own.y + pull(p.y, box.y0, box.y1),
+        }
+  })
   const hugged: PortShift = { ...shift, points }
   // The arrowhead needs a cell of its own before the last corner.
   const d = drawnPath(graph, loop, hugged)
