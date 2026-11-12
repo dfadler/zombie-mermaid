@@ -6,6 +6,9 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import type { MermaidSubgraph } from '@zombie-mermaid/core'
+import { separateGroups } from '../architecture.ts'
+import type { AsciiNodeHint } from '../layout-hints.ts'
 
 const lines = (src: string): string[] =>
   renderMermaidASCII(src, { colorMode: 'none' }).split('\n')
@@ -42,5 +45,49 @@ describe('architecture ASCII labels (#2678)', () => {
     const at = (s: string) => out.find((l) => l.includes(s))!.indexOf(s)
     expect(at('Storage')).toBeGreaterThan(at('Backend'))
     expect(at('Backend')).toBeGreaterThan(at('Frontend'))
+  })
+})
+
+describe('separateGroups settles (#2678)', () => {
+  const node = (layer: number, order: number): AsciiNodeHint => ({
+    layer,
+    order,
+    cross: order * 140,
+    size: 100,
+  })
+  const group = (id: string, nodeIds: string[]): MermaidSubgraph => ({
+    id,
+    label: id,
+    nodeIds,
+    children: [],
+  })
+
+  it('rechecks an earlier group after a later one moves a service into it', () => {
+    const nodes = new Map([
+      ['a1', node(0, 0)],
+      ['a2', node(2, 2)],
+      ['b1', node(0, 1)],
+      ['b2', node(2, 3)],
+    ])
+    separateGroups([group('A', ['a1', 'a2']), group('B', ['b1', 'b2'])], nodes)
+    const span = (ids: string[]) => {
+      const hs = ids.map((id) => nodes.get(id)!)
+      return (h: AsciiNodeHint) =>
+        h.layer >= Math.min(...hs.map((m) => m.layer)) &&
+        h.layer <= Math.max(...hs.map((m) => m.layer)) &&
+        h.order >= Math.min(...hs.map((m) => m.order)) &&
+        h.order <= Math.max(...hs.map((m) => m.order))
+    }
+    for (const [own, other] of [
+      [
+        ['a1', 'a2'],
+        ['b1', 'b2'],
+      ],
+      [
+        ['b1', 'b2'],
+        ['a1', 'a2'],
+      ],
+    ] as const)
+      for (const id of other) expect(span([...own])(nodes.get(id)!)).toBe(false)
   })
 })

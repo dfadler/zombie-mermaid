@@ -67,7 +67,7 @@ function members(sg: MermaidSubgraph): string[] {
  * holds a foreign service is stacked on its last layer, and the foreign
  * service steps one layer past it.
  */
-function separateGroups(
+export function separateGroups(
   subgraphs: MermaidSubgraph[],
   nodes: Map<string, AsciiNodeHint>,
 ): void {
@@ -83,27 +83,35 @@ function separateGroups(
     })
   walk(subgraphs, [])
   // Ponytail: orders of members that share a layer are not re-ranked
-  for (const sg of all) {
-    const own = new Set(members(sg))
-    const hs = [...own].map((id) => nodes.get(id)!).filter(Boolean)
-    if (hs.length < 2) continue
-    const inBox = (h: AsciiNodeHint): boolean =>
-      h.layer >= Math.min(...hs.map((m) => m.layer)) &&
-      h.layer <= Math.max(...hs.map((m) => m.layer)) &&
-      h.order >= Math.min(...hs.map((m) => m.order)) &&
-      h.order <= Math.max(...hs.map((m) => m.order))
-    // A service of an enclosing group (a junction in the group's parent) shares
-    // its box legitimately; only another group's or a root service collides.
-    const foreign = [...nodes].filter(
-      ([id, h]) =>
-        !own.has(id) &&
-        !ancestors.get(sg)!.includes(owner.get(id) ?? '') &&
-        inBox(h),
-    )
-    if (foreign.length === 0) continue
-    const last = Math.max(...hs.map((m) => m.layer))
-    for (const h of hs) h.layer = last
-    for (const [, h] of foreign) if (h.layer >= last) h.layer = last + 1
+  // A later group's move can put a service inside an earlier group's span, so
+  // repeat until a pass moves nothing; the bound covers a layout that never settles.
+  for (let pass = 0, moved = true; moved && pass < all.length + 1; pass++) {
+    moved = false
+    for (const sg of all) {
+      const own = new Set(members(sg))
+      const hs = [...own].map((id) => nodes.get(id)!).filter(Boolean)
+      if (hs.length < 2) continue
+      const inBox = (h: AsciiNodeHint): boolean =>
+        h.layer >= Math.min(...hs.map((m) => m.layer)) &&
+        h.layer <= Math.max(...hs.map((m) => m.layer)) &&
+        h.order >= Math.min(...hs.map((m) => m.order)) &&
+        h.order <= Math.max(...hs.map((m) => m.order))
+      // A service of an enclosing group (a junction in the group's parent) shares
+      // its box legitimately; only another group's or a root service collides.
+      const foreign = [...nodes].filter(
+        ([id, h]) =>
+          !own.has(id) &&
+          !ancestors.get(sg)!.includes(owner.get(id) ?? '') &&
+          inBox(h),
+      )
+      if (foreign.length === 0) continue
+      const last = Math.max(...hs.map((m) => m.layer))
+      for (const h of [...hs, ...foreign.map(([, f]) => f)]) {
+        const to = hs.includes(h) ? last : h.layer >= last ? last + 1 : h.layer
+        if (h.layer !== to) moved = true
+        h.layer = to
+      }
+    }
   }
 }
 
