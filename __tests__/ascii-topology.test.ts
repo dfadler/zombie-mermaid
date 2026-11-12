@@ -9,6 +9,7 @@ import {
   emptyCounts,
   inScope,
   isExact,
+  subgraphLoopCases,
   isGraph,
   measureEr,
   measureSample,
@@ -130,6 +131,22 @@ describe('self-loop hooks (#2913)', () => {
     expect(describeSample('T', c, false)).toBe(
       'layer 0/0 order 0/0 self-loop hooks 1/2  T',
     )
+  })
+})
+
+describe('subgraph self-loop cases (#2913)', () => {
+  it('gives six shapes per direction, and one direction when asked', () => {
+    expect(subgraphLoopCases()).toHaveLength(24)
+    const td = subgraphLoopCases(['TD'])
+    expect(td).toHaveLength(6)
+    expect(td.every((c) => c.source.startsWith('flowchart TD\n'))).toBe(true)
+  })
+
+  it('known miss on main: a duplicate loop in a frame draws as one hook in TD', () => {
+    const c = measureSample(subgraphLoopCases(['TD'])[0]!.source)
+    expect(c.loops).toBe(2)
+    expect(c.loopHooks).toBe(1)
+    expect(isExact(c)).toBe(false)
   })
 })
 

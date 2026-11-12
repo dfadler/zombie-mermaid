@@ -408,3 +408,45 @@ export function redirectDirection(source: string): string {
   }
   return source.replace(/^(\s*(?:graph|flowchart))\s+\w+/m, `$1 ${dir}`)
 }
+
+/**
+ * Duplicate self-loops on a node inside a subgraph (#2913 bullet 1): mermaid@12.3.0
+ * nests one hook per loop there too. Generated per flow direction, labelled and
+ * not, with other members and edges in the frame, on a decision, and in nested
+ * frames. Scored apart from the gallery so its totals stay comparable.
+ */
+export function subgraphLoopCases(
+  dirs: readonly string[] = ['TD', 'LR', 'RL', 'BT'],
+): { title: string; source: string }[] {
+  const out: { title: string; source: string }[] = []
+  for (const d of dirs) {
+    const f = `flowchart ${d}\n`
+    const add = (title: string, body: string): number =>
+      out.push({ title: `${d} ${title}`, source: f + body })
+    add(
+      '2 loops, lone member',
+      '  subgraph S\n    a["a"]\n    a --> a\n    a --> a\n  end',
+    )
+    add(
+      '3 loops, lone member',
+      '  subgraph S\n    a["a"]\n    a --> a\n    a --> a\n    a --> a\n  end',
+    )
+    add(
+      '2 loops, with a neighbour and an edge',
+      '  subgraph S\n    a["a"]\n    b["b"]\n    a --> b\n    b --> b\n    b --> b\n  end',
+    )
+    add(
+      '2 labelled loops',
+      '  subgraph S\n    a["a"]\n    a -->|x| a\n    a -->|y| a\n  end',
+    )
+    add(
+      '2 loops on a decision',
+      '  subgraph S\n    d{"x"}\n    d --> d\n    d --> d\n  end',
+    )
+    add(
+      '2 loops in nested frames, with an outside edge',
+      '  subgraph O\n    subgraph I\n      a["a"]\n      a -->|x| a\n      a -->|y| a\n    end\n    b --> a\n  end\n  c --> b',
+    )
+  }
+  return out
+}

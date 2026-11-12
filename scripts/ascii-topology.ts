@@ -16,6 +16,7 @@ import {
   isGraph,
   measureSample,
   redirectDirection,
+  subgraphLoopCases,
 } from './lib/ascii-topology.ts'
 import type { Counts } from './lib/ascii-topology.ts'
 
@@ -39,6 +40,20 @@ for (const e of list) {
   if (isExact(c)) exact++
   if (verbose || !isExact(c)) console.log(describeSample(e.title, c, verbose))
 }
+// Duplicate self-loops inside subgraphs, scored apart so the lines above stay comparable.
+const dirAt = process.argv.indexOf('--dir')
+const loopCases = subgraphLoopCases(
+  dirAt < 0 ? undefined : [process.argv[dirAt + 1]!],
+)
+let loopTotal = emptyCounts()
+let loopExact = 0
+for (const e of loopCases) {
+  const c: Counts = measureSample(e.source)
+  loopTotal = addCounts(loopTotal, c)
+  if (isExact(c) && c.faceOk === c.faceEnds) loopExact++
+  if (verbose || !isExact(c) || c.faceOk < c.faceEnds)
+    console.log(`subgraph loops: ${describeSample(e.title, c, true)}`)
+}
 const pct = (a: number, b: number): string =>
   `${a}/${b} (${b ? ((100 * a) / b).toFixed(1) : '-'}%)`
 console.log(
@@ -47,5 +62,6 @@ console.log(
     `in-layer order pairs ${pct(total.orderOk, total.orderPairs)}\n` +
     `alignment pairs within ${0.5} node widths ${pct(total.alignOk, total.layerPairs)}, mean deviation ${(total.alignDev / total.layerPairs).toFixed(2)}\n` +
     `edge-end faces ${pct(total.faceOk, total.faceEnds)}\n` +
-    `self-loop hooks ${pct(total.loopHooks, total.loops)}`,
+    `self-loop hooks ${pct(total.loopHooks, total.loops)}` +
+    `\nsubgraph self-loop cases exact ${pct(loopExact, loopCases.length)}, hooks ${pct(loopTotal.loopHooks, loopTotal.loops)}, faces ${pct(loopTotal.faceOk, loopTotal.faceEnds)}`,
 )
