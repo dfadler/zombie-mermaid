@@ -739,7 +739,10 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   const lr = graph.config.graphDirection === 'LR'
   const table = lr ? graph.rowHeight : graph.columnWidth
   for (const e of hints ? graph.edges : []) {
-    if (e.parallelLane?.index !== 0 || !(farGroup(graph, e) || e.clusterSource))
+    if (
+      e.parallelLane?.index !== 0 ||
+      !(farGroup(graph, e) || e.clusterSource || overflowsFace(graph, e))
+    )
       continue
     const h = hints!.get(e)!
     for (const [node, end] of [
@@ -2112,6 +2115,45 @@ function crowdedDecision(graph: AsciiGraph, edge: AsciiEdge): boolean {
   )
 }
 
+/**
+ * ELK ends of `edge`'s group on a face of `node`, counting every edge ELK routes
+ * onto that face.
+ */
+function hintedEnds(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  face: AsciiFace,
+): number {
+  return graph.edges.reduce((n, o) => {
+    const oh = graph.edgeHints?.get(o)
+    return (
+      n +
+      Number(o.from === node && oh?.start.face === face) +
+      Number(o.to === node && oh?.end.face === face)
+    )
+  }, 0)
+}
+
+/**
+ * A neighbour group whose ELK face holds more ends than a face's three cells:
+ * the lane router would spill the siblings onto the side faces, where ELK keeps
+ * them all on the one face, so the group takes ELK's faces (#2919).
+ */
+function overflowsFace(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const h = graph.edgeHints?.get(edge)
+  return (
+    h !== undefined &&
+    // Labels on a hinted lane group are not placed yet (#2919): they stay on lanes.
+    !graph.edges.some(
+      (o) =>
+        o.parallelLane?.usedOffsets === edge.parallelLane?.usedOffsets &&
+        o.text,
+    ) &&
+    (hintedEnds(graph, edge.from, h.start.face) > 3 ||
+      hintedEnds(graph, edge.to, h.end.face) > 3)
+  )
+}
+
 /** The faces ELK's route leaves and enters by, as grid directions, or undefined without a hint. */
 function hintedFaces(
   graph: AsciiGraph,
@@ -2125,7 +2167,8 @@ function hintedFaces(
     (edge.parallelLane &&
       !edge.clusterSource &&
       !farGroup(graph, edge) &&
-      !crowdedDecision(graph, edge)) ||
+      !crowdedDecision(graph, edge) &&
+      !overflowsFace(graph, edge)) ||
     edge.clusterTarget
   )
     return undefined
@@ -2535,7 +2578,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (
     edge.parallelLane &&
     edge.parallelLane.index > 0 &&
-    !(edge.clusterSource && hintedFaces(graph, edge))
+    !(edge.clusterSource && hintedFaces(graph, edge)) &&
+    !(overflowsFace(graph, edge) && hintedFaces(graph, edge))
   ) {
     // A reverse-direction sibling (`B --> A` alongside `A --> B`, #629) runs
     // "backwards" relative to the graph direction, so determineStartAndEndDir
