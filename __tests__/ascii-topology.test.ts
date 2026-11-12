@@ -4,6 +4,7 @@ import {
   describeSample,
   addCounts,
   compareFaces,
+  compareLoops,
   compareSpots,
   emptyCounts,
   inScope,
@@ -87,6 +88,44 @@ describe('compareFaces', () => {
       ],
     }
     expect(compareFaces(grid, hints)).toMatchObject({ faceEnds: 4, faceOk: 3 })
+  })
+})
+
+describe('self-loop hooks (#2913)', () => {
+  it('counts distinct drawn paths per node against the loop edges', () => {
+    const e = (from: string, to: string, path?: string) => ({
+      from,
+      to,
+      start: [],
+      end: [],
+      path,
+    })
+    expect(
+      compareLoops([e('A', 'A', '0,0'), e('A', 'A', '0,0'), e('A', 'B', '1,1')]),
+    ).toMatchObject({ loops: 2, loopHooks: 1 })
+    expect(
+      compareLoops([e('A', 'A', '0,0'), e('A', 'A', '1,1'), e('B', 'B')]),
+    ).toMatchObject({ loops: 3, loopHooks: 3 })
+  })
+
+  it('measures one hook per loop for a single loop, and the duplicate miss, in every direction', () => {
+    for (const dir of ['TD', 'LR', 'RL', 'BT']) {
+      const one = measureSample(`flowchart ${dir}\n  A --> A`)
+      expect(one).toMatchObject({ loops: 1, loopHooks: 1 })
+      const two = measureSample(`flowchart ${dir}\n  A --> A\n  A --> A`)
+      expect(two.loops, dir).toBe(2)
+      // Known miss on main: both loops draw as one hook (mermaid@12.3.0 nests two).
+      expect(two.loopHooks, dir).toBe(1)
+      expect(isExact(two), dir).toBe(false)
+    }
+  })
+
+  it('fails the sample and names the miss when hooks fall short', () => {
+    const c = { ...emptyCounts(), loops: 2, loopHooks: 1 }
+    expect(isExact(c)).toBe(false)
+    expect(describeSample('T', c, false)).toBe(
+      'layer 0/0 order 0/0 self-loop hooks 1/2  T',
+    )
   })
 })
 

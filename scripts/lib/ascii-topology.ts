@@ -47,6 +47,10 @@ export interface Counts {
   alignDev: number
   faceEnds: number
   faceOk: number
+  /** Self-loop edges in the source (mermaid draws each as its own hook). */
+  loops: number
+  /** Per node, the distinct hook paths the grid drew for those loops (at most `loops`). */
+  loopHooks: number
 }
 
 export const emptyCounts = (): Counts => ({
@@ -58,6 +62,8 @@ export const emptyCounts = (): Counts => ({
   alignDev: 0,
   faceEnds: 0,
   faceOk: 0,
+  loops: 0,
+  loopHooks: 0,
 })
 
 export const addCounts = (a: Counts, b: Counts): Counts => {
@@ -161,7 +167,14 @@ function diamondStartDir(
 export interface GridRender {
   spots: Record<string, Spot>
   /** Grid edge ends as faces (already un-mirrored to the SVG side), in graph edge order. */
-  edges: { from: string; to: string; start: AsciiFace[]; end: AsciiFace[] }[]
+  edges: {
+    from: string
+    to: string
+    start: AsciiFace[]
+    end: AsciiFace[]
+    /** The routed grid path as text, to tell two drawn hooks from one drawn twice. */
+    path?: string
+  }[]
 }
 
 /** Draws the sample and reads node spots and edge-end faces off the grid. */
@@ -196,6 +209,11 @@ export function readGrid(source: string): GridRender & { direction: string } {
         to: e.clusterTarget?.source?.id ?? e.to.name,
         start: facesOf(diamondStartDir(e, dir) ?? e.startDir, dir),
         end: facesOf(e.endDir, dir),
+        // The drawn first and last stroke cells: nested loops share a grid path
+        // and differ only here.
+        path: e.ends
+          ? `${e.ends.start.x},${e.ends.start.y} ${e.ends.end.x},${e.ends.end.y}`
+          : e.path.map((p) => `${p.x},${p.y}`).join(' '),
       })
     }
   }
@@ -236,6 +254,26 @@ export function compareFaces(
     if (grid[i]!.start.includes(h.start.face)) c.faceOk++
     if (grid[i]!.end.includes(h.end.face)) c.faceOk++
   }
+  return c
+}
+
+/**
+ * Self-loops against drawn hooks. Mermaid draws one hook per self-loop edge
+ * (duplicates nest), so a node with N loops should show N distinct paths; two
+ * loops routed onto one path draw as one hook, and `compareFaces` cannot see
+ * it (it scores a face per end, and the duplicates share their faces).
+ */
+export function compareLoops(grid: GridRender['edges']): Counts {
+  const c = emptyCounts()
+  const hooks = new Map<string, Set<string>>()
+  for (const g of grid) {
+    if (g.from !== g.to) continue
+    c.loops++
+    const set = hooks.get(g.from) ?? new Set<string>()
+    set.add(g.path ?? '')
+    hooks.set(g.from, set)
+  }
+  for (const set of hooks.values()) c.loopHooks += set.size
   return c
 }
 
@@ -334,12 +372,17 @@ export function measureSample(source: string): Counts {
     }
   }
   const c = compareSpots(elk, spots)
-  return addCounts(c, compareFaces(edges, hints))
+  return addCounts(
+    addCounts(c, compareFaces(edges, hints)),
+    compareLoops(edges),
+  )
 }
 
-/** A sample is exact when every layer and in-layer-order pair agrees. */
+/** A sample is exact when every layer and in-layer-order pair agrees and every self-loop has its own hook. */
 export const isExact = (c: Counts): boolean =>
-  c.layerOk === c.layerPairs && c.orderOk === c.orderPairs
+  c.layerOk === c.layerPairs &&
+  c.orderOk === c.orderPairs &&
+  c.loopHooks === c.loops
 
 /** One report line: layers and order, plus alignment and faces when `all`. */
 export const describeSample = (
@@ -351,6 +394,7 @@ export const describeSample = (
   (all
     ? ` align ${c.alignOk}/${c.layerPairs} faces ${c.faceOk}/${c.faceEnds}`
     : '') +
+  (c.loopHooks < c.loops ? ` self-loop hooks ${c.loopHooks}/${c.loops}` : '') +
   `  ${title}`
 
 /** `source` redrawn in the flow direction after `--dir` (none: unchanged); a state diagram gets a `direction` line. */
