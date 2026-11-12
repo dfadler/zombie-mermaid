@@ -5,8 +5,6 @@ pie showData title Nothing counted
 ---
                   Nothing counted
 
-[                                                  ]
-
-  . Apples [0]
-  . Pears [0]
-  . Plums [0]
+                                                         . Apples [0]
+[                                                  ]     . Pears [0]
+                                                         . Plums [0]

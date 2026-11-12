@@ -8,10 +8,8 @@ pie title Labels <&> "quotes"
 ---
                 Labels <&> "quotes"
 
-[###############=============**********+++++++#####]
-
-  # R&D              30%
-  = Single quoted    25%
-  * <script>         20%
-  + Say "hi"         15%
-  # It's             10%
+                                                         # R&D              30%
+                                                         = Single quoted    25%
+[###############=============**********+++++++#####]     * <script>         20%
+                                                         + Say "hi"         15%
+                                                         # It's             10%
