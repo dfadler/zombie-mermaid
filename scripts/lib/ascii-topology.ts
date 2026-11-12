@@ -172,7 +172,7 @@ export interface GridRender {
     to: string
     start: AsciiFace[]
     end: AsciiFace[]
-    /** The routed grid path as text, to tell two drawn hooks from one drawn twice. */
+    /** The drawn end cells as text, to tell two drawn hooks from one drawn twice. */
     path?: string
   }[]
 }
