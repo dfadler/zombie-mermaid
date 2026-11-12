@@ -2117,6 +2117,24 @@ function crowdedDecision(graph: AsciiGraph, edge: AsciiEdge): boolean {
 }
 
 /**
+ * A lane of a far same-pair group whose ends sit on different rows (columns in
+ * a vertical flow). Offset lanes measure from the source's row, so they cannot
+ * run beside the first route; such a lane takes the same hinted Z and
+ * `planJogRows` (port-offsets.ts) gives each its own bend row or column.
+ */
+function hintedZLane(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const cross = graph.config.graphDirection === 'LR' ? 'y' : 'x'
+  return (
+    edge.parallelLane !== undefined &&
+    !edge.clusterSource &&
+    // A diamond's side faces are slants: the Z's ports there are not drawn yet.
+    edge.from.shape !== 'diamond' &&
+    edge.to.shape !== 'diamond' &&
+    requireGridCoord(edge.from)[cross] !== requireGridCoord(edge.to)[cross]
+  )
+}
+
+/**
  * ELK ends of `edge`'s group on a face of `node`, counting every edge ELK routes
  * onto that face.
  */
@@ -2638,7 +2656,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (
     laneSibling &&
     !(edge.clusterSource && hintedFaces(graph, edge)) &&
-    !overflowHinted
+    !overflowHinted &&
+    !(hintedZLane(graph, edge) && hintedFaces(graph, edge))
   ) {
     routeAsLane()
     return
@@ -2782,7 +2801,11 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
   // The hinted route was rejected: an overflowing group's sibling keeps its lane
   // (#329) rather than the shared centre path of the ordinary search.
-  if (laneSibling && overflowHinted && !hintedPath) {
+  if (
+    laneSibling &&
+    (overflowHinted || hintedZLane(graph, edge)) &&
+    !hintedPath
+  ) {
     routeAsLane()
     return
   }
@@ -3020,7 +3043,9 @@ export function determineLabelLine(
   if (
     edge.parallelLane &&
     edge.parallelLane.index > 0 &&
-    !(edge.clusterSource && edge.hintedFaces)
+    !(edge.clusterSource && edge.hintedFaces) &&
+    // A hinted Z lane took the ordinary route, which leaves its label to this search.
+    !(edge.labelLine.length === 0 && hintedZLane(graph, edge))
   )
     return
   // Likewise a cluster-exit edge: determinePath placed its label directly
