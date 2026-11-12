@@ -189,14 +189,15 @@ export interface GridRender {
     /** The cell the end stroke (arrowhead) was drawn in, after port shifts. */
     endCell?: string
     /** Arrowheads this edge draws (start and end). */
-    arrows?: number
+    arrows: number
   }[]
   /** Arrowhead glyphs in the drawn text. */
-  arrowGlyphs?: number
 }
 
 /** Draws the sample and reads node spots and edge-end faces off the grid. */
-export function readGrid(source: string): GridRender & { direction: string } {
+export function readGrid(
+  source: string,
+): GridRender & { direction: string; arrowGlyphs: number } {
   const parsed = parseMermaid(source)
   const dir = parsed.direction
   const horiz = dir === 'LR' || dir === 'RL'
@@ -257,8 +258,8 @@ export function readGrid(source: string): GridRender & { direction: string } {
     { layoutHints: true },
     { afterDraw },
   )
-  out.arrowGlyphs = (text.match(/[▲▼◄►]/g) ?? []).length
-  return { ...out, direction: dir }
+  const arrowGlyphs = [...text.matchAll(/[▲▼◄►]/g)].length
+  return { ...out, direction: dir, arrowGlyphs }
 }
 
 /** Counts the grid's edge ends whose face is the hints' face (matched by from/to, in order). */
@@ -334,7 +335,7 @@ export function compareEnds(
     c.endCellsWant += ranks.size
     c.endCells += Math.min(ranks.size, cells.size)
   }
-  c.arrowsWant = grid.reduce((n, g) => n + (g.arrows ?? 0), 0)
+  c.arrowsWant = grid.reduce((n, g) => n + g.arrows, 0)
   c.arrows = arrowGlyphs
   return c
 }
@@ -436,7 +437,7 @@ export function measureSample(source: string): Counts {
   const c = compareSpots(elk, spots)
   return addCounts(
     addCounts(addCounts(c, compareFaces(edges, hints)), compareLoops(edges)),
-    compareEnds(edges, hints, arrowGlyphs ?? 0),
+    compareEnds(edges, hints, arrowGlyphs),
   )
 }
 

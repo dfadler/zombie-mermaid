@@ -180,6 +180,12 @@ describe('compareEnds', () => {
     })
   })
 
+  it('skips a hint with no drawn edge', () => {
+    expect(
+      compareEnds([g('A', 'C', '1,1')], hints(hint('X', 'Y', 0)), 0),
+    ).toMatchObject({ endCellsWant: 0, endCells: 0 })
+  })
+
   it('reads a fan-in bundle as one cell and one arrowhead', () => {
     const c = measureSample('flowchart TD\n  A & B --> C')
     expect(c).toMatchObject({
