@@ -1604,8 +1604,9 @@ function allocateFaces(
     if (!nest || f.role !== 'S') continue
     const left = dirEquals(f.edge.startDir, Left)
     const at = f.edge.path[1]!
-    const width =
-      (left ? graph.columnWidth : graph.rowHeight).get(left ? at.x : at.y) ?? 0
+    const width = (left ? graph.columnWidth : graph.rowHeight).get(
+      left ? at.x : at.y,
+    )!
     const by =
       width -
       2 -

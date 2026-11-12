@@ -211,9 +211,7 @@ export function readGrid(source: string): GridRender & { direction: string } {
         end: facesOf(e.endDir, dir),
         // The drawn first and last stroke cells: nested loops share a grid path
         // and differ only here.
-        path: e.ends
-          ? `${e.ends.start.x},${e.ends.start.y} ${e.ends.end.x},${e.ends.end.y}`
-          : e.path.map((p) => `${p.x},${p.y}`).join(' '),
+        path: JSON.stringify(e.ends),
       })
     }
   }
