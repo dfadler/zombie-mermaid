@@ -67,6 +67,17 @@ describe('cluster exit siblings take ELK’s faces (#2913)', () => {
       expect(lines.some((l) => /^\s*└[─┼]+┘\s*$/.test(l))).toBe(true)
     })
 
+    it(`${name}: U sits beside T, not past sixteen empty gutter columns`, () => {
+      // mermaid@12.3.0 puts U 40px right of T; the planner used to insert a
+      // gutter column per failed attempt and leave them all behind.
+      const width = Math.max(
+        ...draw(src, true)
+          .split('\n')
+          .map((l) => l.length),
+      )
+      expect(width).toBeLessThan(45)
+    })
+
     it(`${name}: snapshots SVG and ASCII (grid and ELK hints)`, () => {
       expect(renderMermaidSVG(src)).toMatchSnapshot('svg')
       expect(draw(src, false)).toMatchSnapshot('ascii-grid')
