@@ -1788,8 +1788,9 @@ function besideGeometryFree(
       const inRows = y >= sg.minY && y <= sg.maxY
       const crossesSide = [sg.minX, sg.maxX].some((w) => w >= x0 && w <= x1)
       if (inRows && crossesSide) return false
-      const onTopOrBottom =
-        y === sg.maxY || (y >= sg.minY && y <= sg.minY + titleRows)
+      const onTopOrBottom = sg.titleBelow
+        ? y === sg.minY || (y >= sg.maxY - titleRows && y <= sg.maxY)
+        : y === sg.maxY || (y >= sg.minY && y <= sg.minY + titleRows)
       if (onTopOrBottom && x1 >= sg.minX && x0 <= sg.maxX) return false
     }
     // `clearance` keeps the text off cells *next to* another edge's
@@ -1884,8 +1885,9 @@ function clearOfSubgraphTitles(
       if (sg.nodes.length === 0) return false
       const rows = splitLines(sg.name).length
       return (
-        y >= sg.minY &&
-        y <= sg.minY + rows &&
+        (sg.titleBelow
+          ? y >= sg.maxY - rows && y <= sg.maxY
+          : y >= sg.minY && y <= sg.minY + rows) &&
         item.x <= sg.maxX &&
         item.x + displayWidth(item.text) - 1 >= sg.minX
       )

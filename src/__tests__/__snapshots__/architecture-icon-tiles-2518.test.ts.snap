@@ -59,6 +59,8 @@ exports[`architecture service icon tiles (#2518) > ASCII: server 1`] = `
 exports[`architecture service icon tiles (#2518) > ASCII: unknown icon 1`] = `
 "┌──────────────┐
 │              │
+│              │
+│      ?       │
 │ Unknown Icon │
 │              │
 └──────────────┘"

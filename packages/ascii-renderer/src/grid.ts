@@ -355,6 +355,9 @@ export function setColumnWidth(
         basePadding += subgraphOverhead
       }
     }
+    // A frame mirrored later (`titleBelow`) keeps its title band on the side its
+    // edges leave by; the band needs two more rows before the next layer.
+    if (entersFromTitleBelowFrame(graph, node)) basePadding += 2
     // #1716: each label of a spread group takes a row of the gap, with a
     // plain stroke row-pair clear at the tail and three at the arrowhead.
     for (const s of spreads) {
@@ -683,6 +686,20 @@ export function getEffectiveDirection(
   return graph.config.graphDirection
 }
 
+/** An edge into `node` leaves a `titleBelow` frame that does not hold `node`. */
+function entersFromTitleBelowFrame(
+  graph: AsciiGraph,
+  node: AsciiNode,
+): boolean {
+  return graph.edges.some(
+    (e) =>
+      e.to === node &&
+      subgraphChain(graph, e.from).some(
+        (sg) => sg.titleBelow && !sg.nodes.includes(node),
+      ),
+  )
+}
+
 /**
  * Check if a node has an incoming edge from outside its subgraph
  * AND is the topmost such node in its subgraph.
@@ -785,9 +802,9 @@ function calculateSubgraphBoundingBox(
   const subgraphPadding = 2
   const subgraphLabelSpace = 2
   sg.minX = minX - subgraphPadding
-  sg.minY = minY - subgraphPadding - subgraphLabelSpace
+  sg.minY = minY - subgraphPadding - (sg.titleBelow ? 0 : subgraphLabelSpace)
   sg.maxX = maxX + subgraphPadding
-  sg.maxY = maxY + subgraphPadding
+  sg.maxY = maxY + subgraphPadding + (sg.titleBelow ? subgraphLabelSpace : 0)
 
   // Widen the box, if necessary, so the subgraph's own cluster label fits
   // without truncation. `drawSubgraphLabel` (draw-subgraphs.ts) writes the

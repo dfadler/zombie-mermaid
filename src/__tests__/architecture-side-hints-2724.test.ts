@@ -66,7 +66,8 @@ describe('architecture side hints (#2724)', () => {
   })
 
   it('keeps Unknown Icon right of Web and No Icon right of Disk on their rows', () => {
-    expect(at(out, 'Unknown Icon')[0]).toBe(at(out, 'Web')[0])
+    // The `?` glyph is the box's first label line (#2678), level with Web
+    expect(at(out, '?')[0]).toBe(at(out, 'Web')[0])
     expect(at(out, 'Unknown Icon')[1]).toBeGreaterThan(at(out, 'Web')[1])
     expect(at(out, 'No Icon')[0]).toBe(at(out, 'Disk')[0])
     expect(at(out, 'No Icon')[1]).toBeGreaterThan(at(out, 'Disk')[1])

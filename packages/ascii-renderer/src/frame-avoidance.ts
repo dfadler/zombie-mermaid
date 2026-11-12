@@ -224,7 +224,7 @@ function hasTitleCollision(graph: AsciiGraph, sg: AsciiSubgraph): boolean {
   const width = sg.maxX - sg.minX
   const lines = splitLines(sg.name)
   for (let i = 0; i < lines.length; i++) {
-    const rowY = sg.minY + 1 + i
+    const rowY = sg.titleBelow ? sg.maxY - lines.length + i : sg.minY + 1 + i
     const strokes = new Set<number>()
     for (const edge of graph.edges) {
       for (let k = 1; k < edge.path.length; k++) {

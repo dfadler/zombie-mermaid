@@ -2258,17 +2258,17 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 ### ASCII Pie Charts
 
 Mermaid has no text mode for pie charts, so the ASCII output is this
-library's own design: one stacked bar, 50 cells wide, and a table below it.
+library's own design: one stacked bar, 50 cells wide, and a table beside it. `pie.legendPosition` puts the table
+where mermaid 12.3.0 puts the legend (`right` by default, `left`, `top`,
+`bottom`, or `center` on the bar's columns).
 The numbers are the SVG renderer's.
 
 ```text
              Pets adopted by volunteers
 
-[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]
-
-  █ Dogs    79%
-  ▓ Cats    17%
-  ▒ Rats     3%
+                                                         █ Dogs    79%
+[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]     ▓ Cats    17%
+                                                         ▒ Rats     3%
 ```
 
 - **The bar** holds the slices at or above 1% of the total, in source order,
@@ -2702,11 +2702,15 @@ also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub re
   share of the whole total, including slices that get no bar cell (under 1%, or past the
   bar's 50-cell budget); a nonzero share that rounds to 0% reads `<1%`
   ([#2313](https://github.com/dfadler/zombie-mermaid/issues/2313)).
-  `pie.legendPosition: top` prints the table above the bar (title, table, bar), as
-  mermaid 12.3.0 puts the legend above the pie
-  ([#2974](https://github.com/dfadler/zombie-mermaid/issues/2974)); `bottom` and `center`
-  keep it below. `left` and `right` also keep it below: the bar is a single row, so
-  there is no beside to put the table in.
+  `pie.legendPosition` places the table against the bar as mermaid 12.3.0 places the legend
+  against the pie (checked headless with `scripts/lib/real-mermaid.ts`; not checked on
+  GitHub / mermaid.live): `top` above ([#2974](https://github.com/dfadler/zombie-mermaid/issues/2974)),
+  `bottom` below, `right` in a column right of the bar, `left` in a column left of it, and
+  `center` centred on the bar's columns. `right` is the default and what any unknown value
+  gets, as in mermaid. A terminal bar is one row, so for `left`, `right` and `center` the bar
+  sits on the table's middle row, as mermaid centres the legend on the pie's centre; `center`
+  cannot print the table over the bar without hiding it, so its rows go above and below the
+  bar. No value is left unrepresented.
 
 ## Quadrant charts
 
@@ -2858,14 +2862,21 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   series (`bar [42]`, `[0, 0, 0]`: every value across all series equal, with no explicit
   `y-axis` range) gets one tick in the middle of the axis, as mermaid does, in both SVG and ASCII.
   Differing flat series (`bar [42, 42]` with `line [10, 10]`) and explicit ranges keep several ticks. Every x-axis category is labelled, even when neighbouring labels touch,
-  as mermaid does (the #1243 thinning is gone from SVG). The ASCII renderer has its own layout
-  and is unchanged there: it still thins crowded labels.
+  as mermaid does (the #1243 thinning is gone from SVG). ASCII widens the plot instead (see the
+  ASCII tick entry below).
 - **ASCII category labels widen the chart; they are never cut** ([#2698](https://github.com/dfadler/zombie-mermaid/issues/2698), checked against mermaid 12.3.0). Mermaid prints every category in full on a plot of fixed width and lets neighbours overlap; it does not truncate or rotate (`Engineering`, `ProductManagement`, `CustomerSuccess`, `HumanResources` in the long-label gallery sample). A terminal cannot overlap text, so the ASCII renderer widens every band until no two neighbouring words touch (one blank cell between them). A 60-column plot gives each of up to 10 categories `60 / n` columns, and `6` columns each beyond that; the bands only grow once a word label leaves less than one blank cell to its neighbour, so eight categories fit labels up to 6 characters and `Marketing` makes the whole chart wider. The chart is as wide as its labels need, with no cap. Numbers and dates are still thinned (every n-th shown) rather than widening the chart, where mermaid shows them all. Words in a horizontal chart already get a gutter as wide as the longest label.
-- **ASCII y-axis.** Mermaid has no ASCII output. The plot is 20 rows tall, fewer than
-  mermaid's ~10 d3 ticks need once they round to rows, so the renderer labels every Nth
-  tick (the smallest N that leaves an unlabeled row between labels) rather than putting
-  labels on adjacent rows
-  ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310)).
+- **ASCII value and numeric-axis ticks: every mermaid tick is labelled**
+  ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310), checked on mermaid 12.3.0;
+  not checked on GitHub / mermaid.live). Mermaid has no ASCII output, so the comparison is the
+  list of tick labels and their order. A label needs its own row and a blank row after it, so a
+  vertical chart's plot is `max(20, 2 * (ticks - 1) + 1)` rows tall (21 rows for the usual 11
+  ticks `0, 100 ... 1000`; at most ~41 for d3's largest tick counts) instead of dropping every
+  other tick. A horizontal chart's value axis and a numeric x range are widened the same way
+  until no tick label touches its neighbour. A horizontal chart with a numeric x range
+  (`x-axis 2020 --> 2024`) draws it as mermaid does: a tick at every nice value up the left
+  edge, the first point at the bottom. Horizontal charts also draw the category axis title,
+  rotated down the left edge (`Month` in the init-config sample), which was missing
+  ([#2678](https://github.com/dfadler/zombie-mermaid/issues/2678)).
 
 ## ASCII: LR/RL sibling gap is `paddingY - 1` ([#2350](https://github.com/dfadler/zombie-mermaid/issues/2350))
 
@@ -3258,6 +3269,24 @@ has no pixel units, so these keys do nothing there.
   (only the `<svg>` sizing). **`edgeElasticity`** and **`numIter`** only move the force layout's resting positions by a
   few pixels (`edgeElasticity` 0.1 shifts the rows about 2px; `numIter` 50 shifts the columns about 15px), which needs
   fcose itself to reproduce, so they are not read.
+
+## Architecture ASCII labels ([#2678](https://github.com/dfadler/zombie-mermaid/issues/2678))
+
+Checked against mermaid 12.3.0 (headless, `scripts/lib/real-mermaid.ts`) for the gallery architecture samples and the
+fork-fix architecture sources; not checked on GitHub (renders 12.2.0) or mermaid.live.
+
+- **Every service and group title is drawn.** An icon mermaid has no art for (`general-94`'s `not-a-real-icon`) shows its
+  `?` as the first line of the box, above the label, where mermaid puts the glyph above the text. Known icons
+  (`database`, `disk`, `server`, `cloud`, `internet`, `blank`) draw no glyph in ASCII: the grid has no icon art, so the
+  shape (cylinder, stadium, circle) stands for it.
+- **A group that the ports would fold into another keeps its box** (`general-96`: `jobs:R -- L:db` and `api:B -- T:db`
+  make Backend L-shaped, which swallowed Storage). The group is stacked on its last layer and the foreign service steps
+  one layer past it, which is the column mermaid draws. Group positions in ASCII follow the ports, not fcose, so a
+  group's exact slot can differ (#2682, SVG layout, is decided separately).
+- **Left ([#3043](https://github.com/dfadler/zombie-mermaid/issues/3043)):** an edge with no arrowhead that ends at a group (`api:B -- T:db{group}`) runs down the source
+  group's wall. The same happens for `A --- Sub` in a flowchart, so it is the edge router's cluster-entry shape, not the
+  architecture lowering. C4's text order differs from mermaid's only in DOM order; every label is present and reads in
+  the same places.
 
 ## xyChart `%%{init}%%` / front-matter config ([#2905](https://github.com/dfadler/zombie-mermaid/issues/2905))
 

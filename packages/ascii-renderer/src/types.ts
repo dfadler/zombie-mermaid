@@ -396,6 +396,12 @@ export interface AsciiSubgraph {
   /** Un-normalized direction (RL/BT kept) when the override is honored; drives the post-draw region flip. */
   rawDirection?: 'LR' | 'RL' | 'TD' | 'BT'
   /**
+   * The frame ends up vertically mirrored (root `BT`, or an honored `BT`
+   * override), so the title band is laid out at the bottom and the flip brings
+   * it to the top, where mermaid draws it in every direction.
+   */
+  titleBelow?: boolean
+  /**
    * Extra interior columns added (split across both sides) so the title can
    * clear a vertical edge entering the frame (#1222). Set by layout only.
    */

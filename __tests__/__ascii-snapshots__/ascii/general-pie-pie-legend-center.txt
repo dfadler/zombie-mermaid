@@ -1,7 +1,6 @@
              Pets adopted by volunteers
 
+                    # Dogs    79%
+                    = Cats    17%
 [########################################=========*]
-
-  # Dogs    79%
-  = Cats    17%
-  * Rats     3%
+                    * Rats     3%

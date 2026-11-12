@@ -388,6 +388,13 @@ function convertSubgraph(
       mSg.direction === 'LR' || mSg.direction === 'RL' ? 'LR' : 'TD'
   }
 
+  // Vertical mirroring of this frame: the nearest honored TD/BT override wins,
+  // else the parent's, else the root's (see flipSubgraphRegions).
+  const titleBelow =
+    rawDirection === 'BT' ||
+    (rawDirection !== 'TD' &&
+      (parent ? !!parent.titleBelow : parsed.direction === 'BT'))
+
   const sg: AsciiSubgraph = {
     name: mSg.label,
     nodes: [],
@@ -399,6 +406,7 @@ function convertSubgraph(
     maxY: 0,
     direction: normalizedDirection,
     rawDirection,
+    ...(titleBelow ? { titleBelow } : {}),
     ...(mSg.region ? { region: true } : {}),
     source: mSg,
   }
