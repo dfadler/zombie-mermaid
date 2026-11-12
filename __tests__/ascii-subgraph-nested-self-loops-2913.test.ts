@@ -166,6 +166,22 @@ describe('duplicate self-loops inside a subgraph nest (#2913)', () => {
     ).toBeLessThan(40)
   })
 
+  it.each(['TD', 'LR'])(
+    '%s: one loop in a frame keeps inside its wall',
+    (dir) => {
+      const out = draw(lone(dir, 'a["a"]\n    a --> a'), true)
+      const rows = out.split('\n')
+      // The frame's top and bottom walls span the whole width: nothing crosses them.
+      expect(rows[0]).toMatch(/^┌─+┐$/)
+      expect(rows.at(-1)).toMatch(/^└─+┘$/)
+      expect(new Set(rows.map((r) => r.length)).size).toBe(1)
+      expect(measureSample(lone(dir, 'a["a"]\n    a --> a'))).toMatchObject({
+        loops: 1,
+        loopHooks: 1,
+      })
+    },
+  )
+
   it('draws the same without ELK hints as before: no nesting to take from the layout', () => {
     const src = lone('TD')
     expect(draw(src, false)).toBe(

@@ -450,3 +450,23 @@ export function subgraphLoopCases(
   }
   return out
 }
+
+/** Scores `subgraphLoopCases`: exact when every loop has its hook and every end its face; `lines` names the misses. */
+export function scoreSubgraphLoops(
+  dirs?: readonly string[],
+  all = false,
+): { cases: number; exact: number; counts: Counts; lines: string[] } {
+  const list = subgraphLoopCases(dirs)
+  let counts = emptyCounts()
+  let exact = 0
+  const lines: string[] = []
+  for (const e of list) {
+    const c = measureSample(e.source)
+    counts = addCounts(counts, c)
+    const ok = isExact(c) && c.faceOk === c.faceEnds
+    if (ok) exact++
+    if (all || !ok)
+      lines.push(`subgraph loops: ${describeSample(e.title, c, true)}`)
+  }
+  return { cases: list.length, exact, counts, lines }
+}
