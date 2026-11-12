@@ -47,5 +47,7 @@ console.log(
     `in-layer order pairs ${pct(total.orderOk, total.orderPairs)}\n` +
     `alignment pairs within ${0.5} node widths ${pct(total.alignOk, total.layerPairs)}, mean deviation ${(total.alignDev / total.layerPairs).toFixed(2)}\n` +
     `edge-end faces ${pct(total.faceOk, total.faceEnds)}\n` +
-    `self-loop hooks ${pct(total.loopHooks, total.loops)}`,
+    `self-loop hooks ${pct(total.loopHooks, total.loops)}\n` +
+    `end cells ${pct(total.endCells, total.endCellsWant)}\n` +
+    `arrowheads ${pct(total.arrows, total.arrowsWant)}`,
 )

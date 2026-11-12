@@ -4,6 +4,7 @@ import {
   describeSample,
   addCounts,
   compareFaces,
+  compareEnds,
   compareLoops,
   compareSpots,
   emptyCounts,
@@ -130,6 +131,77 @@ describe('self-loop hooks (#2913)', () => {
     expect(describeSample('T', c, false)).toBe(
       'layer 0/0 order 0/0 self-loop hooks 1/2  T',
     )
+  })
+})
+
+describe('compareEnds', () => {
+  const hint = (from: string, to: string, order: number) => ({
+    index: 0,
+    from,
+    to,
+    start: { face: 'B' as const, order: 0 },
+    end: { face: 'T' as const, order },
+  })
+  const hints = (...e: ReturnType<typeof hint>[]): AsciiLayoutHints => ({
+    nodes: new Map(),
+    edges: e,
+  })
+  const g = (from: string, to: string, endCell?: string, arrows = 1) => ({
+    from,
+    to,
+    start: [],
+    end: [],
+    endCell,
+    arrows,
+  })
+
+  it('counts a shared end cell once where the hints give two positions', () => {
+    const h = hints(hint('A', 'C', 0), hint('B', 'C', 1))
+    expect(
+      compareEnds([g('A', 'C', '1,1'), g('B', 'C', '1,1')], h, 1),
+    ).toMatchObject({ endCellsWant: 2, endCells: 1, arrowsWant: 2, arrows: 1 })
+    expect(
+      compareEnds([g('A', 'C', '1,1'), g('B', 'C', '5,1')], h, 2),
+    ).toMatchObject({ endCellsWant: 2, endCells: 2, arrowsWant: 2, arrows: 2 })
+  })
+
+  it('wants one cell for ends the hints put at one position, and skips loops and unread ends', () => {
+    const h = hints(hint('A', 'C', 0), hint('B', 'C', 0), hint('C', 'C', 1))
+    expect(
+      compareEnds(
+        [g('A', 'C', '1,1'), g('B', 'C', '1,1'), g('C', 'C', '2,2')],
+        h,
+        3,
+      ),
+    ).toMatchObject({ endCellsWant: 1, endCells: 1 })
+    expect(compareEnds([g('A', 'C'), g('B', 'C')], h, 0)).toMatchObject({
+      endCellsWant: 0,
+      endCells: 0,
+    })
+  })
+
+  it('reads a fan-in bundle as one cell and one arrowhead', () => {
+    const c = measureSample('flowchart TD\n  A & B --> C')
+    expect(c).toMatchObject({
+      endCellsWant: 2,
+      endCells: 1,
+      arrowsWant: 2,
+      arrows: 1,
+    })
+    expect(describeSample('T', c, false)).toContain(
+      'end cells 1/2 arrowheads 1/2',
+    )
+  })
+
+  it('is exact for separate landings', () => {
+    const c = measureSample('flowchart TD\n  A --> B')
+    expect(c).toMatchObject({
+      endCellsWant: 1,
+      endCells: 1,
+      arrowsWant: 1,
+      arrows: 1,
+    })
+    expect(describeSample('T', c, false)).not.toContain('end cells')
   })
 })
 
