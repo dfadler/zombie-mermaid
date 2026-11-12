@@ -2112,6 +2112,24 @@ function crowdedDecision(graph: AsciiGraph, edge: AsciiEdge): boolean {
   )
 }
 
+/**
+ * A lane of a far same-pair group whose ends sit on different rows (columns in
+ * a vertical flow). Offset lanes measure from the source's row, so they cannot
+ * run beside the first route; such a lane takes the same hinted Z and
+ * `planJogRows` (port-offsets.ts) gives each its own bend row or column.
+ */
+function hintedZLane(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const cross = graph.config.graphDirection === 'LR' ? 'y' : 'x'
+  return (
+    edge.parallelLane !== undefined &&
+    !edge.clusterSource &&
+    // A diamond's side faces are slants: the Z's ports there are not drawn yet.
+    edge.from.shape !== 'diamond' &&
+    edge.to.shape !== 'diamond' &&
+    requireGridCoord(edge.from)[cross] !== requireGridCoord(edge.to)[cross]
+  )
+}
+
 /** The faces ELK's route leaves and enters by, as grid directions, or undefined without a hint. */
 function hintedFaces(
   graph: AsciiGraph,
@@ -2535,7 +2553,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (
     edge.parallelLane &&
     edge.parallelLane.index > 0 &&
-    !(edge.clusterSource && hintedFaces(graph, edge))
+    !(edge.clusterSource && hintedFaces(graph, edge)) &&
+    !(hintedZLane(graph, edge) && hintedFaces(graph, edge))
   ) {
     // A reverse-direction sibling (`B --> A` alongside `A --> B`, #629) runs
     // "backwards" relative to the graph direction, so determineStartAndEndDir
@@ -2960,7 +2979,9 @@ export function determineLabelLine(
   if (
     edge.parallelLane &&
     edge.parallelLane.index > 0 &&
-    !(edge.clusterSource && edge.hintedFaces)
+    !(edge.clusterSource && edge.hintedFaces) &&
+    // A hinted Z lane took the ordinary route, which leaves its label to this search.
+    !(edge.labelLine.length === 0 && hintedZLane(graph, edge))
   )
     return
   // Likewise a cluster-exit edge: determinePath placed its label directly
