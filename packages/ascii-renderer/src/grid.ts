@@ -260,6 +260,65 @@ function diamondFaceRows(graph: AsciiGraph, node: AsciiNode): number {
 }
 
 /**
+ * How many self-loops ELK hooks out of `node`'s left face (TD) or top face (LR), when
+ * there are duplicates to nest (#2913); 0 for a single loop, which keeps the
+ * node's own size. A loop of a node inside a subgraph is routed another way.
+ */
+function nestedLoops(graph: AsciiGraph, node: AsciiNode): number {
+  const dir = graph.config.graphDirection
+  if (!graph.edgeHints || (dir !== 'TD' && dir !== 'LR')) return 0
+  if (getNodeSubgraph(graph, node)) return 0
+  const face = dir === 'TD' ? 'L' : 'T'
+  const n = graph.edges.filter((e) => {
+    const h = graph.edgeHints!.get(e)
+    return (
+      e.from === node &&
+      e.to === node &&
+      h?.start.face === face &&
+      h.end.face === face
+    )
+  }).length
+  return n > 1 ? n : 0
+}
+
+/**
+ * Cells between the legs of a node's nested hooks (#2913): 2, and in a TD
+ * graph wide enough besides for the longest loop label, which sits between two
+ * legs on its own hook's row (an LR label sits in the row between two legs).
+ */
+export function nestStride(graph: AsciiGraph, node: AsciiNode): number {
+  if (graph.config.graphDirection !== 'TD') return 2
+  const widest = widestLoopLabel(graph, node)
+  return widest ? 3 + widest : 2
+}
+
+function widestLoopLabel(graph: AsciiGraph, node: AsciiNode): number {
+  return Math.max(
+    0,
+    ...graph.edges
+      .filter((e) => e.from === node && e.to === node)
+      .map((e) => Math.max(0, ...splitLines(e.text).map(displayWidth))),
+  )
+}
+
+/**
+ * Cells from the node's border to its innermost hook's leg (#2913): 2, and in
+ * a TD graph far enough that the widest loop label, centred on the leg, stays
+ * clear of the border.
+ */
+export function nestInset(graph: AsciiGraph, node: AsciiNode): number {
+  if (graph.config.graphDirection !== 'TD') return 2
+  return Math.max(2, Math.ceil(widestLoopLabel(graph, node) / 2) + 2)
+}
+
+/** Cells a gutter holds `nest` hooks of `node` in, from the far leg and the outermost label to the node's border (#2913). */
+function nestGutter(graph: AsciiGraph, node: AsciiNode, nest: number): number {
+  const stride = nestStride(graph, node)
+  const base = stride === 2 ? 2 * nest + 1 : stride * nest
+  return base + nestInset(graph, node) - 2
+}
+
+/**
  * Set column widths and row heights for a node's 3x3 grid block.
  * Each node occupies 3 columns (border, content, border) and 3 rows.
  * Uses shape-aware dimensions to properly size non-rectangular shapes.
@@ -292,11 +351,21 @@ export function setColumnWidth(
         .map((s) => 2 * s.strokes - 1),
     )
 
+  // #2913: N nested hooks have 2N ends on one face (left in TD, top in LR),
+  // two cells apart.
+  const nest = nestedLoops(graph, node)
+  const lr = graph.config.graphDirection === 'LR'
   for (let idx = 0; idx < colWidths.length; idx++) {
     const xCoord = gc.x + idx
     const current = graph.columnWidth.get(xCoord) ?? 0
     const want =
-      idx === 1 ? Math.max(colWidths[idx]!, strokeCells(true)) : colWidths[idx]!
+      idx === 1
+        ? Math.max(
+            colWidths[idx]!,
+            strokeCells(true),
+            lr && nest ? 4 * nest - 1 : 0,
+          )
+        : colWidths[idx]!
     graph.columnWidth.set(xCoord, Math.max(current, want))
   }
 
@@ -306,7 +375,12 @@ export function setColumnWidth(
     const current = graph.rowHeight.get(yCoord) ?? 0
     const want =
       idx === 1
-        ? Math.max(rowHeights[idx]!, strokeCells(false), slantRows)
+        ? Math.max(
+            rowHeights[idx]!,
+            strokeCells(false),
+            slantRows,
+            !lr && nest ? 4 * nest - 1 : 0,
+          )
         : rowHeights[idx]!
     graph.rowHeight.set(yCoord, Math.max(current, want))
   }
@@ -317,7 +391,12 @@ export function setColumnWidth(
     const current = graph.columnWidth.get(gc.x - 1) ?? 0
     graph.columnWidth.set(
       gc.x - 1,
-      Math.max(current, graph.config.paddingX, lrFanInGap(graph, node)),
+      Math.max(
+        current,
+        graph.config.paddingX,
+        lrFanInGap(graph, node),
+        !lr && nest ? nestGutter(graph, node, nest) + 2 : 0,
+      ),
     )
   }
 
@@ -363,6 +442,7 @@ export function setColumnWidth(
     for (const s of spreads) {
       if (s.vertical && s.below) basePadding = Math.max(basePadding, s.rows + 3)
     }
+    if (lr && nest) basePadding = Math.max(basePadding, 2 * nest + 3)
     const current = graph.rowHeight.get(gc.y - 1) ?? 0
     graph.rowHeight.set(gc.y - 1, Math.max(current, basePadding))
   }
@@ -2915,10 +2995,22 @@ export function createMapping(graph: AsciiGraph): void {
   }
   // The margin row is only as tall as the loop needs.
   if (graph.topMargin && graph.subgraphs.length === 0) {
-    graph.rowHeight.set(0, 3)
+    graph.rowHeight.set(
+      0,
+      Math.max(3, ...graph.nodes.map((n) => 2 * nestedLoops(graph, n) + 1)),
+    )
   }
   if (graph.leftMargin && graph.subgraphs.length === 0) {
-    graph.columnWidth.set(0, 3)
+    graph.columnWidth.set(
+      0,
+      Math.max(
+        3,
+        ...graph.nodes.map((n) => {
+          const k = nestedLoops(graph, n)
+          return k ? nestGutter(graph, n, k) : 0
+        }),
+      ),
+    )
   }
   tightenSidesteps(graph)
 

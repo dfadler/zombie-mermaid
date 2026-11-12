@@ -2295,7 +2295,7 @@ pie title Pets adopted by volunteers
     title: 'Duplicate Self-Loops',
     category: 'Flowchart',
     description:
-      'Two identical self-loops on one node. They draw as one clean loop, with no junction leading into blank space (#2028).',
+      'Two identical self-loops on one node. Each draws as its own hook, the second nested round the first, as mermaid draws them, with no junction leading into blank space (#2028, #2913).',
     source: `flowchart TD
     n0["a"]
     n0 --> n0

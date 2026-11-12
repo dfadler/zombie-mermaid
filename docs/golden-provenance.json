@@ -371,6 +371,16 @@
       "owner": "__tests__/ascii-class-namespace-dashed-2678.test.ts",
       "mermaid": "12.3.0",
       "verdict": "the relation is dashed end to end across the namespace frames, as mermaid draws `..>`, `..|>` and `..`; the layout and the SVG snapshots only pin this renderer's output"
+    },
+    {
+      "paths": [
+        "__tests__/__snapshots__/ascii-nested-self-loops-2913.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-nested-self-loops-2913.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "with ELK hints N duplicate self-loops draw N nested hooks, as mermaid draws them (topology gate self-loop hooks 7/7 in all four directions); the plain-grid snapshot (one hook) and the SVG snapshots only pin this renderer's output"
     }
   ]
 }

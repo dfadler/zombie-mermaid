@@ -310,6 +310,12 @@ export interface AsciiEdge {
   /** A TD self-loop ELK hooks out of the left face, on a first column with no room beside it (#2888). */
   loopLeftWanted?: boolean
   /**
+   * Set when this hooked self-loop shares its node and face with others (#2913):
+   * mermaid nests them, the innermost (index 0) a hook of its own and each next
+   * one drawn around the last. `count` is how many loops the node has there.
+   */
+  loopNest?: { index: number; count: number }
+  /**
    * Set by determinePath when the edge was routed as planned. Its ports are
    * placed by port-offsets.ts's allocateFaces, like a lane's.
    */

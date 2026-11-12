@@ -179,6 +179,10 @@ ALLOWLIST=(
   # (#2678): the repo rule is an SVG and an ASCII snapshot per case; reviewed
   # via `git diff` (`vitest -u`).
   "__tests__/ascii-class-namespace-dashed-2678.test.ts"
+  # SVG + ASCII goldens for nested duplicate self-loops (#2913): the repo rule
+  # is an SVG and an ASCII snapshot per case; reviewed via `git diff`
+  # (`vitest -u`).
+  "__tests__/ascii-nested-self-loops-2913.test.ts"
 )
 
 is_allowlisted() {
