@@ -51,9 +51,21 @@ export interface Counts {
   loops: number
   /** Per node, the distinct hook paths the grid drew for those loops (at most `loops`). */
   loopHooks: number
+  /** Per target node and face, the distinct end positions the hints give (non-loop edges). */
+  endCellsWant: number
+  /** Of those, how many the grid drew in a cell of their own (distinct end cells, capped at the want). */
+  endCells: number
+  /** Edges that carry an arrowhead (each end with one counts). */
+  arrowsWant: number
+  /** Arrowhead glyphs found in the drawn text. */
+  arrows: number
 }
 
 export const emptyCounts = (): Counts => ({
+  endCellsWant: 0,
+  endCells: 0,
+  arrowsWant: 0,
+  arrows: 0,
   layerPairs: 0,
   layerOk: 0,
   orderPairs: 0,
@@ -174,11 +186,18 @@ export interface GridRender {
     end: AsciiFace[]
     /** The drawn end cells as text, to tell two drawn hooks from one drawn twice. */
     path?: string
+    /** The cell the end stroke (arrowhead) was drawn in, after port shifts. */
+    endCell?: string
+    /** Arrowheads this edge draws (start and end). */
+    arrows: number
   }[]
+  /** Arrowhead glyphs in the drawn text. */
 }
 
 /** Draws the sample and reads node spots and edge-end faces off the grid. */
-export function readGrid(source: string): GridRender & { direction: string } {
+export function readGrid(
+  source: string,
+): GridRender & { direction: string; arrowGlyphs: number } {
   const parsed = parseMermaid(source)
   const dir = parsed.direction
   const horiz = dir === 'LR' || dir === 'RL'
@@ -212,13 +231,20 @@ export function readGrid(source: string): GridRender & { direction: string } {
         // The drawn first and last stroke cells: nested loops share a grid path
         // and differ only here.
         path: JSON.stringify(e.ends),
+        // A fan-in bundle draws one shared path and arrowhead, with no `ends`.
+        endCell: e.ends
+          ? `${e.ends.end.x},${e.ends.end.y}`
+          : e.bundle?.type === 'fan-in'
+            ? `bundle:${e.bundle.sharedNode.name}`
+            : undefined,
+        arrows: Number(e.hasArrowStart) + Number(e.hasArrowEnd),
       })
     }
   }
   registerAsciiLayout(
     process.argv.includes('--no-hints') ? undefined : asciiLayoutProvider,
   )
-  renderGraphAscii(
+  const text = renderGraphAscii(
     parsed,
     {
       useAscii: false,
@@ -232,7 +258,8 @@ export function readGrid(source: string): GridRender & { direction: string } {
     { layoutHints: true },
     { afterDraw },
   )
-  return { ...out, direction: dir }
+  const arrowGlyphs = [...text.matchAll(/[▲▼◄►]/g)].length
+  return { ...out, direction: dir, arrowGlyphs }
 }
 
 /** Counts the grid's edge ends whose face is the hints' face (matched by from/to, in order). */
@@ -272,6 +299,44 @@ export function compareLoops(grid: GridRender['edges']): Counts {
     hooks.set(g.from, set)
   }
   for (const set of hooks.values()) c.loopHooks += set.size
+  return c
+}
+
+/**
+ * Edge ends that share one arrowhead cell. `compareFaces` scores a face per
+ * end, so several edges landing on one cell of a face pass it while mermaid
+ * draws each at its own position. Per target node and hinted face (self-loops
+ * are `compareLoops`'s), the want is the distinct hint ranks; the got is the
+ * distinct drawn end cells, capped at the want. Also the arrowhead glyphs
+ * drawn against the arrowheads the edges carry.
+ */
+export function compareEnds(
+  grid: GridRender['edges'],
+  hints: AsciiLayoutHints,
+  arrowGlyphs: number,
+): Counts {
+  const c = emptyCounts()
+  const used = new Set<number>()
+  const groups = new Map<string, { ranks: Set<number>; cells: Set<string> }>()
+  for (const h of hints.edges) {
+    const i = grid.findIndex(
+      (g, k) => !used.has(k) && g.from === h.from && g.to === h.to,
+    )
+    if (i < 0) continue
+    used.add(i)
+    if (h.from === h.to || !grid[i]!.endCell) continue
+    const key = `${h.to}|${h.end.face}`
+    const grp = groups.get(key) ?? { ranks: new Set(), cells: new Set() }
+    grp.ranks.add(h.end.order)
+    grp.cells.add(grid[i]!.endCell!)
+    groups.set(key, grp)
+  }
+  for (const { ranks, cells } of groups.values()) {
+    c.endCellsWant += ranks.size
+    c.endCells += Math.min(ranks.size, cells.size)
+  }
+  c.arrowsWant = grid.reduce((n, g) => n + g.arrows, 0)
+  c.arrows = arrowGlyphs
   return c
 }
 
@@ -348,7 +413,7 @@ export function measureEr(
 export function measureSample(source: string): Counts {
   if (isEr(source)) return measureEr(source)
   const parsed = parseMermaid(source)
-  const { spots, edges, direction } = readGrid(source)
+  const { spots, edges, direction, arrowGlyphs } = readGrid(source)
   // The layout the ASCII provider takes its hints from (see `asciiLayoutProvider`).
   const pos = layoutFlowchartSync(parseMermaid(source), {
     legacyNodeSizes: true,
@@ -371,8 +436,8 @@ export function measureSample(source: string): Counts {
   }
   const c = compareSpots(elk, spots)
   return addCounts(
-    addCounts(c, compareFaces(edges, hints)),
-    compareLoops(edges),
+    addCounts(addCounts(c, compareFaces(edges, hints)), compareLoops(edges)),
+    compareEnds(edges, hints, arrowGlyphs),
   )
 }
 
@@ -393,6 +458,10 @@ export const describeSample = (
     ? ` align ${c.alignOk}/${c.layerPairs} faces ${c.faceOk}/${c.faceEnds}`
     : '') +
   (c.loopHooks < c.loops ? ` self-loop hooks ${c.loopHooks}/${c.loops}` : '') +
+  (c.endCells < c.endCellsWant
+    ? ` end cells ${c.endCells}/${c.endCellsWant}`
+    : '') +
+  (c.arrows !== c.arrowsWant ? ` arrowheads ${c.arrows}/${c.arrowsWant}` : '') +
   `  ${title}`
 
 /** `source` redrawn in the flow direction after `--dir` (none: unchanged); a state diagram gets a `direction` line. */
@@ -452,11 +521,14 @@ export function subgraphLoopCases(
 }
 
 /** Scores `subgraphLoopCases`: exact when every loop has its hook and every end its face; `lines` names the misses. */
-export function scoreSubgraphLoops(
-  dirs?: readonly string[],
-  all = false,
-): { cases: number; exact: number; counts: Counts; lines: string[] } {
-  const list = subgraphLoopCases(dirs)
+export function scoreSubgraphLoops(all = false): {
+  cases: number
+  exact: number
+  counts: Counts
+  lines: string[]
+} {
+  const at = process.argv.indexOf('--dir')
+  const list = subgraphLoopCases(at < 0 ? undefined : [process.argv[at + 1]!])
   let counts = emptyCounts()
   let exact = 0
   const lines: string[] = []

@@ -40,11 +40,7 @@ for (const e of list) {
   if (isExact(c)) exact++
   if (verbose || !isExact(c)) console.log(describeSample(e.title, c, verbose))
 }
-const dirAt = process.argv.indexOf('--dir')
-const loops = scoreSubgraphLoops(
-  dirAt < 0 ? undefined : [process.argv[dirAt + 1]!],
-  verbose,
-)
+const loops = scoreSubgraphLoops(verbose)
 loops.lines.forEach((l) => console.log(l))
 const pct = (a: number, b: number): string =>
   `${a}/${b} (${b ? ((100 * a) / b).toFixed(1) : '-'}%)`
@@ -54,6 +50,8 @@ console.log(
     `in-layer order pairs ${pct(total.orderOk, total.orderPairs)}\n` +
     `alignment pairs within ${0.5} node widths ${pct(total.alignOk, total.layerPairs)}, mean deviation ${(total.alignDev / total.layerPairs).toFixed(2)}\n` +
     `edge-end faces ${pct(total.faceOk, total.faceEnds)}\n` +
-    `self-loop hooks ${pct(total.loopHooks, total.loops)}` +
-    `\nsubgraph self-loop cases exact ${pct(loops.exact, loops.cases)}, hooks ${pct(loops.counts.loopHooks, loops.counts.loops)}, faces ${pct(loops.counts.faceOk, loops.counts.faceEnds)}`,
+    `self-loop hooks ${pct(total.loopHooks, total.loops)}\n` +
+    `end cells ${pct(total.endCells, total.endCellsWant)}\n` +
+    `arrowheads ${pct(total.arrows, total.arrowsWant)}\n` +
+    `subgraph self-loop cases exact ${pct(loops.exact, loops.cases)}, hooks ${pct(loops.counts.loopHooks, loops.counts.loops)}, faces ${pct(loops.counts.faceOk, loops.counts.faceEnds)}`,
 )
