@@ -82,4 +82,29 @@ describe('overflowing neighbour group on ELK faces (#2919)', () => {
     expect(text).toContain('┐')
     expect((text.match(/▼/g) ?? []).length).toBeGreaterThanOrEqual(8)
   })
+
+  it('keeps a lane for a sibling whose hinted route is rejected', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    // Decisions and loops crowd the faces so a sibling's ELK route is refused
+    // (found by fuzzing): it stays on its lane instead of sharing a centre path,
+    // which draws one more arrowhead.
+    const src = [
+      'flowchart TD',
+      'a{d} --> a',
+      'b{d} --> a',
+      ...Array(2).fill('b --> a'),
+      ...Array(4).fill('a --> b'),
+      'b{d} --> b',
+      'b{d} --> b',
+      ...Array(2).fill('b --> b'),
+      ...Array(2).fill('b{d} --> a'),
+      ...Array(2).fill('b --> a'),
+      'b --> a',
+    ].join('\n')
+    const text = renderMermaidASCII(src, {
+      colorMode: 'none',
+      layoutHints: true,
+    })
+    expect((text.match(/[▼▲◄►]/g) ?? []).length).toBe(7)
+  })
 })
