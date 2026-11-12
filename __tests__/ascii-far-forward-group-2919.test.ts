@@ -40,9 +40,10 @@ describe('forward far same-pair group on ELK faces (#2919)', () => {
     registerAsciiLayout(asciiLayoutProvider)
     const s = samples.find((x) => /Dense Duplicate Edges \(LR\)/.test(x.title))!
     const { faceOk, faceEnds } = measureSample(redirectDirection(s.source))
-    // 16 of 20 before; the `a --> c` pair adds two (other groups still miss two).
+    // 16 of 20 before the `a --> c` pair, 18 with it, all 20 once the `b --> c`
+    // neighbour pair takes ELK's faces too (the overflow rule).
     expect(faceEnds).toBe(20)
-    expect(faceOk).toBeGreaterThanOrEqual(18)
+    expect(faceOk).toBe(20)
   })
 
   it('draws the same group without hints as before', () => {

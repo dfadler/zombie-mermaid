@@ -736,16 +736,20 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // #2902: a group routed between ELK's faces needs a cell for every end ELK
   // puts on those faces, so lengthen the nodes' side faces to hold them.
   const hints = graph.edgeHints
-  const lr = graph.config.graphDirection === 'LR'
-  const table = lr ? graph.rowHeight : graph.columnWidth
   for (const e of hints ? graph.edges : []) {
-    if (e.parallelLane?.index !== 0 || !(farGroup(graph, e) || e.clusterSource))
+    if (
+      e.parallelLane?.index !== 0 ||
+      !(farGroup(graph, e) || e.clusterSource || overflowsFace(graph, e))
+    )
       continue
     const h = hints!.get(e)!
     for (const [node, end] of [
       [e.from, h.start],
       [e.to, h.end],
     ] as const) {
+      // A side face grows its rows, a top or bottom face its columns.
+      const side = end.face === 'L' || end.face === 'R'
+      const table = side ? graph.rowHeight : graph.columnWidth
       const ends = graph.edges.reduce((n, o) => {
         const oh = hints!.get(o)
         return (
@@ -756,7 +760,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
       }, 0)
       // A cluster exit's face holds the default three cells as it is (#1826).
       if (e.clusterSource && ends <= 3) continue
-      const at = requireGridCoord(node)[lr ? 'y' : 'x'] + 1
+      const at = requireGridCoord(node)[side ? 'y' : 'x'] + 1
       table.set(at, Math.max(table.get(at)!, ends + 1))
     }
   }
@@ -2112,6 +2116,45 @@ function crowdedDecision(graph: AsciiGraph, edge: AsciiEdge): boolean {
   )
 }
 
+/**
+ * ELK ends of `edge`'s group on a face of `node`, counting every edge ELK routes
+ * onto that face.
+ */
+function hintedEnds(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  face: AsciiFace,
+): number {
+  return graph.edges.reduce((n, o) => {
+    const oh = graph.edgeHints?.get(o)
+    return (
+      n +
+      Number(o.from === node && oh?.start.face === face) +
+      Number(o.to === node && oh?.end.face === face)
+    )
+  }, 0)
+}
+
+/**
+ * A neighbour group whose ELK face holds more ends than a face's three cells:
+ * the lane router would spill the siblings onto the side faces, where ELK keeps
+ * them all on the one face, so the group takes ELK's faces (#2919).
+ */
+function overflowsFace(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  const h = graph.edgeHints?.get(edge)
+  return (
+    h !== undefined &&
+    // Labels on a hinted lane group are not placed yet (#2919): they stay on lanes.
+    !graph.edges.some(
+      (o) =>
+        o.parallelLane?.usedOffsets === edge.parallelLane?.usedOffsets &&
+        o.text,
+    ) &&
+    (hintedEnds(graph, edge.from, h.start.face) > 3 ||
+      hintedEnds(graph, edge.to, h.end.face) > 3)
+  )
+}
+
 /** The faces ELK's route leaves and enters by, as grid directions, or undefined without a hint. */
 function hintedFaces(
   graph: AsciiGraph,
@@ -2125,7 +2168,8 @@ function hintedFaces(
     (edge.parallelLane &&
       !edge.clusterSource &&
       !farGroup(graph, edge) &&
-      !crowdedDecision(graph, edge)) ||
+      !crowdedDecision(graph, edge) &&
+      !overflowsFace(graph, edge)) ||
     edge.clusterTarget
   )
     return undefined
@@ -2532,11 +2576,9 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // determineLabelLine's general width-based heuristic can't reliably
   // re-derive that from the finished path alone). determineLabelLine
   // itself skips lane edges for exactly this reason — see its own guard.
-  if (
-    edge.parallelLane &&
-    edge.parallelLane.index > 0 &&
-    !(edge.clusterSource && hintedFaces(graph, edge))
-  ) {
+  const laneSibling =
+    edge.parallelLane !== undefined && edge.parallelLane.index > 0
+  const routeAsLane = (): void => {
     // A reverse-direction sibling (`B --> A` alongside `A --> B`, #629) runs
     // "backwards" relative to the graph direction, so determineStartAndEndDir
     // hands back a degenerate *same-side* pair — Down/Down in LR, Right/Right
@@ -2587,6 +2629,18 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     if (edge.text.length > 0) {
       applyLabelLine(graph, edge, route.labelSegment, displayWidth(edge.text))
     }
+  }
+  // An overflowing group's sibling takes ELK's faces below instead, and falls
+  // back to its lane only when the hinted route is rejected (see after
+  // `hintedPath`).
+  const overflowHinted =
+    overflowsFace(graph, edge) && hintedFaces(graph, edge) !== undefined
+  if (
+    laneSibling &&
+    !(edge.clusterSource && hintedFaces(graph, edge)) &&
+    !overflowHinted
+  ) {
+    routeAsLane()
     return
   }
 
@@ -2726,6 +2780,12 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       return c.x === r.x && c.y === r.y
     })
   if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
+  // The hinted route was rejected: an overflowing group's sibling keeps its lane
+  // (#329) rather than the shared centre path of the ordinary search.
+  if (laneSibling && overflowHinted && !hintedPath) {
+    routeAsLane()
+    return
+  }
   if (edge.parallelLane) edge.hintedLane = Boolean(hinted && hintedPath)
   edge.hintedFaces = Boolean(hinted && hintedPath)
   edge.gutterBack = detour !== null && hintedPath === detour
