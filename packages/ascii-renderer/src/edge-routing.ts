@@ -2386,11 +2386,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   edge.loopNest = undefined
   // #2888: a TD loop ELK hooks out of the left face and back into it. A first
   // column has no room beside it: ask for a margin column (the layout is redone).
-  if (
-    effectiveDir === 'TD' &&
-    hintedLoopFace(graph, edge) === 'L' &&
-    !sourceSg
-  ) {
+  if (effectiveDir === 'TD' && hintedLoopFace(graph, edge) === 'L') {
     const c = requireGridCoord(edge.from)
     if (graph.leftMargin || c.x > 0) {
       // ELK's order puts the start on the upper cell and the end on the lower.
@@ -2409,7 +2405,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       return
     }
     // A margin column is only made for a graph without subgraphs.
-    if (graph.subgraphs.length === 0) edge.loopLeftWanted = true
+    edge.loopLeftWanted = true
   }
   if (
     effectiveDir === 'LR' &&

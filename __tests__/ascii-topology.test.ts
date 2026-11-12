@@ -142,11 +142,12 @@ describe('subgraph self-loop cases (#2913)', () => {
     expect(td.every((c) => c.source.startsWith('flowchart TD\n'))).toBe(true)
   })
 
-  it('known miss on main: a duplicate loop in a frame draws as one hook in TD', () => {
-    const c = measureSample(subgraphLoopCases(['TD'])[0]!.source)
-    expect(c.loops).toBe(2)
-    expect(c.loopHooks).toBe(1)
-    expect(isExact(c)).toBe(false)
+  it('scores a duplicate loop in a frame exact in every direction', () => {
+    for (const c of subgraphLoopCases()) {
+      const m = measureSample(c.source)
+      expect(m.loopHooks, c.title).toBe(m.loops)
+      expect(m.faceOk, c.title).toBe(m.faceEnds)
+    }
   })
 })
 

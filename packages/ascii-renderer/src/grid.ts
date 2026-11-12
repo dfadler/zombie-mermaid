@@ -18,7 +18,10 @@ import type {
 } from './types.ts'
 import {
   DEFAULT_PADDING_Y,
+  dirEquals,
   gridKey,
+  Left,
+  Up,
   paddingOffset,
   requireGridCoord,
 } from './types.ts'
@@ -267,7 +270,6 @@ function diamondFaceRows(graph: AsciiGraph, node: AsciiNode): number {
 function nestedLoops(graph: AsciiGraph, node: AsciiNode): number {
   const dir = graph.config.graphDirection
   if (!graph.edgeHints || (dir !== 'TD' && dir !== 'LR')) return 0
-  if (getNodeSubgraph(graph, node)) return 0
   const face = dir === 'TD' ? 'L' : 'T'
   const n = graph.edges.filter((e) => {
     const h = graph.edgeHints!.get(e)
@@ -877,6 +879,33 @@ function calculateSubgraphBoundingBox(
       minX = Math.min(minX, d.x)
       maxX = Math.max(maxX, d.x)
     }
+    // #2913: a hook beside a node (left, in TD) or over it (top, in LR) lies in
+    // its gutter, which is a margin cell when the node is first: the frame
+    // reaches past the outer leg, and past a label centred on it
+    // (port-offsets.ts places the legs).
+    if (edge.from !== edge.to || edge.path.length !== 4) continue
+    const left = dirEquals(edge.startDir, Left)
+    if (!left && !dirEquals(edge.startDir, Up)) continue
+    const at = edge.path[1]!
+    const size = (left ? graph.columnWidth : graph.rowHeight).get(
+      left ? at.x : at.y,
+    )!
+    const here = gridToDrawingCoord(graph, at)
+    const nest = edge.loopNest
+    const leg =
+      (left ? here.x : here.y) +
+      (nest
+        ? size -
+          nestInset(graph, edge.from) -
+          nestStride(graph, edge.from) * (nest.count - 1) -
+          Math.floor(size / 2)
+        : 0)
+    if (left) {
+      minX = Math.min(
+        minX,
+        leg - Math.floor(widestLoopLabel(graph, edge.from) / 2),
+      )
+    } else minY = Math.min(minY, leg)
   }
 
   const subgraphPadding = 2
@@ -2966,7 +2995,7 @@ export function createMapping(graph: AsciiGraph): void {
 
   // A loop on a top face (#2100) needs a free grid row above the top nodes:
   // push every node down one row and rebuild the occupancy map.
-  if (graph.topMargin && graph.subgraphs.length === 0) {
+  if (graph.topMargin) {
     graph.grid = createGrid()
     for (const n of graph.nodes) {
       const gc = requireGridCoord(n)
@@ -2976,7 +3005,7 @@ export function createMapping(graph: AsciiGraph): void {
   }
 
   // The same on the left for a TD loop on a left face (#2888).
-  if (graph.leftMargin && graph.subgraphs.length === 0) {
+  if (graph.leftMargin) {
     graph.grid = createGrid()
     for (const n of graph.nodes) {
       const gc = requireGridCoord(n)
@@ -2994,13 +3023,13 @@ export function createMapping(graph: AsciiGraph): void {
     setColumnWidth(graph, node, spreads.get(node))
   }
   // The margin row is only as tall as the loop needs.
-  if (graph.topMargin && graph.subgraphs.length === 0) {
+  if (graph.topMargin) {
     graph.rowHeight.set(
       0,
       Math.max(3, ...graph.nodes.map((n) => 2 * nestedLoops(graph, n) + 1)),
     )
   }
-  if (graph.leftMargin && graph.subgraphs.length === 0) {
+  if (graph.leftMargin) {
     graph.columnWidth.set(
       0,
       Math.max(
