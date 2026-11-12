@@ -52,7 +52,7 @@ import { gridToDrawingCoord } from './grid.ts'
 import { clusterFlowGroup, clusterLaneEndShift } from './cluster-boundary.ts'
 import { exitGutter } from './types.ts'
 import { splitLines } from './multiline-utils.ts'
-import { drawLine } from './draw-lines.ts'
+import { drawLine, horizontalStroke } from './draw-lines.ts'
 
 /**
  * Draw a complete arrow (edge) between two nodes.
@@ -135,6 +135,7 @@ export function drawArrow(
             x: wallStart.x + strokeShift(graph, edge),
             y: wallStart.y,
           },
+          edge.style,
         )
       : copyCanvas(graph.canvas)
 
@@ -651,6 +652,7 @@ function drawBoxStart(
   firstLine: DrawingCoord[],
   sourceNode: AsciiNode,
   wallAt?: DrawingCoord,
+  style: AsciiEdgeStyle = 'solid',
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   const useAscii = graph.config.useAscii
@@ -746,14 +748,13 @@ function drawBoxStart(
       y,
       hasBorder
         ? (junction ?? (dirEquals(dir, Left) ? '┤' : '├'))
-        : useAscii
-          ? '-'
-          : '─',
+        : horizontalStroke(style, useAscii),
     )
     // A widened border column starts the stroke past the real border; bridge
     // the blank cells between them so the connector isn't an orphan (#2027).
     const [lo, hi] = x < from.x ? [x + 1, from.x - 1] : [from.x + 1, x - 1]
-    for (let gx = lo; gx <= hi; gx++) write(canvas, gx, y, useAscii ? '-' : '─')
+    for (let gx = lo; gx <= hi; gx++)
+      write(canvas, gx, y, horizontalStroke(style, useAscii))
   }
 
   return canvas
