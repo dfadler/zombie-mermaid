@@ -351,6 +351,16 @@
       "owner": "packages/ascii-renderer/src/__tests__/ascii-cluster-cycle-rank-2802.test.ts",
       "mermaid": "12.3.0",
       "verdict": "X ranks match mermaid for both orders with ELK hints and for T,R on the plain grid; plain-grid R,T differs (#3001)"
+    },
+    {
+      "paths": [
+        "__tests__/__snapshots__/ascii-cluster-exit-siblings-faces-2913.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-cluster-exit-siblings-faces-2913.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "with ELK hints every edge end is on mermaid's face (topology gate 14/14, 16/16, 22/22 in all four directions); the plain-grid and SVG snapshots only pin this renderer's output"
     }
   ]
 }

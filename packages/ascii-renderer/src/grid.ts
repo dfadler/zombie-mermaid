@@ -2536,7 +2536,9 @@ function gridEdgeHints(
   }
   const out = new Map<AsciiEdge, AsciiEdgeHint>()
   for (const edge of graph.edges) {
-    const h = queue.get(`${edge.from.name}\0${edge.to.name}`)?.shift()
+    // An edge out of a subgraph id is routed from a member; its hint is on the frame.
+    const from = edge.clusterSource?.source?.id ?? edge.from.name
+    const h = queue.get(`${from}\0${edge.to.name}`)?.shift()
     if (!h) continue
     const end = (e: AsciiEdgeEndHint): AsciiEdgeEndHint =>
       mirror ? { ...e, face: mirror[e.face] } : e

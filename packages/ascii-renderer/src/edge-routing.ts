@@ -739,7 +739,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   const lr = graph.config.graphDirection === 'LR'
   const table = lr ? graph.rowHeight : graph.columnWidth
   for (const e of hints ? graph.edges : []) {
-    if (e.parallelLane?.index !== 0 || !farGroup(graph, e)) continue
+    if (e.parallelLane?.index !== 0 || !(farGroup(graph, e) || e.clusterSource))
+      continue
     const h = hints!.get(e)!
     for (const [node, end] of [
       [e.from, h.start],
@@ -753,6 +754,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
           Number(o.to === node && oh?.end.face === end.face)
         )
       }, 0)
+      // A cluster exit's face holds the default three cells as it is (#1826).
+      if (e.clusterSource && ends <= 3) continue
       const at = requireGridCoord(node)[lr ? 'y' : 'x'] + 1
       table.set(at, Math.max(table.get(at)!, ends + 1))
     }
@@ -2120,12 +2123,26 @@ function hintedFaces(
     !h ||
     edge.from === edge.to ||
     (edge.parallelLane &&
+      !edge.clusterSource &&
       !farGroup(graph, edge) &&
       !crowdedDecision(graph, edge)) ||
-    edge.clusterSource ||
     edge.clusterTarget
   )
     return undefined
+  // A cluster exit takes ELK's faces only on the flow axis, out of the frame's
+  // flow face into the far one: a back or side route round the frame keeps the
+  // grid's, which draws it as Mermaid does (#3034).
+  if (edge.clusterSource) {
+    const [out, into, axis] = lr
+      ? (['R', 'L', 'x'] as const)
+      : (['B', 'T', 'y'] as const)
+    if (
+      h.start.face !== out ||
+      h.end.face !== into ||
+      requireGridCoord(edge.to)[axis] <= requireGridCoord(edge.from)[axis]
+    )
+      return undefined
+  }
   // ELK's top or bottom start on an LR decision is a slant: its right face, one
   // cell of its own (#2913).
   const slant =
@@ -2515,7 +2532,11 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // determineLabelLine's general width-based heuristic can't reliably
   // re-derive that from the finished path alone). determineLabelLine
   // itself skips lane edges for exactly this reason — see its own guard.
-  if (edge.parallelLane && edge.parallelLane.index > 0) {
+  if (
+    edge.parallelLane &&
+    edge.parallelLane.index > 0 &&
+    !(edge.clusterSource && hintedFaces(graph, edge))
+  ) {
     // A reverse-direction sibling (`B --> A` alongside `A --> B`, #629) runs
     // "backwards" relative to the graph direction, so determineStartAndEndDir
     // hands back a degenerate *same-side* pair — Down/Down in LR, Right/Right
@@ -2615,9 +2636,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     // A lane group enters by the gutter cell in front of its end face, so the
     // last leg runs into the face, not along it (as the lane siblings do).
     // A cardinal direction is (1, 1) plus its step.
-    const gate = edge.parallelLane
-      ? { x: to.x + hinted[1].x - 1, y: to.y + hinted[1].y - 1 }
-      : undefined
+    const gate =
+      edge.parallelLane || edge.clusterSource
+        ? { x: to.x + hinted[1].x - 1, y: to.y + hinted[1].y - 1 }
+        : undefined
     const via = gate
       ? routeEdge(graph, from, gate, requireCardinalDirection(hinted[0]))
       : null
@@ -2935,7 +2957,12 @@ export function determineLabelLine(
   ctx?: LabelContext,
 ): void {
   if (edge.text.length === 0 || flowLanes.has(edge)) return
-  if (edge.parallelLane && edge.parallelLane.index > 0) return
+  if (
+    edge.parallelLane &&
+    edge.parallelLane.index > 0 &&
+    !(edge.clusterSource && edge.hintedFaces)
+  )
+    return
   // Likewise a cluster-exit edge: determinePath placed its label directly
   // on the first segment outside the cluster. The width-based search below
   // would centre it on the stub, i.e. on the cluster wall.

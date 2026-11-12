@@ -421,7 +421,13 @@ function planOne(
       const hasOtherExit = eligible.some(
         (other) => other.parallelLane?.usedOffsets !== lane.usedOffsets,
       )
-      if (missing !== undefined && (hasOtherExit || lane.total >= 3)) {
+      // A group ELK gives its own ports is routed from them (`determinePath`):
+      // asking for tracks it would not use left sixteen empty columns behind.
+      if (
+        missing !== undefined &&
+        !graph.edgeHints?.has(edge) &&
+        (hasOtherExit || lane.total >= 3)
+      ) {
         return { at: missing, flow: false }
       }
       unroutable.add(lane.usedOffsets)
