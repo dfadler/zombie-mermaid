@@ -736,7 +736,6 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // #2902: a group routed between ELK's faces needs a cell for every end ELK
   // puts on those faces, so lengthen the nodes' side faces to hold them.
   const hints = graph.edgeHints
-  const lr = graph.config.graphDirection === 'LR'
   for (const e of hints ? graph.edges : []) {
     if (
       e.parallelLane?.index !== 0 ||
@@ -744,13 +743,12 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
     )
       continue
     const h = hints!.get(e)!
-    const routed = hintedFaces(graph, e)
-    for (const [node, end, dir] of [
-      [e.from, h.start, routed?.[0]],
-      [e.to, h.end, routed?.[1]],
+    for (const [node, end] of [
+      [e.from, h.start],
+      [e.to, h.end],
     ] as const) {
       // A side face grows its rows, a top or bottom face its columns.
-      const side = dir ? dirEquals(dir, Left) || dirEquals(dir, Right) : lr
+      const side = end.face === 'L' || end.face === 'R'
       const table = side ? graph.rowHeight : graph.columnWidth
       const ends = graph.edges.reduce((n, o) => {
         const oh = hints!.get(o)
@@ -763,7 +761,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
       // A cluster exit's face holds the default three cells as it is (#1826).
       if (e.clusterSource && ends <= 3) continue
       const at = requireGridCoord(node)[side ? 'y' : 'x'] + 1
-      table.set(at, Math.max(table.get(at) ?? 0, ends + 1))
+      table.set(at, Math.max(table.get(at)!, ends + 1))
     }
   }
   const need = new Map<number, { siblings: number; pairs: Set<string> }>()
@@ -2784,7 +2782,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
   // The hinted route was rejected: an overflowing group's sibling keeps its lane
   // (#329) rather than the shared centre path of the ordinary search.
-  if (laneSibling && overflowHinted && !(hinted && hintedPath)) {
+  if (laneSibling && overflowHinted && !hintedPath) {
     routeAsLane()
     return
   }
