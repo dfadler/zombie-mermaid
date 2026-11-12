@@ -29,7 +29,7 @@
 // ============================================================================
 
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
-import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
+import { gridToDrawingCoord, lineToDrawing, nestStride } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
 import { dirEquals, Left, requireGridCoord, Up } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
@@ -1553,13 +1553,25 @@ function allocateFaces(
       // ELK's loop: out of the cell its order puts first, back into the other,
       // as close to the centre as the face allows (a 5-wide box has three cells).
       const left = loopStartsLow(graph, f.edge) ? -1 : 1
-      const k = Math.min(2, Math.floor((geo.hi - geo.lo) / 2))
+      const room = Math.floor((geo.hi - geo.lo) / 2)
+      // #2913: nested duplicates take the cells two apart round the centre,
+      // the inner hook nearest it and each next one outside the last.
+      const nest = f.edge.loopNest
+      const k = nest ? Math.min(room, 2 * nest.index + 1) : Math.min(2, room)
       const dc = f.run.node.drawingCoord
       if (f.run.node.shape === 'diamond' && dc) {
         // A diamond's hook flanks its vertex, on the two slants beside it (a
         // face of one or two cells has no room for a hook's legs).
-        const [lo, hi] = slantGlyphs(f.run)
-        const at = (f.role === 'S') === left < 0 ? lo : hi
+        // #2913: nested hooks take the slants further from the vertex, the
+        // inner hook the pair nearest it: on a side face the rows its tall
+        // slant spans, on a top face the lines further down.
+        const back = nest ? nest.count - 1 - nest.index : 0
+        const vertical = f.run.axis === 'h'
+        const [lo, hi] = slantGlyphs(f.run, !vertical && nest ? nest.index : 0)
+        const at =
+          (f.role === 'S') === left < 0
+            ? lo + (vertical ? back : 0)
+            : hi - (vertical ? back : 0)
         placed.set(f, (f.run.axis === 'h' ? dc.y : dc.x) + at - geo.centre)
         slantStops.set(f, slantBlanks(f.run, at))
         continue
@@ -1585,6 +1597,25 @@ function allocateFaces(
     shiftedRun,
     true,
   )
+  // #2913: the legs of a nest stand a stride apart in the gutter beside the
+  // node, the inner hook's nearest it (one cell short of the arrowhead's).
+  for (const f of placed.keys()) {
+    const nest = f.edge.loopNest
+    if (!nest || f.role !== 'S') continue
+    const left = dirEquals(f.edge.startDir, Left)
+    const at = f.edge.path[1]!
+    const width =
+      (left ? graph.columnWidth : graph.rowHeight).get(left ? at.x : at.y) ?? 0
+    const by =
+      width -
+      2 -
+      nestStride(graph, f.edge.from) * nest.index -
+      Math.floor(width / 2)
+    if (by === 0) continue
+    const shift = result.get(f.edge)!
+    shift.points ??= f.edge.path.map(() => ({ x: 0, y: 0 }))
+    for (const i of [1, 2]) shift.points[i]![left ? 'x' : 'y'] += by
+  }
   // A diamond hook's start sits on its slant glyph, its arrowhead on the blank
   // cell before it.
   // Hooks are on the top or left face (RL and BT are flipped after drawing), so
@@ -1605,18 +1636,22 @@ function allocateFaces(
  * The two slant glyphs beside a diamond's vertex on a face, as positions along
  * it: the slant glyphs on the first line in from the face's border that has any.
  */
-function slantGlyphs(run: PortRun): [number, number] {
+function slantGlyphs(run: PortRun, skip = 0): [number, number] {
   const d = run.node.drawing!
   const h = run.axis === 'h'
   const len = h ? d.length : d[0]!.length
+  let seen = 0
+  let last: [number, number] = [0, 0]
   for (let i = 0; i < len; i++) {
     const at = (h ? d[i]! : d.map((c) => c[i]!)).flatMap((c, k) =>
       c === '╱' || c === '╲' || c === '/' || c === '\\' ? [k] : [],
     )
-    if (at.length) return [at[0]!, at[at.length - 1]!]
+    if (!at.length) continue
+    last = [at[0]!, at[at.length - 1]!]
+    // #2913: nested hooks of a face take the next line in, each wider than the last.
+    if (seen++ === skip) return last
   }
-  /* v8 ignore next */
-  return [0, 0]
+  return last
 }
 
 /** Blank cells from a diamond's border in to its slant glyph, on the row (column) `at` of its drawing. */

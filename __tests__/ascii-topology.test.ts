@@ -101,22 +101,26 @@ describe('self-loop hooks (#2913)', () => {
       path,
     })
     expect(
-      compareLoops([e('A', 'A', '0,0'), e('A', 'A', '0,0'), e('A', 'B', '1,1')]),
+      compareLoops([
+        e('A', 'A', '0,0'),
+        e('A', 'A', '0,0'),
+        e('A', 'B', '1,1'),
+      ]),
     ).toMatchObject({ loops: 2, loopHooks: 1 })
     expect(
       compareLoops([e('A', 'A', '0,0'), e('A', 'A', '1,1'), e('B', 'B')]),
     ).toMatchObject({ loops: 3, loopHooks: 3 })
   })
 
-  it('measures one hook per loop for a single loop, and the duplicate miss, in every direction', () => {
+  it('measures one hook per loop, for one loop and for duplicates, in every direction', () => {
     for (const dir of ['TD', 'LR', 'RL', 'BT']) {
       const one = measureSample(`flowchart ${dir}\n  A --> A`)
       expect(one).toMatchObject({ loops: 1, loopHooks: 1 })
       const two = measureSample(`flowchart ${dir}\n  A --> A\n  A --> A`)
       expect(two.loops, dir).toBe(2)
-      // Known miss on main: both loops draw as one hook (mermaid@12.3.0 nests two).
-      expect(two.loopHooks, dir).toBe(1)
-      expect(isExact(two), dir).toBe(false)
+      // mermaid@12.3.0 nests two hooks; the grid draws two.
+      expect(two.loopHooks, dir).toBe(2)
+      expect(isExact(two), dir).toBe(true)
     }
   })
 

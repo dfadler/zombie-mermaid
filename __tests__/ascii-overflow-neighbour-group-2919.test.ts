@@ -105,6 +105,7 @@ describe('overflowing neighbour group on ELK faces (#2919)', () => {
       colorMode: 'none',
       layoutHints: true,
     })
-    expect((text.match(/[▼▲◄►]/g) ?? []).length).toBe(7)
+    // Nine: b's four loops are four nested hooks, each with its head (#2913).
+    expect((text.match(/[▼▲◄►]/g) ?? []).length).toBe(9)
   })
 })

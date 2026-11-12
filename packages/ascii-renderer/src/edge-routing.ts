@@ -1541,6 +1541,31 @@ function hintedLoopFace(
 }
 
 /**
+ * The hooked loops of `edge`'s node on its face, innermost first (ELK nests
+ * duplicates: the loop whose ends lie nearest each other is the inner hook).
+ */
+export function loopNestOf(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { index: number; count: number } {
+  const face = hintedLoopFace(graph, edge)
+  if (!face) return { index: 0, count: 1 }
+  const span = (e: AsciiEdge): number => {
+    const h = graph.edgeHints!.get(e)!
+    return Math.abs(h.end.order - h.start.order)
+  }
+  const group = graph.edges
+    .filter(
+      (e) =>
+        e.from === edge.from &&
+        e.to === edge.to &&
+        hintedLoopFace(graph, e) === face,
+    )
+    .sort((a, b) => span(a) - span(b))
+  return { index: group.indexOf(edge), count: group.length }
+}
+
+/**
  * Whether a hinted loop's start takes the low cell of its face in the grid
  * (left on a top face, upper on a left face). ELK's order is in SVG
  * orientation, and RL and BT are flipped after drawing.
@@ -2358,6 +2383,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // no room above it: ask for a margin row (the layout is redone with one).
   edge.loopTopWanted = false
   edge.loopLeftWanted = false
+  edge.loopNest = undefined
   // #2888: a TD loop ELK hooks out of the left face and back into it. A first
   // column has no room beside it: ask for a margin column (the layout is redone).
   if (
@@ -2372,6 +2398,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       edge.startDir = Left
       edge.endDir = Left
       edge.faceLane = false
+      const nest = loopNestOf(graph, edge)
+      edge.loopNest = nest.count > 1 ? nest : undefined
       edge.path = [
         { x: c.x, y: c.y + a },
         { x: c.x - 1, y: c.y + a },
@@ -2483,6 +2511,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     edge.startDir = Up
     edge.endDir = Up
     edge.faceLane = false
+    const nest = loopNestOf(graph, edge)
+    edge.loopNest = nest.count > 1 ? nest : undefined
     // ELK's order puts the start on the left cell and the end on the right (the old shape: right to left).
     const [a, b] =
       !graph.edgeHints?.has(edge) || !loopStartsLow(graph, edge)

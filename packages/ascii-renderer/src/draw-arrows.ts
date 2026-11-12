@@ -1255,6 +1255,23 @@ function resolveLabelPlacementUncached(
   if (edge.text.length === 0) return null
   const onLane = flowLaneLabel(graph, edge)
   if (onLane) return onLane
+  // #2913: a nested hook's leg is too short for the on-stroke rules (its ends
+  // are two cells apart), and the label would land on its arrowhead. It sits
+  // centred on its own leg, at the leg's middle row, between the legs' strides.
+  const line = edge.loopNest ? labelLineToDrawing(graph, edge) : []
+  if (
+    line.length === 2 &&
+    line[0]!.x === line[1]!.x &&
+    splitLines(edge.text).length === 1
+  ) {
+    return [
+      {
+        x: line[0]!.x - Math.floor(displayWidth(edge.text) / 2),
+        y: Math.floor((line[0]!.y + line[1]!.y) / 2),
+        text: edge.text,
+      },
+    ]
+  }
   const centred = centredLabelPlacement(graph, edge, labelAware)
   const dx = strokeShiftFor(graph, edge, labelAware)
   // #1408 option C: a vertical edge's label goes on its own stroke when the

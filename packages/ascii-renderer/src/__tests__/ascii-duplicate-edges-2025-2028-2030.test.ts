@@ -534,14 +534,13 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
     expect(out.match(/[▲▼◄►]/g)).toHaveLength(edges)
   })
 
-  it('two self-loops on one node draw the one clean loop', () => {
-    const one = renderMermaidASCII('flowchart TD\n  n0["a"]\n  n0 --> n0', {
-      colorMode: 'none',
-    })
+  it('two self-loops on one node draw two nested hooks, one arrowhead each', () => {
+    // mermaid@12.3.0 draws one hook per loop, the second round the first (#2913).
     const two = renderMermaidASCII(CASES['#2028 duplicate self-loops']!, {
       colorMode: 'none',
     })
-    expect(two).toBe(one)
+    expect(two.match(/[▲▼◄►]/g)).toHaveLength(2)
+    expect(two.match(/┌/g)).toHaveLength(3)
   })
 
   it('#2025: the self-loop leaves and re-enters its node on strokes of its own', () => {
