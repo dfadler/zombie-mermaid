@@ -3263,6 +3263,24 @@ has no pixel units, so these keys do nothing there.
   few pixels (`edgeElasticity` 0.1 shifts the rows about 2px; `numIter` 50 shifts the columns about 15px), which needs
   fcose itself to reproduce, so they are not read.
 
+## Architecture ASCII labels ([#2678](https://github.com/dfadler/zombie-mermaid/issues/2678))
+
+Checked against mermaid 12.3.0 (headless, `scripts/lib/real-mermaid.ts`) for the gallery architecture samples and the
+fork-fix architecture sources; not checked on GitHub (renders 12.2.0) or mermaid.live.
+
+- **Every service and group title is drawn.** An icon mermaid has no art for (`general-94`'s `not-a-real-icon`) shows its
+  `?` as the first line of the box, above the label, where mermaid puts the glyph above the text. Known icons
+  (`database`, `disk`, `server`, `cloud`, `internet`, `blank`) draw no glyph in ASCII: the grid has no icon art, so the
+  shape (cylinder, stadium, circle) stands for it.
+- **A group that the ports would fold into another keeps its box** (`general-96`: `jobs:R -- L:db` and `api:B -- T:db`
+  make Backend L-shaped, which swallowed Storage). The group is stacked on its last layer and the foreign service steps
+  one layer past it, which is the column mermaid draws. Group positions in ASCII follow the ports, not fcose, so a
+  group's exact slot can differ (#2682, SVG layout, is decided separately).
+- **Left ([#3043](https://github.com/dfadler/zombie-mermaid/issues/3043)):** an edge with no arrowhead that ends at a group (`api:B -- T:db{group}`) runs down the source
+  group's wall. The same happens for `A --- Sub` in a flowchart, so it is the edge router's cluster-entry shape, not the
+  architecture lowering. C4's text order differs from mermaid's only in DOM order; every label is present and reads in
+  the same places.
+
 ## xyChart `%%{init}%%` / front-matter config ([#2905](https://github.com/dfadler/zombie-mermaid/issues/2905))
 
 Measured on mermaid 12.3.0 (headless Chromium, each key of the `xyChart` block rendered with and without,
