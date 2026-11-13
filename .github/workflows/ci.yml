@@ -448,8 +448,9 @@ jobs:
       # to publish a new build.
       image: ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only@sha256:aa9d5b32ea243e0f6880c5ad7b4fbb1ab863e97d271a215f5bd966aa58a605d5 # built from docker/visual-regression-chromium.Dockerfile at commit bb5b296 (v1.62.1-jammy, chromium-only, Node 24)
       options: --ipc=host
-    # Splits the ~280 screenshot tests across 4 parallel runners via
-    # Playwright's own --shard flag. Each shard still runs at
+    # Splits the ~2800 screenshot tests across 5 parallel runners via
+    # Playwright's own --shard flag (#2937: at 4 the seams+svg shards ran
+    # ~210s against ~146s for the other two). Each shard still runs at
     # playwright.config.ts's workers: 2 — that cap exists to avoid
     # CPU-contention noise in the pixel diffs (see the comment there), and
     # sharding across separate runners doesn't reintroduce it since each
@@ -459,8 +460,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
+        shardIndex: [1, 2, 3, 4, 5]
+        shardTotal: [5]
 
     steps:
       # This job uploads a writable artifact (screenshots) on failure from
