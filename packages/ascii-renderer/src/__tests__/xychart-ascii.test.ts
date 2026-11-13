@@ -186,7 +186,11 @@ describe('xychart ASCII – line charts', () => {
       [...row].some((c, j) => c === '╮' && lines[i + 1]?.[j] === '╯'),
     )
     expect(hairpin).toBe(true)
-    for (const tee of '├┤┴') expect(result).not.toContain(tee)
+    // The category axis has its own ┤ ticks; the line path itself has no tees.
+    const plot = lines
+      .map((row) => row.slice(row.search(/[│┤┼]/) + 1))
+      .join('\n')
+    for (const tee of '├┤┴') expect(plot).not.toContain(tee)
   })
 
   it('draws a single-point line as one mark in either orientation', () => {
