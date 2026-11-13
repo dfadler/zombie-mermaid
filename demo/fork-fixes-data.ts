@@ -1049,15 +1049,16 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'diagram-title-entities',
-    title: 'Diagram titles showed `&` and `<` as plain characters',
+    title: 'Chart titles showed an ampersand and angle brackets as plain text',
     symptom:
-      'mermaid@12.3.0 runs every diagram title through DOMPurify and draws the result as text, so a pie, gantt, timeline, quadrant, xychart or radar title with `&` or `<` shows `&amp;` and `&lt;` literally. This fork drew the plain characters.',
-    source: 'pie title Q&A <b>x</b>\n  "Yes" : 3\n  "No" : 1',
+      'mermaid@12.3.0 runs every diagram title through DOMPurify and draws the result as text, so an xychart (or pie, gantt, timeline, quadrant, radar) title with an ampersand or a tag shows `&amp;` and the tag literally. This fork drew the ampersand as a plain `&`.',
+    source:
+      'xychart-beta\n    title "Q&A <b>x</b>"\n    x-axis [a, b]\n    bar [1, 2]',
     fixCommit: 'cf94f85a',
     pr: 3091,
     render: 'svg',
     lookFor:
-      'Before: the title reads `Q&A x` (the tag is lost and `&` is plain). After: `Q&amp;A <b>x</b>`, as mermaid 12.3.0 draws it.',
+      'Before: the title reads `Q&A <b>x</b>`. After: `Q&amp;A <b>x</b>`, as mermaid 12.3.0 draws it.',
   },
 ]
 
