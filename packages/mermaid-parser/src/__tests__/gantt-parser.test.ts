@@ -485,3 +485,22 @@ describe('gantt parser: review fixes', () => {
     expect(t.at(-1)!).toBeGreaterThan(300 * 86_400_000)
   })
 })
+
+describe('parseGantt: size config', () => {
+  const withInit = (g: string) =>
+    parseGantt(`%%{init: {"gantt": ${g}}}%%\ngantt\n  A :2024-01-01, 1d`, NOW)
+
+  it('reads numeric size keys and ignores other types and negatives', () => {
+    const c = withInit(
+      '{"barHeight": 30, "fontSize": "big", "barGap": -1, "numberSectionStyles": 2.7}',
+    )
+    expect(c.sizes).toEqual({ barHeight: 30, numberSectionStyles: 2 })
+  })
+
+  it('floors numberSectionStyles at 1 and leaves sizes unset without keys', () => {
+    expect(withInit('{"numberSectionStyles": 0}').sizes).toEqual({
+      numberSectionStyles: 1,
+    })
+    expect(withInit('{"topAxis": true}').sizes).toBeUndefined()
+  })
+})

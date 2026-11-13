@@ -23,6 +23,7 @@ const TYPES = [
   'class',
   'er',
   'flowchart',
+  'gantt',
   'pie',
   'quadrant',
   'sequence',

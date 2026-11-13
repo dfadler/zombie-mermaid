@@ -329,9 +329,8 @@ match exactly, and the weekly layout-oracle workflow fails on a drift.
   whose first task has no start date, is a parse error here; Mermaid renders a
   broken chart.
 - **Config.** The `gantt` keys of `%%{init}%%` that change what is drawn are read
-  (see [Gantt Charts](diagrams.md#gantt-charts)); sizes (`barHeight`, `barGap`,
-  `topPadding`, `leftPadding`, `rightPadding`, `fontSize`, `numberSectionStyles`,
-  `useWidth`) are ignored.
+  (see [Gantt Charts](diagrams.md#gantt-charts)), the size keys included (checked
+  against mermaid 12.3.0); only `useWidth` is ignored, as the frame is a fixed 1200px.
 - **`excludes` at the end of a chart.** A run of excluded days still open at the
   last day is not shaded, as in Mermaid.
 - **ASCII.** Mermaid has no ASCII output; see [ASCII Gantt Charts](diagrams.md#ascii-gantt-charts).
