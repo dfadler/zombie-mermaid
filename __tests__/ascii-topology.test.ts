@@ -10,6 +10,8 @@ import {
   emptyCounts,
   inScope,
   isExact,
+  scoreSubgraphLoops,
+  subgraphLoopCases,
   isGraph,
   measureEr,
   measureSample,
@@ -131,6 +133,44 @@ describe('self-loop hooks (#2913)', () => {
     expect(describeSample('T', c, false)).toBe(
       'layer 0/0 order 0/0 self-loop hooks 1/2  T',
     )
+  })
+})
+
+describe('subgraph self-loop cases (#2913)', () => {
+  it('gives six shapes per direction, and one direction when asked', () => {
+    expect(subgraphLoopCases()).toHaveLength(24)
+    const td = subgraphLoopCases(['TD'])
+    expect(td).toHaveLength(6)
+    expect(td.every((c) => c.source.startsWith('flowchart TD\n'))).toBe(true)
+  })
+
+  it('scores a duplicate loop in a frame exact in every direction', () => {
+    for (const c of subgraphLoopCases()) {
+      const m = measureSample(c.source)
+      expect(m.loopHooks, c.title).toBe(m.loops)
+      expect(m.faceOk, c.title).toBe(m.faceEnds)
+    }
+  })
+})
+
+describe('scoreSubgraphLoops (#2913)', () => {
+  it('scores every case exact and lists only misses, or every case when asked', () => {
+    const quiet = scoreSubgraphLoops()
+    expect(quiet).toMatchObject({ cases: 24, exact: 24, lines: [] })
+    expect(quiet.counts.loopHooks).toBe(quiet.counts.loops)
+    const all = scoreSubgraphLoops(true)
+    expect(all.lines).toHaveLength(24)
+    expect(all.lines[0]).toMatch(/^subgraph loops: layer .* TD 2 loops/)
+  })
+
+  it('narrows to the direction after --dir', () => {
+    const argv = process.argv
+    process.argv = [...argv, '--dir', 'LR']
+    try {
+      expect(scoreSubgraphLoops()).toMatchObject({ cases: 6, exact: 6 })
+    } finally {
+      process.argv = argv
+    }
   })
 })
 

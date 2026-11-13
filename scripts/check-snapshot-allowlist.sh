@@ -183,6 +183,7 @@ ALLOWLIST=(
   # is an SVG and an ASCII snapshot per case; reviewed via `git diff`
   # (`vitest -u`).
   "__tests__/ascii-nested-self-loops-2913.test.ts"
+  "__tests__/ascii-subgraph-nested-self-loops-2913.test.ts"
 )
 
 is_allowlisted() {
