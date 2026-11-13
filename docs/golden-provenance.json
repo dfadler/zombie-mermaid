@@ -323,6 +323,16 @@
     },
     {
       "paths": [
+        "src/__tests__/__snapshots__/architecture-group-row-2988.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "src/__tests__/architecture-group-row-2988.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "viewBox height checked against 12.3.0 within 1px for the three row-of-two cases and the single-cell case; width is 1-2px narrower (#2682)"
+    },
+    {
+      "paths": [
         "src/__tests__/__snapshots__/flowchart-shapes-2552.test.ts.snap"
       ],
       "class": "b",

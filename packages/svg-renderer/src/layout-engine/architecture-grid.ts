@@ -174,6 +174,8 @@ function axisCoords(
   lo: number,
   hi: number,
   m: Metrics,
+  /** Extra pitch past cell `i`, for the cases the border count alone misses. */
+  extra: (i: number) => number = () => 0,
 ): number[] {
   const at = [0]
   for (let i = lo; i < hi; i++) {
@@ -181,9 +183,40 @@ function axisCoords(
     for (const [from, to] of spans.values()) {
       if (from <= i !== from <= i + 1 || to >= i !== to >= i + 1) edges++
     }
-    at.push(at[at.length - 1]! + m.pitch(edges))
+    at.push(at[at.length - 1]! + m.pitch(edges) + extra(i))
   }
   return at
+}
+
+/**
+ * Ponytail: a fit to three measured cases, not a model. On mermaid@12.3.0 a
+ * group that is one row of two services sits further from the services in the
+ * row below it than from a lone one: +15.6px for one outside service (below
+ * either member), +26.2px for two (#2988). It does not follow the group's size
+ * in general (a row of three gives 0 at the end and +38 in the middle), so only
+ * the row-of-two case is fitted; the force layout of #2682 would replace this.
+ */
+const ROW_OF_TWO_DROP = [0, 15.6, 26.2]
+
+function rowOfTwoDrop(
+  spanX: Map<string, [number, number]>,
+  spanY: Map<string, [number, number]>,
+  cell: Map<string, [number, number]>,
+  ancestorsOf: (id: string) => string[],
+  tile: number,
+) {
+  return (row: number): number => {
+    let below = 0
+    for (const [id, [cx, cy]] of cell) {
+      if (cy !== row + 1 || ancestorsOf(id).length > 0) continue
+      for (const [g, [x0, x1]] of spanX) {
+        const [y0, y1] = spanY.get(g)!
+        if (y0 === row && y1 === row && x1 - x0 === 1 && cx >= x0 && cx <= x1)
+          below++
+      }
+    }
+    return tile === TILE ? ROW_OF_TWO_DROP[Math.min(below, 2)]! : 0
+  }
 }
 
 export function layoutArchitectureGrid(
@@ -219,7 +252,19 @@ export function layoutArchitectureGrid(
   const x0 = Math.min(...xs)
   const y0 = Math.min(...ys)
   const colX = axisCoords(spanX, x0, Math.max(...xs), m)
-  const rowY = axisCoords(spanY, y0, Math.max(...ys), m)
+  const rowY = axisCoords(
+    spanY,
+    y0,
+    Math.max(...ys),
+    m,
+    rowOfTwoDrop(
+      spanX,
+      spanY,
+      cell,
+      (id) => ancestors(graph.subgraphs, id),
+      m.tile,
+    ),
+  )
 
   const nodes: PositionedNode[] = []
   const reach = new Map<string, Box>() // What each node occupies, label included.
