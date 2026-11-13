@@ -3454,8 +3454,11 @@ bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gall
   (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
 - **Init config.** `%%{init: {"journey": {...}}}%%` geometry keys (`width`, `height`,
   `taskMargin`, `diagramMarginX`, `diagramMarginY`, `leftMargin`, `maxLabelWidth`) are read in
-  SVG and match mermaid 12.3.0 (viewBox, boxes, bars, lines, axis, legend wrapping). A number
-  outside 0..100000 (or a string) is dropped. `actorColours`, `sectionFills`,
+  SVG and match mermaid 12.3.0 (viewBox, boxes, bars, lines, axis, legend wrapping). `width` and
+  `height` take numeric strings and every key but `height` takes negatives, as in mermaid
+  12.3.0. Dropped: a number beyond ±100000, a negative `height` (mermaid draws negative-height
+  rects and grows the viewBox by their bounds) and a string for any other key (mermaid
+  concatenates it into the arithmetic, giving a garbage viewBox). `actorColours`, `sectionFills`,
   `sectionColours` and the themes' `fillType0-7` are palette, not read: this library colours
   from the theme (in mermaid 12.3.0 they change no geometry or class names). ASCII ignores the config (no text mode).
 - **Non-numeric score.** Mermaid emits `NaN` face coordinates (browsers draw them at 0);

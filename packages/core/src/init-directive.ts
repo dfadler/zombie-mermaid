@@ -837,9 +837,23 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         'leftMargin',
         'maxLabelWidth',
       ] as const) {
-        const v = rec[k]
-        // 0..1e5 keeps the layout finite and the viewBox valid.
-        if (typeof v === 'number' && v >= 0 && v <= 1e5) j[k] = v
+        const n = rec[k]
+        // mermaid@12.3.0 coerces numeric strings only for width/height; every other key
+        // concatenates the string into the arithmetic (a 62310-wide viewBox), so it is dropped.
+        const v =
+          typeof n === 'string' &&
+          n.trim() !== '' &&
+          (k === 'width' || k === 'height')
+            ? Number(n)
+            : (n as unknown)
+        // Negatives pass (mermaid draws them) except `height`, where mermaid emits
+        // negative-height rects and a viewBox grown by their bounds; ±1e5 keeps the layout finite.
+        if (
+          typeof v === 'number' &&
+          Math.abs(v) <= 1e5 &&
+          (v >= 0 || k !== 'height')
+        )
+          j[k] = v
       }
       config.journey = j
       continue
