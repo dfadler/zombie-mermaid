@@ -143,6 +143,43 @@ describe('scripts/verify.sh', () => {
     expect(r.calls.some((c) => c.includes('vitest'))).toBe(false)
   })
 
+  describe('stale Linux baseline warning (#2938)', () => {
+    const shots = '__tests__/visual/__screenshots__/s.visual.test.ts'
+    const write = (sb: Sandbox, rel: string) => {
+      mkdirSync(join(sb.repo, rel, '..'), { recursive: true })
+      writeFileSync(join(sb.repo, rel), 'x')
+    }
+
+    it('lists a changed darwin baseline whose Linux twin did not change', () => {
+      const sb = verifySandbox()
+      write(sb, `${shots}/a-chromium-darwin.png`)
+      const r = run('verify.sh', [], sb, { BASE: 'HEAD' })
+      expect(r.code).toBe(0)
+      expect(r.err).toContain(`${shots}/a-chromium-linux.png`)
+    })
+
+    it('stays quiet when the Linux twin changed too', () => {
+      const sb = verifySandbox()
+      write(sb, `${shots}/a-chromium-darwin.png`)
+      write(sb, `${shots}/a-chromium-linux.png`)
+      expect(run('verify.sh', [], sb, { BASE: 'HEAD' }).err).not.toContain(
+        'WARNING',
+      )
+    })
+
+    it('notes packages/ source changes with no Linux baseline, but not test-only ones', () => {
+      const sb = verifySandbox()
+      write(sb, 'packages/x/__tests__/t.ts')
+      expect(run('verify.sh', [], sb, { BASE: 'HEAD' }).err).not.toContain(
+        'note: packages/',
+      )
+      write(sb, 'packages/x/render.ts')
+      expect(run('verify.sh', [], sb, { BASE: 'HEAD' }).err).toContain(
+        'note: packages/',
+      )
+    })
+  })
+
   it('runs the snapshot allow-list gate in the default path', () => {
     const r = run('verify.sh', [], verifySandbox(), { BASE: 'HEAD' })
     expect(r.calls).toContain('allowlist')
