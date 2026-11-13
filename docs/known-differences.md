@@ -235,8 +235,11 @@ pins the campaigns numbers). Colours (below) are not compared; empty quadrant la
   near-black dots. zombie-mermaid draws them in `var(--fg)`: the same dot on a light
   theme, still visible on a dark one. A point's own `color`, `stroke-color` and
   `stroke-width` (or its class's) are drawn as written.
-- **Palette.** Cell fills are the theme accent mixed into the background at four falling
-  strengths; mermaid uses lavender steps from its `primaryColor`.
+- **Palette.** With no theme accent on a light background (the default), cell fills,
+  border and quadrant label text are mermaid 12.3.0's default-theme values (`#ECECFF`
+  stepping to `#fbfbff`, border `#c7c7f1`). A theme with an accent, or a dark one, mixes
+  the accent into the background at four falling strengths instead, so the chart stays
+  legible; mermaid's other themes' primary colours are not computed.
 - **Text widths.** Neither renderer measures text; this library's font is not mermaid's
   `trebuchet ms`, so a long label overflows at a slightly different point.
 - **Init config and theme variables.** The `quadrantChart` block of `%%{init}%%`

@@ -164,10 +164,23 @@ describe('quadrant SVG: structure and styling', () => {
   it('uses theme variables, not literal colours, for the defaults', () => {
     expect(svg).toContain('.quadrant-point { fill: var(--fg);')
     expect(svg).toContain('.quadrant-text { fill: var(--_text); }')
-    expect(svg).toMatch(
-      /\.quadrant-cell-0 \{ fill: color-mix\(in srgb, var\(--accent, #[0-9a-f]{6}\) 14%, var\(--bg\)\); \}/,
-    )
     expect(svg).not.toContain('NaN')
+  })
+
+  it('defaults to mermaid 12.3.0’s lavender fills; an accent or a dark theme keeps the accent mix (#2858)', () => {
+    const src = 'quadrantChart\n    quadrant-1 A\n    P: [0.3, 0.6]'
+    expect(svg).toContain('.quadrant-cell-0 { fill: #ECECFF; }')
+    expect(svg).toContain('.quadrant-cell-3 { fill: #fbfbff; }')
+    expect(svg).toContain(
+      '.quadrant:nth-child(2) .quadrant-label { fill: #0e0e00; }',
+    )
+    expect(svg).toContain('.quadrant-line { stroke: #c7c7f1; }')
+    const mix =
+      /\.quadrant-cell-0 \{ fill: color-mix\(in srgb, var\(--accent, #[0-9a-f]{6}\) 14%, var\(--bg\)\); \}/
+    expect(renderMermaidSVG(src, { accent: '#ff0000' })).toMatch(mix)
+    expect(renderMermaidSVG(src, { bg: '#18181B', fg: '#FAFAFA' })).toMatch(mix)
+    // Not a #rrggbb: treated as light
+    expect(renderMermaidSVG(src, { bg: 'white' })).toContain('fill: #ECECFF;')
   })
 
   it('renders custom point styles as CSS rules, not attributes', () => {
