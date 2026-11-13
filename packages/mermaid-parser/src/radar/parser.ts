@@ -1,3 +1,4 @@
+import { sanitizeTitle } from '../sanitize-title.ts'
 import {
   extractInitConfig,
   MermaidParseError,
@@ -249,7 +250,7 @@ export function parseRadar(text: string): Radar {
       i++
     } else if (t.kind === 'TITLE') {
       i++
-      title = titleText(t.value) || undefined
+      title = sanitizeTitle(titleText(t.value)) || undefined
     } else if (t.kind === 'KW' && t.value === 'axis') {
       i++
       do {

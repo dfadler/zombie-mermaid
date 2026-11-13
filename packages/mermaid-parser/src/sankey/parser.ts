@@ -1,5 +1,5 @@
 import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
-import { sanitizeTitle } from '../packet/sanitize-title.ts'
+import { sanitizeTitle } from '../sanitize-title.ts'
 import type { Sankey, SankeyLink } from './types.ts'
 
 // ============================================================================

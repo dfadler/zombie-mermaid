@@ -33,11 +33,15 @@ const lay = (src: string) => layoutQuadrantChart(parseQuadrantChart(src))
 const round = (n: number) => Math.round(n * 100) / 100
 
 describe('quadrantChart init config: parsing', () => {
-  it('keeps numbers and known positions, drops the rest', () => {
+  it('keeps numbers (numeric strings too) and known positions, drops the rest', () => {
     const { quadrant } = extractInitConfig([
       '%%{init: {"quadrantChart": {"chartWidth": 400, "pointRadius": "9", "titleFontSize": -1, "pointTextPadding": null, "xAxisPosition": "bottom", "yAxisPosition": "middle"}}}%%',
     ])
-    expect(quadrant).toEqual({ chartWidth: 400, xAxisPosition: 'bottom' })
+    expect(quadrant).toEqual({
+      chartWidth: 400,
+      pointRadius: 9,
+      xAxisPosition: 'bottom',
+    })
   })
 
   it('merges later directives over earlier ones', () => {

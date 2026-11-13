@@ -1,5 +1,5 @@
 import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
-import { sanitizeTitle } from './sanitize-title.ts'
+import { sanitizeTitle } from '../sanitize-title.ts'
 import { resolvePacketConfig } from './types.ts'
 import type { Packet, PacketBlock } from './types.ts'
 

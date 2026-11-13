@@ -200,7 +200,7 @@ describe('gantt SVG', () => {
   it('renders Mermaid structure and classes', () => {
     const svg = renderMermaidSVG(SRC)
     expect(svg).toMatch(/^<svg /)
-    expect(svg).toContain('class="titleText">Plan &lt;1&gt;</text>')
+    expect(svg).toContain('class="titleText">Plan &amp;lt;1&amp;gt;</text>')
     expect(svg).toMatch(
       /<rect data-date="2024-01-06"[^>]*class="exclude-range"/,
     )
