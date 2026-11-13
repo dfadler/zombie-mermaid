@@ -48,49 +48,6 @@ import {
 } from './elk-graph-builder.ts'
 
 /**
- * ELK layer constraint for a top-level `[*]` marker: the start marker is
- * pinned to the first layer so a back-edge can't drag it into the middle
- * (#1240). The end marker is deliberately left unconstrained: it settles in
- * the layer right after the state(s) that transition into it, instead of a
- * layer of its own after every other node (`LAST_SEPARATE`), which drew
- * `Closed --> [*]` as a long line down the page edge when `Closed` is near
- * the top. Keyed by node shape.
- */
-const STATE_MARKER_LAYER_CONSTRAINT: Partial<Record<string, string>> = {
-  'state-start': 'FIRST',
-}
-
-/**
- * Root-graph ELK options applied to state diagrams only (flowcharts keep
- * their tuned defaults).
- *
- * Flowcharts deliberately do not get `MODEL_ORDER` cycle breaking (#1307).
- * They already break cycles the way mermaid.js does, by reversing the
- * depth-first back edges before ELK runs (`edgesReversedForLayout`), so ELK
- * has no cycle left to break; adding `MODEL_ORDER` on top only moved nodes
- * away from mermaid.js. Measured against mermaid 11.17.2 (relative placement
- * of every node pair, `scripts/layout-oracle.ts` style): applied to every
- * flowchart it changed 5 of the 26 gallery samples and 49 of 104 doc/test
- * flowcharts, closer for 0 and 2, further for 4 and 41; applied only to
- * graphs with a subgraph direction override (the one case where the
- * pre-reversal is skipped) it changed 1 and 7, closer for 0 and 2, further
- * for 1 and 5.
- *
- * - `cycleBreaking: MODEL_ORDER` reverses the edge that points *against*
- *   declaration order instead of whichever edge ELK's greedy heuristic picks.
- *   The greedy default reversed the main chain of `[*] --> Idle`,
- *   `Idle --> Active`, `Active --> Idle`, drawing it bottom-to-top with the
- *   start marker beside a state.
- * - `postCompaction: NONE`: LEFT_RIGHT_CONSTRAINT_LOCKING compaction slides
- *   nodes sideways after edges are routed, which leaves state edges ending
- *   in a horizontal run along the target's top border (arrowhead sideways).
- */
-const STATE_LAYOUT_OPTIONS: LayoutOptions = {
-  'elk.layered.cycleBreaking.strategy': 'MODEL_ORDER',
-  'elk.layered.compaction.postCompaction.strategy': 'NONE',
-}
-
-/**
  * Whether `graph` is a `stateDiagram` (it has `[*]` markers, the only thing
  * that distinguishes a state graph from a flowchart here). Composite states
  * are included: their compound nodes are placed among their siblings at
@@ -170,12 +127,13 @@ export function keepLegacyPipeline(graph: MermaidGraph): void {
 /**
  * Flowcharts are laid out the way mermaid@12.3.0 does it: one ELK pass over
  * the whole hierarchy (`INCLUDE_CHILDREN`) with ELK's own `DEPTH_FIRST` cycle
- * breaking. State diagrams keep the settings tuned for them.
+ * breaking. State diagrams always use it (#3005).
  */
 export function usesMermaidElkPipeline(graph: MermaidGraph): boolean {
   return (
-    !isStateGraph(graph) &&
-    (graph.subgraphs.length > 0 || !legacyPipelineGraphs.has(graph))
+    isStateGraph(graph) ||
+    graph.subgraphs.length > 0 ||
+    !legacyPipelineGraphs.has(graph)
   )
 }
 
@@ -351,9 +309,16 @@ function containerLayoutOptions(spec: {
  * How flowchart/state edge labels are measured and placed: at the resolved
  * edge-label font size, inline and centered on the edge.
  */
-function edgeLabelStyle(opts: { fontSizes: FontSizes }): ElkEdgeLabelStyle {
+function edgeLabelStyle(
+  opts: { fontSizes: FontSizes },
+  graph: MermaidGraph,
+): ElkEdgeLabelStyle {
   return {
     fontSize: opts.fontSizes.edgeLabel,
+    // mermaid@12.3.0 gives a state edge label a 24px line (#3005).
+    ...(usesMermaidElkPipeline(graph) && isStateGraph(graph)
+      ? { lineHeight: 24 }
+      : {}),
     layoutOptions: INLINE_CENTERED_EDGE_LABEL,
   }
 }
@@ -509,6 +474,15 @@ export function estimateNodeSize(
     return { width: w * 1.25, height: height + w * 0.48 }
   }
 
+  // mermaid@12.3.0 state notes: the label box (at least 120px wide, 24px a
+  // line) plus 15px of padding on each side (#3004).
+  if (stateDiagram && shape === 'note') {
+    return {
+      width: Math.max(metrics.width, 120) + 30,
+      height: metrics.lines.length * 24 + 30,
+    }
+  }
+
   // Mermaid's small circle is a fixed 14px dot.
   if (shape === 'small-circle') return { width: 14, height: 14 }
 
@@ -573,6 +547,35 @@ export function estimateNodeSize(
 export interface ElkGraphNode extends ElkNode {
   children?: ElkGraphNode[]
   edges?: ElkExtendedEdge[]
+}
+
+/**
+ * mermaid@12.3.0 hands ELK a state note inside a group of its own: 24px of
+ * padding and the note text as the group's label, held at the top, which is
+ * what pushes the ranks around a note further apart (#3004). `elkToPositioned`
+ * flattens the group away, so only the layout is affected.
+ */
+function wrapStateNote(
+  leaf: ElkNode,
+  text: string,
+  fontSize: number,
+): ElkGraphNode {
+  const { width, lines } = measureMultilineText(
+    text,
+    fontSize,
+    FONT_WEIGHTS.nodeLabel,
+  )
+  return {
+    id: `${leaf.id}----parent`,
+    layoutOptions: {
+      ...MERMAID_SUBGRAPH_SPACING,
+      'elk.padding': '[top=24,left=24,bottom=24,right=24]',
+      'elk.nodeLabels.placement': '[H_CENTER, V_TOP, INSIDE]',
+      'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+    },
+    labels: [{ text, width, height: lines.length * 24 - 2 }],
+    children: [leaf],
+  }
 }
 
 /** Sentinel container key for hop/bridge edges that belong at the root level. */
@@ -748,7 +751,12 @@ export function mermaidToElk(
         : 'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     ...(usesMermaidElkPipeline(graph)
-      ? { 'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST' }
+      ? {
+          'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
+          ...(isStateGraph(graph)
+            ? { 'elk.spacing.portsSurrounding': PORTS_SURROUNDING }
+            : {}),
+        }
       : {}),
     // 70 under mermaid@12.3.0's pipeline (50 before nodes had the 120px minimum width, #2717): its wider edge-label boxes need more
     // room for the parallel runs than 12.2.0's did (Five, Six and Nine Cluster
@@ -767,7 +775,6 @@ export function mermaidToElk(
             : '40',
         }
       : {}),
-    ...(isStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
     // Use INCLUDE_CHILDREN otherwise (simpler cross-hierarchy edge routing)
@@ -859,7 +866,7 @@ export function mermaidToElk(
           source: sourceRef,
           target: targetRef,
           label: edge.label,
-          labelStyle: edgeLabelStyle(opts),
+          labelStyle: edgeLabelStyle(opts, graph),
         }),
       )
     }
@@ -879,16 +886,11 @@ export function mermaidToElk(
         opts.legacyNodeSizes,
       )
       const leaf = buildElkLeafNode(id, size, node.label)
-      // A top-level start `[*]` marks where reading starts: pin it to the
-      // first layer so a back-edge can't drag it into the middle. The end
-      // marker stays free (see STATE_MARKER_LAYER_CONSTRAINT).
-      const pin = isStateGraph(graph)
-        ? STATE_MARKER_LAYER_CONSTRAINT[node.shape]
-        : undefined
-      if (pin !== undefined) {
-        leaf.layoutOptions = { 'elk.layered.layering.layerConstraint': pin }
-      }
-      rootChildren.push(leaf)
+      rootChildren.push(
+        isStateGraph(graph) && node.shape === 'note'
+          ? wrapStateNote(leaf, node.label, opts.fontSizes.nodeLabel)
+          : leaf,
+      )
     }
   }
 
@@ -979,7 +981,7 @@ export function mermaidToElk(
           source: reversed.has(index) ? edge.target : edge.source,
           target: reversed.has(index) ? edge.source : edge.target,
           label: edge.label,
-          labelStyle: edgeLabelStyle(opts),
+          labelStyle: edgeLabelStyle(opts, graph),
         }),
       )
     }
@@ -992,7 +994,7 @@ export function mermaidToElk(
         source: reversed.has(index) ? edge.target : edge.source,
         target: reversed.has(index) ? edge.source : edge.target,
         label: edge.label,
-        labelStyle: edgeLabelStyle(opts),
+        labelStyle: edgeLabelStyle(opts, graph),
       }),
     )
   }
@@ -1015,7 +1017,7 @@ export function mermaidToElk(
           source: reversed.has(index) ? edge.target : edge.source,
           target: reversed.has(index) ? edge.source : edge.target,
           label: edge.label,
-          labelStyle: edgeLabelStyle(opts),
+          labelStyle: edgeLabelStyle(opts, graph),
         }),
       )
     }
@@ -1163,7 +1165,11 @@ function subgraphToElk(
         opts.legacyNodeSizes,
       )
       const leaf = buildElkLeafNode(nodeId, size, node.label)
-      children.push(leaf)
+      children.push(
+        isStateGraph(graph) && node.shape === 'note'
+          ? wrapStateNote(leaf, node.label, opts.fontSizes.nodeLabel)
+          : leaf,
+      )
     }
   }
 
@@ -1210,7 +1216,7 @@ function subgraphToElk(
         source: reversed.has(index) ? edge.target : edge.source,
         target: reversed.has(index) ? edge.source : edge.target,
         label: edge.label,
-        labelStyle: edgeLabelStyle(opts),
+        labelStyle: edgeLabelStyle(opts, graph),
       }),
     )
   }

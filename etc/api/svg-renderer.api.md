@@ -162,6 +162,7 @@ export interface ElkEdgeLabelStyle {
     fontSize: number;
     // (undocumented)
     layoutOptions?: LayoutOptions;
+    lineHeight?: number;
 }
 
 // @public

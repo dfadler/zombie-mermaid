@@ -105,9 +105,9 @@ describe('findBackEdgeIndexes', () => {
 })
 
 describe('edgesReversedForLayout', () => {
-  it('reverses the back edge of a state diagram too (#2651)', () => {
+  it('leaves a state diagram cycle to ELK, as mermaid@12.3.0 does (#3005)', () => {
     const g = parseMermaid('stateDiagram-v2\n  [*] --> A\n  A --> B\n  B --> A')
-    expect(edgesReversedForLayout(g as never).size).toBe(1)
+    expect(edgesReversedForLayout(g as never).size).toBe(0)
   })
 
   it('is empty for a graph with a subgraph direction override', () => {
