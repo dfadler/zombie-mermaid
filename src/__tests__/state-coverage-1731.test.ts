@@ -81,7 +81,9 @@ describe('state concurrency regions: edge cases', () => {
     expect(nested).toContain('data-id="In"')
     expect(nested.match(/subgraph-region/g)).toHaveLength(2)
     expect(r1!.region && r2!.region).toBe(true)
-    expect(r1!.x).toBeLessThan(r2!.x)
+    // Two equal regions stack in one column, as in mermaid@12.3.0 (#2962).
+    expect(r1!.y).toBeLessThan(r2!.y)
+    expect(r1!.x).toBeCloseTo(r2!.x, 0)
   })
 
   it('a long dash run is still a separator, and a transition with a dashed label is not', () => {
