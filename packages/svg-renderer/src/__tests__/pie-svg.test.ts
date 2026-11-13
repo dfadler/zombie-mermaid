@@ -118,21 +118,29 @@ describe('pie SVG: styling and theme', () => {
     expect(svg).toContain("text { font-family: 'Inter'")
   })
 
-  it('fills slot 0 with the live theme accent and later slots with series shades', () => {
+  it("fills slices with mermaid 12.3.0's default pie1..pie12 scale on a light background (#2855)", () => {
     const svg = renderMermaidSVG(BASIC, {
       bg: '#ffffff',
       fg: '#111111',
       accent: '#e11d48',
     })
-    expect(svg).toContain('--pie-color-0: var(--accent, #3b82f6);')
-    expect(svg).toContain(
-      `--pie-color-1: ${getSeriesColor(1, '#e11d48', '#ffffff')};`,
-    )
-    expect(svg).toContain(
-      `--pie-color-2: ${getSeriesColor(2, '#e11d48', '#ffffff')};`,
-    )
+    expect(svg).toContain('--pie-color-0: #ECECFF;')
+    expect(svg).toContain('--pie-color-1: #ffffde;')
+    expect(svg).toContain('--pie-color-2: hsl(80, 100%, 56.2745098039%);')
     expect(svg).toContain('.pie-color-1 { fill: var(--pie-color-1); }')
     expect(svg).toContain('rect.pie-color-1 { stroke: var(--pie-color-1); }')
+  })
+
+  it('keeps the theme accent and series shades on a dark background', () => {
+    const svg = renderMermaidSVG(BASIC, {
+      bg: '#101010',
+      fg: '#eeeeee',
+      accent: '#e11d48',
+    })
+    expect(svg).toContain('--pie-color-0: var(--accent, #3b82f6);')
+    expect(svg).toContain(
+      `--pie-color-1: ${getSeriesColor(1, '#e11d48', '#101010')};`,
+    )
   })
 
   it('adapts the series shades to a dark background', () => {

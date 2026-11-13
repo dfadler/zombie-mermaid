@@ -344,7 +344,7 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
 `;
 
 exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type but C4/architecture) > pie: SVG and ASCII snapshots 1`] = `
-"<svg class="zm-pal-1hnw40w" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 522 450" width="522" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg class="zm-pal-ztg2aj" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 522 450" width="522" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   text { font-family: 'sans-serif', system-ui, sans-serif; }
   svg {
@@ -375,9 +375,9 @@ exports[`front matter (#2585) > title: (mermaid 12.3.0 draws it on every type bu
   .pie-slice-label { fill: var(--_text); font-family: "trebuchet ms", verdana, arial, sans-serif; font-size: 17px; font-weight: 400; }
   .pie-title { fill: var(--_text); font-family: "trebuchet ms", verdana, arial, sans-serif; font-size: 25px; font-weight: 400; }
   .pie-legend-text { fill: var(--_text); font-family: "trebuchet ms", verdana, arial, sans-serif; font-size: 17px; font-weight: 400; }
-  .zm-pal-1hnw40w {
-    --pie-color-0: var(--accent, #3b82f6);
-    --pie-color-1: #0d5ba5;
+  .zm-pal-ztg2aj {
+    --pie-color-0: #ECECFF;
+    --pie-color-1: #ffffde;
   }
   .pie-color-0 { fill: var(--pie-color-0); }
   rect.pie-color-0 { stroke: var(--pie-color-0); }

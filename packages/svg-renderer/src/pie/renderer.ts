@@ -9,9 +9,9 @@
 // through `--bg`/`--fg`/`--accent`) applies:
 //
 //   Mermaid                         here
-//   pie1..pie12                     --pie-color-0..11: the theme accent, then
-//                                   getSeriesColor() shades of it (the same
-//                                   palette xychart series use)
+//   pie1..pie12                     --pie-color-0..11: Mermaid's default-theme
+//                                   scale; on a dark background the theme
+//                                   accent, then getSeriesColor() shades of it
 //   slice opacity 0.7               opacity: 0.7 (on fill and stroke, as there)
 //   pieStrokeColor black, 2px       var(--fg), 2px
 //   pieOuterStrokeColor black, 2px  var(--fg), 2px
@@ -39,6 +39,8 @@ import {
 import {
   getSeriesColor,
   CHART_ACCENT_FALLBACK,
+  isValidHex,
+  isDarkBackground,
 } from '@zombie-mermaid/mermaid-parser'
 import { withDataSrc } from '../renderer.ts'
 import { PIE, PIE_FONT_STACK } from './layout.ts'
@@ -57,6 +59,36 @@ export function pieColorValue(
   return getSeriesColor(index, accent ?? CHART_ACCENT_FALLBACK, bg)
 }
 
+/**
+ * Mermaid 12.3.0's default-theme `pie1`..`pie12` (measured with
+ * scripts/lib/real-mermaid.ts, #2855), wrapping after 12 as its ordinal scale does.
+ */
+export const MERMAID_PIE_COLORS = [
+  '#ECECFF',
+  '#ffffde',
+  'hsl(80, 100%, 56.2745098039%)',
+  'hsl(240, 100%, 86.2745098039%)',
+  'hsl(60, 100%, 63.5294117647%)',
+  'hsl(80, 100%, 76.2745098039%)',
+  'hsl(300, 100%, 76.2745098039%)',
+  'hsl(180, 100%, 56.2745098039%)',
+  'hsl(0, 100%, 56.2745098039%)',
+  'hsl(300, 100%, 56.2745098039%)',
+  'hsl(150, 100%, 56.2745098039%)',
+  'hsl(0, 100%, 66.2745098039%)',
+] as const
+
+/**
+ * Slice colour for slot `index`: Mermaid's scale, except on a dark hex
+ * background where its pastels at 0.7 opacity wash out, so the theme-derived
+ * scale stays (the theme-aware option #2855 asks to keep).
+ */
+function pieSliceColor(index: number, colors: DiagramColors): string {
+  if (!(isValidHex(colors.bg) && isDarkBackground(colors.bg)))
+    return MERMAID_PIE_COLORS[index % MERMAID_PIE_COLORS.length]!
+  return pieColorValue(index, colors.accent, colors.bg)
+}
+
 function pieStyles(
   chart: PositionedPieChart,
   colors: DiagramColors,
@@ -70,7 +102,7 @@ function pieStyles(
 
   const vars = indices.map(
     (i) =>
-      `    --pie-color-${i}: ${chart.sliceColors?.[i] ?? pieColorValue(i, colors.accent, colors.bg)};`,
+      `    --pie-color-${i}: ${chart.sliceColors?.[i] ?? pieSliceColor(i, colors)};`,
   )
   const rules = indices.map(
     (i) =>

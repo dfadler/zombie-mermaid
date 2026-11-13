@@ -17,6 +17,9 @@ const SOURCES: Record<string, string> = {
   radar: 'radar-beta\n  axis a, b, c\n  curve x{1, 2, 3}\n  curve y{3, 2, 1}',
 }
 
+/** Pie only follows the accent on a dark background (#2855). */
+const BASE: Record<string, { bg?: string }> = { pie: { bg: '#101010' } }
+
 /** Root class and the declarations the page's cascade gives that diagram. */
 function paletteFor(svg: string, page: string): string[] {
   const cls = /^<svg [^>]*class="(zm-pal-[a-z0-9]+)"/.exec(svg)?.[1]
@@ -31,8 +34,8 @@ function paletteFor(svg: string, page: string): string[] {
 describe('palette isolation across inline SVGs (#2884)', () => {
   for (const [type, src] of Object.entries(SOURCES)) {
     it(`${type}: two accents on one page keep their own palette`, () => {
-      const a = renderMermaidSVG(src, { accent: '#ff0000' })
-      const b = renderMermaidSVG(src, { accent: '#0000ff' })
+      const a = renderMermaidSVG(src, { ...BASE[type], accent: '#ff0000' })
+      const b = renderMermaidSVG(src, { ...BASE[type], accent: '#0000ff' })
       const page = a + b
       // Nothing may declare a palette on every <svg> in the document.
       expect(page).not.toMatch(/(^|\n)\s*svg \{\s*--(mm|pie|xychart|timeline)-/)
