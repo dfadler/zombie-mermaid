@@ -40,6 +40,17 @@ describe('parseJourneySvg', () => {
     expect(l.dots).toHaveLength(4)
     expect(l.axis).toBeDefined()
   })
+
+  it('tolerates a missing viewBox, unclassed rects and a typeless box', () => {
+    const l = parseJourneySvg(
+      '<svg><rect x="1" y="2" width="3" height="4"></rect><rect x="5" y="6" width="7" height="8" class="task"></rect></svg>',
+    )
+    expect(l.size).toBeUndefined()
+    expect(l.sections).toHaveLength(0)
+    expect(l.tasks).toEqual([{ x: 5, y: 6, width: 7, height: 8, type: '' }])
+    // A viewBox without an origin falls back to 0,0.
+    expect(parseJourneySvg('<svg viewBox=" "></svg>').size).toBeDefined()
+  })
 })
 
 describe('journeyAgreement', () => {
@@ -65,6 +76,9 @@ describe('journeyAgreement', () => {
     const none = journeyAgreement(e, e)
     expect(none.sections).toBeNull()
     expect(worstJourney(none)).toBe(0) // Frame is 0 without an axis
+    expect(
+      worstJourney({ ...none, frame: null as unknown as number }),
+    ).toBeNull()
   })
 
   it('counts moved boxes, faces, lines and dots, ignoring sub-half-pixel noise', () => {
