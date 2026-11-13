@@ -97,10 +97,36 @@ describe('journey init config', () => {
     expect(l.tasks[0]!.lines).toHaveLength(1)
   })
 
-  it('drops bad values and unknown keys', () => {
-    expect(shape('{"width":-5,"height":"80","taskMargin":null,"x":1}')).toEqual(
-      shape(''),
+  // Probed in mermaid@12.3.0 (headless Chrome) on this BODY's shape (#3006).
+  it.each([
+    ['{"width":"60"}', [720, 540]],
+    ['{"width":-40}', [520, 540]],
+    ['{"taskMargin":-40}', [630, 540]],
+    ['{"diagramMarginX":-40}', [630, 540]],
+    ['{"diagramMarginY":-40}', [900, 440]],
+  ] as const)(
+    '%s accepts strings and negatives like mermaid@12.3.0',
+    (cfg, vb) => {
+      expect(shape(cfg).vb).toEqual(vb)
+    },
+  )
+
+  it('a numeric-string height coerces like mermaid; negative leftMargin shifts the first task left', () => {
+    expect(shape('{"height":"80"}')).toEqual(shape('{"height":80}'))
+    expect(lay('{"leftMargin":-40}').tasks[0]!.x).toBeLessThan(
+      lay('').tasks[0]!.x,
     )
+  })
+
+  it('drops bad values and unknown keys', () => {
+    // String taskMargin concatenates in mermaid (garbage viewBox), negative height draws
+    // negative-height rects: both dropped.
+    expect(
+      shape(
+        '{"height":-40,"taskMargin":"20","leftMargin":"60","width":"x","maxLabelWidth":1e9,"x":1}',
+      ),
+    ).toEqual(shape(''))
+    expect(shape('{"width":null,"height":""}')).toEqual(shape(''))
   })
 
   it('leaves the ASCII output unchanged (mermaid has no text mode)', () => {
