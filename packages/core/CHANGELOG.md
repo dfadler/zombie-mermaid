@@ -1,5 +1,19 @@
 # @zombie-mermaid/core
 
+## 5.17.0
+
+### Minor Changes
+
+- [#3094](https://github.com/dfadler/zombie-mermaid/pull/3094) [`acc6c90`](https://github.com/dfadler/zombie-mermaid/commit/acc6c90dfb956209a77ffe7a120054dc9a451940) Thanks [@dfadler](https://github.com/dfadler)! - `honorThemeVariables` now defaults to **on**, as in mermaid@12.3.0: a diagram's `%%{init: {"themeVariables": {...}}}%%` colours (`primaryColor`, `primaryBorderColor` and `primaryTextColor` under `theme: base`, `lineColor`, `pie1`..`pie12`, the `quadrant*` colours) now apply without the option. A `bg`, `fg`, `line`, `surface` or `border` you pass still wins. **Behaviour change:** diagrams that carry `themeVariables` render differently than before. To keep the old output, pass `honorThemeVariables: false` to `renderMermaidSVG` / `renderMermaidASCII`.
+
+### Patch Changes
+
+- [#3086](https://github.com/dfadler/zombie-mermaid/pull/3086) [`5b61a20`](https://github.com/dfadler/zombie-mermaid/commit/5b61a201cf86b4a8950471dcb84ec270aed04bba) Thanks [@dfadler](https://github.com/dfadler)! - gitGraph: the `redux`, `redux-dark`, `redux-color`, `redux-dark-color`, `neo` and `neo-dark` themes and `look: neo` now size and draw the graph as mermaid@12.3.0 does (smaller commits, square 32px label boxes, 12 branch colours, Arial text widths, the neo drop shadow); `look` is read from `%%{init}%%` and front matter. In ASCII, `parallelCommits: true` puts commits of the same depth on one row when their lanes do not overlap.
+
+- [#3085](https://github.com/dfadler/zombie-mermaid/pull/3085) [`3b4e15e`](https://github.com/dfadler/zombie-mermaid/commit/3b4e15e78cad94193eac23235e08c2233648adf6) Thanks [@dfadler](https://github.com/dfadler)! - Journey `%%{init}%%`: `width` and `height` accept numeric strings and the geometry keys accept negative numbers, as in mermaid@12.3.0.
+
+- [#3091](https://github.com/dfadler/zombie-mermaid/pull/3091) [`cf94f85`](https://github.com/dfadler/zombie-mermaid/commit/cf94f85a72a3a363955a76b465f823f97001aed3) Thanks [@dfadler](https://github.com/dfadler)! - Pie, gantt, timeline, quadrant, xychart and radar titles are sanitized like mermaid@12.3.0 (a literal `&amp;`, kept tags as text, `[#65](https://github.com/dfadler/zombie-mermaid/issues/65);` decoded), and numeric-string init values ("80") work as numbers in the timeline, kanban, sankey, class, er, quadrant, xychart and architecture blocks; timeline `disableMulticolor` follows truthiness.
+
 ## 5.16.0
 
 ### Minor Changes

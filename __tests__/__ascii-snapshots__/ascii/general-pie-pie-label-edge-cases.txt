@@ -1,4 +1,4 @@
-                Labels <&> "quotes"
+           Labels &lt;&amp;&gt; "quotes"
 
                                                          # R&D              30%
                                                          = Single quoted    25%

@@ -129,6 +129,10 @@ ALLOWLIST=(
   # one SVG per key that moves mermaid's output and the ASCII text they leave
   # unchanged; reviewed via the .snap diff.
   "src/__tests__/architecture-init-2907.test.ts"
+  # SVG + ASCII goldens for a group that is one row of two services with
+  # outside services below it (#2988); heights are asserted against
+  # mermaid@12.3.0, the .snap diff is reviewed for the rest.
+  "src/__tests__/architecture-group-row-2988.test.ts"
   # SVG + ASCII goldens for flowchart cloud/h-cyl/tag-rect/sm-circ/fork shapes
   # (#2552); reviewed via the .snap diff.
   "src/__tests__/flowchart-shapes-2552.test.ts"

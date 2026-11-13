@@ -1,3 +1,4 @@
+import { sanitizeTitle } from '../sanitize-title.ts'
 import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
 import type { Timeline, TimelinePeriod } from './types.ts'
 
@@ -121,7 +122,7 @@ export function parseTimeline(text: string): Timeline {
       case 'TITLE': {
         // Mermaid keeps everything after `title ` (substr(6)).
         const title = value.slice(6).trim()
-        if (title) timeline.title = title
+        if (title) timeline.title = sanitizeTitle(title)
         else delete timeline.title
         break
       }

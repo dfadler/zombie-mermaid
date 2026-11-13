@@ -6,7 +6,7 @@ pie title Labels <&> "quotes"
   "R&D" : 99
   'It\'s' : 10
 ---
-                <span style="color:inherit">Labels &lt;&amp;&gt; "quotes"</span>
+           <span style="color:inherit">Labels &amp;lt;&amp;amp;&amp;gt; "quotes"</span>
 
                                                          <span style="color:#3b82f6;background:#3b82f6">█</span> <span style="color:inherit">R&amp;D</span>             <span style="color:inherit"> 30%</span>
                                                          <span style="color:#0d5ba5">▓</span> <span style="color:inherit">Single quoted</span>   <span style="color:inherit"> 25%</span>

@@ -62,7 +62,7 @@ describe('pie SVG: structure', () => {
   it('escapes labels and titles', () => {
     const out = renderMermaidSVG('pie title A <b> & "c"\n  "x<y & \\"z\\"" : 1')
     expect(out).toContain(
-      'class="pie-title">A &lt;b&gt; &amp; &quot;c&quot;</text>',
+      'class="pie-title">A &lt;b&gt; &amp;amp; &quot;c&quot;&lt;/b&gt;</text>',
     )
     expect(out).toContain('data-label="x&lt;y &amp; &quot;z&quot;"')
     expect(out).toContain(

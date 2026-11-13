@@ -2664,13 +2664,12 @@ renderer keeps such a word whole and does not wrap participant names (#2963).
 browser opens; the viewBox is identical with and without it. Nothing visible changes in a
 static image, so the line is parsed and dropped (also `properties` and `details`).
 
-## Escaped characters in pie titles
+## Escaped characters in titles
 
-mermaid.js double-escapes `<`, `&` and `>` in a pie title: `pie title Labels <&> "quotes"`
-renders the text `Labels &lt;&amp;&gt; "quotes"` (the entities appear literally; the
-quotes are fine). Checked on mermaid 12.2.0 (jsDelivr, real Chrome) and on mermaid.live
-(version not shown on the page), by reading the rendered title element's text. zombie-mermaid
-renders the literal `Labels <&> "quotes"` and does not copy the bug. Duplicate slice
+mermaid.js runs every diagram title through DOMPurify and draws the result as text, so `<`, `&`
+and `>` appear as literal entities: `pie title Labels <&> "quotes"` renders `Labels &lt;&amp;&gt; "quotes"`.
+zombie-mermaid does the same for pie, packet, gantt, timeline, quadrant, xychart and radar titles
+(checked against mermaid 12.3.0, #2998). Sequence, C4 and journey titles are not covered yet. Duplicate slice
 labels such as `"R&D"` keep the first value in both renderers
 ([#2084](https://github.com/dfadler/zombie-mermaid/issues/2084)).
 

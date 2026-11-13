@@ -107,9 +107,10 @@ function purify(src: string): string {
       i = end < 0 ? src.length : end + 3
       continue
     }
-    const m = /^<(\/?)([A-Za-z][^\s/>]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/.exec(
-      src.slice(lt),
-    )
+    const m =
+      /^<(\/?)([A-Za-z][^\s/>]*)(?![^\s/>])((?:"[^"]*"|'[^']*'|[^>"'])*)>/.exec(
+        src.slice(lt),
+      )
     if (!m) {
       // An unterminated tag swallows the rest of the title.
       i = src.length

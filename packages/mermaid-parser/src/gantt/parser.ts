@@ -1,3 +1,4 @@
+import { sanitizeTitle } from '../sanitize-title.ts'
 import { MermaidParseError, decodeMermaidEntities } from '@zombie-mermaid/core'
 import {
   MS_DAY,
@@ -272,7 +273,7 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
     } else if ((m = /^weekend\s+(friday|saturday)\b/i.exec(line))) {
       chart.weekend = m[1]!.toLowerCase() as 'friday' | 'saturday'
     } else if ((m = /^title\s(.+)/i.exec(line))) {
-      chart.title = decodeMermaidEntities(m[1]!.trim())
+      chart.title = sanitizeTitle(m[1]!.trim())
     } else if ((m = /^section\s(.+)/i.exec(line))) {
       section = decodeMermaidEntities(m[1]!.trim())
       chart.sections.push(section)
