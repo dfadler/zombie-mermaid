@@ -56,7 +56,7 @@ jobs:
             tr -d '\000-\010\013-\037\177`' < out.txt | cut -c1-300 | head -20
             printf '\n%s\n\nUpdate SURFACE_VERSIONS and the table in docs/known-differences.md, then re-verify parity claims that name the old version ("Re-verifying" in that doc). Output above is data derived from third-party bundles.\n' "$fence"
           } > body.md
-          n=$(gh issue list --repo "$REPO" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          n=$(gh issue list --repo "$REPO" --state open --search "in:title \"$title\"" --json number,title | jq -r --arg t "$title" '[.[] | select(.title == $t)][0].number // empty')
           if [ -n "$n" ]; then
             gh issue edit "$n" --repo "$REPO" --body-file body.md
           else
