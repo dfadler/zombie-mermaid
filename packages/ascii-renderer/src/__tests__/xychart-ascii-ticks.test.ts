@@ -273,3 +273,35 @@ describe('xychart ASCII – every mermaid tick and axis title (#2310, #2678)', (
     expect(out.split('\n').some((l) => /^\s*(\d+)[┤│]/.test(l))).toBe(true)
   })
 })
+
+describe('xychart ASCII – negative and mixed-sign bars (#2880)', () => {
+  // Mermaid 12.3.0 draws every bar from the axis start, never from zero.
+  const barCells = (out: string) =>
+    out.split('\n').map((l) => (l.match(/█/g) ?? []).length)
+
+  it('vertical bar [-5, 5]: the 5 bar fills every row, the -5 bar one', () => {
+    const rows = barCells(
+      render('xychart-beta\n  x-axis [a, b]\n  bar [-5, 5]'),
+    )
+    const full = rows.filter((n) => n > 0)
+    // One column group per bar: the -5 bar is on the bottom row only.
+    expect(full.length).toBeGreaterThan(2)
+    expect(Math.min(...full)).toBeLessThan(Math.max(...full))
+    expect(full.at(-1)).toBe(Math.max(...full))
+  })
+
+  it('vertical bar [-2, -5, -8] draws the same bars as [2, 5, 8]', () => {
+    const cells = (v: string) =>
+      barCells(render(`xychart-beta\n  x-axis [a, b, c]\n  bar [${v}]`))
+    expect(cells('-2, -5, -8')).toEqual(cells('2, 5, 8'))
+  })
+
+  it('horizontal bar [-5, 5]: the 5 bar is longer than the -5 stub', () => {
+    const out = render(
+      'xychart-beta horizontal\n  x-axis [a, b]\n  bar [-5, 5]',
+    )
+    const [stub, full] = barCells(out).filter((n) => n > 0)
+    expect(stub).toBeGreaterThan(0)
+    expect(full).toBeGreaterThan(stub!)
+  })
+})

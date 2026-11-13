@@ -350,8 +350,8 @@ function renderVertical(
     // a later series drawn on top of an earlier, taller-or-shorter one.
     const usable = Math.max(1, bandW - 2)
     const singleBarW = Math.max(1, Math.min(usable, 8))
-    const baseRow =
-      yRange.max > yRange.min ? valueToRow(Math.max(0, yRange.min)) : 0
+    // Mermaid 12.3.0 draws every bar from the axis start, whatever the signs.
+    const baseRow = 0
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
       const entry = barEntries[bIdx]!
@@ -613,8 +613,7 @@ function renderHorizontal(
     // being split into grouped sub-rows, so a later series' bar paints over
     // an earlier one.
     const singleBarH = 1
-    const baseCol =
-      yRange.max > yRange.min ? valueToCol(Math.max(0, yRange.min)) : plotLeft
+    const baseCol = plotLeft
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
       const entry = barEntries[bIdx]!
