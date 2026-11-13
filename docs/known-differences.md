@@ -857,7 +857,13 @@ the values, markup in labels).
   `<svg>` sizing attributes. Colours (`axisColor`, `graticuleColor`) are palette, not read.
   ASCII ignores the config (no text mode).
 - **Title element.** Written even when empty, as mermaid does.
-- **Other renderers.** Not checked on GitHub or mermaid.live.
+- **Looks and themes.** Mermaid 12.3.0 draws radar identically under `look` `neo` and `redux`
+  (`%%{init}%%`, `theme` `neo-dark`/`redux-dark` too): the SVG structure and the radar CSS equal
+  the default look's. Other themes (`dark`, `forest`) change only the CSS colours, never the
+  structure. This library ignores `look` for radar as well, so there is nothing to match.
+- **mermaid.live.** Checked 2026-11-13 with the Radar: Grades sample: the diagram SVG equals the
+  mermaid 12.3.0 render element for element (only the site's pan/zoom wrapper and `viewBox`
+  differ). GitHub's ` ```mermaid ` block was not checked: it needs a published page.
 - **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
 
 ## Sankey diagrams
