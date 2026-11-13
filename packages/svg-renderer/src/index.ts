@@ -359,12 +359,38 @@ function scopeSvgIds(svg: string): string {
 }
 
 /**
+ * Diagram types whose text mermaid 12.3.0 draws as SVG `<text>`, so a typed
+ * `&lt;` / `&amp;` shows literally (checked against real renders, #2997).
+ * The rest draw HTML labels, where the browser decodes entities.
+ */
+const LITERAL_ENTITY_TYPES: ReadonlySet<DiagramType> = new Set([
+  'pie',
+  'packet',
+  'gantt',
+  'timeline',
+  'xychart',
+  'sankey',
+  'radar',
+  'sequence',
+])
+
+/**
+ * Decode XML entities that may leak from markdown parsers (e.g. rehype-raw),
+ * except for the diagram types above, where mermaid keeps them as typed.
+ */
+function decodeSourceEntities(text: string): string {
+  return LITERAL_ENTITY_TYPES.has(detectDiagramType(text))
+    ? text
+    : decodeXML(text)
+}
+
+/**
  * Parse `text` with the same detection and parser the renderer would use, but
  * lay out and draw nothing. Throws the parser's error (usually `Line N: ...`);
  * returns normally when the source parses.
  */
 export function validateMermaid(text: string): void {
-  const decoded = extractAccessibility(decodeXML(text)).text
+  const decoded = extractAccessibility(decodeSourceEntities(text)).text
   diagramRegistry[detectDiagramType(decoded)].parse(
     splitStatements(decoded),
     decoded,
@@ -378,12 +404,13 @@ function renderMermaidSVGRaw(
 ): { svg: string; colors: DiagramColors } {
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
   // Without this, escapeXml() double-encodes them: &lt; → &amp;lt; → literal "&lt;" in SVG.
+  // Skipped for diagram types where mermaid draws them literally (#2997).
   // `text` itself is left untouched so `embedSource` below stamps the exact
   // string the caller passed in, not this entity-decoded copy used
   // internally for parsing.
   checkLimit('maxInputLength', text.length, options.limits)
   checkLineLength(text, options.limits)
-  const acc = extractAccessibility(decodeXML(text))
+  const acc = extractAccessibility(decodeSourceEntities(text))
   const decoded = acc.text
 
   const font = options.font ?? 'Inter'
