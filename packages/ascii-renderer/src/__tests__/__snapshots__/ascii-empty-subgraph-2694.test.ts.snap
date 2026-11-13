@@ -243,16 +243,19 @@ exports[`an empty subgraph prints its title (#2694) > nested-in-filled: ASCII an
         |  outer |
         |        |
         |        |
+        | inner  |
+        |        |
+        |        |
+        |        |
+        |        |
+        |        |
+        |        |
+        |        |
 +---+   | +----+ |
 |   |   | |    | |
 | A +---->| X  | |
 |   |   | |    | |
 +---+   | +----+ |
-        |        |
-        |        |
-        |        |
-        |        |
-        | inner  |
         |        |
         +--------+"
 `;
@@ -316,16 +319,19 @@ exports[`an empty subgraph prints its title (#2694) > nested-in-filled: ASCII an
         │  outer │
         │        │
         │        │
+        │ inner  │
+        │        │
+        │        │
+        │        │
+        │        │
+        │        │
+        │        │
+        │        │
 ┌───┐   │ ┌────┐ │
 │   │   │ │    │ │
 │ A ├───┼►│ X  │ │
 │   │   │ │    │ │
 └───┘   │ └────┘ │
-        │        │
-        │        │
-        │        │
-        │        │
-        │ inner  │
         │        │
         └────────┘"
 `;
