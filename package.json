@@ -189,6 +189,7 @@
     "gantt:oracle": "tsx scripts/gantt-oracle.ts",
     "journey:oracle": "tsx scripts/journey-oracle.ts",
     "timeline:oracle": "tsx scripts/timeline-oracle.ts",
+    "sankey:oracle": "tsx scripts/sankey-oracle.ts",
     "gitgraph:oracle": "tsx scripts/gitgraph-oracle.ts",
     "radar:oracle": "tsx scripts/radar-oracle.ts",
     "radar:parser-fixture": "tsx scripts/radar-parser-fixture.ts",

@@ -7,6 +7,7 @@ import { scorePie } from './pie-measure.ts'
 import { scoreJourney } from './journey-measure.ts'
 import { scoreKanban } from './kanban-measure.ts'
 import { scoreTimeline } from './timeline-measure.ts'
+import { scoreSankey } from './sankey-measure.ts'
 import { scoreGitGraph } from './gitgraph-measure.ts'
 import { scoreRequirement } from './requirement-measure.ts'
 import { scoreC4 } from './c4-measure.ts'
@@ -25,6 +26,7 @@ export async function scoreSeparately(
   const gantt = await scoreGantt(session)
   const timeline = await scoreTimeline(session, commit)
   const journey = await scoreJourney(session)
+  const sankey = await scoreSankey(session)
   const kanban = await scoreKanban(session)
   const gitgraph = await scoreGitGraph(session, commit)
   const requirement = await scoreRequirement(session, commit)
@@ -48,6 +50,7 @@ export async function scoreSeparately(
           gantt,
           timeline,
           journey,
+          sankey,
           kanban,
           requirement,
           gitgraph,

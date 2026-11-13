@@ -569,7 +569,6 @@ export const SANKEY: {
     readonly ascent: 13;
     readonly descent: 3;
     readonly iterations: 6;
-    readonly labelFit: 1.12;
 };
 
 // @public
