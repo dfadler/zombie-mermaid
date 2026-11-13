@@ -31,6 +31,14 @@ describe('parseSankeySvg', () => {
     ])
   })
 
+  it('tolerates a label without an anchor and a ribbon without a path', () => {
+    const l = parseSankeySvg(
+      '<svg viewBox="0 0 9 9"><g class="node-labels"><text x="1" y="2">t</text></g><g class="link"><path></path></g></svg>',
+    )
+    expect(l.labels).toEqual([{ x: 1, y: 2, anchor: '', text: 't' }])
+    expect(l.ribbons[0]!.nums).toEqual([NaN])
+  })
+
   it('has no size without a viewBox', () => {
     expect(parseSankeySvg('<svg></svg>')).toEqual({
       bars: [],
