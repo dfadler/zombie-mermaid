@@ -1,5 +1,31 @@
 # @zombie-mermaid/mermaid-parser
 
+## 5.17.0
+
+### Minor Changes
+
+- [#3063](https://github.com/dfadler/zombie-mermaid/pull/3063) [`2afa86d`](https://github.com/dfadler/zombie-mermaid/commit/2afa86ddb4ca0f5a99e180fecdcd9ca9a008bbac) Thanks [@dfadler](https://github.com/dfadler)! - Gantt: the `gantt` size keys of `%%{init}%%` (`barHeight`, `barGap`, `topPadding`, `leftPadding`, `rightPadding`, `gridLineStartPadding`, `titleTopMargin`, `fontSize`, `sectionFontSize`, `numberSectionStyles`) are read and match mermaid@12.3.0. The site hub gets a Gantt page.
+
+- [#3094](https://github.com/dfadler/zombie-mermaid/pull/3094) [`acc6c90`](https://github.com/dfadler/zombie-mermaid/commit/acc6c90dfb956209a77ffe7a120054dc9a451940) Thanks [@dfadler](https://github.com/dfadler)! - `honorThemeVariables` now defaults to **on**, as in mermaid@12.3.0: a diagram's `%%{init: {"themeVariables": {...}}}%%` colours (`primaryColor`, `primaryBorderColor` and `primaryTextColor` under `theme: base`, `lineColor`, `pie1`..`pie12`, the `quadrant*` colours) now apply without the option. A `bg`, `fg`, `line`, `surface` or `border` you pass still wins. **Behaviour change:** diagrams that carry `themeVariables` render differently than before. To keep the old output, pass `honorThemeVariables: false` to `renderMermaidSVG` / `renderMermaidASCII`.
+
+### Patch Changes
+
+- [#3040](https://github.com/dfadler/zombie-mermaid/pull/3040) [`3126f3e`](https://github.com/dfadler/zombie-mermaid/commit/3126f3e5807124a865292a4df04c0bf5473e5457) Thanks [@dfadler](https://github.com/dfadler)! - SVG: class and ER boxes are sized as mermaid@12.3.0 draws them: 24px member rows, a 48px class header (72 with an annotation), 24px compartment padding, 42.75px ER header and rows, a row with a `<br>` comment one line taller, and widths from mermaid's kerned 16px text measurement. `PositionedErEntity` gains `rowHeights`. Refs [#2678](https://github.com/dfadler/zombie-mermaid/issues/2678).
+
+- [#3086](https://github.com/dfadler/zombie-mermaid/pull/3086) [`5b61a20`](https://github.com/dfadler/zombie-mermaid/commit/5b61a201cf86b4a8950471dcb84ec270aed04bba) Thanks [@dfadler](https://github.com/dfadler)! - gitGraph: the `redux`, `redux-dark`, `redux-color`, `redux-dark-color`, `neo` and `neo-dark` themes and `look: neo` now size and draw the graph as mermaid@12.3.0 does (smaller commits, square 32px label boxes, 12 branch colours, Arial text widths, the neo drop shadow); `look` is read from `%%{init}%%` and front matter. In ASCII, `parallelCommits: true` puts commits of the same depth on one row when their lanes do not overlap.
+
+- [#3065](https://github.com/dfadler/zombie-mermaid/pull/3065) [`9730760`](https://github.com/dfadler/zombie-mermaid/commit/97307606dca07eeeb739e1c1a7720f5532a088af) Thanks [@dfadler](https://github.com/dfadler)! - Requirement diagrams: relationship lines have rounded corners as in mermaid@12.3.0, `style`, `class` and `classDef` apply in source order (a later one wins), and every `:::` class on a box is kept.
+
+- [#3084](https://github.com/dfadler/zombie-mermaid/pull/3084) [`a40f41b`](https://github.com/dfadler/zombie-mermaid/commit/a40f41b176094ba3c22d1036fdc3065c0130808e) Thanks [@dfadler](https://github.com/dfadler)! - Sankey: node names go through the same DOMPurify round trip as in mermaid@12.3.0 (`<script>` is dropped, `<img onerror>` loses the handler, other tags show as text, names that sanitise alike are one node), and a label that reaches past the bars is sized with the Inter font metrics it is drawn in, so the viewBox no longer clips it. New `pnpm run sankey:oracle` compares bars, labels, ribbons and the viewBox with real mermaid.
+
+- [#3088](https://github.com/dfadler/zombie-mermaid/pull/3088) [`6ffa2aa`](https://github.com/dfadler/zombie-mermaid/commit/6ffa2aaa849f3087f5112929c37c851c372ae488) Thanks [@dfadler](https://github.com/dfadler)! - Sequence SVG: with `wrap` on, a word wider than the wrap width in a message, note or participant name splits mid-word with a trailing `-` as mermaid@12.3.0's `breakString` does, and a `wrap:` prefix or init `wrap` now wraps a participant name (its box grows taller) instead of leaving it on one line.
+
+- [#3092](https://github.com/dfadler/zombie-mermaid/pull/3092) [`f15a155`](https://github.com/dfadler/zombie-mermaid/commit/f15a1559cb7c720cbde4314aec255b3112a9db44) Thanks [@dfadler](https://github.com/dfadler)! - State: diagrams are laid out from the ELK inputs mermaid@12.3.0 uses: composites and edge-less-composite diagrams go through the same pipeline as flowcharts, a note sits in its own padded group at mermaid's size, edge labels are 24px per line (empty edges carry a zero-size label), the layer snapping that moved nodes off ELK's placement is skipped, and a `[*]` dot sits on its neighbour's centre line. Notes are numbered by edge count (`A----note-1`), as mermaid does. Against 12.3.0 the Notes (was 232 px off), Connection Lifecycle (51 px) and composite-with-two-`[*]-pairs (96 px) layouts now agree to within a few px. Closes [#3004](https://github.com/dfadler/zombie-mermaid/issues/3004), [#3005](https://github.com/dfadler/zombie-mermaid/issues/3005), [#3007](https://github.com/dfadler/zombie-mermaid/issues/3007).
+
+- [#3091](https://github.com/dfadler/zombie-mermaid/pull/3091) [`cf94f85`](https://github.com/dfadler/zombie-mermaid/commit/cf94f85a72a3a363955a76b465f823f97001aed3) Thanks [@dfadler](https://github.com/dfadler)! - Pie, gantt, timeline, quadrant, xychart and radar titles are sanitized like mermaid@12.3.0 (a literal `&amp;`, kept tags as text, `[#65](https://github.com/dfadler/zombie-mermaid/issues/65);` decoded), and numeric-string init values ("80") work as numbers in the timeline, kanban, sankey, class, er, quadrant, xychart and architecture blocks; timeline `disableMulticolor` follows truthiness.
+- Updated dependencies [[`5b61a20`](https://github.com/dfadler/zombie-mermaid/commit/5b61a201cf86b4a8950471dcb84ec270aed04bba), [`3b4e15e`](https://github.com/dfadler/zombie-mermaid/commit/3b4e15e78cad94193eac23235e08c2233648adf6), [`acc6c90`](https://github.com/dfadler/zombie-mermaid/commit/acc6c90dfb956209a77ffe7a120054dc9a451940), [`cf94f85`](https://github.com/dfadler/zombie-mermaid/commit/cf94f85a72a3a363955a76b465f823f97001aed3)]:
+  - @zombie-mermaid/core@5.17.0
+
 ## 5.16.0
 
 ### Minor Changes
