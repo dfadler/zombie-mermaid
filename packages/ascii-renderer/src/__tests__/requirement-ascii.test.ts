@@ -88,7 +88,9 @@ describe('requirement ASCII', () => {
     /** Row and column of a box's name line. */
     const at = (out: string, id: string) => {
       const lines = out.split('\n')
-      const row = lines.findIndex((l) => new RegExp(`│\\s+${id}\\s+│`).test(l))
+      const row = lines.findIndex((l) =>
+        l.split('│').some((cell) => cell.trim() === id),
+      )
       return { row, col: lines[row]!.indexOf(id) }
     }
 
