@@ -79,6 +79,16 @@ describe('an empty subgraph prints its title (#2694)', () => {
     expect(out).not.toMatch(/│ one │/)
   })
 
+  it('a nested LR empty subgraph sits above its sibling, inside the frame (#2784)', () => {
+    // Mermaid 12.3.0: `inner` label top y=63, `X` centre y=137, inside `outer`.
+    const lines = renderMermaidASCII(SOURCES[3]![1]).split('\n')
+    const inner = lines.findIndex((l) => l.includes('inner'))
+    const x = lines.findIndex((l) => l.includes('│ X'))
+    expect(inner).toBeGreaterThan(0)
+    expect(inner).toBeLessThan(x)
+    expect(lines.findIndex((l) => l.includes('outer'))).toBeLessThan(inner)
+  })
+
   it("a title with no edge is centred on its neighbour's column (#2784)", () => {
     const lines = renderMermaidASCII(SOURCES[0]![1]).split('\n')
     expect(lines[0]).toBe(' one' + ' '.repeat(lines[0]!.length - 4))

@@ -2959,12 +2959,24 @@ export function createMapping(graph: AsciiGraph): void {
       // reserveSpotInGrid below) only when both directions are immediately
       // foreign-blocked.
       const axis: 'x' | 'y' = nodeDir === 'LR' ? 'y' : 'x'
+      // An empty subgraph's bare title (a `class-name` node here) goes above
+      // its LR siblings, as in mermaid 12.3.0 (#2784): open a row if the
+      // anchor is on the first one.
+      const above = node.shape === 'class-name' && nodeDir === 'LR'
+      if (above && anchor.gridCoord.y < 4) {
+        graph.grid = createGrid()
+        for (const n of graph.nodes) {
+          if (!n.gridCoord) continue
+          n.gridCoord = { x: n.gridCoord.x, y: n.gridCoord.y + 4 }
+          placeBlock(graph.grid, n.gridCoord)
+        }
+      }
       requested = findSubgraphAdjacentSlot(
         graph,
         anchor.gridCoord,
         topSg,
         axis,
-        1,
+        above ? -1 : 1,
       ) ?? { x: anchor.gridCoord.x, y: anchor.gridCoord.y }
     } else {
       // Defensive fallback — shouldn't normally happen, since we only defer
