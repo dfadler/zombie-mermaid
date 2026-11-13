@@ -1035,6 +1035,18 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: a 36.9px rect with 13px text and a 167px diamond. After: a 48px rect with 16px text and a 174px diamond, as in mermaid.',
   },
+  {
+    id: 'pie-slice-palette',
+    title: 'Pie slices used a blue/teal scale instead of mermaid’s',
+    symptom:
+      'Pie slices were painted with a blue/teal scale derived from the theme accent, where mermaid@12.3.0 uses its pastel `pie1`..`pie12` scale (`#ECECFF`, `#ffffde`, `hsl(80, 100%, 56.27%)`, ...).',
+    source: 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85\n  "Rats" : 15',
+    fixCommit: 'fdbe69c3',
+    pr: 3070,
+    render: 'svg',
+    lookFor:
+      'Before: blue, dark blue and light blue slices. After: lavender, pale yellow and lime slices, as in mermaid 12.3.0.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */
