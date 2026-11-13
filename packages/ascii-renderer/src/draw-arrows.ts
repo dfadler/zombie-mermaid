@@ -504,9 +504,12 @@ function clusterEntryDrop(
   const lr = graph.config.graphDirection === 'LR'
   const gutter = gridToDrawingCoord(graph, last)
   const start = gridToDrawingCoord(graph, edge.path[0]!)
+  // The jog keeps one cell clear of the wall for the arrowhead; an arrowless
+  // end needs no head, so its jog may sit in the gutter's only free cell.
+  const clear = edge.hasArrowEnd ? 2 : 1
   const turn = lr
-    ? Math.min(gutter.x, end.x - 2)
-    : Math.min(gutter.y, end.y - 2)
+    ? Math.min(gutter.x, end.x - clear)
+    : Math.min(gutter.y, end.y - clear)
   // No room between the source and the wall for a jog and an arrowhead:
   // leave the edge as routed.
   if (turn <= (lr ? start.x : start.y)) return undefined
