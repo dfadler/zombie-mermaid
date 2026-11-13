@@ -197,6 +197,37 @@ describe('requirement SVG', () => {
     expect(svg).toContain('fill="#0f0"')
   })
 
+  it('applies styles in source order and keeps every class (mermaid 12.3.0)', () => {
+    const src = (body: string) =>
+      'requirementDiagram\nrequirement a:::c1,c2 {\nid: 1\n}\n' + body
+    // Mermaid 12.3.0: `style` before `class` loses, after it wins; classDef
+    // defined after the class still lands at its own position.
+    const before = renderMermaidSVG(
+      src('style a fill:#00f\nclassDef c1 fill:#f00,stroke:#0f0\nclass a c1'),
+    )
+    expect(before).toContain('class="requirement-node c1 c2 c1"')
+    expect(before).toMatch(/fill="#f00" stroke="#0f0"/)
+    const after = renderMermaidSVG(
+      src('classDef c1 fill:#f00\nclass a c1\nstyle a fill:#00f'),
+    )
+    expect(after).toMatch(/fill="#00f"/)
+    const late = renderMermaidSVG(
+      src('style a fill:#00f\nclassDef c2 fill:#f00'),
+    )
+    expect(late).toMatch(/fill="#f00"/)
+  })
+
+  it('rounds relationship corners (mermaid 12.3.0 L/Q path)', () => {
+    const svg = renderMermaidSVG(
+      'requirementDiagram\nrequirement a {\n}\nrequirement b {\n}\nrequirement c {\n}\n' +
+        'a - contains -> b\na - contains -> c',
+    )
+    expect(svg).toMatch(
+      /<path class="requirement-relationship"[^>]* d="M[\d.,]+L[\d.,]+Q[\d.,]+ [\d.,]+L/,
+    )
+    expect(svg).not.toContain('<polyline class="requirement-relationship"')
+  })
+
   it('draws a front matter title', () => {
     expect(renderMermaidSVG('---\ntitle: My Reqs\n---\n' + BASIC)).toContain(
       'My Reqs',
