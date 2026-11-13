@@ -351,12 +351,14 @@ export function parseSequenceDiagram(
         actorMatch[1] === 'actor' ? 'actor' : 'participant'
       const id = actorMatch[2]!
       const rawLabel = actorMatch[3]?.trim() ?? decl.alias ?? id
-      const label = normalizeBrTags(extractWrap(rawLabel).text)
+      const { text: wrapped, wrap } = extractWrap(rawLabel)
+      const label = normalizeBrTags(wrapped)
       if (!actorIds.has(id)) {
         actorIds.add(id)
         diagram.actors.push({
           id,
           label,
+          ...(wrap !== undefined ? { wrap } : {}),
           type,
           ...(decl.type && { participantType: decl.type }),
         })

@@ -315,34 +315,44 @@ export function blockTabWidth(
  * is split mid-word with a trailing `-`, as mermaid's breakString does (#2773).
  */
 function wrapBracketed(label: string, avail: number, fontSize: number): string {
-  const text = `[${label}]`
+  return wrapWords(`[${label}]`, avail, (t) => labelWidth(t, fontSize)).slice(
+    1,
+    -1,
+  )
+}
+
+/**
+ * Mermaid's `wrapLabel` + `breakString`: break at spaces once the line so far
+ * plus the next word (with its trailing space) reaches `avail`; a word wider
+ * than `avail` is split mid-word with a trailing `-`. `width` measures one line.
+ */
+function wrapWords(
+  text: string,
+  avail: number,
+  width: (s: string) => number,
+): string {
   const out: string[] = []
   for (const line of text.split('\n')) {
     let cur = ''
     for (const word of line.split(' ')) {
-      // mermaid's wrapLabel: break once the line so far plus the next word
-      // (with its trailing space) reaches the limit.
-      if (labelWidth(`${word} `, fontSize) > avail) {
+      if (width(`${word} `) > avail) {
         const chars = [...word]
         out.push(cur)
         cur = ''
         chars.forEach((ch, i) => {
-          if (labelWidth(cur + ch, fontSize) >= avail) {
+          if (width(cur + ch) >= avail) {
             out.push(i === chars.length - 1 ? cur + ch : `${cur + ch}-`)
             cur = ''
           } else cur += ch
         })
-      } else if (
-        cur &&
-        labelWidth(cur, fontSize) + labelWidth(`${word} `, fontSize) >= avail
-      ) {
+      } else if (cur && width(cur) + width(`${word} `) >= avail) {
         out.push(cur)
         cur = word
       } else cur = cur ? `${cur} ${word}` : word
     }
     out.push(cur)
   }
-  return out.filter(Boolean).join('\n').slice(1, -1)
+  return out.filter(Boolean).join('\n')
 }
 
 /** Extra height a multi-line label takes over a single line. */
@@ -435,27 +445,6 @@ function fitLabelsBetweenLifelines(
  * Lay out a parsed sequence diagram.
  * Returns a fully positioned diagram ready for SVG rendering.
  */
-/** Greedy word wrap of each line of `text` to `maxWidth` px (a long word stays whole). */
-function wrapLabel(text: string, maxWidth: number, fontSize: number): string {
-  const fit = (s: string) =>
-    estimateTextWidth(s, fontSize, FONT_WEIGHTS.edgeLabel) <= maxWidth
-  return text
-    .split('\n')
-    .map((line) => {
-      const out: string[] = []
-      let cur = ''
-      for (const word of line.split(/\s+/).filter(Boolean)) {
-        if (cur && !fit(`${cur} ${word}`)) {
-          out.push(cur)
-          cur = word
-        } else cur = cur ? `${cur} ${word}` : word
-      }
-      out.push(cur)
-      return out.join('\n')
-    })
-    .join('\n')
-}
-
 /**
  * `sequence.wrap: true`: mermaid wraps notes at `width` (150px at 16px text)
  * and messages at the lifeline gap (`width + actorMargin`). Our text is
@@ -465,21 +454,34 @@ function wrapLabel(text: string, maxWidth: number, fontSize: number): string {
 function wrapDiagramText(
   diagram: SequenceDiagram,
   fontSize: number,
+  actorFontSize: number,
 ): SequenceDiagram {
   const l = diagram.layout ?? {}
   const k = fontSize / 16
   const w = l.width ?? 150
   const noteW = w * k
+  const edgeW = (t: string) => labelWidth(t, fontSize)
   const msgW = (w + (l.actorMargin ?? 50)) * k
+  const actorW = (t: string) =>
+    labelWidth(t, actorFontSize, FONT_WEIGHTS.nodeLabel)
   return {
     ...diagram,
+    // Participant names wrap at `width` like notes (mermaid's actor box stays
+    // `width` wide and grows taller).
+    actors: diagram.actors.map((a) => ({
+      ...a,
+      label:
+        (a.wrap ?? l.wrap)
+          ? wrapWords(a.label, w * (actorFontSize / 16), actorW)
+          : a.label,
+    })),
     notes: diagram.notes.map((n) => ({
       ...n,
-      text: (n.wrap ?? l.wrap) ? wrapLabel(n.text, noteW, fontSize) : n.text,
+      text: (n.wrap ?? l.wrap) ? wrapWords(n.text, noteW, edgeW) : n.text,
     })),
     messages: diagram.messages.map((m) => ({
       ...m,
-      label: (m.wrap ?? l.wrap) ? wrapLabel(m.label, msgW, fontSize) : m.label,
+      label: (m.wrap ?? l.wrap) ? wrapWords(m.label, msgW, edgeW) : m.label,
     })),
   }
 }
@@ -491,8 +493,13 @@ export function layoutSequenceDiagram(
   const diagram =
     input.layout?.wrap ||
     input.messages.some((m) => m.wrap) ||
-    input.notes.some((n) => n.wrap)
-      ? wrapDiagramText(input, resolveFontSizes(options.fontSizes).edgeLabel)
+    input.notes.some((n) => n.wrap) ||
+    input.actors.some((a) => a.wrap)
+      ? wrapDiagramText(
+          input,
+          resolveFontSizes(options.fontSizes).edgeLabel,
+          resolveFontSizes(options.fontSizes).nodeLabel,
+        )
       : input
   if (diagram.actors.length === 0) {
     return {
@@ -518,7 +525,7 @@ export function layoutSequenceDiagram(
 
   // 1. Calculate actor widths and assign horizontal positions (center X)
   const actorWidths = diagram.actors.map((a) => {
-    const textW = estimateTextWidth(
+    const textW = labelWidth(
       a.label,
       fontSizes.nodeLabel,
       FONT_WEIGHTS.nodeLabel,
@@ -581,7 +588,12 @@ export function layoutSequenceDiagram(
     x: actorCenterX[i]!,
     y: actorY,
     width: actorWidths[i]!,
-    height: actorSlotHeight(a, seq.actorHeight),
+    // A box grows by a line height per extra label line (a wrapped name).
+    height:
+      actorSlotHeight(a, seq.actorHeight) +
+      (hasLabelBelowIcon(a)
+        ? 0
+        : dividerLabelExtra(a.label, fontSizes.nodeLabel)),
   }))
   const slotH = (i: number): number => actors[i]!.height
   const headerH = Math.max(

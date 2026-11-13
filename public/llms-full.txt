@@ -2650,9 +2650,11 @@ absent, changes nothing.
 Nothing to honour: mermaid 12.3.0 itself ignores `actorFontSize`, `messageFontSize`,
 `noteFontSize` (text stays 16 px) and `messageMargin` (rows do not move), so we match by
 ignoring them. Per-message and per-note `wrap:` / `nowrap:` prefixes are honoured (they override
-`wrap`, and are not drawn); on a participant name the prefix is dropped but the name is not wrapped
-(#2783). A block tab or divider label word wider than the frame splits mid-word with a `-`, as
-mermaid's `breakString` does (#2773).
+`wrap`, and are not drawn); on a participant name they wrap it too (#2783). In the SVG renderer a word
+wider than the wrap width in a message, note or participant name splits mid-word with a `-`, as
+mermaid's `breakString` does, as does a block tab or divider label word wider than the frame (#2773,
+#2963); the split lands within a character or two of mermaid's, since our text metrics differ. The ASCII
+renderer keeps such a word whole and does not wrap participant names (#2963).
 
 `link` / `links` (participant menus): measured on mermaid 12.3.0, the menu is a
 `display="none"` `actorPopupMenu` group with `<a xlink:href>` entries that only a click in a
