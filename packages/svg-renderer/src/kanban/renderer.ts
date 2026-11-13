@@ -153,7 +153,10 @@ export function renderKanbanSvg(
           transparent,
           title,
           decorative,
-          undefined,
+          // A ticket link is a focusable <a>; role="img" would hide it (axe nested-interactive).
+          board.columns.some((col) =>
+            col.cards.some((c) => c.ticketUrl !== undefined),
+          ),
           emit.styleAttribute,
           emit.description,
         ),
