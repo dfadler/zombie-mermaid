@@ -143,7 +143,10 @@ describe('state composite as mermaid@12.3.0 draws it (#2651)', () => {
       ...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="136" height="40"/g),
     ]
     expect(Number(ys[1]![1]) - Number(ys[0]![1]) - 40).toBe(24)
-    const dot = /<circle cx="[\d.]+" cy="([\d.]+)" r="7"/.exec(svg)!
+    const dot =
+      /data-id="_start"[^>]*>\s*<circle cx="[\d.]+" cy="([\d.]+)" r="7"/.exec(
+        svg,
+      )!
     expect(
       Number(/ y="([\d.]+)"/.exec(outer!)![1]) - (Number(dot[1]) + 7),
     ).toBe(40)

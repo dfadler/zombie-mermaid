@@ -172,10 +172,8 @@ export function keepLegacyPipeline(graph: MermaidGraph): void {
  * breaking. State diagrams keep the settings tuned for them.
  */
 export function usesMermaidElkPipeline(graph: MermaidGraph): boolean {
-  return (
-    !isStateGraph(graph) &&
-    (graph.subgraphs.length > 0 || !legacyPipelineGraphs.has(graph))
-  )
+  if (isStateGraph(graph)) return true
+  return graph.subgraphs.length > 0 || !legacyPipelineGraphs.has(graph)
 }
 
 /** The spacing mermaid@12.3.0 gives ELK for every subgraph. */
@@ -350,9 +348,16 @@ function containerLayoutOptions(spec: {
  * How flowchart/state edge labels are measured and placed: at the resolved
  * edge-label font size, inline and centered on the edge.
  */
-function edgeLabelStyle(opts: { fontSizes: FontSizes }): ElkEdgeLabelStyle {
+function edgeLabelStyle(
+  opts: { fontSizes: FontSizes },
+  graph: MermaidGraph,
+): ElkEdgeLabelStyle {
   return {
     fontSize: opts.fontSizes.edgeLabel,
+    // mermaid@12.3.0 gives a state edge label a 24px line (#3005).
+    ...(usesMermaidElkPipeline(graph) && isStateGraph(graph)
+      ? { lineHeight: 24 }
+      : {}),
     layoutOptions: INLINE_CENTERED_EDGE_LABEL,
   }
 }
@@ -488,6 +493,15 @@ export function estimateNodeSize(
     return { width: w * 1.25, height: height + w * 0.48 }
   }
 
+  // mermaid@12.3.0 state notes: the label box (at least 120px wide, 24px a
+  // line) plus 15px of padding on each side (#3004).
+  if (stateDiagram && shape === 'note') {
+    return {
+      width: Math.max(metrics.width, 120) + 30,
+      height: metrics.lines.length * 24 + 30,
+    }
+  }
+
   // Mermaid's small circle is a fixed 14px dot.
   if (shape === 'small-circle') return { width: 14, height: 14 }
 
@@ -542,6 +556,35 @@ export function estimateNodeSize(
 export interface ElkGraphNode extends ElkNode {
   children?: ElkGraphNode[]
   edges?: ElkExtendedEdge[]
+}
+
+/**
+ * mermaid@12.3.0 hands ELK a state note inside a group of its own: 24px of
+ * padding and the note text as the group's label, held at the top, which is
+ * what pushes the ranks around a note further apart (#3004). `elkToPositioned`
+ * flattens the group away, so only the layout is affected.
+ */
+function wrapStateNote(
+  leaf: ElkNode,
+  text: string,
+  fontSize: number,
+): ElkGraphNode {
+  const { width, lines } = measureMultilineText(
+    text,
+    fontSize,
+    FONT_WEIGHTS.nodeLabel,
+  )
+  return {
+    id: `${leaf.id}----parent`,
+    layoutOptions: {
+      ...MERMAID_SUBGRAPH_SPACING,
+      'elk.padding': '[top=24,left=24,bottom=24,right=24]',
+      'elk.nodeLabels.placement': '[H_CENTER, V_TOP, INSIDE]',
+      'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+    },
+    labels: [{ text, width, height: lines.length * 24 - 2 }],
+    children: [leaf],
+  }
 }
 
 /** Sentinel container key for hop/bridge edges that belong at the root level. */
@@ -717,7 +760,12 @@ export function mermaidToElk(
         : 'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     ...(usesMermaidElkPipeline(graph)
-      ? { 'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST' }
+      ? {
+          'elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
+          ...(isStateGraph(graph)
+            ? { 'elk.spacing.portsSurrounding': PORTS_SURROUNDING }
+            : {}),
+        }
       : {}),
     // 70 under mermaid@12.3.0's pipeline (50 before nodes had the 120px minimum width, #2717): its wider edge-label boxes need more
     // room for the parallel runs than 12.2.0's did (Five, Six and Nine Cluster
@@ -736,7 +784,9 @@ export function mermaidToElk(
             : '40',
         }
       : {}),
-    ...(isStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
+    ...(isStateGraph(graph) && !usesMermaidElkPipeline(graph)
+      ? STATE_LAYOUT_OPTIONS
+      : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
     // Use INCLUDE_CHILDREN otherwise (simpler cross-hierarchy edge routing)
@@ -828,7 +878,7 @@ export function mermaidToElk(
           source: sourceRef,
           target: targetRef,
           label: edge.label,
-          labelStyle: edgeLabelStyle(opts),
+          labelStyle: edgeLabelStyle(opts, graph),
         }),
       )
     }
@@ -851,13 +901,18 @@ export function mermaidToElk(
       // A top-level start `[*]` marks where reading starts: pin it to the
       // first layer so a back-edge can't drag it into the middle. The end
       // marker stays free (see STATE_MARKER_LAYER_CONSTRAINT).
-      const pin = isStateGraph(graph)
-        ? STATE_MARKER_LAYER_CONSTRAINT[node.shape]
-        : undefined
+      const pin =
+        isStateGraph(graph) && !usesMermaidElkPipeline(graph)
+          ? STATE_MARKER_LAYER_CONSTRAINT[node.shape]
+          : undefined
       if (pin !== undefined) {
         leaf.layoutOptions = { 'elk.layered.layering.layerConstraint': pin }
       }
-      rootChildren.push(leaf)
+      rootChildren.push(
+        isStateGraph(graph) && node.shape === 'note'
+          ? wrapStateNote(leaf, node.label, opts.fontSizes.nodeLabel)
+          : leaf,
+      )
     }
   }
 
@@ -948,7 +1003,7 @@ export function mermaidToElk(
           source: reversed.has(index) ? edge.target : edge.source,
           target: reversed.has(index) ? edge.source : edge.target,
           label: edge.label,
-          labelStyle: edgeLabelStyle(opts),
+          labelStyle: edgeLabelStyle(opts, graph),
         }),
       )
     }
@@ -961,7 +1016,7 @@ export function mermaidToElk(
         source: reversed.has(index) ? edge.target : edge.source,
         target: reversed.has(index) ? edge.source : edge.target,
         label: edge.label,
-        labelStyle: edgeLabelStyle(opts),
+        labelStyle: edgeLabelStyle(opts, graph),
       }),
     )
   }
@@ -984,7 +1039,7 @@ export function mermaidToElk(
           source: reversed.has(index) ? edge.target : edge.source,
           target: reversed.has(index) ? edge.source : edge.target,
           label: edge.label,
-          labelStyle: edgeLabelStyle(opts),
+          labelStyle: edgeLabelStyle(opts, graph),
         }),
       )
     }
@@ -1132,7 +1187,11 @@ function subgraphToElk(
         opts.legacyNodeSizes,
       )
       const leaf = buildElkLeafNode(nodeId, size, node.label)
-      children.push(leaf)
+      children.push(
+        isStateGraph(graph) && node.shape === 'note'
+          ? wrapStateNote(leaf, node.label, opts.fontSizes.nodeLabel)
+          : leaf,
+      )
     }
   }
 
@@ -1179,7 +1238,7 @@ function subgraphToElk(
         source: reversed.has(index) ? edge.target : edge.source,
         target: reversed.has(index) ? edge.source : edge.target,
         label: edge.label,
-        labelStyle: edgeLabelStyle(opts),
+        labelStyle: edgeLabelStyle(opts, graph),
       }),
     )
   }

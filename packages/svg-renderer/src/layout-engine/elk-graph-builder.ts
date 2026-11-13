@@ -194,6 +194,8 @@ export const INLINE_CENTERED_EDGE_LABEL: LayoutOptions = {
  */
 export interface ElkEdgeLabelStyle {
   fontSize: number
+  /** Fixed height per label line, replacing the measured height plus padding. */
+  lineHeight?: number
   layoutOptions?: LayoutOptions
 }
 
@@ -216,7 +218,9 @@ export function buildElkEdgeLabel(
   const label: ElkLabel = {
     text,
     width: metrics.width + 8,
-    height: metrics.height + 6,
+    height: style.lineHeight
+      ? metrics.lines.length * style.lineHeight
+      : metrics.height + 6,
   }
   // Copied, not aliased: every label previously got its own fresh options
   // literal, and ELK receives this graph by reference (see
@@ -246,6 +250,17 @@ export function buildElkEdge(spec: {
   }
   if (spec.label) {
     edge.labels = [buildElkEdgeLabel(spec.label, spec.labelStyle)]
+  } else if (spec.labelStyle.lineHeight) {
+    // mermaid@12.3.0 gives every state edge a label, empty ones included, and
+    // ELK centres a node on its in-edges with that label counted (#3005).
+    edge.labels = [
+      {
+        text: '',
+        width: 0,
+        height: 0,
+        layoutOptions: { ...spec.labelStyle.layoutOptions },
+      },
+    ]
   }
   return edge
 }
