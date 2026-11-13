@@ -106,7 +106,7 @@ function neoStyle(look: PositionedGitLook): string {
   if (!look.neo) return ''
   return look.shadowFlood
     ? ` style="filter:url(#${shadowId(look.shadowFlood)})"`
-    : ` style="${look.neoFilter ?? ''}"`
+    : ` style="${look.neoFilter!}"`
 }
 
 function shapeSvg(s: PositionedGitShape): string {

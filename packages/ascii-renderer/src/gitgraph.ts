@@ -142,7 +142,7 @@ export function renderGitGraphAscii(
     let lo = col
     let hi = col
     for (const p of c.parents) {
-      const from = lane.get(commits.get(p)?.branch ?? c.branch)!
+      const from = lane.get(commits.get(p)!.branch)!
       lo = Math.min(lo, from)
       hi = Math.max(hi, from)
     }
@@ -154,7 +154,7 @@ export function renderGitGraphAscii(
   if (gg.config.parallelCommits) {
     const depth = new Map<string, number>()
     for (const c of gg.commits) {
-      const d = Math.max(-1, ...c.parents.map((p) => depth.get(p) ?? -1)) + 1
+      const d = Math.max(-1, ...c.parents.map((p) => depth.get(p)!)) + 1
       depth.set(c.id, d)
       const [lo, hi] = spanOf(c)
       // Two forks off the same commit share its join line, so they sit side by side.

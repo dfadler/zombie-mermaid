@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest'
 import { parseGitGraph } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../index.ts'
 import { layoutGitGraph, lineHeight } from '../gitgraph/layout.ts'
+import { arialWidth } from '../gitgraph/arial-metrics.ts'
 
 const layout = (src: string) => layoutGitGraph(parseGitGraph(src))
 const BASIC =
@@ -357,5 +358,14 @@ describe('gitGraph themes and looks', () => {
     expect(svg).toContain('width="8" height="8"')
     expect(svg).toContain('r="5"')
     expect(svg).toMatch(/M \S+,\S+L\S+M/)
+  })
+})
+
+describe('arialWidth', () => {
+  it('sums advances and kerning, and guesses outside printable ASCII', () => {
+    expect(arialWidth('AT', 100)).toBeCloseTo(66.7 + 61.1 - 7.37, 0)
+    expect(arialWidth('é', 100)).toBeCloseTo(60, 5)
+    expect(arialWidth('日', 100)).toBeCloseTo(100, 5)
+    expect(arialWidth('r', 10, true)).toBeGreaterThan(arialWidth('r', 10))
   })
 })
