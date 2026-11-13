@@ -107,7 +107,9 @@
       ],
       "class": "c",
       "source": "ported from AlexanderGrooff/mermaid-ascii via the beautiful-mermaid v0.1.0 import (3185b9b6); the 97 files of ascii/ and unicode/ still present from that commit",
-      "owner": "packages/ascii-renderer/src/__tests__/ascii.test.ts"
+      "owner": "packages/ascii-renderer/src/__tests__/ascii.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "label-level: 106 of 108 match, 1 defect (subgraph_empty, #2694), 1 not comparable; topology and geometry not compared (#2679 table)"
     },
     {
       "paths": [
@@ -117,19 +119,24 @@
       ],
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written",
-      "owner": "packages/ascii-renderer/src/__tests__/ascii.test.ts"
+      "owner": "packages/ascii-renderer/src/__tests__/ascii.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "label-level: 125 of 132 match, 6 not comparable (markdown, xychart ticks #2310), 1 defect (unicode/acc_title_descr_c4, #2696); topology and geometry not compared (#2679 table)"
     },
     {
       "paths": ["packages/ascii-renderer/src/__tests__/testdata/color/"],
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written; mermaid.js has no terminal colour output",
-      "owner": "packages/ascii-renderer/src/__tests__/ascii-color-goldens.test.ts"
+      "owner": "packages/ascii-renderer/src/__tests__/ascii-color-goldens.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "pie labels match 23 of 23; palette not comparable, mermaid.js has no terminal colour (#2679 table)"
     },
     {
       "paths": ["__tests__/__ascii-snapshots__/"],
       "class": "b",
       "source": "our ASCII output for every gallery sample (#1708), accepted once; guards drift only",
-      "owner": "__tests__/ascii-text-snapshots.test.ts"
+      "owner": "__tests__/ascii-text-snapshots.test.ts",
+      "verdict": "not yet compared against mermaid; no verdict recorded"
     },
     {
       "paths": ["__tests__/__fork-fixes-snapshots__/"],
@@ -143,13 +150,16 @@
       "paths": ["src/__tests__/__theme-variables-snapshots__/"],
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written; the themeVariables mapping rules were measured on mermaid 12.1.0 and 12.2.0 (test header)",
-      "owner": "src/__tests__/theme-variables-2108.test.ts"
+      "owner": "src/__tests__/theme-variables-2108.test.ts",
+      "verdict": "not yet compared against mermaid; no verdict recorded"
     },
     {
       "paths": ["packages/ascii-layout/__tests__/fixtures/"],
       "class": "b",
       "source": "the rasterizer's own output, accepted once; only the layout under it is checked against mermaid (elk-layout oracle)",
-      "owner": "packages/ascii-layout/__tests__/rasterize.test.ts"
+      "owner": "packages/ascii-layout/__tests__/rasterize.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "13 of 14 match at label level; gallery-labeled-fan-in-lr default merges edges by design, grow-only twin shows all (#2679 table)"
     },
     {
       "paths": [
@@ -167,7 +177,9 @@
       "paths": ["packages/elk-layout/__tests__/fixtures/"],
       "class": "b",
       "source": "the elk-layout package's own output; checked by `pnpm run elk-layout:oracle` against the pinned mermaid (12.2.0)",
-      "owner": "packages/elk-layout/__tests__/layout.test.ts"
+      "owner": "packages/elk-layout/__tests__/layout.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "5 match; d1-d3 nodes identical but edge routing drifted (12.2.0 to 12.3.0), regenerate when the pin moves; fan-in-lr 7 of 8 edges (#2679 table)"
     },
     {
       "paths": [
@@ -331,7 +343,8 @@
       "paths": ["src/__tests__/__snapshots__/front-matter-2585.test.ts.snap"],
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written",
-      "owner": "src/__tests__/front-matter-2585.test.ts"
+      "owner": "src/__tests__/front-matter-2585.test.ts",
+      "verdict": "not yet compared against mermaid; no verdict recorded"
     },
     {
       "paths": [
