@@ -68,6 +68,19 @@ fi
 
 # Changed, still-existing files (committed vs base, plus uncommitted and untracked).
 changed=$( { git diff --name-only --diff-filter=d "$base"...HEAD; git diff --name-only --diff-filter=d HEAD; git ls-files --others --exclude-standard; } | sort -u)
+# Warn-only (#2938): CI gates on -chromium-linux.png, which a macOS run never compares.
+# A darwin baseline that moved without its linux twin is stale on CI; renderer sources
+# changed with no linux baseline in the diff may be too.
+shots='__tests__/visual/__screenshots__/'
+stale=$(printf '%s\n' "$changed" | grep -E "^${shots}.*-chromium-darwin\.png$" | sed 's/darwin\.png$/linux.png/' | grep -vxFf <(printf '%s\n' "$changed") || true)
+if [ -n "$stale" ]; then
+  echo "verify: WARNING darwin baselines changed without their Linux twin (CI will fail visual-regression):" >&2
+  printf '%s\n' "$stale" | sed 's/^/  /' >&2
+  echo "  see the linux-baselines skill; check with scripts/docker-test-visual.sh" >&2
+elif ! printf '%s\n' "$changed" | grep -qE "^${shots}.*-chromium-linux\.png$" &&
+  printf '%s\n' "$changed" | grep -E '^packages/.*\.(ts|tsx|css)$' | grep -qvE '(^|/)__tests__/'; then
+  echo "verify: note: packages/ source changed but no Linux baselines did; if rendering moved, run scripts/docker-test-visual.sh (linux-baselines skill)" >&2
+fi
 printf '%s\n' "$changed" | xargs pnpm run --silent check:llms-full
 lintable=$(printf '%s\n' "$changed" | grep -E '\.(ts|tsx|js|mjs|cjs)$' || true)
 if [ -n "$lintable" ]; then
