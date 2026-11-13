@@ -184,6 +184,10 @@ ALLOWLIST=(
   # (`vitest -u`).
   "__tests__/ascii-nested-self-loops-2913.test.ts"
   "__tests__/ascii-subgraph-nested-self-loops-2913.test.ts"
+  # SVG + ASCII goldens for an arrowless edge into a subgraph (#3043): the repo
+  # rule is an SVG and an ASCII snapshot per case; reviewed via `git diff`
+  # (`vitest -u`).
+  "__tests__/ascii-arrowless-cluster-entry-3043.test.ts"
 )
 
 is_allowlisted() {

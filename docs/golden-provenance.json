@@ -380,6 +380,16 @@
     },
     {
       "paths": [
+        "__tests__/__snapshots__/ascii-arrowless-cluster-entry-3043.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-arrowless-cluster-entry-3043.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 runs `api --- S` from api through the gutter to S's wall; the ASCII snapshot does the same (checked by eye against the render, and by the test's row assertions); the SVG and ASCII-only snapshots only pin this renderer's output"
+    },
+    {
+      "paths": [
         "__tests__/__snapshots__/ascii-class-namespace-dashed-2678.test.ts.snap"
       ],
       "class": "b",

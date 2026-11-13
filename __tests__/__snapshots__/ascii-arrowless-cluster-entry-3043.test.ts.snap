@@ -1,0 +1,105 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`arrowless edge into a subgraph reaches the gutter (#3043) > snapshots SVG and ASCII (unicode and ASCII-only) > ascii 1`] = `
+"┌──────────┐           
+│     B    │           
+│          │           
+│          │           
+│ ┌──────┐ │ ┌────────┐
+│ │      │ │ │    S   │
+│ │ api  ├─┼┐│        │
+│ │      │ │││        │
+│ └──────┘ │││ ┌────┐ │
+│          │││ │    │ │
+│          │├┼►│ db │ │
+│          │││ │    │ │
+│ ┌──────┐ │││ └────┘ │
+│ │      │ │││        │
+│ │ jobs ├─┼┘└────────┘
+│ │      │ │           
+│ └──────┘ │           
+│          │           
+└──────────┘           "
+`;
+
+exports[`arrowless edge into a subgraph reaches the gutter (#3043) > snapshots SVG and ASCII (unicode and ASCII-only) > ascii-only 1`] = `
+"+----------+           
+|     B    |           
+|          |           
+|          |           
+| +------+ | +--------+
+| |      | | |    S   |
+| | api  +--+|        |
+| |      | |||        |
+| +------+ ||| +----+ |
+|          ||| |    | |
+|          |++>| db | |
+|          ||| |    | |
+| +------+ ||| +----+ |
+| |      | |||        |
+| | jobs +--++--------+
+| |      | |           
+| +------+ |           
+|          |           
++----------+           "
+`;
+
+exports[`arrowless edge into a subgraph reaches the gutter (#3043) > snapshots SVG and ASCII (unicode and ASCII-only) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 301" width="560" height="301" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm4l3ti3-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm4l3ti3-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="S">
+  <rect x="320" y="89" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="420" y="103" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">S</text>
+</g>
+<g class="subgraph" data-id="B" data-label="B">
+  <rect x="40" y="40" width="200" height="221" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="140" y="54" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">B</text>
+</g>
+<path class="edge" data-from="api" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="false" d="M 216 115 L 282.93 115 Q 290 115, 290 122.07 L 290 168.93 Q 290 176, 297.07 176 L 320 176" fill="none" stroke="var(--_line)" stroke-width="1" />
+<path class="edge" data-from="jobs" data-to="db" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 216 213 L 262.93 213 Q 270 213, 270 205.93 L 270 171.07 Q 270 164, 277.07 164 L 344 164" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm4l3ti3-arrowhead)" />
+<g class="node" data-id="db" data-label="db" data-shape="rectangle">
+  <rect x="344" y="140" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="420" y="164" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">db</text>
+</g>
+<g class="node" data-id="api" data-label="api" data-shape="rectangle">
+  <rect x="64" y="91" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="140" y="115" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">api</text>
+</g>
+<g class="node" data-id="jobs" data-label="jobs" data-shape="rectangle">
+  <rect x="64" y="189" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="140" y="213" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">jobs</text>
+</g>
+</svg>"
+`;

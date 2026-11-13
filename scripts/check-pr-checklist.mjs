@@ -64,8 +64,8 @@ function visibleLines(body, literalFences) {
   return { out, unclosed: fence ? fenceAt : -1 }
 }
 
-/** Unchecked task-list items in a PR body, ignoring HTML comments and code fences. */
-export function uncheckedItems(body) {
+/** Task-list items (`done` is true for `[x]`/`[X]`) in a PR body, ignoring HTML comments and code fences. */
+export function taskItems(body) {
   const literalFences = new Set()
   for (;;) {
     const { out, unclosed } = visibleLines(String(body ?? ''), literalFences)
@@ -75,15 +75,31 @@ export function uncheckedItems(body) {
     }
     const items = []
     for (const line of out) {
-      const m = /^[ \t]*[-*+][ \t]+\[ \][ \t]+(.*)$/.exec(line)
-      if (m) items.push(m[1].trim())
+      const m = /^[ \t]*[-*+][ \t]+\[([ xX])\][ \t]+(.*)$/.exec(line)
+      if (m) items.push({ done: m[1] !== ' ', text: m[2].trim() })
     }
     return items
   }
 }
 
+/** Unchecked task-list items in a PR body, ignoring HTML comments and code fences. */
+export function uncheckedItems(body) {
+  return taskItems(body)
+    .filter((i) => !i.done)
+    .map((i) => i.text)
+}
+
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const open = uncheckedItems(process.env.PR_BODY)
+  const body = process.env.PR_BODY
+  // A body with no boxes at all (the template's Checklist section deleted) would
+  // otherwise pass; bot PRs that never use the template are skipped in the workflow.
+  if (taskItems(body).length === 0) {
+    console.error(
+      '::error::PR body has no checklist. Keep the "## Checklist" section from .github/PULL_REQUEST_TEMPLATE.md and check each box (or "N/A: <reason>").',
+    )
+    process.exit(1)
+  }
+  const open = uncheckedItems(body)
   for (const item of open)
     console.error(`::error::Unchecked PR checklist item: ${item}`)
   if (open.length > 0) {

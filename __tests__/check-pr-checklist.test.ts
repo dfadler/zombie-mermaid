@@ -1,6 +1,7 @@
+import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error plain .mjs script, no type declarations
-import { uncheckedItems } from '../scripts/check-pr-checklist.mjs'
+import { taskItems, uncheckedItems } from '../scripts/check-pr-checklist.mjs'
 
 describe('check-pr-checklist', () => {
   it('lists unchecked items only', () => {
@@ -8,10 +9,51 @@ describe('check-pr-checklist', () => {
     expect(uncheckedItems(body)).toEqual(['open one', 'open two'])
   })
 
-  it('passes when everything is checked, or there are no boxes', () => {
+  it('lists nothing unchecked when everything is checked or there are no boxes', () => {
     expect(uncheckedItems('- [x] a\n- [X] b')).toEqual([])
     expect(uncheckedItems('')).toEqual([])
     expect(uncheckedItems(null)).toEqual([])
+  })
+
+  it('taskItems counts checked and unchecked boxes, so a body with none can be rejected', () => {
+    expect(taskItems('- [x] a\n- [ ] b\n```\n- [ ] c\n```')).toEqual([
+      { done: true, text: 'a' },
+      { done: false, text: 'b' },
+    ])
+    expect(taskItems('## Summary\nno boxes')).toEqual([])
+    expect(taskItems('<!-- - [ ] only in a comment -->')).toEqual([])
+    expect(taskItems(undefined)).toEqual([])
+  })
+
+  describe('script entry point', () => {
+    const run = (body: string | undefined) =>
+      spawnSync(process.execPath, ['scripts/check-pr-checklist.mjs'], {
+        env: {
+          ...process.env,
+          ...(body === undefined ? {} : { PR_BODY: body }),
+        },
+        encoding: 'utf8',
+      })
+
+    it('fails a body with no checklist, even a reworded one', () => {
+      for (const body of [
+        '',
+        '## Summary\nall done',
+        '<!-- - [ ] x -->',
+        undefined,
+      ]) {
+        const r = run(body)
+        expect(r.status).toBe(1)
+        expect(r.stderr).toContain('no checklist')
+      }
+    })
+
+    it('fails an unchecked box and passes a fully checked one', () => {
+      const bad = run('- [x] a\n- [ ] b')
+      expect(bad.status).toBe(1)
+      expect(bad.stderr).toContain('Unchecked PR checklist item: b')
+      expect(run('- [x] a\n- [X] N/A: nothing').status).toBe(0)
+    })
   })
 
   it('ignores boxes in HTML comments and code fences', () => {

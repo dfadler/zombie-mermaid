@@ -1060,6 +1060,19 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: the title reads `Q&A <b>x</b>`. After: `Q&amp;A <b>x</b>`, as mermaid 12.3.0 draws it.',
   },
+  {
+    id: 'ascii-arrowless-cluster-entry',
+    title: 'ASCII: an arrowless edge into a subgraph was a stub',
+    symptom:
+      'An edge without an arrowhead that ends at a subgraph (`api --- S`) was drawn along the source group’s right wall instead of through the gutter to the target group, so it read as a stub. mermaid@12.3.0 draws it from `api` to the subgraph’s wall.',
+    source:
+      'flowchart LR\n  subgraph B\n    api\n    jobs\n  end\n  subgraph S\n    db\n  end\n  api --- S\n  jobs --> db',
+    fixCommit: 'a2a3cdc8e',
+    pr: 3090,
+    render: 'ascii',
+    lookFor:
+      'Before: the `api` line stops as a stub at B’s wall and never reaches S. After: it runs through the gutter to S’s wall, as in mermaid 12.3.0.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */
