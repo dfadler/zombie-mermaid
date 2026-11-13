@@ -1084,9 +1084,15 @@ function subgraphToElk(
     // Concurrent regions: give ELK what mermaid@12.3.0 gives it (the region
     // container and each region are ordinary subgraphs with the subgraph
     // spacing); its own layered packing then yields mermaid's column/row shape
-    // and order (#2962).
-    for (const key of FORK_SPACING_KEYS) delete layoutOptions[key]
-    Object.assign(layoutOptions, MERMAID_SUBGRAPH_SPACING)
+    // and order (#2962). A caller's own `nodeSpacing`/`layerSpacing` still wins,
+    // as in `mermaidSpacing`; the hierarchy setting does not depend on it.
+    if (
+      opts.nodeSpacing === DEFAULTS.nodeSpacing &&
+      opts.layerSpacing === DEFAULTS.layerSpacing
+    ) {
+      for (const key of FORK_SPACING_KEYS) delete layoutOptions[key]
+      Object.assign(layoutOptions, MERMAID_SUBGRAPH_SPACING)
+    }
     layoutOptions['elk.hierarchyHandling'] = 'SEPARATE_CHILDREN'
   }
 

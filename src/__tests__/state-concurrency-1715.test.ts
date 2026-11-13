@@ -125,8 +125,11 @@ ${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
   // Mermaid 12.3.0 (#2962, region-width sweep): a one-node region is 184 x 88
   // and regions sit 24px apart; a wide label only breaks the single column
   // into two rows once it is much wider than the other regions.
-  const regionRects = (src: string) => {
-    const g = layoutGraphSync(parseMermaid(src))
+  const regionRects = (
+    src: string,
+    options?: Parameters<typeof layoutGraphSync>[1],
+  ) => {
+    const g = layoutGraphSync(parseMermaid(src), options)
     const rects: { x: number; y: number; width: number; height: number }[] = []
     const walk = (groups: typeof g.groups) => {
       for (const q of groups) {
@@ -151,6 +154,17 @@ ${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
   it('keeps 24px between stacked regions', () => {
     const [r1, r2] = regionRects(withWide(5)).sort((a, b) => a.y - b.y)
     expect(r2!.y - (r1!.y + r1!.height)).toBeCloseTo(24, 0)
+  })
+
+  it('keeps a caller-supplied layerSpacing inside a region', () => {
+    const src =
+      'stateDiagram-v2\n  state W {\n    a --> b\n    --\n    c --> d\n  }'
+    const step = (options?: Parameters<typeof layoutGraphSync>[1]) => {
+      const g = layoutGraphSync(parseMermaid(src), options)
+      const at = (id: string) => g.nodes.find((x) => x.id === id)!
+      return at('b').y - at('a').y
+    }
+    expect(step({ layerSpacing: 120 })).toBeGreaterThan(step() + 50)
   })
 
   // Column counts probed in mermaid 12.3.0 for this diagram (unspaced label of
