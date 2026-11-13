@@ -1088,14 +1088,27 @@ graphs in all three orientations, with and without `parallelCommits` and
 - **Palette.** Branch colours are the theme accent and its series shades, eight to a
   cycle; mermaid uses its `git0`..`git7` hues. A cherry-pick's bullet is the text colour
   (Mermaid leaves it unstyled, so it is black). The highlight outline uses the text colour.
-- **Looks and themes.** The `neo` and `redux` looks and themes, which change the geometry,
-  are not read.
+- **Looks and themes.** `theme: neo | neo-dark | redux | redux-dark | redux-color | redux-dark-color`
+  and `look: neo` are read from `%%{init}%%` or front matter and move the geometry as in 12.3.0
+  (measured per theme and direction, `scripts/gitgraph-oracle.ts` style: 100% agreement on
+  branch lines, arrows, commits, labels and the viewBox): redux draws 7px commits, square 32px
+  label boxes, 2px arrows and 12 branch colours (`redux-color` skips colour 0 after the
+  first branch); neo and redux size text in Arial at 14px (`textWidth` from a canvas
+  measurement of macOS Arial, so a machine with another Arial can differ by a pixel).
+  Colours stay the caller's palette (the theme name picks no hue), so a redux graph is
+  drawn in the text colour and `redux-color` in the accent shades. `look: neo` adds
+  mermaid's `data-look="neo"` and drop shadow to the branch label boxes.
 - **Names.** Mermaid sanitises ids, tags and names with DOMPurify; here they are escaped
   when written, so markup in them shows as text.
 - **Config keys.** `titleTopMargin` and `diagramPadding` are read (numbers, numeric strings
   and negatives as Mermaid takes them; anything else keeps 25 and 8) and move the title and
-  the viewBox as in 12.3.0. `useMaxWidth` is not read (only the `<svg>` sizing attributes).
+  the viewBox as in 12.3.0. `useMaxWidth` is not read: this renderer always emits fixed
+  `width` and `height` (what mermaid 12.3.0 emits with `useMaxWidth: false`), as for every
+  other diagram type.
 - **ASCII.** Mermaid has no ASCII output; the `git log --graph` layout above is this
-  library's own, and `parallelCommits` does not change it.
+  library's own. `look` and `theme` change nothing in it. `parallelCommits: true` puts
+  commits of the same depth (a root is 0, else one below the deepest parent) on one row, ids
+  separated by commas, when their lane spans do not overlap or they are forks off the same
+  commit; otherwise each keeps its row.
 - **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
   session (no browser with those pages was available).
