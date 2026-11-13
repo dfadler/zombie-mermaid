@@ -131,3 +131,36 @@ describe('Mermaid entity codes in pie and xychart (#1697)', () => {
     })
   }
 })
+
+// #2997: mermaid@12.3.0 draws these types' text as SVG <text>, so typed
+// entities show literally; HTML-label types (flowchart, er, mindmap...) decode.
+describe('source entities per diagram type (mermaid@12.3.0)', () => {
+  const literal: [string, string][] = [
+    ['pie', 'pie title t &lt; &amp; u\n  "a &lt; b" : 1'],
+    ['packet', 'packet-beta\n  title say &lt;i&gt; &amp; x\n  0-7: "a &lt; b"'],
+    [
+      'gantt',
+      'gantt\n  title a &lt; b &amp; c\n  section s\n  t :a1, 2024-01-01, 2d',
+    ],
+    ['timeline', 'timeline\n  title a &lt; b &amp; c\n  2020 : e &lt; f'],
+  ]
+  for (const [name, src] of literal) {
+    it(`${name} keeps &lt; and &amp; as typed`, () => {
+      const svg = renderMermaidSVG(src)
+      expect(svg).toContain('&amp;lt;')
+      expect(svg).not.toMatch(/>[^<]*&lt;[^<]*</)
+    })
+  }
+
+  it('flowchart still decodes', () => {
+    const svg = renderMermaidSVG('flowchart LR\n  A["a &lt; b &amp; c"]')
+    expect(svg).toContain('a &lt; b &amp; c')
+    expect(svg).not.toContain('&amp;lt;')
+  })
+
+  it('ASCII output is unchanged for a pie title', () => {
+    expect(renderMermaidASCII('pie title t &lt; u\n  "a" : 1')).toContain(
+      't &lt; u',
+    )
+  })
+})
