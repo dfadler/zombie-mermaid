@@ -424,6 +424,7 @@ export interface InitConfig {
     ignored: string[];
     journey?: JourneyInitConfig;
     kanban?: KanbanInitConfig;
+    look?: string;
     packet?: PacketInitConfig;
     pieDonutHole?: number;
     pieHighlightSlice?: string;

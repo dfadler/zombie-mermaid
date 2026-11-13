@@ -87,6 +87,7 @@ export interface Actor {
     label: string;
     participantType?: string;
     type: 'participant' | 'actor';
+    wrap?: boolean;
 }
 
 // @public
@@ -539,6 +540,7 @@ export interface GitGraph {
 export interface GitGraphConfig {
     // (undocumented)
     diagramPadding: number;
+    look?: string;
     // (undocumented)
     mainBranchName: string;
     // (undocumented)
@@ -551,6 +553,7 @@ export interface GitGraphConfig {
     showBranches: boolean;
     // (undocumented)
     showCommitLabel: boolean;
+    theme?: string;
     // (undocumented)
     titleTopMargin: number;
 }
@@ -1337,6 +1340,7 @@ export interface PositionedGitBranch {
         h: number;
         tx?: number;
         ty?: number;
+        radius: number;
     };
     colorIndex: number;
     label: {
@@ -1397,6 +1401,8 @@ export interface PositionedGitGraph {
     // (undocumented)
     direction: GitGraphDirection;
     // (undocumented)
+    look: PositionedGitLook;
+    // (undocumented)
     showBranches: boolean;
     title?: {
         text: string;
@@ -1409,6 +1415,18 @@ export interface PositionedGitGraph {
         width: number;
         height: number;
     };
+}
+
+// @public
+export interface PositionedGitLook {
+    colorLimit: number;
+    colorTheme: boolean;
+    dark: boolean;
+    neo: boolean;
+    neoFilter?: string;
+    redux: boolean;
+    shadowFlood?: string;
+    thinBranch: boolean;
 }
 
 // @public

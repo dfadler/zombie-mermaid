@@ -173,8 +173,10 @@ export function parseGitGraph(text: string): GitGraph {
   const source = text
     .replace(/\r\n?/g, '\n')
     .replace(DIRECTIVE, (d) => d.replace(/[^\n]/g, ''))
-  const init = extractInitConfig(text.split(/\r\n?|\n/)).gitGraph
-  const config: GitGraphConfig = { ...GIT_GRAPH_DEFAULTS, ...init }
+  const initAll = extractInitConfig(text.split(/\r\n?|\n/))
+  const config: GitGraphConfig = { ...GIT_GRAPH_DEFAULTS, ...initAll.gitGraph }
+  if (initAll.theme !== undefined) config.theme = initAll.theme
+  if (initAll.look !== undefined) config.look = initAll.look
 
   const mainName = config.mainBranchName
   const commits = new Map<string, GitCommit>()

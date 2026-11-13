@@ -23,7 +23,7 @@ import { DEFAULTS } from './constants.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
 import { straightenTinyJogs } from './jog-straightening.ts'
-import { edgesReversedForLayout } from './to-elk.ts'
+import { edgesReversedForLayout, isStateGraph } from './to-elk.ts'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
@@ -290,7 +290,10 @@ export function elkToPositioned(
   // ELK's orthogonal routing staggers nodes within a layer to create room for
   // edge bends, but this looks bad. We fix it by aligning layers, then let
   // edge bundling and clipping recalculate edge paths from corrected positions.
-  alignLayerNodes(nodes, edges, graph.direction)
+  // mermaid@12.3.0 keeps ELK's own placement for state diagrams, where a note
+  // group or composite staggers its layer on purpose (#3004).
+  if (isStateGraph(graph)) centreStateMarkers(nodes, edges, graph.direction)
+  else alignLayerNodes(nodes, edges, graph.direction)
 
   // Synthesize self-loop edges now that node positions are final. These
   // were excluded from the graph handed to ELK (see to-elk.ts) since ELK
@@ -355,6 +358,36 @@ export function elkToPositioned(
     nodes,
     edges,
     groups,
+  }
+}
+
+/**
+ * mermaid@12.3.0 draws a `[*]` dot on the centre line of the state it joins,
+ * though ELK leaves it a few px to one side (its box ignores the edge label
+ * the dot's edge carries). Slide each marker with one neighbour onto that
+ * neighbour's centre line, when ELK left it within 4px.
+ */
+function centreStateMarkers(
+  nodes: PositionedNode[],
+  edges: PositionedEdge[],
+  direction: MermaidGraph['direction'],
+): void {
+  const horizontal = direction === 'LR' || direction === 'RL'
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  for (const marker of nodes) {
+    if (marker.shape !== 'state-start' && marker.shape !== 'state-end') continue
+    const joined = edges.filter(
+      (e) => e.source === marker.id || e.target === marker.id,
+    )
+    if (joined.length !== 1) continue
+    const other = byId.get(
+      joined[0]!.source === marker.id ? joined[0]!.target : joined[0]!.source,
+    )
+    if (!other) continue
+    const key = horizontal ? 'y' : 'x'
+    const size = horizontal ? 'height' : 'width'
+    const gap = other[key] + other[size] / 2 - (marker[key] + marker[size] / 2)
+    if (Math.abs(gap) <= 4) marker[key] += gap
   }
 }
 

@@ -8,16 +8,9 @@
  * (the first output line names the version scored).
  * Needs Chromium (`pnpm exec playwright install chromium`). A diagnostic, not CI.
  */
-import { samples } from '../samples/samples-data.ts'
-import { renderMermaidSVG } from '../src/index.ts'
+import { scoreKanban } from './lib/kanban-measure.ts'
 import { mermaidVersion } from './lib/mermaid-pin-freshness.ts'
-import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
-import {
-  kanbanAgreement,
-  kanbanBreaches,
-  parseKanbanSvg,
-  type KanbanAgreement,
-} from './lib/kanban-agreement.ts'
+import { startRealMermaid } from './lib/real-mermaid.ts'
 
 const pct = (n: number | null): string =>
   n === null ? '  - ' : `${Math.round(n * 100)}%`.padStart(4)
@@ -29,38 +22,13 @@ async function main(): Promise<number> {
   console.log(`mermaid ${mermaidVersion(distPath)}`)
   const session = await startRealMermaid(distPath)
   try {
-    const results: Record<string, KanbanAgreement> = {}
-    const errored: string[] = []
-    const wanted = samples
-      .filter((s) => /^\s*(?:---[\s\S]*?---\s*)?kanban\b/.test(s.source))
-      .filter(
-        (s) => !filter || s.title.toLowerCase().includes(filter.toLowerCase()),
-      )
-    for (const [i, s] of wanted.entries()) {
-      try {
-        const official = await renderRealMermaidSvg(
-          session,
-          `kanban_${i}`,
-          s.source,
-        )
-        results[s.title] = kanbanAgreement(
-          parseKanbanSvg(official),
-          parseKanbanSvg(renderMermaidSVG(s.source)),
-        )
-      } catch (err) {
-        console.error(
-          `ERR  ${s.title}: ${(err as Error).message.split('\n')[0]}`,
-        )
-        errored.push(s.title)
-      }
-    }
+    const { results, breaches } = await scoreKanban(session, filter)
     console.log('cols cards bars frame  sample')
     for (const [title, r] of Object.entries(results)) {
       console.log(
         `${pct(r.columns)}  ${pct(r.cards)}  ${pct(r.bars)}  ${pct(r.frame)}   ${title}`,
       )
     }
-    const breaches = kanbanBreaches(results, errored)
     if (args.includes('--thresholds') && breaches.length > 0) {
       console.error(`\nBelow threshold: ${breaches.join(', ')}`)
       return 1

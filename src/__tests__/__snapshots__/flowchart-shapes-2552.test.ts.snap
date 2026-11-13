@@ -88,7 +88,7 @@ exports[`flowchart expanded shapes (#2552) > multi-line and wide labels: ASCII s
 `;
 
 exports[`flowchart expanded shapes (#2552) > multi-line and wide labels: SVG snapshot (#2850) 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 856.51 207.8" width="856.51" height="207.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 648.75 207.8" width="648.75" height="207.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -115,15 +115,15 @@ exports[`flowchart expanded shapes (#2552) > multi-line and wide labels: SVG sna
   }
 </style>
 <defs>
-  <marker id="zmrbz7lz-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm37fii6-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmrbz7lz-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm37fii6-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 208.75 103.9 L 248.75 103.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmrbz7lz-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 397.55 103.9 L 437.55 103.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmrbz7lz-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 208.75 103.9 L 248.75 103.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm37fii6-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 397.55 103.9 L 437.55 103.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm37fii6-arrowhead)" />
 <g class="node" data-id="A" data-label="line one
 line two" data-shape="cloud">
   <path transform="translate(53.5 70.38)" d="M0 0 a20.25,20.25 0 0,1 33.75,-13.5 a47.25,47.25 1 0,1 54,-13.5 a33.75,33.75 1 0,1 47.25,27 a20.25,20.25 1 0,1 20.25,22.05 a27,27 1 0,1 -20.25,40.95 a33.75,20.25 1 0,1 -33.75,20.25 a47.25,47.25 1 0,1 -67.5,0 a20.25,20.25 1 0,1 -33.75,-20.25 a20.25,20.25 1 0,1 -13.5,-22.05 a27,27 1 0,1 13.5,-40.95 H0 V0 Z" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
@@ -137,9 +137,9 @@ line three" data-shape="horizontal-cylinder">
   <text x="323.15" y="103.9" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)"><tspan x="323.15" dy="-15.2">line one</tspan><tspan x="323.15" dy="20.8">line two</tspan><tspan x="323.15" dy="20.8">line three</tspan></text>
 </g>
 <g class="node" data-id="C" data-label="a label wider than the 120px minimum box" data-shape="tagged-rectangle">
-  <rect x="437.55" y="79.9" width="378.96" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <polygon points="806.91,127.9 816.51,127.9 816.51,118.3" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="627.03" y="103.9" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a label wider than the 120px minimum box</text>
+  <rect x="437.55" y="55.9" width="171.2" height="96" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="589.55,151.9 608.75,151.9 608.75,132.7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="523.15" y="103.9" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)"><tspan x="523.15" dy="-15.2">a label wider</tspan><tspan x="523.15" dy="20.8">than the 120px</tspan><tspan x="523.15" dy="20.8">minimum box</tspan></text>
 </g>
 </svg>"
 `;

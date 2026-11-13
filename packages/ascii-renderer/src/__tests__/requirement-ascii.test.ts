@@ -78,6 +78,68 @@ describe('requirement ASCII', () => {
     expect(rows(render(BASIC, false, 'LR'))).toBe(lr)
   })
 
+  // Box rank (row) and left-to-right order checked against mermaid@12.3.0's
+  // SVG for the three layouts of scripts/lib/requirement-probes.ts (#3014).
+  describe('box rank and order match mermaid 12.3.0', () => {
+    const box = (id: string) =>
+      `requirement ${id} {\nid: ${id}\ntext: t${id}\nrisk: low\nverifymethod: test\n}`
+    const src = (ids: string[], rels: string[]) =>
+      `requirementDiagram\n${ids.map(box).join('\n')}\n${rels.join('\n')}`
+    /** Row and column of a box's name line. */
+    const at = (out: string, id: string) => {
+      const lines = out.split('\n')
+      const row = lines.findIndex((l) =>
+        l.split('│').some((cell) => cell.trim() === id),
+      )
+      return { row, col: lines[row]!.indexOf(id) }
+    }
+
+    it('shared targets: a, d on the top rank, b, c below, left to right', () => {
+      const out = render(
+        src(
+          ['a', 'b', 'c', 'd'],
+          [
+            'a - contains -> b',
+            'a - contains -> c',
+            'd - satisfies -> b',
+            'd - satisfies -> c',
+          ],
+        ),
+      )
+      const [a, b, c, d] = ['a', 'b', 'c', 'd'].map((i) => at(out, i)) as [
+        ReturnType<typeof at>,
+        ReturnType<typeof at>,
+        ReturnType<typeof at>,
+        ReturnType<typeof at>,
+      ]
+      expect(a.row).toBe(d.row)
+      expect(b.row).toBe(c.row)
+      expect(a.row).toBeLessThan(b.row)
+      expect(a.col).toBeLessThan(d.col)
+      expect(b.col).toBeLessThan(c.col)
+    })
+
+    it('parallel pair: the source is above the target, both lines drawn', () => {
+      const out = render(
+        src(['a', 'e'], ['e - satisfies -> a', 'e - verifies -> a']),
+      )
+      expect(at(out, 'e').row).toBeLessThan(at(out, 'a').row)
+      expect(out).toContain('<<satisfies>>')
+      expect(out).toContain('<<verifies>>')
+    })
+
+    it('cycle: a, b, c stack top to bottom in declaration order', () => {
+      const out = render(
+        src(
+          ['a', 'b', 'c'],
+          ['a - contains -> b', 'b - contains -> c', 'c - contains -> a'],
+        ),
+      )
+      expect(at(out, 'a').row).toBeLessThan(at(out, 'b').row)
+      expect(at(out, 'b').row).toBeLessThan(at(out, 'c').row)
+    })
+  })
+
   it('draws a bare header as nothing', () => {
     expect(render('requirementDiagram').trim()).toBe('')
   })

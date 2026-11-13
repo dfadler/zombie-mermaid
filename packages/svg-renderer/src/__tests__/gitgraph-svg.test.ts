@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest'
 import { parseGitGraph } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../index.ts'
 import { layoutGitGraph, lineHeight } from '../gitgraph/layout.ts'
+import { arialWidth } from '../gitgraph/arial-metrics.ts'
 
 const layout = (src: string) => layoutGitGraph(parseGitGraph(src))
 const BASIC =
@@ -263,5 +264,108 @@ describe('layoutGitGraph – titleTopMargin and diagramPadding', () => {
     expect(l.viewBox.width).toBeCloseTo(w, 0)
     expect(l.viewBox.height).toBeCloseTo(h, 0)
     expect(l.title?.y).toBeCloseTo(titleY, 5)
+  })
+})
+
+// Measured in mermaid@12.3.0 (scripts/gitgraph-oracle.ts style): the viewBox of
+// `gitGraph\n commit id: "A"\n branch dev\n checkout dev\n commit id: "C"` per theme.
+describe('gitGraph themes and looks', () => {
+  const SRC =
+    'gitGraph\n commit id: "A"\n branch dev\n checkout dev\n commit id: "C"'
+  const svgOf = (theme: string, look = 'classic', body = SRC) =>
+    renderMermaidSVG(
+      `%%{init: {"theme":"${theme}","look":"${look}"}}%%\n${body}`,
+    )
+  const box = (svg: string) =>
+    /<rect[^>]*branchLabelBkg label0[^>]*>/.exec(svg)![0]
+
+  it('sizes the viewBox like mermaid for redux, neo and the default theme', () => {
+    const vb = (t: string) =>
+      layoutGitGraph(parseGitGraph(`%%{init: {"theme":"${t}"}}%%\n${SRC}`))
+        .viewBox
+    expect(vb('default').height).toBeCloseTo(146.15, 1)
+    expect(vb('neo').height).toBeCloseTo(145.51, 1)
+    expect(vb('redux').height).toBeCloseTo(151.51, 1)
+    expect(vb('redux').width).toBeCloseTo(201.69, 1)
+    expect(vb('neo').width).toBeCloseTo(199.36, 1)
+  })
+
+  it('draws redux label boxes square, 32px high, and commits at r=7', () => {
+    const svg = svgOf('redux')
+    expect(box(svg)).toContain('rx="0"')
+    expect(box(svg)).toContain('height="32"')
+    expect(svg).toContain('r="7"')
+    expect(svg).not.toContain('data-look')
+    expect(svg).toContain('stroke-dasharray: 4 2')
+    expect(svgOf('default')).toContain('stroke-dasharray: 2')
+  })
+
+  it('adds the look: neo shadow, per theme', () => {
+    expect(box(svgOf('default', 'neo'))).toContain('data-look="neo"')
+    expect(box(svgOf('default', 'neo'))).toContain(
+      'drop-shadow(1px 2px 2px rgba(185, 185, 185, 1))',
+    )
+    expect(box(svgOf('forest', 'neo'))).toContain('rgba(185,185,185,0.5)')
+    expect(box(svgOf('dark', 'neo'))).toContain('rgba(185,185,185,1)')
+    expect(box(svgOf('neo-dark', 'neo'))).toContain('rgba(185,185,185,0.2)')
+    expect(box(svgOf('neo', 'neo'))).toContain(
+      '0px 1px 2px rgba(0, 0, 0, 0.25)',
+    )
+    const redux = svgOf('redux', 'neo')
+    expect(box(redux)).toContain('url(#zm-git-drop-shadow-light)')
+    expect(redux).toContain('flood-color="#000000"')
+    expect(svgOf('redux-dark', 'neo')).toContain('flood-color="#FFFFFF"')
+    expect(box(svgOf('default'))).not.toContain('style=')
+  })
+
+  it('uses a dark cherry-pick in dark themes and 12 colours in redux', () => {
+    const pick = `${SRC}\n checkout main\n cherry-pick id: "C"`
+    expect(svgOf('dark', 'classic', pick)).toContain('fill="#000000"')
+    expect(svgOf('default', 'classic', pick)).toContain('fill="#fff"')
+    expect(svgOf('redux', 'classic', pick)).toContain('.commit11')
+    expect(svgOf('default')).not.toContain('.commit11')
+  })
+
+  it('lays out TB and BT labels under redux and keeps the colour theme colours', () => {
+    for (const d of ['TB', 'BT']) {
+      const svg = svgOf(
+        'redux-color',
+        'classic',
+        SRC.replace('gitGraph', `gitGraph ${d}:`),
+      )
+      expect(box(svg)).toContain('transform="translate(')
+    }
+    const many =
+      'gitGraph\n commit\n' +
+      Array.from(
+        { length: 9 },
+        (_, i) => ` branch b${i}\n commit id: "c${i}"\n checkout main`,
+      ).join('\n')
+    // A colour theme skips the default colour for later branches (calcColorIndex).
+    expect(svgOf('redux-color', 'classic', many)).toContain('commit1')
+  })
+
+  it('reads theme and look from front matter', () => {
+    const fm = renderMermaidSVG(`---\nconfig:\n  theme: redux\n---\n${SRC}`)
+    expect(box(fm)).toContain('rx="0"')
+  })
+
+  it('draws redux highlight, reverse and merge symbols', () => {
+    const src =
+      'gitGraph\n commit id: "a"\n branch d\n commit id: "h" type: HIGHLIGHT\n commit id: "r" type: REVERSE\n checkout main\n merge d id: "m"'
+    const svg = svgOf('redux', 'classic', src)
+    expect(svg).toContain('width="14" height="14"')
+    expect(svg).toContain('width="8" height="8"')
+    expect(svg).toContain('r="5"')
+    expect(svg).toMatch(/M \S+,\S+L\S+M/)
+  })
+})
+
+describe('arialWidth', () => {
+  it('sums advances and kerning, and guesses outside printable ASCII', () => {
+    expect(arialWidth('AT', 100)).toBeCloseTo(66.7 + 61.1 - 7.37, 0)
+    expect(arialWidth('é', 100)).toBeCloseTo(60, 5)
+    expect(arialWidth('日', 100)).toBeCloseTo(100, 5)
+    expect(arialWidth('r', 10, true)).toBeGreaterThan(arialWidth('r', 10))
   })
 })

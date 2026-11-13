@@ -1040,5 +1040,24 @@ xychart-beta
     y-axis "Revenue" 0 --> 100
     bar [20, 50, 80, 40]
     line [30, 45, 70, 60]`,
+  },  {
+    title: 'Mixed-Sign Bars',
+    category: 'Negative Values',
+    description:
+      'Bars run from the start of the value axis to the value, not from zero: -5 is a stub, 5 is full height (mermaid 12.3.0).',
+    source: `xychart-beta
+    title "Net change"
+    x-axis [loss, gain]
+    bar [-5, 5]`,
+  },
+  {
+    title: 'Negative Bars, Horizontal',
+    category: 'Negative Values',
+    description:
+      'Horizontal bars grow from the left edge of the plot, linearly in value, for an all-negative series (mermaid 12.3.0).',
+    source: `xychart-beta horizontal
+    title "Below zero"
+    x-axis [a, b, c]
+    bar [-2, -5, -8]`,
   },
 ]

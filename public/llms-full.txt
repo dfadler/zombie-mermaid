@@ -103,7 +103,7 @@ Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 | `interactivity`       | `'none' \| 'static' \| 'full'`         | `'static'` | Render-target-scoped interactivity level — see below                                                                                                                                                                                                                                                                                                                                                    |
 | `interactive`         | `boolean`                              | `false`    | **Deprecated**, use `interactivity`. Enable hover tooltips on XY chart bars and data points                                                                                                                                                                                                                                                                                                             |
 | `embedSource`         | `boolean`                              | `false`    | Stamp the original diagram source onto the root `<svg>` as `data-src` (HTML-escaped)                                                                                                                                                                                                                                                                                                                    |
-| `honorThemeVariables` | `boolean`                              | `false`    | Opt in to the diagram's own `%%{init: {"themeVariables": ...}}%%` colours (`primaryColor`, `primaryBorderColor`, `primaryTextColor`, `lineColor`, `pie1`..`pie12`); your own colours win. See [themeVariables](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables-opt-in)                                                                                                                                                       |
+| `honorThemeVariables` | `boolean`                              | `true`     | Honour the diagram's own `%%{init: {"themeVariables": ...}}%%` colours (`primaryColor`, `primaryBorderColor`, `primaryTextColor`, `lineColor`, `pie1`..`pie12`); your own colours win. See [themeVariables](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables)                                                                                                                                                                 |
 | `resolveColors`       | `boolean`                              | `false`    | Replace every CSS `var(--…)`/`color-mix(…)` in the output with its computed sRGB value, for rasterizers and other non-browser SVG consumers — see below                                                                                                                                                                                                                                                 |
 | `title`               | `string?`                              | —          | Accessible name for the SVG: adds `role="img"` + `aria-labelledby` pointing at a `<title>` child. Without it the SVG still gets `role="img"` but no name — supply your own description; this library won't fabricate one. Ignored when `decorative` is true                                                                                                                                             |
 | `decorative`          | `boolean`                              | `false`    | Mark the diagram as decorative (already described in surrounding prose) — emits `aria-hidden="true"` instead of a name                                                                                                                                                                                                                                                                                  |
@@ -238,7 +238,7 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 | `colorMode`           | `string`                               | `'auto'` | `'none'`, `'auto'`, `'ansi16'`, `'ansi256'`, `'truecolor'`, or `'html'`                                                                                                                                                                                                                                                                                                                    |
 | `theme`               | `Partial<AsciiTheme>`                  | —        | Override default colors for ASCII output. The default theme gives text (labels) no colour of its own, so it shows in the terminal's own foreground (`color:inherit` for `html`) and reads on dark and light backgrounds; pass `fg` to force one                                                                                                                                            |
 | `direction`           | `'TD' \| 'TB' \| 'BT' \| 'LR' \| 'RL'` | —        | Override the diagram's top-level layout direction at render time, same semantics as `RenderOptions.direction` above. Flowchart and state diagrams only in ASCII output — the ASCII ER layout has no direction concept and ignores it, as do sequence/class/xychart                                                                                                                         |
-| `honorThemeVariables` | `boolean`                              | `false`  | Opt in to the diagram's `themeVariables` for `line`, `border`, `fg` and pie slices (hex only); a key in `theme` wins. See [themeVariables](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables-opt-in)                                                                                                                                                                                                              |
+| `honorThemeVariables` | `boolean`                              | `true`   | Honour the diagram's `themeVariables` for `line`, `border`, `fg` and pie slices (hex only); a key in `theme` wins. See [themeVariables](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables)                                                                                                                                                                                                                        |
 | `showCoords`          | `boolean`                              | `false`  | Internal debugging aid: overlays row/column indices on the output. Not a stable API                                                                                                                                                                                                                                                                                                        |
 | `hyperlinks`          | `boolean`                              | `false`  | Wrap `click` hrefs in OSC 8 terminal hyperlinks (see [ASCII terminal hyperlinks](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#ascii-terminal-hyperlinks))                                                                                                                                                                                                                                                                   |
 | `profile`             | `'markdown'`                           | —        | Preset for plain, paste-safe output (issues, commits, fenced blocks): defaults `useAscii: true`, `colorMode: 'none'`, `hyperlinks: false`, `showCoords: false`; explicit options still win. Labels are not transliterated, and CJK/emoji column width stays font-dependent ([UAX #11](https://www.unicode.org/reports/tr11/)), so such labels can misalign on proportional fallback fonts. |
@@ -479,13 +479,14 @@ option.** The caller is closer to the user's intent than text embedded in a
 diagram, and a diagram from an untrusted source should not be able to
 override a host application's rendering choices.
 
-### `themeVariables` (opt-in)
+### `themeVariables`
 
-Mermaid applies `%%{init: {"themeVariables": {...}}}%%` colours; by default
-zombie-mermaid does not, so a diagram cannot recolour itself against the
-host page's `bg`/`fg` (or CSS-variable) theme. Set `honorThemeVariables: true`
-(`renderMermaidSVG` and `renderMermaidASCII`) to map a small subset onto the
-theme tokens:
+Mermaid applies `%%{init: {"themeVariables": {...}}}%%` colours, and so does
+zombie-mermaid (default since #2856, checked on mermaid 12.3.0): a small subset
+is mapped onto the theme tokens. Pass `honorThemeVariables: false`
+(`renderMermaidSVG` and `renderMermaidASCII`) to ignore them, so a diagram
+cannot recolour itself against the host page's `bg`/`fg` (or CSS-variable)
+theme:
 
 | Variable                                                                                                                                                                                                 | Needs                     | Becomes                              | Diagrams            |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------ | ------------------- |
@@ -503,7 +504,7 @@ flowchart LR
 ```
 
 ```ts
-renderMermaidSVG(source, { honorThemeVariables: true })
+renderMermaidSVG(source, { honorThemeVariables: false }) // opt out
 ```
 
 - **The caller wins.** A `bg`, `fg`, `line`, `surface` or `border` you pass is
@@ -534,7 +535,7 @@ renderMermaidSVG(source, { honorThemeVariables: true })
 
 Checked against mermaid 12.1.0 and 12.2.0 (`scripts/lib/real-mermaid.ts`;
 12.1.0 via jsDelivr), headless Chromium, computed paint; both gave the same results.
-See [known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#themevariables-are-opt-in-and-only-a-subset).
+See [known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#themevariables-are-honoured-by-default-and-only-a-subset).
 
 Keys parsed but deliberately not acted on, and why:
 
@@ -1252,8 +1253,7 @@ total are left out of the pie but stay in the legend, so the drawn slices
 fill the circle and the labels may not add up to 100%. A `pie` with no
 slices draws an empty circle.
 
-Colours follow the theme instead of Mermaid's `pie1`..`pie12` (unless you opt
-in with `honorThemeVariables`, see [`themeVariables`](#themevariables-opt-in)):
+Colours follow the theme instead of Mermaid's `pie1`..`pie12` (unless `honorThemeVariables: false`, see [`themeVariables`](#themevariables)):
 the first slice uses the accent colour, the next eleven use the XY chart series
 shades, and the twelve repeat after that. Slices are drawn at Mermaid's 0.7
 opacity with a 2px outline in the theme's foreground colour.
@@ -2530,6 +2530,9 @@ can no longer be found). When it warns: update `SURFACE_VERSIONS` and the table 
 re-render any open parity claim that names the old version on the new one. A parity issue or
 PR names the GitHub, mermaid.live and pin versions.
 
+`.github/workflows/renderer-versions.yml` runs the same script every Monday and opens (or refreshes) one
+issue titled "mermaid renderer versions moved" when it exits 1.
+
 ## Subgraph inner direction
 
 Re-checked on 12.1.0 (and 11.17.2). Given `subgraph S` holding `a --> b --> c` in a
@@ -2650,9 +2653,11 @@ absent, changes nothing.
 Nothing to honour: mermaid 12.3.0 itself ignores `actorFontSize`, `messageFontSize`,
 `noteFontSize` (text stays 16 px) and `messageMargin` (rows do not move), so we match by
 ignoring them. Per-message and per-note `wrap:` / `nowrap:` prefixes are honoured (they override
-`wrap`, and are not drawn); on a participant name the prefix is dropped but the name is not wrapped
-(#2783). A block tab or divider label word wider than the frame splits mid-word with a `-`, as
-mermaid's `breakString` does (#2773).
+`wrap`, and are not drawn); on a participant name they wrap it too (#2783). In the SVG renderer a word
+wider than the wrap width in a message, note or participant name splits mid-word with a `-`, as
+mermaid's `breakString` does, as does a block tab or divider label word wider than the frame (#2773,
+#2963); the split lands within a character or two of mermaid's, since our text metrics differ. The ASCII
+renderer keeps such a word whole and does not wrap participant names (#2963).
 
 `link` / `links` (participant menus): measured on mermaid 12.3.0, the menu is a
 `display="none"` `actorPopupMenu` group with `<a xlink:href>` entries that only a click in a
@@ -2737,7 +2742,7 @@ pins the campaigns numbers). Colours (below) are not compared; empty quadrant la
   does, checked against 12.2.0; a non-number, negative number or unknown position is
   dropped. The `quadrant*Fill`, `quadrant*TextFill`, `quadrantPoint*`, axis text, title
   and border `*StrokeFill` variables are read under any theme, like mermaid, but only
-  with `honorThemeVariables` ([themeVariables](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables-opt-in)).
+  unless `honorThemeVariables: false` ([themeVariables](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables)).
   ASCII ignores both. Mermaid's other theme-derived colours are not computed.
 - **Empty labels.** Like mermaid 12.3.0, a quadrant with no label gets an empty `<text>`
   at the position a label would have; axis, point and title text are dropped when empty,
@@ -2852,9 +2857,7 @@ also covered 12.1.0). Unless noted, these are choices, not bugs.
   `x-axis Foo [a, b]` title works; `x-axis Foo Bar [a, b]` is rejected by mermaid and is
   not special-cased here. Quote a label (`"New Users"`) to keep its spaces.
 - **Rejected input fails with our own error text, not mermaid's** ([#2785](https://github.com/dfadler/zombie-mermaid/issues/2785), checked against mermaid 12.3.0). Both reject the same sources (`x-axis [a;b, c]`, `x-axis [/users, b]`, `x-axis [a, , b]`, `x-axis [a, b`, `bar [1, x, 3]`, `bar [1, 2`, `line [1,,3]`, `title "unclosed`, `y-axis 0 --> x`, `bar 1,2,3`); nothing renders either way. Mermaid's message is its jison lexer/parser text: `Parse error on line N:`, a clipped source excerpt with a caret, and `Expecting 'SQUARE_BRACES_END', 'COMMA', got 'SEMI'` (or `Lexical error on line N. Unrecognized text.`). The expected-token list comes from its LALR tables and the excerpt is not reliable (it runs the header into the first line, `...chart-betax-axis [a;b, c]`), so it is not reproduced. Ours is `Line N: ...` naming the directive or value and what is allowed. Tools that match on mermaid's message text will not match ours. One accept/reject difference is not about text: `x-axis [a, b] extra` is rejected by mermaid (`got 'ALPHA'`) and accepted here, the trailing text ignored.
-- **Negative bars.** Mermaid 12.2.0 draws a bar from the bottom of the axis, so a negative
-  value gives a bar that starts at the axis minimum; zombie-mermaid draws from 0, the
-  correct reading (a known mermaid quirk).
+- **Negative and mixed-sign bars match mermaid 12.3.0** ([#2880](https://github.com/dfadler/zombie-mermaid/issues/2880), after #2772 for flat series). Mermaid draws every bar from the start of the value axis (the bottom, or the left edge when horizontal) to the value, never from zero. `bar [-5, 5]` is an 8 px stub next to a full-height bar, and `bar [-2, -5, -8]` gives three steps down (full, half, stub); horizontal bar lengths are linear in value from the left edge. Both SVG and ASCII do the same. A bar at the axis minimum is the stub, not nothing.
 - **Value-axis padding and x labels match mermaid in SVG only; flat data matches in both**
   ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0;
   flat data in ASCII: [#2727](https://github.com/dfadler/zombie-mermaid/issues/2727), checked
@@ -3105,13 +3108,14 @@ flowchart, not mermaid:
 
 `RenderOptions.direction` still does not apply to class diagrams.
 
-## `themeVariables` are opt-in, and only a subset
+## `themeVariables` are honoured by default, and only a subset
 
-Decided in [#2108](https://github.com/dfadler/zombie-mermaid/issues/2108).
-Mermaid applies `%%{init: {"themeVariables": {...}}}%%`; zombie-mermaid ignores it
-unless the caller sets `honorThemeVariables: true`, because the colours of a
-diagram should come from the host's `bg`/`fg` theme, not from text inside the
-diagram. Checked on mermaid 12.1.0 and 12.2.0 (headless Chromium, computed
+Added opt-in in [#2108](https://github.com/dfadler/zombie-mermaid/issues/2108), on by
+default since [#2856](https://github.com/dfadler/zombie-mermaid/issues/2856) to match
+mermaid 12.3.0 (`primaryColor` under `theme: base`, `lineColor` and `pie1` render the same
+paint). Mermaid applies `%%{init: {"themeVariables": {...}}}%%`; zombie-mermaid maps a
+subset onto its tokens, and a caller who wants the host's `bg`/`fg` theme to win over text
+inside the diagram sets `honorThemeVariables: false`. Checked on mermaid 12.1.0 and 12.2.0 (headless Chromium, computed
 paint, identical results):
 
 | Input                                                                                             | mermaid.js 12.1.0 / 12.2.0              | zombie-mermaid                                   |
@@ -3129,7 +3133,7 @@ Mermaid derives many colours from `primaryColor` (secondary/tertiary, subgraph
 fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
 `base` diagram with only `primaryColor` set does not look the same in both. Only
 flowchart, state and pie read the directive. Details and the opt-in table:
-[Configuration directives](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables-opt-in).
+[Configuration directives](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#themevariables).
 
 ## Invalid colours are ignored, not refused
 
@@ -3349,7 +3353,13 @@ the values, markup in labels).
   `<svg>` sizing attributes. Colours (`axisColor`, `graticuleColor`) are palette, not read.
   ASCII ignores the config (no text mode).
 - **Title element.** Written even when empty, as mermaid does.
-- **Other renderers.** Not checked on GitHub or mermaid.live.
+- **Looks and themes.** Mermaid 12.3.0 draws radar identically under `look` `neo` and `redux`
+  (`%%{init}%%`, `theme` `neo-dark`/`redux-dark` too): the SVG structure and the radar CSS equal
+  the default look's. Other themes (`dark`, `forest`) change only the CSS colours, never the
+  structure. This library ignores `look` for radar as well, so there is nothing to match.
+- **mermaid.live.** Checked 2026-11-13 with the Radar: Grades sample: the diagram SVG equals the
+  mermaid 12.3.0 render element for element (only the site's pan/zoom wrapper and `viewBox`
+  differ). GitHub's ` ```mermaid ` block was not checked: it needs a published page.
 - **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
 
 ## Sankey diagrams
@@ -3453,8 +3463,11 @@ bars, task boxes, faces, dashed lines, actor dots and the axis agree on the gall
   (bars mixed 30% into the background); Mermaid uses fixed hues and white text.
 - **Init config.** `%%{init: {"journey": {...}}}%%` geometry keys (`width`, `height`,
   `taskMargin`, `diagramMarginX`, `diagramMarginY`, `leftMargin`, `maxLabelWidth`) are read in
-  SVG and match mermaid 12.3.0 (viewBox, boxes, bars, lines, axis, legend wrapping). A number
-  outside 0..100000 (or a string) is dropped. `actorColours`, `sectionFills`,
+  SVG and match mermaid 12.3.0 (viewBox, boxes, bars, lines, axis, legend wrapping). `width` and
+  `height` take numeric strings and every key but `height` takes negatives, as in mermaid
+  12.3.0. Dropped: a number beyond ±100000, a negative `height` (mermaid draws negative-height
+  rects and grows the viewBox by their bounds) and a string for any other key (mermaid
+  concatenates it into the arithmetic, giving a garbage viewBox). `actorColours`, `sectionFills`,
   `sectionColours` and the themes' `fillType0-7` are palette, not read: this library colours
   from the theme (in mermaid 12.3.0 they change no geometry or class names). ASCII ignores the config (no text mode).
 - **Non-numeric score.** Mermaid emits `NaN` face coordinates (browsers draw them at 0);
@@ -3570,15 +3583,28 @@ graphs in all three orientations, with and without `parallelCommits` and
 - **Palette.** Branch colours are the theme accent and its series shades, eight to a
   cycle; mermaid uses its `git0`..`git7` hues. A cherry-pick's bullet is the text colour
   (Mermaid leaves it unstyled, so it is black). The highlight outline uses the text colour.
-- **Looks and themes.** The `neo` and `redux` looks and themes, which change the geometry,
-  are not read.
+- **Looks and themes.** `theme: neo | neo-dark | redux | redux-dark | redux-color | redux-dark-color`
+  and `look: neo` are read from `%%{init}%%` or front matter and move the geometry as in 12.3.0
+  (measured per theme and direction, `scripts/gitgraph-oracle.ts` style: 100% agreement on
+  branch lines, arrows, commits, labels and the viewBox): redux draws 7px commits, square 32px
+  label boxes, 2px arrows and 12 branch colours (`redux-color` skips colour 0 after the
+  first branch); neo and redux size text in Arial at 14px (`textWidth` from a canvas
+  measurement of macOS Arial, so a machine with another Arial can differ by a pixel).
+  Colours stay the caller's palette (the theme name picks no hue), so a redux graph is
+  drawn in the text colour and `redux-color` in the accent shades. `look: neo` adds
+  mermaid's `data-look="neo"` and drop shadow to the branch label boxes.
 - **Names.** Mermaid sanitises ids, tags and names with DOMPurify; here they are escaped
   when written, so markup in them shows as text.
 - **Config keys.** `titleTopMargin` and `diagramPadding` are read (numbers, numeric strings
   and negatives as Mermaid takes them; anything else keeps 25 and 8) and move the title and
-  the viewBox as in 12.3.0. `useMaxWidth` is not read (only the `<svg>` sizing attributes).
+  the viewBox as in 12.3.0. `useMaxWidth` is not read: this renderer always emits fixed
+  `width` and `height` (what mermaid 12.3.0 emits with `useMaxWidth: false`), as for every
+  other diagram type.
 - **ASCII.** Mermaid has no ASCII output; the `git log --graph` layout above is this
-  library's own, and `parallelCommits` does not change it.
+  library's own. `look` and `theme` change nothing in it. `parallelCommits: true` puts
+  commits of the same depth (a root is 0, else one below the deepest parent) on one row, ids
+  separated by commas, when their lane spans do not overlap or they are forks off the same
+  commit; otherwise each keeps its row.
 - **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
   session (no browser with those pages was available).
 

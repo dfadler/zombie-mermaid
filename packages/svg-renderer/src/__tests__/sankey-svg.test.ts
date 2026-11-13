@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest'
 import { parseSankey } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../index.ts'
 import { layoutSankey } from '../sankey/layout.ts'
-import { textWidth } from '../timeline/layout.ts'
+import { measureTextWidth } from '@zombie-mermaid/core'
 
 const layout = (src: string) => layoutSankey(parseSankey(src))
 const BASIC = `sankey-beta
@@ -94,8 +94,8 @@ describe('layoutSankey', () => {
     const p = layout(
       '%%{init: {"sankey": {"labelStyle": "outlined"}}}%%\nsankey-beta\nA,B,1\nB,C,9',
     )
-    // A's label sits left of its bar: Trebuchet width of "A 1" times the 12% allowance.
-    expect(p.nodes[0]!.x0).toBeCloseTo(textWidth('A 1', 14) * 1.12 + 6, 1)
+    // A's label sits left of its bar: its width as Inter is measured, then the gap.
+    expect(p.nodes[0]!.x0).toBeCloseTo(measureTextWidth('A 1', 14, 400) + 6, 1)
   })
 
   it('ignores a flow that is not positive when sizing the drawing', () => {
