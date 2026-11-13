@@ -30,6 +30,7 @@ import {
   subgraphDirectionIsHonored,
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
+import { wrapFlowchartLabel } from './wrap-label.ts'
 import {
   findBackEdgeIndexes,
   subgraphFeedbackEdges,
@@ -408,6 +409,13 @@ const FLOWCHART_SHAPE_EXTRA_WIDTH: Partial<Record<string, number>> = {
   text: 15,
 }
 const STATE_MIN_HEIGHT = 40
+/** mermaid@12.3.0 hexagon: width grows by this much per px of label height. */
+const HEXAGON_EXTRA_PER_PX = 13.7 / 24
+/**
+ * mermaid@12.3.0 stadium width minus the label box, for a 1..6 line label
+ * (measured; beyond that it grows 36px a line).
+ */
+const STADIUM_EXTRA_WIDTH = [52, 58.3, 72.5, 88, 104.5, 132]
 
 export function estimateNodeSize(
   id: string,
@@ -421,15 +429,18 @@ export function estimateNodeSize(
 ): { width: number; height: number } {
   // An architecture icon tile is Mermaid's fixed 80px square; its label hangs below.
   if (icon !== undefined) return { width: TILE, height: TILE }
+  // mermaid@12.3.0 flowchart labels take a 1.5 line height (24px at 16px) and
+  // 12px of vertical padding, so a one-line rect is 48px (#2931), and wrap at
+  // 120px (#2932).
+  const mermaidBox = !stateDiagram && !legacyNodeSizes
+  const wrapped = mermaidBox
+    ? wrapFlowchartLabel(label, nodeLabelFontSize, FONT_WEIGHTS.nodeLabel)
+    : undefined
   const metrics = measureMultilineText(
-    label,
+    wrapped?.text ?? label,
     nodeLabelFontSize,
     FONT_WEIGHTS.nodeLabel,
   )
-
-  // mermaid@12.3.0 flowchart labels take a 1.5 line height (24px at 16px) and
-  // 12px of vertical padding, so a one-line rect is 48px (#2931).
-  const mermaidBox = !stateDiagram && !legacyNodeSizes
   if (mermaidBox)
     metrics.height = metrics.lines.length * nodeLabelFontSize * 1.5
   let width = metrics.width + NODE_PADDING.horizontal * 2
@@ -439,6 +450,14 @@ export function estimateNodeSize(
     const side = Math.max(width, height) + NODE_PADDING.diamondExtra
     width = side
     height = side
+  }
+
+  if (mermaidBox && (shape === 'circle' || shape === 'doublecircle')) {
+    // mermaid@12.3.0: the label box's diagonal plus 32 (56 for a double
+    // circle). A wrapped label's box is the full 120px wide.
+    const labelW = wrapped?.wrapped ? FLOWCHART_MIN_LABEL_WIDTH : metrics.width
+    width = Math.hypot(labelW, metrics.height) + (shape === 'circle' ? 32 : 56)
+    return { width, height: width }
   }
 
   if (shape === 'circle' || shape === 'doublecircle') {
@@ -467,8 +486,10 @@ export function estimateNodeSize(
   }
 
   if (shape === 'cylinder') {
-    height += 14
+    height = mermaidBox ? metrics.height + 64.1 : height + 14
   }
+
+  if (shape === 'rounded' && mermaidBox) height = metrics.height + 30
 
   // mermaid@12.3.0's horizontal cylinder pads the label box by 12, so a
   // one-line node is 36px tall, not the rectangle's 48 (#2850).
@@ -515,7 +536,17 @@ export function estimateNodeSize(
     const labelWidth = Math.max(metrics.width, FLOWCHART_MIN_LABEL_WIDTH)
     const extra = FLOWCHART_SHAPE_EXTRA_WIDTH[shape]
     if (extra !== undefined) width = labelWidth + extra
-    else if (shape === 'tagged-rectangle')
+    if (shape === 'hexagon') {
+      width = labelWidth + 72 + HEXAGON_EXTRA_PER_PX * metrics.height
+      height = metrics.height + 70
+    }
+    if (shape === 'stadium') {
+      const n = metrics.lines.length
+      width =
+        labelWidth +
+        (STADIUM_EXTRA_WIDTH[n - 1] ??
+          STADIUM_EXTRA_WIDTH.at(-1)! + 36 * (n - STADIUM_EXTRA_WIDTH.length))
+    } else if (shape === 'tagged-rectangle')
       width = labelWidth + 32 + 0.2 * height
     else if (
       shape === 'diamond' ||
