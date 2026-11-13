@@ -829,7 +829,7 @@ function findPath(
         const horizontal = d === L || d === R
         const existingH = (m & (L | R)) !== 0
         const existingV = (m & (U | D)) !== 0
-        step += (horizontal && existingH) || (!horizontal && existingV) ? 8 : 3
+        step += (horizontal && existingH) || (!horizontal && existingV) ? 8 : 10
       }
       const g = cur.g + step + (isGoal ? (goals.get(`${nx},${ny}`) ?? 0) : 0)
       const key = `${nx},${ny},${d}`
