@@ -35,7 +35,7 @@ describe('xychart axis flags (ASCII, #3073)', () => {
     const lines = render({ showLabel: false }, {}).split('\n')
     expect(lines.join('\n')).not.toContain('jan')
     expect(lines.join('\n')).toContain('100')
-    // the title sits directly under the axis line
+    // The title sits directly under the axis line
     expect(lines.at(-1)).toContain('Month')
     expect(lines.at(-2)).toMatch(/┬/)
   })
@@ -77,8 +77,8 @@ describe('xychart axis flags (ASCII, #3073)', () => {
     const out = render({ showAxisLine: false }, { showAxisLine: false })
     expect(out).not.toMatch(/─{4}/)
     expect(out).not.toContain('┼')
-    expect(out).toMatch(/│/) // x ticks, as stubs
-    expect(out).toMatch(/─/) // y ticks, as stubs
+    expect(out).toMatch(/│/) // X ticks, as stubs
+    expect(out).toMatch(/─/) // Y ticks, as stubs
   })
 
   it('showAxisLine and showTick false together leave only labels', () => {
@@ -121,7 +121,7 @@ describe('xychart axis flags (ASCII, #3073)', () => {
     const noLine = render({}, { showAxisLine: false }, { horizontal: true })
     expect(noLine).not.toMatch(/─{4}/)
     expect(noLine).not.toContain('┬')
-    // the ticks stay, as stubs
+    // The ticks stay, as stubs
     expect(noLine).toMatch(/│ {5}│/)
   })
 
