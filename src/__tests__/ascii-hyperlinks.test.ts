@@ -340,10 +340,9 @@ describe('CLI – render --ascii --hyperlinks', () => {
   })
 
   it('measures --max-width on visible columns, ignoring the escapes', async () => {
-    const stderr = createMockStdout()
     const out = createMockStdout()
     // Wide enough that the plain render fits; the escape bytes alone would
-    // push a naive length measurement past the limit and trigger a warning.
+    // push a naive length measurement past the limit and make it throw.
     const width = renderMermaidASCII(LINKED_FLOW)
       .split('\n')
       .reduce((m, l) => Math.max(m, l.length), 0)
@@ -351,9 +350,7 @@ describe('CLI – render --ascii --hyperlinks', () => {
       renderArgs({ ascii: true, hyperlinks: true, maxWidth: width }),
       out,
       LINKED_FLOW,
-      stderr,
     )
-    expect(stderr.output()).toBe('')
     expect(out.output()).toContain(OSC8_PREFIX)
   })
 })

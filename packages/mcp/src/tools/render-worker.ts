@@ -7,7 +7,10 @@
 import { parentPort } from 'node:worker_threads'
 import ELK from 'elkjs/lib/elk.bundled.js'
 import { registerElk } from '@zombie-mermaid/svg-renderer'
-import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import {
+  renderMermaidASCII,
+  AsciiWidthError,
+} from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '../../../../src/index.ts'
 import type { RenderRequest, RenderReply } from './render-worker-client.ts'
 
@@ -29,6 +32,10 @@ parentPort?.on('message', (req: RenderRequest) => {
       name: e.name,
       message: e.message,
       line: 'line' in e && typeof e.line === 'number' ? e.line : undefined,
+      width:
+        e instanceof AsciiWidthError
+          ? [e.actualWidth, e.maxWidth, e.compactApplied]
+          : undefined,
     }
   }
   parentPort?.postMessage(reply)

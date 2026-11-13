@@ -39,6 +39,7 @@ import {
 import type { Direction, DiagramType, RenderLimits } from '@zombie-mermaid/core'
 import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
+import { AsciiWidthError, COMPACT_SPACING, maxLineWidth } from './max-width.ts'
 import { colorizeText } from './ansi.ts'
 import { displayWidth } from './display-width.ts'
 import {
@@ -54,6 +55,7 @@ import {
 } from './types.ts'
 
 export { LimitExceededError } from '@zombie-mermaid/core'
+export { AsciiWidthError }
 export { registerAsciiLayout, getAsciiLayout } from './layout-hints.ts'
 export type {
   AsciiFace,
@@ -135,6 +137,17 @@ export interface AsciiRenderOptions {
    */
   hyperlinks?: boolean
   /**
+   * Hard limit on output width, in terminal columns (color codes, OSC 8
+   * links and, for `colorMode: 'html'`, tags are not counted). Unset (the
+   * default; no profile sets it) means no limit and output is unchanged.
+   * When set: render normally; if wider, retry once with compact spacing
+   * (`paddingX: 1`, `paddingY: 1`, `boxBorderPadding: 0`, each only if that
+   * tightens the value in effect); if still wider, throw `AsciiWidthError`.
+   * Diagram structure is never wrapped, flipped or truncated. Must be a
+   * positive integer.
+   */
+  maxWidth?: number
+  /**
    * Honour a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours
    * (default true since #2856, as in Mermaid; pass `false` to ignore them). Maps `lineColor` → `line`/`corner`,
    * `primaryBorderColor` → `border`/`junction`, `primaryTextColor` → `fg`
@@ -201,6 +214,52 @@ export function renderMermaidASCII(
   source: string,
   options: AsciiRenderOptions = {},
 ): string {
+  const max = options.maxWidth
+  if (max === undefined) return renderOnce(source, options)
+  if (!Number.isInteger(max) || max < 1) {
+    throw new RangeError(`maxWidth must be a positive integer, got: ${max}`)
+  }
+  const html = options.colorMode === 'html'
+  let out = renderOnce(source, options)
+  let width = maxLineWidth(out, html)
+  let compactApplied = false
+  if (width > max) {
+    // Only retry when compacting tightens something (explicit values at or
+    // below compact levels have nothing left to give).
+    const compact = {
+      paddingX: Math.min(
+        options.paddingX ?? DEFAULT_PADDING_X,
+        COMPACT_SPACING.paddingX,
+      ),
+      paddingY: Math.min(
+        options.paddingY ?? DEFAULT_PADDING_Y,
+        COMPACT_SPACING.paddingY,
+      ),
+      boxBorderPadding: Math.min(
+        options.boxBorderPadding ?? DEFAULT_BOX_BORDER_PADDING,
+        COMPACT_SPACING.boxBorderPadding,
+      ),
+    }
+    if (
+      compact.paddingX < (options.paddingX ?? DEFAULT_PADDING_X) ||
+      compact.paddingY < (options.paddingY ?? DEFAULT_PADDING_Y) ||
+      compact.boxBorderPadding <
+        (options.boxBorderPadding ?? DEFAULT_BOX_BORDER_PADDING)
+    ) {
+      const retry = renderOnce(source, { ...options, ...compact })
+      const retryWidth = maxLineWidth(retry, html)
+      if (retryWidth < width) {
+        out = retry
+        width = retryWidth
+        compactApplied = true
+      }
+    }
+  }
+  if (width > max) throw new AsciiWidthError(width, max, compactApplied)
+  return out
+}
+
+function renderOnce(source: string, options: AsciiRenderOptions): string {
   // `profile` only fills in defaults; explicit options still win.
   const md = options.profile === 'markdown'
   const config: AsciiConfig = {

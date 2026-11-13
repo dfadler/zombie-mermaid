@@ -119,9 +119,9 @@ describe('runRender failure diagnostics', () => {
   it('appends the offending source line', async () => {
     const args = parseArgs(['render', '--ascii'])
     if (args.command !== 'render') throw new Error('x')
-    await expect(
-      runRender(args, { write: () => true }, BAD, { write: () => true }),
-    ).rejects.toThrow(/Line 4:[\s\S]*\n {2}4 \| {3}loop forever/)
+    await expect(runRender(args, { write: () => true }, BAD)).rejects.toThrow(
+      /Line 4:[\s\S]*\n {2}4 \| {3}loop forever/,
+    )
   })
 })
 
@@ -130,9 +130,7 @@ describe('runRender line numbers', () => {
     const args = parseArgs(['render', '--ascii'])
     if (args.command !== 'render') throw new Error('x')
     await expect(
-      runRender(args, { write: () => true }, '\n\n' + BAD, {
-        write: () => true,
-      }),
+      runRender(args, { write: () => true }, '\n\n' + BAD),
     ).rejects.toThrow(/Line 6:[\s\S]*\n {2}6 \| {3}loop forever/)
   })
 })
