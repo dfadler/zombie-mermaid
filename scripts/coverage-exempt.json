@@ -305,6 +305,16 @@
     "maxLines": 72
   },
   {
+    "file": "scripts/sankey-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the comparison is unit-tested in scripts/lib/sankey-agreement.ts",
+    "maxLines": 48
+  },
+  {
+    "file": "scripts/lib/sankey-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the sankey-oracle and layout-oracle CLIs",
+    "maxLines": 52
+  },
+  {
     "file": "scripts/radar-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the comparison is unit-tested in scripts/lib/radar-agreement.ts",
     "maxLines": 77
