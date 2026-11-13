@@ -1047,6 +1047,18 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: blue, dark blue and light blue slices. After: lavender, pale yellow and lime slices, as in mermaid 12.3.0.',
   },
+  {
+    id: 'diagram-title-entities',
+    title: 'Diagram titles showed `&` and `<` as plain characters',
+    symptom:
+      'mermaid@12.3.0 runs every diagram title through DOMPurify and draws the result as text, so a pie, gantt, timeline, quadrant, xychart or radar title with `&` or `<` shows `&amp;` and `&lt;` literally. This fork drew the plain characters.',
+    source: 'pie title Q&A <b>x</b>\n  "Yes" : 3\n  "No" : 1',
+    fixCommit: 'cf94f85a',
+    pr: 3091,
+    render: 'svg',
+    lookFor:
+      'Before: the title reads `Q&A x` (the tag is lost and `&` is plain). After: `Q&amp;A <b>x</b>`, as mermaid 12.3.0 draws it.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */
