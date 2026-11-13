@@ -112,4 +112,34 @@ describe('gitGraph ASCII', () => {
       '\u001b[',
     )
   })
+
+  describe('parallelCommits', () => {
+    const FORKS =
+      'gitGraph\n commit id: "A"\n branch develop\n branch feature\n branch hotfix\n checkout develop\n commit id: "C"\n checkout feature\n commit id: "D" tag: "t"\n checkout hotfix\n commit id: "H"\n checkout main\n commit id: "B"\n merge develop id: "M"'
+    const init = '%%{init: {"gitGraph": {"parallelCommits": true}}}%%\n'
+
+    it('puts sibling forks of one depth on one row', () => {
+      const rows = render(init + FORKS).split('\n')
+      expect(rows).toEqual([
+        'main  develop  feature  hotfix',
+        '●     ┆        ┆        ┆   A',
+        '├─────●────────●────────●   C, D  [t], H',
+        '●     │        ┆        ┆   B',
+        '◎─────╯        ┆        ┆   M',
+      ])
+    })
+
+    it('keeps one row per commit without it, and when spans overlap', () => {
+      expect(render(FORKS).split('\n')).toHaveLength(7)
+      // B and C overlap lane main..develop, so B stays on its own row.
+      const par = render(init + FORKS).split('\n')
+      expect(par.some((r) => r.endsWith('  B'))).toBe(true)
+    })
+
+    it('draws ASCII glyphs and is unchanged with one commit per depth', () => {
+      expect(render(init + FORKS, true)).toContain('+-----*--------*--------*')
+      const chain = 'gitGraph\n commit id: "a"\n commit id: "b"'
+      expect(render(init + chain)).toBe(render(chain))
+    })
+  })
 })

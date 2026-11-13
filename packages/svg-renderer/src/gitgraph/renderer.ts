@@ -23,6 +23,7 @@
 
 import type {
   PositionedGitGraph,
+  PositionedGitLook,
   PositionedGitShape,
 } from '@zombie-mermaid/mermaid-parser'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
@@ -41,43 +42,56 @@ function r(n: number): string {
   return String(Math.round(n * 1e4) / 1e4)
 }
 
-const COLORS = 8
+/** The id of the `<defs>` shadow under a redux theme with `look: neo`; its content depends on `dark` only, so inlined copies agree. */
+const shadowId = (flood: string): string =>
+  `zm-git-drop-shadow-${flood === '#FFFFFF' ? 'dark' : 'light'}`
 
 function gitStyles(
   colors: DiagramColors,
+  look: PositionedGitLook,
   nonce?: string,
 ): { css: string; cls: string } {
+  // Redux draws every branch in the text colour unless it is a `-color` theme.
+  const flat = look.redux && !look.colorTheme
   const vars = Array.from(
-    { length: COLORS },
+    { length: look.colorLimit },
     (_, i) =>
-      `    --git-color-${i}: ${pieColorValue(i, colors.accent, colors.bg)};`,
+      `    --git-color-${i}: ${flat ? 'var(--fg)' : pieColorValue(i, colors.accent, colors.bg)};`,
   )
   const per = Array.from(
-    { length: COLORS },
+    { length: look.colorLimit },
     (_, i) =>
-      `  .branch-label${i} { fill: var(--bg); }\n` +
+      (look.redux
+        ? `  .branch-label${i} { fill: var(--fg); font-weight: 600; }\n`
+        : `  .branch-label${i} { fill: var(--bg); }\n`) +
       `  .commit${i} { stroke: var(--git-color-${i}); fill: var(--git-color-${i}); }\n` +
       `  .commit-highlight${i} { stroke: var(--fg); fill: var(--fg); }\n` +
-      `  .label${i} { fill: var(--git-color-${i}); }\n` +
+      (look.redux
+        ? `  .label${i} { fill: var(--bg); stroke: var(--git-color-${i}); stroke-width: 2; font-weight: 600; }\n`
+        : `  .label${i} { fill: var(--git-color-${i}); }\n`) +
       `  .arrow${i} { stroke: var(--git-color-${i}); }`,
   )
   const cls = paletteClass(vars)
   const css = `${styleOpenTag(nonce)}
   .branch-label { fill: var(--bg); font-size: 16px; }
 ${per.join('\n')}
-  .branch { stroke-width: 1; stroke: var(--_line); stroke-dasharray: 2; }
-  .commit-label { font-size: 10px; fill: var(--_text); }
-  .commit-label-bkg { fill: var(--_node-fill); opacity: 0.5; }
+${
+  look.thinBranch
+    ? '  .branch { stroke-width: 2; stroke: var(--_line); stroke-dasharray: 4 2; }'
+    : '  .branch { stroke-width: 1; stroke: var(--_line); stroke-dasharray: 2; }'
+}
+  .commit-label { font-size: 10px; fill: var(--_text);${look.redux ? ' font-weight: 600;' : ''} }
+  .commit-label-bkg { ${look.redux ? 'fill: transparent;' : 'fill: var(--_node-fill); opacity: 0.5;'} }
   .tag-label { font-size: 10px; fill: var(--_text); }
-  .tag-label-bkg { fill: var(--_node-fill); stroke: var(--_node-stroke); }
+  .tag-label-bkg { fill: ${look.redux ? 'var(--bg)' : 'var(--_node-fill)'}; stroke: ${look.redux ? 'var(--fg)' : 'var(--_node-stroke)'}; }
   .tag-hole { fill: var(--fg); }
   .commit-cherry-pick { stroke: var(--_text); fill: var(--_text); }
   circle.commit-cherry-pick[fill] { fill: var(--bg); }
   line.commit-cherry-pick { stroke: var(--bg); }
-  .commit-merge { stroke: var(--_node-fill); fill: var(--_node-fill); }
-  .commit-reverse { stroke: var(--_node-fill); fill: var(--_node-fill); stroke-width: 3; }
-  .commit-highlight-inner { stroke: var(--_node-fill); fill: var(--_node-fill); }
-  .arrow { stroke-width: 8; stroke-linecap: round; fill: none; }
+  .commit-merge { stroke: ${look.redux ? 'var(--bg)' : 'var(--_node-fill)'}; fill: ${look.redux ? 'var(--bg)' : 'var(--_node-fill)'}; }
+  .commit-reverse { stroke: ${look.redux ? 'var(--bg)' : 'var(--_node-fill)'}; fill: ${look.redux ? 'var(--bg)' : 'var(--_node-fill)'}; stroke-width: ${look.redux ? 2 : 3}; }
+  .commit-highlight-inner { stroke: ${look.redux ? 'var(--bg)' : 'var(--_node-fill)'}; fill: ${look.redux ? 'var(--bg)' : 'var(--_node-fill)'}; }
+  .arrow { stroke-width: ${look.redux ? 2 : 8}; stroke-linecap: round; fill: none; }
   .gitTitleText { text-anchor: middle; font-size: 18px; fill: var(--_text); }
   .branchLabel text, .commit-label, .tag-label { font-family: inherit; }
   .${cls} {
@@ -85,6 +99,14 @@ ${vars.join('\n')}
   }
 </style>`
   return { css, cls }
+}
+
+/** The `style` Mermaid puts on a branch label box under `look: neo`. */
+function neoStyle(look: PositionedGitLook): string {
+  if (!look.neo) return ''
+  return look.shadowFlood
+    ? ` style="filter:url(#${shadowId(look.shadowFlood)})"`
+    : ` style="${look.neoFilter ?? ''}"`
 }
 
 function shapeSvg(s: PositionedGitShape): string {
@@ -120,7 +142,7 @@ export function renderGitGraphSvg(
   emit: SvgEmitOptions = {},
 ): string {
   const { viewBox: vb } = gg
-  const { css, cls } = gitStyles(colors, emit.nonce)
+  const { css, cls } = gitStyles(colors, gg.look, emit.nonce)
   const parts: string[] = []
   parts.push(
     withDataSrc(
@@ -143,6 +165,10 @@ export function renderGitGraphSvg(
   )
   parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
   parts.push(css)
+  if (gg.look.shadowFlood)
+    parts.push(
+      `<defs><filter id="${shadowId(gg.look.shadowFlood)}" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="${gg.look.shadowFlood}"/></filter></defs>`,
+    )
   parts.push(`<g transform="translate(${r(-vb.x)}, ${r(-vb.y)})">`)
 
   if (gg.showBranches) {
@@ -151,7 +177,7 @@ export function renderGitGraphSvg(
       const { line: l, bkg: k } = b
       parts.push(
         `<line x1="${r(l.x1)}" y1="${r(l.y1)}" x2="${r(l.x2)}" y2="${r(l.y2)}" class="branch branch${b.colorIndex}"/>`,
-        `<rect class="branchLabelBkg label${b.colorIndex}" rx="4" ry="4" x="${r(k.x)}" y="${r(k.y)}" width="${r(k.w)}" height="${r(k.h)}"${k.tx === undefined ? '' : ` transform="translate(${r(k.tx)}, ${r(k.ty ?? 0)})"`}/>`,
+        `<rect${gg.look.neo ? ' data-look="neo"' : ''} class="branchLabelBkg label${b.colorIndex}"${neoStyle(gg.look)} rx="${k.radius}" ry="${k.radius}" x="${r(k.x)}" y="${r(k.y)}" width="${r(k.w)}" height="${r(k.h)}"${k.tx === undefined ? '' : ` transform="translate(${r(k.tx)}, ${r(k.ty ?? 0)})"`}/>`,
         `<g class="branchLabel"><g class="label branch-label${b.colorIndex}" transform="translate(${r(b.label.x)}, ${r(b.label.y)})"><text>${b.name
           .split(/\\n|\n|<br\s*\/?>/gi)
           .map(

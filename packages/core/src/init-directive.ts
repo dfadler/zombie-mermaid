@@ -391,6 +391,8 @@ function isNonNegative(v: unknown): v is number {
 /** Configuration a diagram can set for itself via `%%{init: ...}%%`. */
 export interface InitConfig {
   theme?: string
+  /** `look` (`classic`, `neo`, ...), kept as written; only gitGraph reads it (the neo drop shadow). */
+  look?: string
   /** `pie.textPosition`: slice label distance as a fraction of the radius. */
   pieTextPosition?: number
   /** `pie.donutHole`: inner radius as a fraction of the radius. */
@@ -606,6 +608,11 @@ export function parseInitDirective(line: string): InitConfig | undefined {
        */
       config.theme = value
       config.ignored.push(key)
+      continue
+    }
+
+    if (lower === 'look' && typeof value === 'string') {
+      config.look = value
       continue
     }
 
@@ -971,6 +978,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
     const config = parseInitDirective(line)
     if (!config) continue
     if (config.theme !== undefined) merged.theme = config.theme
+    if (config.look !== undefined) merged.look = config.look
     if (config.pieTextPosition !== undefined) {
       merged.pieTextPosition = config.pieTextPosition
     }
