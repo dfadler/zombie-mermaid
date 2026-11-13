@@ -29,8 +29,11 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read # only checks out the script
+    # Bot PRs (Dependabot etc.) never use the template, and the script fails a body
+    # with no checklist boxes at all.
     if: >-
       github.repository == 'dfadler/zombie-mermaid' &&
+      github.event.pull_request.user.type != 'Bot' &&
       !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
