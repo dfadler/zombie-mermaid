@@ -169,3 +169,16 @@ describe('scoreJourney', () => {
     expect(r.breaches).toEqual(['Journey: Basic (error)'])
   })
 })
+
+describe('parseJourneySvg edge cases', () => {
+  it('copes with no viewBox, unrelated shapes and an untyped box', () => {
+    const l = parseJourneySvg(
+      '<svg><rect x="1" y="2" width="3" height="4" class="other"></rect><rect x="1" y="2" width="3" height="4" class="task"></rect><line x1="0" y1="0" x2="1" y2="1"></line><circle cx="1" cy="1" class="legend"></circle></svg>',
+    )
+    expect(l.size).toBeUndefined()
+    expect(l.sections).toEqual([])
+    expect(l.tasks).toEqual([{ x: 1, y: 2, width: 3, height: 4, type: '' }])
+    expect(l.axis).toBeUndefined()
+    expect(l.dots).toEqual([])
+  })
+})
