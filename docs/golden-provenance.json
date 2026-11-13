@@ -136,7 +136,8 @@
       "class": "b",
       "source": "our ASCII output for every gallery sample (#1708), accepted once; guards drift only",
       "owner": "__tests__/ascii-text-snapshots.test.ts",
-      "verdict": "not yet compared against mermaid; no verdict recorded"
+      "verdict": "label-level, 360 samples (unicode charset): 336 match; 23 differ in words only for terminal reasons (gantt tick format and legend, packet and gantt truncation, kanban priority text, journey Actors legend, glyph art) except 4 defects (sankey node totals, radar curve with fewer values dropped, xychart xAxis.showLabel:false still draws labels); gantt-top-axis not renderable by mermaid 12.3.0 headless; topology and geometry not compared (#2679)",
+      "mermaid": "12.3.0"
     },
     {
       "paths": ["__tests__/__fork-fixes-snapshots__/"],
@@ -151,7 +152,8 @@
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written; the themeVariables mapping rules were measured on mermaid 12.1.0 and 12.2.0 (test header)",
       "owner": "src/__tests__/theme-variables-2108.test.ts",
-      "verdict": "not yet compared against mermaid; no verdict recorded"
+      "verdict": "re-measured on 12.3.0: primary*/lineColor/pie1-3/pie12 and the wrap at 13 match; DIVERGES: an invalid pie colour paints #333 in mermaid, the default palette here; invalid or unsafe primaryColor/lineColor make mermaid throw, here they are ignored; theme base draws the node border as a gradient, here solid; primaryColor alone also derives border, line and text in mermaid, here only the fill (#2679)",
+      "mermaid": "12.3.0"
     },
     {
       "paths": ["packages/ascii-layout/__tests__/fixtures/"],
@@ -344,7 +346,8 @@
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written",
       "owner": "src/__tests__/front-matter-2585.test.ts",
-      "verdict": "not yet compared against mermaid; no verdict recorded"
+      "verdict": "title drawn on every type but C4/architecture, as mermaid 12.3.0; viewBox band identical for flowchart, state, pie, c4, architecture (54px, y -25); DIVERGES: er and class band is 52px in mermaid vs 54 here, sequence 40px vs 36 (#2679)",
+      "mermaid": "12.3.0"
     },
     {
       "paths": [
