@@ -264,6 +264,21 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
       'Quadrant charts sort items by two criteria at once, such as effort against impact or urgency against importance, and are a staple of prioritisation and strategy docs. Mermaid’s syntax starts with `quadrantChart`, an optional `title`, an `x-axis` and `y-axis` with a low and a high label, and up to four `quadrant-N` names. Each point is a `Label: [x, y]` line with both coordinates between 0 and 1, and `classDef` or inline styles can set its color, radius and stroke.',
     docsUrl: 'https://mermaid.ai/open-source/syntax/quadrantChart.html',
   },
+  {
+    slug: 'kanban',
+    label: 'Kanban board',
+    keyword: 'kanban',
+    source: sampleSource('Kanban: Basic'),
+    intro:
+      'Kanban boards lay work out as columns with cards stacked under each, so the state of a project reads at a glance. zombie-mermaid renders columns, cards, tickets, assignees and priority bars in SVG and as a column grid in ASCII.',
+    accent: 'violet',
+    exampleHeading: 'A board of columns, each holding its cards.',
+    sourceFilename: 'board.mmd',
+    aboutHeading: 'Where kanban boards come from, and how the syntax works.',
+    about:
+      'Kanban boards come from lean manufacturing: work items sit on cards that move across columns such as Todo, In progress and Done. Mermaid’s syntax starts with `kanban`, declares each column as an unindented line, and nests cards beneath it, optionally adding metadata such as `ticket`, `assigned` and `priority` in an `@{ }` block. The `kanban.ticketBaseUrl` config option turns tickets into links.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/kanban.html',
+  },
 ]
 
 /**
@@ -286,6 +301,7 @@ const GALLERY_CATEGORY: Record<string, string> = {
   'architecture-beta': 'Architecture',
   pie: 'Pie',
   quadrant: 'Quadrant',
+  kanban: 'Kanban',
 }
 
 /**

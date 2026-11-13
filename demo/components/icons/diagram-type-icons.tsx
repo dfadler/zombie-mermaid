@@ -443,3 +443,40 @@ export function QuadrantIcon({
     </StrokeIcon>
   )
 }
+
+/**
+ * Kanban — three columns, one card slides down. Accent `--violet`.
+ */
+export function KanbanIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--violet">
+      {animated ? (
+        <style>{`
+          .zm-kan-card { animation: zm-kan-slide 2s ease-in-out infinite; }
+          @keyframes zm-kan-slide {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(0, 2px); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-kan-card { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <rect x="3" y="3" width="5" height="18" rx="1" />
+      <rect x="9.5" y="3" width="5" height="18" rx="1" />
+      <rect x="16" y="3" width="5" height="18" rx="1" />
+      <rect
+        className={animated ? 'zm-kan-card' : undefined}
+        x="10.5"
+        y="5.5"
+        width="3"
+        height="3"
+        fill="currentColor"
+        stroke="none"
+      />
+    </StrokeIcon>
+  )
+}

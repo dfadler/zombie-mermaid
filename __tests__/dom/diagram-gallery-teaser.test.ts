@@ -26,6 +26,7 @@ describe('DiagramGalleryTeaser', () => {
       ['Architecture', 'diagrams/architecture-beta.html'],
       ['Pie', 'diagrams/pie.html'],
       ['Quadrant', 'diagrams/quadrant.html'],
+      ['Kanban', 'diagrams/kanban.html'],
     ]
 
     for (const [label, href] of expected) {
