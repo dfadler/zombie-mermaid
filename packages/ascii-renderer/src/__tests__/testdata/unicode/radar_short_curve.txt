@@ -1,0 +1,18 @@
+radar-beta
+  title Short curve
+  axis a["Parse"], b["Layout"], c["Render"], d["Memory"]
+  curve x["Full"]{4, 3, 2, 1}
+  curve y["Short"]{1, 2}
+  curve z["Long"]{1, 2, 3, 4, 5}
+---
+                       Short curve
+
+              0                                      5
+              ├───────┬───────┬──────┬───────┬───────┤
+  Parse  Full ████████████████████████████████········  4
+  Layout Full ████████████████████████················  3
+  Render Full ████████████████························  2
+  Memory Full ████████································  1
+
+  ▓ Short
+  ▒ Long
