@@ -80,6 +80,19 @@ describe('state layout matches mermaid@12.3.0', () => {
     expect(y('a') - y('_start')).toBe(86)
   })
 
+  it('lays out a note inside a composite state', () => {
+    const g = layoutGraphSync(
+      parseMermaid(
+        'stateDiagram-v2\n  state S {\n    [*] --> a\n    a --> b\n    note right of b : hi\n  }',
+      ),
+    )
+    const note = g.nodes.find((n) => n.id === 'b----note-2')!
+    expect([note.width, note.height]).toEqual([150, 54])
+    const s = g.groups.find((x) => x.id === 'S')!
+    expect(note.x).toBeGreaterThanOrEqual(s.x)
+    expect(note.x + note.width).toBeLessThanOrEqual(s.x + s.width)
+  })
+
   it('centres a marker on its neighbour in a left-to-right diagram', () => {
     const g = layoutGraphSync(
       parseMermaid('stateDiagram-v2\n  direction LR\n  [*] --> A\n  A --> B'),

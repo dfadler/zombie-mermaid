@@ -47,49 +47,6 @@ import {
 } from './elk-graph-builder.ts'
 
 /**
- * ELK layer constraint for a top-level `[*]` marker: the start marker is
- * pinned to the first layer so a back-edge can't drag it into the middle
- * (#1240). The end marker is deliberately left unconstrained: it settles in
- * the layer right after the state(s) that transition into it, instead of a
- * layer of its own after every other node (`LAST_SEPARATE`), which drew
- * `Closed --> [*]` as a long line down the page edge when `Closed` is near
- * the top. Keyed by node shape.
- */
-const STATE_MARKER_LAYER_CONSTRAINT: Partial<Record<string, string>> = {
-  'state-start': 'FIRST',
-}
-
-/**
- * Root-graph ELK options applied to state diagrams only (flowcharts keep
- * their tuned defaults).
- *
- * Flowcharts deliberately do not get `MODEL_ORDER` cycle breaking (#1307).
- * They already break cycles the way mermaid.js does, by reversing the
- * depth-first back edges before ELK runs (`edgesReversedForLayout`), so ELK
- * has no cycle left to break; adding `MODEL_ORDER` on top only moved nodes
- * away from mermaid.js. Measured against mermaid 11.17.2 (relative placement
- * of every node pair, `scripts/layout-oracle.ts` style): applied to every
- * flowchart it changed 5 of the 26 gallery samples and 49 of 104 doc/test
- * flowcharts, closer for 0 and 2, further for 4 and 41; applied only to
- * graphs with a subgraph direction override (the one case where the
- * pre-reversal is skipped) it changed 1 and 7, closer for 0 and 2, further
- * for 1 and 5.
- *
- * - `cycleBreaking: MODEL_ORDER` reverses the edge that points *against*
- *   declaration order instead of whichever edge ELK's greedy heuristic picks.
- *   The greedy default reversed the main chain of `[*] --> Idle`,
- *   `Idle --> Active`, `Active --> Idle`, drawing it bottom-to-top with the
- *   start marker beside a state.
- * - `postCompaction: NONE`: LEFT_RIGHT_CONSTRAINT_LOCKING compaction slides
- *   nodes sideways after edges are routed, which leaves state edges ending
- *   in a horizontal run along the target's top border (arrowhead sideways).
- */
-const STATE_LAYOUT_OPTIONS: LayoutOptions = {
-  'elk.layered.cycleBreaking.strategy': 'MODEL_ORDER',
-  'elk.layered.compaction.postCompaction.strategy': 'NONE',
-}
-
-/**
  * Whether `graph` is a `stateDiagram` (it has `[*]` markers, the only thing
  * that distinguishes a state graph from a flowchart here). Composite states
  * are included: their compound nodes are placed among their siblings at
@@ -169,11 +126,14 @@ export function keepLegacyPipeline(graph: MermaidGraph): void {
 /**
  * Flowcharts are laid out the way mermaid@12.3.0 does it: one ELK pass over
  * the whole hierarchy (`INCLUDE_CHILDREN`) with ELK's own `DEPTH_FIRST` cycle
- * breaking. State diagrams keep the settings tuned for them.
+ * breaking. State diagrams always use it (#3005).
  */
 export function usesMermaidElkPipeline(graph: MermaidGraph): boolean {
-  if (isStateGraph(graph)) return true
-  return graph.subgraphs.length > 0 || !legacyPipelineGraphs.has(graph)
+  return (
+    isStateGraph(graph) ||
+    graph.subgraphs.length > 0 ||
+    !legacyPipelineGraphs.has(graph)
+  )
 }
 
 /** The spacing mermaid@12.3.0 gives ELK for every subgraph. */
@@ -784,9 +744,6 @@ export function mermaidToElk(
             : '40',
         }
       : {}),
-    ...(isStateGraph(graph) && !usesMermaidElkPipeline(graph)
-      ? STATE_LAYOUT_OPTIONS
-      : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
     // Use INCLUDE_CHILDREN otherwise (simpler cross-hierarchy edge routing)
@@ -898,16 +855,6 @@ export function mermaidToElk(
         opts.legacyNodeSizes,
       )
       const leaf = buildElkLeafNode(id, size, node.label)
-      // A top-level start `[*]` marks where reading starts: pin it to the
-      // first layer so a back-edge can't drag it into the middle. The end
-      // marker stays free (see STATE_MARKER_LAYER_CONSTRAINT).
-      const pin =
-        isStateGraph(graph) && !usesMermaidElkPipeline(graph)
-          ? STATE_MARKER_LAYER_CONSTRAINT[node.shape]
-          : undefined
-      if (pin !== undefined) {
-        leaf.layoutOptions = { 'elk.layered.layering.layerConstraint': pin }
-      }
       rootChildren.push(
         isStateGraph(graph) && node.shape === 'note'
           ? wrapStateNote(leaf, node.label, opts.fontSizes.nodeLabel)
