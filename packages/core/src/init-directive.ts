@@ -436,8 +436,8 @@ export interface InitConfig {
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
-   * `themeVariables` the renderer can map, applied only when the caller opts
-   * in with `RenderOptions.honorThemeVariables`. `primaryColor`,
+   * `themeVariables` the renderer can map, applied unless the caller sets
+   * `RenderOptions.honorThemeVariables` to false. `primaryColor`,
    * `primaryBorderColor` and `primaryTextColor` are present only when the
    * merged config says `theme: base`, as in Mermaid.
    */
@@ -453,7 +453,7 @@ export interface InitConfig {
  */
 const IGNORED_KEYS: Record<string, string> = {
   theme:
-    "colors come from the caller's bg/fg render options, which are usually CSS variables so a diagram inherits the host page's light/dark. A diagram-supplied theme would hard-code colors that fight it (it is read only as the `base` gate for themeVariables when `honorThemeVariables` is set). Mermaid's theme names (default/dark/forest/neutral) also have no equivalent in this renderer's palettes — pass `bg`/`fg`, or a THEMES entry, instead",
+    "colors come from the caller's bg/fg render options, which are usually CSS variables so a diagram inherits the host page's light/dark. A diagram-supplied theme would hard-code colors that fight it (it is read only as the `base` gate for themeVariables unless `honorThemeVariables` is false). Mermaid's theme names (default/dark/forest/neutral) also have no equivalent in this renderer's palettes — pass `bg`/`fg`, or a THEMES entry, instead",
   securitylevel:
     'this renderer emits static SVG and never executes diagram-supplied script, so there is no sandbox to configure',
   defaultrenderer:
@@ -468,7 +468,7 @@ const IGNORED_KEYS: Record<string, string> = {
   'flowchart.curve':
     'mermaid 12.3.0 ignores it (every flowchart edge is ELK-routed with rounded orthogonal bends); pass the `curve` render option to opt in',
   themevariables:
-    "only primaryColor, primaryBorderColor, primaryTextColor, lineColor, pie1..pie12 and the quadrant* colours are mapped, and only when the caller sets `honorThemeVariables`; every other variable (secondary/tertiary colours, fontFamily, background, per-diagram variables) is not read, and Mermaid's colours derived from primaryColor are not computed",
+    "only primaryColor, primaryBorderColor, primaryTextColor, lineColor, pie1..pie12 and the quadrant* colours are mapped, and not when the caller sets `honorThemeVariables: false`; every other variable (secondary/tertiary colours, fontFamily, background, per-diagram variables) is not read, and Mermaid's colours derived from primaryColor are not computed",
 }
 
 /**
@@ -1076,7 +1076,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
 
 /**
  * Fold the honoured `themeVariables` into render options, for a caller that
- * opted in with `honorThemeVariables`. Like any directive, it
+ * has not set `honorThemeVariables` to false. Like any directive, it
  * only fills what the caller left unset: `bg`/`fg`/`line`/`surface`/`border`
  * passed in `options` always win.
  */

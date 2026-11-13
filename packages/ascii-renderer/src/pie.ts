@@ -231,7 +231,7 @@ export function renderPieAscii(
   config: AsciiConfig,
   colorMode: ColorMode,
   theme: AsciiTheme,
-  honorThemeVariables = false,
+  honorThemeVariables = true,
 ): string {
   const chart = parsePieChart(text)
   const layout = layoutPieAscii(chart)
