@@ -109,8 +109,8 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: >-
           pnpm exec vitest run -c config/vitest.config.ts --coverage
-          --shard="$SHARD/3" --reporter=blob
-          --outputFile=".vitest-reports/blob-$SHARD.json"
+          --shard="$SHARD/3" --reporter=default --reporter=blob
+          --outputFile.blob=".vitest-reports/blob-$SHARD.json"
           --coverage.thresholds.statements=0 --coverage.thresholds.branches=0
           --coverage.thresholds.functions=0 --coverage.thresholds.lines=0
 
