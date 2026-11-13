@@ -187,6 +187,7 @@
     "quadrant:oracle": "tsx scripts/quadrant-oracle.ts",
     "mindmap:oracle": "tsx scripts/mindmap-oracle.ts",
     "gantt:oracle": "tsx scripts/gantt-oracle.ts",
+    "journey:oracle": "tsx scripts/journey-oracle.ts",
     "timeline:oracle": "tsx scripts/timeline-oracle.ts",
     "gitgraph:oracle": "tsx scripts/gitgraph-oracle.ts",
     "radar:oracle": "tsx scripts/radar-oracle.ts",
