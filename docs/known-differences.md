@@ -37,6 +37,9 @@ can no longer be found). When it warns: update `SURFACE_VERSIONS` and the table 
 re-render any open parity claim that names the old version on the new one. A parity issue or
 PR names the GitHub, mermaid.live and pin versions.
 
+`.github/workflows/renderer-versions.yml` runs the same script every Monday and opens (or refreshes) one
+issue titled "mermaid renderer versions moved" when it exits 1.
+
 ## Subgraph inner direction
 
 Re-checked on 12.1.0 (and 11.17.2). Given `subgraph S` holding `a --> b --> c` in a

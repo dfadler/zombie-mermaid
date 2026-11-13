@@ -1,0 +1,64 @@
+# Weekly check of which mermaid GitHub and mermaid.live render (#2830).
+# Runs scripts/lib/renderer-versions.ts (plain fetch, no browser, no install:
+# Node type-strips the .ts and it imports only node: builtins). It exits 1 when
+# a surface differs from SURFACE_VERSIONS or the version literal can no longer
+# be read; that opens ONE issue (found-or-created, body refreshed each run).
+# The issue is advisory: update SURFACE_VERSIONS + docs/known-differences.md
+# and re-verify parity claims that name the old version.
+# The script output is derived from third-party bundles, so it is posted only
+# inside a code fence after control characters are stripped and the length is
+# capped. Never interpolated via ${{ }}.
+name: Renderer versions
+
+on:
+  schedule:
+    - cron: '17 13 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: renderer-versions
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.repository == 'dfadler/zombie-mermaid'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+      - name: Compare with SURFACE_VERSIONS
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          if node scripts/lib/renderer-versions.ts > out.txt 2>&1; then
+            cat out.txt
+            exit 0
+          fi
+          cat out.txt
+          title='mermaid renderer versions moved (GitHub / mermaid.live)'
+          fence='```'
+          {
+            printf 'Weekly scripts/lib/renderer-versions.ts run on %s reports a change:\n\n%stext\n' "$(date -u +%Y-%m-%d)" "$fence"
+            tr -d '\000-\010\013-\037\177`' < out.txt | cut -c1-300 | head -20
+            printf '\n%s\n\nUpdate SURFACE_VERSIONS and the table in docs/known-differences.md, then re-verify parity claims that name the old version ("Re-verifying" in that doc). Output above is data derived from third-party bundles.\n' "$fence"
+          } > body.md
+          n=$(gh issue list --repo "$REPO" --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          if [ -n "$n" ]; then
+            gh issue edit "$n" --repo "$REPO" --body-file body.md
+          else
+            gh issue create --repo "$REPO" --title "$title" --body-file body.md
+          fi
