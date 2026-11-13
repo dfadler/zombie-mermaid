@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { renderMermaidSVG } from '../src/index.ts'
+import { scoreJourney } from '../scripts/lib/journey-measure.ts'
+import type { RealMermaidSession } from '../scripts/lib/real-mermaid.ts'
 import {
   journeyAgreement,
   journeyBreaches,
@@ -118,5 +120,38 @@ describe('journeyBreaches', () => {
       ['c (error)', 'b (50% < 100%)'],
     )
     expect(journeyBreaches({ a: ok })).toEqual([])
+  })
+})
+
+describe('scoreJourney', () => {
+  // A stand-in session whose "official" render is our own, so every sample agrees.
+  const session = {
+    page: {
+      evaluate: async (_fn: unknown, [, src]: [string, string]) =>
+        renderMermaidSVG(src),
+    },
+  } as unknown as RealMermaidSession
+
+  it('scores each journey sample and filters by title', async () => {
+    const all = await scoreJourney(session)
+    expect(Object.keys(all.results)).toContain('Journey: Basic')
+    expect(all.breaches).toEqual([])
+    const one = await scoreJourney(session, 'basic')
+    expect(Object.keys(one.results)).toEqual(['Journey: Basic'])
+  })
+
+  it('reports a sample that fails to render as errored', async () => {
+    const bad = {
+      page: {
+        evaluate: async () => {
+          throw new Error('boom\nstack')
+        },
+      },
+    } as unknown as RealMermaidSession
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const r = await scoreJourney(bad, 'basic')
+    spy.mockRestore()
+    expect(r.errored).toEqual(['Journey: Basic'])
+    expect(r.breaches).toEqual(['Journey: Basic (error)'])
   })
 })
