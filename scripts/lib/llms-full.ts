@@ -21,10 +21,32 @@ export function absolutizeLinks(markdown: string, path: string): string {
   )
 }
 
+/** Repo files linked from `public/llms.txt` (the docs the output is built from). */
+const linkedPaths = (index: string): string[] => {
+  const link = new RegExp(`\\]\\(${BLOB.replaceAll('.', '\\.')}([^)]+)\\)`, 'g')
+  return [...new Set([...index.matchAll(link)].map((m) => m[1]))]
+}
+
+/** Every repo file whose change can change the output (derived, so it cannot go stale). */
+export async function llmsFullInputs(): Promise<string[]> {
+  const paths = linkedPaths(await read('public/llms.txt'))
+  return [
+    'public/llms.txt',
+    'public/llms-full.txt',
+    'scripts/lib/llms-full.ts',
+    ...paths,
+  ]
+}
+
+/** True when any changed file is one the output is generated from. */
+export const touchesLlmsFullInputs = (
+  changed: string[],
+  inputs: string[],
+): boolean => changed.some((f) => inputs.includes(f))
+
 export async function generateLlmsFull(): Promise<string> {
   const index = await read('public/llms.txt')
-  const link = new RegExp(`\\]\\(${BLOB.replaceAll('.', '\\.')}([^)]+)\\)`, 'g')
-  const paths = [...new Set([...index.matchAll(link)].map((m) => m[1]))]
+  const paths = linkedPaths(index)
   const parts = await Promise.all(
     paths.map(
       async (p) =>

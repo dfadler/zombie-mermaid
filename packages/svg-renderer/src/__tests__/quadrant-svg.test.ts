@@ -143,13 +143,44 @@ describe('quadrant SVG: structure and styling', () => {
     expect(count(svg, /quadrant-axis-label/g)).toBe(4)
   })
 
+  it('draws an empty <text> for an unlabeled quadrant, as mermaid 12.3.0 does', () => {
+    const one = renderMermaidSVG(`quadrantChart
+    quadrant-1 Expand
+    A: [0.3, 0.6]`)
+    const labels = [
+      ...one.matchAll(/<text [^>]*quadrant-label[^>]*>([^<]*)<\/text>/g),
+    ]
+    expect(labels.map((m) => m[1])).toEqual(['Expand', '', '', ''])
+    // Positioned as a labelled one would be: top row of each cell, cell centre
+    expect(one).toContain('translate(127.5, 10) rotate(0)"></text>')
+    expect(one).toContain('translate(372.5, 255) rotate(0)"></text>')
+    // Axis, title and point text stay dropped when empty
+    expect(count(one, /quadrant-axis-label|quadrant-title/g)).toBe(0)
+    // No points: centred, still four texts
+    const none = renderMermaidSVG('quadrantChart\n    quadrant-1 Expand')
+    expect(count(none, /class="quadrant-text quadrant-label"/g)).toBe(4)
+  })
+
   it('uses theme variables, not literal colours, for the defaults', () => {
     expect(svg).toContain('.quadrant-point { fill: var(--fg);')
     expect(svg).toContain('.quadrant-text { fill: var(--_text); }')
-    expect(svg).toMatch(
-      /\.quadrant-cell-0 \{ fill: color-mix\(in srgb, var\(--accent, #[0-9a-f]{6}\) 14%, var\(--bg\)\); \}/,
-    )
     expect(svg).not.toContain('NaN')
+  })
+
+  it('defaults to mermaid 12.3.0’s lavender fills; an accent or a dark theme keeps the accent mix (#2858)', () => {
+    const src = 'quadrantChart\n    quadrant-1 A\n    P: [0.3, 0.6]'
+    expect(svg).toContain('.quadrant-cell-0 { fill: #ECECFF; }')
+    expect(svg).toContain('.quadrant-cell-3 { fill: #fbfbff; }')
+    expect(svg).toContain(
+      '.quadrant:nth-child(2) .quadrant-label { fill: #0e0e00; }',
+    )
+    expect(svg).toContain('.quadrant-line { stroke: #c7c7f1; }')
+    const mix =
+      /\.quadrant-cell-0 \{ fill: color-mix\(in srgb, var\(--accent, #[0-9a-f]{6}\) 14%, var\(--bg\)\); \}/
+    expect(renderMermaidSVG(src, { accent: '#ff0000' })).toMatch(mix)
+    expect(renderMermaidSVG(src, { bg: '#18181B', fg: '#FAFAFA' })).toMatch(mix)
+    // Not a #rrggbb: treated as light
+    expect(renderMermaidSVG(src, { bg: 'white' })).toContain('fill: #ECECFF;')
   })
 
   it('renders custom point styles as CSS rules, not attributes', () => {
@@ -169,7 +200,7 @@ describe('quadrant SVG: structure and styling', () => {
     const s = renderMermaidSVG(
       'quadrantChart\n  title A <b> & "c"\n  "x<y": [0.5, 0.5]',
     )
-    expect(s).toContain('A &lt;b&gt; &amp; &quot;c&quot;')
+    expect(s).toContain('A &lt;b&gt; &amp;amp; &quot;c&quot;&lt;/b&gt;')
     expect(s).toContain('x&lt;y')
   })
 })

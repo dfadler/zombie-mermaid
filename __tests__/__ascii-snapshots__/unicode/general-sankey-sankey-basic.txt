@@ -1,0 +1,7 @@
+Agricultural 'waste'  124.73
+  └─▶ Bio-conversion  ████████▏              124.73
+Bio-conversion  310.78
+  ├─▶ Liquid          ▏                         0.6
+  ├─▶ Solid           █▏                      26.86
+  ├─▶ Gas             ████████████████████   280.32
+  └─▶ Losses          ▏                           3

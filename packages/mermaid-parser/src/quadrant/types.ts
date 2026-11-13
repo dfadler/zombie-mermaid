@@ -58,7 +58,7 @@ export interface QuadrantChart {
   config?: QuadrantConfig
   /**
    * `quadrant*` theme variables from `%%{init}%%`, by Mermaid's name. Parsed
-   * always, drawn only when the caller opts in with `honorThemeVariables`.
+   * always, drawn unless the caller passes `honorThemeVariables: false`.
    */
   themeColors?: ThemeVariables['quadrant']
 }

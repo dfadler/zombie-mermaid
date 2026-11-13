@@ -1,0 +1,371 @@
+/**
+ * GitGraph layout and SVG. Expected numbers are measured from mermaid@12.3.0
+ * rendering the same sources (commit ids are given, because Mermaid draws
+ * random ones otherwise); the full comparison runs in scripts/gitgraph-oracle.ts.
+ */
+import { describe, it, expect } from 'vitest'
+import { parseGitGraph } from '@zombie-mermaid/mermaid-parser'
+import { renderMermaidSVG } from '../index.ts'
+import { layoutGitGraph, lineHeight } from '../gitgraph/layout.ts'
+import { arialWidth } from '../gitgraph/arial-metrics.ts'
+
+const layout = (src: string) => layoutGitGraph(parseGitGraph(src))
+const BASIC =
+  'gitGraph\n commit id: "a"\n branch dev\n commit id: "b"\n checkout main\n merge dev id: "m"'
+
+describe('layoutGitGraph – left to right', () => {
+  it("matches mermaid's branch lines, commits and arrows", () => {
+    const l = layout(BASIC)
+    expect(l.branches.map((b) => b.line)).toEqual([
+      { x1: 0, y1: -2, x2: 150, y2: -2 },
+      { x1: 0, y1: 88, x2: 150, y2: 88 },
+    ])
+    const circles = l.commits.flatMap((c) =>
+      c.shapes.flatMap((x) => (x.kind === 'circle' ? [[x.cx, x.cy, x.r]] : [])),
+    )
+    expect(circles).toEqual([
+      [10, -2, 10],
+      [60, 88, 10],
+      [110, -2, 10],
+      [110, -2, 6],
+    ])
+    expect(l.arrows.map((x) => x.d)).toEqual([
+      'M 10 -2 L 10 68 A 20 20, 0, 0, 0, 30 88 L 60 88',
+      'M 10 -2 L 110 -2',
+      'M 60 88 L 90 88 A 20 20, 0, 0, 0, 110 68 L 110 -2',
+    ])
+    expect(l.viewBox.x).toBeCloseTo(-96, 1)
+    expect(l.viewBox.y).toBeCloseTo(-21.5, 1)
+    expect(l.viewBox.width).toBeCloseTo(254, 1)
+    expect(l.viewBox.height).toBeCloseTo(145.86, 1)
+  })
+
+  it('shifts the origin to the padded bounding box', () => {
+    const l = layout('gitGraph\n commit id: "a"')
+    expect(l.viewBox.x).toBeLessThan(0)
+    expect(l.viewBox.width).toBeGreaterThan(0)
+  })
+
+  it('rotates commit labels unless told not to, and drops them on request', () => {
+    const rot = layout('gitGraph\n commit id: "a"').commits[0]!.label!
+    expect(rot.groupTransform).toMatch(/^translate\(.*\) rotate\(-45, /)
+    const flat = layout(
+      '%%{init: {"gitGraph": {"rotateCommitLabel": false}}}%%\ngitGraph\n commit id: "a"',
+    ).commits[0]!.label!
+    expect(flat.groupTransform).toBeUndefined()
+    const none = layout(
+      '%%{init: {"gitGraph": {"showCommitLabel": false}}}%%\ngitGraph\n commit id: "a"',
+    )
+    expect(none.commits[0]!.label).toBeUndefined()
+  })
+
+  it('labels a merge only when it has an id, and never a cherry-pick', () => {
+    const src =
+      'gitGraph\n commit id: "a"\n branch d\n commit id: "b"\n checkout main\n merge d\n cherry-pick id: "b"'
+    const l = layout(src)
+    expect(l.commits.map((c) => c.label?.text)).toEqual([
+      'a',
+      'b',
+      undefined,
+      undefined,
+    ])
+    const m = layout(src.replace('merge d', 'merge d id: "M"'))
+    expect(m.commits.map((c) => c.label?.text)).toEqual([
+      'a',
+      'b',
+      'M',
+      undefined,
+    ])
+  })
+
+  it('stacks tags upward, the last written nearest the commit', () => {
+    const t = layout('gitGraph\n commit id: "a" tag: "one" tag: "two"')
+      .commits[0]!.tags
+    expect(t.map((x) => x.text)).toEqual(['two', 'one'])
+    expect(t[1]!.textPos.y).toBe(t[0]!.textPos.y - 20)
+  })
+
+  it('draws each commit type as Mermaid does', () => {
+    const l = layout(
+      'gitGraph\n commit id: "n"\n commit id: "r" type: REVERSE\n commit id: "h" type: HIGHLIGHT\n branch d\n commit id: "x"\n checkout main\n merge d id: "m"\n cherry-pick id: "x"',
+    )
+    expect(l.commits.map((c) => c.shapes.map((x) => x.kind))).toEqual([
+      ['circle'], // Normal
+      ['circle', 'path'], // Reverse: a cross over the circle
+      ['rect', 'rect'], // Highlight: outer and inner square
+      ['circle'],
+      ['circle', 'circle'], // Merge: a ring
+      ['circle', 'circle', 'circle', 'line', 'line'], // Cherry-pick
+    ])
+  })
+})
+
+describe('layoutGitGraph – orientations', () => {
+  const src = (dir: string) =>
+    `gitGraph${dir}\n commit id: "a"\n branch f\n commit id: "b"\n checkout main\n merge f id: "m"`
+
+  it('runs time down for TB with branches as columns', () => {
+    const l = layout(src(' TB:'))
+    expect(l.branches[0]!.line.x1).toBe(0)
+    expect(l.branches[0]!.line.y1).toBe(30)
+    expect(l.branches[1]!.line.x1).toBeGreaterThan(90)
+    expect(l.branches[0]!.bkg.tx).toBeUndefined()
+  })
+
+  it('runs time up for BT, with branch labels under the lines', () => {
+    const l = layout(src(' BT:'))
+    const b = l.branches[0]!
+    expect(b.line.y1).toBeGreaterThan(b.line.y2)
+    expect(b.bkg.y).toBe(b.line.y1)
+  })
+
+  it('places parallel commits one step after their closest parent', () => {
+    const par = '%%{init: {"gitGraph": {"parallelCommits": true}}}%%\n'
+    const l = layout(
+      `${par}gitGraph\n commit id: "a"\n branch d\n commit id: "b"\n checkout main\n commit id: "c"`,
+    )
+    const cy = l.commits.map((c) => {
+      const s = c.shapes[0]!
+      return s.kind === 'circle' ? s.cx : NaN
+    })
+    expect(cy[1]).toBe(cy[2]) // B and c both follow a
+    const bt = layout(
+      `${par}gitGraph BT:\n commit id: "a"\n branch d\n commit id: "b"`,
+    )
+    expect(bt.commits).toHaveLength(2)
+  })
+
+  it('measures a line of 16px text as 19px and 10px text as 11px', () => {
+    expect(lineHeight(16)).toBe(19)
+    expect(lineHeight(10)).toBe(11)
+    expect(lineHeight(18)).toBe(21)
+  })
+})
+
+describe('renderMermaidSVG – gitGraph', () => {
+  const svg = renderMermaidSVG(BASIC)
+
+  it("uses Mermaid's structure and class names", () => {
+    expect(svg).toContain('class="branch branch0"')
+    expect(svg).toContain('class="branchLabelBkg label1"')
+    expect(svg).toContain('<g class="commit-arrows">')
+    expect(svg).toContain('class="arrow arrow1"')
+    expect(svg).toContain('class="commit commit-merge m commit0"')
+    expect(svg).toContain('class="commit-label"')
+  })
+
+  it('draws a cherry-pick as a circle with two dots and two strokes', () => {
+    const out = renderMermaidSVG(
+      'gitGraph\n commit id: "a"\n branch d\n commit id: "b"\n checkout main\n cherry-pick id: "b"',
+    )
+    expect(out.match(/<line [^>]*stroke="#fff"/g)).toHaveLength(2)
+    expect(out.match(/<circle [^>]*fill="#fff"/g)).toHaveLength(2)
+    expect(out).toContain('commit-cherry-pick')
+  })
+
+  it('escapes ids, tags and branch names', () => {
+    const out = renderMermaidSVG(
+      'gitGraph\n commit id: "<b>&" tag: "<i>"\n branch "a<br>b"',
+    )
+    expect(out).not.toContain('<b>&')
+    expect(out).toContain('&lt;b&gt;&amp;')
+    expect(out).toContain('&lt;i&gt;')
+    expect(out).toContain('>a</tspan>')
+  })
+
+  it('draws the title above the graph', () => {
+    const out = renderMermaidSVG(
+      'gitGraph\n title Release flow\n commit id: "a"',
+    )
+    expect(out).toMatch(/<text [^>]*class="gitTitleText">Release flow<\/text>/)
+  })
+
+  it('omits branch lines and names with showBranches: false', () => {
+    const out = renderMermaidSVG(
+      '%%{init: {"gitGraph": {"showBranches": false}}}%%\ngitGraph\n commit id: "a"',
+    )
+    expect(out).not.toContain('<line ')
+    expect(out).not.toContain('class="branchLabel"')
+  })
+
+  it('moves the viewBox origin to 0,0 and sizes the svg to it', () => {
+    const m =
+      /viewBox="0 0 ([\d.]+) ([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(
+        svg,
+      )!
+    expect(m[1]).toBe(m[3])
+    expect(m[2]).toBe(m[4])
+  })
+
+  it('themes through the accent: colours are custom properties', () => {
+    expect(svg).toContain('--git-color-1')
+    expect(svg).toMatch(/\.commit1 \{ stroke: var\(--git-color-1\)/)
+  })
+
+  it('renders a bare gitGraph and the three orientations', () => {
+    expect(renderMermaidSVG('gitGraph')).toContain('branch-label0')
+    for (const d of ['LR', 'TB', 'BT'])
+      expect(
+        renderMermaidSVG(`gitGraph ${d}:\n commit id: "a"\n commit id: "b"`),
+      ).toContain('commit-bullets')
+  })
+
+  it("throws Mermaid's database errors for a bad graph", () => {
+    expect(() => renderMermaidSVG('gitGraph\n branch main')).toThrow(
+      /existing branch/,
+    )
+  })
+})
+
+// These graphs were scored 100% against mermaid@12.3.0 and 12.2.0 in every
+// orientation, with and without parallelCommits and rotateCommitLabel (the
+// sweep behind docs/known-differences.md#git-graphs); here they pin that the
+// rerouted, merged and tagged arrows all lay out and draw.
+describe('gitGraph sweep', () => {
+  const bodies = [
+    'commit id: "a"\nbranch b1\ncommit id: "b"\ncheckout main\ncommit id: "c"\ncommit id: "d"\nbranch b2\ncommit id: "e"\ncheckout b1\ncommit id: "f"\ncheckout main\nmerge b1 id: "m1"\ncheckout b2\ncommit id: "g"\nmerge main id: "m2"\ncherry-pick id: "f"',
+    'commit id: "a"\nbranch x order: 3\nbranch y order: 1\ncheckout y\ncommit id: "y1" tag: "t1" tag: "t2"\ncheckout x\ncommit id: "x1" type: REVERSE\ncheckout main\nmerge x id: "mx" type: REVERSE\nmerge y id: "my" type: NORMAL',
+    // The first commit of x skips two on main: its arrow is rerouted (main below x when ordered last).
+    'commit id: "a"\nbranch x\ncheckout main\ncommit id: "c"\ncommit id: "d"\ncheckout x\ncommit id: "x1"\ncheckout main\nmerge x id: "m"',
+    '%%{init: {"gitGraph": {"mainBranchOrder": 5}}}%%\ncommit id: "a"\nbranch x\ncheckout main\ncommit id: "c"\ncommit id: "d"\ncheckout x\ncommit id: "x1"\ncheckout main\nmerge x id: "m"',
+  ]
+  for (const dir of ['', ' LR:', ' TB:', ' BT:'])
+    for (const par of [false, true])
+      for (const rot of [true, false])
+        it(`lays out and draws${dir || ' default'} parallel=${par} rotate=${rot}`, () => {
+          for (const body of bodies) {
+            const src = `%%{init: {"gitGraph": {"parallelCommits": ${par}, "rotateCommitLabel": ${rot}}}}%%\ngitGraph${dir}\n${body}`
+            const l = layout(src)
+            expect(Number.isFinite(l.viewBox.width)).toBe(true)
+            expect(l.arrows.length).toBeGreaterThan(2)
+            expect(renderMermaidSVG(src)).toContain('commit-arrows')
+          }
+        })
+})
+
+describe('layoutGitGraph – titleTopMargin and diagramPadding', () => {
+  // Sizes measured from mermaid@12.3.0 (viewBox width x height, title y) for this source.
+  const body =
+    'gitGraph\n title Hi\n commit id: "a"\n branch dev\n commit id: "b"\n checkout main\n merge dev'
+  const cfg = (c: string) => `%%{init: {"gitGraph": ${c}}}%%\n${body}`
+  it.each([
+    ['{}', 254, 174.36, -25],
+    ['{"titleTopMargin": 60}', 254, 209.36, -60],
+    ['{"titleTopMargin": 0}', 254, 149.36, 0],
+    ['{"titleTopMargin": -20}', 254, 145.86, 20],
+    ['{"titleTopMargin": "60"}', 254, 209.36, -60],
+    ['{"titleTopMargin": "abc"}', 254, 174.36, -25],
+    ['{"diagramPadding": 30}', 298, 218.36, -25],
+    ['{"diagramPadding": 0}', 238, 158.36, -25],
+    ['{"diagramPadding": -10}', 218, 138.36, -25],
+    ['{"titleTopMargin": 60, "diagramPadding": 30}', 298, 253.36, -60],
+  ])('%s', (c, w, h, titleY) => {
+    const l = layout(cfg(c))
+    expect(l.viewBox.width).toBeCloseTo(w, 0)
+    expect(l.viewBox.height).toBeCloseTo(h, 0)
+    expect(l.title?.y).toBeCloseTo(titleY, 5)
+  })
+})
+
+// Measured in mermaid@12.3.0 (scripts/gitgraph-oracle.ts style): the viewBox of
+// `gitGraph\n commit id: "A"\n branch dev\n checkout dev\n commit id: "C"` per theme.
+describe('gitGraph themes and looks', () => {
+  const SRC =
+    'gitGraph\n commit id: "A"\n branch dev\n checkout dev\n commit id: "C"'
+  const svgOf = (theme: string, look = 'classic', body = SRC) =>
+    renderMermaidSVG(
+      `%%{init: {"theme":"${theme}","look":"${look}"}}%%\n${body}`,
+    )
+  const box = (svg: string) =>
+    /<rect[^>]*branchLabelBkg label0[^>]*>/.exec(svg)![0]
+
+  it('sizes the viewBox like mermaid for redux, neo and the default theme', () => {
+    const vb = (t: string) =>
+      layoutGitGraph(parseGitGraph(`%%{init: {"theme":"${t}"}}%%\n${SRC}`))
+        .viewBox
+    expect(vb('default').height).toBeCloseTo(146.15, 1)
+    expect(vb('neo').height).toBeCloseTo(145.51, 1)
+    expect(vb('redux').height).toBeCloseTo(151.51, 1)
+    expect(vb('redux').width).toBeCloseTo(201.69, 1)
+    expect(vb('neo').width).toBeCloseTo(199.36, 1)
+  })
+
+  it('draws redux label boxes square, 32px high, and commits at r=7', () => {
+    const svg = svgOf('redux')
+    expect(box(svg)).toContain('rx="0"')
+    expect(box(svg)).toContain('height="32"')
+    expect(svg).toContain('r="7"')
+    expect(svg).not.toContain('data-look')
+    expect(svg).toContain('stroke-dasharray: 4 2')
+    expect(svgOf('default')).toContain('stroke-dasharray: 2')
+  })
+
+  it('adds the look: neo shadow, per theme', () => {
+    expect(box(svgOf('default', 'neo'))).toContain('data-look="neo"')
+    expect(box(svgOf('default', 'neo'))).toContain(
+      'drop-shadow(1px 2px 2px rgba(185, 185, 185, 1))',
+    )
+    expect(box(svgOf('forest', 'neo'))).toContain('rgba(185,185,185,0.5)')
+    expect(box(svgOf('dark', 'neo'))).toContain('rgba(185,185,185,1)')
+    expect(box(svgOf('neo-dark', 'neo'))).toContain('rgba(185,185,185,0.2)')
+    expect(box(svgOf('neo', 'neo'))).toContain(
+      '0px 1px 2px rgba(0, 0, 0, 0.25)',
+    )
+    const redux = svgOf('redux', 'neo')
+    expect(box(redux)).toContain('url(#zm-git-drop-shadow-light)')
+    expect(redux).toContain('flood-color="#000000"')
+    expect(svgOf('redux-dark', 'neo')).toContain('flood-color="#FFFFFF"')
+    expect(box(svgOf('default'))).not.toContain('style=')
+  })
+
+  it('uses a dark cherry-pick in dark themes and 12 colours in redux', () => {
+    const pick = `${SRC}\n checkout main\n cherry-pick id: "C"`
+    expect(svgOf('dark', 'classic', pick)).toContain('fill="#000000"')
+    expect(svgOf('default', 'classic', pick)).toContain('fill="#fff"')
+    expect(svgOf('redux', 'classic', pick)).toContain('.commit11')
+    expect(svgOf('default')).not.toContain('.commit11')
+  })
+
+  it('lays out TB and BT labels under redux and keeps the colour theme colours', () => {
+    for (const d of ['TB', 'BT']) {
+      const svg = svgOf(
+        'redux-color',
+        'classic',
+        SRC.replace('gitGraph', `gitGraph ${d}:`),
+      )
+      expect(box(svg)).toContain('transform="translate(')
+    }
+    const many =
+      'gitGraph\n commit\n' +
+      Array.from(
+        { length: 9 },
+        (_, i) => ` branch b${i}\n commit id: "c${i}"\n checkout main`,
+      ).join('\n')
+    // A colour theme skips the default colour for later branches (calcColorIndex).
+    expect(svgOf('redux-color', 'classic', many)).toContain('commit1')
+  })
+
+  it('reads theme and look from front matter', () => {
+    const fm = renderMermaidSVG(`---\nconfig:\n  theme: redux\n---\n${SRC}`)
+    expect(box(fm)).toContain('rx="0"')
+  })
+
+  it('draws redux highlight, reverse and merge symbols', () => {
+    const src =
+      'gitGraph\n commit id: "a"\n branch d\n commit id: "h" type: HIGHLIGHT\n commit id: "r" type: REVERSE\n checkout main\n merge d id: "m"'
+    const svg = svgOf('redux', 'classic', src)
+    expect(svg).toContain('width="14" height="14"')
+    expect(svg).toContain('width="8" height="8"')
+    expect(svg).toContain('r="5"')
+    expect(svg).toMatch(/M \S+,\S+L\S+M/)
+  })
+})
+
+describe('arialWidth', () => {
+  it('sums advances and kerning, and guesses outside printable ASCII', () => {
+    expect(arialWidth('AT', 100)).toBeCloseTo(66.7 + 61.1 - 7.37, 0)
+    expect(arialWidth('é', 100)).toBeCloseTo(60, 5)
+    expect(arialWidth('日', 100)).toBeCloseTo(100, 5)
+    expect(arialWidth('r', 10, true)).toBeGreaterThan(arialWidth('r', 10))
+  })
+})

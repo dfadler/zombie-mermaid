@@ -17,6 +17,7 @@ const BODIES: Record<string, string> = {
     'architecture-beta\n  service a(server)[A]\n  service b(server)[B]\n  a:R -- L:b',
   c4: 'C4Context\n  Person(u, "User")\n  System(s, "System")\n  Rel(u, s, "uses")',
   pie: 'pie\n  "Yes" : 70\n  "No" : 30',
+  mindmap: 'mindmap\n  root\n    child',
 }
 
 /** Insert the acc statements right after the header line. */
@@ -47,7 +48,10 @@ describe.each(Object.entries(BODIES))('%s', (_type, body) => {
   it('lets the title option win and keeps accDescr', () => {
     const named = renderMermaidSVG(withAcc(body, ACC), { title: 'Opt' })
     expect(named).toMatch(/<title id="[^"]+">Opt<\/title>/)
-    expect(named).not.toContain('Big &lt;Decisions')
+    // C4 also draws accTitle as its visible title (#2733); only <title> is the option's.
+    const rest =
+      _type === 'c4' ? named.replace(/<text[^>]*>[^<]*<\/text>/g, '') : named
+    expect(rest).not.toContain('Big &lt;Decisions')
     expect(named).toContain('How we decide')
   })
 

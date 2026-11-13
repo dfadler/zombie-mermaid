@@ -5,7 +5,11 @@
 // ER diagrams show database entities, their attributes, and relationships.
 // ============================================================================
 
-import type { Direction, StyleDirectives } from '@zombie-mermaid/core'
+import type {
+  Direction,
+  ErInitLayout,
+  StyleDirectives,
+} from '@zombie-mermaid/core'
 
 /**
  * Parsed ER diagram — logical structure from mermaid text.
@@ -25,6 +29,8 @@ export interface ErDiagram extends StyleDirectives {
    * doesn't specify one, in which case the layout falls back to its default.
    */
   direction?: Direction
+  /** `%%{init}%%` / front-matter `er` keys (`diagramPadding`, `entityPadding`, `minEntityWidth`). */
+  layout?: ErInitLayout
 }
 
 export interface ErEntity {
@@ -89,8 +95,10 @@ export interface PositionedErEntity {
   height: number
   /** Height of the header row */
   headerHeight: number
-  /** Height per attribute row */
+  /** Height of a one-line attribute row */
   rowHeight: number
+  /** Height of each attribute row, in order: a row with a `<br>` comment is taller; each is `rowHeight` when absent */
+  rowHeights?: number[]
   /** Inline styles resolved from classDef + `style` (fill, stroke, stroke-width, color) */
   inlineStyle?: Record<string, string>
   /** Style class assigned via `class A name` or `A:::name` — emitted onto the group's `class` attribute */

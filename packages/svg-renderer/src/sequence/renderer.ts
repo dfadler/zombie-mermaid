@@ -9,6 +9,8 @@ import type {
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
 import {
+  ACTOR_FIGURE_HEIGHT,
+  ACTOR_FIGURE_LABEL_GAP,
   ACTOR_LABEL_OFFSET,
   BLOCK_LINE_STROKE,
   BLOCK_TAB_HEIGHT,
@@ -137,6 +139,12 @@ export function renderSequenceSvg(
     if (!isHighlightRect(block)) parts.push(renderBlock(block, fontSizes))
   }
 
+  // 3c. Footer actors, before the messages as in Mermaid: a destroying
+  //     self-message's line and label are drawn across its footer box.
+  for (const actor of diagram.footerActors) {
+    parts.push(renderActor(actor, fontSizes, 'actor-footer'))
+  }
+
   // 4. Messages (horizontal arrows with labels)
   for (const message of diagram.messages) {
     parts.push(renderMessage(message, fontSizes))
@@ -151,10 +159,6 @@ export function renderSequenceSvg(
   for (const actor of diagram.actors) {
     parts.push(renderActor(actor, fontSizes))
   }
-  for (const actor of diagram.footerActors) {
-    parts.push(renderActor(actor, fontSizes, 'actor-footer'))
-  }
-
   if (diagram.title) {
     parts.push(
       '<g class="title">' +
@@ -238,25 +242,17 @@ function renderActor(
   )
 
   if (type === 'actor') {
-    // Circle-person icon: outer circle + head circle + shoulders arc.
-    // Defined in a 24×24 coordinate space, scaled to 90% of the actor box height
-    // and centered both horizontally and vertically within the box.
-    // Stroke width is inverse-scaled so the visual thickness matches STROKE_WIDTHS.outerBox.
-    const s = (height / 24) * 0.9
-    const tx = x - 12 * s // Center icon horizontally on actor.x
-    const ty = y + (height - 24 * s) / 2 // Center icon vertically in actor box
-    const sw = STROKE_WIDTHS.outerBox / s // Compensate for scale transform
-    const iconStroke = 'var(--_line)' // Use line color for actor icon strokes
-
+    // Stick figure as Mermaid 12.3.0 draws it (`g.actor-man`): head circle,
+    // torso, arms and two legs, in a 65-unit-tall design drawn 44px tall from
+    // the top of the slot, with a 2px stroke. The head's fill is the node fill.
+    const k = ACTOR_FIGURE_HEIGHT / 65
+    const top = y
+    const X = (dx: number): number => x + dx * k
+    const Y = (dy: number): number => top + dy * k
+    const st = f`stroke="var(--_line)" stroke-width="2"`
     parts.push(
-      f`  <g transform="translate(${tx},${ty}) scale(${s})">` +
-        // Outer circle
-        f`\n    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
-        // Head
-        f`\n    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
-        // Shoulders
-        f`\n    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
-        `\n  </g>`,
+      f`  <circle cx="${x}" cy="${Y(15)}" r="${15 * k}" fill="var(--_node-fill)" ${st} />` +
+        f`\n  <path d="M${x} ${Y(30)}V${Y(50)}M${X(-18)} ${Y(38)}H${X(18)}M${X(-18)} ${Y(65)}L${x} ${Y(50)}L${X(16)} ${Y(65)}" fill="none" ${st} />`,
     )
     // Label below the icon (supports multi-line)
     parts.push(
@@ -264,7 +260,7 @@ function renderActor(
         renderMultilineText(
           label,
           x,
-          y + height + ACTOR_LABEL_OFFSET,
+          y + height + ACTOR_FIGURE_LABEL_GAP,
           fontSizes.nodeLabel,
           labelStyle,
         ),
@@ -381,26 +377,12 @@ const BLOCK_DIVIDER_DASH = '3 3'
  * Includes data-actor to link to its actor.
  */
 function renderLifeline(lifeline: Lifeline): string {
-  const line =
+  return (
     f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
     f`x1="${lifeline.x}" y1="${lifeline.topY}" x2="${lifeline.x}" y2="${lifeline.bottomY}" ` +
     `stroke="var(--_line)" stroke-width="${LIFELINE_STROKE}" />`
-  if (!lifeline.destroyed) return line
-  // `destroy X`: the lifeline ends at the destroying message's row, marked
-  // with a cross centred on it — the same glyph Mermaid uses. Drawn in the
-  // lifeline pass (before messages), so the destroying arrow lands on top.
-  const { x, bottomY: y } = lifeline
-  const r = DESTROY_CROSS_HALF
-  return (
-    line +
-    f`\n<path class="destroy" data-actor="${escapeAttr(lifeline.actorId)}" ` +
-    f`d="M${x - r} ${y - r} L${x + r} ${y + r} M${x + r} ${y - r} L${x - r} ${y + r}" ` +
-    f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-linecap="round" />`
   )
 }
-
-/** Half-size of the `destroy` cross at the end of a lifeline, in px. */
-const DESTROY_CROSS_HALF = 8
 
 /**
  * Render an activation box (narrow filled rectangle on lifeline).
@@ -445,8 +427,12 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
     // Self-message: the same cubic loop mermaid draws, going right and back
     const loopW = SELF_LOOP_CONTROL
     const loopH = SELF_LOOP_HEIGHT
+    // `rightAngles`: mermaid's square loop (`M x,y-10 H x+75 V y+15 H x`)
+    const d = msg.rightAngles
+      ? f`M ${msg.x1},${msg.y - 10} H ${msg.x1 + 75} V ${msg.y + 15} H ${msg.x2}`
+      : f`M ${msg.x1},${msg.y} C ${msg.x1 + loopW},${msg.y - 10} ${msg.x1 + loopW},${msg.y + loopH + 10} ${msg.x2},${msg.y + loopH}`
     parts.push(
-      f`  <path d="M ${msg.x1},${msg.y} C ${msg.x1 + loopW},${msg.y - 10} ${msg.x1 + loopW},${msg.y + loopH + 10} ${msg.x2},${msg.y + loopH}" ` +
+      f`  <path d="${d}" ` +
         f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
     )
   } else {
@@ -461,10 +447,14 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
     '  ' +
       renderMultilineText(
         msg.label,
-        (msg.x1 + msg.x2) / 2,
+        msg.labelAlign === 'left'
+          ? Math.min(msg.x1, msg.x2) + LABEL_ALIGN_INSET
+          : msg.labelAlign === 'right'
+            ? Math.max(msg.x1, msg.x2) - LABEL_ALIGN_INSET
+            : (msg.x1 + msg.x2) / 2,
         messageLabelCy(msg, fontSizes),
         fontSizes.edgeLabel,
-        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="${msg.labelAlign === 'left' ? 'start' : msg.labelAlign === 'right' ? 'end' : 'middle'}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
   )
 
@@ -667,6 +657,11 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
  * Render a note box: a plain rectangle, as in Mermaid.
  * Wrapped in <g class="note"> with semantic data attributes.
  */
+/** Distance from the note edge to left/right-aligned text (mermaid's 10px `noteMargin`). */
+const NOTE_TEXT_INSET = 10
+/** Distance from the lifeline to left/right-aligned message text. */
+const LABEL_ALIGN_INSET = 10
+
 function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
   const { x, y, width: w, height: h } = note
 
@@ -687,10 +682,14 @@ function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
     // Note text (supports multi-line)
     f`\n  ${renderMultilineText(
       note.text,
-      x + w / 2,
+      note.align === 'left'
+        ? x + NOTE_TEXT_INSET
+        : note.align === 'right'
+          ? x + w - NOTE_TEXT_INSET
+          : x + w / 2,
       y + h / 2,
       fontSizes.edgeLabel,
-      f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      f`font-size="${fontSizes.edgeLabel}" text-anchor="${note.align === 'left' ? 'start' : note.align === 'right' ? 'end' : 'middle'}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
     )}` +
     `\n</g>`
   )

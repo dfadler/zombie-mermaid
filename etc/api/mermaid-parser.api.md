@@ -4,16 +4,27 @@
 
 ```ts
 
+import { ArchitectureInitLayout } from '@zombie-mermaid/core';
+import { C4InitLayout } from '@zombie-mermaid/core';
+import { ClassInitLayout } from '@zombie-mermaid/core';
 import { Direction } from '@zombie-mermaid/core';
+import { ErInitLayout } from '@zombie-mermaid/core';
+import { JourneyInitConfig } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
 import { NodeInteraction } from '@zombie-mermaid/core';
 import { NodeShape } from '@zombie-mermaid/core';
+import { PacketInitConfig } from '@zombie-mermaid/core';
 import { Point } from '@zombie-mermaid/core';
 import { QuadrantConfig } from '@zombie-mermaid/core';
+import { RadarInitConfig } from '@zombie-mermaid/core';
+import { RadarStyleConfig } from '@zombie-mermaid/core';
+import { SankeyInitConfig } from '@zombie-mermaid/core';
+import { SequenceInitLayout } from '@zombie-mermaid/core';
 import { Statement } from '@zombie-mermaid/core';
 import { StyleDirectives } from '@zombie-mermaid/core';
 import { ThemeVariables } from '@zombie-mermaid/core';
 import { toDirection } from '@zombie-mermaid/core';
+import { XyChartInitConfig } from '@zombie-mermaid/core';
 
 // @public
 export interface Activation {
@@ -76,7 +87,11 @@ export interface Actor {
     label: string;
     participantType?: string;
     type: 'participant' | 'actor';
+    wrap?: boolean;
 }
+
+// @public
+export function addDuration(ms: number, n: number, unit: string): number;
 
 // @public (undocumented)
 export interface ArchitectureDiagram {
@@ -86,6 +101,7 @@ export interface ArchitectureDiagram {
     groups: ArchitectureGroup[];
     // (undocumented)
     junctions: ArchitectureJunction[];
+    layout?: ArchitectureInitLayout;
     // (undocumented)
     services: ArchitectureService[];
 }
@@ -194,6 +210,7 @@ export interface C4Diagram {
     boundaries: C4Boundary[];
     direction?: Direction;
     elements: C4Element[];
+    layout?: C4InitLayout;
     // (undocumented)
     relationships: C4Relationship[];
     // (undocumented)
@@ -281,6 +298,7 @@ export interface ClassDiagram extends StyleDirectives {
     classes: ClassNode[];
     direction?: Direction;
     interactions: Map<string, NodeInteraction>;
+    layout?: ClassInitLayout;
     namespaces: ClassNamespace[];
     notes: ClassNote[];
     relationships: ClassRelationship[];
@@ -325,6 +343,7 @@ export interface ClassNote {
 
 // @public (undocumented)
 export interface ClassRelationship {
+    dashed?: boolean;
     // (undocumented)
     from: string;
     fromCardinality?: string;
@@ -349,6 +368,7 @@ export interface ErAttribute {
 export interface ErDiagram extends StyleDirectives {
     direction?: Direction;
     entities: ErEntity[];
+    layout?: ErInitLayout;
     relationships: ErRelationship[];
 }
 
@@ -397,7 +417,149 @@ export function fixActivationBalance(sourceDiagram: string): ActivationFixResult
 export function formatClassMember(m: ClassMember): string;
 
 // @public
+export function formatD3Time(ms: number, fmt: string): string;
+
+// @public
+export function formatDayjs(ms: number, fmt: string): string;
+
+// @public
+export interface GanttChart {
+    axisFormat: string;
+    dateFormat: string;
+    displayMode: '' | 'compact';
+    // (undocumented)
+    excludes: string[];
+    // (undocumented)
+    includes: string[];
+    // (undocumented)
+    inclusiveEndDates: boolean;
+    sections: string[];
+    sizes?: GanttSizes;
+    tasks: GanttTask[];
+    tickInterval?: TickInterval;
+    // (undocumented)
+    title?: string;
+    todayMarker: string;
+    // (undocumented)
+    topAxis: boolean;
+    // (undocumented)
+    weekday: GanttWeekday;
+    // (undocumented)
+    weekend: 'friday' | 'saturday';
+}
+
+// @public
+export interface GanttSizes {
+    // (undocumented)
+    barGap?: number;
+    // (undocumented)
+    barHeight?: number;
+    // (undocumented)
+    fontSize?: number;
+    // (undocumented)
+    gridLineStartPadding?: number;
+    // (undocumented)
+    leftPadding?: number;
+    // (undocumented)
+    numberSectionStyles?: number;
+    // (undocumented)
+    rightPadding?: number;
+    // (undocumented)
+    sectionFontSize?: number;
+    // (undocumented)
+    titleTopMargin?: number;
+    // (undocumented)
+    topPadding?: number;
+}
+
+// @public
+export interface GanttTask {
+    // (undocumented)
+    active: boolean;
+    classes: string[];
+    // (undocumented)
+    crit: boolean;
+    // (undocumented)
+    done: boolean;
+    end: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    link?: string;
+    // (undocumented)
+    milestone: boolean;
+    order: number;
+    renderEnd: number | null;
+    section: string;
+    // (undocumented)
+    start: number;
+    vert: boolean;
+}
+
+// @public (undocumented)
+export type GanttWeekday = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+// @public
 export function getSeriesColor(index: number, accentColor: string, bgColor?: string): string;
+
+// @public
+export const GIT_GRAPH_DEFAULTS: GitGraphConfig;
+
+// @public
+export interface GitCommit {
+    // (undocumented)
+    branch: string;
+    customId?: boolean;
+    customType?: GitCommitType;
+    id: string;
+    message: string;
+    parents: string[];
+    // (undocumented)
+    seq: number;
+    // (undocumented)
+    tags: string[];
+    // (undocumented)
+    type: GitCommitType;
+}
+
+// @public
+export type GitCommitType = 'NORMAL' | 'REVERSE' | 'HIGHLIGHT' | 'MERGE' | 'CHERRY_PICK';
+
+// @public
+export interface GitGraph {
+    branches: string[];
+    commits: GitCommit[];
+    // (undocumented)
+    config: GitGraphConfig;
+    direction: GitGraphDirection;
+    title?: string;
+}
+
+// @public
+export interface GitGraphConfig {
+    // (undocumented)
+    diagramPadding: number;
+    look?: string;
+    // (undocumented)
+    mainBranchName: string;
+    // (undocumented)
+    mainBranchOrder: number;
+    // (undocumented)
+    parallelCommits: boolean;
+    // (undocumented)
+    rotateCommitLabel: boolean;
+    // (undocumented)
+    showBranches: boolean;
+    // (undocumented)
+    showCommitLabel: boolean;
+    theme?: string;
+    // (undocumented)
+    titleTopMargin: number;
+}
+
+// @public (undocumented)
+export type GitGraphDirection = 'LR' | 'TB' | 'BT';
 
 // @public (undocumented)
 export interface GridLine {
@@ -421,7 +583,62 @@ export function isCssColor(value: string): boolean;
 export function isDarkBackground(bgHex: string): boolean;
 
 // @public
+export function isExcludedDate(chart: Pick<GanttChart, 'includes' | 'excludes' | 'weekend' | 'dateFormat'>, ms: number): boolean;
+
+// @public
+export function isoWeekday(ms: number): number;
+
+// @public
 export function isValidHex(color: string): boolean;
+
+// @public
+export interface Journey {
+    actors: string[];
+    config?: JourneyInitConfig;
+    sections: string[];
+    tasks: JourneyTask[];
+    title?: string;
+}
+
+// @public
+export interface JourneyTask {
+    actors: string[];
+    name: string;
+    score: number;
+    section: string;
+}
+
+// @public
+export interface Kanban {
+    // (undocumented)
+    columns: KanbanColumn[];
+    config?: {
+        sectionWidth?: number;
+        ticketBaseUrl?: string;
+    };
+}
+
+// @public
+export interface KanbanCard {
+    assigned?: string;
+    className?: string;
+    icon?: string;
+    id: string;
+    priority?: string;
+    text: string;
+    ticket?: string;
+}
+
+// @public
+export interface KanbanColumn {
+    // (undocumented)
+    cards: KanbanCard[];
+    className?: string;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    text: string;
+}
 
 // @public
 export function knownShapeNames(): string[];
@@ -443,6 +660,7 @@ export interface Lifeline {
     actorId: string;
     // (undocumented)
     bottomY: number;
+    // @deprecated
     destroyed?: boolean;
     // (undocumented)
     topY: number;
@@ -471,7 +689,61 @@ export interface Message {
     seqNumber?: number;
     // (undocumented)
     to: string;
+    wrap?: boolean;
 }
+
+// @public
+export interface Mindmap {
+    // (undocumented)
+    root: MindmapNode;
+}
+
+// @public
+export function mindmapLabelLines(text: string): MindmapTextRun[][];
+
+// @public
+export interface MindmapNode {
+    // (undocumented)
+    children: MindmapNode[];
+    className?: string;
+    icon?: string;
+    id: number;
+    level: number;
+    // (undocumented)
+    shape: MindmapShape;
+    text: string;
+}
+
+// @public
+export function mindmapPlainLines(text: string): string[];
+
+// @public
+export type MindmapShape = 'default' | 'rect' | 'rounded' | 'circle' | 'cloud' | 'bang' | 'hexagon';
+
+// @public
+export interface MindmapTextRun {
+    // (undocumented)
+    bold: boolean;
+    // (undocumented)
+    italic: boolean;
+    // (undocumented)
+    text: string;
+}
+
+// @public (undocumented)
+export const MS_DAY = 86400000;
+
+// @public (undocumented)
+export const MS_HOUR = 3600000;
+
+// @public (undocumented)
+export const MS_MINUTE = 60000;
+
+// @public (undocumented)
+export const MS_SECOND = 1000;
+
+// @public (undocumented)
+export const MS_WEEK: number;
 
 // @public (undocumented)
 export interface Note {
@@ -479,7 +751,57 @@ export interface Note {
     afterIndex: number;
     position: 'left' | 'right' | 'over';
     text: string;
+    wrap?: boolean;
 }
+
+// @public
+export interface Packet {
+    blocks: PacketBlock[];
+    config?: PacketInitConfig;
+    title?: string;
+    words: PacketBlock[][];
+}
+
+// @public
+export const PACKET_DEFAULTS: {
+    readonly rowHeight: 32;
+    readonly bitWidth: 32;
+    readonly bitsPerRow: 32;
+    readonly showBits: true;
+    readonly bitOrder: "ascending";
+    readonly paddingX: 5;
+    readonly paddingY: 5;
+};
+
+// @public
+export interface PacketBlock {
+    // (undocumented)
+    end: number;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    start: number;
+}
+
+// @public
+export interface PacketConfig {
+    // (undocumented)
+    bitOrder: 'ascending' | 'descending';
+    // (undocumented)
+    bitsPerRow: number;
+    // (undocumented)
+    bitWidth: number;
+    // (undocumented)
+    paddingX: number;
+    paddingY: number;
+    // (undocumented)
+    rowHeight: number;
+    // (undocumented)
+    showBits: boolean;
+}
+
+// @public
+export function packGanttSection(tasks: GanttTask[], offset: number, orders: Map<GanttTask, number>): number;
 
 // @public
 export function parseArchitecture(lines: Statement[]): ArchitectureDiagram;
@@ -497,16 +819,37 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram;
 export function parseClassDiagram(lines: Statement[]): ClassDiagram;
 
 // @public
+export function parseDayjs(str: string, fmt: string, now?: Date): number | undefined;
+
+// @public
 export function parseErDiagram(lines: Statement[]): ErDiagram;
 
 // @public
 export function parseExpandedMeta(body: string): ExpandedNodeMeta;
 
 // @public
+export function parseGantt(source: string, now?: Date): GanttChart;
+
+// @public
 export function parseGenericTypes(input: string): string;
 
 // @public
+export function parseGitGraph(text: string): GitGraph;
+
+// @public
+export function parseJourney(text: string): Journey;
+
+// @public
+export function parseKanban(text: string): Kanban;
+
+// @public
 export function parseMermaid(text: string): MermaidGraph;
+
+// @public
+export function parseMindmap(text: string): Mindmap;
+
+// @public
+export function parsePacket(text: string): Packet;
 
 // @public
 export function parsePieChart(text: string): PieChart;
@@ -515,10 +858,22 @@ export function parsePieChart(text: string): PieChart;
 export function parseQuadrantChart(source: string): QuadrantChart;
 
 // @public
+export function parseRadar(text: string): Radar;
+
+// @public
+export function parseRequirementDiagram(text: string): RequirementDiagram;
+
+// @public
+export function parseSankey(text: string): Sankey;
+
+// @public
 export function parseSequenceDiagram(lines: Statement[], text?: string): SequenceDiagram;
 
 // @public
-export function parseXYChart(lines: Statement[]): XYChart;
+export function parseTimeline(text: string): Timeline;
+
+// @public
+export function parseXYChart(lines: Statement[], config?: XyChartInitConfig): XYChart;
 
 // @public
 export interface ParticipantBox {
@@ -663,6 +1018,7 @@ export interface PositionedC4Diagram {
     elements: PositionedC4Element[];
     // (undocumented)
     height: number;
+    layout?: C4InitLayout;
     // (undocumented)
     relationships: PositionedC4Relationship[];
     // (undocumented)
@@ -777,6 +1133,7 @@ export interface PositionedClassNote {
 
 // @public (undocumented)
 export interface PositionedClassRelationship {
+    dashed?: boolean;
     // (undocumented)
     from: string;
     // (undocumented)
@@ -833,6 +1190,7 @@ export interface PositionedErEntity {
     // (undocumented)
     label: string;
     rowHeight: number;
+    rowHeights?: number[];
     // (undocumented)
     width: number;
     // (undocumented)
@@ -866,6 +1224,410 @@ export interface PositionedErRelationship {
 }
 
 // @public (undocumented)
+export interface PositionedGanttAxis {
+    // (undocumented)
+    position: 'top' | 'bottom';
+    // (undocumented)
+    rangeEnd: number;
+    // (undocumented)
+    ticks: PositionedGanttTick[];
+    tickSize: number;
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface PositionedGanttChart {
+    // (undocumented)
+    axes: PositionedGanttAxis[];
+    excludeRanges: {
+        id: string;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    }[];
+    fontSize: number;
+    // (undocumented)
+    height: number;
+    rows: {
+        y: number;
+        width: number;
+        height: number;
+        sectionStyle: number;
+    }[];
+    // (undocumented)
+    sectionFontSize: number;
+    // (undocumented)
+    sectionLabels: {
+        lines: string[];
+        y: number;
+        sectionStyle: number;
+    }[];
+    tasks: PositionedGanttTask[];
+    // (undocumented)
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    today?: {
+        x: number;
+        y1: number;
+        y2: number;
+        style: string;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public (undocumented)
+export interface PositionedGanttTask {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    originX: number;
+    // (undocumented)
+    originY: number;
+    sectionStyle: number;
+    // (undocumented)
+    task: GanttTask;
+    // (undocumented)
+    text: PositionedGanttText;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface PositionedGanttText {
+    anchor: 'start' | 'middle' | 'end';
+    outside: 'left' | 'right' | null;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface PositionedGanttTick {
+    // (undocumented)
+    label: string;
+    x: number;
+}
+
+// @public (undocumented)
+export interface PositionedGitArrow {
+    // (undocumented)
+    colorIndex: number;
+    // (undocumented)
+    d: string;
+}
+
+// @public (undocumented)
+export interface PositionedGitBranch {
+    bkg: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        tx?: number;
+        ty?: number;
+        radius: number;
+    };
+    colorIndex: number;
+    label: {
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    line: {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+    };
+    // (undocumented)
+    name: string;
+}
+
+// @public (undocumented)
+export interface PositionedGitCommit {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label?: PositionedGitCommitLabel;
+    // (undocumented)
+    shapes: PositionedGitShape[];
+    // (undocumented)
+    tags: PositionedGitTag[];
+}
+
+// @public (undocumented)
+export interface PositionedGitCommitLabel {
+    groupTransform?: string;
+    // (undocumented)
+    rect: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+    };
+    rotate?: string;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    textPos: {
+        x: number;
+        y: number;
+    };
+}
+
+// @public
+export interface PositionedGitGraph {
+    // (undocumented)
+    arrows: PositionedGitArrow[];
+    // (undocumented)
+    branches: PositionedGitBranch[];
+    // (undocumented)
+    commits: PositionedGitCommit[];
+    // (undocumented)
+    direction: GitGraphDirection;
+    // (undocumented)
+    look: PositionedGitLook;
+    // (undocumented)
+    showBranches: boolean;
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedGitLook {
+    colorLimit: number;
+    colorTheme: boolean;
+    dark: boolean;
+    neo: boolean;
+    neoFilter?: string;
+    redux: boolean;
+    shadowFlood?: string;
+    thinBranch: boolean;
+}
+
+// @public
+export type PositionedGitShape = {
+    kind: 'circle';
+    cx: number;
+    cy: number;
+    r: number;
+    cls: string;
+    fill?: string;
+} | {
+    kind: 'rect';
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    cls: string;
+} | {
+    kind: 'path';
+    d: string;
+    cls: string;
+} | {
+    kind: 'line';
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    cls: string;
+    stroke?: string;
+};
+
+// @public (undocumented)
+export interface PositionedGitTag {
+    // (undocumented)
+    hole: {
+        cx: number;
+        cy: number;
+    };
+    // (undocumented)
+    holeTransform?: string;
+    points: string;
+    polygonTransform?: string;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    textPos: {
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    textTransform?: string;
+}
+
+// @public
+export interface PositionedJourney {
+    // (undocumented)
+    axis: {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+    };
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    legend: PositionedJourneyLegendRow[];
+    // (undocumented)
+    sections: PositionedJourneySection[];
+    // (undocumented)
+    tasks: PositionedJourneyTask[];
+    // (undocumented)
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedJourneyLegendRow {
+    // (undocumented)
+    cx: number;
+    // (undocumented)
+    cy: number;
+    lines: {
+        text: string;
+        x: number;
+        y: number;
+    }[];
+    // (undocumented)
+    pos: number;
+}
+
+// @public
+export interface PositionedJourneySection {
+    // (undocumented)
+    height: number;
+    num: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedJourneyTask {
+    dots: {
+        cx: number;
+        cy: number;
+        actor: string;
+        pos: number;
+    }[];
+    faceY: number;
+    // (undocumented)
+    height: number;
+    lineEndY: number;
+    lines: string[];
+    // (undocumented)
+    num: number;
+    // (undocumented)
+    score: number;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedKanban {
+    // (undocumented)
+    columns: PositionedKanbanColumn[];
+    // (undocumented)
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedKanbanCard {
+    // (undocumented)
+    assigned?: PositionedKanbanText;
+    // (undocumented)
+    className?: string;
+    cx: number;
+    // (undocumented)
+    cy: number;
+    // (undocumented)
+    height: number;
+    priorityColor?: string;
+    // (undocumented)
+    ticket?: PositionedKanbanText;
+    ticketUrl?: string;
+    // (undocumented)
+    title: PositionedKanbanText;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedKanbanColumn {
+    // (undocumented)
+    cards: PositionedKanbanCard[];
+    // (undocumented)
+    className?: string;
+    colorClass: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    label: PositionedKanbanText;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedKanbanText {
+    // (undocumented)
+    height: number;
+    lines: MindmapTextRun[][];
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    y: number;
+}
+
+// @public (undocumented)
 export interface PositionedLine {
     colorIndex: number;
     points: Array<{
@@ -888,19 +1650,81 @@ export interface PositionedMessage {
     isSelf: boolean;
     // (undocumented)
     label: string;
+    labelAlign?: 'left' | 'right';
     // (undocumented)
     lineStyle: 'solid' | 'dashed';
+    rightAngles?: true;
     seqNumber?: number;
     // (undocumented)
     to: string;
+    // (undocumented)
     x1: number;
     x2: number;
+    y: number;
+}
+
+// @public
+export interface PositionedMindmap {
+    // (undocumented)
+    edges: PositionedMindmapEdge[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    nodes: PositionedMindmapNode[];
+    originX: number;
+    // (undocumented)
+    originY: number;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedMindmapEdge {
+    depth: number;
+    // (undocumented)
+    from: number;
+    // (undocumented)
+    path: string;
+    section: number | undefined;
+    // (undocumented)
+    to: number;
+}
+
+// @public
+export interface PositionedMindmapNode {
+    // (undocumented)
+    boxX: number;
+    // (undocumented)
+    boxY: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    labelHeight: number;
+    labelWidth: number;
+    lines: MindmapTextRun[][];
+    // (undocumented)
+    node: MindmapNode;
+    path?: string;
+    points?: string;
+    radius?: number;
+    rect?: {
+        width: number;
+        height: number;
+        radius: number;
+    };
+    section: number | undefined;
+    underline?: boolean;
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
     y: number;
 }
 
 // @public (undocumented)
 export interface PositionedNote {
     actors?: string[];
+    align?: 'left' | 'right';
     // (undocumented)
     height: number;
     position?: 'left' | 'right' | 'over';
@@ -1062,6 +1886,202 @@ export interface PositionedQuadrantText {
     y: number;
 }
 
+// @public
+export interface PositionedRadar {
+    // (undocumented)
+    axes: PositionedRadarAxis[];
+    centerX: number;
+    // (undocumented)
+    centerY: number;
+    // (undocumented)
+    curves: PositionedRadarCurve[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    legend: PositionedRadarLegendItem[];
+    // (undocumented)
+    rings: PositionedRadarRing[];
+    style?: RadarStyleConfig;
+    title: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedRadarAxis {
+    // (undocumented)
+    anchor: 'start' | 'middle' | 'end';
+    // (undocumented)
+    baseline: 'hanging' | 'auto' | 'central';
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    labelX: number;
+    // (undocumented)
+    labelY: number;
+    x2: number;
+    // (undocumented)
+    y2: number;
+}
+
+// @public
+export interface PositionedRadarCurve {
+    d?: string;
+    index: number;
+    kind: 'path' | 'polygon';
+    points?: Array<{
+        x: number;
+        y: number;
+    }>;
+}
+
+// @public
+export interface PositionedRadarLegendItem {
+    // (undocumented)
+    index: number;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export type PositionedRadarRing = {
+    kind: 'circle';
+    r: number;
+} | {
+    kind: 'polygon';
+    points: Array<{
+        x: number;
+        y: number;
+    }>;
+};
+
+// @public (undocumented)
+export interface PositionedRequirementDiagram {
+    // (undocumented)
+    edges: PositionedRequirementEdge[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    nodes: PositionedRequirementNode[];
+    // (undocumented)
+    width: number;
+}
+
+// @public (undocumented)
+export interface PositionedRequirementEdge {
+    // (undocumented)
+    dst: string;
+    label: string;
+    // (undocumented)
+    labelHeight: number;
+    // (undocumented)
+    labelPoint: {
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    labelWidth: number;
+    points: Array<{
+        x: number;
+        y: number;
+    }>;
+    // (undocumented)
+    src: string;
+    // (undocumented)
+    type: RequirementRelationType;
+}
+
+// @public (undocumented)
+export interface PositionedRequirementNode {
+    className?: string;
+    classNames?: string[];
+    dividerY?: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    inlineStyle?: Record<string, string>;
+    // (undocumented)
+    kind: 'requirement' | 'element';
+    name: string;
+    rows: string[];
+    typeText: string;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedSankey {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    links: PositionedSankeyLink[];
+    // (undocumented)
+    nodes: PositionedSankeyNode[];
+    options: {
+        linkColor: string;
+        labelStyle: 'legacy' | 'outlined';
+        showValues: boolean;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedSankeyLink {
+    source: number;
+    // (undocumented)
+    target: number;
+    // (undocumented)
+    value: number;
+    width: number;
+    x0: number;
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    y0: number;
+    // (undocumented)
+    y1: number;
+}
+
+// @public
+export interface PositionedSankeyNode {
+    color?: string;
+    // (undocumented)
+    id: string;
+    index: number;
+    // (undocumented)
+    label: {
+        text: string;
+        x: number;
+        y: number;
+        anchor: 'start' | 'end';
+    };
+    layer: number;
+    value: number;
+    // (undocumented)
+    x0: number;
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    y0: number;
+    // (undocumented)
+    y1: number;
+}
+
 // @public (undocumented)
 export interface PositionedSequenceDiagram {
     // (undocumented)
@@ -1088,6 +2108,61 @@ export interface PositionedSequenceDiagram {
     width: number;
 }
 
+// @public
+export interface PositionedTimeline {
+    axis: {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+    };
+    // (undocumented)
+    connectors: PositionedTimelineConnector[];
+    // (undocumented)
+    direction: 'LR' | 'TD';
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    nodes: PositionedTimelineNode[];
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+        fontSize: number;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedTimelineConnector {
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    x2: number;
+    // (undocumented)
+    y1: number;
+    // (undocumented)
+    y2: number;
+}
+
+// @public
+export interface PositionedTimelineNode {
+    colorClass: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    kind: 'section' | 'period' | 'event';
+    lines: string[];
+    padding: number;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
 // @public (undocumented)
 export interface PositionedTitle {
     // (undocumented)
@@ -1101,6 +2176,7 @@ export interface PositionedTitle {
 // @public (undocumented)
 export interface PositionedXYChart {
     bars: PositionedBar[];
+    config?: XyChartInitConfig;
     gridLines: GridLine[];
     // (undocumented)
     height: number;
@@ -1150,10 +2226,112 @@ export interface QuadrantPointStyle {
 }
 
 // @public
-export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization' | 'lollipop';
+export interface Radar {
+    // (undocumented)
+    axes: RadarAxis[];
+    config?: RadarInitConfig;
+    // (undocumented)
+    curves: RadarCurve[];
+    // (undocumented)
+    options: RadarOptions;
+    style?: RadarStyleConfig;
+    title?: string;
+}
+
+// @public
+export interface RadarAxis {
+    label: string;
+    name: string;
+}
+
+// @public
+export interface RadarCurve {
+    entries: number[];
+    label: string;
+    // (undocumented)
+    name: string;
+}
+
+// @public
+export interface RadarOptions {
+    // (undocumented)
+    graticule: 'circle' | 'polygon';
+    max: number | null;
+    min: number;
+    // (undocumented)
+    showLegend: boolean;
+    ticks: number;
+}
+
+// @public
+export type RelationshipType = 'inheritance' | 'composition' | 'aggregation' | 'association' | 'dependency' | 'realization' | 'lollipop' | 'link' | 'dashed-link';
+
+// @public
+export function requirementBodyRows(node: RequirementNode): string[];
+
+// @public
+export interface RequirementDiagram extends StyleDirectives {
+    direction?: 'TB' | 'BT' | 'LR' | 'RL';
+    nodeClasses: Map<string, string[]>;
+    nodes: RequirementNode[];
+    // (undocumented)
+    relationships: RequirementRelationship[];
+    styleLayers: Map<string, Record<string, string>[]>;
+}
+
+// @public
+export type RequirementKind = 'requirement' | 'functionalRequirement' | 'interfaceRequirement' | 'performanceRequirement' | 'physicalRequirement' | 'designConstraint';
+
+// @public
+export interface RequirementNode {
+    // (undocumented)
+    docRef: string;
+    // (undocumented)
+    elementType: string;
+    id: string;
+    kind: 'requirement' | 'element';
+    // (undocumented)
+    requirementId: string;
+    risk: string;
+    // (undocumented)
+    text: string;
+    typeLabel: string;
+    verifyMethod: string;
+}
+
+// @public (undocumented)
+export interface RequirementRelationship {
+    dst: string;
+    src: string;
+    // (undocumented)
+    type: RequirementRelationType;
+}
+
+// @public
+export type RequirementRelationType = 'contains' | 'copies' | 'derives' | 'satisfies' | 'verifies' | 'refines' | 'traces';
+
+// @public
+export function resolvePacketConfig(config?: PacketInitConfig): PacketConfig;
 
 // @public
 export function resolveShapeName(name: string): NodeShape | undefined;
+
+// @public
+export interface Sankey {
+    config?: SankeyInitConfig;
+    links: SankeyLink[];
+    nodes: string[];
+}
+
+// @public
+export interface SankeyLink {
+    // (undocumented)
+    source: string;
+    // (undocumented)
+    target: string;
+    // (undocumented)
+    value: number;
+}
 
 // @public
 export interface SequenceDiagram {
@@ -1161,16 +2339,51 @@ export interface SequenceDiagram {
     actors: Actor[];
     blocks: Block[];
     boxes: ParticipantBox[];
+    layout?: SequenceInitLayout;
     messages: Message[];
     mirrorActors?: false;
     notes: Note[];
     title?: string;
 }
 
+// @public (undocumented)
+export interface TickInterval {
+    // (undocumented)
+    every: number;
+    // (undocumented)
+    unit: string;
+}
+
+// @public
+export interface Timeline {
+    config?: {
+        leftMargin?: number;
+        padding?: number;
+        disableMulticolor?: boolean;
+    };
+    direction: 'LR' | 'TD';
+    periods: TimelinePeriod[];
+    sections: string[];
+    title?: string;
+}
+
+// @public
+export interface TimelinePeriod {
+    events: string[];
+    label: string;
+    section: string;
+}
+
+// @public
+export function timeTicks(t0: number, t1: number, custom?: TickInterval, weekday?: string): number[];
+
 // @public
 export function toBlockType(value: string): Block['type'];
 
 export { toDirection }
+
+// @public
+export function weekdayName(ms: number): string;
 
 // @public
 export function wrapC4Text(text: string, width: number): string[];
@@ -1187,6 +2400,7 @@ export interface XYAxis {
 
 // @public
 export interface XYChart {
+    config?: XyChartInitConfig;
     horizontal: boolean;
     series: XYChartSeries[];
     title?: string;

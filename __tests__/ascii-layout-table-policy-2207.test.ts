@@ -27,7 +27,7 @@ describe('ascii-layout-table --policy validation (#2207)', () => {
       const r = run(...(arg ? [arg] : []))
       expect(r.status).toBe(0)
       expect(r.stdout).toContain(
-        `SUMMARY policy=${arg ? arg.slice(9) : 'merge-then-grow'}`,
+        `SUMMARY policy=${arg ? arg.slice(9) : 'grow-only'}`,
       )
     },
     120_000,

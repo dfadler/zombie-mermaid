@@ -100,7 +100,7 @@ describe('cluster centred over its exit targets (#1462)', () => {
     expect(text.match(/▼/g)).toHaveLength(3) // Start->S, first, other
   })
 
-  it('leaves a multi-member cluster where it was', () => {
+  it('centres a multi-member cluster over its exits, like mermaid@12.3.0 (#2738)', () => {
     const out = render(`flowchart TD
   subgraph S [Cluster]
     a
@@ -110,6 +110,6 @@ describe('cluster centred over its exit targets (#1462)', () => {
   S --> Y
   S --> Z
 `)
-    expect(offBy(out, 'Cluster', 'Y')).toBeGreaterThan(1)
+    expect(offBy(out, 'Cluster', 'Y')).toBeLessThanOrEqual(1)
   })
 })

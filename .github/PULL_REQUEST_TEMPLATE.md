@@ -10,6 +10,8 @@
 
 ## Checklist
 
+<!-- The `PR checklist` CI check fails while any box is unchecked (it blocks merge once it is a required check in branch protection). Check a box only after doing the task; if it does not apply, check it and write "N/A: <reason>". -->
+
 - [ ] `pnpm run lint` passes
 - [ ] `pnpm run format:check` passes
 - [ ] `pnpm run typecheck` passes (also covers `demo/` and `editor/`)

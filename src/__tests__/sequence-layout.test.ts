@@ -1000,7 +1000,6 @@ describe('sequence layout – create/destroy', () => {
     const c = result.actors.find((a) => a.id === 'C')!
     const cLine = result.lifelines.find((l) => l.actorId === 'C')!
     expect(cLine.topY).toBe(c.y + c.height)
-    expect(cLine.destroyed).toBeUndefined()
   })
 
   it('stops the creating arrow at the near edge of the created box', () => {
@@ -1029,14 +1028,24 @@ describe('sequence layout – create/destroy', () => {
     expect(gapAfterCreate).toBe(40 + 20) // + SEQ.actorHeight / 2
   })
 
-  it("ends a destroyed participant's lifeline at its destroying message, flagged", () => {
+  it("ends a destroyed participant's lifeline at its footer box, centred on the destroying message", () => {
     const result = layout(source)
     const bLine = result.lifelines.find((l) => l.actorId === 'B')!
-    expect(bLine.bottomY).toBe(result.messages[2]!.y)
-    expect(bLine.destroyed).toBe(true)
+    const bFooter = result.footerActors.find((a) => a.id === 'B')!
+    expect(bFooter.y + bFooter.height / 2).toBe(result.messages[2]!.y)
+    expect(bLine.bottomY).toBe(bFooter.y)
     const aLine = result.lifelines.find((l) => l.actorId === 'A')!
     expect(aLine.bottomY).toBeGreaterThan(result.messages[2]!.y)
-    expect(aLine.destroyed).toBeUndefined()
+  })
+
+  it('still flags a destroyed lifeline with the deprecated `destroyed` field (#2803)', () => {
+    const result = layout(source)
+    expect(result.lifelines.find((l) => l.actorId === 'B')!.destroyed).toBe(
+      true,
+    )
+    expect(
+      result.lifelines.find((l) => l.actorId === 'A')!.destroyed,
+    ).toBeUndefined()
   })
 })
 

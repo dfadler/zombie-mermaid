@@ -6,6 +6,7 @@
  * `rootDir: "src"` — importing it from library source fails `tsc --noEmit`
  * even though vitest runs it happily.
  */
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { samples } from '../samples/samples-data.ts'
 
@@ -25,23 +26,43 @@ describe('docs/guides/samples.md sample counts', () => {
       byCategory.set(category, (byCategory.get(category) ?? 0) + 1)
     }
 
-    expect(samples.length, 'total including the hero banner').toBe(189)
+    expect(samples.length, 'total including the hero banner').toBe(259)
     expect(
       samples.filter((s) => s.category !== 'Hero').length,
       'browsable gallery count quoted in the guide',
-    ).toBe(188)
+    ).toBe(258)
 
     // The category table in samples.md.
     expect(byCategory.get('Flowchart')).toBe(55)
     expect(byCategory.get('Sequence')).toBe(24)
-    expect(byCategory.get('Class')).toBe(29)
+    expect(byCategory.get('Class')).toBe(30)
     expect(byCategory.get('ER')).toBe(20)
     expect(byCategory.get('XY Chart')).toBe(10)
     expect(byCategory.get('Interactivity')).toBe(4)
     expect(byCategory.get('State')).toBe(7)
     expect(byCategory.get('C4')).toBe(3)
     expect(byCategory.get('Architecture')).toBe(3)
-    expect(byCategory.get('Pie')).toBe(26)
+    expect(byCategory.get('Pie')).toBe(27)
     expect(byCategory.get('Quadrant')).toBe(7)
+    expect(byCategory.get('Mindmap')).toBe(8)
+    expect(byCategory.get('Gantt')).toBe(9)
+    expect(byCategory.get('Timeline')).toBe(6)
+    expect(byCategory.get('Journey')).toBe(7)
+    expect(byCategory.get('GitGraph')).toBe(9)
+    expect(byCategory.get('Sankey')).toBe(6)
+    expect(byCategory.get('Requirement')).toBe(6)
+    expect(byCategory.get('Packet')).toBe(7)
+    expect(byCategory.get('Kanban')).toBe(4)
+    expect(byCategory.get('Radar')).toBe(6)
+  })
+
+  /** The prose count ("N diagrams") must track the data, not an estimate. */
+  it('quotes the current total in the prose', () => {
+    const guide = readFileSync(
+      new URL('../docs/guides/samples.md', import.meta.url),
+      'utf8',
+    )
+    expect(guide).toContain(`${samples.length} diagrams`)
+    expect(guide).not.toMatch(/roughly \d+ diagrams/)
   })
 })

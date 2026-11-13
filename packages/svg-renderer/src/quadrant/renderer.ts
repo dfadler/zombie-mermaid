@@ -8,10 +8,11 @@
 // `--bg`/`--fg`/`--accent`) applies:
 //
 //   Mermaid                         here
-//   quadrant1Fill..quadrant4Fill    the theme accent mixed into --bg at four
-//                                   falling strengths (Mermaid steps its
-//                                   primaryColor toward white the same way)
-//   border strokes                  the accent mixed 35% into --bg
+//   quadrant1Fill..quadrant4Fill    Mermaid's own lavender values when the
+//                                   theme has no accent and a light --bg;
+//                                   otherwise the accent mixed into --bg at
+//                                   four falling strengths
+//   border strokes                  likewise (#c7c7f1, or accent 35% in --bg)
 //   title / label / point text      var(--_text)
 //   point fill and stroke           var(--fg), see below
 //
@@ -43,15 +44,39 @@ function r(n: number): string {
 /** Accent share of each quadrant fill, quadrant 1 first (Mermaid: darkest first). */
 const FILL_MIX = [14, 10, 6, 3] as const
 
+/** Mermaid 12.3.0's default-theme cell fills, border and label text, quadrant 1 first. */
+const MERMAID_FILLS = ['#ECECFF', '#f1f1ff', '#f6f6ff', '#fbfbff'] as const
+const MERMAID_LABELS = ['#131300', '#0e0e00', '#090900', '#040400'] as const
+const MERMAID_BORDER = '#c7c7f1'
+
+/** True for a light `#rrggbb` background (the lavender fills would clash with a dark one). */
+function isLightBg(bg: string): boolean {
+  const m = /^#([0-9a-f]{6})$/i.exec(bg)
+  if (!m) return true
+  const n = parseInt(m[1]!, 16)
+  return (
+    ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 > 128
+  )
+}
+
 function quadrantStyles(
   chart: PositionedQuadrantChart,
+  colors: DiagramColors,
   nonce?: string,
 ): string {
+  // No theme accent on a light background: Mermaid's own lavender default
+  // (#2858). A theme with an accent, or a dark one, keeps the accent mix.
+  const mermaid = !colors.accent && isLightBg(colors.bg)
   const accent = `var(--accent, ${CHART_ACCENT_FALLBACK})`
-  const border = `color-mix(in srgb, ${accent} 35%, var(--bg))`
+  const border = mermaid
+    ? MERMAID_BORDER
+    : `color-mix(in srgb, ${accent} 35%, var(--bg))`
   const fills = FILL_MIX.map(
     (n, i) =>
-      `  .quadrant-cell-${i} { fill: color-mix(in srgb, ${accent} ${n}%, var(--bg)); }`,
+      `  .quadrant-cell-${i} { fill: ${mermaid ? MERMAID_FILLS[i] : `color-mix(in srgb, ${accent} ${n}%, var(--bg))`}; }` +
+      (mermaid
+        ? `\n  .quadrant:nth-child(${i + 1}) .quadrant-label { fill: ${MERMAID_LABELS[i]}; }`
+        : ''),
   )
   // A custom colour has to be a CSS rule: a class rule beats a `fill`
   // attribute, and an inline `style` attribute would need `style-src 'unsafe-inline'`.
@@ -103,8 +128,8 @@ function textEl(
   t: PositionedQuadrantChart['axisLabels'][number],
   cls: string,
 ): string {
-  // Mermaid draws empty quadrant labels as empty <text>; nothing to say here.
-  if (!t.text) return ''
+  // An unlabeled quadrant is an empty <text>, positioned as if labelled, as in
+  // Mermaid 12.3.0. The layout never yields empty axis, point or title text.
   return (
     `<text x="0" y="0" class="quadrant-text ${cls}" font-size="${t.fontSize}"` +
     ` dominant-baseline="${t.baseline}" text-anchor="${t.anchor}"` +
@@ -148,7 +173,7 @@ export function renderQuadrantSvg(
     ),
   )
   parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
-  parts.push(quadrantStyles(chart, emit.nonce))
+  parts.push(quadrantStyles(chart, colors, emit.nonce))
 
   parts.push('<g class="quadrants">')
   for (const q of chart.quadrants) {

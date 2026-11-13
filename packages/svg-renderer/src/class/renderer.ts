@@ -19,6 +19,7 @@ import {
   safeHref,
   f,
 } from '@zombie-mermaid/core'
+import { MERMAID_CORNER_RADIUS, roundedPath } from '../edge-curves.ts'
 import { withDataSrc } from '../renderer.ts'
 import {
   buildSvgStyleBlock,
@@ -320,15 +321,16 @@ function renderClassBox(
   )
 
   // Annotation (<<interface>>, <<abstract>>, etc.), drawn as «name» like mermaid.js
-  let nameY = y + headerHeight / 2
+  // Header rows are 24 high with `pad` above and below (12 by default).
+  const pad = (headerHeight - 24 - (cls.annotation ? 24 : 0)) / 2
+  const nameY = y + headerHeight - pad - 12
   if (cls.annotation) {
-    const annotY = y + 12
+    const annotY = y + pad + 12
     parts.push(
       f`  <text x="${x + width / 2}" y="${annotY}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
         f`font-size="${CLS_FONT.annotationSize}" font-weight="${CLS_FONT.annotationWeight}" ` +
         f`font-style="italic" fill="${textColor ?? 'var(--_text-muted)'}">«${escapeXml(cls.annotation)}»</text>`,
     )
-    nameY = y + headerHeight / 2 + 6
   }
 
   // Class name (supports multi-line via <br> tags)
@@ -343,32 +345,40 @@ function renderClassBox(
       ),
   )
 
-  // Divider line between header and attributes
+  // Divider line between header and attributes (none when the compartments
+  // are hidden by `class.hideEmptyMembersBox`)
   const attrTop = y + headerHeight
-  parts.push(
-    f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
-      f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
-  )
+  if (attrHeight > 0)
+    parts.push(
+      f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
+        f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+    )
 
   // Attributes
-  const memberRowH = 20
+  const memberRowH = CLS.memberRowHeight
+  // Space above the first member: 12 by default, more under `class.padding`.
+  const attrPad = (attrHeight - cls.attributes.length * memberRowH) / 2
+  const methodPad =
+    (height - headerHeight - attrHeight - cls.methods.length * memberRowH) / 2 +
+    (cls.attributes.length === 0 ? CLS.methodsAfterEmptyExtra / 2 : 0)
   for (let i = 0; i < cls.attributes.length; i++) {
     const member = cls.attributes[i]!
-    const memberY = attrTop + 4 + i * memberRowH + memberRowH / 2
+    const memberY = attrTop + attrPad + i * memberRowH + memberRowH / 2
     parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY, textColor))
   }
 
   // Divider line between attributes and methods
   const methodTop = attrTop + attrHeight
-  parts.push(
-    f`  <line x1="${x}" y1="${methodTop}" x2="${x + width}" y2="${methodTop}" ` +
-      f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
-  )
+  if (height - headerHeight - attrHeight > 0)
+    parts.push(
+      f`  <line x1="${x}" y1="${methodTop}" x2="${x + width}" y2="${methodTop}" ` +
+        f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+    )
 
   // Methods
   for (let i = 0; i < cls.methods.length; i++) {
     const member = cls.methods[i]!
-    const memberY = methodTop + 4 + i * memberRowH + memberRowH / 2
+    const memberY = methodTop + methodPad + i * memberRowH + memberRowH / 2
     parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY, textColor))
   }
 
@@ -517,8 +527,11 @@ function renderNoteLink(note: PositionedClassNote): string {
 function renderRelationship(rel: PositionedClassRelationship): string {
   if (rel.points.length < 2) return ''
 
-  const pathData = rel.points.map((p) => f`${p.x},${p.y}`).join(' ')
-  const isDashed = rel.type === 'dependency' || rel.type === 'realization'
+  const isDashed =
+    rel.dashed ||
+    rel.type === 'dependency' ||
+    rel.type === 'realization' ||
+    rel.type === 'dashed-link'
   const dashArray = isDashed ? ' stroke-dasharray="6 4"' : ''
 
   // Determine markers based on relationship type and which end has the marker
@@ -551,7 +564,7 @@ function renderRelationship(rel: PositionedClassRelationship): string {
   }
 
   return (
-    f`<polyline ${dataAttrs.join(' ')} points="${pathData}" fill="none" stroke="var(--_line)" ` +
+    f`<path ${dataAttrs.join(' ')} d="${roundedPath(rel.points, MERMAID_CORNER_RADIUS)}" fill="none" stroke="var(--_line)" ` +
     f`stroke-width="${STROKE_WIDTHS.connector}"${dashArray}${markers} />`
   )
 }
@@ -662,7 +675,7 @@ function renderRelationshipLabels(
   if (rel.fromCardinality && rel.points.length >= 2) {
     const p = rel.points[0]!
     const next = rel.points[1]!
-    const offset = cardinalityOffset(p, next, 'start')
+    const offset = cardinalityOffset(p, next, 'start', hasMarkerAt(rel, 'from'))
     parts.push(
       renderMultilineText(
         rel.fromCardinality,
@@ -678,7 +691,7 @@ function renderRelationshipLabels(
   if (rel.toCardinality && rel.points.length >= 2) {
     const p = rel.points[rel.points.length - 1]!
     const prev = rel.points[rel.points.length - 2]!
-    const offset = cardinalityOffset(p, prev, 'end')
+    const offset = cardinalityOffset(p, prev, 'end', hasMarkerAt(rel, 'to'))
     parts.push(
       renderMultilineText(
         rel.toCardinality,
@@ -743,33 +756,51 @@ function cardinalityOffset(
   from: { x: number; y: number },
   inward: { x: number; y: number },
   side: 'start' | 'end',
+  marked: boolean,
 ): { x: number; y: number; anchor: 'start' | 'middle' | 'end' } {
   const dx = inward.x - from.x
   const dy = inward.y - from.y
   const len = Math.max(Math.hypot(dx, dy), 1e-6)
+  // Mermaid sets the label MARKER_CLEARANCE further out, both along and across
+  // the edge, when a marker sits on that end (#2721, measured on 12.3.0).
+  const offset = CARDINALITY_OFFSET + (marked ? MARKER_CLEARANCE : 0)
+  const gap = CARDINALITY_GAP + (marked ? MARKER_CLEARANCE : 0)
   const ux = dx / len
   const uy = dy / len
   // `travel` is the direction of travel along the edge, start to end
   const sign = side === 'start' ? 1 : -1
   const [tx, ty] = [ux * sign, uy * sign]
   // Right of travel in screen coordinates (y down) is (-ty, tx); left is the opposite
-  const px = (side === 'start' ? -ty : ty) * CARDINALITY_OFFSET
-  const py = (side === 'start' ? tx : -tx) * CARDINALITY_OFFSET
-  const y = py + uy * CARDINALITY_OFFSET
+  const px = (side === 'start' ? -ty : ty) * offset
+  const py = (side === 'start' ? tx : -tx) * offset
+  const y = py + uy * offset
   // A label beside a mostly vertical edge is anchored at its near edge, so it
   // starts (right side) or ends (left side) clear of the line however long it is.
   if (Math.abs(px) > Math.abs(py)) {
     const dir = Math.sign(px)
     return {
-      x: dir * CARDINALITY_GAP + ux * CARDINALITY_OFFSET,
+      x: dir * gap + ux * offset,
       y,
       anchor: dir > 0 ? 'start' : 'end',
     }
   }
-  return { x: px + ux * CARDINALITY_OFFSET, y, anchor: 'middle' }
+  return { x: px + ux * offset, y, anchor: 'middle' }
+}
+
+/** True when the relationship draws a marker on the given end. */
+function hasMarkerAt(
+  rel: PositionedClassRelationship,
+  end: 'from' | 'to',
+): boolean {
+  return (
+    getMarkerDefId(rel.type) !== null &&
+    (rel.markerAt === end || rel.markerAt === 'both')
+  )
 }
 
 const CARDINALITY_OFFSET = 12
+/** Extra distance for a label on a marker-ended end (mermaid 12.3.0: 18.2 vs 12.2 along, 11 vs 5 across) */
+const MARKER_CLEARANCE = 6
 /** Clear space between the edge and the near side of a cardinality label */
 const CARDINALITY_GAP = 5
 

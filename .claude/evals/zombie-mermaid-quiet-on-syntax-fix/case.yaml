@@ -5,7 +5,7 @@ name: zombie-mermaid-quiet-on-syntax-fix
 description: >
   Fixing a Mermaid syntax error in source text, with no request to render, must not fire
   zombie-mermaid. expected_outcome: PASS when no zombie-mermaid Skill call is made; FAIL otherwise.
-tags: [zombie-mermaid, trigger, quick]
+tags: [zombie-mermaid, trigger, quick, smoke]
 runs: 3
 
 execution:

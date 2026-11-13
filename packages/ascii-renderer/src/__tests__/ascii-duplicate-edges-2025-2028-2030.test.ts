@@ -13,7 +13,11 @@
  * strokes of its own.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import {
+  registerAsciiLayout,
+  renderMermaidASCII,
+} from '@zombie-mermaid/ascii-renderer'
+import { asciiLayoutProvider } from '../../../../src/ascii-layout-provider.ts'
 
 // Arms each box-drawing glyph extends (U/D/L/R). Dotted and heavy variants are
 // not drawn by these sources.
@@ -534,7 +538,22 @@ describe('ASCII duplicate edges and self-loops (#2025, #2028, #2030)', () => {
     expect(out.match(/[▲▼◄►]/g)).toHaveLength(edges)
   })
 
-  it('two self-loops on one node draw the one clean loop', () => {
+  it('two self-loops on one node draw two nested hooks, one arrowhead each', () => {
+    // mermaid@12.3.0 draws one hook per loop, the second round the first
+    // (#2913); ELK's order of the ends is what nests them.
+    registerAsciiLayout(asciiLayoutProvider)
+    try {
+      const two = renderMermaidASCII(CASES['#2028 duplicate self-loops']!, {
+        colorMode: 'none',
+      })
+      expect(two.match(/[▲▼◄►]/g)).toHaveLength(2)
+      expect(two.match(/┌/g)).toHaveLength(3)
+    } finally {
+      registerAsciiLayout(undefined)
+    }
+  })
+
+  it('without ELK hints two self-loops still draw the one loop', () => {
     const one = renderMermaidASCII('flowchart TD\n  n0["a"]\n  n0 --> n0', {
       colorMode: 'none',
     })

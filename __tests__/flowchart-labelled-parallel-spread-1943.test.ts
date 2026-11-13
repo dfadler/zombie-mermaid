@@ -1,7 +1,7 @@
 /**
  * #1943: three or more labelled edges between one pair spread the target off
  * the source's column, as mermaid 12.1.0 and 12.2.0 do (T is 25px left of
- * Start in "Five Cluster Exit Siblings"). With two labelled edges nothing moves.
+ * Start in "Five Cluster Exit Siblings").
  */
 import { describe, it, expect } from 'vitest'
 import { layoutFlowchartSync } from '@zombie-mermaid/svg-renderer'
@@ -22,10 +22,14 @@ function offset(count: number): number {
 }
 
 describe('labelled parallel edges (#1943)', () => {
-  it('offsets the target from the source column at five edges', () => {
-    expect(Math.abs(offset(5))).toBeGreaterThanOrEqual(20)
-  })
-  it('keeps the old spacing at two edges', () => {
-    expect(Math.abs(offset(2))).toBeLessThan(20)
-  })
+  // mermaid@12.3.0 puts T 14-22px left of S from two labelled edges up (with
+  // its 120px minimum node width); the old 40px spacing hack is gone (#2717).
+  it.each([2, 3, 5])(
+    'offsets the target from the source column at %i edges',
+    (n) => {
+      const d = offset(n)
+      expect(d).toBeLessThanOrEqual(-10)
+      expect(d).toBeGreaterThanOrEqual(-30)
+    },
+  )
 })

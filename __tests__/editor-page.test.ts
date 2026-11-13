@@ -72,6 +72,16 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   c4: 'C4',
   pie: 'Pie',
   quadrant: 'Quadrant',
+  mindmap: 'Mindmap',
+  gantt: 'Gantt',
+  timeline: 'Timeline',
+  gitgraph: 'GitGraph',
+  packet: 'Packet',
+  radar: 'Radar',
+  journey: 'User Journey',
+  kanban: 'Kanban',
+  sankey: 'Sankey',
+  requirement: 'Requirement',
 }
 
 describe('EditorPage meta description', () => {

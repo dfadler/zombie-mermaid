@@ -13,7 +13,10 @@ import {
   layoutGraphSync,
 } from '@zombie-mermaid/svg-renderer'
 import { findBackEdgeIndexes } from '@zombie-mermaid/core'
-import { edgesReversedForLayout } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
+import {
+  edgesReversedForLayout,
+  keepLegacyPipeline,
+} from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
 import type { PositionedGraph } from '@zombie-mermaid/core'
 
 const FLAT_CYCLE = `graph TD
@@ -102,9 +105,9 @@ describe('findBackEdgeIndexes', () => {
 })
 
 describe('edgesReversedForLayout', () => {
-  it('reverses the back edge of a state diagram too (#2651)', () => {
+  it('leaves a state diagram cycle to ELK, as mermaid@12.3.0 does (#3005)', () => {
     const g = parseMermaid('stateDiagram-v2\n  [*] --> A\n  A --> B\n  B --> A')
-    expect(edgesReversedForLayout(g as never).size).toBe(1)
+    expect(edgesReversedForLayout(g as never).size).toBe(0)
   })
 
   it('is empty for a graph with a subgraph direction override', () => {
@@ -114,8 +117,14 @@ describe('edgesReversedForLayout', () => {
     expect(edgesReversedForLayout(g as never).size).toBe(0)
   })
 
-  it('is the DFS back edges for an ordinary flowchart, computed once', () => {
+  it('is empty for an ordinary flowchart: mermaid@12.3.0 leaves cycles to ELK (#2672)', () => {
     const g = parseMermaid(FLAT_CYCLE)
+    expect(edgesReversedForLayout(g as never).size).toBe(0)
+  })
+
+  it('is the DFS back edges on the legacy path (ASCII hints), computed once', () => {
+    const g = parseMermaid(FLAT_CYCLE)
+    keepLegacyPipeline(g as never)
     const a = edgesReversedForLayout(g as never)
     expect(a.size).toBe(1)
     expect(edgesReversedForLayout(g as never)).toBe(a)

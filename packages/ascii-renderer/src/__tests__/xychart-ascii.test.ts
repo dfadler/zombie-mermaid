@@ -66,9 +66,8 @@ describe('xychart ASCII – bar charts', () => {
       x-axis [A, B, C]
       bar [10, 20, 30]
       bar [15, 25, 35]`)
-    // Should contain legend for multi-series
-    expect(result).toContain('Bar 1')
-    expect(result).toContain('Bar 2')
+    // Mermaid 12.3.0 draws no generated legend (#2718)
+    expect(result).not.toMatch(/Bar \d/)
   })
 
   it('overlays (not groups side-by-side) multiple bar series in the same category', () => {
@@ -82,11 +81,7 @@ describe('xychart ASCII – bar charts', () => {
       x-axis [A]
       bar [10]
       bar [20]`)
-    const lines = result
-      .split('\n')
-      // Exclude the legend row ("█ Bar 1  █ Bar 2") — its two swatches are
-      // expected to be separate runs; only plot rows matter here.
-      .filter((line) => !/[A-Za-z]/.test(line))
+    const lines = result.split('\n').filter((line) => !/[A-Za-z]/.test(line))
     expect(lines.length).toBeGreaterThan(0)
     for (const line of lines) {
       const runs = line.match(/█+/g) ?? []
@@ -153,6 +148,69 @@ describe('xychart ASCII – line charts', () => {
     expect(result).not.toContain('╮')
   })
 
+  const count = (text: string, ch: string) => text.split(ch).length - 1
+
+  it('steps once per row, not one big jump, on a horizontal diagonal', () => {
+    const result = render(`xychart-beta horizontal
+      x-axis [A, B]
+      line [10, 90]`)
+    // A and B are ~10 rows apart: one ╮/╰ pair per row crossed.
+    expect(count(result, '╮')).toBeGreaterThan(5)
+    expect(count(result, '╰')).toBeGreaterThan(5)
+  })
+
+  it('steps once per column, not one big jump, on a vertical diagonal', () => {
+    const result = render(`xychart-beta
+      x-axis [A, B]
+      line [10, 90]`)
+    // A and B are ~30 columns apart; the line climbs row by row.
+    expect(count(result, '╭')).toBeGreaterThan(5)
+    expect(count(result, '╯')).toBeGreaterThan(5)
+  })
+
+  it('caps a vertical peak with ╭─╮ at the data value', () => {
+    const lines = render(`xychart-beta
+      x-axis [A, B, C]
+      line [10, 90, 10]`).split('\n')
+    // The topmost row holding any line glyph is the peak row.
+    const top = lines.find((row) => /[╭╮]/.test(row))!
+    expect(top).toMatch(/╭─*╮/)
+  })
+
+  it('turns a horizontal peak as ╮ over ╯, without folding back (no tees)', () => {
+    const result = render(`xychart-beta horizontal
+      x-axis [A, B, C]
+      line [10, 90, 10]`)
+    const lines = result.split('\n')
+    const hairpin = lines.some((row, i) =>
+      [...row].some((c, j) => c === '╮' && lines[i + 1]?.[j] === '╯'),
+    )
+    expect(hairpin).toBe(true)
+    for (const tee of '├┤┴') expect(result).not.toContain(tee)
+  })
+
+  it('draws a single-point line as one mark in either orientation', () => {
+    const horizontal = render(`xychart-beta horizontal
+      x-axis [A]
+      line [50]`)
+    const vertical = render(`xychart-beta
+      x-axis [A]
+      line [50]`)
+    expect(horizontal).toContain('│')
+    expect(vertical).toContain('─')
+  })
+
+  it('draws the fine staircase with + corners in ASCII mode too', () => {
+    const result = render(
+      `xychart-beta horizontal
+      x-axis [A, B]
+      line [10, 90]`,
+      true,
+    )
+    expect(count(result, '+')).toBeGreaterThan(10)
+    expect(result).toContain('-')
+  })
+
   it('uses + for corners in ASCII mode', () => {
     const result = render(
       `xychart-beta
@@ -179,9 +237,8 @@ describe('xychart ASCII – mixed charts', () => {
     // Should have both bar blocks and line corners
     expect(result).toContain('█')
     expect(result).toContain('─')
-    // Legend for multi-series
-    expect(result).toContain('Bar 1')
-    expect(result).toContain('Line 1')
+    // No generated legend (#2718)
+    expect(result).not.toMatch(/Bar \d|Line \d/)
   })
 })
 

@@ -43,6 +43,16 @@ describe('list_diagram_types', () => {
       c4: 'C4Context\nPerson(a, "A")',
       pie: 'pie\n"A" : 1',
       quadrant: 'quadrantChart\nA: [0.5, 0.5]',
+      mindmap: 'mindmap\n  root',
+      gantt: 'gantt\nA :a, 2024-01-01, 1d',
+      timeline: 'timeline\n2002 : LinkedIn',
+      gitgraph: 'gitGraph\ncommit',
+      packet: 'packet\n0-7: "a"',
+      radar: 'radar-beta\naxis a, b\ncurve c{1, 2}',
+      journey: 'journey\nA: 3: Me',
+      kanban: 'kanban\n  A\n    b',
+      sankey: 'sankey-beta\nA,B,1',
+      requirement: 'requirementDiagram\nrequirement r {\n}',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

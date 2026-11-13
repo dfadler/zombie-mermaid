@@ -82,8 +82,100 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('quadrantChartX')).toBe('flowchart')
   })
 
+  it('detects gantt charts, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('gantt')).toBe('gantt')
+    expect(detectDiagramType('  gantt\n  title X')).toBe('gantt')
+    expect(detectDiagramType('%% c\ngantt title X')).toBe('gantt')
+    expect(detectDiagramType('Gantt')).toBe('flowchart')
+    expect(detectDiagramType('ganttChart')).toBe('flowchart')
+  })
+
   it('falls back to flowchart for unrecognized input', () => {
     expect(detectDiagramType('')).toBe('flowchart')
     expect(detectDiagramType('not a real header')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – sankey', () => {
+  it('detects sankey-beta and sankey, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('sankey-beta\nA,B,1')).toBe('sankey')
+    expect(detectDiagramType('  sankey\nA,B,1')).toBe('sankey')
+    expect(detectDiagramType('%% c\nsankey-beta')).toBe('sankey')
+    expect(detectDiagramType('Sankey-beta')).toBe('flowchart')
+    expect(detectDiagramType('sankeys')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – requirement', () => {
+  it('detects requirement diagrams, case-sensitively', () => {
+    expect(detectDiagramType('requirementDiagram')).toBe('requirement')
+    expect(
+      detectDiagramType('%% c\n  requirementDiagram\n  requirement r {\n}'),
+    ).toBe('requirement')
+    expect(detectDiagramType('requirementdiagram')).toBe('flowchart')
+    expect(detectDiagramType('requirementDiagrams')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – timeline', () => {
+  it('detects timelines, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('timeline')).toBe('timeline')
+    expect(detectDiagramType('  timeline TD\n 1 : a')).toBe('timeline')
+    expect(detectDiagramType('%% c\ntimeline')).toBe('timeline')
+    expect(detectDiagramType('Timeline')).toBe('flowchart')
+    expect(detectDiagramType('timelines')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – gitGraph', () => {
+  it('detects gitGraph headers, case-sensitively, as Mermaid does', () => {
+    expect(detectDiagramType('gitGraph')).toBe('gitgraph')
+    expect(detectDiagramType('gitGraph LR:\n commit')).toBe('gitgraph')
+    expect(detectDiagramType('  gitGraph:\n commit')).toBe('gitgraph')
+    expect(detectDiagramType('%% c\ngitGraph TB:')).toBe('gitgraph')
+    expect(detectDiagramType('gitgraph\n commit')).toBe('flowchart')
+    expect(detectDiagramType('GitGraph\n commit')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – packet', () => {
+  it('detects packet and packet-beta, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('packet')).toBe('packet')
+    expect(detectDiagramType('  packet-beta\n0: "a"')).toBe('packet')
+    expect(detectDiagramType('%% c\npacket')).toBe('packet')
+    expect(detectDiagramType('Packet')).toBe('flowchart')
+    expect(detectDiagramType('packets')).toBe('flowchart')
+    expect(detectDiagramType('packet-alpha')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – journey', () => {
+  it('detects journeys, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('journey')).toBe('journey')
+    expect(detectDiagramType('  journey\n title T')).toBe('journey')
+    expect(detectDiagramType('%% c\njourney')).toBe('journey')
+    expect(detectDiagramType('Journey')).toBe('flowchart')
+    expect(detectDiagramType('journeys')).toBe('flowchart')
+    expect(detectDiagramType('journey#c\nA: 1')).toBe('journey')
+  })
+})
+
+describe('detectDiagramType – kanban', () => {
+  it('detects kanban boards, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('kanban')).toBe('kanban')
+    expect(detectDiagramType('  kanban\n  Todo')).toBe('kanban')
+    expect(detectDiagramType('%% c\nkanban')).toBe('kanban')
+    expect(detectDiagramType('Kanban')).toBe('flowchart')
+    expect(detectDiagramType('kanbans')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – radar', () => {
+  it('detects radar-beta, case-sensitively as Mermaid’s detector does', () => {
+    expect(detectDiagramType('radar-beta')).toBe('radar')
+    expect(detectDiagramType('  radar-beta:\n axis a')).toBe('radar')
+    expect(detectDiagramType('%% c\nradar-beta')).toBe('radar')
+    expect(detectDiagramType('Radar-beta')).toBe('flowchart')
+    expect(detectDiagramType('radar')).toBe('flowchart')
   })
 })

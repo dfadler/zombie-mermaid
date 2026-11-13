@@ -6,6 +6,8 @@
 // or numeric x-axes.
 // ============================================================================
 
+import type { XyChartInitConfig } from '@zombie-mermaid/core'
+
 /** Parsed XY chart — logical structure from mermaid text */
 export interface XYChart {
   /** Optional chart title */
@@ -18,6 +20,8 @@ export interface XYChart {
   yAxis: XYAxis
   /** Data series (bar and/or line) */
   series: XYChartSeries[]
+  /** The `%%{init}%%` / front-matter `xyChart` block; orientation and `showTitle` are already applied. */
+  config?: XyChartInitConfig
 }
 
 /** Axis configuration — categorical (labels) or numeric (range) */
@@ -63,6 +67,8 @@ export interface PositionedXYChart {
   gridLines: GridLine[]
   /** Legend items (shown when multiple series) */
   legend: LegendItem[]
+  /** The chart's `xyChart` init block; the renderer reads the per-axis `show*` switches. */
+  config?: XyChartInitConfig
 }
 
 export interface LegendItem {

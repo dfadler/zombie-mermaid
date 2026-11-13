@@ -16,26 +16,43 @@ import { ElkNode } from '@zombie-mermaid/core';
 import { ErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ErRenderOptions } from '@zombie-mermaid/core';
 import { FlowchartRenderOptions } from '@zombie-mermaid/core';
+import { GitGraph } from '@zombie-mermaid/mermaid-parser';
+import { Journey } from '@zombie-mermaid/mermaid-parser';
+import { Kanban } from '@zombie-mermaid/mermaid-parser';
 import { LayoutCache } from '@zombie-mermaid/core';
 import { LayoutOptions } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
+import { Mindmap } from '@zombie-mermaid/mermaid-parser';
 import { MonoFontEmbed } from '@zombie-mermaid/core';
 import { niceTickValues } from '@zombie-mermaid/core';
+import { Packet } from '@zombie-mermaid/mermaid-parser';
 import { PieChart } from '@zombie-mermaid/mermaid-parser';
 import { Point } from '@zombie-mermaid/core';
 import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
+import { PositionedGitGraph } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGraph } from '@zombie-mermaid/core';
+import { PositionedJourney } from '@zombie-mermaid/mermaid-parser';
+import { PositionedKanban } from '@zombie-mermaid/mermaid-parser';
+import { PositionedMindmap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedNode } from '@zombie-mermaid/core';
 import { PositionedPieChart } from '@zombie-mermaid/mermaid-parser';
 import { PositionedQuadrantChart } from '@zombie-mermaid/mermaid-parser';
+import { PositionedRadar } from '@zombie-mermaid/mermaid-parser';
+import { PositionedRequirementDiagram } from '@zombie-mermaid/mermaid-parser';
+import { PositionedSankey } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSequenceDiagram } from '@zombie-mermaid/mermaid-parser';
+import { PositionedTimeline } from '@zombie-mermaid/mermaid-parser';
 import { PositionedXYChart } from '@zombie-mermaid/mermaid-parser';
 import { QuadrantChart } from '@zombie-mermaid/mermaid-parser';
+import { Radar } from '@zombie-mermaid/mermaid-parser';
 import { RenderOptions } from '@zombie-mermaid/core';
+import { RequirementDiagram } from '@zombie-mermaid/mermaid-parser';
+import { Sankey } from '@zombie-mermaid/mermaid-parser';
 import { SequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { SequenceRenderOptions } from '@zombie-mermaid/core';
 import { SvgEmitOptions } from '@zombie-mermaid/core';
+import { Timeline } from '@zombie-mermaid/mermaid-parser';
 import { XYChart } from '@zombie-mermaid/mermaid-parser';
 import { XyChartRenderOptions } from '@zombie-mermaid/core';
 
@@ -96,11 +113,13 @@ export function clipEdgeToShape(points: Point[], node: PositionedNode, isStart: 
 export const CLS: {
     readonly padding: 40;
     readonly boxPadX: 8;
-    readonly headerBaseHeight: 32;
-    readonly annotationHeight: 16;
-    readonly memberRowHeight: 20;
-    readonly sectionPadY: 8;
-    readonly emptySectionHeight: 8;
+    readonly headerBaseHeight: 48;
+    readonly annotationHeight: 24;
+    readonly memberRowHeight: 24;
+    readonly sectionPadY: 24;
+    readonly emptySectionHeight: 24;
+    readonly emptyBareSectionHeight: 18;
+    readonly methodsAfterEmptyExtra: 6;
     readonly mermaidPad: 12;
     readonly memberFontSize: 11;
     readonly memberFontWeight: 400;
@@ -116,7 +135,7 @@ export const CLS: {
 };
 
 // @public
-export function convertToElkFormat(graph: MermaidGraph, options?: FlowchartRenderOptions): ElkNode;
+export function convertToElkFormat(graph: MermaidGraph, options?: FlowchartLayoutOptions): ElkNode;
 
 // @public
 export function createLayoutCache(maxSize?: number): LayoutCache;
@@ -130,6 +149,7 @@ export const ELK_DIRECTION_FALLBACK: {
     readonly state: "DOWN";
     readonly class: "DOWN";
     readonly er: "DOWN";
+    readonly requirement: "DOWN";
     readonly c4: "DOWN";
 };
 
@@ -142,6 +162,7 @@ export interface ElkEdgeLabelStyle {
     fontSize: number;
     // (undocumented)
     layoutOptions?: LayoutOptions;
+    lineHeight?: number;
 }
 
 // @public
@@ -219,6 +240,36 @@ export function hasLabelBelowIcon(a: {
 // @public
 export const INLINE_CENTERED_EDGE_LABEL: LayoutOptions;
 
+// @public (undocumented)
+export const JOURNEY: {
+    readonly width: 150;
+    readonly height: 50;
+    readonly diagramMarginX: 50;
+    readonly diagramMarginY: 10;
+    readonly leftMargin: 150;
+    readonly maxLabelWidth: 360;
+    readonly taskMargin: 50;
+    readonly legendTop: 60;
+    readonly sectionY: 50;
+    readonly taskTop: 110;
+    readonly lineEnd: 450;
+    readonly sections: 7;
+    readonly actors: 6;
+    readonly originY: 25;
+};
+
+// @public
+export const KANBAN: {
+    readonly sectionWidth: 200;
+    readonly padding: 10;
+    readonly lineHeight: 24;
+    readonly cardPadding: 20;
+    readonly minHeading: 25;
+    readonly minColumn: 50;
+    readonly viewBoxPadding: 10;
+    readonly cornerRadius: 5;
+};
+
 export { LayoutCache }
 
 // @public
@@ -228,25 +279,65 @@ export function layoutClassDiagramSync(diagram: ClassDiagram, options?: ClassRen
 export function layoutErDiagramSync(diagram: ErDiagram, options?: ErRenderOptions): PositionedErDiagram;
 
 // @public
-export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartRenderOptions): PositionedGraph;
+export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
+
+// @public (undocumented)
+export function layoutGitGraph(g: GitGraph): PositionedGitGraph;
 
 // @public
-export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartRenderOptions): PositionedGraph;
+export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
+
+// @public (undocumented)
+export function layoutJourney(journey: Journey): PositionedJourney;
 
 // @public
-export function layoutPieChart(chart: PieChart, _options?: unknown): PositionedPieChart;
+export function layoutKanban(kanban: Kanban): PositionedKanban;
+
+// @public
+export function layoutMindmap(mindmap: Mindmap): PositionedMindmap;
+
+// @public
+export function layoutPacket(packet: Packet): PositionedPacket;
+
+// @public
+export function layoutPieChart(chart: PieChart, options?: {
+    font?: string;
+}): PositionedPieChart;
 
 // @public (undocumented)
 export function layoutQuadrantChart(chart: QuadrantChart): PositionedQuadrantChart;
 
 // @public
-export function layoutSequenceDiagram(diagram: SequenceDiagram, options?: SequenceRenderOptions): PositionedSequenceDiagram;
+export function layoutRadar(radar: Radar): PositionedRadar;
+
+// @public
+export function layoutRequirementDiagramSync(diagram: RequirementDiagram, options?: RequirementRenderOptions): PositionedRequirementDiagram;
+
+// @public
+export function layoutSankey(sk: Sankey): PositionedSankey;
+
+// @public (undocumented)
+export function layoutSequenceDiagram(input: SequenceDiagram, options?: SequenceRenderOptions): PositionedSequenceDiagram;
+
+// @public
+export function layoutTimeline(tl: Timeline): PositionedTimeline;
 
 // @public
 export function layoutXYChart(chart: XYChart, _options?: XyChartRenderOptions): PositionedXYChart;
 
 // @public
 export function loadEmbeddedFont(): Promise<void>;
+
+// @public
+export const MINDMAP: {
+    readonly padding: 10;
+    readonly maxNodeWidth: 200;
+    readonly fontSize: 16;
+    readonly lineHeight: 24;
+    readonly sections: 11;
+    readonly edgeInset: 15;
+    readonly cornerRadius: 5;
+};
 
 // @public
 export const MONO_FONT: "'JetBrains Mono'";
@@ -261,6 +352,13 @@ export const NODE_PADDING: {
     readonly horizontal: 20;
     readonly vertical: 10;
     readonly diamondExtra: 24;
+};
+
+// @public
+export const PACKET: {
+    readonly labelFontSize: 12;
+    readonly byteFontSize: 10;
+    readonly titleFontSize: 14;
 };
 
 // @public
@@ -285,6 +383,53 @@ export function pieColorValue(index: number, accent: string | undefined, bg: str
 
 // @public
 export function pointsToPath(points: Point[], curve?: CurveStyle): string;
+
+// @public (undocumented)
+export interface PositionedPacket {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    rows: PositionedPacketBlock[][];
+    // (undocumented)
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedPacketBit {
+    // (undocumented)
+    anchor: 'start' | 'middle' | 'end';
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedPacketBlock {
+    bits?: PositionedPacketBit[];
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    labelX: number;
+    // (undocumented)
+    labelY: number;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
 
 // @public
 export const QUADRANT: {
@@ -313,6 +458,21 @@ export const QUADRANT: {
 };
 
 // @public
+export const RADAR: {
+    readonly width: 600;
+    readonly height: 600;
+    readonly marginTop: 50;
+    readonly marginRight: 50;
+    readonly marginBottom: 50;
+    readonly marginLeft: 50;
+    readonly axisScaleFactor: 1;
+    readonly axisLabelFactor: 1.05;
+    readonly curveTension: 0.17;
+    readonly labelPad: 4;
+    readonly legendLineHeight: 20;
+};
+
+// @public
 export function registerElk(ctor: ElkConstructor): void;
 
 // @public
@@ -320,6 +480,15 @@ export function renderClassSvg(diagram: PositionedClassDiagram, colors: DiagramC
 
 // @public
 export function renderErSvg(diagram: PositionedErDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderGitGraphSvg(gg: PositionedGitGraph, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderJourneySvg(j: PositionedJourney, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderKanbanSvg(board: PositionedKanban, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public @deprecated (undocumented)
 export const renderMermaid: typeof renderMermaidSVGAsync;
@@ -334,10 +503,25 @@ export function renderMermaidSVGAsync(text: string, options?: RenderOptions): Pr
 export const renderMermaidSync: typeof renderMermaidSVG;
 
 // @public
+export function renderMindmapSvg(chart: PositionedMindmap, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderPacketSvg(p: PositionedPacket, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderPieSvg(chart: PositionedPieChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderQuadrantSvg(chart: PositionedQuadrantChart, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderRadarSvg(radar: PositionedRadar, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderRequirementSvg(diagram: PositionedRequirementDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderSankeySvg(sk: PositionedSankey, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderSequenceSvg(diagram: PositionedSequenceDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
@@ -346,13 +530,46 @@ export function renderSequenceSvg(diagram: PositionedSequenceDiagram, colors: Di
 export function renderSvg(graph: PositionedGraph, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, curve?: CurveStyle, embedSource?: string, animationEnabled?: boolean, linksEnabled?: boolean, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
+export function renderTimelineSvg(tl: PositionedTimeline, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderXYChartSvg(chart: PositionedXYChart, colors: DiagramColors, font?: string, transparent?: boolean, interactive?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public (undocumented)
+export const REQUIREMENT: {
+    readonly fontSize: 16;
+    readonly rowHeight: 24;
+    readonly bodyGap: 20;
+    readonly boxPad: 20;
+    readonly textTop: 8;
+    readonly rowInset: 10;
+    readonly margin: 8;
+    readonly nodeSpacing: 40;
+    readonly layerSpacing: 40;
+    readonly loopOut: 20;
+    readonly loopLabelGap: 4;
+    readonly loopHalf: 12;
+};
 
 // @public
 export function resolveCssColors(svg: string, colors: DiagramColors): string;
 
 // @public
 export function resolveFontSizes(overrides?: FontSizeOptions): FontSizes;
+
+// @public (undocumented)
+export const SANKEY: {
+    readonly width: 600;
+    readonly height: 400;
+    readonly nodeWidth: 10;
+    readonly nodePadding: 12;
+    readonly valuePadding: 15;
+    readonly fontSize: 14;
+    readonly labelGap: 6;
+    readonly ascent: 13;
+    readonly descent: 3;
+    readonly iterations: 6;
+};
 
 // @public
 export const SELF_LOOP_CONTROL = 60;
@@ -389,10 +606,42 @@ export const TEXT_BASELINE_SHIFT: "0.35em";
 export function themeCssVariables(options?: RenderOptions): string;
 
 // @public
+export const TIMELINE: {
+    readonly fontSize: 16;
+    readonly lineHeight: 17.6;
+    readonly firstLineHeight: 19;
+    readonly textPad: 8.8;
+    readonly nodeWidth: 150;
+    readonly padding: 20;
+    readonly leftMargin: 150;
+    readonly columnWidth: 200;
+    readonly eventGap: 10;
+    readonly periodFloor: 67.8;
+    readonly eventFloor: 50;
+    readonly titleFontSize: 33.4688;
+    readonly titleAscent: 31;
+    readonly titleDescent: 7;
+    readonly viewBoxPadding: 50;
+    readonly colorLimit: 12;
+};
+
+// @public
+export function timelineTextWidth(text: string, size?: number, bold?: boolean): number;
+
+// @public
 export function validateMermaid(text: string): void;
 
 // @public
 export function withDataSrc(svgTag: string, source: string | undefined): string;
+
+// @public
+export function wrapLegendLabel(person: string, max?: number): string[];
+
+// @public
+export function wrapTaskLabel(label: string, boxWidth?: number): string[];
+
+// @public
+export function wrapTimelineText(text: string, width: number): string[];
 
 // @public
 export function xLabelStep(labels: string[], bandWidth: number): number;

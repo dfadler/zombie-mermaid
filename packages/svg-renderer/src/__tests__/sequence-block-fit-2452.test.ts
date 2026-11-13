@@ -46,15 +46,19 @@ describe('gaps widen so labels clear the next lifeline (#2452)', () => {
     expect(gap(short, 0)).toBe(140)
   })
 
-  it("widens for a block's header tab and divider labels", () => {
+  it("wraps a block's header tab and divider labels instead of widening (#2745)", () => {
     const tab = layout(
       'A->>B: x\nloop a block title that is rather long indeed\nA->>B: y\nend',
     )
-    expect(gap(tab, 0)).toBeGreaterThan(200)
+    expect(gap(tab, 0)).toBe(140)
+    expect(tab.blocks[0]!.label).toBe(
+      'a block title that is\nrather long indeed',
+    )
     const div = layout(
       'A->>B: x\nalt ok\nA->>B: y\nelse a divider label that is rather long indeed\nA->>B: z\nend',
     )
-    expect(gap(div, 0)).toBeGreaterThan(150)
+    expect(gap(div, 0)).toBe(140)
+    expect(div.blocks[0]!.dividers[0]!.label).toContain('\n')
     // An unlabeled divider needs no room.
     const bare = layout('A->>B: x\nalt ok\nA->>B: y\nelse\nA->>B: z\nend')
     expect(gap(bare, 0)).toBe(140)

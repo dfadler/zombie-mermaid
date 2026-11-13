@@ -16,19 +16,17 @@ pie title Commits by weekday and team
 ---
             Commits by weekday and team
 
-[37m[[0m[37m██████[0m[97m▓▓▓▓[0m[36m▒▒▒▒▒▒[0m[97m░░░░[0m[37m█████[0m[97m▓▓▓[0m[37m▒▒▒▒▒[0m[97m░░░[0m[37m█████[0m[97m▓▓▓[0m[37m▒▒[0m[97m░[0m[37m██[0m[97m▓[0m[37m][0m
-
-  [37m█[0m Mon core    13%
-  [97m▓[0m Mon docs     8%
-  [36m▒[0m Tue core    12%
-  [97m░[0m Tue docs     7%
-  [37m█[0m Wed core    11%
-  [97m▓[0m Wed docs     6%
-  [37m▒[0m Thu core    10%
-  [97m░[0m Thu docs     6%
-  [37m█[0m Fri core     9%
-  [97m▓[0m Fri docs     5%
-  [37m▒[0m Sat core     5%
-  [97m░[0m Sat docs     3%
-  [37m█[0m Sun core     4%
-  [97m▓[0m Sun docs     2%
+                                                         [37m█[0m Mon core    13%
+                                                         [97m▓[0m Mon docs     8%
+                                                         [36m▒[0m Tue core    12%
+                                                         [97m░[0m Tue docs     7%
+                                                         [37m█[0m Wed core    11%
+                                                         [97m▓[0m Wed docs     6%
+[37m[[0m[37m██████[0m[97m▓▓▓▓[0m[36m▒▒▒▒▒▒[0m[97m░░░░[0m[37m█████[0m[97m▓▓▓[0m[37m▒▒▒▒▒[0m[97m░░░[0m[37m█████[0m[97m▓▓▓[0m[37m▒▒[0m[97m░[0m[37m██[0m[97m▓[0m[37m][0m     [37m▒[0m Thu core    10%
+                                                         [97m░[0m Thu docs     6%
+                                                         [37m█[0m Fri core     9%
+                                                         [97m▓[0m Fri docs     5%
+                                                         [37m▒[0m Sat core     5%
+                                                         [97m░[0m Sat docs     3%
+                                                         [37m█[0m Sun core     4%
+                                                         [97m▓[0m Sun docs     2%

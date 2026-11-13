@@ -6,6 +6,7 @@
 // ============================================================================
 
 import type {
+  ClassInitLayout,
   Direction,
   NodeInteraction,
   StyleDirectives,
@@ -27,6 +28,8 @@ export interface ClassDiagram extends StyleDirectives {
   namespaces: ClassNamespace[]
   /** Maps class IDs to interactions declared by `click` statements */
   interactions: Map<string, NodeInteraction>
+  /** `%%{init}%%` / front-matter `class` keys (`padding`, `hideEmptyMembersBox`). */
+  layout?: ClassInitLayout
   /** Notes, in source order — `note "text"` and `note for X "text"` */
   notes: ClassNote[]
   /**
@@ -87,6 +90,8 @@ export type RelationshipType =
   | 'dependency' // A ..> B    (dashed line, open arrow)
   | 'realization' // A ..|> B   (dashed line, hollow triangle)
   | 'lollipop' // A ()-- B   (solid line, circle: interface)
+  | 'link' // A -- B     (solid line, no marker)
+  | 'dashed-link' // A .. B     (dashed line, no marker)
 
 export interface ClassRelationship {
   from: string
@@ -100,6 +105,8 @@ export interface ClassRelationship {
    *   - Both ends like `<|--|>`, `<-->`, `()--()` → 'both' (same marker at each end)
    */
   markerAt: 'from' | 'to' | 'both'
+  /** Dashed line on a type that is solid by default (`A ..() B`) */
+  dashed?: boolean
   /** Label on the relationship line */
   label?: string
   /** Cardinality at the "from" end (e.g., "1", "*", "0..1") */
@@ -182,6 +189,8 @@ export interface PositionedClassRelationship {
   type: RelationshipType
   /** Which end of the line has the UML marker — propagated from ClassRelationship */
   markerAt: 'from' | 'to' | 'both'
+  /** Dashed line on a type that is solid by default — propagated from ClassRelationship */
+  dashed?: boolean
   label?: string
   fromCardinality?: string
   toCardinality?: string

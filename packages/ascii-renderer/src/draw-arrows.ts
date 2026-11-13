@@ -40,6 +40,7 @@ import {
 import { pseudoStateGlyph } from './draw-boxes.ts'
 import { blankLayer, copyCanvas, drawText, write } from './canvas.ts'
 import {
+  denseFacingPair,
   determineDirection,
   dirEquals,
   flowLaneLabel,
@@ -48,9 +49,10 @@ import {
 } from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { gridToDrawingCoord } from './grid.ts'
+import { clusterFlowGroup, clusterLaneEndShift } from './cluster-boundary.ts'
 import { exitGutter } from './types.ts'
 import { splitLines } from './multiline-utils.ts'
-import { drawLine } from './draw-lines.ts'
+import { drawLine, horizontalStroke } from './draw-lines.ts'
 
 /**
  * Draw a complete arrow (edge) between two nodes.
@@ -133,6 +135,7 @@ export function drawArrow(
             x: wallStart.x + strokeShift(graph, edge),
             y: wallStart.y,
           },
+          edge.style,
         )
       : copyCanvas(graph.canvas)
 
@@ -273,14 +276,30 @@ function exitLandings(
   if (!plan) return landings
   const lr = graph.config.graphDirection === 'LR'
 
+  // A flow group (#2737) leaves as strokes two cells apart about the target's
+  // centre, straight down to its flow-side face.
+  if (!lr) {
+    for (const edge of plan.edges) {
+      if (!clusterFlowGroup(graph, edge)) continue
+      const to = requireGridCoord(edge.to)
+      landings.set(
+        edge,
+        gridToDrawingCoord(graph, { x: to.x + 1, y: to.y }).x +
+          clusterLaneEndShift(graph, edge),
+      )
+    }
+  }
   const units = new Map<unknown, AsciiEdge[]>()
   for (const edge of plan.edges) {
+    if (landings.has(edge)) continue
     const key = edge.parallelLane?.usedOffsets ?? edge
     const unit = units.get(key)
     if (unit) unit.push(edge)
     else units.set(key, [edge])
   }
-  if (units.size < 2) return landings
+  // A composite with regions engages on one exit (#3013): its stand-in sits in
+  // a region, not at the target's column, so the exit still lands at the target.
+  if (units.size < 2 && !sg.children.some((c) => c.region)) return landings
 
   const ranked = [...units.values()]
     .map((edges) => {
@@ -485,9 +504,12 @@ function clusterEntryDrop(
   const lr = graph.config.graphDirection === 'LR'
   const gutter = gridToDrawingCoord(graph, last)
   const start = gridToDrawingCoord(graph, edge.path[0]!)
+  // The jog keeps one cell clear of the wall for the arrowhead; an arrowless
+  // end needs no head, so its jog may sit in the gutter's only free cell.
+  const clear = edge.hasArrowEnd ? 2 : 1
   const turn = lr
-    ? Math.min(gutter.x, end.x - 2)
-    : Math.min(gutter.y, end.y - 2)
+    ? Math.min(gutter.x, end.x - clear)
+    : Math.min(gutter.y, end.y - clear)
   // No room between the source and the wall for a jog and an arrowhead:
   // leave the edge as routed.
   if (turn <= (lr ? start.x : start.y)) return undefined
@@ -563,12 +585,12 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = shift(
+    // The wall landing is already where the stroke is drawn: a flow group's
+    // whole run is shifted (#2737), so shifting it again would double it.
+    const prevDC =
       startOverride && i === 1
         ? startOverride
-        : gridToDrawingCoord(graph, previousCoord),
-      i - 1,
-    )
+        : shift(gridToDrawingCoord(graph, previousCoord), i - 1)
     const nextDC =
       endOverride && i === path.length - 1
         ? shift(endOverride, i)
@@ -603,7 +625,15 @@ const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊', '|', '
 /** Solid fork/join bar cell (Unicode / ASCII): nothing to connect to, nothing to overwrite. */
 const BAR_CHARS = new Set(['█', '#'])
 /** Horizontal box-border characters a vertical connector can genuinely merge with. */
-const HORIZONTAL_BORDER_CHARS = new Set(['─', '━', '═', '╌', '┄', '-', '='])
+export const HORIZONTAL_BORDER_CHARS = new Set([
+  '─',
+  '━',
+  '═',
+  '╌',
+  '┄',
+  '-',
+  '=',
+])
 
 /**
  * Draw the junction character where an edge exits the source node's box.
@@ -625,6 +655,7 @@ function drawBoxStart(
   firstLine: DrawingCoord[],
   sourceNode: AsciiNode,
   wallAt?: DrawingCoord,
+  style: AsciiEdgeStyle = 'solid',
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   const useAscii = graph.config.useAscii
@@ -700,8 +731,17 @@ function drawBoxStart(
       )
     }
     const boxWidth = drawing.length
-    const x = dirEquals(dir, Left) ? dc.x : dc.x + boxWidth - 1
+    const left = dirEquals(dir, Left)
+    let x = left ? dc.x : dc.x + boxWidth - 1
     const y = from.y
+    // A slanted face (a diamond's) is blank at the border column off its
+    // vertex: start beside the slant glyph instead, so the branch touches it.
+    const row = drawing.map((col) => col[y - dc.y] ?? ' ')
+    if (row[x - dc.x] === ' ' && row.some((c) => c !== ' ')) {
+      const step = left ? 1 : -1
+      while (row[x - dc.x] === ' ') x += step
+      x -= step
+    }
     const existing = existingOnBox(x, y)
     const hasBorder =
       existing !== undefined && VERTICAL_BORDER_CHARS.has(existing)
@@ -711,14 +751,13 @@ function drawBoxStart(
       y,
       hasBorder
         ? (junction ?? (dirEquals(dir, Left) ? '┤' : '├'))
-        : useAscii
-          ? '-'
-          : '─',
+        : horizontalStroke(style, useAscii),
     )
     // A widened border column starts the stroke past the real border; bridge
     // the blank cells between them so the connector isn't an orphan (#2027).
     const [lo, hi] = x < from.x ? [x + 1, from.x - 1] : [from.x + 1, x - 1]
-    for (let gx = lo; gx <= hi; gx++) write(canvas, gx, y, useAscii ? '-' : '─')
+    for (let gx = lo; gx <= hi; gx++)
+      write(canvas, gx, y, horizontalStroke(style, useAscii))
   }
 
   return canvas
@@ -1219,6 +1258,23 @@ function resolveLabelPlacementUncached(
   if (edge.text.length === 0) return null
   const onLane = flowLaneLabel(graph, edge)
   if (onLane) return onLane
+  // #2913: a nested hook's leg is too short for the on-stroke rules (its ends
+  // are two cells apart), and the label would land on its arrowhead. It sits
+  // centred on its own leg, at the leg's middle row, between the legs' strides.
+  const line = edge.loopNest ? labelLineToDrawing(graph, edge) : []
+  if (
+    line.length === 2 &&
+    line[0]!.x === line[1]!.x &&
+    splitLines(edge.text).length === 1
+  ) {
+    return [
+      {
+        x: line[0]!.x - Math.floor(displayWidth(edge.text) / 2),
+        y: Math.floor((line[0]!.y + line[1]!.y) / 2),
+        text: edge.text,
+      },
+    ]
+  }
   const centred = centredLabelPlacement(graph, edge, labelAware)
   const dx = strokeShiftFor(graph, edge, labelAware)
   // #1408 option C: a vertical edge's label goes on its own stroke when the
@@ -1363,7 +1419,7 @@ function centredLabelPlacement(
   // here would land on that same row, so `done` and `fail` would read as one
   // run (`done────fail`). Pulled down, each label sits on its own segment.
   const pullTowardTarget =
-    hasReciprocalPartner(graph, edge) ||
+    (hasReciprocalPartner(graph, edge) && !denseFacingPair(graph, edge)) ||
     (graph.config.graphDirection !== 'LR' &&
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
@@ -1384,7 +1440,12 @@ function centredLabelPlacement(
             edge.text,
             isUpwardEdge,
             pullTowardTarget,
-            edge.hasArrowStart && edge.hasArrowEnd,
+            (edge.hasArrowStart && edge.hasArrowEnd) ||
+              // A dense pair's return stroke runs right to left with its head
+              // at the near end: leave that cell to the head.
+              (edge.hasArrowEnd &&
+                drawingLine[0]!.x > drawingLine[1]!.x &&
+                denseFacingPair(graph, edge)),
           ),
           drawingLine[0]?.x === drawingLine[1]?.x
             ? drawingLine[0]?.x
@@ -1748,8 +1809,9 @@ function besideGeometryFree(
       const inRows = y >= sg.minY && y <= sg.maxY
       const crossesSide = [sg.minX, sg.maxX].some((w) => w >= x0 && w <= x1)
       if (inRows && crossesSide) return false
-      const onTopOrBottom =
-        y === sg.maxY || (y >= sg.minY && y <= sg.minY + titleRows)
+      const onTopOrBottom = sg.titleBelow
+        ? y === sg.minY || (y >= sg.maxY - titleRows && y <= sg.maxY)
+        : y === sg.maxY || (y >= sg.minY && y <= sg.minY + titleRows)
       if (onTopOrBottom && x1 >= sg.minX && x0 <= sg.maxX) return false
     }
     // `clearance` keeps the text off cells *next to* another edge's
@@ -1844,8 +1906,9 @@ function clearOfSubgraphTitles(
       if (sg.nodes.length === 0) return false
       const rows = splitLines(sg.name).length
       return (
-        y >= sg.minY &&
-        y <= sg.minY + rows &&
+        (sg.titleBelow
+          ? y >= sg.maxY - rows && y <= sg.maxY
+          : y >= sg.minY && y <= sg.minY + rows) &&
         item.x <= sg.maxX &&
         item.x + displayWidth(item.text) - 1 >= sg.minX
       )

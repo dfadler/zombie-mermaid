@@ -487,13 +487,11 @@ export const DEFAULT_FLOOR = 0.85
  */
 export const SAMPLE_FLOORS: Readonly<Record<string, number>> = {
   // Ratcheted (#1834): 100/100 on mermaid 12.2.0 (CJK Labels since #2358). Nested Subgraphs
-  // is 100/100/100 on 12.3.0 but 100/20 on the 12.2.0 pin since #2671 moved subgraph flowcharts
-  // to 12.3.0's ELK pipeline (12.2.0 uses dagre there). The floor is right and the pin is stale
-  // (#2710): do not lower it. The RL and BT variants have no entry; they are 100/100 and sit
-  // under DEFAULT_FLOOR.
+  // is 100/100/100 on 12.3.0 (the pin since #2710); 12.2.0 laid subgraph flowcharts out with
+  // dagre, 12.3.0 uses ELK, which #2671 follows. The RL and BT variants have no entry; they
+  // are 100/100 and sit under DEFAULT_FLOOR.
   'Nested Subgraphs': 0.95,
   'Flowchart: CJK Labels': 0.95,
-  'State: Notes': 0.8,
   // Measured 2026-10-21 on mermaid 12.1.0 with the dead-band (#2155); each floor sits
   // just under the measured figure. See docs/known-differences.md.
   // Dense (TD): c is 18.5px right of a in ours and 30.1px in mermaid, 0.1px outside the band.

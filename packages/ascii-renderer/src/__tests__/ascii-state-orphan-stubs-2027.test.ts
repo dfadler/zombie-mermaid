@@ -114,3 +114,43 @@ describe('state diagram orphan stubs (#2027)', () => {
     expect(arrow).toBe(_d === 'LR' ? '►' : '▼')
   })
 })
+
+// #2910: the start marker sits on the face its edge leaves from, so a taller
+// source in the same layer does not strand it above a gap.
+describe('state start marker keeps its stem beside a taller source (#2910)', () => {
+  const sample = `stateDiagram-v2
+  [*] --> A
+  B --> A
+  A --> [*]`
+  const stemBelow = (lines: string[]) => {
+    const row = lines.findIndex((l) => l.includes('●'))
+    const col = lines[row]!.indexOf('●')
+    return lines[row + 1]?.[col]
+  }
+
+  it('TD: a stem glyph is directly under ●', () => {
+    expect(stemBelow(renderMermaidASCII(sample).split('\n'))).toBe('│')
+  })
+
+  it('TD (ASCII): a stem glyph is directly under *', () => {
+    const lines = renderMermaidASCII(sample, { useAscii: true }).split('\n')
+    const row = lines.findIndex((l) => l.includes('*'))
+    expect(lines[row + 1]![lines[row]!.indexOf('*')]).toBe('|')
+  })
+
+  it('LR: a line glyph is directly right of ●', () => {
+    const lines = renderMermaidASCII(
+      `stateDiagram-v2
+  direction LR
+  [*] --> A
+  X --> A
+  note left of A
+    a
+    b
+    c
+  end note`,
+    ).split('\n')
+    const row = lines.findIndex((l) => l.includes('●'))
+    expect(lines[row]![lines[row]!.indexOf('●') + 1]).toBe('─')
+  })
+})

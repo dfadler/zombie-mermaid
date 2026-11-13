@@ -24,6 +24,14 @@ import { fileURLToPath } from 'node:url'
 
 interface BudgetFile {
   unit: string
+  /**
+   * Soft band above each budget (percent, default 0). Over budget but within
+   * the band prints WARN and passes; only past it does the gate fail. Keeps
+   * concurrent PRs from each rewriting this file for a few percent of growth
+   * (#2935); the budget itself is still the target and is raised/ratcheted
+   * deliberately.
+   */
+  failAbovePct?: number
   budgets: Record<string, number>
   /** Minified browser bundle of the entry, `elkjs` NOT registered (#1370). */
   consumerBundles: Record<string, number>
@@ -34,14 +42,19 @@ interface BudgetFile {
 const EXIT_OK = 0
 const EXIT_FAILURE = 1
 
-/** One row: exact bytes, budget, remaining headroom (negative = over). Returns true if over. */
+/** One row: exact bytes, budget, remaining headroom (negative = over). Returns true if the gate fails. */
 function report(label: string, size: number, budget: number): boolean {
   const headroom = ((budget - size) / budget) * 100
-  const over = size > budget
+  const fails = size > budget * (1 + failAbovePct / 100)
+  const status = fails ? 'OVER' : size > budget ? 'WARN' : 'ok'
   console.log(
-    `  ${label.padEnd(42)} ${String(size).padStart(7)} B / ${String(budget).padStart(7)} B  headroom ${`${headroom.toFixed(1)}%`.padStart(6)}  ${over ? 'OVER' : 'ok'}`,
+    `  ${label.padEnd(42)} ${String(size).padStart(7)} B / ${String(budget).padStart(7)} B  headroom ${`${headroom.toFixed(1)}%`.padStart(6)}  ${status}`,
   )
-  return over
+  if (status === 'WARN')
+    console.log(
+      `::warning title=Bundle size::${label} is ${size - budget} B over its budget (within the ${failAbovePct}% soft band); raise or fix before it passes the band`,
+    )
+  return fails
 }
 
 const budgetFile = JSON.parse(
@@ -50,6 +63,8 @@ const budgetFile = JSON.parse(
     'utf-8',
   ),
 ) as BudgetFile
+
+const failAbovePct = budgetFile.failAbovePct ?? 0
 
 console.log(`Bundle size check (${budgetFile.unit})`)
 console.log('─'.repeat(70))
@@ -126,7 +141,7 @@ if (anyMissing) {
 
 if (anyOverBudget) {
   console.error(
-    '\nFAIL: one or more dist/ files exceeded their gzip size budget.',
+    '\nFAIL: one or more dist/ files exceeded their size budget (plus the soft band).',
   )
   console.error(
     'If the increase is intentional and reviewed, raise the budget in bundle-size-budget.json in the same PR and justify the increase in the PR description and say in the PR body whether it is new feature code (raise) or a regression (fix instead); see CONTRIBUTING.md, "Bundle size budgets".',

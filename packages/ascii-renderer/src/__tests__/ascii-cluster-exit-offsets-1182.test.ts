@@ -134,7 +134,8 @@ describe('cluster exits leave at their own wall cell (#1182)', () => {
   Outer --> F
 `)
     const fRow = lines.find((l) => /│ F │/.test(l))!
-    expect(fRow).toMatch(/├─+►│ F │/)
+    expect(fRow).toMatch(/└─+►│ F │/)
+    expect(fRow).not.toContain('┌')
   })
 
   it('a wall too narrow to give every exit its own cell keeps the shared tee', () => {

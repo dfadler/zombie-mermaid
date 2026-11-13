@@ -2,11 +2,12 @@ import type { FlowchartLayout } from '@zombie-mermaid/elk-layout'
 import { BIT, DX, DY, route, type RouteGrid } from './route.ts'
 
 /**
- * What to do when a node face has fewer interior cells than edge ends.
- *  - `merge-then-grow`: merge identical parallel edges (same faces, direction and arrows) into
+ * What to do when a node face has fewer interior cells than edge ends. The default is
+ * `grow-only`: mermaid@12.3.0 draws every parallel edge, so the default never hides one.
+ *  - `merge-then-grow` (opt-in): merge identical parallel edges (same faces, direction and arrows) into
  *    one drawn line first, then grow the box on that face by the minimum cells. Merged lines
  *    hide edge multiplicity (reported in `RasterResult.mergedGroups`).
- *  - `grow-only` ("show every edge", #2183): never merge; every edge keeps its own lane and a
+ *  - `grow-only` (default, "show every edge", #2183): never merge; every edge keeps its own lane and a
  *    short face grows the box by the minimum cells. Nothing is hidden, but boxes can be far
  *    taller/wider than the layout's (expected distortion, reported in `stats.maxBoxError`).
  * A policy is just "may identical parallel edges be merged?".
@@ -687,7 +688,7 @@ export function rasterizeLayout(
   const {
     cellW = 5,
     cellH = 10,
-    facePolicy = 'merge-then-grow',
+    facePolicy = 'grow-only',
     maxCols = DEFAULT_MAX_COLS,
   } = opts
   const { mergeIdentical } = POLICIES[facePolicy]

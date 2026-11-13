@@ -8,26 +8,18 @@ C4Context
   System(s, "System")
   Rel(u, s, "uses")
 ---
-                           
-     Accessible title      
-                           
-                           
-     ╭────────────╮        
-     │     o      │        
-     │    /|\     │        
-     │    / \     │        
-     │    User    │        
-     │  [Person]  │        
-     ╰────────────╯        
-            │              
-            │              
-            │ uses         
-            ▼              
-  ┌───────────────────┐    
-  │      System       │    
-  │ [Software System] │    
-  └───────────────────┘    
-                           
-                           
-                           
-                           
+                                                 
+                Accessible title                 
+                                                 
+                                                 
+  ╭────────────╮        ┌───────────────────┐    
+  │     o      │  uses  │      System       │    
+  │    /|\     │───────►│ [Software System] │    
+  │    / \     │        └───────────────────┘    
+  │    User    │                                 
+  │  [Person]  │                                 
+  ╰────────────╯                                 
+                                                 
+                                                 
+                                                 
+                                                 

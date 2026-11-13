@@ -1,0 +1,1545 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"  ┌one─┐     
+  │    │     
+┌─┴─┐  │     
+│   │  │ two 
+│ a │◄─┘     
+│   │        
+└───┘        "
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"              ┌───┐
+    ┌────────►│   │
+    │         │   │
+    │     ┌──►│   │
+   two   one  │ a │
+    │     └───┤   │
+    │         │   │
+    └─────────┤   │
+              └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 338 128" width="338" height="128" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmrm5b9w-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmrm5b9w-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="a" data-to="a" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="one" d="M 146 66.4 L 128.4 66.4 Q 126 66.4, 126 64 L 126 64 Q 126 61.6, 128.4 61.6 L 146 61.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmrm5b9w-arrowhead)" />
+<path class="edge" data-from="a" data-to="a" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="two" d="M 146 71.2 L 79.91 71.2 Q 72.84 71.2, 72.84 64.13 L 72.84 63.87 Q 72.84 56.8, 79.91 56.8 L 146 56.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmrm5b9w-arrowhead)" />
+<g class="edge-label" data-from="a" data-to="a" data-label="one">
+  <rect x="96.84" y="56.85" width="21.16" height="14.3" fill="var(--bg)" />
+  <text x="107.42" y="64" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">one</text>
+</g>
+<g class="edge-label" data-from="a" data-to="a" data-label="two">
+  <rect x="44" y="56.85" width="20.84" height="14.3" fill="var(--bg)" />
+  <text x="54.42" y="64" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">two</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="146" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="222" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"  ┌───┐
+  │   │
+┌─┴─┐ │
+│   │ │
+│ a │◄┘
+│   │  
+└───┘  "
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"     ┌───┐
+ ┌──►│   │
+ │   │   │
+ │ ┌►│   │
+ │ │ │ a │
+ │ └─┤   │
+ │   │   │
+ └───┤   │
+     └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 272 128" width="272" height="128" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1lc7plc-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1lc7plc-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 80 66.4 L 62.4 66.4 Q 60 66.4, 60 64 L 60 64 Q 60 61.6, 62.4 61.6 L 80 61.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lc7plc-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 80 71.2 L 47.07 71.2 Q 40 71.2, 40 64.13 L 40 63.87 Q 40 56.8, 47.07 56.8 L 80 56.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lc7plc-arrowhead)" />
+<g class="node" data-id="n0" data-label="a" data-shape="rectangle">
+  <rect x="80" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="156" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"   ┌───┐
+   │   │
+  ╱╲   │
+ ╱  ╲  │
+< x  >◄┘
+ ╲  ╱   
+  ╲╱    "
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"       ╱╲  
+       ╱╲  
+ ┌───►╱  ╲ 
+ │ ┌─►╱  ╲ 
+ │ │ < x  >
+ │ └──╲  ╱ 
+ └────╲  ╱ 
+       ╲╱  
+       ╲╱  "
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 294 254" width="294" height="254" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1qeww8e-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1qeww8e-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="d" data-to="d" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 95 142 L 67.07 142 Q 60 142, 60 134.93 L 60 119.07 Q 60 112, 67.07 112 L 95 112" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1qeww8e-arrowhead)" />
+<path class="edge" data-from="d" data-to="d" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 125 172 L 47.07 172 Q 40 172, 40 164.93 L 40 89.07 Q 40 82, 47.07 82 L 125 82" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1qeww8e-arrowhead)" />
+<g class="node" data-id="d" data-label="x" data-shape="diamond">
+  <polygon points="167,40 254,127 167,214 80,127" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="167" y="127" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">x</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"  ┌───┐
+  │   │
+┌─┴─┐ │
+│   │ │
+│ a │◄┘
+│   │  
+└───┘  "
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"       ┌───┐
+ ┌────►│   │
+ │     │   │
+ │ ┌──►│   │
+ │ │   │   │
+ │ │ ┌►│   │
+ │ │ │ │ a │
+ │ │ └─┤   │
+ │ │   │   │
+ │ └───┤   │
+ │     │   │
+ └─────┤   │
+       └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 292 128" width="292" height="128" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1f68ina-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1f68ina-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 65.71 L 81.71 65.71 Q 80 65.71, 80 64 L 80 64 Q 80 62.29, 81.71 62.29 L 100 62.29" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1f68ina-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 69.14 L 65.14 69.14 Q 60 69.14, 60 64 L 60 64 Q 60 58.86, 65.14 58.86 L 100 58.86" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1f68ina-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 72.57 L 47.07 72.57 Q 40 72.57, 40 65.5 L 40 62.5 Q 40 55.43, 47.07 55.43 L 100 55.43" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1f68ina-arrowhead)" />
+<g class="node" data-id="n0" data-label="a" data-shape="rectangle">
+  <rect x="100" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="176" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐        
+│   │        
+│ c │        
+│   │        
+└───┘        
+  ▲          
+  │          
+  │          
+  │          
+  │          
+  ├──────┐   
+  │┌────┐│   
+  ││    ││   
+  ││    ││   
+  ││    ││   
+  ││    ││   
+┌─┴┴┐   ││   
+│   │   ││   
+│ b │◄──┘│   
+│   │    │   
+└───┘    │   
+  ▲      │   
+  │      │   
+  ├──────┘   
+  │          
+  │          
+┌─┴─┐        
+│   │        
+│ a │        
+│   │        
+└───┘        "
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"       ┌───┐  
+       │   │  
+       │ c │  
+       │   │  
+       └───┘  
+         ▲    
+         │    
+         ├───┐
+         │   │
+         │   │
+       ┌─┴─┐ │
+ ┌────►│   │ │
+ │     │   │ │
+ │ ┌──►│   │ │
+ │ │   │   │ │
+ │ │ ┌►│   │ │
+ │ │ │ │ b │ │
+ │ │ └─┤   │ │
+ │ │   │   │ │
+ │ └───┤   │ │
+ │     │   │ │
+ └─────┤   │ │
+       └───┘ │
+         ▲   │
+         │   │
+         ├───┘
+         │    
+         │    
+       ┌─┴─┐  
+       │   │  
+       │ a │  
+       │   │  
+       └───┘  "
+`;
+
+exports[`duplicate self-loops nest (#2913) > BT: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 304" width="340" height="304" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm8ubag6-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm8ubag6-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="a" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 198.67 216 L 198.67 203.07 Q 198.67 196, 191.6 196 L 183.07 196 Q 176 196, 176 188.93 L 176 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm8ubag6-arrowhead)" />
+<path class="edge" data-from="b" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 176 128 L 176 115.07 Q 176 108, 183.07 108 L 191.6 108 Q 198.67 108, 198.67 100.93 L 198.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm8ubag6-arrowhead)" />
+<path class="edge" data-from="a" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 249.33 216 L 249.33 203.07 Q 249.33 196, 256.4 196 L 264.93 196 Q 272 196, 272 188.93 L 272 115.07 Q 272 108, 264.93 108 L 256.4 108 Q 249.33 108, 249.33 100.93 L 249.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm8ubag6-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 153.71 L 81.71 153.71 Q 80 153.71, 80 152 L 80 152 Q 80 150.29, 81.71 150.29 L 100 150.29" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm8ubag6-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 157.14 L 65.14 157.14 Q 60 157.14, 60 152 L 60 152 Q 60 146.86, 65.14 146.86 L 100 146.86" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm8ubag6-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 160.57 L 47.07 160.57 Q 40 160.57, 40 153.5 L 40 150.5 Q 40 143.43, 47.07 143.43 L 100 143.43" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm8ubag6-arrowhead)" />
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="148" y="216" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="224" y="240" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="b" data-label="b" data-shape="rectangle">
+  <rect x="100" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="176" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">b</text>
+</g>
+<g class="node" data-id="c" data-label="c" data-shape="rectangle">
+  <rect x="148" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="224" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">c</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐     
+│   │     
+│ a ├──┐  
+│   │  │  
+└───┘  │  
+  ▲    │  
+  └────┘  
+   one    "
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"         
+ ┌─two─┐ 
+ │     │ 
+ │ one │ 
+ │ │ ▼ ▼ 
+┌┴─┴────┐
+│       │
+│   a   │
+│       │
+└───────┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 216.6" width="232" height="216.6" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1tklxsw-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1tklxsw-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="a" data-to="a" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="one" d="M 103.2 128.6 L 103.2 115.67 Q 103.2 108.6, 110.27 108.6 L 121.73 108.6 Q 128.8 108.6, 128.8 115.67 L 128.8 128.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1tklxsw-arrowhead)" />
+<path class="edge" data-from="a" data-to="a" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="two" d="M 77.6 128.6 L 77.6 71.37 Q 77.6 64.3, 84.67 64.3 L 147.33 64.3 Q 154.4 64.3, 154.4 71.37 L 154.4 128.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1tklxsw-arrowhead)" />
+<g class="edge-label" data-from="a" data-to="a" data-label="one">
+  <rect x="105.42" y="87.3" width="21.16" height="14.3" fill="var(--bg)" />
+  <text x="116" y="94.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">one</text>
+</g>
+<g class="edge-label" data-from="a" data-to="a" data-label="two">
+  <rect x="105.58" y="43" width="20.84" height="14.3" fill="var(--bg)" />
+  <text x="116" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">two</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="40" y="128.6" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="152.6" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐  
+│   │  
+│ a ├─┐
+│   │ │
+└───┘ │
+  ▲   │
+  └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"         
+ ┌─────┐ 
+ │     │ 
+ │ ┌─┐ │ 
+ │ │ ▼ ▼ 
+┌┴─┴────┐
+│       │
+│   a   │
+│       │
+└───────┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 168" width="232" height="168" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmf509p6-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmf509p6-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 103.2 80 L 103.2 67.07 Q 103.2 60, 110.27 60 L 121.73 60 Q 128.8 60, 128.8 67.07 L 128.8 80" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmf509p6-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 77.6 80 L 77.6 47.07 Q 77.6 40, 84.67 40 L 147.33 40 Q 154.4 40, 154.4 47.07 L 154.4 80" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmf509p6-arrowhead)" />
+<g class="node" data-id="n0" data-label="a" data-shape="rectangle">
+  <rect x="40" y="80" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="104" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"  ╱╲    
+ ╱  ╲   
+< x  >─┐
+ ╲  ╱  │
+  ╲╱   │
+   ▲   │
+   └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"         
+  ┌───┐  
+  │   │  
+  │┌─┐│  
+  ││ ▼│  
+  │╱─╲▼  
+  ╱   ╲  
+<   x   >
+  ╲   ╱  
+   ╲─╱   "
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 254 294" width="254" height="294" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1nqqk2s-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1nqqk2s-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="d" data-to="d" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 112 95 L 112 67.07 Q 112 60, 119.07 60 L 134.93 60 Q 142 60, 142 67.07 L 142 95" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1nqqk2s-arrowhead)" />
+<path class="edge" data-from="d" data-to="d" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 82 125 L 82 47.07 Q 82 40, 89.07 40 L 164.93 40 Q 172 40, 172 47.07 L 172 125" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1nqqk2s-arrowhead)" />
+<g class="node" data-id="d" data-label="x" data-shape="diamond">
+  <polygon points="127,80 214,167 127,254 40,167" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="127" y="167" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">x</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐  
+│   │  
+│ a ├─┐
+│   │ │
+└───┘ │
+  ▲   │
+  └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"             
+ ┌─────────┐ 
+ │         │ 
+ │ ┌─────┐ │ 
+ │ │     │ │ 
+ │ │ ┌─┐ │ │ 
+ │ │ │ ▼ ▼ ▼ 
+┌┴─┴─┴──────┐
+│           │
+│     a     │
+│           │
+└───────────┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 188" width="232" height="188" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmxpnthq-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmxpnthq-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 106.86 100 L 106.86 87.07 Q 106.86 80, 113.93 80 L 118.07 80 Q 125.14 80, 125.14 87.07 L 125.14 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmxpnthq-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 88.57 100 L 88.57 67.07 Q 88.57 60, 95.64 60 L 136.36 60 Q 143.43 60, 143.43 67.07 L 143.43 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmxpnthq-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 70.29 100 L 70.29 47.07 Q 70.29 40, 77.36 40 L 154.64 40 Q 161.71 40, 161.71 47.07 L 161.71 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmxpnthq-arrowhead)" />
+<g class="node" data-id="n0" data-label="a" data-shape="rectangle">
+  <rect x="40" y="100" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="124" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐     ┌───┐           ┌───┐
+│   │     │   │           │   │
+│ a ├────►│ b ├──────────►│ c │
+│   │     │   ├────┐      │   │
+└─┬─┘     └───┘    │      └───┘
+  │         ▲      │        ▲  
+  │         │      │        │  
+  │         │      │        │  
+  │         └──────┘        │  
+  └─────────────────────────┘  
+                               
+                               
+                               "
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"                                 
+           ┌─────────┐           
+           │         │           
+           │ ┌─────┐ │           
+           │ │     │ │           
+           │ │ ┌─┐ │ │           
+           │ │ │ ▼ ▼ ▼           
+┌───┐     ┌┴─┴─┴──────┐     ┌───┐
+│   ├────►│           ├────►│   │
+│ a │     │     b     │     │ c │
+│   ├──┐  │           │  ┌─►│   │
+└───┘  │  └───────────┘  │  └───┘
+       │                 │       
+       └─────────────────┘       "
+`;
+
+exports[`duplicate self-loops nest (#2913) > LR: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616 216" width="616" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmvk52tl-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmvk52tl-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="a" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 138 L 205 138 Q 212 138, 212 131 L 212 131 Q 212 124, 219 124 L 232 124" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmvk52tl-arrowhead)" />
+<path class="edge" data-from="b" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 384 124 L 397 124 Q 404 124, 404 131 L 404 131 Q 404 138, 411 138 L 424 138" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmvk52tl-arrowhead)" />
+<path class="edge" data-from="a" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 154 L 205 154 Q 212 154, 212 161 L 212 161 Q 212 168, 219 168 L 397 168 Q 404 168, 404 161 L 404 161 Q 404 154, 411 154 L 424 154" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmvk52tl-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 298.86 100 L 298.86 87.07 Q 298.86 80, 305.93 80 L 310.07 80 Q 317.14 80, 317.14 87.07 L 317.14 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmvk52tl-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 280.57 100 L 280.57 67.07 Q 280.57 60, 287.64 60 L 328.36 60 Q 335.43 60, 335.43 67.07 L 335.43 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmvk52tl-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 262.29 100 L 262.29 47.07 Q 262.29 40, 269.36 40 L 346.64 40 Q 353.71 40, 353.71 47.07 L 353.71 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmvk52tl-arrowhead)" />
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="40" y="122" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="146" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="b" data-label="b" data-shape="rectangle">
+  <rect x="232" y="100" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="124" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">b</text>
+</g>
+<g class="node" data-id="c" data-label="c" data-shape="rectangle">
+  <rect x="424" y="122" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="500" y="146" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">c</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"     ┌───┐
+     │   │
+  ┌──┤ a │
+  │  │   │
+  │  └───┘
+  │    ▲  
+  └────┘  
+    one   "
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"         
+ ┌─two─┐ 
+ │     │ 
+ │ one │ 
+ ▼ ▼ │ │ 
+┌────┴─┴┐
+│       │
+│   a   │
+│       │
+└───────┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 216.6" width="232" height="216.6" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1745ebk-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1745ebk-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="a" data-to="a" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="one" d="M 128.8 128.6 L 128.8 115.67 Q 128.8 108.6, 121.73 108.6 L 110.27 108.6 Q 103.2 108.6, 103.2 115.67 L 103.2 128.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1745ebk-arrowhead)" />
+<path class="edge" data-from="a" data-to="a" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="two" d="M 154.4 128.6 L 154.4 71.37 Q 154.4 64.3, 147.33 64.3 L 84.67 64.3 Q 77.6 64.3, 77.6 71.37 L 77.6 128.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1745ebk-arrowhead)" />
+<g class="edge-label" data-from="a" data-to="a" data-label="one">
+  <rect x="105.42" y="87.3" width="21.16" height="14.3" fill="var(--bg)" />
+  <text x="116" y="94.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">one</text>
+</g>
+<g class="edge-label" data-from="a" data-to="a" data-label="two">
+  <rect x="105.58" y="43" width="20.84" height="14.3" fill="var(--bg)" />
+  <text x="116" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">two</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="40" y="128.6" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="152.6" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"  ┌───┐
+  │   │
+┌─┤ a │
+│ │   │
+│ └───┘
+│   ▲  
+└───┘  "
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"         
+ ┌─────┐ 
+ │     │ 
+ │ ┌─┐ │ 
+ ▼ ▼ │ │ 
+┌────┴─┴┐
+│       │
+│   a   │
+│       │
+└───────┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 168" width="232" height="168" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmxehjjc-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmxehjjc-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 128.8 80 L 128.8 67.07 Q 128.8 60, 121.73 60 L 110.27 60 Q 103.2 60, 103.2 67.07 L 103.2 80" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmxehjjc-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 154.4 80 L 154.4 47.07 Q 154.4 40, 147.33 40 L 84.67 40 Q 77.6 40, 77.6 47.07 L 77.6 80" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmxehjjc-arrowhead)" />
+<g class="node" data-id="n0" data-label="a" data-shape="rectangle">
+  <rect x="40" y="80" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="104" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"    ╱╲  
+   ╱  ╲ 
+┌─< x  >
+│  ╲  ╱ 
+│   ╲╱  
+│   ▲   
+└───┘   "
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"         
+  ┌───┐  
+  │   │  
+  │┌─┐│  
+  │▼ ││  
+  ▼╱─╲│  
+  ╱   ╲  
+<   x   >
+  ╲   ╱  
+   ╲─╱   "
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 254 294" width="254" height="294" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1h2xotg-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1h2xotg-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="d" data-to="d" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 142 95 L 142 67.07 Q 142 60, 134.93 60 L 119.07 60 Q 112 60, 112 67.07 L 112 95" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1h2xotg-arrowhead)" />
+<path class="edge" data-from="d" data-to="d" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 172 125 L 172 47.07 Q 172 40, 164.93 40 L 89.07 40 Q 82 40, 82 47.07 L 82 125" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1h2xotg-arrowhead)" />
+<g class="node" data-id="d" data-label="x" data-shape="diamond">
+  <polygon points="127,80 214,167 127,254 40,167" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="127" y="167" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">x</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"  ┌───┐
+  │   │
+┌─┤ a │
+│ │   │
+│ └───┘
+│   ▲  
+└───┘  "
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"             
+ ┌─────────┐ 
+ │         │ 
+ │ ┌─────┐ │ 
+ │ │     │ │ 
+ │ │ ┌─┐ │ │ 
+ ▼ ▼ ▼ │ │ │ 
+┌──────┴─┴─┴┐
+│           │
+│     a     │
+│           │
+└───────────┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 188" width="232" height="188" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmkj7ch6-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmkj7ch6-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 125.14 100 L 125.14 87.07 Q 125.14 80, 118.07 80 L 113.93 80 Q 106.86 80, 106.86 87.07 L 106.86 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmkj7ch6-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 143.43 100 L 143.43 67.07 Q 143.43 60, 136.36 60 L 95.64 60 Q 88.57 60, 88.57 67.07 L 88.57 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmkj7ch6-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 161.71 100 L 161.71 47.07 Q 161.71 40, 154.64 40 L 77.36 40 Q 70.29 40, 70.29 47.07 L 70.29 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmkj7ch6-arrowhead)" />
+<g class="node" data-id="n0" data-label="a" data-shape="rectangle">
+  <rect x="40" y="100" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="124" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐           ┌───┐     ┌───┐
+│   │           │   │     │   │
+│ c │◄──────────┤ b │◄────┤ a │
+│   │      ┌────┤   │     │   │
+└───┘      │    └───┘     └─┬─┘
+  ▲        │      ▲         │  
+  │        │      │         │  
+  │        │      │         │  
+  │        └──────┘         │  
+  └─────────────────────────┘  
+                               
+                               
+                               "
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"                                 
+           ┌─────────┐           
+           │         │           
+           │ ┌─────┐ │           
+           │ │     │ │           
+           │ │ ┌─┐ │ │           
+           ▼ ▼ ▼ │ │ │           
+┌───┐     ┌──────┴─┴─┴┐     ┌───┐
+│   │◄────┤           │◄────┤   │
+│ c │     │     b     │     │ a │
+│   │◄─┐  │           │  ┌──┤   │
+└───┘  │  └───────────┘  │  └───┘
+       │                 │       
+       └─────────────────┘       "
+`;
+
+exports[`duplicate self-loops nest (#2913) > RL: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616 216" width="616" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1xa73fj-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1xa73fj-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="a" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 424 138 L 411 138 Q 404 138, 404 131 L 404 131 Q 404 124, 397 124 L 384 124" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xa73fj-arrowhead)" />
+<path class="edge" data-from="b" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 232 124 L 219 124 Q 212 124, 212 131 L 212 131 Q 212 138, 205 138 L 192 138" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xa73fj-arrowhead)" />
+<path class="edge" data-from="a" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 424 154 L 411 154 Q 404 154, 404 161 L 404 161 Q 404 168, 397 168 L 219 168 Q 212 168, 212 161 L 212 161 Q 212 154, 205 154 L 192 154" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xa73fj-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 317.14 100 L 317.14 87.07 Q 317.14 80, 310.07 80 L 305.93 80 Q 298.86 80, 298.86 87.07 L 298.86 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xa73fj-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 335.43 100 L 335.43 67.07 Q 335.43 60, 328.36 60 L 287.64 60 Q 280.57 60, 280.57 67.07 L 280.57 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xa73fj-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 353.71 100 L 353.71 47.07 Q 353.71 40, 346.64 40 L 269.36 40 Q 262.29 40, 262.29 47.07 L 262.29 100" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xa73fj-arrowhead)" />
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="424" y="122" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="500" y="146" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="b" data-label="b" data-shape="rectangle">
+  <rect x="232" y="100" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="124" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">b</text>
+</g>
+<g class="node" data-id="c" data-label="c" data-shape="rectangle">
+  <rect x="40" y="122" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="146" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">c</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐        
+│   │        
+│ a │◄─┐     
+│   │  │ two 
+└─┬─┘  │     
+  │    │     
+  └one─┘     "
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"              ┌───┐
+    ┌─────────┤   │
+    │         │   │
+    │     ┌───┤   │
+   two   one  │ a │
+    │     └──►│   │
+    │         │   │
+    └────────►│   │
+              └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 labelled loops: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 338 128" width="338" height="128" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1o6vzvc-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1o6vzvc-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="a" data-to="a" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="one" d="M 146 61.6 L 128.4 61.6 Q 126 61.6, 126 64 L 126 64 Q 126 66.4, 128.4 66.4 L 146 66.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1o6vzvc-arrowhead)" />
+<path class="edge" data-from="a" data-to="a" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="two" d="M 146 56.8 L 79.91 56.8 Q 72.84 56.8, 72.84 63.87 L 72.84 64.13 Q 72.84 71.2, 79.91 71.2 L 146 71.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1o6vzvc-arrowhead)" />
+<g class="edge-label" data-from="a" data-to="a" data-label="one">
+  <rect x="96.84" y="56.85" width="21.16" height="14.3" fill="var(--bg)" />
+  <text x="107.42" y="64" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">one</text>
+</g>
+<g class="edge-label" data-from="a" data-to="a" data-label="two">
+  <rect x="44" y="56.85" width="20.84" height="14.3" fill="var(--bg)" />
+  <text x="54.42" y="64" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">two</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="146" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="222" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐  
+│   │  
+│ a │◄┐
+│   │ │
+└─┬─┘ │
+  │   │
+  └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"     ┌───┐
+ ┌───┤   │
+ │   │   │
+ │ ┌─┤   │
+ │ │ │ a │
+ │ └►│   │
+ │   │   │
+ └──►│   │
+     └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 272 128" width="272" height="128" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmifqbme-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmifqbme-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 80 61.6 L 62.4 61.6 Q 60 61.6, 60 64 L 60 64 Q 60 66.4, 62.4 66.4 L 80 66.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmifqbme-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 80 56.8 L 47.07 56.8 Q 40 56.8, 40 63.87 L 40 64.13 Q 40 71.2, 47.07 71.2 L 80 71.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmifqbme-arrowhead)" />
+<g class="node" data-id="n0" data-label="a" data-shape="rectangle">
+  <rect x="80" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="156" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"  ╱╲    
+ ╱  ╲   
+< x  >◄┐
+ ╲  ╱  │
+  ╲╱   │
+   │   │
+   └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"       ╱╲  
+       ╱╲  
+ ┌────╱  ╲ 
+ │ ┌──╱  ╲ 
+ │ │ < x  >
+ │ └─►╲  ╱ 
+ └───►╲  ╱ 
+       ╲╱  
+       ╲╱  "
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 2 loops on a decision: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 294 254" width="294" height="254" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1vk6zr6-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1vk6zr6-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="d" data-to="d" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 95 112 L 67.07 112 Q 60 112, 60 119.07 L 60 134.93 Q 60 142, 67.07 142 L 95 142" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1vk6zr6-arrowhead)" />
+<path class="edge" data-from="d" data-to="d" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 125 82 L 47.07 82 Q 40 82, 40 89.07 L 40 164.93 Q 40 172, 47.07 172 L 125 172" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1vk6zr6-arrowhead)" />
+<g class="node" data-id="d" data-label="x" data-shape="diamond">
+  <polygon points="167,40 254,127 167,214 80,127" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="167" y="127" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">x</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐  
+│   │  
+│ a │◄┐
+│   │ │
+└─┬─┘ │
+  │   │
+  └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"       ┌───┐
+ ┌─────┤   │
+ │     │   │
+ │ ┌───┤   │
+ │ │   │   │
+ │ │ ┌─┤   │
+ │ │ │ │ a │
+ │ │ └►│   │
+ │ │   │   │
+ │ └──►│   │
+ │     │   │
+ └────►│   │
+       └───┘"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 3 loops on a box: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 292 128" width="292" height="128" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm19ofu0q-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm19ofu0q-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 62.29 L 81.71 62.29 Q 80 62.29, 80 64 L 80 64 Q 80 65.71, 81.71 65.71 L 100 65.71" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm19ofu0q-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 58.86 L 65.14 58.86 Q 60 58.86, 60 64 L 60 64 Q 60 69.14, 65.14 69.14 L 100 69.14" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm19ofu0q-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 55.43 L 47.07 55.43 Q 40 55.43, 40 62.5 L 40 65.5 Q 40 72.57, 47.07 72.57 L 100 72.57" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm19ofu0q-arrowhead)" />
+<g class="node" data-id="n0" data-label="a" data-shape="rectangle">
+  <rect x="100" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="176" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+</svg>"
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐        
+│   │        
+│ a │        
+│   │        
+└─┬─┘        
+  │          
+  │          
+  ├──────┐   
+  │      │   
+  ▼      │   
+┌───┐    │   
+│   │    │   
+│ b │◄──┐│   
+│   │   ││   
+└─┬┬┘   ││   
+  ││    ││   
+  ││    ││   
+  ││    ││   
+  ││    ││   
+  │└────┘│   
+  ├──────┘   
+  │          
+  │          
+  │          
+  │          
+  ▼          
+┌───┐        
+│   │        
+│ c │        
+│   │        
+└───┘        "
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"       ┌───┐  
+       │   │  
+       │ a │  
+       │   │  
+       └─┬─┘  
+         │    
+         │    
+         ├───┐
+         │   │
+         ▼   │
+       ┌───┐ │
+ ┌─────┤   │ │
+ │     │   │ │
+ │ ┌───┤   │ │
+ │ │   │   │ │
+ │ │ ┌─┤   │ │
+ │ │ │ │ b │ │
+ │ │ └►│   │ │
+ │ │   │   │ │
+ │ └──►│   │ │
+ │     │   │ │
+ └────►│   │ │
+       └─┬─┘ │
+         │   │
+         │   │
+         ├───┘
+         │    
+         ▼    
+       ┌───┐  
+       │   │  
+       │ c │  
+       │   │  
+       └───┘  "
+`;
+
+exports[`duplicate self-loops nest (#2913) > TD: 3 loops on a middle node, with its neighbours: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 304" width="340" height="304" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1oziyzs-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1oziyzs-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="a" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 198.67 88 L 198.67 100.93 Q 198.67 108, 191.6 108 L 183.07 108 Q 176 108, 176 115.07 L 176 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1oziyzs-arrowhead)" />
+<path class="edge" data-from="b" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 176 176 L 176 188.93 Q 176 196, 183.07 196 L 191.6 196 Q 198.67 196, 198.67 203.07 L 198.67 216" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1oziyzs-arrowhead)" />
+<path class="edge" data-from="a" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 249.33 88 L 249.33 100.93 Q 249.33 108, 256.4 108 L 264.93 108 Q 272 108, 272 115.07 L 272 188.93 Q 272 196, 264.93 196 L 256.4 196 Q 249.33 196, 249.33 203.07 L 249.33 216" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1oziyzs-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 150.29 L 81.71 150.29 Q 80 150.29, 80 152 L 80 152 Q 80 153.71, 81.71 153.71 L 100 153.71" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1oziyzs-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 146.86 L 65.14 146.86 Q 60 146.86, 60 152 L 60 152 Q 60 157.14, 65.14 157.14 L 100 157.14" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1oziyzs-arrowhead)" />
+<path class="edge" data-from="b" data-to="b" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 100 143.43 L 47.07 143.43 Q 40 143.43, 40 150.5 L 40 153.5 Q 40 160.57, 47.07 160.57 L 100 160.57" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1oziyzs-arrowhead)" />
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="148" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="224" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="b" data-label="b" data-shape="rectangle">
+  <rect x="100" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="176" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">b</text>
+</g>
+<g class="node" data-id="c" data-label="c" data-shape="rectangle">
+  <rect x="148" y="216" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="224" y="240" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">c</text>
+</g>
+</svg>"
+`;

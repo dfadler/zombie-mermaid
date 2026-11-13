@@ -443,3 +443,391 @@ export function QuadrantIcon({
     </StrokeIcon>
   )
 }
+
+/**
+ * Gantt — three staggered task bars. Accent `--green`.
+ */
+export function GanttIcon({ animated = true, ...props }: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--green">
+      {animated ? (
+        <style>{`
+          .zm-gantt-bar { animation: zm-gantt-slide 2s ease-in-out infinite; }
+          @keyframes zm-gantt-slide {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(1.5px); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-gantt-bar { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <path d="M3 3v18h18" />
+      <rect
+        x="6"
+        y="6"
+        width="7"
+        height="3"
+        rx="1"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        className={animated ? 'zm-gantt-bar' : undefined}
+        x="9"
+        y="11"
+        width="8"
+        height="3"
+        rx="1"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        x="13"
+        y="16"
+        width="6"
+        height="3"
+        rx="1"
+        fill="currentColor"
+        stroke="none"
+      />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Kanban — three columns, one card slides down. Accent `--violet`.
+ */
+export function KanbanIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--violet">
+      {animated ? (
+        <style>{`
+          .zm-kan-card { animation: zm-kan-slide 2s ease-in-out infinite; }
+          @keyframes zm-kan-slide {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(0, 2px); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-kan-card { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <rect x="3" y="3" width="5" height="18" rx="1" />
+      <rect x="9.5" y="3" width="5" height="18" rx="1" />
+      <rect x="16" y="3" width="5" height="18" rx="1" />
+      <rect
+        className={animated ? 'zm-kan-card' : undefined}
+        x="10.5"
+        y="5.5"
+        width="3"
+        height="3"
+        fill="currentColor"
+        stroke="none"
+      />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Mindmap — a central node with four branches, the centre pulses. Accent `--blue`.
+ */
+export function MindmapIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--blue">
+      {animated ? (
+        <style>{`
+          .zm-mindmap-a { transform-box: fill-box; transform-origin: center; animation: zm-mindmap-k 2s ease-in-out infinite; }
+          @keyframes zm-mindmap-k {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-mindmap-a { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <circle
+        className={animated ? 'zm-mindmap-a' : undefined}
+        cx="12"
+        cy="12"
+        r="2.5"
+        fill="currentColor"
+        stroke="none"
+      />
+      <circle cx="20.5" cy="12" r="1.5" />
+      <circle cx="3.5" cy="12" r="1.5" />
+      <circle cx="12" cy="3.5" r="1.5" />
+      <circle cx="12" cy="20.5" r="1.5" />
+      <path d="M14.5 12H19 M9.5 12H5 M12 9.5V5 M12 14.5V19" />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Timeline — an axis with three events, the middle one pulses. Accent `--cyan`.
+ */
+export function TimelineIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--cyan">
+      {animated ? (
+        <style>{`
+          .zm-timeline-a { transform-box: fill-box; transform-origin: center; animation: zm-timeline-k 2s ease-in-out infinite; }
+          @keyframes zm-timeline-k {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.5); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-timeline-a { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <path d="M3 12H21" />
+      <circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle
+        className={animated ? 'zm-timeline-a' : undefined}
+        cx="12"
+        cy="12"
+        r="1.4"
+        fill="currentColor"
+        stroke="none"
+      />
+      <circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <path d="M6 12V7 M12 12V17 M18 12V7" />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Requirement — two boxes joined by a dashed relationship that marches. Accent `--amber`.
+ */
+export function RequirementIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--amber">
+      {animated ? (
+        <style>{`
+          .zm-requirement-a { stroke-dasharray: 2 2; animation: zm-requirement-k 2s ease-in-out infinite; }
+          @keyframes zm-requirement-k {
+            0%, 100% { stroke-dashoffset: 0; }
+            50% { stroke-dashoffset: -4; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-requirement-a { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <rect x="3" y="4" width="8" height="6" rx="1" />
+      <rect x="13" y="14" width="8" height="6" rx="1" />
+      <path
+        className={animated ? 'zm-requirement-a' : undefined}
+        d="M11 7h3v10"
+      />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * User journey — a score line over three steps, the middle step bobs. Accent `--pink`.
+ */
+export function JourneyIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--pink">
+      {animated ? (
+        <style>{`
+          .zm-journey-a {  animation: zm-journey-k 2s ease-in-out infinite; }
+          @keyframes zm-journey-k {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-journey-a { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <path d="M3 17L8 9L13 14L21 6" />
+      <circle cx="3" cy="17" r="1.4" fill="currentColor" stroke="none" />
+      <circle
+        className={animated ? 'zm-journey-a' : undefined}
+        cx="13"
+        cy="14"
+        r="1.4"
+        fill="currentColor"
+        stroke="none"
+      />
+      <circle cx="21" cy="6" r="1.4" fill="currentColor" stroke="none" />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Radar — an outer pentagon with an inner curve that breathes. Accent `--green`.
+ */
+export function RadarIcon({ animated = true, ...props }: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--green">
+      {animated ? (
+        <style>{`
+          .zm-radar-a { transform-box: fill-box; transform-origin: center; animation: zm-radar-k 2s ease-in-out infinite; }
+          @keyframes zm-radar-k {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-radar-a { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <polygon points="12,3 20,9 17,19 7,19 4,9" />
+      <polygon
+        className={animated ? 'zm-radar-a' : undefined}
+        points="12,8 16,11 14.5,15.5 9.5,15.5 8,11"
+      />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Packet — three header rows, one field flashes. Accent `--violet`.
+ */
+export function PacketIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--violet">
+      {animated ? (
+        <style>{`
+          .zm-packet-a {  animation: zm-packet-k 2s ease-in-out infinite; }
+          @keyframes zm-packet-k {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-packet-a { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <rect x="3" y="4" width="18" height="4" rx="1" />
+      <rect x="3" y="10" width="18" height="4" rx="1" />
+      <rect x="3" y="16" width="18" height="4" rx="1" />
+      <rect
+        className={animated ? 'zm-packet-a' : undefined}
+        x="3"
+        y="10"
+        width="6"
+        height="4"
+        fill="currentColor"
+        stroke="none"
+      />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Git graph — a main lane with a branch, the branch commit bobs. Accent `--blue`.
+ */
+export function GitGraphIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--blue">
+      {animated ? (
+        <style>{`
+          .zm-gitgraph-a {  animation: zm-gitgraph-k 2s ease-in-out infinite; }
+          @keyframes zm-gitgraph-k {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(2px); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-gitgraph-a { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <path d="M4 18H20" />
+      <path d="M8 18C10 18 9 7 12 7H13C16 7 15 18 17 18" />
+      <circle cx="4" cy="18" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="20" cy="18" r="1.4" fill="currentColor" stroke="none" />
+      <circle
+        className={animated ? 'zm-gitgraph-a' : undefined}
+        cx="12"
+        cy="7"
+        r="1.4"
+        fill="currentColor"
+        stroke="none"
+      />
+      <circle cx="17" cy="18" r="1.4" fill="currentColor" stroke="none" />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Sankey — a source bar fanning into two sinks, the lower flow fades. Accent `--cyan`.
+ */
+export function SankeyIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--cyan">
+      {animated ? (
+        <style>{`
+          .zm-sankey-a {  animation: zm-sankey-k 2s ease-in-out infinite; }
+          @keyframes zm-sankey-k {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-sankey-a { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <rect
+        x="3"
+        y="4"
+        width="2"
+        height="16"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        x="19"
+        y="4"
+        width="2"
+        height="7"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        x="19"
+        y="13"
+        width="2"
+        height="7"
+        fill="currentColor"
+        stroke="none"
+      />
+      <path d="M5 7.5 C12 7.5 12 7.5 19 7.5" strokeWidth="3" opacity="0.6" />
+      <path
+        className={animated ? 'zm-sankey-a' : undefined}
+        d="M5 16.5 C12 16.5 12 16.5 19 16.5"
+        strokeWidth="3"
+        opacity="0.6"
+      />
+    </StrokeIcon>
+  )
+}

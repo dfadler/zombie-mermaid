@@ -19,11 +19,12 @@ const { dir, nodes, edges } = await layoutFlowchart(mmdSource)
 model: subgraphs, and shapes other than rectangle, rounded, diamond, stadium, circle,
 double circle, hexagon, subroutine and cylinder. Catch it and fall back.
 
-## elkjs is pinned to exactly 0.9.3
+## elkjs is pinned to exactly 0.12.0
 
-That is the version mermaid itself depends on; 0.11/0.12 lay the dense duplicate-edge samples
-out differently. The rest of the repo uses elkjs 0.12, which is fine: pnpm resolves
-the alias `elkjs-0.9.3` (npm:elkjs@0.9.3) for this package, and a test asserts it. The alias is also how the published umbrella declares the pin (optional peer, see the ASCII layout docs).
+That is the version mermaid 12.3.0 itself depends on (12.2.0 used 0.9.3; the two route repeated and
+opposing edges between the same two nodes differently, #2708). pnpm resolves the alias
+`elkjs-0.12.0` (npm:elkjs@0.12.0) for this package, and a test asserts it. The alias is also how the
+published umbrella declares the pin (optional peer, see the ASCII layout docs).
 Do not bump it without re-running the oracle.
 
 ## Font strategy
@@ -52,10 +53,21 @@ position/size deltas and edge-point deltas (`--tol=<px>`, default 1). The unit t
 browser; they compare against committed `__tests__/fixtures/*.expected.json`, so a one-unit
 change to any ELK option (for example `spacing.baseValue` 40 to 41) fails them.
 
+## Fixtures d1 to d3 and mermaid 12.3.0 (#2708)
+
+mermaid 12.3.0 depends on elkjs ^0.12.0 (12.2.0: ^0.9.3). Running this package on elkjs 0.9.3
+against 12.3.0 left d1/d2/d3 at 7/12, 6/12 and 2/10 edges within 1px (only repeated and opposing
+edges between two different nodes moved, up to 66px); on elkjs 0.12.0 they are 12/12, 12/12 and
+10/10, and `d1`/`d2`/`d3.expected.json` were regenerated from that output. Check:
+
+```sh
+pnpm exec tsx scripts/elk-layout-oracle.ts packages/elk-layout/__tests__/fixtures/d1.mmd packages/elk-layout/__tests__/fixtures/d2.mmd packages/elk-layout/__tests__/fixtures/d3.mmd
+```
+
 ## Known gaps
 
 - Subgraphs and the shapes listed above are unsupported (signalled, not approximated).
-- Reciprocal edges 40 px apart (gallery samples 145 and 146) differ in a few edge points.
+- Reciprocal edges 40 px apart (gallery samples 145 and 146) differ in a few edge points (on 12.3.0 / elkjs 0.12.0: 1/3 and 5/6 edges within 1px; sample 116 is 7/8). Not investigated further here.
 - Stadium and hexagon multi-line sizes use fitted constants (126.3 and 219.4 px wide), and the
   stadium text-wrap rule past 120 px is not understood.
 - `o--`/`x--` circle and cross markers are trimmed like arrowheads, unverified.

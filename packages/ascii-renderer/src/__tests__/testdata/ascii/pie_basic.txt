@@ -5,8 +5,6 @@ pie title Pets adopted by volunteers
 ---
              Pets adopted by volunteers
 
-[########################################=========*]
-
-  # Dogs    79%
-  = Cats    17%
-  * Rats     3%
+                                                         # Dogs    79%
+[########################################=========*]     = Cats    17%
+                                                         * Rats     3%

@@ -1,24 +1,24 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and SVG for the issue source > ascii 1`] = `
-" ┌───┐              ┌───┐                                    
- │ A │              │ B │                                    
- └─┬─┘              └─┬─┘                                    
-   │                  │                                      
-┌─ loop ────────────────── [every retry] ───────────────────┐
-│  │                  │                                     │
-│  │      fetch       │                                     │
-│  │──────────────────▶                                     │
-│  │                  │                                     │
-│  │                  │ ┌─────────────────────────────────┐ │
-│  │                  │ │ waits for the upstream response │ │
-│  │                  │ └─────────────────────────────────┘ │
-│  │                  │                                     │
-└───────────────────────────────────────────────────────────┘
-   │                  │                                      
- ┌─┴─┐              ┌─┴─┐                                    
- │ A │              │ B │                                    
- └───┘              └───┘                                    "
+" ┌───┐      ┌───┐                                    
+ │ A │      │ B │                                    
+ └─┬─┘      └─┬─┘                                    
+   │          │                                      
+┌─ loop ────────────── [every retry] ───────────────┐
+│  │          │                                     │
+│  │  fetch   │                                     │
+│  │──────────▶                                     │
+│  │          │                                     │
+│  │          │ ┌─────────────────────────────────┐ │
+│  │          │ │ waits for the upstream response │ │
+│  │          │ └─────────────────────────────────┘ │
+│  │          │                                     │
+└───────────────────────────────────────────────────┘
+   │          │                                      
+ ┌─┴─┐      ┌─┴─┐                                    
+ │ A │      │ B │                                    
+ └───┘      └───┘                                    "
 `;
 
 exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and SVG for the issue source > svg 1`] = `
@@ -49,13 +49,13 @@ exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and 
   }
 </style>
 <defs>
-  <marker id="zm1tch5td-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zmz93cpx-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zm1tch5td-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zmz93cpx-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zm1tch5td-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zmz93cpx-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
@@ -67,8 +67,16 @@ exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and 
   <text x="65" y="87" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">loop</text>
   <text x="282.88" y="87" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[every retry]</text>
 </g>
+<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
+  <rect x="30" y="203" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="70" y="223" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+</g>
+<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
+  <rect x="170" y="203" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="210" y="223" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+</g>
 <g class="message" data-from="A" data-to="B" data-label="fetch" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="70" y1="144" x2="210" y2="144" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1tch5td-seq-arrow)" />
+  <line x1="70" y1="144" x2="210" y2="144" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmz93cpx-seq-arrow)" />
   <text x="140" y="134" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">fetch</text>
 </g>
 <g class="note" data-position="right" data-actors="B">
@@ -82,14 +90,6 @@ exports[`ASCII sequence block walls enclose notes (#2514) > snapshots ASCII and 
 <g class="actor" data-id="B" data-label="B" data-type="participant">
   <rect x="170" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="210" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
-</g>
-<g class="actor-footer" data-id="A" data-label="A" data-type="participant">
-  <rect x="30" y="203" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="70" y="223" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
-</g>
-<g class="actor-footer" data-id="B" data-label="B" data-type="participant">
-  <rect x="170" y="203" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="210" y="223" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;

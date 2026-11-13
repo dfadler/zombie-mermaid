@@ -3,10 +3,8 @@
 //
 // A dedicated C4 renderer (it does not lower to the flowchart model):
 //
-//   1. Rank: elements get a row from their relationships (`Rel_D`/`Rel_U`
-//      reverse or keep the arrow direction as a layering constraint;
-//      `Rel_R`/`Rel_L` pull the two elements into one row, left/right in
-//      that order).
+//   1. Rows: shapes go in rows in declaration order, as Mermaid places them
+//      (c4-rows.ts); relationship directions do not move anything.
 //   2. Place: each boundary is a container that stacks its own rows, so
 //      boundaries nest and each is a bordered block sized to its contents.
 //   3. Draw: persons get a stick-figure glyph, databases a drum, queues
@@ -15,9 +13,13 @@
 //   4. Route: every relationship is an orthogonal path found by A* over the
 //      character grid, avoiding element boxes; labels (name, then the
 //      `[technology]` line) are placed beside the longest free segment.
+//      Grid limit: mermaid 12.3.0 draws each relationship centre to centre,
+//      the first as a straight `<line>` and the rest as a `Q` curve, so a line
+//      between non-adjacent shapes crosses the shapes between them. A character
+//      cell holds one glyph, so a route cannot cross a box and bends around it
+//      instead (#2790).
 //
-// The layout is always top-to-bottom (`BT` flips the rows); `LR`/`RL` are
-// laid out top-to-bottom too.
+// The direction does not change the layout, as in Mermaid.
 // ============================================================================
 
 import { parseC4Diagram } from '@zombie-mermaid/mermaid-parser'
@@ -29,16 +31,21 @@ import type {
 } from '@zombie-mermaid/mermaid-parser'
 import {
   c4BoundaryTypeLine,
-  c4Placement,
   c4RelLabelLines,
   c4TypeLine,
   wrapC4Text,
 } from '@zombie-mermaid/mermaid-parser'
-import { splitStatements, withDirectionOverride } from '@zombie-mermaid/core'
+import {
+  extractInitConfig,
+  splitStatements,
+  withDirectionOverride,
+} from '@zombie-mermaid/core'
 import type { AsciiConfig, AsciiTheme, CharRole, ColorMode } from './types.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 import { mkCanvas, mkRoleCanvas, canvasToString, write } from './canvas.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
+import { c4Rows } from './c4-rows.ts'
+import type { C4Frame } from './c4-rows.ts'
 import type { FlowchartAsciiExtras } from './flowchart.ts'
 
 const WRAP = 28
@@ -56,8 +63,6 @@ interface ElNode {
   el: C4Element
   lines: string[]
   glyph: boolean
-  order: number
-  rank: number
   box: Box
 }
 
@@ -68,84 +73,10 @@ interface BNode {
   /** Rows of free space after each row but the last (see `verticalGaps`). */
   vgaps: number[]
   headerH: number
-  order: number
-  rank: number
   box: Box
 }
 
 type Item = ElNode | BNode
-
-// ---------------------------------------------------------------------------
-// Ranking
-// ---------------------------------------------------------------------------
-
-/**
- * Row per element. Horizontal hints merge elements into one group; every
- * other relationship is an edge `placement.source -> placement.target`
- * between groups. Back edges found by DFS are dropped, then rows are the
- * longest path from any group with no incoming edge.
- */
-export function rankElements(
-  aliases: string[],
-  rels: C4Relationship[],
-): Map<string, number> {
-  const parent = new Map<string, string>(aliases.map((a) => [a, a]))
-  const find = (a: string): string => {
-    let r = a
-    while (parent.get(r) !== r) r = parent.get(r)!
-    return r
-  }
-  const known = new Set(aliases)
-  for (const rel of rels) {
-    const p = c4Placement(rel)
-    if (p.axis === 'horizontal' && known.has(p.source) && known.has(p.target)) {
-      const a = find(p.source)
-      const b = find(p.target)
-      if (a !== b) parent.set(b, a)
-    }
-  }
-  const out = new Map<string, Set<string>>()
-  for (const a of aliases) out.set(find(a), out.get(find(a)) ?? new Set())
-  for (const rel of rels) {
-    const p = c4Placement(rel)
-    if (p.axis === 'horizontal') continue
-    if (!known.has(p.source) || !known.has(p.target)) continue
-    const s = find(p.source)
-    const t = find(p.target)
-    if (s !== t) out.get(s)!.add(t)
-  }
-  // Drop back edges (DFS in declaration order) so cycles can't loop.
-  const state = new Map<string, 0 | 1 | 2>()
-  const dag = new Map<string, string[]>()
-  const visit = (g: string) => {
-    state.set(g, 1)
-    const kept: string[] = []
-    for (const t of out.get(g) ?? []) {
-      const st = state.get(t) ?? 0
-      if (st === 1) continue
-      kept.push(t)
-      if (st === 0) visit(t)
-    }
-    dag.set(g, kept)
-    state.set(g, 2)
-  }
-  for (const g of out.keys()) if (!state.has(g)) visit(g)
-  const groupRank = new Map<string, number>()
-  const rankOf = (g: string): number => {
-    const cached = groupRank.get(g)
-    if (cached !== undefined) return cached
-    groupRank.set(g, 0)
-    let r = 0
-    for (const [s, ts] of dag) {
-      if (ts.includes(g)) r = Math.max(r, rankOf(s) + 1)
-    }
-    groupRank.set(g, r)
-    return r
-  }
-  const ranks = new Map<string, number>()
-  for (const a of aliases) ranks.set(a, rankOf(find(a)))
-  return ranks
-}
 
 // ---------------------------------------------------------------------------
 // Measuring
@@ -161,7 +92,7 @@ function elementLines(el: C4Element): { lines: string[]; glyph: boolean } {
   return { lines, glyph: el.kind === 'person' }
 }
 
-function measureElement(el: C4Element, order: number): ElNode {
+function measureElement(el: C4Element): ElNode {
   const { lines, glyph } = elementLines(el)
   const inner = Math.max(...lines.map(displayWidth))
   const extra = el.shape === 'db' ? 2 : 0
@@ -170,8 +101,6 @@ function measureElement(el: C4Element, order: number): ElNode {
     el,
     lines,
     glyph,
-    order,
-    rank: 0,
     box: {
       x: 0,
       y: 0,
@@ -196,6 +125,7 @@ export function renderC4Ascii(
     parseC4Diagram(splitStatements(text)),
     extras.direction,
   )
+  diagram.layout = extractInitConfig(text.split(/\r\n?|\n/)).c4Layout
   // Mermaid 12.3.0 draws accTitle in the title slot, over any `title`.
   diagram.title = extras.accTitle?.replace(/\s+/g, ' ') || diagram.title
   if (
@@ -215,30 +145,18 @@ export function renderC4Ascii(
 
   // -- Items -------------------------------------------------------------
   const elNodes = new Map<string, ElNode>()
-  for (const [i, el] of diagram.elements.entries()) {
-    elNodes.set(el.alias, measureElement(el, i))
-  }
-  // Elements and empty boundaries (drawn as plain boxes) are rankable;
-  // a populated boundary takes the rank of its topmost content.
-  const leafAliases = [
-    ...diagram.elements.map((e) => e.alias),
-    ...emptyBoundaryAliases(diagram.boundaries),
-  ]
-  const ranks = rankElements(leafAliases, diagram.relationships)
-  for (const [alias, node] of elNodes) node.rank = ranks.get(alias) ?? 0
-
+  for (const el of diagram.elements) elNodes.set(el.alias, measureElement(el))
   const bNodes = new Map<string, BNode>()
-  const inBoundary = new Set<string>()
-  const buildBoundary = (b: C4Boundary): Item => {
-    const items: Item[] = []
-    for (const a of b.elementAliases) {
-      inBoundary.add(a)
-      items.push(elNodes.get(a)!)
-    }
-    for (const c of b.children) items.push(buildBoundary(c))
+  const toRows = (f: C4Frame): Item[][] => [
+    ...f.shapeRows.map((r) => r.map((el) => elNodes.get(el.alias)!)),
+    ...f.boundaryRows.map((r) => r.map(buildBoundary)),
+  ]
+  const buildBoundary = (f: C4Frame): Item => {
+    const b = f.boundary!
+    const rows = toRows(f)
     const typeLine = c4BoundaryTypeLine(b)
     const headerH = typeLine ? 2 : 1
-    if (items.length === 0) {
+    if (rows.length === 0) {
       // Empty boundary: a plain labelled box.
       const lines = [...wrapC4Text(b.label, WRAP)]
       if (typeLine) lines.push(typeLine)
@@ -248,8 +166,6 @@ export function renderC4Ascii(
         rows: [],
         vgaps: [],
         headerH,
-        order: Number.MAX_SAFE_INTEGER,
-        rank: ranks.get(b.alias) ?? 0,
         box: {
           x: 0,
           y: 0,
@@ -266,32 +182,16 @@ export function renderC4Ascii(
       rows: [],
       vgaps: [],
       headerH,
-      order: 0,
-      rank: 0,
       box: { x: 0, y: 0, w: 0, h: 0 },
     }
-    node.rows = layoutRows(items, diagram)
-    // BT flips every level, not just the root, or a boundary's contents
-    // would still flow downward inside an upward diagram.
-    if (diagram.direction === 'BT') node.rows.reverse()
+    node.rows = rows
     node.vgaps = verticalGaps(node.rows, diagram, vGap)
     bNodes.set(b.alias, node)
-    const flat = node.rows.flat()
-    node.order = Math.min(...flat.map((i) => i.order))
-    node.rank = Math.min(...flat.map((i) => i.rank))
     // Sized below, once children are (children were sized on creation).
-    sizeBoundary(node, hGap)
+    sizeBoundary(node, diagram, hGap)
     return node
   }
-  const topBoundaries = diagram.boundaries.map(buildBoundary)
-  const rootItems: Item[] = [
-    ...diagram.elements
-      .filter((e) => !inBoundary.has(e.alias))
-      .map((e) => elNodes.get(e.alias)!),
-    ...topBoundaries,
-  ]
-  const rootRows = layoutRows(rootItems, diagram)
-  if (diagram.direction === 'BT') rootRows.reverse()
+  const rootRows = toRows(c4Rows(diagram))
   const rootVGaps = verticalGaps(rootRows, diagram, vGap)
 
   // -- Place -------------------------------------------------------------
@@ -301,16 +201,15 @@ export function renderC4Ascii(
     vgaps: number[],
     x0: number,
     y0: number,
-    width: number,
   ) => {
     let y = y0
     for (const [ri, row] of rows.entries()) {
       const gaps = rowGaps(row, diagram, hGap)
-      const rowW = row.reduce((s, i) => s + i.box.w, 0) + sum(gaps)
-      let x = x0 + Math.floor((width - rowW) / 2)
+      // Mermaid starts every row at the left and aligns shapes by their tops.
+      let x = x0
       const rowH = Math.max(...row.map((i) => i.box.h))
       row.forEach((item, k) => {
-        placeItem(item, x, y + Math.floor((rowH - item.box.h) / 2))
+        placeItem(item, x, y)
         x += item.box.w + (gaps[k] ?? 0)
       })
       y += rowH + (vgaps[ri] ?? 0)
@@ -320,23 +219,10 @@ export function renderC4Ascii(
     item.box.x = x
     item.box.y = y
     if (item.kind === 'b' && item.rows.length > 0) {
-      placeRows(
-        item.rows,
-        item.vgaps,
-        x + 2,
-        y + item.headerH + 2,
-        item.box.w - 4,
-      )
+      placeRows(item.rows, item.vgaps, x + 2, y + item.headerH + 2)
     }
   }
-  const rootW = Math.max(
-    0,
-    ...rootRows.map(
-      (r) =>
-        r.reduce((s, i) => s + i.box.w, 0) + sum(rowGaps(r, diagram, hGap)),
-    ),
-  )
-  placeRows(rootRows, rootVGaps, MARGIN, MARGIN + titleRows, rootW)
+  placeRows(rootRows, rootVGaps, MARGIN, MARGIN + titleRows)
 
   // -- Canvas ------------------------------------------------------------
   let maxX = 0
@@ -613,27 +499,17 @@ export function renderC4Ascii(
 // Row layout helpers
 // ---------------------------------------------------------------------------
 
-function emptyBoundaryAliases(boundaries: C4Boundary[]): string[] {
-  return boundaries.flatMap((b) =>
-    b.elementAliases.length === 0 && b.children.length === 0
-      ? [b.alias]
-      : emptyBoundaryAliases(b.children),
-  )
-}
-
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0)
 
-/** Widest label of a horizontal-hint relationship joining these two items. */
+/** Widest label of a relationship joining these two (neighbouring) items. */
 function pairLabelWidth(a: Item, b: Item, diagram: C4Diagram): number {
-  const has = (item: Item, alias: string) =>
-    item.kind === 'el' ? item.el.alias === alias : item.b.alias === alias
+  const inA = aliasesOf(a)
+  const inB = aliasesOf(b)
   let w = 0
   for (const rel of diagram.relationships) {
-    const p = c4Placement(rel)
-    if (p.axis !== 'horizontal') continue
     if (
-      (has(a, p.source) && has(b, p.target)) ||
-      (has(b, p.source) && has(a, p.target))
+      (inA.has(rel.from) && inB.has(rel.to)) ||
+      (inB.has(rel.from) && inA.has(rel.to))
     ) {
       w = Math.max(w, ...c4RelLabelLines(rel).map(displayWidth))
     }
@@ -650,45 +526,12 @@ function rowGaps(row: Item[], diagram: C4Diagram, hGap: number): number[] {
   return gaps
 }
 
-/**
- * Group a container's items into rows by rank, ordered by declaration, with
- * horizontal hints ("a left of b") moving `a` ahead of `b` in the row.
- */
-function layoutRows(items: Item[], diagram: C4Diagram): Item[][] {
-  const byRank = new Map<number, Item[]>()
-  for (const it of items) {
-    byRank.set(it.rank, [...(byRank.get(it.rank) ?? []), it])
-  }
-  const rows = [...byRank.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([, row]) => row.sort((a, b) => a.order - b.order))
-  const idOf = (i: Item) => (i.kind === 'el' ? i.el.alias : i.b.alias)
-  for (const row of rows) {
-    for (let pass = 0; pass < row.length; pass++) {
-      let moved = false
-      for (const rel of diagram.relationships) {
-        const p = c4Placement(rel)
-        if (p.axis !== 'horizontal') continue
-        const ids = row.map(idOf)
-        const bi = ids.indexOf(p.source)
-        const ai = ids.indexOf(p.target)
-        if (bi < 0 || ai < 0 || bi < ai) continue
-        const [node] = row.splice(bi, 1)
-        row.splice(ai, 0, node!)
-        moved = true
-      }
-      if (!moved) break
-    }
-  }
-  return rows
-}
-
-function sizeBoundary(n: BNode, hGap: number): void {
+function sizeBoundary(n: BNode, diagram: C4Diagram, hGap: number): void {
   let w = 0
   // Top border, header rows, then one free row for edges to enter through.
   let h = n.headerH + 2
   for (const [i, row] of n.rows.entries()) {
-    const rw = sum(row.map((it) => it.box.w)) + (row.length - 1) * hGap
+    const rw = sum(row.map((it) => it.box.w)) + sum(rowGaps(row, diagram, hGap))
     w = Math.max(w, rw)
     h += Math.max(...row.map((it) => it.box.h)) + (n.vgaps[i] ?? 0)
   }
@@ -972,12 +815,21 @@ function findPath(
         )
           step += 12
       }
+      // A stroke running along a box's side reads as part of its border, so
+      // keep clear of a box when there is room. The goal cell is exempt: a
+      // route has to meet its own box.
+      if (!isGoal) {
+        const [sx, sy] = d === L || d === R ? [0, 1] : [1, 0]
+        for (const k of [1, -1]) {
+          if (grid.blocked[nx + sx * k]?.[ny + sy * k]) step += 3
+        }
+      }
       const m = grid.masks[nx]![ny]!
       if (m !== 0) {
         const horizontal = d === L || d === R
         const existingH = (m & (L | R)) !== 0
         const existingV = (m & (U | D)) !== 0
-        step += (horizontal && existingH) || (!horizontal && existingV) ? 8 : 3
+        step += (horizontal && existingH) || (!horizontal && existingV) ? 8 : 10
       }
       const g = cur.g + step + (isGoal ? (goals.get(`${nx},${ny}`) ?? 0) : 0)
       const key = `${nx},${ny},${d}`

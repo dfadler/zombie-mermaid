@@ -12,7 +12,7 @@ pnpm run doctor     # check your toolchain; ASCII/Docker tools are optional
 pnpm run verify     # typecheck + lint/format/tests for what you changed
 ```
 
-`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`. `pnpm run verify --ci-gates` adds the build, API-report and bundle-size checks CI runs (~20s); `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or, for one source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`) runs only affected tests. Rough path-to-suite map:
+`pnpm run verify` is the everyday gate: the three `tsc` projects in parallel, oxlint and oxfmt on files changed vs `origin/main`, then `vitest run --changed origin/main`; it also fails with the fix command (`pnpm run docs:llms`) when a doc that `public/llms-full.txt` is generated from changed without regenerating it. `pnpm run verify --ci-gates` adds the build, API-report and bundle-size checks CI runs (~20s); `pnpm run verify --full` mirrors CI. For a tighter loop, `pnpm exec vitest run -c config/vitest.config.ts --changed origin/main` (or, for one source file, `pnpm exec vitest related <file> --run -c config/vitest.config.ts`) runs only affected tests. Rough path-to-suite map:
 
 | Changed path                                   | Run                                                                |
 | ---------------------------------------------- | ------------------------------------------------------------------ |
@@ -248,7 +248,7 @@ Either way, add a changeset (see "Changesets" above) describing what changed and
 - Entries sit in one of three page groups, set by the optional `group` field: the main "fixes" group (omit it; the claim is that the After matches real Mermaid), `group: 'features'` ("features added": Mermaid output for something upstream lacks entirely), and `group: 'markup'` ("markup-only fixes": an `excerpt` of SVG markup that makes no Mermaid-parity claim).
 - An entry whose After still differs from Mermaid must not be on the page (#2619). Keep it in `allForkFixes` with `parked: '<fix cluster>'`: `forkFixes` (what the page, the "before" renders and the capture script read) skips it, and its data waits for the fix. The PR that makes the After match Mermaid deletes the `parked` line, regenerates the screenshot, and records the snapshot below. `scripts/fork-fixes-oracle.ts` still covers parked entries.
 - `__tests__/fork-fixes-ascii-snapshots.test.ts` snapshots each shown ASCII entry's After text (`colorMode: 'none'`, in `__tests__/__fork-fixes-snapshots__/`) and runs in the normal test run. If it fails, the renderer output changed and the committed screenshot is stale: re-run the capture script below, then update the snapshot with `pnpm exec vitest run -u -c config/vitest.config.ts __tests__/fork-fixes-ascii-snapshots.test.ts` and commit both.
-- If the entry has `render: 'ascii'`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, and `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/`. Those real-terminal screenshots are the before/after shown on that page, not a live render.
+- If the entry has `render: 'ascii'`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, and `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/`. The script also records which After text each PNG came from in `scripts/fork-fixes-screenshot-hashes.json`; `__tests__/fork-fixes-screenshot-hashes.test.ts` fails when an entry's render no longer matches, so updating the snapshot with `-u` without re-capturing cannot merge. Open the new PNG before committing it (a re-capture is not byte-identical, so a PNG diff alone does not show it changed). Those real-terminal screenshots are the before/after shown on that page, not a live render.
 
 ### Staying aware of upstream changes
 
@@ -280,6 +280,12 @@ measured plus 2% (reset 2026-10-14, #1994; package ESM and unpacked entries rese
 Measure on a clean `pnpm install --frozen-lockfile && pnpm run build`: sizes are
 deterministic for a given lockfile, but a stale `dist/` or a main checkout with
 drifted dependencies reads differently from CI, and CI is what counts.
+
+Each budget also has a soft band (`failAbovePct` in the JSON, 10): a file over
+its budget but within the band prints `WARN` and a CI annotation and passes; only
+past the band does the gate fail. Small growth from concurrent PRs therefore no
+longer forces each of them to rewrite the JSON (#2935). Raise the budget when a
+WARN is feature growth you want to keep, or when the gate fails.
 
 **A raise is justified** for growth that is the feature: new feature code, a new
 validator or schema, new exported types. Raise only the entries that grew, to

@@ -192,7 +192,9 @@ export function drawSubgraphLabel(
   // Start at row 1 inside subgraph, expand downward for multiple lines
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
-    const labelY = 1 + i
+    // Laid out as TD and mirrored later: a `titleBelow` frame draws its title
+    // on the last rows so the flip lands it at the top.
+    const labelY = sg.titleBelow ? height - lines.length + i : 1 + i
     // Center the label within the interior columns (1..width-1, i.e.
     // excluding both border columns). When the interior width minus the
     // label width is odd, the leftover column can't be split evenly — bias

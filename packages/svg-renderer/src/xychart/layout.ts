@@ -9,7 +9,7 @@ import type {
   PlotArea,
   LegendItem,
 } from '@zombie-mermaid/mermaid-parser'
-import { niceTickValues } from '@zombie-mermaid/core'
+import { collapseFlatRange, niceTickValues } from '@zombie-mermaid/core'
 import type { XyChartRenderOptions } from '@zombie-mermaid/core'
 import { estimateTextWidth } from '../styles.ts'
 
@@ -77,16 +77,10 @@ function valueAxis(
   extent: number,
   labelSize: (labels: string[]) => number,
 ) {
-  const { min, max } = chart.yAxis.range!
-  const all = chart.series.flatMap((s) => s.data)
-  const v = all[0]
-  const flat =
-    v !== undefined &&
-    all.every((d) => d === v) &&
-    min === v - 0.1 &&
-    max === v + 0.1
-  // Ceiling: an explicit `y-axis v-0.1 --> v+0.1` over flat data collapses too; the parser would need to flag its synthetic range to tell them apart.
-  const range = flat ? { min: v, max: v } : { min, max }
+  const range = collapseFlatRange(
+    chart.yAxis.range!,
+    chart.series.flatMap((s) => s.data),
+  )
   const ticks = niceTickValues(range.min, range.max)
   const labels = formatTickLabels(ticks)
   const pad = Math.min(labelSize(labels) / 2, 0.2 * extent)
@@ -168,15 +162,24 @@ export function layoutXYChart(
   chart: XYChart,
   _options: XyChartRenderOptions = {},
 ): PositionedXYChart {
-  if (chart.horizontal) return layoutHorizontal(chart)
-  return layoutVertical(chart)
+  // The canvas is `xyChart.width` x `height` (mermaid default 700 x 500); the
+  // plot takes what the margins leave, so a hidden title or label widens it.
+  const cw = chart.config?.width ?? 700
+  const ch = chart.config?.height ?? 500
+  return chart.horizontal
+    ? layoutHorizontal(chart, cw, ch)
+    : layoutVertical(chart, cw, ch)
 }
 
 // ============================================================================
 // Vertical layout (default)
 // ============================================================================
 
-function layoutVertical(chart: XYChart): PositionedXYChart {
+function layoutVertical(
+  chart: XYChart,
+  canvasW: number,
+  canvasH: number,
+): PositionedXYChart {
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
@@ -193,29 +196,33 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
-  const va = valueAxis(chart, XY.plotHeight, () => XY.axisLabelHeight)
-  const yTicks = va.ticks
-  const yLabels = va.labels
+  // Tick labels do not depend on the extent, so the margins come first.
+  const labelsOf = valueAxis(chart, 0, () => XY.axisLabelHeight).labels
+  const showXLabels = chart.config?.xAxis?.showLabel !== false
+  const showYLabels = chart.config?.yAxis?.showLabel !== false
   const maxYLabelWidth = Math.max(
-    ...yLabels.map((label) =>
+    ...labelsOf.map((label) =>
       estimateTextWidth(label, XY.axisLabelFontSize, XY.axisLabelFontWeight),
     ),
     XY.yLabelWidth,
   )
-
-  // Margins
   const top = XY.padding + (hasTitle ? XY.titleHeight : 0) // No legend height: Mermaid draws none
   const bottom =
-    XY.padding + XY.xLabelHeight + (hasXTitle ? XY.axisTitlePad : 0)
+    XY.padding +
+    (showXLabels ? XY.xLabelHeight : 0) +
+    (hasXTitle ? XY.axisTitlePad : 0)
   const left =
     XY.padding +
-    maxYLabelWidth +
-    XY.yLabelGap +
+    (showYLabels ? maxYLabelWidth + XY.yLabelGap : 0) +
     (hasYTitle ? XY.axisTitlePad : 0)
   const right = XY.padding
-
-  const plotW = XY.plotWidth
-  const plotH = XY.plotHeight
+  const pw = Math.max(50, canvasW - left - right)
+  const ph = Math.max(50, canvasH - top - bottom)
+  const va = valueAxis(chart, ph, () => XY.axisLabelHeight)
+  const yTicks = va.ticks
+  const yLabels = va.labels
+  const plotW = pw
+  const plotH = ph
   const totalW = left + plotW + right
   const totalH = top + plotH + bottom
 
@@ -273,9 +280,9 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     xScale,
     yScale,
     cat.bar,
-    // Mermaid draws every bar down to the bottom of the plot; only a range
-    // that dips below zero keeps the zero line as the base.
-    va.range.min >= 0 ? top + plotH : yScale(0),
+    // Mermaid 12.3.0 draws every bar from the bottom of the plot, whatever the
+    // signs (`bar [-5, 5]`: a stub and a full-height bar), never from zero.
+    top + plotH,
     catLabels,
     colorMap,
   )
@@ -339,6 +346,7 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     lines,
     gridLines,
     legend,
+    ...(chart.config && { config: chart.config }),
   }
 }
 
@@ -346,7 +354,11 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
 // Horizontal layout
 // ============================================================================
 
-function layoutHorizontal(chart: XYChart): PositionedXYChart {
+function layoutHorizontal(
+  chart: XYChart,
+  canvasW: number,
+  canvasH: number,
+): PositionedXYChart {
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
@@ -361,26 +373,22 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
-  const va = valueAxis(
-    chart,
-    XY.plotWidth,
-    (labels) =>
-      MERMAID_TEXT_SCALE *
-      Math.max(
-        ...labels.map((l) =>
-          estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
-        ),
+  const valueLabelSize = (labels: string[]) =>
+    MERMAID_TEXT_SCALE *
+    Math.max(
+      ...labels.map((l) =>
+        estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
       ),
-  )
-  const valueTicks = va.ticks
-  const valueLabels = va.labels
+    )
+  const valueLabels = valueAxis(chart, 0, valueLabelSize).labels
+  const showCatLabels = chart.config?.xAxis?.showLabel !== false
+  const showValueLabels = chart.config?.yAxis?.showLabel !== false
 
   // Compute category label widths for left margin
   const dataCount = getDataCount(chart)
   const catLabels = getCategoryLabels(chart, dataCount)
-  const cat = buildCatAxis(chart, XY.plotHeight, true)
   const maxCatLabelWidth = Math.max(
-    ...cat.ticks.map(({ label: l }) =>
+    ...buildCatAxis(chart, 0, true).ticks.map(({ label: l }) =>
       estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
     ),
     40,
@@ -391,12 +399,11 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     XY.padding +
     (hasTitle ? XY.titleHeight : 0) +
     (hasYTitle ? XY.axisTitlePad : 0) +
-    XY.xLabelHeight
+    (showValueLabels ? XY.xLabelHeight : 0)
   const bottom = XY.padding
   const left =
     XY.padding +
-    maxCatLabelWidth +
-    XY.yLabelGap +
+    (showCatLabels ? maxCatLabelWidth + XY.yLabelGap : 0) +
     (hasXTitle ? XY.axisTitlePad : 0)
   // The last value label is centered on the plot's right edge, so reserve
   // half its width there (#2311).
@@ -410,9 +417,14 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
       2 +
       4,
   )
+  const pw = Math.max(50, canvasW - left - right)
+  const ph = Math.max(50, canvasH - top - bottom)
+  const va = valueAxis(chart, pw, valueLabelSize)
+  const valueTicks = va.ticks
+  const cat = buildCatAxis(chart, ph, true)
 
-  const plotW = XY.plotWidth
-  const plotH = XY.plotHeight
+  const plotW = pw
+  const plotH = ph
   const totalW = left + plotW + right
   const totalH = top + plotH + bottom
 
@@ -481,7 +493,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
         const groupTop = cy - groupH / 2
         const by = groupTop
         const valX = valueScale(Math.max(s.data[i]!, va.range.min))
-        const baseX = va.range.min >= 0 ? left : valueScale(0)
+        const baseX = left
         bars.push({
           x: Math.min(baseX, valX),
           y: by,
@@ -583,6 +595,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     lines,
     gridLines,
     legend,
+    ...(chart.config && { config: chart.config }),
   }
 }
 

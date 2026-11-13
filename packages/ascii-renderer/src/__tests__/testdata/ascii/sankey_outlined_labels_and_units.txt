@@ -1,0 +1,14 @@
+%%{init: {"sankey": {"labelStyle": "outlined", "prefix": "$", "suffix": "k"}}}%%
+sankey-beta
+Coal,Power,30
+Gas,Power,50
+Power,Homes,60
+Power,Industry,20
+---
+Coal  $30k
+  `-> Power     ##########             $30k
+Power  $80k
+  +-> Homes     ####################   $60k
+  `-> Industry  ######|                $20k
+Gas  $50k
+  `-> Power     ################|      $50k

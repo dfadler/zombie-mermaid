@@ -82,19 +82,19 @@ export function pinFreshness(
 }
 
 /**
- * Last observed mermaid version per user-facing surface (2026-10-22, #2184;
- * method in docs/known-differences.md). Re-check by hand when the pin moves:
- * the page cannot be queried from a script.
+ * Last observed mermaid version per user-facing surface (2026-11-10, #2830;
+ * method in docs/known-differences.md). `tsx scripts/lib/renderer-versions.ts`
+ * reads both live and exits 1 when either differs from this table.
  */
 export const SURFACE_VERSIONS = {
-  'GitHub ```mermaid blocks': '12.1.0 (bundle fingerprint)',
-  'mermaid.live': '12.2.0 (version label)',
+  'GitHub ```mermaid blocks': '12.2.0 (renderer.draw literal)',
+  'mermaid.live': '12.3.0 (renderer.draw literal)',
 } as const
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const r = pinFreshness()
   const seen = Object.entries(SURFACE_VERSIONS).map(([k, v]) => `${k} ${v}`)
   console.log(
-    `${r.stale ? 'STALE   ' : 'ok      '} ${r.message}\n         last checked 2026-10-22: ${seen.join('; ')}`,
+    `${r.stale ? 'STALE   ' : 'ok      '} ${r.message}\n         last recorded 2026-11-10 (run scripts/lib/renderer-versions.ts to re-read): ${seen.join('; ')}`,
   )
 }

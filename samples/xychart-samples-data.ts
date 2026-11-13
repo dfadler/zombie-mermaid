@@ -79,7 +79,7 @@ export const xychartSamples: Sample[] = [
     description: 'Bars with nearly identical heights.',
     source: `xychart-beta
     title "Consistent Output"
-    x-axis [Week 1, Week 2, Week 3, Week 4]
+    x-axis ["Week 1", "Week 2", "Week 3", "Week 4"]
     bar [100, 102, 99, 101]`,
   },
   {
@@ -88,7 +88,7 @@ export const xychartSamples: Sample[] = [
     description: 'Bars with a wide range of values from small to large.',
     source: `xychart-beta
     title "City Population (thousands)"
-    x-axis [Town A, Town B, City C, Metro D, Mega E]
+    x-axis ["Town A", "Town B", "City C", "Metro D", "Mega E"]
     bar [5, 25, 150, 800, 3500]`,
   },
   {
@@ -140,7 +140,7 @@ export const xychartSamples: Sample[] = [
     description: 'Line chart showing a declining trend.',
     source: `xychart-beta
     title "Declining Defect Rate"
-    x-axis [Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6]
+    x-axis ["Sprint 1", "Sprint 2", "Sprint 3", "Sprint 4", "Sprint 5", "Sprint 6"]
     line [25, 20, 15, 12, 8, 5]`,
   },
   {
@@ -388,7 +388,7 @@ export const xychartSamples: Sample[] = [
     description: 'X-axis with long multi-word category labels.',
     source: `xychart-beta
     title "Department Budget"
-    x-axis [Engineering, Product Management, Customer Success, Human Resources]
+    x-axis [Engineering, "Product Management", "Customer Success", "Human Resources"]
     bar [850, 420, 310, 180]`,
   },
   {
@@ -463,7 +463,7 @@ export const xychartSamples: Sample[] = [
     description: 'X-axis with a mix of short and longer labels.',
     source: `xychart-beta
     title "Regional Sales"
-    x-axis [US, EU, Asia Pacific, LATAM, MEA, ANZ]
+    x-axis [US, EU, "Asia Pacific", LATAM, MEA, ANZ]
     bar [450, 380, 520, 180, 95, 60]`,
   },
 
@@ -486,7 +486,7 @@ export const xychartSamples: Sample[] = [
     description: 'Horizontal bars with explicit y-axis range.',
     source: `xychart-beta horizontal
     title "Sprint Velocity"
-    x-axis [Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5]
+    x-axis ["Sprint 1", "Sprint 2", "Sprint 3", "Sprint 4", "Sprint 5"]
     y-axis "Story Points" 0 --> 100
     bar [45, 52, 68, 72, 80]`,
   },
@@ -515,7 +515,7 @@ export const xychartSamples: Sample[] = [
     description: 'Horizontal bars showing a ranked list.',
     source: `xychart-beta horizontal
     title "Top Features Requested"
-    x-axis [Dark Mode, API Access, Mobile App, SSO, Webhooks, CSV Export]
+    x-axis ["Dark Mode", "API Access", "Mobile App", SSO, Webhooks, "CSV Export"]
     bar [245, 198, 176, 152, 134, 112]`,
   },
   {
@@ -563,7 +563,7 @@ export const xychartSamples: Sample[] = [
     description: 'Horizontal orientation with long category labels.',
     source: `xychart-beta horizontal
     title "Error Categories"
-    x-axis [Authentication Failure, Database Timeout, Rate Limit Exceeded, Invalid Input]
+    x-axis ["Authentication Failure", "Database Timeout", "Rate Limit Exceeded", "Invalid Input"]
     bar [342, 128, 89, 456]`,
   },
 
@@ -603,7 +603,7 @@ export const xychartSamples: Sample[] = [
     description: 'Title containing numeric values.',
     source: `xychart-beta
     title "FY2024 Q3 Results"
-    x-axis [Product A, Product B, Product C]
+    x-axis ["Product A", "Product B", "Product C"]
     bar [340, 520, 180]`,
   },
   {
@@ -793,7 +793,7 @@ export const xychartSamples: Sample[] = [
     description: 'Chart with values in the millions.',
     source: `xychart-beta
     title "National GDP (millions)"
-    x-axis [Country A, Country B, Country C]
+    x-axis ["Country A", "Country B", "Country C"]
     bar [5200000, 3800000, 2900000]`,
   },
   {
@@ -802,7 +802,7 @@ export const xychartSamples: Sample[] = [
     description: 'Chart with very small decimal-like integer values.',
     source: `xychart-beta
     title "Trace Amounts"
-    x-axis [Sample A, Sample B, Sample C, Sample D]
+    x-axis ["Sample A", "Sample B", "Sample C", "Sample D"]
     bar [1, 2, 1, 3]`,
   },
   {
@@ -829,7 +829,7 @@ export const xychartSamples: Sample[] = [
     description: 'One value is dramatically larger than the rest.',
     source: `xychart-beta
     title "Revenue by Product"
-    x-axis [Niche A, Niche B, Flagship, Niche C, Niche D]
+    x-axis ["Niche A", "Niche B", Flagship, "Niche C", "Niche D"]
     bar [50, 30, 5000, 40, 20]`,
   },
   {
@@ -847,7 +847,7 @@ export const xychartSamples: Sample[] = [
     description: 'Values that start at zero and increase.',
     source: `xychart-beta
     title "Ramp Up"
-    x-axis [Day 1, Day 2, Day 3, Day 4, Day 5]
+    x-axis ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"]
     bar [0, 10, 50, 150, 400]`,
   },
   {
@@ -911,7 +911,7 @@ export const xychartSamples: Sample[] = [
     description: 'Customer satisfaction survey scores by category.',
     source: `xychart-beta
     title "Customer Satisfaction Survey"
-    x-axis [Ease of Use, Performance, Support, Pricing, Features, Reliability]
+    x-axis ["Ease of Use", Performance, Support, Pricing, Features, Reliability]
     y-axis "Score" 0 --> 5
     bar [4, 3, 5, 3, 4, 4]`,
   },
@@ -991,7 +991,7 @@ export const xychartSamples: Sample[] = [
     description: 'Conversion rates for control vs variant across segments.',
     source: `xychart-beta
     title "A/B Test Conversion Rates"
-    x-axis [Mobile, Desktop, Tablet, New Users, Returning]
+    x-axis [Mobile, Desktop, Tablet, "New Users", Returning]
     bar [3, 5, 4, 2, 6]
     bar [4, 7, 5, 3, 8]`,
   },
@@ -1014,5 +1014,50 @@ export const xychartSamples: Sample[] = [
     x-axis [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
     bar [12, 15, 18, 22, 20, 25, 28, 24, 30, 32, 35, 38]
     line [12, 15, 18, 22, 20, 25, 28, 24, 30, 32, 35, 38]`,
+  },
+  {
+    title: 'Init Config: Horizontal, No Titles',
+    category: 'Init Config',
+    description:
+      '`xyChart` init block: chartOrientation horizontal, showTitle false, y-axis showTitle false (mermaid 12.3.0).',
+    source: `%%{init: {"xyChart": {"chartOrientation": "horizontal", "showTitle": false, "yAxis": {"showTitle": false}}}}%%
+xychart-beta
+    title "Hidden title"
+    x-axis "Month" [jan, feb, mar, apr]
+    y-axis "Revenue" 0 --> 100
+    bar [20, 50, 80, 40]
+    line [30, 45, 70, 60]`,
+  },
+  {
+    title: 'Init Config: Size and Bare Axes',
+    category: 'Init Config',
+    description:
+      '`xyChart` init block: width 900, height 400, x-axis without labels, y-axis without ticks and axis line (mermaid 12.3.0).',
+    source: `%%{init: {"xyChart": {"width": 900, "height": 400, "xAxis": {"showLabel": false}, "yAxis": {"showTick": false, "showAxisLine": false}}}}%%
+xychart-beta
+    title "Sales"
+    x-axis "Month" [jan, feb, mar, apr]
+    y-axis "Revenue" 0 --> 100
+    bar [20, 50, 80, 40]
+    line [30, 45, 70, 60]`,
+  },  {
+    title: 'Mixed-Sign Bars',
+    category: 'Negative Values',
+    description:
+      'Bars run from the start of the value axis to the value, not from zero: -5 is a stub, 5 is full height (mermaid 12.3.0).',
+    source: `xychart-beta
+    title "Net change"
+    x-axis [loss, gain]
+    bar [-5, 5]`,
+  },
+  {
+    title: 'Negative Bars, Horizontal',
+    category: 'Negative Values',
+    description:
+      'Horizontal bars grow from the left edge of the plot, linearly in value, for an all-negative series (mermaid 12.3.0).',
+    source: `xychart-beta horizontal
+    title "Below zero"
+    x-axis [a, b, c]
+    bar [-2, -5, -8]`,
   },
 ]

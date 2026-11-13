@@ -13,6 +13,7 @@ export interface AccessibleText {
     accDescr?: string;
     // (undocumented)
     accTitle?: string;
+    frontMatterTitle?: string;
     text: string;
 }
 
@@ -20,13 +21,135 @@ export interface AccessibleText {
 export function applyClickStatement(line: string, interactions: Map<string, NodeInteraction>): void;
 
 // @public
-export function applyInitConfig(options: RenderOptions, config: InitConfig): RenderOptions;
-
-// @public
 export function applyThemeVariables(options: RenderOptions, config: InitConfig | undefined): RenderOptions;
 
 // @public
+export interface ArchitectureInitLayout {
+    // (undocumented)
+    fontSize?: number;
+    // (undocumented)
+    iconSize?: number;
+    // (undocumented)
+    idealEdgeLengthMultiplier?: number;
+    // (undocumented)
+    padding?: number;
+}
+
+// @public
 export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string, body?: MonoFontEmbed): string;
+
+// @public (undocumented)
+export const C4: {
+    readonly width: 216;
+    readonly diagramMarginX: 50;
+    readonly diagramMarginY: 10;
+    readonly shapeMargin: 50;
+    readonly shapePadding: 20;
+    readonly shapeInRow: 4;
+    readonly boundaryInRow: 2;
+    readonly nextLinePaddingX: 0;
+    readonly screenWidth: 1440;
+    readonly nameSize: 14;
+    readonly typeSize: 10.5;
+    readonly descrSize: 11.5;
+    readonly messageSize: 12;
+    readonly boundarySize: 14;
+    readonly nameLine: 15.35;
+    readonly typeLine: 15.72;
+    readonly descrLine: 17.1;
+    readonly descrExtraLine: 12.48;
+    readonly textScale: 0.922;
+    readonly boundaryLabelHeight: 18;
+    readonly boundaryTypeHeight: 16.1;
+    readonly boundaryDescrHeight: 14.4;
+    readonly rootHeadingHeight: 47;
+    readonly titleExtra: 60;
+    readonly cornerRadius: 12;
+    readonly strokeWidth: 2;
+    readonly personRx: 0.177;
+    readonly personRxMaxOfHeight: 0.45;
+    readonly personHeadRatio: 0.23;
+    readonly personHeadMin: 16;
+    readonly personHeadMax: 56;
+    readonly personHeadOverlap: 0.27;
+    readonly dbTrim: 3.91;
+    readonly queueExtra: 10;
+};
+
+// @public
+export const C4_TEXT_WIDTH: number;
+
+// @public
+export type C4Config = {
+    -readonly [K in keyof typeof C4]: number;
+} & {
+    wrap: boolean;
+    textWidth: number;
+};
+
+// @public
+export function c4Config(layout?: C4InitLayout): C4Config;
+
+// @public
+export function c4CylinderCap(width: number): {
+    rx: number;
+    ry: number;
+};
+
+// @public
+export function c4DescriptionHeight(lines: number): number;
+
+// @public
+export interface C4InitLayout {
+    // (undocumented)
+    diagramMarginX?: number;
+    // (undocumented)
+    diagramMarginY?: number;
+    // (undocumented)
+    nextLinePaddingX?: number;
+    // (undocumented)
+    shapeMargin?: number;
+    // (undocumented)
+    shapePadding?: number;
+    // (undocumented)
+    width?: number;
+    // (undocumented)
+    wrap?: boolean;
+}
+
+// @public
+export function c4PersonGeometry(width: number, height?: number): {
+    rx: number;
+    headRadius: number;
+    pillTop: number;
+};
+
+// @public
+export function c4QueueCap(height: number): {
+    rx: number;
+    ry: number;
+};
+
+// @public (undocumented)
+export interface C4ShapeSize {
+    // (undocumented)
+    height: number;
+    textHeight: number;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export function c4ShapeSize(el: {
+    kind: string;
+    shape?: string;
+}, nameLines: number, descriptionLines: number, textWidth: number, cfg?: C4Config): C4ShapeSize;
+
+// @public
+export function c4TextBlockHeight(nameLines: number, descriptionLines: number): number;
+
+// @public
+export function c4TextWidth(text: string, fontSize: number, weight: number): number;
 
 // @public
 export function checkGraphSize(nodes: number, edges: number, limits: RenderLimits | undefined): void;
@@ -38,7 +161,24 @@ export function checkLimit(limit: keyof RenderLimits, value: number, limits: Ren
 export function checkLineLength(text: string, limits: RenderLimits | undefined): void;
 
 // @public
+export interface ClassInitLayout {
+    // (undocumented)
+    hideEmptyMembersBox?: boolean;
+    // (undocumented)
+    padding?: number;
+}
+
+// @public
 export type ClassRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'fontSizes' | 'interactivity' | 'layoutCache'>;
+
+// @public
+export function collapseFlatRange(range: {
+    min: number;
+    max: number;
+}, data: number[]): {
+    min: number;
+    max: number;
+};
 
 // @public
 export type CommonRenderOptions = Pick<RenderOptions, 'bg' | 'fg' | 'line' | 'accent' | 'muted' | 'surface' | 'border' | 'font' | 'embedFont' | 'transparent' | 'embedSource' | 'resolveColors' | 'nonce' | 'styleAttribute' | 'title' | 'decorative'>;
@@ -69,7 +209,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "sankey", "requirement"];
 
 // @public
 export interface DiagramColors {
@@ -195,6 +335,16 @@ export interface ElkShape extends ElkGraphElement {
 }
 
 // @public
+export interface ErInitLayout {
+    // (undocumented)
+    diagramPadding?: number;
+    // (undocumented)
+    entityPadding?: number;
+    // (undocumented)
+    minEntityWidth?: number;
+}
+
+// @public
 export type ErRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'direction' | 'fontSizes' | 'layoutCache'>;
 
 // @public
@@ -237,6 +387,26 @@ export function getCharWidth(char: string): number;
 export function getReadableTextColor(fill: string | undefined, fallback: string): string;
 
 // @public
+export interface GitGraphInitConfig {
+    // (undocumented)
+    diagramPadding?: number;
+    // (undocumented)
+    mainBranchName?: string;
+    // (undocumented)
+    mainBranchOrder?: number;
+    // (undocumented)
+    parallelCommits?: boolean;
+    // (undocumented)
+    rotateCommitLabel?: boolean;
+    // (undocumented)
+    showBranches?: boolean;
+    // (undocumented)
+    showCommitLabel?: boolean;
+    // (undocumented)
+    titleTopMargin?: number;
+}
+
+// @public
 export function groupStyle(id: string, directives: StyleDirectives): {
     inlineStyle?: Record<string, string>;
 };
@@ -246,19 +416,33 @@ export function hasMeasuredAdvance(char: string): boolean;
 
 // @public
 export interface InitConfig {
-    curve?: CurveStyle;
+    architectureLayout?: ArchitectureInitLayout;
+    c4Layout?: C4InitLayout;
+    classLayout?: ClassInitLayout;
+    erLayout?: ErInitLayout;
+    gitGraph?: GitGraphInitConfig;
     ignored: string[];
+    journey?: JourneyInitConfig;
+    kanban?: KanbanInitConfig;
+    look?: string;
+    packet?: PacketInitConfig;
     pieDonutHole?: number;
     pieHighlightSlice?: string;
     pieLegendPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
     pieTextPosition?: number;
     quadrant?: QuadrantConfig;
+    radar?: RadarInitConfig;
+    radarTheme?: RadarStyleConfig;
+    sankey?: SankeyInitConfig;
     sequenceHideUnused?: boolean;
+    sequenceLayout?: SequenceInitLayout;
     sequenceMirrorActors?: boolean;
     sequenceShowNumbers?: boolean;
     // (undocumented)
     theme?: string;
     themeVariables?: ThemeVariables;
+    timeline?: TimelineInitConfig;
+    xyChart?: XyChartInitConfig;
 }
 
 // @public
@@ -281,6 +465,32 @@ export function isValidCssColor(value: string): boolean;
 
 // @public
 export function isWideChar(char: string): boolean;
+
+// @public
+export interface JourneyInitConfig {
+    // (undocumented)
+    diagramMarginX?: number;
+    // (undocumented)
+    diagramMarginY?: number;
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    leftMargin?: number;
+    // (undocumented)
+    maxLabelWidth?: number;
+    // (undocumented)
+    taskMargin?: number;
+    // (undocumented)
+    width?: number;
+}
+
+// @public
+export interface KanbanInitConfig {
+    // (undocumented)
+    sectionWidth?: number;
+    // (undocumented)
+    ticketBaseUrl?: string;
+}
 
 // @public
 export interface LayoutCache {
@@ -468,6 +678,27 @@ export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circl
 export function normalizeBrTags(label: string): string;
 
 // @public
+export interface PacketInitConfig {
+    // (undocumented)
+    bitOrder?: 'ascending' | 'descending';
+    // (undocumented)
+    bitsPerRow?: number;
+    // (undocumented)
+    bitWidth?: number;
+    // (undocumented)
+    paddingX?: number;
+    // (undocumented)
+    paddingY?: number;
+    // (undocumented)
+    rowHeight?: number;
+    // (undocumented)
+    showBits?: boolean;
+}
+
+// @public
+export function paletteClass(declarations: readonly string[]): string;
+
+// @public
 export function parseCssColor(value: string): RgbaColor | null;
 
 // @public
@@ -539,12 +770,14 @@ export interface PositionedGroup {
     // (undocumented)
     height: number;
     icon?: string;
+    iconSize?: number;
     // (undocumented)
     id: string;
     inlineStyle?: Record<string, string>;
     // (undocumented)
     label: string;
     region?: boolean;
+    titleOnly?: boolean;
     // (undocumented)
     width: number;
     // (undocumented)
@@ -583,6 +816,53 @@ export type QuadrantConfig = Partial<Record<(typeof QUADRANT_NUMBER_KEYS)[number
     xAxisPosition?: 'top' | 'bottom';
     yAxisPosition?: 'left' | 'right';
 };
+
+// @public
+export interface RadarInitConfig {
+    // (undocumented)
+    axisLabelFactor?: number;
+    // (undocumented)
+    axisScaleFactor?: number;
+    // (undocumented)
+    curveTension?: number;
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    marginBottom?: number;
+    // (undocumented)
+    marginLeft?: number;
+    // (undocumented)
+    marginRight?: number;
+    // (undocumented)
+    marginTop?: number;
+    useMaxWidth?: boolean;
+    // (undocumented)
+    width?: number;
+}
+
+// @public
+export interface RadarStyleConfig {
+    // (undocumented)
+    axisLabelFontSize?: number;
+    // (undocumented)
+    axisStrokeWidth?: number;
+    // (undocumented)
+    curveOpacity?: number;
+    // (undocumented)
+    curveStrokeWidth?: number;
+    // (undocumented)
+    graticuleOpacity?: number;
+    // (undocumented)
+    graticuleStrokeWidth?: number;
+    // (undocumented)
+    legendFontSize?: number;
+}
+
+// @public
+export function readFrontMatterTitle(text: string): string | undefined;
+
+// @public
+export function readFrontMatterValue(text: string, key: string): string | undefined;
 
 // @public (undocumented)
 export interface RenderLimits {
@@ -670,6 +950,60 @@ export function safeHref(href: string | undefined): string | undefined;
 export function sanitizeClassName(className: string | undefined): string | undefined;
 
 // @public
+export interface SankeyInitConfig {
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    labelStyle?: 'legacy' | 'outlined';
+    linkColor?: string;
+    // (undocumented)
+    nodeAlignment?: 'left' | 'right' | 'center' | 'justify';
+    nodeColors?: Record<string, string>;
+    // (undocumented)
+    nodePadding?: number;
+    // (undocumented)
+    nodeWidth?: number;
+    // (undocumented)
+    prefix?: string;
+    // (undocumented)
+    showValues?: boolean;
+    // (undocumented)
+    suffix?: string;
+    // (undocumented)
+    width?: number;
+}
+
+// @public
+export interface SequenceInitLayout {
+    // (undocumented)
+    activationWidth?: number;
+    // (undocumented)
+    actorMargin?: number;
+    // (undocumented)
+    bottomMarginAdj?: number;
+    // (undocumented)
+    boxMargin?: number;
+    // (undocumented)
+    diagramMarginX?: number;
+    // (undocumented)
+    diagramMarginY?: number;
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    messageAlign?: 'left' | 'center' | 'right';
+    // (undocumented)
+    noteAlign?: 'left' | 'center' | 'right';
+    // (undocumented)
+    noteMargin?: number;
+    // (undocumented)
+    rightAngles?: boolean;
+    // (undocumented)
+    width?: number;
+    // (undocumented)
+    wrap?: boolean;
+}
+
+// @public
 export type SequenceRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'fontSizes' | 'sequence'>;
 
 // @public
@@ -754,6 +1088,16 @@ export interface ThemeVariables {
 }
 
 // @public
+export interface TimelineInitConfig {
+    // (undocumented)
+    disableMulticolor?: boolean;
+    // (undocumented)
+    leftMargin?: number;
+    // (undocumented)
+    padding?: number;
+}
+
+// @public
 export function toDirection(raw: string | undefined): Direction;
 
 // @public
@@ -775,6 +1119,40 @@ export function withDirectionOverride<T extends {
 
 // @public
 export function withoutOwnClusterEdges(graph: MermaidGraph): MermaidGraph;
+
+// @public
+export function withRootClass(openTag: string, cls: string): string;
+
+// @public
+export function wrapToWidth(text: string, maxWidth: number, fontSize: number): string[];
+
+// @public
+export interface XyChartAxisInitConfig {
+    // (undocumented)
+    showAxisLine?: boolean;
+    // (undocumented)
+    showLabel?: boolean;
+    // (undocumented)
+    showTick?: boolean;
+    // (undocumented)
+    showTitle?: boolean;
+}
+
+// @public
+export interface XyChartInitConfig {
+    // (undocumented)
+    chartOrientation?: 'vertical' | 'horizontal';
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    showTitle?: boolean;
+    // (undocumented)
+    width?: number;
+    // (undocumented)
+    xAxis?: XyChartAxisInitConfig;
+    // (undocumented)
+    yAxis?: XyChartAxisInitConfig;
+}
 
 // @public
 export type XyChartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'interactivity' | 'interactive'>;

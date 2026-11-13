@@ -1,0 +1,5 @@
+Sales, EMEA
+  ├─▶ Region "North"  ████████████████████
+  └─▶ Other           ██████▏
+Region "North"
+  └─▶ Total           ████████████████████

@@ -59,6 +59,22 @@ const diagrams: Record<string, string> = {
   x-axis Low --> High
   y-axis Cold --> Hot
   Campaign A: [0.3, 0.6]`,
+
+  kanban: `kanban
+  Todo
+    a[Build it]@{ ticket: T-1, priority: 'High' }
+  Done
+    b[Ship it]`,
+
+  mindmap: `mindmap
+  root((Plan))
+    Build
+    Ship`,
+  gantt: `gantt
+  title Plan
+  dateFormat YYYY-MM-DD
+  todayMarker off
+  Build :a, 2024-01-01, 5d`,
 }
 
 // ============================================================================

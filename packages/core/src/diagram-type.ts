@@ -27,6 +27,16 @@ export const DIAGRAM_TYPES = [
   'c4',
   'pie',
   'quadrant',
+  'mindmap',
+  'gantt',
+  'kanban',
+  'timeline',
+  'gitgraph',
+  'packet',
+  'radar',
+  'journey',
+  'sankey',
+  'requirement',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -52,6 +62,30 @@ export function detectDiagramType(text: string): DiagramType {
   if (/^pie(?:\s|$)/.test(header)) return 'pie'
   // Also case-sensitive: Mermaid's detector is `/^\s*quadrantChart/`.
   if (/^quadrantChart(?:\s|$)/.test(header)) return 'quadrant'
+
+  // Mermaid's detector is `/^\s*mindmap/`; the grammar keyword is `mindmap\b`.
+  if (/^mindmap\b/i.test(header)) return 'mindmap'
+  // Case-sensitive: Mermaid's detector is `/^\s*gantt/`.
+  if (/^gantt(?:\s|$)/.test(header)) return 'gantt'
+  // Case-sensitive too: Mermaid's detector is `/^\s*kanban/`.
+  if (/^kanban(?:\s|$)/.test(header)) return 'kanban'
+  // Also case-sensitive: Mermaid's detector is `/^\s*timeline/`.
+  if (/^timeline(?:\s|$)/.test(header)) return 'timeline'
+  // Case-sensitive: Mermaid's detector is `/^\s*gitGraph/`.
+  if (/^gitGraph/.test(header)) return 'gitgraph'
+  // Case-sensitive: Mermaid's detector is `/^\s*packet(-beta)?/`.
+  if (/^packet(?:-beta)?(?:\s|$)/.test(header)) return 'packet'
+  // Case-sensitive: Mermaid's detector is `/^\s*radar-beta/`.
+  if (/^radar-beta/.test(header)) return 'radar'
+  // Case-sensitive too: Mermaid's detector is `/^\s*journey/`.
+  // A `#` ends the keyword too (`journey#c`): the grammar's `journey\b`.
+  if (/^journey(?:\s|#|$)/.test(header)) return 'journey'
+  // Case-sensitive too: Mermaid's detector is `/^\s*sankey(-beta)?/`.
+  if (/^sankey(?:-beta)?(?:\s|$)/.test(header)) return 'sankey'
+
+  // Case-sensitive: Mermaid's detector is `/^\s*requirement(Diagram)?/`, its
+  // grammar keyword `requirementDiagram\b`.
+  if (/^requirementDiagram(?:\s|$)/.test(header)) return 'requirement'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'

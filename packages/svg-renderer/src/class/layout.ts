@@ -47,11 +47,20 @@ import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
 export const CLS = {
   padding: 40,
   boxPadX: 8,
-  headerBaseHeight: 32,
-  annotationHeight: 16,
-  memberRowHeight: 20,
-  sectionPadY: 8,
-  emptySectionHeight: 8,
+  // Mermaid 12.3.0's class box, row for row (#2678): a 48 header (72 with an
+  // «annotation» line), 24 per member row plus 24 of padding per compartment.
+  headerBaseHeight: 48,
+  annotationHeight: 24,
+  memberRowHeight: 24,
+  sectionPadY: 24,
+  /**
+   * Empty compartment height: 24 next to a compartment with members, 18 for a
+   * class with no members at all (#2720).
+   */
+  emptySectionHeight: 24,
+  emptyBareSectionHeight: 18,
+  /** Extra space above the methods when the attribute compartment is empty. */
+  methodsAfterEmptyExtra: 6,
   /** Padding each side of mermaid's class box (`class.padding`), see {@link mermaidClassBoxWidth} */
   mermaidPad: 12,
   memberFontSize: 11,
@@ -237,6 +246,10 @@ function buildClassElkGraph(
   const classSizes: ClassSizeMap = new Map()
   const noteSizes: NoteSizeMap = new Map()
   const fontSizes = resolveFontSizes(options.fontSizes)
+  // `class.padding` as a delta from mermaid's default (12), applied to our
+  // scale: each compartment gains it above and below.
+  const pad = diagram.layout?.padding ?? CLS.mermaidPad
+  const padDelta = pad - CLS.mermaidPad
 
   for (const cls of diagram.classes) {
     if (lollipopIds.has(cls.id)) {
@@ -256,19 +269,37 @@ function buildClassElkGraph(
       })
       continue
     }
-    const headerHeight = cls.annotation
-      ? CLS.headerBaseHeight + CLS.annotationHeight
-      : CLS.headerBaseHeight
+    const headerHeight = Math.max(
+      0,
+      (cls.annotation
+        ? CLS.headerBaseHeight + CLS.annotationHeight
+        : CLS.headerBaseHeight) +
+        padDelta * 2,
+    )
+
+    const bare = cls.attributes.length + cls.methods.length === 0
+    // `hideEmptyMembersBox` drops the compartments of a member-less class only.
+    const hideEmpty = bare && diagram.layout?.hideEmptyMembersBox === true
+    const emptyHeight = hideEmpty
+      ? 0
+      : Math.max(
+          0,
+          (bare ? CLS.emptyBareSectionHeight : CLS.emptySectionHeight) +
+            padDelta * 2,
+        )
 
     const attrHeight =
       cls.attributes.length > 0
-        ? cls.attributes.length * CLS.memberRowHeight + CLS.sectionPadY
-        : CLS.emptySectionHeight
+        ? cls.attributes.length * CLS.memberRowHeight +
+          Math.max(0, CLS.sectionPadY + padDelta * 2)
+        : emptyHeight
 
     const methodHeight =
       cls.methods.length > 0
-        ? cls.methods.length * CLS.memberRowHeight + CLS.sectionPadY
-        : CLS.emptySectionHeight
+        ? cls.methods.length * CLS.memberRowHeight +
+          Math.max(0, CLS.sectionPadY + padDelta * 2) +
+          (cls.attributes.length === 0 ? CLS.methodsAfterEmptyExtra : 0)
+        : emptyHeight
 
     const headerTextW = estimateTextWidth(
       cls.label,
@@ -278,7 +309,7 @@ function buildClassElkGraph(
     const maxAttrW = maxMemberWidth(cls.attributes)
     const maxMethodW = maxMemberWidth(cls.methods)
     const width = Math.max(
-      mermaidClassBoxWidth(cls),
+      mermaidClassBoxWidth(cls, pad),
       // Never narrower than our own text needs
       headerTextW + CLS.boxPadX * 2,
       maxAttrW + CLS.boxPadX * 2,
@@ -564,6 +595,7 @@ function extractClassLayout(
       to: rel.to,
       type: rel.type,
       markerAt: rel.markerAt,
+      ...(rel.dashed ? { dashed: true } : {}),
       label: rel.label,
       fromCardinality: rel.fromCardinality,
       toCardinality: rel.toCardinality,
@@ -689,12 +721,15 @@ function mermaidMemberText(m: ClassMember): string {
  * (16px Trebuchet MS), not in the fonts we draw with. Checked on mermaid 12.1.0
  * and 12.2.0, which agree.
  */
-function mermaidClassBoxWidth(cls: {
-  label: string
-  annotation?: string
-  attributes: ClassMember[]
-  methods: ClassMember[]
-}): number {
+function mermaidClassBoxWidth(
+  cls: {
+    label: string
+    annotation?: string
+    attributes: ClassMember[]
+    methods: ClassMember[]
+  },
+  pad: number = CLS.mermaidPad,
+): number {
   const name = mermaidTextWidth(cls.label, true)
   const annotation = cls.annotation
     ? mermaidTextWidth(`\u00ab${cls.annotation}\u00bb`, false)
@@ -706,7 +741,7 @@ function mermaidClassBoxWidth(cls: {
     ),
   )
   const centred = Math.max(name, annotation)
-  return centred / 2 + Math.max(centred / 2, members) + CLS.mermaidPad * 2
+  return centred / 2 + Math.max(centred / 2, members) + pad * 2
 }
 
 /** Calculate the max width of a list of class members (uses mono metrics) */

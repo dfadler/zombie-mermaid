@@ -275,7 +275,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'subgraph-frame-merge',
-    parked: 'ascii-layout-details',
     title: 'An edge-less subgraph member merged two sibling subgraph frames',
     symptom:
       'Root-node placement treated an edge-less node as a shared "root" regardless of which subgraph it belonged to, so one subgraph’s bounding box could balloon out to enclose an unrelated sibling — corrupting both frames and interleaving their titles.',
@@ -562,7 +561,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-longest-path-layering',
-    parked: 'ascii-flow-axis-faces',
     title: 'ASCII put a node in the row of the parent that placed it first',
     symptom:
       'A node took the level of whichever parent placed it first and was never revisited, so with `A --> D` and `B --> D` it landed beside `B` and `B --> D` ran sideways. Nodes are now ranked by longest path, with back edges ignored, as mermaid does. The same source also fixed edge labels losing the spaces between their words: an edge label drawn over a stroke treated its spaces as transparent, so `long label` printed as `long─label`.',
@@ -641,7 +639,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-feedback-edge-sibling-order',
-    parked: 'ascii-flow-axis-faces',
     title:
       'ASCII subgraph order and feedback edges followed mermaid 11, not 12',
     symptom:
@@ -652,7 +649,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2148,
     render: 'ascii',
     lookFor:
-      'Before: `Fix & Retry` hangs below `QA Approved?`. After: it sits beside `Build Image`, and the QA `No` edge rises into it.',
+      'Before: `Fix & Retry` hangs below `QA Approved?`. After: it sits beside `Build Image`, `Yes` and `No` leave the two lower slants of `Tests Pass?`, the dotted edge re-enters `Push Code` from below, right of the forward stem, and the QA `No` edge rises from the upper-right slant into it.',
   },
   {
     id: 'er-multi-key-attributes',
@@ -682,13 +679,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'er-ascii-crossings-labels',
-    // Parked on a named limit (#2656, #2663): Mermaid 12.3.0 orders ER layers with
-    // ELK for minimum crossings (149 of 150 random layered graphs), and among tied
-    // orders its pick is not derivable (best proxy 107 of 150). Ordering by
-    // crossings here gave Mermaid's order and no junction, but the router, which
-    // left-aligns each row, then drew the `receives` label over another edge's
-    // stem and broke four ER snapshots; see #2663.
-    parked: 'ascii-er',
     title:
       'ER ASCII edges crossed without a junction and labels were ambiguous',
     symptom:
@@ -776,7 +766,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2509,
     render: 'ascii',
     lookFor:
-      'Before: one stroke leaves the diamond’s bottom vertex. After: no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
+      'Before: one stroke leaves the diamond’s bottom vertex. After: yes leaves the upper-right slant, no leaves the right corner and drops into the parallelogram; the return runs under it into the diamond’s lower-right face, without crossing.',
   },
   {
     id: 'architecture-junction-group-icons',
@@ -808,7 +798,6 @@ export const allForkFixes: ForkFix[] = [
   },
   {
     id: 'ascii-label-canvas-edge',
-    parked: 'ascii-layout-details',
     title: 'ASCII edge label cut off at the canvas edge',
     symptom:
       'In a right-to-left state diagram, the label `e1` on an edge running down the outermost column printed as `1`, because its first character fell past the edge of the canvas.',
@@ -858,7 +847,7 @@ export const allForkFixes: ForkFix[] = [
     pr: 2575,
     render: 'ascii',
     lookFor:
-      'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a compact staircase, S1/S4 in the first column and S2/S3 in the second, as mermaid draws it.',
+      'Before: S1 and S2 at the top, S3 and S4 about ten rows below. After: a staircase as mermaid 12.3.0 draws it: S4 one layer in (the layer the `e0` label takes), then S1, S3 and S2 each a layer further, stepping up.',
   },
   {
     id: 'flowchart-expanded-shapes-draw',
@@ -1019,6 +1008,70 @@ export const allForkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: `message line two` sits on the arrow and `second line` touches the message label. After: the arrow drops below both message lines and the first message clears the frame label, as in mermaid 12.3.0.',
+  },
+  {
+    id: 'ascii-xychart-legend-axis',
+    title:
+      'ASCII xychart drew a made-up legend and put the horizontal value axis at the bottom',
+    symptom:
+      'The ASCII xychart added a `Bar 1` / `Line 1` legend that mermaid does not draw, and a horizontal chart put the value axis under the bars instead of above them.',
+    source:
+      'xychart-beta horizontal\n    title "Sprint Velocity"\n    x-axis [Alpha, Beta, Gamma, Delta]\n    y-axis "Story Points" 0 --> 100\n    bar [30, 55, 80, 45]\n    line [20, 50, 70, 60]',
+    fixCommit: 'b52a43db',
+    pr: 2756,
+    render: 'ascii',
+    lookFor:
+      'Before: a `Bar 1` / `Line 1` legend and the value axis under the bars. After: no legend, and `Story Points` with its tick labels and axis line above the bars, as in mermaid 12.3.0.',
+  },
+  {
+    id: 'flowchart-node-box',
+    title: 'Flowchart nodes were shorter than mermaid draws them',
+    symptom:
+      'A one-line flowchart node was 36.9px high with 13px text, where mermaid@12.3.0 draws 48px with 16px text. Diamond, triangle and tagged-rect widths, which depend on the label height, were off by the same difference.',
+    source: 'flowchart TD\n  A[ab] --> B{ab}',
+    fixCommit: 'f367d175',
+    pr: 3003,
+    render: 'svg',
+    lookFor:
+      'Before: a 36.9px rect with 13px text and a 167px diamond. After: a 48px rect with 16px text and a 174px diamond, as in mermaid.',
+  },
+  {
+    id: 'pie-slice-palette',
+    title: 'Pie slices used a blue/teal scale instead of mermaid’s',
+    symptom:
+      'Pie slices were painted with a blue/teal scale derived from the theme accent, where mermaid@12.3.0 uses its pastel `pie1`..`pie12` scale (`#ECECFF`, `#ffffde`, `hsl(80, 100%, 56.27%)`, ...).',
+    source: 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85\n  "Rats" : 15',
+    fixCommit: 'fdbe69c3',
+    pr: 3070,
+    render: 'svg',
+    lookFor:
+      'Before: blue, dark blue and light blue slices. After: lavender, pale yellow and lime slices, as in mermaid 12.3.0.',
+  },
+  {
+    id: 'diagram-title-entities',
+    title: 'Chart titles showed an ampersand and angle brackets as plain text',
+    symptom:
+      'mermaid@12.3.0 runs every diagram title through DOMPurify and draws the result as text, so an xychart (or pie, gantt, timeline, quadrant, radar) title with an ampersand or a tag shows `&amp;` and the tag literally. This fork drew the ampersand as a plain `&`.',
+    source:
+      'xychart-beta\n    title "Q&A <b>x</b>"\n    x-axis [a, b]\n    bar [1, 2]',
+    fixCommit: 'cf94f85a',
+    pr: 3091,
+    render: 'svg',
+    lookFor:
+      'Before: the title reads `Q&A <b>x</b>`. After: `Q&amp;A <b>x</b>`, as mermaid 12.3.0 draws it.',
+  },
+  {
+    id: 'ascii-arrowless-cluster-entry',
+    title: 'ASCII: an arrowless edge into a subgraph was a stub',
+    symptom:
+      'An edge without an arrowhead that ends at a subgraph (`api --- S`) was drawn along the source group’s right wall instead of through the gutter to the target group, so it read as a stub. mermaid@12.3.0 draws it from `api` to the subgraph’s wall.',
+    source:
+      'flowchart LR\n  subgraph B\n    api\n    jobs\n  end\n  subgraph S\n    db\n  end\n  api --- S\n  jobs --> db',
+    fixCommit: 'a2a3cdc8e',
+    pr: 3090,
+    render: 'ascii',
+    lookFor:
+      'Before: the `api` line stops as a stub at B’s wall and never reaches S. After: it runs through the gutter to S’s wall, as in mermaid 12.3.0.',
   },
 ]
 

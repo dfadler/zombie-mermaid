@@ -1,0 +1,11 @@
+                      Onboarding
+
+  Actors: Alice, Bob, Carol, Dave, Eve, Frank, Grace
+
+  [Sign up]
+    :)  4  Visit site      Alice, Bob, Carol
+    :(  2  Create account  Alice
+
+  [Use]
+    :)  5  First project   Alice, Bob
+    :|  3  Invite team     Bob, Dave, Eve, Frank, Grace

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parsePieChart } from '@zombie-mermaid/mermaid-parser'
 import type { PositionedPieChart } from '@zombie-mermaid/mermaid-parser'
-import { layoutPieChart, PIE } from '../pie/layout.ts'
+import { layoutPieChart } from '../pie/layout.ts'
 import { estimateTextWidth } from '../styles.ts'
 
 // Geometry follows Mermaid's pieRenderer.ts (default config): a 450px frame,
@@ -36,18 +36,26 @@ describe('pie layout: Mermaid frame', () => {
 
   it('sizes the width as pie + margin + swatch + gap + longest legend text', () => {
     const p = layout('pie\n  "Short" : 1\n  "A much longer label" : 1')
+    // Mermaid 12.3.0 (default font): viewBox width 663.11.
+    expect(p.width).toBe(664)
+    // An explicit `font` is sized with the library's own estimate for it.
     const longest = estimateTextWidth('A much longer label', 17, 400)
-    expect(p.width).toBe(Math.ceil(450 + 40 + 18 + 4 + longest))
+    const own = layoutPieChart(
+      parsePieChart('pie\n  "Short" : 1\n  "A much longer label" : 1'),
+      { font: 'Inter' },
+    )
+    expect(own.width).toBe(Math.ceil(450 + 40 + 18 + 4 + longest))
   })
 
   it('widens the viewBox for a title wider than the chart, keeping the pie centred under it', () => {
     const title =
       'An extremely long pie chart title that runs well past the legend'
     const p = layout(`pie title ${title}\n  "A" : 1`)
-    const titleW = estimateTextWidth(title, 25, 400)
+    // Mermaid 12.3.0 (default font): viewBox width 713.06, so the title is that wide.
+    const titleW = 713
     expect(titleW / 2).toBeGreaterThan(225)
     // Content shifted right by the overhang on the left.
-    close(p.cx, titleW / 2)
+    expect(Math.abs(p.cx - titleW / 2)).toBeLessThan(1)
     close(p.title!.x, p.cx)
     expect(p.width).toBeGreaterThanOrEqual(Math.floor(titleW))
   })
@@ -178,17 +186,35 @@ describe('pie layout: legend', () => {
     expect(layout('pie\n  "A" : 1').legend[0]!.text).toBe('A')
   })
 
-  it('grows the viewBox for a legend taller than the frame instead of clipping it', () => {
+  it('clips a legend taller than the frame like Mermaid 12.3.0 (viewBox stays 450)', () => {
     const lines = Array.from({ length: 30 }, (_, i) => `  "S${i}" : 1`)
     const p = layout(`pie\n${lines.join('\n')}`)
-    // Mermaid would start the legend at 225 - 330 = -105, above the frame.
-    const first = p.legend[0]!
-    const last = p.legend[p.legend.length - 1]!
-    expect(first.y).toBe(0)
-    expect(last.y + last.size).toBeLessThanOrEqual(p.height)
-    // The pie moved down by the same amount and keeps its frame.
-    expect(p.cy).toBe(225 + 105)
-    expect(p.height).toBe(30 * 22 - 4)
+    // Mermaid starts the legend at 225 - 330 = -105, above the frame.
+    expect(p.legend[0]!.y).toBe(225 - (30 * 22) / 2)
+    expect(p.legend[p.legend.length - 1]!.y).toBeGreaterThan(450)
+    expect(p.cy).toBe(225)
+    expect(p.height).toBe(450)
+  })
+})
+
+describe('pie layout: canvas width matches mermaid 12.3.0', () => {
+  // Widths of the 12.3.0 viewBox (scripts/lib/real-mermaid.ts), rounded up.
+  it.each([
+    ['title + legend', 'pie title Pets\n "Dogs":386\n "Cats":85', 547],
+    ['no title', 'pie\n "Dogs":386\n "Cats":85', 547],
+    ['showData', 'pie showData title Pets\n "Dogs":386\n "Cats":85', 592],
+    ['all-zero slices', 'pie title Zeros\n "A":0\n "B":0', 523],
+    ['long legend label', 'pie\n "A very long legend label indeed":5', 753],
+  ])('%s', (_name, src, width) => {
+    expect(layout(src).width).toBe(width)
+  })
+})
+
+describe('pie layout: non-ASCII text in the default font', () => {
+  it('measures a character outside the Trebuchet table with the Inter estimate, so the canvas still grows', () => {
+    const ascii = layout('pie title Nothing yet').width
+    const wide = layout('pie title Nothing yet 日本語日本語').width
+    expect(wide).toBeGreaterThan(ascii + 50)
   })
 })
 
@@ -199,8 +225,16 @@ describe('pie layout: empty chart', () => {
     expect(p.legend).toEqual([])
     expect(p.title?.text).toBe('Nothing yet')
     expect(p.height).toBe(450)
-    // No legend: the pie and its right margin only, not a cropped half.
-    expect(p.width).toBe(PIE.height + PIE.margin)
+    // No legend rows: as wide as the title alone, as in mermaid 12.3.0.
+    expect(p.width).toBe(290) // Mermaid 12.3.0: 289.84
+  })
+
+  it('sizes the gallery title-only pie to its title (mermaid 12.3.0: 337px)', () => {
+    expect(layout('pie title Nothing to show yet').width).toBe(337)
+  })
+
+  it('is 225 wide with neither title nor slices (mermaid 12.3.0)', () => {
+    expect(layout('pie').width).toBe(225)
   })
 })
 

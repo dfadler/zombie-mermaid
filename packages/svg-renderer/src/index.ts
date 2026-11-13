@@ -132,6 +132,42 @@ export { PIE, layoutPieChart } from './pie/layout.ts'
 export { pieColorValue, renderPieSvg } from './pie/renderer.ts'
 export { QUADRANT, layoutQuadrantChart } from './quadrant/layout.ts'
 export { renderQuadrantSvg } from './quadrant/renderer.ts'
+export { MINDMAP, layoutMindmap } from './mindmap/layout.ts'
+export { renderMindmapSvg } from './mindmap/renderer.ts'
+export {
+  TIMELINE,
+  layoutTimeline,
+  textWidth as timelineTextWidth,
+  wrapTimelineText,
+} from './timeline/layout.ts'
+export { renderTimelineSvg } from './timeline/renderer.ts'
+export { layoutGitGraph } from './gitgraph/layout.ts'
+export { renderGitGraphSvg } from './gitgraph/renderer.ts'
+export { PACKET, layoutPacket } from './packet/layout.ts'
+export type {
+  PositionedPacket,
+  PositionedPacketBlock,
+  PositionedPacketBit,
+} from './packet/layout.ts'
+export { renderPacketSvg } from './packet/renderer.ts'
+export { RADAR, layoutRadar } from './radar/layout.ts'
+export { renderRadarSvg } from './radar/renderer.ts'
+export { KANBAN, layoutKanban } from './kanban/layout.ts'
+export { renderKanbanSvg } from './kanban/renderer.ts'
+export { SANKEY, layoutSankey } from './sankey/layout.ts'
+export { renderSankeySvg } from './sankey/renderer.ts'
+export {
+  JOURNEY,
+  layoutJourney,
+  wrapLegendLabel,
+  wrapTaskLabel,
+} from './journey/layout.ts'
+export { renderJourneySvg } from './journey/renderer.ts'
+export {
+  REQUIREMENT,
+  layoutRequirementDiagramSync,
+} from './requirement/layout.ts'
+export { renderRequirementSvg } from './requirement/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {
@@ -156,8 +192,11 @@ import {
 } from '@zombie-mermaid/core'
 import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
+import { isStateGraph } from './layout-engine/to-elk.ts'
+import type { MermaidGraph } from '@zombie-mermaid/core'
 import { loadEmbeddedFont, resolveBodyFont } from './embedded-font.ts'
 import { diagramRegistry } from './registry.ts'
+import { addFrontMatterTitle } from './front-matter-title.ts'
 import type { SvgRenderContext } from './registry.ts'
 
 /**
@@ -320,12 +359,38 @@ function scopeSvgIds(svg: string): string {
 }
 
 /**
+ * Diagram types whose text mermaid 12.3.0 draws as SVG `<text>`, so a typed
+ * `&lt;` / `&amp;` shows literally (checked against real renders, #2997).
+ * The rest draw HTML labels, where the browser decodes entities.
+ */
+const LITERAL_ENTITY_TYPES: ReadonlySet<DiagramType> = new Set([
+  'pie',
+  'packet',
+  'gantt',
+  'timeline',
+  'xychart',
+  'sankey',
+  'radar',
+  'sequence',
+])
+
+/**
+ * Decode XML entities that may leak from markdown parsers (e.g. rehype-raw),
+ * except for the diagram types above, where mermaid keeps them as typed.
+ */
+function decodeSourceEntities(text: string): string {
+  return LITERAL_ENTITY_TYPES.has(detectDiagramType(text))
+    ? text
+    : decodeXML(text)
+}
+
+/**
  * Parse `text` with the same detection and parser the renderer would use, but
  * lay out and draw nothing. Throws the parser's error (usually `Line N: ...`);
  * returns normally when the source parses.
  */
 export function validateMermaid(text: string): void {
-  const decoded = extractAccessibility(decodeXML(text)).text
+  const decoded = extractAccessibility(decodeSourceEntities(text)).text
   diagramRegistry[detectDiagramType(decoded)].parse(
     splitStatements(decoded),
     decoded,
@@ -339,19 +404,20 @@ function renderMermaidSVGRaw(
 ): { svg: string; colors: DiagramColors } {
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
   // Without this, escapeXml() double-encodes them: &lt; → &amp;lt; → literal "&lt;" in SVG.
+  // Skipped for diagram types where mermaid draws them literally (#2997).
   // `text` itself is left untouched so `embedSource` below stamps the exact
   // string the caller passed in, not this entity-decoded copy used
   // internally for parsing.
   checkLimit('maxInputLength', text.length, options.limits)
   checkLineLength(text, options.limits)
-  const acc = extractAccessibility(decodeXML(text))
+  const acc = extractAccessibility(decodeSourceEntities(text))
   const decoded = acc.text
 
   const font = options.font ?? 'Inter'
   // Box sizing depends on the metrics model, so pick it before any layout runs.
   setMonospaceMetrics(isMonospaceFont(font))
   const transparent = options.transparent ?? false
-  const fontSizes = resolveFontSizes(options.fontSizes)
+  let fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType: DiagramType = detectDiagramType(decoded)
   const embedSource = options.embedSource ? text : undefined
   const title = options.title ?? acc.accTitle
@@ -368,15 +434,29 @@ function renderMermaidSVGRaw(
   // ./registry.ts).
   const registered = diagramRegistry[diagramType]
   const diagram = registered.parse(lines, decoded)
+  // Mermaid 12.3.0 draws C4 `accTitle` in the title slot, replacing any `title`.
+  if (diagramType === 'c4' && acc.accTitle) {
+    ;(diagram as { title?: string }).title = acc.accTitle.replace(/\s+/g, ' ')
+  }
   const g = diagram as { nodes?: unknown; edges?: unknown }
   if (g.nodes instanceof Map && Array.isArray(g.edges)) {
     checkGraphSize(g.nodes.size, g.edges.length, options.limits)
   }
-  const positioned = registered.layoutForSvg(diagram, options)
+  let layoutOptions = options
+  // mermaid@12.3.0 draws flowchart node labels at 16px (state keeps 13px) (#2931).
+  if (
+    diagramType === 'flowchart' &&
+    options.fontSizes?.nodeLabel === undefined &&
+    !isStateGraph(diagram as MermaidGraph)
+  ) {
+    fontSizes = resolveFontSizes({ ...options.fontSizes, nodeLabel: 16 })
+    layoutOptions = { ...options, fontSizes }
+  }
+  const positioned = registered.layoutForSvg(diagram, layoutOptions)
   // Opt-in: the diagram's own `themeVariables` fill colours the caller left
   // unset (only flowchart/state carry an `initConfig`; pie reads its own).
   const colors = buildColors(
-    options.honorThemeVariables
+    options.honorThemeVariables !== false
       ? applyThemeVariables(
           options,
           (diagram as { initConfig?: InitConfig }).initConfig,
@@ -393,7 +473,9 @@ function renderMermaidSVGRaw(
     decorative,
     emit,
   }
-  return { svg: registered.renderSvg(positioned, ctx, options), colors }
+  let svg = registered.renderSvg(positioned, ctx, options)
+  if (acc.frontMatterTitle) svg = addFrontMatterTitle(svg, acc.frontMatterTitle)
+  return { svg, colors }
 }
 
 /**

@@ -89,6 +89,10 @@ cd "$REPO_ROOT"
 # a mistake. See docs/testing-conventions.md's "when a literal-value
 # assertion is still correct" section before adding to this list.
 ALLOWLIST=(
+  # SVG and ASCII goldens of a configured C4 diagram (#2906): the `c4` init
+  # keys are a renderer-output contract, not demo/editor UI. Reviewed via
+  # `git diff` on src/__tests__/__snapshots__/c4-init-2906.{svg,txt}.
+  "src/__tests__/c4-init-2906.test.ts"
   # Golden-DOM regression tests for the five site-generator pages moved
   # from template-literal HTML to React (#589). The checked-in, normalized
   # HTML fixtures under __tests__/__fixtures__/ are reviewed via `git diff`
@@ -118,9 +122,25 @@ ALLOWLIST=(
   # SVG + ASCII goldens for the architecture junction join and group header
   # icons (#2563, #2564); reviewed via `git diff` (`vitest -u`).
   "src/__tests__/architecture-junction-group-icon-2563-2564.test.ts"
+  # SVG + ASCII goldens for architecture edge side hints (#2724): placement by
+  # port, which is a whole-diagram property.
+  "src/__tests__/architecture-side-hints-2724.test.ts"
+  # SVG + ASCII goldens for the architecture init/front-matter keys (#2907):
+  # one SVG per key that moves mermaid's output and the ASCII text they leave
+  # unchanged; reviewed via the .snap diff.
+  "src/__tests__/architecture-init-2907.test.ts"
+  # SVG + ASCII goldens for a group that is one row of two services with
+  # outside services below it (#2988); heights are asserted against
+  # mermaid@12.3.0, the .snap diff is reviewed for the rest.
+  "src/__tests__/architecture-group-row-2988.test.ts"
   # SVG + ASCII goldens for flowchart cloud/h-cyl/tag-rect/sm-circ/fork shapes
   # (#2552); reviewed via the .snap diff.
   "src/__tests__/flowchart-shapes-2552.test.ts"
+  # Front matter title: SVG + ASCII output per diagram type (#2585); reviewed via
+  # the .snap diff.
+  "src/__tests__/front-matter-2585.test.ts"
+  # SVG + ASCII goldens for a decision with a duplicated edge (#2780); reviewed via the .snap diff.
+  "src/__tests__/ascii-decision-duplicate-edge-2780.test.ts"
   # ASCII + SVG goldens for opposing edges at a diamond vertex or slanted
   # side (#2492): the repo rule is an SVG and an ASCII snapshot per case.
   # Not a component test; the files under
@@ -136,16 +156,42 @@ ALLOWLIST=(
   # ASCII + SVG goldens for a note before a block's first message (#2531),
   # same rule and review path as above.
   "packages/ascii-renderer/src/__tests__/ascii-sequence-note-before-first-message-2531.test.ts"
+  # ASCII + SVG goldens for a note after a block's `end` (#2744),
+  # same rule and review path as above.
+  "packages/ascii-renderer/src/__tests__/ascii-sequence-note-after-end-2744.test.ts"
   # ASCII + SVG goldens for slanted shapes stretched taller than 5 rows
   # (#2164): the repo rule is an SVG and an ASCII snapshot per case. Not a
   # component test; the files under packages/ascii-renderer/src/__tests__/
   # are reviewed via `git diff` (`vitest -u`).
   "packages/ascii-renderer/src/__tests__/ascii-tall-slanted-shapes-2164.test.ts"
+  # SVG + ASCII goldens for an empty subgraph (#2694): the repo rule is an SVG
+  # and an ASCII snapshot per case; reviewed via `git diff` (`vitest -u`).
+  "packages/ascii-renderer/src/__tests__/ascii-empty-subgraph-2694.test.ts"
+  # SVG + ASCII goldens for a cluster-boundary cycle in both declaration orders
+  # (#2802): the repo rule is an SVG and an ASCII snapshot per case; reviewed
+  # via `git diff` (`vitest -u`).
+  "packages/ascii-renderer/src/__tests__/ascii-cluster-cycle-rank-2802.test.ts"
   # SVG + ASCII goldens for numeric x-axis ranges on an xychart (#1592): the
   # repo rule is an SVG and an ASCII snapshot per case. Not a component test;
   # the files under src/__tests__/__snapshots__/ are reviewed via `git diff`
   # (`vitest -u`).
   "src/__tests__/xychart-numeric-axis-1592.test.ts"
+  # SVG + ASCII goldens for the cluster exit siblings (#2913): the repo rule is
+  # an SVG and an ASCII snapshot per case; reviewed via `git diff` (`vitest -u`).
+  "__tests__/ascii-cluster-exit-siblings-faces-2913.test.ts"
+  # SVG + ASCII goldens for dashed class relations across namespace frames
+  # (#2678): the repo rule is an SVG and an ASCII snapshot per case; reviewed
+  # via `git diff` (`vitest -u`).
+  "__tests__/ascii-class-namespace-dashed-2678.test.ts"
+  # SVG + ASCII goldens for nested duplicate self-loops (#2913): the repo rule
+  # is an SVG and an ASCII snapshot per case; reviewed via `git diff`
+  # (`vitest -u`).
+  "__tests__/ascii-nested-self-loops-2913.test.ts"
+  "__tests__/ascii-subgraph-nested-self-loops-2913.test.ts"
+  # SVG + ASCII goldens for an arrowless edge into a subgraph (#3043): the repo
+  # rule is an SVG and an ASCII snapshot per case; reviewed via `git diff`
+  # (`vitest -u`).
+  "__tests__/ascii-arrowless-cluster-entry-3043.test.ts"
 )
 
 is_allowlisted() {

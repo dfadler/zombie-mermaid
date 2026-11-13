@@ -113,7 +113,7 @@ describe('index.ts → index.html', () => {
         .querySelector('meta[name="description"]')
         ?.getAttribute('content'),
     ).toBe(
-      'Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, Pie, and Quadrant diagrams.',
+      'Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, Pie, Quadrant, Gantt, Mindmap, Timeline, Requirement, Kanban, User Journey, Radar, Packet, GitGraph, and Sankey diagrams.',
     )
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
@@ -495,6 +495,16 @@ describe('index.ts → index.html', () => {
       ['Architecture', 'diagrams/architecture-beta.html'],
       ['Pie', 'diagrams/pie.html'],
       ['Quadrant', 'diagrams/quadrant.html'],
+      ['Gantt', 'diagrams/gantt.html'],
+      ['Kanban', 'diagrams/kanban.html'],
+      ['Mindmap', 'diagrams/mindmap.html'],
+      ['Timeline', 'diagrams/timeline.html'],
+      ['Requirement', 'diagrams/requirement.html'],
+      ['Journey', 'diagrams/journey.html'],
+      ['Radar', 'diagrams/radar.html'],
+      ['Packet', 'diagrams/packet.html'],
+      ['GitGraph', 'diagrams/gitgraph.html'],
+      ['Sankey', 'diagrams/sankey.html'],
     ]
     for (const [label, href] of gallery) {
       expect(body.getByRole('link', { name: label })).toHaveAttribute(

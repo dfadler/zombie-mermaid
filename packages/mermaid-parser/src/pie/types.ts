@@ -47,8 +47,8 @@ export interface PieChart {
   highlightSlice?: string
   /**
    * `themeVariables` `pie1`..`pie12` from the init directive, by slot (0..11).
-   * The renderer applies them only when the caller opts in with
-   * `honorThemeVariables`.
+   * The renderer applies them unless the caller passes
+   * `honorThemeVariables: false`.
    */
   sliceColors?: Record<number, string>
   /**

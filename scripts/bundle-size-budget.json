@@ -1,34 +1,35 @@
 {
   "unit": "gzip-bytes",
+  "failAbovePct": 10,
   "budgets": {
-    "dist/index.js": 1024,
-    "dist/index.cjs": 1024,
-    "dist/ascii.js": 512,
-    "dist/ascii.cjs": 512,
-    "dist/mcp.js": 512,
-    "dist/mcp.cjs": 512,
-    "dist/cli.js": 14000,
-    "packages/core/dist/index.js": 13520,
-    "packages/core/dist/index.cjs": 13600,
-    "packages/mermaid-parser/dist/index.js": 20500,
-    "packages/mermaid-parser/dist/index.cjs": 20710,
-    "packages/svg-renderer/dist/index.js": 64800,
-    "packages/svg-renderer/dist/index.cjs": 65350,
-    "packages/ascii-renderer/dist/index.js": 79700,
-    "packages/ascii-renderer/dist/index.cjs": 79900,
-    "packages/mcp/dist/index.js": 4800,
-    "packages/mcp/dist/index.cjs": 7830
+    "dist/index.js": 2125,
+    "dist/index.cjs": 1850,
+    "dist/ascii.js": 705,
+    "dist/ascii.cjs": 705,
+    "dist/mcp.js": 1750,
+    "dist/mcp.cjs": 1550,
+    "dist/cli.js": 20625,
+    "packages/core/dist/index.js": 20470,
+    "packages/core/dist/index.cjs": 20570,
+    "packages/mermaid-parser/dist/index.js": 48487,
+    "packages/mermaid-parser/dist/index.cjs": 48609,
+    "packages/svg-renderer/dist/index.js": 113904,
+    "packages/svg-renderer/dist/index.cjs": 114908,
+    "packages/ascii-renderer/dist/index.js": 117578,
+    "packages/ascii-renderer/dist/index.cjs": 117949,
+    "packages/mcp/dist/index.js": 6287,
+    "packages/mcp/dist/index.cjs": 10574
   },
   "consumerBundles": {
-    "packages/svg-renderer/dist/index.js": 97050,
-    "dist/index.js": 174600
+    "packages/svg-renderer/dist/index.js": 178875,
+    "dist/index.js": 293132
   },
   "unpackedBudgets": {
-    "dist": 97389,
-    "packages/core/dist": 212685,
-    "packages/mermaid-parser/dist": 200559,
-    "packages/svg-renderer/dist": 458850,
-    "packages/ascii-renderer/dist": 486000,
-    "packages/mcp/dist": 41310
+    "dist": 152627,
+    "packages/core/dist": 292443,
+    "packages/mermaid-parser/dist": 390583,
+    "packages/svg-renderer/dist": 781952,
+    "packages/ascii-renderer/dist": 702309,
+    "packages/mcp/dist": 56803
   }
 }

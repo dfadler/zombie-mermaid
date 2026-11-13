@@ -2,9 +2,10 @@
  * #2563 / #2564: mermaid 12.2.0 and 12.3.0 (the pin and npm latest when
  * written) draw an architecture junction as an invisible join (an 80x80 rect
  * with fill-opacity 0) and put a group's icon, a 30px tile, in its header.
- * ASCII has no icons and keeps a one-cell dot for the junction.
+ * ASCII has no icons and draws the junction as a plain line join (#2725).
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
+// Mermaid 12.3.0 verdict (#2708): matches (label level, 2 sources); SVG viewBox within 26px of mermaid (649x463 vs 640x460, 574x345 vs 600x340), not analysed further.
 import { describe, expect, it } from 'vitest'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 

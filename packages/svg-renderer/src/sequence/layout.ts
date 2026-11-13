@@ -9,7 +9,11 @@ import type {
   PositionedNote,
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
-import type { RenderOptions, SequenceRenderOptions } from '@zombie-mermaid/core'
+import type {
+  RenderOptions,
+  SequenceInitLayout,
+  SequenceRenderOptions,
+} from '@zombie-mermaid/core'
 import { LINE_HEIGHT_RATIO, measureMultilineText } from '@zombie-mermaid/core'
 import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 
@@ -30,6 +34,12 @@ import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 const SEQ = {
   /** Padding around the entire diagram */
   padding: 30,
+  /** Padding above and below the diagram (`padding` is the horizontal one). */
+  paddingY: 30,
+  /** Extra room under the bottom row (`bottomMarginAdj`). */
+  bottomAdj: 0,
+  /** Narrowest an actor box gets. */
+  actorMinWidth: 80,
   /** Minimum gap between actor centers */
   actorGap: 140,
   /** Actor box height */
@@ -118,6 +128,33 @@ export function boxLabelHeight(labelFontSize: number): number {
 export const ACTOR_LABEL_OFFSET = 14
 
 /**
+ * Mermaid 12.3.0 draws the `actor` stick figure 44px tall regardless of the
+ * participant box height (head radius 10.15, label centre 15px beneath the
+ * figure). Typed icons (`boundary`, `control`, ...) keep the box height.
+ */
+export const ACTOR_FIGURE_HEIGHT = 44
+export const ACTOR_FIGURE_LABEL_GAP = 15
+/** Mermaid 12.3.0: a stick-figure lifeline starts 74px below the head top. */
+const ACTOR_LIFELINE_START = 74
+/** Mermaid 12.3.0: a stick-figure footer's head top sits 6px below its lifeline end. */
+export const ACTOR_FOOTER_GAP = 6
+
+/** Height of an actor's header/footer slot: the figure for `actor`, else the box. */
+export function actorSlotHeight(
+  a: { type: 'participant' | 'actor' },
+  boxHeight: number,
+): number {
+  return a.type === 'actor'
+    ? Math.max(ACTOR_FIGURE_HEIGHT, boxHeight)
+    : boxHeight
+}
+
+/** Centre of the label beneath an icon, measured from the bottom of its slot. */
+export function actorLabelOffset(a: { type: 'participant' | 'actor' }): number {
+  return a.type === 'actor' ? ACTOR_FIGURE_LABEL_GAP : ACTOR_LABEL_OFFSET
+}
+
+/**
  * `participant X@{ "type": ... }` kinds drawn as a free-standing icon with the
  * label beneath it, like a stick-figure `actor`. `collections` and `queue`
  * keep the label inside a box-shaped glyph, so they are not listed here.
@@ -146,14 +183,12 @@ const ACTOR_LABEL_CLEARANCE = 4
  * the icon; a `participant` box holds its label inside.
  */
 function actorLabelBottom(
+  offset: number,
   label: string,
   fontSize: number,
   fontWeight: number,
 ): number {
-  return (
-    ACTOR_LABEL_OFFSET +
-    measureMultilineText(label, fontSize, fontWeight).height / 2
-  )
+  return offset + measureMultilineText(label, fontSize, fontWeight).height / 2
 }
 
 /** Resolved sequence-layout config — same shape as {@link SEQ} but mutable numbers. */
@@ -163,12 +198,34 @@ type SeqConfig = { [K in keyof typeof SEQ]: number }
  * Merge user-provided sequence-layout overrides over the {@link SEQ} defaults.
  * Any field left unspecified (or `undefined`) falls back to its default.
  */
-function resolveSeqOptions(overrides?: RenderOptions['sequence']): SeqConfig {
+function resolveSeqOptions(
+  overrides?: RenderOptions['sequence'],
+  init?: SequenceInitLayout,
+): SeqConfig {
+  // `%%{init}%%` keys are mermaid px at 16px text. This renderer lays out at
+  // its own scale, so each key moves our constant by its distance from
+  // mermaid's default (absent or default = unchanged). Explicit render
+  // options win over the directive.
+  const d = (v: number | undefined, def: number) => (v ?? def) - def
+  const dn = d(init?.noteMargin, 10)
+  const dpx = d(init?.diagramMarginX, 50)
   return {
     ...SEQ,
-    actorHeight: overrides?.actorHeight ?? SEQ.actorHeight,
+    padding: SEQ.padding + dpx,
+    paddingY: SEQ.paddingY + d(init?.diagramMarginY, 10),
+    bottomAdj: Math.max(0, d(init?.bottomMarginAdj, 1)),
+    actorMinWidth: SEQ.actorMinWidth + d(init?.width, 150),
+    actorGap: SEQ.actorGap + d(init?.actorMargin, 50),
+    activationWidth: SEQ.activationWidth + d(init?.activationWidth, 10),
+    selfMessageHeight: SEQ.selfMessageHeight - (init?.rightAngles ? 10 : 0),
+    notePadX: SEQ.notePadX + dn,
+    notePadY: SEQ.notePadY + dn,
+    actorHeight:
+      overrides?.actorHeight ?? SEQ.actorHeight + d(init?.height, 65),
     headerGap: overrides?.headerGap ?? SEQ.headerGap,
-    messageRowHeight: overrides?.messageRowHeight ?? SEQ.messageRowHeight,
+    messageRowHeight:
+      overrides?.messageRowHeight ??
+      SEQ.messageRowHeight + d(init?.boxMargin, 10),
     noteOffsetAfterMessage:
       overrides?.noteOffsetAfterMessage ?? SEQ.noteOffsetAfterMessage,
     noteStackGap: overrides?.noteStackGap ?? SEQ.noteStackGap,
@@ -251,23 +308,51 @@ export function blockTabWidth(
   return labelWidth(block.type, fontSize, FONT_WEIGHTS.groupHeader) + 16
 }
 
-/** Space between a block's tab and its centred label, and either side of a divider label. */
-const BLOCK_LABEL_GAP = 8
+/**
+ * Wrap a block header or divider label (shown as `[label]`) onto lines of at
+ * most `avail` px, breaking at spaces. Mermaid wraps these to the frame
+ * instead of widening the participant gap (#2745). A word wider than `avail`
+ * is split mid-word with a trailing `-`, as mermaid's breakString does (#2773).
+ */
+function wrapBracketed(label: string, avail: number, fontSize: number): string {
+  return wrapWords(`[${label}]`, avail, (t) => labelWidth(t, fontSize)).slice(
+    1,
+    -1,
+  )
+}
 
 /**
- * The block width its header label and divider labels need. The header label
- * is centred in the space right of the tab, divider labels across the block.
+ * Mermaid's `wrapLabel` + `breakString`: break at spaces once the line so far
+ * plus the next word (with its trailing space) reaches `avail`; a word wider
+ * than `avail` is split mid-word with a trailing `-`. `width` measures one line.
  */
-function blockLabelsWidth(
-  block: SequenceDiagram['blocks'][number],
-  fontSize: number,
-): number {
-  const bracketed = (label?: string) =>
-    label ? labelWidth(`[${label}]`, fontSize) + 2 * BLOCK_LABEL_GAP : 0
-  return Math.max(
-    blockTabWidth(block, fontSize) + bracketed(block.label),
-    ...block.dividers.map((d) => bracketed(d.label)),
-  )
+function wrapWords(
+  text: string,
+  avail: number,
+  width: (s: string) => number,
+): string {
+  const out: string[] = []
+  for (const line of text.split('\n')) {
+    let cur = ''
+    for (const word of line.split(' ')) {
+      if (width(`${word} `) > avail) {
+        const chars = [...word]
+        out.push(cur)
+        cur = ''
+        chars.forEach((ch, i) => {
+          if (width(cur + ch) >= avail) {
+            out.push(i === chars.length - 1 ? cur + ch : `${cur + ch}-`)
+            cur = ''
+          } else cur += ch
+        })
+      } else if (cur && width(cur) + width(`${word} `) >= avail) {
+        out.push(cur)
+        cur = word
+      } else cur = cur ? `${cur} ${word}` : word
+    }
+    out.push(cur)
+  }
+  return out.filter(Boolean).join('\n')
 }
 
 /** Extra height a multi-line label takes over a single line. */
@@ -300,8 +385,7 @@ function nestedBlocks(blocks: SequenceDiagram['blocks']): number[][] {
  * Widen `gaps` (`gaps[i]` = distance from actor i - 1 to actor i) in place so
  * no label crosses a lifeline: a message label between two actors is centred
  * on the span, a self-message label on its lifeline, a note sits beside or
- * over its actor, and a block's header tab and divider labels start at its
- * left edge. A shortfall on a span of several gaps is spread evenly over them
+ * over its actor. A shortfall on a span of several gaps is spread evenly over them
  * (ported from lukilabs/beautiful-mermaid#167).
  */
 function fitLabelsBetweenLifelines(
@@ -355,30 +439,68 @@ function fitLabelsBetweenLifelines(
       widen(Math.min(i, j), Math.max(i, j), w - 50)
     }
   }
-
-  for (const block of diagram.blocks) {
-    // The header label and divider labels are centred across the block, which
-    // spans its first to last lifeline plus the frame's side padding, so
-    // that span must hold the widest of them.
-    const ends = diagram.messages
-      .slice(block.startIndex, block.endIndex + 1)
-      .flatMap((m) => [index.get(m.from)!, index.get(m.to)!])
-    widen(
-      Math.min(...ends),
-      Math.max(...ends),
-      blockLabelsWidth(block, fontSize) - 2 * blockFramePad(seq),
-    )
-  }
 }
 
 /**
  * Lay out a parsed sequence diagram.
  * Returns a fully positioned diagram ready for SVG rendering.
  */
-export function layoutSequenceDiagram(
+/**
+ * `sequence.wrap: true`: mermaid wraps notes at `width` (150px at 16px text)
+ * and messages at the lifeline gap (`width + actorMargin`). Our text is
+ * smaller, so the widths shrink by the font ratio and the same words land on
+ * each line.
+ */
+function wrapDiagramText(
   diagram: SequenceDiagram,
+  fontSize: number,
+  actorFontSize: number,
+): SequenceDiagram {
+  const l = diagram.layout ?? {}
+  const k = fontSize / 16
+  const w = l.width ?? 150
+  const noteW = w * k
+  const edgeW = (t: string) => labelWidth(t, fontSize)
+  const msgW = (w + (l.actorMargin ?? 50)) * k
+  const actorW = (t: string) =>
+    labelWidth(t, actorFontSize, FONT_WEIGHTS.nodeLabel)
+  return {
+    ...diagram,
+    // Participant names wrap at `width` like notes (mermaid's actor box stays
+    // `width` wide and grows taller).
+    actors: diagram.actors.map((a) => ({
+      ...a,
+      label:
+        (a.wrap ?? l.wrap)
+          ? wrapWords(a.label, w * (actorFontSize / 16), actorW)
+          : a.label,
+    })),
+    notes: diagram.notes.map((n) => ({
+      ...n,
+      text: (n.wrap ?? l.wrap) ? wrapWords(n.text, noteW, edgeW) : n.text,
+    })),
+    messages: diagram.messages.map((m) => ({
+      ...m,
+      label: (m.wrap ?? l.wrap) ? wrapWords(m.label, msgW, edgeW) : m.label,
+    })),
+  }
+}
+
+export function layoutSequenceDiagram(
+  input: SequenceDiagram,
   options: SequenceRenderOptions = {},
 ): PositionedSequenceDiagram {
+  const diagram =
+    input.layout?.wrap ||
+    input.messages.some((m) => m.wrap) ||
+    input.notes.some((n) => n.wrap) ||
+    input.actors.some((a) => a.wrap)
+      ? wrapDiagramText(
+          input,
+          resolveFontSizes(options.fontSizes).edgeLabel,
+          resolveFontSizes(options.fontSizes).nodeLabel,
+        )
+      : input
   if (diagram.actors.length === 0) {
     return {
       width: 0,
@@ -394,23 +516,32 @@ export function layoutSequenceDiagram(
     }
   }
 
-  const seq = resolveSeqOptions(options.sequence)
+  const seq = resolveSeqOptions(options.sequence, diagram.layout)
+  const alignOf = (v?: 'left' | 'center' | 'right') =>
+    v === 'left' || v === 'right' ? v : undefined
+  const noteAlign = alignOf(diagram.layout?.noteAlign)
+  const msgAlign = alignOf(diagram.layout?.messageAlign)
   const fontSizes = resolveFontSizes(options.fontSizes)
 
   // 1. Calculate actor widths and assign horizontal positions (center X)
   const actorWidths = diagram.actors.map((a) => {
-    const textW = estimateTextWidth(
+    const textW = labelWidth(
       a.label,
       fontSizes.nodeLabel,
       FONT_WEIGHTS.nodeLabel,
     )
-    return Math.max(textW + seq.actorPadX * 2, 80)
+    return Math.max(textW + seq.actorPadX * 2, seq.actorMinWidth)
   })
 
   // Build actor center X positions with minimum gap, widened so message
   // labels fit between their lifelines (ported from lukilabs/beautiful-mermaid#167).
   const gaps = actorWidths.map((w, i) =>
-    i === 0 ? 0 : Math.max(seq.actorGap, (actorWidths[i - 1]! + w) / 2 + 40),
+    i === 0
+      ? 0
+      : Math.max(
+          seq.actorGap,
+          (actorWidths[i - 1]! + w) / 2 + 40 + (seq.actorGap - SEQ.actorGap),
+        ),
   )
   fitLabelsBetweenLifelines(
     diagram,
@@ -445,7 +576,7 @@ export function layoutSequenceDiagram(
       : seq.boxPad + (anyBoxLabel ? boxLabelHeight(fontSizes.edgeLabel) : 0)
   // A `title` line sits above the boxes and actors (as in Mermaid).
   const titleInset = diagram.title ? seq.titleBand : 0
-  const top = seq.padding + titleInset
+  const top = seq.paddingY + titleInset
   const actorY = top + boxTopInset
   const actors: PositionedActor[] = diagram.actors.map((a, i) => ({
     id: a.id,
@@ -457,8 +588,19 @@ export function layoutSequenceDiagram(
     x: actorCenterX[i]!,
     y: actorY,
     width: actorWidths[i]!,
-    height: seq.actorHeight,
+    // A box grows by a line height per extra label line (a wrapped name).
+    height:
+      actorSlotHeight(a, seq.actorHeight) +
+      (hasLabelBelowIcon(a)
+        ? 0
+        : dividerLabelExtra(a.label, fontSizes.nodeLabel)),
   }))
+  const slotH = (i: number): number => actors[i]!.height
+  const headerH = Math.max(
+    ...diagram.actors.map((a, i) => (a.createdAt === undefined ? slotH(i) : 0)),
+    seq.actorHeight,
+  )
+  const footerH = Math.max(...actors.map((a) => a.height), seq.actorHeight)
 
   // Box backgrounds span from the outermost member's left edge to the
   // outermost member's right edge (plus padding) — any participant declared
@@ -488,7 +630,12 @@ export function layoutSequenceDiagram(
   //    instead, so they don't take part in the header.
   const actorLabelBottoms = diagram.actors.map((a) =>
     hasLabelBelowIcon(a)
-      ? actorLabelBottom(a.label, fontSizes.nodeLabel, FONT_WEIGHTS.nodeLabel)
+      ? actorLabelBottom(
+          actorLabelOffset(a),
+          a.label,
+          fontSizes.nodeLabel,
+          FONT_WEIGHTS.nodeLabel,
+        )
       : 0,
   )
   const headerLabelBottom = Math.max(
@@ -500,7 +647,7 @@ export function layoutSequenceDiagram(
   const firstMessageLabelRoom = fontSizes.edgeLabel + 12
   let messageY =
     actorY +
-    seq.actorHeight +
+    headerH +
     Math.max(
       seq.headerGap,
       headerLabelBottom > 0
@@ -518,11 +665,38 @@ export function layoutSequenceDiagram(
   // Room a multi-line header label (or first message label) adds above a
   // block's first arrow, so the frame top can stay put (#2588).
   const startLabelExtra = new Map<number, number>()
+  // Header and divider labels wrap to the frame (the lifelines it spans plus
+  // its padding) rather than widening the participant gap (#2745).
+  const wrappedLabels = diagram.blocks.map((block) => {
+    const xs = diagram.messages
+      .slice(block.startIndex, block.endIndex + 1)
+      .flatMap((m) => [
+        actorCenterX[actorIndex.get(m.from)!]!,
+        actorCenterX[actorIndex.get(m.to)!]!,
+      ])
+    const span = xs.length
+      ? Math.max(...xs) - Math.min(...xs)
+      : actorCenterX[actorCenterX.length - 1]! - actorCenterX[0]!
+    // Mermaid 12.3.0 wraps to roughly the lifeline span less 30px (floor
+    // 80px) at 16px type, measured against its own text widths; this
+    // renderer's narrower spans and type give 14px and 60px, which break the
+    // same labels at the same words.
+    const avail = Math.max(span - 14, 60)
+    const wrap = (label: string) =>
+      label ? wrapBracketed(label, avail, fontSizes.edgeLabel) : label
+    return {
+      label: wrap(block.label),
+      dividers: block.dividers.map((d) => wrap(d.label)),
+    }
+  })
   diagram.blocks.forEach((block, bi) => {
     const holdsInner = diagram.blocks.some(
       (b, j) => j < bi && b.startIndex === block.startIndex,
     )
-    const extra = dividerLabelExtra(block.label, fontSizes.edgeLabel)
+    const extra = dividerLabelExtra(
+      wrappedLabels[bi]!.label,
+      fontSizes.edgeLabel,
+    )
     // Only the innermost header sits just above the message; an outer one
     // sits above the inner tab (see `blockTop` below).
     const labelGap = holdsInner ? 0 : seq.blockHeaderLabelGap
@@ -541,7 +715,7 @@ export function layoutSequenceDiagram(
     )
 
     // Each divider (else/and) needs room for the divider label
-    for (const div of block.dividers) {
+    for (const [di, div] of block.dividers.entries()) {
       // A nested block opening right below the divider has its own header
       // between the two, so it needs no extra gap.
       const opensBlock = diagram.blocks.some((b) => b.startIndex === div.index)
@@ -549,7 +723,10 @@ export function layoutSequenceDiagram(
         div.index,
         seq.dividerExtra +
           (opensBlock ? 0 : seq.dividerLabelGap) +
-          dividerLabelExtra(div.label, fontSizes.edgeLabel),
+          dividerLabelExtra(
+            wrappedLabels[bi]!.dividers[di],
+            fontSizes.edgeLabel,
+          ),
       )
     }
   })
@@ -629,6 +806,7 @@ export function layoutSequenceDiagram(
       height: noteH,
       position: note.position,
       actors: note.actorIds,
+      ...(noteAlign && { align: noteAlign }),
     }
     positionedNotes.push(positioned)
     notePositions.set(note, positioned)
@@ -655,11 +833,14 @@ export function layoutSequenceDiagram(
   const nestingOffset = seq.activationWidth / 2
 
   /** Open an activation bar on `actorId` at row `y` (stacks for nesting). */
-  function startActivation(actorId: string, y: number): void {
+  function startActivation(actorId: string, y: number, selfLoop = false): void {
+    // Mermaid opens a bar after a self-message at the point below its loop
+    // (loop height + 2), not at the loop's top row (#2743).
+    const startY = selfLoop ? y + seq.selfMessageHeight + 2 : y
     const stack = activationStacks.get(actorId) ?? []
     activationStacks.set(actorId, stack)
     const depth = stack.length // Current depth before pushing
-    stack.push({ startY: y, depth })
+    stack.push({ startY, depth })
   }
 
   /**
@@ -667,7 +848,8 @@ export function layoutSequenceDiagram(
    * deactivate with nothing open is ignored rather than fatal (Mermaid
    * itself errors here; this renderer has always been lenient about it).
    */
-  function endActivation(actorId: string, y: number): void {
+  function endActivation(actorId: string, y: number, selfLoop = false): void {
+    const endY = selfLoop ? y + seq.selfMessageHeight : y
     const stack = activationStacks.get(actorId)
     if (!stack || stack.length === 0) return
     const { startY, depth } = stack.pop()!
@@ -678,7 +860,7 @@ export function layoutSequenceDiagram(
       actorId,
       x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
       topY: startY,
-      bottomY: y,
+      bottomY: endY,
       width: seq.activationWidth,
       depth,
     })
@@ -699,22 +881,34 @@ export function layoutSequenceDiagram(
     list.push(event)
     activationEventsByAfterIndex.set(event.afterIndex, list)
   }
-  function applyActivationEvents(afterIndex: number, y: number): void {
+  function applyActivationEvents(
+    afterIndex: number,
+    y: number,
+    selfLoop = false,
+  ): void {
     for (const event of activationEventsByAfterIndex.get(afterIndex) ?? []) {
-      if (event.kind === 'start') startActivation(event.actorId, y)
-      else endActivation(event.actorId, y)
+      if (event.kind === 'start') startActivation(event.actorId, y, selfLoop)
+      else endActivation(event.actorId, y, selfLoop)
     }
   }
 
   // Events before the first message open at the top of the message area.
   applyActivationEvents(-1, messageY)
 
+  const mirror = diagram.mirrorActors !== false
   const msgLabelExtra: number[] = []
   for (let msgIdx = 0; msgIdx < diagram.messages.length; msgIdx++) {
     const msg = diagram.messages[msgIdx]!
     const fromIdx = actorIndex.get(msg.from) ?? 0
     const toIdx = actorIndex.get(msg.to) ?? 0
-    const isSelf = msg.from === msg.to
+    // Mermaid 12.3.0 draws a self-message that destroys its participant (with
+    // mirrored actors) as a straight line from the footer's near edge to the
+    // lifeline, not as a loop (`senderAdjustment`), on a normal message row.
+    const destroysSelf =
+      msg.from === msg.to &&
+      mirror &&
+      diagram.actors[fromIdx]!.destroyedAt === msgIdx
+    const isSelf = msg.from === msg.to && !destroysSelf
 
     // Add extra vertical space if this message sits below a block header or divider
     messageY +=
@@ -727,8 +921,13 @@ export function layoutSequenceDiagram(
     messageY += labelExtra
     msgLabelExtra[msgIdx] = labelExtra
 
-    const x1 = actorCenterX[fromIdx]!
+    let x1 = actorCenterX[fromIdx]!
     let x2 = actorCenterX[toIdx]!
+    if (destroysSelf) {
+      x1 -= hasLabelBelowIcon(diagram.actors[fromIdx]!)
+        ? 18 // mermaid's ACTOR_TYPE_WIDTH / 2
+        : actorWidths[fromIdx]! / 2
+    }
 
     // A `create participant` message ends at the near edge of the box it
     // creates rather than at the lifeline centre — the box sits on this row
@@ -740,6 +939,20 @@ export function layoutSequenceDiagram(
     if (createsRecipient) {
       const halfW = actorWidths[toIdx]! / 2
       x2 += x1 < x2 ? -halfW : halfW
+    }
+
+    // A destroying message meets the footer box's near edge, not the lifeline
+    // centre: Mermaid 12.3.0 starts a destroyed sender's arrow just outside the
+    // box (`senderAdjustment`) and stops a destroyed recipient's arrow short of
+    // it by the arrowhead (`receiverAdjustment`).
+    if (!destroysSelf && mirror && fromIdx !== toIdx) {
+      const dir = Math.sign(x2 - x1)
+      const reach = (i: number): number =>
+        hasLabelBelowIcon(diagram.actors[i]!) ? 18 : actorWidths[i]! / 2
+      if (diagram.actors[fromIdx]!.destroyedAt === msgIdx)
+        x1 += dir * (reach(fromIdx) + 1)
+      if (diagram.actors[toIdx]!.destroyedAt === msgIdx)
+        x2 -= dir * (reach(toIdx) + 8)
     }
 
     messages.push({
@@ -754,6 +967,9 @@ export function layoutSequenceDiagram(
       isSelf,
       bidirectional: msg.bidirectional ?? false,
       ...(msg.isLost && { isLost: true }),
+      ...(msgAlign && { labelAlign: msgAlign }),
+      ...(isSelf &&
+        diagram.layout?.rightAngles && { rightAngles: true as const }),
       seqNumber: msg.seqNumber,
     })
 
@@ -761,9 +977,9 @@ export function layoutSequenceDiagram(
     // shorthand activates the recipient, `-` deactivates the sender (see
     // parser.ts); standalone statements following this message apply at
     // the same row, after the shorthand, in source order.
-    if (msg.activate) startActivation(msg.to, messageY)
-    if (msg.deactivate) endActivation(msg.from, messageY)
-    applyActivationEvents(msgIdx, messageY)
+    if (msg.activate) startActivation(msg.to, messageY, isSelf)
+    if (msg.deactivate) endActivation(msg.from, messageY, isSelf)
+    applyActivationEvents(msgIdx, messageY, isSelf)
 
     // Advance messageY past the message itself
     messageY += isSelf
@@ -772,7 +988,7 @@ export function layoutSequenceDiagram(
     // The created box is centred on this row, so its lower half hangs
     // below the arrow — give the next row room to clear it (Mermaid bumps
     // by the same half-height after a creating message).
-    if (createsRecipient) messageY += seq.actorHeight / 2
+    if (createsRecipient) messageY += slotH(toIdx) / 2
 
     // Close a block ending at this message so it holds its last message (and
     // a self-message loop), its notes and its nested blocks, then keep the
@@ -934,14 +1150,6 @@ export function layoutSequenceDiagram(
       blockLeft = Math.min(blockLeft, c.x - seq.blockPadX)
       blockRight = Math.max(blockRight, c.x + c.width + seq.blockPadX)
     }
-    // ...and the tab beside the centred header label, and the divider labels
-    const need = blockLabelsWidth(block, fontSizes.edgeLabel)
-    const growth = need - (blockRight - blockLeft)
-    if (growth > 0) {
-      blockLeft -= growth / 2
-      blockRight += growth / 2
-    }
-
     // Position dividers — offset from message Y so the divider label text
     // (rendered at divider.y + 14 in the renderer) clears the message label
     // (rendered at msg.y - 6).
@@ -952,7 +1160,8 @@ export function layoutSequenceDiagram(
     // overlap horizontally (e.g. long divider labels like "[Account locked]"
     // next to centered message labels like "403 Forbidden"), we increase the
     // offset to 40 so text bounding boxes have ~5px visual clearance.
-    const dividers = block.dividers.map((d) => {
+    const dividers = block.dividers.map((d, di) => {
+      const dLabel = wrappedLabels[bi]!.dividers[di]!
       // A nested block opening right after the divider: sit above its header tab
       const opening = inner.filter(
         (_, k) => diagram.blocks[nested[bi]![k]!]!.startIndex === d.index,
@@ -960,7 +1169,7 @@ export function layoutSequenceDiagram(
       if (opening.length > 0) {
         return {
           y: Math.min(...opening.map((c) => c.y)) - seq.dividerExtra,
-          label: d.label,
+          label: dLabel,
         }
       }
 
@@ -971,15 +1180,15 @@ export function layoutSequenceDiagram(
       const offset =
         (d.label && msg?.label ? 40 : 28) +
         seq.dividerLabelGap +
-        dividerLabelExtra(d.label, fontSizes.edgeLabel) +
+        dividerLabelExtra(dLabel, fontSizes.edgeLabel) +
         (msgLabelExtra[d.index] ?? 0)
 
-      return { y: msgY - offset, label: d.label }
+      return { y: msgY - offset, label: dLabel }
     })
 
     blocks.push({
       type: block.type,
-      label: block.label,
+      label: wrappedLabels[bi]!.label,
       ...(block.color !== undefined ? { color: block.color } : {}),
       x: blockLeft,
       y: blockTop,
@@ -1002,7 +1211,6 @@ export function layoutSequenceDiagram(
   // The lifelines end where the mirrored footer actors begin; a stick figure
   // or typed icon keeps its label below the box, so the footer row grows by it.
   const lifelineBottom = messageY
-  const mirror = diagram.mirrorActors !== false
   const footerLabelRoom = Math.max(
     0,
     ...diagram.actors.map((a, i) =>
@@ -1013,8 +1221,9 @@ export function layoutSequenceDiagram(
   )
   const diagramBottom =
     lifelineBottom +
-    (mirror ? seq.actorHeight + footerLabelRoom : 0) +
-    seq.padding
+    (mirror ? footerH + footerLabelRoom : 0) +
+    seq.paddingY +
+    seq.bottomAdj
 
   // Find global X extents across actors, blocks, notes, and message labels
   let globalMinX: number = seq.padding // Actors already start at seq.padding
@@ -1083,7 +1292,7 @@ export function layoutSequenceDiagram(
   for (let i = 0; i < diagram.actors.length; i++) {
     const createdAt = diagram.actors[i]!.createdAt
     if (createdAt !== undefined) {
-      actors[i]!.y = (messages[createdAt]?.y ?? messageY) - seq.actorHeight / 2
+      actors[i]!.y = (messages[createdAt]?.y ?? messageY) - slotH(i) / 2
     }
   }
 
@@ -1097,29 +1306,47 @@ export function layoutSequenceDiagram(
       // the icon, so the line starts under it rather than through it.
       topY:
         actors[i]!.y +
-        seq.actorHeight +
-        (actorLabelBottoms[i]! > 0
-          ? actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE
-          : 0),
+        (a.type === 'actor'
+          ? Math.max(
+              ACTOR_LIFELINE_START,
+              slotH(i) + actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE,
+            )
+          : slotH(i) +
+            (actorLabelBottoms[i]! > 0
+              ? actorLabelBottoms[i]! + ACTOR_LABEL_CLEARANCE
+              : 0)),
       bottomY:
         destroyedAt === undefined
           ? lifelineBottom
-          : (messages[destroyedAt]?.y ?? messageY),
+          : (messages[destroyedAt]?.y ?? messageY) -
+            // Mermaid 12.3.0 centres a box footer on the message; a stick
+            // figure's head top sits 31px above it (its 74px slot centred).
+            (mirror ? (actorLabelBottoms[i]! > 0 ? 31 : slotH(i) / 2) : 0),
     }
     if (destroyedAt !== undefined) lifeline.destroyed = true
     return lifeline
   })
 
   // Mermaid mirrors every participant along the bottom of the lifelines; a
-  // destroyed one ended at its destroying message, so it has no footer.
+  // destroyed one's footer box sits at its destroying message instead, centred
+  // on the arrow (`actor.stopy = lineStartY - actor.height / 2`), and its
+  // lifeline ends at the box top (no cross: the `-x` message end is the only one).
   const footerActors = actors
-    .filter((_, i) => mirror && diagram.actors[i]!.destroyedAt === undefined)
-    .map((a) => ({ ...a, y: lifelineBottom }))
+    .map((a, i) => {
+      const destroyedAt = diagram.actors[i]!.destroyedAt
+      return destroyedAt === undefined
+        ? {
+            ...a,
+            y: lifelineBottom + (a.type === 'actor' ? ACTOR_FOOTER_GAP : 0),
+          }
+        : { ...a, y: lifelines[i]!.bottomY }
+    })
+    .filter(() => mirror)
 
   // Box backgrounds run from the top padding to just under the footer
   // actors (boxPad < padding, so this stays inside the diagram height).
   for (const b of boxes) {
-    b.height = diagramBottom - seq.padding + seq.boxPad - b.y
+    b.height = diagramBottom - seq.paddingY - seq.bottomAdj + seq.boxPad - b.y
   }
 
   // 9. Calculate diagram dimensions from the bounding box
@@ -1146,7 +1373,7 @@ export function layoutSequenceDiagram(
     boxes,
     footerActors,
     ...(diagram.title && {
-      title: { text: diagram.title, y: seq.padding + TITLE_FONT_SIZE / 2 },
+      title: { text: diagram.title, y: seq.paddingY + TITLE_FONT_SIZE / 2 },
     }),
   }
 }

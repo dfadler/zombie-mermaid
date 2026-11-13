@@ -5,6 +5,7 @@
  * cylinder keeps the cylinder glyph); `sm-circ` is the state-start dot.
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
+// Mermaid 12.3.0 verdict (#2708): matches (label level, 4 SVG sources and the ASCII one); outline geometry not compared, and the SVG viewBox differs (e.g. sm-circ 80x86 mermaid vs 152x150 here), left to #2678.
 import { describe, expect, it } from 'vitest'
 import { parseMermaid, renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 import { estimateNodeSize } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
@@ -71,6 +72,39 @@ describe('flowchart expanded shapes (#2552)', () => {
       'flowchart TD\nA --> F@{ shape: fork }\nF --> B',
     )
     expect(tb).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="70" height="10"/)
+  })
+
+  // #2850: mermaid@12.3.0 label box is 120 wide and 24 per line; padding is
+  // 15 for the cloud, 12 for the h-cyl, 24 for the tag-rect (headless oracle
+  // and GitHub/mermaid.live agree: 168.8x103.9, 148.8x36, 161.6x48).
+  it('sizes cloud, h-cyl and tag-rect like mermaid (#2850)', () => {
+    const size = (shape: string, label: string) =>
+      estimateNodeSize('A', label, shape, 16)
+    const round = (s: { width: number; height: number }) => [
+      Math.round(s.width * 10) / 10,
+      Math.round(s.height * 10) / 10,
+    ]
+    expect(round(size('cloud', 'cloud'))).toEqual([168.8, 103.8])
+    expect(round(size('horizontal-cylinder', 'h-cyl'))).toEqual([148.8, 36])
+    expect(round(size('tagged-rectangle', 'tag'))).toEqual([161.6, 48])
+    // multi-line: 24px per line
+    expect(round(size('cloud', 'a\nb\nc'))[1]).toBe(151.8)
+    expect(round(size('horizontal-cylinder', 'a\nb'))[1]).toBe(60)
+    expect(round(size('tagged-rectangle', 'a\nb\nc'))[1]).toBe(96)
+  })
+
+  const EDGE = `flowchart LR
+A@{ shape: cloud, label: "line one<br/>line two" }
+B@{ shape: h-cyl, label: "line one<br/>line two<br/>line three" }
+C@{ shape: tag-rect, label: "a label wider than the 120px minimum box" }
+A --> B --> C`
+
+  it('multi-line and wide labels: SVG snapshot (#2850)', () => {
+    expect(renderMermaidSVG(EDGE)).toMatchSnapshot()
+  })
+
+  it('multi-line and wide labels: ASCII snapshot (#2850)', () => {
+    expect(renderMermaidASCII(EDGE)).toMatchSnapshot()
   })
 
   it('fills the bar from style and classDef, but ignores them on the small circle (#2680)', () => {

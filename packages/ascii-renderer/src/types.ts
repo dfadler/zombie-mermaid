@@ -12,6 +12,7 @@ import type {
   NodeShape,
 } from '@zombie-mermaid/core'
 import type { Grid } from './grid-occupancy.ts'
+import type { AsciiEdgeHint, AsciiLayoutHints } from './layout-hints.ts'
 
 // Re-export NodeShape for convenience
 export type { NodeShape }
@@ -182,7 +183,12 @@ export interface AsciiNode {
    * `class-name` nodes only: which end of its cell the text hugs, so it
    * sits next to the circle its edge ends in (see class-flow.ts).
    */
-  textAlign?: 'start' | 'end'
+  textAlign?: 'start' | 'center' | 'end'
+  /**
+   * An empty flowchart subgraph's bare title on a vertical edge: the edge runs
+   * through its row, and the text is drawn over the stroke, as in mermaid (#2784).
+   */
+  titleOnly?: boolean
   styleClassName: string
   styleClass: AsciiStyleClass
 }
@@ -216,6 +222,8 @@ export interface AsciiEdge {
   from: AsciiNode
   to: AsciiNode
   text: string
+  /** Index of the parsed edge this came from (some parsed edges are dropped), for layout hints. */
+  parsedIndex?: number
   /**
    * Closes a cycle through a subgraph boundary (mermaid 12's
    * `orientFeedbackEdges`): layered as if it ran target -> source (#2111).
@@ -284,6 +292,12 @@ export interface AsciiEdge {
    * its chosen offset here and skips any offset a sibling already claimed,
    * keeping every lane in the group on a genuinely distinct path.
    */
+  /** determinePath routed this lane-group edge between ELK's faces, so port-offsets.ts places its ports (#2902). */
+  hintedLane?: boolean
+  /** Routed between ELK's faces (the hint held), not the grid's own. */
+  hintedFaces?: boolean
+  /** A back edge that enters by the gutter cell below its target's bottom face, clear of a frame. */
+  gutterBack?: boolean
   parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
   /**
    * Flow-axis face lane plan (#2121, `assignFaceLanes`): the gutter lane slot
@@ -293,11 +307,21 @@ export interface AsciiEdge {
   faceLanePlan?: { slot: number; dep: number; arr: number }
   /** determinePath wanted this self-loop on its top face but the first row has no room above (#2100). */
   loopTopWanted?: boolean
+  /** A TD self-loop ELK hooks out of the left face, on a first column with no room beside it (#2888). */
+  loopLeftWanted?: boolean
+  /**
+   * Set when this hooked self-loop shares its node and face with others (#2913):
+   * mermaid nests them, the innermost (index 0) a hook of its own and each next
+   * one drawn around the last. `count` is how many loops the node has there.
+   */
+  loopNest?: { index: number; count: number }
   /**
    * Set by determinePath when the edge was routed as planned. Its ports are
    * placed by port-offsets.ts's allocateFaces, like a lane's.
    */
   faceLane?: boolean
+  /** An edge of a bypass triangle (#2731, #2739): its ends take cells of their own on a shared face. */
+  ownPorts?: boolean
   /**
    * The subgraph this edge was originally addressed *from* (`Processing -->
    * Done` where `Processing` is a subgraph id), before the converter
@@ -377,6 +401,12 @@ export interface AsciiSubgraph {
   direction?: 'LR' | 'TD'
   /** Un-normalized direction (RL/BT kept) when the override is honored; drives the post-draw region flip. */
   rawDirection?: 'LR' | 'RL' | 'TD' | 'BT'
+  /**
+   * The frame ends up vertically mirrored (root `BT`, or an honored `BT`
+   * override), so the title band is laid out at the bottom and the flip brings
+   * it to the top, where mermaid draws it in every direction.
+   */
+  titleBelow?: boolean
   /**
    * Extra interior columns added (split across both sides) so the title can
    * clear a vertical edge entering the frame (#1222). Set by layout only.
@@ -468,6 +498,12 @@ export interface LabelRect {
 export interface AsciiGraph {
   /** The parsed graph, for the sibling-order rules shared with SVG (#2111). */
   parsed?: MermaidGraph
+  /** Take layer and order from the registered layout provider (flowchart and state only, #2645). */
+  useLayoutHints?: boolean
+  /** Hints the caller computed itself (architecture, #2724); read before the registered provider. */
+  ownHints?: AsciiLayoutHints
+  /** ELK's face and order for each edge end, faces mirrored to the grid's own TD/LR orientation, when the grid placed nodes from the same hints (#2645, PR 4b). */
+  edgeHints?: Map<AsciiEdge, AsciiEdgeHint>
   /** Edges (by index) that must not take flow-axis face lanes (#2121). */
   faceLaneOff?: ReadonlySet<number>
   /** Planned face lanes that were rejected by this layout (#2121). */
@@ -476,6 +512,10 @@ export interface AsciiGraph {
   topMargin?: boolean
   /** A self-loop wanted a top face but the first row has no room above it. */
   wantsTopMargin?: boolean
+  /** Layout keeps a free grid column left of the first node column (TD loops on a left face, #2888). */
+  leftMargin?: boolean
+  /** A TD self-loop wanted a left face but the first column has no room beside it. */
+  wantsLeftMargin?: boolean
   nodes: AsciiNode[]
   edges: AsciiEdge[]
   canvas: Canvas
@@ -493,6 +533,8 @@ export interface AsciiGraph {
    * (#1701).
    */
   nodeRects?: LabelRect[]
+  /** Skipped nodes `sidestepSkippedNodes` moved aside, with the end node they sit beside. */
+  sidesteps?: { node: AsciiNode; anchor: AsciiNode }[]
   /** Grid occupancy map — tracks which "x,y" cells are reserved. */
   grid: Grid
   columnWidth: Map<number, number>

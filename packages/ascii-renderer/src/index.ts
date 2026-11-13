@@ -12,6 +12,16 @@
 //   - ER diagrams (erDiagram) — grid layout with crow's foot notation
 //   - Pie charts (pie) — one stacked bar plus a table (see pie.ts)
 //   - Quadrant charts (quadrantChart) — a four-cell grid with numbered markers (see quadrant.ts)
+//   - Mindmaps (mindmap) — an indented tree with shape delimiters (see mindmap.ts)
+//   - Gantt charts (gantt) — a labelled row per task over a time axis (see gantt.ts)
+//   - Timelines (timeline) — a vertical spine of periods and events (see timeline.ts)
+//   - GitGraphs (gitGraph) — one row per commit, one column per branch (see gitgraph.ts)
+//   - Packets (packet) — bit-field boxes in rows of bits (see packet.ts)
+//   - Radar charts (radar-beta) — a group of bars per axis on a ruler (see radar.ts)
+//   - User journeys (journey) — tasks as score-height columns (see journey.ts)
+//   - Kanban boards (kanban) — stacked column blocks of boxed cards (see kanban.ts)
+//   - Sankey diagrams (sankey-beta) — each source with a bar per outgoing flow (see sankey.ts)
+//   - Requirement diagrams (requirementDiagram) — boxes and labelled lines (see requirement.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'
@@ -30,6 +40,8 @@ import type { Direction, DiagramType, RenderLimits } from '@zombie-mermaid/core'
 import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
 import { AsciiWidthError, COMPACT_SPACING, maxLineWidth } from './max-width.ts'
+import { colorizeText } from './ansi.ts'
+import { displayWidth } from './display-width.ts'
 import {
   detectColorMode,
   DEFAULT_ASCII_THEME,
@@ -44,6 +56,15 @@ import {
 
 export { LimitExceededError } from '@zombie-mermaid/core'
 export { AsciiWidthError }
+export { registerAsciiLayout, getAsciiLayout } from './layout-hints.ts'
+export type {
+  AsciiFace,
+  AsciiNodeHint,
+  AsciiEdgeEndHint,
+  AsciiEdgeHint,
+  AsciiLayoutHints,
+  AsciiLayoutProvider,
+} from './layout-hints.ts'
 export type { RenderLimits }
 
 // Re-export types for external use
@@ -127,8 +148,8 @@ export interface AsciiRenderOptions {
    */
   maxWidth?: number
   /**
-   * Opt in to a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours
-   * (default false: output is unchanged). Maps `lineColor` → `line`/`corner`,
+   * Honour a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours
+   * (default true since #2856, as in Mermaid; pass `false` to ignore them). Maps `lineColor` → `line`/`corner`,
    * `primaryBorderColor` → `border`/`junction`, `primaryTextColor` → `fg`
    * (the last two only with `theme: "base"`, as in Mermaid) and, for pie
    * charts, `pie1`..`pie12` → the slice colours. Hex values only (ANSI and
@@ -262,10 +283,11 @@ function renderOnce(source: string, options: AsciiRenderOptions): string {
   checkLineLength(source, options.limits)
   // accTitle/accDescr have no place in text output: drop them, never print.
   // The one exception is C4, where Mermaid draws accTitle as the title.
-  const { text, accTitle } = extractAccessibility(source)
+  const { text, accTitle, frontMatterTitle } = extractAccessibility(source)
   const theme: AsciiTheme = {
     ...DEFAULT_ASCII_THEME,
-    ...(options.honorThemeVariables && directiveTheme(text, options.theme)),
+    ...(options.honorThemeVariables !== false &&
+      directiveTheme(text, options.theme)),
     ...options.theme,
   }
   const diagramType: DiagramType = detectDiagramType(text)
@@ -277,13 +299,38 @@ function renderOnce(source: string, options: AsciiRenderOptions): string {
   // `extras` carries every ASCII-only per-type option: `hyperlinks` (read
   // by 'class' and 'flowchart') and `direction` (read by 'flowchart'
   // only); both are ignored by every other registered type.
-  const result = asciiRegistry[diagramType](text, config, colorMode, theme, {
+  let result = asciiRegistry[diagramType](text, config, colorMode, theme, {
     hyperlinks: options.hyperlinks ?? false,
     direction: options.direction,
     limits: options.limits,
-    honorThemeVariables: options.honorThemeVariables ?? false,
+    honorThemeVariables: options.honorThemeVariables !== false,
     accTitle,
   })
+
+  // A front matter `title:` on flowchart/state/class/ER: a centred row over
+  // the diagram (no colour/markup counted in the width), as pie does.
+  if (frontMatterTitle) {
+    // Width of the visible text only: skip ANSI escapes and HTML tags (a
+    // measuring scan, not sanitisation; the text is never re-emitted).
+    const visible = (l: string) => {
+      let out = ''
+      let skipTo = ''
+      for (const c of l) {
+        if (skipTo) {
+          if (c === skipTo) skipTo = ''
+        } else if (c === '\x1b') skipTo = 'm'
+        else if (c === '<') skipTo = '>'
+        else out += c
+      }
+      return displayWidth(out)
+    }
+    const width = Math.max(...result.split('\n').map(visible))
+    const pad = Math.max(
+      0,
+      Math.floor((width - displayWidth(frontMatterTitle)) / 2),
+    )
+    result = `${' '.repeat(pad)}${colorizeText(frontMatterTitle, theme.fg, colorMode)}\n\n${result}`
+  }
 
   return options.showCoords ? addCoordsOverlay(result) : result
 }

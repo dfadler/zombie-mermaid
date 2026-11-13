@@ -1,5 +1,5 @@
 /**
- * `honorThemeVariables` (#2108): an opt-in mapping of a small subset of
+ * `honorThemeVariables` (#2108, default on since #2856): a mapping of a small subset of
  * Mermaid's `%%{init: {"themeVariables": ...}}%%` onto our colour tokens.
  *
  * Mermaid behaviour relied on (measured, mermaid 12.1.0 and 12.2.0, headless
@@ -36,6 +36,7 @@ const BASE_ALL = {
   lineColor: '#0000ff',
 }
 const ON = { honorThemeVariables: true } as const
+const OFF = { honorThemeVariables: false } as const
 
 /** [name, source, options]; each gets an SVG and an ASCII file snapshot. */
 const cases: Array<
@@ -76,7 +77,7 @@ const cases: Array<
     `${init(BASE_ALL)}\nstateDiagram-v2\n  [*] --> A\n  A --> B`,
     ON,
   ],
-  ['flowchart-off', flow(BASE_ALL, 'base'), {}],
+  ['flowchart-off', flow(BASE_ALL, 'base'), OFF],
   [
     'pie-pie1-3',
     pie({ pie1: '#ff0000', pie2: '#00aa00', pie3: '#0000ff' }),
@@ -90,7 +91,7 @@ const cases: Array<
       ),
     ON,
   ],
-  ['pie-off', pie({ pie1: '#ff0000', pie2: '#00aa00' }), {}],
+  ['pie-off', pie({ pie1: '#ff0000', pie2: '#00aa00' }), OFF],
 ]
 
 describe('honorThemeVariables: snapshots', () => {
@@ -108,18 +109,32 @@ describe('honorThemeVariables: snapshots', () => {
 })
 
 describe('honorThemeVariables: behaviour', () => {
-  it('off by default: output equals the same diagram without variables', () => {
+  it('on by default (#2856): omitting the option equals honorThemeVariables: true', () => {
+    for (const src of [flow(BASE_ALL, 'base'), pie({ pie1: '#ff0000' })]) {
+      expect(renderMermaidSVG(src)).toBe(renderMermaidSVG(src, ON))
+      expect(renderMermaidASCII(src, { colorMode: 'html' })).toBe(
+        renderMermaidASCII(src, { ...ON, colorMode: 'html' }),
+      )
+    }
+    expect(renderMermaidSVG(flow(BASE_ALL, 'base'))).toContain(
+      '--surface:#ff0000',
+    )
+  })
+
+  it('opt out: honorThemeVariables: false equals the same diagram without variables', () => {
     const plain = 'flowchart LR\n  A[Alpha] --> B[Beta]'
-    expect(renderMermaidSVG(flow(BASE_ALL, 'base'))).toBe(
+    expect(renderMermaidSVG(flow(BASE_ALL, 'base'), OFF)).toBe(
       renderMermaidSVG(plain),
     )
     const p = 'pie title Pets\n  "Dogs" : 40\n  "Cats" : 35\n  "Rats" : 25'
-    expect(renderMermaidSVG(pie({ pie1: '#ff0000' }))).toBe(renderMermaidSVG(p))
+    expect(renderMermaidSVG(pie({ pie1: '#ff0000' }), OFF)).toBe(
+      renderMermaidSVG(p),
+    )
     for (const [src, base] of [
       [flow(BASE_ALL, 'base'), plain],
       [pie({ pie1: '#ff0000' }), p],
     ] as const) {
-      expect(renderMermaidASCII(src, { colorMode: 'html' })).toBe(
+      expect(renderMermaidASCII(src, { ...OFF, colorMode: 'html' })).toBe(
         renderMermaidASCII(base, { colorMode: 'html' }),
       )
     }

@@ -9,9 +9,7 @@ pie title Time spent
 ---
                      <span style="color:#a9b1d6">Time spent</span>
 
-<span style="color:#373949">[</span><span style="color:#7aa2f7;background:#7aa2f7">█████████████████████████</span><span style="color:#5fabf2">▓▓▓▓▓▓▓▓▓▓▓▓▓</span><span style="color:#0d52a5">▒▒▒▒▒▒▒</span><span style="color:#92daf6">░░░░░</span><span style="color:#373949">]</span>
-
-  <span style="color:#7aa2f7;background:#7aa2f7">█</span> <span style="color:#a9b1d6">Coding</span>     <span style="color:#a9b1d6"> 50%</span>
-  <span style="color:#5fabf2">▓</span> <span style="color:#a9b1d6">Meetings</span>   <span style="color:#a9b1d6"> 25%</span>
-  <span style="color:#0d52a5">▒</span> <span style="color:#a9b1d6">Review</span>     <span style="color:#a9b1d6"> 15%</span>
-  <span style="color:#92daf6">░</span> <span style="color:#a9b1d6">Email</span>      <span style="color:#a9b1d6"> 10%</span>
+                                                         <span style="color:#7aa2f7;background:#7aa2f7">█</span> <span style="color:#a9b1d6">Coding</span>     <span style="color:#a9b1d6"> 50%</span>
+<span style="color:#373949">[</span><span style="color:#7aa2f7;background:#7aa2f7">█████████████████████████</span><span style="color:#5fabf2">▓▓▓▓▓▓▓▓▓▓▓▓▓</span><span style="color:#0d52a5">▒▒▒▒▒▒▒</span><span style="color:#92daf6">░░░░░</span><span style="color:#373949">]</span>     <span style="color:#5fabf2">▓</span> <span style="color:#a9b1d6">Meetings</span>   <span style="color:#a9b1d6"> 25%</span>
+                                                         <span style="color:#0d52a5">▒</span> <span style="color:#a9b1d6">Review</span>     <span style="color:#a9b1d6"> 15%</span>
+                                                         <span style="color:#92daf6">░</span> <span style="color:#a9b1d6">Email</span>      <span style="color:#a9b1d6"> 10%</span>

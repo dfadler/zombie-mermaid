@@ -2,7 +2,7 @@
 
 ## Statement separators
 
-Newlines and semicolons both separate statements, for every diagram type:
+Newlines and semicolons both separate statements, for every diagram type except `journey` and `timeline`, whose Mermaid lexers have no `;` separator (in a journey it is a syntax error):
 
 ```
 flowchart TD;A-->B;B-->C
@@ -158,9 +158,10 @@ label; drawing a misleading outline would be worse.
 A diagram can configure itself inline:
 
 ```
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart TD
-  A --> B --> C
+%%{init: {"pie": {"textPosition": 0.6}}}%%
+pie
+  "A" : 2
+  "B" : 1
 ```
 
 Mermaid's relaxed JSON is accepted — unquoted keys and single quotes both
@@ -171,13 +172,14 @@ option.** The caller is closer to the user's intent than text embedded in a
 diagram, and a diagram from an untrusted source should not be able to
 override a host application's rendering choices.
 
-### `themeVariables` (opt-in)
+### `themeVariables`
 
-Mermaid applies `%%{init: {"themeVariables": {...}}}%%` colours; by default
-zombie-mermaid does not, so a diagram cannot recolour itself against the
-host page's `bg`/`fg` (or CSS-variable) theme. Set `honorThemeVariables: true`
-(`renderMermaidSVG` and `renderMermaidASCII`) to map a small subset onto the
-theme tokens:
+Mermaid applies `%%{init: {"themeVariables": {...}}}%%` colours, and so does
+zombie-mermaid (default since #2856, checked on mermaid 12.3.0): a small subset
+is mapped onto the theme tokens. Pass `honorThemeVariables: false`
+(`renderMermaidSVG` and `renderMermaidASCII`) to ignore them, so a diagram
+cannot recolour itself against the host page's `bg`/`fg` (or CSS-variable)
+theme:
 
 | Variable                                                                                                                                                                                                 | Needs                     | Becomes                              | Diagrams            |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------ | ------------------- |
@@ -195,7 +197,7 @@ flowchart LR
 ```
 
 ```ts
-renderMermaidSVG(source, { honorThemeVariables: true })
+renderMermaidSVG(source, { honorThemeVariables: false }) // opt out
 ```
 
 - **The caller wins.** A `bg`, `fg`, `line`, `surface` or `border` you pass is
@@ -226,7 +228,7 @@ renderMermaidSVG(source, { honorThemeVariables: true })
 
 Checked against mermaid 12.1.0 and 12.2.0 (`scripts/lib/real-mermaid.ts`;
 12.1.0 via jsDelivr), headless Chromium, computed paint; both gave the same results.
-See [known differences](known-differences.md#themevariables-are-opt-in-and-only-a-subset).
+See [known differences](known-differences.md#themevariables-are-honoured-by-default-and-only-a-subset).
 
 Keys parsed but deliberately not acted on, and why:
 
@@ -237,11 +239,14 @@ Keys parsed but deliberately not acted on, and why:
 | `fontFamily`      | use the `font` render option                                                 |
 | `htmlLabels`      | labels are always SVG text                                                   |
 | `maxTextSize`     | no text-size limit is enforced                                               |
+| `flowchart.curve` | mermaid 12.3.0 ignores it too; use the `curve` render option to opt in       |
 
 ### Edge curves
 
-`flowchart.curve` selects how a routed edge is drawn. It changes only the
-drawn line — never where the edge goes.
+The `curve` render option selects how a routed edge is drawn. It changes only
+the drawn line — never where the edge goes. A `%%{init: {"flowchart": {"curve":
+...}}}%%` directive is **ignored**: mermaid 12.3.0 draws the same rounded
+orthogonal edges for every `curve` value (#2729).
 
 | Value                             | Result                             |
 | --------------------------------- | ---------------------------------- |
@@ -512,7 +517,9 @@ row directly above that arrow (as in Mermaid 12.1.0 and 12.2.0). A created
 actor figure's height does not pad the other participants' header boxes (the
 footer row, which holds every surviving participant, is still uniform).
 `destroy X` ends `X`'s lifeline
-at the next message with a cross, and no footer box is drawn for it.
+at the next message and draws `X`'s footer box there, centred on that message's
+arrow (as in Mermaid 12.3.0), instead of at the bottom of the diagram. There is
+no cross; the only cross is the `-x` message end.
 
 Mermaid's binding rules apply, with Mermaid's own error text: the message
 right after `create` must have the created participant as its _recipient_
@@ -522,46 +529,11 @@ must have the destroyed participant as its sender _or_ recipient, and a
 simulate the behavior"). A directive with no message after it at all is
 treated as a plain declaration rather than an error.
 
-In ASCII output the cross sits on the row directly _under_ the destroying
-arrow, not on the arrow row — a cross on the arrow row would replace the
-arrowhead and read as a lost message (`-x`). One row is reserved for it. A
-self-message cannot create its own recipient (the loop glyphs occupy the
-box's cells), so that degenerate case keeps the header box.
-
-### Participant grouping (`box ... end`)
-
-`box <color?> <label?> ... end` groups a run of participants under a shared
-background, spanning from the leftmost to the rightmost member declared
-inside it:
-
-```
-sequenceDiagram
-  box Aqua Group 1
-  participant A
-  participant B
-  end
-  participant C
-  A->>B: hello
-  B->>C: world
-```
-
-The header word (or an `rgb(...)`/`hsl(...)` call) is a colour if it matches
-a CSS named colour, hex, or `rgb()`/`hsl()` function form; otherwise the
-whole header is the label. `box transparent Group 1` is explicitly
-colourless with a label (Mermaid's own convention), and either piece can be
-omitted — `box`, `box Aqua`, and `box Group 1` are all valid. A box cannot
-nest inside another box, and a participant can only belong to one box;
-both are errors with Mermaid's own wording. A participant first declared
-(or auto-created by a message) while a box is open joins it, matching
-Mermaid's `addActor` rule; one declared after the box's `end` does not, even
-if a later message places it visually between two grouped members.
-
-In SVG, the group is a background rectangle with a themed stroke, drawn
-behind everything else, with the label centred in a band above the
-participant boxes. A colour is blended into the theme background via
-`color-mix()` at a fixed percentage rather than painted as-is, so it reads
-as an appropriate tint in both light and dark themes instead of the same
-opaque swatch in both.
+In ASCII output a destroyed participant's footer box is drawn the same way as a
+created one, centred on the destroying arrow's row; the arrow stops at (or
+starts from) the box's edge. A self-message cannot create its own recipient
+(the loop glyphs occupy the box's cells), so that degenerate case keeps the
+header box; a destroying self-message puts the footer box just under the loop.
 
 In ASCII output the group is a labelled bracket around the header boxes and
 an unlabelled one around the footer boxes — not a full-height background,
@@ -570,8 +542,8 @@ boundary. Colour is not representable in ASCII and is ignored; only the
 label, if any, is drawn. A participant created or destroyed inside an open
 box is included in the box's span, but its header or footer bracket segment
 reflects only the members actually present in that row (a created
-participant has no header box to bracket; a destroyed one has no footer
-box).
+participant has no header box to bracket; a destroyed one's footer box is
+not in the bottom row).
 
 `rect <color> … end` is a background highlight (named colour, hex, `rgb()`/`rgba()`,
 `hsl()`/`hsla()`). SVG paints the region behind the lifelines with the colour as
@@ -721,7 +693,7 @@ classDiagram-v2
 - `classDiagram-v2` is the same diagram type as `classDiagram`, as in Mermaid.
 - `<|--|>`, `<|..|>`, `<-->`, `<..>`, `*--*` and `o--o` draw the relationship's
   marker at both ends of the line (a mixed pair such as `<|--*` is still an error).
-- `()--`, `--()` and `()--()` end the line in a hollow circle (lollipop interface):
+- `()--`, `--()` and `()--()` (and the dotted `()..`, `..()`, `()..()`, with a dashed stem) end the line in a hollow circle (lollipop interface):
   `○`, or `O` in the `--ascii` charset. A one-ended lollipop draws the interface name with
   the circle above or below its host and no box, in SVG and ASCII, as Mermaid does; a
   class that has members, an annotation, another relationship, a note or a namespace
@@ -773,7 +745,6 @@ classDiagram
 - `class A["Label"]` aliases are not honoured yet.
 - The `$` / `*` classifier after a method's `)` is styled but also left in the
   member text.
-- A dotted lollipop (`()..`, `..()`) is a parse error.
 - `note`/`note for` and `classDef`/`style`/`class`/`:::` styling are
   recognized (see above).
 
@@ -874,7 +845,7 @@ For the original design proposal behind this feature, see [xychart-design.md](xy
 
 The chart renderer follows a clean, minimal design philosophy, originally inspired by Apple's design language and Craft's interface for `beautiful-mermaid`:
 
-- **Rounded bars** — All bar corners are rounded for a modern, polished look
+- **Square bars** — Flat, unstroked bars with square corners and no legend, as mermaid draws them; a second bar series is drawn over the first, not beside it
 - **Straight lines** — Line series join their points with straight segments, as mermaid does (mermaid has no option for curved lines). Points carry no markers unless the chart is interactive
 - **Axis lines and ticks** — Each axis has a line and tick marks, as in mermaid; there is no grid
 - **Drop-shadow lines** — Each line series has a subtle shadow beneath it for depth
@@ -908,10 +879,12 @@ its line number, not silently dropped.
 The diagram is lowered to the flowchart model and drawn by the flowchart
 layout, so it is not positioned on Mermaid's port grid:
 
-- Ports only choose the flow direction (left-to-right unless more edges use
-  top/bottom ports) and which way each edge points in the layout, so
-  `db:L -- R:server` still puts `server` left of `db`. Exact placement is the
-  flowchart layout's.
+- Ports place services on Mermaid's grid, in SVG and ASCII: `a:R -- L:b` puts
+  `b` right of `a` and `a:B -- T:b` puts `b` below it, and ASCII leaves and
+  enters each node by the face the port names. The flow direction (left to
+  right unless more edges use top/bottom ports) only sets which axis is the
+  layer axis. `RenderOptions.direction` is ignored, in SVG and ASCII:
+  mermaid@12.3.0 has no direction for `architecture-beta` (#2912).
 - Icons are not drawn. `database` and `disk` give a cylinder, `cloud` a
   stadium, `internet` a circle; any other icon (including custom `"pack:name"`
   icons) gives a rectangle.
@@ -938,11 +911,11 @@ Supported: `Person`, `System`, `Container`, `Component` (plus `Db`, `Queue` and 
 
 C4 diagrams have their own renderers (they are not lowered to the flowchart model): persons get a head-and-shoulders glyph, databases a cylinder, queues a pipe, external elements the muted C4 palette, and boundaries and deployment nodes a dashed frame with a title. Relationship labels show the label and, on its own line, the `[technology]`. A `title` is drawn at the top. `Rel` endpoints may be populated boundaries. `RenderOptions.direction` re-orients the SVG layout (default top-to-bottom).
 
-Layout hints: `Rel_D`/`Rel_U`/`Rel_L`/`Rel_R` are layering constraints (target below/above, or side by side in one row) in ASCII. In SVG they have no effect on placement, as in Mermaid: shapes are laid out in declaration order, in rows, and relationships are drawn afterwards without moving anything. C4 SVG uses its own row layout, not ELK, so it does not need `elkjs`.
+Layout hints: `Rel_D`/`Rel_U`/`Rel_L`/`Rel_R` have no effect on placement, in SVG or ASCII, as in Mermaid: shapes are laid out in declaration order, in rows (four to a row, boundaries two to a row), and relationships are drawn afterwards without moving anything. C4 SVG uses its own row layout, not ELK, so it does not need `elkjs`.
 
 Known limitations:
 
-- ASCII output is always top-to-bottom (`BT` reverses the rows; `LR`/`RL` are laid out top-to-bottom).
+- The render direction has no effect on C4 layout, as in Mermaid (`BT`, `LR` and `RL` render like `TB`).
 - `UpdateElementStyle`, `UpdateRelStyle`, `UpdateLayoutConfig`, legends and tags are accepted and ignored. Elements use the standard C4 palette.
 - A relationship from an element to itself is not drawn in ASCII.
 - Two relationships with the same `from` and `to` (for example `Rel(a, b, ...)` and `Rel_Back(a, b, ...)`) are both drawn. Mermaid merges them and draws only the later one; we keep both so nothing the author wrote is dropped (#1209).
@@ -973,8 +946,7 @@ total are left out of the pie but stay in the legend, so the drawn slices
 fill the circle and the labels may not add up to 100%. A `pie` with no
 slices draws an empty circle.
 
-Colours follow the theme instead of Mermaid's `pie1`..`pie12` (unless you opt
-in with `honorThemeVariables`, see [`themeVariables`](#themevariables-opt-in)):
+Colours follow the theme instead of Mermaid's `pie1`..`pie12` (unless `honorThemeVariables: false`, see [`themeVariables`](#themevariables)):
 the first slice uses the accent colour, the next eleven use the XY chart series
 shades, and the twelve repeat after that. Slices are drawn at Mermaid's 0.7
 opacity with a 2px outline in the theme's foreground colour.
@@ -993,8 +965,8 @@ Known differences from Mermaid:
   else draws the default). `left` and `top` shift the pie to make room, `top`
   and `bottom` make the frame taller, and `center` draws the legend over the
   pie. As in Mermaid, the title stays centred on the frame, not on a shifted
-  pie. The ASCII output always puts the legend beside the bars, so it ignores
-  it.
+  pie. The ASCII output prints the table above the bar for `top` and below it
+  for every other value.
 - `%%{init: {"pie": {"highlightSlice": "Cats"}}}%%` draws the slice with that
   exact label 5% larger and fully opaque, as Mermaid 12.1.0 does (it scales the
   slice about the pie centre; it does not pull it out). `"hover"` only
@@ -1093,6 +1065,722 @@ High Engagement │                 6      │                        │
   always below the grid, unlike the SVG's x axis on top of a point-free chart.
 - `accTitle` and `accDescr` are not printed.
 
+## Mindmaps
+
+`mindmap` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/mindmap.html)
+and is checked against mermaid 12.3.0 (12.1.0, 12.2.0 and 12.3.0 render it identically).
+Indentation sets the level, only relative to the line above; the first node is the root.
+
+```
+mindmap
+  root((mindmap))
+    Origins
+      Long history
+      Popularisation
+        British popular psychology author Tony Buzan
+    Research
+      On effectiveness<br/>and features
+    Tools
+      Pen and paper
+      Mermaid
+```
+
+| Syntax       | Shape                             |
+| ------------ | --------------------------------- |
+| `text`       | default (rounded top, underlined) |
+| `id[text]`   | rectangle                         |
+| `id(text)`   | rounded rectangle                 |
+| `id((text))` | circle                            |
+| `id)text(`   | cloud                             |
+| `id))text((` | bang                              |
+| `id{{text}}` | hexagon                           |
+
+- Text inside a delimiter runs to the next `)`, `]`, `(` or `}`; quote it (`"..."`
+  or ``"`...`"``) to include those. A newline or `<br/>` is a line break, and labels
+  are Markdown (`**bold**`, `*italic*`); a label wider than 200px wraps.
+- The id in front of a delimiter is never drawn. `B:::urgent` is a node labelled
+  `B:::urgent`; `:::urgent large` goes on its own line under the node, as does
+  `::icon(fa fa-book)` (Mermaid draws no icon without an icon font, and neither do we).
+- A node needs a parent: a line at or above the root's indentation fails with
+  "There can be only one root", as in Mermaid. `%%` comments are skipped.
+- Each first-level branch takes a colour section (eleven, then they repeat) that its
+  descendants inherit; connector thickness follows the indentation, as in Mermaid (`17 - 3 * (n + 1)` px, 3px once
+  that reaches zero), so deeper indentation draws thinner connectors.
+- Layout is Mermaid's CoSE-Bilkent force layout, ported without dependencies; see
+  [Known differences](known-differences.md#mindmaps) for what differs (colours, font
+  metrics, init config).
+
+### ASCII Mindmaps
+
+Mermaid has no text mode for mindmaps, so the ASCII output is this library's own:
+an indented tree, each label wrapped in its shape's delimiters, `+--` and `` `-- ``
+instead of box-drawing characters in ASCII mode.
+
+```
+((mindmap))
+├── Origins
+│   ├── Long history
+│   └── Popularisation
+│       └── British popular psychology author Tony Buzan
+├── Research
+│   └── On effectiveness
+│       and features
+└── Tools
+    ├── Pen and paper
+    └── Mermaid
+```
+
+## Gantt Charts
+
+`gantt` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/gantt.html)
+and its renderer's layout, checked against `mermaid@12.3.0` (npm `latest`;
+mermaid.live runs 12.2.0, which renders the same figures):
+
+```mermaid
+gantt
+    title A Gantt Diagram
+    dateFormat YYYY-MM-DD
+    section Section
+        A task          :a1, 2014-01-01, 30d
+        Another task    :after a1, 20d
+    section Another
+        Task in Another :2014-01-12, 12d
+        another task    :24d
+```
+
+Supported: `title`, `dateFormat` (the dayjs tokens `YYYY YY MMMM MMM MM M DD D Do HH H hh h mm m ss s SSS A a Z ZZ X x`),
+`axisFormat` (d3 time-format directives), `tickInterval` (`1millisecond` to
+`1month`, `week` on the `weekday`), `weekday`, `weekend`, `excludes` /
+`includes` (`weekends`, weekday names, dates), `inclusiveEndDates`,
+`todayMarker` (`off` or a stroke style), `topAxis`, `section`, the task tags
+`active`, `done`, `crit`, `milestone` and `vert`, the one-, two- and
+three-part task forms with `after a b`, `until a` and durations
+(`y M w d h m s ms`), `click ... href` (marks the task as a link; it is not
+clickable in static output, as in Mermaid), `accTitle` and `accDescr`. The
+`gantt` block of `%%{init}%%` and front matter `config:` is read for
+`displayMode` (`compact`), `topAxis`, `axisFormat`, `tickInterval` and
+`weekday`, and front matter `displayMode: compact` works as documented. The
+size keys `barHeight`, `barGap`, `topPadding`, `leftPadding`, `rightPadding`,
+`gridLineStartPadding`, `titleTopMargin`, `fontSize`, `sectionFontSize` and
+`numberSectionStyles` are read too (checked against mermaid 12.3.0); `useWidth`
+is not.
+
+The SVG uses Mermaid's geometry: a frame 1200px wide (Mermaid uses its
+container's width), 24px rows with 20px bars, 75px side padding, the d3 time
+scale and ticks, shaded `excludes` days, section stripes cycling through four
+styles and a vertical marker through every row for `vert`. Colours come from
+the theme (the accent for bars, the foreground mixed into the background for
+done tasks and the grid), so every theme and live theme switching apply. Dates
+are read and drawn in UTC. See [Known differences](known-differences.md#gantt-charts).
+
+### ASCII Gantt Charts
+
+Mermaid has no text mode for gantt charts, so the ASCII output is this
+library's own design: section headings and task labels on the left, a
+60-column timeline on the right.
+
+```text
+                               A Gantt Diagram
+
+Section
+  A task          ████████████████████████████████████
+  Another task                                        ████████████████████████
+Another
+  Task in Another              ███████████████
+  another task                               ██████████████████████████████
+                  ─────┬───────┬───────┬────────┬───────┬───────┬───────┬─────
+                  2014-01-05      2014-01-19       2014-02-02      2014-02-16
+
+  █ task
+```
+
+- **Bars** use `█` for a task, `▒` active, `░` done and `▓` critical (ASCII
+  mode: `#`, `=`, `.`, `%`); a critical task that is also done or active keeps
+  that glyph and gets ` !` after its label. A milestone is `◆` (`*`) centred on
+  its date and a `vert` marker is a `┆` (`:`) line through every row.
+- **The axis** repeats the SVG's ticks and `axisFormat`, dropping a label that
+  would run into the one before it. A legend below names the glyphs in use.
+- Not drawn: `excludes` shading and the today line (output must not depend on
+  the clock). `accTitle` and `accDescr` are not printed.
+
+## Timelines
+
+`timeline` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/timeline.html)
+and its renderer's layout. `pnpm run timeline:oracle` compares the gallery samples
+box by box with `mermaid@12.3.0`; mermaid 12.2.0 (the pin and mermaid.live today)
+renders the same sources identically.
+
+```mermaid
+timeline
+    title England's History Timeline
+    section 17th Century
+        1603 : Be merged crowns
+        1611 : King James Bible
+    section 18th Century
+        1707 : Act of Union : Great Britain
+        1776 : Loses American colonies
+             : Industrial revolution begins
+```
+
+Supported: `timeline` and `timeline TD` (the axis runs down the page, as in
+Mermaid), `title`, `section`, periods with any number of `: event` parts, extra
+events on continuation lines, `%%` comments, `accTitle` and `accDescr`. As in
+Mermaid, a `#` starts a comment even inside a period (`C# Language` is the
+period `C`), a `:` is a separator only when a space follows it, an event needs a
+period before it, the events after a `section` line join the last period of the
+previous section, and a period written before the first `section` is not drawn
+once sections exist. A bare `timeline` is valid: just the axis.
+
+The SVG uses Mermaid's geometry: periods in columns 200px apart, boxes 190px
+wide with text wrapped at 150px, a running-maximum row height within a section,
+dashed lines running past the tallest event column, an arrowed axis, and a
+12-colour cycle (per period without sections, per section with them). Line
+breaks are found by summing Trebuchet MS advances (Mermaid's first font), not
+by measuring in a browser. Colours come from the theme (the accent and its
+series shades, mixed into `--bg` for the boxes). See
+[Known differences](known-differences.md#timelines).
+
+### ASCII Timelines
+
+Mermaid has no text mode for timelines, and its columns would run off a terminal
+after a few periods, so the ASCII output is this library's own design: a vertical
+spine for both `timeline` and `timeline TD`.
+
+```text
+ History of Social Media Platform
+
+  2002 ──●── LinkedIn
+         │
+  2004 ──●── Facebook
+         │   Google
+         │
+  2005 ──●── YouTube
+         ▼
+```
+
+- Periods are right-aligned beside their `●` (`o` in ASCII mode), in source order,
+  with their events to the right, one per row. Long period labels wrap at 24 columns.
+- A `section` is a `[name]` row; markers and headings use the theme accent.
+- `accTitle` and `accDescr` are not printed.
+
+## Kanban Boards
+
+`kanban` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/kanban.html)
+and its renderer's layout. `pnpm run kanban:oracle` compares the gallery samples card by
+card with `mermaid@12.3.0`.
+
+```mermaid
+kanban
+  Todo
+    [Create Documentation]
+    docs[Create Blog about the new diagram]
+  id10[Ready for test]
+    id4[Create parsing tests]@{ ticket: MC-2038, assigned: 'K.Sveidqvist', priority: 'High' }
+    id66[last item]@{ priority: 'Very Low', assigned: 'knsv' }
+  id11[Done]
+    id5[define getData]
+```
+
+Supported: a column is a line at the first line's indentation, a card is any more
+indented line under it; text is bare or `id[text]` (the other bracket shapes parse but, as
+in Mermaid, are not drawn differently). `@{ ... }` after a card sets `ticket`, `assigned`,
+`priority` (`Very High` red, `High` orange, `Low` blue, `Very Low` light blue; `Medium` and
+other names draw no colour), `label` and `icon`, in flow style on one line or as `key: value`
+lines. `kanban.sectionWidth` and `kanban.ticketBaseUrl` (`#TICKET#` is replaced; the ticket
+becomes a link) come from front matter or `%%{init}%%`. As in Mermaid, a line indented less
+than the first column is "Items without section detected", a `shape` key must be lowercase,
+and `::icon(...)` and `:::class` are recorded but not drawn.
+
+The SVG uses Mermaid's geometry: columns 205px apart (200px wide), cards 185px wide with
+text wrapped at 175px, 24px per text line, 5px between cards. Line breaks are found by
+summing Trebuchet MS advances (Mermaid's first font), including `white-space: break-spaces`
+behaviour, not by measuring in a browser. Colours come from the theme. See
+[Known differences](known-differences.md#kanban-boards).
+
+### ASCII Kanban Boards
+
+Mermaid has no text mode for kanban boards, and its columns would run off a terminal after
+three or four, so the ASCII output is this library's own design: one framed block per
+column, stacked, with boxed cards.
+
+```text
+┌──────────────────────────────┐
+│        Ready for test        │
+├──────────────────────────────┤
+│ ┌─ High ───────────────────┐ │
+│ │ Create parsing tests     │ │
+│ │ MC-2038     K.Sveidqvist │ │
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
+```
+
+- Cards share one width (the widest content, up to 40 columns; longer text wraps).
+- `priority` is named in the card's top border; `ticket` and `assigned` share a row.
+
+## User journeys
+
+`journey` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/userJourney.html)
+and its renderer's geometry, read from `mermaid@12.3.0`.
+
+```mermaid
+journey
+    title My working day
+    section Go to work
+      Make tea: 5: Me
+      Go upstairs: 3: Me
+      Do work: 1: Me, Cat
+    section Go home
+      Go downstairs: 5: Me
+      Sit down: 5: Me
+```
+
+Supported: `title`, `section`, tasks written `Name: score: Actor, Actor` (the
+actors are optional), `%%` comments, `accTitle` and `accDescr`. As in Mermaid, a
+`#` starts a comment, `;` is not a separator (it is a syntax error), a task
+needs its `: score` on the same line, the score is `Number()` of the text
+(so `0`, `6` and `7.5` are drawn off the 1-5 scale, and a non-numeric score
+draws a straight mouth), actors are listed sorted, and tasks written before the
+first `section` get no section bar. A bare `journey` is valid: just the axis.
+
+The SVG uses Mermaid's geometry: tasks 200px apart in 150x50 boxes, section bars
+spanning their tasks, a dashed line per task down to y=450 with a face at
+`300 + (5 - score) * 30` (smile above 3, straight at 3, sad below), a dot per
+actor on the box, an actor legend whose labels wrap at 360px, and seven
+section colours that cycle. Colours come from the theme, not Mermaid's fixed
+palette. See [Known differences](known-differences.md#user-journeys).
+
+### ASCII User journeys
+
+Mermaid has no text mode for journeys, and its score-height columns would run
+off a terminal, so the ASCII output is this library's own: the same content
+listed row by row.
+
+```text
+         My working day
+
+  Actors: Cat, Me
+
+  [Go to work]
+    :)  5  Make tea       Me
+    :|  3  Go upstairs    Me
+    :(  1  Do work        Me, Cat
+
+  [Go home]
+    :)  5  Go downstairs  Me
+    :)  5  Sit down       Me
+```
+
+- Each task shows a face (`:)` above 3, `:|` at 3, `:(` below 3), its score, its
+  name and its actors. A `section` is a `[name]` row; headings and faces use the
+  theme accent.
+- `accTitle` and `accDescr` are not printed.
+
+## Requirement Diagrams
+
+`requirementDiagram` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/requirementDiagram.html)
+and its renderer's layout. `pnpm run requirement:oracle` compares the gallery samples
+box by box with `mermaid@12.3.0`; mermaid 12.2.0 (the pin and mermaid.live today)
+reads the same sources the same way.
+
+```mermaid
+requirementDiagram
+
+    requirement test_req {
+    id: 1
+    text: the test text.
+    risk: high
+    verifymethod: test
+    }
+
+    element test_entity {
+    type: simulation
+    }
+
+    test_entity - satisfies -> test_req
+```
+
+Supported: the six requirement kinds (`requirement`, `functionalRequirement`,
+`interfaceRequirement`, `performanceRequirement`, `physicalRequirement`,
+`designConstraint`) with `id`, `text`, `risk` (`low`, `medium`, `high`) and
+`verifymethod` (`analysis`, `demonstration`, `inspection`, `test`); `element`
+with `type` and `docref`; the seven relationships (`contains`, `copies`,
+`derives`, `satisfies`, `verifies`, `refines`, `traces`) written `a - r -> b` or
+`b <- r - a`; `direction TB | BT | LR | RL`; `classDef`, `class`, `style` and
+`:::`; `%%` comments, `accTitle`, `accDescr` and a front matter `title`.
+
+The grammar is stricter than it looks, and this parser is as strict as
+`mermaid@12.3.0`: a `{` ends its line and every property sits on its own line, an
+unquoted name or value stops at `: , { < > - =` (so `text: a-b` and `text: a, b`
+are errors; quote them), an unquoted name or value that starts with a keyword
+(`text: test suite`, `requirement element`) is an error, and a relationship to a
+name that was never declared is an error. A name written twice keeps its first
+definition.
+
+The SVG uses Mermaid's box geometry: a `<<Type>>` row, the bold name, a divider
+20px lower and then the `ID:`, `Text:`, `Risk:` and `Verification:` rows (an
+element's `Type:` and `Doc Ref:`), 24px per row with 10px of padding, boxes sized
+from the text with Trebuchet MS advances and kerning, `contains` as a solid line
+with a circle-plus at the container and every other relationship as a dashed
+arrow with its `<<label>>`. Layout is ELK (`registerElk`, as for ER and class
+diagrams); with the default look it agrees with Mermaid's box positions and
+drawing size on the gallery samples. Colours come from the theme. See
+[Known differences](known-differences.md#requirement-diagrams).
+
+### ASCII Requirement Diagrams
+
+Mermaid has no text mode for requirement diagrams, so the ASCII output is this
+library's own: the same boxes and labelled lines on the flowchart grid, with a
+blank row where the SVG has a divider, relationships dotted with an arrowhead and
+`contains` solid with a `●` (`o` in ASCII mode) at the container.
+
+```text
+┌──────────────────────┐
+│                      │
+│                      │
+│     <<Element>>      │
+│     test_entity      │
+│                      │
+│   Type: simulation   │
+│                      │
+└───────────┬──────────┘
+            ┆
+            ┆
+      <<satisfies>>
+            ┆
+            ▼
+┌──────────────────────┐
+│                      │
+│   <<Requirement>>    │
+│       test_req       │
+│                      │
+│ ID: 1                │
+│ Text: the test text. │
+│ Risk: High           │
+│ Verification: Test   │
+│                      │
+└──────────────────────┘
+```
+
+## Git graphs
+
+`gitGraph` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/gitgraph.html)
+and its renderer's geometry. `pnpm run gitgraph:oracle` compares the gallery samples
+with `mermaid@12.3.0` (branch lines and label boxes, arrow routes, commit symbols,
+commit labels, tags and the drawing size); 12.2.0 (the pin and mermaid.live today)
+scores the same on every sample.
+
+```mermaid
+gitGraph
+   commit id: "init"
+   commit id: "docs"
+   branch develop
+   checkout develop
+   commit id: "feature-a"
+   commit id: "feature-b"
+   checkout main
+   merge develop id: "release-1"
+   commit id: "hotfix"
+```
+
+Supported: `gitGraph`, `gitGraph LR:` (the default), `gitGraph TB:` and `gitGraph BT:`;
+`commit` with `id:`, `msg:` (or a bare string), any number of `tag:` and
+`type: NORMAL | REVERSE | HIGHLIGHT` in any order; `branch <name> [order: N]` (a name may
+contain `/`, `.` and `-`, or be a quoted string); `checkout` / `switch`; `merge` with
+`id:`, `tag:` and `type:`; `cherry-pick id: "…" [tag: "…"] [parent: "…"]`; `title`,
+`accTitle`, `accDescr` and `%%` comments. The `gitGraph` config block of `%%{init}%%`
+and front matter is read for `mainBranchName`, `mainBranchOrder`, `showCommitLabel`,
+`showBranches`, `rotateCommitLabel`, `parallelCommits`, `titleTopMargin` and
+`diagramPadding`. The errors are Mermaid's:
+a branch that exists, a `checkout` of one that does not, a `merge` of a branch into
+itself, with no commits, with the same head or reusing an id, and a `cherry-pick` of a
+commit on the current branch or of a merge without `parent:`.
+
+The SVG ports Mermaid's renderer: commits 50px apart (40 plus 10), branches 90px apart
+with rotated labels (50 without), the same arrow routes and rerouting lanes, the same
+symbols (a ring for a merge, a cross for `REVERSE`, a square for `HIGHLIGHT`, the
+cherry for a pick) and the same tag boxes. Text widths are summed Trebuchet MS
+advances, not measured in a browser. Colours come from the theme (the accent and its
+series shades), eight to a cycle as in Mermaid. See
+[Known differences](known-differences.md#git-graphs).
+
+### ASCII Git graphs
+
+Mermaid has no text mode for git graphs, and its commit labels would run off a terminal
+after a dozen commits, so the ASCII output is this library's own design: the layout of
+`git log --graph`, one row per commit and one column per branch, for all three
+orientations.
+
+```text
+main  develop
+●     ┆   init
+●     ┆   docs
+├─────●   feature-a
+│     ●   feature-b
+◎─────╯   release-1
+●     ┆   hotfix
+```
+
+- Columns follow Mermaid's branch order (`order:`, then creation); the name is written
+  over its column (under it in `BT`). A branch is dotted (`┆`) before its first
+  commit and `showBranches: false` removes the names and the dotted lines.
+- A commit is `●` (`*` in ASCII mode), `✕` reverse, `◆` highlight, `◎` merge or
+  `○` cherry-pick. A branch's first commit joins the commit it forked from with
+  `├──`; a merge or pick joins the commit it took from with `──╯`.
+- The row's text is the commit id (none with `showCommitLabel: false`; a merge has one
+  only when it was given an `id:`, a pick never) then the tags in brackets.
+- `LR` and `TB` read downward, oldest first. `BT` reads upward, newest first as `git log`
+  prints it. `parallelCommits` is not drawn: every commit has its own row.
+- Lanes are painted in the SVG palette; the title is centred over the graph.
+
+## Radar charts
+
+`radar-beta` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/radar.html)
+and its renderer's geometry. `pnpm run radar:oracle` compares the gallery samples and
+some edge cases with `mermaid@12.3.0`: the frame, every ring, spoke, label, curve, legend
+row and the title agree to 0.01px. The parser is checked against Mermaid's own on 87
+sources (`pnpm run radar:parser-fixture` rebuilds the record).
+
+```mermaid
+radar-beta
+  title Grades
+  axis m["Math"], s["Science"], e["English"], h["History"], g["Geography"], a["Art"]
+  curve a["Alice"]{85, 90, 80, 70, 75, 90}
+  curve b["Bob"]{70, 75, 85, 80, 90, 85}
+  max 100
+  min 0
+```
+
+Supported: `radar-beta` and `radar-beta:`, `title`, `axis` lists with optional `["label"]`s,
+`curve` lists written as plain values or as `axis: value` entries (in any order, one per
+axis), the options `showLegend`, `ticks` (at most 32), `max`, `min` and `graticule`
+(`circle` or `polygon`), `%%` comments, `accTitle` and `accDescr`. As in Mermaid,
+`axis a,` followed by a newline is an error, a value is `12` or `1.5` (no sign,
+exponent or leading zero), an identifier cannot be a keyword or start with `true`,
+`false`, `circle`, `polygon` or `title`, a curve with the wrong number of values is
+not drawn (but is listed in the legend), `max` defaults to the largest value of any
+curve, and values outside `min` and `max` are clipped to the ring or the centre.
+
+The SVG uses Mermaid's geometry: a 600px chart in 50px margins (a 700 x 700 viewBox),
+axis 0 pointing up and the rest clockwise, labels 1.05 radii out, circular curves drawn as
+closed bezier curves with tension 0.17 and polygonal ones with straight edges, and a
+legend of 12px swatches in the top right. Colours come from the theme (the accent and its
+series shades). See [Known differences](known-differences.md#radar-charts).
+
+### ASCII Radar charts
+
+Mermaid has no text mode for radar charts and a polar grid cannot be drawn legibly in a
+character grid, so the ASCII output is this library's own design: a group of bars per axis,
+one bar for each curve, under a ruler with a mark for every ring.
+
+```text
+                           Grades
+
+                0                                    100
+                ├───────┬───────┬───────┬───────┬───────┤
+  Math      Alice ██████████████████████████████████······  85
+            Bob   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓············  70
+```
+
+- Bars use the same mapping as the SVG radius (clipped to `min` .. `max`), and the value
+  written is printed after the bar. A curve keeps its fill and colour by position in the
+  source, as `radarCurve-N` does.
+- Curve names are shown unless `showLegend false`; both graticules look the same.
+- `accTitle` and `accDescr` are not printed.
+
+## Packet Diagrams
+
+`packet` (and its older header `packet-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/packet.html)
+and its renderer's geometry. The SVG output agrees element by element with
+`mermaid@12.3.0` (`__tests__/packet-agreement.test.ts` replays 18 renders of it).
+
+```mermaid
+packet
+title TCP Packet
+0-15: "Source Port"
+16-31: "Destination Port"
+32-63: "Sequence Number"
+```
+
+Supported: `0-15: "label"` ranges, `106: "label"` single bits, `+8: "label"` bit
+counts, `title`, `%%` comments, `accTitle` and `accDescr`, and the `packet`
+config keys `rowHeight`, `bitWidth`, `bitsPerRow`, `paddingX`, `paddingY`,
+`showBits` and `bitOrder` (`descending` mirrors each row so the highest bit is
+on the left, new in Mermaid 12.3.0), set through `%%{init}%%` or front matter.
+As in Mermaid, fields must be contiguous from bit 0 and each one ends its line,
+labels are quoted (single or double quotes, backslash escapes), a field may
+follow the header on its line, a zero-width `+0` or `end < start` is an error,
+a field crossing a row is cut at the boundary and repeated (label included) on
+each row, and at most 10000 rows are kept. A bare `packet` is valid.
+
+The SVG uses Mermaid's geometry (rows `rowHeight + paddingY` apart, boxes
+`bits * bitWidth - paddingX` wide, 10px bit numbers above the boxes, the title
+under the last row) and the theme's colours. See
+[Known differences](known-differences.md#packet-diagrams).
+
+### ASCII Packet Diagrams
+
+Mermaid has no text output for packets, so this is this library's own drawing:
+each field is a box with shared borders, its first and last bit on the top line
+and its label centred under them. A box is 2 columns per bit (3 for a long
+label if the row still fits in 120 columns); a label wider than its box ends in
+`…` (`~` in ASCII mode), and a number that does not fit is dropped.
+
+````text
+                                           TCP Packet
+┌───────────────────────────────────────────────┬───────────────────────────────────────────────┐
+│0                                            15│16                                           31│
+│                  Source Port                  │               Destination Port                │
+├───────────────────────────────────────────────┴───────────────────────────────────────────────┤
+│32                                                                                           63│
+│                                        Sequence Number                                        │
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
+
+## Requirement Diagrams
+
+`requirementDiagram` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/requirementDiagram.html)
+and its renderer's layout. `pnpm run requirement:oracle` compares the gallery samples
+box by box with `mermaid@12.3.0`; mermaid 12.2.0 (the pin and mermaid.live today)
+reads the same sources the same way.
+
+```mermaid
+requirementDiagram
+
+    requirement test_req {
+    id: 1
+    text: the test text.
+    risk: high
+    verifymethod: test
+    }
+
+    element test_entity {
+    type: simulation
+    }
+
+    test_entity - satisfies -> test_req
+````
+
+Supported: the six requirement kinds (`requirement`, `functionalRequirement`,
+`interfaceRequirement`, `performanceRequirement`, `physicalRequirement`,
+`designConstraint`) with `id`, `text`, `risk` (`low`, `medium`, `high`) and
+`verifymethod` (`analysis`, `demonstration`, `inspection`, `test`); `element`
+with `type` and `docref`; the seven relationships (`contains`, `copies`,
+`derives`, `satisfies`, `verifies`, `refines`, `traces`) written `a - r -> b` or
+`b <- r - a`; `direction TB | BT | LR | RL`; `classDef`, `class`, `style` and
+`:::`; `%%` comments, `accTitle`, `accDescr` and a front matter `title`.
+
+The grammar is stricter than it looks, and this parser is as strict as
+`mermaid@12.3.0`: a `{` ends its line and every property sits on its own line, an
+unquoted name or value stops at `: , { < > - =` (so `text: a-b` and `text: a, b`
+are errors; quote them), an unquoted name or value that starts with a keyword
+(`text: test suite`, `requirement element`) is an error, and a relationship to a
+name that was never declared is an error. A name written twice keeps its first
+definition.
+
+The SVG uses Mermaid's box geometry: a `<<Type>>` row, the bold name, a divider
+20px lower and then the `ID:`, `Text:`, `Risk:` and `Verification:` rows (an
+element's `Type:` and `Doc Ref:`), 24px per row with 10px of padding, boxes sized
+from the text with Trebuchet MS advances and kerning, `contains` as a solid line
+with a circle-plus at the container and every other relationship as a dashed
+arrow with its `<<label>>`. Layout is ELK (`registerElk`, as for ER and class
+diagrams); with the default look it agrees with Mermaid's box positions and
+drawing size on the gallery samples. Colours come from the theme. See
+[Known differences](known-differences.md#requirement-diagrams).
+
+### ASCII Requirement Diagrams
+
+Mermaid has no text mode for requirement diagrams, so the ASCII output is this
+library's own: the same boxes and labelled lines on the flowchart grid, with a
+blank row where the SVG has a divider, relationships dotted with an arrowhead and
+`contains` solid with a `●` (`o` in ASCII mode) at the container.
+
+```text
+┌──────────────────────┐
+│                      │
+│                      │
+│     <<Element>>      │
+│     test_entity      │
+│                      │
+│   Type: simulation   │
+│                      │
+└───────────┬──────────┘
+            ┆
+            ┆
+      <<satisfies>>
+            ┆
+            ▼
+┌──────────────────────┐
+│                      │
+│   <<Requirement>>    │
+│       test_req       │
+│                      │
+│ ID: 1                │
+│ Text: the test text. │
+│ Risk: High           │
+│ Verification: Test   │
+│                      │
+└──────────────────────┘
+```
+
+## Sankey diagrams
+
+`sankey-beta` (or `sankey`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/sankey.html)
+and its renderer's layout, which is [d3-sankey](https://github.com/d3/d3-sankey)'s. Checked
+against `mermaid@12.3.0` (the pin, 12.2.0, lays the same sources out identically).
+
+```mermaid
+sankey-beta
+
+Agricultural 'waste',Bio-conversion,124.729
+Bio-conversion,Liquid,0.597
+Bio-conversion,Solid,26.862
+Bio-conversion,Gas,280.322
+Bio-conversion,Losses,3
+```
+
+Supported: `source,target,value` rows (a field may be quoted to hold commas, with
+`""` for a quote), `%%` comments, and the `sankey` init keys `linkColor`
+(`gradient`, `source`, `target` or a CSS colour), `nodeAlignment` (`justify`,
+`left`, `right`, `center`), `showValues`, `prefix`, `suffix`, `labelStyle`
+(`legacy`, `outlined`), `width`, `height`, `nodeWidth`, `nodePadding` and
+`nodeColors`. As in Mermaid, names are printable ASCII only (even inside
+quotes), the header must be alone on its line, a row has exactly three
+non-empty fields, a node linked back to itself (directly or through others) is
+a "circular link" error, and a repeated pair stays two links. `accTitle` and
+`accDescr` lines are accepted (as the SVG's name and description) and not printed;
+Mermaid's sankey grammar rejects them. See Known differences for colours and values
+that cannot be drawn.
+
+The SVG uses d3-sankey's layout ported to TypeScript (same iteration, same
+numbers) and Mermaid's drawing: bars, labels beside them with the value on the
+same line, then the ribbons, each a stroked cubic path as wide as its flow
+(never under 1px). The viewBox is the bounding box of the drawing, so long
+labels widen it, as there. Colours come from the theme (the accent and its
+series shades, one per node) instead of Mermaid's Tableau palette. See
+[Known differences](known-differences.md#sankey-diagrams).
+
+### ASCII sankey diagrams
+
+Mermaid has no text mode for sankey diagrams and ribbons do not survive a
+character grid, so the ASCII output is this library's own design: each source
+node once, with a row per outgoing flow whose bar is that flow's share of the
+largest one.
+
+```text
+Agricultural 'waste'  124.73
+  └─▶ Bio-conversion  ████████▏              124.73
+Bio-conversion  310.78
+  ├─▶ Liquid          ▏                         0.6
+  ├─▶ Solid           █▏                      26.86
+  ├─▶ Gas             ████████████████████   280.32
+  └─▶ Losses          ▏                           3
+```
+
+- Node values are the larger of the incoming and outgoing totals, as in the
+  SVG, written with `prefix` and `suffix`; `showValues: false` leaves all
+  numbers out. A positive flow always gets at least a thin bar (`▏`, `|` in
+  ASCII mode).
+- Bars use the theme accent. A cycle throws "circular link", as the SVG does.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1100,18 +1788,9 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Type                                                                  | Header                                                                                                          |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
-| Mindmap                                                               | `mindmap`                                                                                                       |
-| Packet                                                                | `packet` / `packet-beta`                                                                                        |
-| Gantt                                                                 | `gantt`                                                                                                         |
-| Timeline                                                              | `timeline`                                                                                                      |
-| User journey                                                          | `journey`                                                                                                       |
-| Requirement                                                           | `requirementDiagram`                                                                                            |
-| Git graph                                                             | `gitGraph`                                                                                                      |
-| Kanban                                                                | `kanban`                                                                                                        |
-| Radar                                                                 | `radar-beta`                                                                                                    |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
-| Sankey, Block                                                         | `sankey-beta`, `block-beta` (12.2.0 rejects them with an empty body; header names per upstream docs)            |
+| Block                                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)                              |
 
 ## Accessibility
 
@@ -1141,8 +1820,10 @@ several lines, anywhere after the header. `accTitle` becomes the accessible
 name when the `title` option is not given (the option wins; for C4 the order is
 option, `accTitle`, then the C4 `title`), and `accDescr` becomes a
 `<desc id="zm-desc-N">` referenced by `aria-describedby`. The statements are
-never drawn, and both are dropped when the diagram is `decorative`. ASCII output
-ignores them. The visible chart `title` of a pie chart is not used as its
+never drawn (except C4, where Mermaid 12.3.0 draws `accTitle` in the title slot,
+replacing any `title`, in SVG and ASCII), and both are dropped when the diagram is
+`decorative` (a decorative C4 still draws the `accTitle` text; only the accessible
+name and description are omitted). ASCII output otherwise ignores them. The visible chart `title` of a pie chart is not used as its
 accessible name.
 
 For a diagram that's already described in surrounding prose, mark it
@@ -1273,17 +1954,17 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 ### ASCII Pie Charts
 
 Mermaid has no text mode for pie charts, so the ASCII output is this
-library's own design: one stacked bar, 50 cells wide, and a table below it.
+library's own design: one stacked bar, 50 cells wide, and a table beside it. `pie.legendPosition` puts the table
+where mermaid 12.3.0 puts the legend (`right` by default, `left`, `top`,
+`bottom`, or `center` on the bar's columns).
 The numbers are the SVG renderer's.
 
 ```text
              Pets adopted by volunteers
 
-[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]
-
-  █ Dogs    79%
-  ▓ Cats    17%
-  ▒ Rats     3%
+                                                         █ Dogs    79%
+[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]     ▓ Cats    17%
+                                                         ▒ Rats     3%
 ```
 
 - **The bar** holds the slices at or above 1% of the total, in source order,

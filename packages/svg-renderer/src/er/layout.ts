@@ -18,11 +18,15 @@ import type {
 import type { ErRenderOptions } from '@zombie-mermaid/core'
 import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
 import {
-  estimateTextWidth,
-  estimateMonoTextWidth,
   FONT_WEIGHTS,
   resolveFontSizes,
+  estimateTextWidth,
+  estimateMonoTextWidth,
 } from '../styles.ts'
+import {
+  mermaidSansTextWidth,
+  mermaidTextWidth,
+} from '../class/mermaid-text-width.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
 import { extractEdgePoints } from '../layout-engine/elk-adapter-utils.ts'
 import {
@@ -36,14 +40,23 @@ import {
 /** Layout constants for ER diagrams */
 export const ER = {
   padding: 40,
-  boxPadX: 14,
+  /** Padding either side of the name in a bare entity (mermaid 12.3.0, #2678). */
+  boxPadX: 20,
+  /** Padding either side of the name in an entity with attributes. */
+  headerPadX: 25,
   /** Left/right padding inside one attribute cell. */
-  cellPadX: 10,
-  headerHeight: 34,
+  cellPadX: 12.5,
+  /** Header and every row: a 24 text line plus 1.25 x `entityPadding` (15). */
+  headerHeight: 42.75,
   /** An attribute-less entity is a taller box with a centred name, as in mermaid. */
-  bareHeight: 68,
-  rowHeight: 22,
-  minWidth: 140,
+  bareHeight: 84,
+  rowHeight: 42.75,
+  /** One line of text in a header or row; a `<br>` comment adds one per break. */
+  textLineHeight: 24,
+  /** Clear space kept around the label we draw, beyond its estimated width. */
+  drawnLabelMargin: 8,
+  /** Narrowest bare entity (`er.minEntityWidth`'s default). */
+  minWidth: 100,
   attrFontSize: 11,
   attrFontWeight: 400,
   nodeSpacing: 70,
@@ -126,11 +139,38 @@ export function erColumns(entity: {
     .map((cell) => ({
       cell,
       width:
-        Math.max(...rows.map((r) => attrTextWidth(r[cell]!))) + ER.cellPadX * 2,
+        Math.max(
+          ...rows.flatMap((r) =>
+            r[cell]!.split('\n')
+              // Never narrower than the monospace text we draw.
+              .map((line) =>
+                Math.max(
+                  mermaidTextWidth(line, false),
+                  estimateMonoTextWidth(line, ER.attrFontSize),
+                ),
+              ),
+          ),
+        ) +
+        ER.cellPadX * 2,
     }))
 }
 
-/** One attribute's cell texts: type, name, keys, comment (a `<br>` is a space). */
+/** Lines in an attribute row: its tallest cell (a `<br>` in the comment starts a new line). */
+export function erRowLines(a: ErAttribute): number {
+  return Math.max(1, ...erCells(a).map((c) => c.split('\n').length))
+}
+
+/** Height of each attribute row: 24 per text line plus the row padding (mermaid's 1.25 x `entityPadding`). */
+export function erRowHeights(
+  attributes: ReadonlyArray<ErAttribute>,
+  rowGrow: number,
+): number[] {
+  return attributes.map(
+    (a) => ER.rowHeight + (erRowLines(a) - 1) * ER.textLineHeight + rowGrow,
+  )
+}
+
+/** One attribute's cell texts: type, name, keys, comment (each `<br>` a newline). */
 export function erCells(a: ErAttribute): [string, string, string, string] {
   return [
     a.type,
@@ -139,31 +179,18 @@ export function erCells(a: ErAttribute): [string, string, string, string] {
     commentLines(a.comment ?? '')
       .split('\n')
       .map((line) => line.trim())
-      .join(' '),
+      .join('\n'),
   ]
+}
+
+/** Extra height per header/row from `er.entityPadding` (default 15), floored so rows stay legible. */
+function erRowGrow(diagram: ErDiagram): number {
+  return Math.max(-10, ((diagram.layout?.entityPadding ?? 15) - 15) * 1.25)
 }
 
 type EntitySizeMap = Map<string, { width: number; height: number }>
 
 /** Build ELK graph and size map from an ER diagram. */
-/**
- * Width of an attribute row sized for the worst-case glyph advance.
- *
- * The mono face advances 0.6em per glyph (6.6px at the 11px attribute size),
- * but browsers that don't position glyphs at subpixel offsets (headless
- * Chromium on Linux) round each advance to a whole pixel, so a long row draws
- * wider than `estimateMonoTextWidth` says and the type runs into the
- * right-aligned name (#1262, same cause as class members in #1238).
- */
-function attrTextWidth(text: string): number {
-  // Fullwidth (CJK) glyphs take two cells.
-  const cells = [...text].reduce(
-    (n, ch) => n + (ch.codePointAt(0)! >= 0x2e80 ? 2 : 1),
-    0,
-  )
-  return cells * Math.ceil(estimateMonoTextWidth('M', ER.attrFontSize))
-}
-
 function buildErElkGraph(
   diagram: ErDiagram,
   options: ErRenderOptions,
@@ -171,19 +198,51 @@ function buildErElkGraph(
   const entitySizes: EntitySizeMap = new Map()
   const fontSizes = resolveFontSizes(options.fontSizes)
 
+  // `er.diagramPadding` / `er.entityPadding` as deltas from mermaid's defaults
+  // (20 / 15), applied to our scale. Measured against mermaid 12.3.0: a bare
+  // entity grows 2 wide and 3 tall per unit of diagramPadding, each attribute
+  // column 1.25 wide; the header and every row grow 1.25 tall per unit of
+  // entityPadding.
+  const dPad = (diagram.layout?.diagramPadding ?? 20) - 20
+  const rowGrow = erRowGrow(diagram)
+  const minEntityWidth = diagram.layout?.minEntityWidth ?? 0
+
   for (const entity of diagram.entities) {
-    const headerTextW = estimateTextWidth(
-      entity.label,
-      fontSizes.nodeLabel,
-      FONT_WEIGHTS.nodeLabel,
-    )
+    // Mermaid measures the name at 16px Trebuchet MS, regular weight.
+    // Mermaid measures the name at 16px Trebuchet MS, regular weight.
+    const headerTextW = mermaidTextWidth(entity.label, false)
+    // The bold label we draw, at the configured size, must still fit with room to spare.
+    const drawnLabelW =
+      estimateTextWidth(
+        entity.label,
+        fontSizes.nodeLabel,
+        FONT_WEIGHTS.nodeLabel,
+      ) + ER.drawnLabelMargin
     const bare = entity.attributes.length === 0
-    const tableW = erColumns(entity).reduce((sum, c) => sum + c.width, 0)
-    const headerW = headerTextW + ER.boxPadX * 2
-    const width = bare ? headerW : Math.max(ER.minWidth, headerW, tableW)
+    const columns = erColumns(entity)
+    const tableW =
+      columns.reduce((sum, c) => sum + c.width, 0) +
+      columns.length * dPad * 1.25
+    const width = Math.max(
+      minEntityWidth,
+      drawnLabelW,
+      bare
+        ? Math.max(
+            // Mermaid's minimum applies when the name, measured in sans-serif
+            // and rounded, plus its padding falls short of it.
+            mermaidSansTextWidth(entity.label) + ER.boxPadX * 2 + dPad * 2 <
+              ER.minWidth
+              ? ER.minWidth
+              : 0,
+            headerTextW + ER.boxPadX * 2 + dPad * 2,
+          )
+        : Math.max(headerTextW + ER.headerPadX * 2 + dPad * 2, tableW),
+    )
     const height = bare
-      ? ER.bareHeight
-      : ER.headerHeight + entity.attributes.length * ER.rowHeight
+      ? Math.max(20, ER.bareHeight + dPad * 3)
+      : ER.headerHeight +
+        rowGrow +
+        erRowHeights(entity.attributes, rowGrow).reduce((a, b) => a + b, 0)
     entitySizes.set(entity.id, { width, height })
   }
 
@@ -256,6 +315,7 @@ function extractErLayout(
   entitySizes: EntitySizeMap,
   options: ErRenderOptions,
 ): PositionedErDiagram {
+  const rowGrow = erRowGrow(diagram)
   const entityLookup = new Map<string, ErEntity>()
   for (const entity of diagram.entities) entityLookup.set(entity.id, entity)
 
@@ -279,8 +339,11 @@ function extractErLayout(
         width: child.width ?? size.width,
         height: child.height ?? size.height,
         headerHeight:
-          entity.attributes.length === 0 ? size.height : ER.headerHeight,
-        rowHeight: ER.rowHeight,
+          entity.attributes.length === 0
+            ? size.height
+            : ER.headerHeight + rowGrow,
+        rowHeight: ER.rowHeight + rowGrow,
+        rowHeights: erRowHeights(entity.attributes, rowGrow),
         // Same cascade flowcharts and class diagrams use: classDef default →
         // assigned class → `style`. Invalid colours are dropped there.
         inlineStyle: resolveNodeStyle(entity.id, diagram),

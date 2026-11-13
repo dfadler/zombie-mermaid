@@ -17,6 +17,14 @@ function render(text: string, useAscii = false): string {
   return renderMermaidASCII(text, { colorMode: 'none', useAscii })
 }
 
+/** `render` with the table below the bar (`legendPosition: bottom`), one line per row. */
+function renderBelow(text: string, useAscii = false): string {
+  return render(
+    `%%{init: {"pie": {"legendPosition": "bottom"}}}%%\n${text}`,
+    useAscii,
+  )
+}
+
 /** The bar line: the one that starts with '['. */
 function barOf(output: string): string {
   const line = output.split('\n').find((l) => l.startsWith('['))
@@ -207,7 +215,7 @@ describe('pie ASCII – layout', () => {
       expect([r.cells, r.percentText, r.drawnIndex]).toEqual([0, '2%', -1])
     }
 
-    const out = render(src)
+    const out = renderBelow(src)
     expect(out).toContain('  ▓ S50     2%')
     expect(out.split('\n').slice(-10)).toEqual(
       Array.from({ length: 10 }, (_, i) => `  · S${i + 51}     2%`),
@@ -230,7 +238,7 @@ describe('pie ASCII – layout', () => {
 
 describe('pie ASCII – output', () => {
   it('renders the basic chart (Unicode)', () => {
-    expect(render(PETS)).toBe(
+    expect(renderBelow(PETS)).toBe(
       [
         '             Pets adopted by volunteers',
         '',
@@ -244,7 +252,7 @@ describe('pie ASCII – output', () => {
   })
 
   it('renders the basic chart with ASCII characters only', () => {
-    const out = render(PETS, true)
+    const out = renderBelow(PETS, true)
     expect(out).toBe(
       [
         '             Pets adopted by volunteers',
@@ -267,12 +275,12 @@ describe('pie ASCII – output', () => {
       'pie',
       'pie title Nothing',
     ]) {
-      expect(displayWidth(barOf(render(src)))).toBe(BAR_WIDTH + 2)
+      expect(displayWidth(barOf(renderBelow(src)))).toBe(BAR_WIDTH + 2)
     }
   })
 
   it('fills the whole bar for a single slice', () => {
-    const out = render('pie title Uptime\n  "Up" : 1')
+    const out = renderBelow('pie title Uptime\n  "Up" : 1')
     expect(barOf(out)).toBe(`[${'█'.repeat(BAR_WIDTH)}]`)
     expect(out).toContain('  █ Up   100%')
   })
@@ -281,13 +289,13 @@ describe('pie ASCII – output', () => {
     const src =
       'pie\n' +
       Array.from({ length: 14 }, (_, i) => `  "s${i}" : ${20 - i}`).join('\n')
-    const runs = runsOf(barOf(render(src)))
+    const runs = runsOf(barOf(renderBelow(src)))
     expect(runs).toHaveLength(14)
     for (let i = 1; i < runs.length; i++) {
       expect(runs[i]![0]).not.toBe(runs[i - 1]![0])
     }
     // Each table swatch repeats its segment's fill.
-    const swatches = render(src)
+    const swatches = renderBelow(src)
       .split('\n')
       .filter((l) => l.startsWith('  '))
       .map((l) => l[2])
@@ -295,7 +303,7 @@ describe('pie ASCII – output', () => {
   })
 
   it('shows omitted slices with a dot swatch and their percentage', () => {
-    const out = render(`pie showData
+    const out = renderBelow(`pie showData
   "Chrome" : 640
   "Lynx" : 1
   "Netscape" : 0`)
@@ -304,22 +312,22 @@ describe('pie ASCII – output', () => {
       '  · Lynx [1]        <1%',
       '  · Netscape [0]     0%',
     ])
-    expect(render('pie\n  "A" : 999\n  "B" : 1', true)).toContain(
+    expect(renderBelow('pie\n  "A" : 999\n  "B" : 1', true)).toContain(
       '  . B    <1%',
     )
   })
 
   it('renders an empty bar for a chart with no slices', () => {
-    expect(render('pie title Empty')).toBe(
+    expect(renderBelow('pie title Empty')).toBe(
       ['                       Empty', '', `[${' '.repeat(BAR_WIDTH)}]`].join(
         '\n',
       ),
     )
-    expect(render('pie')).toBe(`[${' '.repeat(BAR_WIDTH)}]`)
+    expect(renderBelow('pie')).toBe(`[${' '.repeat(BAR_WIDTH)}]`)
   })
 
   it('does not print accTitle or accDescr', () => {
-    const out = render(`pie
+    const out = renderBelow(`pie
   accTitle: Hidden name
   accDescr: Hidden description
   "A" : 1`)
@@ -327,7 +335,7 @@ describe('pie ASCII – output', () => {
   })
 
   it('aligns the percentage column by display width for wide labels', () => {
-    const out = render(`pie
+    const out = renderBelow(`pie
   "猫 cats 🐱" : 3
   "dogs" : 1`)
     const rows = out.split('\n').filter((l) => l.endsWith('%'))
@@ -338,7 +346,7 @@ describe('pie ASCII – output', () => {
   it('never truncates a long label', () => {
     const long =
       'A very long slice label that is much wider than the bar itself'
-    const out = render(`pie\n  "${long}" : 1\n  "B" : 1`)
+    const out = renderBelow(`pie\n  "${long}" : 1\n  "B" : 1`)
     expect(out).toContain(`  █ ${long}    50%`)
   })
 
@@ -415,7 +423,8 @@ describe('pie ASCII – colour modes', () => {
   // D (neighbours once the zero slice between them is left out) to the same
   // colour, and the bar showed them as one 40-cell run.
   it('keeps neighbours apart in ansi16 when a zero slice sits between them', () => {
-    const src = `pie
+    const src = `%%{init: {"pie": {"legendPosition": "bottom"}}}%%
+pie
   "A" : 10
   "B" : 40
   "gap" : 0
@@ -434,7 +443,8 @@ describe('pie ASCII – colour modes', () => {
 
   it('keeps all 12 ansi16 neighbours apart for accents that collapse to one colour', () => {
     const src =
-      'pie\n' + Array.from({ length: 12 }, (_, i) => `  "S${i}" : 1`).join('\n')
+      '%%{init: {"pie": {"legendPosition": "bottom"}}}%%\npie\n' +
+      Array.from({ length: 12 }, (_, i) => `  "S${i}" : 1`).join('\n')
     const cases = [
       { accent: '#2aa198' },
       { accent: '#00ff00' },
@@ -494,14 +504,84 @@ describe('pie ASCII – colour modes', () => {
 })
 
 describe('pie ASCII – init legendPosition / highlightSlice', () => {
-  it.each(['left', 'top', 'bottom', 'center'])(
-    'ignores legendPosition %s (the legend is always beside the bars)',
+  const withPos = (pos: string) =>
+    render(`%%{init: {"pie": {"legendPosition": "${pos}"}}}%%\n${PETS}`).split(
+      '\n',
+    )
+  // Title, '', then the block under test.
+  const block = (pos: string) => withPos(pos).slice(2)
+  const rows = withPos('bottom').slice(4)
+  const bar = barOf(withPos('bottom').join('\n'))
+  // Mermaid 12.3.0 (headless): right is the default and what any unknown
+  // value gets; left/right put the legend column beside the pie, top/bottom
+  // stack it, center draws it over the pie.
+  it.each([undefined, 'right', 'bogus'])(
+    'legendPosition %s puts the table right of the bar, on its middle row',
     (pos) => {
-      expect(
-        render(`%%{init: {"pie": {"legendPosition": "${pos}"}}}%%\n${PETS}`),
-      ).toBe(render(PETS))
+      const lines =
+        pos === undefined ? render(PETS).split('\n').slice(2) : block(pos)
+      const gap = ' '.repeat(bar.length + 3)
+      expect(lines).toEqual([
+        gap + rows[0],
+        bar + '   ' + rows[1],
+        gap + rows[2],
+      ])
     },
   )
+
+  it('legendPosition left puts the table left of the bar, on its middle row', () => {
+    const w = Math.max(...rows.map((r) => r.length))
+    expect(block('left')).toEqual([
+      rows[0],
+      rows[1]!.padEnd(w + 3) + bar,
+      rows[2],
+    ])
+  })
+
+  it('legendPosition bottom prints title, bar, then the table', () => {
+    expect(block('bottom')).toEqual([bar, '', ...rows])
+  })
+
+  it('legendPosition top prints title, table, then the bar', () => {
+    expect(block('top')).toEqual([...rows, '', bar])
+  })
+
+  it('legendPosition center centres the table on the bar, bar on the middle row', () => {
+    const w = Math.max(...rows.map((r) => r.length))
+    const pad = ' '.repeat(Math.floor((bar.length - w) / 2))
+    expect(block('center')).toEqual([
+      pad + rows[0],
+      pad + rows[1],
+      bar,
+      pad + rows[2],
+    ])
+  })
+
+  it('keeps every legend entry in every position', () => {
+    for (const pos of ['top', 'bottom', 'left', 'right', 'center', 'bogus']) {
+      const out = withPos(pos).join('\n')
+      for (const label of ['Dogs', 'Cats', 'Rats']) expect(out).toContain(label)
+    }
+  })
+
+  it('a table wider than the bar pushes the centred bar right to stay centred', () => {
+    const long = 'L'.repeat(70)
+    const out = render(
+      `%%{init: {"pie": {"legendPosition": "center"}}}%%\npie\n  "${long}" : 1\n  "B" : 1`,
+    ).split('\n')
+    const barLine = out.find((l) => l.trimStart().startsWith('['))!
+    expect(barLine.startsWith(' ')).toBe(true)
+    expect(out.every((l) => !l.endsWith(' '))).toBe(true)
+  })
+
+  it('legendPosition with no slices has no table to place', () => {
+    const src = 'pie title Empty'
+    for (const pos of ['top', 'left', 'center', 'right']) {
+      expect(
+        render(`%%{init: {"pie": {"legendPosition": "${pos}"}}}%%\n${src}`),
+      ).toBe(render(src))
+    }
+  })
 
   it('ignores highlightSlice (no hover, no emphasis in text)', () => {
     expect(

@@ -42,6 +42,16 @@ import { renderArchitectureAscii } from './architecture.ts'
 import { renderC4Ascii } from './c4-diagram.ts'
 import { renderPieAscii } from './pie.ts'
 import { renderQuadrantAscii } from './quadrant.ts'
+import { renderMindmapAscii } from './mindmap.ts'
+import { renderGanttAscii } from './gantt.ts'
+import { renderTimelineAscii } from './timeline.ts'
+import { renderGitGraphAscii } from './gitgraph.ts'
+import { renderPacketAscii } from './packet.ts'
+import { renderRadarAscii } from './radar.ts'
+import { renderJourneyAscii } from './journey.ts'
+import { renderKanbanAscii } from './kanban.ts'
+import { renderSankeyAscii } from './sankey.ts'
+import { renderRequirementAscii } from './requirement.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -104,4 +114,24 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderPieAscii(text, config, colorMode, theme, extras.honorThemeVariables),
   quadrant: (text, config, colorMode, theme) =>
     renderQuadrantAscii(text, config, colorMode, theme),
+  mindmap: (text, config, colorMode, theme) =>
+    renderMindmapAscii(text, config, colorMode, theme),
+  gantt: (text, config, colorMode, theme) =>
+    renderGanttAscii(text, config, colorMode, theme),
+  timeline: (text, config, colorMode, theme) =>
+    renderTimelineAscii(text, config, colorMode, theme),
+  gitgraph: (text, config, colorMode, theme) =>
+    renderGitGraphAscii(text, config, colorMode, theme),
+  packet: (text, config, colorMode, theme) =>
+    renderPacketAscii(text, config, colorMode, theme),
+  radar: (text, config, colorMode, theme) =>
+    renderRadarAscii(text, config, colorMode, theme),
+  journey: (text, config, colorMode, theme) =>
+    renderJourneyAscii(text, config, colorMode, theme),
+  kanban: (text, config, colorMode, theme) =>
+    renderKanbanAscii(text, config, colorMode, theme),
+  sankey: (text, config, colorMode, theme) =>
+    renderSankeyAscii(text, config, colorMode, theme),
+  requirement: (text, config, colorMode, theme, extras) =>
+    renderRequirementAscii(text, config, colorMode, theme, extras),
 }

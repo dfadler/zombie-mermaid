@@ -483,6 +483,268 @@ function QuadrantGlyph() {
   )
 }
 
+function GanttGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect x="14" y="10" width="36" height="10" rx="2" fill="currentColor" />
+      <rect
+        x="32"
+        y="30"
+        width="40"
+        height="10"
+        rx="2"
+        fill="currentColor"
+        className="edge-anim"
+      />
+      <rect x="56" y="50" width="30" height="10" rx="2" fill="currentColor" />
+    </svg>
+  )
+}
+
+function KanbanGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <path
+        d="M16 8 H38 V62 H16 Z M39 8 H61 V62 H39 Z M62 8 H84 V62 H62 Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+      <rect x="20" y="14" width="14" height="10" fill="currentColor" />
+      <rect x="43" y="14" width="14" height="10" fill="currentColor" />
+      <rect x="66" y="14" width="14" height="10" fill="currentColor" />
+    </svg>
+  )
+}
+
+function MindmapGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <circle cx="50" cy="35" r="7" fill="currentColor" />
+      <circle
+        cx="82"
+        cy="35"
+        r="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="18"
+        cy="35"
+        r="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="50"
+        cy="9"
+        r="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="50"
+        cy="61"
+        r="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M57 35 H78 M43 35 H22 M50 28 V13 M50 42 V57"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function TimelineGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <path
+        d="M10 35 H90"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+      <circle cx="25" cy="35" r="4" fill="currentColor" />
+      <circle cx="50" cy="35" r="4" fill="currentColor" />
+      <circle cx="75" cy="35" r="4" fill="currentColor" />
+      <path
+        d="M25 35 V18 M50 35 V52 M75 35 V18"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+    </svg>
+  )
+}
+
+function RequirementGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="12"
+        y="10"
+        width="30"
+        height="20"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="58"
+        y="40"
+        width="30"
+        height="20"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M42 20 H50 V50 H58"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function JourneyGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <path
+        d="M10 50 Q28 8 50 38 T90 20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+      <circle cx="10" cy="50" r="3.5" fill="currentColor" />
+      <circle cx="50" cy="38" r="3.5" fill="currentColor" />
+      <circle cx="90" cy="20" r="3.5" fill="currentColor" />
+    </svg>
+  )
+}
+
+function RadarGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <polygon
+        points="50,8 88,35 74,60 26,60 12,35"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <polygon
+        points="50,24 70,36 62,50 38,50 30,36"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function PacketGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="14"
+        y="10"
+        width="72"
+        height="14"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="14"
+        y="28"
+        width="72"
+        height="14"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="14"
+        y="46"
+        width="72"
+        height="14"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M50 10 V24 M32 28 V42 M68 28 V42 M30 46 V60"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+    </svg>
+  )
+}
+
+function GitGraphGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <path d="M14 55 H86" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M32 55 C40 55 38 20 48 20 H62 C72 20 70 55 78 55"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+      <circle cx="14" cy="55" r="4" fill="currentColor" />
+      <circle cx="32" cy="55" r="4" fill="currentColor" />
+      <circle cx="48" cy="20" r="4" fill="currentColor" />
+      <circle cx="62" cy="20" r="4" fill="currentColor" />
+      <circle cx="86" cy="55" r="4" fill="currentColor" />
+    </svg>
+  )
+}
+
+function SankeyGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect x="12" y="8" width="6" height="54" rx="2" fill="currentColor" />
+      <rect x="82" y="8" width="6" height="22" rx="2" fill="currentColor" />
+      <rect x="82" y="40" width="6" height="22" rx="2" fill="currentColor" />
+      <path
+        d="M18 19 C50 19 50 19 82 19"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="8"
+      />
+      <path
+        d="M18 50 C50 50 50 51 82 51"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="8"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
 /**
  * Every diagram type's crosslink glyph, keyed by `DiagramTypeProfile.slug`
  * (demo/diagram-pages-data.ts) — the same six slugs `DIAGRAM_TYPE_PROFILES`
@@ -500,6 +762,16 @@ const DIAGRAM_TYPE_GLYPHS: Record<string, () => ReactNode> = {
   'architecture-beta': ArchitectureGlyph,
   pie: PieGlyph,
   quadrant: QuadrantGlyph,
+  gantt: GanttGlyph,
+  kanban: KanbanGlyph,
+  mindmap: MindmapGlyph,
+  timeline: TimelineGlyph,
+  requirement: RequirementGlyph,
+  journey: JourneyGlyph,
+  radar: RadarGlyph,
+  packet: PacketGlyph,
+  gitgraph: GitGraphGlyph,
+  sankey: SankeyGlyph,
 }
 
 /** One crosslink target: the other type's own display data. */

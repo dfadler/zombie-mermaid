@@ -53,7 +53,7 @@ describe('centering a node over its children', () => {
       '      │     │',
       '      │  A  │',
       '      │     │',
-      '      └─────┘',
+      '      └──┬──┘',
       '         │',
       '         │',
       '   ┌─────┴────┐',

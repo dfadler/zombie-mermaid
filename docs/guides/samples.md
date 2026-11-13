@@ -17,7 +17,7 @@ What's there instead:
 
 - **The [Diagrams hub](https://dfadler.github.io/zombie-mermaid/diagrams/)**
   lists Flowchart (including State), Sequence, Class, ER, XY Chart, Architecture, C4 and Pie
-  (Quadrant charts render but have no hub page yet). Each of those has its own detail page
+  (Quadrant charts, Gantt charts and mindmaps render but have no hub page yet). Each of those has its own detail page
   (`/diagrams/<type>.html`) showing **one** worked example for that type:
   its Mermaid source (syntax-highlighted) next to the rendered SVG, plus a
   live picker across every built-in theme and an "Open in the live editor"
@@ -34,7 +34,7 @@ browser.
 
 There is no "browse all the samples" experience anymore, in the browser or
 otherwise. The fuller sample library this section used to describe —
-roughly 90 diagrams covering every shape, edge type, and theme combination —
+259 diagrams covering every shape, edge type, and theme combination —
 still exists in the repo as [`samples-data.ts`](../../samples/samples-data.ts), but
 it now only feeds the internal visual-test suite and
 `scripts/visual-diff.ts`'s local before/after report (see

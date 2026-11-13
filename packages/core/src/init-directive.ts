@@ -3,7 +3,7 @@
 //
 // Mermaid lets a diagram carry its own configuration inline:
 //
-//   %%{init: {"theme": "dark", "flowchart": {"curve": "basis"}}}%%
+//   %%{init: {"theme": "dark", "pie": {"textPosition": 0.6}}}%%
 //   flowchart TD
 //     A --> B
 //
@@ -17,6 +17,7 @@
 // ============================================================================
 
 import { isValidCssColor } from './css-color.ts'
+import type { C4InitLayout } from './c4-metrics.ts'
 import type { RenderOptions } from './types.ts'
 
 /** How an edge path is interpolated between its routed points. */
@@ -28,13 +29,257 @@ export type CurveStyle =
   | 'stepBefore'
   | 'stepAfter'
 
-const CURVE_STYLES = new Set<CurveStyle>([
-  'linear',
-  'basis',
-  'natural',
-  'step',
-  'stepBefore',
-  'stepAfter',
+/** The `timeline.*` init keys that change mermaid's output. */
+export interface TimelineInitConfig {
+  leftMargin?: number
+  padding?: number
+  disableMulticolor?: boolean
+}
+
+/** The `journey.*` geometry keys mermaid@12.3.0 reads; colour keys (`actorColours`, `sectionFills`, `sectionColours`) are palette, not structure. */
+export interface JourneyInitConfig {
+  width?: number
+  height?: number
+  taskMargin?: number
+  diagramMarginX?: number
+  diagramMarginY?: number
+  leftMargin?: number
+  maxLabelWidth?: number
+}
+
+/** Radar sizes and opacities (CSS in mermaid@12.3.0), read from `themeVariables.radar` only: mermaid 12.3.0 ignores them under `radar`. */
+export interface RadarStyleConfig {
+  axisStrokeWidth?: number
+  axisLabelFontSize?: number
+  curveOpacity?: number
+  curveStrokeWidth?: number
+  graticuleOpacity?: number
+  graticuleStrokeWidth?: number
+  legendFontSize?: number
+}
+
+/** The `radar.*` geometry keys mermaid@12.3.0 reads, ; `legendBoxSize` is unused by mermaid and colours are palette. */
+export interface RadarInitConfig {
+  width?: number
+  height?: number
+  marginTop?: number
+  marginRight?: number
+  marginBottom?: number
+  marginLeft?: number
+  axisScaleFactor?: number
+  axisLabelFactor?: number
+  curveTension?: number
+  /** Only changes the root `width`/`max-width`, which this renderer always sizes by its viewBox. */
+  useMaxWidth?: boolean
+}
+
+const RADAR_GEOMETRY_KEYS = [
+  'width',
+  'height',
+  'marginTop',
+  'marginRight',
+  'marginBottom',
+  'marginLeft',
+  'axisScaleFactor',
+  'axisLabelFactor',
+  'curveTension',
+] as const
+const RADAR_STYLE_KEYS = [
+  'axisStrokeWidth',
+  'axisLabelFontSize',
+  'curveOpacity',
+  'curveStrokeWidth',
+  'graticuleOpacity',
+  'graticuleStrokeWidth',
+  'legendFontSize',
+] as const
+
+/** The numeric `keys` of `rec` in 0..1e5, which keeps the layout finite. */
+function radarNumbers(
+  rec: Record<string, unknown>,
+  keys: readonly (keyof RadarInitConfig | keyof RadarStyleConfig)[],
+): RadarInitConfig & RadarStyleConfig {
+  const out: Record<string, number> = {}
+  for (const k of keys) {
+    const v = rec[k]
+    if (typeof v === 'number' && v >= 0 && v <= 1e5) out[k] = v
+  }
+  return out
+}
+
+/** The `gitGraph.*` init keys that change mermaid's output. */
+export interface GitGraphInitConfig {
+  mainBranchName?: string
+  mainBranchOrder?: number
+  showCommitLabel?: boolean
+  showBranches?: boolean
+  rotateCommitLabel?: boolean
+  parallelCommits?: boolean
+  titleTopMargin?: number
+  diagramPadding?: number
+}
+
+/** The `kanban.*` init keys that change mermaid's output. */
+export interface KanbanInitConfig {
+  sectionWidth?: number
+  ticketBaseUrl?: string
+}
+
+/** The `packet.*` init keys that change mermaid's output. */
+export interface PacketInitConfig {
+  rowHeight?: number
+  bitWidth?: number
+  bitsPerRow?: number
+  paddingX?: number
+  paddingY?: number
+  showBits?: boolean
+  bitOrder?: 'ascending' | 'descending'
+}
+
+/** The `sankey.*` init keys that change mermaid's output (a bad value is dropped). */
+export interface SankeyInitConfig {
+  width?: number
+  height?: number
+  nodeWidth?: number
+  nodePadding?: number
+  nodeAlignment?: 'left' | 'right' | 'center' | 'justify'
+  /** `gradient`, `source`, `target` or any CSS colour. */
+  linkColor?: string
+  showValues?: boolean
+  prefix?: string
+  suffix?: string
+  labelStyle?: 'legacy' | 'outlined'
+  /** Node id -> CSS colour. */
+  nodeColors?: Record<string, string>
+}
+
+/** Drop C0/C1 control characters (and DEL): they would reach a terminal or an XML parser. */
+function stripControls(s: string): string {
+  return s.replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
+}
+
+/**
+ * A CSS colour a sankey may paint with: a keyword, hex, or a colour function.
+ * Anything else (notably `url(...)`, which would fetch a resource from an
+ * inline SVG) is dropped.
+ */
+function isSafeCssColor(v: unknown): v is string {
+  return (
+    typeof v === 'string' &&
+    /^(?:#[0-9a-f]{3,8}|[a-z]+|(?:rgb|hsl|hwb|lab|lch|oklab|oklch|color)a?\([^()]*\))$/i.test(
+      v.trim(),
+    )
+  )
+}
+
+/** Numeric `sequence.*` layout keys (mermaid's key names are case-sensitive). */
+const SEQUENCE_NUMBER_KEYS = new Set<string>([
+  'width',
+  'height',
+  'actorMargin',
+  'boxMargin',
+  'noteMargin',
+  'diagramMarginX',
+  'diagramMarginY',
+  'bottomMarginAdj',
+  'activationWidth',
+])
+
+/**
+ * `%%{init: {"sequence": {...}}}%%` layout keys, in mermaid's own units
+ * (px at 16px text). Renderers apply each as a delta from mermaid's default
+ * onto their own scale.
+ */
+export interface SequenceInitLayout {
+  wrap?: boolean
+  rightAngles?: boolean
+  activationWidth?: number
+  noteAlign?: 'left' | 'center' | 'right'
+  messageAlign?: 'left' | 'center' | 'right'
+  width?: number
+  height?: number
+  actorMargin?: number
+  boxMargin?: number
+  noteMargin?: number
+  diagramMarginX?: number
+  diagramMarginY?: number
+  bottomMarginAdj?: number
+}
+
+/**
+ * `%%{init: {"class": {...}}}%%` keys, in mermaid's own units (px at 16px
+ * text) and measured against mermaid 12.3.0: `padding` (default 12) pads each
+ * compartment of a class box on every side; `hideEmptyMembersBox` drops the
+ * two empty compartments of a class with no members.
+ */
+export interface ClassInitLayout {
+  padding?: number
+  hideEmptyMembersBox?: boolean
+}
+
+/**
+ * `%%{init: {"er": {...}}}%%` keys, in mermaid's own units. `diagramPadding`
+ * (default 20) pads entity cells horizontally, `entityPadding` (default 15)
+ * pads each row vertically and `minEntityWidth` (default 100) floors an
+ * entity's width. Renderers apply the first two as a delta from the default.
+ */
+export interface ErInitLayout {
+  diagramPadding?: number
+  entityPadding?: number
+  minEntityWidth?: number
+}
+
+/**
+ * `%%{init: {"architecture": {...}}}%%` keys, in mermaid's own units:
+ * `padding` (default 40) pads the page and every group, `iconSize` (default
+ * 80) is a service tile's edge and sets the label wrap, `fontSize` (default
+ * 16) sets the room a label takes below its tile, and
+ * `idealEdgeLengthMultiplier` (default 1.5) sets the cell pitch to
+ * `iconSize * (1 + multiplier)`.
+ */
+export interface ArchitectureInitLayout {
+  padding?: number
+  iconSize?: number
+  fontSize?: number
+  idealEdgeLengthMultiplier?: number
+}
+
+/** The per-axis `xyChart.xAxis` / `xyChart.yAxis` keys that change mermaid 12.3.0's output and that are honoured. */
+export interface XyChartAxisInitConfig {
+  showLabel?: boolean
+  showTitle?: boolean
+  showTick?: boolean
+  showAxisLine?: boolean
+}
+
+/**
+ * `%%{init: {"xyChart": {...}}}%%` keys honoured, measured against mermaid
+ * 12.3.0 (`width` 700 and `height` 500 are mermaid's defaults; renderers
+ * apply them as a delta). `xAxis` is mermaid's category-or-x axis and `yAxis`
+ * its value axis, whatever the orientation. Every other key is reported in
+ * `ignored`.
+ */
+export interface XyChartInitConfig {
+  width?: number
+  height?: number
+  showTitle?: boolean
+  chartOrientation?: 'vertical' | 'horizontal'
+  xAxis?: XyChartAxisInitConfig
+  yAxis?: XyChartAxisInitConfig
+}
+
+const XY_AXIS_BOOLEAN_KEYS = [
+  'showLabel',
+  'showTitle',
+  'showTick',
+  'showAxisLine',
+] as const
+
+const XY_HONOURED = new Set([
+  'width',
+  'height',
+  'showTitle',
+  'chartOrientation',
 ])
 
 const PIE_LEGEND_POSITIONS = new Set([
@@ -139,11 +384,20 @@ function directiveColor(value: unknown): string | undefined {
     : undefined
 }
 
+function isNonNegative(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0
+}
+
+/** A numeric string as the number mermaid's arithmetic makes of it ("60" -> 60); anything else unchanged. */
+function numeric(v: unknown): unknown {
+  return typeof v === 'string' && v.trim() !== '' ? Number(v) : v
+}
+
 /** Configuration a diagram can set for itself via `%%{init: ...}%%`. */
 export interface InitConfig {
   theme?: string
-  /** Flowchart edge interpolation. */
-  curve?: CurveStyle
+  /** `look` (`classic`, `neo`, ...), kept as written; only gitGraph reads it (the neo drop shadow). */
+  look?: string
   /** `pie.textPosition`: slice label distance as a fraction of the radius. */
   pieTextPosition?: number
   /** `pie.donutHole`: inner radius as a fraction of the radius. */
@@ -158,11 +412,39 @@ export interface InitConfig {
   sequenceShowNumbers?: boolean
   /** `sequence.hideUnusedParticipants`: true drops participants no message or note touches. */
   sequenceHideUnused?: boolean
+  /** Other `sequence.*` layout keys (numbers >= 0, `wrap`, `noteAlign`, `messageAlign`). */
+  sequenceLayout?: SequenceInitLayout
+  /** `timeline.leftMargin` / `padding` / `disableMulticolor`; other keys and bad values are dropped. */
+  timeline?: TimelineInitConfig
+  /** `radar.*` keys ({@link RadarInitConfig}); other keys and bad values are dropped. */
+  radar?: RadarInitConfig
+  /** `themeVariables.radar` sizes and opacities ({@link RadarStyleConfig}); 0 is kept, as mermaid does. */
+  radarTheme?: RadarStyleConfig
+  /** `journey.*` geometry keys ({@link JourneyInitConfig}); other keys and bad values are dropped. */
+  journey?: JourneyInitConfig
+  /** The `gitGraph` block (see {@link GitGraphInitConfig}); a bad value is dropped. */
+  gitGraph?: GitGraphInitConfig
+  /** `kanban.sectionWidth` (a number in 1..1e5) and `kanban.ticketBaseUrl`; other keys and bad values are dropped. */
+  kanban?: KanbanInitConfig
+  /** `packet.*` layout keys (numbers or numeric strings 0..1e5, `bitsPerRow` an integer >= 1), `showBits` (by truthiness) and `bitOrder` (anything but `descending` is ascending); other keys and bad values are dropped. */
+  packet?: PacketInitConfig
+  /** The `sankey` block (see {@link SankeyInitConfig}). */
+  sankey?: SankeyInitConfig
+  /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
+  classLayout?: ClassInitLayout
+  /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
+  erLayout?: ErInitLayout
+  /** The `c4` block (see {@link C4InitLayout}); a bad value is dropped. */
+  c4Layout?: C4InitLayout
+  /** The `architecture` block: `padding` (0..1e4), `iconSize` and `fontSize` (1..1e4) and `idealEdgeLengthMultiplier` (0.1..100); a bad value is dropped. */
+  architectureLayout?: ArchitectureInitLayout
+  /** The `xyChart` block (see {@link XyChartInitConfig}); a bad value is dropped. */
+  xyChart?: XyChartInitConfig
   /** The `quadrantChart` block; a bad or negative number, or unknown position, is dropped. */
   quadrant?: QuadrantConfig
   /**
-   * `themeVariables` the renderer can map, applied only when the caller opts
-   * in with `RenderOptions.honorThemeVariables`. `primaryColor`,
+   * `themeVariables` the renderer can map, applied unless the caller sets
+   * `RenderOptions.honorThemeVariables` to false. `primaryColor`,
    * `primaryBorderColor` and `primaryTextColor` are present only when the
    * merged config says `theme: base`, as in Mermaid.
    */
@@ -178,7 +460,7 @@ export interface InitConfig {
  */
 const IGNORED_KEYS: Record<string, string> = {
   theme:
-    "colors come from the caller's bg/fg render options, which are usually CSS variables so a diagram inherits the host page's light/dark. A diagram-supplied theme would hard-code colors that fight it (it is read only as the `base` gate for themeVariables when `honorThemeVariables` is set). Mermaid's theme names (default/dark/forest/neutral) also have no equivalent in this renderer's palettes — pass `bg`/`fg`, or a THEMES entry, instead",
+    "colors come from the caller's bg/fg render options, which are usually CSS variables so a diagram inherits the host page's light/dark. A diagram-supplied theme would hard-code colors that fight it (it is read only as the `base` gate for themeVariables unless `honorThemeVariables` is false). Mermaid's theme names (default/dark/forest/neutral) also have no equivalent in this renderer's palettes — pass `bg`/`fg`, or a THEMES entry, instead",
   securitylevel:
     'this renderer emits static SVG and never executes diagram-supplied script, so there is no sandbox to configure',
   defaultrenderer:
@@ -188,8 +470,12 @@ const IGNORED_KEYS: Record<string, string> = {
     'labels are always rendered as SVG text; there is no HTML label mode',
   maxtextsize: 'no text-size limit is enforced',
   startonload: 'not a browser auto-render integration',
+  state:
+    'no `state` key changes mermaid 12.3.0 output beyond `useMaxWidth` (measured: padding, nodeSpacing, rankSpacing, fontSize, forkWidth and the rest render identically)',
+  'flowchart.curve':
+    'mermaid 12.3.0 ignores it (every flowchart edge is ELK-routed with rounded orthogonal bends); pass the `curve` render option to opt in',
   themevariables:
-    "only primaryColor, primaryBorderColor, primaryTextColor, lineColor, pie1..pie12 and the quadrant* colours are mapped, and only when the caller sets `honorThemeVariables`; every other variable (secondary/tertiary colours, fontFamily, background, per-diagram variables) is not read, and Mermaid's colours derived from primaryColor are not computed",
+    "only primaryColor, primaryBorderColor, primaryTextColor, lineColor, pie1..pie12 and the quadrant* colours are mapped, and not when the caller sets `honorThemeVariables: false`; every other variable (secondary/tertiary colours, fontFamily, background, per-diagram variables) is not read, and Mermaid's colours derived from primaryColor are not computed",
 }
 
 /**
@@ -250,6 +536,17 @@ function normalizeRelaxedJson(text: string): string {
       quote = ch
       out += '"'
       continue
+    }
+
+    // A whole number token, exponent included, so `1e2` is not split into
+    // `1` and a bare word `e2`.
+    if (/[-\d]/.test(ch)) {
+      const num = /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(text.slice(i))
+      if (num) {
+        out += num[0]
+        i += num[0].length - 1
+        continue
+      }
     }
 
     // Bare key: an identifier run followed (after spaces) by a colon.
@@ -319,9 +616,19 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'look' && typeof value === 'string') {
+      config.look = value
+      continue
+    }
+
     if (lower === 'themevariables' && typeof value === 'object' && value) {
       const tv: ThemeVariables = {}
       for (const [vk, vv] of Object.entries({ ...value })) {
+        if (vk === 'radar' && typeof vv === 'object' && vv !== null) {
+          // The colour keys are palette, not read.
+          config.radarTheme = radarNumbers({ ...vv }, RADAR_STYLE_KEYS)
+          continue
+        }
         const color = directiveColor(vv)
         if ((QUADRANT_COLOR_VARIABLES as readonly string[]).includes(vk)) {
           if (color) (tv.quadrant ??= {})[vk as QuadrantColorVariable] = color
@@ -344,9 +651,9 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const flowchart: Record<string, unknown> = { ...value }
       for (const [fk, fv] of Object.entries(flowchart)) {
         if (fk.toLowerCase() === 'curve' && typeof fv === 'string') {
-          if (CURVE_STYLES.has(fv as CurveStyle)) {
-            config.curve = fv as CurveStyle
-          }
+          // Mermaid 12.3.0 lays out every flowchart with ELK and ignores
+          // `flowchart.curve` (#2729): parsed, reported, never applied.
+          config.ignored.push('flowchart.curve')
           continue
         }
         if (fk.toLowerCase() in IGNORED_KEYS) config.ignored.push(fk)
@@ -362,7 +669,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const q: QuadrantConfig = {}
       const rec: Record<string, unknown> = { ...value }
       for (const k of QUADRANT_NUMBER_KEYS) {
-        const v = rec[k]
+        const v = numeric(rec[k])
         if (typeof v === 'number' && Number.isFinite(v) && v >= 0) q[k] = v
       }
       const x = rec.xAxisPosition
@@ -373,14 +680,292 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'xychart' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const xy: XyChartInitConfig = {}
+      for (const k of ['width', 'height'] as const) {
+        const v = numeric(rec[k])
+        if (typeof v === 'number' && v >= 50 && v <= 1e5) xy[k] = v
+      }
+      if (typeof rec.showTitle === 'boolean') xy.showTitle = rec.showTitle
+      const o = rec.chartOrientation
+      if (o === 'vertical' || o === 'horizontal') xy.chartOrientation = o
+      for (const ax of ['xAxis', 'yAxis'] as const) {
+        const a = rec[ax]
+        if (typeof a !== 'object' || a === null) continue
+        const ar: Record<string, unknown> = { ...a }
+        const out: XyChartAxisInitConfig = {}
+        for (const k of XY_AXIS_BOOLEAN_KEYS)
+          if (typeof ar[k] === 'boolean') out[k] = ar[k]
+        xy[ax] = out
+      }
+      config.xyChart = xy
+      for (const [k, v] of Object.entries(rec)) {
+        if (k === 'xAxis' || k === 'yAxis') {
+          if (typeof v === 'object' && v !== null)
+            for (const ak of Object.keys(v))
+              if (!(XY_AXIS_BOOLEAN_KEYS as readonly string[]).includes(ak))
+                config.ignored.push(`xyChart.${k}.${ak}`)
+        } else if (!XY_HONOURED.has(k)) config.ignored.push(`xyChart.${k}`)
+      }
+      continue
+    }
+
+    if (lower === 'class' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const layout: ClassInitLayout = {}
+      const pad = numeric(rec.padding)
+      if (isNonNegative(pad)) layout.padding = pad
+      if (typeof rec.hideEmptyMembersBox === 'boolean')
+        layout.hideEmptyMembersBox = rec.hideEmptyMembersBox
+      config.classLayout = layout
+      continue
+    }
+
+    if (lower === 'er' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const layout: ErInitLayout = {}
+      for (const k of [
+        'diagramPadding',
+        'entityPadding',
+        'minEntityWidth',
+      ] as const) {
+        const v = numeric(rec[k])
+        if (isNonNegative(v)) layout[k] = v
+      }
+      config.erLayout = layout
+      continue
+    }
+
+    if (lower === 'c4' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const layout: C4InitLayout = {}
+      for (const [from, to] of [
+        ['diagramMarginX', 'diagramMarginX'],
+        ['diagramMarginY', 'diagramMarginY'],
+        ['c4ShapeMargin', 'shapeMargin'],
+        ['c4ShapePadding', 'shapePadding'],
+        ['nextLinePaddingX', 'nextLinePaddingX'],
+      ] as const)
+        if (isNonNegative(rec[from]) && rec[from] <= 1e5) layout[to] = rec[from]
+      if (isNonNegative(rec.width) && rec.width > 0 && rec.width <= 1e5)
+        layout.width = rec.width
+      if (typeof rec.wrap === 'boolean') layout.wrap = rec.wrap
+      config.c4Layout = layout
+      continue
+    }
+
+    if (
+      lower === 'architecture' &&
+      typeof value === 'object' &&
+      value !== null
+    ) {
+      const rec: Record<string, unknown> = { ...value }
+      const layout: ArchitectureInitLayout = {}
+      const inRange = (v: unknown, lo: number, hi = 1e4): v is number =>
+        typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi
+      const pad = numeric(rec.padding)
+      const icon = numeric(rec.iconSize)
+      const font = numeric(rec.fontSize)
+      const ideal = numeric(rec.idealEdgeLengthMultiplier)
+      if (inRange(pad, 0)) layout.padding = pad
+      if (inRange(icon, 1)) layout.iconSize = icon
+      if (inRange(font, 1)) layout.fontSize = font
+      if (inRange(ideal, 0.1, 100)) layout.idealEdgeLengthMultiplier = ideal
+      config.architectureLayout = layout
+      continue
+    }
+
     if (lower === 'sequence' && typeof value === 'object' && value !== null) {
       for (const [sk, sv] of Object.entries({ ...value })) {
-        if (typeof sv !== 'boolean') continue
         const sl = sk.toLowerCase()
+        const layout = (config.sequenceLayout ??= {}) as Record<string, unknown>
+        if (
+          SEQUENCE_NUMBER_KEYS.has(sk)
+            ? typeof sv === 'number' && sv >= 0 && Number.isFinite(sv)
+            : sk === 'wrap' || sk === 'rightAngles'
+              ? typeof sv === 'boolean'
+              : (sk === 'noteAlign' || sk === 'messageAlign') &&
+                (sv === 'left' || sv === 'center' || sv === 'right')
+        )
+          layout[sk] = sv
+        if (typeof sv !== 'boolean') continue
         if (sl === 'mirroractors') config.sequenceMirrorActors = sv
         else if (sl === 'showsequencenumbers') config.sequenceShowNumbers = sv
         else if (sl === 'hideunusedparticipants') config.sequenceHideUnused = sv
       }
+      continue
+    }
+
+    if (lower === 'gitgraph' && typeof value === 'object' && value !== null) {
+      const g: GitGraphInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      if (typeof rec.mainBranchName === 'string' && rec.mainBranchName !== '')
+        g.mainBranchName = rec.mainBranchName
+      if (typeof rec.mainBranchOrder === 'number' && rec.mainBranchOrder >= 0)
+        g.mainBranchOrder = rec.mainBranchOrder
+      for (const k of [
+        'showCommitLabel',
+        'showBranches',
+        'rotateCommitLabel',
+        'parallelCommits',
+      ] as const)
+        if (typeof rec[k] === 'boolean') g[k] = rec[k]
+      // Mermaid coerces numeric strings ("60") and lets a negative number through.
+      for (const k of ['titleTopMargin', 'diagramPadding'] as const) {
+        const n = rec[k]
+        const v =
+          typeof n === 'string' && n.trim() !== '' ? Number(n) : (n as unknown)
+        if (typeof v === 'number' && Number.isFinite(v)) g[k] = v
+      }
+      config.gitGraph = g
+      continue
+    }
+
+    if (lower === 'timeline' && typeof value === 'object' && value !== null) {
+      const t: TimelineInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of ['leftMargin', 'padding'] as const) {
+        // `leftMargin: "200"` is not coerced: mermaid concatenates it into a garbage viewBox.
+        const v = k === 'padding' ? numeric(rec[k]) : rec[k]
+        // 0..1e5 keeps the layout finite and the axis and viewBox valid.
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
+      }
+      // JavaScript truthiness, as mermaid's `if (disableMulticolor)`.
+      if (rec.disableMulticolor !== undefined && rec.disableMulticolor !== null)
+        t.disableMulticolor = Boolean(rec.disableMulticolor)
+      config.timeline = t
+      continue
+    }
+
+    if (lower === 'radar' && typeof value === 'object' && value !== null) {
+      const rec: Record<string, unknown> = { ...value }
+      const r = radarNumbers(rec, RADAR_GEOMETRY_KEYS)
+      if (typeof rec.useMaxWidth === 'boolean') r.useMaxWidth = rec.useMaxWidth
+      config.radar = r
+      continue
+    }
+
+    if (lower === 'journey' && typeof value === 'object' && value !== null) {
+      const j: JourneyInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'width',
+        'height',
+        'taskMargin',
+        'diagramMarginX',
+        'diagramMarginY',
+        'leftMargin',
+        'maxLabelWidth',
+      ] as const) {
+        const n = rec[k]
+        // mermaid@12.3.0 coerces numeric strings only for width/height; every other key
+        // concatenates the string into the arithmetic (a 62310-wide viewBox), so it is dropped.
+        const v =
+          typeof n === 'string' &&
+          n.trim() !== '' &&
+          (k === 'width' || k === 'height')
+            ? Number(n)
+            : (n as unknown)
+        // Negatives pass (mermaid draws them) except `height`, where mermaid emits
+        // negative-height rects and a viewBox grown by their bounds; ±1e5 keeps the layout finite.
+        if (
+          typeof v === 'number' &&
+          Math.abs(v) <= 1e5 &&
+          (v >= 0 || k !== 'height')
+        )
+          j[k] = v
+      }
+      config.journey = j
+      continue
+    }
+
+    if (lower === 'kanban' && typeof value === 'object' && value !== null) {
+      const k: KanbanInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      const w = numeric(rec.sectionWidth)
+      if (typeof w === 'number' && w > 0 && w <= 1e5) k.sectionWidth = w
+      if (typeof rec.ticketBaseUrl === 'string')
+        k.ticketBaseUrl = rec.ticketBaseUrl
+      config.kanban = k
+      continue
+    }
+
+    if (lower === 'packet' && typeof value === 'object' && value !== null) {
+      const p: PacketInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      // Mermaid uses the values in plain arithmetic, so a numeric string or
+      // `true` works as the number it coerces to.
+      const num = (v: unknown) =>
+        typeof v === 'string' || typeof v === 'boolean' ? Number(v) : v
+      for (const k of [
+        'rowHeight',
+        'bitWidth',
+        'paddingX',
+        'paddingY',
+      ] as const) {
+        const v = num(rec[k])
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) p[k] = v
+      }
+      // At least one bit per row, or the row loop in mermaid never ends.
+      const bpr = num(rec.bitsPerRow)
+      if (
+        typeof bpr === 'number' &&
+        Number.isInteger(bpr) &&
+        bpr >= 1 &&
+        bpr <= 1e4
+      )
+        p.bitsPerRow = bpr
+      // JavaScript truthiness, as mermaid's `if (showBits)`; null keeps the default.
+      if (rec.showBits !== undefined && rec.showBits !== null)
+        p.showBits = Boolean(rec.showBits)
+      // Mermaid compares with `=== 'descending'`, so any other value draws ascending.
+      if (rec.bitOrder !== undefined && rec.bitOrder !== null)
+        p.bitOrder = rec.bitOrder === 'descending' ? 'descending' : 'ascending'
+      config.packet = p
+      continue
+    }
+
+    if (lower === 'sankey' && typeof value === 'object' && value !== null) {
+      const t: SankeyInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'width',
+        'height',
+        'nodeWidth',
+        'nodePadding',
+      ] as const) {
+        const v = numeric(rec[k])
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
+      }
+      const align = rec.nodeAlignment
+      if (
+        align === 'left' ||
+        align === 'right' ||
+        align === 'center' ||
+        align === 'justify'
+      )
+        t.nodeAlignment = align
+      if (
+        rec.linkColor === 'gradient' ||
+        rec.linkColor === 'source' ||
+        rec.linkColor === 'target' ||
+        isSafeCssColor(rec.linkColor)
+      )
+        t.linkColor = rec.linkColor
+      if (typeof rec.showValues === 'boolean') t.showValues = rec.showValues
+      if (typeof rec.prefix === 'string') t.prefix = stripControls(rec.prefix)
+      if (typeof rec.suffix === 'string') t.suffix = stripControls(rec.suffix)
+      if (rec.labelStyle === 'legacy' || rec.labelStyle === 'outlined')
+        t.labelStyle = rec.labelStyle
+      if (typeof rec.nodeColors === 'object' && rec.nodeColors !== null) {
+        // No prototype: a node named `constructor` must not find a function.
+        const colors: Record<string, string> = Object.create(null)
+        for (const [id, c] of Object.entries({ ...rec.nodeColors }))
+          if (isSafeCssColor(c)) colors[id] = c
+        t.nodeColors = colors
+      }
+      config.sankey = t
       continue
     }
 
@@ -421,7 +1006,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
     const config = parseInitDirective(line)
     if (!config) continue
     if (config.theme !== undefined) merged.theme = config.theme
-    if (config.curve !== undefined) merged.curve = config.curve
+    if (config.look !== undefined) merged.look = config.look
     if (config.pieTextPosition !== undefined) {
       merged.pieTextPosition = config.pieTextPosition
     }
@@ -442,6 +1027,53 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.sequenceHideUnused !== undefined) {
       merged.sequenceHideUnused = config.sequenceHideUnused
+    }
+    if (config.sequenceLayout) {
+      merged.sequenceLayout = {
+        ...merged.sequenceLayout,
+        ...config.sequenceLayout,
+      }
+    }
+    if (config.gitGraph)
+      merged.gitGraph = { ...merged.gitGraph, ...config.gitGraph }
+    if (config.timeline)
+      merged.timeline = { ...merged.timeline, ...config.timeline }
+    if (config.radar) merged.radar = { ...merged.radar, ...config.radar }
+    if (config.radarTheme)
+      merged.radarTheme = { ...merged.radarTheme, ...config.radarTheme }
+    if (config.journey)
+      merged.journey = { ...merged.journey, ...config.journey }
+    if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
+    if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
+    if (config.sankey) {
+      const earlier = merged.sankey?.nodeColors
+      merged.sankey = { ...merged.sankey, ...config.sankey }
+      if (config.sankey.nodeColors) {
+        // Directives add to each other's node colours, later ones winning per node.
+        merged.sankey.nodeColors = Object.assign(
+          Object.create(null),
+          earlier,
+          config.sankey.nodeColors,
+        )
+      }
+    }
+    if (config.classLayout)
+      merged.classLayout = { ...merged.classLayout, ...config.classLayout }
+    if (config.erLayout)
+      merged.erLayout = { ...merged.erLayout, ...config.erLayout }
+    if (config.c4Layout)
+      merged.c4Layout = { ...merged.c4Layout, ...config.c4Layout }
+    if (config.architectureLayout)
+      merged.architectureLayout = {
+        ...merged.architectureLayout,
+        ...config.architectureLayout,
+      }
+    if (config.xyChart) {
+      const { xAxis, yAxis, ...rest } = config.xyChart
+      const m = (merged.xyChart ??= {})
+      Object.assign(m, rest)
+      if (xAxis) m.xAxis = { ...m.xAxis, ...xAxis }
+      if (yAxis) m.yAxis = { ...m.yAxis, ...yAxis }
     }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }
@@ -465,22 +1097,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
 }
 
 /**
- * Fold an init config into render options.
- *
- * Caller-supplied options always win: a directive supplies a default, never
- * an override. See the module header for why.
- */
-export function applyInitConfig(
-  options: RenderOptions,
-  config: InitConfig,
-): RenderOptions {
-  if (config.curve === undefined || options.curve !== undefined) return options
-  return { ...options, curve: config.curve }
-}
-
-/**
  * Fold the honoured `themeVariables` into render options, for a caller that
- * opted in with `honorThemeVariables`. Like `applyInitConfig`, a directive
+ * has not set `honorThemeVariables` to false. Like any directive, it
  * only fills what the caller left unset: `bg`/`fg`/`line`/`surface`/`border`
  * passed in `options` always win.
  */

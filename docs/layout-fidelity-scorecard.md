@@ -10,17 +10,17 @@ floor for its lowest figure (default 85%, lower overrides in
 `SAMPLE_FLOORS`); `--thresholds` exits 1 on a breach. Floors guard against
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
-Reference: mermaid 12.2.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-11-02 at
-ae439b3 with `pnpm run layout:scorecard`, tolerance 20px.
+Reference: mermaid 12.3.0. Since mermaid 12.0.0 its default layout engine for
+these diagram types is ELK (it was dagre before). Generated 2026-11-10 at
+8736bef with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
 | Type      | Samples | Vertical | Horizontal | Containment |
 | --------- | ------- | -------- | ---------- | ----------- |
-| Flowchart | 56      | 100%     | 98%        | 100%        |
-| State     | 7       | 100%     | 98%        | 100%        |
-| Class     | 29      | 100%     | 100%       | 100%        |
+| Flowchart | 57      | 100%     | 100%       | 100%        |
+| State     | 7       | 100%     | 100%       | 100%        |
+| Class     | 30      | 100%     | 100%       | 100%        |
 | ER        | 20      | 100%     | 100%       | -           |
 
 ## Trend (last 20 recorded runs)
@@ -31,14 +31,6 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-30 | 036684d | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
-| 2026-10-30 | 036684d | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-30 | 036684d | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
-| 2026-10-30 | 036684d | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
-| 2026-10-30 | 151f853 | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
-| 2026-10-30 | 151f853 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-30 | 151f853 | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
-| 2026-10-30 | 151f853 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
 | 2026-10-31 | ac52e8a | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
 | 2026-10-31 | ac52e8a | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-10-31 | ac52e8a | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
@@ -51,6 +43,14 @@ across that change.
 | 2026-11-02 | ae439b3 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-11-02 | ae439b3 | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
 | 2026-11-02 | ae439b3 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-11-09 | cf76b06 | 12.2.0  | Flowchart | 57      | 99%      | 98%        | 100%        |
+| 2026-11-09 | cf76b06 | 12.2.0  | State     | 7       | 100%     | 100%       | 100%        |
+| 2026-11-09 | cf76b06 | 12.2.0  | Class     | 30      | 100%     | 100%       | 100%        |
+| 2026-11-09 | cf76b06 | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-11-10 | 8736bef | 12.3.0  | Flowchart | 57      | 100%     | 100%       | 100%        |
+| 2026-11-10 | 8736bef | 12.3.0  | State     | 7       | 100%     | 100%       | 100%        |
+| 2026-11-10 | 8736bef | 12.3.0  | Class     | 30      | 100%     | 100%       | 100%        |
+| 2026-11-10 | 8736bef | 12.3.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Edge labels (ASCII)
 
@@ -70,6 +70,8 @@ between the two renderers. Descriptive only, no floor.
 | 2026-10-31 | ac52e8a | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 | 2026-11-02 | ae439b3 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-11-09 | cf76b06 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-11-10 | 8736bef | 12.3.0  | 4     | 0.50     | 0.53  | 0.06  |
 
 ## Sequence diagrams (order)
 
@@ -90,6 +92,8 @@ says nothing about pixel positions or spacing.
 | 2026-10-31 | ac52e8a | 12.2.0  | 21      | 100%         | 100%     | 100%      |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 21      | 100%         | 100%     | 100%      |
 | 2026-11-02 | ae439b3 | 12.2.0  | 24      | 100%         | 100%     | 100%      |
+| 2026-11-09 | cf76b06 | 12.2.0  | 24      | 100%         | 100%     | 100%      |
+| 2026-11-10 | 8736bef | 12.3.0  | 24      | 100%         | 100%     | 100%      |
 
 ## Pie charts (angles)
 
@@ -109,6 +113,8 @@ exits 1 otherwise). It says nothing about radius, centre or fonts.
 | 2026-10-31 | ac52e8a | 12.2.0  | 19      | 100%   | 100%   | 100%   |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 19      | 100%   | 100%   | 100%   |
 | 2026-11-02 | ae439b3 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-11-09 | cf76b06 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-11-10 | 8736bef | 12.3.0  | 19      | 100%   | 100%   | 100%   |
 
 ## C4 diagrams (placement)
 
@@ -117,8 +123,7 @@ of each other (columns and rows, within `PLACE_TOLERANCE`), of boxes inside the
 same boundaries, of relationships with the same label and technology text and
 of relationships running the same way is taken (`scripts/c4-oracle.ts`).
 Every sample must score 100% (`C4_FLOOR`; `--thresholds` exits 1
-otherwise) except those held lower in `C4_SAMPLE_FLOORS`, where our placement
-really differs. It says nothing about box sizes or fonts.
+otherwise). It says nothing about box sizes or fonts.
 
 | Date       | Commit  | Mermaid | Samples | Horizontal | Vertical | Containment | Relationships | Direction |
 | ---------- | ------- | ------- | ------- | ---------- | -------- | ----------- | ------------- | --------- |
@@ -128,6 +133,8 @@ really differs. It says nothing about box sizes or fonts.
 | 2026-10-31 | ac52e8a | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
 | 2026-10-31 | 67dd7ff | 12.2.0  | 3       | 91%        | 93%      | 100%        | 100%          | 93%       |
 | 2026-11-02 | ae439b3 | 12.2.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
+| 2026-11-09 | cf76b06 | 12.2.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
+| 2026-11-10 | 8736bef | 12.3.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
 
 ## XY charts (axes and data)
 
@@ -136,15 +143,22 @@ axis labels at the same fraction of their axis and of bars and line points at
 the same category and value fraction is taken (`scripts/xychart-oracle.ts`).
 Positions are fractions of the axis, so canvas size does not count. Every
 sample must score 100% (`XYCHART_FLOOR`; `--thresholds` exits 1
-otherwise). It
-says nothing about colors, fonts or bar widths.
+otherwise). Style is the share of four drawing features that match: straight
+lines (mermaid has no curve option), no circles (markers, dot grid), an axis
+line and tick marks. Extent is the share of value-axis ends (lowest and
+highest label) at the same fraction of the axis line, so the padding that
+keeps the smallest bar visible counts. Every XY sample is scored, bar widths
+too (`bars`); a sample real mermaid cannot parse is skipped and listed. It
+says nothing about colors or fonts.
 
-| Date       | Commit  | Mermaid | Samples | Labels | Ticks | Data |
-| ---------- | ------- | ------- | ------- | ------ | ----- | ---- |
-| 2026-10-30 | 036684d | 12.2.0  | 10      | 100%   | 100%  | 90%  |
-| 2026-10-31 | ac52e8a | 12.2.0  | 10      | 100%   | 100%  | 90%  |
-| 2026-10-31 | 67dd7ff | 12.2.0  | 10      | 100%   | 100%  | 90%  |
-| 2026-11-02 | ae439b3 | 12.2.0  | 10      | 100%   | 100%  | 100% |
+| Date       | Commit  | Mermaid | Samples | Labels | Ticks | Data | Style | Extent |
+| ---------- | ------- | ------- | ------- | ------ | ----- | ---- | ----- | ------ |
+| 2026-10-30 | 036684d | 12.2.0  | 10      | 100%   | 100%  | 90%  | -     | -      |
+| 2026-10-31 | ac52e8a | 12.2.0  | 10      | 100%   | 100%  | 90%  | -     | -      |
+| 2026-10-31 | 67dd7ff | 12.2.0  | 10      | 100%   | 100%  | 90%  | -     | -      |
+| 2026-11-02 | ae439b3 | 12.2.0  | 10      | 100%   | 100%  | 100% | -     | -      |
+| 2026-11-09 | cf76b06 | 12.2.0  | 120     | 100%   | 100%  | 100% | 100%  | 100%   |
+| 2026-11-10 | 8736bef | 12.3.0  | 120     | 100%   | 100%  | 100% | 100%  | 100%   |
 
 ## Architecture diagrams (placement)
 
@@ -166,6 +180,8 @@ parity claim. It says nothing about distances or edge routes.
 | 2026-11-02 | ae439b3 | 12.2.0  | 3       | 74%      | 90%        | 97%         |
 | 2026-11-05 | 7efe1d2 | 12.2.0  | 3       | 100%     | 100%       | 100%        |
 | 2026-11-05 | 7efe1d2 | 12.3.0  | 3       | 100%     | 100%       | 100%        |
+| 2026-11-09 | cf76b06 | 12.2.0  | 3       | 100%     | 100%       | 100%        |
+| 2026-11-10 | 8736bef | 12.3.0  | 3       | 100%     | 100%       | 100%        |
 
 ## Per sample
 
@@ -173,10 +189,7 @@ parity claim. It says nothing about distances or edge routes.
 
 | Sample                                                   | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | -------------------------------------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
-| Flowchart: Self-Loop with In and Out Neighbours (TD)     | 100%     | 33%        | -           | 3     | 30%   | pass   |
-| Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 67%        | -           | 3     | 65%   | pass   |
-| System Architecture                                      | 89%      | 100%       | 100%        | 10    | 85%   | pass   |
-| Fan-Out Under Half-Column Parent                         | 100%     | 97%        | -           | 9     | 85%   | pass   |
+| System Architecture                                      | 96%      | 100%       | 100%        | 10    | 85%   | pass   |
 | Simple Flow                                              | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Original Node Shapes                                     | 100%     | 100%       | -           | 5     | 85%   | pass   |
 | Subroutine and Hexagon Shapes                            | 100%     | 100%       | -           | 3     | 85%   | pass   |
@@ -213,6 +226,7 @@ parity claim. It says nothing about distances or edge routes.
 | Flowchart: Three Parallel Edges Plus Reciprocal (TD)     | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Four Parallel Edges (TD)                      | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Five Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Fan-Out Under Half-Column Parent                         | 100%     | 100%       | -           | 9     | 85%   | pass   |
 | LR Fan-In With Bypass Edge                               | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Reciprocal and Duplicate Edges RL                        | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Decision Self-Loop with Duplicate Edges                  | 100%     | 100%       | -           | 4     | 85%   | pass   |
@@ -223,23 +237,26 @@ parity claim. It says nothing about distances or edge routes.
 | Flowchart: Parallel Edges with Back Edges (TD)           | 100%     | 100%       | -           | 2     | 85%   | pass   |
 | Flowchart: Cluster Exit Siblings with No Other Exit (TD) | 100%     | 100%       | 100%        | 3     | 85%   | pass   |
 | Flowchart: Nine Cluster Exit Siblings (TD)               | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Flowchart: Self-Loop with In and Out Neighbours (TD)     | 100%     | 100%       | -           | 3     | 30%   | pass   |
 | Flowchart: Self-Loop with In and Out Neighbours (LR)     | 100%     | 100%       | -           | 3     | 85%   | pass   |
+| Flowchart: Dense Duplicate Edges (TD)                    | 100%     | 100%       | -           | 3     | 65%   | pass   |
 | Flowchart: Dense Duplicate Edges (LR)                    | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Parallelogram Shapes (LR)                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Parallelogram Shapes (RL)                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Parallelogram Shapes (BT)                                | 100%     | 100%       | -           | 4     | 85%   | pass   |
+| Cloud, Horizontal Cylinder, Tag and Fork Shapes          | 100%     | 100%       | -           | 6     | 85%   | pass   |
 | Duplicate Self-Loops                                     | -        | -          | -           | 1     | 85%   | n/a    |
 
 ### State (lowest first)
 
 | Sample                       | Vertical | Horizontal | Containment | Nodes | Floor | Status |
 | ---------------------------- | -------- | ---------- | ----------- | ----- | ----- | ------ |
-| State: Notes                 | 100%     | 83%        | -           | 4     | 80%   | pass   |
 | State: Basic State Diagram   | 100%     | 100%       | -           | 5     | 85%   | pass   |
 | State: Composite States      | 100%     | 100%       | 100%        | 8     | 85%   | pass   |
 | State: Connection Lifecycle  | 100%     | 100%       | -           | 7     | 85%   | pass   |
 | State: CJK State Names       | 100%     | 100%       | -           | 6     | 85%   | pass   |
 | State: Choice, Fork and Join | 100%     | 100%       | -           | 7     | 85%   | pass   |
+| State: Notes                 | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | State: Concurrent Regions    | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
 
 Not scored (the oracle errored): zombie-mermaid.
@@ -272,6 +289,7 @@ Not scored (the oracle errored): zombie-mermaid.
 | Class: Direction BT                             | 100%     | 100%       | -           | 4     | 85%   | pass   |
 | Class: Direction RL with Namespaces             | 100%     | 100%       | 100%        | 3     | 85%   | pass   |
 | Class: Two Namespaces with Cross Edges          | 100%     | 100%       | 100%        | 4     | 85%   | pass   |
+| Class: Dotted Lollipop Interface                | 100%     | 100%       | -           | 3     | 85%   | pass   |
 | Class: Basic Class                              | -        | -          | -           | 1     | 85%   | n/a    |
 | Class: Visibility Markers                       | -        | -          | -           | 1     | 85%   | n/a    |
 | Class: Interface Annotation                     | -        | -          | -           | 1     | 85%   | n/a    |

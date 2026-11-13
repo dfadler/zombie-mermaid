@@ -6,6 +6,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid, renderMermaidASCII, renderMermaidSVG } from '../index.ts'
+import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
 
 const SRC = `stateDiagram-v2
     state Work {
@@ -78,5 +79,144 @@ describe('state concurrency regions (#1715)', () => {
     for (const id of ['A1', 'A2', 'B1', 'B2']) expect(svg).toContain(`>${id}<`)
     expect(svg.match(/class="subgraph subgraph-region"/g)).toHaveLength(2)
     expect(svg.match(/stroke-dasharray="6 4"/g)).toHaveLength(2)
+  })
+
+  // Mermaid 12.3.0 (#2899): regions in written order, two across, the third
+  // wrapped under the first.
+  it.each([3, 4, 5])('%i regions wrap two across in written order', (n) => {
+    const ids = 'ABCDE'.slice(0, n).split('')
+    const src = `stateDiagram-v2
+  state W {
+${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
+  }`
+    const g = layoutGraphSync(parseMermaid(src))
+    const at = (id: string) => g.nodes.find((x) => x.id === id)!
+    ids.forEach((id, i) => {
+      const col = i % 2
+      const row = Math.floor(i / 2)
+      const a = at(ids[col]!)
+      expect(at(id).x).toBeCloseTo(a.x, 0)
+      expect(at(id).y).toBeCloseTo(at(ids[row * 2]!).y, 0)
+      if (col === 1) expect(at(id).x).toBeGreaterThan(at(ids[0]!).x)
+      if (row > 0) expect(at(id).y).toBeGreaterThan(at(ids[0]!).y)
+    })
+  })
+
+  // Mermaid 12.3.0 (#2962): unequal regions are packed smallest first, ties in
+  // written order. Probed positions: C top-left, A top-right, B under C.
+  it('packs unequal-height regions smallest first', () => {
+    const g = layoutGraphSync(
+      parseMermaid(`stateDiagram-v2
+  state W {
+    A --> A2
+    --
+    B --> B2
+    --
+    C
+  }`),
+    )
+    const at = (id: string) => g.nodes.find((x) => x.id === id)!
+    expect(at('A').x).toBeGreaterThan(at('C').x)
+    expect(at('A').y).toBeCloseTo(at('C').y, 0)
+    expect(at('B').x).toBeCloseTo(at('C').x, 0)
+    expect(at('B').y).toBeGreaterThan(at('C').y)
+  })
+
+  // Mermaid 12.3.0 (#2962, region-width sweep): a one-node region is 184 x 88
+  // and regions sit 24px apart; a wide label only breaks the single column
+  // into two rows once it is much wider than the other regions.
+  const regionRects = (
+    src: string,
+    options?: Parameters<typeof layoutGraphSync>[1],
+  ) => {
+    const g = layoutGraphSync(parseMermaid(src), options)
+    const rects: { x: number; y: number; width: number; height: number }[] = []
+    const walk = (groups: typeof g.groups) => {
+      for (const q of groups) {
+        if (q.region) rects.push(q)
+        walk(q.children)
+      }
+    }
+    walk(g.groups)
+    return rects
+  }
+  const withWide = (len: number) =>
+    `stateDiagram-v2
+  state S {
+    A1
+    --
+    B1
+    --
+    state "${'x'.repeat(len)}" as Y
+    Y
+  }`
+
+  it('keeps 24px between stacked regions', () => {
+    const [r1, r2] = regionRects(withWide(5)).sort((a, b) => a.y - b.y)
+    expect(r2!.y - (r1!.y + r1!.height)).toBeCloseTo(24, 0)
+  })
+
+  it('keeps a caller-supplied layerSpacing inside a region', () => {
+    const src =
+      'stateDiagram-v2\n  state W {\n    a --> b\n    --\n    c --> d\n  }'
+    const step = (options?: Parameters<typeof layoutGraphSync>[1]) => {
+      const g = layoutGraphSync(parseMermaid(src), options)
+      const at = (id: string) => g.nodes.find((x) => x.id === id)!
+      return at('b').y - at('a').y
+    }
+    expect(step({ layerSpacing: 120 })).toBeGreaterThan(step() + 50)
+  })
+
+  // Column counts probed in mermaid 12.3.0 for this diagram (unspaced label of
+  // `len` characters). A 30-character label is a width tie that ours still
+  // resolves as two columns (mermaid: one), so it is left out.
+  it.each([
+    [5, 1],
+    [20, 1],
+    [40, 2],
+    [60, 2],
+  ])('a %i-char wide region: %i column(s) of regions', (len, cols) => {
+    const xs = new Set(regionRects(withWide(len)).map((r) => Math.round(r.x)))
+    expect(xs.size).toBe(cols)
+  })
+
+  it('declares a bare state id inside a region', () => {
+    const g = parseMermaid(
+      'stateDiagram-v2\n  state W {\n    A\n    --\n    B\n  }',
+    )
+    expect([...g.nodes.keys()].sort()).toEqual(['A', 'B'])
+  })
+
+  // Mermaid 12.3.0 (#3013): `[*] --> W` and `W --> Z` attach to W's own wall,
+  // not to a member inside a region.
+  it('ASCII joins the edges into and out of a composite with regions to its frame', () => {
+    const out = renderMermaidASCII(`stateDiagram-v2
+  [*] --> W
+  state W {
+    A --> A2
+    --
+    B --> B2
+    --
+    C
+  }
+  W --> Z`)
+    const lines = out.split('\n')
+    const top = lines.findIndex((l) => l.startsWith('┌'))
+    const bottom = lines.findIndex((l) => l.startsWith('└'))
+    // The start dot and its line run into W's top wall.
+    expect(lines.slice(0, top).join('\n')).toMatch(/●[^▼]*│[^▼]*▼/s)
+    // The exit leaves through W's bottom wall, and nothing inside the frame
+    // sprouts a side exit through a region wall.
+    expect(lines[bottom]).toContain('┬')
+    expect(lines.slice(top, bottom).join('')).not.toMatch(/[├┤]/)
+    // ...and runs straight down to Z: one column from the wall to the arrowhead
+    // (mermaid 12.3.0 draws it vertically at W's centre, over Z).
+    const col = lines[bottom]!.indexOf('┬')
+    const arrow = lines.findIndex((l, i) => i > bottom && l.includes('▼'))
+    expect(arrow).toBeGreaterThan(bottom)
+    for (const l of lines.slice(bottom + 1, arrow + 1)) {
+      expect(l.trim()).toHaveLength(1)
+      expect(l.indexOf(l.trim())).toBe(col)
+    }
   })
 })

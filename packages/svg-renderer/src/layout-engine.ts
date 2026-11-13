@@ -38,6 +38,7 @@ import {
   isStateGraph,
   mermaidToElk,
   usesMermaidElkPipeline,
+  keepLegacyPipeline,
 } from './layout-engine/to-elk.ts'
 import { elkToPositioned } from './layout-engine/from-elk.ts'
 import { clearBorders } from './layout-engine/clear-borders.ts'
@@ -48,21 +49,35 @@ import { layoutSimple } from './layout-engine/simple-layout.ts'
 // ============================================================================
 
 /**
+ * `FlowchartRenderOptions` plus an internal switch for the ASCII layout
+ * provider: `legacyNodeSizes` keeps the node sizes and edge spacing from before
+ * mermaid's 120px minimum node width (#2717), so ASCII hints do not move.
+ */
+export type FlowchartLayoutOptions = FlowchartRenderOptions & {
+  legacyNodeSizes?: boolean
+}
+
+/**
  * Lay out a parsed MermaidGraph using ELK.js (synchronous).
  * Returns a fully positioned graph ready for rendering.
  */
 export function layoutGraphSync(
   graph: MermaidGraph,
-  options: FlowchartRenderOptions = {},
+  options: FlowchartLayoutOptions = {},
 ): PositionedGraph {
   const opts = {
     ...DEFAULTS,
     ...options,
     fontSizes: resolveFontSizes(options.fontSizes),
   }
-  const elkGraph = mermaidToElk(graph, opts)
-  const result = elkLayoutSync(elkGraph, options.layoutCache)
-  return elkToPositioned(result, graph, opts.mergeEdges)
+  const layOut = (g: MermaidGraph): PositionedGraph =>
+    elkToPositioned(
+      elkLayoutSync(mermaidToElk(g, opts), options.layoutCache),
+      g,
+      opts.mergeEdges,
+      opts.fontSizes.edgeLabel,
+    )
+  return layOut(graph)
 }
 
 /**
@@ -74,7 +89,7 @@ export function layoutGraphSync(
  */
 export function layoutFlowchartSync(
   rawGraph: MermaidGraph,
-  options: FlowchartRenderOptions = {},
+  options: FlowchartLayoutOptions = {},
 ): PositionedGraph {
   const positioned = layoutFlowchartUnmarked(rawGraph, options)
   // mermaid@12.3.0 draws a flowchart subgraph with a centred title and no
@@ -82,9 +97,11 @@ export function layoutFlowchartSync(
   // entry point, so mark the flowchart ones here, in one place, whichever
   // layout produced the groups.
   const composites = new Set<string>()
+  const empties = new Set<string>()
   const collect = (sgs: MermaidGraph['subgraphs']): void => {
     for (const sg of sgs) {
       if (sg.stateComposite) composites.add(sg.id)
+      if (!sg.nodeIds.length && !sg.children.length) empties.add(sg.id)
       collect(sg.children)
     }
   }
@@ -92,6 +109,8 @@ export function layoutFlowchartSync(
   const mark = (groups: PositionedGraph['groups']): void => {
     for (const g of groups) {
       if (!g.region && !composites.has(g.id)) g.bandless = true
+      // #2726: mermaid@12.3.0 draws an empty flowchart subgraph as its title only.
+      if (g.bandless && empties.has(g.id) && !g.architecture) g.titleOnly = true
       mark(g.children)
     }
   }
@@ -102,11 +121,16 @@ export function layoutFlowchartSync(
 
 function layoutFlowchartUnmarked(
   rawGraph: MermaidGraph,
-  options: FlowchartRenderOptions,
+  options: FlowchartLayoutOptions,
 ): PositionedGraph {
   // Real mermaid.js draws no line for an edge between a node and a subgraph
   // containing it (#1310), so it is not laid out or rendered here either.
-  const graph = withoutOwnClusterEdges(rawGraph)
+  let graph = withoutOwnClusterEdges(rawGraph)
+  if (options.legacyNodeSizes && graph.subgraphs.length === 0) {
+    // A copy, so the caller's graph stays on mermaid's pipeline for later calls.
+    graph = { ...graph }
+    keepLegacyPipeline(graph)
+  }
   // Opt-in built-in layout that needs no elkjs (#1685); never a fallback.
   // State diagrams share this entry point and still need ELK (see `isStateGraph`).
   if (options.layout === 'simple' && !isStateGraph(graph)) {
@@ -143,7 +167,7 @@ function layoutFlowchartUnmarked(
  */
 export function convertToElkFormat(
   graph: MermaidGraph,
-  options: FlowchartRenderOptions = {},
+  options: FlowchartLayoutOptions = {},
 ): ElkNode {
   const opts = {
     ...DEFAULTS,

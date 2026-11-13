@@ -145,6 +145,12 @@ distinct modules, not a fixed 20).
   any interactive state the diff touches), taken from a static build, even when a
   byte-diff already shows zero change. Pure non-rendering changes are exempt.
 
+## PR checklist boxes: check only what you did
+
+`PR checklist` (CI) fails while the PR body has an unchecked `- [ ]` task-list item outside
+HTML comments and fenced code blocks. Never tick a box to pass it: run the `pr-checklist` skill when writing or editing any PR body. A box is checked
+only after the task was done and verified this session, or marked `N/A: <reason>`.
+
 ## Decision docs: run the self-review checklist before opening the PR
 
 Before opening a PR that adds or edits a `docs/decisions/*.md` file, walk through

@@ -238,7 +238,7 @@ for (const mode of ['html', 'truecolor'] as const) {
 
 const ONE_BAR_SERIES = 'xychart-beta\n  x-axis [A, B, C]\n  bar [3, 5, 2]'
 const TWO_BAR_SERIES =
-  'xychart-beta\n  title "Sales"\n  x-axis [Q1, Q2, Q3, Q4]\n  bar [200, 250, 300, 280]\n  bar [230, 280, 320, 350]'
+  'xychart-beta\n  title "Sales"\n  x-axis [Q1, Q2, Q3, Q4]\n  bar [200, 250, 300, 380]\n  bar [230, 280, 320, 350]'
 const TWO_LINE_SERIES =
   'xychart-beta\n  x-axis [A, B, C, D]\n  line [3, 5, 2, 6]\n  line [1, 2, 4, 3]'
 

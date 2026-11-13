@@ -7,6 +7,7 @@
  * that.
  */
 // Provenance (#2679): the .snap is this renderer's own output, accepted once when the test was written. It does not claim to match mermaid.js.
+// Mermaid 12.3.0 verdict (#2708): SVG labels match (7 sources); ASCII tick labels not comparable (it keeps fewer ticks than mermaid, #2310); SVG viewBox is 700x500 in mermaid vs 720x422/702x422 here, not analysed.
 import { describe, expect, it } from 'vitest'
 import { layoutXYChart } from '@zombie-mermaid/svg-renderer'
 import { parseXYChart } from '@zombie-mermaid/mermaid-parser'

@@ -62,7 +62,7 @@ describe('pie SVG: structure', () => {
   it('escapes labels and titles', () => {
     const out = renderMermaidSVG('pie title A <b> & "c"\n  "x<y & \\"z\\"" : 1')
     expect(out).toContain(
-      'class="pie-title">A &lt;b&gt; &amp; &quot;c&quot;</text>',
+      'class="pie-title">A &lt;b&gt; &amp;amp; &quot;c&quot;&lt;/b&gt;</text>',
     )
     expect(out).toContain('data-label="x&lt;y &amp; &quot;z&quot;"')
     expect(out).toContain(
@@ -99,21 +99,48 @@ describe('pie SVG: styling and theme', () => {
     expect(svg).toMatch(/\.pie-legend-text \{[^}]*font-size: 17px/)
   })
 
-  it('fills slot 0 with the live theme accent and later slots with series shades', () => {
+  it("draws in mermaid's default font stack, with no font import, unless `font` is given", () => {
+    const stack = 'font-family: "trebuchet ms", verdana, arial, sans-serif;'
+    const svg = renderMermaidSVG(BASIC)
+    for (const cls of ['pie-title', 'pie-slice-label', 'pie-legend-text']) {
+      expect(svg).toMatch(new RegExp(`\\.${cls} \\{[^}]*${stack}`))
+    }
+    expect(svg).not.toContain('fonts.googleapis.com')
+    const own = renderMermaidSVG(BASIC, { font: 'Georgia' })
+    expect(own).not.toContain('trebuchet')
+    expect(own).toContain("text { font-family: 'Georgia'")
+  })
+
+  it('keeps Inter when the embedded Inter subset is requested', async () => {
+    const { renderMermaidSVGAsync } = await import('../../../../src/index.ts')
+    const svg = await renderMermaidSVGAsync(BASIC, { embedFont: 'subset' })
+    expect(svg).not.toContain('trebuchet')
+    expect(svg).toContain("text { font-family: 'Inter'")
+  })
+
+  it("fills slices with mermaid 12.3.0's default pie1..pie12 scale on a light background (#2855)", () => {
     const svg = renderMermaidSVG(BASIC, {
       bg: '#ffffff',
       fg: '#111111',
       accent: '#e11d48',
     })
-    expect(svg).toContain('--pie-color-0: var(--accent, #3b82f6);')
-    expect(svg).toContain(
-      `--pie-color-1: ${getSeriesColor(1, '#e11d48', '#ffffff')};`,
-    )
-    expect(svg).toContain(
-      `--pie-color-2: ${getSeriesColor(2, '#e11d48', '#ffffff')};`,
-    )
+    expect(svg).toContain('--pie-color-0: #ECECFF;')
+    expect(svg).toContain('--pie-color-1: #ffffde;')
+    expect(svg).toContain('--pie-color-2: hsl(80, 100%, 56.2745098039%);')
     expect(svg).toContain('.pie-color-1 { fill: var(--pie-color-1); }')
     expect(svg).toContain('rect.pie-color-1 { stroke: var(--pie-color-1); }')
+  })
+
+  it('keeps the theme accent and series shades on a dark background', () => {
+    const svg = renderMermaidSVG(BASIC, {
+      bg: '#101010',
+      fg: '#eeeeee',
+      accent: '#e11d48',
+    })
+    expect(svg).toContain('--pie-color-0: var(--accent, #3b82f6);')
+    expect(svg).toContain(
+      `--pie-color-1: ${getSeriesColor(1, '#e11d48', '#101010')};`,
+    )
   })
 
   it('adapts the series shades to a dark background', () => {
@@ -332,10 +359,23 @@ describe('pie SVG: init legendPosition', () => {
     )
   })
 
-  it('grows the viewBox for a top legend wider than the frame instead of clipping it', () => {
-    const g = geo(renderMermaidSVG(src('"top"', `"${'W'.repeat(80)}" : 1`)))
-    expect(g.rects[0]!.x).toBeGreaterThanOrEqual(0)
-    expect(g.w).toBeGreaterThan(490)
+  it.each(['top', 'bottom', 'center'])(
+    'clips a %s legend wider than the frame instead of growing the viewBox (mermaid 12.3.0)',
+    (pos) => {
+      const g = geo(
+        renderMermaidSVG(src(`"${pos}"`, `"${'W'.repeat(80)}" : 1`)),
+      )
+      expect(g.w).toBe(490)
+    },
+  )
+
+  it('still grows the viewBox for a left or right legend', () => {
+    for (const pos of ['left', 'right']) {
+      const g = geo(
+        renderMermaidSVG(src(`"${pos}"`, `"${'W'.repeat(80)}" : 1`)),
+      )
+      expect(g.w).toBeGreaterThan(490)
+    }
   })
 
   it('does nothing for a chart with no slices', () => {

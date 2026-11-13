@@ -16,7 +16,7 @@ import {
 import type { Point, RenderOptions } from '@zombie-mermaid/core'
 import {
   C4,
-  C4_TEXT_WIDTH,
+  c4Config,
   c4CylinderCap,
   c4PersonGeometry,
   c4QueueCap,
@@ -25,6 +25,7 @@ import {
   c4TextWidth,
   wrapToWidth,
 } from './metrics.ts'
+import type { C4Config } from '@zombie-mermaid/core'
 import type { C4LabelBox } from './metrics.ts'
 
 // ============================================================================
@@ -85,9 +86,9 @@ function grow(
 }
 
 /** Mermaid's `Bounds.insert`: give a shape the next free slot. */
-function insert(b: Bounds, shape: Placed): void {
+function insert(b: Bounds, shape: Placed, cfg: C4Config): void {
   b.next.cnt += 1
-  const margin = C4.shapeMargin
+  const margin = cfg.shapeMargin
   let startx =
     b.next.startx === b.next.stopx
       ? b.next.stopx! + margin
@@ -100,7 +101,7 @@ function insert(b: Bounds, shape: Placed): void {
     stopx >= b.widthLimit! ||
     b.next.cnt > C4.shapeInRow
   ) {
-    startx = b.next.startx! + margin + C4.nextLinePaddingX
+    startx = b.next.startx! + margin + cfg.nextLinePaddingX
     starty = b.next.stopy! + margin * 2
     b.next.stopx = stopx = startx + shape.width
     b.next.starty = b.next.stopy
@@ -132,10 +133,13 @@ interface MeasuredElement extends Placed {
   descriptionLines: string[]
 }
 
-function measureElement(el: C4Element): MeasuredElement {
-  const nameLines = wrapToWidth(el.label, C4_TEXT_WIDTH, C4.nameSize)
+function measureElement(el: C4Element, cfg: C4Config): MeasuredElement {
+  // `wrap: false`: mermaid keeps each source line whole and widens the shape.
+  const wrap = (text: string, size: number): string[] =>
+    cfg.wrap ? wrapToWidth(text, cfg.textWidth, size) : text.split('\n')
+  const nameLines = wrap(el.label, C4.nameSize)
   const descriptionLines = el.description
-    ? wrapToWidth(el.description, C4_TEXT_WIDTH, C4.descrSize)
+    ? wrap(el.description, C4.descrSize)
     : []
   const textWidth = Math.max(
     ...nameLines.map((l) => c4TextWidth(l, C4.nameSize, 700)),
@@ -147,6 +151,7 @@ function measureElement(el: C4Element): MeasuredElement {
     nameLines.length,
     descriptionLines.length,
     textWidth,
+    cfg,
   )
   return { el, nameLines, descriptionLines, x: 0, y: 0, ...size }
 }
@@ -194,21 +199,21 @@ interface Layout {
   maxY: number
 }
 
-function layoutFrames(root: Frame): Layout {
+function layoutFrames(root: Frame, cfg: C4Config): Layout {
   const elements = new Map<string, MeasuredElement>()
   const boundaries: LaidOutBoundary[] = []
-  let maxX: number = C4.diagramMarginX
-  let maxY: number = C4.diagramMarginY
+  let maxX: number = cfg.diagramMarginX
+  let maxY: number = cfg.diagramMarginY
 
   // Mermaid's `drawC4ShapeArray`: measure, insert each, then bump the margin.
   const placeShapes = (bounds: Bounds, els: C4Element[]): void => {
     for (const el of els) {
-      const m = measureElement(el)
+      const m = measureElement(el, cfg)
       elements.set(el.alias, m)
-      insert(bounds, m)
+      insert(bounds, m, cfg)
     }
-    bounds.stopx! += C4.shapeMargin
-    bounds.stopy! += C4.shapeMargin
+    bounds.stopx! += cfg.shapeMargin
+    bounds.stopy! += cfg.shapeMargin
   }
 
   // Mermaid's `drawInsideBoundary`.
@@ -237,13 +242,13 @@ function layoutFrames(root: Frame): Layout {
       if (!b) Y = C4.rootHeadingHeight
 
       if (i === 0 || i % C4.boundaryInRow === 0) {
-        const x = parent.startx! + C4.diagramMarginX
-        const y = parent.stopy! + C4.diagramMarginY + Y
+        const x = parent.startx! + cfg.diagramMarginX
+        const y = parent.stopy! + cfg.diagramMarginY + Y
         setData(bounds, x, x, y, y)
       } else {
         const x =
           bounds.stopx !== bounds.startx
-            ? bounds.stopx! + C4.diagramMarginX
+            ? bounds.stopx! + cfg.diagramMarginX
             : bounds.startx!
         setData(bounds, x, x, bounds.starty!, bounds.starty!)
       }
@@ -257,10 +262,10 @@ function layoutFrames(root: Frame): Layout {
         // A boundary with nothing in it still gets a visible frame.
         // Widen the bounds too, or the diagram width ignores the frame.
         if (width === 0) {
-          width = C4.width
+          width = cfg.width
           bounds.stopx = bounds.startx! + width
         }
-        if (height === 0) height = Y + C4.shapeMargin
+        if (height === 0) height = Y + cfg.shapeMargin
         boundaries.push({
           alias: b.alias,
           label: b.label,
@@ -276,8 +281,8 @@ function layoutFrames(root: Frame): Layout {
           ...(descrY === undefined ? {} : { descrY }),
         })
       }
-      parent.stopy = Math.max(bounds.stopy! + C4.shapeMargin, parent.stopy!)
-      parent.stopx = Math.max(bounds.stopx! + C4.shapeMargin, parent.stopx!)
+      parent.stopy = Math.max(bounds.stopy! + cfg.shapeMargin, parent.stopy!)
+      parent.stopx = Math.max(bounds.stopx! + cfg.shapeMargin, parent.stopx!)
       maxX = Math.max(maxX, parent.stopx)
       maxY = Math.max(maxY, parent.stopy)
     }
@@ -286,10 +291,10 @@ function layoutFrames(root: Frame): Layout {
   const screen = newBounds()
   setData(
     screen,
-    C4.diagramMarginX,
-    C4.diagramMarginX,
-    C4.diagramMarginY,
-    C4.diagramMarginY,
+    cfg.diagramMarginX,
+    cfg.diagramMarginX,
+    cfg.diagramMarginY,
+    cfg.diagramMarginY,
   )
   screen.widthLimit = C4.screenWidth
   // The unnamed root is not drawn, so its children are the depth-0 boundaries.
@@ -673,6 +678,7 @@ function clearLabel(
   obstacles: Obstacle[],
   lines: Point[][],
   placed: Obstacle[],
+  wrap: boolean,
 ): void {
   const start = rel.points[0]
   const end = rel.points[rel.points.length - 1]
@@ -698,7 +704,8 @@ function clearLabel(
       cost: 0,
     },
   ]
-  if (hasHead) {
+  // `wrap: false` keeps the label whole, as mermaid does.
+  if (hasHead && wrap) {
     const tail = rel.technology ? [`[${rel.technology}]`] : []
     const seen = new Set([own.join('\n')])
     WRAP_FRACTIONS.forEach((fraction, i) => {
@@ -837,6 +844,7 @@ export function layoutC4DiagramSync(
   diagram: C4Diagram,
   _options: RenderOptions = {},
 ): PositionedC4Diagram {
+  const cfg = c4Config(diagram.layout)
   if (diagram.elements.length === 0 && diagram.boundaries.length === 0) {
     const empty: PositionedC4Diagram = {
       variant: diagram.variant,
@@ -850,21 +858,21 @@ export function layoutC4DiagramSync(
       // Mermaid emits viewBox "0 -70 200 187" with the title at x=-150, off
       // the canvas, so it is invisible there; here the canvas is sized to the
       // title and the title is drawn inside it (docs/known-differences.md).
-      const height = 2 * C4.diagramMarginY + C4.titleExtra
+      const height = 2 * cfg.diagramMarginY + C4.titleExtra
       empty.title = diagram.title
       empty.width = Math.ceil(
-        2 * C4.diagramMarginX + c4TextWidth(diagram.title, 16, 400),
+        2 * cfg.diagramMarginX + c4TextWidth(diagram.title, 16, 400),
       )
       empty.height = height
-      empty.titlePosition = { x: C4.diagramMarginX, y: height / 2 }
+      empty.titlePosition = { x: cfg.diagramMarginX, y: height / 2 }
     }
     return empty
   }
 
-  const layout = layoutFrames(buildFrames(diagram))
+  const layout = layoutFrames(buildFrames(diagram), cfg)
   const titleExtra = diagram.title ? C4.titleExtra : 0
   // Mermaid's viewBox starts `diagramMarginY + titleExtra` above the content.
-  const shift = C4.diagramMarginY + titleExtra
+  const shift = cfg.diagramMarginY + titleExtra
 
   const elements: PositionedC4Element[] = diagram.elements.flatMap((el) => {
     const m = layout.elements.get(el.alias)
@@ -912,11 +920,12 @@ export function layoutC4DiagramSync(
       obstacles,
       sampled.filter((_, j) => j !== i),
       placedLabels,
+      cfg.wrap,
     ),
   )
 
-  const width = layout.maxX + C4.diagramMarginX
-  const height = layout.maxY + C4.diagramMarginY + titleExtra
+  const width = layout.maxX + cfg.diagramMarginX
+  const height = layout.maxY + cfg.diagramMarginY + titleExtra
   const positioned: PositionedC4Diagram = {
     variant: diagram.variant,
     width,
@@ -924,14 +933,15 @@ export function layoutC4DiagramSync(
     elements,
     boundaries,
     relationships,
+    ...(diagram.layout && { layout: diagram.layout }),
   }
   if (diagram.title) {
     positioned.title = diagram.title
     // Mermaid starts the title at `boxWidth / 2 - 4 * marginX`.
-    const boxWidth = layout.maxX - C4.diagramMarginX
+    const boxWidth = layout.maxX - cfg.diagramMarginX
     positioned.titlePosition = {
-      x: boxWidth / 2 - 4 * C4.diagramMarginX,
-      y: C4.diagramMarginY + C4.diagramMarginY + shift,
+      x: boxWidth / 2 - 4 * cfg.diagramMarginX,
+      y: cfg.diagramMarginY + cfg.diagramMarginY + shift,
     }
   }
   return positioned

@@ -27,7 +27,7 @@ import {
   toDisplayCells,
   WIDE_CHAR_PLACEHOLDER,
 } from './display-width.ts'
-import type { Message } from '@zombie-mermaid/mermaid-parser'
+import type { Message, SequenceDiagram } from '@zombie-mermaid/mermaid-parser'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.
@@ -70,6 +70,43 @@ function actorGlyphLines(a: {
     ? PARTICIPANT_TYPE_GLYPHS[a.participantType!]
     : undefined
   return g === undefined ? [] : [g]
+}
+
+// Wrap budget (columns) for a block header or divider label, from the span
+// of the lifelines the block covers. Mermaid 12.3.0 wraps to the span less
+// 30px at ~7.6px per character; a default 10-column gap is ~200px, so this is
+// ~2.6 columns of text per column of span, less 3 (#2745). Floor ~80px.
+function wrapBudget(span: number): number {
+  return Math.max(Math.floor(2.6 * span) - 3, 10)
+}
+
+// Break a block label (shown as `[label]`) like mermaid's wrapLabel: at spaces
+// once the line so far plus the next word and its trailing space reaches
+// `avail`; a word that alone is wider than that is split mid-word with a
+// trailing `-` (breakString). Explicit newlines kept.
+function wrapBracketed(label: string, avail: number): string[] {
+  const out: string[] = []
+  for (const line of `[${label}]`.split('\n')) {
+    let cur = ''
+    for (const word of line.split(' ')) {
+      if (displayWidth(word) + 1 > avail) {
+        const chars = [...word]
+        out.push(cur)
+        cur = ''
+        chars.forEach((ch, i) => {
+          if (displayWidth(cur + ch) >= avail) {
+            out.push(i === chars.length - 1 ? cur + ch : `${cur + ch}-`)
+            cur = ''
+          } else cur += ch
+        })
+      } else if (cur && displayWidth(cur) + displayWidth(word) + 1 >= avail) {
+        out.push(cur)
+        cur = word
+      } else cur = cur ? `${cur} ${word}` : word
+    }
+    out.push(cur)
+  }
+  return out.filter(Boolean)
 }
 
 // Horizontal clearance between a block's (loop/alt/opt/par/etc.) side wall
@@ -125,6 +162,44 @@ function selfExtent(msg: Message): number {
  *
  * Pipeline: parse → layout (columns + rows) → draw onto canvas → string.
  */
+/** `sequence.wrap`: notes wrap at `width` (150px), messages at `width + actorMargin`, at 8px a column. */
+function wrapDiagramText(d: SequenceDiagram): SequenceDiagram {
+  const l = d.layout ?? {}
+  const wrap = (text: string, px: number, on = l.wrap) =>
+    !on
+      ? text
+      : splitLines(text)
+          .map((line) =>
+            line
+              .split(/\s+/)
+              .filter(Boolean)
+              .reduce<string[]>((rows, w) => {
+                const last = rows[rows.length - 1]
+                if (
+                  last !== undefined &&
+                  displayWidth(`${last} ${w}`) <= px / 8
+                )
+                  rows[rows.length - 1] = `${last} ${w}`
+                else rows.push(w)
+                return rows
+              }, [])
+              .join('\n'),
+          )
+          .join('\n')
+  const w = l.width ?? 150
+  return {
+    ...d,
+    notes: d.notes.map((n) => ({
+      ...n,
+      text: wrap(n.text, w, n.wrap ?? l.wrap),
+    })),
+    messages: d.messages.map((m) => ({
+      ...m,
+      label: wrap(m.label, w + (l.actorMargin ?? 50), m.wrap ?? l.wrap),
+    })),
+  }
+}
+
 export function renderSequenceAscii(
   text: string,
   config: AsciiConfig,
@@ -132,7 +207,15 @@ export function renderSequenceAscii(
   theme?: AsciiTheme,
 ): string {
   const lines = splitStatements(text)
-  const diagram = parseSequenceDiagram(lines, text)
+  const parsed = parseSequenceDiagram(lines, text)
+  const diagram =
+    parsed.layout?.wrap ||
+    parsed.messages.some((m) => m.wrap) ||
+    parsed.notes.some((n) => n.wrap)
+      ? wrapDiagramText(parsed)
+      : parsed
+  const noteAlign = parsed.layout?.noteAlign
+  const messageAlign = parsed.layout?.messageAlign
   const mirror = diagram.mirrorActors !== false
 
   if (diagram.actors.length === 0) return ''
@@ -191,14 +274,41 @@ export function renderSequenceAscii(
     // type tab (as mermaid does), so it needs a dash each side.
     let width = maxLineWidth(block.type) + 4
     if (block.label) {
-      width += maxLineWidth(`[${block.label}]`) + 5
+      width += Math.max(...headerLabelLines(block).map(displayWidth)) + 5
     }
-    for (const divider of block.dividers) {
-      if (divider.label) {
-        width = Math.max(width, maxLineWidth(`[${divider.label}]`) + 4)
+    for (let d = 0; d < block.dividers.length; d++) {
+      if (block.dividers[d]!.label) {
+        width = Math.max(
+          width,
+          Math.max(...dividerLabelLines(block, d).map(displayWidth)) + 4,
+        )
       }
     }
     return width
+  }
+
+  // Header and divider labels wrap to the frame instead of widening the
+  // lifeline gap (#2745, mermaid 12.3.0). Read llX lazily: it is only final
+  // after the layout passes below.
+  function wrapAvail(block: Block): number {
+    const xs: number[] = []
+    const last = Math.min(block.endIndex, diagram.messages.length - 1)
+    for (let m = block.startIndex; m <= last; m++) {
+      const msg = diagram.messages[m]!
+      const f = llX[actorIndexOf(msg.from)]!
+      xs.push(f, llX[actorIndexOf(msg.to)]!)
+      // A self-message's loop and label widen mermaid's block too.
+      if (msg.from === msg.to) xs.push(f + selfExtent(msg), f - selfLeft(msg))
+    }
+    // A block with no messages is never laid out, so `xs` is never empty here.
+    const span = Math.max(...xs) - Math.min(...xs)
+    return wrapBudget(span)
+  }
+  function headerLabelLines(block: Block): string[] {
+    return wrapBracketed(block.label, wrapAvail(block))
+  }
+  function dividerLabelLines(block: Block, d: number): string[] {
+    return wrapBracketed(block.dividers[d]!.label, wrapAvail(block))
   }
 
   // Clamped: a negative boxBorderPadding would otherwise produce a negative
@@ -251,13 +361,10 @@ export function renderSequenceAscii(
   // ---- Participant lifecycle (create / destroy) ----
   //
   // A `create participant X` box is drawn centred on the row of the message
-  // that creates it, in place of a header box; a `destroy X` lifeline stops
-  // one row under the destroying arrow with a cross glyph, and gets no
-  // footer box. Mermaid draws the created box centred on the message line
-  // and ends the destroyed lifeline with a cross at that line; the ASCII
-  // form keeps the arrowhead intact by putting the cross on the row below
-  // — a cross *on* the arrow row would replace the arrowhead and read as a
-  // lost message (`-x`) instead.
+  // that creates it, in place of a header box; a `destroy X` footer box is
+  // drawn the same way, centred on the destroying message's row (Mermaid
+  // 12.3.0: `rect.actor-bottom` at the destroy point, no cross), and the
+  // lifeline ends at its top edge.
   //
   // Rows above the arrow taken by actor `i`'s created box, and rows below it.
   // For the default 3-row box that's one row each side of the arrow row.
@@ -271,10 +378,39 @@ export function renderSequenceAscii(
     if (a.createdAt !== undefined) createdByMsg.set(a.createdAt, i)
     if (a.destroyedAt !== undefined) destroyedByMsg.set(a.destroyedAt, i)
   })
+  // A self-message that destroys its participant (mirrored actors): mermaid
+  // 12.2.0/12.3.0 draw it as a straight line from the footer box's left edge
+  // to the lifeline centre, label above it, all inside the box (rect
+  // y=129..203, line y=166 = the box's vertical centre, label centred over
+  // the line, x=201..276). So the footer box grows to enclose them: `half`
+  // columns either side of the lifeline, `above`/`below` rows around the
+  // arrow row, the arrowhead `hx` columns left of the lifeline (just before
+  // the name / figure).
+  const selfDestroy = new Map<
+    number,
+    { half: number; above: number; below: number; hx: number }
+  >()
+  diagram.messages.forEach((msg, m) => {
+    const i = actorIndexOf(msg.from)
+    if (!mirror || msg.from !== msg.to || destroyedByMsg.get(m) !== i) return
+    const a = diagram.actors[i]!
+    const hx = Math.floor(actorContentWidth(a) / 2) + 1
+    const half = Math.max(
+      Math.floor(actorBoxWidths[i]! / 2),
+      hx + Math.max(maxLineWidth(msg.label) + 2, 3),
+    )
+    const above = Math.max(createdBoxAbove(i), lineCount(msg.label) + 1)
+    const figure = actorGlyphLines(a).length > 0
+    const below = Math.max(
+      above,
+      figure ? createdBoxH(i) - 1 - above : createdBoxH(i) - 2,
+    )
+    selfDestroy.set(m, { half, above, below, hx })
+  })
   // Filled in by the vertical layout pass: actor index → top row of its
-  // created box / row of its destroy cross.
+  // created box / top row of its destroyed footer box.
   const createdBoxTop = new Map<number, number>()
-  const destroyRow = new Map<number, number>()
+  const destroyBoxTop = new Map<number, number>()
 
   // ---- Participant groups (box … end) ----
   //
@@ -328,6 +464,15 @@ export function renderSequenceAscii(
     const fi = actorIndexOf(msg.from)
     const ti = actorIndexOf(msg.to)
     if (fi === ti) {
+      const sd = selfDestroy.get(mi)
+      if (sd !== undefined) {
+        // The footer box must clear both neighbouring lifelines.
+        if (fi < adjMaxWidth.length)
+          adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, sd.half)
+        if (fi > 0)
+          adjMaxWidth[fi - 1] = Math.max(adjMaxWidth[fi - 1]!, sd.half)
+        continue
+      }
       // A self-message's label sits above its loop and must clear the next
       // lifeline by one blank column, or it overwrites that lifeline
       // (issue #1387). The last actor has no right neighbour; the
@@ -360,32 +505,6 @@ export function renderSequenceAscii(
     }
   }
 
-  // A block's wall must be as wide as its header and divider labels. Spread
-  // its lifelines apart to give it that width, so the wall stays centred on
-  // them (as in mermaid.js) instead of growing past the last one.
-  for (const block of diagram.blocks) {
-    let lo = Number.POSITIVE_INFINITY
-    let hi = -1
-    for (const msg of diagram.messages.slice(
-      block.startIndex,
-      block.endIndex + 1,
-    )) {
-      const f = actorIndexOf(msg.from)
-      const t = actorIndexOf(msg.to)
-      lo = Math.min(lo, f, t)
-      hi = Math.max(hi, f, t)
-    }
-    // The wall reaches BLOCK_WALL_MARGIN past each end lifeline; `- 2` is the
-    // margin the gap computation below adds.
-    const perGap =
-      Math.ceil(
-        (maxBlockLabelWidth(block) + 1 - 2 * BLOCK_WALL_MARGIN) / (hi - lo),
-      ) - 2
-    for (let g = lo; g < hi; g++) {
-      adjMaxWidth[g] = Math.max(adjMaxWidth[g]!, perGap)
-    }
-  }
-
   // Width (including border + padding, matching the box drawn in the
   // vertical-layout pass below) of a note anchored to an actor. Computed up
   // front, before lifeline x-positions are finalized, so `left`/`right`
@@ -413,9 +532,22 @@ export function renderSequenceAscii(
   // How many blocks enclose this note (#2514)? Each one has a left wall.
   function noteDepth(note: (typeof diagram.notes)[number]): number {
     return (
-      diagram.blocks.filter(
-        (b) => note.afterIndex >= b.startIndex && note.afterIndex <= b.endIndex,
-      ).length + leadingBlocks(note).length
+      diagram.blocks.filter((b) => noteInsideBlock(note, b)).length +
+      leadingBlocks(note).length
+    )
+  }
+
+  // A note after a block's last message sits inside the block only when it was
+  // written before the `end`; one written after it follows the frame (#2744).
+  function noteInsideBlock(
+    note: (typeof diagram.notes)[number],
+    b: Block,
+  ): boolean {
+    return (
+      note.afterIndex >= b.startIndex &&
+      note.afterIndex <= b.endIndex &&
+      (note.afterIndex < b.endIndex ||
+        diagram.notes.indexOf(note) < b.noteEndIndex)
     )
   }
 
@@ -485,11 +617,18 @@ export function renderSequenceAscii(
   // Compute lifeline x-positions (greedy left-to-right).
   // See paddingOffset's doc comment (types.ts) for why this is an offset
   // from the paddingX default rather than the raw config value.
-  const minLifelineGap = paddingOffset(
-    config.paddingX,
-    DEFAULT_PADDING_X,
-    10,
+  // `sequence.width` / `actorMargin` (#2783): mermaid spaces actor centres by
+  // `width + actorMargin` (150 + 50 px by default = the 10-column minimum, so
+  // 20 px a column); a key off its default moves the minimum by its distance.
+  const initGapCols = Math.round(
+    ((diagram.layout?.width ?? 150) +
+      (diagram.layout?.actorMargin ?? 50) -
+      200) /
+      20,
+  )
+  const minLifelineGap = Math.max(
     4,
+    paddingOffset(config.paddingX, DEFAULT_PADDING_X, 10, 4) + initGapCols,
   )
   // A bracketed first participant needs room for the wall to its left; two
   // adjacent participants in different groups (or one grouped, one not)
@@ -537,7 +676,7 @@ export function renderSequenceAscii(
       // block's left wall (column 0) by one blank column.
       ...diagram.messages.map((m, mi) =>
         m.from === m.to && actorIndexOf(m.from) === 0
-          ? selfLeft(m) +
+          ? (selfDestroy.get(mi)?.half ?? selfLeft(m)) +
             (diagram.blocks.some((b) => mi >= b.startIndex && mi <= b.endIndex)
               ? 2
               : 0)
@@ -790,7 +929,10 @@ export function renderSequenceAscii(
           if (div.index === m && div.index <= diagram.blocks[b]!.endIndex) {
             curY += rowGap
             divYMap.set(`${b}:${d}`, curY)
-            curY += minSeparatorGap
+            // Extra rows for a wrapped divider label (#2745).
+            curY +=
+              minSeparatorGap +
+              Math.max(0, dividerLabelLines(diagram.blocks[b]!, d).length - 1)
           }
         }
       }
@@ -802,7 +944,7 @@ export function renderSequenceAscii(
     for (let b = diagram.blocks.length - 1; b >= 0; b--) {
       if (diagram.blocks[b]!.startIndex === m) {
         // Blank rows + 1 header row + one more per extra label line.
-        const extra = splitLines(`[${diagram.blocks[b]!.label}]`).length - 1
+        const extra = headerLabelLines(diagram.blocks[b]!).length - 1
         curY += rowGap + 1 + extra
         blockStartY.set(b, curY - 1 - extra)
         // Notes written between this header and the first message (#2531),
@@ -821,7 +963,11 @@ export function renderSequenceAscii(
     curY += rowGap // Blank row before message
 
     const msg = diagram.messages[m]!
-    const isSelf = msg.from === msg.to
+    // A self-message that destroys its participant (mirrored actors) is a
+    // straight line inside the enlarged footer box, not a loop (`selfDestroy`).
+    const sd = selfDestroy.get(m)
+    const destroysSelf = sd !== undefined
+    const isSelf = msg.from === msg.to && !destroysSelf
 
     // Calculate height needed for multi-line message labels
     const msgLineCount = lineCount(msg.label)
@@ -829,7 +975,7 @@ export function renderSequenceAscii(
     // A self-message can't sensibly create its own recipient (the loop
     // glyphs would sit where the box goes), so that degenerate case keeps
     // the header box instead.
-    const createdIdx = isSelf ? undefined : createdByMsg.get(m)
+    const createdIdx = msg.from === msg.to ? undefined : createdByMsg.get(m)
     const destroyedIdx = destroyedByMsg.get(m)
 
     if (isSelf) {
@@ -845,41 +991,71 @@ export function renderSequenceAscii(
       // the created box's rows below it.
       // The label stays on the rows directly above the arrow; a tall created
       // box just adds blank rows above the label (#2281).
-      const boxAbove =
-        createdIdx === undefined ? 0 : createdBoxAbove(createdIdx)
-      const boxBelow =
-        createdIdx === undefined ? 0 : createdBoxBelow(createdIdx)
-      const above = Math.max(msgLineCount, boxAbove)
+      const boxAbove = Math.max(
+        createdIdx === undefined ? 0 : createdBoxAbove(createdIdx),
+        destroyedIdx === undefined ? 0 : createdBoxAbove(destroyedIdx),
+      )
+      const boxBelow = Math.max(
+        createdIdx === undefined ? 0 : createdBoxBelow(createdIdx),
+        destroyedIdx === undefined ? 0 : createdBoxBelow(destroyedIdx),
+      )
+      // A destroying self-message's label and arrow sit inside its footer box:
+      // the label on the rows under the top border, the arrow row below them.
+      const above = sd?.above ?? Math.max(msgLineCount, boxAbove)
       msgArrowY[m] = curY + above
-      msgLabelY[m] = msgArrowY[m]! - msgLineCount
-      curY += above + 1 + boxBelow
+      msgLabelY[m] = sd === undefined ? msgArrowY[m]! - msgLineCount : curY + 1
+      curY += above + 1 + (sd?.below ?? boxBelow)
       if (createdIdx !== undefined) {
-        createdBoxTop.set(createdIdx, msgArrowY[m]! - boxAbove)
+        createdBoxTop.set(
+          createdIdx,
+          msgArrowY[m]! - createdBoxAbove(createdIdx),
+        )
+      }
+      if (destroyedIdx !== undefined) {
+        destroyBoxTop.set(
+          destroyedIdx,
+          msgArrowY[m]! - (sd?.above ?? createdBoxAbove(destroyedIdx)),
+        )
       }
     }
 
-    // One reserved row under the arrow (under the bottom arm, for a
-    // self-message) for the destroy cross, so it never lands on whatever
-    // comes next when rowGap is 0.
-    if (destroyedIdx !== undefined) {
-      destroyRow.set(destroyedIdx, curY)
-      curY += 1
+    // Notes after this message; one written after a block's `end` waits for
+    // that block's closing row below (#2744).
+    const pending = diagram.notes.filter(
+      (n) => n.afterIndex === m && !leadingBlocks(n).length,
+    )
+    const placePending = (inside: (n: (typeof pending)[number]) => boolean) => {
+      for (const note of pending) {
+        if (!placedAfter.has(note) && inside(note)) {
+          placedAfter.add(note)
+          placeNote(note)
+        }
+      }
     }
+    const placedAfter = new Set<(typeof pending)[number]>()
+    // Place the notes still inside every block closing at m from index `from`.
+    const placeInside = (from: number): void =>
+      placePending((n) =>
+        diagram.blocks.every(
+          (blk, bi) =>
+            bi < from || blk.endIndex !== m || noteInsideBlock(n, blk),
+        ),
+      )
+    placeInside(0)
 
-    // Notes after this message
-    for (const note of diagram.notes) {
-      if (note.afterIndex === m && !leadingBlocks(note).length) placeNote(note)
-    }
-
-    // Block closings after this message
+    // Block closings after this message (innermost first)
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.endIndex === m) {
+        placeInside(b)
         // Trailing empty else/and/option sections (#2555).
         diagram.blocks[b]!.dividers.forEach((div, d) => {
           if (div.index > m) {
             curY += rowGap
             divYMap.set(`${b}:${d}`, curY)
-            curY += minSeparatorGap
+            // Extra rows for a wrapped divider label (#2745).
+            curY +=
+              minSeparatorGap +
+              Math.max(0, dividerLabelLines(diagram.blocks[b]!, d).length - 1)
           }
         })
         curY += rowGap
@@ -887,6 +1063,7 @@ export function renderSequenceAscii(
         curY += minSeparatorGap
       }
     }
+    placePending(() => true)
   }
 
   curY += minSeparatorGap // Gap before footer (mandatory — see minSeparatorGap)
@@ -911,7 +1088,8 @@ export function renderSequenceAscii(
     const msg = diagram.messages[m]!
     if (msg.from === msg.to) {
       const fi = actorIndexOf(msg.from)
-      const selfRight = llX[fi]! + selfExtent(msg) + 2
+      const selfRight =
+        llX[fi]! + (selfDestroy.get(m)?.half ?? selfExtent(msg)) + 2
       totalW = Math.max(totalW, selfRight + 1)
     }
   }
@@ -1027,13 +1205,16 @@ export function renderSequenceAscii(
     label: string,
     glyphLines: readonly string[],
     boxH: number,
+    // A destroying self-message's footer box: `half` columns each side of the
+    // lifeline, content starting `contentTop` rows under the top border.
+    enlarged?: { half: number; contentTop: number },
   ): void {
     const lines = [...glyphLines, ...splitLines(label)]
     const maxW = Math.max(
       maxLineWidth(label),
       maxLineWidth(glyphLines.join('\n')),
     )
-    const w = maxW + 2 * boxPad + 2
+    const w = enlarged ? 2 * enlarged.half + 1 : maxW + 2 * boxPad + 2
     const h = boxH
     const contentRows = h - 2
     const left = cx - Math.floor(w / 2)
@@ -1050,15 +1231,17 @@ export function renderSequenceAscii(
       const row = topY + 1 + i
       setC(left, row, V, 'border')
       setC(left + w - 1, row, V, 'border')
-      const line = lines[i]
-      if (line === undefined) continue
+      const line = lines[i - (enlarged?.contentTop ?? 0)]
+      if (line === undefined || i < (enlarged?.contentTop ?? 0)) continue
       // Center this line within the box. Centering offset and cell-writing
       // both use display width (terminal columns), not `.length` (JS
       // code units) — a code-unit-based offset would under-center CJK
       // labels, and writing one grid cell per code unit (rather than per
       // terminal column) would under-reserve columns for wide glyphs,
       // both contributing to issue #334's border/content misalignment.
-      const ls = left + 1 + boxPad + Math.floor((maxW - displayWidth(line)) / 2)
+      const ls = enlarged
+        ? cx - Math.floor(displayWidth(line) / 2)
+        : left + 1 + boxPad + Math.floor((maxW - displayWidth(line)) / 2)
       writeTextCells(ls, row, line, 'text')
     }
 
@@ -1072,14 +1255,17 @@ export function renderSequenceAscii(
   // ---- DRAW: lifelines ----
 
   // A created participant's lifeline starts under its mid-diagram box; a
-  // destroyed one's ends at its cross row (drawn in the messages pass, so
-  // the cross wins over the `│` painted here).
+  // destroyed one's ends just above its footer box.
   const lifelineTop = (i: number) => {
     const boxTop = createdBoxTop.get(i)
     return boxTop === undefined ? headerBottom : boxTop + createdBoxH(i)
   }
   const lifelineBottom = (i: number) =>
-    destroyRow.get(i) ?? (mirror ? footerY : footerY - 1)
+    destroyBoxTop.has(i)
+      ? destroyBoxTop.get(i)! - 1
+      : mirror
+        ? footerY
+        : footerY - 1
 
   // ---- LAYOUT: activation intervals (rows where a lifeline is "active") ----
   //
@@ -1224,9 +1410,9 @@ export function renderSequenceAscii(
   for (let i = 0; i < diagram.actors.length; i++) {
     const actor = diagram.actors[i]!
     // Created: the box sits on its creating message's row, not in the
-    // header. Destroyed: no footer box — the lifeline already ended.
+    // header. Destroyed: the footer box sits on its destroying message's row.
     const headerTop = createdBoxTop.get(i) ?? headerBoxTop
-    const destroyed = destroyRow.has(i)
+    const destroyedTop = destroyBoxTop.get(i)
     const headerH = createdBoxTop.has(i) ? createdBoxH(i) : headerBoxH
     drawActorBox(
       llX[i]!,
@@ -1235,20 +1421,34 @@ export function renderSequenceAscii(
       actorGlyphLines(actor),
       headerH,
     )
-    if (mirror && !destroyed) {
+    const footerTop = destroyedTop ?? footerBoxTop
+    // A destroying self-message's footer box is enlarged to enclose its arrow.
+    const sd = [...selfDestroy].find(([m]) => destroyedByMsg.get(m) === i)?.[1]
+    const footerH =
+      destroyedTop === undefined
+        ? actorBoxH
+        : sd === undefined
+          ? createdBoxH(i)
+          : sd.above + 1 + sd.below
+    if (mirror) {
       drawActorBox(
         llX[i]!,
-        footerBoxTop,
+        footerTop,
         actor.label,
         actorGlyphLines(actor),
-        actorBoxH,
+        footerH,
+        sd && {
+          half: sd.half,
+          // A plain box's name sits on the arrow row; a figure's rows stay put.
+          contentTop: actorGlyphLines(actor).length > 0 ? 0 : sd.above - 1,
+        },
       )
     }
 
     // Lifeline junctions on box borders (Unicode only)
     if (!useAscii) {
       setC(llX[i]!, headerTop + headerH - 1, JT, 'junction')
-      if (mirror && !destroyed) setC(llX[i]!, footerBoxTop, JB, 'junction')
+      if (mirror) setC(llX[i]!, footerTop, JB, 'junction')
     }
   }
 
@@ -1260,7 +1460,8 @@ export function renderSequenceAscii(
     const ti = actorIndexOf(msg.to)
     const fromX = llX[fi]!
     const toX = llX[ti]!
-    const isSelf = fi === ti
+    const destroysSelf = mirror && fi === ti && destroyedByMsg.get(m) === fi
+    const isSelf = fi === ti && !destroysSelf
     const isDashed = msg.lineStyle === 'dashed'
     const isFilled = msg.arrowHead === 'filled'
     // "lost message" (-x/--x): a distinct cross terminator, not the plain
@@ -1272,7 +1473,32 @@ export function renderSequenceAscii(
     // Arrow line character (solid vs dashed)
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
 
-    if (isSelf) {
+    if (destroysSelf) {
+      // Inside the footer box (drawn with the footers): the label centred
+      // over the arrow, which runs from the box's left interior to just
+      // before the name / figure at the lifeline centre.
+      const { half, hx } = selfDestroy.get(m)!
+      const headX = fromX - hx
+      const start = fromX - half + 1
+      const mid = Math.floor((start + headX) / 2)
+      splitLines(msg.label).forEach((line, k) => {
+        writeTextCells(
+          mid - Math.floor(displayWidth(line) / 2),
+          msgLabelY[m]! + k,
+          line,
+          'text',
+          totalW,
+        )
+      })
+      for (let x = start; x < headX; x++)
+        setC(x, msgArrowY[m]!, lineChar, 'line')
+      setC(
+        headX,
+        msgArrowY[m]!,
+        isLost ? lostChar : useAscii ? '>' : isFilled ? '▶' : '▷',
+        'arrow',
+      )
+    } else if (isSelf) {
       // Self-message: the label centred above a 3-row loop to the right of
       // the lifeline, as mermaid.js draws it (issues #1387, #2456)
       //   │ Label        (label rows, one per line)
@@ -1350,16 +1576,30 @@ export function renderSequenceAscii(
       // instead of the lifeline centre (the box occupies this row — see the
       // lifecycle comment near createdBoxAbove). `headX` is where the
       // arrowhead goes; the line runs from the sender up to it.
+      // A destroyed participant's footer box sits on its destroying message's
+      // row the same way, at either end of the arrow: the line stops at (or
+      // starts from) the box border (`tailX`).
       const createsRecipient = createdByMsg.get(m) === ti
+      const destroysRecipient = destroyedByMsg.get(m) === ti
+      const destroysSender = destroyedByMsg.get(m) === fi
       let headX = toX
-      if (createsRecipient) {
+      if (createsRecipient || destroysRecipient) {
         const boxLeft = actorBoxLeft(ti, toX)
         const boxRight = boxLeft + actorBoxWidths[ti]! - 1
         headX = leftToRight ? boxLeft - 1 : boxRight + 1
       }
+      let tailX = fromX
+      if (destroysSender) {
+        const boxLeft = actorBoxLeft(fi, fromX)
+        const boxRight = boxLeft + actorBoxWidths[fi]! - 1
+        tailX = leftToRight ? boxRight : boxLeft
+      }
 
       // Draw label centered between the two lifelines (supports multi-line)
-      let midX = Math.floor((fromX + toX) / 2)
+      let midX = Math.floor(
+        ((destroysSender ? tailX : fromX) + (destroysRecipient ? headX : toX)) /
+          2,
+      )
       const msgLines = splitLines(msg.label)
 
       // A label centred on a message that spans several participants can land
@@ -1391,14 +1631,19 @@ export function renderSequenceAscii(
         const line = msgLines[lineIdx]!
         // Center on display width, not `.length` — see writeTextCells' doc
         // comment for why a code-unit-based offset under-centers CJK labels.
-        const labelStart = midX - Math.floor(displayWidth(line) / 2)
+        const labelStart =
+          messageAlign === 'left'
+            ? Math.min(fromX, toX) + 2
+            : messageAlign === 'right'
+              ? Math.max(fromX, toX) - 1 - displayWidth(line)
+              : midX - Math.floor(displayWidth(line) / 2)
         const y = labelY + lineIdx
         writeTextCells(labelStart, y, line, 'text', totalW)
       }
 
       // Draw arrow line
       if (leftToRight) {
-        for (let x = fromX + 1; x < headX; x++)
+        for (let x = tailX + 1; x < headX; x++)
           setC(x, arrowY, lineChar, 'line')
         // Arrowhead at destination
         const ah = isLost
@@ -1417,10 +1662,10 @@ export function renderSequenceAscii(
         // variant to branch on, unlike the one-way `ah` glyph above.
         if (msg.bidirectional) {
           const ahStart = useAscii ? '<' : '◀'
-          setC(fromX, arrowY, ahStart, 'arrow')
+          setC(tailX, arrowY, ahStart, 'arrow')
         }
       } else {
-        for (let x = headX + 1; x < fromX; x++)
+        for (let x = headX + 1; x < tailX; x++)
           setC(x, arrowY, lineChar, 'line')
         const ah = isLost
           ? lostChar
@@ -1434,7 +1679,7 @@ export function renderSequenceAscii(
         setC(headX, arrowY, ah, 'arrow')
         if (msg.bidirectional) {
           const ahStart = useAscii ? '>' : '▶'
-          setC(fromX, arrowY, ahStart, 'arrow')
+          setC(tailX, arrowY, ahStart, 'arrow')
         }
       }
 
@@ -1447,13 +1692,13 @@ export function renderSequenceAscii(
       if (msg.seqNumber !== undefined) {
         const numStr = String(msg.seqNumber)
         if (leftToRight) {
-          const start = fromX + 1
-          if (start + numStr.length < toX) {
+          const start = tailX + 1
+          if (start + numStr.length < headX) {
             for (let i = 0; i < numStr.length; i++)
               setC(start + i, arrowY, numStr[i]!, 'text')
           }
         } else {
-          const start = fromX - numStr.length
+          const start = tailX - numStr.length
           if (start > headX) {
             for (let i = 0; i < numStr.length; i++)
               setC(start + i, arrowY, numStr[i]!, 'text')
@@ -1461,15 +1706,6 @@ export function renderSequenceAscii(
         }
       }
     }
-  }
-
-  // ---- DRAW: destroy crosses ----
-
-  // Same glyph as a lost message's terminator, on the destroyed actor's
-  // lifeline one row under the destroying arrow (see the lifecycle comment
-  // near createdBoxAbove for why not on the arrow row itself).
-  for (const [i, y] of destroyRow) {
-    setC(llX[i]!, y, useAscii ? 'x' : '✕', 'arrow')
   }
 
   // ---- DRAW: blocks (loop, alt, opt, par, etc.) ----
@@ -1652,7 +1888,7 @@ export function renderSequenceAscii(
     writeTextCells(bLeft + 2, topY, ` ${block.type} `, 'text', bRight)
     if (block.label) {
       const tabEnd = bLeft + 4 + block.type.length
-      const lines = splitLines(`[${block.label}]`)
+      const lines = headerLabelLines(block)
       for (let i = 0; i < lines.length && topY + i < botY; i++) {
         const w = displayWidth(lines[i]!) + 2
         writeTextCells(
@@ -1685,17 +1921,22 @@ export function renderSequenceAscii(
       for (let x = bLeft + 1; x < bRight; x++) setC(x, dY, dashChar, 'line')
       setC(bRight, dY, JR, 'junction')
       // Divider label
-      const dLabel = block.dividers[d]!.label
-      if (dLabel) {
-        const dStr = `[${dLabel}]`
-        const w = displayWidth(dStr) + 2
-        writeTextCells(
-          Math.max(bLeft + 1, bLeft + Math.floor((bRight - bLeft - w) / 2) + 1),
-          dY,
-          ` ${dStr} `,
-          'text',
-          bRight,
-        )
+      if (block.dividers[d]!.label) {
+        const dLines = dividerLabelLines(block, d)
+        for (let i = 0; i < dLines.length && dY + i < botY; i++) {
+          const dStr = dLines[i]!
+          const w = displayWidth(dStr) + 2
+          writeTextCells(
+            Math.max(
+              bLeft + 1,
+              bLeft + Math.floor((bRight - bLeft - w) / 2) + 1,
+            ),
+            dY + i,
+            ` ${dStr} `,
+            'text',
+            bRight,
+          )
+        }
       }
     }
   }
@@ -1729,7 +1970,13 @@ export function renderSequenceAscii(
       }
       // Centred in the box, as mermaid does (it matters once the box spans
       // two lifelines and is wider than its text).
-      const pad = Math.floor((np.width - 2 - displayWidth(np.lines[l]!)) / 2)
+      const room = np.width - 2 - displayWidth(np.lines[l]!)
+      const pad =
+        noteAlign === 'left'
+          ? 1
+          : noteAlign === 'right'
+            ? room - 1
+            : Math.floor(room / 2)
       writeTextCells(np.x + 1 + pad, ly, np.lines[l]!, 'text')
     }
     // Bottom border

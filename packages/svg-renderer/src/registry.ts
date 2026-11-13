@@ -47,7 +47,7 @@ import type {
   Statement,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from './styles.ts'
-import { withDirectionOverride } from '@zombie-mermaid/core'
+import { extractInitConfig, withDirectionOverride } from '@zombie-mermaid/core'
 
 import {
   parseXYChart,
@@ -58,7 +58,17 @@ import {
   architectureToGraph,
   parseC4Diagram,
   parsePieChart,
+  parseMindmap,
   parseQuadrantChart,
+  parseGantt,
+  parseTimeline,
+  parseGitGraph,
+  parsePacket,
+  parseRadar,
+  parseJourney,
+  parseKanban,
+  parseSankey,
+  parseRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -76,6 +86,25 @@ import type {
   PositionedPieChart,
   QuadrantChart,
   PositionedQuadrantChart,
+  Mindmap,
+  PositionedMindmap,
+  GanttChart,
+  PositionedGanttChart,
+  Timeline,
+  PositionedTimeline,
+  GitGraph,
+  PositionedGitGraph,
+  Packet,
+  Radar,
+  PositionedRadar,
+  Journey,
+  PositionedJourney,
+  Kanban,
+  PositionedKanban,
+  Sankey,
+  PositionedSankey,
+  RequirementDiagram,
+  PositionedRequirementDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -91,6 +120,27 @@ import { layoutPieChart } from './pie/layout.ts'
 import { renderPieSvg } from './pie/renderer.ts'
 import { layoutQuadrantChart } from './quadrant/layout.ts'
 import { renderQuadrantSvg } from './quadrant/renderer.ts'
+import { layoutMindmap } from './mindmap/layout.ts'
+import { renderMindmapSvg } from './mindmap/renderer.ts'
+import { layoutGantt } from './gantt/layout.ts'
+import { renderGanttSvg } from './gantt/renderer.ts'
+import { layoutTimeline } from './timeline/layout.ts'
+import { layoutJourney } from './journey/layout.ts'
+import { renderJourneySvg } from './journey/renderer.ts'
+import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutGitGraph } from './gitgraph/layout.ts'
+import { renderGitGraphSvg } from './gitgraph/renderer.ts'
+import { layoutPacket } from './packet/layout.ts'
+import type { PositionedPacket } from './packet/layout.ts'
+import { renderPacketSvg } from './packet/renderer.ts'
+import { layoutRadar } from './radar/layout.ts'
+import { renderRadarSvg } from './radar/renderer.ts'
+import { layoutKanban } from './kanban/layout.ts'
+import { renderKanbanSvg } from './kanban/renderer.ts'
+import { layoutSankey } from './sankey/layout.ts'
+import { renderSankeySvg } from './sankey/renderer.ts'
+import { layoutRequirementDiagramSync } from './requirement/layout.ts'
+import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -166,7 +216,8 @@ export interface DiagramModule<TDiagram = unknown, TPositioned = unknown> {
 
 const xychartModule: DiagramModule<XYChart, PositionedXYChart> = {
   type: 'xychart',
-  parse: parseXYChart,
+  parse: (lines, text) =>
+    parseXYChart(lines, extractInitConfig(text.split(/\r\n?|\n/)).xyChart),
   layoutForSvg: layoutXYChart,
   renderSvg(positioned, ctx, options) {
     // Mirrors resolveXYChartInteractive() in the umbrella's src/index.ts
@@ -237,7 +288,10 @@ function resolveAnimationEnabled(options: RenderOptions): boolean {
 
 const classModule: DiagramModule<ClassDiagram, PositionedClassDiagram> = {
   type: 'class',
-  parse: parseClassDiagram,
+  parse(lines, text) {
+    const layout = extractInitConfig(text.split(/\r\n?|\n/)).classLayout
+    return { ...parseClassDiagram(lines), ...(layout && { layout }) }
+  },
   layoutForSvg: layoutClassDiagramSync,
   renderSvg(positioned, ctx, options) {
     return renderClassSvg(
@@ -257,7 +311,10 @@ const classModule: DiagramModule<ClassDiagram, PositionedClassDiagram> = {
 
 const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
   type: 'er',
-  parse: parseErDiagram,
+  parse(lines, text) {
+    const layout = extractInitConfig(text.split(/\r\n?|\n/)).erLayout
+    return { ...parseErDiagram(lines), ...(layout && { layout }) }
+  },
   // `options.direction` replaces the diagram's own top-level `direction`
   // line, if any, before layout — same order as the umbrella's original
   // 'er' case: parse, then withDirectionOverride, then layout.
@@ -315,13 +372,13 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
   parse: (_lines, text) => parseMermaid(text),
   layoutForSvg(diagram, options) {
     // Same order as the umbrella's original fallback: direction override,
-    // then layout. `options.curve` wins over the diagram's own
-    // `%%{init: ...}%%` directive, which wins over the 'linear' default —
-    // see the doc comment on `PositionedFlowchart` above.
+    // then layout. The curve is the `options.curve` render option or
+    // 'linear'; `flowchart.curve` in an init directive is ignored, as in
+    // mermaid 12.3.0 (#2729).
     const graph = withDirectionOverride(diagram, options.direction)
     return {
       graph: layoutFlowchartSync(graph, options),
-      curve: options.curve ?? diagram.initConfig?.curve ?? 'linear',
+      curve: options.curve ?? 'linear',
     }
   },
   renderSvg(positioned, ctx, options) {
@@ -344,7 +401,10 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
 
 const c4Module: DiagramModule<C4Diagram, PositionedC4Diagram> = {
   type: 'c4',
-  parse: parseC4Diagram,
+  parse(lines, text) {
+    const layout = extractInitConfig(text.split(/\r\n?|\n/)).c4Layout
+    return { ...parseC4Diagram(lines), ...(layout && { layout }) }
+  },
   // Mermaid's C4 renderer has no direction: shapes are placed in rows in
   // declaration order, so `options.direction` does not apply to the SVG.
   layoutForSvg(diagram, options) {
@@ -378,19 +438,28 @@ const architectureModule: DiagramModule<
   PositionedFlowchart
 > = {
   type: 'architecture',
-  parse: parseArchitecture,
+  parse(lines, text) {
+    const layout = extractInitConfig(text.split(/\r\n?|\n/)).architectureLayout
+    return { ...parseArchitecture(lines), ...(layout && { layout }) }
+  },
   layoutForSvg(diagram, options) {
-    const graph = withDirectionOverride(
-      architectureToGraph(diagram),
-      options.direction,
-    )
+    // No direction override: ports place every service (#2912).
     return {
-      graph: layoutArchitectureGrid(graph, options.padding),
+      graph: layoutArchitectureGrid(
+        architectureToGraph(diagram),
+        options.padding,
+        diagram.layout,
+      ),
       curve: 'linear',
     }
   },
   renderSvg: flowchartModule.renderSvg,
 }
+
+// `undefined` selects Mermaid's own font (see ./pie/layout.ts). Asking for the
+// embedded Inter subset is asking for Inter, so that stays the font then.
+const pieFont = (options: RenderOptions): string | undefined =>
+  options.font ?? (options.embedFont === 'subset' ? 'Inter' : undefined)
 
 /**
  * Pie charts parse from the raw `text` rather than `lines` (see
@@ -404,16 +473,16 @@ const pieModule: DiagramModule<PieChart, PositionedPieChart> = {
   // `pie1..pie12` from the directive only when the caller opted in.
   layoutForSvg: (chart, options) =>
     layoutPieChart(
-      options.honorThemeVariables
+      options.honorThemeVariables !== false
         ? chart
         : { ...chart, sliceColors: undefined },
-      options,
+      { font: pieFont(options) },
     ),
-  renderSvg(positioned, ctx) {
+  renderSvg(positioned, ctx, options) {
     return renderPieSvg(
       positioned,
       ctx.colors,
-      ctx.font,
+      pieFont(options),
       ctx.transparent,
       ctx.embedSource,
       ctx.title,
@@ -436,12 +505,241 @@ const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
   // the `quadrantChart` sizes always apply, as Mermaid's config does.
   layoutForSvg: (chart, options) =>
     layoutQuadrantChart(
-      options.honorThemeVariables
+      options.honorThemeVariables !== false
         ? chart
         : { ...chart, themeColors: undefined },
     ),
   renderSvg(positioned, ctx) {
     return renderQuadrantSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Mindmaps parse from the raw `text` (the grammar is indentation based and a
+ * label may contain `;`), then lay out with Mermaid's CoSE-Bilkent force
+ * layout. No direction or interactivity applies.
+ */
+const mindmapModule: DiagramModule<Mindmap, PositionedMindmap> = {
+  type: 'mindmap',
+  parse: (_lines, text) => parseMindmap(text),
+  layoutForSvg: (chart) => layoutMindmap(chart),
+  renderSvg(positioned, ctx) {
+    return renderMindmapSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Gantt charts parse from the raw `text` (a task line is `name :data`, which
+ * the statement splitter would cut at `;` and `#`) and lay out at Mermaid's
+ * fallback width. The `todayMarker` line only appears while today is inside
+ * the chart's date range.
+ */
+const ganttModule: DiagramModule<GanttChart, PositionedGanttChart> = {
+  type: 'gantt',
+  parse: (_lines, text) => parseGantt(text),
+  layoutForSvg: (chart) => layoutGantt(chart),
+  renderSvg(positioned, ctx) {
+    return renderGanttSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/** Journeys parse from the raw `text` (`;` is not a separator there), then lay out to Mermaid's fixed geometry. */
+const journeyModule: DiagramModule<Journey, PositionedJourney> = {
+  type: 'journey',
+  parse: (_lines, text) => parseJourney(text),
+  layoutForSvg: (j) => layoutJourney(j),
+  renderSvg(positioned, ctx) {
+    return renderJourneySvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Timelines parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator and a label may contain one), then lay out to Mermaid's fixed
+ * geometry. No theme variables or interactivity apply.
+ */
+const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
+  type: 'timeline',
+  parse: (_lines, text) => parseTimeline(text),
+  layoutForSvg: (tl) => layoutTimeline(tl),
+  renderSvg(positioned, ctx) {
+    return renderTimelineSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/** Kanban boards parse from the raw `text`, then lay out to Mermaid's fixed geometry. */
+const kanbanModule: DiagramModule<Kanban, PositionedKanban> = {
+  type: 'kanban',
+  parse: (_lines, text) => parseKanban(text),
+  layoutForSvg: (kb) => layoutKanban(kb),
+  renderSvg(positioned, ctx) {
+    return renderKanbanSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Radar charts parse from the raw `text` (Mermaid's grammar has no `;`
+ * statement separator and a label may contain one), then lay out to
+ * Mermaid's fixed 700 x 700 geometry. No theme variables or interactivity
+ * apply.
+ */
+const radarModule: DiagramModule<Radar, PositionedRadar> = {
+  type: 'radar',
+  parse: (_lines, text) => parseRadar(text),
+  layoutForSvg: (radar) => layoutRadar(radar),
+  renderSvg(positioned, ctx) {
+    return renderRadarSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Requirement diagrams parse from the raw `text` (a value may hold `;` or
+ * `'`), then lay out with ELK like ER. `options.direction` replaces the
+ * diagram's own `direction` statement.
+ */
+const requirementModule: DiagramModule<
+  RequirementDiagram,
+  PositionedRequirementDiagram
+> = {
+  type: 'requirement',
+  parse: (_lines, text) => parseRequirementDiagram(text),
+  layoutForSvg: (diagram, options) =>
+    layoutRequirementDiagramSync(diagram, options),
+  renderSvg(positioned, ctx) {
+    return renderRequirementSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Packets parse from the raw `text` (`;` is not a statement separator and a
+ * label may contain one), then lay out to Mermaid's fixed geometry. No theme
+ * variables or interactivity apply.
+ */
+const packetModule: DiagramModule<Packet, PositionedPacket> = {
+  type: 'packet',
+  parse: (_lines, text) => parsePacket(text),
+  layoutForSvg: (packet) => layoutPacket(packet),
+  renderSvg(positioned, ctx) {
+    return renderPacketSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * GitGraphs parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator), then lay out with Mermaid's own constants. Colours are this
+ * library's palette; no interactivity applies.
+ */
+const gitgraphModule: DiagramModule<GitGraph, PositionedGitGraph> = {
+  type: 'gitgraph',
+  parse: (_lines, text) => parseGitGraph(text),
+  layoutForSvg: (gg) => layoutGitGraph(gg),
+  renderSvg(positioned, ctx) {
+    return renderGitGraphSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Sankeys parse from the raw `text` (a CSV body: `;` is not a separator and
+ * a quoted field may span lines), then lay out with a port of d3-sankey.
+ * No theme variables or interactivity apply.
+ */
+const sankeyModule: DiagramModule<Sankey, PositionedSankey> = {
+  type: 'sankey',
+  parse: (_lines, text) => parseSankey(text),
+  layoutForSvg: (sk) => layoutSankey(sk),
+  renderSvg(positioned, ctx) {
+    return renderSankeySvg(
       positioned,
       ctx.colors,
       ctx.font,
@@ -484,4 +782,14 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   c4: c4Module,
   pie: pieModule,
   quadrant: quadrantModule,
+  mindmap: mindmapModule,
+  gantt: ganttModule,
+  timeline: timelineModule,
+  packet: packetModule,
+  radar: radarModule,
+  journey: journeyModule,
+  kanban: kanbanModule,
+  sankey: sankeyModule,
+  requirement: requirementModule,
+  gitgraph: gitgraphModule,
 }

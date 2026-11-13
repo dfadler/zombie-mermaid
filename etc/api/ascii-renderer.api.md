@@ -6,8 +6,57 @@
 
 import { DiagramColors } from '@zombie-mermaid/core';
 import { Direction } from '@zombie-mermaid/core';
+import { ErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { LimitExceededError } from '@zombie-mermaid/core';
+import { MermaidGraph } from '@zombie-mermaid/core';
 import { RenderLimits } from '@zombie-mermaid/core';
+
+// @public (undocumented)
+export interface AsciiEdgeEndHint {
+    // (undocumented)
+    face: AsciiFace;
+    order: number;
+}
+
+// @public (undocumented)
+export interface AsciiEdgeHint {
+    // (undocumented)
+    end: AsciiEdgeEndHint;
+    // (undocumented)
+    from: string;
+    index: number;
+    // (undocumented)
+    start: AsciiEdgeEndHint;
+    // (undocumented)
+    to: string;
+}
+
+// @public
+export type AsciiFace = 'T' | 'B' | 'L' | 'R';
+
+// @public (undocumented)
+export interface AsciiLayoutHints {
+    // (undocumented)
+    edges: AsciiEdgeHint[];
+    // (undocumented)
+    nodes: Map<string, AsciiNodeHint>;
+}
+
+// @public
+export interface AsciiLayoutProvider {
+    // (undocumented)
+    er?: (diagram: ErDiagram) => AsciiLayoutHints | undefined;
+    // (undocumented)
+    graph?: (graph: MermaidGraph) => AsciiLayoutHints | undefined;
+}
+
+// @public (undocumented)
+export interface AsciiNodeHint {
+    cross: number;
+    layer: number;
+    order: number;
+    size: number;
+}
 
 // @public (undocumented)
 export interface AsciiRenderOptions {
@@ -63,7 +112,13 @@ export function detectColorMode(): ColorMode;
 // @public
 export function diagramColorsToAsciiTheme(colors: DiagramColors): AsciiTheme;
 
+// @public
+export function getAsciiLayout(): AsciiLayoutProvider | undefined;
+
 export { LimitExceededError }
+
+// @public
+export function registerAsciiLayout(p: AsciiLayoutProvider | undefined): void;
 
 export { RenderLimits }
 

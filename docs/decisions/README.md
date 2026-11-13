@@ -57,6 +57,7 @@ Add a row when you add a doc; update the status when it changes. The issue colum
 | ---------------------------------------------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------------- |
 | [architecture-lowered-to-flowchart-1167.md](architecture-lowered-to-flowchart-1167.md)                           | implemented          | [#1167](https://github.com/dfadler/zombie-mermaid/issues/1167) |
 | [ascii-browser-font-investigation-978.md](ascii-browser-font-investigation-978.md)                               | implemented          | [#978](https://github.com/dfadler/zombie-mermaid/issues/978)   |
+| [ascii-layout-hints-from-elk-2645.md](ascii-layout-hints-from-elk-2645.md)                                       | accepted             | [#2645](https://github.com/dfadler/zombie-mermaid/issues/2645) |
 | [ascii-class-diagram-x-coordinate-assignment-970.md](ascii-class-diagram-x-coordinate-assignment-970.md)         | implemented          | [#970](https://github.com/dfadler/zombie-mermaid/issues/970)   |
 | [ascii-occupancy-unification-532.md](ascii-occupancy-unification-532.md)                                         | implemented          | [#532](https://github.com/dfadler/zombie-mermaid/issues/532)   |
 | [ascii-orientation-audit-vs-beautiful-mermaid-1372.md](ascii-orientation-audit-vs-beautiful-mermaid-1372.md)     | implemented          | [#1372](https://github.com/dfadler/zombie-mermaid/issues/1372) |

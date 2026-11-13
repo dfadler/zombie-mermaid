@@ -9,12 +9,10 @@ pie showData title Browser share
 ---
                    Browser share
 
-[████████████████████████████████▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒░░]
-
-  █ Chrome [640]     64%
-  ▓ Safari [190]     19%
-  ▒ Firefox [120]    12%
-  ░ Edge [45]         5%
-  · Opera [4]        <1%
-  · Lynx [1]         <1%
-  · Netscape [0]      0%
+                                                         █ Chrome [640]     64%
+                                                         ▓ Safari [190]     19%
+                                                         ▒ Firefox [120]    12%
+[████████████████████████████████▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒░░]     ░ Edge [45]         5%
+                                                         · Opera [4]        <1%
+                                                         · Lynx [1]         <1%
+                                                         · Netscape [0]      0%

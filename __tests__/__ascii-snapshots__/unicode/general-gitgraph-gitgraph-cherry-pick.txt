@@ -1,0 +1,8 @@
+main  develop  release
+●     ┆        ┆   ZERO
+├─────●        ┆   A
+●     │        ┆   ONE
+│     ●        ┆   B
+◎─────╯        ┆   MERGE
+├─────┼────────○   [cherry-pick:MERGE|parent:B]
+┆     ╰────────○   [cherry-pick:A]

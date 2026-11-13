@@ -187,7 +187,7 @@ export function isPortFixedEdge(edge: AsciiEdge): boolean {
     edge.from === edge.to ||
     edge.path.length < 2 ||
     edge.bundle !== undefined ||
-    edge.parallelLane !== undefined ||
+    (edge.parallelLane !== undefined && !edge.hintedLane) ||
     edge.faceLane === true ||
     edge.style === 'invisible' ||
     edge.clusterSource !== undefined ||
@@ -218,7 +218,15 @@ function portSharedCells(
   path: readonly GridCoord[],
 ): Set<string> {
   const shared = new Set<string>()
-  if (isPortFixedEdge(owner) || isPortFixedEdge(edge)) return shared
+  // A cluster exit's far end is a plain node's port: for an edge on ELK's faces
+  // port-offsets.ts draws the two apart there too (a state's retry arrow beside
+  // the arrow that reaches it from a composite, #2919).
+  if (
+    (isPortFixedEdge(owner) &&
+      !(owner.clusterSource !== undefined && edge.hintedFaces)) ||
+    isPortFixedEdge(edge)
+  )
+    return shared
   const reciprocal = owner.from === edge.to && owner.to === edge.from
   const same = (a: GridCoord | undefined, b: GridCoord | undefined): boolean =>
     a !== undefined && b !== undefined && a.x === b.x && a.y === b.y

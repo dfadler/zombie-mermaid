@@ -18,7 +18,10 @@ import type {
 } from './types.ts'
 import {
   DEFAULT_PADDING_Y,
+  dirEquals,
   gridKey,
+  Left,
+  Up,
   paddingOffset,
   requireGridCoord,
 } from './types.ts'
@@ -76,7 +79,15 @@ import { getShapeDimensions } from './shapes/index.ts'
 import { splitLines } from './multiline-utils.ts'
 import { displayWidth } from './display-width.ts'
 import { edgeLabelPlacement, labelFit } from './draw-arrows.ts'
-import { withPortShifts } from './port-offsets.ts'
+import { jogGapSizes, withPortShifts } from './port-offsets.ts'
+import { getAsciiLayout } from './layout-hints.ts'
+import type {
+  AsciiEdgeEndHint,
+  AsciiEdgeHint,
+  AsciiFace,
+  AsciiLayoutHints,
+  AsciiNodeHint,
+} from './layout-hints.ts'
 
 // `requireGridCoord` is defined in types.ts (a pure predicate over
 // AsciiNode with no grid-state dependency) and re-exported here so the two
@@ -223,6 +234,93 @@ function straddlesParent(
 }
 
 /**
+ * Rows an LR diamond needs for ELK's ends on one side face, each on a slant
+ * cell of its own, two apart from the apex rows (#2913): as mermaid spreads the
+ * ports of a decision with many edges, with no stem shared. 0 when it needs no
+ * more than the label gives it.
+ */
+function diamondFaceRows(graph: AsciiGraph, node: AsciiNode): number {
+  if (
+    node.shape !== 'diamond' ||
+    !graph.edgeHints ||
+    graph.config.graphDirection !== 'LR'
+  )
+    return 0
+  let right = 0
+  let left = 0
+  for (const e of graph.edges) {
+    if (e.from === e.to || (e.from !== node && e.to !== node)) continue
+    const other = e.from === node ? e.to : e.from
+    const o = other.gridCoord
+    const n = node.gridCoord
+    if (!o || !n) continue
+    if (o.x > n.x) right++
+    else if (o.x < n.x) left++
+  }
+  // Up to three ends already have a cell each (the vertex and its slants).
+  const most = Math.max(right, left)
+  return most > 3 ? most + 4 : 0
+}
+
+/**
+ * How many self-loops ELK hooks out of `node`'s left face (TD) or top face (LR), when
+ * there are duplicates to nest (#2913); 0 for a single loop, which keeps the
+ * node's own size. A loop of a node inside a subgraph is routed another way.
+ */
+function nestedLoops(graph: AsciiGraph, node: AsciiNode): number {
+  const dir = graph.config.graphDirection
+  if (!graph.edgeHints || (dir !== 'TD' && dir !== 'LR')) return 0
+  const face = dir === 'TD' ? 'L' : 'T'
+  const n = graph.edges.filter((e) => {
+    const h = graph.edgeHints!.get(e)
+    return (
+      e.from === node &&
+      e.to === node &&
+      h?.start.face === face &&
+      h.end.face === face
+    )
+  }).length
+  return n > 1 ? n : 0
+}
+
+/**
+ * Cells between the legs of a node's nested hooks (#2913): 2, and in a TD
+ * graph wide enough besides for the longest loop label, which sits between two
+ * legs on its own hook's row (an LR label sits in the row between two legs).
+ */
+export function nestStride(graph: AsciiGraph, node: AsciiNode): number {
+  if (graph.config.graphDirection !== 'TD') return 2
+  const widest = widestLoopLabel(graph, node)
+  return widest ? 3 + widest : 2
+}
+
+function widestLoopLabel(graph: AsciiGraph, node: AsciiNode): number {
+  return Math.max(
+    0,
+    ...graph.edges
+      .filter((e) => e.from === node && e.to === node)
+      .map((e) => Math.max(0, ...splitLines(e.text).map(displayWidth))),
+  )
+}
+
+/**
+ * Cells from the node's border to its innermost hook's leg (#2913): 2, and in
+ * a TD graph far enough that the widest loop label, centred on the leg, stays
+ * clear of the border.
+ */
+export function nestInset(graph: AsciiGraph, node: AsciiNode): number {
+  if (graph.config.graphDirection !== 'TD') return 2
+  return Math.max(2, Math.ceil(widestLoopLabel(graph, node) / 2) + 2)
+}
+
+/** Cells a gutter holds `nest` hooks of `node` in, from the far leg and the outermost label to the node's border (#2913). */
+function nestGutter(graph: AsciiGraph, node: AsciiNode, nest: number): number {
+  const stride = nestStride(graph, node)
+  const base = stride === 2 ? 2 * nest + 1 : stride * nest
+  return base + nestInset(graph, node) - 2
+}
+
+/**
  * Set column widths and row heights for a node's 3x3 grid block.
  * Each node occupies 3 columns (border, content, border) and 3 rows.
  * Uses shape-aware dimensions to properly size non-rectangular shapes.
@@ -255,20 +353,36 @@ export function setColumnWidth(
         .map((s) => 2 * s.strokes - 1),
     )
 
+  // #2913: N nested hooks have 2N ends on one face (left in TD, top in LR),
+  // two cells apart.
+  const nest = nestedLoops(graph, node)
+  const lr = graph.config.graphDirection === 'LR'
   for (let idx = 0; idx < colWidths.length; idx++) {
     const xCoord = gc.x + idx
     const current = graph.columnWidth.get(xCoord) ?? 0
     const want =
-      idx === 1 ? Math.max(colWidths[idx]!, strokeCells(true)) : colWidths[idx]!
+      idx === 1
+        ? Math.max(
+            colWidths[idx]!,
+            strokeCells(true),
+            lr && nest ? 4 * nest - 1 : 0,
+          )
+        : colWidths[idx]!
     graph.columnWidth.set(xCoord, Math.max(current, want))
   }
 
+  const slantRows = diamondFaceRows(graph, node)
   for (let idx = 0; idx < rowHeights.length; idx++) {
     const yCoord = gc.y + idx
     const current = graph.rowHeight.get(yCoord) ?? 0
     const want =
       idx === 1
-        ? Math.max(rowHeights[idx]!, strokeCells(false))
+        ? Math.max(
+            rowHeights[idx]!,
+            strokeCells(false),
+            slantRows,
+            !lr && nest ? 4 * nest - 1 : 0,
+          )
         : rowHeights[idx]!
     graph.rowHeight.set(yCoord, Math.max(current, want))
   }
@@ -279,7 +393,12 @@ export function setColumnWidth(
     const current = graph.columnWidth.get(gc.x - 1) ?? 0
     graph.columnWidth.set(
       gc.x - 1,
-      Math.max(current, graph.config.paddingX, lrFanInGap(graph, node)),
+      Math.max(
+        current,
+        graph.config.paddingX,
+        lrFanInGap(graph, node),
+        !lr && nest ? nestGutter(graph, node, nest) + 2 : 0,
+      ),
     )
   }
 
@@ -312,12 +431,20 @@ export function setColumnWidth(
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
       const subgraphOverhead = 4
       basePadding += subgraphOverhead
+      // A concurrency region is a second frame inside its composite's (#3013).
+      if (subgraphChain(graph, node).some((sg) => sg.region)) {
+        basePadding += subgraphOverhead
+      }
     }
+    // A frame mirrored later (`titleBelow`) keeps its title band on the side its
+    // edges leave by; the band needs two more rows before the next layer.
+    if (entersFromTitleBelowFrame(graph, node)) basePadding += 2
     // #1716: each label of a spread group takes a row of the gap, with a
     // plain stroke row-pair clear at the tail and three at the arrowhead.
     for (const s of spreads) {
       if (s.vertical && s.below) basePadding = Math.max(basePadding, s.rows + 3)
     }
+    if (lr && nest) basePadding = Math.max(basePadding, 2 * nest + 3)
     const current = graph.rowHeight.get(gc.y - 1) ?? 0
     graph.rowHeight.set(gc.y - 1, Math.max(current, basePadding))
   }
@@ -448,6 +575,9 @@ function rerouteAroundStyleConflicts(
     startDir: edge.startDir,
     endDir: edge.endDir,
     labelLine: edge.labelLine,
+    hintedLane: edge.hintedLane,
+    hintedFaces: edge.hintedFaces,
+    gutterBack: edge.gutterBack,
   }
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
@@ -463,7 +593,7 @@ function rerouteAroundStyleConflicts(
         ) ??
         // A lane already keeps off other edges' runs (`runTaken`); the stem
         // it shares with a chain partner is split by port-offsets.ts.
-        (edge.parallelLane?.index || edge.faceLane
+        (edge.parallelLane?.index || edge.faceLane || edge.hintedLane
           ? null
           : findUnrelatedOverlap(
               nodeOnlyGrid,
@@ -479,7 +609,15 @@ function rerouteAroundStyleConflicts(
       if (!conflict) return
       graph.grid.add(conflict.x, conflict.y)
       temporarilyBlocked.push(conflict)
-      const { path, startDir, endDir, labelLine } = edge
+      const {
+        path,
+        startDir,
+        endDir,
+        labelLine,
+        hintedLane,
+        hintedFaces,
+        gutterBack,
+      } = edge
       determinePath(graph, edge)
       // With the conflict cell blocked, no clear route may remain, and
       // determinePath then falls back to a straight line that ignores
@@ -503,7 +641,15 @@ function rerouteAroundStyleConflicts(
           nodeOnlyGrid,
         )
       ) {
-        Object.assign(edge, { path, startDir, endDir, labelLine })
+        Object.assign(edge, {
+          path,
+          startDir,
+          endDir,
+          labelLine,
+          hintedLane,
+          hintedFaces,
+          gutterBack,
+        })
         return
       }
     }
@@ -622,6 +768,20 @@ export function getEffectiveDirection(
   return graph.config.graphDirection
 }
 
+/** An edge into `node` leaves a `titleBelow` frame that does not hold `node`. */
+function entersFromTitleBelowFrame(
+  graph: AsciiGraph,
+  node: AsciiNode,
+): boolean {
+  return graph.edges.some(
+    (e) =>
+      e.to === node &&
+      subgraphChain(graph, e.from).some(
+        (sg) => sg.titleBelow && !sg.nodes.includes(node),
+      ),
+  )
+}
+
 /**
  * Check if a node has an incoming edge from outside its subgraph
  * AND is the topmost such node in its subgraph.
@@ -719,14 +879,41 @@ function calculateSubgraphBoundingBox(
       minX = Math.min(minX, d.x)
       maxX = Math.max(maxX, d.x)
     }
+    // #2913: a hook beside a node (left, in TD) or over it (top, in LR) lies in
+    // its gutter, which is a margin cell when the node is first: the frame
+    // reaches past the outer leg, and past a label centred on it
+    // (port-offsets.ts places the legs).
+    if (edge.from !== edge.to || edge.path.length !== 4) continue
+    const left = dirEquals(edge.startDir, Left)
+    if (!left && !dirEquals(edge.startDir, Up)) continue
+    const at = edge.path[1]!
+    const size = (left ? graph.columnWidth : graph.rowHeight).get(
+      left ? at.x : at.y,
+    )!
+    const here = gridToDrawingCoord(graph, at)
+    const nest = edge.loopNest
+    const leg =
+      (left ? here.x : here.y) +
+      (nest
+        ? size -
+          nestInset(graph, edge.from) -
+          nestStride(graph, edge.from) * (nest.count - 1) -
+          Math.floor(size / 2)
+        : 0)
+    if (left) {
+      minX = Math.min(
+        minX,
+        leg - Math.floor(widestLoopLabel(graph, edge.from) / 2),
+      )
+    } else minY = Math.min(minY, leg)
   }
 
   const subgraphPadding = 2
   const subgraphLabelSpace = 2
   sg.minX = minX - subgraphPadding
-  sg.minY = minY - subgraphPadding - subgraphLabelSpace
+  sg.minY = minY - subgraphPadding - (sg.titleBelow ? 0 : subgraphLabelSpace)
   sg.maxX = maxX + subgraphPadding
-  sg.maxY = maxY + subgraphPadding
+  sg.maxY = maxY + subgraphPadding + (sg.titleBelow ? subgraphLabelSpace : 0)
 
   // Widen the box, if necessary, so the subgraph's own cluster label fits
   // without truncation. `drawSubgraphLabel` (draw-subgraphs.ts) writes the
@@ -931,6 +1118,28 @@ function widenGapsForCrossingLabels(graph: AsciiGraph): boolean {
     if (!widened) break
   }
   return changed
+}
+
+/**
+ * Widen a gap to the size `planJogRows` asked for, so each of its jogs has a
+ * bend row of its own with a clear row between them (#2888). Only grows a gap.
+ */
+function widenGapsForJogRows(graph: AsciiGraph): void {
+  if (!graph.edgeHints) return
+  const lr = graph.config.graphDirection === 'LR'
+  const sizes = withPortShifts(graph, () => jogGapSizes(graph))
+  const table = lr ? graph.columnWidth : graph.rowHeight
+  let changed = false
+  for (const [line, size] of sizes) {
+    if ((table.get(line) ?? 0) >= size) continue
+    table.set(line, size)
+    changed = true
+  }
+  if (!changed) return
+  for (const node of graph.nodes) {
+    node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+  }
+  calculateSubgraphBoundingBoxes(graph)
 }
 
 /**
@@ -1318,6 +1527,167 @@ function shiftCrossAxis(
 }
 
 /**
+ * A forward skip edge (`A --> C` over `B`, #2731, #2739) runs straight along
+ * the column (row, in LR) of its ends and the nodes it skips step aside, as in
+ * mermaid, whose layout gives the skip edge a slot of its own at that rank:
+ * the skipped nodes take the slot after it (right in TD, below in LR) when
+ * the skip edge is declared before the edge into them, the slot before it
+ * otherwise. A slot is opened for them by moving the nodes past it over.
+ * Only ends and skipped nodes outside every subgraph move, and only graphs
+ * with no back edge or same-rank edge (the routes around those are tuned to
+ * the nodes staying put, see `centerParentsOverChildren`).
+ */
+/**
+ * Grid units the skipped node steps aside by: two of a node's three, the
+ * most the grid allows without a whole slot (LR then narrows it to mermaid's
+ * offset, see `tightenSidesteps`).
+ */
+const OFF = 2
+
+function sidestepSkippedNodes(graph: AsciiGraph): void {
+  if (graph.subgraphs.length > 0) return
+  const lr = graph.config.graphDirection === 'LR'
+  // Narrower gaps leave no room for a port and a lane each: keep the old layout.
+  // ponytail: tune per direction if tighter gaps matter.
+  if (graph.config.paddingX < 3 || (!lr && graph.config.paddingY < 2)) return
+  const rank = (n: AsciiNode): number =>
+    lr ? requireGridCoord(n).x : requireGridCoord(n).y
+  const cross = (n: AsciiNode): number =>
+    lr ? requireGridCoord(n).y : requireGridCoord(n).x
+  if (
+    graph.edges.some(
+      (e) => e.clusterSource || e.clusterTarget || rank(e.from) >= rank(e.to),
+    )
+  ) {
+    return
+  }
+  // Each pass moves one set of skipped nodes out of the column, so the count
+  // of edges bounds the loop.
+  for (let pass = 0; pass < graph.edges.length; pass++) {
+    const skip = graph.edges.find((e) => {
+      if (cross(e.from) !== cross(e.to) || rank(e.to) - rank(e.from) <= 4) {
+        return false
+      }
+      return skipped(e).length > 0
+    })
+    if (!skip) return
+    const c = cross(skip.from)
+    const moving = skipped(skip)
+    const into = graph.edges.findIndex(
+      (e) => e.from === skip.from && moving.includes(e.to),
+    )
+    const after = graph.edges.indexOf(skip) < into
+    for (const e of graph.edges) {
+      if (
+        (e.from === skip.from || e.to === skip.to) &&
+        (e === skip || moving.includes(e.from) || moving.includes(e.to))
+      ) {
+        e.ownPorts = true
+      }
+    }
+    if (after) {
+      shiftCrossAxis(graph, lr, c, OFF)
+    } else {
+      shiftCrossAxis(graph, lr, c - 1, OFF)
+    }
+    for (const n of moving) {
+      ;(graph.sidesteps ??= []).push({ node: n, anchor: skip.from })
+      relocateNode(
+        graph,
+        n,
+        lr
+          ? { x: rank(n), y: after ? c + OFF : c }
+          : { x: after ? c + OFF : c, y: rank(n) },
+      )
+    }
+  }
+
+  /** Nodes in the column of `skip`'s ends, between them, on a path from one to the other. */
+  function skipped(skip: AsciiEdge): AsciiNode[] {
+    const found = graph.nodes.filter(
+      (n) =>
+        n !== skip.from &&
+        n !== skip.to &&
+        n.gridCoord !== null &&
+        cross(n) === cross(skip.from) &&
+        rank(n) > rank(skip.from) &&
+        rank(n) < rank(skip.to) &&
+        isReachableViaEdges(graph, skip.from, n) &&
+        isReachableViaEdges(graph, n, skip.to),
+    )
+    // Only the plain triangle (`A --> N --> C` and `A --> C`, no labels, no
+    // other edge between them): dense fan-ins keep their routes.
+    // ponytail: longer skipped chains and labeled triangles keep the old layout.
+    if (found.length !== 1) return []
+    const n = found[0]!
+    const tri = [
+      skip,
+      ...graph.edges.filter((e) => e.from === skip.from && e.to === n),
+      ...graph.edges.filter((e) => e.from === n && e.to === skip.to),
+    ]
+    const ok =
+      tri.length === 3 &&
+      tri.every((e) => e.text.length === 0) &&
+      graph.edges.filter((e) => e.to === n || e.from === n).length === 2 &&
+      graph.edges.filter((e) => e.from === skip.from).length === 2 &&
+      graph.edges.filter((e) => e.to === skip.to).length === 2
+    return ok ? found : []
+  }
+}
+
+/**
+ * LR: mermaid offsets the skipped node by 0.46 node heights (checked against
+ * mermaid 12.2.0 and 12.3.0 alike), but the grid only places it a whole slot
+ * aside, 0.8 of a node. Once sizes are known, split the two rows that hold
+ * the first block's box unevenly (same total): the box starts later in its
+ * cell, so the offset shrinks to 2 of its 5 text rows while edge ports (cell
+ * centres) stay on the box centre. Half a box is the smallest this reaches.
+ * TD keeps the slot: mermaid bends the skip edge around the skipped node
+ * there, and a smaller offset would leave the straight edge touching it.
+ */
+function tightenSidesteps(graph: AsciiGraph): void {
+  if (graph.config.graphDirection !== 'LR' || graph.topMargin) return
+  const sizes = graph.rowHeight
+  /* v8 ignore next -- every row of a placed block has a size by now */
+  const size = (i: number): number => sizes.get(i) ?? 0
+  const row = (n: AsciiNode): number => requireGridCoord(n).y
+  for (const { node, anchor } of graph.sidesteps ?? []) {
+    const gap = row(node) - row(anchor)
+    /* v8 ignore next -- defensive: a later sidestep moved this anchor */
+    if (Math.abs(gap) !== OFF) continue
+    // `lead` starts first, `trail` OFF rows on.
+    const lead = gap < 0 ? node : anchor
+    const trail = gap < 0 ? anchor : node
+    const l = row(lead)
+    const box = size(l) + size(l + 1)
+    // Only these blocks (and the anchor's own row) may use the cells.
+    const alone = graph.nodes.every((n) => {
+      if (n === node || n.gridCoord === null || row(n) === row(anchor)) {
+        return true
+      }
+      return row(n) + 2 < l || row(n) > l + OFF + 2
+    })
+    if (!alone) continue
+    const want = Math.min(
+      box - 1,
+      Math.max(Math.ceil(box / 2), Math.round(0.46 * (box + 1))),
+    )
+    const first = 2 * (box - want + Math.floor(size(row(trail)) / 2))
+    /* v8 ignore next -- defensive: needs a trail row taller than the box */
+    if (first > box + 1) continue
+    // The box starts `first / 2` rows into its cell: take them back from the
+    // gap before it, or from the canvas top when it is the first cell.
+    const lost = Math.floor(first / 2)
+    /* v8 ignore next -- defensive: the gap above is always at least `lost` */
+    if (l > 0 && size(l - 1) < lost) continue
+    if (l > 0) sizes.set(l - 1, size(l - 1) - lost)
+    else graph.offsetY -= lost
+    sizes.set(l, first)
+    sizes.set(l + 1, box - first)
+  }
+}
+
+/**
  * Whether `node` is outside every subgraph, or the only member of each one it
  * is in. Moving it then moves the whole frame with it (frames are derived
  * from their members afterwards), so a cluster exit's stand-in member can be
@@ -1458,7 +1828,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
             graph.edges.some((r) => r.from === e.to && r.to === node),
         )
       if (reciprocal)
-        markDecisionSplit(node, lr, getChildren(graph, node).length)
+        markDecisionSplit(node, lr, new Set(getChildren(graph, node)).size)
     }
     return
   }
@@ -1475,7 +1845,9 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       continue
     }
     // No self-loops here: `flowsDown` rejected them.
-    const children = getChildren(graph, node)
+    // Parallel edges (`A --> B` twice) are one child: a duplicate would be
+    // slid, freed and placed twice onto the same block (#2780).
+    const children = [...new Set(getChildren(graph, node))]
     if (children.length < 1) continue
     let ok = true
     for (const c of children) {
@@ -1560,6 +1932,90 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     markDecisionSplit(node, lr, children.length)
   }
   markLabeledFanIn(graph)
+}
+
+/**
+ * Mermaid centres the row of targets a cluster links out to under the cluster
+ * (#2738). The targets are placed from the cluster's members, so the cluster
+ * sits at the left edge of a row that runs off to its right: slide the whole
+ * cluster, and the free-standing chain feeding only it, right until its
+ * centre meets the row's. TD only, and only when nothing else sits beside the
+ * moved nodes or in the way.
+ */
+function centerClustersOverExits(graph: AsciiGraph): void {
+  if (graph.config.graphDirection !== 'TD') return
+  // Back and same-row edges route around the nodes they skip; moving nodes
+  // scrambles those routes (see `centerParentsOverChildren`).
+  const forward = graph.edges.every(
+    (e) => requireGridCoord(e.from).y < requireGridCoord(e.to).y,
+  )
+  if (!forward) return
+  for (const sg of graph.subgraphs) {
+    if (sg.parent !== null) continue
+    const members = collectSubgraphMembers(sg)
+    // A lone member is centred by `centerParentsOverChildren` (#1462).
+    if (members.length < 2 || members.some((m) => m.gridCoord === null))
+      continue
+    const targets = new Set<AsciiNode>()
+    for (const e of graph.edges) {
+      if (members.includes(e.from) && !members.includes(e.to)) targets.add(e.to)
+    }
+    if (targets.size < 2) continue
+    const ty = [...targets].map((t) => t.gridCoord?.y)
+    const my = Math.max(...members.map((m) => requireGridCoord(m).y))
+    if (ty.some((y) => y === undefined || y !== ty[0] || y <= my)) continue
+    if ([...targets].some((t) => isNodeInAnySubgraph(graph, t))) continue
+    const tx = [...targets].map((t) => requireGridCoord(t).x)
+    const mx = members.map((m) => requireGridCoord(m).x)
+    // Only ever rightward: a cluster already right of the row stays put.
+    const delta = Math.max(
+      0,
+      Math.floor(
+        (Math.min(...tx) + Math.max(...tx)) / 2 -
+          (Math.min(...mx) + Math.max(...mx)) / 2,
+      ),
+    )
+    // The chain feeding only the cluster moves with it.
+    const moving = new Set<AsciiNode>(members)
+    for (let grew = true; grew;) {
+      grew = false
+      for (const n of graph.nodes) {
+        const out = graph.edges.filter((e) => e.from === n && e.to !== n)
+        if (
+          !moving.has(n) &&
+          !isNodeInAnySubgraph(graph, n) &&
+          out.length > 0 &&
+          out.every((e) => moving.has(e.to))
+        ) {
+          moving.add(n)
+          grew = true
+        }
+      }
+    }
+    const minX = Math.min(...[...moving].map((n) => requireGridCoord(n).x))
+    const top = Math.min(...[...moving].map((n) => requireGridCoord(n).y))
+    // Nothing else may share the moved ranks to the right of the block.
+    if (
+      graph.nodes.some((n) => {
+        const gc = n.gridCoord
+        return (
+          !moving.has(n) &&
+          gc !== null &&
+          gc.y >= top &&
+          gc.y <= my &&
+          gc.x >= minX
+        )
+      })
+    )
+      continue
+    // Free by the check above: nothing else sits in these rows past `minX`.
+    const old = [...moving].map((n) => requireGridCoord(n))
+    for (const gc of old) freeNodeBlock(graph, gc)
+    ;[...moving].forEach((n, i) => {
+      n.gridCoord = { x: old[i]!.x + delta, y: old[i]!.y }
+      placeBlock(graph.grid, n.gridCoord, NODE_BLOCK_SIZE)
+    })
+  }
 }
 
 /**
@@ -1896,6 +2352,15 @@ function computeMinLevels(
 ): Map<AsciiNode, number> {
   const forward = new Map<AsciiNode, AsciiNode[]>()
   const state = new Map<AsciiNode, 'open' | 'done'>()
+  let reversed = false
+  const reaches = (from: AsciiNode, targets: AsciiNode[]): boolean => {
+    const seen = new Set<AsciiNode>()
+    const walk = (n: AsciiNode): boolean =>
+      targets.includes(n) ||
+      (!seen.has(n) &&
+        (seen.add(n), (forward.get(n) ?? []).some((c) => walk(c))))
+    return walk(from)
+  }
   const dfs = (node: AsciiNode): void => {
     state.set(node, 'open')
     const out: AsciiNode[] = []
@@ -1909,6 +2374,30 @@ function computeMinLevels(
           ? [e.to]
           : [],
     )
+    // A cluster is one block to mermaid: a node reached from inside it ranks
+    // below the whole cluster, not just below the member that links to it
+    // (#2738), so every member also feeds the cluster's outside targets.
+    for (const sg of subgraphChain(graph, node)) {
+      const members = collectSubgraphMembers(sg)
+      for (const e of graph.edges) {
+        if (
+          !e.feedback &&
+          members.includes(e.from) &&
+          !members.includes(e.to)
+        ) {
+          // A target already ranked from outside that leads back into the
+          // cluster closes a cycle through its boundary; DFS order decides
+          // which side is the back edge, as in dagre (#3001).
+          if (state.get(e.to) === 'done' && reaches(e.to, members)) {
+            reversed = true
+            const out = forward.get(e.to)!
+            for (const m of members) if (!out.includes(m)) out.push(m)
+            continue
+          }
+          rankChildren.push(e.to)
+        }
+      }
+    }
     for (const child of rankChildren) {
       if (child === node || state.get(child) === 'open') continue
       out.push(child)
@@ -1924,13 +2413,27 @@ function computeMinLevels(
   const levels = new Map<AsciiNode, number>()
   const order = [...forward.keys()].reverse()
   for (const node of order) levels.set(node, 0)
-  for (const node of order) {
-    /* v8 ignore next -- every node in `order` was seeded to 0 above */
-    const next = (levels.get(node) ?? 0) + 4
-    /* v8 ignore next -- every forward node has an entry */
-    for (const child of forward.get(node) ?? []) {
-      levels.set(child, Math.max(levels.get(child) ?? 0, next))
+  // Repeat until stable: a reversed cluster edge (#3001) is not in post-order.
+  for (let changed = true, pass = 0; changed && pass <= order.length; pass++) {
+    changed = false
+    for (const node of order) {
+      /* v8 ignore next -- every node in `order` was seeded to 0 above */
+      const next = (levels.get(node) ?? 0) + 4
+      /* v8 ignore next -- every forward node has an entry */
+      for (const child of forward.get(node) ?? []) {
+        if (next > (levels.get(child) ?? 0)) {
+          levels.set(child, next)
+          changed = true
+        }
+      }
     }
+  }
+  // A source with no parent sits just above its shallowest child, as the
+  // network-simplex ranker tightens it, not at the root level (#3001).
+  const hasParent = new Set([...forward.values()].flat())
+  for (const [node, kids] of forward) {
+    if (!reversed || hasParent.has(node) || kids.length === 0) continue
+    levels.set(node, Math.min(...kids.map((k) => levels.get(k)!)) - 4)
   }
   return levels
 }
@@ -2042,6 +2545,164 @@ function separateNonMembersFromFrames(graph: AsciiGraph): void {
     }
     if (!moved) return
   }
+}
+
+// ELK is slow and createMapping reruns for the same parsed graph (top margin,
+// face-lane passes), so ask the provider once per parsed graph.
+const hintCache = new WeakMap<
+  object,
+  { provider: object; hints: AsciiLayoutHints | undefined }
+>()
+
+/** The registered provider's hints for this graph, or `undefined` (grid placement stays). */
+function layoutHintsFor(graph: AsciiGraph): AsciiLayoutHints | undefined {
+  if (graph.ownHints) return graph.ownHints
+  const parsed = graph.parsed
+  const provider = getAsciiLayout()
+  if (!graph.useLayoutHints || !parsed || !provider?.graph) return undefined
+  const hit = hintCache.get(parsed)
+  if (hit?.provider === provider) return hit.hints
+  const hints = provider.graph(parsed)
+  hintCache.set(parsed, { provider, hints })
+  return hints
+}
+
+/**
+ * An edge addressed to a composite that holds concurrent regions (`[*] --> W`,
+ * `W --> Z`) is redirected by the converter to a member picked from the parsed
+ * graph alone, which can sit in any region. Pick it again from ELK's layers:
+ * an entry stands on the member nearest the flow's start and an exit on the one
+ * nearest its end, ties going to the member nearest the composite's centre, so
+ * the line runs straight into or out of the frame (#3013).
+ */
+function nodesOf(sg: AsciiSubgraph): AsciiNode[] {
+  return [...new Set([...sg.nodes, ...sg.children.flatMap(nodesOf)])]
+}
+
+function retargetRegionClusterEdges(
+  graph: AsciiGraph,
+  hints: AsciiLayoutHints,
+): void {
+  const pick = (
+    sg: AsciiSubgraph,
+    end: 'entry' | 'exit',
+    current: AsciiNode,
+  ): AsciiNode => {
+    const members = nodesOf(sg)
+    const inside = new Set(members)
+    const open = members.filter(
+      (m) =>
+        hints.nodes.has(m.name) &&
+        !graph.edges.some((e) =>
+          end === 'entry'
+            ? e.to === m && inside.has(e.from)
+            : e.from === m && inside.has(e.to),
+        ),
+    )
+    if (open.length === 0) return current
+    const h = (m: AsciiNode): AsciiNodeHint => hints.nodes.get(m.name)!
+    const centre = open.reduce((s, m) => s + h(m).cross, 0) / open.length
+    const flow = (m: AsciiNode): number =>
+      end === 'entry' ? h(m).layer : -h(m).layer
+    return open.reduce((best, m) =>
+      flow(m) < flow(best) ||
+      (flow(m) === flow(best) &&
+        Math.abs(h(m).cross - centre) < Math.abs(h(best).cross - centre))
+        ? m
+        : best,
+    )
+  }
+  const hasRegions = (sg: AsciiSubgraph): boolean =>
+    sg.children.some((c) => c.region)
+  for (const edge of graph.edges) {
+    if (edge.clusterSource && hasRegions(edge.clusterSource)) {
+      edge.from = pick(edge.clusterSource, 'exit', edge.from)
+    }
+    if (edge.clusterTarget && hasRegions(edge.clusterTarget)) {
+      edge.to = pick(edge.clusterTarget, 'entry', edge.to)
+    }
+  }
+}
+
+const MIRROR: Record<string, Record<AsciiFace, AsciiFace>> = {
+  RL: { T: 'T', B: 'B', L: 'R', R: 'L' },
+  BT: { T: 'B', B: 'T', L: 'L', R: 'R' },
+}
+
+/** ELK's edge-end faces per grid edge, mirrored into the grid's TD/LR orientation (RL and BT are flipped after drawing). */
+function gridEdgeHints(
+  graph: AsciiGraph,
+  hints: AsciiLayoutHints,
+): Map<AsciiEdge, AsciiEdgeHint> {
+  const mirror = MIRROR[graph.parsed!.direction]
+  // The provider lists edges in the layout's order, which is not the parsed
+  // order (self-loops come last), so an edge takes the next hint for its own
+  // pair of nodes.
+  const queue = new Map<string, AsciiEdgeHint[]>()
+  for (const h of hints.edges) {
+    const key = `${h.from}\0${h.to}`
+    queue.set(key, [...(queue.get(key) ?? []), h])
+  }
+  const out = new Map<AsciiEdge, AsciiEdgeHint>()
+  for (const edge of graph.edges) {
+    // An edge out of a subgraph id is routed from a member; its hint is on the frame.
+    const from = edge.clusterSource?.source?.id ?? edge.from.name
+    const h = queue.get(`${from}\0${edge.to.name}`)?.shift()
+    if (!h) continue
+    const end = (e: AsciiEdgeEndHint): AsciiEdgeEndHint =>
+      mirror ? { ...e, face: mirror[e.face] } : e
+    out.set(edge, { ...h, start: end(h.start), end: end(h.end) })
+  }
+  return out
+}
+
+/**
+ * Mermaid's gap between neighbouring nodes in provider units. One 4-cell slot
+ * is the median node's cross-axis size plus this gap, so two siblings ELK puts
+ * a node and a gap apart sit one slot apart. (A tighter unit of 0.8 x size
+ * scored best on the topology script's alignment measure, which divides by node
+ * size, but it put LR siblings 10 cells apart where Mermaid has 4.)
+ */
+const SLOT_GAP = 40
+
+/**
+ * Grid slot of every node from ELK's layer and cross-axis centre. The flow
+ * coordinate is `layer * 4`. The cross coordinate scales ELK's centre so a
+ * median node plus `SLOT_GAP` is a 4-cell slot, snapped to even cells (a parent
+ * centred between two children lands half a slot over), then pushed along each
+ * layer in ELK's order so nodes never touch. Order and alignment follow ELK
+ * without running it on cell sizes (#2685). `undefined` when a node has no hint.
+ */
+function trackSlots(
+  graph: AsciiGraph,
+  hints: AsciiLayoutHints,
+): Map<AsciiNode, GridCoord> | undefined {
+  const rows: { node: AsciiNode; h: AsciiNodeHint }[] = []
+  for (const node of graph.nodes) {
+    const h = hints.nodes.get(node.name)
+    if (!h) return undefined
+    rows.push({ node, h })
+  }
+  const sizes = rows.map((r) => r.h.size).sort((a, b) => a - b)
+  const unit = sizes[sizes.length >> 1]! + SLOT_GAP
+  const origin = Math.min(...rows.map((r) => r.h.cross))
+  const cell = (r: { h: AsciiNodeHint }): number =>
+    2 * Math.round(((r.h.cross - origin) / unit) * 2)
+  const lr = graph.config.graphDirection === 'LR'
+  const slots = new Map<AsciiNode, GridCoord>()
+  const byLayer = new Map<number, typeof rows>()
+  for (const r of rows)
+    byLayer.set(r.h.layer, [...(byLayer.get(r.h.layer) ?? []), r])
+  for (const [layer, members] of byLayer) {
+    let next = 0
+    const flow = layer * 4
+    for (const r of members.sort((a, b) => a.h.order - b.h.order)) {
+      const at = Math.max(cell(r), next)
+      next = at + 4
+      slots.set(r.node, lr ? { x: flow, y: at } : { x: at, y: flow })
+    }
+  }
+  return slots
 }
 
 // ============================================================================
@@ -2200,14 +2861,38 @@ export function createMapping(graph: AsciiGraph): void {
     externalRootNodes = groupedRootNodes
   }
 
+  // With ELK hints (flowchart and state), the slots replace every placement
+  // heuristic below. Without them, or when a node has no hint or a subgraph
+  // sets its own direction, the grid places as before.
+  const hints = layoutHintsFor(graph)
+  const slots =
+    hints && graph.subgraphs.every((sg) => !sg.direction)
+      ? trackSlots(graph, hints)
+      : undefined
+  // Only when the grid places by the hints: otherwise the retargeted member
+  // would sit where the heuristic put it, not where ELK's layers say.
+  if (hints && slots) retargetRegionClusterEdges(graph, hints)
+  if (slots) {
+    for (const [node, at] of slots) reserveSpotInGrid(graph, node, at)
+  }
+  graph.edgeHints = slots && hints ? gridEdgeHints(graph, hints) : undefined
+
   // Place external root nodes
-  for (const node of externalRootNodes) {
+  // A source lowered beside its child (#3001) goes first, and the level-0
+  // roots start past it, so each sits over its own child as mermaid draws it.
+  const byLevel = [...externalRootNodes].sort(
+    (a, b) => minLevels.get(b)! - minLevels.get(a)!,
+  )
+  for (const node of slots ? [] : byLevel) {
+    const lvl = minLevels.get(node)!
+    const at =
+      lvl === 0
+        ? Math.max(0, ...Object.values(highestPositionPerLevel))
+        : (highestPositionPerLevel[lvl] ?? 0)
     const requested: GridCoord =
-      dir === 'LR'
-        ? { x: 0, y: highestPositionPerLevel[0] ?? 0 }
-        : { x: highestPositionPerLevel[0] ?? 0, y: 0 }
+      dir === 'LR' ? { x: lvl, y: at } : { x: at, y: lvl }
     reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
-    highestPositionPerLevel[0] = (highestPositionPerLevel[0] ?? 0) + 4
+    highestPositionPerLevel[lvl] = at + 4
     placeDeferredSiblingsNextToRoot(
       graph,
       node,
@@ -2217,7 +2902,7 @@ export function createMapping(graph: AsciiGraph): void {
   }
 
   // Place subgraph root nodes at level 4 (one level in from the edge)
-  if (shouldSeparate && subgraphRootNodes.length > 0) {
+  if (!slots && shouldSeparate && subgraphRootNodes.length > 0) {
     const subgraphLevel = 4
     for (const node of subgraphRootNodes) {
       const requested: GridCoord =
@@ -2243,7 +2928,7 @@ export function createMapping(graph: AsciiGraph): void {
   // resolved above (anchored to a root placed in this same subgraph) —
   // these are the ones whose anchor is itself a non-root, only placed by
   // the reachable-children traversal just above.
-  for (const node of deferredRoots) {
+  for (const node of slots ? [] : deferredRoots) {
     if (resolvedDeferred.has(node)) continue
     const topSg = getTopLevelSubgraph(graph, node)!
     const nodeDir = getEffectiveDirection(graph, node)
@@ -2274,12 +2959,24 @@ export function createMapping(graph: AsciiGraph): void {
       // reserveSpotInGrid below) only when both directions are immediately
       // foreign-blocked.
       const axis: 'x' | 'y' = nodeDir === 'LR' ? 'y' : 'x'
+      // An empty subgraph's bare title (a `class-name` node here) goes above
+      // its LR siblings, as in mermaid 12.3.0 (#2784): open a row if the
+      // anchor is on the first one.
+      const above = node.shape === 'class-name' && nodeDir === 'LR'
+      if (above && anchor.gridCoord.y < 4) {
+        graph.grid = createGrid()
+        for (const n of graph.nodes) {
+          if (!n.gridCoord) continue
+          n.gridCoord = { x: n.gridCoord.x, y: n.gridCoord.y + 4 }
+          placeBlock(graph.grid, n.gridCoord)
+        }
+      }
       requested = findSubgraphAdjacentSlot(
         graph,
         anchor.gridCoord,
         topSg,
         axis,
-        1,
+        above ? -1 : 1,
       ) ?? { x: anchor.gridCoord.x, y: anchor.gridCoord.y }
     } else {
       // Defensive fallback — shouldn't normally happen, since we only defer
@@ -2300,13 +2997,17 @@ export function createMapping(graph: AsciiGraph): void {
   // above since it wasn't on the grid yet — give the traversal another pass.
   placeReachableChildren(graph, highestPositionPerLevel, minLevels)
 
-  centerParentsOverChildren(graph)
+  sidestepSkippedNodes(graph)
+  if (!slots) {
+    centerParentsOverChildren(graph)
+    centerClustersOverExits(graph)
 
-  separateNonMembersFromFrames(graph)
+    separateNonMembersFromFrames(graph)
+  }
 
   // A loop on a top face (#2100) needs a free grid row above the top nodes:
   // push every node down one row and rebuild the occupancy map.
-  if (graph.topMargin && graph.subgraphs.length === 0) {
+  if (graph.topMargin) {
     graph.grid = createGrid()
     for (const n of graph.nodes) {
       const gc = requireGridCoord(n)
@@ -2315,15 +3016,44 @@ export function createMapping(graph: AsciiGraph): void {
     }
   }
 
+  // The same on the left for a TD loop on a left face (#2888).
+  if (graph.leftMargin) {
+    graph.grid = createGrid()
+    for (const n of graph.nodes) {
+      const gc = requireGridCoord(n)
+      n.gridCoord = { x: gc.x + 1, y: gc.y }
+      placeBlock(graph.grid, n.gridCoord)
+    }
+    // The column belongs to the loops drawn in it: routed edges keep out.
+    const rows = Math.max(...graph.nodes.map((n) => requireGridCoord(n).y + 3))
+    for (let y = 0; y < rows; y++) graph.grid.add(0, y)
+  }
+
   // Compute column widths and row heights
   const spreads = spreadCandidates(graph)
   for (const node of graph.nodes) {
     setColumnWidth(graph, node, spreads.get(node))
   }
   // The margin row is only as tall as the loop needs.
-  if (graph.topMargin && graph.subgraphs.length === 0) {
-    graph.rowHeight.set(0, 3)
+  if (graph.topMargin) {
+    graph.rowHeight.set(
+      0,
+      Math.max(3, ...graph.nodes.map((n) => 2 * nestedLoops(graph, n) + 1)),
+    )
   }
+  if (graph.leftMargin) {
+    graph.columnWidth.set(
+      0,
+      Math.max(
+        3,
+        ...graph.nodes.map((n) => {
+          const k = nestedLoops(graph, n)
+          return k ? nestGutter(graph, n, k) : 0
+        }),
+      ),
+    )
+  }
+  tightenSidesteps(graph)
 
   // Fresh render-wide A* iteration budget for this layout pass. Shared by
   // every getPath call below (both bundled-edge routing and per-edge
@@ -2426,6 +3156,7 @@ export function createMapping(graph: AsciiGraph): void {
 
   noteRejectedFaceLanes(graph)
   graph.wantsTopMargin = graph.edges.some((e) => e.loopTopWanted)
+  graph.wantsLeftMargin = graph.edges.some((e) => e.loopLeftWanted)
 
   // A self-loop that runs along another edge's cells gets one more drawn
   // cell in the tracks it turns in, so it can be drawn nearer its node (#2070).
@@ -2479,6 +3210,7 @@ export function createMapping(graph: AsciiGraph): void {
   widenGapsForFrameTitles(graph)
   widenGapsForCrossingLabels(graph)
   widenGapsForOffRunLabels(graph)
+  widenGapsForJogRows(graph)
   // A cluster-exit gutter narrower than its cluster's drawn wall (padding,
   // nesting, or LR label widening) is widened here, where the wall is first
   // known. Widening only shifts what lies past the gutter, so node drawing
@@ -2613,5 +3345,11 @@ function compareBySiblingSubgraphOrder(
 
 /** Get all direct children of a node (targets of outgoing edges). */
 function getChildren(graph: AsciiGraph, node: AsciiNode): AsciiNode[] {
-  return getEdgesFromNode(graph, node).map((e) => e.to)
+  // Mermaid hangs `Sub --> X` on the cluster's first member, so its long edge
+  // lands right of what the other members link to. When the exit's source is
+  // not that first member, its targets follow the node's own (#2738).
+  const own = getEdgesFromNode(graph, node)
+  const late = (e: AsciiGraph['edges'][number]) =>
+    e.clusterSource !== undefined && e.clusterSource.nodes[0] !== node
+  return [...own.filter((e) => !late(e)), ...own.filter(late)].map((e) => e.to)
 }

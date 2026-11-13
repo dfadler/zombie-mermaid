@@ -23,21 +23,20 @@
 //     and bottom stack the legend above or below (the pie shifts down for top)
 //     and make the frame taller; center draws it over the pie. The title stays
 //     centred on the frame in every case, as in Mermaid.
+//   - A legend wider or taller than the frame (top, bottom or centre with a
+//     very long label, or many rows) is clipped, not grown: the viewBox keeps
+//     Mermaid 12.3.0's size and rows outside it are cut (#2722, #2781).
 //   - `pie.highlightSlice`: the named slice grows 5% about the pie centre and
 //     is drawn fully opaque (`hover` has no static meaning and is ignored).
 //
-// Two places differ from Mermaid on purpose, both where Mermaid's output is
-// broken rather than a style choice:
-//   - A legend taller than the 450px frame (more than ~20 rows) grows the
-//     viewBox instead of being clipped at the top and bottom.
-//   - A legend wider than the frame (top, bottom or centre with a very long
-//     label) grows the viewBox instead of being clipped at the sides.
-//   - A chart with no slices keeps the pie's own width. Mermaid's width
-//     formula takes Math.max() of an empty list there (-Infinity), which
-//     leaves a viewBox that crops the circle in half.
+//   - A chart with no legend rows is as wide as its title alone (a bare `pie`
+//     is 225 wide and crops the circle in half), as in Mermaid 12.3.0, whose
+//     width formula takes Math.max() of an empty list there (-Infinity).
 //
-// Lengths are kept from Mermaid as-is. Text widths come from this library's
-// own metrics for its own font, not Mermaid's "trebuchet ms".
+// Lengths are kept from Mermaid as-is. With no `font` option the text is drawn
+// in Mermaid's own stack (PIE_FONT_STACK) and measured with Trebuchet MS
+// advances, so the canvas matches 12.3.0 to the pixel; an explicit `font` is
+// drawn and measured with this library's metrics for that font, as elsewhere.
 // ============================================================================
 
 import type {
@@ -47,6 +46,7 @@ import type {
   PositionedPieSlice,
 } from '@zombie-mermaid/mermaid-parser'
 import { estimateTextWidth } from '../styles.ts'
+import { trebuchetAdvance } from './trebuchet-metrics.ts'
 
 /** Mermaid pieRenderer.ts constants (default config and default theme). */
 export const PIE = {
@@ -74,7 +74,26 @@ export const PIE = {
   minPercent: 1,
 } as const
 
+/** Mermaid's default pie font stack (`fontFamily` in its default theme). */
+export const PIE_FONT_STACK = '"trebuchet ms", verdana, arial, sans-serif'
+
 const TAU = Math.PI * 2
+
+/**
+ * Width of `text` in px: Trebuchet MS advances in Mermaid's default font, this
+ * library's estimate for an explicit `font` (and for non-ASCII characters,
+ * which the Trebuchet table does not cover).
+ */
+function textWidth(text: string, size: number, font: string | undefined) {
+  if (font !== undefined) return estimateTextWidth(text, size, PIE.fontWeight)
+  let width = 0
+  for (const ch of text) {
+    width +=
+      trebuchetAdvance(ch, size) ??
+      estimateTextWidth(ch, size, PIE.fontWeight) - size * 0.15
+  }
+  return width
+}
 
 /** Round to two decimals for compact path data. */
 function r(n: number): string {
@@ -127,10 +146,10 @@ function legendText(label: string, value: number, showData: boolean): string {
   return showData ? `${label} [${String(value)}]` : label
 }
 
-/** Lay out a parsed pie chart. Options are accepted for registry parity; none apply. */
+/** Lay out a parsed pie chart. Only `options.font` applies: unset, text is sized as Mermaid's default font. */
 export function layoutPieChart(
   chart: PieChart,
-  _options: unknown = {},
+  options: { font?: string } = {},
 ): PositionedPieChart {
   const height = PIE.height
   const pieWidth = height
@@ -163,9 +182,7 @@ export function layoutPieChart(
   )
   const longestText = Math.max(
     0,
-    ...legendTexts.map((t) =>
-      estimateTextWidth(t, PIE.legendFontSize, PIE.fontWeight),
-    ),
+    ...legendTexts.map((t) => textWidth(t, PIE.legendFontSize, options.font)),
   )
   const swatchAndGap = PIE.legendRectSize + PIE.legendSpacing
   const legendBlockHeight = rowHeight * rowCount
@@ -187,9 +204,11 @@ export function layoutPieChart(
 
   const sideWidth = swatchAndGap + longestText
   const chartAndLegendWidth =
-    rowCount > 0 && (legendPosition === 'left' || legendPosition === 'right')
-      ? pieWidth + PIE.margin + sideWidth
-      : pieWidth + PIE.margin
+    rowCount === 0
+      ? -Infinity
+      : legendPosition === 'left' || legendPosition === 'right'
+        ? pieWidth + PIE.margin + sideWidth
+        : pieWidth + PIE.margin
   const chartAndLegendHeight =
     legendPosition === 'top' || legendPosition === 'bottom'
       ? height + legendBlockHeight
@@ -198,27 +217,17 @@ export function layoutPieChart(
   const titleText = chart.title ?? ''
   const titleWidth =
     titleText.length > 0
-      ? estimateTextWidth(titleText, PIE.titleFontSize, PIE.fontWeight)
+      ? textWidth(titleText, PIE.titleFontSize, options.font)
       : 0
   const titleLeft = cx0 - titleWidth / 2
   const titleRight = cx0 + titleWidth / 2
 
   // Mermaid sizes the box from the pie, legend column and title only, so a
-  // legend that sticks out (see the header) is clipped there; grow instead.
-  const legendLeft = legendOrigin.x
-  const legendRight = legendOrigin.x + sideWidth
-  const legendTop = legendOrigin.y
-  const legendBottom =
-    legendOrigin.y + legendBlockHeight - rowHeight + PIE.legendRectSize
-  const minX = Math.min(0, titleLeft, rowCount > 0 ? legendLeft : 0)
-  const maxX = Math.max(
-    chartAndLegendWidth,
-    titleRight,
-    rowCount > 0 ? legendRight : 0,
-  )
-  const minY = rowCount > 0 ? Math.min(0, legendTop) : 0
-  const maxY =
-    rowCount > 0 ? Math.max(chartAndLegendHeight, legendBottom) : height
+  // legend that sticks out is clipped there (12.3.0), as vertically below.
+  const minX = Math.min(0, titleLeft)
+  const maxX = Math.max(chartAndLegendWidth, titleRight)
+  const minY = 0
+  const maxY = chartAndLegendHeight
 
   const dx = -minX
   const dy = -minY

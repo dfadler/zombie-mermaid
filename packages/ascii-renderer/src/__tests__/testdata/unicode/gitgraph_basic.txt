@@ -1,0 +1,18 @@
+gitGraph
+   commit id: "init"
+   commit id: "docs"
+   branch develop
+   checkout develop
+   commit id: "feature-a"
+   commit id: "feature-b"
+   checkout main
+   merge develop id: "release-1"
+   commit id: "hotfix"
+---
+main  develop
+●     ┆   init
+●     ┆   docs
+├─────●   feature-a
+│     ●   feature-b
+◎─────╯   release-1
+●     ┆   hotfix

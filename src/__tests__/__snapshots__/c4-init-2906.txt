@@ -1,0 +1,15 @@
+                                                                                          
+                                                                                          
+  ╭─────────────────╮        ┌─────────────────────────┐         ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐    
+  │        o        │        │         System          │  Sends  ┆       Email       ┆    
+  │       /|\       │        │    [Software System]    │────────►┆ [Software System] ┆    
+  │       / \       │  Uses  │                         │         └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘    
+  │      User       │───────►│ Does the work in a long │                                  
+  │    [Person]     │        │       description       │                                  
+  │                 │        └─────────────────────────┘                                  
+  │ Uses the system │                                                                     
+  ╰─────────────────╯                                                                     
+                                                                                          
+                                                                                          
+                                                                                          
+                                                                                          

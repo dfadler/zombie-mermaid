@@ -33,11 +33,15 @@ const lay = (src: string) => layoutQuadrantChart(parseQuadrantChart(src))
 const round = (n: number) => Math.round(n * 100) / 100
 
 describe('quadrantChart init config: parsing', () => {
-  it('keeps numbers and known positions, drops the rest', () => {
+  it('keeps numbers (numeric strings too) and known positions, drops the rest', () => {
     const { quadrant } = extractInitConfig([
       '%%{init: {"quadrantChart": {"chartWidth": 400, "pointRadius": "9", "titleFontSize": -1, "pointTextPadding": null, "xAxisPosition": "bottom", "yAxisPosition": "middle"}}}%%',
     ])
-    expect(quadrant).toEqual({ chartWidth: 400, xAxisPosition: 'bottom' })
+    expect(quadrant).toEqual({
+      chartWidth: 400,
+      pointRadius: 9,
+      xAxisPosition: 'bottom',
+    })
   })
 
   it('merges later directives over earlier ones', () => {
@@ -132,8 +136,16 @@ describe('quadrant theme variables', () => {
     '{"themeVariables": {"quadrant1Fill": "#ff0000", "quadrant1TextFill": "#abcdef", "quadrantPointFill": "#00ff00", "quadrantPointTextFill": "#fedcba", "quadrantXAxisTextFill": "#111111", "quadrantYAxisTextFill": "#222222", "quadrantTitleFill": "#0000ff", "quadrantInternalBorderStrokeFill": "#123456", "quadrantExternalBorderStrokeFill": "#654321"}}',
   )
 
-  it('are ignored unless honorThemeVariables is set', () => {
-    expect(renderMermaidSVG(TV)).toBe(renderMermaidSVG(BODY))
+  it('are ignored when honorThemeVariables is false', () => {
+    expect(renderMermaidSVG(TV, { honorThemeVariables: false })).toBe(
+      renderMermaidSVG(BODY),
+    )
+  })
+
+  it('are honoured by default (#2856)', () => {
+    expect(renderMermaidSVG(TV)).toBe(
+      renderMermaidSVG(TV, { honorThemeVariables: true }),
+    )
   })
 
   it('paint the chart when honoured', () => {

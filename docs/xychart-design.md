@@ -18,7 +18,7 @@ Added for [#1705](https://github.com/dfadler/zombie-mermaid/issues/1705) (findin
 
 Ticks match Mermaid's. `niceTickValues` in `packages/core/src/ticks.ts` is a port of d3's `ticks(min, max, 10)`, the call behind Mermaid's `scaleLinear().ticks()`, and both the SVG layout (`packages/svg-renderer/src/xychart/layout.ts`) and the ASCII renderer (`packages/ascii-renderer/src/xychart.ts`) use it. It applies to the y-axis in vertical charts and to the value (x) axis in horizontal charts.
 
-1. Take the axis range `min --> max`. If the source has no `y-axis min --> max`, the parser (`packages/mermaid-parser/src/xychart/parser.ts`) uses the data's own minimum and maximum across all series, with no padding and no floor to 0, as Mermaid does. A flat series (min equals max) gets a range of 0.1 either side so there is something to draw. With no data, the range is 0 to 100.
+1. Take the axis range `min --> max`. If the source has no `y-axis min --> max`, the parser (`packages/mermaid-parser/src/xychart/parser.ts`) uses the data's own minimum and maximum across all series, with no padding and no floor to 0, as Mermaid does. A flat series (min equals max) gets a range of 0.1 either side in the parser; both renderers collapse it (`collapseFlatRange` in `@zombie-mermaid/core`) to a single mid-axis tick labelled with the value, as Mermaid does. This applies only when every value across all series is equal and the range is derived (no explicit `y-axis`); `bar [42, 42]` with `line [10, 10]`, or an explicit range, keeps several ticks. With no data, the range is 0 to 100.
 2. Aim for 10 intervals: `step = (max - min) / 10`.
 3. Round `step` to a nice step of `1`, `2` or `5` times a power of ten. With `power = floor(log10(step))` and `error = step / 10^power`, the multiplier is `10` for an error of at least `sqrt(50)`, `5` for at least `sqrt(10)`, `2` for at least `sqrt(2)`, otherwise `1`.
 4. Emit every multiple of the step that falls inside `min` to `max`.
@@ -33,7 +33,7 @@ Earlier versions aimed for about 6 intervals (5 to 10 ticks) and padded the defa
 
 - **SVG:** the title is rotated 90 degrees along the left edge of the plot (`PositionedAxis.title.rotate`).
 - **ASCII, vertical charts:** a terminal cannot rotate text, so the title is written one character per row down the leftmost column (column 0), starting at the row that centers it on the plot. A title longer than the plot has rows for is cut off at the bottom of the plot. Because the letters are on separate rows, the title cannot be found by searching the text of the output.
-- **ASCII, horizontal charts:** the value axis is horizontal, so its title is ordinary text centered on the last row, under the tick labels.
+- **ASCII, horizontal charts:** the value axis is horizontal, so its title is ordinary text centered on the row above the tick labels; the whole value axis sits above the plot, as in mermaid (#2719).
 
 ```text
 S    │

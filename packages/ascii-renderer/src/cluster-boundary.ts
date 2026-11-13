@@ -33,6 +33,7 @@
 import type {
   AsciiEdge,
   AsciiGraph,
+  AsciiNode,
   AsciiSubgraph,
   ClusterExitPlan,
   ClusterGridBox,
@@ -191,6 +192,40 @@ export function buildClusterEntryRoute(
   return { path, startDir, endDir }
 }
 
+/**
+ * A same-target lane group leaving a cluster straight ahead (#2737): mermaid
+ * draws its edges as parallel strokes from the cluster's flow-side wall to the
+ * target's flow-side face, left to right in source order, not round the
+ * target's side faces. Returns the group in lane order, or null when the edge
+ * isn't one (TD only; a one-character label per stroke, so the labels fit
+ * between strokes two cells apart; the target in the stand-in's column).
+ * ponytail: a target off that column, or wider labels, keep the side faces
+ * (`laneSide`); lift when mermaid parity needs them.
+ */
+export function clusterFlowGroup(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): AsciiEdge[] | null {
+  const lane = edge.parallelLane
+  if (!lane || !edge.clusterSource || graph.config.graphDirection === 'LR') {
+    return null
+  }
+  const group = graph.edges
+    .filter((e) => e.parallelLane?.usedOffsets === lane.usedOffsets)
+    .sort((a, b) => a.parallelLane!.index - b.parallelLane!.index)
+  const from = edge.from.gridCoord
+  const to = edge.to.gridCoord
+  if (
+    !from ||
+    !to ||
+    from.x !== to.x ||
+    group.some((e) => !e.clusterSource || displayWidth(e.text) > 1)
+  ) {
+    return null
+  }
+  return group
+}
+
 /** Whether any exit in `plan` is a parallel-lane sibling (#329, #1182). */
 export function planHasLaneGroup(plan: ClusterExitPlan): boolean {
   for (const edge of plan.edges) if (edge.parallelLane) return true
@@ -258,6 +293,11 @@ export function planClusterExits(graph: AsciiGraph): void {
   }
 }
 
+/** Whether `node` is a member of `sg`, directly or through a nested subgraph or region. */
+function inCluster(sg: AsciiSubgraph, node: AsciiNode): boolean {
+  return sg.nodes.includes(node) || sg.children.some((c) => inCluster(c, node))
+}
+
 /** Safety bound on gutter-track insertions per layout. */
 const MAX_TRACK_INSERTIONS = 16
 
@@ -317,9 +357,7 @@ function planOne(
     if (edge.bundle || edge.from === edge.to) return false
     // The stand-in must really sit inside this cluster's box, and the
     // target outside it.
-    if (!sg.nodes.includes(edge.from) || sg.nodes.includes(edge.to)) {
-      return false
-    }
+    if (!inCluster(sg, edge.from) || inCluster(sg, edge.to)) return false
     // Strictly past the gutter, not merely past the wall: backward and
     // sideways targets keep today's routing.
     return vertical ? to.y > box.maxY + 1 : to.x > box.maxX + 1
@@ -371,14 +409,25 @@ function planOne(
   const unroutable = new Set<Set<number>>()
   for (const edge of eligible) {
     const lane = edge.parallelLane
-    if (lane && lane.index > 0 && !clusterLaneSideRoute(graph, trial, edge)) {
+    if (
+      lane &&
+      lane.index > 0 &&
+      !clusterFlowGroup(graph, edge) &&
+      !clusterLaneSideRoute(graph, trial, edge)
+    ) {
       // A sibling that only lacks a gutter track gets one inserted (#1253)
       // when the group would otherwise engage.
       const missing = laneSide(graph, trial, edge)?.insertAt
       const hasOtherExit = eligible.some(
         (other) => other.parallelLane?.usedOffsets !== lane.usedOffsets,
       )
-      if (missing !== undefined && (hasOtherExit || lane.total >= 3)) {
+      // A group ELK gives its own ports is routed from them (`determinePath`):
+      // asking for tracks it would not use left sixteen empty columns behind.
+      if (
+        missing !== undefined &&
+        !graph.edgeHints?.has(edge) &&
+        (hasOtherExit || lane.total >= 3)
+      ) {
         return { at: missing, flow: false }
       }
       unroutable.add(lane.usedOffsets)
@@ -398,8 +447,13 @@ function planOne(
   // first two, the siblings need side faces of the target, which only the
   // plan routes (ordinary routing merges them on one face).
   const [only] = eligible
+  // A composite with concurrent regions engages on a single exit: the stand-in
+  // can sit in any region, so ordinary routing would leave through a region's
+  // side wall instead of the composite's flow-side wall (#3013).
+  const regions = sg.children.some((c) => c.region)
   if (
     exits.size < 2 &&
+    !regions &&
     !(exits.size === 1 && (only!.parallelLane?.total ?? 0) >= 3)
   )
     return null
@@ -416,7 +470,20 @@ function planOne(
       const start = vertical ? at.y : at.x
       return start <= track && track <= start + 2
     })
-    if (occupied || !sizes.has(track)) return { at: track, flow: true }
+    // The track just above a target is the row its other incoming edges end
+    // their arrowheads on; a run along it would cross them (#2738).
+    const arrowRow = graph.nodes.some((node) => {
+      if (
+        (vertical ? requireGridCoord(node).y : requireGridCoord(node).x) !==
+        track + 1
+      )
+        return false
+      return graph.edges.some(
+        (e) => e.to === node && e.from !== node && !eligible.includes(e),
+      )
+    })
+    if (occupied || arrowRow || !sizes.has(track))
+      return { at: track, flow: true }
   }
 
   const stubLen = (vertical ? gutter.y - face.y : gutter.x - face.x) + rows - 1
@@ -425,6 +492,17 @@ function planOne(
       ? { x: face.x, y: face.y + i }
       : { x: face.x + i, y: face.y }
     if (!isFree(graph.grid, cell)) return null
+  }
+
+  // A flow group's strokes sit two cells apart on the target's flow-side
+  // face: the stand-in's column (the target's too) holds one per sibling.
+  for (const edge of eligible) {
+    const group =
+      edge.parallelLane?.index === 0 && clusterFlowGroup(graph, edge)
+    if (!group) continue
+    const sizes = vertical ? graph.columnWidth : graph.rowHeight
+    const mid = requireGridCoord(edge.to)[vertical ? 'x' : 'y'] + 1
+    sizes.set(mid, Math.max(sizes.get(mid)!, 2 * group.length - 1))
   }
 
   const plan: ClusterExitPlan = {
@@ -630,6 +708,14 @@ export function clusterLaneEndShift(
 ): number {
   const lane = edge.parallelLane
   if (!lane) return 0
+  const flow = clusterFlowGroup(graph, edge)
+  if (flow) {
+    // Strokes two cells apart about the face centre, in source order.
+    if (!graph.clusterExitPlans?.get(edge.clusterSource!)?.edges.has(edge)) {
+      return 0
+    }
+    return (lane.index - (flow.length - 1) / 2) * 2
+  }
   for (const plan of graph.clusterExitPlans?.values() ?? []) {
     if (!plan.edges.has(edge) || lane.index === 0) continue
     // The siblings entering the same target face, in lane order, take its

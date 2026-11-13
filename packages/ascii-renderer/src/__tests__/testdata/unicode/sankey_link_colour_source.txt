@@ -1,0 +1,13 @@
+%%{init: {"sankey": {"linkColor": "source"}}}%%
+sankey-beta
+Visits,Signed up,40
+Visits,Left,60
+Signed up,Paid,12
+Signed up,Free,28
+---
+Visits  100
+  ├─▶ Signed up  █████████████          40
+  └─▶ Left       ████████████████████   60
+Signed up  40
+  ├─▶ Paid       ████                   12
+  └─▶ Free       █████████              28

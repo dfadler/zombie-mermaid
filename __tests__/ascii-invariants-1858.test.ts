@@ -21,9 +21,16 @@ import {
 /** Sample title -> issue tracking the renderer bug (unicode charset). */
 const KNOWN: Record<string, string> = {}
 
-/** Rules a diagram kind does not promise (pie/xychart/quadrant are ragged by design). */
+/** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline/kanban/journey/packet/sankey are ragged by design). */
 function skipFor(source: string): Rule[] {
-  if (/^\s*(xychart|pie|quadrantChart)/m.test(source))
+  // A packet is a table of boxes sharing borders: the graph rules for connectors
+  // beside node text do not apply.
+  if (/^\s*packet/m.test(source)) return ['equal-width', 'arms', 'node-text']
+  if (
+    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|radar-beta|gitGraph|sankey)/m.test(
+      source,
+    )
+  )
     return ['equal-width', 'arms']
   if (/^\s*sequenceDiagram/m.test(source)) return ['arms'] // lifelines/frames
   if (/^\s*erDiagram/m.test(source)) return ['arms'] // Crow's-foot `│` marks

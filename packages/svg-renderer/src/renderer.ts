@@ -22,6 +22,7 @@ import {
   sanitizeClassName,
   f,
 } from '@zombie-mermaid/core'
+import { wrapFlowchartLabel } from './layout-engine/wrap-label.ts'
 import type { FontSizes } from './styles.ts'
 import {
   ASYMMETRIC_NOTCH,
@@ -391,6 +392,9 @@ function dashAttr(style: Record<string, string> | undefined): string {
 /** Edge of the icon tile in an architecture group's corner, as Mermaid draws it. */
 const ARCH_GROUP_ICON = 30
 
+/** Half of mermaid@12.3.0's 24 px title box: its centre sits this far below its top. */
+const TITLE_ONLY_HALF_LINE = 12
+
 function renderGroup(
   group: PositionedGroup,
   font: string,
@@ -416,20 +420,23 @@ function renderGroup(
   // Architecture group (#2619): Mermaid draws a dashed, unfilled box with the
   // icon tile in its top-left corner and the title beside it, no header band.
   if (group.architecture) {
-    const glyph = group.icon && (ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH)
+    // Mermaid draws the corner icon at 0.75 of `architecture.padding`.
+    const iconSize = group.iconSize ?? ARCH_GROUP_ICON
+    const glyph =
+      iconSize > 0 && group.icon && (ICON_GLYPHS[group.icon] ?? UNKNOWN_GLYPH)
     parts.push(
       f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
       f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`,
     )
     if (glyph)
       parts.push(
-        f`  <g transform="translate(${group.x + 1} ${group.y + 1}) scale(${ARCH_GROUP_ICON / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
+        f`  <g transform="translate(${group.x + 1} ${group.y + 1}) scale(${iconSize / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${glyph}</g>`,
       )
     parts.push(
       '  ' +
         renderMultilineText(
           group.label,
-          group.x + (glyph ? ARCH_GROUP_ICON + 4 : 6),
+          group.x + (group.icon ? iconSize + 4 : 6),
           group.y + 1 + ARCH_GROUP_ICON / 2,
           fontSizes.groupHeader,
           f`font-size="${fontSizes.groupHeader}" font-weight="400" fill="var(--_text)"`,
@@ -461,10 +468,11 @@ function renderGroup(
   // draws it: the outer rect carries the band colour with rounded corners, and
   // a square-cornered body rect sits inside it (below).
   const bandless = group.bandless === true
-  parts.push(
-    f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
-      f`rx="${bandless ? 0 : COMPOSITE_RADIUS}" ry="${bandless ? 0 : COMPOSITE_RADIUS}" fill="${bandless ? fill : hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
-  )
+  if (!group.titleOnly)
+    parts.push(
+      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
+        f`rx="${bandless ? 0 : COMPOSITE_RADIUS}" ry="${bandless ? 0 : COMPOSITE_RADIUS}" fill="${bandless ? fill : hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
+    )
 
   // Flowchart subgraph (#2636): mermaid@12.3.0 draws no header band, only a
   // centred title along the top edge.
@@ -474,7 +482,12 @@ function renderGroup(
         renderMultilineText(
           group.label,
           group.x + group.width / 2,
-          group.y + headerHeight / 2,
+          // #2784: mermaid@12.3.0 hangs an empty subgraph's 24 px title box from
+          // the middle of its slot (the box's top on the centre line), not
+          // centred at the top edge like a framed subgraph's.
+          group.titleOnly
+            ? group.y + group.height / 2 + TITLE_ONLY_HALF_LINE
+            : group.y + headerHeight / 2,
           fontSizes.groupHeader,
           f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
         ),
@@ -628,7 +641,8 @@ function renderEdgeLabel(
   // Use layout-computed label position when available (layout-aware, avoids collisions).
   // Fall back to geometric midpoint of the edge polyline.
   const mid = edge.labelPosition ?? edgeMidpoint(edge.points)
-  const padding = 8
+  // Mermaid 12.3.0: label box = text box, no padding, no border (#2854)
+  const padding = 0
 
   // Measure text (works for both single and multi-line)
   const metrics = measureMultilineText(
@@ -648,8 +662,7 @@ function renderEdgeLabel(
     padding,
     // Use --_text-sec for better contrast (was --_text-muted)
     f`text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
-    // Increased stroke width from 0.5 to 1 for better label separation from edges
-    `rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1"`,
+    `fill="var(--bg)"`,
   )
 
   // Semantic wrapper: links label to its edge via data-from/data-to
@@ -737,7 +750,7 @@ function renderNode(
   stateDiagram: boolean = false,
 ): string {
   const shape = renderNodeShape(node, stateDiagram)
-  const label = renderNodeLabel(node, font, fontSizes)
+  const label = renderNodeLabel(node, font, fontSizes, stateDiagram)
 
   // Combine shape and label inside a semantic group
   // This enables reliable node identification without heuristics
@@ -809,8 +822,17 @@ const ARCH_GROUP_DASH = 8
  * An architecture service as Mermaid draws it (#2518): an 80px tile with its
  * icon glyph, or a dashed empty box when the service names no icon.
  */
-function renderServiceTile(x: number, y: number, icon: string): string {
-  const at = f`transform="translate(${x} ${y})"`
+function renderServiceTile(
+  x: number,
+  y: number,
+  icon: string,
+  size: number = TILE,
+): string {
+  // `architecture.iconSize` scales the 80-unit tile and its glyph together.
+  const at =
+    size === TILE
+      ? f`transform="translate(${x} ${y})"`
+      : f`transform="translate(${x} ${y}) scale(${size / TILE})"`
   if (icon === '') {
     return f`<path ${at} d="M0,80 V5 Q0,0 5,0 H75 Q80,0 80,5 V80 Z" fill="none" stroke="var(--_node-stroke)" stroke-width="${ARCH_GROUP_STROKE}" stroke-dasharray="${ARCH_GROUP_DASH}" />`
   }
@@ -834,7 +856,8 @@ function renderNodeShapeBase(
   stateDiagram: boolean,
 ): string {
   const { x, y, width, height, shape } = node
-  if (node.icon !== undefined) return renderServiceTile(x, y, node.icon)
+  if (node.icon !== undefined)
+    return renderServiceTile(x, y, node.icon, node.width)
   // mermaid@12.3.0 (and 12.2.0) draw `sm-circ` in the default node colours whatever
   // `style` or `classDef` says, so the dot never reads the inline style.
   const inlineStyle = shape === 'small-circle' ? undefined : node.inlineStyle
@@ -1797,6 +1820,7 @@ function renderNodeLabel(
   node: PositionedNode,
   _font: string,
   fontSizes: FontSizes,
+  stateDiagram: boolean,
 ): string {
   // State pseudostates have no label
   if (node.shape === 'state-start' || node.shape === 'state-end') {
@@ -1840,7 +1864,17 @@ function renderNodeLabel(
     attrs += f` style="font-family: ${escapeAttr(fontFamily)};"`
   }
 
-  return renderMultilineText(node.label, cx, cy, fontSizes.nodeLabel, attrs)
+  // A flowchart label wraps at 120px, as in mermaid@12.3.0 (#2932); node
+  // sizes (`estimateNodeSize`) were computed from the same wrapped text.
+  const text =
+    stateDiagram || node.icon !== undefined
+      ? node.label
+      : wrapFlowchartLabel(
+          node.label,
+          fontSizes.nodeLabel,
+          FONT_WEIGHTS.nodeLabel,
+        ).text
+  return renderMultilineText(text, cx, cy, fontSizes.nodeLabel, attrs)
 }
 
 // ============================================================================

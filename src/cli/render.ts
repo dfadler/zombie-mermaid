@@ -154,6 +154,11 @@ async function renderText(
     if (args.maxWidth !== undefined)
       asciiOpts.maxWidth = resolveMaxWidth(args.maxWidth)
     let ascii: string
+    // mermaid-wide drops the column cap, so a hard --max-width would be silently ignored.
+    if (args.layout === 'mermaid-wide' && args.maxWidth !== undefined)
+      throw new Error(
+        '--layout mermaid-wide has no width cap; do not combine it with --max-width (use --layout mermaid to cap at --max-width).',
+      )
     try {
       if (args.layout !== undefined) {
         // mermaid-wide: no cap, so wide diagrams are drawn layout-faithfully instead of falling
@@ -174,7 +179,7 @@ async function renderText(
         // Never differ silently: one stderr line says which renderer ran.
         err.write(
           r.path === 'layout-faithful'
-            ? `layout-faithful: used mermaid's ELK layout (mermaid 12.1.0 + elkjs 0.9.3). ${r.note ?? ''}`.trimEnd() +
+            ? `layout-faithful: used mermaid's ELK layout (mermaid 12.3.0 + elkjs 0.12.0). ${r.note ?? ''}`.trimEnd() +
                 '\n'
             : `layout-faithful: ${r.fallbackReason ?? 'unavailable'}; used standard renderer\n`,
         )

@@ -440,7 +440,7 @@ export const samples: Sample[] = [
     title: 'Interactivity: Curved Edges',
     category: 'Interactivity',
     description:
-      'A diagram can configure its own rendering with `%%{init: ...}%%`. Here it asks for the `basis` curve, a direct port of d3’s `curveBasis`, so edges bow through their bend points instead of turning square corners. An explicit `curve` render option always wins over the directive.',
+      'A diagram can configure its own rendering with `%%{init: ...}%%`. Here it asks for the `basis` curve. Mermaid 12.3.0 ignores `flowchart.curve` (every edge is ELK-routed with rounded orthogonal bends), and so does this renderer; only the `curve` render option changes the edges.',
     source: `%%{init: {"flowchart": {"curve": "basis"}}}%%
 flowchart TD
   Ingest[Ingest] --> Queue[Queue]
@@ -453,7 +453,7 @@ flowchart TD
     title: 'Interactivity: Step Routing',
     category: 'Interactivity',
     description:
-      'The same directive with `step` instead, which routes every edge as right angles. The default stays `linear`, which still emits `<polyline class="edge">` so existing selectors keep working; only a non-linear curve switches the element to `<path>`.',
+      'The same directive with `step`: also ignored, matching Mermaid 12.3.0, so the edges keep their rounded orthogonal routing.',
     source: `%%{init: {"flowchart": {"curve": "step"}}}%%
 flowchart LR
   Client[Client] --> Gateway[Gateway]
@@ -1773,7 +1773,7 @@ flowchart LR
     title: 'Pie: Tall Legend',
     category: 'Pie',
     description:
-      'Twenty-four slices: the legend is taller than the 450px frame, so the viewBox grows to fit it.',
+      'Twenty-four slices: the legend is taller than the 450px frame, so it is clipped at the top and bottom, as in mermaid 12.3.0.',
     source: `pie title Tickets by component
   "Component 01" : 30
   "Component 02" : 29
@@ -1903,7 +1903,7 @@ flowchart LR
     title: 'Pie: More Slices Than Bar Cells',
     category: 'Pie',
     description:
-      'Sixty equal slices. The SVG draws every one; the 50-cell ASCII bar fits fifty, and the other ten are listed like slices under 1% (dot swatch, no percentage).',
+      'Sixty equal slices. The SVG draws every slice (its legend is clipped as in mermaid); the 50-cell ASCII bar fits fifty, and the other ten are listed like slices under 1% (dot swatch, no percentage).',
     source: `pie title Sixty equal slices
 ${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" : 1`).join('\n')}`,
   },
@@ -2206,7 +2206,7 @@ pie title Pets adopted by volunteers
     title: 'Pie: Legend Top',
     category: 'Pie',
     description:
-      '`%%{init: {"pie": {"legendPosition": "top"}}}%%` stacks the legend above the pie and makes the frame taller. The ASCII bar chart keeps its legend beside the bars, so it is unchanged.',
+      '`%%{init: {"pie": {"legendPosition": "top"}}}%%` stacks the legend above the pie and makes the frame taller. The ASCII output prints the table above the bar.',
     source: `%%{init: {"pie": {"legendPosition": "top"}}}%%
 pie title Pets adopted by volunteers
   "Dogs" : 386
@@ -2295,7 +2295,7 @@ pie title Pets adopted by volunteers
     title: 'Duplicate Self-Loops',
     category: 'Flowchart',
     description:
-      'Two identical self-loops on one node. They draw as one clean loop, with no junction leading into blank space (#2028).',
+      'Two identical self-loops on one node. Each draws as its own hook, the second nested round the first, as mermaid draws them, with no junction leading into blank space (#2028, #2913).',
     source: `flowchart TD
     n0["a"]
     n0 --> n0
@@ -2903,14 +2903,16 @@ pie title Pets adopted by volunteers
     title: 'Sequence: Long Block Tab And Divider Labels',
     category: 'Sequence',
     description:
-      'Long block and divider labels over adjacent participants: the gap between the participants widens so the label ends before the next lifeline.',
+      'Long block and divider labels over adjacent participants: the labels wrap onto several lines and the gap between the participants stays as it is. A word wider than the frame is split with a hyphen (#2773); `wrap:` wraps one message or note and `nowrap:` keeps one whole, and the prefix is not drawn (#2783).',
     source: `sequenceDiagram
   participant A
   participant B
   par a branch with a long descriptive title
-    A->>B: x
-  and another branch with an equally long title
+    A->>B: wrap: alpha beta gamma delta epsilon zeta eta theta iota kappa
+    B->>A: nowrap: ok
+  and Antidisestablishmentarianism_pneumonoultramicroscopicsilicovolcanoconiosis_extra
     B->>A: y
+    Note over A: wrap: alpha beta gamma delta epsilon zeta eta theta
   end`,
   },
   {
@@ -2940,5 +2942,1119 @@ pie title Pets adopted by volunteers
   E@{ shape: fork }
   F@{ shape: join }
   A --> B --> C --> D --> E --> F`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Gantt (parity with mermaid 12.3.0, scripts/gantt-oracle.ts)
+  //  `todayMarker off` keeps every sample independent of the clock.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Gantt: Basic',
+    category: 'Gantt',
+    gallery: true,
+    description:
+      'Two sections of tasks, one starting after another; the axis ticks come from the date range.',
+    source: `gantt
+    title A Gantt Diagram
+    dateFormat YYYY-MM-DD
+    todayMarker off
+    section Section
+        A task          :a1, 2014-01-01, 30d
+        Another task    :after a1, 20d
+    section Another
+        Task in Another :2014-01-12, 12d
+        another task    :24d`,
+  },
+  {
+    title: 'Gantt: Statuses, Milestone and Weekends',
+    category: 'Gantt',
+    gallery: true,
+    description:
+      'Done, active and critical tasks, an `until` end and a milestone; `excludes weekends` shades Saturdays and Sundays and stretches tasks across them.',
+    source: `gantt
+    dateFormat  YYYY-MM-DD
+    title       Adding GANTT diagram functionality to mermaid
+    excludes    weekends
+    todayMarker off
+    section A section
+    Completed task            :done,    des1, 2014-01-06,2014-01-08
+    Active task               :active,  des2, 2014-01-09, 3d
+    Future task               :         des3, after des2, 5d
+    Future task2              :         des4, after des3, 5d
+    section Critical tasks
+    Completed task in the critical line :crit, done, 2014-01-06,24h
+    Implement parser and jison          :crit, done, after des1, 2d
+    Create tests for parser             :crit, active, 3d
+    Future task in critical line        :crit, 5d
+    Create tests for renderer           :2d
+    Add to mermaid                      :until isadded
+    Functionality added                 :milestone, isadded, 2014-01-25, 0d`,
+  },
+  {
+    title: 'Gantt: Hourly Axis',
+    category: 'Gantt',
+    description:
+      'Times instead of dates: `dateFormat HH:mm` with `axisFormat %H:%M`, and milestones at both ends.',
+    source: `gantt
+    dateFormat  HH:mm
+    axisFormat  %H:%M
+    todayMarker off
+    Initial milestone : milestone, m1, 17:49, 2m
+    Task A : 10m
+    Task B : 5m
+    Final milestone : milestone, m2, 18:08, 4m`,
+  },
+  {
+    title: 'Gantt: Vertical Marker and Tick Interval',
+    category: 'Gantt',
+    gallery: true,
+    description:
+      'A `vert` marker across all rows, weekly ticks from `tickInterval 1week` and a `%m/%d` axis format.',
+    source: `gantt
+    title Release
+    dateFormat YYYY-MM-DD
+    axisFormat %m/%d
+    tickInterval 1week
+    todayMarker off
+    section Dev
+    Code :a, 2024-06-03, 10d
+    Test :b, after a, 5d
+    section Ship
+    Docs :c, 2024-06-07, 12d
+    Launch :vert, v1, 2024-06-24, 0d`,
+  },
+  {
+    title: 'Gantt: Weekday Excludes and Click',
+    category: 'Gantt',
+    description:
+      'A named weekday excluded, a date included back in, and `click` marking a task as a link.',
+    source: `gantt
+    title Sprint
+    dateFormat YYYY-MM-DD
+    excludes monday
+    includes 2024-05-13
+    todayMarker off
+    section Build
+    Spec :s1, 2024-05-06, 6d
+    Implement :s2, after s1, 8d
+    section Review
+    Review :s3, after s2, 4d
+    Release notes :s4, 2024-05-20, 3d
+    click s3 href "https://example.com/review"`,
+  },
+  {
+    title: 'Gantt: Many Sections',
+    category: 'Gantt',
+    description:
+      'Five sections cycle through four row styles; the third carries Mermaid\'s yellow stripe. Tasks without a section sit above the first heading.',
+    source: `gantt
+    dateFormat YYYY-MM-DD
+    axisFormat %b %d
+    todayMarker off
+    Kick-off :k, 2024-01-02, 1d
+    section One
+    Plan :p1, 2024-01-03, 5d
+    section Two
+    Build :p2, after p1, 7d
+    section Three
+    Test :p3, after p2, 4d
+    section Four
+    Ship :p4, after p3, 2d
+    section Five
+    Retro :p5, after p4, 1d`,
+  },
+  {
+    title: 'Gantt: Wide Characters and Empty Sections',
+    category: 'Gantt',
+    description:
+      'Chinese, Japanese and emoji text and a section heading with no tasks, which draws no row.',
+    source: `gantt
+    title プロジェクト計画 📅
+    dateFormat YYYY-MM-DD
+    todayMarker off
+    section 設計
+    要件定義 :a, 2024-04-01, 10d
+    設計レビュー :after a, 5d
+    section 空
+    section 実装
+    コーディング :b, 2024-04-10, 20d`,
+  },
+  {
+    title: 'Gantt: Top Axis',
+    category: 'Gantt',
+    description:
+      'The `topAxis` statement repeats the axis above the chart. Mermaid 12.3.0 fails on this statement (`TopAxis is not a function`), so there is no reference render; see docs/known-differences.md.',
+    source: `gantt
+    title Top axis
+    dateFormat YYYY-MM-DD
+    topAxis
+    todayMarker off
+    section Work
+    Draft :d, 2024-02-01, 6d
+    Edit :after d, 4d`,
+  },
+  {
+    title: 'Gantt: Title Only',
+    category: 'Gantt',
+    description:
+      'A gantt with a title and no tasks draws just the title and an empty frame.',
+    source: `gantt
+    title Nothing planned yet`,
+  },
+  {
+    title: 'Class: Dotted Lollipop Interface',
+    category: 'Class',
+    description:
+      '`..()` and `()..` draw the lollipop circle on a dashed stem (#2851), as mermaid 12.3.0 does.',
+    source: `classDiagram
+  Comparable ()..() Version
+  Version ..() Printable
+  Cache ().. Store`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  MINDMAP
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Mindmap: Basic',
+    category: 'Mindmap',
+    description:
+      "Mermaid's documentation example: a circle root, three branches taking three colours, and a label that wraps and one broken with <br/>.",
+    source: `mindmap
+  root((mindmap))
+    Origins
+      Long history
+      Popularisation
+        British popular psychology author Tony Buzan
+    Research
+      On effectiveness<br/>and features
+    Tools
+      Pen and paper
+      Mermaid`,
+  },
+  {
+    title: 'Mindmap: Shapes',
+    category: 'Mindmap',
+    description:
+      'Every node shape: default, square, rounded, circle, cloud, bang and hexagon.',
+    source: `mindmap
+  root[Square root]
+    id1(Rounded)
+    id2((Circle))
+    id3))Bang((
+    id4)Cloud(
+    id5{{Hexagon}}
+    Default shape`,
+  },
+  {
+    title: 'Mindmap: Markdown and Line Breaks',
+    category: 'Mindmap',
+    description:
+      'Labels are Markdown: bold and italic, a newline inside a quoted label, and HTML line breaks.',
+    source: `mindmap
+  id1["\`**Root** with a second line
+  and *emphasis*\`"]
+    id2["\`The dog in **the** hog... a *very long text* that wraps to a new line\`"]
+    id3[Regular labels still work]
+    id4[Line one<br/>line two]`,
+  },
+  {
+    title: 'Mindmap: Deep Nesting',
+    category: 'Mindmap',
+    description:
+      'Six levels deep: deeper nodes inherit their branch colour and their connectors thin out.',
+    source: `mindmap
+  root((Planet))
+    Land
+      Africa
+        Egypt
+          Cairo
+            Old Cairo
+    Sea
+      Pacific
+        Mariana Trench`,
+  },
+  {
+    title: 'Mindmap: Many Branches',
+    category: 'Mindmap',
+    description:
+      'Twelve first-level branches: the eleven section colours are used in turn and the twelfth repeats the first.',
+    source: `mindmap
+  root((Months))
+    Jan
+    Feb
+    Mar
+    Apr
+    May
+    Jun
+    Jul
+    Aug
+    Sep
+    Oct
+    Nov
+    Dec`,
+  },
+  {
+    title: 'Mindmap: Uneven Indentation',
+    category: 'Mindmap',
+    description:
+      'Only indentation relative to the line above matters: C is indented less than B but more than A, so it becomes B’s sibling, as in Mermaid.',
+    source: `mindmap
+  Root
+    A
+        B
+      C
+    D`,
+  },
+  {
+    title: 'Mindmap: Icons, Classes and Comments',
+    category: 'Mindmap',
+    description:
+      '::icon() and :::class lines decorate the node above and comments are skipped; Mermaid draws no icon without an icon font.',
+    source: `mindmap
+  Root
+    A
+      ::icon(fa fa-book)
+    %% a comment
+    B(B)
+      :::urgent large
+    C`,
+  },
+  {
+    title: 'Mindmap: Wide Characters',
+    category: 'Mindmap',
+    description: 'CJK and emoji labels size their nodes by display width.',
+    source: `mindmap
+  root((思维导图))
+    起源
+      历史悠久 📜
+    工具
+      纸和笔 ✏️
+      Mermaid`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  TIMELINES
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/timeline_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Timeline: Basic',
+    category: 'Timeline',
+    description:
+      'Periods in columns along an arrowed axis, each with its events hanging below on a dashed line; every period gets its own colour without sections.',
+    source: `timeline
+    title History of Social Media Platform
+    2002 : LinkedIn
+    2004 : Facebook : Google
+    2005 : YouTube
+    2006 : Twitter`,
+  },
+  {
+    title: 'Timeline: Sections',
+    category: 'Timeline',
+    gallery: true,
+    description:
+      'Sections group periods under a heading that spans their columns; all periods of a section share one colour.',
+    source: `timeline
+    title England's History Timeline
+    section 17th Century
+        1603 : Be merged crowns
+        1611 : King James Bible
+    section 18th Century
+        1707 : Act of Union : Great Britain
+        1776 : Loses American colonies
+             : Industrial revolution begins`,
+  },
+  {
+    title: 'Timeline: Long Text',
+    category: 'Timeline',
+    description:
+      'Text wraps at 150px: a long period label makes its row taller for every later period in the section, and a long event makes the dashed lines longer.',
+    source: `timeline
+    title Edge cases
+    section Early
+        A very long period label that wraps across several lines of text : first event
+        Empty period
+        Short : An event with a long description that needs several lines : Second
+    section Late
+        2030 : Single`,
+  },
+  {
+    title: 'Timeline: Comments And Gaps',
+    category: 'Timeline',
+    description:
+      'A `#` starts a comment even inside a period label (`C# Language` is the period `C`), periods may have no events, and extra `:` lines add events to the last period.',
+    source: `timeline
+    %% a comment
+    Stone Age : Hand axes
+    Bronze Age : Writing : Cities
+               : Wheel
+    C# Language : dropped
+    Iron Age`,
+  },
+  {
+    title: 'Timeline: Vertical',
+    category: 'Timeline',
+    gallery: true,
+    description:
+      '`timeline TD` runs the axis down the page with periods on its left and events on its right, as Mermaid draws it.',
+    source: `timeline TD
+    title Product launches
+    section 2020s
+        2021 : Alpha
+        2022 : Beta : Public preview
+    section Later
+        2024 : General availability`,
+  },
+  {
+    title: 'Timeline: Empty',
+    category: 'Timeline',
+    description:
+      'A bare `timeline` is valid: just the arrowed axis.',
+    source: `timeline`,
+  },
+
+  {
+    title: 'Pie: Wide Legend',
+    category: 'Pie',
+    description:
+      'A centred legend with labels wider than the frame: the viewBox stays 490px wide and the overhang is clipped, as in mermaid 12.3.0.',
+    source: `---
+config:
+  pie:
+    legendPosition: center
+---
+pie title Reports by team
+  "Platform infrastructure and reliability engineering" : 40
+  "Customer facing web applications and mobile clients" : 35
+  "Data" : 25`,
+  },
+  // ══════════════════════════════════════════════════════════════════════════
+  //  REQUIREMENT DIAGRAMS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Requirement: Basic',
+    category: 'Requirement',
+    gallery: true,
+    description:
+      'A requirement box (type, name, then its ID, text, risk and verification under a divider) satisfied by an element over a dashed, arrowed relationship.',
+    source: `requirementDiagram
+
+    requirement test_req {
+    id: 1
+    text: the test text.
+    risk: high
+    verifymethod: test
+    }
+
+    element test_entity {
+    type: simulation
+    }
+
+    test_entity - satisfies -> test_req`,
+  },
+  {
+    title: 'Requirement: Kinds And Relationships',
+    category: 'Requirement',
+    description:
+      'All six requirement kinds and the relationship types: `contains` is a solid line with a circle-plus at the container, every other type a dashed arrow.',
+    source: `requirementDiagram
+
+    functionalRequirement fr {
+    id: 1.1
+    text: The system shall start
+    risk: low
+    verifymethod: inspection
+    }
+    interfaceRequirement ir {
+    id: 1.2
+    text: Expose a REST API
+    risk: medium
+    verifymethod: analysis
+    }
+    performanceRequirement pr {
+    id: 1.3
+    text: Respond in 200ms
+    risk: high
+    verifymethod: demonstration
+    }
+    physicalRequirement phr {
+    id: 1.4
+    text: Fit in a 1U rack
+    risk: low
+    verifymethod: test
+    }
+    designConstraint dc {
+    id: 1.5
+    text: Use TLS 1.3
+    risk: medium
+    verifymethod: test
+    }
+
+    fr - contains -> ir
+    fr - contains -> pr
+    pr - copies -> phr
+    phr - derives -> dc`,
+  },
+  {
+    title: 'Requirement: Direction And Traceability',
+    category: 'Requirement',
+    gallery: true,
+    description:
+      '`direction LR` runs the diagram left to right; `<-` writes a relationship from the other end, and elements show their type and document reference.',
+    source: `requirementDiagram
+    direction LR
+
+    requirement checkout {
+    id: R1
+    text: Customers can pay by card
+    risk: high
+    verifymethod: test
+    }
+    element payment_service {
+    type: service
+    docref: docs/payments.md
+    }
+    element e2e_suite {
+    type: browser suite
+    }
+
+    payment_service - satisfies -> checkout
+    checkout <- verifies - e2e_suite`,
+  },
+  {
+    title: 'Requirement: Styling',
+    category: 'Requirement',
+    description:
+      '`classDef`, `class`, `:::` and `style` recolour boxes, as in Mermaid.',
+    source: `requirementDiagram
+
+    requirement a {
+    id: 1
+    text: styled by class
+    risk: low
+    verifymethod: test
+    }
+    requirement b:::urgent {
+    id: 2
+    text: styled inline
+    risk: medium
+    verifymethod: analysis
+    }
+    a - traces -> b
+
+    classDef urgent fill:#fde,stroke:#c33,stroke-width:2px
+    class a urgent
+    style b fill:#eef,stroke:#339`,
+  },
+  {
+    title: 'Requirement: Bare Boxes',
+    category: 'Requirement',
+    description:
+      'A requirement or element with no properties is just the type and name, and the divider is not drawn.',
+    source: `requirementDiagram
+
+    requirement bare {
+    }
+    element thing {
+    }
+    thing - satisfies -> bare`,
+  },
+  {
+    title: 'Requirement: Empty',
+    category: 'Requirement',
+    description: 'A bare `requirementDiagram` is valid: an empty drawing.',
+    source: `requirementDiagram`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  KANBAN BOARDS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/kanban_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Kanban: Basic',
+    category: 'Kanban',
+    gallery: true,
+    description:
+      'Columns side by side, each with its cards stacked below; a card can carry a ticket, an assignee and a priority bar on its left edge.',
+    source: `kanban
+  Todo
+    [Create Documentation]
+    docs[Create Blog about the new diagram]
+  id7[In progress]
+    id6[Create renderer so that it works in all cases. We also add some extra text here for testing purposes. And some more just for the extra flare.]
+  id9[Ready for deploy]
+    id8[Design grammar]@{ assigned: 'knsv' }
+  id10[Ready for test]
+    id4[Create parsing tests]@{ ticket: MC-2038, assigned: 'K.Sveidqvist', priority: 'High' }
+    id66[last item]@{ priority: 'Very Low', assigned: 'knsv' }
+  id11[Done]
+    id5[define getData]
+    id2[Title of diagram is more than 100 chars when user duplicates diagram with 100 char]@{ ticket: MC-2036, priority: 'Very High'}
+    id3[Update DB function]@{ ticket: MC-2037, assigned: knsv, priority: 'High' }
+  id12[Can't reproduce]
+    id3[Weird flickering in Firefox]`,
+  },
+  {
+    title: 'Kanban: Priorities',
+    category: 'Kanban',
+    description:
+      'Every priority: Very High is red, High orange, Low blue and Very Low light blue; Medium and unknown names draw a bar with no colour.',
+    source: `kanban
+  Backlog
+    a[Very High]@{ priority: 'Very High' }
+    b[High]@{ priority: 'High' }
+    c[Medium]@{ priority: 'Medium' }
+    d[Low]@{ priority: 'Low' }
+    e[Very Low]@{ priority: 'Very Low' }
+    f[Ticket and assignee]@{ ticket: ABC-1, assigned: bob }`,
+  },
+  {
+    title: 'Kanban: Ticket Links And Width',
+    category: 'Kanban',
+    description:
+      '`kanban.ticketBaseUrl` turns each ticket into a link (`#TICKET#` is replaced) and `kanban.sectionWidth` widens the columns and their cards.',
+    source: `---
+config:
+  kanban:
+    ticketBaseUrl: 'https://example.test/browse/#TICKET#'
+    sectionWidth: 260
+---
+kanban
+  Todo
+    a[Write the spec]@{ ticket: T-1 }
+  Done
+    b[Ship it]@{ ticket: T-2, assigned: sam }`,
+  },
+  {
+    title: 'Kanban: Empty Columns And Markdown',
+    category: 'Kanban',
+    description:
+      'Columns need no cards; card text is Markdown (**bold**, *italic*) and `<br>` breaks a line.',
+    source: `kanban
+  Ideas
+    i1[**Bold** and *italic*<br>on two lines]
+  Doing
+  Done`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  USER JOURNEYS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/journey_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Journey: Basic',
+    category: 'Journey',
+    gallery: true,
+    description:
+      'Tasks in columns under section bars, each with a face at a height set by its score (1-5) and a dot per actor; the legend lists the actors.',
+    source: `journey
+    title My working day
+    section Go to work
+      Make tea: 5: Me
+      Go upstairs: 3: Me
+      Do work: 1: Me, Cat
+    section Go home
+      Go downstairs: 5: Me
+      Sit down: 5: Me`,
+  },
+  {
+    title: 'Journey: Many Actors',
+    category: 'Journey',
+    description:
+      'Actors are listed once, sorted, and keep their colour across tasks; a task shows one dot per actor.',
+    source: `journey
+    title Onboarding
+    section Sign up
+      Visit site: 4: Alice, Bob, Carol
+      Create account: 2: Alice
+    section Use
+      First project: 5: Alice, Bob
+      Invite team: 3: Bob, Dave, Eve, Frank, Grace`,
+  },
+  {
+    title: 'Journey: Long Text',
+    category: 'Journey',
+    description:
+      'A long actor name wraps in the legend at 360px and pushes the diagram right; `<br>` breaks a task label.',
+    source: `journey
+    title A very long title for the journey diagram that goes on
+    section A section with a fairly long name here
+      A task with a very long description that wraps over lines: 3: A Very Long Actor Name That Wraps Around The Legend Because It Is Longer Than Others, Short
+      Line<br>break: 4: Me`,
+  },
+  {
+    title: 'Journey: No Section',
+    category: 'Journey',
+    description:
+      'Tasks written before the first section get no section bar; a task with no actors is valid.',
+    source: `journey
+    Task one: 5: Me
+    Task two: 1
+    section S
+      Task three: 3: Me`,
+  },
+  {
+    title: 'Journey: Scores',
+    category: 'Journey',
+    description:
+      'The face is a smile above 3, sad below 3 and straight at 3; scores outside 1-5 move the face off the scale, and a non-numeric score draws a straight mouth.',
+    source: `journey
+    section S
+      zero: 0: Me
+      three: 3: Me
+      five: 5: Me
+      six: 6: Me
+      text: x: Me`,
+  },
+  {
+    title: 'Journey: Repeated Sections',
+    category: 'Journey',
+    description:
+      'A section name written twice gets two bars (and two colours) when another section comes between them (adjacent runs merge into one bar); a section with no tasks draws nothing.',
+    source: `journey
+    section A
+      t1: 1: X
+    section B
+      t2: 2: Y
+    section A
+      t3: 3: X
+    section C
+    section D
+      t4: 4: Z`,
+  },
+  {
+    title: 'Journey: Empty',
+    category: 'Journey',
+    description: 'A bare `journey` is valid: just the arrowed axis.',
+    source: `journey`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  RADAR (parity with mermaid 12.3.0, #2814)
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/radar_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Radar: Basic',
+    category: 'Radar',
+    gallery: true,
+    description:
+      'Two curves over six axes with a circular graticule, a legend in the top right and a fixed 0 to 100 scale.',
+    source: `radar-beta
+  title Grades
+  axis m["Math"], s["Science"], e["English"], h["History"], g["Geography"], a["Art"]
+  curve a["Alice"]{85, 90, 80, 70, 75, 90}
+  curve b["Bob"]{70, 75, 85, 80, 90, 85}
+  max 100
+  min 0`,
+  },
+  {
+    title: 'Radar: Polygon Graticule',
+    category: 'Radar',
+    description:
+      'graticule polygon draws the rings and the curves with straight edges; showLegend false drops the legend.',
+    source: `radar-beta
+  title Skills
+  axis a["Design"], b["Code"], c["Test"], d["Ops"]
+  curve x["Team X"]{4, 5, 3, 2}
+  curve y["Team Y"]{2, 3, 5, 4}
+  graticule polygon
+  ticks 4
+  showLegend false`,
+  },
+  {
+    title: 'Radar: Detailed Entries',
+    category: 'Radar',
+    description:
+      'Entries written as axis: value in any order take their place by axis; an axis name that is not declared is ignored.',
+    source: `radar-beta
+  axis speed, power, range
+  curve one["One"]{range: 3, speed: 8, power: 5}
+  curve two["Two"]{
+    speed: 4,
+    power: 9,
+    range: 6
+  }`,
+  },
+  {
+    title: 'Radar: Min, Max and Ticks',
+    category: 'Radar',
+    description:
+      'Values outside min and max are clipped to the outer ring or the centre; ticks sets the number of rings.',
+    source: `radar-beta:
+  axis a, b, c, d, e
+  curve c1["Clipped"]{0, 20, 150, 60, 100}
+  curve c2["Inside"]{10, 30, 50, 70, 90}
+  min 10
+  max 100
+  ticks 3`,
+  },
+  {
+    title: 'Radar: Many Curves',
+    category: 'Radar',
+    description:
+      'Seven curves cycle through the series colours; a curve with the wrong number of values is listed but not drawn.',
+    source: `radar-beta
+  title Benchmarks
+  axis p["Parse"], l["Layout"], r["Render"], m["Memory"], s["Startup"]
+  curve a{5, 4, 3, 2, 1}
+  curve b{1, 2, 3, 4, 5}
+  curve c{3, 3, 3, 3, 3}
+  curve d{5, 1, 5, 1, 5}
+  curve e{2, 5, 2, 5, 2}
+  curve f{4, 4, 1, 1, 4}
+  curve g["Short"]{1, 2}`,
+  },
+  {
+    title: 'Radar: Wide Characters',
+    category: 'Radar',
+    description: 'CJK labels and an emoji title line up by display width in the text output.',
+    source: `radar-beta
+  title 能力 📊
+  axis a["速度"], b["力量"], c["Range"]
+  curve x["甲"]{3, 4, 5}
+  curve y["乙"]{5, 2, 4}`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  PACKETS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/packet_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Packet: Basic',
+    category: 'Packet',
+    gallery: true,
+    description:
+      'A TCP header: fields in rows of 32 bits, each box labelled with its name and numbered from its first to its last bit; a longer field takes a whole row.',
+    source: `packet
+title TCP Packet
+0-15: "Source Port"
+16-31: "Destination Port"
+32-63: "Sequence Number"
+64-95: "Acknowledgment Number"
+96-99: "Data Offset"
+100-105: "Reserved"
+106: "URG"
+107: "ACK"
+108-111: "Flags"
+112-127: "Window"
+128-159: "Payload"`,
+  },
+  {
+    title: 'Packet: Bit Counts',
+    category: 'Packet',
+    description:
+      '`packet-beta` is the same diagram under its old header, and `+N` sizes a field by its bit count instead of its range.',
+    source: `packet-beta
++8: "Version"
++8: "Type"
++16: "Length"
++1: "F"
++31: "Flags"`,
+  },
+  {
+    title: 'Packet: Fields Across Rows',
+    category: 'Packet',
+    description:
+      'A field that crosses a row boundary is cut at the boundary and repeated, with its label, on every row it touches.',
+    source: `packet
+title Spanning
+0-7: "Header"
+8-39: "Payload that runs across rows"
+40-47: "Checksum"`,
+  },
+  {
+    title: 'Packet: Descending Bit Order',
+    category: 'Packet',
+    gallery: true,
+    description:
+      'The `bitOrder: descending` option (new in Mermaid 12.3.0) mirrors every row to read from its highest bit down to its lowest, the convention for hardware registers; fields keep their width.',
+    source: `%%{init: {"packet": {"bitOrder": "descending", "bitsPerRow": 16}}}%%
+packet
+title Control register
+0: "EN"
+1: "IE"
+2-3: "MODE"
+4-7: "PRESCALE"
+8-15: "RESERVED"
+16-31: "COUNT"`,
+  },
+  {
+    title: 'Packet: Narrow Rows Without Bit Numbers',
+    category: 'Packet',
+    description:
+      'The `bitsPerRow`, `bitWidth`, `rowHeight` and padding options resize the grid, and `showBits: false` drops the numbers over the boxes.',
+    source: `%%{init: {"packet": {"bitsPerRow": 8, "bitWidth": 40, "showBits": false}}}%%
+packet
+0-3: "Nibble"
+4-5: "AB"
+6: "C"
+7: "D"
+8-23: "Two bytes"`,
+  },
+  {
+    title: 'Packet: Comments And Escapes',
+    category: 'Packet',
+    description:
+      'Labels are quoted with either quote mark and take backslash escapes; `%%` starts a comment and `title` may sit between fields.',
+    source: `packet
+%% a comment
+0-3: 'single quotes' %% trailing comment
+4-7: "say \\"hi\\""
+title Escapes
+8-15: "日本語"`,
+  },
+  {
+    title: 'Packet: Empty',
+    category: 'Packet',
+    description:
+      'A bare `packet` is valid and draws nothing; a title alone draws just the title.',
+    source: `packet
+title Nothing yet`,
+  },
+  // ══════════════════════════════════════════════════════════════════════════
+  //  GITGRAPHS
+  //  Every commit has an `id:` because Mermaid draws random ids otherwise
+  //  (the oracle compares label widths). Each source has an ASCII golden of
+  //  the same shape under packages/ascii-renderer/src/__tests__/testdata/*/gitgraph_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'GitGraph: Basic',
+    category: 'GitGraph',
+    gallery: true,
+    description:
+      'Commits, a branch, a checkout and a merge: branches are rows (left to right), arrows run from each commit to its children and the merge commit is a ringed bullet.',
+    source: `gitGraph
+   commit id: "init"
+   commit id: "docs"
+   branch develop
+   checkout develop
+   commit id: "feature-a"
+   commit id: "feature-b"
+   checkout main
+   merge develop id: "release-1"
+   commit id: "hotfix"`,
+  },
+  {
+    title: 'GitGraph: Commit Types And Tags',
+    category: 'GitGraph',
+    description:
+      'NORMAL, REVERSE (crossed) and HIGHLIGHT (square) commits, tags stacked above a commit, and `type:` on a merge changing its symbol.',
+    source: `gitGraph
+   commit id: "start"
+   commit id: "bad-idea" type: REVERSE
+   commit id: "milestone" type: HIGHLIGHT tag: "v1.0"
+   branch feature
+   commit id: "wip" tag: "draft" tag: "review"
+   checkout main
+   merge feature id: "merged" type: HIGHLIGHT tag: "v1.1"`,
+  },
+  {
+    title: 'GitGraph: Cherry Pick',
+    category: 'GitGraph',
+    gallery: true,
+    description:
+      'A cherry-pick copies a commit from another branch onto the current one and tags it `cherry-pick:<id>`; picking a merge commit needs `parent:`.',
+    source: `gitGraph
+   commit id: "ZERO"
+   branch develop
+   commit id: "A"
+   checkout main
+   commit id: "ONE"
+   checkout develop
+   commit id: "B"
+   checkout main
+   merge develop id: "MERGE"
+   branch release
+   checkout release
+   cherry-pick id: "MERGE" parent: "B"
+   cherry-pick id: "A"`,
+  },
+  {
+    title: 'GitGraph: Top To Bottom',
+    category: 'GitGraph',
+    gallery: true,
+    description:
+      '`gitGraph TB:` turns branches into columns and time into rows, with rotated labels left of the line and tags to its right.',
+    source: `gitGraph TB:
+   commit id: "one"
+   branch feature
+   commit id: "two" tag: "v0.1"
+   checkout main
+   commit id: "three"
+   merge feature id: "four"`,
+  },
+  {
+    title: 'GitGraph: Bottom To Top',
+    category: 'GitGraph',
+    description:
+      '`gitGraph BT:` runs time upward, so the first commit is at the bottom and branch labels sit under the lines.',
+    source: `gitGraph BT:
+   commit id: "one"
+   branch feature
+   commit id: "two" tag: "v0.1"
+   checkout main
+   commit id: "three"
+   merge feature id: "four"`,
+  },
+  {
+    title: 'GitGraph: Config And Branch Order',
+    category: 'GitGraph',
+    description:
+      'The `gitGraph` config block: `mainBranchName`, `showCommitLabel`, `rotateCommitLabel`, and `order:` placing branches by number instead of creation order.',
+    source: `%%{init: {"gitGraph": {"mainBranchName": "trunk", "showCommitLabel": true, "rotateCommitLabel": false}}}%%
+gitGraph
+   commit id: "a"
+   branch hotfix order: 2
+   branch feature order: 1
+   checkout feature
+   commit id: "b"
+   checkout hotfix
+   commit id: "c"
+   checkout trunk
+   merge feature id: "m1"
+   merge hotfix id: "m2"`,
+  },
+  {
+    title: 'GitGraph: Parallel Commits',
+    category: 'GitGraph',
+    description:
+      '`parallelCommits: true` positions each commit one step after its closest parent instead of after the previous commit, so commits on different branches line up.',
+    source: `---
+title: Parallel commits
+config:
+  gitGraph:
+    parallelCommits: true
+---
+gitGraph
+   commit id: "a"
+   branch develop
+   commit id: "b"
+   checkout main
+   commit id: "c"
+   checkout develop
+   commit id: "d"
+   checkout main
+   merge develop id: "e"`,
+  },
+  {
+    title: 'GitGraph: Hidden Branches And Labels',
+    category: 'GitGraph',
+    description:
+      '`showBranches: false` drops the branch lines and names; `showCommitLabel: false` drops the commit ids.',
+    source: `%%{init: {"gitGraph": {"showBranches": false, "showCommitLabel": false}}}%%
+gitGraph
+   commit id: "a"
+   branch topic
+   commit id: "b"
+   checkout main
+   commit id: "c" tag: "v2"
+   merge topic id: "d"`,
+  },
+  {
+    title: 'GitGraph: Empty',
+    category: 'GitGraph',
+    description:
+      'A bare `gitGraph` is valid: just the label of the main branch and its line.',
+    source: `gitGraph`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  SANKEY DIAGRAMS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/sankey_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Sankey: Basic',
+    category: 'Sankey',
+    gallery: true,
+    description:
+      'Rows of `source,target,value` become bars joined by ribbons as wide as the flow, shaded from the source colour to the target colour.',
+    source: `sankey-beta
+
+Agricultural 'waste',Bio-conversion,124.729
+Bio-conversion,Liquid,0.597
+Bio-conversion,Solid,26.862
+Bio-conversion,Gas,280.322
+Bio-conversion,Losses,3`,
+  },
+  {
+    title: 'Sankey: Multiple Stages',
+    category: 'Sankey',
+    description:
+      'Flows that skip a stage, merge and split again; the default `justify` alignment pushes nodes with no outgoing flow to the last column.',
+    source: `sankey-beta
+Revenue,Costs,60
+Revenue,Profit,40
+Costs,Salaries,35
+Costs,Hosting,15
+Costs,Marketing,10
+Profit,Reinvested,25
+Profit,Dividends,15
+Reinvested,Hosting,5`,
+  },
+  {
+    title: 'Sankey: Link Colour Source',
+    category: 'Sankey',
+    description:
+      '`linkColor: source` paints every ribbon in its source node colour instead of a gradient.',
+    source: `%%{init: {"sankey": {"linkColor": "source"}}}%%
+sankey-beta
+Visits,Signed up,40
+Visits,Left,60
+Signed up,Paid,12
+Signed up,Free,28`,
+  },
+  {
+    title: 'Sankey: Node Alignment Left',
+    category: 'Sankey',
+    description:
+      '`nodeAlignment: left` keeps each node in the column of its depth, so a sink stays beside its source rather than moving to the end.',
+    source: `%%{init: {"sankey": {"nodeAlignment": "left"}}}%%
+sankey-beta
+A,B,10
+B,C,5
+A,C,2
+A,D,3`,
+  },
+  {
+    title: 'Sankey: Outlined Labels And Units',
+    category: 'Sankey',
+    description:
+      '`labelStyle: outlined` puts labels left of the nodes before the widest column and right of it after, with a halo; `prefix` and `suffix` decorate the values.',
+    source: `%%{init: {"sankey": {"labelStyle": "outlined", "prefix": "$", "suffix": "k"}}}%%
+sankey-beta
+Coal,Power,30
+Gas,Power,50
+Power,Homes,60
+Power,Industry,20`,
+  },
+  {
+    title: 'Sankey: Quoted Names',
+    category: 'Sankey',
+    description:
+      'A field in double quotes may hold commas, and a doubled quote stands for one quote; `showValues: false` leaves the numbers off the labels.',
+    source: `%%{init: {"sankey": {"showValues": false}}}%%
+sankey-beta
+"Sales, EMEA","Region ""North""",30
+"Sales, EMEA",Other,10
+"Region ""North""",Total,30`,
   },
 ]

@@ -1,6 +1,12 @@
 import type { PositionedXYChart } from '@zombie-mermaid/mermaid-parser'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
-import { svgOpenTag, buildStyleBlock, styleOpenTag } from '@zombie-mermaid/core'
+import {
+  svgOpenTag,
+  buildStyleBlock,
+  styleOpenTag,
+  paletteClass,
+  withRootClass,
+} from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
 import { TEXT_BASELINE_SHIFT, estimateTextWidth } from '../styles.ts'
 import {
@@ -86,44 +92,66 @@ export function renderXYChartSvg(
     ...chart.bars.map((b) => b.colorIndex),
     ...chart.lines.map((l) => l.colorIndex),
   )
+  const {
+    style: chartCss,
+    defs: chartDefs,
+    cls,
+  } = chartStyles(chart, interactive, colors.accent, colors.bg, emit.nonce)
   const svgTag = withDataSrc(
-    svgOpenTag(
-      chart.width,
-      chart.height,
-      colors,
-      transparent,
-      title,
-      decorative,
-      undefined,
-      emit.styleAttribute,
-      emit.description,
-    ).replace('<svg ', `<svg data-xychart-colors="${maxColorIdx}" `),
+    withRootClass(
+      svgOpenTag(
+        chart.width,
+        chart.height,
+        colors,
+        transparent,
+        title,
+        decorative,
+        undefined,
+        emit.styleAttribute,
+        emit.description,
+      ).replace('<svg ', `<svg data-xychart-colors="${maxColorIdx}" `),
+      cls,
+    ),
     embedSource,
   )
   parts.push(svgTag)
   parts.push(buildStyleBlock(font, false, emit.nonce, emit.bodyFont))
 
-  // Chart-specific styles + gradient defs
-  const { style: chartCss, defs: chartDefs } = chartStyles(
-    chart,
-    interactive,
-    colors.accent,
-    colors.bg,
-    emit.nonce,
-  )
   parts.push(chartCss)
   if (chartDefs) parts.push(chartDefs)
 
-  // 1. Axis lines and tick marks
+  // 1. Axis lines and tick marks. `xyChart.xAxis` is mermaid's category axis
+  // whatever the orientation; horizontal charts hold it in `yAxis`.
+  const cfg = chart.config
+  const catCfg = cfg?.xAxis
+  const valCfg = cfg?.yAxis
+  const [leftCfg, topBottomCfg] = chart.horizontal
+    ? [catCfg, valCfg]
+    : [valCfg, catCfg]
+  const showLeft = leftCfg?.showAxisLine !== false
+  const showFar = topBottomCfg?.showAxisLine !== false
   const { plotArea } = chart
   const axisY = plotArea.y + plotArea.height
   // Horizontal charts put the value axis along the top, as mermaid does.
-  parts.push(
-    chart.horizontal
-      ? `<path d="M${r(plotArea.x)},${r(axisY)} V${r(plotArea.y)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`
-      : `<path d="M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(plotArea.x + plotArea.width)}" class="xychart-axis"/>`,
-  )
-  for (const t of [...chart.xAxis.ticks, ...chart.yAxis.ticks]) {
+  const right = plotArea.x + plotArea.width
+  const farY = chart.horizontal ? plotArea.y : axisY
+  const axisD =
+    showLeft && showFar
+      ? chart.horizontal
+        ? `M${r(plotArea.x)},${r(axisY)} V${r(plotArea.y)} H${r(right)}`
+        : `M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(right)}`
+      : showLeft
+        ? `M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)}`
+        : showFar
+          ? `M${r(plotArea.x)},${r(farY)} H${r(right)}`
+          : ''
+  if (axisD) parts.push(`<path d="${axisD}" class="xychart-axis"/>`)
+  const xTickCfg = chart.horizontal ? valCfg : catCfg
+  const yTickCfg = chart.horizontal ? catCfg : valCfg
+  for (const t of [
+    ...(xTickCfg?.showTick === false ? [] : chart.xAxis.ticks),
+    ...(yTickCfg?.showTick === false ? [] : chart.yAxis.ticks),
+  ]) {
     parts.push(
       `<path d="M${r(t.x)},${r(t.y)} L${r(t.tx)},${r(t.ty)}" class="xychart-axis"/>`,
     )
@@ -270,7 +298,7 @@ export function renderXYChartSvg(
   }
 
   // 5. Axis labels
-  for (const tick of chart.xAxis.ticks) {
+  for (const tick of xTickCfg?.showLabel === false ? [] : chart.xAxis.ticks) {
     if (tick.label === '') continue // Dropped by the layout's overlap step
     parts.push(
       `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
@@ -278,7 +306,7 @@ export function renderXYChartSvg(
         `dy="${TEXT_BASELINE_SHIFT}" class="xychart-label">${escapeXml(tick.label)}</text>`,
     )
   }
-  for (const tick of chart.yAxis.ticks) {
+  for (const tick of yTickCfg?.showLabel === false ? [] : chart.yAxis.ticks) {
     parts.push(
       `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
         `font-size="${CHART_FONT.labelSize}" font-weight="${CHART_FONT.labelWeight}" ` +
@@ -337,7 +365,7 @@ function chartStyles(
   themeAccent?: string,
   bgColor?: string,
   nonce?: string,
-): { style: string; defs: string } {
+): { style: string; defs: string; cls: string } {
   const accentHex = themeAccent ?? CHART_ACCENT_FALLBACK
 
   // Collect all unique global color indices from bars + lines
@@ -386,8 +414,11 @@ function chartStyles(
   .xychart-dot-group:hover .xychart-tip { opacity: 1; }`
     : ''
 
+  const cls = paletteClass(colorVarDefs)
   const colorVarsBlock =
-    colorVarDefs.length > 0 ? `\n  svg {\n${colorVarDefs.join('\n')}\n  }` : ''
+    colorVarDefs.length > 0
+      ? `\n  .${cls} {\n${colorVarDefs.join('\n')}\n  }`
+      : ''
 
   const style = `${styleOpenTag(nonce)}
   .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
@@ -400,7 +431,7 @@ function chartStyles(
 ${seriesRules.join('\n')}${tipRules}
 </style>`
 
-  return { style, defs: '' }
+  return { style, defs: '', cls }
 }
 
 // Horizontal charts plot (value, category) and mermaid draws straight segments

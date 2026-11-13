@@ -495,6 +495,15 @@ describe('runRender – max-width (hard error, #2057)', () => {
     expect(stdout).toBe('')
   })
 
+  it('rejects --layout mermaid-wide with --max-width instead of ignoring the limit', async () => {
+    const { message, stdout } = await failure(
+      { ascii: true, maxWidth: 40, layout: 'mermaid-wide' },
+      CHAIN,
+    )
+    expect(message).toContain('mermaid-wide has no width cap')
+    expect(stdout).toBe('')
+  })
+
   it('does not throw when ASCII output fits within --max-width', async () => {
     const mockStdout = createMockStdout()
     await runRender(

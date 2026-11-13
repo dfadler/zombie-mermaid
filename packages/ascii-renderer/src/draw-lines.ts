@@ -55,6 +55,15 @@ const LINE_CHARS = {
   },
 } as const
 
+/** The horizontal stroke glyph of an edge style (`┄` dotted, `━` thick). */
+export function horizontalStroke(
+  style: AsciiEdgeStyle,
+  useAscii: boolean,
+): string {
+  const h = LINE_CHARS[style].h
+  return useAscii ? h.ascii : h.unicode
+}
+
 /**
  * Draw a line between two drawing coordinates using orthogonal Manhattan routing.
  * Returns the list of coordinates that were drawn on.

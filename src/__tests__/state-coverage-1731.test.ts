@@ -81,7 +81,9 @@ describe('state concurrency regions: edge cases', () => {
     expect(nested).toContain('data-id="In"')
     expect(nested.match(/subgraph-region/g)).toHaveLength(2)
     expect(r1!.region && r2!.region).toBe(true)
-    expect(r1!.x).toBeLessThan(r2!.x)
+    // Two equal regions stack in one column, as in mermaid@12.3.0 (#2962).
+    expect(r1!.y).toBeLessThan(r2!.y)
+    expect(r1!.x).toBeCloseTo(r2!.x, 0)
   })
 
   it('a long dash run is still a separator, and a transition with a dashed label is not', () => {
@@ -142,13 +144,13 @@ describe('state notes: edge cases', () => {
     const g = parseMermaid(
       'stateDiagram-v2\n  note left of A\n    x --> y\n    state z <<fork>>\n  END NOTE\n  A --> B',
     )
-    expect(g.nodes.get('A----note-1')!.label).toBe('x --> y\nstate z <<fork>>')
+    expect(g.nodes.get('A----note-0')!.label).toBe('x --> y\nstate z <<fork>>')
     expect(g.nodes.has('x')).toBe(false)
     expect(
       edges(
         'stateDiagram-v2\n  note left of A\n    x --> y\n  end note\n  A --> B',
       ),
-    ).toEqual(['A>A----note-1', 'A>B'])
+    ).toEqual(['A----note-0>A', 'A>B'])
   })
 
   it('renders a note in ASCII-only mode', () => {

@@ -133,6 +133,9 @@ function findViolation(
       const lo = Math.min(from, to)
       const hi = Math.max(from, to)
       for (const sg of graph.subgraphs) {
+        // A self-loop belongs inside its own frame, whose wall is drawn round
+        // the loop's hook (#2913): chasing that wall would widen without end.
+        if (edge.from === edge.to && isRelated(sg, edge)) continue
         const box = clusterGridBox(sg)
         if (!box) continue
         const wallLo = vertical ? sg.minX : sg.minY
@@ -224,7 +227,7 @@ function hasTitleCollision(graph: AsciiGraph, sg: AsciiSubgraph): boolean {
   const width = sg.maxX - sg.minX
   const lines = splitLines(sg.name)
   for (let i = 0; i < lines.length; i++) {
-    const rowY = sg.minY + 1 + i
+    const rowY = sg.titleBelow ? sg.maxY - lines.length + i : sg.minY + 1 + i
     const strokes = new Set<number>()
     for (const edge of graph.edges) {
       for (let k = 1; k < edge.path.length; k++) {

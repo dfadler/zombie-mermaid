@@ -1,0 +1,7 @@
+  Actors: Me
+
+    :)  5  Task one    Me
+    :(  1  Task two
+
+  [S]
+    :|  3  Task three  Me

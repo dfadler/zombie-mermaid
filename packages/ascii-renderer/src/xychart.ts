@@ -27,7 +27,12 @@ import type {
 } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { mkCanvas, mkRoleCanvas, write } from './canvas.ts'
-import { niceTickValues, splitStatements } from '@zombie-mermaid/core'
+import {
+  collapseFlatRange,
+  extractInitConfig,
+  niceTickValues,
+  splitStatements,
+} from '@zombie-mermaid/core'
 
 // ============================================================================
 // Constants
@@ -113,7 +118,10 @@ export function renderXYChartAscii(
   theme: AsciiTheme,
 ): string {
   const lines = splitStatements(text)
-  const chart = parseXYChart(lines)
+  const chart = parseXYChart(
+    lines,
+    extractInitConfig(text.split(/\r\n?|\n/)).xyChart,
+  )
   const ch = config.useAscii ? ASC : UNI
 
   if (chart.horizontal) {
@@ -140,55 +148,81 @@ function renderVertical(
   // actually undefined for parsed input. That guarantee lives in a
   // different module, so narrow it here explicitly instead of trusting it
   // silently across the boundary.
-  const yRange = chart.yAxis.range
-  if (!yRange) {
-    /* v8 ignore next */
+  const parsedRange = chart.yAxis.range
+  /* v8 ignore next 3 */
+  if (!parsedRange) {
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
+  // Flat data is one mid-axis tick, as in Mermaid and the SVG (#2727).
+  const yRange = collapseFlatRange(
+    parsedRange,
+    chart.series.flatMap((s) => s.data),
+  )
   const plotW = Math.max(PLOT_WIDTH, dataCount * 6)
-  const plotH = PLOT_HEIGHT
-  const allTicks = niceTickValues(yRange.min, yRange.max)
-  const allLabels = formatTickLabels(allTicks)
-  // The plot has fewer rows than ticks can need (d3 gives ~10 intervals over
-  // plotH rows), so adjacent ticks can round onto neighbouring rows. Keep
-  // every Nth tick, with the smallest N that leaves an unlabeled row between
-  // labels, so they land on evenly spaced rows (#2310).
-  const tickRow = (v: number): number =>
-    Math.round(((v - yRange.min) / (yRange.max - yRange.min)) * (plotH - 1))
-  let tickStride = 1
-  while (
-    allTicks.some(
-      (t, i) =>
-        i >= tickStride && tickRow(t) - tickRow(allTicks[i - tickStride]!) < 2,
-    )
-  ) {
-    tickStride++
+  const yTicks = niceTickValues(yRange.min, yRange.max)
+  const yLabels = formatTickLabels(yTicks)
+  // Mermaid labels every tick. A label needs a row and a blank row after it, so
+  // n ticks need 2 * (n - 1) + 1 rows; the plot grows to that instead of
+  // dropping ticks (#2310). d3 gives at most ~21 ticks, so at most ~41 rows.
+  const plotH = Math.max(PLOT_HEIGHT, 2 * (yTicks.length - 1) + 1)
+  const valueToRow = (v: number): number => {
+    const t =
+      yRange.max > yRange.min
+        ? (v - yRange.min) / (yRange.max - yRange.min)
+        : 0.5
+    return Math.round(t * (plotH - 1))
   }
-  const yTicks = allTicks.filter((_, i) => i % tickStride === 0)
-  const yLabels = allLabels.filter((_, i) => i % tickStride === 0)
   const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
 
   const catLabels = getCategoryLabels(chart, dataCount)
-  const bandW = widenBandForLabels(catLabels, Math.floor(plotW / dataCount))
+  const xr = chart.xAxis.categories ? undefined : chart.xAxis.range
+  const xTicks = xr ? niceTickValues(xr.min, xr.max) : undefined
+  const xLabels = xTicks ? formatTickLabels(xTicks) : catLabels
+  const wordBandW = widenBandForLabels(catLabels, Math.floor(plotW / dataCount))
 
   // Canvas dimensions
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
   const hasYTitle = !!chart.yAxis.title
-  const hasLegend = chart.series.length > 1
   const titleRow = hasTitle ? 0 : -1
-  const plotTop = (hasTitle ? 2 : 0) + (hasLegend ? 1 : 0)
+  const plotTop = hasTitle ? 2 : 0
   // Reserve a column for the rotated y-axis title (rendered top-to-bottom,
   // one character per row, mirroring how mermaid.js rotates it 90deg along
   // the left edge) plus a 1-column gap before the tick-value gutter.
   const yTitleWidth = hasYTitle ? 2 : 0
   const plotLeft = yTitleWidth + yGutter + 1 // +1 for axis character
+  // Column of the label for each x tick at band width `w`. A numeric x range
+  // is a linear axis (#2553): a tick at every nice value, placed by value across
+  // the points' span, like mermaid and the SVG.
+  const centersOf = (w: number): number[] => {
+    const at = (i: number): number => plotLeft + Math.floor(w * (i + 0.5))
+    if (!xTicks) return catLabels.map((_, i) => at(i))
+    const first = at(0)
+    return xTicks.map(
+      (v) =>
+        first +
+        Math.round(
+          ((v - xr!.min) / (xr!.max - xr!.min || 1)) *
+            (at(dataCount - 1) - first),
+        ),
+    )
+  }
+  // Mermaid prints every x tick; widen the bands until none is thinned (#2310).
+  // Tick spacing grows with every step, so this ends once the labels clear;
+  // one point has a single span of zero width, which no widening can spread.
+  let bandW = wordBandW
+  while (
+    xTicks &&
+    dataCount > 1 &&
+    !thinLabels(xLabels, centersOf(bandW)).every(Boolean)
+  ) {
+    bandW++
+  }
   const totalW = plotLeft + bandW * dataCount + 2
   const xAxisRow = plotTop + plotH
   const xLabelRow = xAxisRow + 1
   const xTitleRow = hasXTitle ? xLabelRow + 1 : -1
-  const totalH =
-    xLabelRow + 1 + (hasXTitle ? 1 : 0) + (hasLegend && !hasTitle ? 0 : 0)
+  const totalH = xLabelRow + 1 + (hasXTitle ? 1 : 0)
 
   // Create canvas
   const canvas = createCanvas(totalW, totalH)
@@ -199,10 +233,6 @@ function renderVertical(
   const seriesColors = getSeriesColors(chart.series.length, theme)
 
   // Scales
-  const valueToRow = (v: number): number => {
-    const t = (v - yRange.min) / (yRange.max - yRange.min || 1)
-    return Math.round(t * (plotH - 1))
-  }
   const bandCenter = (i: number): number =>
     plotLeft + Math.floor(bandW * (i + 0.5))
 
@@ -215,21 +245,6 @@ function renderVertical(
       Math.floor(totalW / 2 - chart.title.length / 2),
       chart.title,
       'text',
-    )
-  }
-
-  // 2. Legend
-  if (hasLegend) {
-    const legendRow = hasTitle ? 1 : 0
-    drawLegend(
-      canvas,
-      roles,
-      hexColors,
-      chart,
-      legendRow,
-      totalW,
-      ch,
-      seriesColors,
     )
   }
 
@@ -266,20 +281,7 @@ function renderVertical(
   }
   // A numeric x range is a linear axis (#2553): a tick at every nice value,
   // placed by value across the points' span, like mermaid and the SVG.
-  const xr = chart.xAxis.categories ? undefined : chart.xAxis.range
-  const xTicks = xr ? niceTickValues(xr.min, xr.max) : undefined
-  const xLabels = xTicks ? formatTickLabels(xTicks) : catLabels
-  const first = bandCenter(0)
-  const catCenters = xTicks
-    ? xTicks.map(
-        (v) =>
-          first +
-          Math.round(
-            ((v - xr!.min) / (xr!.max - xr!.min || 1)) *
-              (bandCenter(dataCount - 1) - first),
-          ),
-      )
-    : catLabels.map((_, i) => bandCenter(i))
+  const catCenters = centersOf(bandW)
   const catShown = thinLabels(xLabels, catCenters)
   for (let i = 0; i < xLabels.length; i++) {
     const cx = catCenters[i]!
@@ -348,7 +350,8 @@ function renderVertical(
     // a later series drawn on top of an earlier, taller-or-shorter one.
     const usable = Math.max(1, bandW - 2)
     const singleBarW = Math.max(1, Math.min(usable, 8))
-    const baseRow = valueToRow(Math.max(0, yRange.min))
+    // Mermaid 12.3.0 draws every bar from the axis start, whatever the signs.
+    const baseRow = 0
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
       const entry = barEntries[bIdx]!
@@ -424,28 +427,65 @@ function renderHorizontal(
   // See the matching comment in renderVertical: the parser always derives a
   // y-axis range before returning, but that guarantee lives in a different
   // module, so it's narrowed here explicitly rather than trusted silently.
-  const yRange = chart.yAxis.range
-  if (!yRange) {
-    /* v8 ignore next */
+  const parsedRange = chart.yAxis.range
+  /* v8 ignore next 3 */
+  if (!parsedRange) {
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
+  // Flat data is one mid-axis tick, as in Mermaid and the SVG (#2727).
+  const yRange = collapseFlatRange(
+    parsedRange,
+    chart.series.flatMap((s) => s.data),
+  )
   const valueTicks = niceTickValues(yRange.min, yRange.max)
   const valueLabels = formatTickLabels(valueTicks)
-  const catLabels = getCategoryLabels(chart, dataCount)
+  // A numeric x range is a linear axis (#2553), as in the vertical chart: a tick
+  // at every nice value, the first point at the bottom (mermaid runs the
+  // numbers up the left edge) and the last at the top.
+  const xr = chart.xAxis.categories ? undefined : chart.xAxis.range
+  const catTicks = xr ? niceTickValues(xr.min, xr.max) : undefined
+  const catLabels = catTicks
+    ? formatTickLabels(catTicks)
+    : getCategoryLabels(chart, dataCount)
   const catGutter = Math.max(...catLabels.map((l) => l.length)) + 1
 
-  const plotW = Math.max(PLOT_WIDTH, 40)
+  // Mermaid prints every value tick: widen the plot until none is thinned
+  // (#2310). Ticks sit (plotW - 1) / (n - 1) columns apart, so this ends.
+  const colOf = (v: number, w: number): number =>
+    Math.round(
+      (yRange.max > yRange.min
+        ? (v - yRange.min) / (yRange.max - yRange.min)
+        : 0.5) *
+        (w - 1),
+    )
+  let plotW = PLOT_WIDTH
+  while (
+    !thinLabels(
+      valueLabels,
+      valueTicks.map((v) => colOf(v, plotW)),
+    ).every(Boolean)
+  ) {
+    plotW++
+  }
   const bandH = Math.max(2, Math.floor(PLOT_HEIGHT / dataCount))
-  const plotH = bandH * dataCount
+  // One row and a blank row per tick, so no tick is dropped (#2310).
+  const plotH = Math.max(
+    bandH * dataCount,
+    2 * ((catTicks?.length ?? 1) - 1) + 1,
+  )
 
   const hasTitle = !!chart.title
   const hasYTitle = !!chart.yAxis.title
-  const hasLegend = chart.series.length > 1
-  const plotTop = (hasTitle ? 2 : 0) + (hasLegend ? 1 : 0)
-  const plotLeft = catGutter + 1
+  // The category axis runs down the left, so its title is the rotated one
+  // (one character per row, like the y title of a vertical chart).
+  const catTitleWidth = chart.xAxis.title ? 2 : 0
+  // Mermaid puts the value axis above the plot: [axis title], tick labels,
+  // then the axis line, then the bars (#2719).
+  const xAxisRow = (hasTitle ? 2 : 0) + (hasYTitle ? 1 : 0) + 1
+  const plotTop = xAxisRow + 1
+  const plotLeft = catTitleWidth + catGutter + 1
   const totalW = plotLeft + plotW + 2
-  const totalH = plotTop + plotH + 2 + (hasYTitle ? 1 : 0)
-  const xAxisRow = plotTop + plotH
+  const totalH = plotTop + plotH
 
   const canvas = createCanvas(totalW, totalH)
   const roles = createRoleCanvas(totalW, totalH)
@@ -456,10 +496,19 @@ function renderHorizontal(
 
   // Value scale (horizontal)
   const valueToCol = (v: number): number => {
-    const t = (v - yRange.min) / (yRange.max - yRange.min || 1)
+    const t =
+      yRange.max > yRange.min
+        ? (v - yRange.min) / (yRange.max - yRange.min)
+        : 0.5
     return plotLeft + Math.round(t * (plotW - 1))
   }
-  const bandMid = (i: number): number => plotTop + Math.floor(bandH * (i + 0.5))
+  // Row of a position along the linear category axis (0 = first point, bottom).
+  const rowAt = (frac: number): number =>
+    plotTop + plotH - 1 - Math.round(frac * (plotH - 1))
+  const bandMid = (i: number): number =>
+    catTicks
+      ? rowAt(dataCount > 1 ? i / (dataCount - 1) : 0)
+      : plotTop + Math.floor(bandH * (i + 0.5))
 
   // Title
   if (chart.title) {
@@ -473,35 +522,32 @@ function renderHorizontal(
     )
   }
 
-  // Legend
-  if (hasLegend) {
-    const legendRow = hasTitle ? 1 : 0
-    drawLegend(
-      canvas,
-      roles,
-      hexColors,
-      chart,
-      legendRow,
-      totalW,
-      ch,
-      seriesColors,
-    )
-  }
-
   // Y-axis (category axis on left)
   for (let r = plotTop; r < plotTop + plotH; r++) {
     set(canvas, roles, r, plotLeft - 1, ch.vLine, 'border')
   }
   set(canvas, roles, xAxisRow, plotLeft - 1, ch.origin, 'border')
 
-  for (let i = 0; i < dataCount; i++) {
-    const my = bandMid(i)
+  for (let i = 0; i < catLabels.length; i++) {
+    const my = catTicks
+      ? rowAt((catTicks[i]! - xr!.min) / (xr!.max - xr!.min || 1))
+      : bandMid(i)
     const label = catLabels[i]!
-    const labelStart = catGutter - label.length
+    const labelStart = catTitleWidth + catGutter - label.length
     writeText(canvas, roles, my, Math.max(0, labelStart), label, 'text')
   }
 
-  // X-axis (value axis on bottom)
+  // Category-axis title, rotated down the left edge and centred on the plot.
+  if (chart.xAxis.title) {
+    const title = chart.xAxis.title
+    const startRow =
+      plotTop + Math.max(0, Math.floor((plotH - title.length) / 2))
+    for (let i = 0; i < title.length; i++) {
+      set(canvas, roles, startRow + i, 0, title[i]!, 'text')
+    }
+  }
+
+  // X-axis (value axis on top)
   for (let c = plotLeft; c < plotLeft + plotW; c++) {
     set(canvas, roles, xAxisRow, c, ch.hLine, 'border')
   }
@@ -523,7 +569,7 @@ function renderHorizontal(
     writeText(
       canvas,
       roles,
-      xAxisRow + 1,
+      xAxisRow - 1,
       cx - Math.floor(label.length / 2),
       label,
       'text',
@@ -536,7 +582,7 @@ function renderHorizontal(
     writeText(
       canvas,
       roles,
-      totalH - 1,
+      xAxisRow - 2,
       Math.floor(totalW / 2 - title.length / 2),
       title,
       'text',
@@ -567,7 +613,7 @@ function renderHorizontal(
     // being split into grouped sub-rows, so a later series' bar paints over
     // an earlier one.
     const singleBarH = 1
-    const baseCol = valueToCol(Math.max(0, yRange.min))
+    const baseCol = plotLeft
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
       const entry = barEntries[bIdx]!
@@ -617,14 +663,121 @@ function renderHorizontal(
 }
 
 // ============================================================================
-// Staircase line drawing — vertical charts
+// Line drawing — fine staircase
 //
-// Connects data points with flat segments (─) at each value's row,
-// vertical segments (│) between rows, and rounded corners (╭╮╰╯)
-// at transitions. The vertical step happens at the midpoint column
-// between adjacent data points.
+// A line series is drawn as a staircase with one small step per category
+// row/column (corners ╭╮╰╯ at every step), so it tracks the diagonal the SVG
+// draws instead of one big right-angle jump between data points. Works with
+// plain box-drawing characters only, so there is no font dependency and
+// `useAscii` gets the same shape with `+` corners.
+//
+// The path is rasterized from the polyline: each category cell (a row for
+// horizontal charts, a column for vertical ones) covers the span of the
+// polyline inside it. Neighbouring cells connect at the value where the
+// polyline crosses the cell boundary. Each cell's glyph comes from which of
+// its four sides the path touches.
 // ============================================================================
 
+const UP = 1
+const DOWN = 2
+const LEFT = 4
+const RIGHT = 8
+
+type LineChars = typeof UNI | typeof ASC
+
+/**
+ * Glyph for a cell whose path touches the sides in `mask`. The path visits each
+ * category cell once, so a cell is a straight run, an end, or a single corner;
+ * it never touches three sides.
+ */
+function stepGlyph(mask: number, ch: LineChars): string {
+  const vert = (mask & (UP | DOWN)) !== 0
+  const horiz = (mask & (LEFT | RIGHT)) !== 0
+  if (vert && !horiz) return ch.vLine
+  if (horiz && !vert) return ch.hLine
+  const down = (mask & DOWN) !== 0
+  const right = (mask & RIGHT) !== 0
+  if (down) return right ? ch.cornerTL : ch.cornerTR // ╭ ╮
+  return right ? ch.cornerBL : ch.cornerBR // ╰ ╯
+}
+
+/**
+ * Draw the polyline through `points` (display cell coordinates) as a fine
+ * staircase. `major` is the axis the categories run along (`'row'` for
+ * horizontal charts, `'col'` for vertical); the points must increase along it.
+ */
+function drawStepLine(
+  points: { row: number; col: number }[],
+  major: 'row' | 'col',
+  ch: LineChars,
+  drawAt: (row: number, col: number, char: string) => void,
+): void {
+  const pts = points.map((pt) =>
+    major === 'row' ? { t: pt.row, v: pt.col } : { t: pt.col, v: pt.row },
+  )
+  const first = pts[0]!
+  const last = pts[pts.length - 1]!
+
+  // Polyline value (minor axis) at major position t.
+  const valueAt = (t: number): number => {
+    let i = 0
+    while (i < pts.length - 2 && t > pts[i + 1]!.t) i++
+    const p = pts[i]!
+    const q = pts[i + 1]!
+    return p.v + ((q.v - p.v) * (t - p.t)) / (q.t - p.t)
+  }
+
+  const masks = new Map<string, number>()
+  const cell = (t: number, v: number) =>
+    major === 'row' ? { row: t, col: v } : { row: v, col: t }
+  // Connect two adjacent cells (they differ by one step on exactly one axis).
+  const link = (t1: number, v1: number, t2: number, v2: number) => {
+    const a = cell(t1, v1)
+    const b = cell(t2, v2)
+    const [fromA, fromB] =
+      b.row !== a.row
+        ? b.row > a.row
+          ? [DOWN, UP]
+          : [UP, DOWN]
+        : b.col > a.col
+          ? [RIGHT, LEFT]
+          : [LEFT, RIGHT]
+    const ka = `${a.row},${a.col}`
+    const kb = `${b.row},${b.col}`
+    masks.set(ka, (masks.get(ka) ?? 0) | fromA)
+    masks.set(kb, (masks.get(kb) ?? 0) | fromB)
+  }
+
+  // Column (minor value) where the path crosses from cell k into k + 1: where
+  // the polyline crosses the boundary, except below a peak or trough, where it
+  // steps down at the tip so the line turns there instead of folding back over
+  // itself.
+  const crossing = (k: number): number => {
+    const i = pts.findIndex((pt) => pt.t === k)
+    if (i > 0 && i < pts.length - 1) {
+      const rise = pts[i]!.v - pts[i - 1]!.v
+      const fall = pts[i + 1]!.v - pts[i]!.v
+      if (rise * fall < 0) return Math.round(pts[i]!.v)
+    }
+    return Math.round(valueAt(k + 0.5))
+  }
+
+  for (let k = first.t; k <= last.t; k++) {
+    const enter = k === first.t ? Math.round(first.v) : crossing(k - 1)
+    const exit = k === last.t ? Math.round(last.v) : crossing(k)
+    const vMin = Math.min(enter, exit)
+    const vMax = Math.max(enter, exit)
+    for (let v = vMin; v < vMax; v++) link(k, v, k, v + 1)
+    if (k < last.t) link(k, exit, k + 1, exit)
+  }
+
+  for (const [key, mask] of masks) {
+    const [row, col] = key.split(',').map(Number) as [number, number]
+    drawAt(row, col, stepGlyph(mask, ch))
+  }
+}
+
+// Vertical charts: categories are columns, values are rows.
 function drawStaircaseLine(
   canvas: Canvas,
   roles: RoleCanvas,
@@ -635,114 +788,35 @@ function drawStaircaseLine(
   plotH: number,
   plotLeft: number,
   plotTotalW: number,
-  ch: typeof UNI | typeof ASC,
+  ch: LineChars,
   hexCanvas?: HexCanvas,
   hexColor?: string | null,
 ): void {
   if (data.length === 0) return
 
-  const points = data.map((v, i) => ({
-    col: bandCenter(i),
-    row: valueToRow(v),
-  }))
-
-  // Helper to draw on the canvas (row 0 = bottom, displayed inverted)
-  const drawAt = (col: number, row: number, char: string) => {
-    const displayRow = plotTop + (plotH - 1 - row)
-    if (displayRow >= 0 && col >= plotLeft && col < plotLeft + plotTotalW) {
-      set(canvas, roles, displayRow, col, char, 'arrow', hexCanvas, hexColor)
+  // Value rows count up from the bottom; the canvas row is inverted.
+  const toDisplayRow = (row: number) => plotTop + (plotH - 1 - row)
+  const drawAt = (row: number, col: number, char: string) => {
+    if (row >= 0 && col >= plotLeft && col < plotLeft + plotTotalW) {
+      set(canvas, roles, row, col, char, 'arrow', hexCanvas, hexColor)
     }
   }
+
+  const points = data.map((v, i) => ({
+    col: bandCenter(i),
+    row: toDisplayRow(valueToRow(v)),
+  }))
 
   // Single point: just draw a flat segment
   if (points.length === 1) {
-    drawAt(points[0]!.col, points[0]!.row, ch.hLine)
+    drawAt(points[0]!.row, points[0]!.col, ch.hLine)
     return
   }
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const p1 = points[i]!
-    const p2 = points[i + 1]!
-
-    if (p1.row === p2.row) {
-      // Flat: draw ─ across
-      for (let c = p1.col; c <= p2.col; c++) {
-        drawAt(c, p1.row, ch.hLine)
-      }
-      continue
-    }
-
-    const midCol = Math.round((p1.col + p2.col) / 2)
-    const goingUp = p2.row > p1.row
-
-    // 1. Flat at p1's row from p1.col to midCol-1
-    for (let c = p1.col; c < midCol; c++) {
-      drawAt(c, p1.row, ch.hLine)
-    }
-
-    // 2. Corner at (midCol, p1.row)
-    //    goingUp:   ─ from LEFT, │ going UP   → LEFT+TOP  = ╯ (cornerBR)
-    //    goingDown: ─ from LEFT, │ going DOWN  → LEFT+BOT  = ╮ (cornerTR)
-    if (goingUp) {
-      drawAt(midCol, p1.row, ch.cornerBR) // ╯
-    } else {
-      drawAt(midCol, p1.row, ch.cornerTR) // ╮
-    }
-
-    // 3. Vertical from p1.row to p2.row (exclusive of endpoints)
-    const minRow = Math.min(p1.row, p2.row)
-    const maxRow = Math.max(p1.row, p2.row)
-    for (let row = minRow + 1; row < maxRow; row++) {
-      drawAt(midCol, row, ch.vLine)
-    }
-
-    // 4. Corner at (midCol, p2.row)
-    //    goingUp:   │ from BOTTOM, ─ going RIGHT → BOT+RIGHT = ╭ (cornerTL)
-    //    goingDown: │ from TOP, ─ going RIGHT     → TOP+RIGHT = ╰ (cornerBL)
-    if (goingUp) {
-      drawAt(midCol, p2.row, ch.cornerTL) // ╭
-    } else {
-      drawAt(midCol, p2.row, ch.cornerBL) // ╰
-    }
-
-    // 5. Flat at p2's row from midCol+1 to p2.col
-    for (let c = midCol + 1; c <= p2.col; c++) {
-      drawAt(c, p2.row, ch.hLine)
-    }
-
-    // Leading flat for first segment (before p1.col)
-    if (i === 0) {
-      const leadStart = Math.max(
-        plotLeft,
-        p1.col - Math.floor((p2.col - p1.col) / 4),
-      )
-      for (let c = leadStart; c < p1.col; c++) {
-        drawAt(c, p1.row, ch.hLine)
-      }
-    }
-
-    // Trailing flat for last segment (after p2.col)
-    if (i === points.length - 2) {
-      const trailEnd = Math.min(
-        plotLeft + plotTotalW - 1,
-        p2.col + Math.floor((p2.col - p1.col) / 4),
-      )
-      for (let c = p2.col + 1; c <= trailEnd; c++) {
-        drawAt(c, p2.row, ch.hLine)
-      }
-    }
-  }
+  drawStepLine(points, 'col', ch, drawAt)
 }
 
-// ============================================================================
-// Staircase line drawing — horizontal charts
-//
-// Same staircase approach but with axes swapped:
-// data values map to columns (horizontal position) and categories map to
-// rows (vertical position). Flat segments are vertical (│), transitions
-// are horizontal (─), with the same rounded corners.
-// ============================================================================
-
+// Horizontal charts: categories are rows, values are columns.
 function drawHorizontalStaircaseLine(
   canvas: Canvas,
   roles: RoleCanvas,
@@ -753,16 +827,19 @@ function drawHorizontalStaircaseLine(
   plotH: number,
   plotLeft: number,
   plotW: number,
-  ch: typeof UNI | typeof ASC,
+  ch: LineChars,
   hexCanvas?: HexCanvas,
   hexColor?: string | null,
 ): void {
   if (data.length === 0) return
 
-  const points = data.map((v, i) => ({
-    row: bandMid(i),
-    col: valueToCol(v),
-  }))
+  // Rows must increase along the path; a linear axis runs bottom to top.
+  const points = data
+    .map((v, i) => ({
+      row: bandMid(i),
+      col: valueToCol(v),
+    }))
+    .sort((a, b) => a.row - b.row)
 
   const drawAt = (row: number, col: number, char: string) => {
     if (
@@ -780,123 +857,7 @@ function drawHorizontalStaircaseLine(
     return
   }
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const p1 = points[i]!
-    const p2 = points[i + 1]!
-
-    if (p1.col === p2.col) {
-      // Same value: draw │ down
-      for (let r = p1.row; r <= p2.row; r++) {
-        drawAt(r, p1.col, ch.vLine)
-      }
-      continue
-    }
-
-    const midRow = Math.round((p1.row + p2.row) / 2)
-    const goingRight = p2.col > p1.col
-
-    // 1. Vertical at p1's col from p1.row to midRow-1
-    for (let r = p1.row; r < midRow; r++) {
-      drawAt(r, p1.col, ch.vLine)
-    }
-
-    // 2. Corner at (midRow, p1.col)
-    //    goingRight: │ from TOP, ─ going RIGHT → TOP+RIGHT = ╰ (cornerBL)
-    //    goingLeft:  │ from TOP, ─ going LEFT  → TOP+LEFT  = ╯ (cornerBR)
-    if (goingRight) {
-      drawAt(midRow, p1.col, ch.cornerBL) // ╰
-    } else {
-      drawAt(midRow, p1.col, ch.cornerBR) // ╯
-    }
-
-    // 3. Horizontal from p1.col to p2.col (exclusive)
-    const minCol = Math.min(p1.col, p2.col)
-    const maxCol = Math.max(p1.col, p2.col)
-    for (let c = minCol + 1; c < maxCol; c++) {
-      drawAt(midRow, c, ch.hLine)
-    }
-
-    // 4. Corner at (midRow, p2.col)
-    //    goingRight: ─ from LEFT, │ going DOWN  → LEFT+BOT  = ╮ (cornerTR)
-    //    goingLeft:  ─ from RIGHT, │ going DOWN → RIGHT+BOT = ╭ (cornerTL)
-    if (goingRight) {
-      drawAt(midRow, p2.col, ch.cornerTR) // ╮
-    } else {
-      drawAt(midRow, p2.col, ch.cornerTL) // ╭
-    }
-
-    // 5. Vertical at p2's col from midRow+1 to p2.row
-    for (let r = midRow + 1; r <= p2.row; r++) {
-      drawAt(r, p2.col, ch.vLine)
-    }
-  }
-}
-
-// ============================================================================
-// Legend — shows series symbols with per-series colors
-// ============================================================================
-
-function drawLegend(
-  canvas: Canvas,
-  roles: RoleCanvas,
-  hexCanvas: HexCanvas,
-  chart: XYChart,
-  row: number,
-  totalW: number,
-  ch: typeof UNI | typeof ASC,
-  seriesColors: string[],
-): void {
-  // Build legend items with global series indices
-  type LegendItem = { symbol: string; label: string; globalIdx: number }
-  const items: LegendItem[] = []
-  let barIdx = 0,
-    lineIdx = 0
-  for (let si = 0; si < chart.series.length; si++) {
-    const s = chart.series[si]!
-    if (s.type === 'bar') {
-      items.push({ symbol: ch.bar, label: `Bar ${barIdx + 1}`, globalIdx: si })
-      barIdx++
-    } else {
-      items.push({
-        symbol: ch.hLine,
-        label: `Line ${lineIdx + 1}`,
-        globalIdx: si,
-      })
-      lineIdx++
-    }
-  }
-
-  // Calculate total legend width: "symbol space label  symbol space label ..."
-  let totalLen = 0
-  for (let i = 0; i < items.length; i++) {
-    if (i > 0) totalLen += 2 // Gap between items
-    totalLen += 1 + 1 + items[i]!.label.length // Symbol + space + label
-  }
-
-  const startCol = Math.max(0, Math.floor(totalW / 2 - totalLen / 2))
-  let col = startCol
-
-  for (let i = 0; i < items.length; i++) {
-    if (i > 0) col += 2 // Gap
-    const item = items[i]!
-    // Symbol with series-specific color
-    set(
-      canvas,
-      roles,
-      row,
-      col,
-      item.symbol,
-      'arrow',
-      hexCanvas,
-      seriesColors[item.globalIdx],
-    )
-    col += 1
-    // Space (already ' ' from canvas init)
-    col += 1
-    // Label text
-    writeText(canvas, roles, row, col, item.label, 'text')
-    col += item.label.length
-  }
+  drawStepLine(points, 'row', ch, drawAt)
 }
 
 // ============================================================================

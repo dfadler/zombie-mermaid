@@ -14,7 +14,14 @@
 //     ▓ Cats   17%
 //     ▒ Rats    3%
 //
-//   - The title, when there is one, is centred over the bar.
+//   - The title, when there is one, is centred over the bar. The table sits
+//     where `pie.legendPosition` puts the legend against the pie in Mermaid
+//     12.3.0: `top` above the bar, `bottom` below, `right` (the default, and
+//     any unknown value) in a column right of it, `left` in a column left of
+//     it, `center` centred on the bar's columns. The bar is one row, so for
+//     left, right and center it sits on the table's middle row, as Mermaid
+//     centres the legend on the pie's centre; `center` cannot overprint the
+//     bar, so the table's rows go above and below it.
 //   - The bar is BAR_WIDTH cells wide. Like the SVG pie, it holds only the
 //     slices at or above 1% of the total, in source order, and those slices
 //     share the whole bar between them. Cells are handed out by largest
@@ -66,6 +73,8 @@ const PALETTE_SIZE = 12
 const TABLE_INDENT = '  '
 /** Gap between the label column and the percentage column. */
 const TABLE_GAP = '   '
+/** Columns between the bar and a table beside it. */
+const SIDE_GAP = 3
 /** Width of the percentage column ("100%"). */
 const PERCENT_WIDTH = 4
 
@@ -222,7 +231,7 @@ export function renderPieAscii(
   config: AsciiConfig,
   colorMode: ColorMode,
   theme: AsciiTheme,
-  honorThemeVariables = false,
+  honorThemeVariables = true,
 ): string {
   const chart = parsePieChart(text)
   const layout = layoutPieAscii(chart)
@@ -248,14 +257,6 @@ export function renderPieAscii(
   const lines: string[] = []
   const barLineWidth = layout.barWidth + 2
 
-  if (layout.title !== undefined) {
-    const pad = Math.max(
-      0,
-      Math.floor((barLineWidth - displayWidth(layout.title)) / 2),
-    )
-    lines.push(' '.repeat(pad) + paint(layout.title, theme.fg), '')
-  }
-
   let bar = ''
   let used = 0
   for (const row of layout.rows) {
@@ -264,10 +265,12 @@ export function renderPieAscii(
     used += row.cells
   }
   bar += ' '.repeat(Math.max(0, layout.barWidth - used))
-  lines.push(paint('[', theme.border) + bar + paint(']', theme.border))
+  const barLine = paint('[', theme.border) + bar + paint(']', theme.border)
 
+  // Each table line with its display width, so the side-by-side layouts can
+  // pad without measuring escape codes.
+  const table: { line: string; width: number }[] = []
   if (layout.rows.length > 0) {
-    lines.push('')
     const labelWidth = Math.max(...layout.rows.map((r) => displayWidth(r.text)))
     for (const row of layout.rows) {
       const swatch = paint(fill(row), slot(row.colorIndex))
@@ -275,13 +278,70 @@ export function renderPieAscii(
         paint(row.text, theme.fg) +
         ' '.repeat(labelWidth - displayWidth(row.text))
       const pct = paint(row.percentText.padStart(PERCENT_WIDTH), theme.fg)
-      const line =
+      table.push(
         row.percentText.length > 0
-          ? `${TABLE_INDENT}${swatch} ${label}${TABLE_GAP}${pct}`
-          : `${TABLE_INDENT}${swatch} ${paint(row.text, theme.fg)}`
-      lines.push(line)
+          ? {
+              line: `${TABLE_INDENT}${swatch} ${label}${TABLE_GAP}${pct}`,
+              width:
+                TABLE_INDENT.length +
+                2 +
+                labelWidth +
+                TABLE_GAP.length +
+                PERCENT_WIDTH,
+            }
+          : {
+              line: `${TABLE_INDENT}${swatch} ${paint(row.text, theme.fg)}`,
+              width: TABLE_INDENT.length + 2 + displayWidth(row.text),
+            },
+      )
     }
   }
+
+  // Where the legend sits against the bar follows `pie.legendPosition`, as
+  // Mermaid 12.3.0 places it against the pie (checked headless): `top` and
+  // `bottom` stack it above or below; `left` and `right` (also the default
+  // and any unknown value) put it in a column beside the pie; `center` draws
+  // it over the pie. The bar is one row, so beside and over become the
+  // analogue the SVG's own geometry gives: the bar sits on the table's middle
+  // row (Mermaid centres the legend on the pie's centre), the table to its
+  // left or right, or, for `center`, the table centred on the bar's columns
+  // with the bar in its middle row rather than hidden under it.
+  const pos = chart.legendPosition ?? 'right'
+  const tableWidth = Math.max(0, ...table.map((t) => t.width))
+  const mid = Math.floor((table.length - 1) / 2)
+  let block: string[]
+  let barIndent = 0
+  if (table.length === 0) {
+    block = [barLine]
+  } else if (pos === 'top') {
+    block = [...table.map((t) => t.line), '', barLine]
+  } else if (pos === 'bottom') {
+    block = [barLine, '', ...table.map((t) => t.line)]
+  } else if (pos === 'center') {
+    const width = Math.max(barLineWidth, tableWidth)
+    barIndent = Math.floor((width - barLineWidth) / 2)
+    const tableIndent = ' '.repeat(Math.floor((width - tableWidth) / 2))
+    block = table.map((t) => tableIndent + t.line)
+    block.splice(mid + 1, 0, ' '.repeat(barIndent) + barLine)
+  } else if (pos === 'left') {
+    barIndent = tableWidth + SIDE_GAP
+    block = table.map((t, i) =>
+      i === mid ? t.line + ' '.repeat(barIndent - t.width) + barLine : t.line,
+    )
+  } else {
+    block = table.map((t, i) => {
+      const lead = i === mid ? barLine : ' '.repeat(barLineWidth)
+      return lead + ' '.repeat(SIDE_GAP) + t.line
+    })
+  }
+
+  if (layout.title !== undefined) {
+    const pad =
+      barIndent +
+      Math.max(0, Math.floor((barLineWidth - displayWidth(layout.title)) / 2))
+    lines.push(' '.repeat(pad) + paint(layout.title, theme.fg), '')
+  }
+  lines.push(...block)
 
   return lines.join('\n')
 }

@@ -5,6 +5,8 @@
 // Sequence diagrams show actor interactions over time (vertical timeline).
 // ============================================================================
 
+import type { SequenceInitLayout } from '@zombie-mermaid/core'
+
 /** Parsed sequence diagram — logical structure from mermaid text */
 export interface SequenceDiagram {
   /** Ordered list of actors/participants */
@@ -31,6 +33,8 @@ export interface SequenceDiagram {
   boxes: ParticipantBox[]
   /** `%%{init}%%` `sequence.mirrorActors: false`: no participant row under the lifelines. */
   mirrorActors?: false
+  /** `%%{init}%%` `sequence` layout keys (`wrap`, `noteAlign`, spacing...); see {@link SequenceInitLayout}. */
+  layout?: SequenceInitLayout
   /** Text of a `title <text>` line (the last one wins); unset when there is none. */
   title?: string
 }
@@ -72,6 +76,8 @@ export interface ActivationEvent {
 export interface Actor {
   id: string
   label: string
+  /** `wrap:` / `nowrap:` prefix on the name; overrides the init `sequence.wrap` */
+  wrap?: boolean
   /** 'participant' renders as a box, 'actor' renders as a stick figure */
   type: 'participant' | 'actor'
   /**
@@ -119,6 +125,8 @@ export interface Message {
   bidirectional?: boolean
   /** Sequence number to display next to this arrow when `autonumber` is active */
   seqNumber?: number
+  /** `wrap:` (true) / `nowrap:` (false) prefix; overrides the init `sequence.wrap` */
+  wrap?: boolean
 }
 
 export interface Block {
@@ -153,6 +161,8 @@ export interface Note {
   position: 'left' | 'right' | 'over'
   /** Message index after which this note appears */
   afterIndex: number
+  /** `wrap:` / `nowrap:` prefix; overrides the init `sequence.wrap` */
+  wrap?: boolean
 }
 
 // ============================================================================
@@ -211,9 +221,9 @@ export interface Lifeline {
   topY: number
   bottomY: number
   /**
-   * Set when the actor is destroyed mid-diagram (`Actor.destroyedAt`):
-   * `bottomY` is then the destroying message's row rather than the diagram
-   * bottom, and the renderer marks it with a cross.
+   * Set when the actor is destroyed mid-diagram (`Actor.destroyedAt`).
+   * @deprecated No renderer reads it any more (a destroyed participant now gets
+   * a footer box instead of a cross). Use `Actor.destroyedAt` instead.
    */
   destroyed?: boolean
 }
@@ -225,6 +235,10 @@ export interface PositionedMessage {
   lineStyle: 'solid' | 'dashed'
   arrowHead: 'filled' | 'open'
   /** Start point (from actor's lifeline) */
+  /** `sequence.messageAlign: left|right`: label hugs that end of the arrow (unset = centred). */
+  labelAlign?: 'left' | 'right'
+  /** `sequence.rightAngles`: the self-message loop is drawn square. */
+  rightAngles?: true
   x1: number
   /** End point (to actor's lifeline) */
   x2: number
@@ -274,4 +288,6 @@ export interface PositionedNote {
   actors?: string[]
   /** Note position relative to actors (for SVG attribution) */
   position?: 'left' | 'right' | 'over'
+  /** `sequence.noteAlign: left|right`: text hugs that side of the note (unset = centred). */
+  align?: 'left' | 'right'
 }

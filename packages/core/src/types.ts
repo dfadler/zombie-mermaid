@@ -314,10 +314,17 @@ export interface PositionedGroup {
    * (state composites keep the band).
    */
   bandless?: boolean
+  /**
+   * An empty flowchart subgraph (no nodes, no children): mermaid draws a
+   * zero-height cluster, so only the title is visible, no frame.
+   */
+  titleOnly?: boolean
   /** Architecture group icon name; see `MermaidSubgraph.icon`. */
   icon?: string
   /** See `MermaidSubgraph.architecture`. */
   architecture?: boolean
+  /** Edge of an architecture group's corner icon in px: `architecture.padding * 0.75` (30 by default; none is drawn at 0). */
+  iconSize?: number
 }
 
 // ============================================================================
@@ -579,9 +586,11 @@ export interface RenderOptions {
   curve?: CurveStyle
 
   /**
-   * Opt in to a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours.
-   * Default: false, which leaves the output byte-identical (a diagram cannot
-   * recolour itself against the host's `bg`/`fg`/CSS-variable theme).
+   * Honour a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours, as
+   * Mermaid does. Default: true (since #2856). Pass `false` to ignore them and
+   * keep a diagram from recolouring itself against the host's
+   * `bg`/`fg`/CSS-variable theme (the output is then byte-identical to the same
+   * diagram without the variables).
    *
    * When true, a small subset of Mermaid's `themeVariables` is mapped onto
    * this library's colour tokens, each value validated like a `style`

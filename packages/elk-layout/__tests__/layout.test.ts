@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { layoutFlowchart, UnsupportedFlowchartError } from '../src/index.ts'
 
 // Provenance (#2679): the .expected.json files are this package's own output (class b), kept
-// honest by the oracle against the pinned mermaid; d1-d3 route edges differently in 12.3.0.
+// honest by the oracle against the pinned mermaid; d1-d3 route edges differently in 12.3.0
+// (7/12, 6/12, 2/10 edges within 1px, nodes identical): details and the regeneration commands are in
+// packages/elk-layout/README.md (#2708). Do not regenerate them until the routing matches 12.3.0.
 // No Chromium here: expected JSON is committed. Its agreement with real mermaid is checked by
 // `pnpm run elk-layout:oracle`. Regenerate after an intentional change with
 // `UPDATE_ELK_LAYOUT=1 pnpm exec vitest run -c config/vitest.config.ts packages/elk-layout`
@@ -27,11 +29,11 @@ const normalise = (l: Awaited<ReturnType<typeof layoutFlowchart>>) => ({
 })
 
 describe('elk-layout', () => {
-  it('resolves its own exact elkjs 0.9.3 (the root also carries a newer elkjs)', () => {
-    const v = createRequire(import.meta.url)('elkjs-0.9.3/package.json') as {
+  it('resolves its own exact elkjs 0.12.0 (the root elkjs is a caret range)', () => {
+    const v = createRequire(import.meta.url)('elkjs-0.12.0/package.json') as {
       version: string
     }
-    expect(v.version).toBe('0.9.3')
+    expect(v.version).toBe('0.12.0')
   })
 
   const sources = readdirSync(FIXTURES).filter((f) => f.endsWith('.mmd'))

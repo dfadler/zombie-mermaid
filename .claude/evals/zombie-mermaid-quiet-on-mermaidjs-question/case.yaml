@@ -5,7 +5,7 @@ description: >
   A conceptual question about how mermaid.js parses subgraphs, plus a mermaid-cli install
   question, must not fire zombie-mermaid.
   expected_outcome: PASS when no zombie-mermaid Skill call is made; FAIL otherwise.
-tags: [zombie-mermaid, trigger, quick]
+tags: [zombie-mermaid, trigger, quick, smoke]
 runs: 3
 
 execution:

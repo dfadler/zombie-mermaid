@@ -38,10 +38,11 @@ describe('state diagram notes (#1714)', () => {
       'first line\nsecond line',
     )
     // The block's lines are not read as states or transitions.
+    // A left note is listed before its state (see addNote).
     expect([...g.nodes.keys()]).toEqual([
       '_start',
-      'Active',
       'Active----note-1',
+      'Active',
       '_end',
     ])
   })
@@ -51,7 +52,8 @@ describe('state diagram notes (#1714)', () => {
       'stateDiagram-v2\n  note right of A : one\n  note left of A : two',
     )
     expect(g.nodes.get('A')).toBeDefined()
-    expect([...g.nodes.keys()]).toEqual(['A', 'A----note-1', 'A----note-2'])
+    // Numbered by the count of edges so far, as mermaid does (#3004).
+    expect([...g.nodes.keys()]).toEqual(['A----note-1', 'A', 'A----note-0'])
   })
 
   it('keeps a note inside the composite its state is in', () => {
@@ -82,7 +84,7 @@ describe('state diagram notes (#1714)', () => {
 
   it('applies a style fill to the note', () => {
     const svg = renderMermaidSVG(
-      'stateDiagram-v2\n  note right of A : hi\n  style A----note-1 fill:#ffeeaa',
+      'stateDiagram-v2\n  note right of A : hi\n  style A----note-0 fill:#ffeeaa',
     )
     expect(svg).toContain('fill="#ffeeaa"')
   })

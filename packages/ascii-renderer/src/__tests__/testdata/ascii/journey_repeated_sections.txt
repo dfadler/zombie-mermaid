@@ -1,0 +1,24 @@
+journey
+    section A
+      t1: 1: X
+    section B
+      t2: 2: Y
+    section A
+      t3: 3: X
+    section C
+    section D
+      t4: 4: Z
+---
+  Actors: X, Y, Z
+
+  [A]
+    :(  1  t1  X
+
+  [B]
+    :(  2  t2  Y
+
+  [A]
+    :|  3  t3  X
+
+  [D]
+    :)  4  t4  Z

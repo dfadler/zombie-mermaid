@@ -42,6 +42,8 @@ import { splitLines, maxLineWidth } from './multiline-utils.ts'
 import { splitStatements } from '@zombie-mermaid/core'
 import { toDisplayCells } from './display-width.ts'
 import { findFreeLane } from './lane-search.ts'
+import { getAsciiLayout } from './layout-hints.ts'
+import type { AsciiLayoutHints } from './layout-hints.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // ============================================================================
@@ -509,12 +511,34 @@ export function renderErAscii(
   }
 
   // --- Find connected components ---
-  const components = findConnectedComponents(diagram)
+  let components = findConnectedComponents(diagram)
+  // ELK's layer and in-layer order, when a layout provider is registered
+  // (#2645, #2663). Without one, or for LR/RL, the placement below is the
+  // grid's own, unchanged.
+  const sideBySide = diagram.direction === 'LR' || diagram.direction === 'RL'
+  let hints: AsciiLayoutHints | undefined
+  try {
+    hints = sideBySide ? undefined : getAsciiLayout()?.er?.(diagram)
+  } catch {
+    // A layout engine that fails leaves the grid placement, not an error.
+    hints = undefined
+  }
+  // Every entity needs an integer layer: a fractional one would never be reached.
+  const useHints =
+    hints !== undefined &&
+    diagram.entities.every((e) =>
+      Number.isInteger(hints.nodes.get(e.id)?.layer),
+    )
+
+  // ELK shares layers across disconnected components (mermaid.js lays them
+  // side by side), so with hints the whole diagram is one component.
+  if (useHints && components.length > 1) {
+    components = [new Set(diagram.entities.map((e) => e.id))]
+  }
 
   // --- Layout: place each component, then stack components vertically ---
   const placed = new Map<string, PlacedEntity>()
   let currentY = 0
-  const sideBySide = diagram.direction === 'LR' || diagram.direction === 'RL'
 
   for (const component of components) {
     // Get entities in this component (preserve original order for consistency)
@@ -522,16 +546,29 @@ export function renderErAscii(
 
     // Stack layers top to bottom like mermaid.js (#1917). A layer wider than
     // the sqrt-based row limit wraps, which keeps the width bounded.
-    const maxPerRow = Math.max(2, Math.ceil(Math.sqrt(declared.length)))
+    // With hints a layer is one row: wrapping would split it from its parents.
+    const hinted = useHints
+    const hint = (e: ErEntity) => hints!.nodes.get(e.id)!
+    const topLayer = hinted
+      ? Math.min(...declared.map((e) => hint(e).layer))
+      : 0
+    const maxPerRow = hinted
+      ? Infinity
+      : Math.max(2, Math.ceil(Math.sqrt(declared.length)))
     // `direction LR`/`RL` keeps the side-by-side row packing (one layer).
     // ponytail: BT stacks like TB (not flipped); LR is not true columns.
-    const layerOf = sideBySide
-      ? new Map(declared.map((e) => [e.id, 0]))
-      : assignLayers(declared, diagram.relationships)
+    const layerOf = hinted
+      ? new Map(declared.map((e) => [e.id, hint(e).layer - topLayer]))
+      : sideBySide
+        ? new Map(declared.map((e) => [e.id, 0]))
+        : assignLayers(declared, diagram.relationships)
     const componentEntities: ErEntity[] = []
     const rowStarts = new Set<string>()
     const slot = new Map<string, number>() // Index in componentEntities
-    for (let l = 0; componentEntities.length < declared.length; l++) {
+    // Visit the distinct layers in order: a merged component (#2968) or sparse
+    // hints can skip layer numbers, and counting up would never reach them.
+    const layers = [...new Set(layerOf.values())].sort((a, b) => a - b)
+    for (const l of layers) {
       // Order a layer by its earliest-placed parent so children sit under
       // their parents; declaration order breaks ties.
       const parentSlot = (e: ErEntity): number =>
@@ -543,7 +580,7 @@ export function renderErAscii(
         )
       const layer = declared
         .filter((e) => layerOf.get(e.id) === l)
-        .map((e, i) => [e, parentSlot(e), i] as const)
+        .map((e, i) => [e, hinted ? hint(e).order : parentSlot(e), i] as const)
         .sort((a, b) => a[1] - b[1] || a[2] - b[2])
         .map(([e]) => e)
       layer.forEach((e, i) => {
@@ -556,6 +593,7 @@ export function renderErAscii(
     let maxRowH = 0
     let rowStartIdx = 0
     let lastGap = 0
+    const gapAfter = new Map<string, number>()
 
     for (let idx = 0; idx < componentEntities.length; idx++) {
       const ent = componentEntities[idx]!
@@ -568,12 +606,18 @@ export function renderErAscii(
         // the marker rows of both ends (#2112), so a gap that carries more
         // edges than the base gap holds grows by one row per edge.
         const above = new Set(componentEntities.slice(0, idx).map((e) => e.id))
-        const crossing = diagram.relationships.filter(
+        const crossingRels = diagram.relationships.filter(
           (r) =>
             r.entity1 !== r.entity2 &&
             component.has(r.entity1) &&
             above.has(r.entity1) !== above.has(r.entity2),
-        ).length
+        )
+        // With hints one more row keeps a stretch of every labelled edge's own
+        // stem free of jogs and markers, so its label need not sit on another
+        // edge's stem.
+        const crossing =
+          crossingRels.length +
+          (hinted && crossingRels.some((r) => r.label) ? 1 : 0)
         // A same-row relationship with an entity between its ends detours
         // through this gap, and takes a row for the line and one for its label.
         const rowIds = componentEntities
@@ -632,7 +676,75 @@ export function renderErAscii(
 
       currentX += w + gap
       lastGap = gap
+      gapAfter.set(ent.id, gap)
       maxRowH = Math.max(maxRowH, h)
+    }
+
+    // With hints, centre each layer under the entities it connects to (down,
+    // up, down passes, like ELK) instead of leaving every row packed left. A
+    // row keeps its order and its gaps; it only slides right to make room.
+    // ponytail: edges that skip a layer do not pull; ELK's `cross` units are
+    // unused because box widths differ between SVG and cells.
+    if (hinted) {
+      const byLayer = new Map<number, ErEntity[]>()
+      for (const e of componentEntities) {
+        const l = layerOf.get(e.id)!
+        byLayer.set(l, [...(byLayer.get(l) ?? []), e])
+      }
+      const layers = [...byLayer.keys()].sort((a, b) => a - b)
+      const centreOf = (id: string) => {
+        const p = placed.get(id)!
+        return p.x + Math.floor(p.width / 2)
+      }
+      const settle = (l: number, from: number) => {
+        let right = -Infinity
+        let prev: string | undefined
+        for (const e of byLayer.get(l)!) {
+          const p = placed.get(e.id)!
+          const pulls = diagram.relationships
+            .filter((r) => r.entity1 !== r.entity2)
+            .map((r) =>
+              r.entity1 === e.id
+                ? r.entity2
+                : r.entity2 === e.id
+                  ? r.entity1
+                  : '',
+            )
+            .filter((o) => o && layerOf.get(o) === from)
+          const want =
+            pulls.length > 0
+              ? Math.round(
+                  pulls.reduce((s, o) => s + centreOf(o), 0) / pulls.length,
+                ) - Math.floor(p.width / 2)
+              : p.x
+          const room = Math.max(
+            prev === undefined ? 0 : (gapAfter.get(prev) ?? 0),
+            selfReserve.get(e.id) ?? 0,
+          )
+          const x = Math.max(want, prev === undefined ? room : right + room)
+          placed.set(e.id, { ...p, x })
+          right = x + p.width
+          prev = e.id
+        }
+      }
+      for (let n = 0; n < 40; n++)
+        for (const pass of [1, -1]) {
+          const seq =
+            pass === 1 ? layers.slice(1) : layers.slice(0, -1).reverse()
+          for (const l of seq) settle(l, l - pass)
+        }
+      // Slide the component back to the left edge once the passes are done.
+      const slack = Math.min(
+        ...[...byLayer.values()].map(
+          (row) =>
+            placed.get(row[0]!.id)!.x - (selfReserve.get(row[0]!.id) ?? 0),
+        ),
+      )
+      if (slack > 0)
+        for (const e of componentEntities) {
+          const p = placed.get(e.id)!
+          placed.set(e.id, { ...p, x: p.x - slack })
+        }
     }
 
     // Center a lone entity on the component's widest row like dagre, so it
@@ -640,7 +752,7 @@ export function renderErAscii(
     // Aligning the center columns (floor(w / 2), as attachments use) avoids a
     // one-column jog on odd/even width differences. `direction LR`/`RL` keeps
     // its left-aligned row packing.
-    if (!sideBySide) {
+    if (!sideBySide && !hinted) {
       const rows = new Map<number, PlacedEntity[]>()
       for (const e of componentEntities) {
         const p = placed.get(e.id)!
@@ -675,6 +787,31 @@ export function renderErAscii(
 
     // Move to next component row (add gap between components)
     currentY += maxRowH + componentGap
+  }
+
+  // A one-line label sits centred on its vertical edge, as mermaid draws it
+  // (#2253), but the canvas has no columns left of x=1. With hints, shift the
+  // layout right by the room the widest such label needs beyond its edge, so a
+  // label wider than its box is not pushed off centre (#2968).
+  // ponytail: the edge column is estimated as the box centre.
+  if (useHints) {
+    let shift = 0
+    for (const rel of diagram.relationships) {
+      const a = placed.get(rel.entity1)
+      const b = placed.get(rel.entity2)
+      if (!rel.label || !a || !b || a.y === b.y) continue
+      const edgeX = Math.min(
+        a.x + Math.floor(a.width / 2),
+        b.x + Math.floor(b.width / 2),
+      )
+      shift = Math.max(
+        shift,
+        Math.floor((maxLineWidth(rel.label) - 1) / 2) + 1 - edgeX,
+      )
+    }
+    if (shift > 0) {
+      for (const [id, p] of placed) placed.set(id, { ...p, x: p.x + shift })
+    }
   }
 
   // --- Create canvas ---
@@ -782,7 +919,7 @@ export function renderErAscii(
     y: number,
     minX: number,
     maxX: number,
-    foreignMargin: number,
+    requestedMargin: number,
   ): boolean {
     for (let i = 0; i < cells.length; i++) {
       const x = startX + i
@@ -790,6 +927,10 @@ export function renderErAscii(
       if (isProtected(x, y) || rc[x]?.[y] === 'arrow') return false
       if (boxCells.has(`${x},${y}`)) return false
     }
+    // With hints the text itself never covers another edge's line until the
+    // very last pass (-2), which keeps a label rather than lose it (#2663).
+    const foreignMargin =
+      requestedMargin === -1 && useHints ? 0 : requestedMargin
     if (foreignMargin < 0) return true
     // A cell already holding a *different* relationship's line reads as
     // free above (isProtected only tracks text/border), so without this
@@ -1006,7 +1147,11 @@ export function renderErAscii(
   ): boolean {
     for (const lane of verticalLanes) {
       if (Math.abs(lane.x - x) !== 1) continue
-      if (yStart <= lane.yEnd && yEnd >= lane.yStart) return true
+      // With hints, two stems side by side for only a corner and a row (one
+      // arriving at its jog as the other leaves) read as two edges, so they
+      // may share that much instead of detouring (#2663).
+      const overlap = Math.min(yEnd, lane.yEnd) - Math.max(yStart, lane.yStart)
+      if (overlap >= (useHints ? 2 : 0)) return true
     }
     return false
   }
@@ -1202,7 +1347,33 @@ export function renderErAscii(
   // setCGuarded and canPlaceLabelLineAvoidingMarkers above.
   let currentRelLineCells = new Set<string>()
 
-  for (const rel of diagram.relationships) {
+  // With hints, each box's downward jogs nest instead of crossing: of the
+  // edges jogging right, the farthest goes first and takes the highest free
+  // row; of those jogging left, the nearest goes first and takes the lowest, so
+  // the farthest ends above it. Either way a nearer edge jogs below a farther
+  // one and never meets its stem (#2663).
+  const jogKey = (rel: (typeof diagram.relationships)[number]): number => {
+    const a = placed.get(rel.entity1)
+    const b = placed.get(rel.entity2)
+    /* v8 ignore next */
+    if (!a || !b) return 0
+    // Same-row edges keep declaration order, ahead of the jogs, so a tall
+    // label there cannot be crowded out by the sort.
+    if (a.y === b.y) return -Infinity
+    const [up, low] = a.y <= b.y ? [a, b] : [b, a]
+    return -(
+      low.x +
+      Math.floor(low.width / 2) -
+      (up.x + Math.floor(up.width / 2))
+    )
+  }
+  const drawOrder = useHints
+    ? diagram.relationships
+        .map((rel, i) => [rel, i] as const)
+        .sort((a, b) => jogKey(a[0]) - jogKey(b[0]) || a[1] - b[1])
+        .map(([rel]) => rel)
+    : diagram.relationships
+  for (const rel of drawOrder) {
     currentRelLineCells = new Set<string>()
     const e1 = placed.get(rel.entity1)
     const e2 = placed.get(rel.entity2)
@@ -1377,7 +1548,20 @@ export function renderErAscii(
           const labelMinX = startX + labelInset
           const labelMaxX = endX - labelInset
           const labelRows = splitLines(rel.label).length
-          const maxLabelY = lineY + 1 + Math.max(vGap - 1, 1)
+          // With hints the search also covers the rows the pair's other labels
+          // take, so a tall label drawn first cannot crowd this one out.
+          const pairRows = useHints
+            ? diagram.relationships
+                .filter(
+                  (r) =>
+                    r !== rel &&
+                    r.label &&
+                    [r.entity1, r.entity2].sort().join('|') ===
+                      [rel.entity1, rel.entity2].sort().join('|'),
+                )
+                .reduce((n, r) => n + splitLines(r.label).length, 0)
+            : 0
+          const maxLabelY = lineY + 1 + Math.max(vGap - 1, 1) + pairRows
           while (
             labelBaseY < maxLabelY &&
             !regionClear(
@@ -1736,9 +1920,11 @@ export function renderErAscii(
         for (let y = startY; y <= topJogY; y++) {
           setCGuarded(lineX, y, lineV, 'line')
         }
+        // No run when the bypass column is the stem's own: a one-cell run over
+        // it would draw a stray junction.
         for (
           let x = Math.min(lineX, routingX);
-          x <= Math.max(lineX, routingX);
+          lineX !== routingX && x <= Math.max(lineX, routingX);
           x++
         ) {
           setCGuardedH(x, topJogY, lineH, 'line')
@@ -1748,7 +1934,7 @@ export function renderErAscii(
         }
         for (
           let x = Math.min(routingX, lowerCX);
-          x <= Math.max(routingX, lowerCX);
+          routingX !== lowerCX && x <= Math.max(routingX, lowerCX);
           x++
         ) {
           setCGuardedH(x, bottomJogY, lineH, 'line')
@@ -1998,7 +2184,7 @@ export function renderErAscii(
             [3, false, true],
             [1, false, true],
             [-1, false, true],
-            [-1, false, false],
+            [-2, false, false],
           ] as const
           let spot: { x: number; y: number } | undefined
           search: for (const [foreignMargin, gapOnly, ownStem] of passes) {

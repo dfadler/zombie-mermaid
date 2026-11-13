@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 544 450" width="544" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<svg class="zm-pal-12lsx67" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 538 450" width="538" height="450" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'sans-serif', system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -27,21 +26,21 @@
 <style>
   .pie-outer { fill: none; stroke: var(--fg); stroke-width: 2px; }
   .pie-slice { stroke: var(--fg); stroke-width: 2px; opacity: 0.7; }
-  .pie-slice-label { fill: var(--_text); font-size: 17px; font-weight: 400; }
-  .pie-title { fill: var(--_text); font-size: 25px; font-weight: 400; }
-  .pie-legend-text { fill: var(--_text); font-size: 17px; font-weight: 400; }
-  svg {
+  .pie-slice-label { fill: var(--_text); font-family: "trebuchet ms", verdana, arial, sans-serif; font-size: 17px; font-weight: 400; }
+  .pie-title { fill: var(--_text); font-family: "trebuchet ms", verdana, arial, sans-serif; font-size: 25px; font-weight: 400; }
+  .pie-legend-text { fill: var(--_text); font-family: "trebuchet ms", verdana, arial, sans-serif; font-size: 17px; font-weight: 400; }
+  .zm-pal-12lsx67 {
     --pie-color-0: #ff0000;
-    --pie-color-1: #0d5ba5;
-    --pie-color-2: #5fb4f2;
-    --pie-color-3: #0a5076;
-    --pie-color-4: #92e0f6;
-    --pie-color-5: #0a5e76;
-    --pie-color-6: #97f5f7;
-    --pie-color-7: #0a6d76;
-    --pie-color-8: #97f7e5;
-    --pie-color-9: #0a7671;
-    --pie-color-10: #97f7d2;
+    --pie-color-1: #ffffde;
+    --pie-color-2: hsl(80, 100%, 56.2745098039%);
+    --pie-color-3: hsl(240, 100%, 86.2745098039%);
+    --pie-color-4: hsl(60, 100%, 63.5294117647%);
+    --pie-color-5: hsl(80, 100%, 76.2745098039%);
+    --pie-color-6: hsl(300, 100%, 76.2745098039%);
+    --pie-color-7: hsl(180, 100%, 56.2745098039%);
+    --pie-color-8: hsl(0, 100%, 56.2745098039%);
+    --pie-color-9: hsl(300, 100%, 56.2745098039%);
+    --pie-color-10: hsl(150, 100%, 56.2745098039%);
     --pie-color-11: #00aa00;
   }
   .pie-color-0 { fill: var(--pie-color-0); }
