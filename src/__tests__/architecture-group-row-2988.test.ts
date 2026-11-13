@@ -23,6 +23,14 @@ const cases = {
   service a(server)[A] in g
   service c(disk)[C]
   a:B -- T:c`,
+  'service in another group below': `architecture-beta
+  group g(cloud)[G]
+  group h(cloud)[H]
+  service a(server)[A] in g
+  service b(database)[B] in g
+  service c(disk)[C] in h
+  a:R -- L:b
+  b:B -- T:c`,
   'iconSize off the default': `%%{init: {"architecture": {"iconSize": 60}}}%%\n${head}  a:R -- L:b\n  b:B -- T:c`,
 } as const
 const heights: Record<keyof typeof cases, number> = {
@@ -30,6 +38,7 @@ const heights: Record<keyof typeof cases, number> = {
   'below the left member': 442.6,
   'two outside services': 453.15,
   'group of one cell': 426.9,
+  'service in another group below': NaN, // Only snapshotted.
   'iconSize off the default': NaN, // Only snapshotted.
 }
 const height = (svg: string): number =>

@@ -215,7 +215,7 @@ function rowOfTwoDrop(
           below++
       }
     }
-    return tile === TILE ? (ROW_OF_TWO_DROP[below] ?? 0) : 0
+    return tile === TILE ? ROW_OF_TWO_DROP[Math.min(below, 2)]! : 0
   }
 }
 
