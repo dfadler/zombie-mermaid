@@ -1466,8 +1466,11 @@ three-part task forms with `after a b`, `until a` and durations
 clickable in static output, as in Mermaid), `accTitle` and `accDescr`. The
 `gantt` block of `%%{init}%%` and front matter `config:` is read for
 `displayMode` (`compact`), `topAxis`, `axisFormat`, `tickInterval` and
-`weekday`, and front matter `displayMode: compact` works as documented; bar
-sizes and paddings are not read yet.
+`weekday`, and front matter `displayMode: compact` works as documented. The
+size keys `barHeight`, `barGap`, `topPadding`, `leftPadding`, `rightPadding`,
+`gridLineStartPadding`, `titleTopMargin`, `fontSize`, `sectionFontSize` and
+`numberSectionStyles` are read too (checked against mermaid 12.3.0); `useWidth`
+is not.
 
 The SVG uses Mermaid's geometry: a frame 1200px wide (Mermaid uses its
 container's width), 24px rows with 20px bars, 75px side padding, the d3 time
@@ -2822,9 +2825,8 @@ match exactly, and the weekly layout-oracle workflow fails on a drift.
   whose first task has no start date, is a parse error here; Mermaid renders a
   broken chart.
 - **Config.** The `gantt` keys of `%%{init}%%` that change what is drawn are read
-  (see [Gantt Charts](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#gantt-charts)); sizes (`barHeight`, `barGap`,
-  `topPadding`, `leftPadding`, `rightPadding`, `fontSize`, `numberSectionStyles`,
-  `useWidth`) are ignored.
+  (see [Gantt Charts](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#gantt-charts)), the size keys included (checked
+  against mermaid 12.3.0); only `useWidth` is ignored, as the frame is a fixed 1200px.
 - **`excludes` at the end of a chart.** A run of excluded days still open at the
   last day is not shaded, as in Mermaid.
 - **ASCII.** Mermaid has no ASCII output; see [ASCII Gantt Charts](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#ascii-gantt-charts).

@@ -48,7 +48,7 @@ export const GANTT = {
   numberSectionStyles: 4,
   /** Mermaid's fallback when its container has no width. */
   defaultWidth: 1200,
-} as const
+}
 
 export interface GanttLayoutOptions {
   /** Frame width in px. Default 1200. */
@@ -56,8 +56,6 @@ export interface GanttLayoutOptions {
   /** The clock for the `todayMarker` line (default `Date.now()`). */
   now?: number
 }
-
-const GAP = GANTT.barHeight + GANTT.barGap
 
 const MS_PER = {
   millisecond: 1,
@@ -74,7 +72,9 @@ export function layoutGantt(
   chart: GanttChart,
   opts: GanttLayoutOptions = {},
 ): PositionedGanttChart {
-  const w = opts.width ?? GANTT.defaultWidth
+  const C = { ...GANTT, ...chart.sizes }
+  const GAP = C.barHeight + C.barGap
+  const w = opts.width ?? C.defaultWidth
   const all = chart.tasks
   const rowTasks = all.filter((t) => !t.vert)
 
@@ -84,12 +84,12 @@ export function layoutGantt(
     if (!categories.includes(t.section)) categories.push(t.section)
   const styleOf = (section: string) => {
     const i = categories.indexOf(section)
-    return (i < 0 ? 0 : i) % GANTT.numberSectionStyles
+    return (i < 0 ? 0 : i) % C.numberSectionStyles
   }
 
   const orders = new Map<GanttTask, number>()
   const heights = new Map<string, number>()
-  let h = 2 * GANTT.topPadding
+  let h = 2 * C.topPadding
   if (chart.displayMode === 'compact') {
     let offset = 0
     for (const cat of categories) {
@@ -107,10 +107,10 @@ export function layoutGantt(
     }
   }
   // Rows drawn: one per task, or the packed rows in compact mode.
-  const rowCount = (h - 2 * GANTT.topPadding) / GAP
+  const rowCount = (h - 2 * C.topPadding) / GAP
   const orderOf = (t: GanttTask) => (t.vert ? -1 : (orders.get(t) ?? t.order))
 
-  const span = w - GANTT.leftPadding - GANTT.rightPadding
+  const span = w - C.leftPadding - C.rightPadding
   const t0 = all.length ? Math.min(...all.map((t) => t.start)) : 0
   const t1 = all.length ? Math.max(...all.map((t) => t.end)) : 0
   // The d3 scaleTime(...).rangeRound: a degenerate domain maps to the midpoint.
@@ -127,52 +127,52 @@ export function layoutGantt(
     const sx = scale(t.start)
     const ex = scale(t.end)
     const renderEx = scale(t.renderEnd ?? t.end)
-    let x = sx + GANTT.leftPadding
+    let x = sx + C.leftPadding
     let width = renderEx - sx
-    let y = order * GAP + GANTT.topPadding
-    let height: number = GANTT.barHeight
+    let y = order * GAP + C.topPadding
+    let height: number = C.barHeight
     if (t.milestone) {
-      x = sx + GANTT.leftPadding + 0.5 * (ex - sx) - 0.5 * GANTT.barHeight
-      width = GANTT.barHeight
+      x = sx + C.leftPadding + 0.5 * (ex - sx) - 0.5 * C.barHeight
+      width = C.barHeight
     } else if (t.vert) {
-      width = 0.08 * GANTT.barHeight
+      width = 0.08 * C.barHeight
     }
     if (t.vert) {
-      y = GANTT.gridLineStartPadding
-      height = rowCount * GAP + GANTT.barHeight * 2
+      y = C.gridLineStartPadding
+      height = rowCount * GAP + C.barHeight * 2
     }
-    const originX = sx + GANTT.leftPadding + 0.5 * (ex - sx)
-    const originY = order * GAP + GANTT.topPadding + 0.5 * GANTT.barHeight
+    const originX = sx + C.leftPadding + 0.5 * (ex - sx)
+    const originY = order * GAP + C.topPadding + 0.5 * C.barHeight
 
     // Label
-    const textW = estimateTextWidth(t.label, GANTT.fontSize, 400)
+    const textW = estimateTextWidth(t.label, C.fontSize, 400)
     let startX = sx
     let endX = renderEx
     if (t.milestone) {
-      startX += 0.5 * (ex - sx) - 0.5 * GANTT.barHeight
-      endX = startX + GANTT.barHeight
+      startX += 0.5 * (ex - sx) - 0.5 * C.barHeight
+      endX = startX + C.barHeight
     }
     let tx: number
     let anchor: 'start' | 'middle' | 'end' = 'middle'
     let outside: 'left' | 'right' | null = null
     // The class decision uses endX from scale(end), not renderEnd (as Mermaid does).
     let classEnd = ex
-    if (t.milestone) classEnd = sx + GANTT.barHeight
+    if (t.milestone) classEnd = sx + C.barHeight
     const overflow = textW > (t.vert ? 0 : endX - startX)
     const classOverflow = textW > classEnd - sx
     if (t.vert) {
-      tx = sx + GANTT.leftPadding
+      tx = sx + C.leftPadding
     } else if (overflow) {
-      if (endX + textW + 1.5 * GANTT.leftPadding > w) {
-        tx = startX + GANTT.leftPadding - 5
+      if (endX + textW + 1.5 * C.leftPadding > w) {
+        tx = startX + C.leftPadding - 5
       } else {
-        tx = endX + GANTT.leftPadding + 5
+        tx = endX + C.leftPadding + 5
       }
     } else {
-      tx = (endX - startX) / 2 + startX + GANTT.leftPadding
+      tx = (endX - startX) / 2 + startX + C.leftPadding
     }
     if (classOverflow) {
-      if (classEnd + textW + 1.5 * GANTT.leftPadding > w) {
+      if (classEnd + textW + 1.5 * C.leftPadding > w) {
         outside = 'left'
         anchor = 'end'
       } else {
@@ -181,11 +181,8 @@ export function layoutGantt(
       }
     }
     const ty = t.vert
-      ? GANTT.gridLineStartPadding + rowCount * GAP + 60
-      : order * GAP +
-        GANTT.barHeight / 2 +
-        (GANTT.fontSize / 2 - 2) +
-        GANTT.topPadding
+      ? C.gridLineStartPadding + rowCount * GAP + 60
+      : order * GAP + C.barHeight / 2 + (C.fontSize / 2 - 2) + C.topPadding
     return {
       id: t.id,
       x,
@@ -209,8 +206,8 @@ export function layoutGantt(
     if (seen.has(o)) continue
     seen.add(o)
     rows.push({
-      y: o * GAP + GANTT.topPadding - 2,
-      width: w - GANTT.rightPadding / 2,
+      y: o * GAP + C.topPadding - 2,
+      width: w - C.rightPadding / 2,
       height: GAP,
       sectionStyle: p.sectionStyle,
     })
@@ -243,10 +240,10 @@ export function layoutGantt(
     const x1 = scale(sod(r.end) + DAY - 1)
     return {
       id: formatD3Time(r.start, '%Y-%m-%d'),
-      x: x0 + GANTT.leftPadding,
-      y: GANTT.gridLineStartPadding,
+      x: x0 + C.leftPadding,
+      y: C.gridLineStartPadding,
       width: x1 - x0,
-      height: h - GANTT.topPadding - GANTT.gridLineStartPadding,
+      height: h - C.topPadding - C.gridLineStartPadding,
     }
   }
 
@@ -260,10 +257,10 @@ export function layoutGantt(
     )
     if (est > 10_000) custom = undefined
   }
-  const tickSize = -h + GANTT.topPadding + GANTT.gridLineStartPadding
+  const tickSize = -h + C.topPadding + C.gridLineStartPadding
   const makeAxis = (position: 'top' | 'bottom'): PositionedGanttAxis => ({
-    x: GANTT.leftPadding,
-    y: position === 'bottom' ? h - 50 : GANTT.topPadding,
+    x: C.leftPadding,
+    y: position === 'bottom' ? h - 50 : C.topPadding,
     position,
     tickSize,
     rangeEnd: span,
@@ -284,13 +281,15 @@ export function layoutGantt(
     const n = heights.get(cat)!
     sectionLabels.push({
       lines: cat.split(/<br\s*\/?>|\n/i),
-      y: (n * GAP) / 2 + before * GAP + GANTT.topPadding,
+      y: (n * GAP) / 2 + before * GAP + C.topPadding,
       sectionStyle: styleOf(cat),
     })
     before += n
   }
 
   const out: PositionedGanttChart = {
+    fontSize: C.fontSize,
+    sectionFontSize: C.sectionFontSize,
     width: w,
     height: h,
     excludeRanges,
@@ -300,7 +299,7 @@ export function layoutGantt(
     sectionLabels,
   }
   if (chart.title) {
-    out.title = { text: chart.title, x: w / 2, y: GANTT.titleTopMargin }
+    out.title = { text: chart.title, x: w / 2, y: C.titleTopMargin }
   }
   if (chart.todayMarker !== 'off' && all.length) {
     const now = opts.now ?? Date.now()
@@ -308,9 +307,9 @@ export function layoutGantt(
     // Off the chart the line is invisible; leave it out so output stays stable.
     if (now >= t0 && now <= t1) {
       out.today = {
-        x: nx + GANTT.leftPadding,
-        y1: GANTT.titleTopMargin,
-        y2: h - GANTT.titleTopMargin,
+        x: nx + C.leftPadding,
+        y1: C.titleTopMargin,
+        y2: h - C.titleTopMargin,
         style: chart.todayMarker.replace(/,/g, ';'),
       }
     }

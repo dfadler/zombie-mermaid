@@ -443,3 +443,54 @@ export function QuadrantIcon({
     </StrokeIcon>
   )
 }
+
+/**
+ * Gantt — three staggered task bars. Accent `--green`.
+ */
+export function GanttIcon({ animated = true, ...props }: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--green">
+      {animated ? (
+        <style>{`
+          .zm-gantt-bar { animation: zm-gantt-slide 2s ease-in-out infinite; }
+          @keyframes zm-gantt-slide {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(1.5px); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .zm-gantt-bar { animation: none; }
+          }
+        `}</style>
+      ) : null}
+      <path d="M3 3v18h18" />
+      <rect
+        x="6"
+        y="6"
+        width="7"
+        height="3"
+        rx="1"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        className={animated ? 'zm-gantt-bar' : undefined}
+        x="9"
+        y="11"
+        width="8"
+        height="3"
+        rx="1"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        x="13"
+        y="16"
+        width="6"
+        height="3"
+        rx="1"
+        fill="currentColor"
+        stroke="none"
+      />
+    </StrokeIcon>
+  )
+}
