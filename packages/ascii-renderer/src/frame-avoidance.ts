@@ -133,6 +133,9 @@ function findViolation(
       const lo = Math.min(from, to)
       const hi = Math.max(from, to)
       for (const sg of graph.subgraphs) {
+        // A self-loop belongs inside its own frame, whose wall is drawn round
+        // the loop's hook (#2913): chasing that wall would widen without end.
+        if (edge.from === edge.to && isRelated(sg, edge)) continue
         const box = clusterGridBox(sg)
         if (!box) continue
         const wallLo = vertical ? sg.minX : sg.minY

@@ -63,6 +63,10 @@ export interface RequirementDiagram extends StyleDirectives {
   relationships: RequirementRelationship[]
   /** `direction TB|BT|LR|RL`; the last one wins. Unset lays out top to bottom. */
   direction?: 'TB' | 'BT' | 'LR' | 'RL'
+  /** Every class a box carries, in source order (`classAssignments` keeps only the last). */
+  nodeClasses: Map<string, string[]>
+  /** A box's `style` and class declarations, in source order; later ones win. */
+  styleLayers: Map<string, Record<string, string>[]>
 }
 
 // ============================================================================
@@ -85,7 +89,10 @@ export interface PositionedRequirementNode {
   /** The divider's y, absolute; absent without body rows. */
   dividerY?: number
   inlineStyle?: Record<string, string>
+  /** The box's last class. */
   className?: string
+  /** Every class on the box, in source order. */
+  classNames?: string[]
 }
 
 export interface PositionedRequirementEdge {

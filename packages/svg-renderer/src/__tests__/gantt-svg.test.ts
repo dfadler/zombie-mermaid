@@ -272,3 +272,40 @@ B :b, 2024-01-01, 90d`)
     expect(renderMermaidSVG(src)).toBe(renderMermaidSVG(src))
   })
 })
+
+describe('gantt layout: size config', () => {
+  // Figures from mermaid@12.3.0 for this source at width 1264 (checked with
+  // scripts/gantt-oracle.ts's comparison; bars, stripes, ticks and the frame matched).
+  const SIZED = `%%{init: {"gantt": {"barHeight": 30, "barGap": 6, "topPadding": 60, "leftPadding": 100, "rightPadding": 40, "gridLineStartPadding": 20, "fontSize": 14, "sectionFontSize": 16, "titleTopMargin": 15}}}%%
+gantt
+    title Sized
+    dateFormat YYYY-MM-DD
+    todayMarker off
+    section One
+        A task :a1, 2014-05-01, 30d
+        Another :after a1, 20d`
+  const l = lay(SIZED)
+
+  it('reads the size keys into the frame, rows and scale', () => {
+    expect(l.height).toBe(2 * 60 + 2 * 36)
+    expect(l.tasks[0]).toMatchObject({ x: 100, y: 60, height: 30 })
+    expect(l.tasks[1]!.y).toBe(60 + 36)
+    expect(l.axes[0]!.x).toBe(100)
+    expect(l.axes[0]!.rangeEnd).toBe(1264 - 100 - 40)
+    expect(l.title).toMatchObject({ y: 15 })
+    expect(l.fontSize).toBe(14)
+    expect(l.sectionFontSize).toBe(16)
+  })
+
+  it('keeps Mermaid defaults without the keys', () => {
+    const d = lay(STATUS)
+    expect(d.fontSize).toBe(GANTT.fontSize)
+    expect(d.tasks[0]!.height).toBe(GANTT.barHeight)
+  })
+
+  it('writes the font sizes into the SVG', () => {
+    const svg = renderMermaidSVG(SIZED)
+    expect(svg).toContain('font-size="14"')
+    expect(svg).toContain('font-size="16"')
+  })
+})

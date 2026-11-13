@@ -17,7 +17,7 @@
 // ============================================================================
 
 import type { ElkNode } from '@zombie-mermaid/core'
-import { resolveNodeStyle } from '@zombie-mermaid/core'
+import { dropInvalidColors } from '@zombie-mermaid/core'
 import type {
   PositionedRequirementDiagram,
   PositionedRequirementEdge,
@@ -196,8 +196,17 @@ export function layoutRequirementDiagramSync(
     const rows = rowsOf.get(n.id)!
     const x = child.x ?? 0
     const y = child.y ?? 0
+    const classNames = diagram.nodeClasses.get(n.id)
     const className = diagram.classAssignments.get(n.id)
-    const inlineStyle = resolveNodeStyle(n.id, diagram)
+    // `classDef default` first, then the box's own declarations in source order.
+    const layers = [
+      diagram.classDefs.get('default'),
+      ...(diagram.styleLayers.get(n.id) ?? []),
+    ]
+    const inlineStyle = layers.reduce<Record<string, string> | undefined>(
+      (acc, layer) => (layer ? { ...acc, ...dropInvalidColors(layer) } : acc),
+      undefined,
+    )
     return {
       id: n.id,
       kind: n.kind,
@@ -213,6 +222,7 @@ export function layoutRequirementDiagramSync(
       }),
       ...(inlineStyle && { inlineStyle }),
       ...(className && { className }),
+      ...(classNames && { classNames }),
     }
   })
   const byId = new Map(nodes.map((n) => [n.id, n]))

@@ -7,7 +7,12 @@ import {
   parseDayjs,
   weekdayName,
 } from './dates.ts'
-import type { GanttChart, GanttTask, GanttWeekday } from './types.ts'
+import type {
+  GanttChart,
+  GanttSizes,
+  GanttTask,
+  GanttWeekday,
+} from './types.ts'
 
 // ============================================================================
 // Gantt parser
@@ -138,6 +143,19 @@ function stripComment(line: string): string {
   return line
 }
 
+const SIZE_KEYS = [
+  'titleTopMargin',
+  'barHeight',
+  'barGap',
+  'topPadding',
+  'rightPadding',
+  'leftPadding',
+  'gridLineStartPadding',
+  'fontSize',
+  'sectionFontSize',
+  'numberSectionStyles',
+] as const satisfies readonly (keyof GanttSizes)[]
+
 /** Parse a Mermaid `gantt` chart from raw source text. */
 export function parseGantt(source: string, now: Date = new Date()): GanttChart {
   const chart: GanttChart = {
@@ -168,7 +186,7 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
   const clickable: string[] = []
 
   // `%%{init: {"gantt": {...}}}%%` (and front matter `config:`): the keys that
-  // change what is drawn. Sizes (`barHeight`, ...) are not read.
+  // change what is drawn, sizes (`barHeight`, ...) included.
   for (const body of initDirectives(source)) {
     try {
       const cfg = JSON.parse(body.replace(/'/g, '"')) as {
@@ -183,6 +201,14 @@ export function parseGantt(source: string, now: Date = new Date()): GanttChart {
         chart.weekday = g.weekday as GanttWeekday
       }
       if (typeof g.tickInterval === 'string') configTick = g.tickInterval
+      for (const k of SIZE_KEYS) {
+        // A size must be a finite number; numberSectionStyles at least 1.
+        const v = g[k]
+        if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
+          ;(chart.sizes ??= {})[k] =
+            k === 'numberSectionStyles' ? Math.max(1, Math.floor(v)) : v
+        }
+      }
     } catch {
       // Not JSON (Mermaid's own parser is looser): the directive is ignored.
     }

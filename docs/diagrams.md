@@ -1159,8 +1159,11 @@ three-part task forms with `after a b`, `until a` and durations
 clickable in static output, as in Mermaid), `accTitle` and `accDescr`. The
 `gantt` block of `%%{init}%%` and front matter `config:` is read for
 `displayMode` (`compact`), `topAxis`, `axisFormat`, `tickInterval` and
-`weekday`, and front matter `displayMode: compact` works as documented; bar
-sizes and paddings are not read yet.
+`weekday`, and front matter `displayMode: compact` works as documented. The
+size keys `barHeight`, `barGap`, `topPadding`, `leftPadding`, `rightPadding`,
+`gridLineStartPadding`, `titleTopMargin`, `fontSize`, `sectionFontSize` and
+`numberSectionStyles` are read too (checked against mermaid 12.3.0); `useWidth`
+is not.
 
 The SVG uses Mermaid's geometry: a frame 1200px wide (Mermaid uses its
 container's width), 24px rows with 20px bars, 75px side padding, the d3 time

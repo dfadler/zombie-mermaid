@@ -617,11 +617,18 @@ export function renderSequenceAscii(
   // Compute lifeline x-positions (greedy left-to-right).
   // See paddingOffset's doc comment (types.ts) for why this is an offset
   // from the paddingX default rather than the raw config value.
-  const minLifelineGap = paddingOffset(
-    config.paddingX,
-    DEFAULT_PADDING_X,
-    10,
+  // `sequence.width` / `actorMargin` (#2783): mermaid spaces actor centres by
+  // `width + actorMargin` (150 + 50 px by default = the 10-column minimum, so
+  // 20 px a column); a key off its default moves the minimum by its distance.
+  const initGapCols = Math.round(
+    ((diagram.layout?.width ?? 150) +
+      (diagram.layout?.actorMargin ?? 50) -
+      200) /
+      20,
+  )
+  const minLifelineGap = Math.max(
     4,
+    paddingOffset(config.paddingX, DEFAULT_PADDING_X, 10, 4) + initGapCols,
   )
   // A bracketed first participant needs room for the wall to its left; two
   // adjacent participants in different groups (or one grouped, one not)

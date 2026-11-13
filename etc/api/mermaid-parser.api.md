@@ -433,6 +433,7 @@ export interface GanttChart {
     // (undocumented)
     inclusiveEndDates: boolean;
     sections: string[];
+    sizes?: GanttSizes;
     tasks: GanttTask[];
     tickInterval?: TickInterval;
     // (undocumented)
@@ -444,6 +445,30 @@ export interface GanttChart {
     weekday: GanttWeekday;
     // (undocumented)
     weekend: 'friday' | 'saturday';
+}
+
+// @public
+export interface GanttSizes {
+    // (undocumented)
+    barGap?: number;
+    // (undocumented)
+    barHeight?: number;
+    // (undocumented)
+    fontSize?: number;
+    // (undocumented)
+    gridLineStartPadding?: number;
+    // (undocumented)
+    leftPadding?: number;
+    // (undocumented)
+    numberSectionStyles?: number;
+    // (undocumented)
+    rightPadding?: number;
+    // (undocumented)
+    sectionFontSize?: number;
+    // (undocumented)
+    titleTopMargin?: number;
+    // (undocumented)
+    topPadding?: number;
 }
 
 // @public
@@ -1220,6 +1245,7 @@ export interface PositionedGanttChart {
         width: number;
         height: number;
     }[];
+    fontSize: number;
     // (undocumented)
     height: number;
     rows: {
@@ -1228,6 +1254,8 @@ export interface PositionedGanttChart {
         height: number;
         sectionStyle: number;
     }[];
+    // (undocumented)
+    sectionFontSize: number;
     // (undocumented)
     sectionLabels: {
         lines: string[];
@@ -1955,8 +1983,8 @@ export interface PositionedRequirementEdge {
 
 // @public (undocumented)
 export interface PositionedRequirementNode {
-    // (undocumented)
     className?: string;
+    classNames?: string[];
     dividerY?: number;
     // (undocumented)
     height: number;
@@ -2226,9 +2254,11 @@ export function requirementBodyRows(node: RequirementNode): string[];
 // @public
 export interface RequirementDiagram extends StyleDirectives {
     direction?: 'TB' | 'BT' | 'LR' | 'RL';
+    nodeClasses: Map<string, string[]>;
     nodes: RequirementNode[];
     // (undocumented)
     relationships: RequirementRelationship[];
+    styleLayers: Map<string, Record<string, string>[]>;
 }
 
 // @public

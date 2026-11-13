@@ -42,6 +42,20 @@ export type GanttWeekday =
   | 'saturday'
   | 'sunday'
 
+/** The numeric `gantt` config keys that change sizes (`%%{init}%%`), as given. */
+export interface GanttSizes {
+  titleTopMargin?: number
+  barHeight?: number
+  barGap?: number
+  topPadding?: number
+  rightPadding?: number
+  leftPadding?: number
+  gridLineStartPadding?: number
+  fontSize?: number
+  sectionFontSize?: number
+  numberSectionStyles?: number
+}
+
 /** A parsed Mermaid gantt chart. */
 export interface GanttChart {
   title?: string
@@ -61,6 +75,8 @@ export interface GanttChart {
   weekend: 'friday' | 'saturday'
   /** `compact` packs non-overlapping tasks of a section onto one row. */
   displayMode: '' | 'compact'
+  /** Size keys set in the `gantt` config; unset keys keep Mermaid's defaults. */
+  sizes?: GanttSizes
   /** Section names in order of appearance. */
   sections: string[]
   /** Tasks in source order. */
@@ -133,4 +149,7 @@ export interface PositionedGanttChart {
   sectionLabels: { lines: string[]; y: number; sectionStyle: number }[]
   /** The `todayMarker` line when today falls inside the chart. */
   today?: { x: number; y1: number; y2: number; style: string }
+  /** Task label and section label font sizes, px. */
+  fontSize: number
+  sectionFontSize: number
 }
