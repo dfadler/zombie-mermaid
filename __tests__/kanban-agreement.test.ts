@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { renderMermaidSVG } from '../src/index.ts'
+import { scoreKanban } from '../scripts/lib/kanban-measure.ts'
+import type { RealMermaidSession } from '../scripts/lib/real-mermaid.ts'
 import {
   kanbanAgreement,
   kanbanBreaches,
@@ -91,5 +93,39 @@ describe('parseKanbanSvg on sparse markup', () => {
     const svg =
       '<svg viewBox="0 0 1 1"><g class="node" transform="translate(1, 2)"><rect class="basic" x="0" y="0" width="1" height="1"></rect><line stroke-width="4"></line></g></svg>'
     expect(parseKanbanSvg(svg).bars).toEqual(['-'])
+  })
+})
+
+describe('scoreKanban', () => {
+  // A stand-in session whose "official" render is our own, so every sample agrees.
+  const session = {
+    page: {
+      evaluate: async (_fn: unknown, [, src]: [string, string]) =>
+        renderMermaidSVG(src),
+    },
+  } as unknown as RealMermaidSession
+
+  it('scores each kanban sample and filters by title', async () => {
+    const all = await scoreKanban(session)
+    const titles = Object.keys(all.results)
+    expect(titles.length).toBeGreaterThan(0)
+    expect(all.breaches).toEqual([])
+    const one = await scoreKanban(session, titles[0]!.toUpperCase())
+    expect(Object.keys(one.results)).toContain(titles[0])
+  })
+
+  it('reports a sample that fails to render as errored', async () => {
+    const bad = {
+      page: {
+        evaluate: async () => {
+          throw new Error('boom\nstack')
+        },
+      },
+    } as unknown as RealMermaidSession
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const r = await scoreKanban(bad)
+    spy.mockRestore()
+    expect(r.errored.length).toBeGreaterThan(0)
+    expect(r.breaches).toEqual(r.errored)
   })
 })

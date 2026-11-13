@@ -22,6 +22,7 @@ import {
   sanitizeClassName,
   f,
 } from '@zombie-mermaid/core'
+import { wrapFlowchartLabel } from './layout-engine/wrap-label.ts'
 import type { FontSizes } from './styles.ts'
 import {
   ASYMMETRIC_NOTCH,
@@ -749,7 +750,7 @@ function renderNode(
   stateDiagram: boolean = false,
 ): string {
   const shape = renderNodeShape(node, stateDiagram)
-  const label = renderNodeLabel(node, font, fontSizes)
+  const label = renderNodeLabel(node, font, fontSizes, stateDiagram)
 
   // Combine shape and label inside a semantic group
   // This enables reliable node identification without heuristics
@@ -1819,6 +1820,7 @@ function renderNodeLabel(
   node: PositionedNode,
   _font: string,
   fontSizes: FontSizes,
+  stateDiagram: boolean,
 ): string {
   // State pseudostates have no label
   if (node.shape === 'state-start' || node.shape === 'state-end') {
@@ -1862,7 +1864,17 @@ function renderNodeLabel(
     attrs += f` style="font-family: ${escapeAttr(fontFamily)};"`
   }
 
-  return renderMultilineText(node.label, cx, cy, fontSizes.nodeLabel, attrs)
+  // A flowchart label wraps at 120px, as in mermaid@12.3.0 (#2932); node
+  // sizes (`estimateNodeSize`) were computed from the same wrapped text.
+  const text =
+    stateDiagram || node.icon !== undefined
+      ? node.label
+      : wrapFlowchartLabel(
+          node.label,
+          fontSizes.nodeLabel,
+          FONT_WEIGHTS.nodeLabel,
+        ).text
+  return renderMultilineText(text, cx, cy, fontSizes.nodeLabel, attrs)
 }
 
 // ============================================================================

@@ -50,3 +50,43 @@ describe('long block label word (#2773)', () => {
     expect(svg).toContain('coniosis]')
   })
 })
+
+// Over-long words split mid-word with a trailing `-` (mermaid@12.3.0
+// breakString) in wrapped messages, notes and participant names (#2963).
+describe('long word in wrapped text (#2963)', () => {
+  const W = 'Pneumonoultramicroscopicsilicovolcanoconiosis_is_a_long_word'
+  const init = '%%{init: {"sequence": {"wrap": true}}}%%\n'
+  const texts = (svg: string) =>
+    (svg.match(/<text[\s\S]*?<\/text>/g) ?? []).join('\n')
+  it('splits a wrap: message word', () => {
+    const t = texts(renderMermaidSVG(`sequenceDiagram\n A->>B: wrap:${W} ok`))
+    expect(t).toMatch(/Pneumonoultra\w*-/)
+    expect(t).not.toContain(W)
+  })
+  it('splits a note word under init wrap and keeps nowrap: whole', () => {
+    const t = texts(
+      renderMermaidSVG(`${init}sequenceDiagram\n A->>B: x\n Note over A: ${W}`),
+    )
+    expect(t).toMatch(/Pneumonoultra\w*-/)
+    const n = texts(
+      renderMermaidSVG(
+        `${init}sequenceDiagram\n A->>B: x\n Note over A: nowrap:${W}`,
+      ),
+    )
+    expect(n).toContain(W)
+  })
+  it('wraps a participant name (prefix and init), growing the box', () => {
+    const plain = renderMermaidSVG(`sequenceDiagram\n participant A as ${W}`)
+    const pre = renderMermaidSVG(`sequenceDiagram\n participant A as wrap:${W}`)
+    const glob = renderMermaidSVG(
+      `${init}sequenceDiagram\n participant A as ${W}`,
+    )
+    expect(texts(plain)).toContain(W)
+    for (const svg of [pre, glob]) {
+      expect(texts(svg)).toMatch(/Pneumonoultra\w*-/)
+      expect(svg).not.toContain('wrap:')
+    }
+    const h = (svg: string) => +/<rect[^>]*height="([\d.]+)"/.exec(svg)![1]!
+    expect(h(pre)).toBeGreaterThan(h(plain))
+  })
+})

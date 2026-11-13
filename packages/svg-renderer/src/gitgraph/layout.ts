@@ -22,10 +22,12 @@ import type {
   PositionedGitBranch,
   PositionedGitCommit,
   PositionedGitGraph,
+  PositionedGitLook,
   PositionedGitShape,
   PositionedGitTag,
 } from '@zombie-mermaid/mermaid-parser'
-import { textWidth } from '../timeline/layout.ts'
+import { textWidth as trebuchetWidth } from '../timeline/layout.ts'
+import { arialWidth } from './arial-metrics.ts'
 
 const LAYOUT_OFFSET = 10
 const COMMIT_STEP = 40
@@ -33,6 +35,65 @@ const PX = 4
 const PY = 2
 const THEME_COLOR_LIMIT = 8
 const DEFAULT_POS = 30
+const REDUX_PAD_Y = 12
+const REDUX_THEMES = new Set([
+  'redux',
+  'redux-dark',
+  'redux-color',
+  'redux-dark-color',
+])
+const COLOR_THEMES = new Set(['redux-color', 'redux-dark-color'])
+const DARK_THEMES = new Set([
+  'dark',
+  'redux-dark',
+  'redux-dark-color',
+  'neo-dark',
+])
+const ARIAL_THEMES = new Set([...REDUX_THEMES, 'neo', 'neo-dark'])
+/** `look: neo` drop shadow of a branch label box by theme (themeVariables.dropShadow, 12.3.0, verbatim). */
+const NEO_SHADOWS: Record<string, string> = {
+  default: 'drop-shadow(1px 2px 2px rgba(185, 185, 185, 1))',
+  forest: 'drop-shadow( 1px 2px 2px rgba(185,185,185,0.5))',
+  neo: 'drop-shadow( 0px 1px 2px rgba(0, 0, 0, 0.25));',
+  'neo-dark': 'drop-shadow( 1px 2px 2px rgba(185,185,185,0.2))',
+}
+const NEO_SHADOW_OTHER = 'drop-shadow( 1px 2px 2px rgba(185,185,185,1))'
+
+/** What Mermaid's theme and look change in a gitGraph: see {@link PositionedGitLook}. */
+export function gitLook(
+  theme: string | undefined,
+  look: string | undefined,
+): PositionedGitLook {
+  const t = theme ?? 'default'
+  const redux = REDUX_THEMES.has(t)
+  const neo = look === 'neo'
+  const out: PositionedGitLook = {
+    redux,
+    colorTheme: COLOR_THEMES.has(t),
+    dark: DARK_THEMES.has(t),
+    thinBranch: ARIAL_THEMES.has(t),
+    colorLimit: redux ? 12 : THEME_COLOR_LIMIT,
+    neo,
+  }
+  if (neo) {
+    if (redux) out.shadowFlood = out.dark ? '#FFFFFF' : '#000000'
+    else
+      out.neoFilter = `filter:${
+        t === 'default' || t === 'forest' || t === 'neo' || t === 'neo-dark'
+          ? NEO_SHADOWS[t]
+          : NEO_SHADOW_OTHER
+      }`
+  }
+  return out
+}
+
+/** Mermaid's `calcColorIndex`: colour themes never give a branch past the first the default slot. */
+const calcColorIndex = (
+  raw: number,
+  limit: number,
+  avoidDefault: boolean,
+): number =>
+  avoidDefault && raw > 0 ? ((raw - 1) % (limit - 1)) + 1 : raw % limit
 
 interface Pt {
   x: number
@@ -43,8 +104,6 @@ interface Pt {
 export function lineHeight(size: number): number {
   return Math.round(0.939 * size) + Math.round(0.222 * size)
 }
-const ascent = (size: number): number => Math.round(0.939 * size)
-const descent = (size: number): number => Math.round(0.222 * size)
 
 /** Mermaid's `drawText` splits a branch name into rows on `\n` and `<br>`. */
 function textRows(txt: string): string[] {
@@ -102,6 +161,20 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
   const dir = g.direction
   const vertical = dir === 'TB' || dir === 'BT'
   const cfg = g.config
+  const look = gitLook(cfg.theme, cfg.look)
+  const arial = ARIAL_THEMES.has(cfg.theme ?? '')
+  // The font of the theme: Trebuchet MS at 16px, or Arial at 14px (redux, neo).
+  const baseSize = arial ? 14 : 16
+  const asc = (size: number): number =>
+    Math.round((arial ? 0.905 : 0.939) * size)
+  const desc = (size: number): number =>
+    Math.round((arial ? 0.212 : 0.222) * size)
+  const lh = (size: number): number => asc(size) + desc(size)
+  const textWidth = (t: string, size = 16, bold = false): number =>
+    arial ? arialWidth(t, size, bold) : trebuchetWidth(t, size, bold)
+  // Redux draws the branch and commit labels at weight 600.
+  const boldLabels = look.redux
+  const spineOffset = look.redux ? REDUX_PAD_Y / 2 + 1 : -2
   const commits = new Map<string, GitCommit>(g.commits.map((c) => [c.id, c]))
 
   const branchPos = new Map<string, { pos: number; index: number }>()
@@ -113,7 +186,8 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
   // ---- branch positions -------------------------------------------------
   let bp = 0
   g.branches.forEach((name, index) => {
-    const w = Math.max(...textRows(name).map((r) => textWidth(r)))
+    // The first pass measures the label before it has its `branch-labelN` (weight 600) class.
+    const w = Math.max(...textRows(name).map((r) => textWidth(r, baseSize)))
     branchPos.set(name, { pos: bp, index })
     bp += 50 + (cfg.rotateCommitLabel ? 40 : 0) + (vertical ? w / 2 : 0)
   })
@@ -209,12 +283,16 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
       dir === 'BT' && cfg.parallelCommits ? pos : pos + LAYOUT_OFFSET
     const branchY = branchPos.get(c.branch)!.pos
     const x = vertical ? branchPos.get(c.branch)!.pos : posWithOffset
-    const y = vertical ? posWithOffset : branchY - 2
+    const y = vertical ? posWithOffset : branchY + spineOffset
     return { x, y, posWithOffset }
   }
 
   const colorOf = (branch: string): number =>
-    (branchPos.get(branch)?.index ?? 0) % THEME_COLOR_LIMIT
+    calcColorIndex(
+      branchPos.get(branch)?.index ?? 0,
+      THEME_COLOR_LIMIT,
+      look.colorTheme,
+    )
 
   // ---- commit symbols, labels and tags ----------------------------------
   const typeClassOf = (c: GitCommit): string => {
@@ -240,41 +318,43 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
     const tc = typeClassOf(c)
     const ci = colorOf(c.branch)
     const out: PositionedGitShape[] = []
+    const rx = look.redux
+    const ink = look.dark ? '#000000' : '#fff'
     if (sym === 'HIGHLIGHT') {
       out.push({
         kind: 'rect',
-        x: p.x - 10,
-        y: p.y - 10,
-        w: 20,
-        h: 20,
+        x: p.x - 10 + (rx ? 3 : 0),
+        y: p.y - 10 + (rx ? 3 : 0),
+        w: rx ? 14 : 20,
+        h: rx ? 14 : 20,
         cls: `commit ${c.id} commit-highlight${ci} ${tc}-outer`,
       })
       out.push({
         kind: 'rect',
-        x: p.x - 6,
-        y: p.y - 6,
-        w: 12,
-        h: 12,
+        x: p.x - 6 + (rx ? 2 : 0),
+        y: p.y - 6 + (rx ? 2 : 0),
+        w: rx ? 8 : 12,
+        h: rx ? 8 : 12,
         cls: `commit ${c.id} commit${ci} ${tc}-inner`,
       })
     } else if (sym === 'CHERRY_PICK') {
       const cls = `commit ${c.id} ${tc}`
-      out.push({ kind: 'circle', cx: p.x, cy: p.y, r: 10, cls })
+      out.push({ kind: 'circle', cx: p.x, cy: p.y, r: rx ? 7 : 10, cls })
       out.push({
         kind: 'circle',
         cx: p.x - 3,
         cy: p.y + 2,
-        r: 2.75,
+        r: rx ? 2.5 : 2.75,
         cls,
-        fill: '#fff',
+        fill: ink,
       })
       out.push({
         kind: 'circle',
         cx: p.x + 3,
         cy: p.y + 2,
-        r: 2.75,
+        r: rx ? 2.5 : 2.75,
         cls,
-        fill: '#fff',
+        fill: ink,
       })
       out.push({
         kind: 'line',
@@ -283,7 +363,7 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
         x2: p.x,
         y2: p.y - 5,
         cls,
-        stroke: '#fff',
+        stroke: ink,
       })
       out.push({
         kind: 'line',
@@ -292,14 +372,14 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
         x2: p.x,
         y2: p.y - 5,
         cls,
-        stroke: '#fff',
+        stroke: ink,
       })
     } else {
       out.push({
         kind: 'circle',
         cx: p.x,
         cy: p.y,
-        r: 10,
+        r: rx ? 7 : 10,
         cls: `commit ${c.id} commit${ci}`,
       })
       if (sym === 'MERGE')
@@ -307,15 +387,17 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
           kind: 'circle',
           cx: p.x,
           cy: p.y,
-          r: 6,
+          r: rx ? 5 : 6,
           cls: `commit ${tc} ${c.id} commit${ci}`,
         })
-      if (sym === 'REVERSE')
+      if (sym === 'REVERSE') {
+        const k = rx ? 4 : 5
         out.push({
           kind: 'path',
-          d: `M ${p.x - 5},${p.y - 5}L${p.x + 5},${p.y + 5}M${p.x - 5},${p.y + 5}L${p.x + 5},${p.y - 5}`,
+          d: `M ${p.x - k},${p.y - k}L${p.x + k},${p.y + k}M${p.x - k},${p.y + k}L${p.x + k},${p.y - k}`,
           cls: `commit ${tc} ${c.id} commit${ci}`,
         })
+      }
     }
     return out
   }
@@ -333,8 +415,8 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
       )
     )
       return undefined
-    const w = textWidth(c.id, 10)
-    const h = lineHeight(10)
+    const w = textWidth(c.id, 10, boldLabels)
+    const h = lh(10)
     let rect = {
       x: cp.posWithOffset - w / 2 - PY,
       y: cp.y + 13.5,
@@ -372,7 +454,7 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
       }
     }
     box.rect(label.rect.x, label.rect.y, label.rect.w, label.rect.h, t)
-    box.rect(label.textPos.x, label.textPos.y - ascent(10), w, h, t)
+    box.rect(label.textPos.x, label.textPos.y - asc(10), w, h, t)
     return label
   }
 
@@ -384,7 +466,7 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
     if (c.tags.length === 0) return []
     // Mermaid reverses the tags in place: the last one is drawn nearest the commit.
     const values = [...c.tags].reverse()
-    const h = lineHeight(10)
+    const h = lh(10)
     const widths = values.map((v) => textWidth(v, 10))
     const maxW = Math.max(...widths)
     const h2 = h / 2
@@ -421,7 +503,7 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
       let hole: Pt = { x: tag.hole.cx, y: tag.hole.cy }
       let textBox = {
         x: tag.textPos.x,
-        y: tag.textPos.y - ascent(10),
+        y: tag.textPos.y - asc(10),
         w: widths[i]!,
         t: undefined as Transform | undefined,
       }
@@ -449,7 +531,7 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
         hole = t12({ x: tag.hole.cx, y: tag.hole.cy })
         textBox = {
           x: tag.textPos.x,
-          y: tag.textPos.y - ascent(10),
+          y: tag.textPos.y - asc(10),
           w: widths[i]!,
           t: t14,
         }
@@ -485,8 +567,9 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
             box.add(s.cx + s.r, s.cy + s.r)
           } else if (s.kind === 'rect') box.rect(s.x, s.y, s.w, s.h)
           else if (s.kind === 'path') {
-            box.add(cp.x - 5, cp.y - 5)
-            box.add(cp.x + 5, cp.y + 5)
+            const k = look.redux ? 4 : 5
+            box.add(cp.x - k, cp.y - k)
+            box.add(cp.x + k, cp.y + k)
           } else {
             box.add(s.x1, s.y1)
             box.add(s.x2, s.y2)
@@ -624,7 +707,14 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
     )) {
       box.add(Number(m[1] ?? m[3]), Number(m[2] ?? m[4]))
     }
-    return { d, colorIndex: (colorIdx ?? 0) % THEME_COLOR_LIMIT }
+    return {
+      d,
+      colorIndex: calcColorIndex(
+        colorIdx ?? 0,
+        THEME_COLOR_LIMIT,
+        look.colorTheme,
+      ),
+    }
   }
 
   // ---- run: first pass positions, branches, arrows, second pass draws ----
@@ -633,9 +723,9 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
   const branches: PositionedGitBranch[] = []
   if (cfg.showBranches) {
     g.branches.forEach((name, index) => {
-      const ci = index % THEME_COLOR_LIMIT
+      const ci = calcColorIndex(index, look.colorLimit, look.colorTheme)
       const pos = branchPos.get(name)!.pos
-      const spineY = vertical ? pos : pos - 2
+      const spineY = vertical ? pos : pos + spineOffset
       let line = { x1: 0, y1: spineY, x2: maxPos, y2: spineY }
       if (dir === 'TB') line = { x1: pos, y1: DEFAULT_POS, x2: pos, y2: maxPos }
       else if (dir === 'BT')
@@ -645,27 +735,57 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
       box.add(line.x2, line.y2)
 
       const rows = textRows(name)
-      const bw = Math.max(...rows.map((r) => textWidth(r)))
-      const bh = rows.length * lineHeight(16)
+      const bw = Math.max(
+        ...rows.map((r) => textWidth(r, baseSize, boldLabels)),
+      )
+      const bh = rows.length * lh(baseSize)
       const rot = cfg.rotateCommitLabel ? 30 : 0
+      const px = look.redux ? 16 : 0
+      const py = look.redux ? REDUX_PAD_Y : 0
       let bkg: PositionedGitBranch['bkg'] = {
         x: -bw - 4 - rot,
         y: -bh / 2 + 10,
-        w: bw + 18,
-        h: bh + 4,
+        w: bw + 18 + px,
+        h: bh + 4 + py,
         tx: -19,
-        ty: spineY - 12,
+        ty: spineY - 12 - py / 2,
+        radius: look.redux ? 0 : 4,
       }
-      let label = { x: -bw - 14 - rot, y: spineY - bh / 2 - 2 }
+      let label = {
+        x: -bw - 14 - rot + px / 2,
+        y: spineY - bh / 2 - 2,
+      }
       if (dir === 'TB') {
-        bkg = { x: pos - bw / 2 - 10, y: 0, w: bkg.w, h: bkg.h }
+        bkg = {
+          x: pos - bw / 2 - 10,
+          y: 0,
+          w: bkg.w,
+          h: bkg.h,
+          radius: bkg.radius,
+        }
         label = { x: pos - bw / 2 - 5, y: 0 }
+        if (look.redux) {
+          bkg.tx = -px / 2 - 3
+          bkg.ty = -py - 10
+          label.y = -py * 2 + 7
+        }
       } else if (dir === 'BT') {
-        bkg = { x: pos - bw / 2 - 10, y: maxPos, w: bkg.w, h: bkg.h }
+        bkg = {
+          x: pos - bw / 2 - 10,
+          y: maxPos,
+          w: bkg.w,
+          h: bkg.h,
+          radius: bkg.radius,
+        }
         label = { x: pos - bw / 2 - 5, y: maxPos }
+        if (look.redux) {
+          bkg.tx = -px / 2 - 3
+          bkg.ty = py + 10
+          label.y = maxPos + py * 2 + 4
+        }
       }
       box.rect(bkg.x + (bkg.tx ?? 0), bkg.y + (bkg.ty ?? 0), bkg.w, bkg.h)
-      box.rect(label.x, label.y + 1, bw, bh)
+      box.rect(label.x, label.y + baseSize - asc(baseSize), bw, bh)
       branches.push({ name, colorIndex: ci, line, bkg, label })
     })
   }
@@ -685,18 +805,14 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
     arrows,
     commits: drawn,
     showBranches: cfg.showBranches,
+    look,
   }
   if (!Number.isFinite(box.minX)) box.add(0, 0)
   if (g.title) {
     const cx = box.minX + (box.maxX - box.minX) / 2
     const tw = textWidth(g.title, 18)
     out.title = { text: g.title, x: cx, y: -cfg.titleTopMargin }
-    box.rect(
-      cx - tw / 2,
-      -cfg.titleTopMargin - ascent(18),
-      tw,
-      ascent(18) + descent(18),
-    )
+    box.rect(cx - tw / 2, -cfg.titleTopMargin - asc(18), tw, asc(18) + desc(18))
   }
   out.viewBox = {
     x: box.minX - cfg.diagramPadding,

@@ -131,6 +131,23 @@ describe('parseSankey', () => {
     expect({ ...sk.config?.nodeColors }).toEqual({ A: 'red', B: 'green' })
   })
 
+  // Node names go through DOMPurify in mermaid@12.3.0's sankeyDB; expected
+  // strings are what its rendered <text> shows (checked against the real render).
+  it.each([
+    ['<script>x</script>A', 'A'],
+    ['<img src=x onerror=alert(1)>A', '<img src="x">A'],
+    ['<b>A</b>', '<b>A</b>'],
+    ['a < b', 'a &lt; b'],
+    ['A &amp; B', 'A &amp; B'],
+  ])('sanitises the node name %j like mermaid', (name, shown) => {
+    expect(parseSankey(`sankey-beta\n"${name}",B,1`).nodes[0]).toBe(shown)
+  })
+
+  it('merges names that sanitise to the same node', () => {
+    const sk = parseSankey('sankey-beta\nA,B,1\n"<script>x</script>A",C,1')
+    expect(sk.nodes).toEqual(['A', 'B', 'C'])
+  })
+
   it('numbers the line of an error', () => {
     expect(() => parseSankey('sankey-beta\nA,B,1\nC,D')).toThrow(/Line 3/)
   })

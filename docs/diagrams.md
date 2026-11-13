@@ -172,13 +172,14 @@ option.** The caller is closer to the user's intent than text embedded in a
 diagram, and a diagram from an untrusted source should not be able to
 override a host application's rendering choices.
 
-### `themeVariables` (opt-in)
+### `themeVariables`
 
-Mermaid applies `%%{init: {"themeVariables": {...}}}%%` colours; by default
-zombie-mermaid does not, so a diagram cannot recolour itself against the
-host page's `bg`/`fg` (or CSS-variable) theme. Set `honorThemeVariables: true`
-(`renderMermaidSVG` and `renderMermaidASCII`) to map a small subset onto the
-theme tokens:
+Mermaid applies `%%{init: {"themeVariables": {...}}}%%` colours, and so does
+zombie-mermaid (default since #2856, checked on mermaid 12.3.0): a small subset
+is mapped onto the theme tokens. Pass `honorThemeVariables: false`
+(`renderMermaidSVG` and `renderMermaidASCII`) to ignore them, so a diagram
+cannot recolour itself against the host page's `bg`/`fg` (or CSS-variable)
+theme:
 
 | Variable                                                                                                                                                                                                 | Needs                     | Becomes                              | Diagrams            |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------ | ------------------- |
@@ -196,7 +197,7 @@ flowchart LR
 ```
 
 ```ts
-renderMermaidSVG(source, { honorThemeVariables: true })
+renderMermaidSVG(source, { honorThemeVariables: false }) // opt out
 ```
 
 - **The caller wins.** A `bg`, `fg`, `line`, `surface` or `border` you pass is
@@ -227,7 +228,7 @@ renderMermaidSVG(source, { honorThemeVariables: true })
 
 Checked against mermaid 12.1.0 and 12.2.0 (`scripts/lib/real-mermaid.ts`;
 12.1.0 via jsDelivr), headless Chromium, computed paint; both gave the same results.
-See [known differences](known-differences.md#themevariables-are-opt-in-and-only-a-subset).
+See [known differences](known-differences.md#themevariables-are-honoured-by-default-and-only-a-subset).
 
 Keys parsed but deliberately not acted on, and why:
 
@@ -945,8 +946,7 @@ total are left out of the pie but stay in the legend, so the drawn slices
 fill the circle and the labels may not add up to 100%. A `pie` with no
 slices draws an empty circle.
 
-Colours follow the theme instead of Mermaid's `pie1`..`pie12` (unless you opt
-in with `honorThemeVariables`, see [`themeVariables`](#themevariables-opt-in)):
+Colours follow the theme instead of Mermaid's `pie1`..`pie12` (unless `honorThemeVariables: false`, see [`themeVariables`](#themevariables)):
 the first slice uses the accent colour, the next eleven use the XY chart series
 shades, and the twelve repeat after that. Slices are drawn at Mermaid's 0.7
 opacity with a 2px outline in the theme's foreground colour.

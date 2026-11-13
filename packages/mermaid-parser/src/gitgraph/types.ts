@@ -46,6 +46,10 @@ export interface GitGraphConfig {
   parallelCommits: boolean
   titleTopMargin: number
   diagramPadding: number
+  /** `theme` as written (`redux`, `neo-dark`, ...): picks Mermaid's geometry and font; colours stay the caller's. */
+  theme?: string
+  /** `look` as written; `neo` adds a drop shadow to the branch label boxes. */
+  look?: string
 }
 
 /** Mermaid's defaults for {@link GitGraphConfig} (`defaultConfig.gitGraph`, 12.3.0). */
@@ -103,7 +107,7 @@ export type PositionedGitShape =
 
 export interface PositionedGitBranch {
   name: string
-  /** Mermaid's `branchN` / `labelN` colour index (0..7). */
+  /** Mermaid's `branchN` / `labelN` colour index (0..7, or 0..11 under a redux theme). */
   colorIndex: number
   line: { x1: number; y1: number; x2: number; y2: number }
   /** Label background rect with its translate. */
@@ -112,9 +116,11 @@ export interface PositionedGitBranch {
     y: number
     w: number
     h: number
-    /** `translate(tx, ty)`, LR only. */
+    /** `translate(tx, ty)`: LR, and TB and BT under a redux theme. */
     tx?: number
     ty?: number
+    /** `rx` and `ry`: 4, or 0 under a redux theme. */
+    radius: number
   }
   /** Where the label text block sits (translate of the `label` group). */
   label: { x: number; y: number }
@@ -165,4 +171,25 @@ export interface PositionedGitGraph {
   /** The centred heading; `x` is the middle of the drawing. */
   title?: { text: string; x: number; y: number }
   showBranches: boolean
+  look: PositionedGitLook
+}
+
+/** The parts of Mermaid's theme and look that move or restyle gitGraph geometry. */
+export interface PositionedGitLook {
+  /** A `redux*` theme: one flat colour (unless `colorTheme`), 12 branch colours, no label radius. */
+  redux: boolean
+  /** `redux-color` / `redux-dark-color`: branches keep their own colour. */
+  colorTheme: boolean
+  /** `dark`, `neo-dark` and the redux dark themes: the cherry-pick's dots and stems are black, not white. */
+  dark: boolean
+  /** `redux*`, `neo` and `neo-dark`: the branch lines are 2px with a `4 2` dash (classic: 1px, `2`). */
+  thinBranch: boolean
+  /** How many `branchN` colour slots exist: 8, or 12 under a redux theme. */
+  colorLimit: number
+  /** `look: neo`: the branch label boxes get `data-look="neo"` and a drop shadow. */
+  neo: boolean
+  /** The shadow's CSS `filter` value for a non-redux theme (a redux one points at a `<defs>` filter instead). */
+  neoFilter?: string
+  /** Redux with `look: neo`: the flood colour of that `<defs>` filter (black, or white when dark). */
+  shadowFlood?: string
 }

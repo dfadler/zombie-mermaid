@@ -135,8 +135,8 @@ export interface AsciiRenderOptions {
    */
   hyperlinks?: boolean
   /**
-   * Opt in to a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours
-   * (default false: output is unchanged). Maps `lineColor` → `line`/`corner`,
+   * Honour a diagram's own `%%{init: {"themeVariables": {...}}}%%` colours
+   * (default true since #2856, as in Mermaid; pass `false` to ignore them). Maps `lineColor` → `line`/`corner`,
    * `primaryBorderColor` → `border`/`junction`, `primaryTextColor` → `fg`
    * (the last two only with `theme: "base"`, as in Mermaid) and, for pie
    * charts, `pie1`..`pie12` → the slice colours. Hex values only (ANSI and
@@ -227,7 +227,8 @@ export function renderMermaidASCII(
   const { text, accTitle, frontMatterTitle } = extractAccessibility(source)
   const theme: AsciiTheme = {
     ...DEFAULT_ASCII_THEME,
-    ...(options.honorThemeVariables && directiveTheme(text, options.theme)),
+    ...(options.honorThemeVariables !== false &&
+      directiveTheme(text, options.theme)),
     ...options.theme,
   }
   const diagramType: DiagramType = detectDiagramType(text)
@@ -243,7 +244,7 @@ export function renderMermaidASCII(
     hyperlinks: options.hyperlinks ?? false,
     direction: options.direction,
     limits: options.limits,
-    honorThemeVariables: options.honorThemeVariables ?? false,
+    honorThemeVariables: options.honorThemeVariables !== false,
     accTitle,
   })
 

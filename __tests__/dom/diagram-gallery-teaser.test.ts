@@ -28,6 +28,14 @@ describe('DiagramGalleryTeaser', () => {
       ['Quadrant', 'diagrams/quadrant.html'],
       ['Gantt', 'diagrams/gantt.html'],
       ['Kanban', 'diagrams/kanban.html'],
+      ['Mindmap', 'diagrams/mindmap.html'],
+      ['Timeline', 'diagrams/timeline.html'],
+      ['Requirement', 'diagrams/requirement.html'],
+      ['Journey', 'diagrams/journey.html'],
+      ['Radar', 'diagrams/radar.html'],
+      ['Packet', 'diagrams/packet.html'],
+      ['GitGraph', 'diagrams/gitgraph.html'],
+      ['Sankey', 'diagrams/sankey.html'],
     ]
 
     for (const [label, href] of expected) {

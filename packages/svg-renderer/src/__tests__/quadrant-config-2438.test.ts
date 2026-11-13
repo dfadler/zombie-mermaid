@@ -132,8 +132,16 @@ describe('quadrant theme variables', () => {
     '{"themeVariables": {"quadrant1Fill": "#ff0000", "quadrant1TextFill": "#abcdef", "quadrantPointFill": "#00ff00", "quadrantPointTextFill": "#fedcba", "quadrantXAxisTextFill": "#111111", "quadrantYAxisTextFill": "#222222", "quadrantTitleFill": "#0000ff", "quadrantInternalBorderStrokeFill": "#123456", "quadrantExternalBorderStrokeFill": "#654321"}}',
   )
 
-  it('are ignored unless honorThemeVariables is set', () => {
-    expect(renderMermaidSVG(TV)).toBe(renderMermaidSVG(BODY))
+  it('are ignored when honorThemeVariables is false', () => {
+    expect(renderMermaidSVG(TV, { honorThemeVariables: false })).toBe(
+      renderMermaidSVG(BODY),
+    )
+  })
+
+  it('are honoured by default (#2856)', () => {
+    expect(renderMermaidSVG(TV)).toBe(
+      renderMermaidSVG(TV, { honorThemeVariables: true }),
+    )
   })
 
   it('paint the chart when honoured', () => {

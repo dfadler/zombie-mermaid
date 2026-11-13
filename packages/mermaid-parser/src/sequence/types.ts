@@ -76,6 +76,8 @@ export interface ActivationEvent {
 export interface Actor {
   id: string
   label: string
+  /** `wrap:` / `nowrap:` prefix on the name; overrides the init `sequence.wrap` */
+  wrap?: boolean
   /** 'participant' renders as a box, 'actor' renders as a stick figure */
   type: 'participant' | 'actor'
   /**

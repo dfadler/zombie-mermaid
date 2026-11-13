@@ -445,16 +445,15 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   // lines gathered so far.
   let noteBlock: { target: string; left: boolean; lines: string[] } | null =
     null
-  let noteCount = 0
   const addNote = (target: string, left: boolean, text: string): void => {
     if (!compositeStateIds.has(target)) {
       ensureStateNode(graph, compositeStack, target)
     }
-    noteCount++
     // Mermaid names the note node `<state>----note-<n>` and joins it to the
     // state with a dotted, arrowless link: state -> note for `right of`,
     // note -> state for `left of` (mermaid 12.3.0), so a left note ranks above.
-    const noteId = `${target}----note-${noteCount}`
+    // The number is the count of edges so far, as in mermaid.
+    const noteId = `${target}----note-${graph.edges.length}`
     registerStateNode(graph, compositeStack, {
       id: noteId,
       label: normalizeBrTags(text),

@@ -1,4 +1,5 @@
 import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
+import { sanitizeTitle } from '../packet/sanitize-title.ts'
 import type { Sankey, SankeyLink } from './types.ts'
 
 // ============================================================================
@@ -88,7 +89,10 @@ export function parseSankey(text: string): Sankey {
   const nodes: string[] = []
   const seen = new Set<string>()
   const links: SankeyLink[] = []
-  const node = (id: string): string => {
+  // sankeyDB's findOrCreateNode runs the name through DOMPurify (common
+  // sanitizeText); names that sanitise alike are one node.
+  const node = (name: string): string => {
+    const id = sanitizeTitle(name)
     if (!seen.has(id)) {
       seen.add(id)
       nodes.push(id)

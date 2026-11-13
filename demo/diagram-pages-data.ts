@@ -294,6 +294,128 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
       'Kanban boards come from lean manufacturing: work items sit on cards that move across columns such as Todo, In progress and Done. Mermaid’s syntax starts with `kanban`, declares each column as an unindented line, and nests cards beneath it, optionally adding metadata such as `ticket`, `assigned` and `priority` in an `@{ }` block. The `kanban.ticketBaseUrl` config option turns tickets into links.',
     docsUrl: 'https://mermaid.ai/open-source/syntax/kanban.html',
   },
+  {
+    slug: 'mindmap',
+    label: 'Mindmap',
+    keyword: 'mindmap',
+    source: sampleSource('Mindmap: Basic'),
+    intro:
+      'Mindmaps branch outward from one central idea, so a topic and its sub-topics read as a tree. zombie-mermaid renders the branches, node shapes, icons and Markdown labels in SVG and ASCII.',
+    accent: 'blue',
+    exampleHeading: 'A map that grows out from one root idea.',
+    sourceFilename: 'map.mmd',
+    aboutHeading: 'Where mindmaps come from, and how the syntax works.',
+    about:
+      'Mindmaps were popularised as a note-taking technique: one idea in the middle, related ideas branching off it. Mermaid’s syntax starts with `mindmap`, and nesting is by indentation, with the first line under it as the root. Each node can take a shape such as `[square]`, `(rounded)` or `))bang((`, plus `::icon()` and `:::class` decorations.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/mindmap.html',
+  },
+  {
+    slug: 'timeline',
+    label: 'Timeline',
+    keyword: 'timeline',
+    source: sampleSource('Timeline: Basic'),
+    intro:
+      'Timelines place events in order along a line, grouped into periods or sections. zombie-mermaid renders them horizontally or vertically in SVG and ASCII.',
+    accent: 'cyan',
+    exampleHeading: 'Periods in order, each with its events.',
+    sourceFilename: 'history.mmd',
+    aboutHeading: 'Where timelines come from, and how the syntax works.',
+    about:
+      'Timelines show what happened when, which makes them a fit for project histories, release notes and roadmaps. Mermaid’s syntax starts with `timeline`, an optional `title`, and one `period : event` line per entry, with extra `: event` lines adding more events to the same period. A `section` line groups periods, and `direction TD` turns the layout vertical.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/timeline.html',
+  },
+  {
+    slug: 'requirement',
+    label: 'Requirement diagram',
+    keyword: 'requirementDiagram',
+    source: sampleSource('Requirement: Basic'),
+    intro:
+      'Requirement diagrams trace what a system must do to the elements that satisfy it. zombie-mermaid renders requirement and element boxes with labelled relationship edges in SVG and ASCII.',
+    accent: 'amber',
+    exampleHeading:
+      'Requirements, the elements that meet them, and the links between.',
+    sourceFilename: 'requirements.mmd',
+    aboutHeading:
+      'Where requirement diagrams come from, and how the syntax works.',
+    about:
+      'Requirement diagrams follow the SysML model used in systems engineering to keep requirements traceable. Mermaid’s syntax starts with `requirementDiagram`, declares blocks such as `requirement`, `functionalRequirement` and `element` with an id, text, risk and verification method, and joins them with `a - satisfies -> b` style relationships such as `contains`, `copies`, `derives`, `refines`, `traces` and `verifies`.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/requirementDiagram.html',
+  },
+  {
+    slug: 'journey',
+    label: 'User journey',
+    keyword: 'journey',
+    source: sampleSource('Journey: Basic'),
+    intro:
+      'User journey diagrams score each step of a task by how satisfied the people doing it are, grouped into sections. zombie-mermaid renders the sections, tasks, scores and actors in SVG and ASCII.',
+    accent: 'pink',
+    exampleHeading: 'Steps of a task, scored by how it feels.',
+    sourceFilename: 'journey.mmd',
+    aboutHeading: 'Where user journeys come from, and how the syntax works.',
+    about:
+      'User journey maps come from UX research, where a team follows a person through a task and records how they feel at each step. Mermaid’s syntax starts with `journey`, an optional `title`, `section` lines to group steps, and one `Task: score: Actor, Actor` line per step, with a score from 1 (unhappy) to 5 (happy).',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/userJourney.html',
+  },
+  {
+    slug: 'radar',
+    label: 'Radar chart',
+    keyword: 'radar-beta',
+    source: sampleSource('Radar: Basic'),
+    intro:
+      'Radar charts compare several series across the same set of axes, so strengths and gaps show up as the shape of each curve. zombie-mermaid renders circular or polygonal graticules, legends and scales in SVG and ASCII.',
+    accent: 'green',
+    exampleHeading: 'Several series compared across shared axes.',
+    sourceFilename: 'radar.mmd',
+    aboutHeading: 'Where radar charts come from, and how the syntax works.',
+    about:
+      'Radar charts, also called spider charts, plot one value per axis around a centre, which suits comparing skills, product features or benchmark scores. Mermaid’s syntax starts with `radar-beta`, declares `axis` names, then one `curve` per series with its values, and options such as `min`, `max`, `ticks` and `graticule` control the scale and grid.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/radar.html',
+  },
+  {
+    slug: 'packet',
+    label: 'Packet diagram',
+    keyword: 'packet / packet-beta',
+    source: sampleSource('Packet: Basic'),
+    intro:
+      'Packet diagrams lay a protocol header out bit by bit, so each field sits where it does on the wire. zombie-mermaid renders the rows, field boxes and bit numbers in SVG and ASCII.',
+    accent: 'violet',
+    exampleHeading: 'A protocol header, field by field.',
+    sourceFilename: 'header.mmd',
+    aboutHeading: 'Where packet diagrams come from, and how the syntax works.',
+    about:
+      'Packet diagrams are the bit-layout drawings found in network RFCs, such as the TCP and IPv4 header figures. Mermaid’s syntax starts with `packet` (or `packet-beta`), then one `start-end: "Label"` line per field, or `+N: "Label"` to give a field a bit count and let it follow the previous one.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/packet.html',
+  },
+  {
+    slug: 'gitgraph',
+    label: 'Git graph',
+    keyword: 'gitgraph',
+    source: sampleSource('GitGraph: Basic'),
+    intro:
+      'Git graphs draw a repository’s branches and commits as lanes with merge and cherry-pick links. zombie-mermaid renders commits, tags, branches and merges in SVG and ASCII.',
+    accent: 'blue',
+    exampleHeading: 'Branches, commits and merges as lanes.',
+    sourceFilename: 'history.mmd',
+    aboutHeading: 'Where git graphs come from, and how the syntax works.',
+    about:
+      'Git graphs are the branch diagrams used in workflow guides such as GitFlow. Mermaid’s syntax starts with `gitGraph`, then commands that mirror Git: `commit`, `branch`, `checkout`, `merge` and `cherry-pick`. Commits can take an `id`, a `tag` and a `type` such as `REVERSE` or `HIGHLIGHT`, and the graph can run left to right, top to bottom or bottom to top.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/gitgraph.html',
+  },
+  {
+    slug: 'sankey',
+    label: 'Sankey diagram',
+    keyword: 'sankey-beta',
+    source: sampleSource('Sankey: Basic'),
+    intro:
+      'Sankey diagrams show how a quantity flows between stages, with each link as wide as the amount it carries. zombie-mermaid renders nodes, flows and labels in SVG and ASCII.',
+    accent: 'cyan',
+    exampleHeading: 'Flows between stages, sized by amount.',
+    sourceFilename: 'flows.mmd',
+    aboutHeading: 'Where Sankey diagrams come from, and how the syntax works.',
+    about:
+      'Sankey diagrams are named after Captain Sankey’s 1898 chart of steam engine energy losses, and are now used for budgets, energy and traffic flows. Mermaid’s syntax starts with `sankey-beta` and is a CSV table of `source,target,value` rows, with quotes around names that contain commas.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/sankey.html',
+  },
 ]
 
 /**
@@ -318,6 +440,14 @@ const GALLERY_CATEGORY: Record<string, string> = {
   quadrant: 'Quadrant',
   gantt: 'Gantt',
   kanban: 'Kanban',
+  mindmap: 'Mindmap',
+  timeline: 'Timeline',
+  requirement: 'Requirement',
+  journey: 'Journey',
+  radar: 'Radar',
+  packet: 'Packet',
+  gitgraph: 'GitGraph',
+  sankey: 'Sankey',
 }
 
 /**
