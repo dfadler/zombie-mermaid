@@ -20,6 +20,7 @@ import {
   ErIcon,
   FlowchartIcon,
   GanttIcon,
+  KanbanIcon,
   PieIcon,
   QuadrantIcon,
   SequenceIcon,
@@ -54,6 +55,7 @@ const HUB_TYPE_ICONS: Record<
   pie: PieIcon,
   quadrant: QuadrantIcon,
   gantt: GanttIcon,
+  kanban: KanbanIcon,
 }
 const HUB_ICON_SIZE = 200
 

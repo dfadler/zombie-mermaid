@@ -112,6 +112,9 @@ describe('kanban SVG', () => {
       "---\nconfig:\n  kanban:\n    ticketBaseUrl: 'https://x.test/#TICKET#'\n---\nkanban\n  A\n    a@{ ticket: Q-7 }",
     )
     expect(linked).toContain('href="https://x.test/Q-7"')
+    // A focusable <a> inside role="img" fails axe nested-interactive.
+    expect(linked.match(/<svg[^>]*>/)![0]).not.toContain('role="img"')
+    expect(svg.match(/<svg[^>]*>/)![0]).toContain('role="img"')
   })
 
   it('escapes text', () => {

@@ -279,6 +279,21 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
       'Gantt charts show when each task of a project starts and ends, and are a staple of project planning. Mermaid’s syntax starts with `gantt`, followed by a `title`, a `dateFormat` and optional `axisFormat`, `excludes` and `todayMarker` lines. A `section` groups tasks, and each task is a `Label :status, id, start, end` line where the start can be a date or `after` another task, and the end a date or a duration such as `30d`.',
     docsUrl: 'https://mermaid.ai/open-source/syntax/gantt.html',
   },
+  {
+    slug: 'kanban',
+    label: 'Kanban board',
+    keyword: 'kanban',
+    source: sampleSource('Kanban: Basic'),
+    intro:
+      'Kanban boards lay work out as columns with cards stacked under each, so the state of a project reads at a glance. zombie-mermaid renders columns, cards, tickets, assignees and priority bars in SVG and as a column grid in ASCII.',
+    accent: 'violet',
+    exampleHeading: 'A board of columns, each holding its cards.',
+    sourceFilename: 'board.mmd',
+    aboutHeading: 'Where kanban boards come from, and how the syntax works.',
+    about:
+      'Kanban boards come from lean manufacturing: work items sit on cards that move across columns such as Todo, In progress and Done. Mermaid’s syntax starts with `kanban`, declares each column as an unindented line, and nests cards beneath it, optionally adding metadata such as `ticket`, `assigned` and `priority` in an `@{ }` block. The `kanban.ticketBaseUrl` config option turns tickets into links.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/kanban.html',
+  },
 ]
 
 /**
@@ -302,6 +317,7 @@ const GALLERY_CATEGORY: Record<string, string> = {
   pie: 'Pie',
   quadrant: 'Quadrant',
   gantt: 'Gantt',
+  kanban: 'Kanban',
 }
 
 /**

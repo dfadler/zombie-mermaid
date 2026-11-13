@@ -24,6 +24,7 @@ const TYPES = [
   'er',
   'flowchart',
   'gantt',
+  'kanban',
   'pie',
   'quadrant',
   'sequence',

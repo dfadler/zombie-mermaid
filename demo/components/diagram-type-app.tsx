@@ -501,6 +501,23 @@ function GanttGlyph() {
   )
 }
 
+function KanbanGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <path
+        d="M16 8 H38 V62 H16 Z M39 8 H61 V62 H39 Z M62 8 H84 V62 H62 Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+      <rect x="20" y="14" width="14" height="10" fill="currentColor" />
+      <rect x="43" y="14" width="14" height="10" fill="currentColor" />
+      <rect x="66" y="14" width="14" height="10" fill="currentColor" />
+    </svg>
+  )
+}
+
 /**
  * Every diagram type's crosslink glyph, keyed by `DiagramTypeProfile.slug`
  * (demo/diagram-pages-data.ts) — the same six slugs `DIAGRAM_TYPE_PROFILES`
@@ -519,6 +536,7 @@ const DIAGRAM_TYPE_GLYPHS: Record<string, () => ReactNode> = {
   pie: PieGlyph,
   quadrant: QuadrantGlyph,
   gantt: GanttGlyph,
+  kanban: KanbanGlyph,
 }
 
 /** One crosslink target: the other type's own display data. */

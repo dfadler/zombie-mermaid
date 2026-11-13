@@ -496,6 +496,7 @@ describe('index.ts → index.html', () => {
       ['Pie', 'diagrams/pie.html'],
       ['Quadrant', 'diagrams/quadrant.html'],
       ['Gantt', 'diagrams/gantt.html'],
+      ['Kanban', 'diagrams/kanban.html'],
     ]
     for (const [label, href] of gallery) {
       expect(body.getByRole('link', { name: label })).toHaveAttribute(

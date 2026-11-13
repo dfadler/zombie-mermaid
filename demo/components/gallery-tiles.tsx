@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /**
- * The eleven small animated SVG illustrations `DiagramGalleryTeaser`
+ * The twelve small animated SVG illustrations `DiagramGalleryTeaser`
  * (`diagram-gallery-teaser.tsx`) links to, one per diagram type — kept
  * together in one file since they're trivial variants of the same shape
  * (a `viewBox="0 0 100 70"` SVG, no props, one accent color each) rather
@@ -412,6 +412,24 @@ export function GanttTile() {
   )
 }
 
+/** Kanban: three columns, each with a card. */
+export function KanbanTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <path
+        d="M16 8 H38 V62 H16 Z M39 8 H61 V62 H39 Z M62 8 H84 V62 H62 Z"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+      <rect x="20" y="14" width="14" height="10" fill={colorVar('--violet')} />
+      <rect x="43" y="14" width="14" height="10" fill={colorVar('--violet')} />
+      <rect x="66" y="14" width="14" height="10" fill={colorVar('--violet')} />
+    </svg>
+  )
+}
+
 /**
  * One tile component per {@link GALLERY_TYPES} entry (`diagram-gallery-
  * teaser.tsx`), in the same order — index `i` here must line up with that
@@ -429,4 +447,5 @@ export const GALLERY_TILES = [
   PieTile,
   QuadrantTile,
   GanttTile,
+  KanbanTile,
 ]
