@@ -77,32 +77,7 @@ export function layoutGraphSync(
       opts.mergeEdges,
       opts.fontSizes.edgeLabel,
     )
-  const first = layOut(graph)
-  // mermaid@12.3.0 packs concurrent regions smallest first, ties in written
-  // order (#2962). Region sizes are only known after a layout, so lay out
-  // again with the regions reordered.
-  const area = new Map<string, number>()
-  const measure = (groups: PositionedGraph['groups']): void => {
-    for (const g of groups) {
-      if (g.region) area.set(g.id, g.width * g.height)
-      measure(g.children)
-    }
-  }
-  measure(first.groups)
-  if (area.size === 0) return first
-  const sortRegions = (
-    sgs: MermaidGraph['subgraphs'],
-  ): MermaidGraph['subgraphs'] =>
-    sgs.map((sg) => {
-      const children = sortRegions(sg.children)
-      return {
-        ...sg,
-        children: children.some((c) => c.region)
-          ? [...children].sort((a, b) => area.get(a.id)! - area.get(b.id)!)
-          : children,
-      }
-    })
-  return layOut({ ...graph, subgraphs: sortRegions(graph.subgraphs) })
+  return layOut(graph)
 }
 
 /**

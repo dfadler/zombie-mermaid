@@ -122,6 +122,50 @@ ${ids.map((i) => `    [*] --> ${i}`).join('\n    --\n')}
     expect(at('B').y).toBeGreaterThan(at('C').y)
   })
 
+  // Mermaid 12.3.0 (#2962, region-width sweep): a one-node region is 184 x 88
+  // and regions sit 24px apart; a wide label only breaks the single column
+  // into two rows once it is much wider than the other regions.
+  const regionRects = (src: string) => {
+    const g = layoutGraphSync(parseMermaid(src))
+    const rects: { x: number; y: number; width: number; height: number }[] = []
+    const walk = (groups: typeof g.groups) => {
+      for (const q of groups) {
+        if (q.region) rects.push(q)
+        walk(q.children)
+      }
+    }
+    walk(g.groups)
+    return rects
+  }
+  const withWide = (len: number) =>
+    `stateDiagram-v2
+  state S {
+    A1
+    --
+    B1
+    --
+    state "${'x'.repeat(len)}" as Y
+    Y
+  }`
+
+  it('keeps 24px between stacked regions', () => {
+    const [r1, r2] = regionRects(withWide(5)).sort((a, b) => a.y - b.y)
+    expect(r2!.y - (r1!.y + r1!.height)).toBeCloseTo(24, 0)
+  })
+
+  // Column counts probed in mermaid 12.3.0 for this diagram (unspaced label of
+  // `len` characters). A 30-character label is a width tie that ours still
+  // resolves as two columns (mermaid: one), so it is left out.
+  it.each([
+    [5, 1],
+    [20, 1],
+    [40, 2],
+    [60, 2],
+  ])('a %i-char wide region: %i column(s) of regions', (len, cols) => {
+    const xs = new Set(regionRects(withWide(len)).map((r) => Math.round(r.x)))
+    expect(xs.size).toBe(cols)
+  })
+
   it('declares a bare state id inside a region', () => {
     const g = parseMermaid(
       'stateDiagram-v2\n  state W {\n    A\n    --\n    B\n  }',

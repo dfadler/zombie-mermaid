@@ -132,7 +132,7 @@ export const MERMAID_SUBGRAPH_PADDING = {
 export const SUBGRAPH_PADDING = { top: 44, left: 16, bottom: 16, right: 16 }
 
 /** Padding for an untitled concurrency region (no header band). */
-export const REGION_PADDING = { top: 16, left: 16, bottom: 16, right: 16 }
+export const REGION_PADDING = { top: 24, left: 24, bottom: 24, right: 24 }
 
 /**
  * Whether three or more labelled edges join the same source and target. With
@@ -178,6 +178,14 @@ export function usesMermaidElkPipeline(graph: MermaidGraph): boolean {
   )
 }
 
+/** The spacing mermaid@12.3.0 gives ELK for every subgraph. */
+const MERMAID_SUBGRAPH_SPACING: LayoutOptions = {
+  'spacing.baseValue': '24',
+  'elk.spacing.nodeNode': '50',
+  'elk.layered.spacing.edgeNodeBetweenLayers': '30',
+  'elk.spacing.edgeEdge': '20',
+}
+
 /**
  * Spacing mermaid@12.3.0 gives ELK, replacing the fork's explicit values when
  * the caller left `nodeSpacing`/`layerSpacing` at their defaults: the root sets
@@ -198,12 +206,7 @@ function mermaidSpacing(
   }
   return level === 'root'
     ? { 'spacing.baseValue': '40' }
-    : {
-        'spacing.baseValue': '24',
-        'elk.spacing.nodeNode': '50',
-        'elk.layered.spacing.edgeNodeBetweenLayers': '30',
-        'elk.spacing.edgeEdge': '20',
-      }
+    : MERMAID_SUBGRAPH_SPACING
 }
 
 /** Layout option keys that `mermaidSpacing` replaces. */
@@ -1077,11 +1080,14 @@ function subgraphToElk(
       : `(${titleWidth}, 0)`
   }
 
-  if (sg.children.some((c) => c.region)) {
-    // Mermaid 12.3.0 lays concurrent regions out two across in written order,
-    // wrapping the third under the first (#2899); ELK's layered packing puts
-    // them in one row in shuffled order.
-    layoutOptions['elk.algorithm'] = 'org.eclipse.elk.rectpacking'
+  if (sg.region || sg.children.some((c) => c.region)) {
+    // Concurrent regions: give ELK what mermaid@12.3.0 gives it (the region
+    // container and each region are ordinary subgraphs with the subgraph
+    // spacing); its own layered packing then yields mermaid's column/row shape
+    // and order (#2962).
+    for (const key of FORK_SPACING_KEYS) delete layoutOptions[key]
+    Object.assign(layoutOptions, MERMAID_SUBGRAPH_SPACING)
+    layoutOptions['elk.hierarchyHandling'] = 'SEPARATE_CHILDREN'
   }
 
   if (usesMermaidElkPipeline(graph)) {
