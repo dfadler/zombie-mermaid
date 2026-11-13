@@ -1983,8 +1983,8 @@ export interface PositionedRequirementEdge {
 
 // @public (undocumented)
 export interface PositionedRequirementNode {
-    // (undocumented)
     className?: string;
+    classNames?: string[];
     dividerY?: number;
     // (undocumented)
     height: number;
@@ -2254,9 +2254,11 @@ export function requirementBodyRows(node: RequirementNode): string[];
 // @public
 export interface RequirementDiagram extends StyleDirectives {
     direction?: 'TB' | 'BT' | 'LR' | 'RL';
+    nodeClasses: Map<string, string[]>;
     nodes: RequirementNode[];
     // (undocumented)
     relationships: RequirementRelationship[];
+    styleLayers: Map<string, Record<string, string>[]>;
 }
 
 // @public

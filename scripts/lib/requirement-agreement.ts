@@ -162,7 +162,7 @@ export function parseOurRequirementSvg(svg: string): RequirementLayout {
     })
   }
   const edges: RequirementLine[] = [
-    ...svg.matchAll(/<polyline class="requirement-relationship"([^>]*)>/g),
+    ...svg.matchAll(/<path class="requirement-relationship"([^>]*)>/g),
   ].map((m) => {
     const a = (name: 'data-type' | 'data-src' | 'data-dst') =>
       ({

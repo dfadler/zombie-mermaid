@@ -89,10 +89,10 @@ function renderNode(node: PositionedRequirementNode, fontSizes: FontSizes) {
   const textColor = inlineStyle?.color
     ? escapeAttr(inlineStyle.color)
     : undefined
-  const safeClassName = sanitizeClassName(node.className)
-  const cls = safeClassName
-    ? f`requirement-node ${safeClassName}`
-    : 'requirement-node'
+  const safe = (node.classNames ?? []).flatMap(
+    (c) => sanitizeClassName(c) ?? [],
+  )
+  const cls = ['requirement-node', ...safe].join(' ')
   const parts: string[] = [
     f`<g class="${cls}" data-id="${escapeAttr(node.id)}" data-kind="${node.kind}">`,
     f`  <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="0" ry="0" ` +
@@ -163,6 +163,28 @@ function unit(a: Pt, b: Pt): Pt {
     : { x: (b.x - a.x) / len, y: (b.y - a.y) / len }
 }
 
+/** How far a rounded bend starts before its corner (Mermaid: ~7.07, a radius-10 arc's chord inset). */
+const CORNER = 5 * Math.SQRT2
+
+/** `M..L..Q..` through `pts`: straight runs, each interior corner a quadratic curve. */
+function roundedPath(pts: Pt[]): string {
+  const last = pts.length - 1
+  let d = f`M${pts[0]!.x},${pts[0]!.y}`
+  for (let i = 1; i < last; i++) {
+    const p = pts[i]!
+    const a = pts[i - 1]!
+    const b = pts[i + 1]!
+    const ua = unit(p, a)
+    const ub = unit(p, b)
+    const ra = Math.min(CORNER, Math.hypot(a.x - p.x, a.y - p.y) / 2)
+    const rb = Math.min(CORNER, Math.hypot(b.x - p.x, b.y - p.y) / 2)
+    d +=
+      f`L${p.x + ua.x * ra},${p.y + ua.y * ra}` +
+      f`Q${p.x},${p.y} ${p.x + ub.x * rb},${p.y + ub.y * rb}`
+  }
+  return d + f`L${pts[last]!.x},${pts[last]!.y}`
+}
+
 function renderEdge(edge: PositionedRequirementEdge): string {
   const pts = edge.points
   if (pts.length < 2) return ''
@@ -175,7 +197,7 @@ function renderEdge(edge: PositionedRequirementEdge): string {
     f`data-dst="${escapeAttr(edge.dst)}"`,
   ].join(' ')
   const line =
-    f`<polyline ${attrs} points="${pts.map((p) => f`${p.x},${p.y}`).join(' ')}" fill="none" ` +
+    f`<path ${attrs} d="${roundedPath(pts)}" fill="none" ` +
     f`stroke="var(--_line)" stroke-width="${sw}"${contains ? '' : f` stroke-dasharray="${DASH}"`} />`
   if (contains) {
     // Circle-plus centred 10px along the line from the container's edge.

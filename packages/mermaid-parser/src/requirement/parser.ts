@@ -3,6 +3,7 @@ import {
   tryApplyClassAssignment,
   tryApplyClassDef,
   tryApplyStyleStatement,
+  parseStyleProps,
 } from '@zombie-mermaid/core'
 import type {
   RequirementDiagram,
@@ -169,6 +170,22 @@ export function parseRequirementDiagram(text: string): RequirementDiagram {
     classDefs: new Map(),
     classAssignments: new Map(),
     nodeStyles: new Map(),
+    nodeClasses: new Map(),
+    styleLayers: new Map(),
+  }
+  // Mermaid appends a node's styles in source order: `style` when it is read,
+  // a class's `classDef` when the class is applied, or when it is defined if
+  // the node already carries the class. Later declarations win.
+  const addLayer = (id: string, layer?: Record<string, string>) => {
+    if (layer)
+      diagram.styleLayers.set(id, [
+        ...(diagram.styleLayers.get(id) ?? []),
+        layer,
+      ])
+  }
+  const addClass = (id: string, name: string) => {
+    diagram.nodeClasses.set(id, [...(diagram.nodeClasses.get(id) ?? []), name])
+    addLayer(id, diagram.classDefs.get(name))
   }
   const requirements = new Map<string, RequirementNode>()
   const elements = new Map<string, RequirementNode>()
@@ -242,9 +259,24 @@ export function parseRequirementDiagram(text: string): RequirementDiagram {
       diagram.direction = dir[1]!.toUpperCase() as 'TB' | 'BT' | 'RL' | 'LR'
       continue
     }
-    if (tryApplyClassDef(line, diagram)) continue
-    if (tryApplyStyleStatement(line, diagram)) continue
-    if (tryApplyClassAssignment(line, diagram)) continue
+    if (tryApplyClassDef(line, diagram)) {
+      const names = line.match(/^classDef\s+([\w,-]+)/)![1]!.split(',')
+      for (const [id, classes] of diagram.nodeClasses)
+        for (const name of new Set(classes))
+          if (names.includes(name)) addLayer(id, diagram.classDefs.get(name))
+      continue
+    }
+    if (tryApplyStyleStatement(line, diagram)) {
+      const m = line.match(/^style\s+([\p{L}\p{N}\p{M}_,-]+)\s+(.+)$/u)!
+      for (const id of m[1]!.split(','))
+        addLayer(id.trim(), parseStyleProps(m[2]!))
+      continue
+    }
+    if (tryApplyClassAssignment(line, diagram)) {
+      const m = line.match(/^class\s+(.+?)\s+([\w-]+)\s*;?\s*$/u)!
+      for (const id of m[1]!.split(',')) addClass(id.trim(), m[2]!)
+      continue
+    }
 
     const block = BLOCK_RE.exec(line)
     if (block) {
@@ -270,6 +302,7 @@ export function parseRequirementDiagram(text: string): RequirementDiagram {
       if (block[4]) {
         const names = block[4].split(',').map((s) => s.trim())
         diagram.classAssignments.set(id, names[names.length - 1]!)
+        for (const name of names) addClass(id, name)
       }
       current = duplicate ? { ...node } : node
       closed = false
@@ -299,7 +332,9 @@ export function parseRequirementDiagram(text: string): RequirementDiagram {
 
     const short = SHORTHAND_RE.exec(line)
     if (short) {
-      diagram.classAssignments.set(pick(short[1], short[2], no), short[3]!)
+      const id = pick(short[1], short[2], no)
+      diagram.classAssignments.set(id, short[3]!)
+      addClass(id, short[3]!)
       continue
     }
 
