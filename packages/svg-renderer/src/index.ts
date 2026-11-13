@@ -456,7 +456,7 @@ function renderMermaidSVGRaw(
   // Opt-in: the diagram's own `themeVariables` fill colours the caller left
   // unset (only flowchart/state carry an `initConfig`; pie reads its own).
   const colors = buildColors(
-    options.honorThemeVariables
+    options.honorThemeVariables !== false
       ? applyThemeVariables(
           options,
           (diagram as { initConfig?: InitConfig }).initConfig,

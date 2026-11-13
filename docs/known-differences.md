@@ -245,7 +245,7 @@ pins the campaigns numbers). Colours (below) are not compared; empty quadrant la
   does, checked against 12.2.0; a non-number, negative number or unknown position is
   dropped. The `quadrant*Fill`, `quadrant*TextFill`, `quadrantPoint*`, axis text, title
   and border `*StrokeFill` variables are read under any theme, like mermaid, but only
-  with `honorThemeVariables` ([themeVariables](diagrams.md#themevariables-opt-in)).
+  unless `honorThemeVariables: false` ([themeVariables](diagrams.md#themevariables)).
   ASCII ignores both. Mermaid's other theme-derived colours are not computed.
 - **Empty labels.** Like mermaid 12.3.0, a quadrant with no label gets an empty `<text>`
   at the position a label would have; axis, point and title text are dropped when empty,
@@ -613,13 +613,14 @@ flowchart, not mermaid:
 
 `RenderOptions.direction` still does not apply to class diagrams.
 
-## `themeVariables` are opt-in, and only a subset
+## `themeVariables` are honoured by default, and only a subset
 
-Decided in [#2108](https://github.com/dfadler/zombie-mermaid/issues/2108).
-Mermaid applies `%%{init: {"themeVariables": {...}}}%%`; zombie-mermaid ignores it
-unless the caller sets `honorThemeVariables: true`, because the colours of a
-diagram should come from the host's `bg`/`fg` theme, not from text inside the
-diagram. Checked on mermaid 12.1.0 and 12.2.0 (headless Chromium, computed
+Added opt-in in [#2108](https://github.com/dfadler/zombie-mermaid/issues/2108), on by
+default since [#2856](https://github.com/dfadler/zombie-mermaid/issues/2856) to match
+mermaid 12.3.0 (`primaryColor` under `theme: base`, `lineColor` and `pie1` render the same
+paint). Mermaid applies `%%{init: {"themeVariables": {...}}}%%`; zombie-mermaid maps a
+subset onto its tokens, and a caller who wants the host's `bg`/`fg` theme to win over text
+inside the diagram sets `honorThemeVariables: false`. Checked on mermaid 12.1.0 and 12.2.0 (headless Chromium, computed
 paint, identical results):
 
 | Input                                                                                             | mermaid.js 12.1.0 / 12.2.0              | zombie-mermaid                                   |
@@ -637,7 +638,7 @@ Mermaid derives many colours from `primaryColor` (secondary/tertiary, subgraph
 fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
 `base` diagram with only `primaryColor` set does not look the same in both. Only
 flowchart, state and pie read the directive. Details and the opt-in table:
-[Configuration directives](diagrams.md#themevariables-opt-in).
+[Configuration directives](diagrams.md#themevariables).
 
 ## Invalid colours are ignored, not refused
 

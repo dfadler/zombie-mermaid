@@ -473,7 +473,7 @@ const pieModule: DiagramModule<PieChart, PositionedPieChart> = {
   // `pie1..pie12` from the directive only when the caller opted in.
   layoutForSvg: (chart, options) =>
     layoutPieChart(
-      options.honorThemeVariables
+      options.honorThemeVariables !== false
         ? chart
         : { ...chart, sliceColors: undefined },
       { font: pieFont(options) },
@@ -505,7 +505,7 @@ const quadrantModule: DiagramModule<QuadrantChart, PositionedQuadrantChart> = {
   // the `quadrantChart` sizes always apply, as Mermaid's config does.
   layoutForSvg: (chart, options) =>
     layoutQuadrantChart(
-      options.honorThemeVariables
+      options.honorThemeVariables !== false
         ? chart
         : { ...chart, themeColors: undefined },
     ),
