@@ -19,6 +19,7 @@ import {
   ClassIcon,
   ErIcon,
   FlowchartIcon,
+  GanttIcon,
   KanbanIcon,
   PieIcon,
   QuadrantIcon,
@@ -53,6 +54,7 @@ const HUB_TYPE_ICONS: Record<
   'architecture-beta': ArchitectureIcon,
   pie: PieIcon,
   quadrant: QuadrantIcon,
+  gantt: GanttIcon,
   kanban: KanbanIcon,
 }
 const HUB_ICON_SIZE = 200

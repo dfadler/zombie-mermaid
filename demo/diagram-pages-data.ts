@@ -265,6 +265,21 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     docsUrl: 'https://mermaid.ai/open-source/syntax/quadrantChart.html',
   },
   {
+    slug: 'gantt',
+    label: 'Gantt chart',
+    keyword: 'gantt',
+    source: sampleSource('Gantt: Basic'),
+    intro:
+      'Gantt charts lay tasks out as bars on a time axis, grouped into sections, so a plan reads as a schedule. zombie-mermaid renders the bars, grid, axis and milestones in SVG and as a character grid in ASCII.',
+    accent: 'green',
+    exampleHeading: 'Two sections of tasks on one timeline.',
+    sourceFilename: 'plan.mmd',
+    aboutHeading: 'Where Gantt charts come from, and how the syntax works.',
+    about:
+      'Gantt charts show when each task of a project starts and ends, and are a staple of project planning. Mermaid’s syntax starts with `gantt`, followed by a `title`, a `dateFormat` and optional `axisFormat`, `excludes` and `todayMarker` lines. A `section` groups tasks, and each task is a `Label :status, id, start, end` line where the start can be a date or `after` another task, and the end a date or a duration such as `30d`.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/gantt.html',
+  },
+  {
     slug: 'kanban',
     label: 'Kanban board',
     keyword: 'kanban',
@@ -301,6 +316,7 @@ const GALLERY_CATEGORY: Record<string, string> = {
   'architecture-beta': 'Architecture',
   pie: 'Pie',
   quadrant: 'Quadrant',
+  gantt: 'Gantt',
   kanban: 'Kanban',
 }
 

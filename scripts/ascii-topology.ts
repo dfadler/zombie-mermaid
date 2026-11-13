@@ -16,6 +16,7 @@ import {
   isGraph,
   measureSample,
   redirectDirection,
+  scoreSubgraphLoops,
 } from './lib/ascii-topology.ts'
 import type { Counts } from './lib/ascii-topology.ts'
 
@@ -39,6 +40,8 @@ for (const e of list) {
   if (isExact(c)) exact++
   if (verbose || !isExact(c)) console.log(describeSample(e.title, c, verbose))
 }
+const loops = scoreSubgraphLoops(verbose)
+loops.lines.forEach((l) => console.log(l))
 const pct = (a: number, b: number): string =>
   `${a}/${b} (${b ? ((100 * a) / b).toFixed(1) : '-'}%)`
 console.log(
@@ -49,5 +52,6 @@ console.log(
     `edge-end faces ${pct(total.faceOk, total.faceEnds)}\n` +
     `self-loop hooks ${pct(total.loopHooks, total.loops)}\n` +
     `end cells ${pct(total.endCells, total.endCellsWant)}\n` +
-    `arrowheads ${pct(total.arrows, total.arrowsWant)}`,
+    `arrowheads ${pct(total.arrows, total.arrowsWant)}\n` +
+    `subgraph self-loop cases exact ${pct(loops.exact, loops.cases)}, hooks ${pct(loops.counts.loopHooks, loops.counts.loops)}, faces ${pct(loops.counts.faceOk, loops.counts.faceEnds)}`,
 )

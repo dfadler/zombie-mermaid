@@ -144,9 +144,14 @@ describe('self-loops take ELK’s faces (#2888)', () => {
     },
   )
 
-  it('a loop inside a subgraph keeps its own routing in TD', () => {
+  it('a loop inside a subgraph hooks out of the left face inside its frame in TD (#2913), and keeps the grid’s own routing with no hints', () => {
     const src = 'flowchart TD\n  subgraph s\n    a --> a\n  end'
-    expect(draw(src)).toBe(draw(src, false))
+    const out = draw(src)
+    expect(out).toContain('┌─┤ a │')
+    expect(
+      out.split('\n').every((r) => r.length === out.split('\n')[0]!.length),
+    ).toBe(true)
+    expect(draw(src, false)).not.toContain('┌─┤ a │')
   })
 
   it('a first-column loop beside a subgraph is not drawn inside its node (no margin column is made there)', () => {

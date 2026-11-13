@@ -37,7 +37,6 @@ import {
   escapeXml,
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
-import { GANTT } from './layout.ts'
 
 function r(n: number): string {
   return String(Math.round(n * 100) / 100)
@@ -227,7 +226,7 @@ export function renderGanttSvg(
   }
   for (const p of chart.tasks) {
     parts.push(
-      `<text data-task="${escapeXml(p.id)}" font-size="${GANTT.fontSize}" x="${r(p.text.x)}" y="${r(p.text.y)}" class="${escapeXml(textClass(p))}">${escapeXml(p.text.text)}</text>`,
+      `<text data-task="${escapeXml(p.id)}" font-size="${chart.fontSize}" x="${r(p.text.x)}" y="${r(p.text.y)}" class="${escapeXml(textClass(p))}">${escapeXml(p.text.text)}</text>`,
     )
   }
   parts.push('</g>')
@@ -243,7 +242,7 @@ export function renderGanttSvg(
       .join('')
     if (s.lines.every((l) => l === '')) continue
     parts.push(
-      `<text dy="${dy}em" x="10" y="${r(s.y)}" font-size="${GANTT.sectionFontSize}" class="sectionTitle sectionTitle${s.sectionStyle}">${tspans}</text>`,
+      `<text dy="${dy}em" x="10" y="${r(s.y)}" font-size="${chart.sectionFontSize}" class="sectionTitle sectionTitle${s.sectionStyle}">${tspans}</text>`,
     )
   }
   parts.push('</g>')

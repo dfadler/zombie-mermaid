@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /**
- * The eleven small animated SVG illustrations `DiagramGalleryTeaser`
+ * The twelve small animated SVG illustrations `DiagramGalleryTeaser`
  * (`diagram-gallery-teaser.tsx`) links to, one per diagram type — kept
  * together in one file since they're trivial variants of the same shape
  * (a `viewBox="0 0 100 70"` SVG, no props, one accent color each) rather
@@ -373,6 +373,45 @@ export function QuadrantTile() {
   )
 }
 
+/** Gantt: three staggered task bars on a baseline. */
+export function GanttTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <path
+        d="M14 8 V60 H90"
+        stroke={colorVar('--green')}
+        strokeWidth="2"
+        fill="none"
+      />
+      <rect
+        x="20"
+        y="14"
+        width="30"
+        height="8"
+        rx="2"
+        fill={colorVar('--green')}
+      />
+      <rect
+        x="36"
+        y="29"
+        width="34"
+        height="8"
+        rx="2"
+        fill={colorVar('--green')}
+        className="edge-anim"
+      />
+      <rect
+        x="58"
+        y="44"
+        width="26"
+        height="8"
+        rx="2"
+        fill={colorVar('--green')}
+      />
+    </svg>
+  )
+}
+
 /** Kanban: three columns, each with a card. */
 export function KanbanTile() {
   return (
@@ -407,5 +446,6 @@ export const GALLERY_TILES = [
   ArchitectureTile,
   PieTile,
   QuadrantTile,
+  GanttTile,
   KanbanTile,
 ]

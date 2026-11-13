@@ -483,6 +483,24 @@ function QuadrantGlyph() {
   )
 }
 
+function GanttGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect x="14" y="10" width="36" height="10" rx="2" fill="currentColor" />
+      <rect
+        x="32"
+        y="30"
+        width="40"
+        height="10"
+        rx="2"
+        fill="currentColor"
+        className="edge-anim"
+      />
+      <rect x="56" y="50" width="30" height="10" rx="2" fill="currentColor" />
+    </svg>
+  )
+}
+
 function KanbanGlyph() {
   return (
     <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
@@ -517,6 +535,7 @@ const DIAGRAM_TYPE_GLYPHS: Record<string, () => ReactNode> = {
   'architecture-beta': ArchitectureGlyph,
   pie: PieGlyph,
   quadrant: QuadrantGlyph,
+  gantt: GanttGlyph,
   kanban: KanbanGlyph,
 }
 

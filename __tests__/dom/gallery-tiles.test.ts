@@ -21,11 +21,12 @@ import {
   ArchitectureTile,
   PieTile,
   QuadrantTile,
+  GanttTile,
   KanbanTile,
 } from '../../demo/components/gallery-tiles.tsx'
 
 describe('gallery tiles', () => {
-  it('GALLERY_TILES lists all eleven tiles in flowchart/state/sequence/class/er/xy-chart/c4/architecture/pie/quadrant/kanban order', () => {
+  it('GALLERY_TILES lists all twelve tiles in flowchart/state/sequence/class/er/xy-chart/c4/architecture/pie/quadrant/gantt/kanban order', () => {
     expect(GALLERY_TILES).toEqual([
       FlowchartTile,
       StateTile,
@@ -37,6 +38,7 @@ describe('gallery tiles', () => {
       ArchitectureTile,
       PieTile,
       QuadrantTile,
+      GanttTile,
       KanbanTile,
     ])
   })
@@ -52,6 +54,7 @@ describe('gallery tiles', () => {
     ['ArchitectureTile', ArchitectureTile],
     ['PieTile', PieTile],
     ['QuadrantTile', QuadrantTile],
+    ['GanttTile', GanttTile],
     ['KanbanTile', KanbanTile],
   ] as const)('%s renders a single 100x70-viewBox svg', (_name, Tile) => {
     const { container } = render(createElement(Tile))

@@ -26,6 +26,7 @@ describe('DiagramGalleryTeaser', () => {
       ['Architecture', 'diagrams/architecture-beta.html'],
       ['Pie', 'diagrams/pie.html'],
       ['Quadrant', 'diagrams/quadrant.html'],
+      ['Gantt', 'diagrams/gantt.html'],
       ['Kanban', 'diagrams/kanban.html'],
     ]
 

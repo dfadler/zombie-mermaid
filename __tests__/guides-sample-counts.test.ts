@@ -6,6 +6,7 @@
  * `rootDir: "src"` — importing it from library source fails `tsc --noEmit`
  * even though vitest runs it happily.
  */
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { samples } from '../samples/samples-data.ts'
 
@@ -53,5 +54,15 @@ describe('docs/guides/samples.md sample counts', () => {
     expect(byCategory.get('Packet')).toBe(7)
     expect(byCategory.get('Kanban')).toBe(4)
     expect(byCategory.get('Radar')).toBe(6)
+  })
+
+  /** The prose count ("N diagrams") must track the data, not an estimate. */
+  it('quotes the current total in the prose', () => {
+    const guide = readFileSync(
+      new URL('../docs/guides/samples.md', import.meta.url),
+      'utf8',
+    )
+    expect(guide).toContain(`${samples.length} diagrams`)
+    expect(guide).not.toMatch(/roughly \d+ diagrams/)
   })
 })
