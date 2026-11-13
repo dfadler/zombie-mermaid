@@ -285,6 +285,16 @@
     "maxLines": 80
   },
   {
+    "file": "scripts/journey-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/journey-agreement.ts",
+    "maxLines": 60
+  },
+  {
+    "file": "scripts/lib/journey-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the journey-oracle and layout-oracle CLIs",
+    "maxLines": 50
+  },
+  {
     "file": "scripts/timeline-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/timeline-agreement.ts",
     "maxLines": 60
