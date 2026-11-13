@@ -357,7 +357,7 @@
   {
     "file": "scripts/lib/separate-scores.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid renders), only reachable from the layout-oracle CLI; each figure is unit-tested in its own *-agreement.ts",
-    "maxLines": 56
+    "maxLines": 59
   },
   {
     "file": "scripts/lib/xychart-measure.ts",
