@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseInitDirective } from '@zombie-mermaid/core'
+import { parseGantt } from '../../packages/mermaid-parser/src/gantt/parser.ts'
 import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
@@ -62,5 +63,15 @@ describe('init values coerce like mermaid 12.3.0 (#2998)', () => {
     expect(init('timeline', { disableMulticolor: 0 })?.timeline).toEqual({
       disableMulticolor: false,
     })
+  })
+})
+
+describe('title sanitizing stays linear on an unterminated tag (#2998)', () => {
+  it('handles a 50k-character unterminated tag name quickly', () => {
+    // parseGantt is exported and has no input limit of its own.
+    const src = `gantt\n title <a${'b'.repeat(50_000)}\n dateFormat YYYY-MM-DD\n section S\n t :2024-01-01, 2d`
+    const start = performance.now()
+    parseGantt(src)
+    expect(performance.now() - start).toBeLessThan(1500)
   })
 })
