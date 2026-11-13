@@ -188,6 +188,10 @@ ALLOWLIST=(
   # rule is an SVG and an ASCII snapshot per case; reviewed via `git diff`
   # (`vitest -u`).
   "__tests__/ascii-arrowless-cluster-entry-3043.test.ts"
+  # SVG + ASCII goldens for a decision's entry face with three ends (#2913): the
+  # repo rule is an SVG and an ASCII snapshot per case; reviewed via `git diff`
+  # (`vitest -u`).
+  "__tests__/ascii-decision-entry-face-2913.test.ts"
 )
 
 is_allowlisted() {
