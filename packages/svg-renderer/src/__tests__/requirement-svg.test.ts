@@ -217,6 +217,13 @@ describe('requirement SVG', () => {
     expect(late).toMatch(/fill="#f00"/)
   })
 
+  it('drops an unsafe class name from the class attribute', () => {
+    const svg = renderMermaidSVG(
+      'requirementDiagram\nrequirement a:::9x,ok {\n}',
+    )
+    expect(svg).toContain('class="requirement-node ok"')
+  })
+
   it('rounds relationship corners (mermaid 12.3.0 L/Q path)', () => {
     const svg = renderMermaidSVG(
       'requirementDiagram\nrequirement a {\n}\nrequirement b {\n}\nrequirement c {\n}\n' +

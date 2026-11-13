@@ -197,6 +197,7 @@ export function layoutRequirementDiagramSync(
     const x = child.x ?? 0
     const y = child.y ?? 0
     const classNames = diagram.nodeClasses.get(n.id)
+    const className = diagram.classAssignments.get(n.id)
     // `classDef default` first, then the box's own declarations in source order.
     const layers = [
       diagram.classDefs.get('default'),
@@ -220,6 +221,7 @@ export function layoutRequirementDiagramSync(
         dividerY: y + REQUIREMENT.rowHeight * 2 + REQUIREMENT.bodyGap,
       }),
       ...(inlineStyle && { inlineStyle }),
+      ...(className && { className }),
       ...(classNames && { classNames }),
     }
   })

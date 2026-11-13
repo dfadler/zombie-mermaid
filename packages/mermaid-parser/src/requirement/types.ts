@@ -89,6 +89,8 @@ export interface PositionedRequirementNode {
   /** The divider's y, absolute; absent without body rows. */
   dividerY?: number
   inlineStyle?: Record<string, string>
+  /** The box's last class. */
+  className?: string
   /** Every class on the box, in source order. */
   classNames?: string[]
 }
