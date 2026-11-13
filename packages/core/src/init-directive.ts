@@ -388,6 +388,11 @@ function isNonNegative(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0
 }
 
+/** A numeric string as the number mermaid's arithmetic makes of it ("60" -> 60); anything else unchanged. */
+function numeric(v: unknown): unknown {
+  return typeof v === 'string' && v.trim() !== '' ? Number(v) : v
+}
+
 /** Configuration a diagram can set for itself via `%%{init: ...}%%`. */
 export interface InitConfig {
   theme?: string
@@ -657,7 +662,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const q: QuadrantConfig = {}
       const rec: Record<string, unknown> = { ...value }
       for (const k of QUADRANT_NUMBER_KEYS) {
-        const v = rec[k]
+        const v = numeric(rec[k])
         if (typeof v === 'number' && Number.isFinite(v) && v >= 0) q[k] = v
       }
       const x = rec.xAxisPosition
@@ -671,9 +676,10 @@ export function parseInitDirective(line: string): InitConfig | undefined {
     if (lower === 'xychart' && typeof value === 'object' && value !== null) {
       const rec: Record<string, unknown> = { ...value }
       const xy: XyChartInitConfig = {}
-      for (const k of ['width', 'height'] as const)
-        if (typeof rec[k] === 'number' && rec[k] >= 50 && rec[k] <= 1e5)
-          xy[k] = rec[k]
+      for (const k of ['width', 'height'] as const) {
+        const v = numeric(rec[k])
+        if (typeof v === 'number' && v >= 50 && v <= 1e5) xy[k] = v
+      }
       if (typeof rec.showTitle === 'boolean') xy.showTitle = rec.showTitle
       const o = rec.chartOrientation
       if (o === 'vertical' || o === 'horizontal') xy.chartOrientation = o
@@ -701,7 +707,8 @@ export function parseInitDirective(line: string): InitConfig | undefined {
     if (lower === 'class' && typeof value === 'object' && value !== null) {
       const rec: Record<string, unknown> = { ...value }
       const layout: ClassInitLayout = {}
-      if (isNonNegative(rec.padding)) layout.padding = rec.padding
+      const pad = numeric(rec.padding)
+      if (isNonNegative(pad)) layout.padding = pad
       if (typeof rec.hideEmptyMembersBox === 'boolean')
         layout.hideEmptyMembersBox = rec.hideEmptyMembersBox
       config.classLayout = layout
@@ -715,8 +722,10 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         'diagramPadding',
         'entityPadding',
         'minEntityWidth',
-      ] as const)
-        if (isNonNegative(rec[k])) layout[k] = rec[k]
+      ] as const) {
+        const v = numeric(rec[k])
+        if (isNonNegative(v)) layout[k] = v
+      }
       config.erLayout = layout
       continue
     }
@@ -748,11 +757,14 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const layout: ArchitectureInitLayout = {}
       const inRange = (v: unknown, lo: number, hi = 1e4): v is number =>
         typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi
-      if (inRange(rec.padding, 0)) layout.padding = rec.padding
-      if (inRange(rec.iconSize, 1)) layout.iconSize = rec.iconSize
-      if (inRange(rec.fontSize, 1)) layout.fontSize = rec.fontSize
-      if (inRange(rec.idealEdgeLengthMultiplier, 0.1, 100))
-        layout.idealEdgeLengthMultiplier = rec.idealEdgeLengthMultiplier
+      const pad = numeric(rec.padding)
+      const icon = numeric(rec.iconSize)
+      const font = numeric(rec.fontSize)
+      const ideal = numeric(rec.idealEdgeLengthMultiplier)
+      if (inRange(pad, 0)) layout.padding = pad
+      if (inRange(icon, 1)) layout.iconSize = icon
+      if (inRange(font, 1)) layout.fontSize = font
+      if (inRange(ideal, 0.1, 100)) layout.idealEdgeLengthMultiplier = ideal
       config.architectureLayout = layout
       continue
     }
@@ -807,12 +819,14 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       const t: TimelineInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
       for (const k of ['leftMargin', 'padding'] as const) {
-        const v = rec[k]
+        // `leftMargin: "200"` is not coerced: mermaid concatenates it into a garbage viewBox.
+        const v = k === 'padding' ? numeric(rec[k]) : rec[k]
         // 0..1e5 keeps the layout finite and the axis and viewBox valid.
         if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
       }
-      if (typeof rec.disableMulticolor === 'boolean')
-        t.disableMulticolor = rec.disableMulticolor
+      // JavaScript truthiness, as mermaid's `if (disableMulticolor)`.
+      if (rec.disableMulticolor !== undefined && rec.disableMulticolor !== null)
+        t.disableMulticolor = Boolean(rec.disableMulticolor)
       config.timeline = t
       continue
     }
@@ -848,7 +862,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
     if (lower === 'kanban' && typeof value === 'object' && value !== null) {
       const k: KanbanInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
-      const w = rec.sectionWidth
+      const w = numeric(rec.sectionWidth)
       if (typeof w === 'number' && w > 0 && w <= 1e5) k.sectionWidth = w
       if (typeof rec.ticketBaseUrl === 'string')
         k.ticketBaseUrl = rec.ticketBaseUrl
@@ -900,7 +914,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         'nodeWidth',
         'nodePadding',
       ] as const) {
-        const v = rec[k]
+        const v = numeric(rec[k])
         if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
       }
       const align = rec.nodeAlignment

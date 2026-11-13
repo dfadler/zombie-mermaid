@@ -1,3 +1,4 @@
+import { sanitizeTitle } from '../sanitize-title.ts'
 import {
   MermaidParseError,
   decodeMermaidEntities,
@@ -125,11 +126,14 @@ function fail(line: number, message: string, source: string): never {
 }
 
 /** Text as Mermaid reads it: trimmed, quotes (and markdown backticks) dropped. */
-function text(raw: string): string {
-  let t = raw.trim()
+function rawText(raw: string): string {
+  const t = raw.trim()
   const m = /^"(?:`)?([^"]*?)(?:`)?"$/.exec(t)
-  if (m) t = m[1]!.trim()
-  return decodeMermaidEntities(t)
+  return m ? m[1]!.trim() : t
+}
+
+function text(raw: string): string {
+  return decodeMermaidEntities(rawText(raw))
 }
 
 function withHash(color: string): string {
@@ -205,7 +209,7 @@ export function parseQuadrantChart(source: string): QuadrantChart {
       return
     }
     if ((m = /^title\b(.*)$/i.exec(line))) {
-      chart.title = text(m[1]!)
+      chart.title = sanitizeTitle(rawText(m[1]!))
       return
     }
     if ((m = /^(x|y)-axis\b(.*)$/i.exec(line))) {

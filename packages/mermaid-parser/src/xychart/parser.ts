@@ -1,3 +1,4 @@
+import { sanitizeTitle } from '../sanitize-title.ts'
 import type { XyChartInitConfig } from '@zombie-mermaid/core'
 import type { XYChart, XYAxis, XYChartSeries } from './types.ts'
 import {
@@ -48,13 +49,13 @@ export function parseXYChart(
     // Title
     const titleMatch = line.match(/^title\s+"([^"]+)"/)
     if (titleMatch) {
-      title = decodeMermaidEntities(titleMatch[1]!)
+      title = sanitizeTitle(titleMatch[1]!)
       continue
     }
     // Unquoted: letters, digits and spaces only, spaces dropped (mermaid 12.3.0, #2728)
     const bareTitle = bareText(line, 'title')
     if (bareTitle !== null) {
-      title = bareTitle
+      title = sanitizeTitle(bareTitle)
       continue
     }
 

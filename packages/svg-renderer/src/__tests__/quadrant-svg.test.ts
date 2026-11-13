@@ -200,7 +200,7 @@ describe('quadrant SVG: structure and styling', () => {
     const s = renderMermaidSVG(
       'quadrantChart\n  title A <b> & "c"\n  "x<y": [0.5, 0.5]',
     )
-    expect(s).toContain('A &lt;b&gt; &amp; &quot;c&quot;')
+    expect(s).toContain('A &lt;b&gt; &amp;amp; &quot;c&quot;&lt;/b&gt;')
     expect(s).toContain('x&lt;y')
   })
 })

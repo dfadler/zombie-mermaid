@@ -6,7 +6,7 @@ pie title Labels <&> "quotes"
   "R&D" : 99
   'It\'s' : 10
 ---
-                Labels <&> "quotes"
+           Labels &lt;&amp;&gt; "quotes"
 
                                                          # R&D              30%
                                                          = Single quoted    25%
