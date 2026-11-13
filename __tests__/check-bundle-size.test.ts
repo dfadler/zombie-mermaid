@@ -13,8 +13,10 @@ async function run(
     budgets?: Record<string, number>
     consumerBundles?: Record<string, number>
     bundleFails?: boolean
+    failAbovePct?: number
   } = {},
 ) {
+  vi.restoreAllMocks()
   vi.resetModules()
   const exit = vi
     .spyOn(process, 'exit')
@@ -37,6 +39,7 @@ async function run(
         if (String(u).endsWith('bundle-size-budget.json'))
           return JSON.stringify({
             unit: 'gzip-bytes',
+            failAbovePct: gzip.failAbovePct,
             budgets: gzip.budgets ?? {},
             consumerBundles: gzip.consumerBundles ?? {},
             unpackedBudgets,
@@ -136,5 +139,23 @@ describe('scripts/check-bundle-size.ts unpacked budgets', () => {
     )
     expect(r.text).toMatch(/pkg\/c\.js\s+MISSING/)
     expect(r.code).toBe(1)
+  })
+
+  it('warns but passes when over budget within the soft band, fails past it', async () => {
+    const warn = await run(
+      { 'pkg/dist': 1000 },
+      { 'pkg/dist': { 'a.js': 1050 } },
+      { failAbovePct: 10 },
+    )
+    expect(warn.code).toBe(0)
+    expect(warn.text).toMatch(/WARN/)
+    expect(warn.text).toMatch(/::warning title=Bundle size::pkg\/dist is 50 B/)
+    const fail = await run(
+      { 'pkg/dist': 1000 },
+      { 'pkg/dist': { 'a.js': 1101 } },
+      { failAbovePct: 10 },
+    )
+    expect(fail.code).toBe(1)
+    expect(fail.text).toMatch(/OVER/)
   })
 })

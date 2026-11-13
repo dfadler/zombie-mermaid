@@ -281,6 +281,12 @@ Measure on a clean `pnpm install --frozen-lockfile && pnpm run build`: sizes are
 deterministic for a given lockfile, but a stale `dist/` or a main checkout with
 drifted dependencies reads differently from CI, and CI is what counts.
 
+Each budget also has a soft band (`failAbovePct` in the JSON, 10): a file over
+its budget but within the band prints `WARN` and a CI annotation and passes; only
+past the band does the gate fail. Small growth from concurrent PRs therefore no
+longer forces each of them to rewrite the JSON (#2935). Raise the budget when a
+WARN is feature growth you want to keep, or when the gate fails.
+
 **A raise is justified** for growth that is the feature: new feature code, a new
 validator or schema, new exported types. Raise only the entries that grew, to
 measured + 2%, and state in the PR body which entries, by how many bytes, and

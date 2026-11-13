@@ -1,5 +1,6 @@
 {
   "unit": "gzip-bytes",
+  "failAbovePct": 10,
   "budgets": {
     "dist/index.js": 2125,
     "dist/index.cjs": 1850,
