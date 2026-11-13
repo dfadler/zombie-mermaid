@@ -23,7 +23,7 @@ export async function scoreSankey(
   filter?: string,
 ): Promise<SankeyRun> {
   const wanted = samples
-    .filter((s) => /^(?:\s*%%\{[\s\S]*?\}%%)*\s*sankey\b/i.test(s.source))
+    .filter((s) => /^(?:\s*%%\{[^}]*\}%%)*\s*sankey\b/i.test(s.source))
     .filter(
       (s) => !filter || s.title.toLowerCase().includes(filter.toLowerCase()),
     )
