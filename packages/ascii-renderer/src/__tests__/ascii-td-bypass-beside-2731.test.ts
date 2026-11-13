@@ -4,8 +4,14 @@
  * 12.3.0 puts `R` beside the column and runs `Q --> W` straight down; each of
  * the three edges takes a port of its own.
  */
-import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { afterEach, describe, it, expect } from 'vitest'
+import {
+  registerAsciiLayout,
+  renderMermaidASCII,
+} from '@zombie-mermaid/ascii-renderer'
+import { asciiLayoutProvider } from '../../../../src/ascii-layout-provider.ts'
+
+afterEach(() => registerAsciiLayout(undefined))
 
 const SRC = 'graph TD\n  Q[Queue] --> W[Worker]\n  Q --> R[Retry]\n  R --> W'
 
@@ -57,5 +63,24 @@ describe('TD bypass edge beside the node it skips (#2731)', () => {
     )
     // Two skipped nodes, B and D, each beside the spine: two heads per target.
     expect(out.match(/▼ ▼/g)).toHaveLength(2)
+  })
+
+  it('does the same with the ELK layout provider every entry point registers', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    const out = render().join('\n')
+    // Queue and Worker each get two ports, Retry sits off the spine.
+    expect(out).toMatch(/┬─┬/)
+    expect(out).toMatch(/▼ ▼/)
+    expect(out).toMatch(/│\s+│ Retry │/)
+  })
+
+  it('steps aside in LR with the provider too', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    const out = renderMermaidASCII('graph LR\n  A --> B --> C\n  A --> C', {
+      colorMode: 'none',
+    })
+    // B above the main row, A -> C straight with its own head.
+    expect(out.split('\n')[1]).toMatch(/│   │\s*$/)
+    expect(out).toMatch(/│   ├─+►│   │/)
   })
 })

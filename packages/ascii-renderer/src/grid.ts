@@ -2956,8 +2956,8 @@ export function createMapping(graph: AsciiGraph): void {
   // above since it wasn't on the grid yet — give the traversal another pass.
   placeReachableChildren(graph, highestPositionPerLevel, minLevels)
 
+  sidestepSkippedNodes(graph)
   if (!slots) {
-    sidestepSkippedNodes(graph)
     centerParentsOverChildren(graph)
     centerClustersOverExits(graph)
 
