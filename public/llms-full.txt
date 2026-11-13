@@ -2674,10 +2674,6 @@ labels such as `"R&D"` keep the first value in both renderers
 Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 (the pin, which is
 also the latest on npm) for #2314; the audit also checked 12.1.0, what GitHub renders.
 
-- **Palette.** zombie-mermaid colours slices with a blue/teal scale derived from the
-  theme accent; mermaid uses its pastel `pie1`..`pie12` scale (`#ECECFF`, `#ffffde`, ...).
-  `themeVariables` `pie1`..`pie12` are honoured only when opted in (see the
-  `themeVariables` section below).
 - **Tall legend.** A legend taller than the 450px frame (about 20 slices or more) is
   clipped at the top and bottom, as in mermaid 12.3.0: the viewBox height stays 450 and
   the rows outside it are cut off. A legend wider than the frame (top, bottom or center
