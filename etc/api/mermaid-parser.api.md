@@ -87,6 +87,7 @@ export interface Actor {
     label: string;
     participantType?: string;
     type: 'participant' | 'actor';
+    wrap?: boolean;
 }
 
 // @public
