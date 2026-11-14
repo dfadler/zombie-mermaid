@@ -31,6 +31,7 @@ import {
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 import { wrapFlowchartLabel } from './wrap-label.ts'
+import { isUsecaseShape, usecaseNodeSize } from '../usecase/shapes.ts'
 import {
   findBackEdgeIndexes,
   subgraphFeedbackEdges,
@@ -394,6 +395,7 @@ export function estimateNodeSize(
 ): { width: number; height: number } {
   // An architecture icon tile is Mermaid's fixed 80px square; its label hangs below.
   if (icon !== undefined) return { width: TILE, height: TILE }
+  if (isUsecaseShape(shape)) return usecaseNodeSize(shape, label)
   // mermaid@12.3.0 flowchart labels take a 1.5 line height (24px at 16px) and
   // 12px of vertical padding, so a one-line rect is 48px (#2931), and wrap at
   // 120px (#2932).
