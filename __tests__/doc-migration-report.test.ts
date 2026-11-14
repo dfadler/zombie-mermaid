@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   issueRefs,
+  lineCount,
   main,
   report,
   statusLine,
@@ -47,5 +48,12 @@ describe('doc-migration-report', () => {
   it('reads the Status line, or nothing when a doc has none', () => {
     expect(statusLine('# T\n\nStatus: implemented\n')).toBe('implemented')
     expect(statusLine('# T\n\nNo status here')).toBe('')
+  })
+
+  it('counts lines without the trailing newline', () => {
+    const eighty = Array.from({ length: 80 }, (_, i) => `l${i}`).join('\n')
+    expect(lineCount(eighty)).toBe(80)
+    expect(lineCount(`${eighty}\n`)).toBe(80)
+    expect(lineCount('')).toBe(1)
   })
 })

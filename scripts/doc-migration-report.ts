@@ -28,6 +28,12 @@ export function issueRefs(name: string, text: string): number[] {
   return [...found].sort((a, b) => a - b)
 }
 
+/** Number of lines in `text`; a final newline does not start another line. */
+export function lineCount(text: string): number {
+  const n = text.split('\n').length
+  return text.endsWith('\n') ? n - 1 : n
+}
+
 /** The first 40 characters of the doc's `Status:` line, or an empty string. */
 export function statusLine(text: string): string {
   return /^Status:\s*(.+)$/m.exec(text)?.[1].slice(0, 40) ?? ''
@@ -65,7 +71,7 @@ export function report(maxLines: number, all: boolean): DocRow[] {
       const status = statusLine(text)
       return {
         path,
-        lines: text.split('\n').length,
+        lines: lineCount(text),
         status,
         issues: issueRefs(path.split('/').pop() as string, text),
         referencedBy: referencedBy(path),
