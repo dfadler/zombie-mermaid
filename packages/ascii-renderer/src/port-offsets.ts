@@ -1503,27 +1503,23 @@ function allocateFaces(
           (a.role === b.role ? 0 : a.role === 'S' ? -1 : 1) ||
           graph.edges.indexOf(a.edge) - graph.edges.indexOf(b.edge),
       )
-      // Adjacent slant rows, the vertex row too when the count is odd.
-      let offs = ends.map((_, i) =>
-        n % 2 ? i - (n - 1) / 2 : i - n / 2 + (i < n / 2 ? 0 : 1),
-      )
-      if (n === 3) {
-        // Three ends take the vertex and the two outer slants, however many
-        // rows the vertex spans (a six-row decision has two).
-        const rows: number[] = []
-        for (let p = geo.lo; p <= geo.hi; p++)
-          if (attachesAt(ends[0]!.run, p, geo, true, true)) rows.push(p)
-        if (rows.length < 2) continue
-        offs = [rows[0]! - geo.centre, 0, rows[rows.length - 1]! - geo.centre]
-      }
-      if (
-        !offs.every(
-          (o) =>
-            o === 0 ||
-            attachesAt(ends[0]!.run, geo.centre + o, geo, true, true),
-        )
-      )
-        continue
+      // The slant rows nearest the vertex, half above it and half below, the
+      // vertex row itself too when the count is odd. A taller decision has a
+      // vertex of two rows (neither takes a stroke but the centre one), so the
+      // rows are found, not counted off from the centre.
+      const rows: number[] = []
+      for (let p = geo.lo; p <= geo.hi; p++)
+        if (p !== geo.centre && attachesAt(ends[0]!.run, p, geo, true, true))
+          rows.push(p)
+      const above = rows.filter((p) => p < geo.centre).reverse()
+      const below = rows.filter((p) => p > geo.centre)
+      const half = Math.floor(n / 2)
+      if (above.length < half || below.length < half) continue
+      const offs = [
+        ...above.slice(0, half).reverse(),
+        ...(n % 2 ? [geo.centre] : []),
+        ...below.slice(0, half),
+      ].map((p) => p - geo.centre)
       ends.forEach((f, i) => {
         f.rank = i
         if (!runsOf(f.edge)?.straight) return
