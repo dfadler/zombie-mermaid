@@ -1,0 +1,27 @@
+                                Sourcing
+
+Visibility
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :  o-In House (build)              :                  
+|                  :     ----\       :                :                  
+|                  :          ----\  :                :                  
+|                  :               --o Vendor (buy)   :                  
+|                  :                /:                :                  
+|                  :               / :                :                  
+|                  :              /  :                :                  
+|                  :             o-Contractor (outsource)                
+|                  :                -----\            :                  
+|                  :                 :    -----\      :                  
+|                  :                 :          --/o Exchange (market)   
+|                  :                 :          /-    :                  
+|                  :                 :        /- Platform (buy)          
+|                  :                 :      o! Legacy :          o!      
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
++------------------+-----------------+----------------+------------------
+       Genesis         Custom Built        Product         Commodity  Evolution

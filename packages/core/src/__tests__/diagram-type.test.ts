@@ -180,6 +180,18 @@ describe('detectDiagramType – radar', () => {
   })
 })
 
+describe('detectDiagramType – wardley', () => {
+  it('detects wardley-beta, case-sensitively as Mermaid’s detector is', () => {
+    expect(detectDiagramType('wardley-beta')).toBe('wardley')
+    expect(detectDiagramType('  wardley-beta\n component A [0.5, 0.5]')).toBe(
+      'wardley',
+    )
+    expect(detectDiagramType('%% c\nwardley-beta title X')).toBe('wardley')
+    expect(detectDiagramType('Wardley-beta')).toBe('flowchart')
+    expect(detectDiagramType('wardley')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – usecase', () => {
   it('detects usecase-beta, case-sensitively as Mermaid’s detector does', () => {
     expect(detectDiagramType('usecase-beta')).toBe('usecase')

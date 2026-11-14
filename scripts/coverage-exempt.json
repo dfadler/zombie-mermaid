@@ -315,6 +315,11 @@
     "maxLines": 52
   },
   {
+    "file": "scripts/wardley-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the comparison is unit-tested in scripts/lib/wardley-agreement.ts",
+    "maxLines": 77
+  },
+  {
     "file": "scripts/radar-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the comparison is unit-tested in scripts/lib/radar-agreement.ts",
     "maxLines": 77

@@ -77,6 +77,8 @@ export * from './journey/parser.ts'
 export * from './journey/types.ts'
 export * from './sankey/parser.ts'
 export * from './sankey/types.ts'
+export * from './wardley/parser.ts'
+export * from './wardley/types.ts'
 
 export * from './requirement/parser.ts'
 export * from './requirement/types.ts'

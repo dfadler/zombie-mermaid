@@ -22,6 +22,7 @@
 //   - Kanban boards (kanban) — stacked column blocks of boxed cards (see kanban.ts)
 //   - Sankey diagrams (sankey-beta) — each source with a bar per outgoing flow (see sankey.ts)
 //   - Requirement diagrams (requirementDiagram) — boxes and labelled lines (see requirement.ts)
+//   - Wardley maps (wardley-beta) — components placed on a visibility/evolution grid (see wardley.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'

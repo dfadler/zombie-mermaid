@@ -168,6 +168,7 @@ export {
   layoutRequirementDiagramSync,
 } from './requirement/layout.ts'
 export { renderRequirementSvg } from './requirement/renderer.ts'
+export { WARDLEY, renderWardleySvg } from './wardley/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {
