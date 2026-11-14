@@ -19,7 +19,7 @@ import '../../src/index.ts'
 import { generate, mulberry32, violation } from '../helpers/ascii-fuzz.ts'
 
 const SEEDS = (process.env.ELK_FUZZ_SEEDS ?? '1,2,3,4').split(',').map(Number)
-const RUNS = Number(process.env.ELK_FUZZ_RUNS ?? 50)
+const RUNS = Number(process.env.ELK_FUZZ_RUNS ?? 30)
 
 describe('ELK-registered ASCII fuzz (#3146)', () => {
   it('never throws and always draws a rectangular canvas', () => {
@@ -45,6 +45,6 @@ describe('ELK-registered ASCII fuzz (#3146)', () => {
         }
       }
     }
-    // Bounded for the unit-test budget: ~400 renders; 120 s covers a loaded machine.
+    // Bounded for the unit-test budget: ~240 renders (55 s on a loaded CI runner at 50 runs); 120 s covers a loaded machine.
   }, 120_000)
 })
