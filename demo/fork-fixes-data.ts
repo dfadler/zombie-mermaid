@@ -1073,6 +1073,18 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: the `api` line stops as a stub at B’s wall and never reaches S. After: it runs through the gutter to S’s wall, as in mermaid 12.3.0.',
   },
+  {
+    id: 'ascii-lr-bypass-dip',
+    title: 'ASCII: the edge that skips a node ran straight through the row',
+    symptom:
+      'In a left-to-right flow, `A --> C` past `B` (with `A --> B --> C`) ran as a straight line along the row. mermaid@12.3.0 steps it off the row, under `B` (or over it when `B` sits below), and back into C’s left face.',
+    source: 'flowchart LR\n    A --> B\n    A --> C\n    B --> C',
+    fixCommit: 'cb7413b2e',
+    pr: 3121,
+    render: 'ascii',
+    lookFor:
+      'Before: `A → C` is one straight stroke along the row. After: it drops to the bottom border row, runs under `B`, and rises into `C`, as in mermaid 12.3.0.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */
