@@ -2238,9 +2238,9 @@ and a `block ... end` group is a larger box around its cells.
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Support for these is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
 
-| Type                                                                  | Header                                                                                                          |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Treemap                                                               | `treemap-beta`                                                                                                  |
+| Type                                                        | Header                                                                                         |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Treemap                                                     | `treemap-beta`                                                                                 |
 | Tree view, Venn, Wardley, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 
 ## Accessibility
