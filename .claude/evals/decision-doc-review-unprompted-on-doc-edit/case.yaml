@@ -43,7 +43,7 @@ graders:
   - name: flags_ambiguous_center
     type: regex
     target: last_message
-    pattern: "(?:node|box|label)['’]?s?\\s+(?:own\\s+)?cent(?:er|re)[^\\n]{0,80}(?:slot|padd)|(?:slot|padd\\w*)['’]?s?\\s+cent(?:er|re)[^\\n]{0,80}(?:node|box|label)|two (?:different )?(?:meanings|readings)|(?:which|what) cent(?:er|re)"
+    pattern: "(?:node|box|label)['’]?s?\\s+(?:own\\s+)?cent(?:er|re)[^\\n]{0,80}(?:slot|padd)|(?:slot|padd\\w*)['’]?s?\\s+cent(?:er|re)[^\\n]{0,80}(?:node|box|label)|two (?:different )?(?:meanings|readings)|(?:which|what) cent(?:er|re)|ambiguous\\s+term\\w*|(?:pick|define)\\s+one\\s+meaning"
     flags: i
   - name: flags_scope_claim
     type: regex
