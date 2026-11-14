@@ -4071,8 +4071,8 @@ sankey-beta
     description:
       'Actors drawn as stick figures, use cases as ellipses inside a system boundary, and a note on one of them.',
     source: `usecase-beta
-    actor Customer
     actor Admin
+    actor Customer
     systemBoundary Shop
         Browse
         Checkout

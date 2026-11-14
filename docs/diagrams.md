@@ -1793,8 +1793,8 @@ against Mermaid's own on 117 sources (`pnpm run usecase:parser-fixture` rebuilds
 
 ```mermaid
 usecase-beta
-    actor Customer
     actor Admin
+    actor Customer
     systemBoundary Shop
         Browse
         Checkout
