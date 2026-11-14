@@ -2897,7 +2897,10 @@ export function createMapping(graph: AsciiGraph): void {
       const f = (x: AsciiEdgeEndHint): AsciiEdgeEndHint =>
         dir === graph.config.graphDirection
           ? x
-          : { ...x, face: turn[x.face] ?? x.face }
+          : /* v8 ignore next -- ELK hooks a loop on the left (TD) or top (LR) */ {
+              ...x,
+              face: turn[x.face] ?? x.face,
+            }
       loops.set(e, { ...h, start: f(h.start), end: f(h.end) })
     }
     if (loops.size > 0) graph.edgeHints = loops

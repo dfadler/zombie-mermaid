@@ -37,6 +37,13 @@ describe('#3053 duplicate self-loops in a frame with its own direction', () => {
     })
   }
 
+  it('hooks a loop in a frame that repeats the diagram direction', () => {
+    const out = renderMermaidASCII(
+      'flowchart TD\n subgraph S\n direction TB\n a --> b\n b --> b\n b --> b\n end',
+    )
+    expect(out.match(/►/g)).toHaveLength(2)
+  })
+
   it('keeps a single loop over the node too', () => {
     const out = renderMermaidASCII(frame('RL', 1))
     expect(out.match(/▼/g)).toHaveLength(1)
