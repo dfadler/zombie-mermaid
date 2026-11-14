@@ -72,6 +72,7 @@ import {
   parseRequirementDiagram,
   parseUsecase,
   usecaseToGraph,
+  parseTreemap,
   parseWardley,
 } from '@zombie-mermaid/mermaid-parser'
 import type { UsecaseDiagram } from '@zombie-mermaid/mermaid-parser'
@@ -112,6 +113,8 @@ import type {
   PositionedSankey,
   RequirementDiagram,
   PositionedRequirementDiagram,
+  Treemap,
+  PositionedTreemap,
   WardleyMap,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
@@ -149,9 +152,11 @@ import { layoutBlock } from './block/layout.ts'
 import { renderBlockSvg } from './block/renderer.ts'
 import { layoutSankey } from './sankey/layout.ts'
 import { renderSankeySvg } from './sankey/renderer.ts'
+import { layoutTreemap } from './treemap/layout.ts'
+import { renderTreemapSvg } from './treemap/renderer.ts'
+import { renderWardleySvg } from './wardley/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
-import { renderWardleySvg } from './wardley/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -809,6 +814,29 @@ const sankeyModule: DiagramModule<Sankey, PositionedSankey> = {
 }
 
 /**
+ * Treemaps parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator), then lay out with a port of d3-hierarchy's squarified treemap.
+ * No theme variables or interactivity apply.
+ */
+const treemapModule: DiagramModule<Treemap, PositionedTreemap> = {
+  type: 'treemap',
+  parse: (_lines, text) => parseTreemap(text),
+  layoutForSvg: (tm) => layoutTreemap(tm),
+  renderSvg(positioned, ctx) {
+    return renderTreemapSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * Wardley maps parse from the raw `text` (`;` starts a link label), and every
  * element sits at a fixed percentage of the canvas, so there is no layout
  * step: the parsed map is what the renderer draws.
@@ -873,5 +901,6 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   requirement: requirementModule,
   usecase: usecaseModule,
   gitgraph: gitgraphModule,
+  treemap: treemapModule,
   wardley: wardleyModule,
 }

@@ -54,6 +54,7 @@ import { renderKanbanAscii } from './kanban.ts'
 import { renderBlockAscii } from './block.ts'
 import { renderSankeyAscii } from './sankey.ts'
 import { renderRequirementAscii } from './requirement.ts'
+import { renderTreemapAscii } from './treemap.ts'
 import { renderWardleyAscii } from './wardley.ts'
 
 /**
@@ -141,6 +142,8 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderBlockAscii(text, config, colorMode, theme),
   requirement: (text, config, colorMode, theme, extras) =>
     renderRequirementAscii(text, config, colorMode, theme, extras),
+  treemap: (text, config, colorMode, theme) =>
+    renderTreemapAscii(text, config, colorMode, theme),
   wardley: (text, config, colorMode, theme) =>
     renderWardleyAscii(text, config, colorMode, theme),
 }

@@ -85,6 +85,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   wardley: 'Wardley',
   requirement: 'Requirement',
   block: 'Block',
+  treemap: 'Treemap',
 }
 
 describe('EditorPage meta description', () => {

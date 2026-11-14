@@ -87,6 +87,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   sankey: 'sankey-beta\n  A,B,1',
   block: 'block-beta\n  columns 2\n  a b',
   usecase: 'usecase-beta\n  actor A\n  A --> B',
+  treemap: 'treemap-beta\n  "A": 1',
   requirement:
     'requirementDiagram\n  requirement r {\n    id: 1\n  }\n  element e {\n  }\n  e - satisfies -> r',
   wardley: 'wardley-beta\n  title Map\n  component A [0.5, 0.5]',
