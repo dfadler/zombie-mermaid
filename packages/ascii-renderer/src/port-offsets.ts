@@ -269,6 +269,9 @@ function attachesAt(
       drawing[pos - dc.x + 1]?.[geo.border],
     ]
     const inner = next.find((c) => c === '╲' || c === '╱')
+    // A fork/join bar is solid along its whole width.
+    if (run.node.shape === 'fork-join' && (ch === '█' || ch === '#'))
+      return true
     return (
       ch === '─' ||
       ch === '-' ||
@@ -1047,6 +1050,24 @@ function raiseFlowFanBars(
     const d = (lr ? from.x : from.y) + size + 1 - (lr ? at.x : at.y)
     /* v8 ignore next */
     if (d >= 0) continue
+    // Raising the bar lengthens the run on the target's side of it: it must not
+    // now run through a node between the two layers (a long edge's bend sits
+    // beside its target on purpose, where the column past the nodes is free).
+    const [mainAt, crossAt] = lr ? (['x', 'y'] as const) : (['y', 'x'] as const)
+    const lo = requireGridCoord(edge.from)[mainAt] + 2
+    const hi = p[1]![mainAt]
+    const blocked = graph.nodes.some((n) => {
+      const g = requireGridCoord(n)
+      return (
+        n !== edge.from &&
+        n !== edge.to &&
+        g[crossAt] <= p[2]![crossAt] &&
+        p[2]![crossAt] <= g[crossAt] + 2 &&
+        g[mainAt] + 2 > lo &&
+        g[mainAt] < hi
+      )
+    })
+    if (blocked) continue
     const shift = result.get(edge) ?? { start: 0, end: 0 }
     const points = shift.points ?? p.map(() => ({ x: 0, y: 0 }))
     for (const i of [1, 2]) points[i]![lr ? 'x' : 'y'] = d
@@ -1114,8 +1135,28 @@ function jogCost(jogs: Jog[], rows: number[], lo: number): number {
   return cost
 }
 
+/**
+ * `jogCost` reads only each jog's `near` and `far`, so the answer is a pure
+ * function of those, `lo` and `hi`. The planner asks for the same gap again on
+ * every re-route of an unchanged layout (1156 searches for 8 distinct gaps in
+ * the LR "Five Cluster Exit Siblings" sample, #3093), and each is up to 6^6
+ * cost evaluations: memoize it.
+ */
+const jogRowsCache = new Map<string, number[]>()
+const JOG_ROWS_CACHE_MAX = 500
+
 /** The rows `lo..hi` that cost least for these jogs: exhaustive for the few a gap holds, else coordinate descent. */
 export function bestJogRows(jogs: Jog[], lo: number, hi: number): number[] {
+  const key = `${lo},${hi}|${jogs.map((j) => `${j.near},${j.far}`).join(';')}`
+  const hit = jogRowsCache.get(key)
+  if (hit) return [...hit]
+  const rows = searchJogRows(jogs, lo, hi)
+  if (jogRowsCache.size >= JOG_ROWS_CACHE_MAX) jogRowsCache.clear()
+  jogRowsCache.set(key, rows)
+  return [...rows]
+}
+
+function searchJogRows(jogs: Jog[], lo: number, hi: number): number[] {
   const n = jogs.length
   const count = hi - lo + 1
   let best = jogs.map(() => lo)

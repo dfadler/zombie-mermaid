@@ -160,10 +160,12 @@ export function architectureToGraph(diagram: ArchitectureDiagram): MermaidGraph;
 
 // @public (undocumented)
 export interface AxisTick {
+    fontSize?: number;
     label: string;
     labelX: number;
     // (undocumented)
     labelY: number;
+    rotate?: number;
     textAnchor: 'start' | 'middle' | 'end';
     tx: number;
     // (undocumented)
@@ -187,6 +189,27 @@ export interface Block {
     startIndex: number;
     type: 'loop' | 'alt' | 'opt' | 'par' | 'critical' | 'break' | 'rect';
 }
+
+// @public
+export interface BlockDiagram {
+    root: BlockNode;
+}
+
+// @public
+export interface BlockNode {
+    children: BlockNode[];
+    columns?: number;
+    id: string;
+    label: string;
+    // (undocumented)
+    shape: BlockShape;
+    // (undocumented)
+    type: 'node' | 'space' | 'composite';
+    widthInColumns: number;
+}
+
+// @public
+export type BlockShape = 'square' | 'round';
 
 // @public (undocumented)
 export interface C4Boundary {
@@ -356,6 +379,22 @@ export interface ClassRelationship {
     type: RelationshipType;
 }
 
+// @public
+export interface DataLabel {
+    // (undocumented)
+    baseline: 'middle' | 'hanging' | 'auto';
+    // (undocumented)
+    fontSize: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    textAnchor: 'start' | 'middle' | 'end';
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
 // @public (undocumented)
 export interface ErAttribute {
     comment?: string;
@@ -393,6 +432,38 @@ export interface ErRelationship {
 }
 
 // @public
+export interface EventModeling {
+    // (undocumented)
+    dataBlocks: EventModelingDataBlock[];
+    // (undocumented)
+    frames: EventModelingFrame[];
+}
+
+// @public
+export interface EventModelingDataBlock {
+    // (undocumented)
+    name: string;
+    value: string;
+}
+
+// @public
+export type EventModelingEntityType = 'ui' | 'processor' | 'command' | 'readmodel' | 'event';
+
+// @public
+export interface EventModelingFrame {
+    dataInline?: string;
+    dataRef?: string;
+    // (undocumented)
+    entityType: EventModelingEntityType;
+    id: string;
+    identifier: string;
+    name: string;
+    namespace?: string;
+    reset: boolean;
+    sources: string[];
+}
+
+// @public
 export interface ExpandedNodeMeta {
     [key: string]: string | undefined;
     constraint?: string;
@@ -421,6 +492,9 @@ export function formatD3Time(ms: number, fmt: string): string;
 
 // @public
 export function formatDayjs(ms: number, fmt: string): string;
+
+// @public
+export function formatTreemapValue(v: number): string;
 
 // @public
 export interface GanttChart {
@@ -584,6 +658,20 @@ export function isDarkBackground(bgHex: string): boolean;
 
 // @public
 export function isExcludedDate(chart: Pick<GanttChart, 'includes' | 'excludes' | 'weekend' | 'dateFormat'>, ms: number): boolean;
+
+// @public
+export interface Ishikawa {
+    // (undocumented)
+    root?: IshikawaNode;
+}
+
+// @public
+export interface IshikawaNode {
+    // (undocumented)
+    children: IshikawaNode[];
+    // (undocumented)
+    text: string;
+}
 
 // @public
 export function isoWeekday(ms: number): number;
@@ -807,6 +895,9 @@ export function packGanttSection(tasks: GanttTask[], offset: number, orders: Map
 export function parseArchitecture(lines: Statement[]): ArchitectureDiagram;
 
 // @public
+export function parseBlock(text: string): BlockDiagram;
+
+// @public
 export function parseBoxHeader(header: string): {
     color?: string;
     label: string;
@@ -825,6 +916,9 @@ export function parseDayjs(str: string, fmt: string, now?: Date): number | undef
 export function parseErDiagram(lines: Statement[]): ErDiagram;
 
 // @public
+export function parseEventModeling(text: string): EventModeling;
+
+// @public
 export function parseExpandedMeta(body: string): ExpandedNodeMeta;
 
 // @public
@@ -835,6 +929,9 @@ export function parseGenericTypes(input: string): string;
 
 // @public
 export function parseGitGraph(text: string): GitGraph;
+
+// @public
+export function parseIshikawa(text: string): Ishikawa;
 
 // @public
 export function parseJourney(text: string): Journey;
@@ -871,6 +968,12 @@ export function parseSequenceDiagram(lines: Statement[], text?: string): Sequenc
 
 // @public
 export function parseTimeline(text: string): Timeline;
+
+// @public
+export function parseTreemap(text: string): Treemap;
+
+// @public (undocumented)
+export function parseUsecase(source: string): UsecaseDiagram;
 
 // @public
 export function parseXYChart(lines: Statement[], config?: XyChartInitConfig): XYChart;
@@ -948,6 +1051,7 @@ export interface PositionedAxis {
         x: number;
         y: number;
         rotate?: number;
+        fontSize?: number;
     };
 }
 
@@ -985,6 +1089,44 @@ export interface PositionedBlock {
     x: number;
     // (undocumented)
     y: number;
+}
+
+// @public
+export interface PositionedBlockDiagram {
+    nodes: PositionedBlockNode[];
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedBlockNode {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    shape: BlockShape;
+    // (undocumented)
+    text: PositionedBlockText;
+    // (undocumented)
+    type: 'node' | 'composite';
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedBlockText {
+    // (undocumented)
+    lines: string[];
+    width: number;
 }
 
 // @public (undocumented)
@@ -1221,6 +1363,68 @@ export interface PositionedErRelationship {
         x: number;
         y: number;
     }>;
+}
+
+// @public
+export interface PositionedEventModeling {
+    // (undocumented)
+    boxes: PositionedEventModelingBox[];
+    // (undocumented)
+    lanes: PositionedEventModelingLane[];
+    laneWidth: number;
+    // (undocumented)
+    relations: PositionedEventModelingRelation[];
+    // (undocumented)
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedEventModelingBox {
+    // (undocumented)
+    dataLines: string[];
+    // (undocumented)
+    frame: EventModelingFrame;
+    // (undocumented)
+    height: number;
+    lane: number;
+    nameLines: string[];
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedEventModelingLane {
+    // (undocumented)
+    height: number;
+    index: number;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedEventModelingRelation {
+    from: number;
+    // (undocumented)
+    to: number;
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    x2: number;
+    // (undocumented)
+    y1: number;
+    // (undocumented)
+    y2: number;
 }
 
 // @public (undocumented)
@@ -2165,8 +2369,88 @@ export interface PositionedTimelineNode {
 
 // @public (undocumented)
 export interface PositionedTitle {
+    fontSize?: number;
     // (undocumented)
     text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedTreemap {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    leaves: PositionedTreemapLeaf[];
+    offsetX: number;
+    // (undocumented)
+    offsetY: number;
+    // (undocumented)
+    sections: PositionedTreemapSection[];
+    // (undocumented)
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    treeOffsetY: number;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedTreemapLabel {
+    // (undocumented)
+    fontSize: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedTreemapLeaf {
+    // (undocumented)
+    color: number;
+    // (undocumented)
+    height: number;
+    label?: PositionedTreemapLabel;
+    // (undocumented)
+    name: string;
+    // (undocumented)
+    styles: TreemapStyle[];
+    // (undocumented)
+    value: number;
+    valueLabel?: PositionedTreemapLabel;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedTreemapSection {
+    color: number;
+    // (undocumented)
+    depth: number;
+    // (undocumented)
+    height: number;
+    label: PositionedTreemapLabel;
+    // (undocumented)
+    name: string;
+    // (undocumented)
+    styles: TreemapStyle[];
+    // (undocumented)
+    value: number;
+    valueLabel?: PositionedTreemapLabel;
+    // (undocumented)
+    width: number;
     // (undocumented)
     x: number;
     // (undocumented)
@@ -2177,6 +2461,7 @@ export interface PositionedTitle {
 export interface PositionedXYChart {
     bars: PositionedBar[];
     config?: XyChartInitConfig;
+    dataLabels?: DataLabel[];
     gridLines: GridLine[];
     // (undocumented)
     height: number;
@@ -2381,6 +2666,110 @@ export function timeTicks(t0: number, t1: number, custom?: TickInterval, weekday
 export function toBlockType(value: string): Block['type'];
 
 export { toDirection }
+
+// @public
+export interface Treemap {
+    roots: TreemapNode[];
+    // (undocumented)
+    title?: string;
+}
+
+// @public
+export interface TreemapNode {
+    children?: TreemapNode[];
+    classSelector?: string;
+    // (undocumented)
+    name: string;
+    styles: TreemapStyle[];
+    value?: number;
+}
+
+// @public
+export interface TreemapStyle {
+    // (undocumented)
+    key: string;
+    // (undocumented)
+    value: string;
+}
+
+// @public
+export interface UsecaseActor {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    parentId?: string;
+}
+
+// @public
+export interface UsecaseBoundary {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    members: string[];
+}
+
+// @public
+export interface UsecaseCase {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    parentId?: string;
+    // (undocumented)
+    shape: 'ellipse' | 'rect';
+}
+
+// @public (undocumented)
+export interface UsecaseDiagram {
+    // (undocumented)
+    actors: UsecaseActor[];
+    // (undocumented)
+    boundaries: UsecaseBoundary[];
+    // (undocumented)
+    direction: UsecaseDirection;
+    // (undocumented)
+    notes: UsecaseNote[];
+    // (undocumented)
+    relationships: UsecaseRelationship[];
+    // (undocumented)
+    useCases: UsecaseCase[];
+}
+
+// @public (undocumented)
+export type UsecaseDirection = 'TB' | 'TD' | 'BT' | 'LR' | 'RL';
+
+// @public
+export interface UsecaseNote {
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    target: string;
+}
+
+// @public
+export const usecaseNoteId: (n: number) => string;
+
+// @public (undocumented)
+export interface UsecaseRelationship {
+    arrow: 'forward' | 'backward' | 'none';
+    // (undocumented)
+    label?: string;
+    // (undocumented)
+    source: string;
+    // (undocumented)
+    target: string;
+    // (undocumented)
+    type: UsecaseRelationshipType;
+}
+
+// @public (undocumented)
+export type UsecaseRelationshipType = 'association' | 'include' | 'extend' | 'generalization';
+
+// @public
+export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph;
 
 // @public
 export function weekdayName(ms: number): string;

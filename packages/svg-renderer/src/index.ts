@@ -141,6 +141,8 @@ export {
   wrapTimelineText,
 } from './timeline/layout.ts'
 export { renderTimelineSvg } from './timeline/renderer.ts'
+export { EVENTMODELING, layoutEventModeling } from './eventmodeling/layout.ts'
+export { renderEventModelingSvg } from './eventmodeling/renderer.ts'
 export { layoutGitGraph } from './gitgraph/layout.ts'
 export { renderGitGraphSvg } from './gitgraph/renderer.ts'
 export { PACKET, layoutPacket } from './packet/layout.ts'
@@ -154,8 +156,12 @@ export { RADAR, layoutRadar } from './radar/layout.ts'
 export { renderRadarSvg } from './radar/renderer.ts'
 export { KANBAN, layoutKanban } from './kanban/layout.ts'
 export { renderKanbanSvg } from './kanban/renderer.ts'
+export { BLOCK, layoutBlock } from './block/layout.ts'
+export { renderBlockSvg } from './block/renderer.ts'
 export { SANKEY, layoutSankey } from './sankey/layout.ts'
 export { renderSankeySvg } from './sankey/renderer.ts'
+export { TREEMAP, layoutTreemap } from './treemap/layout.ts'
+export { renderTreemapSvg } from './treemap/renderer.ts'
 export {
   JOURNEY,
   layoutJourney,
@@ -168,6 +174,13 @@ export {
   layoutRequirementDiagramSync,
 } from './requirement/layout.ts'
 export { renderRequirementSvg } from './requirement/renderer.ts'
+export {
+  ISHIKAWA,
+  layoutIshikawa,
+  wrapIshikawaText,
+} from './ishikawa/layout.ts'
+export type { PositionedIshikawa } from './ishikawa/layout.ts'
+export { renderIshikawaSvg } from './ishikawa/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {
@@ -370,6 +383,7 @@ const LITERAL_ENTITY_TYPES: ReadonlySet<DiagramType> = new Set([
   'timeline',
   'xychart',
   'sankey',
+  'treemap',
   'radar',
   'sequence',
 ])

@@ -1,0 +1,8 @@
+Products        2,100  ##################
++- Electronics  1,400  ############
+|  +- Phones      800  ######|
+|  `- Laptops     600  #####
+`- Clothing       700  ######
+   +- Women       400  ###
+   `- Men         300  ##|
+Services          200  #|

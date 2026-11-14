@@ -1149,6 +1149,15 @@ function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
   return placed && clearOfEarlierLabels(graph, edge, placed)
 }
 
+/** An earlier edge's label where it is drawn (after its own slide); only ever asks earlier edges, so no cycle. */
+function finalPlacement(graph: AsciiGraph, edge: AsciiEdge): LabelLines {
+  const key = `${graph.edges.indexOf(edge)}:final`
+  if (!placementMemo.has(key)) {
+    placementMemo.set(key, resolveWithClearance(graph, edge))
+  }
+  return placementMemo.get(key)!
+}
+
 type LabelLines = { x: number; y: number; text: string }[] | null
 /** Per-`edgeLabelPlacement`-call memo of `resolveLabelPlacement` (#1466). */
 let placementMemo = new Map<string, LabelLines>()
@@ -1177,14 +1186,20 @@ function clearOfEarlierLabels(
     return placement
   }
   const at = graph.edges.indexOf(edge)
-  const labelsOf = (edges: AsciiEdge[], labelAware: boolean) =>
+  const labelsOf = (edges: AsciiEdge[], place: (e: AsciiEdge) => LabelLines) =>
     edges
       .filter((other) => other.path.length >= 2)
-      .flatMap((other) => resolveLabelPlacement(graph, other, labelAware) ?? [])
-  const earlier = labelsOf(graph.edges.slice(0, at), false)
+      .flatMap((other) => place(other) ?? [])
+  // An earlier label is taken where it is drawn, slide included: its unslid
+  // cell can be free while the cell it slid to is what this label lands on.
+  const earlier = labelsOf(graph.edges.slice(0, at), (e) =>
+    finalPlacement(graph, e),
+  )
   // A later label is taken where it will be drawn (label-aware, before its
   // own slide, which only ever looks at earlier ones: no cycle).
-  const later = labelsOf(graph.edges.slice(at + 1), true)
+  const later = labelsOf(graph.edges.slice(at + 1), (e) =>
+    resolveLabelPlacement(graph, e, true),
+  )
   return slideClearOf(
     placement,
     earlier,
@@ -1386,6 +1401,45 @@ function onStrokePlacement(
   return null
 }
 
+/**
+ * #3049: a straight TD cluster exit beside a single exit that jogs right on
+ * the gutter row puts its label on that row too, left of the jog's own label,
+ * as mermaid@12.3.0 draws the pair (both at the same height). Any other
+ * shape, with three or more exits among them, is returned untouched.
+ */
+function onSiblingJogRow(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  const plan = edge.clusterSource
+    ? graph.clusterExitPlans?.get(edge.clusterSource)
+    : undefined
+  if (
+    graph.config.graphDirection === 'LR' ||
+    plan?.edges.size !== 2 ||
+    !plan.edges.has(edge) ||
+    edge.path.some((c) => c.x !== edge.path[0]!.x) ||
+    line.length < 2 ||
+    line[0]!.x !== line[1]!.x ||
+    placement.length !== 1
+  ) {
+    return placement
+  }
+  const jog = [...plan.edges].find(
+    (o) =>
+      o !== edge &&
+      o.text.length > 0 &&
+      o.path.length >= 3 &&
+      o.path[1]!.y === o.path[2]!.y &&
+      o.path[2]!.x > edge.path[0]!.x,
+  )
+  const at = jog && resolveLabelPlacement(graph, jog, false)
+  if (!at || at.length !== 1) return placement
+  return [{ ...placement[0]!, y: at[0]!.y }]
+}
+
 function centredLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
@@ -1424,7 +1478,7 @@ function centredLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  const centred = clearOfJoiningStrokes(
+  const placed = clearOfJoiningStrokes(
     graph,
     edge,
     drawingLine,
@@ -1444,6 +1498,7 @@ function centredLabelPlacement(
               // A dense pair's return stroke runs right to left with its head
               // at the near end: leave that cell to the head.
               (edge.hasArrowEnd &&
+                drawingLine.length >= 2 &&
                 drawingLine[0]!.x > drawingLine[1]!.x &&
                 denseFacingPair(graph, edge)),
           ),
@@ -1455,6 +1510,7 @@ function centredLabelPlacement(
       ),
     ),
   )
+  const centred = onSiblingJogRow(graph, edge, drawingLine, placed)
 
   // #1284: every labelled vertical edge puts its label beside the stroke
   // instead of cutting through it, the down edge's to its right and the up

@@ -93,6 +93,7 @@ const DIAGRAM_KEYWORDS = new Set([
   'timeline',
   'radar-beta',
   'requirementDiagram',
+  'usecase-beta',
   'quadrantChart',
   'xychart-beta',
 ])

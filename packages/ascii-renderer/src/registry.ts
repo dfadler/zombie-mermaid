@@ -48,10 +48,15 @@ import { renderTimelineAscii } from './timeline.ts'
 import { renderGitGraphAscii } from './gitgraph.ts'
 import { renderPacketAscii } from './packet.ts'
 import { renderRadarAscii } from './radar.ts'
+import { renderUsecaseAscii } from './usecase.ts'
 import { renderJourneyAscii } from './journey.ts'
 import { renderKanbanAscii } from './kanban.ts'
+import { renderEventModelingAscii } from './eventmodeling.ts'
+import { renderBlockAscii } from './block.ts'
 import { renderSankeyAscii } from './sankey.ts'
 import { renderRequirementAscii } from './requirement.ts'
+import { renderTreemapAscii } from './treemap.ts'
+import { renderIshikawaAscii } from './ishikawa.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -126,12 +131,22 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderPacketAscii(text, config, colorMode, theme),
   radar: (text, config, colorMode, theme) =>
     renderRadarAscii(text, config, colorMode, theme),
+  usecase: (text, config, colorMode, theme, extras) =>
+    renderUsecaseAscii(text, config, colorMode, theme, extras),
   journey: (text, config, colorMode, theme) =>
     renderJourneyAscii(text, config, colorMode, theme),
   kanban: (text, config, colorMode, theme) =>
     renderKanbanAscii(text, config, colorMode, theme),
+  eventmodeling: (text, config, colorMode, theme) =>
+    renderEventModelingAscii(text, config, colorMode, theme),
   sankey: (text, config, colorMode, theme) =>
     renderSankeyAscii(text, config, colorMode, theme),
+  block: (text, config, colorMode, theme) =>
+    renderBlockAscii(text, config, colorMode, theme),
   requirement: (text, config, colorMode, theme, extras) =>
     renderRequirementAscii(text, config, colorMode, theme, extras),
+  treemap: (text, config, colorMode, theme) =>
+    renderTreemapAscii(text, config, colorMode, theme),
+  ishikawa: (text, config, colorMode, theme) =>
+    renderIshikawaAscii(text, config, colorMode, theme),
 }

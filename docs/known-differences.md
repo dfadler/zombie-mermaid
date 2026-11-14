@@ -817,10 +817,16 @@ Init and front matter share one code path.
   SVG and ASCII (every combination of the four per-axis keys checked against 12.3.0, both orientations, band and linear x,
   with and without axis titles): a hidden label leaves no row or column, a tick without its axis line is a lone stub. The margins are our own (the plot rectangle is not mermaid's to the pixel; tick
   and data positions as fractions of each axis match, `pnpm run xychart:oracle`).
-- **Not read** (reported as ignored; mermaid lays the plot out from these and our margins are fixed sizes, see
-  [#3010](https://github.com/dfadler/zombie-mermaid/issues/3010)): `titleFontSize`, `titlePadding`, `showDataLabel`, `showDataLabelOutsideBar` (data labels are
-  not drawn), `plotReservedSpacePercent`, and per axis `labelFontSize`, `labelPadding`, `titleFontSize`,
-  `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth`, `labelRotation`.
+- **Read, SVG only** ([#3010](https://github.com/dfadler/zombie-mermaid/issues/3010)): `titleFontSize`, `titlePadding`,
+  `plotReservedSpacePercent`, `showDataLabel`, `showDataLabelOutsideBar`, and per axis `labelFontSize`, `labelPadding`,
+  `titleFontSize`, `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth` and `labelRotation` (the bottom axis of a
+  vertical chart only, as in mermaid). A set key moves our fixed margins by its difference from mermaid 12.3.0's
+  default and draws at its value; checked against 12.3.0 for each key, both orientations: the plot rectangle's edges
+  move within 1px (a title or axis title font within 1px; 4px for a larger label font on the value axis, because text widths are
+  estimated; 2px for a rotated label's room). Unset keys leave the output as it was, so the plot rectangle at the defaults is still our own.
+  `showDataLabel` takes mermaid's font-size rule and positions (values from the first series, as mermaid does, one size per
+  series), placed on our bars. `plotReservedSpacePercent` drops a title, axis title or label that does not fit in
+  the share it leaves, only when set. ASCII reads none of these: a character grid has no pixel sizes.
 
 ## C4 `%%{init}%%` / front-matter config ([#2906](https://github.com/dfadler/zombie-mermaid/issues/2906))
 
@@ -903,6 +909,36 @@ labels, custom sizes), measured with a throwaway script, not yet a checked-in or
   connected); only the headless mermaid builds above were compared.
 - **ASCII.** Mermaid has no ASCII output; the flow list above is this library's own.
 
+## Treemap diagrams
+
+Checked against mermaid 12.3.0: section and leaf positions and sizes and the viewBox agree to
+0.01px on the gallery samples, and the labels that are shown agree except where a label is fitted
+one pixel off (see Label fitting), measured with `pnpm run treemap:oracle`. mermaid.live and
+GitHub: not checked on this run (no signed-in browser tool connected); only the headless mermaid
+build above was compared.
+
+- **Palette.** Sections use mermaid's default-theme `cScale1..12` hues on a light background and
+  the theme accent with its series shades on a dark one; mermaid draws the same pastels on any
+  background. Text is `var(--_text)`; mermaid picks black or white per slot.
+- **Label fitting.** Fitting measures with Trebuchet MS advances, as mermaid's headless render does
+  on a machine that has the font. A label can still land one font size off (`Kotlin` 12 here, 13
+  there), and bold section labels are measured as regular, so a truncation can differ by a letter.
+  Non-ASCII text falls back to the library's Inter estimate.
+- **Font.** Text is drawn in the render's font (Inter by default), not mermaid's stack, and there
+  is no `clip-path` on labels: fitting already keeps them inside their cell.
+- **`classDef`.** Only `fill`, `stroke`, `stroke-width` (cells) and `color` (text) are applied, and a
+  colour with `url()` or markup is ignored. Mermaid copies every property to the cell with
+  `!important`. An unknown `:::class` does nothing, as there.
+- **Init keys.** `padding`, `nodeWidth`, `nodeHeight`, `showValues`, `valueFormat` and
+  `diagramPadding` are not read: the canvas is 1000 x 400, values are written with d3's `,` format
+  (12 significant digits), and 8px surround the drawing.
+- **Values.** A value such as `.` or `_` reads as `NaN` in mermaid and draws garbage; here it is a
+  parse error. Mermaid's grammar also has a "single root" check that its renderer does not apply, so
+  several top-level rows are accepted, as there.
+- **Accessibility.** `accTitle` / `accDescr` give the SVG its name and description; the `title` line is
+  drawn, not used as the name. `useMaxWidth` is ignored: the SVG carries a fixed `width` and `height`.
+- **ASCII.** Mermaid has no ASCII output; the tree list above is this library's own.
+
 ## Timelines
 
 Checked against mermaid 12.3.0 with `pnpm run timeline:oracle` (12.2.0, the pin, renders
@@ -955,6 +991,47 @@ wrapped line counts, priority bars and the drawing size agree on every gallery s
 - **Repeated spaces** inside a wrapped label are collapsed (Mermaid keeps them).
 - **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
 - **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
+
+## Event modeling
+
+Checked against mermaid 12.3.0 with `pnpm run eventmodeling:oracle`: swimlane and box
+rectangles, lane labels, arrows and the drawing size agree on every gallery sample.
+
+- **Lanes per namespaced frame.** Mermaid 12.3.0 never finds an existing lane by namespace
+  (its lane records carry no namespace), so every frame of `Inv.A`, `Inv.B`, `Inv.C` gets
+  its own "Stream: Inv" lane. The SVG reproduces that; the ASCII output puts frames that
+  share a namespace in one lane, as Mermaid's documentation describes.
+- **Text widths.** Mermaid measures `<b>Name</b><br/><br/><code>data</code>` as literal
+  text in the browser (tags and `&nbsp;` included) and divides a box with data by three;
+  this library sums Trebuchet MS bold advances plus kerning (measured on macOS), so a box
+  can differ by a pixel on a machine without Trebuchet. Characters outside printable ASCII
+  are estimated.
+- **Colours.** The entity fills and strokes are Mermaid's defaults in every theme (blue
+  commands, orange events, green read models); the lane bands, labels and arrows follow the
+  theme. `themeVariables.em*` is not read.
+- **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; a multi-line `data` block
+  flows as one paragraph there and here.
+- **Not drawn.** `entity`, `note` and `gwt` parse and draw nothing, as in Mermaid 12.3.0;
+  data type prefixes (`json`, `md`, ...) get no special treatment, as there.
+- **ASCII.** Mermaid has no ASCII output; the horizontal lane bands are this library's own, with one column per frame instead of Mermaid's overlap.
+
+## Block diagrams
+
+Checked against mermaid 12.3.0 with `pnpm run block:oracle`: every block's rectangle, its corner
+radius and the drawing size agree on every gallery sample.
+
+- **Text widths.** Mermaid measures labels in the browser; this library sums Trebuchet MS advances
+  and ignores kerning, so a label can differ by about a pixel (`A label` measures 0.9px wider
+  here). The gallery samples avoid such labels.
+- **Palette.** Blocks use the theme's node fill and border; a group is a light mix of the border
+  colour into the background. Mermaid uses its own purple and yellow.
+- **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
+- **Not drawn yet.** Links, the other shapes, styling and markdown strings: see
+  [#3105](https://github.com/dfadler/zombie-mermaid/issues/3105),
+  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106),
+  [#3107](https://github.com/dfadler/zombie-mermaid/issues/3107).
+- **`~~~`.** Mermaid's lexer reads `~~~` as a block id (its id rule comes before the invisible-link rule); so does this parser.
+- **ASCII.** Mermaid has no ASCII output; the box grid is this library's own.
 
 ## User journeys
 
@@ -1113,5 +1190,31 @@ graphs in all three orientations, with and without `parallelCommits` and
   commits of the same depth (a root is 0, else one below the deepest parent) on one row, ids
   separated by commas, when their lane spans do not overlap or they are forks off the same
   commit; otherwise each keeps its row.
+- **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
+  session (no browser with those pages was available).
+
+## Ishikawa (fishbone) diagrams
+
+Checked against `mermaid@12.3.0` (`pnpm run ishikawa:oracle`; the pin, 12.2.0, is not
+the reference here because it is behind npm `latest`).
+
+- **Text widths.** Mermaid measures text in the browser; here the library's font
+  metrics are used, so every x that depends on a label (where the next pair of bones
+  starts, the left edge, the label boxes) and the frame width differ by a few percent.
+  Bone vectors, y positions, element order and all text agree exactly.
+- **Quirks of Mermaid's grammar not ported.** Its jison grammar rejects `ishikawa   `
+  (trailing spaces after the header), a header with no newline after it, and some blank
+  lines straight after the header (`ishikawa`, blank, `  Effect` is an error, while
+  `ishikawa`, blank, `%% c`, `  Effect` is not); this parser accepts all of them.
+- **Accessibility statements.** The front door strips `accTitle` / `accDescr` lines
+  before parsing; Mermaid's ishikawa grammar has no such statement and draws them as
+  causes.
+- **Not drawn.** The `handDrawn` look (rough.js strokes) and the `ishikawa.*` config keys
+  `diagramPadding` and `useMaxWidth`; `fontSize` from config is not read (16px).
+- **Labels.** Mermaid runs a label through DOMPurify and draws the resulting HTML as
+  text: `<x>` vanishes and `&` shows as `&amp;`. The same sanitizer stand-in as for
+  packet titles is used (`sanitize-title.ts`).
+- **ASCII.** Mermaid has no ASCII output; the fishbone layout is this library's own (see
+  [Supported diagrams](diagrams.md#ascii-ishikawa-diagrams)).
 - **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
   session (no browser with those pages was available).

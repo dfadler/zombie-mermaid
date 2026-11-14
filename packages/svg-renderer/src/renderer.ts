@@ -1,3 +1,10 @@
+import {
+  USECASE,
+  fontOf,
+  isUsecaseShape,
+  lineHeight,
+  usecaseLabelText,
+} from './usecase/shapes.ts'
 import type {
   PositionedGraph,
   PositionedNode,
@@ -162,7 +169,7 @@ export function renderSvg(
     parts.push(arrowMarkerDefsForColor(color, graph.stateDiagram === true))
   }
   // Circle / cross terminators (`--o`, `--x`), emitted only when used.
-  const kinds = new Set<'circle' | 'cross'>()
+  const kinds = new Set<'circle' | 'cross' | 'triangle'>()
   for (const e of graph.edges) {
     if (e.startMarker) kinds.add(e.startMarker)
     if (e.endMarker) kinds.add(e.endMarker)
@@ -335,7 +342,10 @@ function barbMarkerPair(color: string, idSuffix: string): string {
  * border), one marker for both ends via `auto-start-reverse`. Mermaid's start
  * markers use a slightly different refX (0.6px more gap on the cross).
  */
-function terminatorMarker(kind: 'circle' | 'cross'): string {
+function terminatorMarker(kind: 'circle' | 'cross' | 'triangle'): string {
+  // A use case generalization: Mermaid's `extension` marker, a hollow triangle.
+  if (kind === 'triangle')
+    return f`<marker id="triangle" viewBox="0 0 20 14" refX="18" refY="7" markerUnits="userSpaceOnUse" markerWidth="20" markerHeight="14" orient="auto-start-reverse"><path d="M1 7L18 13V1Z" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" stroke-linejoin="round"/></marker>`
   return kind === 'circle'
     ? f`<marker id="circle" viewBox="0 0 10 10" refX="12.25" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto-start-reverse"><circle cx="5" cy="5" r="5" fill="var(--_arrow)"/></marker>`
     : f`<marker id="cross" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1 1L14 14M1 14L14 1" stroke="var(--_arrow)" stroke-width="2.5"/></marker>`
@@ -947,6 +957,19 @@ function renderNodeShapeBase(
       return renderCrossedCircle(x, y, width, height, fill, stroke, sw)
     case 'fork-join':
       return renderForkJoin(x, y, width, height, stroke)
+    case 'usecase-ellipse':
+      return f`<ellipse cx="${x + width / 2}" cy="${y + height / 2}" rx="${width / 2}" ry="${height / 2}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    case 'usecase-actor':
+      return renderStickFigure(x, y, width, height, fill, stroke, sw)
+    case 'usecase-note':
+      return renderUsecaseNote(
+        x,
+        y,
+        width,
+        height,
+        escapeAttr(inlineStyle?.fill ?? '#fff5ad'),
+        escapeAttr(inlineStyle?.stroke ?? '#aaaa33'),
+      )
     case 'note':
       return renderNoteShape(
         x,
@@ -1592,6 +1615,42 @@ function renderSmallCircle(
 }
 
 /** State diagram note: a dog-eared box, like the sequence/class notes. */
+/** A use case diagram's actor: Mermaid's stick figure, 64px tall from the node's top edge. */
+function renderStickFigure(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const u = USECASE
+  const cx = x + w / 2
+  const body =
+    f`M${cx},${y + u.torsoTop} V${y + u.torsoBottom} ` +
+    f`M${cx - u.armsHalf},${y + u.armsY} H${cx + u.armsHalf} ` +
+    f`M${cx},${y + u.torsoBottom} L${cx - u.legsHalf},${y + u.legsBottom} ` +
+    f`M${cx},${y + u.torsoBottom} L${cx + u.legsHalf},${y + u.legsBottom}`
+  return (
+    f`<rect class="usecase-actor-outline" x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="none" />\n` +
+    f`<circle cx="${cx}" cy="${y + u.headY}" r="${u.headR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />\n` +
+    f`<path d="${body}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" />`
+  )
+}
+
+/** A use case diagram's note: a plain yellow box. */
+function renderUsecaseNote(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+): string {
+  return f`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="1" />`
+}
+
 function renderNoteShape(
   x: number,
   y: number,
@@ -1834,9 +1893,19 @@ function renderNodeLabel(
     (node.shape === 'asymmetric' ? ASYMMETRIC_NOTCH / 2 : 0)
   // An icon tile's label hangs below it, as Mermaid's does.
   // Its first line stays put and further (wrapped) lines hang below it.
-  const labelLines = node.label.split('\n').length
-  const cy =
-    node.icon === undefined
+  const usecase = isUsecaseShape(node.shape)
+  const labelLines = usecase
+    ? usecaseLabelText(node.shape, node.label).split('\n').length
+    : node.label.split('\n').length
+  // An actor's name sits under its figure, 10px above the node's bottom edge.
+  const cy = usecase
+    ? node.shape === 'usecase-actor'
+      ? node.y +
+        node.height -
+        USECASE.actorPad -
+        (labelLines * lineHeight(node.shape)) / 2
+      : node.y + node.height / 2
+    : node.icon === undefined
       ? node.y + node.height / 2
       : node.y +
         node.height +
@@ -1848,7 +1917,8 @@ function renderNodeLabel(
   // color, as in Mermaid 12.3.0 (#2637).
   const textColor = escapeAttr(node.inlineStyle?.color ?? 'var(--_text)')
 
-  let attrs = f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
+  const fontSize = usecase ? fontOf(node.shape) : fontSizes.nodeLabel
+  let attrs = f`text-anchor="middle" font-size="${fontSize}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
 
   // Per-node font-family override (from `style A font-family:...` or
   // classDef/class). Emitted as an inline `style` attribute rather than a
@@ -1866,15 +1936,16 @@ function renderNodeLabel(
 
   // A flowchart label wraps at 120px, as in mermaid@12.3.0 (#2932); node
   // sizes (`estimateNodeSize`) were computed from the same wrapped text.
-  const text =
-    stateDiagram || node.icon !== undefined
+  const text = usecase
+    ? usecaseLabelText(node.shape, node.label)
+    : stateDiagram || node.icon !== undefined
       ? node.label
       : wrapFlowchartLabel(
           node.label,
           fontSizes.nodeLabel,
           FONT_WEIGHTS.nodeLabel,
         ).text
-  return renderMultilineText(text, cx, cy, fontSizes.nodeLabel, attrs)
+  return renderMultilineText(text, cx, cy, fontSize, attrs)
 }
 
 // ============================================================================

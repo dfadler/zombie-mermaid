@@ -30,7 +30,11 @@ import {
 } from './types.ts'
 import type { AsciiFace } from './layout-hints.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
-import { canBundle, crowdedTopFaceEnds } from './edge-bundling.ts'
+import {
+  canBundle,
+  crowdedTopFaceEnds,
+  isStrokeFanIn,
+} from './edge-bundling.ts'
 import {
   getNodeSubgraph,
   gridToDrawingCoord,
@@ -1313,6 +1317,37 @@ function buildClusterLaneRoute(
   }
 }
 
+/**
+ * #3095: the skip edge of a sidestepped bypass (`A --> C` past `B`, #2739). The
+ * skipped node sits off its row, and mermaid 12.3.0 takes the skip edge to the
+ * other side of the row (17 px below for a `B` above, above for a `B` below)
+ * and back: out of A's right face, one gap column on, along A's and C's
+ * border row, up into C's left face. The path in grid cells, or undefined.
+ */
+function bypassDip(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): GridCoord[] | undefined {
+  if (!edge.ownPorts) return undefined
+  const a = requireGridCoord(edge.from)
+  const c = requireGridCoord(edge.to)
+  if (a.y !== c.y || c.x - a.x <= 4) return undefined
+  // `ownPorts` is only set by `sidestepSkippedNodes`, which records the node.
+  const b = requireGridCoord(
+    graph.sidesteps!.find((s) => s.anchor === edge.from)!.node,
+  )
+  // The border row on the side away from the skipped node.
+  const row = b.y < a.y ? a.y + 2 : a.y
+  return [
+    { x: a.x + 2, y: a.y + 1 },
+    { x: a.x + 3, y: a.y + 1 },
+    { x: a.x + 3, y: row },
+    { x: c.x - 1, y: row },
+    { x: c.x - 1, y: c.y + 1 },
+    { x: c.x, y: c.y + 1 },
+  ]
+}
+
 /** Whether a node sits between `edge`'s ends on the same grid row (LR). */
 function jumpsNodeOnRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
   const a = edge.from.gridCoord
@@ -2353,6 +2388,14 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       ? sourceSg.direction
       : graph.config.graphDirection
 
+  const dip = effectiveDir === 'LR' ? bypassDip(graph, edge) : undefined
+  if (dip) {
+    edge.startDir = Right
+    edge.endDir = Left
+    edge.path = dip
+    return
+  }
+
   let [
     preferredDir,
     preferredOppositeDir,
@@ -2366,6 +2409,14 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   const flowFan = leavesFlowFace(graph, edge, effectiveDir)
   if (flowFan) {
     ;[preferredDir, preferredOppositeDir] = [Down, Up]
+  }
+  // An unlabeled edge of a fan-in leaves its source by the bottom and enters by
+  // the top: mermaid ends each on a cell of its own (`separateFanIns`), where a
+  // side-face L would share one trunk and one arrowhead with its siblings
+  // (#2678).
+  if (effectiveDir === 'TD' && isStrokeFanIn(graph, edge)) {
+    ;[preferredDir, preferredOppositeDir] = [Down, Up]
+    ;[alternativeDir, alternativeOppositeDir] = [Down, Up]
   }
   const rightFan = leavesRightFace(graph, edge, effectiveDir)
   if (rightFan) {
@@ -3072,8 +3123,12 @@ export function determineLabelLine(
     edge.parallelLane &&
     edge.parallelLane.index > 0 &&
     !(edge.clusterSource && edge.hintedFaces) &&
-    // A hinted Z lane took the ordinary route, which leaves its label to this search.
-    !(edge.labelLine.length === 0 && hintedZLane(graph, edge))
+    // A lane edge whose route set no label (a hinted Z lane, or a face lane
+    // from buildFaceLaneRoute, #3103) leaves its label to this search.
+    !(
+      edge.labelLine.length === 0 &&
+      (hintedZLane(graph, edge) || edge.faceLane)
+    )
   )
     return
   // Likewise a cluster-exit edge: determinePath placed its label directly

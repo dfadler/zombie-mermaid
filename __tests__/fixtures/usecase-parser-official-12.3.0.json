@@ -1,0 +1,2120 @@
+{
+  "implicit": {
+    "source": "usecase-beta\nA --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "actor then rel": {
+    "source": "usecase-beta\nactor A\nA --> B\nactor B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        },
+        {
+          "id": "B",
+          "label": "B"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "declared after use": {
+    "source": "usecase-beta\nB\nactor B",
+    "error": true
+  },
+  "actor list": {
+    "source": "usecase-beta\nactor A, B(Bee), \"C c\"",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        },
+        {
+          "id": "B",
+          "label": "Bee"
+        },
+        {
+          "id": "C_c",
+          "label": "C c"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "actor label": {
+    "source": "usecase-beta\nactor A(Alice)\nA --> U(Do it)",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "Alice"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "Do it",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "dup label": {
+    "source": "usecase-beta\nU(One)\nU(Two)",
+    "error": true
+  },
+  "rect then ellipse": {
+    "source": "usecase-beta\nU[One]\nU(Two)",
+    "error": true
+  },
+  "quoted": {
+    "source": "usecase-beta\n\"Do it\" --> 'Other'",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "Do_it",
+          "label": "Do it",
+          "shape": "ellipse"
+        },
+        {
+          "id": "Other",
+          "label": "Other",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "Do_it",
+          "target": "Other",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "quoted actor": {
+    "source": "usecase-beta\nactor \"Big Boss\"\n\"Big Boss\" --> X",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "Big_Boss",
+          "label": "Big Boss"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "X",
+          "label": "X",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "Big_Boss",
+          "target": "X",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "dotted include": {
+    "source": "usecase-beta\nA ..> : include B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "include",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "dotted extend nospace": {
+    "source": "usecase-beta\nA ..>:extend B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "extend",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "upper include": {
+    "source": "usecase-beta\nA ..> : INCLUDE B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "include",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "generalization": {
+    "source": "usecase-beta\nactor A\nactor B\nA --|> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        },
+        {
+          "id": "B",
+          "label": "B"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "generalization",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "gen mixed": {
+    "source": "usecase-beta\nactor A\nB\nA --|> B",
+    "error": true
+  },
+  "include actor": {
+    "source": "usecase-beta\nactor A\nA ..> : include B",
+    "error": true
+  },
+  "back": {
+    "source": "usecase-beta\nA <-- B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "backward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "line": {
+    "source": "usecase-beta\nA -- B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "none"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "line label": {
+    "source": "usecase-beta\nA -- hello world -- B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "none",
+          "label": "hello world"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "fwd label": {
+    "source": "usecase-beta\nA -- hello world --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward",
+          "label": "hello world"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "quoted label": {
+    "source": "usecase-beta\nA --\"hi there\"--> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward",
+          "label": "hi there"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "back label": {
+    "source": "usecase-beta\nA <-- hi -- B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "backward",
+          "label": "hi"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "long arrow": {
+    "source": "usecase-beta\nA ---> B\nC ----- D",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        },
+        {
+          "id": "C",
+          "label": "C",
+          "shape": "ellipse"
+        },
+        {
+          "id": "D",
+          "label": "D",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        },
+        {
+          "source": "C",
+          "target": "D",
+          "type": "association",
+          "arrow": "none"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "circle": {
+    "source": "usecase-beta\nA --o B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "other3"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "edge id": {
+    "source": "usecase-beta\nA e1@--> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "boundary": {
+    "source": "usecase-beta\nsystemBoundary S\n  actor X\n  U1\n  U2[Two]\nend\nX --> U1",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "X",
+          "label": "X",
+          "parentId": "S"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U1",
+          "label": "U1",
+          "shape": "ellipse",
+          "parentId": "S"
+        },
+        {
+          "id": "U2",
+          "label": "Two",
+          "shape": "rect",
+          "parentId": "S"
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "S",
+          "members": ["X", "U1", "U2"]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "X",
+          "target": "U1",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "boundary label": {
+    "source": "usecase-beta\nsystemBoundary S(My System)\nU\nend",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "parentId": "S"
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "My System",
+          "members": ["U"]
+        }
+      ],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "boundary quoted": {
+    "source": "usecase-beta\nsystemBoundary \"My Sys\"\nU\nend",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "parentId": "My_Sys"
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "My_Sys",
+          "label": "My Sys",
+          "members": ["U"]
+        }
+      ],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "boundary rel inside": {
+    "source": "usecase-beta\nsystemBoundary S\nA --> B\nend",
+    "error": true
+  },
+  "nested boundary": {
+    "source": "usecase-beta\nsystemBoundary S\nsystemBoundary T\nend\nend",
+    "error": true
+  },
+  "two boundaries same use": {
+    "source": "usecase-beta\nsystemBoundary S\nU\nend\nsystemBoundary T\nU\nend",
+    "error": true
+  },
+  "direction": {
+    "source": "usecase-beta\ndirection TB\nA --> B",
+    "usecase": {
+      "direction": "TB",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "direction TD": {
+    "source": "usecase-beta\ndirection TD\nA",
+    "usecase": {
+      "direction": "TB",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "note": {
+    "source": "usecase-beta\nA\nnote for A \"hello\"",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": [
+        {
+          "target": "A",
+          "label": "hello"
+        }
+      ]
+    }
+  },
+  "note unquoted": {
+    "source": "usecase-beta\nA\nnote for A hello there",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": [
+        {
+          "target": "A",
+          "label": "hello there"
+        }
+      ]
+    }
+  },
+  "note missing target": {
+    "source": "usecase-beta\nnote for Z \"hello\"",
+    "error": true
+  },
+  "note before def": {
+    "source": "usecase-beta\nnote for A \"x\"\nA",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": [
+        {
+          "target": "A",
+          "label": "x"
+        }
+      ]
+    }
+  },
+  "comment": {
+    "source": "usecase-beta\n%% hi\nA --> B %% trailing",
+    "error": true
+  },
+  "header same line": {
+    "source": "usecase-beta A",
+    "error": true
+  },
+  "empty": {
+    "source": "usecase-beta",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "semicolon": {
+    "source": "usecase-beta\nA --> B; C --> D",
+    "error": true
+  },
+  "self": {
+    "source": "usecase-beta\nA --> A",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "A",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "actor actor assoc": {
+    "source": "usecase-beta\nactor A\nactor B\nA --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        },
+        {
+          "id": "B",
+          "label": "B"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "actor rel tail": {
+    "source": "usecase-beta\nactor A --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "id with digits": {
+    "source": "usecase-beta\n1a --> b2",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "1a",
+          "label": "1a",
+          "shape": "ellipse"
+        },
+        {
+          "id": "b2",
+          "label": "b2",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "1a",
+          "target": "b2",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "label with parens": {
+    "source": "usecase-beta\nA(Do (it)) --> B",
+    "error": true
+  },
+  "label unquoted spaces": {
+    "source": "usecase-beta\nA(Do the thing) --> B[And, more]",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "Do the thing",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "And, more",
+          "shape": "rect"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "html label": {
+    "source": "usecase-beta\nA(\"x<br/>y\")",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "x<br/>y",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "quoted label in parens": {
+    "source": "usecase-beta\nA(\"Do it\")",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "Do it",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "tab indent": {
+    "source": "usecase-beta\n\tA --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "crlf": {
+    "source": "usecase-beta\r\nA --> B\r\n",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "accTitle": {
+    "source": "usecase-beta\naccTitle: T\naccDescr: D\nA",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "title": {
+    "source": "usecase-beta\ntitle X\nA",
+    "error": true
+  },
+  "keyword-named": {
+    "source": "usecase-beta\nactor end",
+    "error": true
+  },
+  "two rel one line": {
+    "source": "usecase-beta\nA --> B --> C",
+    "error": true
+  },
+  "dangling arrow": {
+    "source": "usecase-beta\nA -->",
+    "error": true
+  },
+  "usecase keyword id": {
+    "source": "usecase-beta\nnote --> include",
+    "error": true
+  },
+  "id sanitised": {
+    "source": "usecase-beta\n\"Do-it & more!\" --> \"  spaced  \"",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "Do_it___more_",
+          "label": "Do-it & more!",
+          "shape": "ellipse"
+        },
+        {
+          "id": "__spaced__",
+          "label": "  spaced  ",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "Do_it___more_",
+          "target": "__spaced__",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "id with hyphen": {
+    "source": "usecase-beta\na-b --> c",
+    "error": true
+  },
+  "label trimmed": {
+    "source": "usecase-beta\nA(  spaced  ) --> B[ box ]",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "spaced",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "box",
+          "shape": "rect"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "empty label": {
+    "source": "usecase-beta\nA()",
+    "error": true
+  },
+  "bracket actor": {
+    "source": "usecase-beta\nactor A[Label]",
+    "error": true
+  },
+  "actor in boundary": {
+    "source": "usecase-beta\nsystemBoundary S\nactor A, B\nend",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "parentId": "S"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "parentId": "S"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "S",
+          "members": ["A", "B"]
+        }
+      ],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "boundary then outside ref": {
+    "source": "usecase-beta\nU\nsystemBoundary S\nU\nend",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "parentId": "S"
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "S",
+          "members": ["U"]
+        }
+      ],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "unclosed boundary": {
+    "source": "usecase-beta\nsystemBoundary S\nU",
+    "error": true
+  },
+  "stray end": {
+    "source": "usecase-beta\nend",
+    "error": true
+  },
+  "boundary id clash": {
+    "source": "usecase-beta\nS\nsystemBoundary S\nend",
+    "error": true
+  },
+  "two boundaries": {
+    "source": "usecase-beta\nsystemBoundary S\nA\nend\nsystemBoundary T\nB\nend\nA --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse",
+          "parentId": "S"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse",
+          "parentId": "T"
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "S",
+          "members": ["A"]
+        },
+        {
+          "id": "T",
+          "label": "T",
+          "members": ["B"]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "rel to boundary": {
+    "source": "usecase-beta\nsystemBoundary S\nA\nend\nB --> S",
+    "error": true
+  },
+  "label with arrow": {
+    "source": "usecase-beta\nA -- a-b -- B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "none",
+          "label": "a-b"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "two dashes label": {
+    "source": "usecase-beta\nA --\"a -- b\"--> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward",
+          "label": "a -- b"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "include with label": {
+    "source": "usecase-beta\nA -- x ..> : include B",
+    "error": true
+  },
+  "extend upper first": {
+    "source": "usecase-beta\nA ..> : Extend B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "extend",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "generalization actors": {
+    "source": "usecase-beta\nactor A\nactor B\nB --|> A",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        },
+        {
+          "id": "B",
+          "label": "B"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "B",
+          "target": "A",
+          "type": "generalization",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "gen usecases": {
+    "source": "usecase-beta\nA --|> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "generalization",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "actor to usecase back": {
+    "source": "usecase-beta\nactor A\nA <-- B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "backward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "keyword id": {
+    "source": "usecase-beta\nTD --> B",
+    "error": true
+  },
+  "keyword prefix id": {
+    "source": "usecase-beta\nendpoint --> notes",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "endpoint",
+          "label": "endpoint",
+          "shape": "ellipse"
+        },
+        {
+          "id": "notes",
+          "label": "notes",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "endpoint",
+          "target": "notes",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "actor keyword": {
+    "source": "usecase-beta\nactor actor",
+    "error": true
+  },
+  "direction BT": {
+    "source": "usecase-beta\ndirection BT\nA",
+    "usecase": {
+      "direction": "BT",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "direction RL": {
+    "source": "usecase-beta\ndirection RL\nA",
+    "usecase": {
+      "direction": "RL",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "direction bad": {
+    "source": "usecase-beta\ndirection XX\nA",
+    "error": true
+  },
+  "direction twice": {
+    "source": "usecase-beta\ndirection TB\ndirection RL\nA",
+    "usecase": {
+      "direction": "RL",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "direction lowercase": {
+    "source": "usecase-beta\ndirection lr\nA",
+    "error": true
+  },
+  "stereotype": {
+    "source": "usecase-beta\nactor A <<system>>",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "metadata": {
+    "source": "usecase-beta\nactor A@{ type: hollow }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "class suffix": {
+    "source": "usecase-beta\nA:::foo",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "classdef": {
+    "source": "usecase-beta\nclassDef foo fill:#f00\nA",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "json": {
+    "source": "usecase-beta\njson J @ {\"a\": 1}",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "cross": {
+    "source": "usecase-beta\nA --x B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "other4"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "markdown": {
+    "source": "usecase-beta\nA(\"`**bold**`\")",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "**bold**",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "note label quoted spaces": {
+    "source": "usecase-beta\nA\nnote for A \"two words\"",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": [
+        {
+          "target": "A",
+          "label": "two words"
+        }
+      ]
+    }
+  },
+  "note on actor": {
+    "source": "usecase-beta\nactor A\nnote for A \"hi\"",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [],
+      "notes": [
+        {
+          "target": "A",
+          "label": "hi"
+        }
+      ]
+    }
+  },
+  "two notes": {
+    "source": "usecase-beta\nA\nnote for A \"1\"\nnote for A \"2\"",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": [
+        {
+          "target": "A",
+          "label": "1"
+        },
+        {
+          "target": "A",
+          "label": "2"
+        }
+      ]
+    }
+  },
+  "header with comment": {
+    "source": "usecase-beta %% c",
+    "error": true
+  },
+  "leading comment": {
+    "source": "%% c\nusecase-beta\nA",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "leading blank": {
+    "source": "\n\nusecase-beta\nA",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "duplicate rel": {
+    "source": "usecase-beta\nA --> B\nA --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        },
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "same label twice": {
+    "source": "usecase-beta\nU(One)\nU(One)",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "One",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "label then bare": {
+    "source": "usecase-beta\nU(One)\nU --> V",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "One",
+          "shape": "ellipse"
+        },
+        {
+          "id": "V",
+          "label": "V",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "U",
+          "target": "V",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "bare then label": {
+    "source": "usecase-beta\nU --> V\nU(One)",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "One",
+          "shape": "ellipse"
+        },
+        {
+          "id": "V",
+          "label": "V",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "U",
+          "target": "V",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "actor label conflict": {
+    "source": "usecase-beta\nactor A(One)\nactor A(Two)",
+    "error": true
+  },
+  "actor twice": {
+    "source": "usecase-beta\nactor A\nactor A",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "rect label then rect": {
+    "source": "usecase-beta\nU[One]\nU[One]",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "One",
+          "shape": "rect"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "unicode": {
+    "source": "usecase-beta\nactor Café\nCafé --> Über",
+    "error": true
+  },
+  "number only id": {
+    "source": "usecase-beta\n1 --> 2",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "1",
+          "label": "1",
+          "shape": "ellipse"
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "1",
+          "target": "2",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "decimal id": {
+    "source": "usecase-beta\n1.5 --> 2",
+    "error": true
+  },
+  "underscore id": {
+    "source": "usecase-beta\n_a --> b_",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "_a",
+          "label": "_a",
+          "shape": "ellipse"
+        },
+        {
+          "id": "b_",
+          "label": "b_",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "_a",
+          "target": "b_",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "tail text after target": {
+    "source": "usecase-beta\nA --> B C",
+    "error": true
+  },
+  "trailing spaces": {
+    "source": "usecase-beta\nA --> B   \n  ",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "colon in label": {
+    "source": "usecase-beta\nA(Step: 1) --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "Step: 1",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "comma in actor label": {
+    "source": "usecase-beta\nactor A(One, two), B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "One, two"
+        },
+        {
+          "id": "B",
+          "label": "B"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "relationships": [],
+      "notes": []
+    }
+  },
+  "quoted then paren": {
+    "source": "usecase-beta\n\"Q\"(Label)",
+    "error": true
+  },
+  "actor missing name": {
+    "source": "usecase-beta\nactor",
+    "error": true
+  },
+  "actor trailing comma": {
+    "source": "usecase-beta\nactor A,",
+    "error": true
+  },
+  "include self": {
+    "source": "usecase-beta\nA ..> : include A",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "A",
+          "type": "include",
+          "arrow": "forward"
+        }
+      ],
+      "notes": []
+    }
+  },
+  "dot arrow plain": {
+    "source": "usecase-beta\nA ..> B",
+    "error": true
+  },
+  "backward label markerless only": {
+    "source": "usecase-beta\nA <-- hi --> B",
+    "error": true
+  }
+}

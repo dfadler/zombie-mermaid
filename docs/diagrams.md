@@ -349,7 +349,7 @@ motion was intended.
 own class (`class A foo` or `A:::foo`) overrides it property by property, and
 an explicit `style A ...` directive overrides both.
 
-<!-- mermaid-audited-version: 12.2.0 (read by .github/workflows/upstream-watch.yml; bump when the coverage audit is redone) -->
+<!-- mermaid-audited-version: 12.3.0 (read by .github/workflows/upstream-watch.yml; bump when the coverage audit is redone) -->
 
 ### Known limitations
 
@@ -1781,16 +1781,274 @@ Bio-conversion  310.78
   ASCII mode).
 - Bars use the theme accent. A cycle throws "circular link", as the SVG does.
 
+## Treemap diagrams
+
+`treemap-beta` (or `treemap`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/treemap.html)
+and its renderer's layout, which is [d3-hierarchy](https://d3js.org/d3-hierarchy/treemap)'s
+squarified treemap. Checked against `mermaid@12.3.0` (read from its source and rendered headless).
+
+```mermaid
+treemap-beta
+"Products"
+    "Electronics"
+        "Phones": 800
+        "Laptops": 600
+    "Clothing"
+        "Men": 300
+        "Women": 400
+"Services": 200
+```
+
+Supported: indented rows (a quoted name alone is a section, `"Name": value` a leaf; `,` also
+separates and a value may hold commas, `1,500.5`), single or double quotes, `title`,
+`classDef name styles;` with `:::name` after a section's name or a leaf's value, and `%%`
+comments. As in Mermaid, a depth is the length of the blank run before a name, a leaf never
+holds children, siblings sort by value (largest first), a section's value is the sum of its
+leaves, a section with no children is a leaf of value 0, and a bare word, `;`, a negative value
+or an indented trailing comment is a parse error. A `classDef` applies `fill`, `stroke` and
+`stroke-width` to the cell and `color` to its text; other properties and the `treemap` init
+keys (`padding`, `nodeWidth`, `nodeHeight`, `showValues`, `valueFormat`, `diagramPadding`) are
+not read yet, so the canvas is always Mermaid's default 1000 x 400. See
+[Known differences](known-differences.md#treemap-diagrams).
+
+The SVG ports d3's layout (same squarify, padding and rounding, so cells land on the same
+pixels) and Mermaid's drawing: a header and body per section, then the leaf cells, with labels
+fitted by shrinking the font and dropping what does not fit. `pnpm run treemap:oracle` compares
+cell positions, shown labels and the viewBox with real mermaid.js.
+
+### ASCII treemap diagrams
+
+Mermaid has no text mode for treemaps and nested rectangles sized by area do not survive a
+character grid, so the ASCII output is this library's own design: the tree as an indented
+list, largest first, each row with its total and a bar for its share of the whole treemap.
+
+```text
+Products        2,100  ██████████████████
+├─ Electronics  1,400  ████████████
+│  ├─ Phones      800  ██████▏
+│  └─ Laptops     600  █████
+└─ Clothing       700  ██████
+   ├─ Women       400  ███
+   └─ Men         300  ██▏
+Services          200  █▏
+```
+
+- A bar is the node's share of the grand total across 20 cells, and a positive value always
+  gets at least a thin bar (`▏`, `|` in ASCII mode); a zero value gets none.
+- A `title` is centred above the list; `accTitle` and `accDescr` are not printed.
+
+## Ishikawa diagrams
+
+`ishikawa` (or `ishikawa-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/ishikawa.html)
+and its renderer's layout. `pnpm run ishikawa:oracle` compares the gallery samples and
+a set of edge cases with `mermaid@12.3.0`: element order and count, all text, every
+bone's vector and every y relative to the spine agree exactly; x positions and the
+frame follow text widths, so they agree within a few percent (see
+[Known differences](known-differences.md#ishikawa-fishbone-diagrams)).
+
+```mermaid
+ishikawa-beta
+    Blurry Photo
+    Process
+        Out-of-focus
+        Shutter speed too slow
+    User
+        Shaky hands
+        Wrong settings
+    Equipment
+        Dirty lens
+        Low-end sensor
+```
+
+Supported: the first line under the header is the effect (the head); each line
+indented by the same amount under it is a category, and anything indented deeper
+is a cause of the line above it, to any depth. Categories alternate above and
+below the spine, the first pair nearest the head; a cause one level down hangs
+from its parent bone as a slanted bone, the next as a stub again. `<br>` breaks a
+label, a long cause wraps at 15 characters and a long effect in the head, `%%`
+comment lines and blank lines are skipped. Not drawn: the `handDrawn` look and the
+`ishikawa.diagramPadding` / `useMaxWidth` keys.
+
+### ASCII Ishikawa diagrams
+
+Mermaid has no text mode for ishikawa diagrams, so the ASCII output is this
+library's own: a fishbone on a character grid, the effect boxed at the right end
+of the spine, categories (`[ Name ]`) alternating above (`╲`, `\` in ASCII mode)
+and below (`╱`, `/`) it, and each cause on its own row joined to its bone by a
+leader line. A cause one level down is marked with `└` and indented.
+
+```text
+        [ Equipment ]                   [ Process ]
+Dirty lens ────╲       Out-of-focus ──────────╲
+Low-end sensor ─╲      Shutter speed too slow ─╲      ┌──────────────┐
+─────────────────┴───────────────────────┬──────┴────►│ Blurry Photo │
+                       Shaky hands ─────╱             └──────────────┘
+                       Wrong settings ─╱
+                                  [ User ]
+```
+
+## Event Modeling
+
+`eventmodeling` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/eventmodeling.html)
+and its renderer's layout, read from `mermaid@12.3.0` and `@mermaid-js/parser@2.0.1`.
+`pnpm run eventmodeling:oracle` compares the gallery samples lane by lane, box by box and
+arrow by arrow with `mermaid@12.3.0`.
+
+```mermaid
+eventmodeling
+tf 01 ui CartScreen
+tf 02 cmd AddItem { description: string }
+tf 03 evt ItemAdded
+tf 04 rmo CartItems
+tf 05 ui CartPage
+```
+
+Supported: `tf` / `timeframe` and `rf` / `resetframe` (a reset frame draws no arrow from the
+frame before it), a frame number of one to three digits, the entity types `ui`,
+`pcr` / `processor`, `cmd` / `command`, `rmo` / `readmodel` and `evt` / `event`, and a
+`Namespace.Name` identifier. `->> NN` points a frame at the named earlier frames instead of
+the nearest earlier frame of another swimlane. Data follows a frame as inline `{ ... }`,
+`"..."` or `'...'` (with an optional `` `json` `` type prefix) or as `[[Name]]` pointing at a
+`data Name { ... }` block. `entity`, `note` and `gwt` statements parse and, as in Mermaid
+12.3.0, draw nothing. As in Mermaid, `title`, `accTitle` and `accDescr` are syntax errors,
+keywords are lowercase, a repeated frame number is "Duplicate event modeling frame ID", and
+an unknown `->>` target, a source of the wrong kind or a missing `data` block is ignored
+without an error.
+
+The SVG uses Mermaid's geometry: boxes at least 80px (at most 450px wide), lanes 10px
+apart, boxes overlapping their predecessor's right edge, 19px per text line. Text widths are
+Trebuchet MS bold advances plus kerning, not a browser measurement. See
+[Known differences](known-differences.md#event-modeling).
+
+### ASCII Event Modeling
+
+Mermaid has no text mode for event models, so the ASCII output is this library's own, but it
+keeps the form of Mermaid's drawing: swimlanes are horizontal bands named in the left margin,
+time runs left to right, and each frame is a box in its lane with its entity type in the top
+border. Mermaid overlaps neighbouring boxes; a character grid cannot, so each frame takes the
+next column.
+
+```text
+UI/Automation        ┌─ ui ──┐
+                     │ Cart  ├───────────┐
+                     └───────┘           │
+                                         │
+─────────────────────────────────────────│───────
+                                         ▼
+Command/Read Model                ┌─ command ──┐
+                                  │ Add        │
+                                  └────────────┘
+```
+
+- An arrow leaves the right side of its source and turns down (or up) into the top (or
+  bottom) of its target; in one lane it runs into the target's left side. It runs behind any
+  box it passes.
+- Text wraps at 24 columns; data is listed under the name.
+- Frames that share a namespace share one lane.
+
+## Use case diagrams
+
+`usecase-beta` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/useCaseDiagram.html).
+Mermaid 12.3.0 detects only the `usecase-beta` header (`usecase` and `useCaseDiagram` are not
+diagrams there either). `pnpm run usecase:oracle` renders the gallery samples in
+`mermaid@12.3.0`: node sizes and text and every relationship (order, label, dotted or solid,
+which boxes it joins) agree. Box positions and the drawing size are reported, not gated:
+Mermaid lays the diagram out with dagre and this library with ELK. The parser is checked
+against Mermaid's own on 117 sources (`pnpm run usecase:parser-fixture` rebuilds the record).
+
+```mermaid
+usecase-beta
+    actor Admin
+    actor Customer
+    systemBoundary Shop
+        Browse
+        Checkout
+        Pay[Pay by card]
+    end
+    Customer --> Browse
+    Customer --> Checkout
+    Checkout ..> : include Pay
+    Admin --"manages"--> Browse
+    note for Checkout "needs login"
+```
+
+Supported: `actor` lists (`actor A, B(Label), "Quoted name"`), use cases (`Name`, `Name(label)`
+as an ellipse, `Name[label]` as a rectangle, a quoted name), `systemBoundary Name(title) … end`
+holding actors and use cases, `direction`, associations (`-->`, `<--`, `--`, with a label as
+`-- text -->` or `--"text"-->`), `..> : include` and `..> : extend` between use cases, `--|>`
+generalization between two actors or two use cases, `note for Id "text"`, `%%` comment lines and
+`accTitle`/`accDescr` (the accessible name is not drawn). As in Mermaid a statement is one
+line, a name that is both an actor and a use case is an error, and a boundary cannot nest.
+
+Not supported yet, each an error saying so: `@{ ... }` metadata (actor `type`/`icon`/`business`,
+use case `business`), `<<stereotype>>`, `:::class`, `classDef`/`class`/`style`, `json` nodes,
+`--o`/`--x` markers, `id@` edge ids and markdown strings (tracked in
+[#3131](https://github.com/dfadler/zombie-mermaid/issues/3131)). The SVG
+uses this library's theme colours, not Mermaid's purple and yellow.
+
+ASCII draws an actor as a box holding a three-line stick figure over its name, a use case as
+a rounded box, a boundary as a titled frame and a generalization head as `▷`.
+
+## Block diagrams
+
+`block` and `block-beta` follow [Mermaid's syntax](https://mermaid.ai/open-source/syntax/block.html)
+and its grid layout. `pnpm run block:oracle` compares every block's rectangle, its corner radius
+and the drawing size with `mermaid@12.3.0` on the gallery samples (all agree).
+
+```mermaid
+block-beta
+  columns 3
+  a["Alpha long label here"] b:2 c
+  d e f
+  block:grp:2
+    columns 2
+    x y z
+  end
+  space g
+```
+
+Supported in this first version: `columns N` / `columns auto`, blocks (`id`, `id["text"]`,
+`id("text")` for rounded corners), `id:2` column spans, `space` and `space:N`, `block:id:N ... end`
+groups with their own `columns` and the anonymous `block ... end`, `<br>` line breaks, `%%`
+comments, `accTitle` / `accDescr` and front matter. As in Mermaid, every cell in a group takes the
+size of the widest block (a block spanning N columns counts as 1/N of its width), a group grows
+its children to fill it, and a repeated id changes the first block instead of adding one. A label
+in `[ ]` or `( )` must be quoted.
+
+Not supported yet, and rejected with an error naming the issue: links and arrows between blocks
+([#3105](https://github.com/dfadler/zombie-mermaid/issues/3105)), the other node shapes and block
+arrows ([#3106](https://github.com/dfadler/zombie-mermaid/issues/3106)), and `classDef`, `class`,
+`style`, markdown strings and `block.padding`
+([#3107](https://github.com/dfadler/zombie-mermaid/issues/3107)).
+
+Colours follow the theme, see [Known differences](known-differences.md#block-diagrams).
+
+### ASCII block diagrams
+
+Mermaid has no text mode for block diagrams. A grid has a direct text form, so the output is
+this library's own: every block is a box, all boxes in a group share one cell size as in the SVG,
+and a `block ... end` group is a larger box around its cells.
+
+```text
+┌─────────┐ ┌─────────────────┐
+│  Alpha  │ │        b        │
+└─────────┘ └─────────────────┘
+╭─────────╮ ┌─────────┐
+│    c    │ │    d    │
+╰─────────╯ └─────────┘
+```
+
+- Round blocks use `╭╮╰╯` corners (`+` in ASCII mode); `space` leaves its cell empty.
+- Cells are one column apart and touch vertically; labels are centred in both directions.
+- Frames use the line colour, labels the foreground.
+
 ## Unsupported upstream diagram types
 
-These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
+These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Support for these is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
 
-| Type                                                                  | Header                                                                                                          |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Use case                                                              | `usecase-beta`                                                                                                  |
-| Treemap                                                               | `treemap-beta`                                                                                                  |
-| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
-| Block                                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)                              |
+| Type                                        | Header                                                                        |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| Tree view, Venn, Wardley, Cynefin, Railroad | `treeView-beta`, `venn-beta`, `wardley-beta`, `cynefin-beta`, `railroad-beta` |
 
 ## Accessibility
 

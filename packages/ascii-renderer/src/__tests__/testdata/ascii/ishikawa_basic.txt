@@ -1,0 +1,19 @@
+ishikawa-beta
+    Blurry Photo
+    Process
+        Out-of-focus
+        Shutter speed too slow
+    User
+        Shaky hands
+        Wrong settings
+    Equipment
+        Dirty lens
+        Low-end sensor
+---
+        [ Equipment ]                   [ Process ]
+Dirty lens ----\       Out-of-focus ----------\
+Low-end sensor -\      Shutter speed too slow -\      +--------------+
+-----------------+-----------------------+------+---->| Blurry Photo |
+                       Shaky hands -----/             +--------------+
+                       Wrong settings -/
+                                  [ User ]

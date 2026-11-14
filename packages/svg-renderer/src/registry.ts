@@ -62,14 +62,21 @@ import {
   parseQuadrantChart,
   parseGantt,
   parseTimeline,
+  parseEventModeling,
   parseGitGraph,
   parsePacket,
+  parseIshikawa,
   parseRadar,
   parseJourney,
   parseKanban,
+  parseBlock,
   parseSankey,
   parseRequirementDiagram,
+  parseUsecase,
+  usecaseToGraph,
+  parseTreemap,
 } from '@zombie-mermaid/mermaid-parser'
+import type { UsecaseDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
   PositionedXYChart,
@@ -95,16 +102,23 @@ import type {
   GitGraph,
   PositionedGitGraph,
   Packet,
+  Ishikawa,
   Radar,
   PositionedRadar,
   Journey,
   PositionedJourney,
   Kanban,
   PositionedKanban,
+  BlockDiagram,
+  PositionedBlockDiagram,
   Sankey,
   PositionedSankey,
   RequirementDiagram,
   PositionedRequirementDiagram,
+  EventModeling,
+  PositionedEventModeling,
+  Treemap,
+  PositionedTreemap,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -128,17 +142,26 @@ import { layoutTimeline } from './timeline/layout.ts'
 import { layoutJourney } from './journey/layout.ts'
 import { renderJourneySvg } from './journey/renderer.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutEventModeling } from './eventmodeling/layout.ts'
+import { renderEventModelingSvg } from './eventmodeling/renderer.ts'
 import { layoutGitGraph } from './gitgraph/layout.ts'
 import { renderGitGraphSvg } from './gitgraph/renderer.ts'
 import { layoutPacket } from './packet/layout.ts'
 import type { PositionedPacket } from './packet/layout.ts'
 import { renderPacketSvg } from './packet/renderer.ts'
+import { layoutIshikawa } from './ishikawa/layout.ts'
+import type { PositionedIshikawa } from './ishikawa/layout.ts'
+import { renderIshikawaSvg } from './ishikawa/renderer.ts'
 import { layoutRadar } from './radar/layout.ts'
 import { renderRadarSvg } from './radar/renderer.ts'
 import { layoutKanban } from './kanban/layout.ts'
 import { renderKanbanSvg } from './kanban/renderer.ts'
+import { layoutBlock } from './block/layout.ts'
+import { renderBlockSvg } from './block/renderer.ts'
 import { layoutSankey } from './sankey/layout.ts'
 import { renderSankeySvg } from './sankey/renderer.ts'
+import { layoutTreemap } from './treemap/layout.ts'
+import { renderTreemapSvg } from './treemap/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -456,6 +479,32 @@ const architectureModule: DiagramModule<
   renderSvg: flowchartModule.renderSvg,
 }
 
+/**
+ * Use case diagrams are lowered to the flowchart model (`usecaseToGraph`) and
+ * ride the flowchart layout + renderer, so this module is `flowchartModule`
+ * with a different `parse` — as mermaid hands them to the same dagre layout.
+ * The parser reads the raw `text`: `;` is label text there, not a separator.
+ */
+const usecaseModule: DiagramModule<UsecaseDiagram, PositionedFlowchart> = {
+  type: 'usecase',
+  parse: (_lines, text) => parseUsecase(text),
+  layoutForSvg(diagram, options) {
+    const graph = withDirectionOverride(
+      usecaseToGraph(diagram),
+      options.direction,
+    )
+    // Mermaid's canvas margin around the drawing is 20px, not the flowchart's 40.
+    return {
+      graph: layoutFlowchartSync(graph, {
+        ...options,
+        padding: options.padding ?? 20,
+      }),
+      curve: 'linear',
+    }
+  },
+  renderSvg: flowchartModule.renderSvg,
+}
+
 // `undefined` selects Mermaid's own font (see ./pie/layout.ts). Asking for the
 // embedded Inter subset is asking for Inter, so that stays the font then.
 const pieFont = (options: RenderOptions): string | undefined =>
@@ -612,6 +661,25 @@ const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
   },
 }
 
+/** Block diagrams parse from the raw `text`, then lay out on Mermaid's fixed grid. */
+const blockModule: DiagramModule<BlockDiagram, PositionedBlockDiagram> = {
+  type: 'block',
+  parse: (_lines, text) => parseBlock(text),
+  layoutForSvg: (block) => layoutBlock(block),
+  renderSvg(positioned, ctx) {
+    return renderBlockSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
 /** Kanban boards parse from the raw `text`, then lay out to Mermaid's fixed geometry. */
 const kanbanModule: DiagramModule<Kanban, PositionedKanban> = {
   type: 'kanban',
@@ -752,6 +820,75 @@ const sankeyModule: DiagramModule<Sankey, PositionedSankey> = {
   },
 }
 
+/** Event modeling diagrams parse from the raw `text`, then lay out to Mermaid's fixed geometry. */
+const eventModelingModule: DiagramModule<
+  EventModeling,
+  PositionedEventModeling
+> = {
+  type: 'eventmodeling',
+  parse: (_lines, text) => parseEventModeling(text),
+  layoutForSvg: (em) => layoutEventModeling(em),
+  renderSvg(positioned, ctx) {
+    return renderEventModelingSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Treemaps parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator), then lay out with a port of d3-hierarchy's squarified treemap.
+ * No theme variables or interactivity apply.
+ */
+const treemapModule: DiagramModule<Treemap, PositionedTreemap> = {
+  type: 'treemap',
+  parse: (_lines, text) => parseTreemap(text),
+  layoutForSvg: (tm) => layoutTreemap(tm),
+  renderSvg(positioned, ctx) {
+    return renderTreemapSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Ishikawa diagrams parse from the raw `text` (`;` is not a statement
+ * separator), then lay out to Mermaid's fixed geometry. A diagram with no
+ * lines under its header has nothing to draw and lays out to `undefined`.
+ */
+const ishikawaModule: DiagramModule<Ishikawa, PositionedIshikawa | undefined> =
+  {
+    type: 'ishikawa',
+    parse: (_lines, text) => parseIshikawa(text),
+    layoutForSvg: (d) => layoutIshikawa(d),
+    renderSvg(positioned, ctx) {
+      return renderIshikawaSvg(
+        positioned,
+        ctx.colors,
+        ctx.font,
+        ctx.transparent,
+        ctx.embedSource,
+        ctx.title,
+        ctx.decorative,
+        ctx.emit,
+      )
+    },
+  }
+
 /**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
@@ -785,11 +922,16 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   mindmap: mindmapModule,
   gantt: ganttModule,
   timeline: timelineModule,
+  eventmodeling: eventModelingModule,
   packet: packetModule,
   radar: radarModule,
   journey: journeyModule,
   kanban: kanbanModule,
+  block: blockModule,
   sankey: sankeyModule,
   requirement: requirementModule,
+  usecase: usecaseModule,
+  ishikawa: ishikawaModule,
   gitgraph: gitgraphModule,
+  treemap: treemapModule,
 }

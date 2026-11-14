@@ -78,10 +78,15 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   gitgraph: 'GitGraph',
   packet: 'Packet',
   radar: 'Radar',
+  usecase: 'Use Case',
   journey: 'User Journey',
   kanban: 'Kanban',
   sankey: 'Sankey',
+  eventmodeling: 'Event Modeling',
   requirement: 'Requirement',
+  block: 'Block',
+  treemap: 'Treemap',
+  ishikawa: 'Ishikawa',
 }
 
 describe('EditorPage meta description', () => {

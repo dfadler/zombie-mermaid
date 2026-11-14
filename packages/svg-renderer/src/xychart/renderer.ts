@@ -1,4 +1,7 @@
-import type { PositionedXYChart } from '@zombie-mermaid/mermaid-parser'
+import type {
+  PositionedXYChart,
+  AxisTick,
+} from '@zombie-mermaid/mermaid-parser'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
@@ -135,27 +138,41 @@ export function renderXYChartSvg(
   // Horizontal charts put the value axis along the top, as mermaid does.
   const right = plotArea.x + plotArea.width
   const farY = chart.horizontal ? plotArea.y : axisY
-  const axisD =
-    showLeft && showFar
-      ? chart.horizontal
-        ? `M${r(plotArea.x)},${r(axisY)} V${r(plotArea.y)} H${r(right)}`
-        : `M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)} H${r(right)}`
-      : showLeft
-        ? `M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)}`
-        : showFar
-          ? `M${r(plotArea.x)},${r(farY)} H${r(right)}`
-          : ''
-  if (axisD) parts.push(`<path d="${axisD}" class="xychart-axis"/>`)
+  // Each axis line has its own width (`axisLineWidth`), so a set width splits the one path in two.
+  const split =
+    leftCfg?.axisLineWidth !== undefined ||
+    topBottomCfg?.axisLineWidth !== undefined
+  const leftD = `M${r(plotArea.x)},${r(plotArea.y)} V${r(axisY)}`
+  const farD = `M${r(plotArea.x)},${r(farY)} H${r(right)}`
+  if (split) {
+    if (showLeft)
+      parts.push(`<path d="${leftD}" class="xychart-axis xychart-axis-left"/>`)
+    if (showFar)
+      parts.push(`<path d="${farD}" class="xychart-axis xychart-axis-far"/>`)
+  } else {
+    const axisD =
+      showLeft && showFar
+        ? chart.horizontal
+          ? `M${r(plotArea.x)},${r(axisY)} V${r(plotArea.y)} H${r(right)}`
+          : `${leftD} H${r(right)}`
+        : showLeft
+          ? leftD
+          : showFar
+            ? farD
+            : ''
+    if (axisD) parts.push(`<path d="${axisD}" class="xychart-axis"/>`)
+  }
   const xTickCfg = chart.horizontal ? valCfg : catCfg
   const yTickCfg = chart.horizontal ? catCfg : valCfg
-  for (const t of [
-    ...(xTickCfg?.showTick === false ? [] : chart.xAxis.ticks),
-    ...(yTickCfg?.showTick === false ? [] : chart.yAxis.ticks),
-  ]) {
-    parts.push(
-      `<path d="M${r(t.x)},${r(t.y)} L${r(t.tx)},${r(t.ty)}" class="xychart-axis"/>`,
-    )
-  }
+  for (const [ticks, cfgOf, cls] of [
+    [chart.xAxis.ticks, xTickCfg, ' xychart-tick-x'],
+    [chart.yAxis.ticks, yTickCfg, ' xychart-tick-y'],
+  ] as const)
+    if (cfgOf?.showTick !== false)
+      for (const t of ticks)
+        parts.push(
+          `<path d="M${r(t.x)},${r(t.y)} L${r(t.tx)},${r(t.ty)}" class="xychart-axis${cfgOf?.tickWidth === undefined ? '' : cls}"/>`,
+        )
 
   // 2. Bars — always render bar paths inline (before lines for correct z-order)
   //    Interactive: also build overlay groups with transparent hit-areas + tooltips (deferred to step 9)
@@ -298,51 +315,36 @@ export function renderXYChartSvg(
   }
 
   // 5. Axis labels
-  for (const tick of xTickCfg?.showLabel === false ? [] : chart.xAxis.ticks) {
-    if (tick.label === '') continue // Dropped by the layout's overlap step
+  for (const tick of xTickCfg?.showLabel === false ? [] : chart.xAxis.ticks)
+    parts.push(...tickLabel(tick))
+  for (const tick of yTickCfg?.showLabel === false ? [] : chart.yAxis.ticks)
+    parts.push(...tickLabel(tick))
+
+  // 6. Axis titles
+  for (const t of [chart.xAxis.title, chart.yAxis.title]) {
+    if (!t) continue
+    const transform = t.rotate
+      ? ` transform="rotate(${t.rotate},${t.x},${t.y})"`
+      : ''
     parts.push(
-      `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
-        `font-size="${CHART_FONT.labelSize}" font-weight="${CHART_FONT.labelWeight}" ` +
-        `dy="${TEXT_BASELINE_SHIFT}" class="xychart-label">${escapeXml(tick.label)}</text>`,
-    )
-  }
-  for (const tick of yTickCfg?.showLabel === false ? [] : chart.yAxis.ticks) {
-    parts.push(
-      `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
-        `font-size="${CHART_FONT.labelSize}" font-weight="${CHART_FONT.labelWeight}" ` +
-        `dy="${TEXT_BASELINE_SHIFT}" class="xychart-label">${escapeXml(tick.label)}</text>`,
+      `<text x="${t.x}" y="${t.y}" text-anchor="middle"${transform} ` +
+        `font-size="${t.fontSize ?? CHART_FONT.axisTitleSize}" font-weight="${CHART_FONT.axisTitleWeight}" ` +
+        `dy="${TEXT_BASELINE_SHIFT}" class="xychart-axis-title">${escapeXml(t.text)}</text>`,
     )
   }
 
-  // 6. Axis titles
-  if (chart.xAxis.title) {
-    const t = chart.xAxis.title
-    const transform = t.rotate
-      ? ` transform="rotate(${t.rotate},${t.x},${t.y})"`
-      : ''
+  // 6b. Bar values (`showDataLabel`)
+  for (const d of chart.dataLabels ?? [])
     parts.push(
-      `<text x="${t.x}" y="${t.y}" text-anchor="middle"${transform} ` +
-        `font-size="${CHART_FONT.axisTitleSize}" font-weight="${CHART_FONT.axisTitleWeight}" ` +
-        `dy="${TEXT_BASELINE_SHIFT}" class="xychart-axis-title">${escapeXml(t.text)}</text>`,
+      `<text x="${r(d.x)}" y="${r(d.y)}" text-anchor="${d.textAnchor}" dominant-baseline="${d.baseline}" ` +
+        `font-size="${d.fontSize}" class="xychart-data-label">${escapeXml(d.text)}</text>`,
     )
-  }
-  if (chart.yAxis.title) {
-    const t = chart.yAxis.title
-    const transform = t.rotate
-      ? ` transform="rotate(${t.rotate},${t.x},${t.y})"`
-      : ''
-    parts.push(
-      `<text x="${t.x}" y="${t.y}" text-anchor="middle"${transform} ` +
-        `font-size="${CHART_FONT.axisTitleSize}" font-weight="${CHART_FONT.axisTitleWeight}" ` +
-        `dy="${TEXT_BASELINE_SHIFT}" class="xychart-axis-title">${escapeXml(t.text)}</text>`,
-    )
-  }
 
   // 7. Chart title
   if (chart.title) {
     parts.push(
       `<text x="${chart.title.x}" y="${chart.title.y}" text-anchor="middle" ` +
-        `font-size="${CHART_FONT.titleSize}" font-weight="${CHART_FONT.titleWeight}" ` +
+        `font-size="${chart.title.fontSize ?? CHART_FONT.titleSize}" font-weight="${CHART_FONT.titleWeight}" ` +
         `dy="${TEXT_BASELINE_SHIFT}" class="xychart-title">${escapeXml(chart.title.text)}</text>`,
     )
   }
@@ -420,8 +422,28 @@ function chartStyles(
       ? `\n  .${cls} {\n${colorVarDefs.join('\n')}\n  }`
       : ''
 
+  // `axisLineWidth` and `tickWidth` of each axis (mermaid default 2): the
+  // category axis is `xAxis` whatever the orientation.
+  const w = chart.config
+  const [leftAx, farAx] = chart.horizontal
+    ? [w?.xAxis, w?.yAxis]
+    : [w?.yAxis, w?.xAxis]
+  const [xTickAx, yTickAx] = chart.horizontal
+    ? [w?.yAxis, w?.xAxis]
+    : [w?.xAxis, w?.yAxis]
+  const widthCss = (
+    [
+      ['xychart-axis-left', leftAx?.axisLineWidth],
+      ['xychart-axis-far', farAx?.axisLineWidth],
+      ['xychart-tick-x', xTickAx?.tickWidth],
+      ['xychart-tick-y', yTickAx?.tickWidth],
+    ] as const
+  )
+    .filter(([, v]) => v !== undefined)
+    .map(([c, v]) => `\n  .${c} { stroke-width: ${v}; }`)
+    .join('')
   const style = `${styleOpenTag(nonce)}
-  .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }
+  .xychart-axis { fill: none; stroke: var(--_text); stroke-width: 2; }${widthCss}${chart.dataLabels?.length ? '\n  .xychart-data-label { fill: var(--_text); }' : ''}
   .xychart-line { fill: none; stroke-width: ${CHART_FONT.lineWidth}; stroke-linecap: round; stroke-linejoin: round; }
   .xychart-line-shadow { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
   .xychart-dot { stroke: var(--bg); stroke-width: 2; }
@@ -599,6 +621,24 @@ function tooltipAbove(cx: number, topY: number, text: string): string {
 function formatTipValue(v: number): string {
   if (Number.isInteger(v)) return v.toLocaleString('en-US')
   return v.toFixed(Math.abs(v) < 10 ? 1 : 0)
+}
+
+/** A tick's label as `<text>`; none for a label the layout dropped. */
+function tickLabel(tick: AxisTick): string[] {
+  if (tick.label === '') return [] // Dropped by the layout's overlap step or by `plotReservedSpacePercent`
+  const size = tick.fontSize ?? CHART_FONT.labelSize
+  const body = escapeXml(tick.label)
+  const base = `font-size="${size}" font-weight="${CHART_FONT.labelWeight}"`
+  // `labelRotation`: pivot on the label's top centre, as mermaid does.
+  if (tick.rotate)
+    return [
+      `<text x="${r(tick.labelX)}" y="${r(tick.labelY)}" text-anchor="${tick.textAnchor}" transform="rotate(${tick.rotate},${r(tick.labelX)},${r(tick.labelY)})" ` +
+        `${base} dominant-baseline="text-before-edge" class="xychart-label">${body}</text>`,
+    ]
+  return [
+    `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
+      `${base} dy="${TEXT_BASELINE_SHIFT}" class="xychart-label">${body}</text>`,
+  ]
 }
 
 function r(n: number): string {

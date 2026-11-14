@@ -106,6 +106,16 @@ describe('detectDiagramType – sankey', () => {
   })
 })
 
+describe('detectDiagramType – block', () => {
+  it('detects block and block-beta, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('block-beta\ncolumns 2')).toBe('block')
+    expect(detectDiagramType('block\n  a b')).toBe('block')
+    expect(detectDiagramType('%% c\n  block-beta')).toBe('block')
+    expect(detectDiagramType('Block-beta')).toBe('flowchart')
+    expect(detectDiagramType('blocks')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – requirement', () => {
   it('detects requirement diagrams, case-sensitively', () => {
     expect(detectDiagramType('requirementDiagram')).toBe('requirement')
@@ -160,6 +170,18 @@ describe('detectDiagramType – journey', () => {
   })
 })
 
+describe('detectDiagramType – eventmodeling', () => {
+  it('detects event models, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('eventmodeling')).toBe('eventmodeling')
+    expect(detectDiagramType('  eventmodeling\n  tf 01 ui A')).toBe(
+      'eventmodeling',
+    )
+    expect(detectDiagramType('%% c\neventmodeling')).toBe('eventmodeling')
+    expect(detectDiagramType('Eventmodeling')).toBe('flowchart')
+    expect(detectDiagramType('eventmodelings')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – kanban', () => {
   it('detects kanban boards, case-sensitively and as a whole word', () => {
     expect(detectDiagramType('kanban')).toBe('kanban')
@@ -177,5 +199,38 @@ describe('detectDiagramType – radar', () => {
     expect(detectDiagramType('%% c\nradar-beta')).toBe('radar')
     expect(detectDiagramType('Radar-beta')).toBe('flowchart')
     expect(detectDiagramType('radar')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – usecase', () => {
+  it('detects usecase-beta, case-sensitively as Mermaid’s detector does', () => {
+    expect(detectDiagramType('usecase-beta')).toBe('usecase')
+    expect(detectDiagramType('%% c\n  usecase-beta\n  actor A')).toBe('usecase')
+    expect(detectDiagramType('Usecase-beta')).toBe('flowchart')
+    // Mermaid 12.3.0 detects only `usecase-beta`, not `usecase` or `useCaseDiagram`.
+    expect(detectDiagramType('usecase')).toBe('flowchart')
+    expect(detectDiagramType('useCaseDiagram')).toBe('flowchart')
+    expect(detectDiagramType('usecase-betas')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – treemap', () => {
+  it('detects treemap and treemap-beta, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('treemap-beta\n"A": 1')).toBe('treemap')
+    expect(detectDiagramType('  treemap\n"A": 1')).toBe('treemap')
+    expect(detectDiagramType('%% c\ntreemap-beta')).toBe('treemap')
+    expect(detectDiagramType('Treemap-beta')).toBe('flowchart')
+    expect(detectDiagramType('treemaps')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – ishikawa', () => {
+  it('detects ishikawa and ishikawa-beta in any case, as Mermaid does', () => {
+    expect(detectDiagramType('ishikawa')).toBe('ishikawa')
+    expect(detectDiagramType('  ishikawa-beta\n  Effect')).toBe('ishikawa')
+    expect(detectDiagramType('%% c\nIshikawa')).toBe('ishikawa')
+    expect(detectDiagramType('ISHIKAWA Effect')).toBe('ishikawa')
+    expect(detectDiagramType('ishikawas')).toBe('flowchart')
+    expect(detectDiagramType('fishbone')).toBe('flowchart')
   })
 })

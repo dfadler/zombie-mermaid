@@ -52,7 +52,12 @@ describe('list_diagram_types', () => {
       journey: 'journey\nA: 3: Me',
       kanban: 'kanban\n  A\n    b',
       sankey: 'sankey-beta\nA,B,1',
+      ishikawa: 'ishikawa\n  Effect\n    Cause',
       requirement: 'requirementDiagram\nrequirement r {\n}',
+      eventmodeling: 'eventmodeling\ntf 01 ui A',
+      block: 'block-beta\ncolumns 2\na b',
+      usecase: 'usecase-beta\nactor A\nA --> B',
+      treemap: 'treemap-beta\n"A": 1',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

@@ -13,7 +13,7 @@ import { renderMermaidSVG } from '@zombie-mermaid/svg-renderer'
 // (or set `FC_SEED` below). `verbose: 1` prints the shrunk counterexample.
 const SEED = process.env.FC_SEED ? Number(process.env.FC_SEED) : undefined
 const PARAMS: fc.Parameters<unknown> = {
-  numRuns: 50,
+  numRuns: Number(process.env.FC_RUNS ?? 50),
   seed: SEED,
   verbose: 1,
 }
@@ -92,5 +92,46 @@ describe('flowchart properties (#1860)', () => {
       }),
       PARAMS,
     )
-  })
+    // 60 s timeout (#3093): 50 ASCII layouts take ~8 s at load average ~90 on
+    // 12 cores (mean ~160 ms each, worst generated case ~3 s), against the 20 s
+    // default, so a loaded machine could time it out with no real failure.
+  }, 60_000)
+
+  // Edge labels: every label string appears in the output at least as often as
+  // the diagram holds it (labels and node texts that contain it count too, so
+  // a substring match cannot hide a missing one). Domain limited to what the
+  // renderer draws whole today: no self-loops, no diamonds, at most two
+  // edges between one pair. Wider domains still drop labels (see the PR that
+  // added this test for the sources).
+  it('every edge label appears in the ASCII output', () => {
+    const labelled = flowchartArb.filter((src) => {
+      const edges = [
+        ...src.matchAll(
+          /^\s+n(\d+) \S+ n(\d+)$|^\s+n(\d+) \S+\|\w+\| n(\d+)$/gm,
+        ),
+      ]
+      if (/n\d+\{/.test(src)) return false
+      const pair = new Map<string, number>()
+      for (const m of edges) {
+        const a = Number(m[1] ?? m[3])
+        const b = Number(m[2] ?? m[4])
+        if (a === b) return false
+        const k = a < b ? `${a},${b}` : `${b},${a}`
+        pair.set(k, (pair.get(k) ?? 0) + 1)
+      }
+      return [...pair.values()].every((n) => n <= 2)
+    })
+    fc.assert(
+      fc.property(labelled, (src) => {
+        const out = renderMermaidASCII(src, { colorMode: 'none' })
+        const labels = [...src.matchAll(/\|(\w+)\|/g)].map((m) => m[1]!)
+        const texts = [...src.matchAll(/n\d+\S*?"(\w+)"/g)].map((m) => m[1]!)
+        for (const l of new Set(labels)) {
+          const need = [...labels, ...texts].filter((t) => t.includes(l)).length
+          expect(out.split(l).length - 1).toBeGreaterThanOrEqual(need)
+        }
+      }),
+      PARAMS,
+    )
+  }, 60_000)
 })

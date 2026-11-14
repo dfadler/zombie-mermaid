@@ -4,6 +4,7 @@
 
 ```ts
 
+import { BlockDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ClassRenderOptions } from '@zombie-mermaid/core';
 import { CurveStyle } from '@zombie-mermaid/core';
@@ -15,8 +16,10 @@ import { ElkLabel } from '@zombie-mermaid/core';
 import { ElkNode } from '@zombie-mermaid/core';
 import { ErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ErRenderOptions } from '@zombie-mermaid/core';
+import { EventModeling } from '@zombie-mermaid/mermaid-parser';
 import { FlowchartRenderOptions } from '@zombie-mermaid/core';
 import { GitGraph } from '@zombie-mermaid/mermaid-parser';
+import { Ishikawa } from '@zombie-mermaid/mermaid-parser';
 import { Journey } from '@zombie-mermaid/mermaid-parser';
 import { Kanban } from '@zombie-mermaid/mermaid-parser';
 import { LayoutCache } from '@zombie-mermaid/core';
@@ -28,8 +31,10 @@ import { niceTickValues } from '@zombie-mermaid/core';
 import { Packet } from '@zombie-mermaid/mermaid-parser';
 import { PieChart } from '@zombie-mermaid/mermaid-parser';
 import { Point } from '@zombie-mermaid/core';
+import { PositionedBlockDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
+import { PositionedEventModeling } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGitGraph } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGraph } from '@zombie-mermaid/core';
 import { PositionedJourney } from '@zombie-mermaid/mermaid-parser';
@@ -43,6 +48,7 @@ import { PositionedRequirementDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSankey } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedTimeline } from '@zombie-mermaid/mermaid-parser';
+import { PositionedTreemap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedXYChart } from '@zombie-mermaid/mermaid-parser';
 import { QuadrantChart } from '@zombie-mermaid/mermaid-parser';
 import { Radar } from '@zombie-mermaid/mermaid-parser';
@@ -53,6 +59,7 @@ import { SequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { SequenceRenderOptions } from '@zombie-mermaid/core';
 import { SvgEmitOptions } from '@zombie-mermaid/core';
 import { Timeline } from '@zombie-mermaid/mermaid-parser';
+import { Treemap } from '@zombie-mermaid/mermaid-parser';
 import { XYChart } from '@zombie-mermaid/mermaid-parser';
 import { XyChartRenderOptions } from '@zombie-mermaid/core';
 
@@ -75,6 +82,18 @@ export function baseElkLayoutOptions(spec: {
     layerSpacing: number;
     padding: number | ElkPaddingSides;
 }): LayoutOptions;
+
+// @public
+export const BLOCK: {
+    readonly padding: 8;
+    readonly lineHeight: 24;
+    readonly labelPaddingX: 32;
+    readonly roundPaddingX: 16;
+    readonly labelPaddingY: 16;
+    readonly fontSize: 16;
+    readonly margin: 5;
+    readonly cornerRadius: 5;
+};
 
 // @public
 export function boxLabelHeight(labelFontSize: number): number;
@@ -198,6 +217,29 @@ export function estimateTextWidth(text: string, fontSize: number, fontWeight: nu
 export function evaluateCssColorValue(value: string, declarations: Record<string, string>): string;
 
 // @public
+export const EVENTMODELING: {
+    readonly swimlaneMinHeight: 70;
+    readonly swimlanePadding: 15;
+    readonly swimlaneGap: 10;
+    readonly boxPadding: 10;
+    readonly boxOverlap: 90;
+    readonly boxMinWidth: 80;
+    readonly boxMaxWidth: 450;
+    readonly boxMinHeight: 80;
+    readonly boxMaxHeight: 750;
+    readonly contentStartX: 250;
+    readonly textMaxWidth: 430;
+    readonly lineHeight: 19;
+    readonly viewBoxPadding: 30;
+    readonly labelUiAutomation: "UI/Automation";
+    readonly labelUiAutomationPrefix: "UI/A: ";
+    readonly labelCommandReadModel: "Command/Read Model";
+    readonly labelCommandReadModelPrefix: "C/RM: ";
+    readonly labelEvents: "Events";
+    readonly labelEventsPrefix: "Stream: ";
+};
+
+// @public
 export function extractEdgeLabelPosition(elkEdge: ElkExtendedEdge, offsetX?: number, offsetY?: number): Point | undefined;
 
 // @public
@@ -240,6 +282,18 @@ export function hasLabelBelowIcon(a: {
 // @public
 export const INLINE_CENTERED_EDGE_LABEL: LayoutOptions;
 
+// @public
+export const ISHIKAWA: {
+    readonly fontSize: 16;
+    readonly headFontSize: 14;
+    readonly spineLength: 250;
+    readonly boneStub: 30;
+    readonly boneBase: 60;
+    readonly bonePerChild: 5;
+    readonly padding: 20;
+    readonly angle: number;
+};
+
 // @public (undocumented)
 export const JOURNEY: {
     readonly width: 150;
@@ -270,6 +324,9 @@ export const KANBAN: {
     readonly cornerRadius: 5;
 };
 
+// @public
+export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram;
+
 export { LayoutCache }
 
 // @public
@@ -279,6 +336,9 @@ export function layoutClassDiagramSync(diagram: ClassDiagram, options?: ClassRen
 export function layoutErDiagramSync(diagram: ErDiagram, options?: ErRenderOptions): PositionedErDiagram;
 
 // @public
+export function layoutEventModeling(diagram: EventModeling): PositionedEventModeling;
+
+// @public
 export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
 
 // @public (undocumented)
@@ -286,6 +346,9 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph;
 
 // @public
 export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
+
+// @public
+export function layoutIshikawa(d: Ishikawa): PositionedIshikawa | undefined;
 
 // @public (undocumented)
 export function layoutJourney(journey: Journey): PositionedJourney;
@@ -321,6 +384,9 @@ export function layoutSequenceDiagram(input: SequenceDiagram, options?: Sequence
 
 // @public
 export function layoutTimeline(tl: Timeline): PositionedTimeline;
+
+// @public
+export function layoutTreemap(treemap: Treemap): PositionedTreemap;
 
 // @public
 export function layoutXYChart(chart: XYChart, _options?: XyChartRenderOptions): PositionedXYChart;
@@ -383,6 +449,37 @@ export function pieColorValue(index: number, accent: string | undefined, bg: str
 
 // @public
 export function pointsToPath(points: Point[], curve?: CurveStyle): string;
+
+// @public (undocumented)
+export interface PositionedIshikawa {
+    // (undocumented)
+    head: {
+        d: string;
+        x: number;
+        y: number;
+        lines: string[];
+        textX: number;
+        textY: number;
+    };
+    // (undocumented)
+    height: number;
+    items: Array<{
+        kind: 'line';
+        line: IshikawaLine;
+    } | {
+        kind: 'box';
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    } | {
+        kind: 'text';
+        text: IshikawaText;
+    }>;
+    spine: IshikawaLine;
+    // (undocumented)
+    width: number;
+}
 
 // @public (undocumented)
 export interface PositionedPacket {
@@ -476,13 +573,22 @@ export const RADAR: {
 export function registerElk(ctor: ElkConstructor): void;
 
 // @public
+export function renderBlockSvg(diagram: PositionedBlockDiagram, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderClassSvg(diagram: PositionedClassDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, linksEnabled?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderErSvg(diagram: PositionedErDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
+export function renderEventModelingSvg(d: PositionedEventModeling, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderGitGraphSvg(gg: PositionedGitGraph, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderIshikawaSvg(p: PositionedIshikawa | undefined, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderJourneySvg(j: PositionedJourney, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
@@ -531,6 +637,9 @@ export function renderSvg(graph: PositionedGraph, colors: DiagramColors, font?: 
 
 // @public
 export function renderTimelineSvg(tl: PositionedTimeline, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderTreemapSvg(tm: PositionedTreemap, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderXYChartSvg(chart: PositionedXYChart, colors: DiagramColors, font?: string, transparent?: boolean, interactive?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
@@ -629,10 +738,28 @@ export const TIMELINE: {
 export function timelineTextWidth(text: string, size?: number, bold?: boolean): number;
 
 // @public
+export const TREEMAP: {
+    readonly width: 1000;
+    readonly height: 400;
+    readonly padding: 10;
+    readonly sectionHeader: 25;
+    readonly sectionPadding: 10;
+    readonly diagramPadding: 8;
+    readonly titleHeight: 30;
+    readonly titleFontSize: 14;
+    readonly sectionLabelFontSize: 12;
+    readonly sectionValueFontSize: 10;
+    readonly colorSlots: 13;
+};
+
+// @public
 export function validateMermaid(text: string): void;
 
 // @public
 export function withDataSrc(svgTag: string, source: string | undefined): string;
+
+// @public
+export function wrapIshikawaText(text: string, maxChars: number): string;
 
 // @public
 export function wrapLegendLabel(person: string, max?: number): string[];

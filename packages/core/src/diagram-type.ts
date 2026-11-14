@@ -37,6 +37,11 @@ export const DIAGRAM_TYPES = [
   'journey',
   'sankey',
   'requirement',
+  'eventmodeling',
+  'usecase',
+  'block',
+  'treemap',
+  'ishikawa',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -83,9 +88,22 @@ export function detectDiagramType(text: string): DiagramType {
   // Case-sensitive too: Mermaid's detector is `/^\s*sankey(-beta)?/`.
   if (/^sankey(?:-beta)?(?:\s|$)/.test(header)) return 'sankey'
 
+  // Case-sensitive: Mermaid's detector is `/^\s*treemap/`; its grammar keyword
+  // is `treemap-beta|treemap`.
+  if (/^treemap(?:-beta)?(?:\s|$)/.test(header)) return 'treemap'
+
   // Case-sensitive: Mermaid's detector is `/^\s*requirement(Diagram)?/`, its
   // grammar keyword `requirementDiagram\b`.
   if (/^requirementDiagram(?:\s|$)/.test(header)) return 'requirement'
+  // Case-insensitive: Mermaid's detector is `/^\s*ishikawa(-beta)?\b/i`.
+  if (/^ishikawa(?:-beta)?\b/i.test(header)) return 'ishikawa'
+
+  // Case-sensitive: Mermaid's detector is `/^\s*eventmodeling/`.
+  if (/^eventmodeling(?:\s|$)/.test(header)) return 'eventmodeling'
+  // Case-sensitive: Mermaid's detector is `/^\s*usecase-beta(?:\s|$)/`.
+  if (/^usecase-beta(?:\s|$)/.test(header)) return 'usecase'
+  // Case-sensitive: Mermaid's detector is `/^\s*block(-beta)?/`.
+  if (/^block(?:-beta)?(?:\s|$)/.test(header)) return 'block'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'

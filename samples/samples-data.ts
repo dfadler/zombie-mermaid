@@ -4057,4 +4057,375 @@ sankey-beta
 "Sales, EMEA",Other,10
 "Region ""North""",Total,30`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  USE CASE (parity with mermaid 12.3.0, #2819)
+  //  Header usecase-beta. Unsupported syntax (metadata, stereotypes, classes,
+  //  json nodes, circle/cross arrows, edge ids) is filed under #2819.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Use Case: Basic',
+    category: 'Use Case',
+    gallery: true,
+    description:
+      'Actors drawn as stick figures, use cases as ellipses inside a system boundary, and a note on one of them.',
+    source: `usecase-beta
+    actor Admin
+    actor Customer
+    systemBoundary Shop
+        Browse
+        Checkout
+        Pay[Pay by card]
+    end
+    Customer --> Browse
+    Customer --> Checkout
+    Checkout ..> : include Pay
+    Admin --"manages"--> Browse
+    note for Checkout "needs login"`,
+  },
+  {
+    title: 'Use Case: Relationships',
+    category: 'Use Case',
+    description:
+      'Association lines with and without arrowheads and labels, include and extend dependencies, and generalization between actors.',
+    source: `usecase-beta
+    actor User
+    actor Admin
+    Admin --|> User
+    systemBoundary Library
+        Search(Search catalogue)
+        Borrow(Borrow a book)
+        Reserve
+        Renew
+        Fine(Pay a fine)
+    end
+    User -- Search
+    User --> Borrow
+    Borrow ..> : include Reserve
+    Renew ..> : extend Borrow
+    Admin <-- Fine
+    Borrow -- late return --> Fine`,
+  },
+  {
+    title: 'Use Case: Top To Bottom',
+    category: 'Use Case',
+    description:
+      'direction TB lays the diagram out downward; Name[label] draws a rectangular use case and a quoted name keeps its spaces.',
+    source: `usecase-beta
+    direction TB
+    actor "Support agent"
+    actor Customer(Customer)
+    systemBoundary "Help desk"
+        Open[Open a ticket]
+        Reply(Reply to a ticket)
+        Close
+    end
+    Customer --> Open
+    "Support agent" --> Reply
+    "Support agent" --> Close
+    Reply ..> : include Close`,
+  },
+  {
+    title: 'Use Case: Notes',
+    category: 'Use Case',
+    description:
+      'note for attaches a note to an actor or a use case with a dotted line.',
+    source: `usecase-beta
+    actor Guest
+    Book
+    Cancel(Cancel a booking)
+    Guest --> Book
+    Book ..> : include Cancel
+    note for Guest "May be anonymous"`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  BLOCK DIAGRAMS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/block_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Block: Basic',
+    category: 'Block',
+    gallery: true,
+    description:
+      'A grid: `columns 3` sets how many blocks fit on a row, `b:2` spans two columns, and every cell takes the size of the widest block.',
+    source: `block-beta
+  columns 3
+  a["Alpha"] b:2 c
+  d e f`,
+  },
+  {
+    title: 'Block: Groups And Spaces',
+    category: 'Block',
+    gallery: true,
+    description:
+      '`block:id ... end` nests a grid with its own `columns` inside a cell, and `space` leaves a cell empty.',
+    source: `block-beta
+  columns 3
+  a["Alpha long label here"] b:2 c
+  d e f
+  block:grp:2
+    columns 2
+    x y z
+  end
+  space g`,
+  },
+  {
+    title: 'Block: Round Blocks And Line Breaks',
+    category: 'Block',
+    description:
+      '`id("text")` draws rounded corners and `<br>` breaks a label, which makes the whole row taller.',
+    source: `block-beta
+  columns 3
+  a("rounded") b["two<br/>lines"] c("two words long")`,
+  },
+  {
+    title: 'Block: Anonymous Group',
+    category: 'Block',
+    description:
+      'A bare `block ... end` is a group with no id; with no `columns` it lays its blocks in one row.',
+    source: `block
+  A
+  block
+    B C
+  end
+  block:q
+    D
+  end`,
+  },
+  {
+    title: 'Block: Columns Auto',
+    category: 'Block',
+    description: '`columns auto` (the default) puts every block on one row.',
+    source: `block-beta
+  columns auto
+  a b c d e`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  TREEMAP DIAGRAMS
+  //  Mermaid's `treemap` / `treemap-beta` (checked against mermaid 12.3.0).
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Treemap: Basic',
+    category: 'Treemap',
+    gallery: true,
+    description:
+      'Indented rows nest: a quoted name with no value is a section, `"Name": value` is a leaf whose area follows its value, and a section totals its leaves.',
+    source: `treemap-beta
+"Products"
+    "Electronics"
+        "Phones": 800
+        "Laptops": 600
+    "Clothing"
+        "Men": 300
+        "Women": 400
+"Services": 200`,
+  },
+  {
+    title: 'Treemap: Title And Flat Sections',
+    category: 'Treemap',
+    description:
+      'A `title` line is drawn above the map; sections one level deep sit side by side, largest first.',
+    source: `treemap-beta
+title Monthly spend
+"Rent"
+    "Studio": 1400
+"Food"
+    "Groceries": 420
+    "Eating out": 180
+"Transport"
+    "Fuel": 90
+    "Transit pass": 60`,
+  },
+  {
+    title: 'Treemap: Class Styling',
+    category: 'Treemap',
+    description:
+      'A `classDef` row styles every node that names it with `:::class` (a leaf after its value): here `fill` and `stroke`.',
+    source: `treemap-beta
+"Budget"
+    "Core": 50:::keep
+    "Growth": 30
+    "Reserve": 20:::keep
+classDef keep fill:#f96,stroke:#333;`,
+  },
+  {
+    title: 'Treemap: Many Leaves',
+    category: 'Treemap',
+    description:
+      'With more than 20 leaves the labels start at a smaller size, and those that cannot fit their cell are left off.',
+    source: `treemap-beta
+"Languages"
+    "Compiled"
+        "C": 12
+        "C++": 11
+        "Rust": 9
+        "Go": 8
+        "Java": 14
+        "C#": 10
+        "Swift": 4
+    "Scripting"
+        "Python": 18
+        "JavaScript": 20
+        "TypeScript": 13
+        "Ruby": 5
+        "PHP": 6
+        "Perl": 2
+        "Lua": 1
+    "Other"
+        "SQL": 9
+        "Shell": 4
+        "R": 3
+        "Haskell": 1
+        "Elixir": 2
+        "Zig": 1
+        "Kotlin": 5`,
+  },
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ISHIKAWA (FISHBONE) DIAGRAMS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/ishikawa_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Ishikawa: Basic',
+    category: 'Ishikawa',
+    gallery: true,
+    description:
+      'A fishbone: the effect is the head, each category a bone slanting onto the spine, and the causes sit on their bone. Categories alternate above and below the spine.',
+    source: `ishikawa-beta
+    Blurry Photo
+    Process
+        Out-of-focus
+        Shutter speed too slow
+    User
+        Shaky hands
+        Wrong settings
+    Equipment
+        Dirty lens
+        Low-end sensor`,
+  },
+  {
+    title: 'Ishikawa: Late Delivery',
+    category: 'Ishikawa',
+    gallery: true,
+    description:
+      'The six classic categories (people, process, machine, materials, method, environment), with a cause one level down: it hangs from its parent bone.',
+    source: `ishikawa
+  Late delivery
+    People
+      Training
+        No onboarding doc
+      Turnover
+    Process
+      Approval
+      Handoffs
+    Machine
+      Build servers
+    Materials
+      Supplier
+        Slow shipping
+    Method
+      Planning
+    Environment
+      Remote time zones`,
+  },
+  {
+    title: 'Ishikawa: Wrapped And Broken Labels',
+    category: 'Ishikawa',
+    description:
+      'A long cause wraps at 15 characters, a long effect wraps in the head, and `<br>` breaks a label wherever it is written.',
+    source: `ishikawa
+  Customer churn rises<br>every quarter
+    Product
+      Missing integrations with the tools teams already use
+      Slow<br/>onboarding
+    Support
+      Long response times`,
+  },
+  {
+    title: 'Ishikawa: Bare Effect And Empty Categories',
+    category: 'Ishikawa',
+    description:
+      'A line with no categories draws the head on its own, and a category with no causes is a short bone.',
+    source: `ishikawa
+  Outage
+    Network
+    Database
+    Deploys`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  EVENT MODELING — eventmodeling (Mermaid 12.3.0)
+  //
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/eventmodeling_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Event Modeling: Basic',
+    category: 'Event Modeling',
+    gallery: true,
+    description:
+      'A shopping cart on a timeline: a screen sends a command, the command records an event, and a read model built from it feeds the screen again, in the UI, Command/Read Model and Events swimlanes.',
+    source: `eventmodeling
+tf 01 ui CartScreen
+tf 02 cmd AddItem
+tf 03 evt ItemAdded
+tf 04 rmo CartItems
+tf 05 ui CartPage`,
+  },
+  {
+    title: 'Event Modeling: Namespaces And Data',
+    category: 'Event Modeling',
+    description:
+      'A `Namespace.Name` identifier opens its own swimlane; inline data in braces, a typed `json` payload and a `[[Name]]` reference to a `data` block each show under the name.',
+    source: `eventmodeling
+tf 01 rmo Inventory.Stock
+tf 02 ui ProductPage
+tf 03 cmd AddItem { description: string }
+tf 04 evt ItemAdded [[AddItem01]]
+tf 05 pcr Pricing.Recalculate \`json\`{ "currency": "EUR" }
+
+data AddItem01 {
+  description: 'john'
+}`,
+  },
+  {
+    title: 'Event Modeling: Source Frames And Reset',
+    category: 'Event Modeling',
+    description:
+      '`->>` points a frame at one or more named earlier frames; a reset frame (`rf`) draws no arrow from the frame before it; `timeframe`, `readmodel` and the other long keywords are accepted.',
+    source: `eventmodeling
+rf 01 evt CartCreated
+rf 02 evt ItemAdded
+timeframe 03 readmodel CartView ->> 01 ->> 02
+timeframe 04 ui CartScreen
+tf 05 cmd Checkout`,
+  },
+  {
+    title: 'Event Modeling: Long Text And Repeated Namespaces',
+    category: 'Event Modeling',
+    description:
+      'Long data wraps at 430px, a name too wide for a box breaks with a hyphen, a data block flows as one paragraph, and each namespaced frame opens its own lane, as Mermaid 12.3.0 draws it.',
+    source: `eventmodeling
+tf 001 ui AVeryLongScreenNameThatKeepsGoingAndGoingWithoutAnySpacesAtAllSoItMustBreakSomewhereAroundHere
+tf 002 cmd Register { name: string, email: string, password: string, newsletter: boolean, referral: string }
+tf 003 evt Billing.Registered [[Details]]
+tf 004 evt Billing.Confirmed
+tf 005 rmo Accounts.View ->> 003 ->> 004
+
+data Details {
+  customer: 'Ada Lovelace'
+  plan: 'enterprise'
+  seats: 25
+}`,
+  },
 ]
