@@ -1,0 +1,25 @@
+UI/Automation       Command/Read Model      Events
+
+                                            +- event -----+
+                                            | CartCreated |
+                                            +------+------+
+                                                   |
+                                                   |
+                                            +- event -----+
+                                            | ItemAdded   |
+                                            +------+------+
+                                                   |
+                                                   |
+                    +- read model ---+             |
+                    | CartView       |<------------+
+                    +--------+-------+
+                             |
+                             |
++- ui -------+               |
+| CartScreen |<--------------+
++------+-----+
+       |
+       |
+       |            +- command ------+
+       +----------->| Checkout       |
+                    +----------------+
