@@ -42,4 +42,24 @@ describe('TD decision branches leave the lower slants (#2660)', () => {
     expect(rows[i]!.indexOf('|')).toBeLessThan(rows[i]!.indexOf('\\'))
     expect(rows[i]!.lastIndexOf('|')).toBeGreaterThan(rows[i]!.indexOf('/'))
   })
+
+  // A decision entered from above that also sends an edge back up takes both
+  // on its top face: the entry on the upper-left slant, the back edge on the
+  // upper-right one (mermaid@12.3.0), not two stems at the top vertex.
+  it('puts an entry and a back edge on the two upper slants', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    const rows = renderMermaidASCII(
+      'graph TD\n  subgraph ci [CI]\n    A[Push] --> B{Pass?}\n    B -->|Yes| C[Build]\n    B -->|No| D[Fix]\n    D -.-> A\n  end\n  C --> E([Deploy])\n  E --> F{QA?}\n  F -->|Yes| G((Prod))\n  F -->|No| D',
+      { colorMode: 'none' },
+    )
+      .split('\n')
+      .map((r) => r.trimEnd())
+    // The last `╱─╲` is the QA decision's top vertex.
+    const top = rows.findLastIndex((r) => r.includes('╱─╲'))
+    const above = rows[top - 1]!
+    const vertex = rows[top]!.indexOf('╱─╲')
+    expect(above.slice(0, vertex)).toMatch(/[▼│]/)
+    expect(above.slice(vertex + 3)).toMatch(/[│▲]/)
+    expect(above[vertex + 1]).toBe(' ')
+  })
 })
