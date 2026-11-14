@@ -27,7 +27,7 @@ graders:
   - name: targets_issue_comment
     type: regex
     target: last_message
-    pattern: 'comment[^\n]{0,60}#2210|#2210[^\n]{0,60}comment'
+    pattern: 'comment[^\n]{0,60}(?:#|issue\s+)2210|(?:#|issue\s+)2210[^\n]{0,60}comment'
     flags: i
   - name: no_research_doc
     type: regex

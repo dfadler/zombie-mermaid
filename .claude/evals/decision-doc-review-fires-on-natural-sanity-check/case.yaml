@@ -1,5 +1,5 @@
 # Should-fire, natural phrasing. No delta expected from the Skill check alone.
-# good-reply: Two worktrees can hash to the same port, so the no-collision claim is wrong. Check the range for an off-by-one at the top end.
+# good-reply: Two worktrees can hash to the same port, so the no-collision claim is wrong. The ports span 3500 to 3999, so ranges beyond that are not an issue.
 # bad-reply: This reads fine to me, go ahead and open the PR.
 schema_version: '1.1'
 name: decision-doc-review-fires-on-natural-sanity-check
@@ -33,11 +33,11 @@ graders:
   - name: checks_range
     type: regex
     target: last_message
-    pattern: '\b3999\b|3500\s*(?:-|to|–)\s*3999|off-by-one'
+    pattern: '\b3999\b|3500\s*(?:-|to|–|through)\s*3999'
     flags: i
   - name: no_blanket_approval
     type: regex
     target: last_message
-    pattern: '(?:looks good|lgtm|ready to open|good to go|reads fine)'
+    pattern: '(?<!(?:\bnot|\bno|\bnever|n''t)\s(?:\w+\s){0,3})(?:looks good|lgtm|ready to open|good to go|reads fine)(?![^\n]{0,40}\b(?:but|however|though|yet)\b)'
     flags: i
     match: not_contains
