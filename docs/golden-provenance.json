@@ -504,7 +504,7 @@
       "source": "this renderer's own output, accepted once when the test was written",
       "owner": "__tests__/ascii-decision-pair-three-edges.test.ts",
       "mermaid": "12.3.0",
-      "verdict": "mermaid 12.3.0 draws the three edges between two decisions on three rows, the reciprocal's on top (checked in LR and RL); the ASCII snapshots draw the same order, checked by the test; the snapshots pin this renderer's output only"
+      "verdict": "GitHub's mermaid draws the three edges between two decisions on three rows, the reciprocal's last (checked in LR; mermaid@12.3.0 headless puts it first, an open disagreement; RL not checked on GitHub); the ASCII snapshots draw the same order, checked by the test; the snapshots pin this renderer's output only"
     },
     {
       "paths": [

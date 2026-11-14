@@ -2,7 +2,7 @@
  * Three edges between two decisions in a horizontal flow (one reciprocal) all
  * ran along one row: their labels overwrote each other and two arrowheads
  * shared a cell. mermaid@12.3.0 draws them on three rows of the facing
- * vertices, the reciprocal's on top in ELK's order. A face of three straight
+ * vertices, the reciprocal's last, as GitHub renders them. A face of three straight
  * strokes is now spread over the vertex and the two outer slants, however many
  * rows the vertex spans. One SVG and ASCII golden per case.
  */
@@ -32,12 +32,12 @@ describe('three edges between two decisions in a horizontal flow', () => {
   for (const dir of ['LR', 'RL'] as const) {
     it(`${dir}: each label on a row of its own, both arrowheads drawn`, () => {
       const lines = draw(source(dir)).split('\n')
-      const rows = ['5dJ', '8wr', 'PZ'].map((l) =>
+      const rows = ['8wr', 'PZ', '5dJ'].map((l) =>
         lines.findIndex((x) => x.includes(l)),
       )
       expect(rows.every((r) => r >= 0)).toBe(true)
       expect(new Set(rows).size).toBe(3)
-      // Reciprocal on top, then the straight one, then the last, as mermaid draws
+      // The edges leaving the node first, the reciprocal last, as GitHub's mermaid draws
       expect(rows).toEqual([...rows].sort((a, b) => a - b))
       const arrows = lines
         .join('')
