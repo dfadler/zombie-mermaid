@@ -1,0 +1,4 @@
+schema_version: '1'
+grants:
+  decision-doc-review-unprompted-on-doc-edit:
+    - 'Edit'

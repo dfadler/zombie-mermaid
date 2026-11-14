@@ -1,3 +1,4 @@
+# Should-not-fire guard: the Skill check passes without the plugin by design, so no delta is expected.
 # target sentence: description's trigger list ("open, edit, or update a PR body ... fix the `PR checklist` CI check"); this asks for a generic PR-check design, not to act on a PR body.
 schema_version: '1.1'
 name: pr-checklist-quiet-on-ci-workflow-explainer

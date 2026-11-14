@@ -1,0 +1,51 @@
+# target sentence: "Source block comes **first**, right after the heading, before any image." then SVG, then ASCII (real terminal)
+# Negation-style graders (source_block_first) pair with the positive svg_then_ascii_tables check; their lint EVAL024 echo warning is intended.
+# good-reply: ## Visual verification ```mermaid flowchart LR A -->|a very long label here| B ``` ### SVG | Before (main @ abc1234) | After | ![before](URL) ### ASCII (real terminal, via verify-ascii-terminal) | Before (main @ abc1234) | After | ![before](URL)
+# bad-reply: ## Visual verification ### SVG | Before | After | ![before](URL) ### ASCII (Playwright browser screenshot, NOT a real terminal) | Before | After | ![before](URL) ```mermaid flowchart LR A --> B ```
+schema_version: '1.1'
+name: pr-visual-verification-fires-section-shape
+description: >
+  A diff touching both renderers gets the fixed Visual verification shape: the Mermaid source in a
+  fenced block first, then an SVG table, then an ASCII table labeled as a real-terminal capture,
+  each labeled with the base sha. expected_outcome: PASS when the skill fires and the reply has the
+  mermaid fence before any image or table, then SVG then ASCII headings (ASCII heading naming a real
+  terminal) and a main @ sha label; FAIL otherwise. Reply-only: the Skill check is unscored in a
+  two-arm run, so a delta is possible only on the sha label and heading shape.
+tags: [pr-visual-verification, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I'm about to open a PR. Files changed vs main:
+
+      packages/ascii-layout/src/grid.ts
+      packages/svg-renderer/src/edges.ts
+      packages/svg-renderer/__tests__/edges.test.ts
+
+    It fixes how a flowchart edge with a long label is routed around a node
+    (source: `flowchart LR; A -->|a very long label here| B; A --> C --> B`).
+    What goes in the screenshots section of the PR body? Write it out, with placeholder image
+    URLs. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+  # no image, link or table row may precede the first mermaid fence
+  - name: source_block_first
+    type: regex
+    pattern: '^(?:(?!!\[|<img|\|\s*Before|\[(?:before|after)\]|```mermaid)[\s\S])*```mermaid'
+    flags: i
+  # fence, then SVG heading, then ASCII heading that names a real terminal and is not negated
+  - name: svg_then_ascii_tables
+    type: regex
+    pattern: '```mermaid[\s\S]+?```[\s\S]*?#{2,4}[ \t]*SVG[\s\S]*?#{2,4}[ \t]*ASCII(?![^\n]*(?:\bnot\b|browser|playwright))[^\n]*(?:real[- ]terminal|verify-ascii-terminal)'
+    flags: i
+  - name: base_sha_label
+    type: regex
+    pattern: 'main\s*@\s*`?(?:[0-9a-f]{7,40}|<[^>\n]*sha[^>\n]*>)'
+    flags: i

@@ -1,0 +1,38 @@
+# target sentence: "**ASCII**: invoke `verify-ascii-terminal` and use its before.png/after.png. Never Playwright or visual-diff output for ASCII."
+# No skill_fired grader: first paid run showed the skill is not invoked for this yes/no question (0 of 3 and 2 of 3 fires) while the reply still carried the rule.
+# good-reply: Yes for the SVG half, a browser screenshot is fine there. For the ASCII half no: it must be a real terminal capture (verify-ascii-terminal), not the demo panel or a Playwright shot.
+# bad-reply: Sounds good. Playwright works for both the SVG and the ASCII panel; a real terminal capture or verify-ascii-terminal is overkill here.
+schema_version: '1.1'
+name: pr-visual-verification-ascii-not-browser-screenshot
+description: >
+  Offered a Playwright screenshot of the demo ASCII panel, the reply accepts a browser shot for the
+  SVG half only and requires a real-terminal capture for ASCII. expected_outcome: PASS when the
+  reply requires a real-terminal capture for ASCII and approves the browser shot for SVG at most;
+  FAIL if it approves the browser shot for the ASCII output.
+tags: [pr-visual-verification, trigger]
+runs: 3
+
+execution:
+  prompt: |
+    I changed how packages/ascii-renderer/src/edges.ts emits arrowheads, and
+    packages/svg-renderer/src/edges.ts too. I have Playwright set up and the demo page open, so
+    I'll just grab a browser screenshot of the ASCII output panel and of the SVG for the PR
+    before/after. Good enough? Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  # free pre-filter: names a real-terminal route and is not the "overkill" reply
+  - name: names_real_terminal
+    type: regex
+    pattern: '^(?![\s\S]*(?:overkill|unnecessary|not needed|no need for a))[\s\S]*(?:real[- ]terminal|verify-ascii-terminal|\bPTY\b|asciinema)'
+    flags: i
+  - name: ascii_needs_terminal_capture
+    type: llm
+    criteria: >
+      PASS if the reply says the ASCII half must be a real-terminal capture (not the demo panel or
+      a Playwright or browser screenshot), and approves a browser screenshot for the SVG half at
+      most. FAIL if it approves a browser or Playwright screenshot for the ASCII output, or calls
+      a real-terminal capture unnecessary. Do not fail a reply for opening with "Yes" when that
+      "Yes" is about the SVG half, or for length or formatting.

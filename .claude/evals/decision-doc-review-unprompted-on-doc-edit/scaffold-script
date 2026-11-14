@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Fixture repo: a draft decision doc with three seeded defects (no rounding direction, two readings of
+# "center", a scope claim that ignores adjacent slots).
+set -euo pipefail
+mkdir -p docs/decisions
+cat > docs/decisions/README.md <<'R'
+# Decisions
+
+Short records of settled decisions.
+R
+cat > docs/decisions/edge-label-placement.md <<'D'
+# Edge label placement
+
+Status: proposed
+
+## Decision
+
+Each edge label is placed at the center of its edge's slot. The label's left x is
+`(slotWidth - labelWidth) / 2` from the slot's left edge. The center of the label then sits on
+the edge's center line.
+
+Sub-issue #2001 (render the labels) needs no spacing pass, because every label is drawn in its
+own slot.
+D

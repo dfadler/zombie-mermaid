@@ -1,3 +1,4 @@
+# Should-not-fire guard: the Skill check passes without the plugin by design, so no delta is expected.
 # Smoke guard: near-miss that edits a nearby doc; no expected delta.
 schema_version: '1.1'
 name: provenance-check-quiet-on-proofread-other-doc
