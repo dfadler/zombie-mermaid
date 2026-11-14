@@ -73,6 +73,7 @@ import {
   parseRequirementDiagram,
   parseUsecase,
   usecaseToGraph,
+  parseTreemap,
 } from '@zombie-mermaid/mermaid-parser'
 import type { UsecaseDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -113,6 +114,8 @@ import type {
   PositionedSankey,
   RequirementDiagram,
   PositionedRequirementDiagram,
+  Treemap,
+  PositionedTreemap,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -152,6 +155,8 @@ import { layoutBlock } from './block/layout.ts'
 import { renderBlockSvg } from './block/renderer.ts'
 import { layoutSankey } from './sankey/layout.ts'
 import { renderSankeySvg } from './sankey/renderer.ts'
+import { layoutTreemap } from './treemap/layout.ts'
+import { renderTreemapSvg } from './treemap/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -811,6 +816,29 @@ const sankeyModule: DiagramModule<Sankey, PositionedSankey> = {
 }
 
 /**
+ * Treemaps parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator), then lay out with a port of d3-hierarchy's squarified treemap.
+ * No theme variables or interactivity apply.
+ */
+const treemapModule: DiagramModule<Treemap, PositionedTreemap> = {
+  type: 'treemap',
+  parse: (_lines, text) => parseTreemap(text),
+  layoutForSvg: (tm) => layoutTreemap(tm),
+  renderSvg(positioned, ctx) {
+    return renderTreemapSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * Ishikawa diagrams parse from the raw `text` (`;` is not a statement
  * separator), then lay out to Mermaid's fixed geometry. A diagram with no
  * lines under its header has nothing to draw and lays out to `undefined`.
@@ -877,4 +905,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   usecase: usecaseModule,
   ishikawa: ishikawaModule,
   gitgraph: gitgraphModule,
+  treemap: treemapModule,
 }

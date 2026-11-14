@@ -158,6 +158,8 @@ export { BLOCK, layoutBlock } from './block/layout.ts'
 export { renderBlockSvg } from './block/renderer.ts'
 export { SANKEY, layoutSankey } from './sankey/layout.ts'
 export { renderSankeySvg } from './sankey/renderer.ts'
+export { TREEMAP, layoutTreemap } from './treemap/layout.ts'
+export { renderTreemapSvg } from './treemap/renderer.ts'
 export {
   JOURNEY,
   layoutJourney,
@@ -379,6 +381,7 @@ const LITERAL_ENTITY_TYPES: ReadonlySet<DiagramType> = new Set([
   'timeline',
   'xychart',
   'sankey',
+  'treemap',
   'radar',
   'sequence',
 ])

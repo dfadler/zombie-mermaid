@@ -56,6 +56,7 @@ describe('list_diagram_types', () => {
       requirement: 'requirementDiagram\nrequirement r {\n}',
       block: 'block-beta\ncolumns 2\na b',
       usecase: 'usecase-beta\nactor A\nA --> B',
+      treemap: 'treemap-beta\n"A": 1',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

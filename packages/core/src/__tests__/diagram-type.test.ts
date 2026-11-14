@@ -202,6 +202,16 @@ describe('detectDiagramType – usecase', () => {
   })
 })
 
+describe('detectDiagramType – treemap', () => {
+  it('detects treemap and treemap-beta, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('treemap-beta\n"A": 1')).toBe('treemap')
+    expect(detectDiagramType('  treemap\n"A": 1')).toBe('treemap')
+    expect(detectDiagramType('%% c\ntreemap-beta')).toBe('treemap')
+    expect(detectDiagramType('Treemap-beta')).toBe('flowchart')
+    expect(detectDiagramType('treemaps')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – ishikawa', () => {
   it('detects ishikawa and ishikawa-beta in any case, as Mermaid does', () => {
     expect(detectDiagramType('ishikawa')).toBe('ishikawa')
