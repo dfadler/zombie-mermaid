@@ -760,22 +760,14 @@ export function mermaidToElk(
             : {}),
         }
       : {}),
-    // 70 under mermaid@12.3.0's pipeline (50 before nodes had the 120px minimum width, #2717): its wider edge-label boxes need more
-    // room for the parallel runs than 12.2.0's did (Five, Six and Nine Cluster
-    // Exit Siblings all match 12.3.0 at 70; 60 fails Five and Six).
-    // Flowcharts without subgraphs need none of this once nodes have mermaid's
-    // 120px minimum width (#2717): the target already sits ~14px off the source.
+    // Subgraph flowcharts with a labelled parallel run: 70, because mermaid@12.3.0's
+    // wider edge-label boxes need more room than 12.2.0's (Five, Six and Nine Cluster
+    // Exit Siblings match at 70; 60 fails Five and Six). Without it Nine drops to 67%
+    // horizontal on the layout oracle (#2934).
     ...(hasLabelledParallelRun(graph) &&
-    ((usesMermaidElkPipeline(graph) && graph.subgraphs.length > 0) ||
-      isStateGraph(graph) ||
-      opts.legacyNodeSizes)
-      ? {
-          'elk.spacing.edgeEdge': usesMermaidElkPipeline(graph)
-            ? opts.legacyNodeSizes
-              ? '50'
-              : '70'
-            : '40',
-        }
+    usesMermaidElkPipeline(graph) &&
+    graph.subgraphs.length > 0
+      ? { 'elk.spacing.edgeEdge': '70' }
       : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
