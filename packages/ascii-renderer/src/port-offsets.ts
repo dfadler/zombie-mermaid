@@ -1818,6 +1818,24 @@ function placeFace(
     if (ranked && diamond) {
       if (Math.abs(p - centre) > 1) continue
     }
+    // #2660: a decision's two branches leave its flow face from the lower
+    // slants, as mermaid@12.3.0 draws them, not as two stems under the vertex:
+    // the cell is the first one out whose row one in holds a slant glyph.
+    if (
+      ranked &&
+      run.node.shape === 'diamond' &&
+      run.axis === 'v' &&
+      (run.side === 'bottom' || run.side === 'top') &&
+      list.length === 2
+    ) {
+      const glyph =
+        run.node.drawing![p - run.node.drawingCoord!.x]?.[
+          geo.border + (run.side === 'top' ? 1 : -1)
+        ]
+      if (Math.abs(p - centre) >= 2 && glyph && '╲╱\\/'.includes(glyph))
+        cells.push(p)
+      continue
+    }
     // Its entry face's vertex is a cell too (#2913): three ends take it and
     // both slants. The flow face is `spreadDiamondFaces`'s.
     if (
