@@ -148,7 +148,7 @@ function landsStrokeByStroke(
 ): boolean {
   const c = requireGridCoord(node)
   const width = [0, 1, 2].reduce(
-    (w, i) => w + (graph.columnWidth.get(c.x + i) ?? 0),
+    (w, i) => w + graph.columnWidth.get(c.x + i)!,
     0,
   )
   return (

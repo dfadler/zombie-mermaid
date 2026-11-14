@@ -89,6 +89,12 @@ describe('fan-in landing cells (#2678)', () => {
           expect(out.match(/▼/g)).toHaveLength(1)
         })
 
+        it('lands the join bar of the ASCII charset too', () => {
+          const out = draw(CASES['state join']!, hints, true)
+          expect(out).toMatch(/v v/)
+          expect(out).toContain('#')
+        })
+
         it('draws the ASCII charset the same way', () => {
           const out = draw(AMP, hints, true)
           expect(out.match(/v/g)).toHaveLength(2)
