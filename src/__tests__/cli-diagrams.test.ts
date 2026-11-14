@@ -70,6 +70,9 @@ const diagrams: Record<string, string> = {
   tf 01 ui Cart
   tf 02 cmd AddItem
   tf 03 evt ItemAdded`,
+  block: `block-beta
+  columns 2
+  a["One"] b("Two")`,
 
   mindmap: `mindmap
   root((Plan))

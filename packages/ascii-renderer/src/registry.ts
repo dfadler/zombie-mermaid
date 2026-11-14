@@ -52,6 +52,7 @@ import { renderUsecaseAscii } from './usecase.ts'
 import { renderJourneyAscii } from './journey.ts'
 import { renderKanbanAscii } from './kanban.ts'
 import { renderEventModelingAscii } from './eventmodeling.ts'
+import { renderBlockAscii } from './block.ts'
 import { renderSankeyAscii } from './sankey.ts'
 import { renderRequirementAscii } from './requirement.ts'
 
@@ -138,6 +139,8 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderEventModelingAscii(text, config, colorMode, theme),
   sankey: (text, config, colorMode, theme) =>
     renderSankeyAscii(text, config, colorMode, theme),
+  block: (text, config, colorMode, theme) =>
+    renderBlockAscii(text, config, colorMode, theme),
   requirement: (text, config, colorMode, theme, extras) =>
     renderRequirementAscii(text, config, colorMode, theme, extras),
 }

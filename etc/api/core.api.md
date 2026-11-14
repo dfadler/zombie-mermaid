@@ -209,7 +209,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "sankey", "requirement", "eventmodeling", "usecase"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "sankey", "requirement", "eventmodeling", "usecase", "block"];
 
 // @public
 export interface DiagramColors {
@@ -1128,6 +1128,10 @@ export function wrapToWidth(text: string, maxWidth: number, fontSize: number): s
 
 // @public
 export interface XyChartAxisInitConfig {
+    axisLineWidth?: number;
+    labelFontSize?: number;
+    labelPadding?: number;
+    labelRotation?: number;
     // (undocumented)
     showAxisLine?: boolean;
     // (undocumented)
@@ -1136,6 +1140,10 @@ export interface XyChartAxisInitConfig {
     showTick?: boolean;
     // (undocumented)
     showTitle?: boolean;
+    tickLength?: number;
+    tickWidth?: number;
+    titleFontSize?: number;
+    titlePadding?: number;
 }
 
 // @public
@@ -1144,8 +1152,13 @@ export interface XyChartInitConfig {
     chartOrientation?: 'vertical' | 'horizontal';
     // (undocumented)
     height?: number;
+    plotReservedSpacePercent?: number;
+    showDataLabel?: boolean;
+    showDataLabelOutsideBar?: boolean;
     // (undocumented)
     showTitle?: boolean;
+    titleFontSize?: number;
+    titlePadding?: number;
     // (undocumented)
     width?: number;
     // (undocumented)

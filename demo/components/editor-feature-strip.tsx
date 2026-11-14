@@ -62,7 +62,7 @@ const EDITOR_FEATURES: readonly EditorFeature[] = [
     icon: <DownloadIcon size={26} />,
     title: 'SVG and ASCII output',
     description:
-      'Flip between SVG and terminal-ready ASCII, then download the SVG — across all twenty-two diagram types, including C4, architecture, pie, quadrant, gantt, mindmap, timeline, requirement, kanban, user journey, radar, packet, git graph, sankey, use case, and event modeling.',
+      'Flip between SVG and terminal-ready ASCII, then download the SVG — across all twenty-three diagram types, including C4, architecture, pie, quadrant, gantt, mindmap, timeline, requirement, kanban, user journey, radar, packet, git graph, sankey, use case, block, and event modeling.',
   },
 ] as const
 

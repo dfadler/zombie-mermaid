@@ -160,10 +160,12 @@ export function architectureToGraph(diagram: ArchitectureDiagram): MermaidGraph;
 
 // @public (undocumented)
 export interface AxisTick {
+    fontSize?: number;
     label: string;
     labelX: number;
     // (undocumented)
     labelY: number;
+    rotate?: number;
     textAnchor: 'start' | 'middle' | 'end';
     tx: number;
     // (undocumented)
@@ -187,6 +189,27 @@ export interface Block {
     startIndex: number;
     type: 'loop' | 'alt' | 'opt' | 'par' | 'critical' | 'break' | 'rect';
 }
+
+// @public
+export interface BlockDiagram {
+    root: BlockNode;
+}
+
+// @public
+export interface BlockNode {
+    children: BlockNode[];
+    columns?: number;
+    id: string;
+    label: string;
+    // (undocumented)
+    shape: BlockShape;
+    // (undocumented)
+    type: 'node' | 'space' | 'composite';
+    widthInColumns: number;
+}
+
+// @public
+export type BlockShape = 'square' | 'round';
 
 // @public (undocumented)
 export interface C4Boundary {
@@ -354,6 +377,22 @@ export interface ClassRelationship {
     toCardinality?: string;
     // (undocumented)
     type: RelationshipType;
+}
+
+// @public
+export interface DataLabel {
+    // (undocumented)
+    baseline: 'middle' | 'hanging' | 'auto';
+    // (undocumented)
+    fontSize: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    textAnchor: 'start' | 'middle' | 'end';
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
 }
 
 // @public (undocumented)
@@ -839,6 +878,9 @@ export function packGanttSection(tasks: GanttTask[], offset: number, orders: Map
 export function parseArchitecture(lines: Statement[]): ArchitectureDiagram;
 
 // @public
+export function parseBlock(text: string): BlockDiagram;
+
+// @public
 export function parseBoxHeader(header: string): {
     color?: string;
     label: string;
@@ -986,6 +1028,7 @@ export interface PositionedAxis {
         x: number;
         y: number;
         rotate?: number;
+        fontSize?: number;
     };
 }
 
@@ -1023,6 +1066,44 @@ export interface PositionedBlock {
     x: number;
     // (undocumented)
     y: number;
+}
+
+// @public
+export interface PositionedBlockDiagram {
+    nodes: PositionedBlockNode[];
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedBlockNode {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    shape: BlockShape;
+    // (undocumented)
+    text: PositionedBlockText;
+    // (undocumented)
+    type: 'node' | 'composite';
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedBlockText {
+    // (undocumented)
+    lines: string[];
+    width: number;
 }
 
 // @public (undocumented)
@@ -2265,6 +2346,7 @@ export interface PositionedTimelineNode {
 
 // @public (undocumented)
 export interface PositionedTitle {
+    fontSize?: number;
     // (undocumented)
     text: string;
     // (undocumented)
@@ -2277,6 +2359,7 @@ export interface PositionedTitle {
 export interface PositionedXYChart {
     bars: PositionedBar[];
     config?: XyChartInitConfig;
+    dataLabels?: DataLabel[];
     gridLines: GridLine[];
     // (undocumented)
     height: number;

@@ -57,9 +57,10 @@ describe('ASCII vs Unicode charset: box-start border junctions', () => {
 
     // Each source box's bottom border must show an interior '+' junction
     // where the fan-in connector drops from it, not a plain dash run, and
-    // the connector's own row joins the two with a '+' where the trunk
-    // continues down to the (centered) target.
+    // the connector's own row turns with a '+' into a stem of its own per
+    // source, each ending in its own arrowhead on the (centered) target (#2678).
     expect(ascii.match(/\+--\+--\+/g)).toHaveLength(2)
-    expect(ascii).toContain('+-------+------+')
+    expect(ascii).toMatch(/\+-+\+ \+-+\+/)
+    expect(ascii).toContain('v v')
   })
 })
