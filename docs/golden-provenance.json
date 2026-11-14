@@ -437,6 +437,14 @@
       "owner": "__tests__/ascii-decision-entry-face-2913.test.ts",
       "mermaid": "12.3.0",
       "verdict": "with ELK hints the decision's entry face gives its three ends a cell each, as mermaid draws it (topology gate end cells 375/379, arrowheads 391/395); the order of G's three ends differs from mermaid (see the PR), and the plain-grid and SVG snapshots only pin this renderer's output"
+    },
+    {
+      "paths": ["__tests__/fixtures/ishikawa-official-12.3.0.json"],
+      "class": "a",
+      "source": "read back from real mermaid 12.3.0 by scripts/ishikawa-oracle.ts (--write-fixture): its SVG for every Ishikawa sample and edge case, without the CSS",
+      "owner": "__tests__/ishikawa-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: re-rendered with mermaid@12.3.0, all samples and edge cases agree on element order, text, bone vectors and y positions (1px) and the frame within 3% high and 15% wide (2026-11-13); x positions follow text widths and are not compared"
     }
   ]
 }

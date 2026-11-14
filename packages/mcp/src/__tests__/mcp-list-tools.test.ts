@@ -52,6 +52,7 @@ describe('list_diagram_types', () => {
       journey: 'journey\nA: 3: Me',
       kanban: 'kanban\n  A\n    b',
       sankey: 'sankey-beta\nA,B,1',
+      ishikawa: 'ishikawa\n  Effect\n    Cause',
       requirement: 'requirementDiagram\nrequirement r {\n}',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())

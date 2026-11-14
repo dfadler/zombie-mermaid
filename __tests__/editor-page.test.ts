@@ -82,6 +82,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   kanban: 'Kanban',
   sankey: 'Sankey',
   requirement: 'Requirement',
+  ishikawa: 'Ishikawa',
 }
 
 describe('EditorPage meta description', () => {

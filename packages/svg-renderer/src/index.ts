@@ -168,6 +168,13 @@ export {
   layoutRequirementDiagramSync,
 } from './requirement/layout.ts'
 export { renderRequirementSvg } from './requirement/renderer.ts'
+export {
+  ISHIKAWA,
+  layoutIshikawa,
+  wrapIshikawaText,
+} from './ishikawa/layout.ts'
+export type { PositionedIshikawa } from './ishikawa/layout.ts'
+export { renderIshikawaSvg } from './ishikawa/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

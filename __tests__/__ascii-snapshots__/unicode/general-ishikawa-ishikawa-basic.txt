@@ -1,0 +1,7 @@
+        [ Equipment ]                   [ Process ]
+Dirty lens ────╲       Out-of-focus ──────────╲
+Low-end sensor ─╲      Shutter speed too slow ─╲      ┌──────────────┐
+─────────────────┴───────────────────────┬──────┴────►│ Blurry Photo │
+                       Shaky hands ─────╱             └──────────────┘
+                       Wrong settings ─╱
+                                  [ User ]

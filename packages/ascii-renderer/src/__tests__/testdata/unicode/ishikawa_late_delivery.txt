@@ -1,0 +1,27 @@
+ishikawa
+  Late delivery
+    People
+      Training
+        No onboarding doc
+      Turnover
+    Process
+      Approval
+      Handoffs
+    Machine
+      Build servers
+    Materials
+      Supplier
+        Slow shipping
+    Method
+      Planning
+    Environment
+      Remote time zones
+---
+                                                                  [ People ]
+    [ Method ]                      [ Machine ]     Training ───────────╲
+Planning ─╲                Build servers ─╲         └ No onboarding doc ─╲
+           ╲                               ╲        Turnover ─────────────╲    ┌───────────────┐
+────────────┴───────┬───────────────────────┴─┬─────────────────┬──────────┴──►│ Late delivery │
+Remote time zones ─╱       Supplier ─────────╱      Approval ──╱               └───────────────┘
+                  ╱        └ Slow shipping ─╱       Handoffs ─╱
+          [ Environment ]            [ Materials ]      [ Process ]

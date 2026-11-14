@@ -2088,6 +2088,56 @@ Bio-conversion  310.78
   ASCII mode).
 - Bars use the theme accent. A cycle throws "circular link", as the SVG does.
 
+## Ishikawa diagrams
+
+`ishikawa` (or `ishikawa-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/ishikawa.html)
+and its renderer's layout. `pnpm run ishikawa:oracle` compares the gallery samples and
+a set of edge cases with `mermaid@12.3.0`: element order and count, all text, every
+bone's vector and every y relative to the spine agree exactly; x positions and the
+frame follow text widths, so they agree within a few percent (see
+[Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#ishikawa-fishbone-diagrams)).
+
+```mermaid
+ishikawa-beta
+    Blurry Photo
+    Process
+        Out-of-focus
+        Shutter speed too slow
+    User
+        Shaky hands
+        Wrong settings
+    Equipment
+        Dirty lens
+        Low-end sensor
+```
+
+Supported: the first line under the header is the effect (the head); each line
+indented by the same amount under it is a category, and anything indented deeper
+is a cause of the line above it, to any depth. Categories alternate above and
+below the spine, the first pair nearest the head; a cause one level down hangs
+from its parent bone as a slanted bone, the next as a stub again. `<br>` breaks a
+label, a long cause wraps at 15 characters and a long effect in the head, `%%`
+comment lines and blank lines are skipped. Not drawn: the `handDrawn` look and the
+`ishikawa.diagramPadding` / `useMaxWidth` keys.
+
+### ASCII Ishikawa diagrams
+
+Mermaid has no text mode for ishikawa diagrams, so the ASCII output is this
+library's own: a fishbone on a character grid, the effect boxed at the right end
+of the spine, categories (`[ Name ]`) alternating above (`╲`, `\` in ASCII mode)
+and below (`╱`, `/`) it, and each cause on its own row joined to its bone by a
+leader line. A cause one level down is marked with `└` and indented.
+
+```text
+        [ Equipment ]                   [ Process ]
+Dirty lens ────╲       Out-of-focus ──────────╲
+Low-end sensor ─╲      Shutter speed too slow ─╲      ┌──────────────┐
+─────────────────┴───────────────────────┬──────┴────►│ Blurry Photo │
+                       Shaky hands ─────╱             └──────────────┘
+                       Wrong settings ─╱
+                                  [ User ]
+```
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -2096,7 +2146,7 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
-| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
+| Tree view, Venn, Wardley, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 | Block                                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)                              |
 
 ## Accessibility
@@ -3606,6 +3656,32 @@ graphs in all three orientations, with and without `parallelCommits` and
   commits of the same depth (a root is 0, else one below the deepest parent) on one row, ids
   separated by commas, when their lane spans do not overlap or they are forks off the same
   commit; otherwise each keeps its row.
+- **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
+  session (no browser with those pages was available).
+
+## Ishikawa (fishbone) diagrams
+
+Checked against `mermaid@12.3.0` (`pnpm run ishikawa:oracle`; the pin, 12.2.0, is not
+the reference here because it is behind npm `latest`).
+
+- **Text widths.** Mermaid measures text in the browser; here the library's font
+  metrics are used, so every x that depends on a label (where the next pair of bones
+  starts, the left edge, the label boxes) and the frame width differ by a few percent.
+  Bone vectors, y positions, element order and all text agree exactly.
+- **Quirks of Mermaid's grammar not ported.** Its jison grammar rejects `ishikawa   `
+  (trailing spaces after the header), a header with no newline after it, and some blank
+  lines straight after the header (`ishikawa`, blank, `  Effect` is an error, while
+  `ishikawa`, blank, `%% c`, `  Effect` is not); this parser accepts all of them.
+- **Accessibility statements.** The front door strips `accTitle` / `accDescr` lines
+  before parsing; Mermaid's ishikawa grammar has no such statement and draws them as
+  causes.
+- **Not drawn.** The `handDrawn` look (rough.js strokes) and the `ishikawa.*` config keys
+  `diagramPadding` and `useMaxWidth`; `fontSize` from config is not read (16px).
+- **Labels.** Mermaid runs a label through DOMPurify and draws the resulting HTML as
+  text: `<x>` vanishes and `&` shows as `&amp;`. The same sanitizer stand-in as for
+  packet titles is used (`sanitize-title.ts`).
+- **ASCII.** Mermaid has no ASCII output; the fishbone layout is this library's own (see
+  [Supported diagrams](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md#ascii-ishikawa-diagrams)).
 - **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
   session (no browser with those pages was available).
 

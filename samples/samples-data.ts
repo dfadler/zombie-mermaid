@@ -4057,4 +4057,77 @@ sankey-beta
 "Sales, EMEA",Other,10
 "Region ""North""",Total,30`,
   },
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ISHIKAWA (FISHBONE) DIAGRAMS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/ishikawa_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Ishikawa: Basic',
+    category: 'Ishikawa',
+    gallery: true,
+    description:
+      'A fishbone: the effect is the head, each category a bone slanting onto the spine, and the causes sit on their bone. Categories alternate above and below the spine.',
+    source: `ishikawa-beta
+    Blurry Photo
+    Process
+        Out-of-focus
+        Shutter speed too slow
+    User
+        Shaky hands
+        Wrong settings
+    Equipment
+        Dirty lens
+        Low-end sensor`,
+  },
+  {
+    title: 'Ishikawa: Late Delivery',
+    category: 'Ishikawa',
+    gallery: true,
+    description:
+      'The six classic categories (people, process, machine, materials, method, environment), with a cause one level down: it hangs from its parent bone.',
+    source: `ishikawa
+  Late delivery
+    People
+      Training
+        No onboarding doc
+      Turnover
+    Process
+      Approval
+      Handoffs
+    Machine
+      Build servers
+    Materials
+      Supplier
+        Slow shipping
+    Method
+      Planning
+    Environment
+      Remote time zones`,
+  },
+  {
+    title: 'Ishikawa: Wrapped And Broken Labels',
+    category: 'Ishikawa',
+    description:
+      'A long cause wraps at 15 characters, a long effect wraps in the head, and `<br>` breaks a label wherever it is written.',
+    source: `ishikawa
+  Customer churn rises<br>every quarter
+    Product
+      Missing integrations with the tools teams already use
+      Slow<br/>onboarding
+    Support
+      Long response times`,
+  },
+  {
+    title: 'Ishikawa: Bare Effect And Empty Categories',
+    category: 'Ishikawa',
+    description:
+      'A line with no categories draws the head on its own, and a category with no causes is a short bone.',
+    source: `ishikawa
+  Outage
+    Network
+    Database
+    Deploys`,
+  },
 ]

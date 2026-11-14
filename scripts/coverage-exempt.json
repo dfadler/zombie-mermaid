@@ -320,6 +320,11 @@
     "maxLines": 77
   },
   {
+    "file": "scripts/ishikawa-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the comparison is unit-tested in scripts/lib/ishikawa-agreement.ts",
+    "maxLines": 77
+  },
+  {
     "file": "scripts/radar-parser-fixture.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a scratch install of mermaid 12.3.0's @mermaid-js/parser; its output is the committed fixture __tests__/fixtures/radar-parser-official-12.3.0.json, checked by __tests__/radar-parser-agreement.test.ts",
     "maxLines": 92

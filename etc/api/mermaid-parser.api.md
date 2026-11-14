@@ -586,6 +586,20 @@ export function isDarkBackground(bgHex: string): boolean;
 export function isExcludedDate(chart: Pick<GanttChart, 'includes' | 'excludes' | 'weekend' | 'dateFormat'>, ms: number): boolean;
 
 // @public
+export interface Ishikawa {
+    // (undocumented)
+    root?: IshikawaNode;
+}
+
+// @public
+export interface IshikawaNode {
+    // (undocumented)
+    children: IshikawaNode[];
+    // (undocumented)
+    text: string;
+}
+
+// @public
 export function isoWeekday(ms: number): number;
 
 // @public
@@ -835,6 +849,9 @@ export function parseGenericTypes(input: string): string;
 
 // @public
 export function parseGitGraph(text: string): GitGraph;
+
+// @public
+export function parseIshikawa(text: string): Ishikawa;
 
 // @public
 export function parseJourney(text: string): Journey;

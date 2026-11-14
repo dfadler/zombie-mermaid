@@ -179,3 +179,14 @@ describe('detectDiagramType – radar', () => {
     expect(detectDiagramType('radar')).toBe('flowchart')
   })
 })
+
+describe('detectDiagramType – ishikawa', () => {
+  it('detects ishikawa and ishikawa-beta in any case, as Mermaid does', () => {
+    expect(detectDiagramType('ishikawa')).toBe('ishikawa')
+    expect(detectDiagramType('  ishikawa-beta\n  Effect')).toBe('ishikawa')
+    expect(detectDiagramType('%% c\nIshikawa')).toBe('ishikawa')
+    expect(detectDiagramType('ISHIKAWA Effect')).toBe('ishikawa')
+    expect(detectDiagramType('ishikawas')).toBe('flowchart')
+    expect(detectDiagramType('fishbone')).toBe('flowchart')
+  })
+})

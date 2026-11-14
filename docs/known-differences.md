@@ -1115,3 +1115,29 @@ graphs in all three orientations, with and without `parallelCommits` and
   commit; otherwise each keeps its row.
 - **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
   session (no browser with those pages was available).
+
+## Ishikawa (fishbone) diagrams
+
+Checked against `mermaid@12.3.0` (`pnpm run ishikawa:oracle`; the pin, 12.2.0, is not
+the reference here because it is behind npm `latest`).
+
+- **Text widths.** Mermaid measures text in the browser; here the library's font
+  metrics are used, so every x that depends on a label (where the next pair of bones
+  starts, the left edge, the label boxes) and the frame width differ by a few percent.
+  Bone vectors, y positions, element order and all text agree exactly.
+- **Quirks of Mermaid's grammar not ported.** Its jison grammar rejects `ishikawa   `
+  (trailing spaces after the header), a header with no newline after it, and some blank
+  lines straight after the header (`ishikawa`, blank, `  Effect` is an error, while
+  `ishikawa`, blank, `%% c`, `  Effect` is not); this parser accepts all of them.
+- **Accessibility statements.** The front door strips `accTitle` / `accDescr` lines
+  before parsing; Mermaid's ishikawa grammar has no such statement and draws them as
+  causes.
+- **Not drawn.** The `handDrawn` look (rough.js strokes) and the `ishikawa.*` config keys
+  `diagramPadding` and `useMaxWidth`; `fontSize` from config is not read (16px).
+- **Labels.** Mermaid runs a label through DOMPurify and draws the resulting HTML as
+  text: `<x>` vanishes and `&` shows as `&amp;`. The same sanitizer stand-in as for
+  packet titles is used (`sanitize-title.ts`).
+- **ASCII.** Mermaid has no ASCII output; the fishbone layout is this library's own (see
+  [Supported diagrams](diagrams.md#ascii-ishikawa-diagrams)).
+- **Other renderers.** mermaid.live (mermaid 12.2.0) and GitHub: not checked in this
+  session (no browser with those pages was available).
