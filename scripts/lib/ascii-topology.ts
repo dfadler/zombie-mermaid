@@ -421,9 +421,23 @@ export function measureEr(
   return compareSpots(elk, grid)
 }
 
-/** Full measure for one flowchart/state/ER source: grid versus ELK. */
-export function measureSample(source: string, misses?: string[]): Counts {
+/** `--misses` output: the sample's title, then each edge end whose face differs from ELK's. */
+export const missLines = (
+  title: string,
+  misses: string[],
+  enabled: boolean,
+): string[] =>
+  enabled && misses.length > 0
+    ? [`  ${title}`, ...misses.map((m) => `    ${m}`)]
+    : []
+
+/**
+ * Full measure for one flowchart/state/ER source: grid versus ELK. With a
+ * `title` and `--misses` on the command line it lists the face misses too.
+ */
+export function measureSample(source: string, title = ''): Counts {
   if (isEr(source)) return measureEr(source)
+  const misses: string[] = []
   const parsed = parseMermaid(source)
   const { spots, edges, direction, arrowGlyphs } = readGrid(source)
   // The layout the ASCII provider takes its hints from (see `asciiLayoutProvider`).
@@ -447,11 +461,11 @@ export function measureSample(source: string, misses?: string[]): Counts {
     }
   }
   const c = compareSpots(elk, spots)
+  const faces = compareFaces(edges, hints, misses)
+  const enabled = process.argv.includes('--misses')
+  for (const l of missLines(title, misses, enabled)) console.log(l)
   return addCounts(
-    addCounts(
-      addCounts(c, compareFaces(edges, hints, misses)),
-      compareLoops(edges),
-    ),
+    addCounts(addCounts(c, faces), compareLoops(edges)),
     compareEnds(edges, hints, arrowGlyphs),
   )
 }
