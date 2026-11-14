@@ -85,6 +85,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   requirement: 'Requirement',
   block: 'Block',
   treemap: 'Treemap',
+  ishikawa: 'Ishikawa',
 }
 
 describe('EditorPage meta description', () => {

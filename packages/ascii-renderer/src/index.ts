@@ -23,6 +23,7 @@
 //   - Block diagrams (block) — a grid of boxed cells, groups as larger boxes (see block.ts)
 //   - Sankey diagrams (sankey-beta) — each source with a bar per outgoing flow (see sankey.ts)
 //   - Requirement diagrams (requirementDiagram) — boxes and labelled lines (see requirement.ts)
+//   - Ishikawa diagrams (ishikawa) — a fishbone: causes slanting onto a spine (see ishikawa.ts)
 //
 // Usage:
 //   import { renderMermaidASCII } from 'zombie-mermaid'

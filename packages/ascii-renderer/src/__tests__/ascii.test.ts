@@ -213,7 +213,7 @@ describe('Diagonal validation', () => {
       const { mermaid, paddingX, paddingY } = parseTestCase(content)
       // Diamond `{}` and circle `(())` nodes draw their own diagonals (#2164);
       // this checks that edges stay orthogonal.
-      if (/\{|\(\(/.test(mermaid)) continue
+      if (/\{|\(\(/.test(mermaid) || /^\s*ishikawa/m.test(mermaid)) continue
       const output = renderMermaidASCII(mermaid, {
         useAscii: true,
         boxBorderPadding: paddingX,
@@ -235,7 +235,7 @@ describe('Diagonal validation', () => {
       const { mermaid, paddingX, paddingY } = parseTestCase(content)
       // Diamond `{}` and circle `(())` nodes draw their own diagonals (#2164);
       // this checks that edges stay orthogonal.
-      if (/\{|\(\(/.test(mermaid)) continue
+      if (/\{|\(\(/.test(mermaid) || /^\s*ishikawa/m.test(mermaid)) continue
       const output = renderMermaidASCII(mermaid, {
         useAscii: false,
         boxBorderPadding: paddingX,
