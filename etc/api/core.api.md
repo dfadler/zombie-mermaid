@@ -209,7 +209,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "sankey", "requirement", "usecase", "block", "treemap", "ishikawa"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "sankey", "requirement", "eventmodeling", "usecase", "block", "treemap", "ishikawa"];
 
 // @public
 export interface DiagramColors {

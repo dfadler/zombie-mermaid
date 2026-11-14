@@ -66,6 +66,10 @@ const diagrams: Record<string, string> = {
   Done
     b[Ship it]`,
 
+  eventmodeling: `eventmodeling
+  tf 01 ui Cart
+  tf 02 cmd AddItem
+  tf 03 evt ItemAdded`,
   block: `block-beta
   columns 2
   a["One"] b("Two")`,

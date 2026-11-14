@@ -91,6 +91,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   ishikawa: 'ishikawa\n  Effect\n    Cause\n      Sub cause',
   requirement:
     'requirementDiagram\n  requirement r {\n    id: 1\n  }\n  element e {\n  }\n  e - satisfies -> r',
+  eventmodeling: 'eventmodeling\n  tf 01 ui Cart\n  tf 02 cmd Add',
 }
 
 /**

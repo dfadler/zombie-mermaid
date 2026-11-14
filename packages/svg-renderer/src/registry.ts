@@ -62,6 +62,7 @@ import {
   parseQuadrantChart,
   parseGantt,
   parseTimeline,
+  parseEventModeling,
   parseGitGraph,
   parsePacket,
   parseIshikawa,
@@ -114,6 +115,8 @@ import type {
   PositionedSankey,
   RequirementDiagram,
   PositionedRequirementDiagram,
+  EventModeling,
+  PositionedEventModeling,
   Treemap,
   PositionedTreemap,
 } from '@zombie-mermaid/mermaid-parser'
@@ -139,6 +142,8 @@ import { layoutTimeline } from './timeline/layout.ts'
 import { layoutJourney } from './journey/layout.ts'
 import { renderJourneySvg } from './journey/renderer.ts'
 import { renderTimelineSvg } from './timeline/renderer.ts'
+import { layoutEventModeling } from './eventmodeling/layout.ts'
+import { renderEventModelingSvg } from './eventmodeling/renderer.ts'
 import { layoutGitGraph } from './gitgraph/layout.ts'
 import { renderGitGraphSvg } from './gitgraph/renderer.ts'
 import { layoutPacket } from './packet/layout.ts'
@@ -815,6 +820,28 @@ const sankeyModule: DiagramModule<Sankey, PositionedSankey> = {
   },
 }
 
+/** Event modeling diagrams parse from the raw `text`, then lay out to Mermaid's fixed geometry. */
+const eventModelingModule: DiagramModule<
+  EventModeling,
+  PositionedEventModeling
+> = {
+  type: 'eventmodeling',
+  parse: (_lines, text) => parseEventModeling(text),
+  layoutForSvg: (em) => layoutEventModeling(em),
+  renderSvg(positioned, ctx) {
+    return renderEventModelingSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
 /**
  * Treemaps parse from the raw `text` (Mermaid's lexer has no `;` statement
  * separator), then lay out with a port of d3-hierarchy's squarified treemap.
@@ -895,6 +922,7 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   mindmap: mindmapModule,
   gantt: ganttModule,
   timeline: timelineModule,
+  eventmodeling: eventModelingModule,
   packet: packetModule,
   radar: radarModule,
   journey: journeyModule,
