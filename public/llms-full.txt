@@ -2125,7 +2125,7 @@ line, a name that is both an actor and a use case is an error, and a boundary ca
 Not supported yet, each an error saying so: `@{ ... }` metadata (actor `type`/`icon`/`business`,
 use case `business`), `<<stereotype>>`, `:::class`, `classDef`/`class`/`style`, `json` nodes,
 `--o`/`--x` markers, `id@` edge ids and markdown strings (tracked in
-[#2819](https://github.com/dfadler/zombie-mermaid/issues/2819) and its sub-issues). The SVG
+[#3131](https://github.com/dfadler/zombie-mermaid/issues/3131)). The SVG
 uses this library's theme colours, not Mermaid's purple and yellow.
 
 ASCII draws an actor as a box holding a three-line stick figure over its name, a use case as
