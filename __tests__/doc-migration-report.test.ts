@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { issueRefs, main, report } from '../scripts/doc-migration-report'
+import {
+  issueRefs,
+  main,
+  report,
+  statusLine,
+} from '../scripts/doc-migration-report'
 
 describe('doc-migration-report', () => {
   it('reads issue numbers from the text and from the file name', () => {
@@ -37,5 +42,10 @@ describe('doc-migration-report', () => {
     expect(() => main(['--max-lines', 'x'], () => {})).toThrow(
       '--max-lines needs a number',
     )
+  })
+
+  it('reads the Status line, or nothing when a doc has none', () => {
+    expect(statusLine('# T\n\nStatus: implemented\n')).toBe('implemented')
+    expect(statusLine('# T\n\nNo status here')).toBe('')
   })
 })

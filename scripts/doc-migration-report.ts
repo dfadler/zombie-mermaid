@@ -28,6 +28,11 @@ export function issueRefs(name: string, text: string): number[] {
   return [...found].sort((a, b) => a - b)
 }
 
+/** The first 40 characters of the doc's `Status:` line, or an empty string. */
+export function statusLine(text: string): string {
+  return /^Status:\s*(.+)$/m.exec(text)?.[1].slice(0, 40) ?? ''
+}
+
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
     const p = join(dir, f)
@@ -57,7 +62,7 @@ export function report(maxLines: number, all: boolean): DocRow[] {
   return DIRS.flatMap(files)
     .map((path): DocRow => {
       const text = readFileSync(path, 'utf8')
-      const status = /^Status:\s*(.+)$/m.exec(text)?.[1].slice(0, 40) ?? ''
+      const status = statusLine(text)
       return {
         path,
         lines: text.split('\n').length,
@@ -90,5 +95,7 @@ export function main(args: string[], out: (line: string) => void): void {
   out(`\n${rows.length} doc(s)${all ? '' : ` over ${maxLines} lines`}.`)
 }
 
+// Entry point: run only when executed directly, never when a test imports the module.
+/* v8 ignore next 3 */
 if (process.argv[1]?.endsWith('doc-migration-report.ts'))
   main(process.argv.slice(2), console.log)
