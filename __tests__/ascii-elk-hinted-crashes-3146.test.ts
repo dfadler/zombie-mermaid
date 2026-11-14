@@ -11,7 +11,11 @@
  *    the face-lengthening step read the hint of an edge that had none.
  */
 import { describe, expect, it } from 'vitest'
-import { renderMermaidASCII as render } from '../packages/ascii-renderer/src/index.ts'
+import {
+  getAsciiLayout,
+  registerAsciiLayout,
+  renderMermaidASCII as render,
+} from '../packages/ascii-renderer/src/index.ts'
 // The root entry registers the ELK layout provider (as the CLI does).
 import '../src/index.ts'
 import { renderMermaidSVG } from '../packages/svg-renderer/src/index.ts'
@@ -50,6 +54,23 @@ const THROW = `flowchart BT
 const draw = (src: string, useAscii = false): string =>
   render(src, { colorMode: 'none', useAscii })
 
+const elk = getAsciiLayout()
+
+/**
+ * The bare grid, as with no provider registered. The ELK-hinted ASCII of the
+ * first source differs by a few strokes between macOS and the Linux CI runner
+ * (the SVG from the same layout does not), so the goldens pin the grid and the
+ * ELK-registered renders are checked structurally above.
+ */
+const drawGrid = (src: string, useAscii = false): string => {
+  registerAsciiLayout(undefined)
+  try {
+    return draw(src, useAscii)
+  } finally {
+    registerAsciiLayout(elk)
+  }
+}
+
 const rectangular = (out: string): boolean =>
   new Set(out.split('\n').map((l) => [...l].length)).size === 1
 
@@ -78,8 +99,8 @@ describe('ELK-hinted ASCII crashes (#3146)', () => {
       ['throw', THROW],
     ] as const) {
       expect(renderMermaidSVG(src)).toMatchSnapshot(`${name}-svg`)
-      expect(draw(src)).toMatchSnapshot(`${name}-ascii`)
-      expect(draw(src, true)).toMatchSnapshot(`${name}-ascii-only`)
+      expect(drawGrid(src)).toMatchSnapshot(`${name}-ascii`)
+      expect(drawGrid(src, true)).toMatchSnapshot(`${name}-ascii-only`)
     }
   })
 })
