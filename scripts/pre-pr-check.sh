@@ -20,6 +20,8 @@ Warns about likely PR-process misses, from the diff of HEAD against REF
 (default origin/main):
   - ASCII-renderer paths changed, but the PR body has no image (real-terminal
     screenshot flow: verify-ascii-terminal skill)
+  - rendering paths changed, but the PR body has no \`\`\`mermaid block (the
+    Visual verification section: pr-visual-verification skill)
   - published code changed with no .changeset/*.md
   - a releasing changeset (names a package) on a PR that touches no published code
   - a docs/research/ file added (findings belong on the issue, #1938)
@@ -78,7 +80,7 @@ if [ "$hook" -eq 1 ]; then
   body="$cmd" # inline --body text is part of the command itself
 fi
 if [ -n "$body_file" ] && [ -r "$body_file" ]; then
-  body="$body$(cat "$body_file")"
+  body="$body"$'\n'"$(cat "$body_file")" # newline: the file's first line must start a line, for the fence check
 fi
 
 top="$(git rev-parse --show-toplevel 2>/dev/null)" || exit "$EXIT_OK"
@@ -102,6 +104,12 @@ if has '^\.changeset/.+\.md$'; then has_changeset=1; fi
 if has '^(packages/ascii-renderer/|packages/site/ascii-html\.ts|src/cli\.ts|scripts/visual-diff\.ts)'; then
   printf '%s' "$body" | grep -Eq '!\[|user-attachments|<img' ||
     warnings+=("ASCII output paths changed but the PR body has no screenshot. Use the verify-ascii-terminal skill (real-terminal capture, never the Playwright/HTML mockup) and paste the mermaid source under the Visual verification heading.")
+fi
+# Anything that can change a render needs the full "Visual verification" section
+# (pr-visual-verification skill): a ```mermaid block GitHub renders, plus SVG/ASCII images.
+if printf '%s\n' "$files" | grep -E '^(src|packages/(ascii-renderer|svg-renderer|core|ascii-layout|elk-layout|mermaid-parser)/src|demo)/|^packages/site/ascii-html\.ts$|^scripts/visual-diff\.ts$' | grep -Ev '(__tests__|\.test\.)' | grep -q .; then
+  printf '%s' "$body" | grep -Eiq '^[[:space:]]*(```|~~~)[[:space:]]*mermaid|visual verification.*N/A: ' ||
+    warnings+=("Rendering paths changed but the PR body has no \`\`\`mermaid block for GitHub to render. Run the pr-visual-verification skill and fill the Visual verification section (or write N/A: <reason>).")
 fi
 if [ "$has_code" -eq 1 ] && [ "$has_changeset" -eq 0 ]; then
   warnings+=("Published code changed but no .changeset/*.md is added (see CONTRIBUTING.md Changesets; never bump versions or edit CHANGELOG).")
