@@ -189,18 +189,19 @@ export function parseEventModeling(text: string): EventModeling {
     }
     if (take(/gwt(?!\w)/y) !== undefined) {
       need(FRAME_ID, 'a frame number')
-      const statements = (word: string): void => {
-        need(new RegExp(`${word}(?!\\w)`, 'y'), `"${word}"`)
+      const statements = (keyword: RegExp, word: string): void => {
+        need(keyword, `"${word}"`)
         do {
           need(ENTITY_TYPE, 'ui, pcr, cmd, rmo or evt')
           need(NAME, 'a name')
           skip()
         } while (ENTITY_TYPE_AHEAD.test(src.slice(pos, pos + 12)))
       }
-      statements('given')
+      statements(/given(?!\w)/y, 'given')
       skip()
-      if (/^when(?!\w)/.test(src.slice(pos, pos + 5))) statements('when')
-      statements('then')
+      if (/^when(?!\w)/.test(src.slice(pos, pos + 5)))
+        statements(/when(?!\w)/y, 'when')
+      statements(/then(?!\w)/y, 'then')
       continue
     }
     fail(`Unexpected "${near()}"`)
