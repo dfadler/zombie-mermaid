@@ -38,6 +38,7 @@ export const DIAGRAM_TYPES = [
   'sankey',
   'requirement',
   'usecase',
+  'block',
   'wardley',
 ] as const
 
@@ -94,6 +95,8 @@ export function detectDiagramType(text: string): DiagramType {
 
   // Case-sensitive: Mermaid's detector is `/^\s*usecase-beta(?:\s|$)/`.
   if (/^usecase-beta(?:\s|$)/.test(header)) return 'usecase'
+  // Case-sensitive: Mermaid's detector is `/^\s*block(-beta)?/`.
+  if (/^block(?:-beta)?(?:\s|$)/.test(header)) return 'block'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'

@@ -295,6 +295,11 @@
     "maxLines": 50
   },
   {
+    "file": "scripts/block-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/block-agreement.ts",
+    "maxLines": 48
+  },
+  {
     "file": "scripts/timeline-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/timeline-agreement.ts",
     "maxLines": 60
@@ -407,6 +412,11 @@
   {
     "file": "scripts/samples-oracle.ts",
     "reason": "audit harness: needs headless Chromium plus a mermaid@latest install outside the repo, so it only runs as a CLI (rerun command in its header, #2678)",
+    "maxLines": 150
+  },
+  {
+    "file": "scripts/gallery-verdicts.ts",
+    "reason": "audit harness: needs headless Chromium and real mermaid, so it only runs as a CLI (rerun command in its header, #2678)",
     "maxLines": 150
   },
   {

@@ -39,10 +39,10 @@ describe('ASCII port offsets (#1350)', () => {
     const shifts = portShifts(g)
     // B --> A arrives at A's bottom port, where A --> B and A --> D leave.
     expect(shifts.get(edge(g, 'B', 'A'))?.end).toBeLessThan(0)
-    // The leaving edges share one trunk (A --> D is bundled, so fixed), and
-    // keep the routed column rather than moving individually.
-    expect(shifts.has(edge(g, 'A', 'B'))).toBe(false)
-    expect(shifts.has(edge(g, 'A', 'D'))).toBe(false)
+    // A --> D and B --> D land on cells of their own (#2678), not one trunk.
+    expect(shifts.get(edge(g, 'A', 'D'))?.end).not.toBe(
+      shifts.get(edge(g, 'B', 'D'))?.end,
+    )
   })
 
   it('draws the up arrow and the outgoing trunk in different columns', () => {
