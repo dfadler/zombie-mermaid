@@ -4,6 +4,7 @@
 
 ```ts
 
+import { BlockDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ClassRenderOptions } from '@zombie-mermaid/core';
 import { CurveStyle } from '@zombie-mermaid/core';
@@ -28,6 +29,7 @@ import { niceTickValues } from '@zombie-mermaid/core';
 import { Packet } from '@zombie-mermaid/mermaid-parser';
 import { PieChart } from '@zombie-mermaid/mermaid-parser';
 import { Point } from '@zombie-mermaid/core';
+import { PositionedBlockDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGitGraph } from '@zombie-mermaid/mermaid-parser';
@@ -75,6 +77,18 @@ export function baseElkLayoutOptions(spec: {
     layerSpacing: number;
     padding: number | ElkPaddingSides;
 }): LayoutOptions;
+
+// @public
+export const BLOCK: {
+    readonly padding: 8;
+    readonly lineHeight: 24;
+    readonly labelPaddingX: 32;
+    readonly roundPaddingX: 16;
+    readonly labelPaddingY: 16;
+    readonly fontSize: 16;
+    readonly margin: 5;
+    readonly cornerRadius: 5;
+};
 
 // @public
 export function boxLabelHeight(labelFontSize: number): number;
@@ -269,6 +283,9 @@ export const KANBAN: {
     readonly viewBoxPadding: 10;
     readonly cornerRadius: 5;
 };
+
+// @public
+export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram;
 
 export { LayoutCache }
 
@@ -474,6 +491,9 @@ export const RADAR: {
 
 // @public
 export function registerElk(ctor: ElkConstructor): void;
+
+// @public
+export function renderBlockSvg(diagram: PositionedBlockDiagram, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderClassSvg(diagram: PositionedClassDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, linksEnabled?: boolean, emit?: SvgEmitOptions): string;

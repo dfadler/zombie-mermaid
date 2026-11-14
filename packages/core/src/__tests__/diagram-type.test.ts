@@ -106,6 +106,16 @@ describe('detectDiagramType – sankey', () => {
   })
 })
 
+describe('detectDiagramType – block', () => {
+  it('detects block and block-beta, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('block-beta\ncolumns 2')).toBe('block')
+    expect(detectDiagramType('block\n  a b')).toBe('block')
+    expect(detectDiagramType('%% c\n  block-beta')).toBe('block')
+    expect(detectDiagramType('Block-beta')).toBe('flowchart')
+    expect(detectDiagramType('blocks')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – requirement', () => {
   it('detects requirement diagrams, case-sensitively', () => {
     expect(detectDiagramType('requirementDiagram')).toBe('requirement')

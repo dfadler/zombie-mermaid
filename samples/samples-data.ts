@@ -3546,6 +3546,71 @@ kanban
   },
 
   // ══════════════════════════════════════════════════════════════════════════
+  //  BLOCK DIAGRAMS
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/block_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Block: Basic',
+    category: 'Block',
+    gallery: true,
+    description:
+      'A grid: `columns 3` sets how many blocks fit on a row, `b:2` spans two columns, and every cell takes the size of the widest block.',
+    source: `block-beta
+  columns 3
+  a["Alpha"] b:2 c
+  d e f`,
+  },
+  {
+    title: 'Block: Groups And Spaces',
+    category: 'Block',
+    gallery: true,
+    description:
+      '`block:id ... end` nests a grid with its own `columns` inside a cell, and `space` leaves a cell empty.',
+    source: `block-beta
+  columns 3
+  a["Alpha long label here"] b:2 c
+  d e f
+  block:grp:2
+    columns 2
+    x y z
+  end
+  space g`,
+  },
+  {
+    title: 'Block: Round Blocks And Line Breaks',
+    category: 'Block',
+    description:
+      '`id("text")` draws rounded corners and `<br>` breaks a label, which makes the whole row taller.',
+    source: `block-beta
+  columns 3
+  a("rounded") b["two<br/>lines"] c("two words long")`,
+  },
+  {
+    title: 'Block: Anonymous Group',
+    category: 'Block',
+    description:
+      'A bare `block ... end` is a group with no id; with no `columns` it lays its blocks in one row.',
+    source: `block
+  A
+  block
+    B C
+  end
+  block:q
+    D
+  end`,
+  },
+  {
+    title: 'Block: Columns Auto',
+    category: 'Block',
+    description: '`columns auto` (the default) puts every block on one row.',
+    source: `block-beta
+  columns auto
+  a b c d e`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
   //  USER JOURNEYS
   //  Each source has an ASCII golden of the same shape under
   //  packages/ascii-renderer/src/__tests__/testdata/*/journey_*.txt.

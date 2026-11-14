@@ -85,6 +85,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   journey: 'journey\n  title Day\n  section S\n    Tea: 5: Me',
   kanban: 'kanban\n  Todo\n    a[One]',
   sankey: 'sankey-beta\n  A,B,1',
+  block: 'block-beta\n  columns 2\n  a b',
   requirement:
     'requirementDiagram\n  requirement r {\n    id: 1\n  }\n  element e {\n  }\n  e - satisfies -> r',
 }

@@ -53,6 +53,7 @@ describe('list_diagram_types', () => {
       kanban: 'kanban\n  A\n    b',
       sankey: 'sankey-beta\nA,B,1',
       requirement: 'requirementDiagram\nrequirement r {\n}',
+      block: 'block-beta\ncolumns 2\na b',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

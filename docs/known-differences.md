@@ -956,6 +956,24 @@ wrapped line counts, priority bars and the drawing size agree on every gallery s
 - **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
 - **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
 
+## Block diagrams
+
+Checked against mermaid 12.3.0 with `pnpm run block:oracle`: every block's rectangle, its corner
+radius and the drawing size agree on every gallery sample.
+
+- **Text widths.** Mermaid measures labels in the browser; this library sums Trebuchet MS advances
+  and ignores kerning, so a label can differ by about a pixel (`A label` measures 0.9px wider
+  here). The gallery samples avoid such labels.
+- **Palette.** Blocks use the theme's node fill and border; a group is a light mix of the border
+  colour into the background. Mermaid uses its own purple and yellow.
+- **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
+- **Not drawn yet.** Links, the other shapes, styling and markdown strings: see
+  [#3105](https://github.com/dfadler/zombie-mermaid/issues/3105),
+  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106),
+  [#3107](https://github.com/dfadler/zombie-mermaid/issues/3107).
+- **`~~~`.** Mermaid's lexer reads `~~~` as a block id (its id rule comes before the invisible-link rule); so does this parser.
+- **ASCII.** Mermaid has no ASCII output; the box grid is this library's own.
+
 ## User journeys
 
 Checked against mermaid 12.3.0 (`mermaid.render` in headless Chromium): viewBox, section

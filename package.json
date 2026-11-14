@@ -194,6 +194,7 @@
     "radar:oracle": "tsx scripts/radar-oracle.ts",
     "radar:parser-fixture": "tsx scripts/radar-parser-fixture.ts",
     "kanban:oracle": "tsx scripts/kanban-oracle.ts",
+    "block:oracle": "tsx scripts/block-oracle.ts",
     "requirement:oracle": "tsx scripts/requirement-oracle.ts",
     "pie:oracle": "tsx scripts/pie-oracle.ts",
     "c4:oracle": "tsx scripts/c4-oracle.ts",

@@ -188,6 +188,27 @@ export interface Block {
     type: 'loop' | 'alt' | 'opt' | 'par' | 'critical' | 'break' | 'rect';
 }
 
+// @public
+export interface BlockDiagram {
+    root: BlockNode;
+}
+
+// @public
+export interface BlockNode {
+    children: BlockNode[];
+    columns?: number;
+    id: string;
+    label: string;
+    // (undocumented)
+    shape: BlockShape;
+    // (undocumented)
+    type: 'node' | 'space' | 'composite';
+    widthInColumns: number;
+}
+
+// @public
+export type BlockShape = 'square' | 'round';
+
 // @public (undocumented)
 export interface C4Boundary {
     // (undocumented)
@@ -807,6 +828,9 @@ export function packGanttSection(tasks: GanttTask[], offset: number, orders: Map
 export function parseArchitecture(lines: Statement[]): ArchitectureDiagram;
 
 // @public
+export function parseBlock(text: string): BlockDiagram;
+
+// @public
 export function parseBoxHeader(header: string): {
     color?: string;
     label: string;
@@ -985,6 +1009,44 @@ export interface PositionedBlock {
     x: number;
     // (undocumented)
     y: number;
+}
+
+// @public
+export interface PositionedBlockDiagram {
+    nodes: PositionedBlockNode[];
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedBlockNode {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    shape: BlockShape;
+    // (undocumented)
+    text: PositionedBlockText;
+    // (undocumented)
+    type: 'node' | 'composite';
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedBlockText {
+    // (undocumented)
+    lines: string[];
+    width: number;
 }
 
 // @public (undocumented)
