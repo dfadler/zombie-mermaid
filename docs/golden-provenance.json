@@ -390,6 +390,16 @@
     },
     {
       "paths": [
+        "__tests__/__snapshots__/ascii-lane-sibling-label-3103.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-lane-sibling-label-3103.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 draws the same six edges and labels a and 0; the ELK-hinted ASCII entry has the same topology (checked by eye), while these snapshots are the plain-grid and SVG output and only pin this renderer"
+    },
+    {
+      "paths": [
         "__tests__/__snapshots__/ascii-arrowless-cluster-entry-3043.test.ts.snap"
       ],
       "class": "b",
