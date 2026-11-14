@@ -1,0 +1,22 @@
+{
+  "general-112": {
+    "expect": "differs||lt;&amp;&gt",
+    "note": "the known pie entity false positive of the word check (dfadler/zombie-mermaid#3069)"
+  },
+  "general-186": {
+    "expect": "differs|pneumonoultramicroscopicsilic,ovolcanoconiosis_extra|Antidisestablishmentarianism,pneumonoultramicroscopicsilic,ovolcanoconiosis_extra",
+    "note": "a word wider than the frame is split with a hyphen at a different point than mermaid, by design (dfadler/zombie-mermaid#2773)"
+  },
+  "general-196": {
+    "expect": "not-renderable||",
+    "note": "mermaid 12.3.0 throws in headless Chromium, so there is nothing to compare (dfadler/zombie-mermaid#3069)"
+  },
+  "general-237": {
+    "expect": "differs||URG,ACK",
+    "note": "packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)"
+  },
+  "general-242": {
+    "expect": "differs||quotes",
+    "note": "packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)"
+  }
+}
