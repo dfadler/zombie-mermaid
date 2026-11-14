@@ -389,6 +389,14 @@
       "verdict": "with ELK hints every edge end is on mermaid's face (topology gate 14/14, 16/16, 22/22 in all four directions); the plain-grid and SVG snapshots only pin this renderer's output"
     },
     {
+      "paths": ["__tests__/__snapshots__/ascii-label-after-slide.test.ts.snap"],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-label-after-slide.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 draws all three labels (STX, n82, C5) on three parallel edges; the ASCII snapshot draws the same three, checked by the test's contains assertions; the snapshots pin this renderer's output only"
+    },
+    {
       "paths": [
         "__tests__/__snapshots__/ascii-lane-sibling-label-3103.test.ts.snap"
       ],
