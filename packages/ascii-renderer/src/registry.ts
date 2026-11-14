@@ -52,6 +52,7 @@ import { renderJourneyAscii } from './journey.ts'
 import { renderKanbanAscii } from './kanban.ts'
 import { renderSankeyAscii } from './sankey.ts'
 import { renderRequirementAscii } from './requirement.ts'
+import { renderWardleyAscii } from './wardley.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -134,4 +135,6 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderSankeyAscii(text, config, colorMode, theme),
   requirement: (text, config, colorMode, theme, extras) =>
     renderRequirementAscii(text, config, colorMode, theme, extras),
+  wardley: (text, config, colorMode, theme) =>
+    renderWardleyAscii(text, config, colorMode, theme),
 }

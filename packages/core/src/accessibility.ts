@@ -35,6 +35,7 @@ const OWN_TITLE: Partial<Record<DiagramType, RegExp>> = {
   gitgraph: /^[ \t]*title\b/m,
   packet: /^[ \t]*title\b/m,
   radar: /^[ \t]*title\b/m,
+  wardley: /^[ \t]*title\b/m,
   // Mermaid's journey keywords are case-insensitive (`TITLE T` is a title).
   journey: /^[ \t]*title\b/im,
   sequence: /^[ \t]*title\b/m,

@@ -37,6 +37,7 @@ export const DIAGRAM_TYPES = [
   'journey',
   'sankey',
   'requirement',
+  'wardley',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -82,6 +83,9 @@ export function detectDiagramType(text: string): DiagramType {
   if (/^journey(?:\s|#|$)/.test(header)) return 'journey'
   // Case-sensitive too: Mermaid's detector is `/^\s*sankey(-beta)?/`.
   if (/^sankey(?:-beta)?(?:\s|$)/.test(header)) return 'sankey'
+
+  // Case-sensitive: Mermaid's detector is `/^\s*wardley-beta/`.
+  if (/^wardley-beta/.test(header)) return 'wardley'
 
   // Case-sensitive: Mermaid's detector is `/^\s*requirement(Diagram)?/`, its
   // grammar keyword `requirementDiagram\b`.

@@ -81,6 +81,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   journey: 'User Journey',
   kanban: 'Kanban',
   sankey: 'Sankey',
+  wardley: 'Wardley',
   requirement: 'Requirement',
 }
 

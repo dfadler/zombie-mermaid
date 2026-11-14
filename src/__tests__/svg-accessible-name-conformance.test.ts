@@ -87,6 +87,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   sankey: 'sankey-beta\n  A,B,1',
   requirement:
     'requirementDiagram\n  requirement r {\n    id: 1\n  }\n  element e {\n  }\n  e - satisfies -> r',
+  wardley: 'wardley-beta\n  title Map\n  component A [0.5, 0.5]',
 }
 
 /**

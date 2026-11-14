@@ -870,6 +870,29 @@ the values, markup in labels).
   differ). GitHub's ` ```mermaid ` block was not checked: it needs a published page.
 - **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
 
+## Wardley maps
+
+Checked against mermaid 12.3.0 with `pnpm run wardley:oracle` (the repo's pin, `mermaid` in `package.json`, is 12.3.0): the viewBox and every line, circle, rectangle, path and text agree to 0.01px, in drawing
+order, on the six gallery samples and twenty-eight edge cases (percentages above 1, a value of exactly 1,
+custom stages with and without boundaries, quoted names, label offsets, every inertia and flow
+form, links to unknown names, repeated evolves and components, pipelines, annotations, notes,
+accelerators, comments, front matter).
+
+- **Palette.** Strokes and text are the theme's `--fg` and `--_text`; the evolve arrows
+  (mermaid's `#dc3545`) use the theme accent; the build, buy and outsource overlays (mermaid's
+  `#eee`, `#ccc`, `#666`) are mixes of `--fg` into `--bg`. Mermaid draws its default theme's colours.
+- **Rounding.** Coordinates are written to two decimals; mermaid writes the full float.
+- **Annotations box.** Mermaid sizes it from the text's measured width in the browser; this
+  library estimates the width, so the box can differ by a few percent (and where it is clamped
+  against the right edge, move with it).
+- **Not read.** The `wardley-beta` config keys (`width`, `height`, `padding`, `nodeRadius`,
+  `showGrid`, ...) and `themeVariables.wardley` do not change the drawing; mermaid's defaults are
+  used, and `size [w, h]` in the source is honoured. `showGrid` defaults to off in mermaid too.
+- **Degenerate links.** Two nodes on one spot draw no link; mermaid writes `NaN` coordinates.
+- **Not checked.** mermaid.live (12.2.0 today) and a GitHub block were not compared; both are
+  older than 12.3.0, so the pin's agreement with 12.3.0 is the reference.
+- **ASCII.** Mermaid has no ASCII output; the grid layout is this library's own.
+
 ## Sankey diagrams
 
 Checked against mermaid 12.3.0 (12.2.0, the pin, lays the samples out identically):

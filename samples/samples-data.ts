@@ -4057,4 +4057,132 @@ sankey-beta
 "Sales, EMEA",Other,10
 "Region ""North""",Total,30`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  WARDLEY MAPS (parity with mermaid 12.3.0, #2820)
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/wardley_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Wardley: Tea Shop',
+    category: 'Wardley',
+    gallery: true,
+    description:
+      'The classic tea shop map: anchors, components placed by visibility and evolution, links, an evolve arrow and label offsets.',
+    source: `wardley-beta
+  title Tea Shop
+  anchor Business [0.95, 0.63]
+  anchor Public [0.95, 0.78]
+  component Cup of Tea [0.79, 0.61] label [-85, 7]
+  component Cup [0.73, 0.78]
+  component Tea [0.63, 0.81]
+  component Hot Water [0.52, 0.80]
+  component Water [0.38, 0.82]
+  component Kettle [0.43, 0.35] label [-57, 4]
+  evolve Kettle 0.62
+  component Power [0.10, 0.71] label [-27, 20]
+  Business -> Cup of Tea
+  Public -> Cup of Tea
+  Cup of Tea -> Cup
+  Cup of Tea -> Tea
+  Cup of Tea -> Hot Water
+  Hot Water -> Water
+  Hot Water -> Kettle
+  Kettle -> Power`,
+  },
+  {
+    title: 'Wardley: Pipeline',
+    category: 'Wardley',
+    description:
+      'A pipeline draws its components in a box on the parent’s row, joined left to right; the parent square moves above the box.',
+    source: `wardley-beta
+  title Compute
+  size [900, 500]
+  anchor Customer [0.95, 0.5]
+  component Application [0.75, 0.55]
+  component Compute [0.45, 0.4]
+  Customer -> Application
+  Application -> Compute
+  pipeline Compute {
+    component Servers [0.25]
+    component Virtual Machines [0.55]
+    component Serverless [0.85]
+  }`,
+  },
+  {
+    title: 'Wardley: Links',
+    category: 'Wardley',
+    description:
+      'Flow arrows (+>, +<, +<>), dashed links, link labels after a semicolon and a link written between quoted names.',
+    source: `wardley-beta
+  anchor User [0.9, 0.5]
+  component Web [0.7, 0.55]
+  component API [0.55, 0.65]
+  component Queue [0.4, 0.45]
+  component Database [0.25, 0.8]
+  component Cache [0.4, 0.85]
+  User -> Web
+  Web +> API
+  API +< Queue
+  API +<> Database
+  API -.-> Cache; read-through
+  Queue --> Database; async writes
+  "Web" -> "Cache"`,
+  },
+  {
+    title: 'Wardley: Strategies and Inertia',
+    category: 'Wardley',
+    description:
+      'build, buy, outsource and market decorators draw overlays on the component; inertia adds a bar.',
+    source: `wardley-beta
+  title Sourcing
+  component In House [0.8, 0.3] (build)
+  component Vendor [0.65, 0.5] (buy)
+  component Contractor [0.5, 0.45] (outsource)
+  component Exchange [0.35, 0.7] (market)
+  component Legacy [0.2, 0.6] inertia
+  component Platform [0.2, 0.9] (buy) inertia
+  In House -> Vendor
+  Vendor -> Contractor
+  Contractor -> Exchange
+  Exchange -> Legacy`,
+  },
+  {
+    title: 'Wardley: Annotations and Notes',
+    category: 'Wardley',
+    description:
+      'Numbered annotations with a text box, a free note, an accelerator and a deaccelerator arrow.',
+    source: `wardley-beta
+  title Market Forces
+  anchor Customer [0.92, 0.6]
+  component Product [0.7, 0.55]
+  component Platform [0.45, 0.7]
+  Customer -> Product
+  Product -> Platform
+  annotations [0.8, 0.05]
+  annotation 1,[0.7, 0.55] "Product is differentiating"
+  annotation 2,[0.45, 0.7] "Platform is a commodity"
+  note "Check the build or buy call" [0.3, 0.3]
+  accelerator Open Source [0.55, 0.2]
+  deaccelerator Lock-in [0.2, 0.55]`,
+  },
+  {
+    title: 'Wardley: Custom Evolution Axis',
+    category: 'Wardley',
+    description:
+      'evolution names the stages and @ sets where each one ends; a slash gives a stage a second name.',
+    source: `wardley-beta
+  title Practices
+  size [1000, 500]
+  evolution Novel@0.2 -> Emerging@0.4 -> Good@0.7 / Best -> Standard@1.0
+  anchor Team [0.9, 0.5]
+  component Standups [0.6, 0.55]
+  component Retros [0.4, 0.35]
+  component Pairing [0.3, 0.15]
+  Team -> Standups
+  Standups -> Retros
+  Retros -> Pairing
+  evolve Pairing 0.45`,
+  },
 ]

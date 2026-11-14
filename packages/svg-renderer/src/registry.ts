@@ -69,6 +69,7 @@ import {
   parseKanban,
   parseSankey,
   parseRequirementDiagram,
+  parseWardley,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -105,6 +106,7 @@ import type {
   PositionedSankey,
   RequirementDiagram,
   PositionedRequirementDiagram,
+  WardleyMap,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -141,6 +143,7 @@ import { layoutSankey } from './sankey/layout.ts'
 import { renderSankeySvg } from './sankey/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
+import { renderWardleySvg } from './wardley/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
 import { layoutArchitectureGrid } from './layout-engine/architecture-grid.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
@@ -753,6 +756,29 @@ const sankeyModule: DiagramModule<Sankey, PositionedSankey> = {
 }
 
 /**
+ * Wardley maps parse from the raw `text` (`;` starts a link label), and every
+ * element sits at a fixed percentage of the canvas, so there is no layout
+ * step: the parsed map is what the renderer draws.
+ */
+const wardleyModule: DiagramModule<WardleyMap, WardleyMap> = {
+  type: 'wardley',
+  parse: (_lines, text) => parseWardley(text),
+  layoutForSvg: (map) => map,
+  renderSvg(map, ctx) {
+    return renderWardleySvg(
+      map,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -792,4 +818,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   sankey: sankeyModule,
   requirement: requirementModule,
   gitgraph: gitgraphModule,
+  wardley: wardleyModule,
 }

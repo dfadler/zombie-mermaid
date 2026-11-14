@@ -1781,6 +1781,78 @@ Bio-conversion  310.78
   ASCII mode).
 - Bars use the theme accent. A cycle throws "circular link", as the SVG does.
 
+## Wardley maps
+
+`wardley-beta` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/wardley.html)
+and its renderer's geometry. `pnpm run wardley:oracle` compares the gallery samples and some
+edge cases with `mermaid@12.3.0`: the viewBox and every line, circle, rectangle, path and text
+agree to 0.01px (the width of the annotations box, which Mermaid measures in the browser,
+within 10%). The parser accepts and rejects the same 46 probe sources as Mermaid's own
+(`packages/mermaid-parser/src/__tests__/wardley-parser.test.ts`).
+
+```mermaid
+wardley-beta
+  title Tea Shop
+  anchor Business [0.95, 0.63]
+  anchor Public [0.95, 0.78]
+  component Cup of Tea [0.79, 0.61] label [-85, 7]
+  component Cup [0.73, 0.78]
+  component Tea [0.63, 0.81]
+  component Hot Water [0.52, 0.80]
+  component Water [0.38, 0.82]
+  component Kettle [0.43, 0.35] label [-57, 4]
+  evolve Kettle 0.62
+  component Power [0.10, 0.71] label [-27, 20]
+  Business -> Cup of Tea
+  Public -> Cup of Tea
+  Cup of Tea -> Cup
+  Cup of Tea -> Tea
+  Cup of Tea -> Hot Water
+  Hot Water -> Water
+  Hot Water -> Kettle
+  Kettle -> Power
+```
+
+Supported, one statement per line: `title`, `size [w, h]`, `evolution A@0.2 -> B@0.5 / C -> ...`,
+`anchor`, `component` (with `label [dx, dy]`, `(build)`, `(buy)`, `(outsource)`, `(market)` and
+`inertia`), links (`->`, `-->`, `-.->`, `>`, the flow ports `+>` `+<` `+<>` and `+'text'>` arrows,
+and a `; label`), `evolve`, `pipeline ... { component ... [evolution] }`, `note`, `annotations`,
+`annotation`, `accelerator`, `deaccelerator`, `%%` comments, `accTitle` and `accDescr`. As in
+Mermaid, a coordinate is a decimal (`0.5`, not `.5` or `50`), read as a fraction of the chart up
+to 1 and as a percentage above it, a bare keyword is not a name, a name starts with a letter
+or `_` (or is quoted), and `[visibility, evolution]` is the order of the two numbers.
+
+The SVG uses Mermaid's geometry: a 900 x 600 canvas (or `size`) with 48px padding, the stage
+labels under the evolution axis (the four default stages, or the `evolution` stages and their
+`@` boundaries), and every element projected from its percentages. Colours come from the theme.
+See [Known differences](known-differences.md#wardley-maps).
+
+### ASCII Wardley maps
+
+Mermaid has no text mode for Wardley maps, so the ASCII output is this library's own design:
+the same axes on a 72 x 22 character grid.
+
+```text
+                                Tea Shop
+
+Visibility
+│                  ┊                 ┊                ┊
+│                  ┊                 ┊    Business   Public
+│                  ┊                 ┊      ●╲Cup of Tea
+│                  ┊      ●╲Kettle┄┄┄┄┄┄┄┄┄┄┄▸        ┊    ● Water
+└──────────────────┴─────────────────┴────────────────┴──────────────────
+       Genesis         Custom Built        Product         Commodity  Evolution
+```
+
+- A component is `●` with its name, an anchor is its name alone, and `(buy)` and the other
+  strategies follow the name; `inertia` adds `┃`. A pipeline is a box round its components with
+  the parent `□` above it. Links are straight lines, dotted for `-.->`, with an arrowhead for a
+  flow; `evolve` is a dotted arrow towards the target.
+- Annotations are `(n)` marks, listed under the map when the diagram has an `annotations [x, y]`
+  line; accelerators and deaccelerators are `>>` and `<<` before their name.
+- `size`, `label [dx, dy]` offsets and the pipeline's dotted join are SVG only.
+- `accTitle` and `accDescr` are not printed.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1789,7 +1861,7 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
-| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
+| Tree view, Venn, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 | Block                                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)                              |
 
 ## Accessibility

@@ -873,6 +873,9 @@ export function parseSequenceDiagram(lines: Statement[], text?: string): Sequenc
 export function parseTimeline(text: string): Timeline;
 
 // @public
+export function parseWardley(text: string): WardleyMap;
+
+// @public
 export function parseXYChart(lines: Statement[], config?: XyChartInitConfig): XYChart;
 
 // @public
@@ -2381,6 +2384,133 @@ export function timeTicks(t0: number, t1: number, custom?: TickInterval, weekday
 export function toBlockType(value: string): Block['type'];
 
 export { toDirection }
+
+// @public
+export const WARDLEY_DEFAULT_STAGES: readonly ["Genesis", "Custom Built", "Product", "Commodity"];
+
+// @public (undocumented)
+export interface WardleyAnnotation {
+    // (undocumented)
+    number: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface WardleyArrow {
+    // (undocumented)
+    name: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export type WardleyFlow = 'forward' | 'backward' | 'bidirectional';
+
+// @public (undocumented)
+export interface WardleyLink {
+    // (undocumented)
+    dashed: boolean;
+    // (undocumented)
+    flow?: WardleyFlow;
+    // (undocumented)
+    label?: string;
+    source: string;
+    // (undocumented)
+    target: string;
+}
+
+// @public
+export interface WardleyMap {
+    // (undocumented)
+    accelerators: WardleyArrow[];
+    // (undocumented)
+    annotations: WardleyAnnotation[];
+    annotationsBox?: {
+        x: number;
+        y: number;
+    };
+    // (undocumented)
+    deaccelerators: WardleyArrow[];
+    // (undocumented)
+    links: WardleyLink[];
+    // (undocumented)
+    nodes: WardleyNode[];
+    // (undocumented)
+    notes: WardleyNote[];
+    // (undocumented)
+    pipelines: WardleyPipeline[];
+    size?: {
+        width: number;
+        height: number;
+    };
+    stageBoundaries?: number[];
+    stages?: string[];
+    title?: string;
+    // (undocumented)
+    trends: WardleyTrend[];
+}
+
+// @public (undocumented)
+export interface WardleyNode {
+    id: string;
+    // (undocumented)
+    inertia?: boolean;
+    isPipelineParent?: boolean;
+    // (undocumented)
+    kind: WardleyNodeKind;
+    // (undocumented)
+    label: string;
+    labelOffsetX?: number;
+    // (undocumented)
+    labelOffsetY?: number;
+    // (undocumented)
+    strategy?: WardleyStrategy;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export type WardleyNodeKind = 'anchor' | 'component' | 'pipeline-component';
+
+// @public (undocumented)
+export interface WardleyNote {
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface WardleyPipeline {
+    // (undocumented)
+    componentIds: string[];
+    // (undocumented)
+    nodeId: string;
+}
+
+// @public (undocumented)
+export type WardleyStrategy = 'build' | 'buy' | 'outsource' | 'market';
+
+// @public
+export interface WardleyTrend {
+    // (undocumented)
+    nodeId: string;
+    // (undocumented)
+    targetX: number;
+    // (undocumented)
+    targetY: number;
+}
 
 // @public
 export function weekdayName(ms: number): string;
