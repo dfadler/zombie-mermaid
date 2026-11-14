@@ -36,9 +36,12 @@ describe('self-loop face follows the frame direction (#2913)', () => {
       ['RL', 'top'],
       ['TB', 'left'],
       ['BT', 'left'],
-    ] as const)('frame direction %s draws the loop on the %s', (inner, want) => {
-      expect(face(frame(root, inner))).toBe(want)
-    })
+    ] as const)(
+      'frame direction %s draws the loop on the %s',
+      (inner, want) => {
+        expect(face(frame(root, inner))).toBe(want)
+      },
+    )
 
     it('keeps the diagram direction without a frame', () => {
       const want = root === 'LR' || root === 'RL' ? 'top' : 'left'
@@ -67,25 +70,11 @@ describe('self-loop face follows the frame direction (#2913)', () => {
     const [loop] = g.edges.filter((e) => e.source === 'b')
     expect(
       loop!.points.map((p) => [p.x - b.x, p.y - b.y].map(Math.round)),
-    ).toMatchInlineSnapshot(`
-      [
-        [
-          55,
-          0,
-        ],
-        [
-          55,
-          -20,
-        ],
-        [
-          97,
-          -20,
-        ],
-        [
-          97,
-          0,
-        ],
-      ]
-    `)
+    ).toEqual([
+      [55, 0],
+      [55, -20],
+      [97, -20],
+      [97, 0],
+    ])
   })
 })
