@@ -42,8 +42,8 @@ describe('use case oracle agreement (mermaid 12.3.0)', () => {
     const l = base()
     expect(l.boxes.map((b) => [b.id, b.kind, b.label])).toEqual([
       ['Shop', 'boundary', 'Shop'],
-      ['Customer', 'actor', 'Customer'],
       ['Admin', 'actor', 'Admin'],
+      ['Customer', 'actor', 'Customer'],
       ['Browse', 'usecase', 'Browse'],
       ['Checkout', 'usecase', 'Checkout'],
       ['Pay', 'usecase', 'Pay by card'],
