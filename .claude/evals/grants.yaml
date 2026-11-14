@@ -1,0 +1,8 @@
+schema_version: '1'
+grants:
+  research-findings-saves-bench-results-to-issue:
+    - 'Bash(./scripts/bench.sh)'
+    - 'Bash(./bin/gh *)'
+    - 'Write'
+  decision-doc-review-unprompted-on-doc-edit:
+    - 'Edit'

@@ -7,7 +7,7 @@ tags:
   - research-findings
   - trigger-boundary
   - quick
-  - pair:research-findings-fires-on-natural-measurement
+  - pair:research-findings-saves-bench-results-to-issue
 runs: 3
 
 execution:

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Fixture repo: a bench script, a docs/research directory like the real one, and a stub gh that
+# only echoes its arguments so any gh call lands in the trace without touching GitHub.
+set -euo pipefail
+mkdir -p bin scripts docs/research
+cat > bin/gh <<'STUB'
+#!/usr/bin/env bash
+echo "stub gh: $*"
+STUB
+chmod +x bin/gh
+cat > scripts/bench.sh <<'B'
+#!/usr/bin/env bash
+echo "nodes=50 ms=12"
+echo "nodes=200 ms=95"
+echo "nodes=800 ms=1900"
+echo "nodes=3200 ms=41000"
+B
+chmod +x scripts/bench.sh
+cat > docs/research/README.md <<'R'
+# docs/research
+
+Kept research docs live here.
+R

@@ -1,6 +1,6 @@
 # Should-fire: spike results for an issue. No delta expected from the Skill check alone; the regex graders carry the outcome.
 # good-reply: Post this as a comment on #1234: conclusion first, then <details><summary>Raw timings</summary> 800 nodes 1.9 s, 3200 nodes 41 s </details>, linking https://github.com/dfadler/zombie-mermaid/blob/<sha>/scripts/bench-ascii-renderer.ts. No new research doc.
-# Sabotage: delete step 2 (<details>) from the skill and timings_collapsed should fail; delete step 3 and script_permalink should fail (needs a paid run).
+# Sabotage: delete step 2 (<details>) from the skill and raw_output_collapsed should fail; delete step 3 and script_permalink should fail (needs a paid run).
 # bad-reply: I'll create docs/research/layout-timing.md with the numbers and open a PR for it.
 schema_version: '1.1'
 name: research-findings-fires-on-spike-writeup
@@ -25,10 +25,10 @@ graders:
     tool: Skill
     input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research-findings"'
     min: 1
-  - name: timings_collapsed
+  - name: raw_output_collapsed
     type: regex
     target: last_message
-    pattern: '<details>\s*<summary>[\s\S]*?(?:1\.9\d*\s*(?:s|sec)|1[,.]?900\s*ms)[\s\S]*?</details>'
+    pattern: '<details>\s*<summary>'
     flags: i
   - name: script_permalink
     type: regex

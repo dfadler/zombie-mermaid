@@ -1,0 +1,52 @@
+# Run (manual; needs --scaffold): run-evals.ts --scaffold --tier standard --jobs 4 --keep-temp --case decision-doc-review-unprompted-on-doc-edit .claude
+# Action case: the prompt asks for an edit and a PR-ready doc, never for a review. The skill adds the
+# checklist walk; the seeded defects are what a walk finds.
+# Sabotage: delete the five checklist items from the skill and the three flags_* graders should fail (needs a paid run).
+# Only 3 of the 5 checklist items are seeded (edge-case inputs and cited precedent are not).
+# good-reply: Added the section. Before the PR: (slotWidth - labelWidth) / 2 is fractional for odd widths, so say it rounds down. The node's center and the padded slot's center differ: define one. Adjacent slots can make labels overlap, so the no-spacing-pass claim needs checking.
+# bad-reply: Added the Consequences section. The doc is ready for the PR.
+schema_version: '1.1'
+name: decision-doc-review-unprompted-on-doc-edit
+description: >
+  Asked only to add a section to a decision doc and make it PR-ready, the agent surfaces the draft's
+  defects unprompted. expected_outcome: PASS when the reply names the unspecified rounding, the
+  ambiguous center and the unchecked no-spacing-pass claim; FAIL if it edits and calls the doc ready.
+tags: [decision-doc-review, action]
+expected_outcome: >-
+  Delta expected: the bare model does the edit and stops; the skill makes it walk the checklist first.
+runs: 3
+context:
+  scaffold_script: scaffold-script
+
+execution:
+  prompt: |
+    Add a Consequences section to docs/decisions/edge-label-placement.md saying labels are
+    drawn after nodes, then tell me when the doc is ready for the PR.
+  max_turns: 10
+  allowed_tools:
+    - Skill
+    - Read
+    - Edit
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?decision-doc-review"'
+    min: 1
+    arm: with-only
+  - name: flags_rounding
+    type: regex
+    target: last_message
+    pattern: '\bround(?:s|ed|ing)?\s+(?:down|up|toward|half)|\bfloor\b|\bceil\w*|\btruncat\w*|\bfraction\w*|half[- ]pixel|\binteger\b|\bodd[- ](?:width|wide|number|label)'
+    flags: i
+  - name: flags_ambiguous_center
+    type: regex
+    target: last_message
+    pattern: "(?:node|box|label)['’]?s?\\s+(?:own\\s+)?cent(?:er|re)[^\\n]{0,80}(?:slot|padd)|(?:slot|padd\\w*)['’]?s?\\s+cent(?:er|re)[^\\n]{0,80}(?:node|box|label)|two (?:different )?(?:meanings|readings)|(?:which|what) cent(?:er|re)"
+    flags: i
+  - name: flags_scope_claim
+    type: regex
+    target: last_message
+    pattern: '(?:overlap\w*|collid\w*|collision\w*|touch\w*|on top of|run into|crowd\w*|bump\w*)[^\n]{0,120}(?:slot|spacing|#2001|adjacent|neighbo\w*)|(?:slot|spacing|#2001|adjacent|neighbo\w*)[^\n]{0,120}(?:overlap\w*|collid\w*|collision\w*|touch\w*|on top of|run into|crowd\w*|bump\w*)'
+    flags: i

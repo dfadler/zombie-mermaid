@@ -7,7 +7,7 @@ tags:
   - decision-doc-review
   - trigger-boundary
   - quick
-  - pair:decision-doc-review-fires-on-natural-sanity-check
+  - pair:decision-doc-review-unprompted-on-doc-edit
 runs: 3
 
 execution:

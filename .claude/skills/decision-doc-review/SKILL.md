@@ -1,10 +1,10 @@
 ---
 name: decision-doc-review
 description: |
-  Self-review checklist for a design or decision doc (`docs/decisions/*.md`) before the PR is
-  opened. Use when you add or edit a decision doc, or are asked whether one is ready to open as
-  a PR, to review it, or to sanity-check its algorithm, data model or scope claims. Not for
-  code review, PR bodies, or docs outside `docs/decisions/`.
+  Writing or editing a decision page (`docs/decisions/*.md`), or recording a decision in the repo:
+  keep the page short, put the long reasoning on the issue, and self-review the draft before the
+  PR. Use when you add or edit such a page, or are asked whether one is ready, to review it, or
+  to sanity-check its algorithm or scope claims. Not for code review, PR bodies, or other docs.
 ---
 
 # decision-doc-review
@@ -14,6 +14,9 @@ description: |
 - **Input:** a draft `docs/decisions/*.md`, as a file or pasted text.
 - **Output:** one finding list per checklist item, or "nothing found" for an item you checked.
 - **Does not:** review code, PR bodies or docs outside `docs/decisions/`.
+
+Keep the page to the decision, its context and its consequences. Investigation, measurements and
+the long reasoning go in a comment on the issue (see `research-findings`), linked from the page.
 
 A decision doc proposing an algorithm, data model, or boundary between pieces of work reads just
 as fluently when a claim in it is wrong as when it is right. Before opening the PR, walk the

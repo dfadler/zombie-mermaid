@@ -1,12 +1,11 @@
 ---
 name: research-findings
 description: |
-  Where to put the results of investigation, measurement, benchmark or spike work
-  on a GitHub issue: post them as an issue comment, not a new `docs/research/*.md`.
-  Use when you finish (or are about to write up) a spike, profiling run, measurement,
-  comparison or other research for an issue, or are about to create a file under
-  `docs/research/`. Not for decision docs (`docs/decisions/`) or for ordinary code
-  or test changes.
+  Where results of investigating, measuring, benchmarking, profiling or comparing go: an
+  issue comment, not a file in the repo. Use whenever you hold findings for an issue, are asked
+  where to put or how to write up results, or are about to save results as a doc (any
+  `docs/research/` file, a notes or findings markdown file). Not for decisions (use
+  decision-doc-review) or code changes.
 ---
 
 # research-findings
@@ -31,7 +30,10 @@ Findings from investigation, measurement or spike work on an issue go **in the i
 5. Former research docs and where their findings now live are indexed in
    `docs/research/README.md`; look there before re-running a past investigation.
 
-If the user asks for a file anyway, say where the rule points, then do what they asked.
+A repo doc may keep a short summary (a few lines: the conclusion and the numbers that matter) with a
+link to the issue comment; the method, tables and raw output stay in the comment.
+
+If the user asks for a full-length file anyway, say where the rule points, then do what they asked.
 
 See [#1479](https://github.com/dfadler/zombie-mermaid/issues/1479) and
 [#1642](https://github.com/dfadler/zombie-mermaid/issues/1642).
