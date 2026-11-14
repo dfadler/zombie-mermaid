@@ -478,6 +478,16 @@
     },
     {
       "paths": [
+        "__tests__/__snapshots__/ascii-elk-hinted-crashes-3146.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-elk-hinted-crashes-3146.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 (headless, scripts/lib/real-mermaid.ts) draws every node, edge and label of both sources (6 and 5 edges, the G0/G1 frames, the loops); these snapshots pin this renderer only, and its n0 loop in the first source is a long detour where mermaid's is a small hook"
+    },
+    {
+      "paths": [
         "__tests__/__snapshots__/ascii-parallel-lane-reversal.test.ts.snap"
       ],
       "class": "b",

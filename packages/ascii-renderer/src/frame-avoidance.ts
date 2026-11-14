@@ -105,6 +105,29 @@ interface Widening {
   by: number
 }
 
+/**
+ * Grid columns (rows, for LR) the frame's wall is drawn out to by its own
+ * edges: `calculateSubgraphBoundingBox` includes every path point of an edge
+ * between two members, which can run past the member nodes' box.
+ */
+function memberEdgeReach(
+  graph: AsciiGraph,
+  sg: AsciiSubgraph,
+  vertical: boolean,
+): { lo: number; hi: number } {
+  let lo = Infinity
+  let hi = -Infinity
+  for (const e of graph.edges) {
+    if (!sg.nodes.includes(e.from) || !sg.nodes.includes(e.to)) continue
+    for (const p of e.path) {
+      const c = vertical ? p.x : p.y
+      lo = Math.min(lo, c)
+      hi = Math.max(hi, c)
+    }
+  }
+  return { lo, hi }
+}
+
 /** First straight run that touches or sits inside a frame it passes beside. */
 function findViolation(
   graph: AsciiGraph,
@@ -144,8 +167,13 @@ function findViolation(
         const spanHi = vertical ? sg.maxY : sg.maxX
         // The run must pass beside the frame, not end at/inside it.
         if (hi <= spanLo || lo >= spanHi) continue
-        const boxLo = vertical ? box.minX : box.minY
-        const boxHi = vertical ? box.maxX : box.maxY
+        const reach = memberEdgeReach(graph, sg, vertical)
+        const boxLo = Math.min(vertical ? box.minX : box.minY, reach.lo)
+        const boxHi = Math.max(vertical ? box.maxX : box.maxY, reach.hi)
+        // A run inside the frame's own reach (a member loop drawn past its
+        // node) crosses the frame: it falls through both tests below, because
+        // widening the gap at `line` shifts that reach with it and the wall
+        // never clears.
         if (line > boxHi) {
           // Past the frame's far side: the line must be strictly outside the
           // wall with a clear column between them (#1285), even for a frame

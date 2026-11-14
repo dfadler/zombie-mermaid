@@ -199,6 +199,9 @@ ALLOWLIST=(
   # SVG + ASCII goldens for a self-loop detour through unseeded rows (BT crash,
   # found by the #3103 property sweep); reviewed via `git diff` (`vitest -u`).
   "__tests__/ascii-loop-detour-rows-nan.test.ts"
+  # SVG + ASCII goldens for two crashes only the ELK-hinted path had (#3146);
+  # reviewed via `git diff` (`vitest -u`).
+  "__tests__/ascii-elk-hinted-crashes-3146.test.ts"
   # SVG + ASCII goldens for a label that lands where an earlier sibling's label
   # slid to: the repo rule is an SVG and an ASCII snapshot per case; reviewed via
   # `git diff` (`vitest -u`).
