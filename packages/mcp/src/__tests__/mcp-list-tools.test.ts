@@ -53,6 +53,7 @@ describe('list_diagram_types', () => {
       kanban: 'kanban\n  A\n    b',
       sankey: 'sankey-beta\nA,B,1',
       ishikawa: 'ishikawa\n  Effect\n    Cause',
+      wardley: 'wardley-beta\ncomponent A [0.5, 0.5]',
       requirement: 'requirementDiagram\nrequirement r {\n}',
       eventmodeling: 'eventmodeling\ntf 01 ui A',
       block: 'block-beta\ncolumns 2\na b',
