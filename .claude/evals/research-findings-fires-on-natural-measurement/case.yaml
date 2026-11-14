@@ -1,0 +1,37 @@
+# Should-fire, natural phrasing, no trigger words. No delta expected from the Skill check alone.
+# good-reply: Put it in a comment on #2210 with the percentages; collapse any raw profile output.
+# Trigger-focused: the only skill-specific signal is the Skill check; the graders catch the failure mode (a docs/research file).
+# bad-reply: Save it as docs/research/edge-router-profile.md so it is easy to find.
+schema_version: '1.1'
+name: research-findings-fires-on-natural-measurement
+description: >
+  Profiling results for an issue, asked about naturally, go to an issue comment. expected_outcome: PASS when the reply points at a comment on the issue and does not propose a docs/research file; FAIL otherwise.
+tags: [research-findings, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Profiling is done for #2210. The edge router spends 70% of its time in the crossing pass,
+    12% in label placement and 18% elsewhere. Where should I put this so people can find it
+    later? Just tell me, don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research-findings"'
+    min: 1
+  - name: targets_issue_comment
+    type: regex
+    target: last_message
+    pattern: 'comment[\s\S]{0,60}(?:#|issue\s+)2210|(?:#|issue\s+)2210[\s\S]{0,60}comment|comment\s+(?:on|to)\s+(?:the|this)\s+issue|issue\s+comment'
+    flags: i
+  - name: no_research_doc
+    type: regex
+    target: last_message
+    pattern: '(?<!(?:\bnot|\bno|\bnever|n''t|instead of|rather than|skip|avoid|without)\s(?:\w+\s){0,6})docs/research/[\w.-]+\.md'
+    flags: i
+    match: not_contains

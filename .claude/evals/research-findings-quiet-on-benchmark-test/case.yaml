@@ -1,0 +1,26 @@
+# Should-not-fire guard: the Skill check passes without the plugin by design, so no delta is expected.
+schema_version: '1.1'
+name: research-findings-quiet-on-benchmark-test
+description: >
+  Writing a benchmark test shares vocabulary with measurement work but must not fire research-findings.
+tags:
+  - research-findings
+  - trigger-boundary
+  - quick
+  - pair:research-findings-fires-on-natural-measurement
+runs: 3
+
+execution:
+  prompt: |
+    Write a vitest test for layoutGraph in src/layout.ts that fails if 200 nodes take longer than 50 ms. Just the test code.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: research-findings_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research-findings"'
+    min: 0
+    max: 0

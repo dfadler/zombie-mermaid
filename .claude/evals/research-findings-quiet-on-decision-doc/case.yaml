@@ -1,0 +1,26 @@
+# Should-not-fire guard: the Skill check passes without the plugin by design, so no delta is expected.
+schema_version: '1.1'
+name: research-findings-quiet-on-decision-doc
+description: >
+  Outlining a decision doc shares vocabulary with research write-ups but must not fire research-findings.
+tags:
+  - research-findings
+  - trigger-boundary
+  - quick
+  - pair:research-findings-fires-on-spike-writeup
+runs: 3
+
+execution:
+  prompt: |
+    Outline a decision doc for choosing between two label-placement strategies. Headings only; I'll fill in the details.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: research-findings_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research-findings"'
+    min: 0
+    max: 0

@@ -1,0 +1,43 @@
+# Should-fire, natural phrasing. No delta expected from the Skill check alone.
+# good-reply: Two worktrees can hash to the same port, so the no-collision claim is wrong. The ports span 3500 to 3999, so ranges beyond that are not an issue.
+# bad-reply: This reads fine to me, go ahead and open the PR.
+schema_version: '1.1'
+name: decision-doc-review-fires-on-natural-sanity-check
+description: >
+  A short design note with a hash-to-port scheme is sanity-checked for collisions and range. expected_outcome: PASS when the reply challenges the no-collision claim and checks the range boundary; FAIL otherwise.
+tags: [decision-doc-review, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Can you sanity-check this before I push my docs/decisions/worktree-ports.md? Just the
+    relevant part:
+
+    Each worktree gets the dev-server port `3500 + (hash(path) % 500)`. The sub-issue that spawns
+    the servers (#2300) needs no handling for clashes, because each worktree has its own port.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?decision-doc-review"'
+    min: 1
+  - name: flags_collision
+    type: regex
+    target: last_message
+    pattern: '(?:same|identical|shared)\s+port|birthday|two\s+(?:worktrees|paths)[^\n]{0,60}(?:same|collid)'
+    flags: i
+  - name: checks_range
+    type: regex
+    target: last_message
+    pattern: '3500\s*(?:-|to|–|through)\s*3999'
+    flags: i
+  - name: no_blanket_approval
+    type: regex
+    target: last_message
+    pattern: '(?<!(?:\bnot|\bno|\bnever|n''t)\s(?:\w+\s){0,3})(?:looks good|lgtm|ready to open|good to go|reads fine)(?![^\n]{0,40}\b(?:but|however|though|yet)\b)'
+    flags: i
+    match: not_contains
