@@ -727,13 +727,16 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // gets the entry once PR #2090 lands.
   // #2645: a dense facing pair gives each edge a row of its own on the faces.
   for (const e of graph.edges) {
-    if (!denseFacingPair(graph, e) || e.from.index > e.to.index) continue
-    const n = graph.edges.filter(
+    if (!denseFacingPair(graph, e)) continue
+    const pair = graph.edges.filter(
       (o) =>
         o.from !== o.to &&
         (o.from === e.from || o.to === e.from) &&
         (o.from === e.to || o.to === e.to),
-    ).length
+    )
+    // Once per pair, by its first edge (all of them may run from the later node).
+    if (pair[0] !== e) continue
+    const n = pair.length
     const at = requireGridCoord(e.from).y + 1
     graph.rowHeight.set(at, Math.max(graph.rowHeight.get(at) ?? 0, n + 1))
   }
