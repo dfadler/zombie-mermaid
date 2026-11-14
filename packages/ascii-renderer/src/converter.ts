@@ -43,7 +43,14 @@ const ASCII_SHAPE: Partial<Record<NodeShape, NodeShape>> = {
   'horizontal-cylinder': 'cylinder',
   'small-circle': 'state-start',
   'fork-bar': 'fork-join',
+  'usecase-ellipse': 'rounded',
+  'usecase-rect': 'rectangle',
+  'usecase-note': 'note',
 }
+
+/** The ASCII marker for a flowchart edge terminator (`triangle` is a hollow generalization head). */
+const asciiMarker = (m: 'circle' | 'cross' | 'triangle') =>
+  m === 'triangle' ? ('class-triangle' as const) : m
 
 /**
  * Mermaid 12.3.0 draws an empty flowchart subgraph as its title text only: a
@@ -223,9 +230,11 @@ export function convertToAsciiGraph(
       hasArrowStart: mEdge.hasArrowStart,
       hasArrowEnd: mEdge.hasArrowEnd,
       ...(mEdge.startMarker !== undefined
-        ? { startMarker: mEdge.startMarker }
+        ? { startMarker: asciiMarker(mEdge.startMarker) }
         : {}),
-      ...(mEdge.endMarker !== undefined ? { endMarker: mEdge.endMarker } : {}),
+      ...(mEdge.endMarker !== undefined
+        ? { endMarker: asciiMarker(mEdge.endMarker) }
+        : {}),
     }
     edges.push(asciiEdge)
     if (clusterMSg) clusterSourced.set(asciiEdge, clusterMSg)
