@@ -5,11 +5,9 @@ description: >
   A usage question about when to pick the SVG or the ASCII output must not fire
   pr-visual-verification. Trigger-boundary negative: plugin arm only, no delta.
 tags:
-  [
-    pr-visual-verification,
-    trigger-boundary,
-    'pair:pr-visual-verification-svg-only-section',
-  ]
+  - pr-visual-verification
+  - trigger-boundary
+  - 'pair:pr-visual-verification-svg-only-section'
 runs: 3
 
 execution:
