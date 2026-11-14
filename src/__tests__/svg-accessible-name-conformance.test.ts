@@ -85,6 +85,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   journey: 'journey\n  title Day\n  section S\n    Tea: 5: Me',
   kanban: 'kanban\n  Todo\n    a[One]',
   sankey: 'sankey-beta\n  A,B,1',
+  block: 'block-beta\n  columns 2\n  a b',
   usecase: 'usecase-beta\n  actor A\n  A --> B',
   ishikawa: 'ishikawa\n  Effect\n    Cause\n      Sub cause',
   requirement:

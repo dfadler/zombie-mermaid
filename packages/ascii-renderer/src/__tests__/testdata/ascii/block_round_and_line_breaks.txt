@@ -1,0 +1,8 @@
+block-beta
+  columns 3
+  a("rounded") b["two<br/>lines"] c("two words long")
+---
++----------------+ +----------------+ +----------------+
+|    rounded     | |      two       | | two words long |
+|                | |     lines      | |                |
++----------------+ +----------------+ +----------------+
