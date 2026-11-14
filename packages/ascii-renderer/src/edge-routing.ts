@@ -741,7 +741,10 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // puts on those faces, so lengthen the nodes' side faces to hold them.
   const hints = graph.edgeHints
   for (const e of hints ? graph.edges : []) {
+    // A frame with its own direction keeps hints for its loops only (#3053):
+    // an edge ELK did not hint has no faces to make room for.
     if (
+      !hints!.has(e) ||
       e.parallelLane?.index !== 0 ||
       !(farGroup(graph, e) || e.clusterSource || overflowsFace(graph, e))
     )
