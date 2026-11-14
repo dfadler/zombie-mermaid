@@ -181,6 +181,7 @@ export {
 } from './ishikawa/layout.ts'
 export type { PositionedIshikawa } from './ishikawa/layout.ts'
 export { renderIshikawaSvg } from './ishikawa/renderer.ts'
+export { WARDLEY, renderWardleySvg } from './wardley/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

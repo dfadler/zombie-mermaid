@@ -75,6 +75,7 @@ import {
   parseUsecase,
   usecaseToGraph,
   parseTreemap,
+  parseWardley,
 } from '@zombie-mermaid/mermaid-parser'
 import type { UsecaseDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -119,6 +120,7 @@ import type {
   PositionedEventModeling,
   Treemap,
   PositionedTreemap,
+  WardleyMap,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -162,6 +164,7 @@ import { layoutSankey } from './sankey/layout.ts'
 import { renderSankeySvg } from './sankey/renderer.ts'
 import { layoutTreemap } from './treemap/layout.ts'
 import { renderTreemapSvg } from './treemap/renderer.ts'
+import { renderWardleySvg } from './wardley/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -890,6 +893,29 @@ const ishikawaModule: DiagramModule<Ishikawa, PositionedIshikawa | undefined> =
   }
 
 /**
+ * Wardley maps parse from the raw `text` (`;` starts a link label), and every
+ * element sits at a fixed percentage of the canvas, so there is no layout
+ * step: the parsed map is what the renderer draws.
+ */
+const wardleyModule: DiagramModule<WardleyMap, WardleyMap> = {
+  type: 'wardley',
+  parse: (_lines, text) => parseWardley(text),
+  layoutForSvg: (map) => map,
+  renderSvg(map, ctx) {
+    return renderWardleySvg(
+      map,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -932,6 +958,7 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   requirement: requirementModule,
   usecase: usecaseModule,
   ishikawa: ishikawaModule,
+  wardley: wardleyModule,
   gitgraph: gitgraphModule,
   treemap: treemapModule,
 }

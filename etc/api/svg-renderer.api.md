@@ -60,6 +60,7 @@ import { SequenceRenderOptions } from '@zombie-mermaid/core';
 import { SvgEmitOptions } from '@zombie-mermaid/core';
 import { Timeline } from '@zombie-mermaid/mermaid-parser';
 import { Treemap } from '@zombie-mermaid/mermaid-parser';
+import { WardleyMap } from '@zombie-mermaid/mermaid-parser';
 import { XYChart } from '@zombie-mermaid/mermaid-parser';
 import { XyChartRenderOptions } from '@zombie-mermaid/core';
 
@@ -642,6 +643,9 @@ export function renderTimelineSvg(tl: PositionedTimeline, colors: DiagramColors,
 export function renderTreemapSvg(tm: PositionedTreemap, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
+export function renderWardleySvg(map: WardleyMap, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderXYChartSvg(chart: PositionedXYChart, colors: DiagramColors, font?: string, transparent?: boolean, interactive?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public (undocumented)
@@ -754,6 +758,17 @@ export const TREEMAP: {
 
 // @public
 export function validateMermaid(text: string): void;
+
+// @public
+export const WARDLEY: {
+    readonly width: 900;
+    readonly height: 600;
+    readonly padding: 48;
+    readonly nodeRadius: 6;
+    readonly nodeLabelOffset: 8;
+    readonly axisFontSize: 12;
+    readonly labelFontSize: 10;
+};
 
 // @public
 export function withDataSrc(svgTag: string, source: string | undefined): string;

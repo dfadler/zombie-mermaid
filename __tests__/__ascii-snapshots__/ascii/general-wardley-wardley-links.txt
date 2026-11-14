@@ -1,0 +1,25 @@
+Visibility
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :               User               :                  
+|                  :                 :\               :                  
+|                  :                 : |              :                  
+|                  :                 : \              :                  
+|                  :                 :  o\Web         :                  
+|                  :                 :    --\         :                  
+|                  :                 :      ---\      :                  
+|                  :                 :        >o-API  :                  
+|                  :                 :    /---  read-through             
+|                  :                 : /--        \   --\                
+|                  :               /---            -\ : .--\             
+|                  :             o-Queue             -\     -o Cache     
+|                  :                 :--async writes  :\                 
+|                  :                 :        -------\: ->               
+|                  :                 :                ----o Database     
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
++------------------+-----------------+----------------+------------------
+       Genesis         Custom Built        Product         Commodity  Evolution

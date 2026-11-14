@@ -83,6 +83,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   kanban: 'Kanban',
   sankey: 'Sankey',
   eventmodeling: 'Event Modeling',
+  wardley: 'Wardley',
   requirement: 'Requirement',
   block: 'Block',
   treemap: 'Treemap',
