@@ -1491,16 +1491,11 @@ function allocateFaces(
         !geo
       )
         continue
-      // ELK's order along the face (the reciprocal's end first, as mermaid draws).
-      const orderOf = (f: FaceEnd): number => {
-        const h = graph.edgeHints!.get(f.edge)
-        /* v8 ignore next */
-        return (f.role === 'S' ? h?.start : h?.end)?.order ?? 0
-      }
+      // Strokes leaving the node first, the arriving reciprocal's last: the order
+      // GitHub's mermaid draws (the pinned 12.3.0 puts the reciprocal first).
       ends.sort(
         (a, b) =>
           a.y - b.y ||
-          (n === 3 ? orderOf(a) - orderOf(b) : 0) ||
           (a.role === b.role ? 0 : a.role === 'S' ? -1 : 1) ||
           graph.edges.indexOf(a.edge) - graph.edges.indexOf(b.edge),
       )

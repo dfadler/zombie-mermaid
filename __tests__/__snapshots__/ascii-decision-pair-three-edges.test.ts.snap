@@ -2,19 +2,19 @@
 
 exports[`three edges between two decisions in a horizontal flow > snapshots SVG and ASCII (unicode and ASCII-only), LR and RL > ascii-LR 1`] = `
 "    ╱╲             ╱╲    
-  ╱    ╲◄┄┄5dJ┄┄┄╱    ╲  
+  ╱    ╲───8wr───╱    ╲  
 < ES09B  >     < 0u158Y >
-<        >─8wr─<        >
-  ╲    ╱───PZ───►╲    ╱  
+<        >─PZ─►<        >
+  ╲    ╱◄┄┄5dJ┄┄┄╲    ╱  
     ╲╱             ╲╱    "
 `;
 
 exports[`three edges between two decisions in a horizontal flow > snapshots SVG and ASCII (unicode and ASCII-only), LR and RL > ascii-RL 1`] = `
 "    ╱╲             ╱╲    
-  ╱    ╲┄┄┄5dJ┄┄►╱    ╲  
+  ╱    ╲───8wr───╱    ╲  
 < 0u158Y >     < ES09B  >
-<        >─8wr─<        >
-  ╲    ╱◄───PZ───╲    ╱  
+<        >◄─PZ─<        >
+  ╲    ╱┄┄┄5dJ┄┄►╲    ╱  
     ╲╱             ╲╱    "
 `;
 
