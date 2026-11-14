@@ -1149,6 +1149,15 @@ function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
   return placed && clearOfEarlierLabels(graph, edge, placed)
 }
 
+/** An earlier edge's label where it is drawn (after its own slide); only ever asks earlier edges, so no cycle. */
+function finalPlacement(graph: AsciiGraph, edge: AsciiEdge): LabelLines {
+  const key = `${graph.edges.indexOf(edge)}:final`
+  if (!placementMemo.has(key)) {
+    placementMemo.set(key, resolveWithClearance(graph, edge))
+  }
+  return placementMemo.get(key)!
+}
+
 type LabelLines = { x: number; y: number; text: string }[] | null
 /** Per-`edgeLabelPlacement`-call memo of `resolveLabelPlacement` (#1466). */
 let placementMemo = new Map<string, LabelLines>()
@@ -1177,14 +1186,20 @@ function clearOfEarlierLabels(
     return placement
   }
   const at = graph.edges.indexOf(edge)
-  const labelsOf = (edges: AsciiEdge[], labelAware: boolean) =>
+  const labelsOf = (edges: AsciiEdge[], place: (e: AsciiEdge) => LabelLines) =>
     edges
       .filter((other) => other.path.length >= 2)
-      .flatMap((other) => resolveLabelPlacement(graph, other, labelAware) ?? [])
-  const earlier = labelsOf(graph.edges.slice(0, at), false)
+      .flatMap((other) => place(other) ?? [])
+  // An earlier label is taken where it is drawn, slide included: its unslid
+  // cell can be free while the cell it slid to is what this label lands on.
+  const earlier = labelsOf(graph.edges.slice(0, at), (e) =>
+    finalPlacement(graph, e),
+  )
   // A later label is taken where it will be drawn (label-aware, before its
   // own slide, which only ever looks at earlier ones: no cycle).
-  const later = labelsOf(graph.edges.slice(at + 1), true)
+  const later = labelsOf(graph.edges.slice(at + 1), (e) =>
+    resolveLabelPlacement(graph, e, true),
+  )
   return slideClearOf(
     placement,
     earlier,
