@@ -38,6 +38,7 @@ export const DIAGRAM_TYPES = [
   'sankey',
   'requirement',
   'eventmodeling',
+  'usecase',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -90,6 +91,8 @@ export function detectDiagramType(text: string): DiagramType {
 
   // Case-sensitive: Mermaid's detector is `/^\s*eventmodeling/`.
   if (/^eventmodeling(?:\s|$)/.test(header)) return 'eventmodeling'
+  // Case-sensitive: Mermaid's detector is `/^\s*usecase-beta(?:\s|$)/`.
+  if (/^usecase-beta(?:\s|$)/.test(header)) return 'usecase'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'

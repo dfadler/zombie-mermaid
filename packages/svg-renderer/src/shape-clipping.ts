@@ -62,6 +62,11 @@ export function clipEdgeToShape(
       result[i] = { x: node.x + ASYMMETRIC_NOTCH * (1 - dy / half), y: p.y }
     }
   }
+  if (node.shape === 'usecase-ellipse') {
+    const i = isStart ? 0 : points.length - 1
+    const next = points[isStart ? 1 : i - 1]!
+    result[i] = clipToEllipse(points[i]!, next, node)
+  }
   // Future: add clipping for hexagon, circle, etc.
 
   return result
@@ -207,4 +212,34 @@ function intersectVerticalRayWithEdge(
 
   const y = p1.y + t * (p2.y - p1.y)
   return { x: rayX, y }
+}
+
+/**
+ * Pull `endpoint` (on the bounding box) along its last segment onto the
+ * ellipse inscribed in `node`: the point where the line from `outer` to the
+ * ellipse's centre-side first meets the outline.
+ */
+function clipToEllipse(
+  endpoint: Point,
+  outer: Point,
+  node: PositionedNode,
+): Point {
+  const rx = node.width / 2
+  const ry = node.height / 2
+  const cx = node.x + rx
+  const cy = node.y + ry
+  // Line p = outer + t * d, t in [0, 1] runs outer → endpoint; solve |p - c|_ellipse = 1.
+  const dx = endpoint.x - outer.x
+  const dy = endpoint.y - outer.y
+  const ox = (outer.x - cx) / rx
+  const oy = (outer.y - cy) / ry
+  const a = (dx / rx) ** 2 + (dy / ry) ** 2
+  const b = 2 * (ox * (dx / rx) + oy * (dy / ry))
+  const c = ox * ox + oy * oy - 1
+  const disc = b * b - 4 * a * c
+  if (a === 0 || disc < 0) return endpoint
+  // The first crossing coming from outside is the smaller root.
+  const t = (-b - Math.sqrt(disc)) / (2 * a)
+  if (t < 0 || t > 1) return endpoint
+  return { x: outer.x + t * dx, y: outer.y + t * dy }
 }
