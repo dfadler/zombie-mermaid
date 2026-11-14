@@ -220,8 +220,14 @@ export function parseOurUsecaseSvg(svg: string): UsecaseLayout {
   const edges: UsecaseLine[] = [
     ...svg.matchAll(/<path class="edge"([^>]*)>/g),
   ].map((m) => {
-    const a = (name: string): string | undefined =>
-      new RegExp(`(?:^|\\s)${name}="([^"]*)"`).exec(m[1]!)?.[1]
+    // Attributes of the tag, by name (a lookup, not a pattern built from the name).
+    const attrs = new Map(
+      [...m[1]!.matchAll(/(?:^|\s)([\w-]+)="([^"]*)"/g)].map((x) => [
+        x[1]!,
+        x[2]!,
+      ]),
+    )
+    const a = (name: string): string | undefined => attrs.get(name)
     const d = (a('d') ?? '').match(/-?[\d.]+/g)!.map(Number)
     return {
       label: unescape(a('data-label') ?? ''),

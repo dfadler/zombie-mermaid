@@ -320,7 +320,7 @@ export function parseUsecase(source: string): UsecaseDiagram {
       boundaries.set(ent.id, boundary)
       continue
     }
-    const note = /^note\s+for\s+(\w+)\s+(.+)$/.exec(line)
+    const note = /^note\s+for\s+(\w+)\s+(\S.*)$/.exec(line)
     if (note) {
       notes.push({
         line: n,

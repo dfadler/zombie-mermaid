@@ -92,12 +92,9 @@ describe('use case SVG', () => {
   })
 
   it('lays out top to bottom with direction TB and honours the direction option', () => {
+    // The y of a node's ellipse: the first `cy` after its group opens.
     const y = (s: string, id: string) =>
-      Number(
-        new RegExp(
-          `data-id="${id}"[^>]*>\\s*<(?:ellipse|rect)[^>]*?c?y="([\\d.]+)"`,
-        ).exec(s)?.[1],
-      )
+      Number(/\bcy="([\d.]+)"/.exec(s.slice(s.indexOf(`data-id="${id}"`)))?.[1])
     const tb = renderMermaidSVG('usecase-beta\ndirection TB\nA --> B')
     expect(y(tb, 'B')).toBeGreaterThan(y(tb, 'A'))
     const lr = renderMermaidSVG('usecase-beta\nA --> B')
