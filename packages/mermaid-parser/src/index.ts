@@ -86,6 +86,9 @@ export * from './treemap/format.ts'
 export * from './requirement/parser.ts'
 export * from './requirement/types.ts'
 
+export * from './ishikawa/parser.ts'
+export * from './ishikawa/types.ts'
+
 export * from './expanded-shapes.ts'
 export * from './flowchart-parser.ts'
 
