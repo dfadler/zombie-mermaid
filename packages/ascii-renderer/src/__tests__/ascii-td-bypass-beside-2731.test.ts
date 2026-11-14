@@ -79,8 +79,8 @@ describe('TD bypass edge beside the node it skips (#2731)', () => {
     const out = renderMermaidASCII('graph LR\n  A --> B --> C\n  A --> C', {
       colorMode: 'none',
     })
-    // B above the main row, A -> C straight with its own head.
+    // B above the main row, A -> C dipping under it with its own head.
     expect(out.split('\n')[1]).toMatch(/│   │\s*$/)
-    expect(out).toMatch(/│   ├─+►│   │/)
+    expect(out).toMatch(/│   ├──┐ +┌─►│   │/)
   })
 })
