@@ -97,6 +97,13 @@ function makeRepo(files: Record<string, string>, subject = 'chore: x') {
   return repo
 }
 
+/** A PR body file holding the Visual verification mermaid block pre-pr-check looks for. */
+function mermaidBody() {
+  const f = join(tmp, 'mermaid-body.md')
+  writeFileSync(f, '```mermaid\ngraph TD\n```\n')
+  return f
+}
+
 const check = (repo: string, ...args: string[]) =>
   bash(PRE_PR, ['--base', 'main', ...args], { cwd: repo })
 
@@ -130,7 +137,7 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
       'src/a.ts': 'export {}',
       '.changeset/x.md': '---\n---\n',
     })
-    const r = check(repo, '--strict')
+    const r = check(repo, '--strict', '--body-file', mermaidBody())
     expect(r.code).toBe(0)
     expect(r.stderr).toBe('')
   })
@@ -182,6 +189,37 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
     expect(check(repo, '--body-file', body).stderr).toContain('no screenshot')
   })
 
+  it('asks for a mermaid block when rendering paths change, accepts one or an N/A', () => {
+    const repo = makeRepo({
+      'packages/svg-renderer/src/x.ts': 'x',
+      '.changeset/x.md': '---\n---\n',
+    })
+    const body = join(tmp, 'body.md')
+    expect(check(repo).stderr).toContain('no ```mermaid block')
+
+    writeFileSync(body, '## Visual verification\n\n```mermaid\ngraph TD\n```\n')
+    expect(check(repo, '--body-file', body).stderr).not.toContain(
+      'no ```mermaid block',
+    )
+
+    writeFileSync(body, '- [x] Visual verification: N/A: docs only\n')
+    expect(check(repo, '--body-file', body).stderr).not.toContain(
+      'no ```mermaid block',
+    )
+
+    writeFileSync(body, '- [x] Visual verification: N/A: <reason>\n')
+    expect(check(repo, '--body-file', body).stderr).toContain(
+      'no ```mermaid block',
+    )
+  })
+
+  it('does not ask for a mermaid block when only tests change', () => {
+    const repo = makeRepo({
+      'packages/svg-renderer/src/__tests__/x.test.ts': 'x',
+    })
+    expect(check(repo).stderr).not.toContain('no ```mermaid block')
+  })
+
   it('flags a rendered-output fix without a fork-fixes entry', () => {
     const repo = makeRepo(
       {
@@ -202,7 +240,7 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
       },
       'fix: edge label',
     )
-    expect(check(repo).stderr).toBe('')
+    expect(check(repo, '--body-file', mermaidBody()).stderr).toBe('')
   })
 
   it('stays quiet when the base ref does not exist', () => {
@@ -254,7 +292,7 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
         '.changeset/x.md': '---\n---\n',
       })
       const body = join(tmp, 'pr-body.md')
-      writeFileSync(body, '<img src="a.png">')
+      writeFileSync(body, '```mermaid\ngraph TD\n```\n<img src="a.png">')
       const r = bash(PRE_PR, ['--base', 'main', '--hook'], {
         cwd: repo,
         input: payload(`gh pr create --body-file ${body}`),
@@ -269,7 +307,9 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
       })
       const r = bash(PRE_PR, ['--base', 'main', '--hook'], {
         cwd: repo,
-        input: payload('gh pr create --body "![a](https://x/a.png)"'),
+        input: payload(
+          'gh pr create --body "\n```mermaid\ngraph TD\n```\n![a](https://x/a.png)"',
+        ),
       })
       expect(r.stdout).toBe('')
     })

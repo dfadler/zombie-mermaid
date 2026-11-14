@@ -43,6 +43,17 @@ properties that make worktree cleanup easy to get wrong:
   resolves) — as a background `Bash` process, and track that PID yourself; nothing
   else will.
 
+## Visual verification: any change that could alter a render
+
+If a diff could change a rendered result (parser, layout, theme, SVG, ASCII, CLI,
+`demo/`), the PR body needs a complete "Visual verification" section, built with the
+`pr-visual-verification` skill: (1) the exact Mermaid source in a fenced `mermaid`
+block right under the heading, which GitHub renders; (2) SVG before/after if SVG can
+change; (3) ASCII before/after if ASCII can change, via `verify-ascii-terminal`.
+Docs/CI/tooling/test-only diffs write `N/A: <reason>` on the checklist line instead.
+`scripts/pre-pr-check.sh` warns when rendering paths changed and no `mermaid` block
+is in the body.
+
 ## ASCII rendering changes: the PR screenshot must be a real terminal; mockup-only changes use the probes
 
 Before attaching before/after screenshots to a PR/issue for any change touching

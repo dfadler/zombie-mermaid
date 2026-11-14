@@ -1,0 +1,45 @@
+# target sentence: "Source block comes **first**, right after the heading, before any image." / "A heading or sentence for a half that does not apply is deleted" / "labeled with the base sha"
+# good-reply: ## Visual verification **Source** (verified against: n/a, no parity claim) ```mermaid sequenceDiagram A->>B: Pneumonoultramicroscopicsilicovolcanoconiosis ``` ### SVG | Before (main @ 3f9c2ab) | After (this PR) | | ![before](before.png) | ![after](after.png) | ASCII unchanged: SVG-only path.
+# bad-reply: ## Visual verification ### SVG ![before](before.png) ![after](after.png) ### ASCII ![ascii](ascii.png) ```mermaid sequenceDiagram A->>B: Pneumonoultramicroscopicsilicovolcanoconiosis ```
+schema_version: '1.1'
+name: pr-visual-verification-svg-only-section
+description: >
+  Drafting the Visual verification section for an SVG-only render change should fire
+  pr-visual-verification and produce the fixed shape: Mermaid source block first, before/after
+  labeled with the base sha, no ASCII half. expected_outcome: PASS when the source block precedes
+  every image, the before column names the base sha, and there is no ASCII heading; FAIL
+  otherwise. Reply-only (no Bash grant), so the model drafts the section with placeholder images.
+tags: [pr-visual-verification, trigger]
+runs: 3
+
+execution:
+  prompt: |
+    My PR changes packages/svg-renderer/src/sequence/layout.ts so a long word in a sequence
+    diagram message is split instead of overflowing. SVG text wrapping only; I did not touch
+    packages/ascii-renderer. I'm opening it against main at 3f9c2ab. Write the Visual
+    verification section for the PR body, using this sample:
+
+    sequenceDiagram
+      A->>B: Pneumonoultramicroscopicsilicovolcanoconiosis
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+  # No image appears before the opening mermaid fence.
+  - name: mermaid_source_before_any_image
+    type: regex
+    pattern: '^(?:(?!!\[)[\s\S])*```mermaid'
+  # The before label carries the base sha, so "Before" alone cannot pass.
+  - name: before_column_names_base_sha
+    type: regex
+    pattern: 'Before[^|\n]*3f9c2ab'
+  # SVG-only change: no ASCII heading at all (the skill deletes the half, with a one-line note).
+  - name: no_ascii_half
+    type: regex
+    pattern: '#{2,4}\s*ASCII'
+    match: not_contains

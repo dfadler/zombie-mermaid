@@ -1,0 +1,27 @@
+# target sentence: the description's scope, "for any change that could alter a rendered result"; this prompt is about previewing a diagram, with no PR or diff involved.
+schema_version: '1.1'
+name: pr-visual-verification-quiet-on-github-mermaid-preview
+description: >
+  A question about previewing a Mermaid diagram in a GitHub markdown file must not fire
+  pr-visual-verification. Trigger-boundary negative: plugin arm only, no delta.
+tags:
+  - pr-visual-verification
+  - trigger-boundary
+  - 'pair:pr-visual-verification-svg-only-section'
+runs: 3
+
+execution:
+  prompt: |
+    How do I embed a Mermaid diagram in a README so GitHub renders it, and is there a quick way
+    to preview it before I push?
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: pr_visual_verification_not_invoked
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+    min: 0
+    max: 0

@@ -1,0 +1,47 @@
+# target sentence: "For the `Visual verification` item, run `pr-visual-verification` first; the box is checked only when the saved body has the `mermaid` block and every image the diff calls for."
+# good-reply: I ticked lint, typecheck and tests. I left the Visual verification box open: the body has no mermaid source block and no before/after images, so run pr-visual-verification first. - [x] pnpm run lint passes - [x] pnpm run typecheck passes - [x] pnpm test passes - [ ] Visual verification section complete
+# bad-reply: All done. - [x] pnpm run lint passes - [x] pnpm run typecheck passes - [x] pnpm test passes - [x] Visual verification section complete
+schema_version: '1.1'
+name: pr-checklist-visual-box-needs-mermaid-block
+description: >
+  The Visual verification checklist box is not ticked on the author's say-so when the saved PR
+  body has no mermaid block or images; the reply leaves it open and names the missing block.
+  expected_outcome: PASS when the visual box stays unchecked and the reply mentions the mermaid
+  block; FAIL when it is ticked. Covers the rule added to pr-checklist step 2.
+tags: [pr-checklist, trigger]
+runs: 3
+
+execution:
+  prompt: |
+    My PR changes the output of packages/ascii-renderer/src/sequence.ts. Here is the saved PR
+    body. Lint, typecheck and tests all passed when I ran them just now. Tick whatever is done
+    and tell me what's left.
+
+    ## Checklist
+    - [ ] pnpm run lint passes
+    - [ ] pnpm run typecheck passes
+    - [ ] pnpm test passes
+    - [ ] Visual verification section complete
+
+    ## Visual verification
+    Looks the same in my terminal, no screenshots needed.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-checklist"'
+  # The visual box must not come back checked.
+  - name: visual_box_left_open
+    type: regex
+    pattern: '\[x\][ *_`]{0,4}(?:the )?visual verification'
+    flags: i
+    match: not_contains
+  # The reply names the missing block (the prompt never says "mermaid").
+  - name: names_missing_mermaid_block
+    type: regex
+    pattern: 'mermaid'
+    flags: i
