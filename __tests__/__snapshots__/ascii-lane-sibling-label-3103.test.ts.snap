@@ -1,0 +1,105 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`labelled lane sibling into a decision renders (#3103) > snapshots SVG and ASCII (unicode and ASCII-only) > ascii 1`] = `
+"╭──────╮       ╭───╮      ╭────╮             ╱╲    
+│      │       │   │      (    )            ╱  ╲   
+│      │       │   │      (    )           ╱    ╲  
+│      │       │   │      (    )          ╱      ╲ 
+│ SmYV ├──────►│ n ├─────►( 5  )──┬─┬─┬─►< 3L886B >
+│      ├────┐  │   │      (    )  │ │ │   ╲      ╱ 
+│      │◄─┐ │  │   ├──┐   (    )  │ │ │    ╲    ╱  
+│      │  │ │  │   │  │   (    )  a │ │     ╲  ╱   
+╰──────╯  │ │  ╰───╯  │   ╰────╯  │ │ │      ╲╱    
+          │ │         │           │ │ │            
+          │ └─────────┼───────────┘ │ │            
+          │           │             │ │            
+          │           └──────0──────┘ │            
+          │                           │            
+          └───────────────────────────┘            "
+`;
+
+exports[`labelled lane sibling into a decision renders (#3103) > snapshots SVG and ASCII (unicode and ASCII-only) > ascii-only 1`] = `
+".------.       .---.      .----.             /\\    
+|      |       |   |      (    )            /  \\   
+|      |       |   |      (    )           /    \\  
+|      |       |   |      (    )          /      \\ 
+| SmYV +------>| n +----->( 5  )--+-+-+->< 3L886B >
+|      +----+  |   |      (    )  | | |   \\      / 
+|      |<-+ |  |   +--+   (    )  | | |    \\    /  
+|      |  | |  |   |  |   (    )  a | |     \\  /   
+'------'  | |  '---'  |   '----'  | | |      \\/    
+          | |         |           | | |            
+          | +---------------------+ | |            
+          |           |             | |            
+          |           +------0------+ |            
+          |                           |            
+          +---------------------------+            "
+`;
+
+exports[`labelled lane sibling into a decision renders (#3103) > snapshots SVG and ASCII (unicode and ASCII-only) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 846 283" width="846" height="283" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1k84ihc-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1k84ihc-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="n0" data-to="n1" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="a" d="M 190 87.7 L 202.93 87.7 Q 210 87.7, 210 80.63 L 210 78.37 Q 210 71.3, 217.07 71.3 L 610.25 71.3 Q 612 71.3, 612 73.05 L 612 73.05 Q 612 74.8, 613.75 74.8 L 684.2 74.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1k84ihc-arrowhead)" />
+<path class="edge" data-from="n3" data-to="n2" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 380 168.95 L 392.93 168.95 Q 400 168.95, 400 161.88 L 400 155.92 Q 400 148.85, 407.07 148.85 L 420 148.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1k84ihc-arrowhead)" />
+<path class="edge" data-from="n0" data-to="n3" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 190 114.7 L 202.93 114.7 Q 210 114.7, 210 121.77 L 210 170.88 Q 210 177.95, 217.07 177.95 L 230 177.95" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1k84ihc-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n1" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 592 148.85 L 609.77 148.85 Q 612 148.85, 612 146.63 L 612 146.63 Q 612 144.4, 614.23 144.4 L 649.4 144.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1k84ihc-arrowhead)" />
+<path class="edge" data-from="n3" data-to="n1" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="0" d="M 380 186.95 L 392.93 186.95 Q 400 186.95, 400 194.02 L 400 216.78 Q 400 223.85, 407.07 223.85 L 604.93 223.85 Q 612 223.85, 612 216.78 L 612 186.27 Q 612 179.2, 619.07 179.2 L 684.2 179.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1k84ihc-arrowhead)" />
+<path class="edge" data-from="n1" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 649.4 109.6 L 614.88 109.6 Q 612 109.6, 612 106.72 L 612 106.72 Q 612 103.85, 609.13 103.85 L 211.33 103.85 Q 210 103.85, 210 102.53 L 210 102.53 Q 210 101.2, 208.67 101.2 L 190 101.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1k84ihc-arrowhead)" />
+<g class="edge-label" data-from="n0" data-to="n1" data-label="a">
+  <rect x="301.09" y="63.3" width="7.83" height="14.3" fill="var(--bg)" />
+  <text x="305" y="70.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">a</text>
+</g>
+<g class="edge-label" data-from="n3" data-to="n1" data-label="0">
+  <rect x="501.71" y="215.85" width="8.59" height="14.3" fill="var(--bg)" />
+  <text x="506" y="223" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">0</text>
+</g>
+<g class="node" data-id="n0" data-label="SmYV" data-shape="rounded">
+  <rect x="40" y="74.2" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="115" y="101.2" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">SmYV</text>
+</g>
+<g class="node" data-id="n1" data-label="3L886B" data-shape="diamond">
+  <polygon points="719,40 806,127 719,214 632,127" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="719" y="127" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">3L886B</text>
+</g>
+<g class="node" data-id="n2" data-label="5" data-shape="stadium">
+  <rect x="420" y="124.85" width="172" height="48" rx="24" ry="24" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="506" y="148.85" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">5</text>
+</g>
+<g class="node" data-id="n3" data-label="n" data-shape="rounded">
+  <rect x="230" y="150.95" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="305" y="177.95" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">n</text>
+</g>
+</svg>"
+`;
