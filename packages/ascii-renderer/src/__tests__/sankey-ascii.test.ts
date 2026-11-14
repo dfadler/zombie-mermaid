@@ -21,6 +21,17 @@ describe('sankey ASCII', () => {
     )
   })
 
+  it('prints the total of a sink fed by several links (#3071)', () => {
+    const src = 'sankey-beta\nA,B,10\nB,C,5\nA,C,2\nA,D,3'
+    const out = render(src)
+    expect(out.split('\n').at(-1)).toBe('C  7')
+    // A sink with one inbound link already shows its value on that link.
+    expect(out).not.toContain('D  3')
+    const cfg = (extra: string) => `%%{init: {"sankey": {${extra}}}}%%\n${src}`
+    expect(render(cfg('"prefix": "$", "suffix": "k"'))).toMatch(/C {2}\$7k$/)
+    expect(render(cfg('"showValues": false'))).not.toMatch(/^C/m)
+  })
+
   it('uses plain characters in ASCII mode', () => {
     expect(render('sankey-beta\nA,B,4\nA,C,1', true)).toBe(
       [

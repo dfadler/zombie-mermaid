@@ -18,6 +18,8 @@
 //   - A node's value is the larger of its incoming and outgoing totals, as in
 //     the SVG, written with the diagram's `prefix` and `suffix`; `showValues:
 //     false` leaves the node values and link values out.
+//   - A sink with several inbound links gets a closing `name  total` row, as
+//     its total would otherwise appear nowhere.
 //   - A bar is at least one cell wide for any positive flow.
 //   - Bars are painted in the theme accent. accTitle / accDescr are not
 //     printed (see the pie renderer).
@@ -110,6 +112,17 @@ export function renderSankeyAscii(
             : ''),
       )
     })
+  }
+  // A sink fed by several links has no row of its own, so its total (which
+  // the SVG draws on the node) would appear nowhere; a single inbound link
+  // already prints it.
+  if (showValues) {
+    for (const id of sk.nodes) {
+      const t = total.get(id)!
+      if (t.out === 0 && sk.links.filter((l) => l.target === id).length > 1) {
+        rows.push(paint(one(id), theme.fg) + '  ' + paint(fmt(t.in), theme.fg))
+      }
+    }
   }
   return rows.join('\n')
 }

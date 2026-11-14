@@ -20,3 +20,4 @@ Profit  40
   └─▶ Dividends   █████                  15
 Reinvested  25
   └─▶ Hosting     █▏                      5
+Hosting  20
