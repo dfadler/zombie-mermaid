@@ -106,6 +106,16 @@ describe('detectDiagramType – sankey', () => {
   })
 })
 
+describe('detectDiagramType – block', () => {
+  it('detects block and block-beta, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('block-beta\ncolumns 2')).toBe('block')
+    expect(detectDiagramType('block\n  a b')).toBe('block')
+    expect(detectDiagramType('%% c\n  block-beta')).toBe('block')
+    expect(detectDiagramType('Block-beta')).toBe('flowchart')
+    expect(detectDiagramType('blocks')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – requirement', () => {
   it('detects requirement diagrams, case-sensitively', () => {
     expect(detectDiagramType('requirementDiagram')).toBe('requirement')
@@ -177,5 +187,17 @@ describe('detectDiagramType – radar', () => {
     expect(detectDiagramType('%% c\nradar-beta')).toBe('radar')
     expect(detectDiagramType('Radar-beta')).toBe('flowchart')
     expect(detectDiagramType('radar')).toBe('flowchart')
+  })
+})
+
+describe('detectDiagramType – usecase', () => {
+  it('detects usecase-beta, case-sensitively as Mermaid’s detector does', () => {
+    expect(detectDiagramType('usecase-beta')).toBe('usecase')
+    expect(detectDiagramType('%% c\n  usecase-beta\n  actor A')).toBe('usecase')
+    expect(detectDiagramType('Usecase-beta')).toBe('flowchart')
+    // Mermaid 12.3.0 detects only `usecase-beta`, not `usecase` or `useCaseDiagram`.
+    expect(detectDiagramType('usecase')).toBe('flowchart')
+    expect(detectDiagramType('useCaseDiagram')).toBe('flowchart')
+    expect(detectDiagramType('usecase-betas')).toBe('flowchart')
   })
 })

@@ -20,6 +20,7 @@
 //   - Radar charts (radar-beta) — a group of bars per axis on a ruler (see radar.ts)
 //   - User journeys (journey) — tasks as score-height columns (see journey.ts)
 //   - Kanban boards (kanban) — stacked column blocks of boxed cards (see kanban.ts)
+//   - Block diagrams (block) — a grid of boxed cells, groups as larger boxes (see block.ts)
 //   - Sankey diagrams (sankey-beta) — each source with a bar per outgoing flow (see sankey.ts)
 //   - Requirement diagrams (requirementDiagram) — boxes and labelled lines (see requirement.ts)
 //

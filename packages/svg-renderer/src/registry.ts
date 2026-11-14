@@ -67,9 +67,13 @@ import {
   parseRadar,
   parseJourney,
   parseKanban,
+  parseBlock,
   parseSankey,
   parseRequirementDiagram,
+  parseUsecase,
+  usecaseToGraph,
 } from '@zombie-mermaid/mermaid-parser'
+import type { UsecaseDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
   PositionedXYChart,
@@ -101,6 +105,8 @@ import type {
   PositionedJourney,
   Kanban,
   PositionedKanban,
+  BlockDiagram,
+  PositionedBlockDiagram,
   Sankey,
   PositionedSankey,
   RequirementDiagram,
@@ -137,6 +143,8 @@ import { layoutRadar } from './radar/layout.ts'
 import { renderRadarSvg } from './radar/renderer.ts'
 import { layoutKanban } from './kanban/layout.ts'
 import { renderKanbanSvg } from './kanban/renderer.ts'
+import { layoutBlock } from './block/layout.ts'
+import { renderBlockSvg } from './block/renderer.ts'
 import { layoutSankey } from './sankey/layout.ts'
 import { renderSankeySvg } from './sankey/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
@@ -456,6 +464,32 @@ const architectureModule: DiagramModule<
   renderSvg: flowchartModule.renderSvg,
 }
 
+/**
+ * Use case diagrams are lowered to the flowchart model (`usecaseToGraph`) and
+ * ride the flowchart layout + renderer, so this module is `flowchartModule`
+ * with a different `parse` — as mermaid hands them to the same dagre layout.
+ * The parser reads the raw `text`: `;` is label text there, not a separator.
+ */
+const usecaseModule: DiagramModule<UsecaseDiagram, PositionedFlowchart> = {
+  type: 'usecase',
+  parse: (_lines, text) => parseUsecase(text),
+  layoutForSvg(diagram, options) {
+    const graph = withDirectionOverride(
+      usecaseToGraph(diagram),
+      options.direction,
+    )
+    // Mermaid's canvas margin around the drawing is 20px, not the flowchart's 40.
+    return {
+      graph: layoutFlowchartSync(graph, {
+        ...options,
+        padding: options.padding ?? 20,
+      }),
+      curve: 'linear',
+    }
+  },
+  renderSvg: flowchartModule.renderSvg,
+}
+
 // `undefined` selects Mermaid's own font (see ./pie/layout.ts). Asking for the
 // embedded Inter subset is asking for Inter, so that stays the font then.
 const pieFont = (options: RenderOptions): string | undefined =>
@@ -600,6 +634,25 @@ const timelineModule: DiagramModule<Timeline, PositionedTimeline> = {
   layoutForSvg: (tl) => layoutTimeline(tl),
   renderSvg(positioned, ctx) {
     return renderTimelineSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/** Block diagrams parse from the raw `text`, then lay out on Mermaid's fixed grid. */
+const blockModule: DiagramModule<BlockDiagram, PositionedBlockDiagram> = {
+  type: 'block',
+  parse: (_lines, text) => parseBlock(text),
+  layoutForSvg: (block) => layoutBlock(block),
+  renderSvg(positioned, ctx) {
+    return renderBlockSvg(
       positioned,
       ctx.colors,
       ctx.font,
@@ -789,7 +842,9 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   radar: radarModule,
   journey: journeyModule,
   kanban: kanbanModule,
+  block: blockModule,
   sankey: sankeyModule,
   requirement: requirementModule,
+  usecase: usecaseModule,
   gitgraph: gitgraphModule,
 }

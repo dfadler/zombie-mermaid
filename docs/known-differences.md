@@ -817,10 +817,16 @@ Init and front matter share one code path.
   SVG and ASCII (every combination of the four per-axis keys checked against 12.3.0, both orientations, band and linear x,
   with and without axis titles): a hidden label leaves no row or column, a tick without its axis line is a lone stub. The margins are our own (the plot rectangle is not mermaid's to the pixel; tick
   and data positions as fractions of each axis match, `pnpm run xychart:oracle`).
-- **Not read** (reported as ignored; mermaid lays the plot out from these and our margins are fixed sizes, see
-  [#3010](https://github.com/dfadler/zombie-mermaid/issues/3010)): `titleFontSize`, `titlePadding`, `showDataLabel`, `showDataLabelOutsideBar` (data labels are
-  not drawn), `plotReservedSpacePercent`, and per axis `labelFontSize`, `labelPadding`, `titleFontSize`,
-  `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth`, `labelRotation`.
+- **Read, SVG only** ([#3010](https://github.com/dfadler/zombie-mermaid/issues/3010)): `titleFontSize`, `titlePadding`,
+  `plotReservedSpacePercent`, `showDataLabel`, `showDataLabelOutsideBar`, and per axis `labelFontSize`, `labelPadding`,
+  `titleFontSize`, `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth` and `labelRotation` (the bottom axis of a
+  vertical chart only, as in mermaid). A set key moves our fixed margins by its difference from mermaid 12.3.0's
+  default and draws at its value; checked against 12.3.0 for each key, both orientations: the plot rectangle's edges
+  move within 1px (a title or axis title font within 1px; 4px for a larger label font on the value axis, because text widths are
+  estimated; 2px for a rotated label's room). Unset keys leave the output as it was, so the plot rectangle at the defaults is still our own.
+  `showDataLabel` takes mermaid's font-size rule and positions (values from the first series, as mermaid does, one size per
+  series), placed on our bars. `plotReservedSpacePercent` drops a title, axis title or label that does not fit in
+  the share it leaves, only when set. ASCII reads none of these: a character grid has no pixel sizes.
 
 ## C4 `%%{init}%%` / front-matter config ([#2906](https://github.com/dfadler/zombie-mermaid/issues/2906))
 
@@ -955,6 +961,24 @@ wrapped line counts, priority bars and the drawing size agree on every gallery s
 - **Repeated spaces** inside a wrapped label are collapsed (Mermaid keeps them).
 - **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
 - **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
+
+## Block diagrams
+
+Checked against mermaid 12.3.0 with `pnpm run block:oracle`: every block's rectangle, its corner
+radius and the drawing size agree on every gallery sample.
+
+- **Text widths.** Mermaid measures labels in the browser; this library sums Trebuchet MS advances
+  and ignores kerning, so a label can differ by about a pixel (`A label` measures 0.9px wider
+  here). The gallery samples avoid such labels.
+- **Palette.** Blocks use the theme's node fill and border; a group is a light mix of the border
+  colour into the background. Mermaid uses its own purple and yellow.
+- **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
+- **Not drawn yet.** Links, the other shapes, styling and markdown strings: see
+  [#3105](https://github.com/dfadler/zombie-mermaid/issues/3105),
+  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106),
+  [#3107](https://github.com/dfadler/zombie-mermaid/issues/3107).
+- **`~~~`.** Mermaid's lexer reads `~~~` as a block id (its id rule comes before the invisible-link rule); so does this parser.
+- **ASCII.** Mermaid has no ASCII output; the box grid is this library's own.
 
 ## User journeys
 

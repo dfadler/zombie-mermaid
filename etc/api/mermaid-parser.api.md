@@ -160,10 +160,12 @@ export function architectureToGraph(diagram: ArchitectureDiagram): MermaidGraph;
 
 // @public (undocumented)
 export interface AxisTick {
+    fontSize?: number;
     label: string;
     labelX: number;
     // (undocumented)
     labelY: number;
+    rotate?: number;
     textAnchor: 'start' | 'middle' | 'end';
     tx: number;
     // (undocumented)
@@ -187,6 +189,27 @@ export interface Block {
     startIndex: number;
     type: 'loop' | 'alt' | 'opt' | 'par' | 'critical' | 'break' | 'rect';
 }
+
+// @public
+export interface BlockDiagram {
+    root: BlockNode;
+}
+
+// @public
+export interface BlockNode {
+    children: BlockNode[];
+    columns?: number;
+    id: string;
+    label: string;
+    // (undocumented)
+    shape: BlockShape;
+    // (undocumented)
+    type: 'node' | 'space' | 'composite';
+    widthInColumns: number;
+}
+
+// @public
+export type BlockShape = 'square' | 'round';
 
 // @public (undocumented)
 export interface C4Boundary {
@@ -354,6 +377,22 @@ export interface ClassRelationship {
     toCardinality?: string;
     // (undocumented)
     type: RelationshipType;
+}
+
+// @public
+export interface DataLabel {
+    // (undocumented)
+    baseline: 'middle' | 'hanging' | 'auto';
+    // (undocumented)
+    fontSize: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    textAnchor: 'start' | 'middle' | 'end';
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
 }
 
 // @public (undocumented)
@@ -807,6 +846,9 @@ export function packGanttSection(tasks: GanttTask[], offset: number, orders: Map
 export function parseArchitecture(lines: Statement[]): ArchitectureDiagram;
 
 // @public
+export function parseBlock(text: string): BlockDiagram;
+
+// @public
 export function parseBoxHeader(header: string): {
     color?: string;
     label: string;
@@ -871,6 +913,9 @@ export function parseSequenceDiagram(lines: Statement[], text?: string): Sequenc
 
 // @public
 export function parseTimeline(text: string): Timeline;
+
+// @public (undocumented)
+export function parseUsecase(source: string): UsecaseDiagram;
 
 // @public
 export function parseXYChart(lines: Statement[], config?: XyChartInitConfig): XYChart;
@@ -948,6 +993,7 @@ export interface PositionedAxis {
         x: number;
         y: number;
         rotate?: number;
+        fontSize?: number;
     };
 }
 
@@ -985,6 +1031,44 @@ export interface PositionedBlock {
     x: number;
     // (undocumented)
     y: number;
+}
+
+// @public
+export interface PositionedBlockDiagram {
+    nodes: PositionedBlockNode[];
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedBlockNode {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    shape: BlockShape;
+    // (undocumented)
+    text: PositionedBlockText;
+    // (undocumented)
+    type: 'node' | 'composite';
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedBlockText {
+    // (undocumented)
+    lines: string[];
+    width: number;
 }
 
 // @public (undocumented)
@@ -2165,6 +2249,7 @@ export interface PositionedTimelineNode {
 
 // @public (undocumented)
 export interface PositionedTitle {
+    fontSize?: number;
     // (undocumented)
     text: string;
     // (undocumented)
@@ -2177,6 +2262,7 @@ export interface PositionedTitle {
 export interface PositionedXYChart {
     bars: PositionedBar[];
     config?: XyChartInitConfig;
+    dataLabels?: DataLabel[];
     gridLines: GridLine[];
     // (undocumented)
     height: number;
@@ -2381,6 +2467,85 @@ export function timeTicks(t0: number, t1: number, custom?: TickInterval, weekday
 export function toBlockType(value: string): Block['type'];
 
 export { toDirection }
+
+// @public
+export interface UsecaseActor {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    parentId?: string;
+}
+
+// @public
+export interface UsecaseBoundary {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    members: string[];
+}
+
+// @public
+export interface UsecaseCase {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    parentId?: string;
+    // (undocumented)
+    shape: 'ellipse' | 'rect';
+}
+
+// @public (undocumented)
+export interface UsecaseDiagram {
+    // (undocumented)
+    actors: UsecaseActor[];
+    // (undocumented)
+    boundaries: UsecaseBoundary[];
+    // (undocumented)
+    direction: UsecaseDirection;
+    // (undocumented)
+    notes: UsecaseNote[];
+    // (undocumented)
+    relationships: UsecaseRelationship[];
+    // (undocumented)
+    useCases: UsecaseCase[];
+}
+
+// @public (undocumented)
+export type UsecaseDirection = 'TB' | 'TD' | 'BT' | 'LR' | 'RL';
+
+// @public
+export interface UsecaseNote {
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    target: string;
+}
+
+// @public
+export const usecaseNoteId: (n: number) => string;
+
+// @public (undocumented)
+export interface UsecaseRelationship {
+    arrow: 'forward' | 'backward' | 'none';
+    // (undocumented)
+    label?: string;
+    // (undocumented)
+    source: string;
+    // (undocumented)
+    target: string;
+    // (undocumented)
+    type: UsecaseRelationshipType;
+}
+
+// @public (undocumented)
+export type UsecaseRelationshipType = 'association' | 'include' | 'extend' | 'generalization';
+
+// @public
+export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph;
 
 // @public
 export function weekdayName(ms: number): string;

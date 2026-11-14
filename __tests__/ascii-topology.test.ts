@@ -227,15 +227,16 @@ describe('compareEnds', () => {
   })
 
   it('reads a fan-in bundle as one cell and one arrowhead', () => {
-    const c = measureSample('flowchart TD\n  A & B --> C')
+    // Three strokes into a 3-cell-wide target cannot land one by one (#2678).
+    const c = measureSample('flowchart TD\n  A & B & C --> D')
     expect(c).toMatchObject({
-      endCellsWant: 2,
+      endCellsWant: 3,
       endCells: 1,
-      arrowsWant: 2,
+      arrowsWant: 3,
       arrows: 1,
     })
     expect(describeSample('T', c, false)).toContain(
-      'end cells 1/2 arrowheads 1/2',
+      'end cells 1/3 arrowheads 1/3',
     )
   })
 
