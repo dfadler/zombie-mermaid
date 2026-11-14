@@ -66,6 +66,10 @@ const diagrams: Record<string, string> = {
   Done
     b[Ship it]`,
 
+  block: `block-beta
+  columns 2
+  a["One"] b("Two")`,
+
   mindmap: `mindmap
   root((Plan))
     Build
