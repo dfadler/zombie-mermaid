@@ -1,15 +1,4 @@
 schema_version: '1'
 grants:
-  research-findings-saves-bench-results-to-issue:
-    - 'Bash(./scripts/bench.sh*)'
-    - 'Bash(./bin/gh *)'
-    - 'Bash(cat *)'
-    - 'Bash(ls*)'
-    - 'Bash(git rev-parse*)'
-    - 'Bash(git remote*)'
-    - 'Bash(git log*)'
-    - 'Bash(echo *)'
-    - 'Bash(pwd)'
-    - 'Write'
   decision-doc-review-unprompted-on-doc-edit:
     - 'Edit'

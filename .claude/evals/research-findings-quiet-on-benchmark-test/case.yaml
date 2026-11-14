@@ -7,7 +7,7 @@ tags:
   - research-findings
   - trigger-boundary
   - quick
-  - pair:research-findings-saves-bench-results-to-issue
+  - pair:research-findings-fires-on-spike-writeup
 runs: 3
 
 execution:
