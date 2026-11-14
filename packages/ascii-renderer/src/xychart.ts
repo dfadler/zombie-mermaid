@@ -71,6 +71,22 @@ const ASC = {
   cornerBR: '+',
 } as const
 
+/**
+ * What `xyChart.xAxis` / `yAxis` ask an axis to draw (mermaid 12.3.0 draws each
+ * unless the key is `false`). The axis title is dropped by the parser.
+ */
+function axisParts(axis: NonNullable<XYChart['config']>['xAxis']): {
+  label: boolean
+  tick: boolean
+  line: boolean
+} {
+  return {
+    label: axis?.showLabel !== false,
+    tick: axis?.showTick !== false,
+    line: axis?.showAxisLine !== false,
+  }
+}
+
 // ============================================================================
 // Multi-series color support
 // ============================================================================
@@ -172,13 +188,17 @@ function renderVertical(
         : 0.5
     return Math.round(t * (plotH - 1))
   }
-  const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
+  const xp = axisParts(chart.config?.xAxis)
+  const yp = axisParts(chart.config?.yAxis)
+  const yGutter = yp.label ? Math.max(...yLabels.map((l) => l.length)) + 1 : 0
 
   const catLabels = getCategoryLabels(chart, dataCount)
   const xr = chart.xAxis.categories ? undefined : chart.xAxis.range
   const xTicks = xr ? niceTickValues(xr.min, xr.max) : undefined
   const xLabels = xTicks ? formatTickLabels(xTicks) : catLabels
-  const wordBandW = widenBandForLabels(catLabels, Math.floor(plotW / dataCount))
+  const wordBandW = xp.label
+    ? widenBandForLabels(catLabels, Math.floor(plotW / dataCount))
+    : Math.floor(plotW / dataCount)
 
   // Canvas dimensions
   const hasTitle = !!chart.title
@@ -212,6 +232,7 @@ function renderVertical(
   // one point has a single span of zero width, which no widening can spread.
   let bandW = wordBandW
   while (
+    xp.label &&
     xTicks &&
     dataCount > 1 &&
     !thinLabels(xLabels, centersOf(bandW)).every(Boolean)
@@ -221,8 +242,9 @@ function renderVertical(
   const totalW = plotLeft + bandW * dataCount + 2
   const xAxisRow = plotTop + plotH
   const xLabelRow = xAxisRow + 1
-  const xTitleRow = hasXTitle ? xLabelRow + 1 : -1
-  const totalH = xLabelRow + 1 + (hasXTitle ? 1 : 0)
+  // Hidden labels leave no row, so the title sits straight under the axis.
+  const xTitleRow = hasXTitle ? xLabelRow + (xp.label ? 1 : 0) : -1
+  const totalH = xLabelRow + (xp.label ? 1 : 0) + (hasXTitle ? 1 : 0)
 
   // Create canvas
   const canvas = createCanvas(totalW, totalH)
@@ -249,34 +271,37 @@ function renderVertical(
   }
 
   // 3. Y-axis line + ticks + labels
-  for (let row = 0; row < plotH; row++) {
+  for (let row = 0; row < plotH && yp.line; row++) {
     const displayRow = plotTop + (plotH - 1 - row)
     set(canvas, roles, displayRow, plotLeft - 1, ch.vLine, 'border')
   }
   // Origin
-  set(canvas, roles, xAxisRow, plotLeft - 1, ch.origin, 'border')
+  if (yp.line && xp.line) {
+    set(canvas, roles, xAxisRow, plotLeft - 1, ch.origin, 'border')
+  }
 
   for (const [ti, tick] of yTicks.entries()) {
     const row = valueToRow(tick)
     if (row < 0 || row >= plotH) continue
     const displayRow = plotTop + (plotH - 1 - row)
     const label = yLabels[ti]!
-    // Tick mark on axis
-    set(
-      canvas,
-      roles,
-      displayRow,
-      plotLeft - 1,
-      row === 0 ? ch.origin : ch.yTick,
-      'border',
-    )
+    // Tick mark on axis; with no axis line it is a stub on its own
+    if (yp.tick) {
+      const glyph = !yp.line
+        ? ch.hLine
+        : row === 0 && xp.line
+          ? ch.origin
+          : ch.yTick
+      set(canvas, roles, displayRow, plotLeft - 1, glyph, 'border')
+    }
     // Label
+    if (!yp.label) continue
     const labelStart = yTitleWidth + yGutter - label.length
     writeText(canvas, roles, displayRow, Math.max(0, labelStart), label, 'text')
   }
 
   // 4. X-axis line + ticks + labels
-  for (let c = plotLeft; c < plotLeft + bandW * dataCount; c++) {
+  for (let c = plotLeft; c < plotLeft + bandW * dataCount && xp.line; c++) {
     set(canvas, roles, xAxisRow, c, ch.hLine, 'border')
   }
   // A numeric x range is a linear axis (#2553): a tick at every nice value,
@@ -285,8 +310,10 @@ function renderVertical(
   const catShown = thinLabels(xLabels, catCenters)
   for (let i = 0; i < xLabels.length; i++) {
     const cx = catCenters[i]!
-    set(canvas, roles, xAxisRow, cx, ch.xTick, 'border')
-    if (!catShown[i]) continue
+    if (xp.tick) {
+      set(canvas, roles, xAxisRow, cx, xp.line ? ch.xTick : ch.vLine, 'border')
+    }
+    if (!xp.label || !catShown[i]) continue
     // Label below
     const label = xLabels[i]!
     const labelStart = cx - Math.floor(label.length / 2)
@@ -447,7 +474,12 @@ function renderHorizontal(
   const catLabels = catTicks
     ? formatTickLabels(catTicks)
     : getCategoryLabels(chart, dataCount)
-  const catGutter = Math.max(...catLabels.map((l) => l.length)) + 1
+  // `xAxis` is the category axis (left) and `yAxis` the value axis (top) here.
+  const cp = axisParts(chart.config?.xAxis)
+  const vp = axisParts(chart.config?.yAxis)
+  const catGutter = cp.label
+    ? Math.max(...catLabels.map((l) => l.length)) + 1
+    : 0
 
   // Mermaid prints every value tick: widen the plot until none is thinned
   // (#2310). Ticks sit (plotW - 1) / (n - 1) columns apart, so this ends.
@@ -460,6 +492,7 @@ function renderHorizontal(
     )
   let plotW = PLOT_WIDTH
   while (
+    vp.label &&
     !thinLabels(
       valueLabels,
       valueTicks.map((v) => colOf(v, plotW)),
@@ -481,7 +514,7 @@ function renderHorizontal(
   const catTitleWidth = chart.xAxis.title ? 2 : 0
   // Mermaid puts the value axis above the plot: [axis title], tick labels,
   // then the axis line, then the bars (#2719).
-  const xAxisRow = (hasTitle ? 2 : 0) + (hasYTitle ? 1 : 0) + 1
+  const xAxisRow = (hasTitle ? 2 : 0) + (hasYTitle ? 1 : 0) + (vp.label ? 1 : 0)
   const plotTop = xAxisRow + 1
   const plotLeft = catTitleWidth + catGutter + 1
   const totalW = plotLeft + plotW + 2
@@ -523,16 +556,30 @@ function renderHorizontal(
   }
 
   // Y-axis (category axis on left)
-  for (let r = plotTop; r < plotTop + plotH; r++) {
+  for (let r = plotTop; r < plotTop + plotH && cp.line; r++) {
     set(canvas, roles, r, plotLeft - 1, ch.vLine, 'border')
   }
-  set(canvas, roles, xAxisRow, plotLeft - 1, ch.origin, 'border')
+  if (cp.line && vp.line) {
+    set(canvas, roles, xAxisRow, plotLeft - 1, ch.origin, 'border')
+  }
 
   for (let i = 0; i < catLabels.length; i++) {
     const my = catTicks
       ? rowAt((catTicks[i]! - xr!.min) / (xr!.max - xr!.min || 1))
       : bandMid(i)
     const label = catLabels[i]!
+    // Tick mark on the axis; with no axis line it is a stub on its own
+    if (cp.tick) {
+      set(
+        canvas,
+        roles,
+        my,
+        plotLeft - 1,
+        cp.line ? ch.yTick : ch.hLine,
+        'border',
+      )
+    }
+    if (!cp.label) continue
     const labelStart = catTitleWidth + catGutter - label.length
     writeText(canvas, roles, my, Math.max(0, labelStart), label, 'text')
   }
@@ -548,7 +595,7 @@ function renderHorizontal(
   }
 
   // X-axis (value axis on top)
-  for (let c = plotLeft; c < plotLeft + plotW; c++) {
+  for (let c = plotLeft; c < plotLeft + plotW && vp.line; c++) {
     set(canvas, roles, xAxisRow, c, ch.hLine, 'border')
   }
   const inPlot = valueTicks
@@ -563,8 +610,10 @@ function renderHorizontal(
   )
   for (const [k, ti] of inPlot.entries()) {
     const cx = valueToCol(valueTicks[ti]!)
-    set(canvas, roles, xAxisRow, cx, ch.xTick, 'border')
-    if (!valueShown[k]) continue
+    if (vp.tick) {
+      set(canvas, roles, xAxisRow, cx, vp.line ? ch.xTick : ch.vLine, 'border')
+    }
+    if (!vp.label || !valueShown[k]) continue
     const label = valueLabels[ti]!
     writeText(
       canvas,
@@ -582,7 +631,7 @@ function renderHorizontal(
     writeText(
       canvas,
       roles,
-      xAxisRow - 2,
+      xAxisRow - (vp.label ? 2 : 1),
       Math.floor(totalW / 2 - title.length / 2),
       title,
       'text',

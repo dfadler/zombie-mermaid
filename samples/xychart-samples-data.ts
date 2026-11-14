@@ -1040,7 +1040,8 @@ xychart-beta
     y-axis "Revenue" 0 --> 100
     bar [20, 50, 80, 40]
     line [30, 45, 70, 60]`,
-  },  {
+  },
+  {
     title: 'Mixed-Sign Bars',
     category: 'Negative Values',
     description:
@@ -1059,5 +1060,38 @@ xychart-beta
     title "Below zero"
     x-axis [a, b, c]
     bar [-2, -5, -8]`,
+  },
+  {
+    title: 'Init Config: Horizontal Bare Axes',
+    category: 'Init Config',
+    description:
+      '`xyChart` init block on a horizontal chart: category axis without labels and ticks, value axis without axis line and title (mermaid 12.3.0).',
+    source: `%%{init: {"xyChart": {"xAxis": {"showLabel": false, "showTick": false}, "yAxis": {"showAxisLine": false, "showTitle": false}}}}%%
+xychart-beta horizontal
+    x-axis "Month" [jan, feb, mar, apr]
+    y-axis "Revenue" 0 --> 100
+    bar [20, 50, 80, 40]`,
+  },
+  {
+    title: 'Init Config: Linear X, Axis Line Off',
+    category: 'Init Config',
+    description:
+      '`xyChart` init block on a numeric x axis: x axis without line, y axis without labels (mermaid 12.3.0).',
+    source: `%%{init: {"xyChart": {"xAxis": {"showAxisLine": false}, "yAxis": {"showLabel": false}}}}%%
+xychart-beta
+    x-axis "Year" 2020 --> 2024
+    y-axis "Revenue" 0 --> 100
+    line [20, 50, 80, 40, 60]`,
+  },
+  {
+    title: 'Init Config: Labels Off, Titles Kept',
+    category: 'Init Config',
+    description:
+      '`xyChart` init block: both axes without labels, ticks and lines, titles kept (mermaid 12.3.0).',
+    source: `%%{init: {"xyChart": {"xAxis": {"showLabel": false, "showTick": false, "showAxisLine": false}, "yAxis": {"showLabel": false, "showTick": false, "showAxisLine": false}}}}%%
+xychart-beta
+    x-axis "Month" [jan, feb, mar]
+    y-axis "Revenue" 0 --> 100
+    bar [20, 50, 80]`,
   },
 ]
