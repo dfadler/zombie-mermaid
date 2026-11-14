@@ -1265,6 +1265,67 @@ function resolveLabelPlacement(
   return placementMemo.get(key)!
 }
 
+/**
+ * #3140: the two labels of a vertical reciprocal pair share the gap's middle
+ * row, each on the outer side of its own stroke, as mermaid@12.3.0 draws them
+ * at one height (the #530 rule put each beside its own arrowhead, on
+ * different rows). Only where both labels are one line, both strokes are
+ * straight verticals on distinct columns, and the middle row has a blank cell
+ * clear of other strokes for both; any other pair keeps the placement below.
+ */
+function sameRowPlacement(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  labelAware: boolean,
+): LabelLines {
+  const partner = graph.edges.find(
+    (o) => o !== edge && o.from === edge.to && o.to === edge.from,
+  )
+  if (
+    !partner ||
+    edge.text.length === 0 ||
+    partner.text.length === 0 ||
+    isClusterExitEdge(graph, edge) ||
+    isClusterExitEdge(graph, partner)
+  ) {
+    return null
+  }
+  const one = (e: AsciiEdge) => {
+    const line = onEntryJog(graph, e, labelLineToDrawing(graph, e))
+    if (
+      splitLines(e.text).length !== 1 ||
+      line.length < 2 ||
+      line[0]!.x !== line[1]!.x ||
+      line[0]!.y === line[1]!.y
+    ) {
+      return null
+    }
+    const x = line[0]!.x + strokeShiftFor(graph, e, labelAware)
+    const lo = Math.min(line[0]!.y, line[1]!.y)
+    const hi = Math.max(line[0]!.y, line[1]!.y)
+    return { x, y: lo + Math.floor((hi - lo) / 2) }
+  }
+  const mine = one(edge)
+  const theirs = one(partner)
+  if (!mine || !theirs || mine.x === theirs.x || mine.y !== theirs.y) {
+    return null
+  }
+  const at = (e: AsciiEdge, s: { x: number; y: number }, left: boolean) => [
+    {
+      x: left ? s.x - 1 - displayWidth(e.text) : s.x + 2,
+      y: s.y,
+      text: e.text,
+    },
+  ]
+  const mineLeft = mine.x < theirs.x
+  const own = at(edge, mine, mineLeft)
+  const other = at(partner, theirs, !mineLeft)
+  return besideFree(graph, edge, own, labelAware, 1) &&
+    besideFree(graph, partner, other, labelAware, 1)
+    ? own
+    : null
+}
+
 function resolveLabelPlacementUncached(
   graph: AsciiGraph,
   edge: AsciiEdge,
@@ -1290,6 +1351,8 @@ function resolveLabelPlacementUncached(
       },
     ]
   }
+  const sameRow = sameRowPlacement(graph, edge, labelAware)
+  if (sameRow) return sameRow
   const centred = centredLabelPlacement(graph, edge, labelAware)
   const dx = strokeShiftFor(graph, edge, labelAware)
   // #1408 option C: a vertical edge's label goes on its own stroke when the

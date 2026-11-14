@@ -57,11 +57,11 @@ describe('vertical edge label on its stroke (#1408)', () => {
     expect(lines[down]!.indexOf('down')).toBeGreaterThan(arrow)
   })
 
-  it('puts narrow reciprocal labels on their own strokes', () => {
+  it('puts narrow reciprocal labels beside their own strokes, on the outer side (#3140)', () => {
     const lines = render('graph TD\nA -->|x| B\nB -->|y| A')
     const up = lines.find((l) => l.includes('▲'))!.indexOf('▲')
     const down = lines.find((l) => l.includes('▼'))!.indexOf('▼')
-    expect(lines.find((l) => /\by\b/.test(l))![up]).toBe('y')
-    expect(lines.find((l) => /\bx\b/.test(l))![down]).toBe('x')
+    expect(lines.find((l) => /\by\b/.test(l))![up - 2]).toBe('y')
+    expect(lines.find((l) => /\bx\b/.test(l))![down + 2]).toBe('x')
   })
 })

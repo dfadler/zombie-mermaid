@@ -69,16 +69,19 @@ B -->|y| A`
     const { up, down } = strokes(lines)
     const yRow = lines.find((l) => l.includes('y'))!
     const xRow = lines.find((l) => /\bx\b/.test(l))!
-    // #1408 (option C): each label sits on its own stroke.
-    expect(yRow.indexOf('y')).toBe(up)
-    expect(xRow.indexOf('x')).toBe(down)
+    // #3140: each label sits on the outer side of its own stroke, one blank
+    // cell clear, so the two share a row without touching.
+    expect(yRow.indexOf('y')).toBe(up - 2)
+    expect(xRow.indexOf('x')).toBe(down + 2)
   })
 
-  it('keeps the #530 row order: up label under the up arrowhead, down label above the down arrowhead', () => {
+  it('puts both labels on one row between the arrowheads (#3140, was the #530 row order)', () => {
     const lines = render(PAIR)
     const { upRow, downRow } = strokes(lines)
-    expect(lines.findIndex((l) => l.includes('y'))).toBe(upRow + 1)
-    expect(lines.findIndex((l) => /\bx\b/.test(l))).toBe(downRow - 1)
+    const y = lines.findIndex((l) => l.includes('y'))
+    expect(lines.findIndex((l) => /\bx\b/.test(l))).toBe(y)
+    expect(y).toBeGreaterThan(upRow)
+    expect(y).toBeLessThan(downRow)
   })
 
   it('leaves room for a long label without covering a stroke', () => {

@@ -65,19 +65,15 @@ describe('ASCII state diagram — bidirectional pair label placement (issue #530
     expect(startIdx).toBeGreaterThan(-1)
     expect(downArrowIdx).toBeGreaterThan(-1)
 
-    // "cancel" (Active --> Idle) sits immediately below the up-arrow that
-    // arrives at Idle — i.e. next to its own arrowhead.
-    expect(cancelIdx).toBe(upArrowIdx + 1)
-    // "start" (Idle --> Active) sits immediately above the down-arrow that
-    // arrives at Active — i.e. next to its own arrowhead.
-    expect(startIdx).toBe(downArrowIdx - 1)
-
-    // Reading top to bottom: Idle's border, ▲, cancel, ..., start, ▼,
-    // Active's border — cancel precedes start.
-    expect(cancelIdx).toBeLessThan(startIdx)
+    // #3140: "cancel" (Active --> Idle) and "start" (Idle --> Active) share
+    // one row between the arrowheads, each beside its own stroke (before, each
+    // stood next to its own arrowhead, #530).
+    expect(cancelIdx).toBe(startIdx)
+    expect(cancelIdx).toBeGreaterThan(upArrowIdx)
+    expect(startIdx).toBeLessThan(downArrowIdx)
   })
 
-  it('places "timeout" next to the arrow arriving at Closed and "connect" next to the arrow arriving at Connecting', () => {
+  it('places "timeout" left of the up stroke into Closed and "connect" right of the down stroke into Connecting', () => {
     const ascii = renderMermaidASCII(CONNECTION_LIFECYCLE, {
       colorMode: 'none',
     })
@@ -107,11 +103,15 @@ describe('ASCII state diagram — bidirectional pair label placement (issue #530
     expect(connectIdx).toBeGreaterThan(-1)
     expect(downArrowIdx).toBeGreaterThan(-1)
 
-    // "timeout" (Connecting --> Closed) sits next to the up-arrow arriving
-    // at Closed; "connect" (Closed --> Connecting) sits next to the
-    // down-arrow arriving at Connecting.
-    expect(timeoutIdx).toBe(upArrowIdx + 1)
-    expect(connectIdx).toBeGreaterThanOrEqual(downArrowIdx - 1)
+    // #3140: each label sits on the outer side of its own stroke, on the
+    // channel's middle rows: "timeout" (Connecting --> Closed) left of the
+    // up stroke, "connect" (Closed --> Connecting) right of the down stroke.
+    const upCol = channel[upArrowIdx]!.indexOf('▲')
+    const downCol = channel[downArrowIdx]!.indexOf('▼')
+    expect(
+      channel[timeoutIdx]!.indexOf('timeout') + 'timeout'.length,
+    ).toBeLessThan(upCol)
+    expect(channel[connectIdx]!.indexOf('connect')).toBeGreaterThan(downCol)
     expect(timeoutIdx).toBeLessThan(connectIdx)
   })
 
