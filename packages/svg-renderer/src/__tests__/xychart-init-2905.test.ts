@@ -25,19 +25,19 @@ describe('xyChart init config (#2905)', () => {
         height: 'x',
         showTitle: false,
         chartOrientation: 'sideways',
-        titleFontSize: 30,
-        xAxis: { showTick: false, tickWidth: 9, showLabel: 1 },
+        legendFontSize: 30,
+        xAxis: { showTick: false, tickWidth: 9, showLabel: 1, tickGap: 3 },
         yAxis: 5,
       }).split('\n'),
     )
     expect(c.xyChart).toEqual({
       width: 900,
       showTitle: false,
-      xAxis: { showTick: false },
+      xAxis: { showTick: false, tickWidth: 9 },
     })
     expect(c.ignored).toEqual([
-      'xyChart.titleFontSize',
-      'xyChart.xAxis.tickWidth',
+      'xyChart.legendFontSize',
+      'xyChart.xAxis.tickGap',
     ])
   })
 
