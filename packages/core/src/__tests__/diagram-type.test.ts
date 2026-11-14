@@ -180,6 +180,18 @@ describe('detectDiagramType – radar', () => {
   })
 })
 
+describe('detectDiagramType – usecase', () => {
+  it('detects usecase-beta, case-sensitively as Mermaid’s detector does', () => {
+    expect(detectDiagramType('usecase-beta')).toBe('usecase')
+    expect(detectDiagramType('%% c\n  usecase-beta\n  actor A')).toBe('usecase')
+    expect(detectDiagramType('Usecase-beta')).toBe('flowchart')
+    // Mermaid 12.3.0 detects only `usecase-beta`, not `usecase` or `useCaseDiagram`.
+    expect(detectDiagramType('usecase')).toBe('flowchart')
+    expect(detectDiagramType('useCaseDiagram')).toBe('flowchart')
+    expect(detectDiagramType('usecase-betas')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – treemap', () => {
   it('detects treemap and treemap-beta, case-sensitively and as a whole word', () => {
     expect(detectDiagramType('treemap-beta\n"A": 1')).toBe('treemap')

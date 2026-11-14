@@ -69,8 +69,11 @@ import {
   parseKanban,
   parseSankey,
   parseRequirementDiagram,
+  parseUsecase,
+  usecaseToGraph,
   parseTreemap,
 } from '@zombie-mermaid/mermaid-parser'
+import type { UsecaseDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
   PositionedXYChart,
@@ -461,6 +464,32 @@ const architectureModule: DiagramModule<
   renderSvg: flowchartModule.renderSvg,
 }
 
+/**
+ * Use case diagrams are lowered to the flowchart model (`usecaseToGraph`) and
+ * ride the flowchart layout + renderer, so this module is `flowchartModule`
+ * with a different `parse` — as mermaid hands them to the same dagre layout.
+ * The parser reads the raw `text`: `;` is label text there, not a separator.
+ */
+const usecaseModule: DiagramModule<UsecaseDiagram, PositionedFlowchart> = {
+  type: 'usecase',
+  parse: (_lines, text) => parseUsecase(text),
+  layoutForSvg(diagram, options) {
+    const graph = withDirectionOverride(
+      usecaseToGraph(diagram),
+      options.direction,
+    )
+    // Mermaid's canvas margin around the drawing is 20px, not the flowchart's 40.
+    return {
+      graph: layoutFlowchartSync(graph, {
+        ...options,
+        padding: options.padding ?? 20,
+      }),
+      curve: 'linear',
+    }
+  },
+  renderSvg: flowchartModule.renderSvg,
+}
+
 // `undefined` selects Mermaid's own font (see ./pie/layout.ts). Asking for the
 // embedded Inter subset is asking for Inter, so that stays the font then.
 const pieFont = (options: RenderOptions): string | undefined =>
@@ -819,6 +848,7 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   kanban: kanbanModule,
   sankey: sankeyModule,
   requirement: requirementModule,
+  usecase: usecaseModule,
   gitgraph: gitgraphModule,
   treemap: treemapModule,
 }

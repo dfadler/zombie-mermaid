@@ -878,6 +878,9 @@ export function parseTimeline(text: string): Timeline;
 // @public
 export function parseTreemap(text: string): Treemap;
 
+// @public (undocumented)
+export function parseUsecase(source: string): UsecaseDiagram;
+
 // @public
 export function parseXYChart(lines: Statement[], config?: XyChartInitConfig): XYChart;
 
@@ -2491,6 +2494,85 @@ export interface TreemapStyle {
     // (undocumented)
     value: string;
 }
+
+// @public
+export interface UsecaseActor {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    parentId?: string;
+}
+
+// @public
+export interface UsecaseBoundary {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    members: string[];
+}
+
+// @public
+export interface UsecaseCase {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    parentId?: string;
+    // (undocumented)
+    shape: 'ellipse' | 'rect';
+}
+
+// @public (undocumented)
+export interface UsecaseDiagram {
+    // (undocumented)
+    actors: UsecaseActor[];
+    // (undocumented)
+    boundaries: UsecaseBoundary[];
+    // (undocumented)
+    direction: UsecaseDirection;
+    // (undocumented)
+    notes: UsecaseNote[];
+    // (undocumented)
+    relationships: UsecaseRelationship[];
+    // (undocumented)
+    useCases: UsecaseCase[];
+}
+
+// @public (undocumented)
+export type UsecaseDirection = 'TB' | 'TD' | 'BT' | 'LR' | 'RL';
+
+// @public
+export interface UsecaseNote {
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    target: string;
+}
+
+// @public
+export const usecaseNoteId: (n: number) => string;
+
+// @public (undocumented)
+export interface UsecaseRelationship {
+    arrow: 'forward' | 'backward' | 'none';
+    // (undocumented)
+    label?: string;
+    // (undocumented)
+    source: string;
+    // (undocumented)
+    target: string;
+    // (undocumented)
+    type: UsecaseRelationshipType;
+}
+
+// @public (undocumented)
+export type UsecaseRelationshipType = 'association' | 'include' | 'extend' | 'generalization';
+
+// @public
+export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph;
 
 // @public
 export function weekdayName(ms: number): string;
