@@ -1825,11 +1825,13 @@ function placeFace(
       ranked &&
       run.node.shape === 'diamond' &&
       run.axis === 'v' &&
-      run.side === 'bottom' &&
+      (run.side === 'bottom' || run.side === 'top') &&
       list.length === 2
     ) {
       const glyph =
-        run.node.drawing![p - run.node.drawingCoord!.x]?.[geo.border - 1]
+        run.node.drawing![p - run.node.drawingCoord!.x]?.[
+          geo.border + (run.side === 'top' ? 1 : -1)
+        ]
       if (Math.abs(p - centre) >= 2 && glyph && '╲╱\\/'.includes(glyph))
         cells.push(p)
       continue
