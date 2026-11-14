@@ -17,7 +17,8 @@ export function mulberry32(seed: number): Rng {
   }
 }
 
-const pick = <T>(r: Rng, xs: readonly T[]): T => xs[Math.floor(r() * xs.length)]!
+const pick = <T>(r: Rng, xs: readonly T[]): T =>
+  xs[Math.floor(r() * xs.length)]!
 const int = (r: Rng, lo: number, hi: number): number =>
   lo + Math.floor(r() * (hi - lo + 1))
 
@@ -35,7 +36,17 @@ const SHAPES: ReadonlyArray<readonly [string, string]> = [
   ['>', ']'],
 ]
 const OPS = ['-->', '---', '-.->', '==>'] as const
-const WORDS = ['a', 'Bb', 'ccc', 'Start', 'End', 'Check', 'x1', 'Long label', 'Z']
+const WORDS = [
+  'a',
+  'Bb',
+  'ccc',
+  'Start',
+  'End',
+  'Check',
+  'x1',
+  'Long label',
+  'Z',
+]
 
 const word = (r: Rng): string => {
   const w = pick(r, WORDS)
@@ -71,7 +82,8 @@ function flowchart(r: Rng): Fuzzed {
     const title = `G${s}`
     labels.push(title)
     const inner = members.map((m) => `    ${decl[m]}`)
-    if (r() < 0.3 && s + 1 < sgCount) inner.push(`    direction ${pick(r, DIRS)}`)
+    if (r() < 0.3 && s + 1 < sgCount)
+      inner.push(`    direction ${pick(r, DIRS)}`)
     body.push(`  subgraph ${title}["${title}"]`, ...inner, '  end')
   }
   for (let i = 0; i < n; i++) if (!used.has(i)) body.push(`  ${decl[i]}`)
@@ -95,10 +107,14 @@ function state(r: Rng): Fuzzed {
   const labels = [...Array(n).keys()].map((i) => `S${i}x`)
   const comp = r() < 0.4 && n >= 3
   const inComp = comp ? Math.min(n - 1, int(r, 1, 3)) : 0
-  lines.push(...labels.slice(inComp).map((l, i) => `  state "${l}" as t${i + inComp}`))
+  lines.push(
+    ...labels.slice(inComp).map((l, i) => `  state "${l}" as t${i + inComp}`),
+  )
   if (comp) {
     lines.push('  state C {')
-    labels.slice(0, inComp).forEach((l, i) => lines.push(`    state "${l}" as t${i}`))
+    labels
+      .slice(0, inComp)
+      .forEach((l, i) => lines.push(`    state "${l}" as t${i}`))
     for (let i = 0; i + 1 < inComp; i++) lines.push(`    t${i} --> t${i + 1}`)
     if (r() < 0.5) lines.push('    [*] --> t0')
     lines.push('  }')
@@ -148,7 +164,8 @@ function er(r: Rng): Fuzzed {
     lines.push(`  ${labels[a]} ${pick(r, card)} ${labels[b]} : rel${k}`)
   }
   labels.forEach((l) => {
-    if (r() < 0.4) lines.push(`  ${l} {`, '    string name', '    int id', '  }')
+    if (r() < 0.4)
+      lines.push(`  ${l} {`, '    string name', '    int id', '  }')
   })
   const src = lines.join('\n')
   // An entity no relationship or block mentions is not in the diagram.
@@ -171,7 +188,8 @@ export function violation(
 ): string | undefined {
   const lines = out.split('\n')
   const widths = new Set(lines.map((l) => [...l].length))
-  if (widths.size !== 1) return `not rectangular (widths ${[...widths].join(',')})`
+  if (widths.size !== 1)
+    return `not rectangular (widths ${[...widths].join(',')})`
   if (/NaN|undefined|Infinity|\[object/.test(out)) return 'NaN/undefined text'
   for (const l of checkLabels ? f.labels : []) {
     if (!out.includes(l)) return `label ${JSON.stringify(l)} missing`

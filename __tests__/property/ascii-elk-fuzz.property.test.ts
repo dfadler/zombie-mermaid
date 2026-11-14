@@ -18,9 +18,7 @@ import { renderMermaidASCII } from '../../packages/ascii-renderer/src/index.ts'
 import '../../src/index.ts'
 import { generate, mulberry32, violation } from '../helpers/ascii-fuzz.ts'
 
-const SEEDS = (process.env.ELK_FUZZ_SEEDS ?? '1,2,3,4')
-  .split(',')
-  .map(Number)
+const SEEDS = (process.env.ELK_FUZZ_SEEDS ?? '1,2,3,4').split(',').map(Number)
 const RUNS = Number(process.env.ELK_FUZZ_RUNS ?? 50)
 
 describe('ELK-registered ASCII fuzz (#3146)', () => {
