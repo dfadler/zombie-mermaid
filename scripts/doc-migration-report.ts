@@ -49,7 +49,7 @@ function referencedBy(path: string): number {
     )
     return out.split('\n').filter(Boolean).length
   } catch {
-    return 0 // git grep exits 1 on no match
+    return 0 // Git grep exits 1 on no match
   }
 }
 
