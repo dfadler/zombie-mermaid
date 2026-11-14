@@ -92,14 +92,10 @@ requirement exists to close.
 
 ## Research and measurement: findings go in the issue
 
-For investigation, measurement or spike work on an issue, post the findings as an issue
-comment (long ones in a collapsed `<details>`), with a permalink to any script or other
-artifact in the repo. Do not add a `docs/research/*.md` doc: write one only when something
-else (a guide, a code comment, a script) links to it and it is worth keeping current.
-`pnpm run check:docs` fails on a doc under `docs/research/` that nothing outside it
-references, and `scripts/pre-pr-check.sh` (the warn-only `gh pr create` hook) warns when a PR adds one, and
-`scripts/research-nudge.sh` (a warn-only `Write` hook) nudges when you create one. Former research docs and where their findings now live are indexed in
-[`docs/research/README.md`](docs/research/README.md). See
+Post investigation, measurement and spike findings as a comment on the issue (long ones in a
+collapsed `<details>`, with a permalink to any script), not as a new `docs/research/*.md`. The
+full rule is the `research-findings` skill (`.claude/skills/research-findings/SKILL.md`); the
+`pre-pr-check.sh` and `research-nudge.sh` hooks still enforce it. See
 [#1479](https://github.com/dfadler/zombie-mermaid/issues/1479) and
 [#1642](https://github.com/dfadler/zombie-mermaid/issues/1642).
 
@@ -153,16 +149,11 @@ only after the task was done and verified this session, or marked `N/A: <reason>
 
 ## Decision docs: run the self-review checklist before opening the PR
 
-Before opening a PR that adds or edits a `docs/decisions/*.md` file, walk through
-the self-review checklist in
+Before opening a PR that adds or edits a `docs/decisions/*.md` file, walk the draft through the
+self-review checklist, whether a human or an agent drafted it. The five items are the
+`decision-doc-review` skill (`.claude/skills/decision-doc-review/SKILL.md`); rationale in
 [`docs/decisions/decision-doc-self-review-checklist-977.md`](docs/decisions/decision-doc-self-review-checklist-977.md#decision)
-against the draft — degenerate/edge-case inputs, boundary and off-by-one
-arithmetic, ambiguous terminology, claims about a sub-issue's scope, and cited
-precedent. This applies whether the doc was drafted by a human or an agent; an
-agent-authored draft just makes the checklist easier to silently skip. See
-[#1063](https://github.com/dfadler/zombie-mermaid/issues/1063) for why this
-pointer exists: writing the checklist down in a doc nothing links to doesn't
-make it get used.
+and [#1063](https://github.com/dfadler/zombie-mermaid/issues/1063).
 
 Before removing a worktree in this repo (`ExitWorktree`, or by hand), stop only the
 processes _you_ started for it — don't kill by port or by a generic name pattern
