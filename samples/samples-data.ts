@@ -4139,4 +4139,71 @@ sankey-beta
     Book ..> : include Cancel
     note for Guest "May be anonymous"`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  EVENT MODELING — eventmodeling (Mermaid 12.3.0)
+  //
+  //  Each source has an ASCII golden of the same shape under
+  //  packages/ascii-renderer/src/__tests__/testdata/*/eventmodeling_*.txt.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Event Modeling: Basic',
+    category: 'Event Modeling',
+    gallery: true,
+    description:
+      'A shopping cart on a timeline: a screen sends a command, the command records an event, and a read model built from it feeds the screen again, in the UI, Command/Read Model and Events swimlanes.',
+    source: `eventmodeling
+tf 01 ui CartScreen
+tf 02 cmd AddItem
+tf 03 evt ItemAdded
+tf 04 rmo CartItems
+tf 05 ui CartPage`,
+  },
+  {
+    title: 'Event Modeling: Namespaces And Data',
+    category: 'Event Modeling',
+    description:
+      'A `Namespace.Name` identifier opens its own swimlane; inline data in braces, a typed `json` payload and a `[[Name]]` reference to a `data` block each show under the name.',
+    source: `eventmodeling
+tf 01 rmo Inventory.Stock
+tf 02 ui ProductPage
+tf 03 cmd AddItem { description: string }
+tf 04 evt ItemAdded [[AddItem01]]
+tf 05 pcr Pricing.Recalculate \`json\`{ "currency": "EUR" }
+
+data AddItem01 {
+  description: 'john'
+}`,
+  },
+  {
+    title: 'Event Modeling: Source Frames And Reset',
+    category: 'Event Modeling',
+    description:
+      '`->>` points a frame at one or more named earlier frames; a reset frame (`rf`) draws no arrow from the frame before it; `timeframe`, `readmodel` and the other long keywords are accepted.',
+    source: `eventmodeling
+rf 01 evt CartCreated
+rf 02 evt ItemAdded
+timeframe 03 readmodel CartView ->> 01 ->> 02
+timeframe 04 ui CartScreen
+tf 05 cmd Checkout`,
+  },
+  {
+    title: 'Event Modeling: Long Text And Repeated Namespaces',
+    category: 'Event Modeling',
+    description:
+      'Long data wraps at 430px, a name too wide for a box breaks with a hyphen, a data block flows as one paragraph, and each namespaced frame opens its own lane, as Mermaid 12.3.0 draws it.',
+    source: `eventmodeling
+tf 001 ui AVeryLongScreenNameThatKeepsGoingAndGoingWithoutAnySpacesAtAllSoItMustBreakSomewhereAroundHere
+tf 002 cmd Register { name: string, email: string, password: string, newsletter: boolean, referral: string }
+tf 003 evt Billing.Registered [[Details]]
+tf 004 evt Billing.Confirmed
+tf 005 rmo Accounts.View ->> 003 ->> 004
+
+data Details {
+  customer: 'Ada Lovelace'
+  plan: 'enterprise'
+  seats: 25
+}`,
+  },
 ]

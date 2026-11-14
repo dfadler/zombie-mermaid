@@ -1,0 +1,35 @@
+UI/Automation                         Command/Read Model                    C/RM: Accounts         Stream: Billing
+
++- ui -------------------------+
+| AVeryLongScreenNameThatKeeps |
+| GoingAndGoingWithoutAnySpace |
+| sAtAllSoItMustBreakSomewhere |
+| AroundHere                   |
++---------------+--------------+
+                |
+                |
+                |                     +- command --------------------+
+                |                     | Register                     |
+                |                     | name: string, email: string, |
+                +-------------------->| password: string,            |
+                                      | newsletter: boolean,         |
+                                      | referral: string             |
+                                      +---------------+--------------+
+                                                      |
+                                                      |
+                                                      |                                            +- event ------------------+
+                                                      |                                            | Registered               |
+                                                      |                                            | customer: 'Ada Lovelace' |
+                                                      +------------------------------------------->| plan: 'enterprise'       |
+                                                      |                                            | seats: 25                |
+                                                      |                                            +-------------+------------+
+                                                      |                                                          |
+                                                      |                                                          |
+                                                      |                                            +- event ------------------+
+                                                      +------------------------------------------->| Confirmed                |
+                                                                                                   +-------------+------------+
+                                                                                                                 |
+                                                                                                                 |
+                                                                            +- read model --+                    |
+                                                                            | View          |<-------------------+
+                                                                            +---------------+

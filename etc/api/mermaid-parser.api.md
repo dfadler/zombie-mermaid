@@ -411,6 +411,38 @@ export interface ErRelationship {
 }
 
 // @public
+export interface EventModeling {
+    // (undocumented)
+    dataBlocks: EventModelingDataBlock[];
+    // (undocumented)
+    frames: EventModelingFrame[];
+}
+
+// @public
+export interface EventModelingDataBlock {
+    // (undocumented)
+    name: string;
+    value: string;
+}
+
+// @public
+export type EventModelingEntityType = 'ui' | 'processor' | 'command' | 'readmodel' | 'event';
+
+// @public
+export interface EventModelingFrame {
+    dataInline?: string;
+    dataRef?: string;
+    // (undocumented)
+    entityType: EventModelingEntityType;
+    id: string;
+    identifier: string;
+    name: string;
+    namespace?: string;
+    reset: boolean;
+    sources: string[];
+}
+
+// @public
 export interface ExpandedNodeMeta {
     [key: string]: string | undefined;
     constraint?: string;
@@ -843,6 +875,9 @@ export function parseDayjs(str: string, fmt: string, now?: Date): number | undef
 export function parseErDiagram(lines: Statement[]): ErDiagram;
 
 // @public
+export function parseEventModeling(text: string): EventModeling;
+
+// @public
 export function parseExpandedMeta(body: string): ExpandedNodeMeta;
 
 // @public
@@ -1243,6 +1278,68 @@ export interface PositionedErRelationship {
         x: number;
         y: number;
     }>;
+}
+
+// @public
+export interface PositionedEventModeling {
+    // (undocumented)
+    boxes: PositionedEventModelingBox[];
+    // (undocumented)
+    lanes: PositionedEventModelingLane[];
+    laneWidth: number;
+    // (undocumented)
+    relations: PositionedEventModelingRelation[];
+    // (undocumented)
+    viewBox: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// @public
+export interface PositionedEventModelingBox {
+    // (undocumented)
+    dataLines: string[];
+    // (undocumented)
+    frame: EventModelingFrame;
+    // (undocumented)
+    height: number;
+    lane: number;
+    nameLines: string[];
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedEventModelingLane {
+    // (undocumented)
+    height: number;
+    index: number;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedEventModelingRelation {
+    from: number;
+    // (undocumented)
+    to: number;
+    // (undocumented)
+    x1: number;
+    // (undocumented)
+    x2: number;
+    // (undocumented)
+    y1: number;
+    // (undocumented)
+    y2: number;
 }
 
 // @public (undocumented)

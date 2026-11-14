@@ -34,7 +34,7 @@ browser.
 
 There is no "browse all the samples" experience anymore, in the browser or
 otherwise. The fuller sample library this section used to describe —
-263 diagrams covering every shape, edge type, and theme combination —
+267 diagrams covering every shape, edge type, and theme combination —
 still exists in the repo as [`samples-data.ts`](../../samples/samples-data.ts), but
 it now only feeds the internal visual-test suite and
 `scripts/visual-diff.ts`'s local before/after report (see

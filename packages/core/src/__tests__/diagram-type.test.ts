@@ -160,6 +160,18 @@ describe('detectDiagramType – journey', () => {
   })
 })
 
+describe('detectDiagramType – eventmodeling', () => {
+  it('detects event models, case-sensitively and as a whole word', () => {
+    expect(detectDiagramType('eventmodeling')).toBe('eventmodeling')
+    expect(detectDiagramType('  eventmodeling\n  tf 01 ui A')).toBe(
+      'eventmodeling',
+    )
+    expect(detectDiagramType('%% c\neventmodeling')).toBe('eventmodeling')
+    expect(detectDiagramType('Eventmodeling')).toBe('flowchart')
+    expect(detectDiagramType('eventmodelings')).toBe('flowchart')
+  })
+})
+
 describe('detectDiagramType – kanban', () => {
   it('detects kanban boards, case-sensitively and as a whole word', () => {
     expect(detectDiagramType('kanban')).toBe('kanban')

@@ -141,6 +141,8 @@ export {
   wrapTimelineText,
 } from './timeline/layout.ts'
 export { renderTimelineSvg } from './timeline/renderer.ts'
+export { EVENTMODELING, layoutEventModeling } from './eventmodeling/layout.ts'
+export { renderEventModelingSvg } from './eventmodeling/renderer.ts'
 export { layoutGitGraph } from './gitgraph/layout.ts'
 export { renderGitGraphSvg } from './gitgraph/renderer.ts'
 export { PACKET, layoutPacket } from './packet/layout.ts'

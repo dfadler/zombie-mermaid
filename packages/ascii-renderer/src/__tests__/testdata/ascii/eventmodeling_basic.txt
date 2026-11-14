@@ -1,0 +1,32 @@
+eventmodeling
+tf 01 ui CartScreen
+tf 02 cmd AddItem
+tf 03 evt ItemAdded
+tf 04 rmo CartItems
+tf 05 ui CartPage
+---
+UI/Automation       Command/Read Model      Events
+
++- ui -------+
+| CartScreen |
++------+-----+
+       |
+       |
+       |            +- command ------+
+       +----------->| AddItem        |
+                    +--------+-------+
+                             |
+                             |
+                             |              +- event ---+
+                             +------------->| ItemAdded |
+                                            +-----+-----+
+                                                  |
+                                                  |
+                    +- read model ---+            |
+                    | CartItems      |<-----------+
+                    +--------+-------+
+                             |
+                             |
++- ui -------+               |
+| CartPage   |<--------------+
++------------+

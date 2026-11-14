@@ -53,6 +53,7 @@ describe('list_diagram_types', () => {
       kanban: 'kanban\n  A\n    b',
       sankey: 'sankey-beta\nA,B,1',
       requirement: 'requirementDiagram\nrequirement r {\n}',
+      eventmodeling: 'eventmodeling\ntf 01 ui A',
       usecase: 'usecase-beta\nactor A\nA --> B',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
