@@ -1313,6 +1313,37 @@ function buildClusterLaneRoute(
   }
 }
 
+/**
+ * #3095: the skip edge of a sidestepped bypass (`A --> C` past `B`, #2739). The
+ * skipped node sits off its row, and mermaid 12.3.0 takes the skip edge to the
+ * other side of the row (17 px below for a `B` above, above for a `B` below)
+ * and back: out of A's right face, one gap column on, along A's and C's
+ * border row, up into C's left face. The path in grid cells, or undefined.
+ */
+function bypassDip(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): GridCoord[] | undefined {
+  if (!edge.ownPorts) return undefined
+  const a = requireGridCoord(edge.from)
+  const c = requireGridCoord(edge.to)
+  if (a.y !== c.y || c.x - a.x <= 4) return undefined
+  // `ownPorts` is only set by `sidestepSkippedNodes`, which records the node.
+  const b = requireGridCoord(
+    graph.sidesteps!.find((s) => s.anchor === edge.from)!.node,
+  )
+  // The border row on the side away from the skipped node.
+  const row = b.y < a.y ? a.y + 2 : a.y
+  return [
+    { x: a.x + 2, y: a.y + 1 },
+    { x: a.x + 3, y: a.y + 1 },
+    { x: a.x + 3, y: row },
+    { x: c.x - 1, y: row },
+    { x: c.x - 1, y: c.y + 1 },
+    { x: c.x, y: c.y + 1 },
+  ]
+}
+
 /** Whether a node sits between `edge`'s ends on the same grid row (LR). */
 function jumpsNodeOnRow(graph: AsciiGraph, edge: AsciiEdge): boolean {
   const a = edge.from.gridCoord
@@ -2350,6 +2381,14 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     sourceSg && sourceSg === targetSg && sourceSg.direction
       ? sourceSg.direction
       : graph.config.graphDirection
+
+  const dip = effectiveDir === 'LR' ? bypassDip(graph, edge) : undefined
+  if (dip) {
+    edge.startDir = Right
+    edge.endDir = Left
+    edge.path = dip
+    return
+  }
 
   let [
     preferredDir,
