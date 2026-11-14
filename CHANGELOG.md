@@ -1,5 +1,31 @@
 # Changelog
 
+## 5.18.0
+
+### Minor Changes
+
+- [#3133](https://github.com/dfadler/zombie-mermaid/pull/3133) [`9d0e5ee`](https://github.com/dfadler/zombie-mermaid/commit/9d0e5ee94f195949230e03643cd562620405a435) Thanks [@dfadler](https://github.com/dfadler)! - Use case diagrams: `usecase-beta` (the only header mermaid@12.3.0 detects) now renders to SVG and ASCII. Actors, use cases (`Name`, `Name(label)`, `Name[label]`), `systemBoundary`, `direction`, associations with labels, `include`/`extend`/generalization and `note for` are supported; metadata, stereotypes, classes, `json` nodes, circle/cross markers and edge ids are rejected with a "not supported yet" error. `parseUsecase` and `usecaseToGraph` join `@zombie-mermaid/mermaid-parser`; `DiagramType` gains `'usecase'`, `NodeShape` gains the `usecase-*` shapes and an edge `triangle` terminator.
+
+### Patch Changes
+
+- [#3101](https://github.com/dfadler/zombie-mermaid/pull/3101) [`8d4b3e8`](https://github.com/dfadler/zombie-mermaid/commit/8d4b3e83a8c5bca97ce67ae00c05efb9c6e185db) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: in a left-to-right or right-to-left flow, a decision with three ends on its entry face (the way in and two returns, as `G{Tests?}` in the Git Branching Workflow sample) gives each end its own cell, on the vertex and the two slants, as mermaid@12.3.0 draws it, instead of ending the arrowhead and both returns on one shared stem. Needs the ELK layout provider (registered by default in `zombie-mermaid`'s entry points).
+
+- [#3108](https://github.com/dfadler/zombie-mermaid/pull/3108) [`68abaac`](https://github.com/dfadler/zombie-mermaid/commit/68abaacc88073779b079acf9653108a02f6d7987) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a labelled left-to-right edge into a decision that takes a face lane no longer throws in the label placement, and its label is drawn instead of dropped.
+
+- [#3129](https://github.com/dfadler/zombie-mermaid/pull/3129) [`01169d4`](https://github.com/dfadler/zombie-mermaid/commit/01169d476c757cc89318ca180afee28e4f7268e4) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a left-to-right or right-to-left flow with several edges leaving one cluster (the "Cluster Exit Siblings" samples) no longer re-runs the same bend-row search hundreds of times while it lays out; the result is unchanged, only faster (one such render dropped from minutes to under a second on a heavily loaded machine).
+
+- [#3098](https://github.com/dfadler/zombie-mermaid/pull/3098) [`fce6493`](https://github.com/dfadler/zombie-mermaid/commit/fce6493a31810e0c28d4c33dc43e80839611a34e) Thanks [@dfadler](https://github.com/dfadler)! - Radar ASCII: a curve with a different number of values than there are axes is listed under the bars with its fill glyph (with `showLegend` on), as mermaid@12.3.0 lists it in its legend while drawing no polygon. It was dropped silently. The SVG already matched; four more cases (fewer values, more values, only a short curve, short curve with `showLegend false`, `min`/`max`, polygon graticule) are now checked against 12.3.0 in the radar oracle.
+
+- [#3099](https://github.com/dfadler/zombie-mermaid/pull/3099) [`adf3ab1`](https://github.com/dfadler/zombie-mermaid/commit/adf3ab1d530f86ed43b53251c06f34f60b6ab9b3) Thanks [@dfadler](https://github.com/dfadler)! - Sankey ASCII: a sink fed by several links now prints its total on a closing `name  total` row, as mermaid@12.3.0 draws it on the node (`Hosting 20`, `c 7`); before, the total appeared nowhere.
+
+- [#3119](https://github.com/dfadler/zombie-mermaid/pull/3119) [`3cad98a`](https://github.com/dfadler/zombie-mermaid/commit/3cad98ac0b99ab7af44d2806ac23f2d2c11e33d3) Thanks [@dfadler](https://github.com/dfadler)! - xyChart (SVG): read the font, padding, tick, line-width, rotation and data-label config keys of mermaid 12.3.0: `titleFontSize`, `titlePadding`, `plotReservedSpacePercent`, `showDataLabel`, `showDataLabelOutsideBar`, and per axis `labelFontSize`, `labelPadding`, `titleFontSize`, `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth`, `labelRotation`. The canvas stays `width` x `height`, and the plot moves by the same amount as in mermaid (within about 1px, checked for each key in both orientations). Charts that set none of them render as before.
+- Updated dependencies [[`8d4b3e8`](https://github.com/dfadler/zombie-mermaid/commit/8d4b3e83a8c5bca97ce67ae00c05efb9c6e185db), [`68abaac`](https://github.com/dfadler/zombie-mermaid/commit/68abaacc88073779b079acf9653108a02f6d7987), [`29510b3`](https://github.com/dfadler/zombie-mermaid/commit/29510b303552a316e136a390e3d44c50ab03bf52), [`01169d4`](https://github.com/dfadler/zombie-mermaid/commit/01169d476c757cc89318ca180afee28e4f7268e4), [`be2f550`](https://github.com/dfadler/zombie-mermaid/commit/be2f55069eb5533bff802b0cc7623c991c896503), [`fce6493`](https://github.com/dfadler/zombie-mermaid/commit/fce6493a31810e0c28d4c33dc43e80839611a34e), [`adf3ab1`](https://github.com/dfadler/zombie-mermaid/commit/adf3ab1d530f86ed43b53251c06f34f60b6ab9b3), [`9d0e5ee`](https://github.com/dfadler/zombie-mermaid/commit/9d0e5ee94f195949230e03643cd562620405a435), [`597a68f`](https://github.com/dfadler/zombie-mermaid/commit/597a68f868224ee82aae6896150d21a9042feba4), [`3cad98a`](https://github.com/dfadler/zombie-mermaid/commit/3cad98ac0b99ab7af44d2806ac23f2d2c11e33d3)]:
+  - @zombie-mermaid/ascii-renderer@5.18.0
+  - @zombie-mermaid/svg-renderer@5.18.0
+  - @zombie-mermaid/core@5.18.0
+  - @zombie-mermaid/mermaid-parser@5.18.0
+  - @zombie-mermaid/mcp@5.18.0
+
 ## 5.17.0
 
 ### Minor Changes

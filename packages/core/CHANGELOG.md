@@ -1,5 +1,15 @@
 # @zombie-mermaid/core
 
+## 5.18.0
+
+### Minor Changes
+
+- [#3133](https://github.com/dfadler/zombie-mermaid/pull/3133) [`9d0e5ee`](https://github.com/dfadler/zombie-mermaid/commit/9d0e5ee94f195949230e03643cd562620405a435) Thanks [@dfadler](https://github.com/dfadler)! - Use case diagrams: `usecase-beta` (the only header mermaid@12.3.0 detects) now renders to SVG and ASCII. Actors, use cases (`Name`, `Name(label)`, `Name[label]`), `systemBoundary`, `direction`, associations with labels, `include`/`extend`/generalization and `note for` are supported; metadata, stereotypes, classes, `json` nodes, circle/cross markers and edge ids are rejected with a "not supported yet" error. `parseUsecase` and `usecaseToGraph` join `@zombie-mermaid/mermaid-parser`; `DiagramType` gains `'usecase'`, `NodeShape` gains the `usecase-*` shapes and an edge `triangle` terminator.
+
+### Patch Changes
+
+- [#3119](https://github.com/dfadler/zombie-mermaid/pull/3119) [`3cad98a`](https://github.com/dfadler/zombie-mermaid/commit/3cad98ac0b99ab7af44d2806ac23f2d2c11e33d3) Thanks [@dfadler](https://github.com/dfadler)! - xyChart (SVG): read the font, padding, tick, line-width, rotation and data-label config keys of mermaid 12.3.0: `titleFontSize`, `titlePadding`, `plotReservedSpacePercent`, `showDataLabel`, `showDataLabelOutsideBar`, and per axis `labelFontSize`, `labelPadding`, `titleFontSize`, `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth`, `labelRotation`. The canvas stays `width` x `height`, and the plot moves by the same amount as in mermaid (within about 1px, checked for each key in both orientations). Charts that set none of them render as before.
+
 ## 5.17.0
 
 ### Minor Changes

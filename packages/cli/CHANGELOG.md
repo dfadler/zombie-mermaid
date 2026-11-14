@@ -1,5 +1,19 @@
 # @zombie-mermaid/cli
 
+## 5.18.0
+
+### Minor Changes
+
+- [#3133](https://github.com/dfadler/zombie-mermaid/pull/3133) [`9d0e5ee`](https://github.com/dfadler/zombie-mermaid/commit/9d0e5ee94f195949230e03643cd562620405a435) Thanks [@dfadler](https://github.com/dfadler)! - Use case diagrams: `usecase-beta` (the only header mermaid@12.3.0 detects) now renders to SVG and ASCII. Actors, use cases (`Name`, `Name(label)`, `Name[label]`), `systemBoundary`, `direction`, associations with labels, `include`/`extend`/generalization and `note for` are supported; metadata, stereotypes, classes, `json` nodes, circle/cross markers and edge ids are rejected with a "not supported yet" error. `parseUsecase` and `usecaseToGraph` join `@zombie-mermaid/mermaid-parser`; `DiagramType` gains `'usecase'`, `NodeShape` gains the `usecase-*` shapes and an edge `triangle` terminator.
+
+### Patch Changes
+
+- Updated dependencies [[`8d4b3e8`](https://github.com/dfadler/zombie-mermaid/commit/8d4b3e83a8c5bca97ce67ae00c05efb9c6e185db), [`68abaac`](https://github.com/dfadler/zombie-mermaid/commit/68abaacc88073779b079acf9653108a02f6d7987), [`29510b3`](https://github.com/dfadler/zombie-mermaid/commit/29510b303552a316e136a390e3d44c50ab03bf52), [`01169d4`](https://github.com/dfadler/zombie-mermaid/commit/01169d476c757cc89318ca180afee28e4f7268e4), [`be2f550`](https://github.com/dfadler/zombie-mermaid/commit/be2f55069eb5533bff802b0cc7623c991c896503), [`fce6493`](https://github.com/dfadler/zombie-mermaid/commit/fce6493a31810e0c28d4c33dc43e80839611a34e), [`adf3ab1`](https://github.com/dfadler/zombie-mermaid/commit/adf3ab1d530f86ed43b53251c06f34f60b6ab9b3), [`9d0e5ee`](https://github.com/dfadler/zombie-mermaid/commit/9d0e5ee94f195949230e03643cd562620405a435), [`597a68f`](https://github.com/dfadler/zombie-mermaid/commit/597a68f868224ee82aae6896150d21a9042feba4), [`3cad98a`](https://github.com/dfadler/zombie-mermaid/commit/3cad98ac0b99ab7af44d2806ac23f2d2c11e33d3)]:
+  - @zombie-mermaid/ascii-renderer@5.18.0
+  - @zombie-mermaid/svg-renderer@5.18.0
+  - @zombie-mermaid/core@5.18.0
+  - @zombie-mermaid/mcp@5.18.0
+
 ## 5.17.0
 
 ### Patch Changes
