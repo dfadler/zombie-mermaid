@@ -84,6 +84,8 @@ export * from './sankey/types.ts'
 export * from './treemap/parser.ts'
 export * from './treemap/types.ts'
 export * from './treemap/format.ts'
+export * from './wardley/parser.ts'
+export * from './wardley/types.ts'
 
 export * from './requirement/parser.ts'
 export * from './requirement/types.ts'
